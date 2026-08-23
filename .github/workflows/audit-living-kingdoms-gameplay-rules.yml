@@ -24,10 +24,11 @@ env:
   PROJECT_DIR: projects/living-kingdoms
   LIVING_KINGDOMS_CI_REALM_TEST: '1'
   LIVING_KINGDOMS_CI_FANTASY_ECOLOGY_TEST: '1'
+  LIVING_KINGDOMS_CI_RESIDENCE_PLACEMENT_TEST: '1'
 
 jobs:
   gameplay-rules:
-    name: Java 25 / Erden gameplay rules / ecology / JAR
+    name: Java 25 / Erden gameplay rules / residence / ecology / JAR
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -44,6 +45,24 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle --no-daemon clean build --stacktrace --console=plain
 
+      - name: First real-play source contracts
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -Eq 'silvana_forest|kardum_league|TEST_SPECIES|TEST_HOMELANDS' \
+            src/main/java/kr/moonseungjun/livingkingdoms/client/OriginSelectionScreen.java
+          ! grep -Eq 'silvana_forest|kardum_league' \
+            src/main/java/kr/moonseungjun/livingkingdoms/network/RealmCodexSnapshotBuilder.java
+          ! grep -Eq 'silvana_forest|kardum_league' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/RealmJurisdiction.java
+          grep -F 'addTicketAndLoadWithRadius(TicketType.PORTAL, chunk, 1)' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/LivingRealmWorldManager.java
+          grep -F 'finishPlacementWhenReady(player, profile, moved ->' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/RealmBuildCoordinator.java
+          grep -F 'if (moved)' \
+            src/main/java/kr/moonseungjun/livingkingdoms/world/RealmBuildCoordinator.java
+
       - name: Fresh Erden gameplay rules audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -59,11 +78,12 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
           passed=0
           for attempt in $(seq 1 900); do
-            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Erden gameplay rules lock was violated|Erden settlement safety catalog drifted|Erden ecology entered civic settlement' "$log"; then
+            if grep -Eq 'LK_REALM_DIAGNOSTIC_FAIL|Exception in server tick loop|watchdog|OutOfMemoryError|NoSuchMethodError|NoClassDefFoundError|Erden gameplay rules lock was violated|Erden settlement safety catalog drifted|Erden ecology entered civic settlement|Erden residence physical audit failed' "$log"; then
               cat "$log"
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' "$log" \
+              && grep -Fq 'LK_ERDEN_RESIDENCE_PHYSICAL_PASS ' "$log" \
               && grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3' "$log" \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' "$log" \
               && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log"; then
@@ -99,6 +119,13 @@ jobs:
             | grep -F 'scripted_spawns_preserved=true' \
             | grep -F 'initial_placement_teleport_only=true' \
             | grep -F 'multiplayer_world_shared=true'
+          grep -F 'LK_ERDEN_RESIDENCE_PHYSICAL_PASS ' "$log" \
+            | grep -F 'loaded_probe_chunks=9' \
+            | grep -F 'walkable=true' \
+            | grep -F 'bounded_fallback=true' \
+            | grep -F 'transient_ticket_released=true' \
+            | grep -F 'ticket_radius=1' \
+            | grep -F 'persistent_forced_chunks=false'
           grep -F 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3' "$log" \
             | grep -F 'capital_spawn=false' \
             | grep -F 'settlement_spawn=false' \
@@ -121,6 +148,7 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/profile/StarterLoadoutManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/StarterNpcManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenResidencePlacementPhysicalAudit.class' "$entries"
           unzip -p "${jars[0]}" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
 
       - name: Upload gameplay rules logs
