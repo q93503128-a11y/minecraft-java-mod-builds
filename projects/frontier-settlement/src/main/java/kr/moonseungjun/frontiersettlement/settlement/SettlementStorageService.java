@@ -43,7 +43,7 @@ public final class SettlementStorageService {
             food += SettlementInventory.countFood(container);
             for (int slot = 0; slot < container.getContainerSize(); slot++) {
                 ItemStack stack = container.getItem(slot);
-                if (!stack.isEmpty() && isMetal(stack)) metal += stack.getCount();
+                if (!stack.isEmpty() && isMetalStack(stack)) metal += stack.getCount();
             }
         }
         return new SettlementResources(wood, stone, metal, food);
@@ -70,7 +70,7 @@ public final class SettlementStorageService {
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.metal() < amount) return false;
-        remove(level, positions, amount, SettlementStorageService::isMetal);
+        remove(level, positions, amount, SettlementStorageService::isMetalStack);
         return true;
     }
 
@@ -122,6 +122,18 @@ public final class SettlementStorageService {
         return ItemStack.EMPTY;
     }
 
+    public static boolean isMetalStack(ItemStack stack) {
+        return stack.is(Items.IRON_INGOT)
+                || stack.is(Items.RAW_IRON)
+                || stack.is(Items.COPPER_INGOT)
+                || stack.is(Items.RAW_COPPER)
+                || stack.is(Items.GOLD_INGOT)
+                || stack.is(Items.RAW_GOLD)
+                || stack.is(ExternalContentTags.C_INGOTS)
+                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
+                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
+    }
+
     private static boolean allStorageChunksLoaded(ServerLevel level, List<BlockPos> positions) {
         for (BlockPos pos : positions) {
             if (!level.hasChunkAt(pos)) return false;
@@ -153,17 +165,5 @@ public final class SettlementStorageService {
             }
             container.setChanged();
         }
-    }
-
-    private static boolean isMetal(ItemStack stack) {
-        return stack.is(Items.IRON_INGOT)
-                || stack.is(Items.RAW_IRON)
-                || stack.is(Items.COPPER_INGOT)
-                || stack.is(Items.RAW_COPPER)
-                || stack.is(Items.GOLD_INGOT)
-                || stack.is(Items.RAW_GOLD)
-                || stack.is(ExternalContentTags.C_INGOTS)
-                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
-                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
     }
 }
