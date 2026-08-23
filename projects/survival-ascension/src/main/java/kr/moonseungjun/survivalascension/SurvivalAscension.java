@@ -9,6 +9,7 @@ import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
 import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
 import kr.moonseungjun.survivalascension.harvesting.IrrigationReplantService;
@@ -26,7 +27,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.25.0-alpha.1";
+    public static final String VERSION = "0.26.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -51,6 +52,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
@@ -66,6 +69,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: persistent 18-directive expedition set + all-task completion + legacy-safe Field Mastery", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: randomized multi-task expeditions + rare regional field incidents + Lv.100 Field Mastery", VERSION);
     }
 }
