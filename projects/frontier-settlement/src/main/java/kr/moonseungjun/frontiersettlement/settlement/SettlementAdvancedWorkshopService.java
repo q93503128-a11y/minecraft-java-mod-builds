@@ -2,6 +2,7 @@ package kr.moonseungjun.frontiersettlement.settlement;
 
 import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -202,6 +204,7 @@ public final class SettlementAdvancedWorkshopService {
         var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         ItemStack enchanted = EnchantmentHelper.enchantItem(level.getRandom(), forged, ENCHANTMENT_POWER,
                 enchantments.listElements()
+                        .<Holder<Enchantment>>map(holder -> holder)
                         .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))
                         .filter(forged::supportsEnchantment));
         if (EnchantmentHelper.getEnchantmentsForCrafting(enchanted).isEmpty()) return false;
@@ -267,7 +270,7 @@ public final class SettlementAdvancedWorkshopService {
     private static void returnCarriedItem(ServerLevel level, SettlementData data, Villager worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) { worker.getNavigation().stop(); return; }
-        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
             worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.8D);
             return;
