@@ -67,7 +67,7 @@ Source project: `Shadows-of-Fire/GatewaysToEternity`
 Copyright (c) 2020 Brennan Ward  
 License: MIT License
 
-Survival Ascension 0.21 adapts the encounter lifecycle of timed sequential waves, inter-wave setup, boss-bar status and completion rewards. It uses its own Ascension Nexus gate, resource costs, mob compositions and failure rules. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
+Survival Ascension 0.21 adapts the encounter lifecycle of timed sequential waves, inter-wave setup, boss-bar status and completion rewards. Survival Ascension 0.22 additionally adapts at a high level the idea of wave-changing modifiers into its own randomized tactical doctrines and bounded mid-wave reinforcement rules. The implementation uses its own Ascension Nexus gate, resource costs, doctrine definitions, vanilla-mob compositions, pursuit behavior and failure rules. No Gateways to Eternity assets, datapacks, namespaces, Gate Pearl items or dependency code are bundled. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
 
 ## Create
 Source project: `Creators-of-Create/Create`  
