@@ -11,16 +11,15 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -36,10 +35,12 @@ import java.util.WeakHashMap;
  */
 public final class HighUtilitySpellService {
     private static final Set<String> HANDLED = Set.of("clone", "true_polymorph", "maze", "etherealness");
+    private static final int CLONE_TICKS = 1800;
     private static final int TRUE_POLYMORPH_TICKS = 480;
-    private static final int MAZE_TICKS = 360;
+    private static final int MAZE_TICKS = 480;
 
     private static final Map<UUID, EtherealState> ETHEREAL = new HashMap<>();
+    private static final Map<UUID, CloneState> CLONES = new HashMap<>();
     private static final Map<UUID, PolymorphState> POLYMORPHS = new HashMap<>();
     private static final Map<UUID, MazeState> MAZES = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
@@ -67,6 +68,7 @@ public final class HighUtilitySpellService {
         Long previous = LAST_TICK.put(level, now);
         if (previous != null && previous == now) return;
         tickEthereal(level, now);
+        tickClones(level, now);
         tickPolymorphs(level, now);
         tickMazes(level, now);
     }
@@ -84,6 +86,8 @@ public final class HighUtilitySpellService {
         UUID ownerId = player.getUUID();
         EtherealState ethereal = ETHEREAL.remove(ownerId);
         if (ethereal != null) restoreEthereal(player, ethereal);
+        CloneState clone = CLONES.remove(ownerId);
+        if (clone != null) discardClone(clone);
         restoreOwnedStates(ownerId);
     }
 
@@ -93,6 +97,8 @@ public final class HighUtilitySpellService {
             if (raw instanceof ServerPlayer player) restoreEthereal(player, state);
         }
         ETHEREAL.clear();
+        for (CloneState state : new ArrayList<>(CLONES.values())) discardClone(state);
+        CLONES.clear();
         for (PolymorphState state : new ArrayList<>(POLYMORPHS.values())) restorePolymorph(state, false);
         POLYMORPHS.clear();
         for (MazeState state : new ArrayList<>(MAZES.values())) restoreMaze(state);
@@ -104,9 +110,11 @@ public final class HighUtilitySpellService {
         Mob source = targetMob(player, snapshot);
         if (source == null) return false;
         ServerLevel level = (ServerLevel) player.level();
+        CloneState old = CLONES.remove(player.getUUID());
+        if (old != null) discardClone(old);
+
         Entity rawClone = source.getType().create(level, EntitySpawnReason.EVENT);
         if (!(rawClone instanceof Mob clone)) return false;
-
         Vec3 look = player.getLookAngle();
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
         right = right.lengthSqr() < 1.0E-8 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
@@ -115,32 +123,30 @@ public final class HighUtilitySpellService {
         clone.finalizeSpawn(level, level.getCurrentDifficultyAt(source.blockPosition()), EntitySpawnReason.EVENT, null);
         copyCombatBody(source, clone);
         clone.setCustomName(Component.literal("§d[클론] §f" + source.getName().getString()));
-        clone.setCustomNameVisible(source.isCustomNameVisible());
+        clone.setCustomNameVisible(true);
         clone.setPersistenceRequired();
         clone.addTag("arcanecircle_clone");
-        clone.addTag("arcanecircle_clone_source_" + source.getUUID());
-        if (source.getTarget() != null && source.getTarget().isAlive()) clone.setTarget(source.getTarget());
+        clone.addTag("arcanecircle_clone_owner_" + player.getUUID());
+        if (source.getTarget() != null && source.getTarget().isAlive() && source.getTarget() != player)
+            clone.setTarget(source.getTarget());
         level.addFreshEntityWithPassengers(clone);
+        CLONES.put(player.getUUID(), new CloneState(level, player.getUUID(), clone.getUUID(),
+                level.getGameTime() + CLONE_TICKS));
         level.playSound(null, clone.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                 SoundSource.PLAYERS, 1.05F, .72F);
         ArcaneNoticeService.push(player, Component.literal("§d[클론] §f" + source.getName().getString()
-                + "의 실제 생명체 복제본을 만들었습니다. §7복제체는 시전자 소유가 아니며 독립적으로 행동합니다."), 100);
+                + "의 전투 육체를 90초간 복제했습니다. §7클론은 시전자를 호위하며 시전자나 자신을 공격하는 적을 자동 반격합니다."), 110);
         return true;
     }
 
     private static void copyCombatBody(Mob source, Mob clone) {
-        for (EquipmentSlot slot : List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
-                EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND)) {
-            ItemStack stack = source.getItemBySlot(slot);
-            if (!stack.isEmpty()) clone.setItemSlot(slot, stack.copy());
-        }
         copyAttribute(source, clone, Attributes.MAX_HEALTH, source.getMaxHealth());
         copyAttribute(source, clone, Attributes.ATTACK_DAMAGE, Double.NaN);
         copyAttribute(source, clone, Attributes.ARMOR, Double.NaN);
         copyAttribute(source, clone, Attributes.ARMOR_TOUGHNESS, Double.NaN);
         copyAttribute(source, clone, Attributes.MOVEMENT_SPEED, Double.NaN);
         copyAttribute(source, clone, Attributes.SCALE, Double.NaN);
-        clone.setHealth(Math.min(clone.getMaxHealth(), Math.max(1.0F, source.getHealth())));
+        clone.setHealth(clone.getMaxHealth());
     }
 
     private static void copyAttribute(Mob source, Mob clone,
@@ -211,7 +217,7 @@ public final class HighUtilitySpellService {
         level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT,
                 SoundSource.PLAYERS, 1.0F, .48F);
         ArcaneNoticeService.push(player, Component.literal("§5[미궁] §f" + target.getName().getString()
-                + "을 18초간 전장에서 추방했습니다. §7효과가 끝나면 원래 전장으로 귀환합니다."), 90);
+                + "을 24초간 전장에서 완전히 추방했습니다. §7귀환 뒤 6초 동안 미궁 후유증으로 방향감각과 전투력이 흔들립니다."), 100);
         return true;
     }
 
@@ -244,6 +250,36 @@ public final class HighUtilitySpellService {
                 continue;
             }
             applyEthereal(player);
+        }
+    }
+
+    private static void tickClones(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, CloneState>> iterator = CLONES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            CloneState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity rawOwner = level.getEntity(state.ownerId);
+            Entity rawClone = level.getEntity(state.cloneId);
+            if (!(rawOwner instanceof ServerPlayer owner) || !owner.isAlive() || owner.isSpectator()
+                    || !(rawClone instanceof Mob clone) || !clone.isAlive() || clone.isRemoved()
+                    || now >= state.expiresAt) {
+                discardClone(state);
+                iterator.remove();
+                continue;
+            }
+            LivingEntity current = clone.getTarget();
+            if (current != null && (!current.isAlive() || current == owner || owner.isAlliedTo(current)))
+                clone.setTarget(null);
+            if (clone.getTarget() == null) {
+                Mob threat = level.getEntitiesOfClass(Mob.class, clone.getBoundingBox().inflate(24.0),
+                                candidate -> candidate != clone && candidate.isAlive() && !candidate.isRemoved()
+                                        && !owner.isAlliedTo(candidate)
+                                        && (candidate.getTarget() == owner || candidate.getTarget() == clone))
+                        .stream().min(Comparator.comparingDouble(clone::distanceToSqr)).orElse(null);
+                if (threat != null) clone.setTarget(threat);
+            }
+            if (clone.getTarget() == null && clone.distanceToSqr(owner) > 100.0)
+                clone.getNavigation().moveTo(owner, 1.16);
         }
     }
 
@@ -289,12 +325,19 @@ public final class HighUtilitySpellService {
     private static void restoreEthereal(ServerPlayer player, EtherealState state) {
         player.noPhysics = state.oldNoPhysics;
         player.setNoGravity(state.oldNoGravity);
-        player.setInvisible(state.oldInvisible);
+        player.setInvisible(state.oldInvisible;
         player.getAbilities().mayfly = state.oldMayfly;
         player.getAbilities().flying = state.oldFlying && state.oldMayfly;
         player.onUpdateAbilities();
         player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 60, 0, true, false));
         WorldMagicService.cancelRelease(player, "etherealness");
+    }
+
+    private static void discardClone(CloneState state) {
+        Entity rawClone = state.level.getEntity(state.cloneId);
+        if (rawClone instanceof Mob clone && !clone.isRemoved()) clone.discard();
+        Entity rawOwner = state.level.getEntity(state.ownerId);
+        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "clone");
     }
 
     private static void restorePolymorph(PolymorphState state, boolean proxyBroken) {
@@ -325,11 +368,17 @@ public final class HighUtilitySpellService {
         target.removeTag("arcanecircle_maze_exile");
         target.snapTo(state.anchor.x, state.anchor.y, state.anchor.z, state.yRot, state.xRot);
         target.setDeltaMovement(Vec3.ZERO);
+        target.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 120, 1, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 3, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, true, false));
         Entity rawOwner = state.level.getEntity(state.ownerId);
         if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "maze");
     }
 
     private static void restoreOwnedStates(UUID ownerId) {
+        CloneState clone = CLONES.remove(ownerId);
+        if (clone != null) discardClone(clone);
         List<UUID> polymorphs = POLYMORPHS.entrySet().stream()
                 .filter(entry -> entry.getValue().ownerId.equals(ownerId)).map(Map.Entry::getKey).toList();
         for (UUID id : polymorphs) {
@@ -369,7 +418,7 @@ public final class HighUtilitySpellService {
 
     private static Mob targetMob(ServerPlayer player, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(player).orElse(null);
-        if (!(target instanceof Mob mob) || !mob.isAlive() || mob.isRemoved()) return null;
+        if (!(target instanceof Mob mob) || !mob.isAlive() || mob.isRemoved() || mob.getTags().contains("arcanecircle_clone")) return null;
         return POLYMORPHS.containsKey(mob.getUUID()) || MAZES.containsKey(mob.getUUID()) ? null : mob;
     }
 
@@ -401,6 +450,20 @@ public final class HighUtilitySpellService {
         }
 
         private boolean active() { return level.getGameTime() < expiresAt; }
+    }
+
+    private static final class CloneState {
+        private final ServerLevel level;
+        private final UUID ownerId;
+        private final UUID cloneId;
+        private final long expiresAt;
+
+        private CloneState(ServerLevel level, UUID ownerId, UUID cloneId, long expiresAt) {
+            this.level = level;
+            this.ownerId = ownerId;
+            this.cloneId = cloneId;
+            this.expiresAt = expiresAt;
+        }
     }
 
     private static final class PolymorphState {
