@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.mobility;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionAction;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
@@ -84,6 +85,7 @@ public final class MobilityProgression {
         player.resetFallDistance();
         DASH_READY_TICK.put(player.getUUID(), now + SkillTuning.mobilityDashCooldownTicks(level));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
+        ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1);
     }
 
     private static int maxAirDashes(ServerPlayer player, int level) {
