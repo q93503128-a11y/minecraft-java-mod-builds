@@ -12,8 +12,10 @@ import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
@@ -234,7 +236,9 @@ public final class AscensionTrialSystem {
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, String typeId, int index, int count) {
-        EntityType<?> type = EntityType.byString(typeId).orElse(null);
+        Identifier identifier = Identifier.parse(typeId);
+        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)) return null;
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(identifier);
         if (type == null) return null;
         for (int attempt = 0; attempt < 10; attempt++) {
             double angle = Math.PI * 2.0D * (index + attempt * 0.37D) / Math.max(1, count);
