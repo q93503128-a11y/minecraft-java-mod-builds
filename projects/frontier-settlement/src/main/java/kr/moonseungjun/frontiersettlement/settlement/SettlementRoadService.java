@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public final class SettlementRoadService {
     private static final double BUILDER_WORK_RANGE_SQR = 18.0D;
     private static final double STORAGE_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 16;
+    private static final double ROAD_BUILDER_SEARCH_MARGIN = 96.0D;
     private static final long PLAYER_ENDPOINT_RANGE_SQR = 16L * 16L;
 
     private SettlementRoadService() {}
@@ -125,7 +127,7 @@ public final class SettlementRoadService {
         }
 
         ServerLevel level = server.overworld();
-        Villager builder = SettlementConstructionService.ensureBuilder(level, data.centerPos());
+        Villager builder = findRoadBuilder(level, data.centerPos(), road, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -133,6 +135,24 @@ public final class SettlementRoadService {
         if (road.grading()) return tickGrading(server, data, road, plan, builder);
         if (road.step() >= plan.size()) return finishIfValid(server, data, road, plan, builder);
         return tickPaving(server, data, road, plan, builder);
+    }
+
+    private static Villager findRoadBuilder(ServerLevel level, BlockPos settlementCenter,
+                                            RoadConstructionState road, List<Placement> plan) {
+        int rawIndex = road.grading() ? road.gradeStep() : road.step();
+        int index = Math.max(0, Math.min(plan.size() - 1, rawIndex));
+        BlockPos hint = plan.get(index).pos();
+        double minX = Math.min(settlementCenter.getX(), hint.getX()) - ROAD_BUILDER_SEARCH_MARGIN;
+        double minY = Math.min(settlementCenter.getY(), hint.getY()) - 64.0D;
+        double minZ = Math.min(settlementCenter.getZ(), hint.getZ()) - ROAD_BUILDER_SEARCH_MARGIN;
+        double maxX = Math.max(settlementCenter.getX(), hint.getX()) + ROAD_BUILDER_SEARCH_MARGIN + 1.0D;
+        double maxY = Math.max(settlementCenter.getY(), hint.getY()) + 65.0D;
+        double maxZ = Math.max(settlementCenter.getZ(), hint.getZ()) + ROAD_BUILDER_SEARCH_MARGIN + 1.0D;
+        AABB corridor = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+        List<Villager> tagged = level.getEntitiesOfClass(Villager.class, corridor,
+                villager -> villager.entityTags().contains(SettlementConstructionService.BUILDER_TAG));
+        if (!tagged.isEmpty()) return tagged.getFirst();
+        return SettlementConstructionService.ensureBuilder(level, settlementCenter);
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data, RoadConstructionState road,
@@ -290,7 +310,7 @@ public final class SettlementRoadService {
         for (int depth = 0; depth <= MAX_FILL_DEPTH; depth++) {
             BlockState state = level.getBlockState(cursor);
             if (!state.isAir() && !state.canBeReplaced()) break;
-            level.setBlock(cursor, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            level.setBlock(cursor, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
             cursor = cursor.below();
         }
         BlockState targetState = level.getBlockState(target);
@@ -360,8 +380,27 @@ public final class SettlementRoadService {
         if (!road.active()) return;
         BlockPos pos = event.getPos();
         BlockState current = level.getBlockState(pos);
-        for (Placement placement : createPlan(road)) {
-            if (placement.pos().equals(pos) && current.is(placement.state().getBlock())) {
+        List<Placement> plan = createPlan(road);
+        int gradedCount = road.grading()
+                ? Math.max(0, Math.min(plan.size(), road.gradeStep()))
+                : plan.size();
+        for (int i = 0; i < plan.size(); i++) {
+            Placement placement = plan.get(i);
+            BlockPos surface = placement.pos();
+            if (surface.equals(pos) && current.is(placement.state().getBlock())) {
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                return;
+            }
+            if (i >= gradedCount) continue;
+            if (surface.equals(pos) && current.is(Blocks.COARSE_DIRT)) {
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                return;
+            }
+            if (surface.getX() == pos.getX() && surface.getZ() == pos.getZ()
+                    && pos.getY() < surface.getY() && pos.getY() >= surface.getY() - MAX_FILL_DEPTH - 1
+                    && current.is(Blocks.COARSE_DIRT)) {
                 event.setCanceled(true);
                 event.setNotifyClient(true);
                 return;
@@ -422,11 +461,11 @@ public final class SettlementRoadService {
                 }
 
                 for (int y = center.getY(); y <= center.getY() + 2; y++) {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    if (level.getBlockEntity(pos) != null) {
+                    BlockPos check = new BlockPos(x, y, z);
+                    if (level.getBlockEntity(check) != null) {
                         return new RouteCandidate(false, centers, Integer.MAX_VALUE, "경로 위에 보호해야 할 블록이 있습니다.");
                     }
-                    BlockState state = level.getBlockState(pos);
+                    BlockState state = level.getBlockState(check);
                     if (!state.getFluidState().isEmpty() || !isClearableForRoad(state)) {
                         return new RouteCandidate(false, centers, Integer.MAX_VALUE, "경로 위 공간을 안전하게 정리할 수 없습니다.");
                     }
