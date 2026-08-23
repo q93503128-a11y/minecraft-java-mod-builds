@@ -186,8 +186,10 @@ public final class WorldMagicService {
 
     private static int seventhCircleVisualDuration(String spellId, int baseDuration, double power) {
         return switch (spellId) {
+            case "delayed_blast_fireball" -> Math.max(baseDuration, SeventhCircleSpellService.DELAYED_BLAST_VISUAL_TICKS);
             case "etherealness" -> Math.max(baseDuration,
                     SeventhCircleSpellService.NPC_ETHEREAL_TICKS + (int) Math.min(240.0, Math.max(0.0, power)));
+            case "fire_storm" -> Math.max(baseDuration, SeventhCircleSpellService.FIRE_STORM_VISUAL_TICKS);
             case "forcecage" -> Math.max(baseDuration, SeventhCircleSpellService.NPC_FORCECAGE_TICKS);
             case "reverse_gravity" -> Math.max(baseDuration, SeventhCircleSpellService.REVERSE_GRAVITY_TICKS);
             default -> baseDuration;
