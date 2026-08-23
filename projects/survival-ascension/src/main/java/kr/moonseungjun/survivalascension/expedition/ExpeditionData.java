@@ -25,7 +25,7 @@ public final class ExpeditionData extends SavedData {
 
     private record PlayerEntry(String uuid, int discoveredMask, int completedMask,
                                Map<String, Integer> progress, Map<String, Integer> directives,
-                               int regionRewardMask, int milestoneMask) {
+                               int regionRewardMask, int incidentRewardMask, int milestoneMask) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
                 Codec.INT.optionalFieldOf("discovered", 0).forGetter(PlayerEntry::discoveredMask),
@@ -33,6 +33,7 @@ public final class ExpeditionData extends SavedData {
                 INT_MAP_CODEC.optionalFieldOf("progress", Map.of()).forGetter(PlayerEntry::progress),
                 INT_MAP_CODEC.optionalFieldOf("directives", Map.of()).forGetter(PlayerEntry::directives),
                 Codec.INT.optionalFieldOf("region_rewards", -1).forGetter(PlayerEntry::regionRewardMask),
+                Codec.INT.optionalFieldOf("incident_rewards", 0).forGetter(PlayerEntry::incidentRewardMask),
                 Codec.INT.optionalFieldOf("milestones", 0).forGetter(PlayerEntry::milestoneMask)
         ).apply(instance, PlayerEntry::new));
     }
@@ -49,17 +50,19 @@ public final class ExpeditionData extends SavedData {
         int discoveredMask;
         int completedMask;
         int regionRewardMask;
+        int incidentRewardMask;
         int milestoneMask;
         final Map<String, Integer> progress = new HashMap<>();
         final Map<String, Integer> directives = new HashMap<>();
 
         State(int discoveredMask, int completedMask, Map<String, Integer> progress,
-              Map<String, Integer> directives, int regionRewardMask, int milestoneMask) {
+              Map<String, Integer> directives, int regionRewardMask, int incidentRewardMask, int milestoneMask) {
             this.discoveredMask = discoveredMask & ALL_REGIONS_MASK;
             this.milestoneMask = milestoneMask & (MILESTONE_OVERWORLD | MILESTONE_LEGENDARY | MILESTONE_MASTER);
             this.regionRewardMask = regionRewardMask < 0
                     ? this.discoveredMask
                     : regionRewardMask & ALL_REGIONS_MASK;
+            this.incidentRewardMask = incidentRewardMask & ALL_REGIONS_MASK;
             int migratedCompleted = completedMask & ALL_REGIONS_MASK;
             if ((this.milestoneMask & MILESTONE_MASTER) != 0) migratedCompleted = ALL_REGIONS_MASK;
             this.completedMask = migratedCompleted;
@@ -98,7 +101,7 @@ public final class ExpeditionData extends SavedData {
     private ExpeditionData(List<PlayerEntry> entries) {
         for (PlayerEntry entry : entries) {
             players.put(entry.uuid(), new State(entry.discoveredMask(), entry.completedMask(), entry.progress(),
-                    entry.directives(), entry.regionRewardMask(), entry.milestoneMask()));
+                    entry.directives(), entry.regionRewardMask(), entry.incidentRewardMask(), entry.milestoneMask()));
         }
     }
 
@@ -106,7 +109,7 @@ public final class ExpeditionData extends SavedData {
         List<PlayerEntry> out = new ArrayList<>(players.size());
         players.forEach((uuid, state) -> out.add(new PlayerEntry(
                 uuid, state.discoveredMask, state.completedMask, Map.copyOf(state.progress), Map.copyOf(state.directives),
-                state.regionRewardMask, state.milestoneMask)));
+                state.regionRewardMask, state.incidentRewardMask, state.milestoneMask)));
         return out;
     }
 
@@ -117,7 +120,7 @@ public final class ExpeditionData extends SavedData {
         String key = player.getUUID().toString();
         State state = players.get(key);
         if (state == null) {
-            state = new State(0, 0, Map.of(), Map.of(), 0, 0);
+            state = new State(0, 0, Map.of(), Map.of(), 0, 0, 0);
             players.put(key, state);
             setDirty();
         }
@@ -187,10 +190,32 @@ public final class ExpeditionData extends SavedData {
         return new ProgressResult(action, oldProgress, newProgress, task.target(), taskCompletedNow, regionCompletedNow);
     }
 
+    public ExpeditionDirective.Task firstIncompleteTask(ServerPlayer player, ExpeditionRegion region) {
+        State state = state(player);
+        if ((state.completedMask & region.bit()) != 0) return null;
+        ExpeditionDirective directive = directive(player, region);
+        for (ExpeditionDirective.Task task : directive.tasks()) {
+            if (state.progress.getOrDefault(taskProgressKey(region, task.action()), 0) < task.target()) return task;
+        }
+        return null;
+    }
+
     public boolean claimRegionReward(ServerPlayer player, ExpeditionRegion region) {
         State state = state(player);
         if ((state.regionRewardMask & region.bit()) != 0) return false;
         state.regionRewardMask |= region.bit();
+        setDirty();
+        return true;
+    }
+
+    public boolean incidentResolved(ServerPlayer player, ExpeditionRegion region) {
+        return (state(player).incidentRewardMask & region.bit()) != 0;
+    }
+
+    public boolean claimIncidentReward(ServerPlayer player, ExpeditionRegion region) {
+        State state = state(player);
+        if ((state.incidentRewardMask & region.bit()) != 0) return false;
+        state.incidentRewardMask |= region.bit();
         setDirty();
         return true;
     }
