@@ -10,7 +10,7 @@ required = [
     "src/main/resources/META-INF/third-party/MINEMENU_MIT.txt", "src/main/resources/META-INF/third-party/BUILDING_GADGETS_2_MIT.txt",
     "src/main/resources/META-INF/third-party/MOB_CHAMPIONS_MIT.txt", "src/main/resources/META-INF/third-party/APOTHEOSIS_MIT.txt",
     "src/main/resources/META-INF/third-party/MEKANISM_MIT.txt", "src/main/resources/META-INF/third-party/WARBAND_MIT.txt",
-    "src/main/resources/META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt",
+    "src/main/resources/META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt", "src/main/resources/META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SkillsScreen.java",
@@ -25,6 +25,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
@@ -42,9 +43,9 @@ def need(text, needles, label):
         if needle not in text: errors.append(f"{label} missing: {needle}")
 
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.20.0-alpha.1"],"gradle.properties")
+need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.21.0-alpha.1"],"gradle.properties")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-need(main,['VERSION = "0.20.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath"],"main registration")
+need(main,['VERSION = "0.21.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick"],"main registration")
 
 tuning=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java").read_text(encoding="utf-8")
 need(tuning,[
@@ -71,9 +72,19 @@ need(mutation,[
 ],"endgame mutations regression")
 
 project=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java").read_text(encoding="utf-8")
-need(project,["ASCENSION_NEXUS","승천 중추","requiredWorldStage","Items.NETHER_STAR","Items.DRAGON_BREATH"],"Ascension Nexus regression")
+need(project,["ASCENSION_NEXUS","승천 중추","requiredWorldStage","Items.NETHER_STAR","Items.DRAGON_BREATH","Lv.100 7×7×10","Lv.100 7×7×7","Lv.100 3회","완공 후 승천 시련"],"Ascension Nexus regression")
 service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java").read_text(encoding="utf-8")
-need(service,["world.stage() < project.requiredWorldStage()","countItem","consumeItem","player.isCreative() || player.isSpectator()"],"infrastructure regression")
+need(service,["world.stage() < project.requiredWorldStage()","countItem","consumeItem","player.isCreative() || player.isSpectator()","AscensionTrialSystem.tryStart(player)","메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8"],"infrastructure regression")
+
+trial=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java").read_text(encoding="utf-8")
+need(trial,[
+    "Gateways to Eternity", "ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
+    "TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "EXCLUSION_RADIUS = 96.0D",
+    "InfrastructureProject.ASCENSION_NEXUS", "WorldAscensionData.get(server).stage() < 2", "EntitySpawnReason.TRIGGERED",
+    "ServerBossEvent", "EntityType.RAVAGER", "EntityType.EVOKER", "EntityType.WITHER_SKELETON",
+    "AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3)", "Items.NETHERITE_SCRAP, 2", "Items.DIAMOND, 4",
+    "입장 재료는 반환되지 않습니다"
+],"Ascension Trial")
 
 mobility=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java").read_text(encoding="utf-8")
 need(mobility,["AIR_DASH_COUNT","maxAirDashes","WorldAscensionData.get(serverLevel.getServer()).stage() >= 2","InfrastructureProject.ASCENSION_NEXUS","return level >= 100 ? 3 : 2","AIR_DASH_COUNT.put(uuid, 0)","DASH_READY_TICK","[기동 숙련 VI]"],"mastery VI mobility")
@@ -96,7 +107,7 @@ need(construction,["MAX_PENDING_BLOCKS_PER_PLAYER = 512","level >= 100 ? 7 : 5",
 guide=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java").read_text(encoding="utf-8")
 need(guide,["숙련 VI","Lv.100 11×11+광맥192","Lv.100 384","Lv.100 파급10/5블록","입체7³","Lv.100은 3회","종말 변이"],"guide")
 third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-need(third,["Hostiles Are Too Easy","CC0 1.0 Universal","0.19","Warband","Veinminer++"],"third-party notices")
+need(third,["Hostiles Are Too Easy","CC0 1.0 Universal","0.19","Warband","Veinminer++","Gateways to Eternity","Copyright (c) 2020 Brennan Ward"],"third-party notices")
 
 affix=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java").read_text(encoding="utf-8")
 need(affix,["AFFIX_POOL","reroll","adjustMiningArea","adjustWoodcuttingLimit","adjustHarvestArea"],"affix regression")
@@ -116,6 +127,6 @@ if errors:
     sys.exit(1)
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
-print("- Lv.100 is mastery VI across all six skills with a final action-scale jump")
-print("- large Mining/Construction capstones retain existing tick budgets and protection/material paths")
-print("- Stage-2 mutations, Ascension Nexus, world stages, warbands, elites and equipment economy regressions retained")
+print("- Lv.100 mastery VI scale and existing tick/protection/material contracts retained")
+print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout and overlap guards")
+print("- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained")
