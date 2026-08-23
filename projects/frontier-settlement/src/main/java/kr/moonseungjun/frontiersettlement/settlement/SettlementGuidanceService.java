@@ -36,7 +36,8 @@ public final class SettlementGuidanceService {
         if (data.outposts().size() < 4) return "다음 목표 · 전초기지 4곳까지 영토 확장";
         if (data.population() < 16) return populationGoal(data, 16);
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
-        return "영지 운영 · 도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비를 계속 확장";
+        if (data.buildingCount(BuildingType.WATCHTOWER) < 1) return buildingGoal(data, BuildingType.WATCHTOWER);
+        return "영지 운영 · 도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망을 계속 확장";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
