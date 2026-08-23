@@ -26,6 +26,8 @@ required = {
     'kr/moonseungjun/arcanecircle/ArcaneCircle.class',
     'kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class',
+    'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellSummary.class',
+    'kr/moonseungjun/arcanecircle/client/SecondCircleAuthorityOverlay.class',
     'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellSummary.class',
     'kr/moonseungjun/arcanecircle/client/ThirdCircleAuthorityOverlay.class',
@@ -87,8 +89,8 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.72':
-        raise SystemExit(f'unexpected alpha.72 package version: {version}')
+    if version != '0.12.1-alpha.73':
+        raise SystemExit(f'unexpected alpha.73 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -98,6 +100,24 @@ with zipfile.ZipFile(jar) as archive:
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
+
+
+    expected2 = {
+        'misty_step': '12m_line_of_sight_safe_reposition_no_solid_geometry_phase',
+        'levitate': '3s_controlled_rise_plus_4s_apex_hover_then_4s_safe_descent',
+    }
+    if index.get('second_circle_value_pass_1') != expected2:
+        raise SystemExit(f'alpha.73 second-circle value metadata mismatch: {index.get("second_circle_value_pass_1")}')
+    roles2 = index.get('second_circle_role_audit', {})
+    expected_roles2 = {'scorching_ray','misty_step','web','mirror_image','invisibility','gust_of_wind','hold_person','shatter','blur','levitate'}
+    if set(roles2) != expected_roles2 or len(set(roles2.values())) != 10:
+        raise SystemExit('alpha.73 second-circle role separation contract missing')
+    if index.get('second_circle_visual_lifetime_sync') != 'maintained_server_effects_and_release_vfx_aligned':
+        raise SystemExit('alpha.73 second-circle visual lifetime contract missing')
+    if index.get('second_circle_dispel_visual_cleanup') is not True:
+        raise SystemExit('alpha.73 second-circle dispel visual cleanup missing')
+    if index.get('second_circle_npc_terrain_safety') != 'gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit':
+        raise SystemExit('alpha.73 second-circle NPC terrain safety missing')
 
     expected3 = {
         'haste': '30s_player_and_npc_arcane_tempo_acceleration_0.72_cast_0.85_cooldown',
@@ -209,7 +229,15 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.72 JAR verification: PASS')
+print('Arcane Circle alpha.73 JAR verification: PASS')
+print('alpha73_second_circle_value_pass_1=PASS')
+print('alpha73_misty_step_line_of_sight_role_boundary=PASS')
+print('alpha73_levitate_apex_hover_authority=PASS')
+print('alpha73_second_circle_visual_lifetime_sync=PASS')
+print('alpha73_second_circle_dispel_visual_cleanup=PASS')
+print('alpha73_second_circle_npc_terrain_safety=PASS')
+print('alpha73_second_circle_role_separation=PASS')
+print('alpha73_second_circle_npc_parity=PASS')
 print('alpha72_third_circle_value_pass_1=PASS')
 print('alpha72_haste_player_npc_arcane_tempo_parity=PASS')
 print('alpha72_dispel_magic_circle_1_to_3_ceiling=PASS')

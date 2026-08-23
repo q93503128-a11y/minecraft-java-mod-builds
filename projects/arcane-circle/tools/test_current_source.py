@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.72')
-need(main, 'VERSION = "0.12.1-alpha.72"')
-assert index['version'] == '0.12.1-alpha.72'
+need(gradle, 'mod_version=0.12.1-alpha.73')
+need(main, 'VERSION = "0.12.1-alpha.73"')
+assert index['version'] == '0.12.1-alpha.73'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -34,7 +34,7 @@ spells = direct | fusions
 assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
-need(text(magic / 'SpellDefinition.java'), 'ThirdCircleSpellSummary.summary(id)', 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
+need(text(magic / 'SpellDefinition.java'), 'SecondCircleSpellSummary.summary(id)', 'ThirdCircleSpellSummary.summary(id)', 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
 
 circle_specs = {
     'FirstCircleSpellService.java': ['magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'],
@@ -59,6 +59,54 @@ need(text(magic / 'SecondCircleSpellService.java'), 'new RaySalvo(level, caster.
 need(text(magic / 'ThirdCircleSpellService.java'), 'ArcaneDamage.isResolving()', 'SLEET_ZONES.add(new SleetZone')
 need(text(magic / 'FourthCircleSpellService.java'), 'FIRE_WALLS.add(new FireWall', 'ICE_STORMS.add(new IceStorm')
 need(text(magic / 'FifthCircleSpellService.java'), 'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)', 'DOMINATED.put')
+
+
+# Alpha.73 second-circle authority/value pass.
+second = text(magic / 'SecondCircleSpellService.java')
+second_summary = text(magic / 'SecondCircleSpellSummary.java')
+second_authority = text(client / 'SecondCircleAuthorityOverlay.java')
+world_magic_2 = text(magic / 'WorldMagicService.java')
+tracker_2 = text(client / 'WorldMagicTracker.java')
+need(second,
+     'clearStepPath(level, caster, p)', 'HitResult.Type.MISS',
+     'public static double webRadius(double range)',
+     'caster instanceof ServerPlayer && stripFragileWindBlocks',
+     'caster instanceof ServerPlayer && shatterBrittle',
+     'public static final int LEVITATE_RISE_TICKS = 60',
+     'public static final int LEVITATE_TOTAL_TICKS = 140',
+     '3초 상승 → 4초 정점 부양 → 안전 하강',
+     'target.setDeltaMovement(motion.x * .60, Math.max(-.02, Math.min(.02, motion.y)), motion.z * .60);',
+     'cancelOwnerRelease(salvo.level, salvo.ownerId, "scorching_ray")',
+     'cancelOwnerRelease(state.level, state.ownerId, "hold_person")',
+     'cancelOwnerRelease(state.level, state.ownerId, "levitate")')
+need(second_summary,
+     '최대 약 12m 단거리 안전 이동', '고체 벽은 관통할 수 없음',
+     '13초 동안 적대 직접 공격 3회', '매번 35% 확률',
+     '3초 상승시킨 뒤 4초 정점에 붙잡아 두고 종료 후 4초 안전 하강')
+need(world_magic_2,
+     'duration = secondCircleVisualDuration(spell.id(), duration);',
+     'case "web" -> Math.max(baseDuration, SecondCircleSpellService.WEB_TICKS);',
+     'case "mirror_image" -> Math.max(baseDuration, SecondCircleSpellService.MIRROR_TICKS);',
+     'case "invisibility" -> Math.max(baseDuration, SecondCircleSpellService.INVISIBILITY_TICKS);',
+     'case "hold_person" -> Math.max(baseDuration, SecondCircleSpellService.HOLD_PERSON_TICKS);',
+     'case "blur" -> Math.max(baseDuration, SecondCircleSpellService.BLUR_TICKS);',
+     'case "levitate" -> Math.max(baseDuration, SecondCircleSpellService.LEVITATE_TOTAL_TICKS);')
+assert world_magic_2.count('duration = secondCircleVisualDuration(spell.id(), duration);') == 2
+need(second_authority, '"web".equals(spell.id())', 'SecondCircleSpellService.webRadius(range)',
+     'double pulse = 1.0 - ((t % .20) / .20);')
+need(tracker_2, 'if(v.spell.circle()==2){', 'SecondCircleAuthorityOverlay.release(')
+expected2 = {
+    'misty_step': '12m_line_of_sight_safe_reposition_no_solid_geometry_phase',
+    'levitate': '3s_controlled_rise_plus_4s_apex_hover_then_4s_safe_descent',
+}
+assert index['second_circle_value_pass_1'] == expected2
+roles2 = index['second_circle_role_audit']
+assert set(roles2) == {'scorching_ray','misty_step','web','mirror_image','invisibility','gust_of_wind','hold_person','shatter','blur','levitate'}
+assert len(set(roles2.values())) == 10
+assert index['second_circle_visual_lifetime_sync'] == 'maintained_server_effects_and_release_vfx_aligned'
+assert index['second_circle_dispel_visual_cleanup'] is True
+assert index['second_circle_npc_terrain_safety'] == 'gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit'
+assert index['second_circle_npc_parity'] is True
 
 # Alpha.72 third-circle authority/value pass.
 third = text(magic / 'ThirdCircleSpellService.java')
@@ -333,13 +381,20 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.72', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.73', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha73_misty_step_line_of_sight_role_boundary=PASS')
+print('alpha73_levitate_apex_hover_authority=PASS')
+print('alpha73_second_circle_visual_lifetime_sync=PASS')
+print('alpha73_second_circle_dispel_visual_cleanup=PASS')
+print('alpha73_second_circle_npc_terrain_safety=PASS')
+print('alpha73_second_circle_role_audit=PASS')
+print('alpha73_second_circle_value_pass_1=PASS')
 print('alpha72_haste_player_npc_arcane_tempo_parity=PASS')
 print('alpha72_dispel_magic_circle_1_to_3_ceiling=PASS')
 print('alpha72_blink_solid_geometry_phase_relocation=PASS')

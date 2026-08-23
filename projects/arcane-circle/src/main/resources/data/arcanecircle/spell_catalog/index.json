@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.72",
+  "version": "0.12.1-alpha.73",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -237,15 +237,15 @@
   "first_circle_npc_parity": true,
   "second_circle_deep_audit": [
     "timed_three_ray_scorching_salvo",
-    "safe_misty_step",
-    "persistent_web_field",
-    "direct_attack_mirror_images",
-    "aggro_breaking_invisibility",
-    "line_force_gust",
+    "line_of_sight_safe_misty_step",
+    "exact_persistent_web_snare",
+    "deterministic_three_charge_mirror_images",
+    "aggro_breaking_single_trajectory_invisibility",
+    "directional_force_gust_with_player_only_fragile_clear",
     "restricted_hold_person",
-    "single_center_shatter",
-    "direct_attack_blur",
-    "rise_safe_descent_levitate"
+    "brittle_material_shatter_with_npc_terrain_safety",
+    "probabilistic_direct_attack_blur",
+    "three_second_rise_four_second_apex_hover_safe_descent_levitate"
   ],
   "second_circle_npc_parity": true,
   "third_circle_deep_audit": [
@@ -504,5 +504,34 @@
     "sleet_storm": "fixed_weather_cast_denial_and_visibility_zone",
     "blink": "solid_geometry_ignoring_solo_phase_relocation"
   },
-  "third_circle_dispel_ceiling": "circles_1_to_3_deterministic_only"
+  "third_circle_dispel_ceiling": "circles_1_to_3_deterministic_only",
+  "second_circle_preserved_authority": [
+    "scorching_ray",
+    "web",
+    "mirror_image",
+    "invisibility",
+    "gust_of_wind",
+    "hold_person",
+    "shatter",
+    "blur"
+  ],
+  "second_circle_value_pass_1": {
+    "misty_step": "12m_line_of_sight_safe_reposition_no_solid_geometry_phase",
+    "levitate": "3s_controlled_rise_plus_4s_apex_hover_then_4s_safe_descent"
+  },
+  "second_circle_role_audit": {
+    "scorching_ray": "sequential_single_target_fire_salvo",
+    "misty_step": "short_line_of_sight_safe_reposition",
+    "web": "fixed_physical_movement_snare_zone",
+    "mirror_image": "deterministic_three_direct_attack_intercepts",
+    "invisibility": "aggro_break_escape_and_single_trajectory_dodge",
+    "gust_of_wind": "directional_forced_displacement_and_fragile_clear",
+    "hold_person": "restricted_humanoid_total_restraint",
+    "shatter": "brittle_material_demolition_burst",
+    "blur": "sustained_probabilistic_direct_attack_evasion",
+    "levitate": "vertical_position_control_and_apex_suspension"
+  },
+  "second_circle_visual_lifetime_sync": "maintained_server_effects_and_release_vfx_aligned",
+  "second_circle_dispel_visual_cleanup": true,
+  "second_circle_npc_terrain_safety": "gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit"
 }

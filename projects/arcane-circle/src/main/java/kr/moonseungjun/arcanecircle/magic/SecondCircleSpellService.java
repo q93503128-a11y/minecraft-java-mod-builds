@@ -13,14 +13,17 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Relative;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +43,8 @@ public final class SecondCircleSpellService {
     public static final int INVISIBILITY_TICKS = 420;
     public static final int HOLD_PERSON_TICKS = 180;
     public static final int BLUR_TICKS = 360;
-    private static final int LEVITATE_RISE_TICKS = 60;
-    private static final int LEVITATE_TOTAL_TICKS = 140;
+    public static final int LEVITATE_RISE_TICKS = 60;
+    public static final int LEVITATE_TOTAL_TICKS = 140;
     private static final int WEB_PULSE = 4;
     private static final int RAY_GAP = 10;
 
@@ -175,7 +178,38 @@ public final class SecondCircleSpellService {
         cleanupTimed(level, now);
     }
 
-    public static void clear(LivingEntity subject) { if (subject != null) clear(subject.getUUID()); }
+    public static void clear(LivingEntity subject) {
+        if (subject == null) return;
+        UUID id = subject.getUUID();
+        Set<String> own = new HashSet<>();
+        if (SALVOS.stream().anyMatch(salvo -> salvo.ownerId.equals(id))) own.add("scorching_ray");
+        if (WEBS.stream().anyMatch(zone -> zone.ownerId.equals(id))) own.add("web");
+        if (MIRRORS.containsKey(id)) own.add("mirror_image");
+        if (INVISIBILITY.containsKey(id)) own.add("invisibility");
+        if (BLUR.containsKey(id)) own.add("blur");
+        for (HoldState state : HOLDS.values()) if (state.ownerId.equals(id)) own.add("hold_person");
+        for (LevitateState state : LEVITATION.values()) if (state.ownerId.equals(id)) own.add("levitate");
+
+        // Dispel/antimagic can target the receiver rather than the caster. Cancel the owner's
+        // corresponding release too so server authority and visible maintained magic end together.
+        for (RaySalvo salvo : SALVOS)
+            if (salvo.targetId.equals(id) && !salvo.ownerId.equals(id))
+                cancelOwnerRelease(salvo.level, salvo.ownerId, "scorching_ray");
+        for (HoldState state : HOLDS.values())
+            if (state.targetId.equals(id) && !state.ownerId.equals(id))
+                cancelOwnerRelease(state.level, state.ownerId, "hold_person");
+        for (LevitateState state : LEVITATION.values())
+            if (state.targetId.equals(id) && !state.ownerId.equals(id))
+                cancelOwnerRelease(state.level, state.ownerId, "levitate");
+
+        clear(id);
+        for (String spellId : own) WorldMagicService.cancelRelease(subject, spellId);
+    }
+
+    private static void cancelOwnerRelease(ServerLevel level, UUID ownerId, String spellId) {
+        Entity raw = level.getEntity(ownerId);
+        if (raw instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, spellId);
+    }
 
     public static void clear(UUID id) {
         if (id == null) return;
@@ -273,6 +307,11 @@ public final class SecondCircleSpellService {
             return false;
         }
         BlockPos p = safe.get();
+        if (!clearStepPath(level, caster, p)) {
+            ArcaneNoticeService.push(caster, Component.literal(
+                    "§c[미스티 스텝] §f도착점까지 열린 위상선이 필요합니다. 벽 너머 이동은 점멸 이상 공간술의 권능입니다."), 55);
+            return false;
+        }
         caster.stopRiding();
         boolean moved = caster.teleportTo(level, p.getX() + .5, p.getY(), p.getZ() + .5,
                 Set.<Relative>of(), caster.getYRot(), caster.getXRot(), true);
@@ -293,6 +332,7 @@ public final class SecondCircleSpellService {
         Optional<BlockPos> safe = findSafe(level, desired, 6);
         if (safe.isEmpty()) return false;
         BlockPos p = safe.get();
+        if (!clearStepPath(level, caster, p)) return false;
         caster.getNavigation().stop();
         caster.snapTo(p.getX() + .5, p.getY(), p.getZ() + .5, caster.getYRot(), caster.getXRot());
         caster.fallDistance = 0.0F;
@@ -300,8 +340,12 @@ public final class SecondCircleSpellService {
         return true;
     }
 
+    public static double webRadius(double range) {
+        return Math.max(4.2, Math.min(7.5, SpellMetrics.effectRadius("web", range, 2)));
+    }
+
     private static boolean web(ServerLevel level, LivingEntity caster, double range, Vec3 center) {
-        double radius = Math.max(4.2, Math.min(7.5, SpellMetrics.effectRadius("web", range, 2)));
+        double radius = webRadius(range);
         WEBS.removeIf(zone -> zone.ownerId.equals(caster.getUUID()));
         WEBS.add(new WebZone(level, caster.getUUID(), center, radius,
                 level.getGameTime() + WEB_TICKS, level.getGameTime()));
@@ -383,7 +427,7 @@ public final class SecondCircleSpellService {
             target.push(direction.x * 1.75, .22, direction.z * 1.75);
             moved = true;
         }
-        boolean terrain = stripFragileWindBlocks(level, origin, direction, length);
+        boolean terrain = caster instanceof ServerPlayer && stripFragileWindBlocks(level, origin, direction, length);
         level.playSound(null, BlockPos.containing(origin.add(direction.scale(length * .55))),
                 SoundEvents.ENDER_DRAGON_FLAP, caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE,
                 .70F, 1.35F);
@@ -488,7 +532,7 @@ public final class SecondCircleSpellService {
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
             if (ArcaneDamage.hurt(level, caster, target, (float) power)) hit = true;
         }
-        boolean terrain = shatterBrittle(level, center, radius);
+        boolean terrain = caster instanceof ServerPlayer && shatterBrittle(level, center, radius);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.0F, 1.28F);
         return hit || terrain || center != null;
@@ -527,11 +571,27 @@ public final class SecondCircleSpellService {
 
     private static boolean levitate(ServerLevel level, LivingEntity caster, LivingEntity target) {
         if (target == null || !target.isAlive() || target.isRemoved()) return false;
+        boolean hostile = target != caster && !caster.isAlliedTo(target);
+        if (hostile && !levitateEligible(target)) {
+            if (caster instanceof ServerPlayer player) {
+                ArcaneNoticeService.push(player, Component.literal(
+                        "§c[레비테이트] §f초대형·보스급 생명체는 2써클 부양장으로 공중 고정할 수 없습니다."), 55);
+            }
+            return false;
+        }
         long now = level.getGameTime();
         LEVITATION.put(target.getUUID(), new LevitateState(level, caster.getUUID(), target.getUUID(),
                 now + LEVITATE_RISE_TICKS, now + LEVITATE_TOTAL_TICKS));
         target.fallDistance = 0.0F;
+        if (caster instanceof ServerPlayer player) {
+            ArcaneNoticeService.push(player, Component.literal(
+                    "§b[레비테이트] §f3초 상승 → 4초 정점 부양 → 안전 하강. §7자신·아군은 체급 제한 없이 사용할 수 있습니다."), 70);
+        }
         return true;
+    }
+
+    private static boolean levitateEligible(LivingEntity target) {
+        return target.getBbWidth() <= 2.20F && target.getBbHeight() <= 4.50F && target.getMaxHealth() <= 120.0F;
     }
 
     private static void tickLevitation(ServerLevel level, long now) {
@@ -552,6 +612,8 @@ public final class SecondCircleSpellService {
                 Vec3 motion = target.getDeltaMovement();
                 target.setDeltaMovement(motion.x * .72, Math.max(.24, motion.y), motion.z * .72);
             } else if (now < state.expiresAt) {
+                Vec3 motion = target.getDeltaMovement();
+                target.setDeltaMovement(motion.x * .60, Math.max(-.02, Math.min(.02, motion.y)), motion.z * .60);
                 target.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 8, 0, true, false));
             } else {
                 finishLevitation(state, true);
@@ -592,6 +654,15 @@ public final class SecondCircleSpellService {
 
     private static boolean enemy(LivingEntity caster, LivingEntity target) {
         return target != null && target != caster && target.isAlive() && !target.isRemoved() && !caster.isAlliedTo(target);
+    }
+
+    private static boolean clearStepPath(ServerLevel level, LivingEntity caster, BlockPos destination) {
+        Vec3 start = caster.getEyePosition();
+        Vec3 end = new Vec3(destination.getX() + .5,
+                destination.getY() + Math.max(.8, caster.getBbHeight() * .50), destination.getZ() + .5);
+        HitResult hit = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE, caster));
+        return hit.getType() == HitResult.Type.MISS;
     }
 
     private static Vec3 clampDestination(Vec3 start, Vec3 desired, double maxDistance) {

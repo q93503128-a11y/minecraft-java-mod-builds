@@ -114,6 +114,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        duration = secondCircleVisualDuration(spell.id(), duration);
         duration = thirdCircleVisualDuration(spell.id(), duration);
         duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
@@ -148,6 +149,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = secondCircleVisualDuration(spell.id(), duration);
         duration = thirdCircleVisualDuration(spell.id(), duration);
         duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
@@ -190,6 +192,18 @@ public final class WorldMagicService {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
+    }
+
+    private static int secondCircleVisualDuration(String spellId, int baseDuration) {
+        return switch (spellId) {
+            case "web" -> Math.max(baseDuration, SecondCircleSpellService.WEB_TICKS);
+            case "mirror_image" -> Math.max(baseDuration, SecondCircleSpellService.MIRROR_TICKS);
+            case "invisibility" -> Math.max(baseDuration, SecondCircleSpellService.INVISIBILITY_TICKS);
+            case "hold_person" -> Math.max(baseDuration, SecondCircleSpellService.HOLD_PERSON_TICKS);
+            case "blur" -> Math.max(baseDuration, SecondCircleSpellService.BLUR_TICKS);
+            case "levitate" -> Math.max(baseDuration, SecondCircleSpellService.LEVITATE_TOTAL_TICKS);
+            default -> baseDuration;
+        };
     }
 
     private static int thirdCircleVisualDuration(String spellId, int baseDuration) {
