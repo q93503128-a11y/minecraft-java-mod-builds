@@ -71,6 +71,7 @@ public final class ExpeditionProgression {
         ensureDiscovered(player, region);
         addObjectiveProgress(player, region, action, amount);
         ExpeditionIncidentSystem.recordAction(player, action, amount);
+        ExpeditionOperationSystem.recordAction(player, action, amount);
     }
 
     public static void grantIncidentBonus(ServerPlayer player, ExpeditionRegion region, ExpeditionAction action, int amount) {
@@ -95,6 +96,7 @@ public final class ExpeditionProgression {
         int amount = Math.max(1, (int) Math.floor(distance));
         addObjectiveProgress(player, ExpeditionRegion.OCEAN, ExpeditionAction.OCEAN_VOYAGE, amount);
         ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
+        ExpeditionOperationSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
     }
 
     private static ExpeditionRegion matchingRegion(Holder<Biome> biome, int worldStage) {
