@@ -1,0 +1,45 @@
+name: Arcane alpha.75 deferred credit self patch
+
+on:
+  push:
+    paths:
+      - '.github/arcane-alpha75-deferred-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply exact deferred combat credit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          applied=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/arcane-alpha75-deferred-credit.py')
+          s=p.read_text(encoding='utf-8')
+          old="""    n=s.count(old)\n    if n!=count: raise SystemExit(f'{path}: expected {count}, got {n}: {old[:100]!r}')\n    p.write_text(s.replace(old,new,count),encoding='utf-8')"""
+          new="""    n=s.count(old)\n    if n!=count:\n        # EighthCircle has two identical pulse-damage lines in source order: Earthquake, then Incendiary Cloud.\n        # Consume only the first for the earthquake attribution pass; the next call then sees exactly one.\n        if path.endswith('EighthCircleSpellService.java') and n==2 and 'earthquake' in new:\n            p.write_text(s.replace(old,new,1),encoding='utf-8')\n            return\n        raise SystemExit(f'{path}: expected {count}, got {n}: {old[:100]!r}')\n    p.write_text(s.replace(old,new,count),encoding='utf-8')"""
+          if old not in s: raise SystemExit('helper replace-function anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+            python3 .github/arcane-alpha75-deferred-credit.py
+            rm -f .github/arcane-alpha75-deferred-credit.py .github/arcane-alpha75-deferred-trigger.txt .github/workflows/arcane-alpha75-deferred-self-patch.yml
+            git add -A
+            git diff --check
+            git commit -m 'Arcane alpha.75 exact deferred combat attribution [skip ci]'
+            if git push origin HEAD:main; then applied=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$applied" -eq 1
