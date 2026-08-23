@@ -34,6 +34,8 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionData.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class",
+        "kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.class",
+        "kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
