@@ -110,6 +110,7 @@ public final class SettlementService {
             String locked;
             if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
             else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
+            else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
             else locked = SettlementConstructionService.lockedReason(data, type);
             if (locked == null) mask |= 1 << type.ordinal();
         }
