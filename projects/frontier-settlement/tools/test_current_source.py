@@ -28,7 +28,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.23'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.24'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -51,14 +51,16 @@ for token in ('SettlementCoreService.tick(server, data)', 'SettlementTierInfrast
               'buildingUnlockMask(SettlementData data)', 'SettlementConstructionService.lockedReason(data, type)',
               'SettlementGuidanceService.nextGoal(data)'):
     if token not in service: raise SystemExit(f'runtime/snapshot invariant missing: {token}')
+if service.count('SettlementConstructionService.tick(server, data)') != 1:
+    raise SystemExit('construction service must have exactly one canonical server tick call')
 
 guidance = (JAVA / 'settlement/SettlementGuidanceService.java').read_text(encoding='utf-8')
-for token in ('data.construction().step() == 0', '자재 운반', 'data.roadConstruction().active()', 'data.outpostConstruction().active()',
-              'data.houseCount() < 1', 'data.lumberCampCount() < 1', 'BuildingType.FARM', 'BuildingType.QUARRY',
-              'data.roads().isEmpty()', 'data.outposts().isEmpty()', 'data.population() < 4', 'BuildingType.MINE',
-              'data.outposts().size() < 2', 'data.population() < 8', 'BuildingType.BLACKSMITH',
-              'data.outposts().size() < 4', 'data.population() < 16', 'BuildingType.GUARD_POST',
-              'data.housingCapacity() <= data.population()', 'data.resources().food() < 8L'):
+for token in ('SettlementConstructionService.phaseLabel(data.construction())', 'data.roadConstruction().active()',
+              'data.outpostConstruction().active()', 'data.houseCount() < 1', 'data.lumberCampCount() < 1',
+              'BuildingType.FARM', 'BuildingType.QUARRY', 'data.roads().isEmpty()', 'data.outposts().isEmpty()',
+              'data.population() < 4', 'BuildingType.MINE', 'data.outposts().size() < 2', 'data.population() < 8',
+              'BuildingType.BLACKSMITH', 'data.outposts().size() < 4', 'data.population() < 16',
+              'BuildingType.GUARD_POST', 'data.housingCapacity() <= data.population()', 'data.resources().food() < 8L'):
     if token not in guidance: raise SystemExit(f'next-goal invariant missing: {token}')
 if 'reward' in guidance.lower() or 'quest' in guidance.lower():
     raise SystemExit('next-goal helper must remain guidance-only, not become a quest/reward system')
@@ -71,10 +73,20 @@ for token in ('HAUL_BATCH_SIZE = 16', 'BUILD_INTERVAL_TICKS = 10', 'Blocks.BARRE
               'costAtStep(long totalCost', 'BreakBlockEvent', 'event.setNotifyClient(true)',
               'supplyPosition(origin, type, rotation)', 'returnCrateExtras'):
     if token not in construction: raise SystemExit(f'physical construction logistics invariant missing: {token}')
+for token in ('WORK_POSITION_REACHED_SQR = 2.25D', 'HIGH_WORK_RANGE_SQR = 100.0D',
+              'MAX_SCAFFOLD_STEP = 7', 'ensureConstructionScaffolds(level, construction, type, supply)',
+              'moveBuilderToWorkPosition', 'Blocks.OAK_FENCE.defaultBlockState()', 'Blocks.OAK_PLANKS.defaultBlockState()',
+              'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)',
+              'builder.swing(InteractionHand.MAIN_HAND)', 'returnNonConstructionCrateItems',
+              'villager.getTags().contains(BUILDER_TAG)', 'case FLOOR -> "기초 시공"',
+              'case ROOF -> "지붕 시공"', 'removeConstructionScaffolds'):
+    if token not in construction: raise SystemExit(f'alpha.24 construction presentation invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)' in construction:
     raise SystemExit('building approval still deletes the full material cost before physical hauling')
 if 'placed < 2' in construction:
     raise SystemExit('legacy two-block construction burst still present')
+if 'destroyBlock(' in construction or 'dropResources(' in construction:
+    raise SystemExit('construction must not create loose drops through destructive removal paths')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)',
@@ -124,4 +136,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.23 source audit: PASS')
+print('Frontier Settlement alpha.24 source audit: PASS')

@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative settlement-growth mod.
 
 Canonical direction: see `CANONICAL_PLAN.md`.
 
-## Current version: 0.1.0-alpha.23
+## Current version: 0.1.0-alpha.24
 
 Frontier Settlement currently provides a server-authoritative shared settlement vertical slice covering founding, building, population/workers, roads, outposts, tier growth and compact world-space controls.
 
@@ -49,9 +49,9 @@ Construction rejects unsafe overlaps and unsuitable terrain instead of silently 
 - completed enclosed buildings include deliberate windows and lighting;
 - a newly introduced wrong obstruction pauses construction instead of being overwritten.
 
-### New in Alpha.23 — physical construction logistics
+### Alpha.23 — physical construction logistics
 
-Alpha.23 changes the builder from an almost-magical block placer into a visible logistics worker.
+Alpha.23 changed the builder from an almost-magical block placer into a visible logistics worker.
 
 - approving a building validates the full physical wood/stone requirement but does not instantly delete the whole cost;
 - a temporary physical construction supply barrel is created beside the work site;
@@ -66,7 +66,22 @@ Alpha.23 changes the builder from an almost-magical block placer into a visible 
 - final validation repairs unexpected missing air blocks without rewinding the whole cost transaction;
 - leftover player-added items are returned to settlement storage when possible; an empty construction barrel is removed with a no-drop update.
 
-Road/outpost construction still uses its existing stable transaction path; physical hauling is being proven on buildings first before being generalized.
+### New in Alpha.24 — phase-readable construction work
+
+Alpha.24 keeps the Alpha.23 physical hauling transaction intact and improves the visible work loop without making construction more destructive.
+
+- construction guidance now reports the current blueprint phase: hauling, foundation, frame/walls, roof, interior/finish or final validation;
+- the active builder is protected from ordinary damage while carrying/placing settlement construction resources, then returns to normal vulnerability when the job finishes;
+- two temporary wooden work towers are attempted beside the site using fence supports and plank treads;
+- scaffold pieces are only placed into air/replaceable positions and never overwrite fluids, block entities or solid player/world obstructions;
+- high wall/roof placements use a reachable elevated scaffold step only when a complete safe tower exists and the target is within the bounded elevated work range;
+- blocked scaffold space causes a safe fallback to the previous ground work position rather than clearing the obstruction;
+- scaffold blocks are protected while the construction is active and removed with direct no-drop updates after completion;
+- the builder now performs a visible main-hand swing when a blueprint block is actually placed;
+- if the construction barrel is jammed with unrelated player-added items, the builder first attempts to return those extras to loaded settlement storage before remaining stuck with a carried material stack;
+- builder lookup prefers the dedicated settlement builder tag and only falls back to the legacy custom-name match for old worlds.
+
+Road/outpost construction still uses its existing stable transaction path; building construction is the presentation-quality reference before the same physical treatment is generalized.
 
 ### Validation
 
