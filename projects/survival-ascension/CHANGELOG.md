@@ -1,26 +1,35 @@
 # Changelog
 
+## 0.39.0-alpha.1
+- Added `Physical Bastion Defense / 물리 요새 방어` so large player-built fortifications around an existing outpost become optional combat infrastructure instead of a passive number bonus.
+- Added `OutpostFortificationService` with a loaded-only annulus scan at radius6..12 and vertical allowance Y-3..+4.
+- Fortification accepts vanilla `WALLS` tag blocks, Iron Bars and Nether Brick Fence.
+- Split the annulus into NE/NW/SE/SW and require at least12 fortified x/z columns in each quadrant; stacked blocks in one x/z coordinate count only once, preventing tall-pillar count inflation.
+- Added no fortified SavedData flag: the currently loaded real blocks are the source of truth. Removing the wall makes subsequent validation fail.
+- Added `ProductionService.ACTION_BASTION_SIEGE = "bastion_siege"` and a Stone Brick Wall entry to the existing Industrial Works radial; no packet schema or protocol bump.
+- Bastion start requires an active outpost within4, a valid four-quadrant fortification ring and two supply charges. The first wave must spawn before the two charges are consumed.
+- Extended `OutpostSiegeSystem` to retain normal OUTPOST mode at3 waves/4800 ticks/supply1 and add BASTION mode at4 waves/6000 ticks/supply2.
+- Bastion mode revalidates the physical fortification ring between waves; normal outpost structure validation, owner64 radius, breach radius6/limit200 and anchor-directed attackers remain shared.
+- Added harder Stage1/Stage2 bastion compositions through more simultaneous ranged/melee/disruption roles and multiple Ravagers rather than adding bastion-only health, attack, armor or damage-reduction multipliers.
+- Added Stage1 bastion rewards: Combat XP650 + Construction XP250 + Diamond4 + Amethyst32 + Echo6 + vanilla XP220.
+- Added Stage2 bastion rewards: Combat XP900 + Construction XP350 + Diamond6 + Echo10 + Dragon Breath4 + Netherite Scrap1 + vanilla XP320. Nearby surviving allies inside48 gain XP70.
+- Retained the existing Incident/Operation/Apex/Trial mutual-exclusion behavior and Field Recovery death exclusion for both defense modes.
+- Added no auto-builder, new SavedData ID, client coordinate trust, background maintenance loop or chunk force-load.
+- Updated Guide/README/PROJECT/source audit/JAR verification while retaining 0.38 normal defense,0.37 warehouse clusters,0.36 commissioning,0.35 offload,0.34 integrated inputs,0.33 complications and older safety contracts.
+
 ## 0.38.0-alpha.1
-- Added `Defendable Physical Outposts / 전초 방어전`: an active owned outpost can now host an explicit three-wave defense encounter instead of serving only as a logistics/safety radius.
-- Added `ProductionService.ACTION_OUTPOST_SIEGE = "outpost_siege"` and a Shield entry in the existing Industrial Works radial; no packet schema or protocol bump.
+- Added `Defendable Physical Outposts / 전초 방어전`: an active owned outpost can host an explicit three-wave defense encounter instead of serving only as a logistics/safety radius.
 - Siege start requires the owner inside4 of an active physical outpost and consumes one field-supply charge only after the first wave has been successfully spawned.
 - Added a four-minute total deadline, three authored waves and a three-second regroup window between waves.
 - Added physical breach pressure: living siege mobs inside6 of the anchor add `breachers * 5` pressure every five server ticks, pressure drains by10 while clear, and200 pressure fails the defense.
-- Siege mobs are anchor-directed instead of being freely kiteable: outside the16-block immediate defense area they clear the distant player target and navigate toward the physical outpost anchor.
-- Defense continuously revalidates owner same-dimension/within64 and the real outpost Barrel + Bed/Campfire/Crafting/Furnace structure through `OutpostService.isRecoveryOperational`; invalid state for200 ticks fails.
-- Authored waves use `EntitySpawnReason.TRIGGERED` in already-loaded radius26~34 open terrain, so NATURAL-only outpost spawn suppression does not cancel them.
-- Stage1/2 difficulty is raised through mixed skeleton/spider/zombie/pillager/vindicator/witch/ravager/enderman compositions rather than a siege-only blanket health/attack multiplier.
-- Added bounded overlap rules: a siege cannot start during Incident/Operation/Apex/Trial; starting one reserves existing Incident/Apex/Trial ready windows; new Operation and manual Apex/Trial starts reject an active siege.
-- Siege deaths now explicitly do not consume a prepaid Field Recovery contract.
-- Success rewards Stage1 Combat XP350 + Diamond2 + Amethyst24 + Echo3 + vanilla XP120, Stage2 Combat XP500 + Diamond4 + Echo6 + Dragon Breath2 + vanilla XP200; nearby allies inside48 gain XP40.
-- Added runtime cleanup on logout and stale tagged-mob rejection without adding siege SavedData, virtual structures, client coordinate trust or chunk force-loading.
-- Updated Guide/README/PROJECT/source audit/JAR verification while retaining 0.37 warehouse clusters,0.36 commissioning,0.35 offload,0.34 integrated inputs,0.33 complications and older safety contracts.
+- Siege mobs are anchor-directed instead of being freely kiteable; outside the16-block immediate defense area they navigate toward the physical outpost anchor.
+- Defense continuously revalidates owner same-dimension/within64 and the real outpost Barrel + Bed/Campfire/Crafting/Furnace structure.
+- Authored waves use `EntitySpawnReason.TRIGGERED` in already-loaded radius26~34 terrain. Stage pressure comes from compositions rather than a siege-only blanket health/attack multiplier.
+- Added bounded encounter overlap, Field Recovery exclusion, success rewards, logout cleanup and stale tagged-mob rejection without siege SavedData or force-load.
 
 ## 0.37.0-alpha.1
-- Added `Physical Warehouse Clusters / 물리 창고군` so high-throughput storage scales by building more real Barrels instead of introducing a virtual warehouse.
-- Extended existing `field_depots_v1` with optional `warehouse_links`; old saves decode with no links and retain all existing depot/outpost state.
-- Added max8 linked Barrels/anchor inside radius6, explicit no-supply-charge link/unlink, global physical-position ownership and loaded-only nearest-first real-Container resolution.
-- Unloaded links are preserved; loaded invalid linked positions prune individually. No virtual capacity, automatic routing, cross-dimension access or force-load.
+- Added `Physical Warehouse Clusters / 물리 창고군`: each depot anchor may link max8 additional real Barrels inside radius6, with optional `warehouse_links` in `field_depots_v1`.
+- Unloaded links are preserved; loaded invalid links prune individually. No virtual capacity, automatic routing, cross-dimension access or force-load.
 
 ## 0.36.0-alpha.1
 - Added bounded real-world commissioning for Industrial Works, Apex Tracking Post and Ascension Nexus before finalizable funding can cross completion.

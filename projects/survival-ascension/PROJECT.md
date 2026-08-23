@@ -1,129 +1,111 @@
 # Survival Ascension
 
-- Mod version: `0.38.0-alpha.1`
+- Mod version: `0.39.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, `expedition_operations_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.38 adds no SavedData field/ID and does not migrate any existing structure or item state.
+- Existing-world compatibility: all existing SavedData IDs remain unchanged. 0.39 adds no new SavedData ID or migration; physical fortification qualification is derived from currently loaded real blocks around an existing `outpost_v1` anchor.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, bases, expeditions and behavior-driven enemies must consume it again. Shift remains the precision/single-action safety override.
 
-## 0.38 Defendable Physical Outposts / 전초 방어전
+## 0.39 Physical Bastion Defense / 물리 요새 방어
 ### Purpose
-0.30 made a real outpost and 0.37 let that outpost host a large physical warehouse cluster. The remaining weakness was that once built, the base itself rarely mattered during combat. 0.38 makes an existing active outpost an optional defendable world objective instead of introducing a separate arena, claim block or quest GUI.
+0.38 proved the physical outpost itself could be a combat objective. 0.39 closes the remaining construction gap: large construction scale now creates a defensive structure that the battle actually uses, without auto-building a second structure system or awarding a permanent generic defense stat.
 
-### Explicit start
-`ProductionService.ACTION_OUTPOST_SIEGE = "outpost_siege"` reuses the existing Industrial Works action payload.
+### Explicit action
+`ProductionService.ACTION_BASTION_SIEGE = "bastion_siege"` reuses the existing Industrial Works action payload.
 
-`M -> Infrastructure -> 산업 가공소 -> 전초 방어전` requires:
+`M -> Infrastructure -> 산업 가공소 -> 요새 방어전` requires:
 - survival/non-spectator;
 - completed Industrial Works;
 - active owned outpost anchor within4;
 - no active Regional Incident / Expedition Operation / Apex Hunt / Ascension Trial;
-- one stored field-supply charge.
+- valid distributed physical fortification ring;
+- two stored field-supply charges.
 
-The first wave is spawned successfully before the supply charge is consumed. If loaded open spawn terrain is insufficient, the action aborts with no charge loss.
+The first bastion wave must spawn successfully before the two supply charges are consumed.
 
-### Physical objective
-`OutpostSiegeSystem` defines:
-- `START_RADIUS = 4`
-- `DEFENSE_RADIUS = 64`
-- `BREACH_RADIUS = 6`
-- `BREACH_LIMIT = 200`
-- `SUPPLY_CHARGE_COST = 1`
-- `TOTAL_WAVES = 3`
-- `SIEGE_TIMEOUT_TICKS = 4800`
-- `OWNER_GRACE_TICKS = 200`
-- `WAVE_DELAY_TICKS = 60`
-- `ENGAGE_RADIUS = 16`
+### Physical fortification scan
+`OutpostFortificationService` defines:
+- `INNER_RADIUS = 6`
+- `OUTER_RADIUS = 12`
+- `VERTICAL_DOWN = 3`
+- `VERTICAL_UP = 4`
+- `MIN_COLUMNS_PER_QUADRANT = 12`
+- `MIN_TOTAL_COLUMNS = 48`
 
-A valid defense continuously requires the owner alive, same dimension, non-creative/non-spectator, inside64, and the exact outpost to keep passing `OutpostService.isRecoveryOperational`: loaded/interactable real anchor Barrel plus the physical Bed/Campfire/Crafting/Furnace structure.
+Accepted defensive blocks:
+- any block in `BlockTags.WALLS`;
+- `Blocks.IRON_BARS`;
+- `Blocks.NETHER_BRICK_FENCE`.
 
-### Anchor-directed attackers
-Siege mobs do not simply chase a kiting player around the64-block radius. Outside the immediate16-block defense area they clear their player target and navigate toward the anchor. When the owner is actually defending inside16 and a mob is close enough, it may engage the owner directly.
+The annulus is split into NE/NW/SE/SW. A fortified x/z coordinate counts once even if the wall is several blocks tall, so a few tall pillars cannot inflate the requirement. Each quadrant independently needs12 columns.
 
-This preserves the physical-base objective: leaving the anchor undefended does not drag the wave away from what it is supposed to attack.
+Scanning is server-side and already-loaded-only via `level.hasChunkAt`. There is no `getChunk`, ticket or force-load.
 
-### Breach pressure
-Every five server ticks:
-- living siege mobs inside radius6 count as breachers;
-- pressure += `breachers * 5`;
-- if no breacher exists, pressure -=10 down to0;
-- pressure >=200 fails the defense immediately.
+### Why no fortification SavedData
+The player's wall itself is the truth. 0.39 stores no `fortified=true` bit and gives no passive armor percentage. If the player tears the wall down, later validation sees that immediately. This avoids stale virtual state and keeps the build visible in the world.
 
-The boss bar shows wave, living siege mob count, breach pressure and total remaining time. Defenses therefore value terrain, walls, positioning, cleave and mobility rather than only total damage dealt.
+### Bastion encounter
+`OutpostSiegeSystem` now has two modes:
+- OUTPOST: retained 3 waves / 4800 ticks / supply1;
+- BASTION: new 4 waves / 6000 ticks / supply2.
 
-### Waves / scaling
-Stage1:
-1. skeleton4 + spider4
-2. zombie3 + pillager3 + vindicator3
-3. ravager1 + pillager3 + vindicator3 + witch1 + skeleton2
+Both retain:
+- owner inside64;
+- real outpost operational through `OutpostService.isRecoveryOperational`;
+- anchor-directed attackers;
+- engage radius16;
+- breach radius6;
+- breach limit200;
+- breach pressure `+ breachers * 5` every five ticks and `-10` while clear;
+- loaded radius26~34 `TRIGGERED` spawns;
+- 3-second regroup window;
+- common Incident/Operation/Apex/Trial overlap exclusion and Field Recovery death exclusion.
 
-Stage2:
-1. skeleton4 + spider3 + zombie2 + enderman1
-2. pillager4 + vindicator4 + witch2 + spider2
-3. ravager2 + pillager4 + vindicator4 + witch2 + enderman1
+Bastion mode revalidates all four physical fortification quadrants between waves. The wall's ordinary collision/pathfinding obstruction is its real combat value; there is no bastion-only HP, attack, armor or damage-reduction modifier.
 
-0.38 intentionally adds no siege-only MAX_HEALTH/ATTACK_DAMAGE blanket modifier. Higher stage pressure comes from roles, ranged/melee overlap, disruptive enemies and heavier composition.
+### Authored bastion pressure
+Stage1 moves from mixed undead/ranged pressure into pillager/vindicator/witch overlap and then multiple Ravagers in the final wave.
 
-### Spawn / lifecycle safety
-- siege mobs use `EntitySpawnReason.TRIGGERED`, so the outpost's NATURAL-only safe-zone cancellation cannot suppress authored waves;
-- spawn search uses already-loaded positions via `level.hasChunkAt` only;
-- no `getChunk`, region ticket or force-load;
-- spawn ring is radius26~34;
-- mobs are persistent-tagged with owner/wave;
-- logout removes the runtime siege and its tracked mobs;
-- a tagged mob joining without a matching active siege is canceled;
-- no new SavedData is introduced.
+Stage2 increases simultaneous role overlap further and ends with three Ravagers plus ranged/melee/disruption pressure. Evokers remain absent so the Ascension Trial keeps its own encounter identity and Vex spam does not bypass the intended wall geometry.
 
-### Encounter overlap
-Starting a siege writes forward exclusions to the existing persistent ready keys for Incident/Apex/Trial through the siege timeout+200 ticks. Manual Expedition Operation starts are rejected by `ProductionService` while siege is active; completed Apex/Nexus actions also reject manual Apex/Trial starts during a siege.
+### Rewards
+Stage1: Combat XP650 + Construction XP250 + Diamond4 + Amethyst32 + Echo6 + vanilla XP220.
 
-Field Recovery explicitly excludes siege deaths, so a prepaid ordinary-death recovery token is not consumed by this challenge.
+Stage2: Combat XP900 + Construction XP350 + Diamond6 + Echo10 + Dragon Breath4 + Netherite Scrap1 + vanilla XP320.
 
-### Failure / rewards
-Failure:
-- owner death;
-- invalid game mode / dimension / over64 / broken physical outpost for200 ticks;
-- breach pressure200;
-- total4-minute deadline.
-The spent supply charge is not refunded.
+Nearby surviving allies within48 gain vanilla XP70. No permanent generic combat stat is awarded.
 
-Success Stage1: Combat XP350 + Diamond2 + Amethyst24 + Echo3 + vanilla XP120.
-Success Stage2: Combat XP500 + Diamond4 + Echo6 + Dragon Breath2 + vanilla XP200.
-Nearby surviving allies inside48 gain vanilla XP40. No flat permanent stat reward.
+## 0.38 Defendable Physical Outposts retained
+Normal three-wave defense remains supply1 / 4 minutes. Siege mobs advance toward the actual anchor rather than following a distant kiting player. Owner death, invalid mode/dimension, >64 distance, broken real outpost, breach pressure200 or timeout fails without refund.
 
-## 0.37 Physical Warehouse Clusters
-`field_depots_v1` keeps optional `warehouse_links`. Each anchor may link max8 real Barrels inside radius6, no link supply charge. Same-dimension loaded interactable real Containers join the nearest-first logistics resolver; unloaded links remain saved and loaded-invalid links prune individually. No virtual capacity or force-load.
+## 0.37 Physical Warehouse Clusters retained
+`field_depots_v1` keeps optional `warehouse_links`. Each anchor may link max8 real Barrels inside6, no link supply charge. Loaded interactable real Containers join the nearest-first resolver; no virtual capacity or force-load.
 
-## 0.36 Physical Commissioning Sites
+## 0.36 Physical Commissioning Sites retained
 Industrial Works / Apex Tracking Post / Ascension Nexus finalizable funding requires a real bounded commissioning site. Validation occurs before final-call material consumption; already-completed worlds remain accepted.
 
-## 0.35 / 0.34 logistics
-High-volume offload scans only main inventory9..35 and preserves hotbar/equipment. Shared sink resolution remains inventory-first then nearest usable physical Barrel. Apex/Trial admission remains carried inventory-only.
+## 0.35 / 0.34 logistics retained
+High-volume offload scans only main inventory9..35 and preserves hotbar/equipment. Shared sink resolution remains inventory-first then nearest usable physical Barrel. Apex/Trial admission stays player-carried.
 
-## 0.33 / 0.32 expedition operations
+## 0.33 / 0.32 expedition operations retained
 One active operation/player, launched at active regional outpost; cross authored range, complete two validated actions, return to exact origin. New operations receive DEEP_FRONT / FORWARD_SHIFT / HOT_EXTRACTION. Death/dimension/game-mode/deadline fails without refund.
 
-## 0.31 Field Recovery
-One prepaid ordinary-death token at active outpost, same-dimension96. Incident/Apex/Trial/Siege deaths do not consume it. Safe return validates actual loaded outpost and standing space; no normal fast travel or force-load.
+## 0.31 Field Recovery retained
+One prepaid ordinary-death token at active outpost, same-dimension96. Incident/Apex/Trial/Outpost/Bastion defense deaths do not consume it. Safe return validates actual loaded outpost and standing space; no ordinary fast travel or force-load.
 
-## 0.30 Physical Outposts
+## 0.30 Physical Outposts retained
 Owned registered Barrel + Bed + Campfire + Crafting Table + Furnace-family within5. Upgrade cost supply2 + Iron32 + Gold8 + Coal32. Active owner-nearby outpost extends logistics to64 and suppresses NATURAL hostiles within24 only; TRIGGERED encounter mobs remain valid.
 
 ## Production retained
 METALWORKS / TIMBERWORKS / PROVISIONS / PRECISION remain. A complete four-line cycle grants supply1; buffers/supply cap3. Physical dispatch remains Gold32 + Amethyst16 + Echo2 to the player.
-
-## Apex / Trial retained
-- Apex: carried Echo8 + Amethyst32 + Gold32, nine region behavior patterns,90s.
-- Trial: carried Echo32 + Amethyst64 + Dragon Breath8, four waves, Evoker excluded.
-- Field challenges are mutually bounded rather than stacked simultaneously.
 
 ## Mastery / Field Mastery retained
 Lv100 base: Mining11×11+vein192, Wood384, Harvest11×11, Construction49/11×11, combat6.5/16, air dash3.
 After all nine regions: Quarry7×7×12, Wood448, Harvest13×13, Construction65/13×13, combat7.5/20, air dash4.
 
 ## External-source policy
-0.38 adds no new external implementation or assets. Existing reference-only and packaged-license boundaries remain in `THIRD_PARTY_NOTICES.md`.
+0.39 adds no new external implementation or assets. Existing reference-only and packaged-license boundaries remain in `THIRD_PARTY_NOTICES.md`.

@@ -36,9 +36,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Optional physical-outpost defense encounter. The objective is not a kill counter alone:
- * siege mobs that hold the six-block command perimeter build breach pressure and can fail the defense.
- * All spawning and structure checks are server-authoritative and loaded-chunk only.
+ * Optional physical-outpost defense encounters. Both modes defend the real outpost anchor through
+ * ordinary world collision/pathing plus breach pressure. Bastion mode does not add a flat armor
+ * multiplier: it admits a harder four-wave encounter only when a distributed player-built wall
+ * ring is physically present around the outpost.
  */
 public final class OutpostSiegeSystem {
     public static final int START_RADIUS = 4;
@@ -46,6 +47,7 @@ public final class OutpostSiegeSystem {
     public static final int BREACH_RADIUS = 6;
     public static final int BREACH_LIMIT = 200;
     public static final int SUPPLY_CHARGE_COST = 1;
+    public static final int BASTION_SUPPLY_CHARGE_COST = 2;
 
     private static final String READY_TICK_KEY = "survivalascension_outpost_siege_ready";
     private static final String INCIDENT_READY_TICK_KEY = "survivalascension_expedition_incident_ready";
@@ -54,9 +56,11 @@ public final class OutpostSiegeSystem {
     private static final String SIEGE_OWNER_KEY = "survivalascension_outpost_siege_owner";
     private static final String SIEGE_WAVE_KEY = "survivalascension_outpost_siege_wave";
     private static final int TOTAL_WAVES = 3;
+    private static final int BASTION_TOTAL_WAVES = 4;
     private static final int START_COOLDOWN_TICKS = 4800;
     private static final int SIEGE_TIMEOUT_TICKS = 4800;
-    private static final int ENCOUNTER_EXCLUSION_TICKS = SIEGE_TIMEOUT_TICKS + 200;
+    private static final int BASTION_TIMEOUT_TICKS = 6000;
+    private static final int ENCOUNTER_EXCLUSION_PADDING_TICKS = 200;
     private static final int OWNER_GRACE_TICKS = 200;
     private static final int WAVE_DELAY_TICKS = 60;
     private static final int ENGAGE_RADIUS = 16;
@@ -75,19 +79,28 @@ public final class OutpostSiegeSystem {
     }
 
     public static void startOrStatus(ServerPlayer player) {
+        startOrStatus(player, SiegeMode.OUTPOST);
+    }
+
+    public static void startBastionOrStatus(ServerPlayer player) {
+        startOrStatus(player, SiegeMode.BASTION);
+    }
+
+    private static void startOrStatus(ServerPlayer player, SiegeMode mode) {
         Siege current = ACTIVE.get(player.getUUID());
         if (current != null) {
             sendStatus(player);
             return;
         }
         if (!(player.level() instanceof ServerLevel level)) return;
+        String label = mode == SiegeMode.BASTION ? "요새 방어" : "전초 방어전";
         if (player.isCreative() || player.isSpectator()) {
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f크리에이티브/관전자 상태에서는 시작할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f크리에이티브/관전자 상태에서는 시작할 수 없습니다."));
             return;
         }
         if (ApexHuntSystem.isActive(player) || AscensionTrialSystem.isActive(player)
                 || ExpeditionOperationSystem.isActive(player) || ExpeditionIncidentSystem.isActive(player)) {
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f현장 사건·원정 작전·정점 사냥·승천 시련 중에는 방어전을 시작할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f현장 사건·원정 작전·정점 사냥·승천 시련 중에는 시작할 수 없습니다."));
             return;
         }
 
@@ -95,48 +108,50 @@ public final class OutpostSiegeSystem {
         long ready = player.getPersistentData().getLongOr(READY_TICK_KEY, 0L);
         if (now < ready) {
             long seconds = Math.max(1L, (ready - now + 19L) / 20L);
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f다음 방어 준비까지 §e" + seconds + "초§f 남았습니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f다음 방어 준비까지 §e" + seconds + "초§f 남았습니다."));
             return;
         }
 
         OutpostData.OutpostEntry outpost = OutpostService.nearestActiveOutpost(player, START_RADIUS);
         if (outpost == null) {
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f활성 전초기지의 앵커 배럴 §e4블록 안§f에서 시작해야 합니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f활성 전초기지의 앵커 배럴 §e4블록 안§f에서 시작해야 합니다."));
             return;
         }
+        if (mode == SiegeMode.BASTION && !OutpostFortificationService.validateForBastion(player, outpost, true)) return;
+
         for (Siege active : ACTIVE.values()) {
             if (active.level == level && active.anchor.distSqr(outpost.pos()) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) {
-                player.sendSystemMessage(Component.literal("§c[전초 방어전] §f근처 전초에서 다른 방어전이 진행 중입니다. §7(96블록 간격 필요)"));
+                player.sendSystemMessage(Component.literal("§c[" + label + "] §f근처 전초에서 다른 방어전이 진행 중입니다. §7(96블록 간격 필요)"));
                 return;
             }
         }
 
         ProductionData production = ProductionData.get(player);
-        if (production.supplyCharges(player) < SUPPLY_CHARGE_COST) {
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f방어 준비에는 §e현장 보급권 1개§f가 필요합니다."));
+        if (production.supplyCharges(player) < mode.supplyCost) {
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f방어 준비에는 §e현장 보급권 " + mode.supplyCost + "개§f가 필요합니다."));
             return;
         }
 
         int stage = Math.max(1, WorldAscensionData.get(level.getServer()).stage());
-        Siege siege = new Siege(player.getUUID(), level, outpost.dimension(), outpost.pos(), stage,
-                now + SIEGE_TIMEOUT_TICKS);
+        Siege siege = new Siege(player.getUUID(), level, outpost.dimension(), outpost.pos(), stage, mode,
+                now + mode.timeoutTicks);
         siege.wave = 1;
         if (!spawnWave(siege)) {
             cleanupMobs(siege);
             closeBossBar(siege);
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f전초 외곽에 충분한 습격대를 배치할 열린 로딩 지형이 없습니다. §7보급권은 소비하지 않았습니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f전초 외곽에 충분한 습격대를 배치할 열린 로딩 지형이 없습니다. §7보급권은 소비하지 않았습니다."));
             return;
         }
-        if (!production.consumeSupplyCharge(player)) {
+        if (!production.consumeSupplyCharges(player, mode.supplyCost)) {
             cleanupMobs(siege);
             closeBossBar(siege);
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f보급권 상태가 바뀌어 시작을 취소했습니다."));
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f보급권 상태가 바뀌어 시작을 취소했습니다."));
             return;
         }
 
         var persistent = player.getPersistentData();
-        persistent.putLong(READY_TICK_KEY, now + START_COOLDOWN_TICKS);
-        long exclusion = now + ENCOUNTER_EXCLUSION_TICKS;
+        persistent.putLong(READY_TICK_KEY, now + Math.max(START_COOLDOWN_TICKS, mode.timeoutTicks));
+        long exclusion = now + mode.timeoutTicks + ENCOUNTER_EXCLUSION_PADDING_TICKS;
         persistent.putLong(INCIDENT_READY_TICK_KEY, Math.max(persistent.getLongOr(INCIDENT_READY_TICK_KEY, 0L), exclusion));
         persistent.putLong(APEX_READY_TICK_KEY, Math.max(persistent.getLongOr(APEX_READY_TICK_KEY, 0L), exclusion));
         persistent.putLong(TRIAL_READY_TICK_KEY, Math.max(persistent.getLongOr(TRIAL_READY_TICK_KEY, 0L), exclusion));
@@ -145,7 +160,12 @@ public final class OutpostSiegeSystem {
         siege.bossBar.addPlayer(player);
         siege.bossBar.setVisible(true);
         updateBossBar(siege);
-        player.sendSystemMessage(Component.literal("§c[전초 방어전 시작] §f보급권1 소비 · 3개 공세를 막으세요."));
+        if (mode == SiegeMode.BASTION) {
+            player.sendSystemMessage(Component.literal("§4[요새 방어 시작] §f보급권2 소비 · 물리 방어진지를 유지하며 4개 공세를 막으세요."));
+            player.sendSystemMessage(Component.literal("§7각 공세 사이에 방어진지를 다시 확인합니다. 벽 자체의 충돌/길막이 방어력이며 별도 피해감소 보너스는 없습니다."));
+        } else {
+            player.sendSystemMessage(Component.literal("§c[전초 방어전 시작] §f보급권1 소비 · 3개 공세를 막으세요."));
+        }
         player.sendSystemMessage(Component.literal("§7적이 앵커 배럴 반경 §e" + BREACH_RADIUS + "블록§7을 점유하면 돌파 압력이 상승합니다. §c"
                 + BREACH_LIMIT + "§7에 도달하면 방어 실패입니다."));
         player.sendSystemMessage(Component.literal("§7습격대는 플레이어를 멀리 쫓기보다 전초 앵커를 향합니다. 앵커 근처에서 맞서 싸워 진입을 끊으세요."));
@@ -154,15 +174,16 @@ public final class OutpostSiegeSystem {
     public static void sendStatus(ServerPlayer player) {
         Siege siege = ACTIVE.get(player.getUUID());
         if (siege == null) {
-            player.sendSystemMessage(Component.literal("§c[전초 방어전] §f진행 중인 방어전 없음 §7· 활성 전초4블록 안에서 보급권1로 시작"));
+            player.sendSystemMessage(Component.literal("§c[전초 방어] §f진행 중인 방어전 없음 §7· 일반=보급권1/3공세 · 요새=물리 방어진지+보급권2/4공세"));
             return;
         }
         long remain = Math.max(0L, siege.deadline - siege.level.getGameTime());
-        player.sendSystemMessage(Component.literal("§c[전초 방어전] §f공세 §e" + siege.wave + "/" + TOTAL_WAVES
+        String label = siege.mode == SiegeMode.BASTION ? "§4요새 방어" : "§c전초 방어";
+        player.sendSystemMessage(Component.literal(label + " §7· 공세 §e" + siege.wave + "/" + siege.totalWaves()
                 + " §7· 적 §f" + siege.mobIds.size() + " §7· 돌파압력 §c" + siege.breachPressure + "/" + BREACH_LIMIT
                 + " §7· 남은시간 §f" + ((remain + 19L) / 20L) + "초"));
         player.sendSystemMessage(Component.literal("  §7앵커 " + siege.anchor.getX() + ", " + siege.anchor.getY() + ", " + siege.anchor.getZ()
-                + " · 방어권64 · 돌파권6 · 구조 유지 필수"));
+                + " · 방어권64 · 돌파권6 · 실제 전초 구조 유지 필수"));
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -218,7 +239,7 @@ public final class OutpostSiegeSystem {
             return;
         }
         if (now >= siege.deadline) {
-            fail(siege, owner, "전체 방어 제한시간 4분을 초과했습니다.");
+            fail(siege, owner, "전체 방어 제한시간 " + (siege.mode.timeoutTicks / 1200) + "분을 초과했습니다.");
             return;
         }
 
@@ -239,7 +260,7 @@ public final class OutpostSiegeSystem {
         }
 
         if (siege.mobIds.isEmpty()) {
-            if (siege.wave >= TOTAL_WAVES) {
+            if (siege.wave >= siege.totalWaves()) {
                 complete(siege, owner);
                 return;
             }
@@ -247,14 +268,20 @@ public final class OutpostSiegeSystem {
                 siege.nextWaveTick = now + WAVE_DELAY_TICKS;
                 if (owner != null) owner.sendSystemMessage(Component.literal("§a[전초 공세 격퇴] §f다음 공세까지 §e3초§f. 전초 주변을 다시 정비하세요."));
             } else if (now >= siege.nextWaveTick) {
+                if (siege.mode == SiegeMode.BASTION && (owner == null
+                        || !OutpostFortificationService.validateForBastion(owner,
+                        new OutpostData.OutpostEntry(siege.dimension, siege.anchor.getX(), siege.anchor.getY(), siege.anchor.getZ()), false))) {
+                    fail(siege, owner, "다음 공세 전에 실제 방어진지 사분면 조건이 무너졌습니다.");
+                    return;
+                }
                 siege.wave++;
                 siege.nextWaveTick = 0L;
                 if (!spawnWave(siege)) {
                     fail(siege, owner, "다음 공세를 배치할 로딩 지형이 부족해 방어전을 안전하게 종료했습니다.");
                     return;
                 }
-                if (owner != null) owner.sendSystemMessage(Component.literal("§c[전초 공세 " + siege.wave + "/" + TOTAL_WAVES
-                        + "] §f새 습격대가 외곽에서 접근합니다."));
+                if (owner != null) owner.sendSystemMessage(Component.literal((siege.mode == SiegeMode.BASTION ? "§4[요새 공세 " : "§c[전초 공세 ")
+                        + siege.wave + "/" + siege.totalWaves() + "] §f새 습격대가 외곽에서 접근합니다."));
             }
         } else {
             siege.nextWaveTick = 0L;
@@ -290,7 +317,7 @@ public final class OutpostSiegeSystem {
     }
 
     private static boolean spawnWave(Siege siege) {
-        List<String> types = waveTypes(siege.stage, siege.wave);
+        List<String> types = waveTypes(siege.stage, siege.wave, siege.mode);
         Set<UUID> spawned = new HashSet<>();
         for (int i = 0; i < types.size(); i++) {
             Mob mob = spawnOne(siege.level, siege.anchor, types.get(i), i, types.size());
@@ -312,7 +339,8 @@ public final class OutpostSiegeSystem {
         return true;
     }
 
-    private static List<String> waveTypes(int stage, int wave) {
+    private static List<String> waveTypes(int stage, int wave, SiegeMode mode) {
+        if (mode == SiegeMode.BASTION) return bastionWaveTypes(stage, wave);
         if (stage >= 2) {
             return switch (wave) {
                 case 1 -> List.of(
@@ -343,6 +371,51 @@ public final class OutpostSiegeSystem {
                     "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
                     "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
                     "minecraft:witch", "minecraft:skeleton", "minecraft:skeleton");
+        };
+    }
+
+    private static List<String> bastionWaveTypes(int stage, int wave) {
+        if (stage >= 2) {
+            return switch (wave) {
+                case 1 -> List.of(
+                        "minecraft:skeleton", "minecraft:skeleton", "minecraft:skeleton", "minecraft:skeleton",
+                        "minecraft:spider", "minecraft:spider", "minecraft:spider", "minecraft:spider",
+                        "minecraft:zombie", "minecraft:zombie", "minecraft:zombie", "minecraft:enderman");
+                case 2 -> List.of(
+                        "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                        "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                        "minecraft:witch", "minecraft:witch", "minecraft:spider", "minecraft:spider");
+                case 3 -> List.of(
+                        "minecraft:ravager", "minecraft:ravager",
+                        "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                        "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                        "minecraft:witch", "minecraft:witch", "minecraft:enderman");
+                default -> List.of(
+                        "minecraft:ravager", "minecraft:ravager", "minecraft:ravager",
+                        "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                        "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                        "minecraft:witch", "minecraft:witch", "minecraft:witch", "minecraft:enderman", "minecraft:enderman");
+            };
+        }
+        return switch (wave) {
+            case 1 -> List.of(
+                    "minecraft:skeleton", "minecraft:skeleton", "minecraft:skeleton", "minecraft:skeleton",
+                    "minecraft:spider", "minecraft:spider", "minecraft:spider", "minecraft:spider",
+                    "minecraft:zombie", "minecraft:zombie");
+            case 2 -> List.of(
+                    "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                    "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                    "minecraft:witch", "minecraft:spider", "minecraft:spider");
+            case 3 -> List.of(
+                    "minecraft:ravager",
+                    "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                    "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                    "minecraft:witch", "minecraft:witch", "minecraft:skeleton", "minecraft:skeleton");
+            default -> List.of(
+                    "minecraft:ravager", "minecraft:ravager",
+                    "minecraft:pillager", "minecraft:pillager", "minecraft:pillager", "minecraft:pillager",
+                    "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator", "minecraft:vindicator",
+                    "minecraft:witch", "minecraft:witch", "minecraft:spider", "minecraft:spider");
         };
     }
 
@@ -389,25 +462,47 @@ public final class OutpostSiegeSystem {
         closeBossBar(siege);
         if (owner == null) return;
 
-        if (siege.stage >= 2) {
-            SkillProgressionService.award(owner, SkillType.COMBAT, 500);
-            giveOrDrop(owner, new ItemStack(Items.DIAMOND, 4));
-            giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 6));
-            giveOrDrop(owner, new ItemStack(Items.DRAGON_BREATH, 2));
-            owner.giveExperiencePoints(200);
+        if (siege.mode == SiegeMode.BASTION) {
+            if (siege.stage >= 2) {
+                SkillProgressionService.award(owner, SkillType.COMBAT, 900);
+                SkillProgressionService.award(owner, SkillType.CONSTRUCTION, 350);
+                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 6));
+                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 10));
+                giveOrDrop(owner, new ItemStack(Items.DRAGON_BREATH, 4));
+                giveOrDrop(owner, new ItemStack(Items.NETHERITE_SCRAP, 1));
+                owner.giveExperiencePoints(320);
+            } else {
+                SkillProgressionService.award(owner, SkillType.COMBAT, 650);
+                SkillProgressionService.award(owner, SkillType.CONSTRUCTION, 250);
+                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 4));
+                giveOrDrop(owner, new ItemStack(Items.AMETHYST_SHARD, 32));
+                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 6));
+                owner.giveExperiencePoints(220);
+            }
+            owner.sendSystemMessage(Component.literal("§a[요새 방어 성공] §f4개 공세를 모두 격퇴했습니다. §7직접 지은 방어진지가 실제 전투 공간으로 기능했습니다."));
         } else {
-            SkillProgressionService.award(owner, SkillType.COMBAT, 350);
-            giveOrDrop(owner, new ItemStack(Items.DIAMOND, 2));
-            giveOrDrop(owner, new ItemStack(Items.AMETHYST_SHARD, 24));
-            giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 3));
-            owner.giveExperiencePoints(120);
+            if (siege.stage >= 2) {
+                SkillProgressionService.award(owner, SkillType.COMBAT, 500);
+                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 4));
+                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 6));
+                giveOrDrop(owner, new ItemStack(Items.DRAGON_BREATH, 2));
+                owner.giveExperiencePoints(200);
+            } else {
+                SkillProgressionService.award(owner, SkillType.COMBAT, 350);
+                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 2));
+                giveOrDrop(owner, new ItemStack(Items.AMETHYST_SHARD, 24));
+                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 3));
+                owner.giveExperiencePoints(120);
+            }
+            owner.sendSystemMessage(Component.literal("§a[전초 방어 성공] §f3개 공세를 모두 격퇴했습니다. §7전초 위치를 지켜낸 보상 지급 완료."));
         }
-        owner.sendSystemMessage(Component.literal("§a[전초 방어 성공] §f3개 공세를 모두 격퇴했습니다. §7전초 위치를 지켜낸 보상 지급 완료."));
+
+        int allyXp = siege.mode == SiegeMode.BASTION ? 70 : 40;
         for (ServerPlayer ally : siege.level.getServer().getPlayerList().getPlayers()) {
             if (ally == owner || ally.level() != siege.level || !ally.isAlive() || ally.isSpectator()) continue;
             if (distanceToCenterSqr(ally, siege.anchor) <= 48.0D * 48.0D) {
-                ally.giveExperiencePoints(40);
-                ally.sendSystemMessage(Component.literal("§c[전초 방어전] §f협동 방어 보상 경험치 §e+40"));
+                ally.giveExperiencePoints(allyXp);
+                ally.sendSystemMessage(Component.literal("§c[전초 방어] §f협동 방어 보상 경험치 §e+" + allyXp));
             }
         }
     }
@@ -422,7 +517,8 @@ public final class OutpostSiegeSystem {
     private static void updateBossBar(Siege siege) {
         long remain = Math.max(0L, siege.deadline - siege.level.getGameTime());
         long seconds = (remain + 19L) / 20L;
-        siege.bossBar.setName(Component.literal("§c전초 방어 §7[공세 " + siege.wave + "/" + TOTAL_WAVES + "] §f적 "
+        String label = siege.mode == SiegeMode.BASTION ? "§4요새 방어" : "§c전초 방어";
+        siege.bossBar.setName(Component.literal(label + " §7[공세 " + siege.wave + "/" + siege.totalWaves() + "] §f적 "
                 + siege.mobIds.size() + " §7· 돌파 §c" + siege.breachPressure + "/" + BREACH_LIMIT + " §7· " + seconds + "초"));
         float integrity = 1.0F - (float) siege.breachPressure / BREACH_LIMIT;
         siege.bossBar.setProgress(Math.max(0.0F, Math.min(1.0F, integrity)));
@@ -480,12 +576,28 @@ public final class OutpostSiegeSystem {
         return dx * dx + dy * dy + dz * dz;
     }
 
+    private enum SiegeMode {
+        OUTPOST(TOTAL_WAVES, SIEGE_TIMEOUT_TICKS, SUPPLY_CHARGE_COST),
+        BASTION(BASTION_TOTAL_WAVES, BASTION_TIMEOUT_TICKS, BASTION_SUPPLY_CHARGE_COST);
+
+        final int waves;
+        final int timeoutTicks;
+        final int supplyCost;
+
+        SiegeMode(int waves, int timeoutTicks, int supplyCost) {
+            this.waves = waves;
+            this.timeoutTicks = timeoutTicks;
+            this.supplyCost = supplyCost;
+        }
+    }
+
     private static final class Siege {
         final UUID owner;
         final ServerLevel level;
         final String dimension;
         final BlockPos anchor;
         final int stage;
+        final SiegeMode mode;
         final long deadline;
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
@@ -495,15 +607,18 @@ public final class OutpostSiegeSystem {
         long nextWaveTick;
         long lastBreachWarningTick;
 
-        Siege(UUID owner, ServerLevel level, String dimension, BlockPos anchor, int stage, long deadline) {
+        Siege(UUID owner, ServerLevel level, String dimension, BlockPos anchor, int stage, SiegeMode mode, long deadline) {
             this.owner = owner;
             this.level = level;
             this.dimension = dimension;
             this.anchor = anchor.immutable();
             this.stage = stage;
+            this.mode = mode;
             this.deadline = deadline;
             this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal("전초 방어전"),
                     BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.PROGRESS);
         }
+
+        int totalWaves() { return mode.waves; }
     }
 }
