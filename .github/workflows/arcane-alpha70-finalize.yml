@@ -1,0 +1,202 @@
+name: Arcane alpha70 finalize
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arcane-alpha70-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Finalize alpha70 source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('.')
+          base = root/'projects/arcane-circle'
+          magic = base/'src/main/java/kr/moonseungjun/arcanecircle/magic'
+          client = base/'src/main/java/kr/moonseungjun/arcanecircle/client'
+          fifth = magic/'FifthCircleSpellService.java'
+          main = base/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java'
+          index_path = base/'src/main/resources/data/arcanecircle/spell_catalog/index.json'
+          source_test = base/'tools/test_current_source.py'
+          jar_verify = base/'tools/verify_jar.py'
+
+          def rep(path, old, new, expected=1):
+              body = path.read_text(encoding='utf-8')
+              n = body.count(old)
+              if n != expected:
+                  raise SystemExit(f'{path}: expected {expected}, got {n}: {old[:100]!r}')
+              path.write_text(body.replace(old, new, expected), encoding='utf-8')
+
+          # Flame Strike is a vertical column, never a symmetric underground cylinder.
+          rep(fifth,
+              '        if (horizontal > radius + target.getBbWidth()) continue;\n        double falloff = Math.max(.62, 1.0 - horizontal / Math.max(1.0, radius) * .38);',
+              '        if (horizontal > radius + target.getBbWidth()) continue;\n'
+              '        double bottom = target.getY();\n'
+              '        double top = bottom + target.getBbHeight();\n'
+              '        if (top < center.y - .60 || bottom > center.y + 13.5) continue;\n'
+              '        double falloff = Math.max(.62, 1.0 - horizontal / Math.max(1.0, radius) * .38);')
+          rep(fifth,
+              'Telekinesis is a sustained grab and throw, Flame Strike is a vertical impact, Hold Monster is',
+              'Telekinesis is a sustained grab and throw, Flame Strike is a four-second vertical fire column, Hold Monster is')
+
+          # Source-visible version.
+          rep(main, 'VERSION = "0.12.1-alpha.69"', 'VERSION = "0.12.1-alpha.70"')
+
+          # Canonical metadata / role separation.
+          idx = json.loads(index_path.read_text(encoding='utf-8'))
+          idx['version'] = '0.12.1-alpha.70'
+          idx['fifth_circle_deep_audit'] = [
+              'immediate_directional_cone_of_cold',
+              'spell_intercepting_force_wall',
+              'drifting_cloudkill_front',
+              'sustained_telekinesis_throw',
+              'four_second_vertical_flame_column',
+              'boss_resisted_hold_monster',
+              'allied_mass_cure',
+              'restoring_physical_passwall',
+              'thirty_second_person_scale_domination',
+              'casting_break_insect_plague'
+          ]
+          idx['fifth_circle_value_pass_1'] = {
+              'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+              'dominate_person': '30s_person_scale_combat_asset_control'
+          }
+          idx['fifth_circle_role_audit'] = {
+              'cone_of_cold': 'immediate_directional_frost_sweep',
+              'wall_of_force': 'physical_and_arcane_barrier',
+              'cloudkill': 'moving_toxic_front',
+              'telekinesis': 'sustained_grab_and_throw',
+              'flame_strike': 'four_second_vertical_fire_column',
+              'hold_monster': 'boss_aware_total_restraint',
+              'mass_cure_wounds': 'allied_battlefield_recovery',
+              'passwall': 'temporary_restoring_terrain_tunnel',
+              'dominate_person': 'thirty_second_person_scale_combat_asset',
+              'insect_plague': 'persistent_damage_and_cast_disruption_field'
+          }
+          idx['fifth_circle_preserved_authority'] = [
+              'cone_of_cold','wall_of_force','cloudkill','telekinesis','hold_monster',
+              'mass_cure_wounds','passwall','insect_plague'
+          ]
+          index_path.write_text(json.dumps(idx, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          # Upgrade source audit from alpha69 to alpha70 while preserving all prior regression gates.
+          st = source_test.read_text(encoding='utf-8')
+          st = st.replace('0.12.1-alpha.69', '0.12.1-alpha.70')
+          st = st.replace(
+              "need(text(magic / 'SpellDefinition.java'), 'NinthCircleSpellSummary.summary(id)')",
+              "need(text(magic / 'SpellDefinition.java'), 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')")
+          anchor = '# Alpha.69 sixth-circle Grand Archmage value pass.\n'
+          if st.count(anchor) != 1:
+              raise SystemExit('source audit alpha69 anchor mismatch')
+          alpha70 = '''# Alpha.70 fifth-circle battlefield-command value pass.
+          fifth = text(magic / 'FifthCircleSpellService.java')
+          fifth_summary = text(magic / 'FifthCircleSpellSummary.java')
+          fifth_authority = text(client / 'FifthCircleAuthorityOverlay.java')
+          world_magic_5 = text(magic / 'WorldMagicService.java')
+          tracker_5 = text(client / 'WorldMagicTracker.java')
+          need(fifth,
+               'FLAME_STRIKE_TICKS = 80', 'FLAME_STRIKE_PULSE_TICKS = 10',
+               'DOMINATE_PERSON_TICKS = 600', 'tickFlameStrikes(level, now);',
+               'state.power * .09', 'if (top < center.y - .60 || bottom > center.y + 13.5) continue;',
+               'public static double flameStrikeRadius(double range)',
+               '의 의지를 30초간 장악했습니다.')
+          need(fifth_summary,
+               '4초 천공 화염기둥', '0.5초마다 내부 적을 다시 태웁니다.',
+               '인간형 체급 비플레이어 적 하나의 전투 진영을 30초 탈취')
+          need(world_magic_5,
+               'duration = fifthCircleVisualDuration(spell.id(), duration);',
+               'case "flame_strike" -> Math.max(baseDuration, FifthCircleSpellService.FLAME_STRIKE_TICKS);')
+          need(fifth_authority,
+               '"flame_strike".equals(spell.id())', 'FifthCircleSpellService.flameStrikeRadius(range)',
+               'Vec3 top = floor.add(0.0, 13.5, 0.0);')
+          need(tracker_5, 'if(v.spell.circle()==5){', 'FifthCircleAuthorityOverlay.release(')
+          expected5 = {
+              'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+              'dominate_person': '30s_person_scale_combat_asset_control',
+          }
+          assert index['fifth_circle_value_pass_1'] == expected5
+          roles5 = index['fifth_circle_role_audit']
+          assert set(roles5) == {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
+          assert len(set(roles5.values())) == 10
+          assert index['fifth_circle_npc_parity'] is True
+
+          '''
+          st = st.replace(anchor, alpha70 + anchor, 1)
+          verify_anchor = "need(verify,\n     '0.12.1-alpha.70', 'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',"
+          if verify_anchor not in st:
+              raise SystemExit('source audit verify-link anchor mismatch')
+          st = st.replace(verify_anchor,
+              "need(verify,\n     '0.12.1-alpha.70', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',\n     'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',", 1)
+          print_anchor = "print('alpha69_mass_suggestion_20s_group_disengage=PASS')"
+          if st.count(print_anchor) != 1:
+              raise SystemExit('source audit print anchor mismatch')
+          st = st.replace(print_anchor,
+              "print('alpha70_flame_strike_4s_vertical_column=PASS')\n"
+              "print('alpha70_dominate_person_30s_person_scale_control=PASS')\n"
+              "print('alpha70_fifth_circle_visual_hitbox_lifetime_sync=PASS')\n"
+              "print('alpha70_fifth_circle_role_audit=PASS')\n"
+              "print('alpha70_fifth_circle_value_pass_1=PASS')\n" + print_anchor, 1)
+          source_test.write_text(st, encoding='utf-8')
+
+          # Upgrade JAR package verifier and keep alpha69+ lower regression contracts.
+          jv = jar_verify.read_text(encoding='utf-8')
+          jv = jv.replace('0.12.1-alpha.69', '0.12.1-alpha.70')
+          req_anchor = "    'kr/moonseungjun/arcanecircle/magic/SixthCircleSpellService.class',"
+          if jv.count(req_anchor) != 1:
+              raise SystemExit('jar verifier required-class anchor mismatch')
+          jv = jv.replace(req_anchor,
+              "    'kr/moonseungjun/arcanecircle/magic/FifthCircleSpellSummary.class',\n"
+              "    'kr/moonseungjun/arcanecircle/client/FifthCircleAuthorityOverlay.class',\n" + req_anchor, 1)
+          meta_anchor = "    expected6 = {\n"
+          if jv.count(meta_anchor) != 1:
+              raise SystemExit('jar verifier expected6 anchor mismatch')
+          meta5 = '''    expected5 = {
+              'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+              'dominate_person': '30s_person_scale_combat_asset_control',
+          }
+          if index.get('fifth_circle_value_pass_1') != expected5:
+              raise SystemExit(f'alpha.70 fifth-circle value metadata mismatch: {index.get("fifth_circle_value_pass_1")}')
+          roles5 = index.get('fifth_circle_role_audit', {})
+          expected_roles5 = {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
+          if set(roles5) != expected_roles5 or len(set(roles5.values())) != 10:
+              raise SystemExit('alpha.70 fifth-circle role separation contract missing')
+
+          '''
+          jv = jv.replace(meta_anchor, meta5 + meta_anchor, 1)
+          print_anchor = "print('alpha69_sixth_circle_value_pass_1=PASS')"
+          if jv.count(print_anchor) != 1:
+              raise SystemExit('jar verifier alpha69 print anchor mismatch')
+          jv = jv.replace(print_anchor,
+              "print('alpha70_fifth_circle_value_pass_1=PASS')\n"
+              "print('alpha70_flame_strike_4s_vertical_column=PASS')\n"
+              "print('alpha70_dominate_person_30s_person_scale_control=PASS')\n"
+              "print('alpha70_fifth_circle_role_separation=PASS')\n"
+              "print('alpha70_fifth_circle_npc_parity=PASS')\n" + print_anchor, 1)
+          jar_verify.write_text(jv, encoding='utf-8')
+
+          print('alpha70 canonical contracts finalized')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/arcane-alpha70-finalize.yml
+          git add projects/arcane-circle
+          git diff --check
+          git commit -m 'Finalize Arcane Circle alpha.70 fifth-circle contracts [skip ci]'
+          git push origin HEAD:main
