@@ -26,6 +26,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("관개 시설", "구리512 · 철128 · 레드스톤128 · 유리128 · 슬라임32", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),
             new Entry("건축 공방", "석재벽돌1024 · 철256 · 구리256 · 레드스톤128 · 흑요석64", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),
             new Entry("전투 훈련장", "철512 · 금256 · 에메랄드128 · 레드스톤128 · 메아리32", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),
+            new Entry("산업 가공소", "전설 · 석재벽돌1024 · 철512 · 구리512 · 레드256 · 자수정128", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),
             new Entry("정점 추적소", "전설 · 철512 · 금256 · 자수정256 · 메아리32 · 네더별1", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),
             new Entry("승천 중추", "종말 · 네더별4 · 숨결64 · 흑요석512 · 자수정512 · 메아리64", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
             new Entry("진행도", "월드 승천 단계 + 공동 프로젝트 현황", new ItemStack(Items.MAP), null, Action.STATUS),
@@ -67,6 +68,10 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureService.ALL_PROJECTS, InfrastructureService.ACTION_STATUS));
             this.minecraft.gui.setScreen(null); return true;
         }
+        if (entry.action() == Action.OPEN_PRODUCTION) {
+            this.minecraft.gui.setScreen(new ProductionRadialMenuScreen());
+            return true;
+        }
         ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(entry.project().id(), InfrastructureService.ACTION_FUND));
         this.minecraft.gui.setScreen(null); return true;
     }
@@ -74,7 +79,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
     private static int selectedIndex() { double a=correctAngle(360-(getMouseAngle()-ANGLE_PER_ITEM/2)); return Mth.clamp((int)Math.floor(a/ANGLE_PER_ITEM),0,ITEM_COUNT-1); }
     private static double getMouseAngle(){Minecraft m=Minecraft.getInstance();double ox=m.getWindow().getScreenWidth()*.5,oy=m.getWindow().getScreenHeight()*.5;return correctAngle(-Math.toDegrees(Math.atan2(m.mouseHandler.xpos()-ox,m.mouseHandler.ypos()-oy)));}
     private static double correctAngle(double a){while(a<0)a+=360;while(a>=360)a-=360;return a;}
-    private enum Action { FUND, STATUS, BACK }
+    private enum Action { FUND, OPEN_PRODUCTION, STATUS, BACK }
     private record Entry(String title,String detail,ItemStack icon,InfrastructureProject project,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}
