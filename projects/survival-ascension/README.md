@@ -9,11 +9,12 @@ Stage 2 now has a repeatable endgame combat loop instead of ending after the Asc
 
 - Complete the Stage-2 Ascension Nexus, then select the completed Nexus again from `M -> Infrastructure` to open an Ascension Trial.
 - Entry consumes real resources every run: 32 Echo Shards + 64 Amethyst Shards + 8 Dragon's Breath.
-- Four timed waves use mixed vanilla combat roles rather than another blanket HP-sponge layer: undead pressure, ranged slow/support, illager/wither pressure, then a Ravager/Evoker/Vindicator end wave.
+- Four timed waves use mixed vanilla combat roles rather than another blanket HP-sponge layer: undead pressure, ranged slow/support, illager/wither pressure, then a Ravager/Vindicator/Pillager/Witch end wave. Summon-producing Evokers are deliberately excluded so failed/completed trials cannot leave untracked Vex behind.
 - Each wave has a 60-second limit and a 5-second inter-wave setup. A vanilla boss bar shows wave, remaining enemies and time.
 - The owner gets a 10-second grace window for death/dimension/64-block arena departure. Active trials require 96 blocks of separation and have a 120-second start cooldown to prevent spam.
 - Successful completion guarantees one Mythic III affix item, 2 Netherite Scraps, 4 Diamonds and 200 XP; nearby helpers receive XP without duplicating the owner loot package.
 - Triggered trial mobs still pass through normal NeoForge spawn finalization, so Stage-2 mutations, Elite ranks and existing tactical systems may layer onto the encounter naturally.
+- Runtime trial state is cleared when a different server instance becomes active, and persisted tagged trial mobs are rejected after restart unless they still belong to the active trial.
 - Fixed stale infrastructure benefit text so Lv.100 Quarry / Builder Foundry / Ascension Nexus descriptions match the actual Mastery VI rules.
 
 The timed-wave lifecycle and boss-bar encounter information model are adapted from the MIT-licensed Gateways to Eternity project; runtime attribution is packaged in the JAR.
