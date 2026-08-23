@@ -36,7 +36,7 @@ Primary direct interactions remain approximately:
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
-Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics requires no new player logistics menu.
+Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics and Alpha.35 road terrain adaptation require no new player logistics/road menus.
 
 ## 3. Multiplayer authority
 
@@ -67,7 +67,7 @@ Functional settlement buildings use official blueprints. Player/vanilla building
 
 Original target remains roughly **15–20 meaningful building families**.
 
-Current Alpha.34 functional families: **11**.
+Current Alpha.35 functional families: **11**.
 
 - house;
 - lumber camp;
@@ -81,7 +81,7 @@ Current Alpha.34 functional families: **11**.
 - market;
 - cart station.
 
-Original families still to close include construction office, watchtower, barracks and advanced workshop. Infrastructure still needs deliberate small stairs/bridges. Town center currently exists through the civic-core progression rather than a separate placement family.
+Original families still to close include construction office, watchtower, barracks and advanced workshop. Town center currently exists through the civic-core progression rather than a separate placement family.
 
 Construction UX:
 
@@ -163,7 +163,20 @@ Road intent:
 
 `choose start -> choose route/end -> preview -> approve -> physical grading/build`
 
-Roads should avoid destructive tunneling and reckless cliff modification. Original v0.2 still requires automatic small stairs/bridges where route quality needs them.
+Roads should avoid destructive tunneling and reckless cliff modification. Alpha.35 implements the original small-stair/small-bridge requirement for bounded ordinary terrain:
+
+- a one-block longitudinal rise is represented by actual cobblestone stair road pieces on the low side;
+- short water runs between dry banks may become a 3-wide stone-brick deck;
+- automatic bridge centerline span is capped at 6 blocks;
+- both banks must exist and differ by no more than one block;
+- bridge water is left in place instead of being filled;
+- bridge grading creates no free log/cobblestone support columns;
+- stair/bridge profiles add real stone cost to the normal physical hauling transaction;
+- optional bridge profile data is persisted only on active `RoadConstructionState`; old saved paths decode as ordinary road;
+- completed roads still persist the ordinary centerline `RoadSegment`, so logistics authority remains unchanged;
+- deep/large/unsafe crossings, dangerous fluids, 2+ block abrupt grades, protected blocks and unsafe headroom remain rejected.
+
+Large ravine bridges, tunnels, retaining-wall roads and monumental bridge architecture remain outside this Alpha.35 slice and should be treated as later terrain/civil-engineering breadth rather than silently generated.
 
 No early teleport network; roads/logistics must retain meaning.
 
@@ -218,7 +231,7 @@ Rules:
 
 The lock stays `candidate_runtime_lock` until all entries are launched together in the target client/server environment.
 
-## 11. External-content bridges implemented
+## 11. External-content / settlement bridges implemented
 
 ### Alpha.31
 
@@ -258,6 +271,15 @@ The lock stays `candidate_runtime_lock` until all entries are launched together 
 - existing road-bound transport deposits there preferentially;
 - per-trip cargo doubles from 16 to 32;
 - route authority remains unchanged.
+
+### Alpha.35 road terrain adaptation
+
+- one-block road rises become cobblestone stairs;
+- short water crossings become bounded 3-wide stone-brick decks;
+- max automatic bridge span is 6 centerline blocks;
+- bridge profile is save-compatible optional active-construction metadata;
+- physical stone hauling/cost remains authoritative;
+- no free economic bridge supports, water deletion or second road/logistics backend.
 
 ## 12. UI and controls
 
@@ -302,7 +324,7 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.34
+## 14. Current playable slice after Alpha.35
 
 The playable slice now includes:
 
@@ -312,7 +334,7 @@ The playable slice now includes:
 - **11 functional building families**;
 - physical site grading and construction hauling;
 - paced loaded town production;
-- physical roads;
+- physical roads with one-block stair adaptation and bounded short-water bridges;
 - physical specialized outposts;
 - finite/renewable specialization rules;
 - persisted road-bound transport;
@@ -321,22 +343,23 @@ The playable slice now includes:
 - Alpha.31 external physical material/relic/weapon recognition;
 - Alpha.32 physical village market;
 - Alpha.33 staffed physical workshop;
-- Alpha.34 road-adjacent physical cart-station freight hub with 32-item transport trips.
+- Alpha.34 road-adjacent physical cart-station freight hub with 32-item transport trips;
+- Alpha.35 persisted road bridge profile + real-stone stair/bridge paving.
 
 This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md` remains authoritative for unfinished breadth.
 
-## 15. Next priorities after Alpha.34
+## 15. Next priorities after Alpha.35
 
 Unless real-play regression overrides them:
 
-1. require final Alpha.34 source audit + Java25 build + JAR verify on the final docs/source SHA;
+1. require final Alpha.35 source audit + Java25 build + JAR verify on the final docs/source SHA;
 2. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
-3. add automatic small road stairs/bridges and improve steep-route behavior;
-4. continue missing original building breadth without new controls: watchtower/barracks and construction office are strong candidates;
-5. add advanced workshop/high-tier crafting that consumes external rare materials rather than inventing a parallel item ecosystem;
-6. add river/coast fishing/trade and dangerous-region military outpost specializations;
-7. design coarse unloaded simulation without breaking physical item authority;
-8. close UI status/progress/notification gaps;
+3. continue missing original building breadth without new controls: watchtower/barracks and construction office are strong candidates;
+4. add advanced workshop/high-tier crafting that consumes external rare materials rather than inventing a parallel item ecosystem;
+5. add river/coast fishing/trade and dangerous-region military outpost specializations;
+6. design coarse unloaded simulation without breaking physical item authority;
+7. close UI status/progress/notification gaps;
+8. real-play audit Alpha.35 stair facing, bridge bank transitions, builder navigation and Terralith water/terrain profiles;
 9. perform full survival + multiplayer acceptance across founding -> settlement -> roads/outposts -> freight station -> external dungeon loot -> market/workshop -> higher tiers.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
