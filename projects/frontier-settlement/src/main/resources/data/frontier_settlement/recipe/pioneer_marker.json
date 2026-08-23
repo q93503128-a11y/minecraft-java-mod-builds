@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " W ",
+    " S ",
+    " C "
+  ],
+  "key": {
+    "W": "minecraft:white_wool",
+    "S": "minecraft:stick",
+    "C": "minecraft:chest"
+  },
+  "result": {
+    "count": 1,
+    "id": "frontier_settlement:pioneer_marker"
+  }
+}
