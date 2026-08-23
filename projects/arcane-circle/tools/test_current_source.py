@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.71')
-need(main, 'VERSION = "0.12.1-alpha.71"')
-assert index['version'] == '0.12.1-alpha.71'
+need(gradle, 'mod_version=0.12.1-alpha.72')
+need(main, 'VERSION = "0.12.1-alpha.72"')
+assert index['version'] == '0.12.1-alpha.72'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -34,7 +34,7 @@ spells = direct | fusions
 assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
-need(text(magic / 'SpellDefinition.java'), 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
+need(text(magic / 'SpellDefinition.java'), 'ThirdCircleSpellSummary.summary(id)', 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
 
 circle_specs = {
     'FirstCircleSpellService.java': ['magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'],
@@ -59,6 +59,58 @@ need(text(magic / 'SecondCircleSpellService.java'), 'new RaySalvo(level, caster.
 need(text(magic / 'ThirdCircleSpellService.java'), 'ArcaneDamage.isResolving()', 'SLEET_ZONES.add(new SleetZone')
 need(text(magic / 'FourthCircleSpellService.java'), 'FIRE_WALLS.add(new FireWall', 'ICE_STORMS.add(new IceStorm')
 need(text(magic / 'FifthCircleSpellService.java'), 'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)', 'DOMINATED.put')
+
+# Alpha.72 third-circle authority/value pass.
+third = text(magic / 'ThirdCircleSpellService.java')
+third_summary = text(magic / 'ThirdCircleSpellSummary.java')
+third_authority = text(client / 'ThirdCircleAuthorityOverlay.java')
+arcane_buff = text(magic / 'ArcaneBuffRuntime.java')
+mage_ai = text(world / 'ArcaneMageService.java')
+world_magic_3 = text(magic / 'WorldMagicService.java')
+tracker_3 = text(client / 'WorldMagicTracker.java')
+need(third,
+     'NPC_HASTE = new HashMap<>()', 'case "haste" -> npcHaste(level, caster);',
+     'public static double npcCastTimeMultiplier(LivingEntity caster)', 'return hasNpcHaste(caster) ? .72 : 1.0;',
+     'public static double npcCooldownMultiplier(LivingEntity caster)', 'return hasNpcHaste(caster) ? .85 : 1.0;',
+     'ArcaneBuffRuntime.clearSpell(subject, "haste")',
+     '1~3써클 유지형 강화·제어 마법을 해제했습니다.', '4써클 이상 권능은 보존됩니다.',
+     'public static double slowRadius(double range)', 'public static double sleetStormRadius(double range)',
+     'public static double blinkDistance(double range)', 'findPhaseDestination(level, player.position(), snapshot.launchDirection(), blinkDistance(range))',
+     '중간 고체 지형을 무시하는 위상 통과 완료')
+assert 'FourthCircleSpellService.clear(target);' not in third
+assert 'FifthCircleSpellService.clear(target);' not in third
+assert 'EighthCircleSpellService.clear(target);' not in third
+need(arcane_buff,
+     'player.addEffect(new MobEffectInstance(MobEffects.SPEED, 12, 1, true, false));',
+     'public static boolean clearSpell(LivingEntity subject, String spellId)')
+need(mage_ai,
+     'ThirdCircleSpellService.npcCooldownMultiplier(caster)',
+     'ThirdCircleSpellService.npcCastTimeMultiplier(caster)',
+     '!ThirdCircleSpellService.hasNpcHaste(caster)', 'SpellCatalog.spell("haste")',
+     'if (!"haste".equals(spell.id())) applyControl(caster, target, profile);')
+need(third_summary,
+     '플레이어와 NPC 모두 시전시간 28% 단축', '1~3써클 강화·제어 마법만 확정 해제',
+     '4써클 이상 권능은 보존', '출발~종착 사이 고체 지형은 무시')
+need(world_magic_3,
+     'duration = thirdCircleVisualDuration(spell.id(), duration);',
+     'case "haste" -> Math.max(baseDuration, ThirdCircleSpellService.HASTE_TICKS);',
+     'case "slow" -> Math.max(baseDuration, ThirdCircleSpellService.SLOW_TICKS);',
+     'case "sleet_storm" -> Math.max(baseDuration, ThirdCircleSpellService.SLEET_TICKS);')
+need(third_authority,
+     '"slow".equals(spell.id())', '"sleet_storm".equals(spell.id())',
+     'ThirdCircleSpellService.slowRadius(range)', 'ThirdCircleSpellService.sleetStormRadius(range)')
+need(tracker_3, 'if(v.spell.circle()==3){', 'ThirdCircleAuthorityOverlay.release(')
+expected3 = {
+    'haste': '30s_player_and_npc_arcane_tempo_acceleration_0.72_cast_0.85_cooldown',
+    'dispel_magic': 'deterministic_maintained_magic_purge_circles_1_to_3_only',
+    'blink': 'solo_safe_endpoint_phase_traversal_ignoring_intervening_solid_geometry_up_to_20m',
+}
+assert index['third_circle_value_pass_1'] == expected3
+roles3 = index['third_circle_role_audit']
+assert set(roles3) == {'fireball','lightning_bolt','fly','haste','dispel_magic','vampiric_touch','slow','protection_from_energy','sleet_storm','blink'}
+assert len(set(roles3.values())) == 10
+assert index['third_circle_dispel_ceiling'] == 'circles_1_to_3_deterministic_only'
+assert index['third_circle_npc_parity'] is True
 
 # Alpha.71 fourth-circle battlefield-authority value pass.
 fourth = text(magic / 'FourthCircleSpellService.java')
@@ -281,13 +333,19 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.71', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.72', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha72_haste_player_npc_arcane_tempo_parity=PASS')
+print('alpha72_dispel_magic_circle_1_to_3_ceiling=PASS')
+print('alpha72_blink_solid_geometry_phase_relocation=PASS')
+print('alpha72_third_circle_visual_hitbox_lifetime_sync=PASS')
+print('alpha72_third_circle_role_audit=PASS')
+print('alpha72_third_circle_value_pass_1=PASS')
 print('alpha71_ice_storm_6s_anti_air_suppression=PASS')
 print('alpha71_phantasmal_killer_14s_terror_bond=PASS')
 print('alpha71_fourth_circle_visual_hitbox_lifetime_sync=PASS')

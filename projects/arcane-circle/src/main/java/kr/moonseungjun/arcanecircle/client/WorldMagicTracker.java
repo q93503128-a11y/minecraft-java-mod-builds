@@ -186,6 +186,12 @@ public final class WorldMagicTracker {
                         ()->CircleScaleEnvelope.release(v.spell,v.direction,targetOffset(v),v.range,elapsedSeconds));
                 if(scaleEnvelope.size()>0)entries.add(new RenderEntry(center,scaleEnvelope,color,86,opacity));
 
+                if(v.spell.circle()==3){
+                    ArcaneWorldMesh thirdAuthority=ThirdCircleAuthorityOverlay.release(v.spell,v.direction,targetOffset(v),
+                            v.range,elapsedSeconds,durationSeconds);
+                    if(thirdAuthority.size()>0)entries.add(new RenderEntry(center,thirdAuthority,color,88,opacity));
+                }
+
                 if(v.spell.circle()==4){
                     ArcaneWorldMesh fourthAuthority=FourthCircleAuthorityOverlay.release(v.spell,v.direction,targetOffset(v),
                             v.range,elapsedSeconds,durationSeconds);

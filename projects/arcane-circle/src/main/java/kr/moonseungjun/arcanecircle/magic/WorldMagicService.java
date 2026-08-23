@@ -114,6 +114,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        duration = thirdCircleVisualDuration(spell.id(), duration);
         duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
@@ -147,6 +148,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = thirdCircleVisualDuration(spell.id(), duration);
         duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
@@ -188,6 +190,17 @@ public final class WorldMagicService {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
+    }
+
+    private static int thirdCircleVisualDuration(String spellId, int baseDuration) {
+        return switch (spellId) {
+            case "fly" -> Math.max(baseDuration, ThirdCircleSpellService.FLY_TICKS);
+            case "haste" -> Math.max(baseDuration, ThirdCircleSpellService.HASTE_TICKS);
+            case "slow" -> Math.max(baseDuration, ThirdCircleSpellService.SLOW_TICKS);
+            case "protection_from_energy" -> Math.max(baseDuration, ThirdCircleSpellService.ENERGY_TICKS);
+            case "sleet_storm" -> Math.max(baseDuration, ThirdCircleSpellService.SLEET_TICKS);
+            default -> baseDuration;
+        };
     }
 
     private static int fourthCircleVisualDuration(String spellId, int baseDuration) {

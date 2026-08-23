@@ -98,8 +98,8 @@ public final class ArcaneBuffRuntime {
                 notice(player, "§7[인비저빌리티] §f은신막이 첫 피격까지 공격 궤적 하나를 완전히 빗나가게 합니다.");
             }
             case "haste" -> {
-                player.addEffect(new MobEffectInstance(MobEffects.SPEED, duration, 1, true, false));
-                notice(player, "§e[헤이스트] §f마법 회로 전개 28% 단축 · 재사용 대기 15% 단축.");
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, 12, 1, true, false));
+                notice(player, "§e[헤이스트] §f30초 · 마법 회로 전개 28% 단축 · 재사용 대기 15% 단축 · 이동 가속.");
             }
             case "protection_from_energy" -> notice(player,
                     "§d[에너지 보호] §f5중 공명막이 강한 충격을 순차 흡수하며 전투 중 다시 충전됩니다.");
@@ -238,6 +238,8 @@ public final class ArcaneBuffRuntime {
                 iterator.remove();
                 continue;
             }
+            if ("haste".equals(state.spellId))
+                player.addEffect(new MobEffectInstance(MobEffects.SPEED, 12, 1, true, false));
             if ("freedom_of_movement".equals(state.spellId) && now % 5L == 0L) cleanseMovement(player);
             if ("true_seeing".equals(state.spellId) && now % 10L == 0L) reveal(level, player, state.radius);
             if ("shapechange".equals(state.spellId) && now % 20L == 0L)
@@ -264,6 +266,14 @@ public final class ArcaneBuffRuntime {
     public static int adjustCooldownTicks(ServerPlayer player, int ticks) {
         if (ticks <= 0) return 0;
         return Math.max(1, (int) Math.round(ticks * cooldownMultiplier(player)));
+    }
+
+    public static boolean clearSpell(LivingEntity subject, String spellId) {
+        if (subject == null || spellId == null || spellId.isBlank()) return false;
+        State removed = STATES.remove(new BuffKey(subject.getUUID(), spellId));
+        if (removed == null) return false;
+        WorldMagicService.cancelRelease(subject, spellId);
+        return true;
     }
 
     public static void clear(UUID playerId) {

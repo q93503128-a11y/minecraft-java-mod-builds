@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.71",
+  "version": "0.12.1-alpha.72",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -252,13 +252,13 @@
     "falloff_fireball_blast",
     "piercing_lightning_line",
     "lifecycle_real_flight",
-    "arcane_tempo_haste",
-    "custom_state_dispel_magic",
+    "player_and_npc_arcane_tempo_haste",
+    "lower_circle_bounded_dispel_magic",
     "actual_damage_vampiric_drain",
     "persistent_slow_field",
     "energy_only_recharging_ward",
     "casting_break_sleet_storm",
-    "safe_long_blink"
+    "solid_geometry_phase_blink"
   ],
   "third_circle_npc_parity": true,
   "fourth_circle_deep_audit": [
@@ -477,5 +477,32 @@
     "confusion",
     "blight",
     "freedom_of_movement"
-  ]
+  ],
+  "third_circle_preserved_authority": [
+    "fireball",
+    "lightning_bolt",
+    "fly",
+    "vampiric_touch",
+    "slow",
+    "protection_from_energy",
+    "sleet_storm"
+  ],
+  "third_circle_value_pass_1": {
+    "haste": "30s_player_and_npc_arcane_tempo_acceleration_0.72_cast_0.85_cooldown",
+    "dispel_magic": "deterministic_maintained_magic_purge_circles_1_to_3_only",
+    "blink": "solo_safe_endpoint_phase_traversal_ignoring_intervening_solid_geometry_up_to_20m"
+  },
+  "third_circle_role_audit": {
+    "fireball": "falloff_area_blast_and_player_terrain_breach",
+    "lightning_bolt": "piercing_multi_target_line_strike",
+    "fly": "thirty_second_free_flight_authority",
+    "haste": "arcane_cast_and_cooldown_tempo_acceleration",
+    "dispel_magic": "lower_circle_maintained_magic_purge",
+    "vampiric_touch": "actual_damage_to_self_healing_conversion",
+    "slow": "fixed_time_dilation_action_suppression_zone",
+    "protection_from_energy": "recharging_energy_only_damage_ward",
+    "sleet_storm": "fixed_weather_cast_denial_and_visibility_zone",
+    "blink": "solid_geometry_ignoring_solo_phase_relocation"
+  },
+  "third_circle_dispel_ceiling": "circles_1_to_3_deterministic_only"
 }

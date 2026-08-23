@@ -51,6 +51,7 @@ public final class ThirdCircleSpellService {
     private static final Map<UUID, PlayerFlight> PLAYER_FLIGHT = new HashMap<>();
     private static final Map<UUID, MobFlight> MOB_FLIGHT = new HashMap<>();
     private static final Map<UUID, EnergyWard> ENERGY = new HashMap<>();
+    private static final Map<UUID, NpcHasteState> NPC_HASTE = new HashMap<>();
     private static final List<SlowZone> SLOW_ZONES = new ArrayList<>();
     private static final List<SleetZone> SLEET_ZONES = new ArrayList<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
@@ -87,10 +88,7 @@ public final class ThirdCircleSpellService {
             case "fireball" -> fireball(level, caster, range, power, snapshot);
             case "lightning_bolt" -> lightningBolt(level, caster, range, power, snapshot);
             case "fly" -> fly(level, caster, designatedTarget);
-            case "haste" -> {
-                caster.addEffect(new MobEffectInstance(MobEffects.SPEED, HASTE_TICKS, 2, true, false));
-                yield true;
-            }
+            case "haste" -> npcHaste(level, caster);
             case "dispel_magic" -> dispelMagic(caster, designatedTarget);
             case "vampiric_touch" -> vampiricTouch(level, caster, designatedTarget, power);
             case "slow" -> slow(level, caster, range, snapshot.target());
@@ -148,12 +146,14 @@ public final class ThirdCircleSpellService {
         tickPlayerFlight(level, now);
         tickMobFlight(level, now);
         tickEnergy(level, now);
+        tickNpcHaste(level, now);
         tickSlow(level, now);
         tickSleet(level, now);
     }
 
     public static void clear(LivingEntity subject) {
         if (subject == null) return;
+        ArcaneBuffRuntime.clearSpell(subject, "haste");
         UUID id = subject.getUUID();
         Set<String> owned = ownedSpellIds(id);
         clear(id);
@@ -167,6 +167,7 @@ public final class ThirdCircleSpellService {
         MobFlight mobFlight = MOB_FLIGHT.remove(id);
         if (mobFlight != null) restoreMobFlight(mobFlight);
         ENERGY.remove(id);
+        NPC_HASTE.remove(id);
         SLOW_ZONES.removeIf(zone -> zone.ownerId.equals(id));
         SLEET_ZONES.removeIf(zone -> zone.ownerId.equals(id));
     }
@@ -177,6 +178,7 @@ public final class ThirdCircleSpellService {
         PLAYER_FLIGHT.clear();
         MOB_FLIGHT.clear();
         ENERGY.clear();
+        NPC_HASTE.clear();
         SLOW_ZONES.clear();
         SLEET_ZONES.clear();
         LAST_TICK.clear();
@@ -185,6 +187,7 @@ public final class ThirdCircleSpellService {
     private static Set<String> ownedSpellIds(UUID id) {
         java.util.HashSet<String> result = new java.util.HashSet<>();
         if (PLAYER_FLIGHT.containsKey(id) || MOB_FLIGHT.containsKey(id)) result.add("fly");
+        if (NPC_HASTE.containsKey(id)) result.add("haste");
         if (ENERGY.containsKey(id)) result.add("protection_from_energy");
         for (SlowZone zone : SLOW_ZONES) if (zone.ownerId.equals(id)) result.add("slow");
         for (SleetZone zone : SLEET_ZONES) if (zone.ownerId.equals(id)) result.add("sleet_storm");
@@ -327,6 +330,42 @@ public final class ThirdCircleSpellService {
         mob.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 100, 0, true, false));
     }
 
+    private static boolean npcHaste(ServerLevel level, Mob caster) {
+        long now = level.getGameTime();
+        NPC_HASTE.put(caster.getUUID(), new NpcHasteState(level, caster.getUUID(), now + HASTE_TICKS));
+        caster.addEffect(new MobEffectInstance(MobEffects.SPEED, 12, 1, true, false));
+        return true;
+    }
+
+    public static boolean hasNpcHaste(LivingEntity caster) {
+        if (caster == null || !(caster.level() instanceof ServerLevel level)) return false;
+        NpcHasteState state = NPC_HASTE.get(caster.getUUID());
+        return state != null && state.level == level && state.expiresAt > level.getGameTime()
+                && caster.isAlive() && !caster.isRemoved();
+    }
+
+    public static double npcCastTimeMultiplier(LivingEntity caster) {
+        return hasNpcHaste(caster) ? .72 : 1.0;
+    }
+
+    public static double npcCooldownMultiplier(LivingEntity caster) {
+        return hasNpcHaste(caster) ? .85 : 1.0;
+    }
+
+    private static void tickNpcHaste(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, NpcHasteState>> iterator = NPC_HASTE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            NpcHasteState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity raw = level.getEntity(state.casterId);
+            if (!(raw instanceof LivingEntity caster) || !caster.isAlive() || caster.isRemoved() || now >= state.expiresAt) {
+                iterator.remove();
+                continue;
+            }
+            caster.addEffect(new MobEffectInstance(MobEffects.SPEED, 12, 1, true, false));
+        }
+    }
+
     private static boolean dispelMagic(ServerPlayer caster, CastTargetSnapshot snapshot) {
         LivingEntity target = snapshot.targetEntity(caster).orElse(null);
         if (target == null) {
@@ -336,7 +375,7 @@ public final class ThirdCircleSpellService {
         }
         dispelTarget(target);
         ArcaneNoticeService.push(caster, Component.literal("§b[디스펠] §f" + target.getName().getString()
-                + "의 유지형 강화·제어 마법을 해제했습니다."), 60);
+                + "의 1~3써클 유지형 강화·제어 마법을 해제했습니다. §74써클 이상 권능은 보존됩니다."), 70);
         return true;
     }
 
@@ -347,38 +386,11 @@ public final class ThirdCircleSpellService {
     }
 
     private static void dispelTarget(LivingEntity target) {
+        // Third-circle Dispel owns lower-circle maintenance only. Higher-circle authority is not
+        // erased for free by a 3C spell; Antimagic Field and higher counters own that escalation.
         FirstCircleSpellService.dispel(target);
         SecondCircleSpellService.clear(target);
         ThirdCircleSpellService.clear(target);
-        FourthCircleSpellService.clear(target);
-        FifthCircleSpellService.clear(target);
-        SixthCircleSpellService.clear(target);
-        SeventhCircleSpellService.clear(target);
-        EighthCircleSpellService.clear(target);
-        SpellGameplayService.clear(target);
-        HighWardSpellService.clear(target);
-        HighControlSpellService.clear(target);
-        if (target instanceof ServerPlayer player) {
-            HighUtilitySpellService.clear(player);
-            SimulacrumService.clear(player);
-            ArcaneLightService.clear(player);
-        }
-        removeBeneficialMagic(target);
-        WorldMagicService.stop(target);
-    }
-
-    private static void removeBeneficialMagic(LivingEntity target) {
-        target.removeEffect(MobEffects.ABSORPTION);
-        target.removeEffect(MobEffects.RESISTANCE);
-        target.removeEffect(MobEffects.REGENERATION);
-        target.removeEffect(MobEffects.SPEED);
-        target.removeEffect(MobEffects.STRENGTH);
-        target.removeEffect(MobEffects.INVISIBILITY);
-        target.removeEffect(MobEffects.FIRE_RESISTANCE);
-        target.removeEffect(MobEffects.NIGHT_VISION);
-        target.removeEffect(MobEffects.LUCK);
-        target.removeEffect(MobEffects.JUMP_BOOST);
-        target.removeEffect(MobEffects.SLOW_FALLING);
     }
 
     private static void cleanseHarmful(LivingEntity target) {
@@ -407,8 +419,12 @@ public final class ThirdCircleSpellService {
         return true;
     }
 
+    public static double slowRadius(double range) {
+        return Math.max(5.0, Math.min(9.0, SpellMetrics.effectRadius("slow", range, 3)));
+    }
+
     private static boolean slow(ServerLevel level, LivingEntity caster, double range, Vec3 center) {
-        double radius = Math.max(5.0, Math.min(9.0, SpellMetrics.effectRadius("slow", range, 3)));
+        double radius = slowRadius(range);
         SLOW_ZONES.removeIf(zone -> zone.ownerId.equals(caster.getUUID()));
         SLOW_ZONES.add(new SlowZone(level, caster.getUUID(), center, radius,
                 level.getGameTime() + SLOW_TICKS, level.getGameTime()));
@@ -470,8 +486,12 @@ public final class ThirdCircleSpellService {
         }
     }
 
+    public static double sleetStormRadius(double range) {
+        return Math.max(6.5, Math.min(10.5, SpellMetrics.effectRadius("sleet_storm", range, 3)));
+    }
+
     private static boolean sleetStorm(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
-        double radius = Math.max(6.5, Math.min(10.5, SpellMetrics.effectRadius("sleet_storm", range, 3)));
+        double radius = sleetStormRadius(range);
         SLEET_ZONES.removeIf(zone -> zone.ownerId.equals(caster.getUUID()));
         SLEET_ZONES.add(new SleetZone(level, caster.getUUID(), center, radius, power,
                 level.getGameTime() + SLEET_TICKS, level.getGameTime()));
@@ -508,13 +528,15 @@ public final class ThirdCircleSpellService {
         }
     }
 
+    public static double blinkDistance(double range) {
+        return Math.max(14.0, Math.min(20.0, Math.max(0.0, range)));
+    }
+
     private static boolean blink(ServerPlayer player, double range, CastTargetSnapshot snapshot) {
         ServerLevel level = (ServerLevel) player.level();
-        double maxDistance = Math.max(12.0, Math.min(20.0, range));
-        Vec3 desired = clampDestination(player.position(), snapshot.target(), maxDistance);
-        Optional<BlockPos> safe = findSafe(level, desired, 8);
+        Optional<BlockPos> safe = findPhaseDestination(level, player.position(), snapshot.launchDirection(), blinkDistance(range));
         if (safe.isEmpty()) {
-            ArcaneNoticeService.push(player, Component.literal("§c[점멸] §f도착 지점 주변에 안전한 공간이 없습니다."), 45);
+            ArcaneNoticeService.push(player, Component.literal("§c[점멸] §f위상선 끝쪽에서 안전한 종착점을 찾지 못했습니다."), 45);
             return false;
         }
         BlockPos p = safe.get();
@@ -526,7 +548,7 @@ public final class ThirdCircleSpellService {
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 40, 0, true, false));
         level.playSound(null, p, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, .88F, .92F);
         ArcaneNoticeService.push(player, Component.literal(
-                "§5[점멸] §f장거리 공간 도약 완료 · §7착지 직후 2초간 위상 잔류막으로 충격을 완화합니다."), 55);
+                "§5[점멸] §f중간 고체 지형을 무시하는 위상 통과 완료 · §7종착점만 안전 공간이어야 하며 2초간 위상 잔류막이 남습니다."), 70);
         return true;
     }
 
@@ -534,9 +556,8 @@ public final class ThirdCircleSpellService {
         if (target == null || !target.isAlive()) return false;
         Vec3 delta = target.position().subtract(caster.position());
         if (delta.lengthSqr() < 1.0E-6) return false;
-        double distance = Math.min(Math.max(8.0, range), Math.max(5.0, delta.length() - 3.0));
-        Vec3 desired = caster.position().add(delta.normalize().scale(distance));
-        Optional<BlockPos> safe = findSafe(level, desired, 8);
+        double distance = Math.min(blinkDistance(range), Math.max(8.0, delta.length() - 2.5));
+        Optional<BlockPos> safe = findPhaseDestination(level, caster.position(), delta.normalize(), distance);
         if (safe.isEmpty()) return false;
         BlockPos p = safe.get();
         caster.getNavigation().stop();
@@ -545,6 +566,15 @@ public final class ThirdCircleSpellService {
         caster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 40, 0, true, false));
         level.playSound(null, p, SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, .84F, .90F);
         return true;
+    }
+
+    private static Optional<BlockPos> findPhaseDestination(ServerLevel level, Vec3 start, Vec3 direction, double maxDistance) {
+        Vec3 unit = direction == null || direction.lengthSqr() < 1.0E-8 ? new Vec3(0.0, 0.0, 1.0) : direction.normalize();
+        for (double distance = maxDistance; distance >= 8.0; distance -= 2.0) {
+            Optional<BlockPos> safe = findSafe(level, start.add(unit.scale(distance)), 6);
+            if (safe.isPresent()) return safe;
+        }
+        return Optional.empty();
     }
 
     private static Vec3 clampDestination(Vec3 start, Vec3 desired, double maxDistance) {
@@ -596,6 +626,7 @@ public final class ThirdCircleSpellService {
 
     private record PlayerFlight(ServerLevel level, UUID playerId, long expiresAt, boolean wasMayfly, boolean wasFlying) {}
     private record MobFlight(ServerLevel level, UUID mobId, UUID targetId, long expiresAt, boolean wasNoGravity) {}
+    private record NpcHasteState(ServerLevel level, UUID casterId, long expiresAt) {}
 
     private static final class EnergyWard {
         final ServerLevel level; final UUID ownerId; final long expiresAt; int charges; long nextChargeAt;

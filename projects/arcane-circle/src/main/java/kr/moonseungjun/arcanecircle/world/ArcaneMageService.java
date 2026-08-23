@@ -6,6 +6,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.RpgScaleService;
 import kr.moonseungjun.arcanecircle.magic.SpellCatalog;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
+import kr.moonseungjun.arcanecircle.magic.ThirdCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.WorldMagicService;
 import kr.moonseungjun.arcanecircle.network.ArcaneNetwork;
 import net.minecraft.core.particles.ParticleOptions;
@@ -161,8 +162,9 @@ public final class ArcaneMageService {
             return;
         }
         caster.setTarget(target);
-        int interval = Math.max(18, (int) Math.round((92 - profile.circle() * 7)
-                * profile.affiliation().cooldownMultiplier()));
+        int interval = Math.max(12, (int) Math.round(Math.max(18.0, (92 - profile.circle() * 7)
+                * profile.affiliation().cooldownMultiplier())
+                * ThirdCircleSpellService.npcCooldownMultiplier(caster)));
         if (ready(caster, now, interval)) startCast(level, caster, target, profile, now, false);
     }
 
@@ -185,8 +187,9 @@ public final class ArcaneMageService {
             return;
         }
         caster.setTarget(target);
-        int interval = Math.max(16, (int) Math.round((94 - profile.circle() * 7)
-                * profile.affiliation().cooldownMultiplier()));
+        int interval = Math.max(12, (int) Math.round(Math.max(16.0, (94 - profile.circle() * 7)
+                * profile.affiliation().cooldownMultiplier())
+                * ThirdCircleSpellService.npcCooldownMultiplier(caster)));
         if (ready(caster, now, interval)) startCast(level, caster, target, profile, now, true);
     }
 
@@ -194,7 +197,8 @@ public final class ArcaneMageService {
                                   MageProfile profile, long now, boolean hostile) {
         if (target == null || !target.isAlive()) return;
         SpellDefinition visual = chooseCombatSpell(caster, profile);
-        int required = Math.max(8, 8 + visual.circle() * 3);
+        int required = Math.max(6, (int) Math.round((8 + visual.circle() * 3)
+                * ThirdCircleSpellService.npcCastTimeMultiplier(caster)));
         double range = Math.min(36.0, Math.max(8.0, Math.sqrt(caster.distanceToSqr(target)) + 2.0));
         double power = spellDamage(profile, hostile ? 1.08F : 1.0F)
                 * (0.76 + visual.circle() * 0.055);
@@ -251,7 +255,10 @@ public final class ArcaneMageService {
         CASTS.remove(caster.getUUID());
         LAST_CAST.put(caster.getUUID(), now);
         boolean executed = NpcSpellResolver.execute(level, caster, target, spell, cast.range(), cast.power());
-        if (executed) { if (target instanceof Mob mob) mob.setTarget(caster); applyControl(caster, target, profile); }
+        if (executed) {
+            if (target instanceof Mob mob) mob.setTarget(caster);
+            if (!"haste".equals(spell.id())) applyControl(caster, target, profile);
+        }
         level.playSound(null, caster.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, cast.hostile() ? SoundSource.HOSTILE : SoundSource.NEUTRAL, 0.78F, 1.25F - profile.circle() * 0.03F);
         if (RETALIATION_TARGET.containsKey(caster.getUUID())) AGGRO_UNTIL.put(caster.getUUID(), Math.max(AGGRO_UNTIL.getOrDefault(caster.getUUID(), 0L), now + RETALIATION_TICKS / 2L));
     }
@@ -310,6 +317,10 @@ public final class ArcaneMageService {
     /** High-circle mages favor high magic but deliberately retain mid/low-circle choices. */
     private static SpellDefinition chooseCombatSpell(Mob caster, MageProfile profile) {
         int circle=Math.max(1,Math.min(9,profile.circle()));
+        if(circle>=3 && !ThirdCircleSpellService.hasNpcHaste(caster) && caster.getRandom().nextInt(100)<14){
+            SpellDefinition haste=SpellCatalog.spell("haste").orElse(null);
+            if(haste!=null)return haste;
+        }
         List<SpellDefinition> all=SpellCatalog.spells().values().stream()
                 .filter(spell->spell.circle()<=circle)
                 .filter(spell->SpellCatalog.isDamaging(spell.id())).toList();

@@ -27,6 +27,8 @@ required = {
     'kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class',
+    'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellSummary.class',
+    'kr/moonseungjun/arcanecircle/client/ThirdCircleAuthorityOverlay.class',
     'kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/FourthCircleSpellSummary.class',
     'kr/moonseungjun/arcanecircle/client/FourthCircleAuthorityOverlay.class',
@@ -85,8 +87,8 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.71':
-        raise SystemExit(f'unexpected alpha.71 package version: {version}')
+    if version != '0.12.1-alpha.72':
+        raise SystemExit(f'unexpected alpha.72 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -96,6 +98,20 @@ with zipfile.ZipFile(jar) as archive:
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
+
+    expected3 = {
+        'haste': '30s_player_and_npc_arcane_tempo_acceleration_0.72_cast_0.85_cooldown',
+        'dispel_magic': 'deterministic_maintained_magic_purge_circles_1_to_3_only',
+        'blink': 'solo_safe_endpoint_phase_traversal_ignoring_intervening_solid_geometry_up_to_20m',
+    }
+    if index.get('third_circle_value_pass_1') != expected3:
+        raise SystemExit(f'alpha.72 third-circle value metadata mismatch: {index.get("third_circle_value_pass_1")}')
+    roles3 = index.get('third_circle_role_audit', {})
+    expected_roles3 = {'fireball','lightning_bolt','fly','haste','dispel_magic','vampiric_touch','slow','protection_from_energy','sleet_storm','blink'}
+    if set(roles3) != expected_roles3 or len(set(roles3.values())) != 10:
+        raise SystemExit('alpha.72 third-circle role separation contract missing')
+    if index.get('third_circle_dispel_ceiling') != 'circles_1_to_3_deterministic_only':
+        raise SystemExit('alpha.72 Dispel ceiling contract missing')
 
     expected4 = {
         'ice_storm': '6s_fixed_anti_air_hail_suppression_with_0.5s_pulses',
@@ -193,7 +209,13 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.71 JAR verification: PASS')
+print('Arcane Circle alpha.72 JAR verification: PASS')
+print('alpha72_third_circle_value_pass_1=PASS')
+print('alpha72_haste_player_npc_arcane_tempo_parity=PASS')
+print('alpha72_dispel_magic_circle_1_to_3_ceiling=PASS')
+print('alpha72_blink_solid_geometry_phase_relocation=PASS')
+print('alpha72_third_circle_role_separation=PASS')
+print('alpha72_third_circle_npc_parity=PASS')
 print('alpha71_fourth_circle_value_pass_1=PASS')
 print('alpha71_ice_storm_6s_anti_air_suppression=PASS')
 print('alpha71_phantasmal_killer_14s_terror_bond=PASS')
