@@ -9,105 +9,22 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public final class BuildingPaletteScreen extends Screen {
-    private int panelX;
-    private int panelY;
-    private int panelWidth;
-    private int panelHeight;
-
-    public BuildingPaletteScreen() {
-        super(Minecraft.getInstance(), Minecraft.getInstance().font, Component.literal("마을 건설"));
+    private int panelX, panelY, panelWidth, panelHeight;
+    public BuildingPaletteScreen(){super(Minecraft.getInstance(),Minecraft.getInstance().font,Component.literal("마을 건설"));}
+    @Override protected void init(){
+        panelWidth=Math.min(430,Math.max(320,this.width-24)); panelHeight=Math.min(252,Math.max(238,this.height-24)); panelX=(this.width-panelWidth)/2; panelY=Math.max(12,(this.height-panelHeight)/2);
+        int gap=10,innerX=panelX+12,innerY=panelY+32,columnWidth=(panelWidth-34)/2,rightX=innerX+columnWidth+gap;
+        addBuilding(BuildingType.HOUSE,innerX,innerY+12,columnWidth); addBuilding(BuildingType.WAREHOUSE,innerX,innerY+32,columnWidth);
+        addBuilding(BuildingType.MARKET,innerX,innerY+68,columnWidth); addBuilding(BuildingType.CART_STATION,innerX,innerY+88,columnWidth);
+        addBuilding(BuildingType.GUARD_POST,innerX,innerY+124,columnWidth); addBuilding(BuildingType.WATCHTOWER,innerX,innerY+144,columnWidth); addBuilding(BuildingType.BARRACKS,innerX,innerY+164,columnWidth);
+        addBuilding(BuildingType.LUMBER_CAMP,rightX,innerY+12,columnWidth); addBuilding(BuildingType.FARM,rightX,innerY+32,columnWidth); addBuilding(BuildingType.QUARRY,rightX,innerY+52,columnWidth); addBuilding(BuildingType.MINE,rightX,innerY+72,columnWidth); addBuilding(BuildingType.BLACKSMITH,rightX,innerY+92,columnWidth); addBuilding(BuildingType.WORKSHOP,rightX,innerY+112,columnWidth);
+        int infraY=innerY+192;
+        addRenderableWidget(Button.builder(Component.literal("도로 계획"),b->{RoadPlacementClient.beginPlacement();this.minecraft.gui.setScreen(null);}).bounds(innerX,infraY,columnWidth,20).build());
+        addRenderableWidget(Button.builder(Component.literal("전초기지"),b->{OutpostPlacementClient.beginPlacement();this.minecraft.gui.setScreen(null);}).bounds(rightX,infraY,columnWidth,20).build());
+        addRenderableWidget(Button.builder(Component.literal("닫기"),b->this.onClose()).bounds(panelX+panelWidth-58,panelY+7,46,20).build());
     }
-
-    @Override
-    protected void init() {
-        panelWidth = Math.min(430, Math.max(320, this.width - 24));
-        panelHeight = Math.min(238, Math.max(212, this.height - 24));
-        panelX = (this.width - panelWidth) / 2;
-        panelY = Math.max(12, (this.height - panelHeight) / 2);
-
-        int gap = 10;
-        int innerX = panelX + 12;
-        int innerY = panelY + 32;
-        int columnWidth = (panelWidth - 34) / 2;
-        int rightX = innerX + columnWidth + gap;
-
-        addBuilding(BuildingType.HOUSE, innerX, innerY + 12, columnWidth);
-        addBuilding(BuildingType.WAREHOUSE, innerX, innerY + 32, columnWidth);
-        addBuilding(BuildingType.MARKET, innerX, innerY + 68, columnWidth);
-        addBuilding(BuildingType.CART_STATION, innerX, innerY + 88, columnWidth);
-        addBuilding(BuildingType.GUARD_POST, innerX, innerY + 124, columnWidth);
-        addBuilding(BuildingType.WATCHTOWER, innerX, innerY + 144, columnWidth);
-
-        addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 12, columnWidth);
-        addBuilding(BuildingType.FARM, rightX, innerY + 32, columnWidth);
-        addBuilding(BuildingType.QUARRY, rightX, innerY + 52, columnWidth);
-        addBuilding(BuildingType.MINE, rightX, innerY + 72, columnWidth);
-        addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 92, columnWidth);
-        addBuilding(BuildingType.WORKSHOP, rightX, innerY + 112, columnWidth);
-
-        int infraY = innerY + 176;
-        addRenderableWidget(Button.builder(Component.literal("도로 계획"), button -> {
-            RoadPlacementClient.beginPlacement();
-            this.minecraft.gui.setScreen(null);
-        }).bounds(innerX, infraY, columnWidth, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("전초기지"), button -> {
-            OutpostPlacementClient.beginPlacement();
-            this.minecraft.gui.setScreen(null);
-        }).bounds(rightX, infraY, columnWidth, 20).build());
-
-        addRenderableWidget(Button.builder(Component.literal("닫기"), button -> this.onClose())
-                .bounds(panelX + panelWidth - 58, panelY + 7, 46, 20)
-                .build());
-    }
-
-    private void addBuilding(BuildingType type, int x, int y, int width) {
-        SettlementSnapshotPayload data = ClientSettlementState.snapshot();
-        boolean unlocked = (data.buildingUnlockMask() & (1 << type.ordinal())) != 0;
-        boolean affordable = data.wood() >= type.woodCost() && data.stone() >= type.stoneCost();
-        String state = unlocked ? (affordable ? "" : " · 자원부족") : " · 잠김";
-        Component label = Component.literal(type.displayName() + "  목" + type.woodCost()
-                + " 석" + type.stoneCost() + state);
-        Button button = Button.builder(label, clicked -> {
-            BuildingPlacementClient.beginPlacement(type);
-            this.minecraft.gui.setScreen(null);
-        }).bounds(x, y, width, 18).build();
-        button.active = unlocked;
-        addRenderableWidget(button);
-    }
-
-    @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // No blur/full-screen dim: keep the Minecraft world readable while choosing construction.
-    }
-
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xD0101114);
-        graphics.fill(panelX, panelY, panelX + 3, panelY + panelHeight, 0xFFD1A85A);
-        graphics.text(this.font, Component.literal("마을 건설"), panelX + 12, panelY + 10, 0xFFFFFFFF, true);
-
-        int innerX = panelX + 12;
-        int innerY = panelY + 32;
-        int gap = 10;
-        int columnWidth = (panelWidth - 34) / 2;
-        int rightX = innerX + columnWidth + gap;
-
-        graphics.text(this.font, Component.literal("기반"), innerX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("물류·교역"), innerX, innerY + 56, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("방어"), innerX, innerY + 112, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("생산"), rightX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 164, 0xFFFFD58A, true);
-
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    @Override
-    public boolean isInGameUi() {
-        return true;
-    }
+    private void addBuilding(BuildingType type,int x,int y,int width){SettlementSnapshotPayload data=ClientSettlementState.snapshot();boolean unlocked=(data.buildingUnlockMask()&(1<<type.ordinal()))!=0,affordable=data.wood()>=type.woodCost()&&data.stone()>=type.stoneCost();String state=unlocked?(affordable?"":" · 자원부족"):" · 잠김";Button button=Button.builder(Component.literal(type.displayName()+"  목"+type.woodCost()+" 석"+type.stoneCost()+state),c->{BuildingPlacementClient.beginPlacement(type);this.minecraft.gui.setScreen(null);}).bounds(x,y,width,18).build();button.active=unlocked;addRenderableWidget(button);}
+    @Override public void extractBackground(GuiGraphicsExtractor g,int x,int y,float p){}
+    @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float p){g.fill(panelX,panelY,panelX+panelWidth,panelY+panelHeight,0xD0101114);g.fill(panelX,panelY,panelX+3,panelY+panelHeight,0xFFD1A85A);g.text(this.font,Component.literal("마을 건설"),panelX+12,panelY+10,0xFFFFFFFF,true);int innerX=panelX+12,innerY=panelY+32,gap=10,columnWidth=(panelWidth-34)/2,rightX=innerX+columnWidth+gap;g.text(this.font,Component.literal("기반"),innerX,innerY,0xFFFFD58A,true);g.text(this.font,Component.literal("물류·교역"),innerX,innerY+56,0xFFFFD58A,true);g.text(this.font,Component.literal("방어"),innerX,innerY+112,0xFFFFD58A,true);g.text(this.font,Component.literal("생산"),rightX,innerY,0xFFFFD58A,true);g.text(this.font,Component.literal("인프라"),innerX,innerY+180,0xFFFFD58A,true);super.extractRenderState(g,mx,my,p);}
+    @Override public boolean isPauseScreen(){return false;} @Override public boolean isInGameUi(){return true;}
 }
