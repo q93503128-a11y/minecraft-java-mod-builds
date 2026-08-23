@@ -36,6 +36,7 @@ public final class InfrastructureService {
                 || ProductionService.ACTION_DISPATCH.equals(action)
                 || ProductionService.ACTION_DEPOT_TOGGLE.equals(action)
                 || ProductionService.ACTION_OUTPOST_UPGRADE.equals(action)
+                || ProductionService.ACTION_FIELD_RECOVERY.equals(action)
                 || action.startsWith(ProductionService.ACTION_PREFIX))) {
             ProductionService.perform(player, action);
             return;
@@ -102,7 +103,7 @@ public final class InfrastructureService {
             Component message = Component.literal("§6[인프라 완공] §e" + project.koreanName() + " §f— " + project.benefit());
             for (ServerPlayer online : server.getPlayerList().getPlayers()) online.sendSystemMessage(message);
             if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
-                player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 배럴 물류 → 물리 전초기지까지 단계적으로 확장할 수 있습니다."));
+                player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 배럴 물류 → 물리 전초기지 → 현장 복귀 계약까지 단계적으로 확장할 수 있습니다."));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 M → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
@@ -121,7 +122,7 @@ public final class InfrastructureService {
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
             if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
-                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 1세트 → 보급권1 · 배럴 물류 · 물리 전초기지 승격"));
+                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 1세트 → 보급권1 · 배럴 물류 · 물리 전초기지 · 1회 현장 복귀"));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
