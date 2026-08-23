@@ -1,11 +1,11 @@
 package kr.moonseungjun.survivalascension.production;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,16 +16,16 @@ import java.util.List;
 
 /**
  * 0.40 physical breach pressure for bastion defense.
- *
  * Only the unique fourth bastion wave may damage the same real fortification blocks that qualified
- * the structure. The service never attacks arbitrary terrain, never force-loads chunks and obeys
- * mobGriefing, NeoForge entity-destroy hooks and the owning player's mayInteract protection gate.
+ * the structure. No arbitrary terrain, chunk force-load or protection bypass is used.
  */
 public final class OutpostSiegeBreachService {
     private static final String SIEGE_OWNER_KEY = "survivalascension_outpost_siege_owner";
     private static final String SIEGE_WAVE_KEY = "survivalascension_outpost_siege_wave";
     private static final String BREAK_READY_KEY = "survivalascension_outpost_breach_ready";
     private static final String OWNER_WARNING_READY_KEY = "survivalascension_outpost_breach_warning_ready";
+    private static final String RAVAGER_ID = "minecraft:ravager";
+    private static final String VINDICATOR_ID = "minecraft:vindicator";
 
     private static final int BASTION_ONLY_WAVE = 4;
     private static final int OWNER_SCAN_RADIUS = 96;
@@ -42,11 +42,9 @@ public final class OutpostSiegeBreachService {
     public static void onServerTick(ServerTickEvent.Pre event) {
         if (++ticker < 5) return;
         ticker = 0;
-
         for (ServerPlayer owner : event.getServer().getPlayerList().getPlayers()) {
             if (!owner.isAlive() || owner.isCreative() || owner.isSpectator() || !OutpostSiegeSystem.isActive(owner)) continue;
             if (!(owner.level() instanceof ServerLevel level)) continue;
-
             String ownerId = owner.getUUID().toString();
             List<Mob> breakers = level.getEntitiesOfClass(Mob.class, owner.getBoundingBox().inflate(OWNER_SCAN_RADIUS), mob -> {
                 if (!mob.isAlive() || !isBreaker(mob)) return false;
@@ -62,7 +60,6 @@ public final class OutpostSiegeBreachService {
         long now = level.getGameTime();
         var data = mob.getPersistentData();
         if (now < data.getLongOr(BREAK_READY_KEY, 0L)) return;
-
         if (!EventHooks.canEntityGrief(level, mob)) {
             data.putLong(BREAK_READY_KEY, now + 20L);
             return;
@@ -83,7 +80,6 @@ public final class OutpostSiegeBreachService {
             data.putLong(BREAK_READY_KEY, now + 20L);
             return;
         }
-
         if (!level.destroyBlock(target.pos(), true, mob)) {
             data.putLong(BREAK_READY_KEY, now + 20L);
             return;
@@ -105,7 +101,6 @@ public final class OutpostSiegeBreachService {
             if (anchor.distSqr(owner.blockPosition()) > OutpostSiegeSystem.DEFENSE_RADIUS * OutpostSiegeSystem.DEFENSE_RADIUS) continue;
             if (horizontalDistanceSqr(mob.blockPosition(), anchor) > ANCHOR_APPROACH_RADIUS * ANCHOR_APPROACH_RADIUS) continue;
             if (!OutpostService.isRecoveryOperational(owner, level, outpost.dimension(), anchor)) continue;
-
             BreachTarget candidate = findTargetNearMob(level, mob, anchor);
             if (candidate != null && (best == null || candidate.distanceSqr() < best.distanceSqr())) best = candidate;
         }
@@ -117,7 +112,6 @@ public final class OutpostSiegeBreachService {
         BreachTarget best = null;
         double towardAnchorX = anchor.getX() + 0.5D - mob.getX();
         double towardAnchorZ = anchor.getZ() + 0.5D - mob.getZ();
-
         for (int dx = -BREAK_SEARCH_HORIZONTAL; dx <= BREAK_SEARCH_HORIZONTAL; dx++) {
             for (int dz = -BREAK_SEARCH_HORIZONTAL; dz <= BREAK_SEARCH_HORIZONTAL; dz++) {
                 for (int dy = -BREAK_SEARCH_DOWN; dy <= BREAK_SEARCH_UP; dy++) {
@@ -133,11 +127,16 @@ public final class OutpostSiegeBreachService {
                     int outerSq = OutpostFortificationService.OUTER_RADIUS * OutpostFortificationService.OUTER_RADIUS;
                     if (anchorHorizontalSq < innerSq || anchorHorizontalSq > outerSq) continue;
 
-                    double toBlockX = pos.getX() + 0.5D - mob.getX();
-                    double toBlockZ = pos.getZ() + 0.5D - mob.getZ();
+                    double blockX = pos.getX() + 0.5D;
+                    double blockY = pos.getY() + 0.5D;
+                    double blockZ = pos.getZ() + 0.5D;
+                    double toBlockX = blockX - mob.getX();
+                    double toBlockZ = blockZ - mob.getZ();
                     if (toBlockX * towardAnchorX + toBlockZ * towardAnchorZ <= 0.0D) continue;
-
-                    double distanceSqr = mob.distanceToSqr(pos.getCenter());
+                    double ddx = blockX - mob.getX();
+                    double ddy = blockY - mob.getY();
+                    double ddz = blockZ - mob.getZ();
+                    double distanceSqr = ddx * ddx + ddy * ddy + ddz * ddz;
                     if (best == null || distanceSqr < best.distanceSqr()) best = new BreachTarget(pos.immutable(), distanceSqr);
                 }
             }
@@ -152,11 +151,13 @@ public final class OutpostSiegeBreachService {
     }
 
     private static boolean isBreaker(Mob mob) {
-        return mob.getType() == EntityType.RAVAGER || mob.getType() == EntityType.VINDICATOR;
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString();
+        return RAVAGER_ID.equals(id) || VINDICATOR_ID.equals(id);
     }
 
     private static int breakCooldown(Mob mob) {
-        return mob.getType() == EntityType.RAVAGER ? RAVAGER_BREAK_COOLDOWN : VINDICATOR_BREAK_COOLDOWN;
+        return RAVAGER_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString())
+                ? RAVAGER_BREAK_COOLDOWN : VINDICATOR_BREAK_COOLDOWN;
     }
 
     private static boolean isFortificationBlock(BlockState state) {
