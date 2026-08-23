@@ -62,6 +62,10 @@ public final class InfrastructureService {
         boolean wasComplete = data.isComplete(project);
         if (wasComplete) {
             if (project == InfrastructureProject.APEX_TRACKING_POST) {
+                if (ExpeditionOperationSystem.isActive(player)) {
+                    player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 §e원정 작전§f을 먼저 완료하거나 실패 처리하세요."));
+                    return;
+                }
                 ApexHuntSystem.tryStart(player);
             } else if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
                 ProductionService.sendStatus(player);
