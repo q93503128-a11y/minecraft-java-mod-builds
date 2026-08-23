@@ -1,7 +1,8 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
-- expedition_v1 persists nine per-player stage-gated region discoveries and one-time milestone rewards
-- Stage-2 nine-region completion unlocks Lv.100 Field Mastery physical scale without deleting base Mastery VI
-- Field Mastery: bore 7x7x12, wood 448, harvest 13x13, shockwave 7.5/20, construction line65/plane13, air dash4
-- Mining/wood/harvest/construction bulk work keeps bounded tick queues; Shift/material/protection contracts remain
-- doctrine trials, awakened Mythic, world stages, mutations, Nexus, warbands and elites regressions retained
+- expedition_v1 separates discovery, in-region field objective progress, completion and one-time rewards
+- 0.23 expedition saves migrate without duplicate region XP or loss of already-unlocked Field Mastery
+- objectives require real smart-tree/bulk-build/mature-crop/traversal/ocean-voyage/pickaxe/hostile-kill actions
+- Ocean travel is isolated from normal land Mobility progress and teleport-like voyage deltas are rejected
+- Field Mastery remains Lv.100-only: bore 7x7x12, wood448, harvest13x13, shockwave7.5/20, construction65/13, air dash4
+- doctrine trials, awakened Mythic, world stages, mutations, Nexus, warbands, elites and bounded tick budgets retained
