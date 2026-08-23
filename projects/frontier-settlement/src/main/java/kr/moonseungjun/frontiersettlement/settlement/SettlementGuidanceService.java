@@ -9,7 +9,9 @@ public final class SettlementGuidanceService {
         if (data.construction().active()) {
             BuildingType type = BuildingType.fromId(data.construction().type());
             String name = type == null ? "건물" : type.displayName();
-            return "진행 중 · " + name + " · " + SettlementConstructionLogisticsService.phaseLabel(data.construction());
+            return data.construction().step() == 0
+                    ? "진행 중 · " + name + " 자재 운반"
+                    : "진행 중 · " + name + " 건설";
         }
         if (data.roadConstruction().active()) return "진행 중 · 도로 공사";
         if (data.outpostConstruction().active()) return "진행 중 · 전초기지 건설";
