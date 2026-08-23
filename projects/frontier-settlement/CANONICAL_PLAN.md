@@ -144,7 +144,7 @@ No early teleport network. Roads and logistics must matter.
 
 Outposts connect distant resources and exploration back to the shared settlement and should become specialized territory nodes rather than duplicate mini-towns. Lumber, quarry and mining sites may deplete locally and create pressure to expand or restore the landscape; agriculture is the first deliberately renewable specialization through physical vanilla crop growth.
 
-Tier-visible public works may make established territory more readable, but they must stay non-destructive: loaded chunks only, clear road shoulders only, no overwriting player containers/fluids/buildings/outposts, and no recoverable free-block farming from automatically maintained infrastructure.
+tier-visible public works may make established territory more readable, but they must stay non-destructive: loaded chunks only, clear road shoulders only, no overwriting player containers/fluids/buildings/outposts, and no recoverable free-block farming from automatically maintained infrastructure.
 
 ## 9. Combat and exploration
 
