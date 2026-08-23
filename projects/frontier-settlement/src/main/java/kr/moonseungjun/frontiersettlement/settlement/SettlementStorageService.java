@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
@@ -160,6 +161,9 @@ public final class SettlementStorageService {
                 || stack.is(Items.COPPER_INGOT)
                 || stack.is(Items.RAW_COPPER)
                 || stack.is(Items.GOLD_INGOT)
-                || stack.is(Items.RAW_GOLD);
+                || stack.is(Items.RAW_GOLD)
+                || stack.is(ExternalContentTags.C_INGOTS)
+                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
+                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
     }
 }
