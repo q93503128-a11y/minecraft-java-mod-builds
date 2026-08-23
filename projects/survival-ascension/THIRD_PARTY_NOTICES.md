@@ -69,6 +69,18 @@ License: MIT License
 
 Survival Ascension adapts timed sequential-wave encounter lifecycle, boss-bar status and wave-changing modifier concepts into its own Ascension Trial doctrines, costs, vanilla compositions and failure rules. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
 
+## Deep Rock Galactic — product reference only for 0.33
+Product: Deep Rock Galactic  
+Reference basis: publicly documented mission mutators/warnings and post-objective extraction flow.
+
+Survival Ascension 0.33 studies only the product-level lesson that a repeatable mission can carry one bounded rule-changing condition and that completion can transition into a distinct extraction phase. No Deep Rock Galactic source code, game data, mission definitions, enemies, names, UI, icons, textures, models, audio, dialogue, maps or other proprietary content is copied or bundled. Survival Ascension's `ExpeditionComplication` rules, persistence and server-authoritative movement/action gates are independent code.
+
+## Warframe — product reference only for 0.33
+Product: Warframe  
+Reference basis: official Sortie and Deep Archimedea descriptions of mission conditions/deviations/risk variables.
+
+Survival Ascension studies only the product-level lesson that a modifier should make the same base mission demand a different strategy instead of replacing the mission identity. No Warframe source code, mission data, modifier tables, UI, art, audio, names, proprietary text or other game content is copied or bundled. `DEEP_FRONT`, `FORWARD_SHIFT` and `HOT_EXTRACTION` are original Survival Ascension rules implemented only through existing ExpeditionAction and outpost systems.
+
 ## Create — design reference for 0.28–0.30
 Source project: `Creators-of-Create/Create`  
 Current repository `LICENSE.md`: code MIT; all files under `./src/main/resources/assets/` All Rights Reserved.

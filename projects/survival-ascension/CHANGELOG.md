@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.33.0-alpha.1
+- Added one bounded server-chosen sortie complication to every newly launched 0.32-style out-and-back expedition operation without changing the nine regional objective catalogs, repeatable rewards or first-clear rewards.
+- Added `ExpeditionComplication` with three authored rules: `DEEP_FRONT / 전선 고착`, `FORWARD_SHIFT / 전선 재전개`, and `HOT_EXTRACTION / 긴급 철수`.
+- `전선 고착` requires validated operation actions to remain at or beyond the operation's authored outbound range instead of allowing fallback to the normal 48-block work zone.
+- `전선 재전개` pauses remaining objective progress after the first field objective completes; progress resumes only after reaching a second server-checked line 48 blocks beyond the normal outbound range while still in the matching expedition region.
+- `긴급 철수` arms a separate physical-return deadline only after both validated field objectives complete: Stage0 4:00, Stage1 3:00, Stage2 2:30. The extraction deadline is capped by the original operation deadline.
+- Extended the existing `expedition_operations_v1` codec with optional `complication`, `complication_state` and `extraction_deadline` fields. Existing 0.32 active operations decode as `NONE` and retain their paid original rules instead of receiving a new modifier during migration.
+- Complication identity/state persists across logout/restart, malformed complication names sanitize to `NONE`, and bounded state/deadline sanitation prevents malformed save values from expanding the authored contract.
+- Complications reuse the existing validated `ExpeditionAction` plumbing and exact-origin physical outpost return. No client coordinate trust, teleport, chunk force-load, new generic quest GUI, blanket HP multiplier or permanent stat bonus was added.
+- Regional Incidents remain ambient and may occur during operations; Apex Hunt and Ascension Trial remain mutually exclusive with manual operation launch. Existing death/dimension/game-mode/base-deadline failures and no-refund policy remain unchanged.
+- Industrial status/system messages and Guide now expose the selected complication, forward-redeployment state and emergency extraction timer. Network protocol remains8 with no new packet type.
+- Deep Rock Galactic mission mutator/extraction structure and Warframe Sortie/Deep Archimedea mission-modifier structure were used only as product-level design references. No source, data, UI, assets, audio or proprietary content was copied or bundled.
+- Updated README/PROJECT canon, third-party reference policy, source audit and JAR verification for the new runtime class and 0.33 persistence/rule gates while retaining all 0.32 and older regression checks.
+
 ## 0.32.0-alpha.1
 - Added repeatable out-and-back `원정 작전` for all nine expedition regions, staged from an active physical outpost in a region whose original directive is already complete.
 - Launch from `M -> Infrastructure -> 산업 가공소 -> 원정 작전`; the server resolves the nearest active owned outpost within4 blocks and derives its expedition region from the saved anchor biome. Launch costs one stored field-supply charge.

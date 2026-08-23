@@ -1,14 +1,49 @@
 # Survival Ascension
 
-- Mod version: `0.32.0-alpha.1`
+- Mod version: `0.33.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.32 adds independent `expedition_operations_v1`; no prior SavedData ID or packet schema is rewritten.
+- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.33 extends the existing independent `expedition_operations_v1` codec only with optional complication fields; no prior SavedData ID or packet schema is rewritten and 0.32 active operations decode with complication `NONE`.
 
 ## Core direction
 Progression must enlarge physical actions rather than only percentages. Larger actions create larger material throughput; world stages, behavior-rich enemies, exploration goals, infrastructure, production, logistics and field bases must consume that throughput again. Shift remains the precision/single-action safety override.
+
+## 0.33 Sortie Complications / 원정 작전 변수
+### Purpose
+0.32 established a persistent physical loop: `launch from exact outpost -> cross outbound range -> perform validated regional actions -> return to exact outpost`. 0.33 adds replay variation by changing the **rules of that route** rather than adding more objective counters, another triggered encounter, generic quest UI, blanket HP scaling or permanent stat inflation.
+
+Every new launch receives exactly one server-chosen `ExpeditionComplication`:
+- `DEEP_FRONT / 전선 고착`: after the outbound range has been crossed, operation actions count only while the player remains at or beyond that operation's authored outbound radius. The normal 48-block work radius is not sufficient for this complication.
+- `FORWARD_SHIFT / 전선 재전개`: the first completed field objective pauses all remaining objective progress. The player must reach a second line at `operation.rangeTarget + 48` while still in the matching ExpeditionRegion. After that line is reached, the remaining validated actions resume.
+- `HOT_EXTRACTION / 긴급 철수`: when both field objectives become complete, an extraction deadline is armed. Stage0 window 4800 ticks / 4:00, Stage1 3600 / 3:00, Stage2 3000 / 2:30. The extraction deadline is never later than the operation's original deadline.
+
+### Selection and persistence
+- Complication selection is server-side and uses server game time, player UUID and lifetime completion count only as entropy; the client never selects or supplies complication state.
+- Exactly one complication per active operation/player. `NONE` exists only as migration/compatibility state for 0.32 active sorties.
+- `expedition_operations_v1` keeps the same SavedData identifier and adds optional `complication`, `complication_state`, `extraction_deadline` fields.
+- Missing complication fields decode as `NONE`, `0`, `0`, so an already-paid 0.32 active operation continues under its original rules instead of receiving a surprise modifier after updating.
+- Malformed complication names sanitize to `NONE`. Forward-shift state is bounded; extraction state accepts only the authored armed value; extraction deadlines are capped to the original operation deadline.
+- Complication state survives logout/server restart together with the original operation state.
+
+### Runtime boundaries
+- Complications reuse only the existing validated `ExpeditionAction` plumbing. They do not create an alternate client counter or inventory-based progress path.
+- `DEEP_FRONT` adds a distance gate before `addProgress`.
+- `FORWARD_SHIFT` locks `addProgress` while its second-line state is pending and unlocks only after a server-side distance + matching-region check.
+- `HOT_EXTRACTION` starts only when both objectives are actually complete and fails through the same operation failure path if the return clock expires.
+- Physical completion is still only at the exact saved origin within8 blocks after `OutpostService.isRecoveryOperational` revalidates the real loaded/interactable Barrel and camp structure.
+- Death, dimension exit, creative/spectator change and base operation deadline remain failures. No supply refund.
+- Regional Incidents remain ambient and may coexist. Apex Hunt and Ascension Trial remain manually mutually exclusive with operations.
+- No operation teleport, no client destination, no chunk ticket/force-load, no new packet. Protocol remains8.
+
+### Presentation
+The existing Industrial Works radial action is unchanged. Launch/status system messages now expose the selected complication, pending forward redeployment line or active emergency-extraction timer. The Guide explains all three. There is no new generic quest screen.
+
+### External design references
+- Deep Rock Galactic is used only for the product-level idea that a repeatable mission can carry a bounded mutator and a distinct post-objective extraction phase.
+- Warframe Sorties / Deep Archimedea are used only for the product-level idea that mission modifiers should change strategy without replacing the base mission's objective identity.
+- No source code, data, UI, assets, audio, namespaced content or proprietary game content from either product is copied or bundled.
 
 ## 0.32 Out-and-back Expedition Operations
 ### Purpose
@@ -162,13 +197,14 @@ Four atomic lines:
 - Construction/replant preserve interaction/protection hooks and actual resource consumption.
 - depot/outpost/recovery/operation origins are server-resolved from saved/owned coordinates; no client coordinate trust or chunk tickets.
 - outpost safe zone cancels NATURAL hostile spawn only; TRIGGERED combat remains unaffected.
-- operation progress only accepts preexisting validated ExpeditionAction hooks after range gate and outside48.
+- operation progress only accepts preexisting validated ExpeditionAction hooks after range gate and outside48, then applies the selected 0.33 complication gate.
 - operation completion requires physical return to origin within8 and outpost revalidation.
 - operation cannot overlap manually started Apex/Trial encounters; Regional Incidents may coexist.
-- production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery one token; operation one active/player.
-- no new packet schema in0.32; protocol remains8.
+- production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery one token; operation one active/player and one complication/operation.
+- no new packet schema in0.33; protocol remains8.
 
 ## External-source policy
+- Deep Rock Galactic and Warframe Sortie/Deep Archimedea are 0.33 product-level design references for bounded mission modifiers and extraction pressure. No source code, data, UI, assets, audio, namespaced content or proprietary game content is copied or bundled.
 - Heracles (`terrarium-earth/Heracles`): current repository license MIT. 0.32 studies only product-level explicit multi-step objective/completion state. No Heracles source structures, quest data, editor/UI, assets or namespace are copied.
 - Bountiful (`ejektaflex/Bountiful`): GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets copied.
 - Waystones 26.2 ARR and Corpse LGPL-3.0 remain reference-only for 0.31 travel/death friction.

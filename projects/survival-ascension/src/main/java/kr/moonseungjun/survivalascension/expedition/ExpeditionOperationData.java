@@ -21,7 +21,8 @@ public final class ExpeditionOperationData extends SavedData {
 
     private record PlayerEntry(String uuid, String activeRegion, String dimension, int x, int y, int z,
                                long deadline, boolean rangeReached, int progressA, int progressB,
-                               int completedMask, int totalCompletions, boolean masteryClaimed) {
+                               int completedMask, int totalCompletions, boolean masteryClaimed,
+                               String complication, int complicationState, long extractionDeadline) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
                 Codec.STRING.optionalFieldOf("active_region", "").forGetter(PlayerEntry::activeRegion),
@@ -35,7 +36,10 @@ public final class ExpeditionOperationData extends SavedData {
                 Codec.INT.optionalFieldOf("progress_b", 0).forGetter(PlayerEntry::progressB),
                 Codec.INT.optionalFieldOf("completed_mask", 0).forGetter(PlayerEntry::completedMask),
                 Codec.INT.optionalFieldOf("total_completions", 0).forGetter(PlayerEntry::totalCompletions),
-                Codec.BOOL.optionalFieldOf("mastery_claimed", false).forGetter(PlayerEntry::masteryClaimed)
+                Codec.BOOL.optionalFieldOf("mastery_claimed", false).forGetter(PlayerEntry::masteryClaimed),
+                Codec.STRING.optionalFieldOf("complication", "NONE").forGetter(PlayerEntry::complication),
+                Codec.INT.optionalFieldOf("complication_state", 0).forGetter(PlayerEntry::complicationState),
+                Codec.LONG.optionalFieldOf("extraction_deadline", 0L).forGetter(PlayerEntry::extractionDeadline)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -58,10 +62,15 @@ public final class ExpeditionOperationData extends SavedData {
         int completedMask;
         int totalCompletions;
         boolean masteryClaimed;
+        ExpeditionComplication complication = ExpeditionComplication.NONE;
+        int complicationState;
+        long extractionDeadline;
 
         State(PlayerEntry entry) {
             try { this.activeRegion = entry.activeRegion().isEmpty() ? null : ExpeditionRegion.valueOf(entry.activeRegion()); }
             catch (IllegalArgumentException ignored) { this.activeRegion = null; }
+            try { this.complication = ExpeditionComplication.valueOf(entry.complication()); }
+            catch (IllegalArgumentException ignored) { this.complication = ExpeditionComplication.NONE; }
             if (this.activeRegion != null && !entry.dimension().isEmpty() && entry.deadline() > 0L) {
                 this.dimension = entry.dimension();
                 this.anchor = new BlockPos(entry.x(), entry.y(), entry.z());
@@ -70,6 +79,12 @@ public final class ExpeditionOperationData extends SavedData {
                 ExpeditionOperation operation = ExpeditionOperation.forRegion(this.activeRegion);
                 this.progressA = clamp(entry.progressA(), operation.tasks().get(0).target());
                 this.progressB = clamp(entry.progressB(), operation.tasks().get(1).target());
+                this.complicationState = sanitizeComplicationState(this.complication, entry.complicationState());
+                this.extractionDeadline = this.complication == ExpeditionComplication.HOT_EXTRACTION && this.complicationState == 1
+                        ? Math.max(0L, Math.min(this.deadline, entry.extractionDeadline())) : 0L;
+                if (this.complication == ExpeditionComplication.HOT_EXTRACTION && this.complicationState == 1 && this.extractionDeadline == 0L) {
+                    this.complicationState = 0;
+                }
             } else {
                 clearActive();
             }
@@ -88,6 +103,9 @@ public final class ExpeditionOperationData extends SavedData {
             rangeReached = false;
             progressA = 0;
             progressB = 0;
+            complication = ExpeditionComplication.NONE;
+            complicationState = 0;
+            extractionDeadline = 0L;
         }
     }
 
@@ -107,7 +125,8 @@ public final class ExpeditionOperationData extends SavedData {
                 state.dimension,
                 state.anchor.getX(), state.anchor.getY(), state.anchor.getZ(),
                 state.deadline, state.rangeReached, state.progressA, state.progressB,
-                state.completedMask, state.totalCompletions, state.masteryClaimed
+                state.completedMask, state.totalCompletions, state.masteryClaimed,
+                state.complication.name(), state.complicationState, state.extractionDeadline
         )));
         return out;
     }
@@ -123,12 +142,14 @@ public final class ExpeditionOperationData extends SavedData {
         State state = state(player);
         if (state.activeRegion == null) return null;
         return new ActiveOperation(state.activeRegion, state.dimension, state.anchor, state.deadline,
-                state.rangeReached, state.progressA, state.progressB);
+                state.rangeReached, state.progressA, state.progressB,
+                state.complication, state.complicationState, state.extractionDeadline);
     }
 
-    public boolean start(ServerPlayer player, ExpeditionOperation operation, String dimension, BlockPos anchor, long deadline) {
+    public boolean start(ServerPlayer player, ExpeditionOperation operation, String dimension, BlockPos anchor,
+                         long deadline, ExpeditionComplication complication) {
         State state = state(player);
-        if (state.activeRegion != null || deadline <= 0L) return false;
+        if (state.activeRegion != null || deadline <= 0L || complication == null) return false;
         state.activeRegion = operation.region();
         state.dimension = dimension;
         state.anchor = anchor.immutable();
@@ -136,6 +157,9 @@ public final class ExpeditionOperationData extends SavedData {
         state.rangeReached = false;
         state.progressA = 0;
         state.progressB = 0;
+        state.complication = complication;
+        state.complicationState = 0;
+        state.extractionDeadline = 0L;
         setDirty();
         return true;
     }
@@ -166,6 +190,38 @@ public final class ExpeditionOperationData extends SavedData {
                 && state.progressB >= operation.tasks().get(1).target();
     }
 
+    public boolean beginForwardShift(ServerPlayer player, int targetRadius) {
+        State state = state(player);
+        if (state.activeRegion == null || state.complication != ExpeditionComplication.FORWARD_SHIFT
+                || state.complicationState != 0 || targetRadius <= 0) return false;
+        state.complicationState = targetRadius;
+        setDirty();
+        return true;
+    }
+
+    public boolean completeForwardShift(ServerPlayer player) {
+        State state = state(player);
+        if (state.activeRegion == null || state.complication != ExpeditionComplication.FORWARD_SHIFT
+                || state.complicationState <= 0) return false;
+        state.complicationState = -1;
+        setDirty();
+        return true;
+    }
+
+    public boolean armExtraction(ServerPlayer player, long extractionDeadline) {
+        State state = state(player);
+        if (state.activeRegion == null || state.complication != ExpeditionComplication.HOT_EXTRACTION
+                || state.complicationState != 0 || extractionDeadline <= 0L) return false;
+        state.complicationState = 1;
+        state.extractionDeadline = Math.min(state.deadline, extractionDeadline);
+        if (state.extractionDeadline <= 0L) {
+            state.complicationState = 0;
+            return false;
+        }
+        setDirty();
+        return true;
+    }
+
     public CompletionResult complete(ServerPlayer player, ExpeditionRegion region) {
         State state = state(player);
         boolean firstRegion = (state.completedMask & region.bit()) == 0;
@@ -192,8 +248,17 @@ public final class ExpeditionOperationData extends SavedData {
 
     private static int clamp(int value, int max) { return Math.max(0, Math.min(max, value)); }
 
+    private static int sanitizeComplicationState(ExpeditionComplication complication, int state) {
+        return switch (complication) {
+            case FORWARD_SHIFT -> state < -1 ? -1 : Math.min(state, 1024);
+            case HOT_EXTRACTION -> state == 1 ? 1 : 0;
+            default -> 0;
+        };
+    }
+
     public record ActiveOperation(ExpeditionRegion region, String dimension, BlockPos anchor, long deadline,
-                                  boolean rangeReached, int progressA, int progressB) {}
+                                  boolean rangeReached, int progressA, int progressB,
+                                  ExpeditionComplication complication, int complicationState, long extractionDeadline) {}
     public record ProgressResult(int oldProgress, int newProgress, boolean taskCompletedNow) {}
     public record CompletionResult(boolean firstRegion, boolean masteryNow, int uniqueCompleted, int totalCompletions) {}
 }

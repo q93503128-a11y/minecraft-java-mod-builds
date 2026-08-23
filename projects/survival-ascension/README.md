@@ -4,6 +4,23 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies, production, logistics and physical field bases consume that larger output again.
 
+## 0.33.0-alpha.1 — Sortie Complications / 원정 작전 변수
+0.33 keeps the 0.32 out-and-back operation catalog and rewards intact, but every **new** sortie now receives exactly one bounded server-authored complication. The complication changes where or when the same validated work must happen instead of adding another quest counter, another boss wave, blanket enemy HP, or a permanent stat bonus.
+
+### Three bounded complications
+- `전선 고착 / DEEP_FRONT`: crossing the outbound line still arms the operation, but validated field actions count only while the player remains beyond that authored outbound range. Falling back to the ordinary 48-block work zone pauses progress.
+- `전선 재전개 / FORWARD_SHIFT`: after the first of the two field objectives completes, remaining objective progress pauses. The player must push to a second line 48 blocks beyond the operation's normal outbound range, still inside the matching ExpeditionRegion, before progress resumes.
+- `긴급 철수 / HOT_EXTRACTION`: completing both field objectives starts a separate return clock. Stage0 gets 4:00, Stage1 gets 3:00, Stage2 gets 2:30. This clock is capped by the original operation deadline and requires the same exact physical outpost return as 0.32.
+
+The server chooses one of the three when the sortie starts. One player still has at most one active operation and therefore at most one complication. Complication identity/state and the emergency extraction deadline are persisted inside the existing `expedition_operations_v1` record.
+
+### Existing-world / active-sortie compatibility
+The new fields are optional. A 0.32 active operation loaded after updating decodes as `NONE` and continues under its original 0.32 rules; the update never silently attaches a new penalty to an already-paid sortie. New 0.33 launches always receive one of the three authored complications.
+
+All old failure and safety contracts remain: death, dimension exit, creative/spectator switching or deadline expiry fails the operation; no supply refund; no client coordinate trust; no operation teleport; no chunk force-load; exact-origin return still revalidates the real Barrel/camp. Regional Incidents may still happen naturally, while Apex Hunt and Ascension Trial remain mutually exclusive with manual operation starts.
+
+No new packet schema was added; network protocol remains `8`.
+
 ## 0.32.0-alpha.1 — Out-and-back Expedition Operations
 0.32 turns a completed regional expedition plus a physical outpost into a repeatable sortie instead of another stationary menu reward.
 
@@ -120,6 +137,7 @@ At Lv.100 and after the nine-region completion:
 - Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs.
 
 ## External references
+- Deep Rock Galactic mission mutators/extraction and Warframe Sortie/Deep Archimedea mission modifiers are 0.33 product-level design references only. Survival Ascension copies no source, data, UI, assets, names, audio or proprietary content from either game.
 - Heracles (`terrarium-earth/Heracles`) is MIT. 0.32 studies only the product-level idea that repeatable multi-step tasks should have explicit objective/completion state; the out-and-back physical-base loop, persistence, rewards and action hooks are independent Survival Ascension code. No Heracles quest data, UI, source structures, assets or namespace are copied.
 - Bountiful remains GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets are copied.
 - Waystones 26.2 remains All Rights Reserved and Corpse LGPL-3.0; both remain reference-only for 0.31 travel/death friction.

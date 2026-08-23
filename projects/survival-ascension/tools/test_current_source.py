@@ -40,6 +40,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionProgram.java",
@@ -78,16 +79,16 @@ for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.32.0-alpha.1"], "toolchain/version")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.33.0-alpha.1"], "toolchain/version")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.32.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath",
+need(main, ['VERSION = "0.33.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath",
             "ExpeditionOperationSystem::onPlayerTick", "ExpeditionOperationSystem::onPlayerLoggedIn",
             "FieldRecoveryService::onLivingDeath", "FieldRecoveryService::onPlayerRespawn",
             "OutpostService::onFinalizeSpawn", "ApexHuntSystem::onServerTick", "AscensionTrialSystem::onServerTick"], "main registration")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "network protocol")
 
-# 0.32 exact authored operation catalog.
+# 0.32 exact authored operation catalog remains locked.
 operation = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java")
 operation_markers = [
     'WOODLAND(ExpeditionRegion.WOODLAND, "심림 순환 벌채", 96, 24000',
@@ -114,42 +115,63 @@ need(operation, operation_markers, "0.32 operation catalog")
 if operation.count("ExpeditionRegion.") < 9:
     errors.append("operation catalog must contain all nine regions")
 
-# 0.32 persistence: one active sortie, exact origin, deadline, progress, first-clears.
+# 0.33 bounded complication catalog.
+complication = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java")
+need(complication, [
+    'NONE("기본 작전"', 'DEEP_FRONT("전선 고착"', 'FORWARD_SHIFT("전선 재전개"', 'HOT_EXTRACTION("긴급 철수"',
+    "case 0 -> 4800;", "case 1 -> 3600;", "default -> 3000;", "this != HOT_EXTRACTION"
+], "0.33 complication catalog")
+
+# 0.32 persistence remains, 0.33 appends optional migration-safe complication state.
 opdata = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java")
 need(opdata, ['"expedition_operations_v1"', "ALL_REGIONS_MASK", 'optionalFieldOf("active_region", "")',
               'optionalFieldOf("dimension", "")', 'optionalFieldOf("deadline", 0L)',
               'optionalFieldOf("range_reached", false)', 'optionalFieldOf("progress_a", 0)',
               'optionalFieldOf("progress_b", 0)', 'optionalFieldOf("completed_mask", 0)',
               'optionalFieldOf("total_completions", 0)', 'optionalFieldOf("mastery_claimed", false)',
-              "ExpeditionRegion.valueOf", "catch (IllegalArgumentException", "clamp(entry.progressA()",
-              "clamp(entry.progressB()", "if (state.activeRegion != null || deadline <= 0L) return false;",
-              "state.rangeReached = true", "state.completedMask |= region.bit()", "state.totalCompletions++",
-              "state.clearActive();", "Integer.bitCount(state.completedMask)"], "0.32 operation persistence")
+              'optionalFieldOf("complication", "NONE")', 'optionalFieldOf("complication_state", 0)',
+              'optionalFieldOf("extraction_deadline", 0L)', "ExpeditionComplication.valueOf(entry.complication())",
+              "catch (IllegalArgumentException ignored) { this.complication = ExpeditionComplication.NONE; }",
+              "clamp(entry.progressA()", "clamp(entry.progressB()", "complication == null", "state.rangeReached = true",
+              "beginForwardShift", "completeForwardShift", "armExtraction", "Math.min(state.deadline, extractionDeadline)",
+              "sanitizeComplicationState", "state.completedMask |= region.bit()", "state.totalCompletions++",
+              "state.clearActive();", "Integer.bitCount(state.completedMask)"], "0.33 operation persistence")
 ordered(opdata, ["public CompletionResult complete", "state.totalCompletions++", "state.clearActive();", "setDirty();"],
         "operation completion persistence")
 
 opsys = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java")
 need(opsys, ["START_RADIUS = 4", "WORK_RADIUS = 48", "RETURN_RADIUS = 8", "SUPPLY_CHARGE_COST = 1",
-              "OutpostService.nearestActiveOutpost(player, START_RADIUS)", "expedition.isComplete(player, region)",
-              "production.consumeSupplyCharge(player)", "ApexHuntSystem.isActive(player)", "AscensionTrialSystem.isActive(player)",
-              "level.getGameTime() + operation.durationTicks()", "distanceSq >= operation.rangeTarget() * operation.rangeTarget()",
-              "data.markRangeReached(player)", "active.anchor().distSqr(player.blockPosition()) < WORK_RADIUS * WORK_RADIUS",
-              "ExpeditionProgression.currentRegion(player) != active.region()", "data.addProgress(player, i, amount, task.target())",
-              "data.objectivesComplete(player, operation)", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
-              "OutpostService.isRecoveryOperational(player, level, active.dimension(), active.anchor())",
+              "FORWARD_SHIFT_EXTRA = 48", "OutpostService.nearestActiveOutpost(player, START_RADIUS)",
+              "expedition.isComplete(player, region)", "production.consumeSupplyCharge(player)",
+              "ApexHuntSystem.isActive(player)", "AscensionTrialSystem.isActive(player)",
+              "ExpeditionComplication complication = chooseComplication(player, level, data)",
+              "level.getGameTime() + operation.durationTicks()", "data.start(player, operation, outpost.dimension(), outpost.pos(), deadline, complication)",
+              "distanceSq >= operation.rangeTarget() * operation.rangeTarget()", "data.markRangeReached(player)",
+              "if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;", "ExpeditionProgression.currentRegion(player) != active.region()",
+              "active.complication() == ExpeditionComplication.DEEP_FRONT", "distanceSq < operation.rangeTarget() * operation.rangeTarget()",
+              "active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0", "return;",
+              "operation.rangeTarget() + FORWARD_SHIFT_EXTRA", "data.beginForwardShift(player, targetRadius)",
+              "data.completeForwardShift(player)", "active.complication() == ExpeditionComplication.HOT_EXTRACTION",
+              "active.extractionDeadline()", 'fail(player, "긴급 철수 제한시간을 초과했습니다.")',
+              "extractionWindowTicks(operation)", "data.armExtraction(player, level.getGameTime() + window)",
+              "data.addProgress(player, i, amount, task.target())", "data.objectivesComplete(player, operation)",
+              "distanceSq <= RETURN_RADIUS * RETURN_RADIUS", "OutpostService.isRecoveryOperational(player, level, active.dimension(), active.anchor())",
               'fail(player, "작전 중 다른 차원으로 이탈했습니다.")', 'fail(player, "작전 제한시간을 초과했습니다.")',
               'fail(player, "게임 모드가 변경되어 작전이 종료되었습니다.")', 'fail(player, "작전 중 사망했습니다.',
               "SkillProgressionService.award(player, operation.region().rewardSkill(), operation.skillXpReward())",
               "new ItemStack(Items.NETHERITE_SCRAP, 2)", "new ItemStack(Items.ECHO_SHARD, 16)",
               "new ItemStack(Items.AMETHYST_SHARD, 64)", "new ItemStack(Items.DRAGON_BREATH, 8)",
-              "player.giveExperiencePoints(300)"], "0.32 operation lifecycle")
+              "player.giveExperiencePoints(300)"], "0.33 operation lifecycle")
 if any(token in opsys for token in ["teleportTo(", "setChunkForced", "addRegionTicket", "getChunk("]):
-    errors.append("0.32 operations must not teleport or force-load chunks")
-ordered(opsys, ["if (active.anchor().distSqr(player.blockPosition()) < WORK_RADIUS * WORK_RADIUS) return;",
-                "if (ExpeditionProgression.currentRegion(player) != active.region()) return;", "data.addProgress"],
-        "operation work gate order")
+    errors.append("0.33 operations must not teleport or force-load chunks")
+ordered(opsys, ["if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;",
+                "if (ExpeditionProgression.currentRegion(player) != active.region()) return;",
+                "ExpeditionComplication.DEEP_FRONT", "ExpeditionComplication.FORWARD_SHIFT", "data.addProgress"],
+        "operation work/complication gate order")
 ordered(opsys, ["data.objectivesComplete(player, operation)", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
                 "OutpostService.isRecoveryOperational", "complete(player, operation)"], "physical return gate")
+ordered(opsys, ["ExpeditionComplication.HOT_EXTRACTION", "active.extractionDeadline() > 0L", "now >= active.extractionDeadline()",
+                'fail(player, "긴급 철수 제한시간을 초과했습니다.")'], "hot extraction failure gate")
 
 # Existing validated actions feed operations, including dedicated ocean voyage.
 progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
@@ -173,7 +195,8 @@ commands = read("src/main/java/kr/moonseungjun/survivalascension/command/Ascensi
 need(commands, ["ExpeditionOperationData.get(player)", "operations.uniqueCompleted(player)", "operations.totalCompletions(player)",
                 '§6[원정 작전]'], "operation stats")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
-need(guide, ["반복 원정 작전", "전진선", "전초48블록 밖", "같은 전초8블록"], "operation guide")
+need(guide, ["반복 원정 작전", "전초48블록 밖", "같은 전초8블록", "원정 작전 변수", "전선 고착", "전선 재전개", "긴급 철수",
+             "Stage0 4:00 / Stage1 3:00 / Stage2 2:30"], "0.33 operation guide")
 
 # 0.31 recovery regression: prepaid one-use, same-dim96, challenge-excluded, consume after successful teleport.
 recovery_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldRecoveryData.java")
@@ -272,11 +295,14 @@ need(reforge, ["ACTION_AWAKEN", "Items.AMETHYST_SHARD, 256", "Items.DRAGON_BREAT
 readme = read("README.md")
 project = read("PROJECT.md")
 third = read("THIRD_PARTY_NOTICES.md")
-need(readme, ["0.32.0-alpha.1", "Out-and-back Expedition Operations", "expedition_operations_v1",
-              "심림 순환 벌채", "공허 외곽 소탕", "within 8 blocks", "Heracles"], "README canon")
-need(project, ["0.32 Out-and-back Expedition Operations", "expedition_operations_v1", "WORK_RADIUS", "within8", "protocol remains8"], "PROJECT canon")
-need(third, ["Heracles — design reference only for 0.32", "Copyright (c) 2023 Terrarium Earth", "License: MIT License",
-             "No Heracles quest data", "Bountiful — reference only for 0.24+", "License: GPL-3.0"], "third-party policy")
+need(readme, ["0.33.0-alpha.1", "Sortie Complications", "expedition_operations_v1", "전선 고착", "전선 재전개", "긴급 철수",
+              "0.32.0-alpha.1", "심림 순환 벌채", "공허 외곽 소탕", "within 8 blocks", "Heracles"], "README canon")
+need(project, ["0.33 Sortie Complications", "DEEP_FRONT", "FORWARD_SHIFT", "HOT_EXTRACTION", "4800", "3600", "3000",
+               "0.32 Out-and-back Expedition Operations", "expedition_operations_v1", "WORK_RADIUS", "within8", "protocol remains8"], "PROJECT canon")
+need(third, ["Deep Rock Galactic — product reference only for 0.33", "Warframe — product reference only for 0.33",
+             "No Deep Rock Galactic source code", "No Warframe source code", "Heracles — design reference only for 0.32",
+             "Copyright (c) 2023 Terrarium Earth", "License: MIT License", "No Heracles quest data",
+             "Bountiful — reference only for 0.24+", "License: GPL-3.0"], "third-party policy")
 
 for forbidden in ["harmonised.pmmo", "alrex.parcool", "mekanism.common", "com.warband",
                   "vbonedra.hostiles_are_too_easy", "com.telepathicgrunt.repurposedstructures", "dev.ftb.mods.ftbquests",
@@ -302,8 +328,9 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.32 expedition_operations_v1 persists one out-and-back sortie with exact origin, deadline and bounded progress")
-print("- all nine operation profiles,96/128/160 outbound gates,48-block work gate and8-block physical return are locked")
-print("- operation actions reuse validated expedition hooks; no teleport, client destination or chunk force-load is introduced")
+print("- 0.33 adds exactly one persistent DEEP_FRONT/FORWARD_SHIFT/HOT_EXTRACTION complication to each new sortie")
+print("- 0.32 active sorties migrate as NONE; optional fields retain expedition_operations_v1 compatibility")
+print("- all nine operation profiles,96/128/160 outbound gates,48-block base work gate and8-block physical return remain locked")
+print("- complication gates reuse validated expedition actions; no teleport, client destination or chunk force-load is introduced")
 print("- operation death/dimension/time/game-mode failures and Apex/Trial mutual exclusion are enforced")
 print("- 0.31 recovery,0.30 outpost,0.29 Barrel logistics, directives/incidents,Apex/Trial and mastery regressions retained")
