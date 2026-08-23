@@ -1,3 +1,9 @@
-SOURCE AUDIT FAIL
-- harvest budget/field scale missing: GLOBAL_BLOCK_BUDGET_PER_TICK = 64
-- harvest budget/field scale missing: LOCAL_BLOCK_BUDGET_PER_TICK = 12
+SOURCE AUDIT PASS
+- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
+- 0.38 turns an active physical outpost into an explicit three-wave defendable objective with breach pressure
+- siege requires active outpost within4, supply1, structure/owner radius64, breach radius6/limit200, loaded TRIGGERED spawns only
+- attackers advance toward the physical anchor and only engage a nearby defending owner, preventing long-range kiting from defeating the objective
+- stage difficulty changes mob-role composition instead of adding a blanket HP multiplier
+- siege excludes incident/operation/Apex/Trial overlap and siege deaths do not consume field recovery
+- no new SavedData/packet/client coordinate/force-load; runtime is bounded and cleaned on logout/stale reload
+- 0.37 warehouse clusters,0.36 commissioning,0.35 offload,0.34 inputs,0.33 complications,0.32 sorties and older regressions retained
