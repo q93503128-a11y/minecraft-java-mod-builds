@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative settlement-growth mod.
 
 Canonical direction: see `CANONICAL_PLAN.md`.
 
-## Current version: 0.1.0-alpha.28
+## Current version: 0.1.0-alpha.29
 
 Frontier Settlement currently provides a server-authoritative shared settlement vertical slice covering founding, building, population/workers, roads, outposts, tier growth and compact world-space controls.
 
@@ -120,7 +120,21 @@ Alpha.28 makes specialization affect actual work cadence and local resource beha
 - already-created Alpha.27 agriculture plots remain valid, while a pristine legacy plot can be initialized once on load;
 - full stockpiles naturally stall local production because workers keep carrying undelivered output instead of deleting or abstracting it.
 
-The interaction budget remains B/R/Enter/Backspace. Alpha.28 changes simulation quality behind those controls, not player micromanagement.
+### Alpha.29 — tier-visible settlement growth and authority cleanup
+
+Alpha.29 makes higher settlement tiers visibly change the lived-in territory while removing one hidden pre-Alpha.27 regression.
+
+- `SettlementTierInfrastructureService` no longer searches for generic `운송 주민`, pairs villagers by UUID order or issues its own transport navigation; Alpha.27 tagged road logistics is the single transport authority at every tier;
+- `FRONTIER_TOWN` and `DOMAIN` add deterministic settlement-owned road-shoulder lighting along already-built loaded roads, with denser spacing at domain tier;
+- road public works only use clear loaded shoulders, skip fluids/block entities and skip protected building/outpost/core footprints rather than overwriting player work;
+- tier road lamps are protected from normal breaking so non-economic public works cannot become a free lantern/fence drop farm;
+- the civic core now also rejects block entities/fluids during its gradual visual upgrade and its deterministic core blocks are protected from break-and-respawn item exploits;
+- higher tiers retain stronger guard-post garrisons, but only loaded guard posts are maintained;
+- night routines now understand Alpha.27 transport assignment tags and Alpha.28 production-worker tags instead of relying on the legacy generic transport name;
+- town workers return to houses, loaded outpost production workers return to their outpost shelter, and transport workers rest at a nearby loaded outpost or town housing anchor;
+- a transport worker already far between safe rest anchors simply stops for the night instead of receiving a cross-territory path request through unloaded terrain.
+
+The interaction budget remains B/R/Enter/Backspace. Alpha.29 adds visible settlement life and fixes authority conflicts behind the existing controls.
 
 ### Validation
 
