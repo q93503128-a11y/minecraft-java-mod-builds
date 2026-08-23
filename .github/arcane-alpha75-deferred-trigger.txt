@@ -1,0 +1,1 @@
+trigger=alpha75-exact-deferred-combat-credit
