@@ -27,6 +27,7 @@ public final class SettlementService {
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
         }
         SettlementCoreService.tick(server, data);
+        SettlementConstructionOfficeService.tick(server, data);
         SettlementBarracksService.tick(server, data);
         if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
         else {
@@ -101,6 +102,7 @@ public final class SettlementService {
             else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
             else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
             else if (type == BuildingType.BARRACKS) locked = SettlementBarracksService.lockedReason(data);
+            else if (type == BuildingType.CONSTRUCTION_OFFICE) locked = SettlementConstructionOfficeService.lockedReason(data);
             else locked = SettlementConstructionService.lockedReason(data, type);
             if (locked == null) mask |= 1 << type.ordinal();
         }
