@@ -397,7 +397,7 @@ public final class MagicPlayerData extends SavedData {
                 && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) state.circle++;
         if (state.circle > previousCircle) state.mana = effectiveStats(player).maxMana();
         MasteryProgress mastery = MasteryProgress.none();
-        if (SpellCatalog.fusion(spellId).isPresent()) {
+        if (SpellCatalog.isFusionResult(spellId)) {
             int required = SpellCatalog.masteryRequired(spellId);
             boolean registered = after >= required && state.known.add(spellId);
             if (registered) equipIntoFirstEmptySlot(state, spellId);

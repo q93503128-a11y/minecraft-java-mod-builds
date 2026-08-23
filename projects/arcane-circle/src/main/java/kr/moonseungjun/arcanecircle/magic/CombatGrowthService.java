@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Measures real health changes caused to actual combatants during one cast window. Passive
+ * Measures real health changes caused to actual combatants during one cast window.
  * Passive livestock cannot feed insight/economy; progress stays logarithmic and tightly capped so one
  * weak mob or a large area spell cannot skip circles.
  */
