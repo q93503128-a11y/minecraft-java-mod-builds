@@ -545,7 +545,7 @@ public final class SettlementConstructionService {
         Villager existing = findBuilder(level, center);
         if (existing != null) {
             if (existing.isNoAi()) existing.setNoAi(false);
-            if (!existing.getTags().contains(BUILDER_TAG)) existing.addTag(BUILDER_TAG);
+            if (!existing.entityTags().contains(BUILDER_TAG)) existing.addTag(BUILDER_TAG);
             return existing;
         }
         Villager builder = new Villager(EntityTypes.VILLAGER, level);
@@ -567,7 +567,7 @@ public final class SettlementConstructionService {
                 center.getX() - 96.0D, center.getY() - 48.0D, center.getZ() - 96.0D,
                 center.getX() + 97.0D, center.getY() + 49.0D, center.getZ() + 97.0D);
         List<Villager> tagged = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.getTags().contains(BUILDER_TAG));
+                villager -> villager.entityTags().contains(BUILDER_TAG));
         if (!tagged.isEmpty()) return tagged.getFirst();
         List<Villager> legacy = level.getEntitiesOfClass(Villager.class, search,
                 villager -> villager.getCustomName() != null && BUILDER_NAME.equals(villager.getCustomName().getString()));

@@ -78,7 +78,7 @@ for token in ('WORK_POSITION_REACHED_SQR = 2.25D', 'HIGH_WORK_RANGE_SQR = 100.0D
               'moveBuilderToWorkPosition', 'Blocks.OAK_FENCE.defaultBlockState()', 'Blocks.OAK_PLANKS.defaultBlockState()',
               'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)',
               'builder.swing(InteractionHand.MAIN_HAND)', 'returnNonConstructionCrateItems',
-              'villager.getTags().contains(BUILDER_TAG)', 'case FLOOR -> "기초 시공"',
+              'villager.entityTags().contains(BUILDER_TAG)', 'case FLOOR -> "기초 시공"',
               'case ROOF -> "지붕 시공"', 'removeConstructionScaffolds'):
     if token not in construction: raise SystemExit(f'alpha.24 construction presentation invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)' in construction:
