@@ -4,6 +4,7 @@ import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
+import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.production.ProductionService;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
@@ -11,7 +12,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 
 public final class InfrastructureService {
     public static final String ACTION_FUND = "fund";
@@ -96,15 +96,16 @@ public final class InfrastructureService {
             if (remaining <= 0) continue;
             int take = Math.min(remaining, countItem(player, requirement.item()));
             if (take <= 0) continue;
-            consumeItem(player, requirement.item(), take);
+            if (!consumeItem(player, requirement.item(), take)) continue;
             data.addContribution(project, i, take);
             consumed += take;
         }
 
         if (consumed <= 0) {
-            player.sendSystemMessage(Component.literal("§6[인프라] §f현재 인벤토리에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
+            player.sendSystemMessage(Component.literal("§6[인프라] §f인벤토리와 현재 사용 가능한 등록 배럴/전초에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
         } else {
-            player.sendSystemMessage(Component.literal("§6[인프라] §f" + project.koreanName() + "에 자원 §e" + consumed + "개§f를 투입했습니다."));
+            player.sendSystemMessage(Component.literal("§6[인프라] §f" + project.koreanName() + "에 자원 §e" + consumed
+                    + "개§f를 투입했습니다. §7인벤토리 우선 → 가까운 물류 배럴 순으로 인출"));
         }
         sendStatus(player, project);
 
@@ -146,26 +147,16 @@ public final class InfrastructureService {
             int current = data.contributed(project, i);
             player.sendSystemMessage(Component.literal("  §7- §f" + requirement.label() + " §e" + current + "§7/§f" + requirement.amount()));
         }
+        if (InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
+            player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고"));
+        }
     }
 
     private static int countItem(ServerPlayer player, Item item) {
-        int count = 0;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.is(item)) count += stack.getCount();
-        }
-        return count;
+        return FieldDepotService.countMaterial(player, item);
     }
 
-    private static void consumeItem(ServerPlayer player, Item item, int amount) {
-        int remaining = amount;
-        for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
-            int take = Math.min(remaining, stack.getCount());
-            stack.shrink(take);
-            remaining -= take;
-        }
-        player.getInventory().setChanged();
+    private static boolean consumeItem(ServerPlayer player, Item item, int amount) {
+        return FieldDepotService.consume(player, item, amount);
     }
 }

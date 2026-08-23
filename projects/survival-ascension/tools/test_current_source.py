@@ -33,16 +33,6 @@ required = [
     "src/main/templates/META-INF/neoforge.mods.toml",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java",
-    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionProgram.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionData.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java",
@@ -55,13 +45,25 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureData.java",
     "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java",
-    "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
-    "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java",
+    "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
+    "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/apex/ApexArchetype.java",
     "src/main/java/kr/moonseungjun/survivalascension/apex/ApexHuntData.java",
     "src/main/java/kr/moonseungjun/survivalascension/apex/ApexHuntSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
@@ -72,147 +74,79 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java",
-    "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
-    "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
 ]
 for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.33.0-alpha.1"], "toolchain/version")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.34.0-alpha.1"], "toolchain/version")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.33.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath",
-            "ExpeditionOperationSystem::onPlayerTick", "ExpeditionOperationSystem::onPlayerLoggedIn",
-            "FieldRecoveryService::onLivingDeath", "FieldRecoveryService::onPlayerRespawn",
-            "OutpostService::onFinalizeSpawn", "ApexHuntSystem::onServerTick", "AscensionTrialSystem::onServerTick"], "main registration")
+need(main, ['VERSION = "0.34.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath", "ExpeditionOperationSystem::onPlayerTick",
+            "FieldRecoveryService::onLivingDeath", "FieldRecoveryService::onPlayerRespawn", "OutpostService::onFinalizeSpawn",
+            "ApexHuntSystem::onServerTick", "AscensionTrialSystem::onServerTick"], "main registration")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "network protocol")
 
-# 0.32 exact authored operation catalog remains locked.
-operation = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java")
-operation_markers = [
-    'WOODLAND(ExpeditionRegion.WOODLAND, "심림 순환 벌채", 96, 24000',
-    'new Task(ExpeditionAction.LOGS_FELLED, 128), new Task(ExpeditionAction.TRAVEL_DISTANCE, 240)',
-    'ARID(ExpeditionRegion.ARID, "사막 보급로 개척", 96, 24000',
-    'new Task(ExpeditionAction.BLOCKS_BUILT, 96), new Task(ExpeditionAction.TRAVEL_DISTANCE, 240)',
-    'WETLAND(ExpeditionRegion.WETLAND, "습지 채집·소탕", 96, 24000',
-    'new Task(ExpeditionAction.CROPS_HARVESTED, 80), new Task(ExpeditionAction.HOSTILES_KILLED, 8)',
-    'HIGHLANDS(ExpeditionRegion.HIGHLANDS, "능선 장거리 순찰", 128, 24000',
-    'new Task(ExpeditionAction.TRAVEL_DISTANCE, 600), new Task(ExpeditionAction.DASHES_USED, 12)',
-    'OCEAN(ExpeditionRegion.OCEAN, "외해 순항", 128, 24000',
-    'new Task(ExpeditionAction.OCEAN_VOYAGE, 900), new Task(ExpeditionAction.HOSTILES_KILLED, 8)',
-    'DEEP(ExpeditionRegion.DEEP, "심층 채굴 회수", 128, 30000',
-    'new Task(ExpeditionAction.BLOCKS_MINED, 192), new Task(ExpeditionAction.HOSTILES_KILLED, 10)',
-    'FROZEN(ExpeditionRegion.FROZEN, "백설 장거리 순찰", 128, 30000',
-    'new Task(ExpeditionAction.TRAVEL_DISTANCE, 600), new Task(ExpeditionAction.HOSTILES_KILLED, 10)',
-    'NETHER(ExpeditionRegion.NETHER, "네더 전진 작전", 160, 30000',
-    'new Task(ExpeditionAction.HOSTILES_KILLED, 24), new Task(ExpeditionAction.BLOCKS_MINED, 96)',
-    'END(ExpeditionRegion.END, "공허 외곽 소탕", 160, 36000',
-    'new Task(ExpeditionAction.HOSTILES_KILLED, 28), new Task(ExpeditionAction.TRAVEL_DISTANCE, 360)',
-    "public record Task(ExpeditionAction action, int target)"
-]
-need(operation, operation_markers, "0.32 operation catalog")
-if operation.count("ExpeditionRegion.") < 9:
-    errors.append("operation catalog must contain all nine regions")
+# 0.34: one local physical logistics resolver, inventory first then nearest usable Barrels.
+depot = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")
+need(depot, [
+    "REGISTER_RADIUS = 4", "SUPPLY_RADIUS = 32", "Predicate<ItemStack>",
+    "public static int countMatching(ServerPlayer player, Predicate<ItemStack> matcher)",
+    "public static boolean consumeMatching(ServerPlayer player, Predicate<ItemStack> matcher, int amount)",
+    "return countMatching(player, stack -> stack.is(item));",
+    "return consumeMatching(player, stack -> stack.is(item), amount);",
+    "matcher.test(stack)", "depots.sort(Comparator.comparingDouble", "OutpostService.EXTENDED_SUPPLY_RADIUS",
+    "level.hasChunkAt(pos)", "level.getBlockState(pos).is(Blocks.BARREL)", "level.mayInteract(player, pos)",
+    "container.setChanged()", "OutpostService.onDepotRemoved"
+], "0.34 physical logistics resolver")
+ordered(depot, ["for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)",
+                "for (Container container : usableContainers(player))"], "0.34 count inventory-before-depot")
+# consumeMatching also must encounter the inventory loop before its container loop.
+consume_start = depot.find("public static boolean consumeMatching")
+if consume_start >= 0:
+    consume_body = depot[consume_start:]
+    ordered(consume_body, ["for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++)",
+                           "for (Container container : usableContainers(player))"], "0.34 consume inventory-before-depot")
+if any(token in depot for token in ["setChunkForced", "addRegionTicket", "getChunk("]):
+    errors.append("0.34 physical logistics must not force-load chunks")
 
-# 0.33 bounded complication catalog.
-complication = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java")
-need(complication, [
-    'NONE("기본 작전"', 'DEEP_FRONT("전선 고착"', 'FORWARD_SHIFT("전선 재전개"', 'HOT_EXTRACTION("긴급 철수"',
-    "case 0 -> 4800;", "case 1 -> 3600;", "default -> 3000;", "this != HOT_EXTRACTION"
-], "0.33 complication catalog")
+production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
+need(production, [
+    "FieldDepotService.countMatching(player, input::matches)",
+    "FieldDepotService.consumeMatching(player, input::matches, amount)",
+    "인벤토리 우선 → 가까운 물류 배럴 순으로 투입",
+    "new ItemStack(Items.GOLD_INGOT, 32)", "new ItemStack(Items.AMETHYST_SHARD, 16)", "new ItemStack(Items.ECHO_SHARD, 2)"
+], "0.34 industrial logistics")
+if "for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)" in production:
+    errors.append("ProductionService must not keep an inventory-only batch counter in 0.34")
 
-# 0.32 persistence remains, 0.33 appends optional migration-safe complication state.
-opdata = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java")
-need(opdata, ['"expedition_operations_v1"', "ALL_REGIONS_MASK", 'optionalFieldOf("active_region", "")',
-              'optionalFieldOf("dimension", "")', 'optionalFieldOf("deadline", 0L)',
-              'optionalFieldOf("range_reached", false)', 'optionalFieldOf("progress_a", 0)',
-              'optionalFieldOf("progress_b", 0)', 'optionalFieldOf("completed_mask", 0)',
-              'optionalFieldOf("total_completions", 0)', 'optionalFieldOf("mastery_claimed", false)',
-              'optionalFieldOf("complication", "NONE")', 'optionalFieldOf("complication_state", 0)',
-              'optionalFieldOf("extraction_deadline", 0L)', "ExpeditionComplication.valueOf(entry.complication())",
-              "catch (IllegalArgumentException ignored) { this.complication = ExpeditionComplication.NONE; }",
-              "clamp(entry.progressA()", "clamp(entry.progressB()", "complication == null", "state.rangeReached = true",
-              "beginForwardShift", "completeForwardShift", "armExtraction", "Math.min(state.deadline, extractionDeadline)",
-              "sanitizeComplicationState", "state.completedMask |= region.bit()", "state.totalCompletions++",
-              "state.clearActive();", "Integer.bitCount(state.completedMask)"], "0.33 operation persistence")
-ordered(opdata, ["public CompletionResult complete", "state.totalCompletions++", "state.clearActive();", "setDirty();"],
-        "operation completion persistence")
-
-opsys = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java")
-need(opsys, ["START_RADIUS = 4", "WORK_RADIUS = 48", "RETURN_RADIUS = 8", "SUPPLY_CHARGE_COST = 1",
-              "FORWARD_SHIFT_EXTRA = 48", "OutpostService.nearestActiveOutpost(player, START_RADIUS)",
-              "expedition.isComplete(player, region)", "production.consumeSupplyCharge(player)",
-              "ApexHuntSystem.isActive(player)", "AscensionTrialSystem.isActive(player)",
-              "ExpeditionComplication complication = chooseComplication(player, level, data)",
-              "level.getGameTime() + operation.durationTicks()", "data.start(player, operation, outpost.dimension(), outpost.pos(), deadline, complication)",
-              "distanceSq >= operation.rangeTarget() * operation.rangeTarget()", "data.markRangeReached(player)",
-              "if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;", "ExpeditionProgression.currentRegion(player) != active.region()",
-              "active.complication() == ExpeditionComplication.DEEP_FRONT", "distanceSq < operation.rangeTarget() * operation.rangeTarget()",
-              "active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0", "return;",
-              "operation.rangeTarget() + FORWARD_SHIFT_EXTRA", "data.beginForwardShift(player, targetRadius)",
-              "data.completeForwardShift(player)", "active.complication() == ExpeditionComplication.HOT_EXTRACTION",
-              "active.extractionDeadline()", 'fail(player, "긴급 철수 제한시간을 초과했습니다.")',
-              "extractionWindowTicks(operation)", "data.armExtraction(player, level.getGameTime() + window)",
-              "data.addProgress(player, i, amount, task.target())", "data.objectivesComplete(player, operation)",
-              "distanceSq <= RETURN_RADIUS * RETURN_RADIUS", "OutpostService.isRecoveryOperational(player, level, active.dimension(), active.anchor())",
-              'fail(player, "작전 중 다른 차원으로 이탈했습니다.")', 'fail(player, "작전 제한시간을 초과했습니다.")',
-              'fail(player, "게임 모드가 변경되어 작전이 종료되었습니다.")', 'fail(player, "작전 중 사망했습니다.',
-              "SkillProgressionService.award(player, operation.region().rewardSkill(), operation.skillXpReward())",
-              "new ItemStack(Items.NETHERITE_SCRAP, 2)", "new ItemStack(Items.ECHO_SHARD, 16)",
-              "new ItemStack(Items.AMETHYST_SHARD, 64)", "new ItemStack(Items.DRAGON_BREATH, 8)",
-              "player.giveExperiencePoints(300)"], "0.33 operation lifecycle")
-if any(token in opsys for token in ["teleportTo(", "setChunkForced", "addRegionTicket", "getChunk("]):
-    errors.append("0.33 operations must not teleport or force-load chunks")
-ordered(opsys, ["if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;",
-                "if (ExpeditionProgression.currentRegion(player) != active.region()) return;",
-                "ExpeditionComplication.DEEP_FRONT", "ExpeditionComplication.FORWARD_SHIFT", "data.addProgress"],
-        "operation work/complication gate order")
-ordered(opsys, ["data.objectivesComplete(player, operation)", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
-                "OutpostService.isRecoveryOperational", "complete(player, operation)"], "physical return gate")
-ordered(opsys, ["ExpeditionComplication.HOT_EXTRACTION", "active.extractionDeadline() > 0L", "now >= active.extractionDeadline()",
-                'fail(player, "긴급 철수 제한시간을 초과했습니다.")'], "hot extraction failure gate")
-
-# Existing validated actions feed operations, including dedicated ocean voyage.
-progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
-need(progression, ["ExpeditionIncidentSystem.recordAction(player, action, amount);",
-                   "ExpeditionOperationSystem.recordAction(player, action, amount);",
-                   "ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);",
-                   "ExpeditionOperationSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);"],
-     "operation action plumbing")
-
-# Routing/UI/status and encounter mutual exclusion.
-production_service = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
-need(production_service, ['ACTION_FIELD_OPERATION = "field_operation"', "ExpeditionOperationSystem.startOrStatus(player)",
-                          "ExpeditionOperationSystem.sendStatus(player)", "consumeSupplyCharge"], "operation production routing")
-ui = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
-need(ui, ['"원정 작전"', "new ItemStack(Items.SPYGLASS)", "Action.OPERATION", "ProductionService.ACTION_FIELD_OPERATION"],
-     "operation radial UI")
 infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
-need(infra, ["ProductionService.ACTION_FIELD_OPERATION.equals(action)", "ExpeditionOperationSystem.isActive(player)",
-             '§4[정점 사냥]', '§5[승천 시련]'], "operation encounter exclusion")
-commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
-need(commands, ["ExpeditionOperationData.get(player)", "operations.uniqueCompleted(player)", "operations.totalCompletions(player)",
-                '§6[원정 작전]'], "operation stats")
-guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
-need(guide, ["반복 원정 작전", "전초48블록 밖", "같은 전초8블록", "원정 작전 변수", "전선 고착", "전선 재전개", "긴급 철수",
-             "Stage0 4:00 / Stage1 3:00 / Stage2 2:30"], "0.33 operation guide")
+need(infra, [
+    "FieldDepotService.countMaterial(player, item)", "FieldDepotService.consume(player, item, amount)",
+    "인벤토리 우선 → 가까운 물류 배럴 순으로 인출", "투입원: 인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고",
+    "ProductionService.ACTION_FIELD_OPERATION.equals(action)", "ExpeditionOperationSystem.isActive(player)"
+], "0.34 infrastructure logistics")
+if "stack.shrink(take)" in infra:
+    errors.append("InfrastructureService must not keep a direct inventory-only funding loop in 0.34")
 
-# 0.31 recovery regression: prepaid one-use, same-dim96, challenge-excluded, consume after successful teleport.
-recovery_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldRecoveryData.java")
-need(recovery_data, ['"field_recovery_v1"', 'optionalFieldOf("armed", List.of())', 'optionalFieldOf("pending", List.of())',
-                     "state.pending = state.armed", "state.armed = null", "state.recoveries++"], "0.31 recovery data")
-recovery = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldRecoveryService.java")
-need(recovery, ["DEATH_RADIUS = 96", "SUPPLY_CHARGE_COST = 1", "production.consumeSupplyCharge(player)",
-                "ExpeditionIncidentSystem.isActive(player)", "ApexHuntSystem.isActive(player)", "AscensionTrialSystem.isActive(player)",
-                "armed.pos().distSqr(player.blockPosition()) > DEATH_RADIUS * DEATH_RADIUS",
-                "data.queuePending(player)", "player.teleportTo(", "if (!moved)", "data.completePending(player)"], "0.31 recovery")
-ordered(recovery, ["boolean moved = player.teleportTo", "if (!moved)", "data.completePending(player)"],
-        "recovery consumes token only after successful teleport")
-if any(token in recovery for token in ["setChunkForced", "addRegionTicket", "getChunk("]):
-    errors.append("field recovery must not force-load chunks")
+reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
+need(reforge, [
+    "FieldDepotService.countMaterial(player, cost.item())", "FieldDepotService.consume(player, cost.item(), cost.count())",
+    "ACTION_AWAKEN", "Items.AMETHYST_SHARD, 256", "Items.DIAMOND, 24", "Items.NETHERITE_SCRAP, 8",
+    "Items.ECHO_SHARD, 64", "Items.DRAGON_BREATH, 16", "salvageRewards"
+], "0.34 equipment logistics")
 
-# 0.30 physical outpost / 0.29 real-Barrel logistics regressions.
+# Deliberate boundary: field encounter admission remains carried inventory only.
+apex = read("src/main/java/kr/moonseungjun/survivalascension/apex/ApexHuntSystem.java")
+trial = read("src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java")
+need(apex, ["ECHO_SHARD_COST = 8", "AMETHYST_COST = 32", "GOLD_COST = 32",
+            "count(player, Items.ECHO_SHARD)", "consume(player, Items.ECHO_SHARD, ECHO_SHARD_COST)"], "Apex carried entry cost")
+need(trial, ["ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
+             "count(player, Items.ECHO_SHARD)", "consume(player, Items.DRAGON_BREATH, DRAGON_BREATH_COST)"], "Trial carried entry cost")
+if "FieldDepotService" in apex or "FieldDepotService" in trial:
+    errors.append("0.34 must not make Apex/Trial entry a remote Barrel payment")
+
+# 0.29/0.30 physical constraints still gate the resolver.
 outpost = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostService.java")
 need(outpost, ["STRUCTURE_RADIUS = 5", "ACTIVE_OWNER_RADIUS = 64", "EXTENDED_SUPPLY_RADIUS = 64", "SAFE_RADIUS = 24",
                "SUPPLY_CHARGE_COST = 2", "IRON_COST = 32", "GOLD_COST = 8", "COAL_COST = 32",
@@ -225,44 +159,96 @@ if '"TRIGGERED".equals(event.getSpawnType().name())' in outpost:
     errors.append("outpost safe zone must not cancel TRIGGERED spawns")
 
 depot_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java")
-need(depot_data, ['"field_depots_v1"', "MAX_DEPOTS_PER_PLAYER = 3", "CLAIMED_BY_OTHER"], "0.29 depot data")
-depot = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")
-need(depot, ["REGISTER_RADIUS = 4", "SUPPLY_RADIUS = 32", "Blocks.BARREL", "level.mayInteract(player, barrel)",
-             "OutpostService.EXTENDED_SUPPLY_RADIUS", "stack.shrink(take)", "container.setChanged()"], "0.29 depot runtime")
-if any(token in depot for token in ["setChunkForced", "addRegionTicket", "getChunk("]):
-    errors.append("field depots must not force-load chunks")
-
+need(depot_data, ['"field_depots_v1"', "MAX_DEPOTS_PER_PLAYER = 3", "CLAIMED_BY_OTHER"], "0.29 depot persistence")
 production_data = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionData.java")
 need(production_data, ['"production_v1"', "MAX_BUFFER = 3", "MAX_SUPPLY_CHARGES = 3", "consumeSupplyCharge",
-                       "consumeSupplyCharges", "normalizeCycles(state)"], "0.28 production")
+                       "consumeSupplyCharges", "normalizeCycles(state)"], "0.28 production persistence")
 
-# Original expedition/directive/incident behavior remains intact.
+# 0.33 bounded sortie complication catalog and persistence remain unchanged.
+complication = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionComplication.java")
+need(complication, ['NONE("기본 작전"', 'DEEP_FRONT("전선 고착"', 'FORWARD_SHIFT("전선 재전개"', 'HOT_EXTRACTION("긴급 철수"',
+                   "case 0 -> 4800;", "case 1 -> 3600;", "default -> 3000;"], "0.33 complication catalog")
+opdata = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationData.java")
+need(opdata, ['"expedition_operations_v1"', 'optionalFieldOf("complication", "NONE")',
+              'optionalFieldOf("complication_state", 0)', 'optionalFieldOf("extraction_deadline", 0L)',
+              "ExpeditionComplication.valueOf(entry.complication())", "ExpeditionComplication.NONE",
+              "beginForwardShift", "completeForwardShift", "armExtraction", "Math.min(state.deadline, extractionDeadline)",
+              "sanitizeComplicationState", "state.totalCompletions++", "state.clearActive()"], "0.33 operation persistence")
+
+operation = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java")
+need(operation, [
+    'WOODLAND(ExpeditionRegion.WOODLAND, "심림 순환 벌채", 96, 24000',
+    'ARID(ExpeditionRegion.ARID, "사막 보급로 개척", 96, 24000',
+    'WETLAND(ExpeditionRegion.WETLAND, "습지 채집·소탕", 96, 24000',
+    'HIGHLANDS(ExpeditionRegion.HIGHLANDS, "능선 장거리 순찰", 128, 24000',
+    'OCEAN(ExpeditionRegion.OCEAN, "외해 순항", 128, 24000',
+    'DEEP(ExpeditionRegion.DEEP, "심층 채굴 회수", 128, 30000',
+    'FROZEN(ExpeditionRegion.FROZEN, "백설 장거리 순찰", 128, 30000',
+    'NETHER(ExpeditionRegion.NETHER, "네더 전진 작전", 160, 30000',
+    'END(ExpeditionRegion.END, "공허 외곽 소탕", 160, 36000',
+    "public record Task(ExpeditionAction action, int target)"
+], "0.32 nine-operation catalog")
+if operation.count("ExpeditionRegion.") < 9:
+    errors.append("operation catalog must contain all nine regions")
+
+opsys = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java")
+need(opsys, ["START_RADIUS = 4", "WORK_RADIUS = 48", "RETURN_RADIUS = 8", "FORWARD_SHIFT_EXTRA = 48",
+              "OutpostService.nearestActiveOutpost(player, START_RADIUS)", "production.consumeSupplyCharge(player)",
+              "ExpeditionComplication complication = chooseComplication", "data.markRangeReached(player)",
+              "if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;", "ExpeditionProgression.currentRegion(player) != active.region()",
+              "ExpeditionComplication.DEEP_FRONT", "ExpeditionComplication.FORWARD_SHIFT", "ExpeditionComplication.HOT_EXTRACTION",
+              "operation.rangeTarget() + FORWARD_SHIFT_EXTRA", "data.beginForwardShift", "data.completeForwardShift",
+              "data.armExtraction", "data.addProgress", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
+              "OutpostService.isRecoveryOperational", 'fail(player, "작전 중 사망했습니다.',
+              'fail(player, "작전 중 다른 차원으로 이탈했습니다.")', 'fail(player, "작전 제한시간을 초과했습니다.")'], "0.32/0.33 operation lifecycle")
+if any(token in opsys for token in ["teleportTo(", "setChunkForced", "addRegionTicket", "getChunk("]):
+    errors.append("operations must not teleport or force-load chunks")
+ordered(opsys, ["if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;",
+                "if (ExpeditionProgression.currentRegion(player) != active.region()) return;",
+                "ExpeditionComplication.DEEP_FRONT", "ExpeditionComplication.FORWARD_SHIFT", "data.addProgress"],
+        "operation gate order")
+ordered(opsys, ["data.objectivesComplete(player, operation)", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
+                "OutpostService.isRecoveryOperational", "complete(player, operation)"], "physical return gate")
+
+# Existing validated gameplay actions still feed incidents and operations.
+progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
+need(progression, ["ExpeditionIncidentSystem.recordAction(player, action, amount);",
+                   "ExpeditionOperationSystem.recordAction(player, action, amount);",
+                   "ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);",
+                   "ExpeditionOperationSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);"], "expedition action plumbing")
+
+# 0.31 recovery remains one prepaid bounded death return.
+recovery_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldRecoveryData.java")
+need(recovery_data, ['"field_recovery_v1"', 'optionalFieldOf("armed", List.of())', 'optionalFieldOf("pending", List.of())',
+                     "state.pending = state.armed", "state.armed = null", "state.recoveries++"], "0.31 recovery data")
+recovery = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldRecoveryService.java")
+need(recovery, ["DEATH_RADIUS = 96", "SUPPLY_CHARGE_COST = 1", "production.consumeSupplyCharge(player)",
+                "ExpeditionIncidentSystem.isActive(player)", "ApexHuntSystem.isActive(player)", "AscensionTrialSystem.isActive(player)",
+                "data.queuePending(player)", "player.teleportTo(", "data.completePending(player)"], "0.31 recovery")
+ordered(recovery, ["boolean moved = player.teleportTo", "if (!moved)", "data.completePending(player)"], "recovery consume after successful teleport")
+if any(token in recovery for token in ["setChunkForced", "addRegionTicket", "getChunk("]):
+    errors.append("field recovery must not force-load chunks")
+
+# Expeditions/incidents and encounter patterns remain.
 directive = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.java")
 for marker in ["WOODLAND_STANDARD", "WOODLAND_PATROL", "ARID_STANDARD", "ARID_ROUTE", "WETLAND_STANDARD", "WETLAND_CLEARANCE",
                "HIGHLANDS_STANDARD", "HIGHLANDS_DASH", "OCEAN_STANDARD", "OCEAN_PATROL", "DEEP_STANDARD", "DEEP_CLEARANCE",
                "FROZEN_STANDARD", "FROZEN_DASH", "NETHER_STANDARD", "NETHER_SUPPLY", "END_STANDARD", "END_TRAVERSE"]:
     need(directive, [marker], "18 directive catalog")
-expdata = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java")
-need(expdata, ['"expedition_v1"', 'optionalFieldOf("region_rewards", -1)', 'optionalFieldOf("incident_rewards", 0)',
-               "directiveComplete", "MILESTONE_MASTER"], "expedition migration")
 incident = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java")
 need(incident, ["CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D", "EVENT_RADIUS = 48.0D",
                 "EntitySpawnReason.TRIGGERED", "data.claimIncidentReward", "cleanupMobs"], "incident lifecycle")
-
-# Apex and Ascension Trial regressions.
 apex_catalog = read("src/main/java/kr/moonseungjun/survivalascension/apex/ApexArchetype.java")
 need(apex_catalog, ["WOODLAND_BREAKER", "ARID_COMMANDER", "WETLAND_PLAGUEHEART", "HIGHLAND_HUNTER", "OCEAN_TYRANT",
                     "DEEP_STALKER", "FROZEN_WARDEN", "NETHER_REAVER", "END_HARBINGER",
                     "CHARGE", "REINFORCE", "PLAGUE", "SKIRMISH", "PULL", "LEAP", "FROST", "WITHER", "VOID"], "Apex catalog")
-apex_system = read("src/main/java/kr/moonseungjun/survivalascension/apex/ApexHuntSystem.java")
-need(apex_system, ["HUNT_TIMEOUT_TICKS = 1800", "EntitySpawnReason.TRIGGERED", "data.claimMasteryReward(owner)"], "Apex lifecycle")
-trial = read("src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java")
+need(apex, ["HUNT_TIMEOUT_TICKS = 1800", "EntitySpawnReason.TRIGGERED", "data.claimMasteryReward(owner)"], "Apex lifecycle")
 need(trial, ["TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "EntitySpawnReason.TRIGGERED", "removeStaleServerTrials",
              "public static boolean isActive(ServerPlayer player)"], "Ascension Trial")
 if '"minecraft:evoker"' in trial:
     errors.append("Ascension Trial must not directly spawn evokers")
 
-# Mastery VI / Field Mastery / queue safety / awakened Mythic regressions.
+# Mastery VI / Field Mastery and tick-budget regressions.
 tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
 need(tuning, ["if (level >= 100) return 11;", "if (level >= 100) return 192;", "if (level >= 100) return 384;",
               "if (level >= 100) return 49;", "if (level >= 100) return 2.0D;", "if (level >= 100) return 16.0D;"], "Mastery VI")
@@ -288,21 +274,22 @@ warband = read("src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDir
 need(warband, ["ROUT_TICKS = 160", "3 + worldStage", "6 + worldStage"], "warband")
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
 need(affix, ['AWAKENED = "awakened"', "currentAffixes(stack).size() == 3", "missing.size() != 2", "awakened ? 4 : rarity"], "awakened Mythic")
-reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
-need(reforge, ["ACTION_AWAKEN", "Items.AMETHYST_SHARD, 256", "Items.DRAGON_BREATH, 16"], "awakening economy")
 
-# Canon/reference policy.
+# UI/canon lock.
+guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
+need(guide, ["통합 물류 백본", "통합 물류 투입", "인벤토리를 먼저 쓰고", "등록 배럴", "정점 / 승천 시련",
+             "전선 고착", "전선 재전개", "긴급 철수", "Stage0 4:00 / Stage1 3:00 / Stage2 2:30"], "0.34 guide")
 readme = read("README.md")
 project = read("PROJECT.md")
+changelog = read("CHANGELOG.md")
 third = read("THIRD_PARTY_NOTICES.md")
-need(readme, ["0.33.0-alpha.1", "Sortie Complications", "expedition_operations_v1", "전선 고착", "전선 재전개", "긴급 철수",
-              "0.32.0-alpha.1", "심림 순환 벌채", "공허 외곽 소탕", "within 8 blocks", "Heracles"], "README canon")
-need(project, ["0.33 Sortie Complications", "DEEP_FRONT", "FORWARD_SHIFT", "HOT_EXTRACTION", "4800", "3600", "3000",
-               "0.32 Out-and-back Expedition Operations", "expedition_operations_v1", "WORK_RADIUS", "within8", "protocol remains8"], "PROJECT canon")
+need(readme, ["0.34.0-alpha.1", "Integrated Logistics Backbone", "countMatching", "consumeMatching", "player-carried",
+              "0.33.0-alpha.1", "Sortie Complications", "expedition_operations_v1"], "README canon")
+need(project, ["0.34 Integrated Logistics Backbone", "inventory", "nearest-first", "32", "64", "Apex Hunt", "Ascension Trial",
+               "no new SavedData", "protocol remains8", "0.33 Sortie Complications"], "PROJECT canon")
+need(changelog, ["0.34.0-alpha.1", "matcher-backed", "Infrastructure", "Equipment", "inventory-only", "Network protocol remains8"], "CHANGELOG canon")
 need(third, ["Deep Rock Galactic — product reference only for 0.33", "Warframe — product reference only for 0.33",
-             "No Deep Rock Galactic source code", "No Warframe source code", "Heracles — design reference only for 0.32",
-             "Copyright (c) 2023 Terrarium Earth", "License: MIT License", "No Heracles quest data",
-             "Bountiful — reference only for 0.24+", "License: GPL-3.0"], "third-party policy")
+             "Heracles — design reference only for 0.32", "Bountiful — reference only for 0.24+"], "third-party policy")
 
 for forbidden in ["harmonised.pmmo", "alrex.parcool", "mekanism.common", "com.warband",
                   "vbonedra.hostiles_are_too_easy", "com.telepathicgrunt.repurposedstructures", "dev.ftb.mods.ftbquests",
@@ -328,9 +315,9 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.33 adds exactly one persistent DEEP_FRONT/FORWARD_SHIFT/HOT_EXTRACTION complication to each new sortie")
-print("- 0.32 active sorties migrate as NONE; optional fields retain expedition_operations_v1 compatibility")
-print("- all nine operation profiles,96/128/160 outbound gates,48-block base work gate and8-block physical return remain locked")
-print("- complication gates reuse validated expedition actions; no teleport, client destination or chunk force-load is introduced")
-print("- operation death/dimension/time/game-mode failures and Apex/Trial mutual exclusion are enforced")
-print("- 0.31 recovery,0.30 outpost,0.29 Barrel logistics, directives/incidents,Apex/Trial and mastery regressions retained")
+print("- 0.34 integrates industrial batches, infrastructure funding and equipment reforge/awakening with nearby physical Barrel logistics")
+print("- stock resolution is inventory-first then nearest usable depot; same-dimension32/active-outpost64, loaded real Barrel and mayInteract boundaries remain")
+print("- matcher-backed production supports tag inputs without virtual/global storage")
+print("- Apex/Trial entry costs and industrial dispatch remain player-carried by design")
+print("- no new SavedData, packet, GUI, remote dimension access or chunk force-load")
+print("- 0.33 complication,0.32 nine-sortie,0.31 recovery,0.30 outpost,0.29 depot and mastery/encounter regressions retained")

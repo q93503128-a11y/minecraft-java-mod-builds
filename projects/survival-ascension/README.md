@@ -4,6 +4,35 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies, production, logistics and physical field bases consume that larger output again.
 
+## 0.34.0-alpha.1 — Integrated Logistics Backbone / 통합 물류 백본
+0.34 closes the remaining gap between high-throughput skills and the physical Barrel/outpost network. Large base-side resource sinks no longer require the player to manually move hundreds of items into personal inventory when those items already exist in a nearby usable owned logistics Barrel.
+
+### One physical stock resolver
+`FieldDepotService` now exposes generic matcher-backed stock counting/consumption in addition to exact-item access. This means the same real-stock path can resolve exact materials and tag-based inputs such as mixed vanilla logs.
+
+Resolution order remains strict:
+1. player inventory first;
+2. currently usable linked Barrels, nearest first;
+3. ordinary depot radius32, active physical outpost radius64;
+4. same dimension only;
+5. already-loaded chunks only;
+6. the saved position must still be a real Barrel and pass `mayInteract`.
+
+Missing loaded Barrels are still pruned. No chunk is force-loaded and no remote dimension inventory is opened.
+
+### Large sinks connected to the network
+- Industrial Works production batches now count and consume from inventory + usable linked Barrel stock. All four lines use the same rule, including tag-based log batches.
+- Incomplete infrastructure projects now accept nearby usable logistics stock when the player funds them. This makes late infrastructure costs actual throughput sinks instead of inventory-shuffling chores.
+- Equipment reforge and Mythic III awakening now use the same local stock resolver for their large Amethyst/Diamond/Scrap/Echo/Dragon Breath costs.
+- Construction, irrigation and outpost-upgrade material use retain their existing linked-stock behavior.
+
+The player inventory is always drained before a Barrel and linked Barrels are drained nearest-first, so the system does not silently prefer remote stock over carried materials.
+
+### Deliberate field-combat boundary
+Apex Hunt and Ascension Trial entry materials remain **player-carried**. They are field encounter preparations rather than stationary industrial transactions, so 0.34 does not turn them into remote warehouse payments. Industrial supply dispatch also still produces physical items into the player inventory/drop path.
+
+No new SavedData, packet, menu or permanent stat layer is introduced. Network protocol remains `8`.
+
 ## 0.33.0-alpha.1 — Sortie Complications / 원정 작전 변수
 0.33 keeps the 0.32 out-and-back operation catalog and rewards intact, but every **new** sortie now receives exactly one bounded server-authored complication. The complication changes where or when the same validated work must happen instead of adding another quest counter, another boss wave, blanket enemy HP, or a permanent stat bonus.
 
@@ -15,7 +44,7 @@ Survival Ascension turns progression into larger physical actions, then makes wo
 The server chooses one of the three when the sortie starts. One player still has at most one active operation and therefore at most one complication. Complication identity/state and the emergency extraction deadline are persisted inside the existing `expedition_operations_v1` record.
 
 ### Existing-world / active-sortie compatibility
-The new fields are optional. A 0.32 active operation loaded after updating decodes as `NONE` and continues under its original 0.32 rules; the update never silently attaches a new penalty to an already-paid sortie. New 0.33 launches always receive one of the three authored complications.
+The new fields are optional. A 0.32 active operation loaded after updating decodes as `NONE` and continues under its original 0.32 rules; the update never silently attaches a new penalty to an already-paid sortie. New 0.33+ launches always receive one of the three authored complications.
 
 All old failure and safety contracts remain: death, dimension exit, creative/spectator switching or deadline expiry fails the operation; no supply refund; no client coordinate trust; no operation teleport; no chunk force-load; exact-origin return still revalidates the real Barrel/camp. Regional Incidents may still happen naturally, while Apex Hunt and Ascension Trial remain mutually exclusive with manual operation starts.
 
@@ -94,7 +123,7 @@ No new packet schema was added; the existing string-based `InfrastructureActionP
 
 ## 0.29 — Physical Field Depots
 - Register a real vanilla Barrel within4 blocks for one field-supply charge; max3/player and one owner per physical position.
-- Same-dimension loaded Barrel stock supplies bulk Construction and irrigation within32 blocks.
+- Same-dimension loaded Barrel stock supplies bulk Construction, irrigation, Industrial Works batches, post-Industrial infrastructure funding and equipment reforge/awakening within the applicable32/64 logistics radius.
 - Player inventory is consumed first; linked Barrels are nearest-first.
 - `mayInteract` is rechecked and linked chunks are never force-loaded.
 - Missing loaded Barrels prune stale links. Construction/replant roll back newly placed blocks if post-place material consumption unexpectedly fails.
@@ -109,10 +138,10 @@ No new packet schema was added; the existing string-based `InfrastructureActionP
 
 ## 0.27 — Apex Hunts
 - Stage-1 `정점 추적소`: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
-- Re-select it inside a completed expedition region to start that region's 90-second Apex Hunt for Echo8 + Amethyst32 + Gold32.
+- Re-select it inside a completed expedition region to start that region's 90-second Apex Hunt for **player-carried** Echo8 + Amethyst32 + Gold32.
 - Nine regional bosses use separate behavior identities: charge, reinforcements, poison/heal field, skirmish repositioning, pull, leap, frost, wither pressure and levitation/void pressure.
 - `apex_hunt_v1` stores first defeats and total victories per player. First defeat of all nine grants a one-time Mythic III/endgame resource package.
-- Stage-2 Ascension Trial remains the stronger deterministic Mythic III source.
+- Stage-2 Ascension Trial remains the stronger deterministic Mythic III source; its entry materials are also deliberately player-carried.
 
 ## 0.25–0.26 Expeditions
 - Nine vanilla-biome expedition regions have two persistent directives each, 18 total.
@@ -134,7 +163,7 @@ At Lv.100 and after the nine-region completion:
 - World Ascension: Awakening0 -> first Wither Legendary1 -> first Ender Dragon Endgame2.
 - Stage2 natural hostile subsets can gain Withered / Phase / Plague mutations; Elite ranks and Warband roles can layer through normal spawn paths.
 - Complete Ascension Nexus to access the repeatable four-wave doctrine Trial.
-- Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs.
+- Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs; 0.34 allows those stationary upgrade costs to draw from the local physical logistics network.
 
 ## External references
 - Deep Rock Galactic mission mutators/extraction and Warframe Sortie/Deep Archimedea mission modifiers are 0.33 product-level design references only. Survival Ascension copies no source, data, UI, assets, names, audio or proprietary content from either game.

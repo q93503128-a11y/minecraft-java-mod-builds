@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 
 public final class FieldDepotService {
     public static final int REGISTER_RADIUS = 4;
@@ -77,7 +78,7 @@ public final class FieldDepotService {
             return;
         }
         player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f배럴 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
-                + "§f을 거점으로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 대량 건축/관개가 재료를 인출합니다."));
+                + "§f을 거점으로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 대량 건축/관개/산업 투입이 재료를 인출합니다."));
     }
 
     public static void sendStatus(ServerPlayer player) {
@@ -104,15 +105,20 @@ public final class FieldDepotService {
     public static boolean hasMaterial(ServerPlayer player, Item item) { return countMaterial(player, item) > 0; }
 
     public static int countMaterial(ServerPlayer player, Item item) {
+        return countMatching(player, stack -> stack.is(item));
+    }
+
+    public static int countMatching(ServerPlayer player, Predicate<ItemStack> matcher) {
+        if (matcher == null) return 0;
         int found = 0;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.is(item)) found += stack.getCount();
+            if (matcher.test(stack)) found += stack.getCount();
         }
         for (Container container : usableContainers(player)) {
             for (int slot = 0; slot < container.getContainerSize(); slot++) {
                 ItemStack stack = container.getItem(slot);
-                if (stack.is(item)) found += stack.getCount();
+                if (matcher.test(stack)) found += stack.getCount();
             }
         }
         return found;
@@ -121,11 +127,15 @@ public final class FieldDepotService {
     public static boolean consumeOne(ServerPlayer player, Item item) { return consume(player, item, 1); }
 
     public static boolean consume(ServerPlayer player, Item item, int amount) {
-        if (amount <= 0 || countMaterial(player, item) < amount) return false;
+        return consumeMatching(player, stack -> stack.is(item), amount);
+    }
+
+    public static boolean consumeMatching(ServerPlayer player, Predicate<ItemStack> matcher, int amount) {
+        if (matcher == null || amount <= 0 || countMatching(player, matcher) < amount) return false;
         int remaining = amount;
         for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
+            if (!matcher.test(stack)) continue;
             int take = Math.min(remaining, stack.getCount());
             stack.shrink(take);
             remaining -= take;
@@ -134,7 +144,7 @@ public final class FieldDepotService {
         for (Container container : usableContainers(player)) {
             for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
                 ItemStack stack = container.getItem(slot);
-                if (!stack.is(item)) continue;
+                if (!matcher.test(stack)) continue;
                 int take = Math.min(remaining, stack.getCount());
                 stack.shrink(take);
                 remaining -= take;

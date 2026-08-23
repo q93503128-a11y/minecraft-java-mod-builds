@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.equipment;
 
+import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -28,10 +29,13 @@ public final class EquipmentReforgeService {
         }
         MaterialCost[] costs = reforgeCosts(rarity, AscensionAffixes.isAwakened(held));
         if (!player.isCreative() && !hasAll(player, costs)) {
-            player.sendSystemMessage(Component.literal("§c[재련] §f재료 부족 · " + join(costs)));
+            player.sendSystemMessage(Component.literal("§c[재련] §f재료 부족 · " + join(costs) + " §7· 인벤토리+사용 가능한 물류 배럴 합산"));
             return;
         }
-        if (!player.isCreative()) consumeAll(player, costs);
+        if (!player.isCreative() && !consumeAll(player, costs)) {
+            player.sendSystemMessage(Component.literal("§c[재련] §f물류 재고 상태가 바뀌어 재련을 중단했습니다."));
+            return;
+        }
         if (!AscensionAffixes.reroll(held, player.level().getRandom())) return;
         player.getInventory().setChanged();
         player.containerMenu.broadcastChanges();
@@ -54,10 +58,13 @@ public final class EquipmentReforgeService {
         }
         MaterialCost[] costs = awakeningCosts();
         if (!player.isCreative() && !hasAll(player, costs)) {
-            player.sendSystemMessage(Component.literal("§c[신화 각성] §f재료 부족 · " + join(costs)));
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §f재료 부족 · " + join(costs) + " §7· 인벤토리+사용 가능한 물류 배럴 합산"));
             return;
         }
-        if (!player.isCreative()) consumeAll(player, costs);
+        if (!player.isCreative() && !consumeAll(player, costs)) {
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §f물류 재고 상태가 바뀌어 각성을 중단했습니다."));
+            return;
+        }
         if (!AscensionAffixes.awaken(held, player.level().getRandom())) {
             player.sendSystemMessage(Component.literal("§c[신화 각성] §f검증 이후 장비 상태가 바뀌어 각성을 중단했습니다."));
             return;
@@ -139,31 +146,15 @@ public final class EquipmentReforgeService {
     }
 
     private static boolean hasAll(ServerPlayer player, MaterialCost[] costs) {
-        for (MaterialCost cost : costs) if (count(player, cost.item()) < cost.count()) return false;
+        for (MaterialCost cost : costs) if (FieldDepotService.countMaterial(player, cost.item()) < cost.count()) return false;
         return true;
     }
 
-    private static int count(ServerPlayer player, Item item) {
-        int count = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.is(item)) count += stack.getCount();
-        }
-        return count;
-    }
-
-    private static void consumeAll(ServerPlayer player, MaterialCost[] costs) {
+    private static boolean consumeAll(ServerPlayer player, MaterialCost[] costs) {
         for (MaterialCost cost : costs) {
-            int remaining = cost.count();
-            for (int i = 0; i < player.getInventory().getContainerSize() && remaining > 0; i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (!stack.is(cost.item())) continue;
-                int take = Math.min(remaining, stack.getCount());
-                stack.shrink(take);
-                remaining -= take;
-            }
+            if (!FieldDepotService.consume(player, cost.item(), cost.count())) return false;
         }
-        player.getInventory().setChanged();
+        return true;
     }
 
     private static void give(ServerPlayer player, ItemStack stack) {

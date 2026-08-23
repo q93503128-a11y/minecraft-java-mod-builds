@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.34.0-alpha.1
+- Added an integrated physical logistics backbone for large stationary resource sinks instead of adding another independent progression layer.
+- Generalized `FieldDepotService` with matcher-backed `countMatching` / `consumeMatching`, allowing exact items and tag-style inputs such as mixed logs to share the same real inventory + linked-Barrel resolution path.
+- Industrial Works production now counts and consumes each batch from player inventory first, then currently usable linked Barrels nearest-first. Existing32-block depot and64-block active-outpost radii, same-dimension rules, loaded-chunk requirement, real-Barrel validation, `mayInteract` and stale-link pruning remain authoritative.
+- Incomplete infrastructure funding now uses the same physical stock resolver, so large later projects can consume nearby stored throughput instead of requiring hundreds of items to be manually moved into player inventory.
+- Equipment reforge and Mythic III awakening now use the same local physical stock resolver for their large material costs while preserving all existing item/affix validation. Salvage rewards still go to player inventory/drop.
+- Industrial supply dispatch still creates physical player-carried output rather than remotely depositing rewards into linked storage.
+- Apex Hunt and Ascension Trial entry materials deliberately remain inventory-only. 0.34 integrates stationary base/economy inputs without turning field-combat preparation into universal remote warehouse payment.
+- No new SavedData, packet, radial page, quest GUI, remote-dimension inventory access or chunk force-loading was added. Network protocol remains8.
+- Updated Guide/README/PROJECT and source audit to lock inventory-first + nearest-Barrel behavior, matcher/tag support, all physical access boundaries, deliberate Apex/Trial carry-in behavior and 0.33/older regressions.
+
 ## 0.33.0-alpha.1
 - Added one bounded server-chosen sortie complication to every newly launched 0.32-style out-and-back expedition operation without changing the nine regional objective catalogs, repeatable rewards or first-clear rewards.
 - Added `ExpeditionComplication` with three authored rules: `DEEP_FRONT / 전선 고착`, `FORWARD_SHIFT / 전선 재전개`, and `HOT_EXTRACTION / 긴급 철수`.

@@ -54,11 +54,17 @@ public final class ProductionService {
                 int have = count(player, input);
                 player.sendSystemMessage(Component.literal("  §7- §f" + input.label() + " §e" + have + "§7/§f" + input.amount()));
             }
+            player.sendSystemMessage(Component.literal("  §7인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고를 합산합니다."));
             return;
         }
-        for (ProductionProgram.Input input : program.inputs()) consume(player, input, input.amount());
+        for (ProductionProgram.Input input : program.inputs()) {
+            if (!consume(player, input, input.amount())) {
+                player.sendSystemMessage(Component.literal("§c[산업 생산망] §f투입 재고 상태가 바뀌어 생산을 중단했습니다."));
+                return;
+            }
+        }
         ProductionData.BatchResult result = data.addBatch(player, program);
-        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료."));
+        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료. §7인벤토리 우선 → 가까운 물류 배럴 순으로 투입"));
         if (result.cycleCompleted()) {
             player.sendSystemMessage(Component.literal("§b[산업 사이클 완성] §f4계통 배치를 결합해 §e현장 보급권 +1§f을 확보했습니다. §7보유 "
                     + result.supplyCharges() + "/" + ProductionData.MAX_SUPPLY_CHARGES));
@@ -74,7 +80,8 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7보급권: 실물 출고1 / 배럴 거점1 / 전초 승격2 / 복귀 계약1 / 원정 작전1. 출고1회는 금32+자수정16+메아리2."));
+        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 등록 배럴/전초 재고. 보급권: 실물 출고1 / 배럴 거점1 / 전초 승격2 / 복귀 계약1 / 원정 작전1."));
+        player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
         FieldRecoveryService.sendStatus(player);
@@ -100,24 +107,11 @@ public final class ProductionService {
     }
 
     private static int count(ServerPlayer player, ProductionProgram.Input input) {
-        int found = 0;
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (input.matches(stack)) found += stack.getCount();
-        }
-        return found;
+        return FieldDepotService.countMatching(player, input::matches);
     }
 
-    private static void consume(ServerPlayer player, ProductionProgram.Input input, int amount) {
-        int remaining = amount;
-        for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!input.matches(stack)) continue;
-            int take = Math.min(remaining, stack.getCount());
-            stack.shrink(take);
-            remaining -= take;
-        }
-        player.getInventory().setChanged();
+    private static boolean consume(ServerPlayer player, ProductionProgram.Input input, int amount) {
+        return FieldDepotService.consumeMatching(player, input::matches, amount);
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
