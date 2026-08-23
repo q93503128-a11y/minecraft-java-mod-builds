@@ -45,6 +45,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java",
+    "src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
@@ -103,8 +104,8 @@ need(incident, ["Kind { AMBUSH, ACTION_RUSH }", "ExpeditionAction.LOGS_FELLED, 2
                 '"minecraft:wither_skeleton"', '"minecraft:shulker"'], "incident definitions")
 
 incident_system = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java")
-need(incident_system, ["CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D", "START_COOLDOWN_TICKS = 3600",
-                       "TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600", "OUTSIDE_GRACE_TICKS = 200", "EVENT_RADIUS = 48.0D",
+need(incident_system, ["public static boolean isActive(ServerPlayer player)", "CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D",
+                       "START_COOLDOWN_TICKS = 3600", "TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600", "OUTSIDE_GRACE_TICKS = 200", "EVENT_RADIUS = 48.0D",
                        "ServerBossEvent", "EntitySpawnReason.TRIGGERED", "findWaterSpawn", "spawned.size() < minimum",
                        "cleanupMobs", "removeStaleServerIncidents", "data.incidentResolved(player, region)",
                        "data.claimIncidentReward", "bonusTask.target() / 5", "ExpeditionProgression.grantIncidentBonus",
@@ -112,6 +113,8 @@ need(incident_system, ["CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D", "ST
                        "Items.DIAMOND, 4", "Items.ECHO_SHARD, 8"], "incident lifecycle and rewards")
 commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
 need(commands, ["사건 해결", "expedition.incidentResolved(player, region)"], "incident stats")
+infrastructure = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
+need(infrastructure, ["ExpeditionIncidentSystem.isActive(player)", "진행 중인 §e현장 사건", "AscensionTrialSystem.tryStart(player)"], "two-way Trial/incident exclusion")
 
 tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
 need(tuning, ["if (level >= 100) return 11;", "if (level >= 100) return 192;", "if (level >= 100) return 384;",
@@ -150,8 +153,10 @@ need(reforge, ["ACTION_AWAKEN", "AscensionAffixes.canAwaken(held)", "Items.AMETH
 
 project = read("PROJECT.md")
 readme = read("README.md")
+third = read("THIRD_PARTY_NOTICES.md")
 need(project, ["0.26 희귀 현장 사건", "incident_rewards", "Enhanced Celestials Tweaks(MIT)", "Majrusz's Progressive Difficulty"], "PROJECT canon")
 need(readme, ["0.26.0-alpha.1", "Rare Regional Field Incidents", "18 region incidents", "once per player per region"], "README canon")
+need(third, ["Enhanced Celestials Tweaks — design reference only for 0.26", "License: GPL-3.0", "FTB Quests — reference only", "License: All Rights Reserved", "Majrusz's Progressive Difficulty — reference only for 0.26"], "third-party reference policy")
 
 for rel in [
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
@@ -176,6 +181,6 @@ print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8")
 print("- 18 persistent expedition directives remain legacy-safe and require all assigned tasks")
 print("- 18 rare regional incidents add bounded ambush/action-rush events with bossbar lifecycle")
-print("- incident rewards are one-time per player/region, fail-safe, Trial-separated and max +20% directive bonus")
+print("- incident rewards are one-time per player/region, fail-safe, two-way Trial-separated and max +20% directive bonus")
 print("- Mastery VI, Field Mastery, tick budgets, normal destroy/material/protection contracts retained")
 print("- doctrine trials, awakened Mythic, world stages, mutations, warbands and elite regressions retained")
