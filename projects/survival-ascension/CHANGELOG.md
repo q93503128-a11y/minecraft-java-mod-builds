@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.21.0-alpha.1
+- Added the repeatable Stage-2 `Ascension Trial` endgame loop behind the completed Ascension Nexus instead of ending progression after infrastructure completion.
+- Re-selecting a completed Nexus consumes 32 Echo Shards + 64 Amethyst Shards + 8 Dragon's Breath from the real survival inventory and opens four timed combat waves.
+- Added mixed-role wave compositions built from vanilla mobs: zombie/skeleton pressure, husk/stray/witch control, wither-skeleton/illager pressure, then a Ravager/Evoker/Vindicator final wave.
+- Each wave has a 60-second limit, a 5-second inter-wave setup, and a server boss bar showing wave, remaining enemies and time.
+- Added 10-second owner death/dimension/64-block departure grace, 96-block active-trial separation, one active trial per owner, and a 120-second persistent start cooldown.
+- Trial mobs use the normal triggered spawn path, allowing existing Stage-2 mutation, Elite and Warband systems to interact with the encounter rather than adding a separate HP-sponge stat layer.
+- Completion guarantees one Mythic III affix item + 2 Netherite Scraps + 4 Diamonds + 200 XP to the owner; nearby helpers receive XP without duplicating the owner loot bundle.
+- Trial state itself is runtime-only. Persisted tagged trial mobs are rejected on entity join after a restart unless they still belong to the active in-memory trial, preventing orphan encounter mobs.
+- Fixed stale infrastructure benefit text so Quarry Network, Builder Foundry, Combat Academy and Ascension Nexus descriptions match their Lv.100 Mastery VI behavior.
+- Adapted the timed sequential-wave / boss-bar encounter lifecycle from the MIT-licensed Gateways to Eternity project and packaged its full MIT notice.
+- Extended source/JAR audits to require the new encounter, 26.2-compatible entity lookup, restart cleanup, attribution and all pre-existing Mastery VI/world/economy safety contracts.
+
 ## 0.20.0-alpha.1
 - Added final Lv.100 `Mastery VI` tier across all six active skills instead of leaving Lv.91-100 as mostly numeric progression.
 - Mining Lv.100: 11x11 excavation, 192 connected/extract ore cap, and Quarry Network tunnel grows from 5x5x8 to 7x7x10.
