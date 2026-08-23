@@ -22,6 +22,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementTier;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -72,6 +73,11 @@ public final class SettlementCommands {
         else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
         else locked = SettlementConstructionService.lockedReason(data, type);
         if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
+        if (type == BuildingType.CART_STATION) {
+            BlockPos selectedCenter = player.blockPosition().relative(player.getDirection(), 10);
+            String placementLock = SettlementCartStationService.placementReason(data, selectedCenter);
+            if (placementLock != null) { player.sendSystemMessage(Component.literal(placementLock)); return 0; }
+        }
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
         player.sendSystemMessage(Component.literal(result.message()));
         return result.started() ? 1 : 0;
