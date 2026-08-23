@@ -5,6 +5,15 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 
 public record ConstructionState(String type, int originX, int originY, int originZ, int rotation, int step, int scaffoldMask) {
+    /**
+     * Alpha.30 phase encoding keeps the persisted schema stable:
+     * - small non-negative steps are pre-Alpha.30 already-prepared active builds;
+     * - 1,000,000+ is physical site grading;
+     * - 2,000,000+ is the normal material-hauling/blueprint phase.
+     */
+    public static final int GRADE_STEP_OFFSET = 1_000_000;
+    public static final int BUILD_STEP_OFFSET = 2_000_000;
+
     public static final ConstructionState EMPTY = new ConstructionState("", 0, 0, 0, 0, 0, 0);
 
     public static final Codec<ConstructionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -35,6 +44,26 @@ public record ConstructionState(String type, int originX, int originY, int origi
 
     public BuildingRotation buildingRotation() {
         return BuildingRotation.fromId(rotation);
+    }
+
+    public boolean grading() {
+        return active() && step >= GRADE_STEP_OFFSET && step < BUILD_STEP_OFFSET;
+    }
+
+    public boolean physicalBuilding() {
+        return active() && step >= BUILD_STEP_OFFSET;
+    }
+
+    public boolean legacyPreparedBuilding() {
+        return active() && step >= 0 && step < GRADE_STEP_OFFSET;
+    }
+
+    public int gradeStep() {
+        return grading() ? step - GRADE_STEP_OFFSET : 0;
+    }
+
+    public int buildStep() {
+        return physicalBuilding() ? step - BUILD_STEP_OFFSET : Math.max(0, step);
     }
 
     public boolean ownsScaffold(int index) {
