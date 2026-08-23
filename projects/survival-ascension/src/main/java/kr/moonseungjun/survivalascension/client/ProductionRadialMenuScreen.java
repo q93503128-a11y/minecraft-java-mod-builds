@@ -28,6 +28,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
             new Entry("정밀 부품 배치", "레드128 · 자수정64 · 금32 · 석영64", new ItemStack(Items.COMPARATOR), "precision", Action.PRODUCE),
+            new Entry("현장 보급 출고", "보급권1 → 금32 · 자수정16 · 메아리2", new ItemStack(Items.MINECART), "", Action.DISPATCH),
             new Entry("생산 현황", "4계통 버퍼 · 누적 사이클 · 현장 보급권", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
             new Entry("뒤로", "인프라 메뉴로 돌아가기", new ItemStack(Items.ARROW), "", Action.BACK)
     };
@@ -66,6 +67,7 @@ public final class ProductionRadialMenuScreen extends Screen {
         String action = switch (entry.action()) {
             case FUND -> InfrastructureService.ACTION_FUND;
             case STATUS -> ProductionService.ACTION_STATUS;
+            case DISPATCH -> ProductionService.ACTION_DISPATCH;
             case PRODUCE -> ProductionService.ACTION_PREFIX + entry.programId();
             case BACK -> "";
         };
@@ -77,7 +79,7 @@ public final class ProductionRadialMenuScreen extends Screen {
     private static int selectedIndex() { double a=correctAngle(360-(getMouseAngle()-ANGLE_PER_ITEM/2)); return Mth.clamp((int)Math.floor(a/ANGLE_PER_ITEM),0,ITEM_COUNT-1); }
     private static double getMouseAngle(){Minecraft m=Minecraft.getInstance();double ox=m.getWindow().getScreenWidth()*.5,oy=m.getWindow().getScreenHeight()*.5;return correctAngle(-Math.toDegrees(Math.atan2(m.mouseHandler.xpos()-ox,m.mouseHandler.ypos()-oy)));}
     private static double correctAngle(double a){while(a<0)a+=360;while(a>=360)a-=360;return a;}
-    private enum Action { FUND, PRODUCE, STATUS, BACK }
+    private enum Action { FUND, PRODUCE, DISPATCH, STATUS, BACK }
     private record Entry(String title,String detail,ItemStack icon,String programId,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}
