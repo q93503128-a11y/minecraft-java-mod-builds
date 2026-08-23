@@ -17,6 +17,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementTier;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -43,6 +44,7 @@ public final class SettlementCommands {
                         .then(Commands.literal("mine").executes(context -> build(context, BuildingType.MINE)))
                         .then(Commands.literal("warehouse").executes(context -> build(context, BuildingType.WAREHOUSE)))
                         .then(Commands.literal("blacksmith").executes(context -> build(context, BuildingType.BLACKSMITH)))
+                        .then(Commands.literal("workshop").executes(context -> build(context, BuildingType.WORKSHOP)))
                         .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))
                         .then(Commands.literal("market").executes(context -> build(context, BuildingType.MARKET)))));
     }
@@ -62,7 +64,9 @@ public final class SettlementCommands {
         ServerPlayer player = context.getSource().getPlayerOrException();
         SettlementData data = SettlementData.get(player.level().getServer());
         if (data.outpostConstruction().active()) { player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요.")); return 0; }
-        String locked = SettlementConstructionService.lockedReason(data, type);
+        String locked = type == BuildingType.WORKSHOP
+                ? SettlementWorkshopService.lockedReason(data)
+                : SettlementConstructionService.lockedReason(data, type);
         if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
         player.sendSystemMessage(Component.literal(result.message()));
@@ -96,8 +100,8 @@ public final class SettlementCommands {
         player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount() + " | 벌목소 " + data.lumberCampCount()
                 + " | 농장 " + data.buildingCount(BuildingType.FARM) + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
-                + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST)
-                + " | 시장 " + data.buildingCount(BuildingType.MARKET)
+                + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 작업장 " + data.buildingCount(BuildingType.WORKSHOP)
+                + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST) + " | 시장 " + data.buildingCount(BuildingType.MARKET)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
 
         SettlementExternalContentService.Snapshot external = SettlementExternalContentService.snapshot(player.level().getServer().overworld(), data);
