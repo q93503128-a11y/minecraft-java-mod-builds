@@ -19,7 +19,7 @@ Source project: `GirafiStudios/MineMenu`
 Copyright (c) 2013 Dylan Miller  
 License: MIT License
 
-Survival Ascension adapts MineMenu's radial interaction/presentation model, including the 60/80 ring proportions, mouse-angle segment selection, selected-segment expansion, icon placement, live-world overlay, and translucent black/red palette. Full notice: `META-INF/third-party/MINEMENU_MIT.txt`.
+Survival Ascension adapts MineMenu's radial interaction/presentation model, including ring proportions, mouse-angle segment selection, selected-segment expansion, icon placement, live-world overlay and translucent palette. 0.28 reuses Survival Ascension's existing adapted radial implementation for the nested Industrial Works menu. Full notice: `META-INF/third-party/MINEMENU_MIT.txt`.
 
 ## Building Gadgets 2
 Source project: `Direwolf20-MC/BuildingGadgets2`  
@@ -33,14 +33,14 @@ Source project: `wendall911/MobChampions`
 Copyright (c) 2024 Wendall Cada  
 License: MIT License
 
-Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
+Survival Ascension adapts Mob Champions' permissively licensed patterns for rank-driven permanent entity attribute modifiers and rank-aware hostile-mob construction. Full notice: `META-INF/third-party/MOB_CHAMPIONS_MIT.txt`.
 
 ## Apotheosis
 Source project: `Shadows-of-Fire/Apotheosis`  
 Copyright (c) 2018-2025 Stormraven Studios, LLC  
 Official GitHub `26.1` code license: MIT License
 
-Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from the MIT-licensed official GitHub source. The current CurseForge distribution page can carry separate All Rights Reserved labeling, so Survival Ascension treats source-code permission and distributed assets/package rights separately. No Apotheosis textures, models, sounds, data files, GUI assets, datapacks or other packaged assets are bundled. Full code notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
+Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from the MIT-licensed official GitHub source. Distribution-page/assets rights are treated separately. No Apotheosis textures, models, sounds, data files, GUI assets or datapacks are bundled. Full code notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
 
 ## Mekanism
 Source project: `mekanism/Mekanism`  
@@ -60,68 +60,68 @@ Survival Ascension adapts Warband's lightweight tactical-squad concepts: persist
 Source project: `MinecraftIsTooEasy/HostilesAreTooEasy`  
 License: CC0 1.0 Universal
 
-Survival Ascension 0.17 adapts the project's boss/progression-driven dynamic difficulty as modern NeoForge 26.2 world-shared SavedData stages. Survival Ascension 0.19 also adapts the CC0 Celestial Type vocabulary for Withered skeletons and Phase / Plague zombies, but reimplements those ideas with its own 26.2 spawn events, persistent NBT, reaction cooldowns, effect durations, rewards and stage gating. No legacy mixins, assets, renderer code, namespaces or old Minecraft runtime code are bundled. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
+Survival Ascension adapts boss/progression-driven world difficulty and the Withered/Phase/Plague vocabulary with its own modern spawn events, persistent NBT, reaction cooldowns, rewards and stage gates. Runtime notice: `META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt`.
 
 ## Gateways to Eternity
 Source project: `Shadows-of-Fire/GatewaysToEternity`  
 Copyright (c) 2020 Brennan Ward  
 License: MIT License
 
-Survival Ascension 0.21 adapts the encounter lifecycle of timed sequential waves, inter-wave setup, boss-bar status and completion rewards. Survival Ascension 0.22 additionally adapts at a high level the idea of wave-changing modifiers into its own randomized tactical doctrines and bounded mid-wave reinforcement rules. The implementation uses its own Ascension Nexus gate, resource costs, doctrine definitions, vanilla-mob compositions, pursuit behavior and failure rules. No Gateways to Eternity assets, datapacks, namespaces, Gate Pearl items or dependency code are bundled. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
+Survival Ascension adapts timed sequential-wave encounter lifecycle, boss-bar status and wave-changing modifier concepts into its own Ascension Trial doctrines, costs, vanilla compositions and failure rules. Full notice: `META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt`.
 
-## Create
+## Create — design reference for 0.28
 Source project: `Creators-of-Create/Create`  
-Code license: MIT  
-Assets license: All Rights Reserved
+Current repository `LICENSE.md`: code MIT; all files under `./src/main/resources/assets/` All Rights Reserved.
 
-Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled.
+Survival Ascension 0.28 studies only the high-level product philosophy of turning large throughput into multi-input processing stages and logistics value. Industrial Works is independent code using vanilla items, `production_v1`, existing Survival Ascension radial/network paths and its own batch/cycle economy. No Create source implementation, assets, textures, models, sounds, recipes, processing data, machines, namespaces or Ponder content are copied or bundled. Because no substantial Create software portion is incorporated, no new Create runtime payload is added.
 
 ## Silent Gear — design reference only for 0.27
 Source project: Silent Gear  
 Current project license: MIT
 
-Survival Ascension 0.27 studies only the high-level product philosophy that long-lived equipment progression should preserve item identity while continuing to create reasons to spend gathered resources. Apex Hunts do not copy Silent Gear's material system, parts, blueprints, grading, traits, recipes, data formats, source code, assets or namespace. No additional runtime license payload is packaged because no Silent Gear code or substantial software portion is incorporated.
+Survival Ascension studies only the product philosophy that long-lived equipment progression should preserve item identity while continuing to create reasons to spend gathered resources. Apex Hunts do not copy Silent Gear's material system, parts, blueprints, grading, traits, recipes, data formats, source code, assets or namespace.
 
 ## Lootr — design reference only for 0.23+
 Source project: Lootr  
 License: MIT
 
-Survival Ascension studies Lootr's player-fair exploration philosophy: one player's discovery/reward should not consume another player's exploration progression. The resulting `expedition_v1` implementation is independent Survival Ascension SavedData and vanilla-item reward code. No Lootr source code, custom chests, textures, assets, namespace, loot-table implementation or runtime dependency is copied or bundled.
+Survival Ascension studies player-fair exploration progression. `expedition_v1` is independent Survival Ascension SavedData and vanilla-item reward code. No Lootr source, custom chests, assets, namespace or loot implementation is bundled.
 
 ## Bountiful — reference only for 0.24+
 Source project: `ejektaflex/Bountiful`  
 License: GPL-3.0
 
-Survival Ascension studies only Bountiful's high-level variable bounty / objective-to-reward contract philosophy. 0.25 uses that product idea to give each region more than one possible persistent field directive. Survival Ascension's region matching, directive assignment, multi-task counters, persistence, reward thresholds and messages are independently implemented. No Bountiful source, bounty/decree data, GUI, assets, board/item code, namespace or runtime dependency is copied or bundled.
+Only high-level variable objective-to-reward contract philosophy is studied. No Bountiful source, data, GUI, assets, item code, namespace or dependency is bundled.
 
 ## FTB Quests — reference only for 0.24+
 Source project: `FTBTeam/FTB-Quests`  
 License: All Rights Reserved
 
-Survival Ascension studies only the product-level separation of task progress, completion state and later stage rewards. 0.25 also studies the high-level idea that one quest can contain multiple tasks which must all be satisfied. `expedition_v1` uses its own Codec, masks, directive map, action counters and vanilla/NeoForge events. No FTB Quests source, assets, quest files, task/reward classes, UI, namespace or runtime dependency is copied or bundled.
+Only product-level task/completion/reward separation and multi-task quest structure are studied. No FTB Quests source, assets, quest files, UI, namespace or dependency is bundled.
 
 ## Enhanced Celestials Tweaks — design reference only for 0.26
 Source project: `SxilverKat/Enhanced-Celestials-Tweaks`  
 License: MIT
 
-Survival Ascension 0.26 studies only the product-level idea that a temporary world event can bundle duration, spawn-pressure changes, reward rules and a defined lifecycle. The regional field incident implementation is independent Survival Ascension code using its own region catalog, action hooks, vanilla triggered spawns, boss bars, cooldowns, per-player persistence and rewards. No Enhanced Celestials Tweaks source, assets, configuration data, namespaces or runtime dependency is copied or bundled, so no additional runtime license payload is packaged for this design-only reference.
+Only the product-level temporary event lifecycle idea is studied. Regional incidents use independent Survival Ascension code, vanilla triggered spawns, boss bars, persistence and rewards.
 
 ## Repurposed Structures — reference only for 0.23+
 License: LGPL-3.0-only
 
-Used only as a design reference for making the existing vanilla world worth revisiting through broader biome/region goals instead of requiring every exploration objective to be a newly generated custom structure. Survival Ascension does not copy or bundle Repurposed Structures source, templates, processors, world-generation data, assets or namespace.
+Reference only for making existing vanilla world regions worth revisiting. No source, templates, processors, worldgen data, assets or namespace is bundled.
 
 ## Explorer's Compass / Nature's Compass — reference only for 0.23+
 License: CC-BY-NC-SA-4.0
 
-Used only to study the value of explicit destination-driven exploration. Survival Ascension does not copy source, textures, item code, search algorithms, UI or assets from either project; it uses direct vanilla biome presence around the player and its own stage-gated per-player expedition record.
+Reference only for destination-driven exploration. Survival Ascension uses direct vanilla biome presence and its own per-player expedition record; no source/UI/assets are copied.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -140,13 +140,13 @@ Project MMO 2.0 is **reference-only**. No source, assets, textures, data, namesp
 Source project: `alRex-U/ParCool`  
 License: LGPL-3.0
 
-ParCool is **reference-only** for Survival Ascension. Its public movement vocabulary was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
+ParCool is reference-only for movement vocabulary. Survival Ascension Mobility is independent vanilla/NeoForge 26.2 attribute and server-authoritative dash code.
 
 ## Majrusz's Progressive Difficulty — reference only for 0.26
 Source project: `Majrusz/MajruszsProgressiveDifficultyMod`  
 License status: no reusable source license was confirmed during the 0.26 review
 
-Survival Ascension studies only the high-level pacing of rare forced encounters such as the public Undead Army concept. Majrusz's Progressive Difficulty remains strictly reference-only: no source code, event data, assets, namespaced content or implementation is copied or bundled.
+Only high-level rare forced-encounter pacing is studied. No source code, event data, assets, namespaced content or implementation is copied or bundled.
 
 ## Other restricted/reference-only mods
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.
