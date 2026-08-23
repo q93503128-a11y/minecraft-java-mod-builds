@@ -1,0 +1,45 @@
+name: Arcane alpha71 sound fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arcane-alpha71-soundfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix soul escape sound holder type
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/arcane-circle/src/main/java/kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.java')
+          body = p.read_text(encoding='utf-8')
+          old = 'SoundEvents.SOUL_ESCAPE,\n'
+          new = 'SoundEvents.SOUL_ESCAPE.value(),\n'
+          if body.count(old) != 1:
+              raise SystemExit(f'expected one SOUL_ESCAPE holder use, got {body.count(old)}')
+          p.write_text(body.replace(old, new, 1), encoding='utf-8')
+          PY
+          rm -f .github/workflows/arcane-alpha71-soundfix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/arcane-circle .github/workflows/arcane-alpha71-soundfix.yml
+          git diff --cached --check
+          git commit -m 'Fix Arcane alpha.71 terror sound holder type [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
