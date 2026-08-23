@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.38`
+현재 구현 기준: `0.1.0-alpha.39`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: Frontier 자체 재구현보다 companion이 콘텐츠를 공급
 - `후보검증`: 버전/구성은 고정했으나 풀스택 실런타임 검증 필요
 
-이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
+이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -21,7 +21,7 @@
 | 핵심 직접 조작 소수 유지 | 완료 | B / R / Enter / Backspace 중심 |
 | 플레이어별 개별 마을 금지 | 완료 | 단일 공동 정착지 |
 | 세금/행복도/가족/거대 연구 UI 금지 | 완료 | 해당 미시관리 없음 |
-| 외부 모드를 콘텐츠 생산 수단으로 사용 | 완료/부분 | 후보 스택/라이선스 레지스터/시장·작업장 연동. 풀런타임 미검증 |
+| 외부 모드를 콘텐츠 생산 수단으로 사용 | 완료/부분 | 후보 스택 + 시장/작업장/고급 제작 연동. 풀런타임 미검증 |
 
 ## 2. 시작 / 자원 / 창고 / HUD
 
@@ -35,7 +35,8 @@
 | 임의 플레이어 상자 과잉 스캔 금지 | 완료 | 정해진 settlement storage만 권위에 포함 |
 | 멀티 창고/HUD 장시간 정합 | 부분 | 실제 2인 장시간 검증 필요 |
 | 병영 충원도 실제 자원 사용 | 완료 | 식량8 + 금속2 물리 소비 |
-| 건설소 자재도 실제 자원 사용 | 완료 | 동일 ledger의 목재/석재 ItemStack staging |
+| 건설소 자재도 실제 자원 사용 | 완료 | 동일 ledger의 목재/석재 staging |
+| 고급 제작 재료도 실제 자원 사용 | 완료/부분 | 의뢰 배럴 유물1 + 전문 주민이 운반한 금속4. 외부 무기별 실전 호환 검증 필요 |
 
 ## 3. 건설 / 지형 공사
 
@@ -50,45 +51,31 @@
 | 선택 영역 절토/성토 후반 보조 | 미구현 | 없음 |
 | 부지→운반→기초→골조→벽→지붕→마감 | 완료 | persisted physical phases |
 | 승인 순간 전체 비용 삭제 금지 | 완료 | 실제 배치 진척과 자재 소비 연결 |
-| 높은/큰 건물 물리 시공 | 완료/부분 | 감시탑·병영·건설소가 기존 scaffold/haul 사용. 실동선 검증 필요 |
+| 높은/큰 건물 물리 시공 | 완료/부분 | 감시탑·병영·건설소·고급 제작소도 scaffold/haul 사용. 실동선 검증 필요 |
 | 플레이어 건축물/컨테이너 보호 | 완료/부분 | 주요 공사경로 보호. 폭발/피스톤 전면 검증 남음 |
-| 자동 건설 물류 지원 | **완료/부분** | Alpha.38 건설소 4배럴 + 물리 보급 주민. 중형 토목/복수 프로젝트는 미완 |
-
-### Alpha.38 건설소 감사
-
-- 마을 단계 + 창고 1곳 후 해금.
-- 13×9, 목재112/석재64.
-- 회전 대응 전용 자재 배럴 4개가 물리 settlement storage에 포함된다.
-- 목재/석재는 건설소 자재칸을 먼저 보지만 식량/금속/무관한 전리품 자동 입고는 건설소를 건너뛴다.
-- 보급 주민은 건물 프로젝트가 있을 때만 움직이며 ordinary storage에서 실제 목재/석재를 꺼내 손에 든다.
-- 1회 최대32, 목표 reserve 목재96/석재96, source radius24.
-- source→office 구간의 sampled chunk가 이미 로드되어야 한다.
-- 원거리 `insert()` 순간이동이 아니라 도착 후 `insertAt()` 한다.
-- 보급 주민은 서비스 유닛으로 민간 population/housing을 늘리지 않는다.
-- 기존 builder가 office-first storage ordering을 이용하며 grading/placement authority는 그대로 `SettlementConstructionService` 하나다.
-- 추상 `+건설속도%`, force-load, 두 번째 builder, 가상 construction point는 없다.
-- 실제 이동 이득/병목은 실플레이에서 확인해야 한다.
+| 자동 건설 물류 지원 | 완료/부분 | 건설소 4배럴 + 물리 보급 주민. 중형 토목/복수 프로젝트는 미완 |
 
 ## 4. 주민 / 생산 / 방어
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
 | 건설가 | 완료 | 전용 builder |
-| 건설 보급 역할 | 완료/부분 | Alpha.38 건설소별 physical supply runner. 장기 duplicate/pathfinding 실플레이 필요 |
+| 건설 보급 역할 | 완료/부분 | 건설소별 physical supply runner. 장기 duplicate/pathfinding 실플레이 필요 |
 | 벌목꾼 | 완료 | 실제 나무 작업 |
 | 농부 | 완료 | 실제 작물 작업 |
 | 광부 | 완료 | 실제 유한 광석 작업 |
 | 채석공 | 완료 | 노출 석재 작업 |
 | 대장장이 | 부분 | 수리 기능은 있으나 주민/제작 연출 약함 |
-| 작업장 전문 제작자 | 부분 | 외부 무기 물리 정비 장인. 고급 제작 미완 |
+| 작업장 전문 제작자 | 완료/부분 | 외부 무기 물리 정비 장인 |
+| 고급 제작 전문 역할 | 완료/부분 | Alpha.39 건물 귀속 visible specialist. 민간 population/job 통합은 후속 정리 |
 | 근거리 경비 | 완료/부분 | 경비초소 + 기본 경비 |
-| 감시/장거리 대응 | 완료/부분 | 감시탑별 response golem, 40블록 loaded 대응. 경보/실전 검증 남음 |
-| 정식 주둔 병력 | 완료/부분 | 병영별 3슬롯, 식량/금속 충원, 영구 귀속, loaded patrol. 사람형 병사/병과 미완 |
+| 감시/장거리 대응 | 완료/부분 | 감시탑별 response golem, loaded 위협 대응. 경보/실전 검증 남음 |
+| 정식 주둔 병력 | 완료/부분 | 병영별3슬롯, 식량/금속 충원, 영구 귀속. 사람형 병사/병과 미완 |
 | 운송업자 | 완료 | 전초별 영구 태그 + 도로 물류 |
-| 상인 | 부분 | 시장 방문 상인/물리 판매, 구매·고급 교역 미완 |
-| 로드 지역 실제 이동·작업 | 완료 | 생산/운송/시장/작업장/건설소/방어 |
+| 상인 | 부분 | 시장 방문 상인/물리 판매. 구매·고급 교역 미완 |
+| 로드 지역 실제 이동·작업 | 완료 | 주요 생산/운송/제작/건설/방어 |
 | 언로드 저빈도 논리 시뮬레이션 | 미구현 | 현재 안전 정지, coarse 생산/물류 없음 |
-| 자동 직업 배치 | 완료/부분 | 주요 역할 자동화. 본진 동일 역할 장기 귀속 추가 검증 필요 |
+| 자동 직업 배치 | 완료/부분 | 주요 역할 자동화. 서비스 전문직과 민간 job 통합 정리 여지 |
 
 병영은 민간 population/housing과 분리되며 공짜 고티어 증원 백엔드는 제거된 상태를 유지한다. 현재 병사 Iron Golem proxy는 최종 프레젠테이션이 아니다.
 
@@ -98,27 +85,28 @@
 | --- | --- | --- |
 | 개척 캠프 | 창고·주택·벌목·소농장 | 완료 |
 | 촌락 | 채석·광산·대장간·경비 | 완료/부분 |
-| 마을 | 도로·다리·시장·첫 전초·건설 물류 | **완료/부분** — 도로/시장/전초/정거장/건설소 + 작은 계단·교량 구현. 실동선 검증 남음 |
-| 개척 도시 | 병영·고급 제작·여러 전초 | 완료/부분 — 병영/여러 전초 구현, 고급 제작 미구현 |
-| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — 도로망/공공사업/감시망/주둔 병력 일부. 전문 거점·고급 교역 미완 |
+| 마을 | 도로·다리·시장·첫 전초·건설 물류 | 완료/부분 — 실동선/토목 검증 남음 |
+| 개척 도시 | 병영·고급 제작·여러 전초 | **완료/부분** — 병영 + Alpha.39 고급 제작소 + 여러 전초 구현. 고급 제작 breadth/실런타임 검증 남음 |
+| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — 도로망/공공사업/감시망/주둔 병력 일부. 수변/군사 전문 전초와 고급 교역 미완 |
 
 ## 6. 건물/인프라 계열
 
 원본 목표: 약 `15~20개 계열`.
-현재 functional `BuildingType`: **14개** + 도로 + 전초기지.
+현재 functional `BuildingType`: **15개** + 도로 + 전초기지.
 
 | 원본 계열 | 상태 |
 | --- | --- |
 | 마을 중심 | 부분 — civic core 성장, 별도 선택 건물은 아님 |
 | 창고 | 완료 |
 | 주택 | 완료 |
-| **건설소** | **완료/부분** — Alpha.38 4자재 배럴 + 물리 보급 주민. 고급 토목/다중 공사 지원은 미완 |
+| 건설소 | 완료/부분 — 물리 자재 staging/runner 구현. 고급 토목/다중 공사 지원은 미완 |
 | 벌목소 | 완료 |
 | 농장 | 완료 |
 | 채석장 | 완료 |
 | 광산 | 완료 |
 | 대장간 | 완료/부분 |
-| 작업장 | 완료/부분 — 외부 무기 정비 완료, 일반/특수 제작 확장 여지 |
+| 작업장 | 완료/부분 — 외부 무기 정비 완료 |
+| **고급 제작소** | **완료/부분** — 외부 무기 + 유물1 + 금속4 → 호환 power30 인챈트 + 완전 수리. 레시피 breadth/실전 호환 검증 남음 |
 | 도로 | 완료 |
 | 작은 다리 | 완료/부분 — 최대6칸 수로 3폭 석재 데크. 대형/협곡 교량 미완 |
 | 전초기지 중심 | 완료 |
@@ -126,10 +114,25 @@
 | 경비초소 | 완료 |
 | 감시탑 | 완료/부분 — loaded response guard. 경보 UI/실전 검증 남음 |
 | 병영 | 완료/부분 — 군사3슬롯, 실물 보급 충원/순찰. 최종 병사 외형/병과 미완 |
-| 시장 | 완료/부분 — 유물→실물 에메랄드, 구매/고급 교역 미완 |
-| **고급 제작소** | **미구현** |
+| 시장 | 완료/부분 — 유물→실물 에메랄드. 구매/고급 교역 미완 |
 
-단순히 15개 숫자를 채우기 위해 의미 없는 건물을 추가하지 않는다. 다음 건물은 고급 제작/외부 희귀재료 루프를 실제로 확장해야 한다.
+15개 숫자를 채웠다는 이유로 의미 없는 16~20번째 건물을 만들지 않는다. 다음 확장은 원본 영토/전초/교역/토목 루프를 실제로 늘릴 때만 추가한다.
+
+### Alpha.39 고급 제작소 감사
+
+- 개척 도시 단계 + 작업장1 + 시장1 후 해금.
+- 15×11, 목재168/석재120.
+- 전용 commission barrel은 일반 shared storage에 포함하지 않는다.
+- 플레이어가 직접 `인챈트 없는 인식 외부 무기 + expedition relic`을 넣어야 의뢰가 성립한다.
+- 공유 창고의 무기/유물을 자동으로 가져오지 않는다.
+- 전문 제작 주민은 공유 저장소에서 **금속만** 실제 추출해 손에 들고 의뢰 배럴로 이동한다.
+- 한 번의 forge 비용은 유물1 + 금속4.
+- power30 enchanting-table 후보 중 해당 외부 무기가 지원하는 enchantment만 사용한다.
+- enchant 결과가 실제 생성됐는지 검증한 뒤에만 금속과 유물을 소모한다.
+- 호환 enchant가 없으면 재료 소실 없이 멈춘다.
+- 성공하면 같은 외부 무기를 완전 수리하고 enchant 결과를 적용한다.
+- hard companion class/item dependency, force-load, teleport inventory, 가상 crafting point는 없다.
+- 현재 고급 제작 주민은 건물 귀속 service specialist라 민간 population을 올리지 않는다. 향후 citizen-job 통합 시 중복 인구를 만들면 안 된다.
 
 ## 7. 전초기지 / 영토
 
@@ -139,12 +142,12 @@
 | 숲 벌목 거점 | 완료 | lumber specialization |
 | 평야 농업 거점 | 완료 | agriculture specialization |
 | 채석 거점 | 완료 | quarry specialization |
-| 해안/강 어업·교역 | 미구현 | 수변 전문화 없음 |
-| 위험 지역 군사 거점 | 미구현 | 병영은 본진 계층이며 전초 군사 전문화는 별도 |
+| 해안/강 어업·교역 | **미구현** | 수변 전문화 없음 |
+| 위험 지역 군사 거점 | **미구현** | 병영은 본진 계층이며 전초 군사 전문화는 별도 |
 | 연결 전 독립 재고 | 완료 | outpost stockpile |
 | 연결 후 실제 운송 | 완료/부분 | 도로 운송 + 본진 화물 정거장. wagon 표현 없음 |
 | 순간이동 금지 | 완료 | 도로 기반 이동 |
-| Terralith biome 기반 전문화 | 부분 | 일반 환경 스캔 기반, companion-aware mapping 보강 필요 |
+| Terralith biome 기반 전문화 | 부분 | 일반 환경 스캔 기반. companion-aware mapping 보강 필요 |
 
 ## 8. 도로 / 토목
 
@@ -153,76 +156,74 @@
 | 시작·끝·필요 시 경로 선택 | 완료/부분 — 실제 경로 UX 추가 검증 필요 |
 | 실제 주민 grading/paving | 완료 |
 | 건물 회피 | 완료/부분 |
-| 급경사 회피 | 부분 — 2블록 이상 급단차 거부, 대형 토목 우회 미완 |
-| 작은 계단 자동 포함 | 완료/부분 — 1블록 종단 경사를 cobblestone stair 처리 |
+| 급경사 회피 | 부분 — 2블록 이상 급단차 거부, 대형 우회/토목 미완 |
+| 작은 계단 자동 포함 | 완료/부분 — 1블록 종단 경사를 실제 cobblestone stair로 처리 |
 | 작은 교량 자동 포함 | 완료/부분 — 최대6칸 물길, 3폭 stone-brick deck |
-| 도로가 실제 물류 의미를 가짐 | 완료 — 전초 운송 + 정거장 위치/효율에 영향 |
-| 대형 교량/터널/옹벽 | 미구현 | 의도적 후반 토목 범위 |
+| 도로가 실제 물류 의미를 가짐 | 완료 |
+| 대형 교량/터널/옹벽 | 미구현 |
 
-## 9. Alpha.31~38 성장 연결
+## 9. 외부 모드 / 탐험 루프
 
-- **Alpha.31**: 외부 재료/relic/Weapons Expanded 인식, soft integration.
-- **Alpha.32**: 전용 시장 배럴의 relic만 실물 emerald로 교역.
-- **Alpha.33**: 작업장 장인이 실제 금속을 운반해 외부 무기 정비.
-- **Alpha.34**: 수레 정거장 4화물 배럴, 운송16→32, 기존 transport authority 유지.
-- **Alpha.35**: 자동 cobblestone stair + bounded stone-brick small bridge, 실제 석재 비용.
-- **Alpha.36**: 감시탑 physical tall build + tower-assigned loaded response guard.
-- **Alpha.37**: 병영 3군사 슬롯 + 실물 식량/금속 충원, 공짜 고티어 증원 제거.
-- **Alpha.38**: 건설소 4자재 배럴 + physical supply runner, 기존 builder authority 유지.
+| 요구사항 | 상태 | 현재 |
+| --- | --- | --- |
+| Terralith 지형 활용 | 후보검증 | lock 완료, fresh-world 풀런타임 미검증 |
+| Dungeons and Taverns / Repurposed Structures | 후보검증 | 탐험 구조물 공급 예정, 풀런타임 미검증 |
+| Better Combat | 후보검증 | 전투 체감 외부 공급, 풀런타임 미검증 |
+| Weapons Expanded | 완료/부분 | 외부 무기 인식 + repair + Alpha.39 forge seam. 실제 전체 무기 호환 테스트 필요 |
+| Lootr | 후보검증 | 던전 전리품 보조, 풀런타임 미검증 |
+| Sophisticated Backpacks | 후보검증 | 원거리 탐험 편의, 풀런타임 미검증 |
+| Jade | 미구현/후보검증 | 모드는 lock됐으나 Frontier 상태 provider 미구현 |
+| Xaero 지도 | 미구현/후보검증 | 모드는 lock됐으나 본진/전초 marker 연동 미구현 |
+| 탐험 전리품→마을 가치 | 완료/부분 | 시장 판매 / 작업장 repair / 고급 forge 구현. 보스/구조 발견 자체의 progression 연결은 약함 |
 
-## 10. 전체 companion 런타임
+`COMPANION_LOCK.json`은 `candidate_runtime_lock`이며 실제 full client/server launch 전에는 runtime-tested로 올리지 않는다.
 
-`COMPANION_LOCK.json`에는 Terralith/Lithostitched, DnT, Repurposed Structures, Better Combat 및 의존 라이브러리, Weapons Expanded, Lootr, Sophisticated, Jade, Xaero를 고정했다.
-
-상태: **후보검증** — 버전/의존성과 Frontier CI는 확인하지만 전부 함께 같은 26.2 인스턴스에서 실제 부팅/새 월드/멀티를 아직 끝내지 않았다.
-
-| 외부 축 | Frontier 연결 상태 |
-| --- | --- |
-| Terralith | 부분 — 바이옴 기반 전초 판정 보강 미완 |
-| Dungeons and Taverns | 부분 — relic 시장 소비 가능, 구조물 발견 progression 미연결 |
-| Repurposed Structures | 부분 — 탐험 콘텐츠 공급, 발견 progression 미연결 |
-| Better Combat | 외부/후보검증 — 풀스택 회귀 필요 |
-| Weapons Expanded | 부분 강화 — 외부 무기 인식 + 작업장 정비 |
-| Lootr | 외부/후보검증 — 멀티 던전 보상 확인 필요 |
-| Sophisticated Backpacks | 외부/후보검증 |
-| Jade | 미구현/후보검증 — Frontier provider 미작성 |
-| Xaero's Minimap | 미구현/후보검증 — Frontier waypoint/territory 연동 미작성 |
-
-## 11. UI / 정보
+## 10. UI / 정보 구조
 
 | 요구사항 | 상태 |
 | --- | --- |
-| compact resource HUD | 완료 |
-| 건물 3D ghost/회전 | 완료 |
-| 단일 B 팔레트 | 완료 |
-| 건설 자재/진척 물리 가시성 | 부분 — 현장 crate/scaffold + `/frontier status` 건설소 staging. 더 좋은 world/UI 표현 여지 |
-| 건물별 상태 패널 | 미구현/부분 |
-| compact notifications | 미구현 |
-| Jade provider | 미구현 |
-| Xaero integration | 미구현 |
+| 상시 compact resource HUD | 완료 |
+| 월드형 건물 placement | 완료 |
+| 회전/재료/가능 여부 preview | 완료 |
+| road/outpost placement | 완료/부분 |
+| 건물 상태/작업 진행 정보 | 부분 — HUD/가이드/status 존재, 별도 compact 상태 표현 보강 필요 |
+| 물리 자재 흐름 가시화 | 완료/부분 — 실제 운반 존재, 정보 표현은 더 개선 가능 |
+| compact side notification | 미구현/부분 |
+| Jade 기반 최소 상태 노출 | 미구현 |
+| Xaero 본진/전초/도로망 연동 | 미구현 |
 
-## 12. 아직 큰 미완성
+새 기능마다 새 키나 새 대형 dashboard를 만드는 방식은 금지한다.
 
-- 고급 제작소 / 외부 희귀 재료 제작;
-- 강/해안 어업·교역 전초;
-- 위험 지역 군사 전초;
-- 언로드 저빈도 논리 시뮬레이션;
-- Jade provider / Xaero 연동;
-- 외부 구조물 발견/보스 결과의 progression 연결;
-- 중형 건물 지형공사/옹벽/대형 토목;
-- 사람형 병사/장비/병과 프레젠테이션;
-- 건설/재료/알림 UI 보강;
-- 전체 companion stack 실제 client/server 부팅 및 멀티 회귀;
-- 최종 장시간 생존/밸런스/동선 검사.
+## 11. 현재 가장 큰 남은 갭
 
-## 13. 다음 작업 우선순위
+우선순위는 실플레이 회귀가 생기면 즉시 그쪽이 우선이다. 그렇지 않으면:
 
-1. Alpha.38 최종 source audit / Java25 clean build / JAR verify를 최종 source/docs SHA로 고정.
-2. 고급 제작소를 추가하고 외부 희귀 재료·탐험 결과를 후반 제작에 실제 연결.
-3. 강/해안 교역·어업 및 위험 지역 군사 전초 전문화.
-4. full `COMPANION_LOCK` fresh-world runtime test.
-5. 언로드 coarse simulation을 물리 아이템 권위를 깨지 않는 방식으로 설계.
-6. Jade/Xaero 및 compact 상태/알림 UI 남은 축을 닫기.
-7. 전체 실플레이 acceptance에서 건설소 보급 동선, 기존 건설 pacing, 도로/물류/방어 회귀를 검증.
+1. **해안/강 어업·교역 전초 전문화** — 원본 지형별 전문 거점 중 가장 큰 빈칸.
+2. **위험 지역 군사 전초 전문화** — 본진 병영과 다른 영토 군사 역할.
+3. **full companion fresh-world client/server runtime + 멀티 검증**.
+4. **언로드 저빈도 production/logistics simulation** — 물리 item authority를 깨지 않는 coarse 모델 필요.
+5. **Jade/Xaero 실제 Frontier integration + compact 상태/notification UX**.
+6. **중간급 지형 공사** — 옹벽/명시적 terrain work/절토·성토 보조.
+7. **외부 구조·보스 발견이 progression에 더 직접 연결되는 루프**.
+8. **고급 제작 breadth** — 실제 탐험 희귀재료가 충분히 생길 때만 recipe 추가.
+9. **사람형 병사/외부 무기 장비 프레젠테이션** — companion 전투 stack과 함께 가치 검증 후.
+10. **장시간 survival + 2인 multiplayer acceptance**.
 
-실플레이 피드백이 생기면 이 우선순위보다 실제 회귀/근본 원인 수정이 우선한다.
+## 12. Alpha.39 실플레이 acceptance
+
+반드시 실제 게임에서 확인할 것:
+
+- founding → 초기 5개 핵심 건물 진행;
+- save/reload 중 building grading/hauling;
+- 건설소 보급 주민 source 선택/운반/staging/builder preference;
+- road stair/short bridge 실제 걷기;
+- road → outpost → 생산 → transporter → cart station;
+- dungeon/loot에서 얻은 relic을 **시장 판매 vs 고급 제작 재료**로 실제 선택 가능한지;
+- normal workshop repair와 advanced workshop forge가 서로 의뢰 배럴을 침범하지 않는지;
+- 외부 무기별 power30 enchant 호환, 호환 불가 시 재료 무손실;
+- 고급 제작 주민의 로드/언로드/밤/금속 운반/중복 생성 여부;
+- watchtower/barracks 전투와 병력 교체 비용;
+- 2인 shared storage/construction/logistics 정합;
+- full companion lock fresh-world launch.
+
+자동 감사/빌드/JAR 검증은 소스 정합을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime 품질을 대신하지 않는다.
