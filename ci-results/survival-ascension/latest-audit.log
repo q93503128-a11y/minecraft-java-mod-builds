@@ -1,2 +1,7 @@
-SOURCE AUDIT FAILED
-- third-party policy missing: stock-backed request/local-restocking
+SOURCE AUDIT PASS
+- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
+- 0.28 four-line production remains atomic, bounded and deadlock-normalized
+- 0.29 field_depots_v1 owns max3 real Barrels/player; registration costs one supply charge
+- depot material access is same-dimension, radius32, loaded-chunk-only, mayInteract-checked and player-inventory-first
+- bulk Construction and irrigation consume actual linked Barrel stock with rollback on unexpected post-place consume failure
+- expedition directives/incidents, nine Apex patterns, Trials, Mastery VI, Field Mastery and Awakened Mythic regressions retained
