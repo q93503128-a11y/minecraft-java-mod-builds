@@ -85,7 +85,9 @@ public final class WoodcuttingProgression {
                     BlockState state = level.getBlockState(target);
                     if (!state.is(BlockTags.LOGS) || level.getBlockEntity(target) != null) continue;
                     if (!isValidLogBreak(player, level, target, state, player.getMainHandItem())) continue;
-                    player.gameMode.destroyBlock(target);
+                    if (player.gameMode.destroyBlock(target)) {
+                        ExpeditionProgression.recordSkillAction(player, SkillType.WOODCUTTING, 1);
+                    }
                     if (!player.getMainHandItem().is(ItemTags.AXES)) break;
                 }
             } finally {
@@ -100,8 +102,6 @@ public final class WoodcuttingProgression {
         gathered.remove(origin.immutable());
         if (gathered.isEmpty()) return;
 
-        // Veinminer++ smart-tree rule: connected logs are only bulk-felled when foliage is actually
-        // attached to the origin or one of the collected logs. Plain log buildings stay single-block.
         if (!hasLeavesNearby(level, origin, gathered)) return;
 
         Deque<BlockPos> targets = new ArrayDeque<>(gathered);
