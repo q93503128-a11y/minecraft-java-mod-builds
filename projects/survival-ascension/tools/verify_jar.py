@@ -30,6 +30,8 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/world/WorldAscensionData.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionProgression.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.class",
+        "kr/moonseungjun/survivalascension/expedition/ExpeditionAction.class",
+        "kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionData.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
