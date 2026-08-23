@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.36
+## Current version: 0.1.0-alpha.37
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,11 +29,11 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.36 adds no new gameplay key or separate defense dashboard.
+Alpha.37 adds no new gameplay key or separate military dashboard.
 
 ## Functional building families
 
-Current functional families: **12**.
+Current functional families: **13**.
 
 - house;
 - lumber camp;
@@ -44,11 +44,12 @@ Current functional families: **12**.
 - blacksmith;
 - workshop;
 - guard post;
-- **watchtower**;
+- watchtower;
+- **barracks**;
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. Construction office, barracks and advanced workshop remain unfinished, together with later territory specializations.
+The original v0.2 target remains roughly 15–20 meaningful families. Construction office and advanced workshop remain major unfinished placement families, together with later territory specializations.
 
 ## Physical construction
 
@@ -60,7 +61,7 @@ Building approval does not instantly mutate the world or delete the full project
 - shallow support uses coarse dirt rather than free recoverable economic material;
 - real wood/stone stacks are extracted from loaded settlement storage in bounded batches;
 - a protected physical site barrel stages materials;
-- tall buildings such as the watchtower reuse the persisted construction-scaffold system rather than appearing instantly;
+- tall/large buildings reuse the persisted construction-scaffold system rather than appearing instantly;
 - unsafe obstructions pause work instead of being silently destroyed;
 - no `destroyBlock` / loose-drop construction path;
 - save migration preserves older active projects.
@@ -135,22 +136,38 @@ This does not claim large ravine bridges, tunnels, retaining walls or arbitrary 
 
 ## Alpha.36 — watchtower / loaded threat response
 
-Alpha.36 closes the first original-design watchtower slice while keeping barracks as a later military layer.
-
 - new `WATCHTOWER` functional building;
 - unlocks after one completed guard post;
 - cost: wood 96 / stone 72;
 - compact 7×7 footprint with a tall physical timber/stone tower, ladder, observation deck, lamps and bell;
-- existing builder grading, real-material hauling and construction scaffolds build the tower normally;
 - every completed, loaded tower maintains one persistently tagged response iron golem assigned to that tower;
-- the tower checks a 40-block horizontal threat radius every 100 ticks;
-- nearby loaded `Monster` entities can become response targets;
-- creepers are intentionally excluded from forced watchtower targeting so the tower does not drag explosion risk toward settlement infrastructure;
-- when no eligible threat remains, the response guard clears its forced target and returns toward the tower;
-- watchtower behavior does not force-load chunks;
-- watch guards are defense units, not settlement population and not the future barracks soldier system.
+- 40-block loaded threat radius, with creepers excluded from forced pursuit;
+- when no eligible threat remains the guard returns toward the tower;
+- no chunk force-load;
+- watch guards are baseline defense units, not civilian population.
 
-Current watchtower detection is **loaded-world defense**, not a global radar. A player-facing warning/notification layer and true barracks soldiers remain later scope.
+## Alpha.37 — supplied barracks / regular garrison
+
+Alpha.37 closes the first original-design barracks slice and removes the old free high-tier reinforcement shortcut.
+
+- new `BARRACKS` functional building;
+- unlock: **frontier-town tier + one watchtower + one blacksmith**;
+- cost: wood 144 / stone 112;
+- 15×11 physical barracks with enclosed quarters/armory, three visible bunk stations and a rear drill yard;
+- one barracks owns **3 persistent military slots**;
+- military capacity is separate from civilian `population` and `housingCapacity`, so soldiers cannot accelerate population-based tier progression and civilians cannot occupy military bunks;
+- one missing loaded slot is considered for automatic recruitment every 600 ticks;
+- each recruited garrison unit costs **8 real food + 2 real metal** from fully loaded shared physical storage;
+- food and metal are checked together before mutation so recruitment cannot partially consume one category and fail on the other;
+- soldiers receive persistent barracks-coordinate and slot tags rather than UUID-order pairing;
+- loaded garrison patrol checks ordinary hostile `Monster` entities around its barracks, while creepers are excluded from forced pursuit;
+- unloaded barracks/patrol areas are not interpreted as missing soldiers and no chunks are force-loaded;
+- tagged barracks combat proxies drop no iron/resources on death, preventing the military system from becoming an iron farm;
+- a killed unit therefore costs real settlement supplies again when its slot is later refilled;
+- `/frontier status` reports loaded garrison count/capacity and the recruitment cost;
+- the old frontier-town/domain **free tier garrison reinforcement backend was removed**; `SettlementTierInfrastructureService` now owns tier-visible public works only.
+
+The current regular soldier combat body is an **Iron Golem proxy**. Alpha.37 does not claim final humanoid soldier visuals, equipment/loadouts, formation behavior or class variety; those remain presentation/combat-depth work, especially if external combat/weapon content is used later.
 
 ## External content stack
 
@@ -170,4 +187,4 @@ Canonical CI performs:
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on pathfinding, watchtower combat behavior, stair/bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on pathfinding, garrison combat/pacing, stair/bridge appearance, balance or full companion-stack runtime compatibility. Those still require real Minecraft play.
