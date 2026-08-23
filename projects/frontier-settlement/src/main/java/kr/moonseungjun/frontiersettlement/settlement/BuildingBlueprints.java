@@ -33,6 +33,7 @@ public final class BuildingBlueprints {
             case QUARRY -> quarry(origin);
             case MINE -> mine(origin);
             case WAREHOUSE -> warehouse(origin);
+            case CONSTRUCTION_OFFICE -> ConstructionOfficeBuildingBlueprint.create(origin);
             case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin);
             case WATCHTOWER -> WatchtowerBuildingBlueprint.create(origin);
             case BARRACKS -> BarracksBuildingBlueprint.create(origin);
