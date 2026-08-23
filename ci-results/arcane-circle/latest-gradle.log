@@ -1,7 +1,8 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 50, in <module>
-    need(eighth,'EARTHQUAKES.add(new EarthquakeField','INCENDIARY_CLOUDS.add(new IncendiaryCloudField',
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 16, in <module>
+    need(gradle,'mod_version=0.12.1-alpha.66'); need(main,'VERSION = "0.12.1-alpha.66"')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 12, in need
     for token in tokens: assert token in body, token
                                 ^^^^^^^^^^^^^
-AssertionError: INCENDIARY_CLOUDS.add(new IncendiaryCloudField
+AssertionError: mod_version=0.12.1-alpha.66
