@@ -4,6 +4,43 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then scales enemies, world stages, exploration goals and shared infrastructure back against that growth.
 
+## 0.27.0-alpha.1 — Apex Tracking Post + Behavior-driven Apex Hunts
+0.27 fills the main remaining combat gap after 0.26: the player had large-scale progression, tactical warbands and repeatable trials, but no region-linked mini-boss hunt loop with clearly different behavior patterns.
+
+### Apex Tracking Post
+A new Stage-1 shared infrastructure project is available from `M -> Infrastructure`.
+- Build cost: Iron 512 + Gold 256 + Amethyst 256 + Echo Shards 32 + Nether Star 1.
+- Once complete, re-select the post while standing inside an already completed expedition region to start that region's Apex Hunt.
+- Repeat hunt cost: Echo Shards 8 + Amethyst Shards 32 + Gold Ingots 32.
+- Hunts cannot be started by creative/spectator players.
+- One hunt lasts 90 seconds, fails after 10 seconds of owner death/region/distance invalidity, uses a boss bar, recalls wandering escorts and cleans tagged mobs on logout/restart.
+- Active hunts are separated by 96 blocks. Starting a hunt also pushes the player's field-incident ready time past the hunt window, and the Ascension Nexus refuses to open a Trial while that player owns an Apex Hunt.
+
+### Nine region Apex archetypes
+Each expedition region has one persistent first-kill slot and one behavior identity.
+- Woodland `수림 파쇄자`: Ravager-led charge hunt. A visible one-second windup precedes a high-speed charge and impact knockback.
+- Arid `황야 지휘관`: Husk commander. Calls bounded reinforcements at 70% and 35% health.
+- Wetland `늪지 역병핵`: Zombie plague-heart. Periodic close-range poison field also heals the boss.
+- Highlands `능선 사냥꾼`: Stray skirmisher. Repeated lateral/reposition impulses punish static melee chasing.
+- Ocean `심해 압제자`: Elder Guardian with Guardian escorts. Periodically pulls the owner back into beam range.
+- Deep `심층 추적자`: Spider stalker. Repeated long leaps close medium distance.
+- Frozen `빙설 감시자`: Stray control hunt. Periodic cold field applies strong short Slowness.
+- Nether `네더 약탈자`: Wither Skeleton with Blaze/Wither Skeleton escorts. Periodic close-range Wither pulse and displacement.
+- End `공허 전조자`: Enderman with Shulker/Enderman escorts. Periodic Levitation pulse while the boss aggressively closes distance.
+
+Boss durability/armor/attack additions are archetype-specific rather than one blanket multiplier. The point of the tier is telegraphed behavior + escort composition, not only a larger health number.
+
+### Rewards and long-term sink
+- Every victory gives an affix item and materials while consuming the repeat-entry resources above.
+- Stage 1: Ascended II gear + Diamonds 2 + Echo Shards 4 + XP 120.
+- Stage 2: Ascended II gear, with 20% Mythic III chance + Diamonds 3 + Echo Shards 6 + Netherite Scrap 1 + XP 180.
+- Nearby helpers inside 48 blocks receive XP 50 without duplicating owner loot.
+- `apex_hunt_v1` stores per-player first defeats and total victories.
+- First defeat of all nine regional Apex archetypes grants guaranteed Mythic III + Netherite Scrap 4 + Echo Shards 32 + Dragon's Breath 16 + XP 500.
+- `/ascension stats` reports `Apex first defeats /9` and total hunt victories.
+
+The repeat reward is deliberately below the Stage-2 Ascension Trial's guaranteed Mythic III so the Trial remains the stronger deterministic endgame loot source.
+
 ## 0.26.0-alpha.1 — Rare Regional Field Incidents
 0.25 made each expedition region use one of two persistent multi-task directives. 0.26 adds short rare incidents so an expedition can change while the player is actually doing it instead of remaining only a checklist.
 
@@ -52,7 +89,7 @@ Examples:
 
 Every task reuses actual Survival Ascension action hooks: successful smart-tree work, protected/material-backed scaled construction, mature crop breaks, legitimate traversal, water/vessel voyage, valid pickaxe destruction, hostile `Enemy` kills and successful server-validated dashes.
 
-`/ascension stats` reports discoveries, completed directives, resolved incidents and active directive task progress.
+`/ascension stats` reports discoveries, completed directives, resolved incidents, active directive task progress, Apex first defeats and total Apex victories.
 
 ## Field Mastery remains the final Lv.100 physical layer
 Complete all nine region directives at Stage 2:
@@ -72,10 +109,12 @@ Complete all nine region directives at Stage 2:
 - Trial completion guarantees Mythic III gear; valid Mythic III can be awakened once into four-affix Awakened Mythic gear through the Equipment radial.
 
 ## External design references
-- Enhanced Celestials Tweaks (MIT): studied the high-level idea that one temporary event can bundle spawn changes, duration, rewards and lifecycle rules. 0.26 uses its own region incidents, vanilla mobs, boss bar, persistence and reward logic; no source/assets/config data are bundled.
-- Majrusz's Progressive Difficulty: Undead Army-style rare forced encounter pacing is reference-only. The current public repository root does not expose a license file, so no source/assets/data are copied.
+- Silent Gear: current CurseForge project is MIT and was studied for the high-level idea that long-lived gear progression should retain identity while resources continue to matter. 0.27 does not copy its material/part/blueprint implementation; Survival Ascension instead uses a hunt-driven affix reward loop.
+- Apotheosis: the official `Shadows-of-Fire/Apotheosis` GitHub `26.1` branch contains an MIT LICENSE for code. CurseForge currently labels the distribution page All Rights Reserved, so Survival Ascension treats source-code adaptation and packaged assets/distribution rights separately; no Apotheosis assets are bundled.
+- Enhanced Celestials Tweaks (MIT): event lifecycle reference only for 0.26.
+- Majrusz's Progressive Difficulty: rare forced encounter pacing reference-only; no code/assets copied without a clear reusable license.
 - FTB Quests and Bountiful remain reference-only for persistent multi-task/contract structure.
 - Lootr remains a design reference for per-player exploration-reward fairness.
-- Gateways to Eternity, Skill Proficiencies, Veinminer++, MineMenu, Building Gadgets 2, Mob Champions, Apotheosis, Mekanism and Warband retain their existing packaged notices where code patterns were permissively adapted.
+- Gateways to Eternity, Skill Proficiencies, Veinminer++, MineMenu, Building Gadgets 2, Mob Champions, Mekanism and Warband retain their existing packaged notices where code patterns were permissively adapted.
 
 M main radial: Skills / Mining / Construction / Equipment / Infrastructure / Guide / Close. Shift remains the precision override for scaled work.
