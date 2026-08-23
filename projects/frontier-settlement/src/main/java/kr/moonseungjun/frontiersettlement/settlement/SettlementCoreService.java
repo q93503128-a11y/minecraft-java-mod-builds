@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,6 +36,7 @@ public final class SettlementCoreService {
             if (changed >= MAX_PLACEMENTS_PER_TICK) break;
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
+            if (level.getBlockEntity(placement.pos()) != null || !current.getFluidState().isEmpty()) continue;
             if (!canSafelyReplace(current, placement.floor())) continue;
             level.setBlock(placement.pos(), placement.state(), DIRECT_BLOCK_UPDATE);
             changed++;
@@ -131,6 +133,25 @@ public final class SettlementCoreService {
                 || state.is(Blocks.ANDESITE) || state.is(Blocks.DIORITE) || state.is(Blocks.GRANITE)
                 || state.is(Blocks.TUFF) || state.is(Blocks.SAND) || state.is(Blocks.RED_SAND)
                 || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY) || state.is(Blocks.SNOW_BLOCK);
+    }
+
+    /** Civic-core blocks are non-economic settlement infrastructure and must never become a drop farm. */
+    public static void onBreakBlock(BreakBlockEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        MinecraftServer server = level.getServer();
+        if (level != server.overworld()) return;
+        SettlementData data = SettlementData.get(server);
+        if (!data.founded()) return;
+
+        BlockPos pos = event.getPos();
+        BlockState current = level.getBlockState(pos);
+        for (Placement placement : desired(data)) {
+            if (!placement.pos().equals(pos)) continue;
+            if (!current.is(placement.state().getBlock())) return;
+            event.setCanceled(true);
+            event.setNotifyClient(true);
+            return;
+        }
     }
 
     private record Placement(BlockPos pos, BlockState state, boolean floor) {}
