@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
@@ -44,9 +45,15 @@ public final class AscensionCommands {
 
         ExpeditionData expedition = ExpeditionData.get(player);
         String stage = WorldAscensionData.get(((ServerLevel) player.level()).getServer()).stageName();
-        player.sendSystemMessage(Component.literal("§2[원정] §f" + expedition.count(player) + "/9 조사 · §7" + stage
+        player.sendSystemMessage(Component.literal("§2[원정] §f발견 §e" + expedition.count(player) + "/9 §7· 완수 §a"
+                + expedition.countCompleted(player) + "/9 §7· " + stage
                 + (expedition.isMasterSurveyComplete(player) ? " §6· 현장 숙련 해방" : "")));
         player.sendSystemMessage(Component.literal(expedition.summary(player)));
+        for (ExpeditionRegion region : ExpeditionRegion.values()) {
+            if (!expedition.isDiscovered(player, region) || expedition.isComplete(player, region)) continue;
+            player.sendSystemMessage(Component.literal("§e" + region.koreanName() + " §7· §f" + region.objectiveName()
+                    + " §e" + expedition.progress(player, region) + "/" + region.objectiveTarget()));
+        }
         return 1;
     }
 
