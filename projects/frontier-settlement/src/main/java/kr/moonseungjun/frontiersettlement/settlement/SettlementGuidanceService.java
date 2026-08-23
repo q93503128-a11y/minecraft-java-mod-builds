@@ -18,11 +18,13 @@ public final class SettlementGuidanceService {
         if (data.lumberCampCount() < 1) return buildingGoal(data, BuildingType.LUMBER_CAMP);
         if (data.buildingCount(BuildingType.FARM) < 1) return buildingGoal(data, BuildingType.FARM);
         if (data.buildingCount(BuildingType.QUARRY) < 1) return buildingGoal(data, BuildingType.QUARRY);
+        if (data.buildingCount(BuildingType.WAREHOUSE) < 1) return buildingGoal(data, BuildingType.WAREHOUSE);
         if (data.roads().isEmpty()) return "다음 목표 · B 팔레트 → 도로 계획";
         if (data.outposts().isEmpty()) return "다음 목표 · B 팔레트 → 도로 끝에 전초기지";
         if (data.population() < 4) return populationGoal(data, 4);
         if (data.buildingCount(BuildingType.MARKET) < 1) return buildingGoal(data, BuildingType.MARKET);
         if (data.buildingCount(BuildingType.CART_STATION) < 1) return buildingGoal(data, BuildingType.CART_STATION);
+        if (data.buildingCount(BuildingType.CONSTRUCTION_OFFICE) < 1) return buildingGoal(data, BuildingType.CONSTRUCTION_OFFICE);
         if (data.buildingCount(BuildingType.MINE) < 1) return buildingGoal(data, BuildingType.MINE);
         if (data.outposts().size() < 2) return "다음 목표 · 두 번째 도로·전초기지 확보";
         if (data.population() < 8) return populationGoal(data, 8);
@@ -34,7 +36,7 @@ public final class SettlementGuidanceService {
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
         if (data.buildingCount(BuildingType.WATCHTOWER) < 1) return buildingGoal(data, BuildingType.WATCHTOWER);
         if (data.buildingCount(BuildingType.BARRACKS) < 1) return buildingGoal(data, BuildingType.BARRACKS);
-        return "영지 운영 · 도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망·주둔 병력을 계속 확장";
+        return "영지 운영 · 건설소 보급·도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망·주둔 병력을 계속 확장";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
