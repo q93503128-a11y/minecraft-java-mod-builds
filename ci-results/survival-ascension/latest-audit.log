@@ -1,7 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.28 production and 0.29 real-Barrel logistics remain bounded, atomic and non-force-loading
-- 0.30 outpost_v1 requires an interactable real four-part camp and costs supply2 + iron32 + gold8 + coal32
-- active outposts are owner-nearby, structure-backed, extend only their depot to64 blocks and suppress NATURAL hostiles only within24
-- TRIGGERED Regional Incident/Apex/Trial spawns remain untouched
-- Mastery VI, Field Mastery, expedition, Apex, Trial and Awakened Mythic regressions retained
+- 0.28 production, 0.29 real-Barrel logistics and 0.30 physical outposts remain bounded and non-force-loading
+- 0.31 field_recovery_v1 is prepaid one-use, same-dimension96 death-bound and challenge-excluded
+- pending recovery survives failed validation/teleport and is consumed only after successful safe return
+- no general outpost fast travel; no client-supplied destination; no forced chunk load
+- Trial four-wave/reward, TRIGGERED encounters, Mastery VI, Field Mastery and Awakened Mythic regressions retained

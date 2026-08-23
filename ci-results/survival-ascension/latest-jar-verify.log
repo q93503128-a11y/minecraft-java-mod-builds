@@ -1,8 +1,0 @@
-JAR VERIFY PASS
-version=0.30.0-alpha.1
-apex_runtime=present
-production_runtime=present
-field_depot_runtime=present
-outpost_runtime=present
-size=378504
-sha256=ff1fe9f733f2a21c161c4a1a92032cf71ff7dbe80d1073fa0b846f4e281dcd68
