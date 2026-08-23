@@ -120,7 +120,7 @@ Resources remain physical Minecraft items. The HUD ledger is a cached view, not 
 - use categorized/tag-based compatibility for wood, stone, food and similar families;
 - warehouse expansion may add storage positions without turning the settlement into abstract currency.
 
-Construction should visibly communicate logistics. The builder should walk to a real storage source, visibly carry actual item stacks, place them into a construction supply cache, and then build at a readable pace. Do not instantly delete all resources at approval and magically spawn the structure.
+Construction should visibly communicate logistics. The builder walks from actual settlement storage carrying real wood/stone stacks, stages or carries them at the work site, and then builds at a readable pace. Do not instantly delete all resources at approval and magically spawn the structure.
 
 Distant outpost logistics should remain spatial and physical. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual output stacks, and pause at unloaded route boundaries rather than teleporting or force-loading the territory. Worker absence/replacement must never confuse an unloaded entity with a dead one.
 
