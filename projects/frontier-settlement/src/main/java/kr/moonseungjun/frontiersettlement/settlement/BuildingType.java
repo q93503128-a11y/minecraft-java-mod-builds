@@ -13,7 +13,7 @@ public enum BuildingType {
     WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0, "대장간 1곳 필요"),
     GUARD_POST("guard_post", "경비초소", 64, 48, 9, 9, 8, 0, "마을 단계 필요"),
     WATCHTOWER("watchtower", "감시탑", 96, 72, 7, 7, 14, 0, "경비초소 1곳 필요"),
-    BARRACKS("barracks", "병영", 144, 112, 15, 11, 10, 3, "감시탑 + 개척 도시 단계 필요"),
+    BARRACKS("barracks", "병영", 144, 112, 15, 11, 10, 0, "감시탑 + 개척 도시 단계 필요"),
     MARKET("market", "시장", 96, 48, 11, 11, 8, 0, "마을 단계 필요"),
     CART_STATION("cart_station", "수레 정거장", 104, 56, 13, 9, 8, 0, "도로 + 전초기지 필요");
 
