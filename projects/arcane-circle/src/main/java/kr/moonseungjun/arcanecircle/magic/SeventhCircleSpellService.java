@@ -29,14 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-/**
- * Alpha.59 seventh-circle authority.
- *
- * Four already-strong player meanings are deliberately delegated instead of reimplemented:
- * Etherealness -> HighUtilitySpellService, Forcecage -> HighControlSpellService,
- * Plane Shift -> PlanarSpellService, Simulacrum -> SimulacrumService. The remaining six spells
- * use the immutable CastTargetSnapshot consumed by the same authored 7C presentation.
- */
+/** Seventh-circle fortress, planar and transcendent battlefield authority. */
 public final class SeventhCircleSpellService {
     private static final Set<String> HANDLED = Set.of(
             "delayed_blast_fireball", "etherealness", "finger_of_death", "fire_storm",
@@ -45,6 +38,11 @@ public final class SeventhCircleSpellService {
     public static final int NPC_ETHEREAL_TICKS = 360;
     public static final int NPC_FORCECAGE_TICKS = 400;
     public static final int REVERSE_GRAVITY_TICKS = 160;
+    public static final int DELAYED_BLAST_FUSE_TICKS = 72;
+    public static final int DELAYED_BLAST_VISUAL_TICKS = 90;
+    public static final int FIRE_STORM_SEQUENCE_TICKS = 48;
+    public static final int FIRE_STORM_VISUAL_TICKS = 70;
+    private static final int FIRE_STORM_STRIKE_INTERVAL = 8;
     private static final double FORCECAGE_RADIUS = 3.1;
     private static final double FORCECAGE_DOWN = .75;
     private static final double FORCECAGE_UP = 4.2;
@@ -52,6 +50,8 @@ public final class SeventhCircleSpellService {
     private static final Map<UUID, NpcEtherealState> NPC_ETHEREAL = new HashMap<>();
     private static final Map<UUID, NpcCageState> NPC_CAGES = new HashMap<>();
     private static final Map<UUID, NpcCopyState> NPC_COPIES = new HashMap<>();
+    private static final List<DelayedBlastCore> DELAYED_BLASTS = new ArrayList<>();
+    private static final List<FireStormField> FIRE_STORMS = new ArrayList<>();
     private static final List<GravityField> GRAVITY_FIELDS = new ArrayList<>();
     private static final Map<UUID, GravityVictim> GRAVITY_VICTIMS = new HashMap<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
@@ -60,6 +60,22 @@ public final class SeventhCircleSpellService {
 
     public static boolean handles(String spellId) { return HANDLED.contains(spellId); }
 
+    public static double delayedBlastRadius(double range) {
+        return Math.max(13.0, Math.min(18.0, range * .34));
+    }
+
+    public static double delayedBlastShockRadius(double range) {
+        return delayedBlastRadius(range) * 1.35;
+    }
+
+    public static double fireStormPatternRadius(double range) {
+        return Math.max(6.5, Math.min(9.5, range * .16));
+    }
+
+    public static double fireStormPillarRadius(double range) {
+        return Math.max(3.8, Math.min(5.2, range * .10));
+    }
+
     public static boolean execute(ServerPlayer caster, String spellId, double range, double power,
                                   CastTargetSnapshot snapshot) {
         if (caster == null || snapshot == null || !snapshot.validFor(caster)) return false;
@@ -67,7 +83,7 @@ public final class SeventhCircleSpellService {
         return switch (spellId) {
             case "delayed_blast_fireball" -> delayedBlast(level, caster, snapshot, range, power, true);
             case "etherealness" -> HighUtilitySpellService.execute(caster, spellId, range, power, snapshot);
-            case "finger_of_death" -> fingerOfDeath(level, caster, null, snapshot, power);
+            case "finger_of_death" -> DeathDoctrineService.execute(caster, spellId, range, power, snapshot);
             case "fire_storm" -> fireStorm(level, caster, snapshot, range, power, true);
             case "forcecage" -> HighControlSpellService.execute(caster, spellId, range, power, snapshot);
             case "plane_shift" -> PlanarSpellService.execute(caster, spellId);
@@ -87,7 +103,7 @@ public final class SeventhCircleSpellService {
         return switch (spell.id()) {
             case "delayed_blast_fireball" -> delayedBlast(level, caster, snapshot, range, power, false);
             case "etherealness" -> npcEthereal(level, caster, power);
-            case "finger_of_death" -> fingerOfDeath(level, caster, target, snapshot, power);
+            case "finger_of_death" -> DeathDoctrineService.executeNpc(level, caster, target, spell.id(), range, power, snapshot);
             case "fire_storm" -> fireStorm(level, caster, snapshot, range, power, false);
             case "forcecage" -> npcForcecage(level, caster, target, snapshot);
             // Player Plane Shift remains the full cross-dimension party transport. An NPC combat caster
@@ -108,6 +124,8 @@ public final class SeventhCircleSpellService {
         tickNpcEthereal(level, now);
         tickNpcCages(level, now);
         tickNpcCopies(level);
+        tickDelayedBlasts(level, now);
+        tickFireStorms(level, now);
         tickReverseGravity(level, now);
     }
 
@@ -120,7 +138,7 @@ public final class SeventhCircleSpellService {
         event.setAmount(Math.max(0.0F, event.getAmount() * .12F));
     }
 
-    /** Clears seventh-circle maintained NPC state and Reverse Gravity state affecting or owned by this entity. */
+    /** Clears maintained 7C state owned by or directly affecting this entity. */
     public static void clear(LivingEntity subject) {
         if (subject == null) return;
         UUID id = subject.getUUID();
@@ -131,6 +149,8 @@ public final class SeventhCircleSpellService {
         while (cages.hasNext()) {
             NpcCageState state = cages.next().getValue();
             if (!state.ownerId.equals(id) && !state.targetId.equals(id)) continue;
+            Entity owner = state.level.getEntity(state.ownerId);
+            if (owner instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "forcecage");
             cages.remove();
         }
 
@@ -142,6 +162,8 @@ public final class SeventhCircleSpellService {
             copies.remove();
         }
 
+        clearDelayedBlastOwned(id);
+        clearFireStormOwned(id);
         clearGravityOwned(id);
         GravityVictim victim = GRAVITY_VICTIMS.remove(id);
         if (victim != null) restoreGravityVictim(victim);
@@ -153,6 +175,8 @@ public final class SeventhCircleSpellService {
         NPC_CAGES.clear();
         for (NpcCopyState state : new ArrayList<>(NPC_COPIES.values())) discardNpcCopy(state);
         NPC_COPIES.clear();
+        DELAYED_BLASTS.clear();
+        FIRE_STORMS.clear();
         for (GravityVictim victim : new ArrayList<>(GRAVITY_VICTIMS.values())) restoreGravityVictim(victim);
         GRAVITY_VICTIMS.clear();
         GRAVITY_FIELDS.clear();
@@ -161,72 +185,136 @@ public final class SeventhCircleSpellService {
 
     private static boolean delayedBlast(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                         double range, double power, boolean destructiveTerrain) {
+        clearDelayedBlastOwned(caster.getUUID());
         Vec3 center = snapshot.target();
-        double radius = Math.max(9.0, Math.min(13.0, 8.0 + range * .10));
-        for (LivingEntity target : enemies(level, caster, center, radius, Math.max(6.0, radius * .72))) {
-            double distance = Math.sqrt(center.distanceToSqr(target.position()));
-            double falloff = Math.max(.42, 1.0 - distance / Math.max(1.0, radius) * .58);
-            ArcaneDamage.hurt(level, caster, target, (float) (power * falloff));
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 300));
-            Vec3 away = horizontalAway(center, target.position());
-            target.push(away.x * (1.15 + falloff * .85), .38 + falloff * .42, away.z * (1.15 + falloff * .85));
-        }
-        if (destructiveTerrain && caster instanceof ServerPlayer player)
-            DestructiveMagicService.impact(player, "delayed_blast_fireball", center, radius, power);
-        level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.25F, .64F);
-        // A locked ground blast is a valid cast even when every target escapes before detonation.
-        return snapshot.validFor(caster);
+        double radius = delayedBlastRadius(range);
+        long now = level.getGameTime();
+        DELAYED_BLASTS.add(new DelayedBlastCore(level, caster.getUUID(), center, radius,
+                radius * 1.35, power, destructiveTerrain, now + DELAYED_BLAST_FUSE_TICKS));
+        level.playSound(null, BlockPos.containing(center), SoundEvents.BEACON_POWER_SELECT,
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .88F, .55F);
+        return true;
     }
 
-    private static boolean fingerOfDeath(ServerLevel level, LivingEntity caster, LivingEntity fallback,
-                                         CastTargetSnapshot snapshot, double power) {
-        LivingEntity target = targetEntity(level, caster, fallback, snapshot);
-        if (!validEnemy(caster, target)) return false;
-        double threshold = Math.max(32.0, power * .72);
-        boolean ordinary = target.getMaxHealth() <= Math.max(260.0, power * 2.8);
-        float amount = (float) (power * 1.62);
-        if (ordinary && target.getHealth() <= threshold)
-            amount = Math.max(amount, target.getHealth() + target.getMaxHealth() * .35F + 4.0F);
-        ArcaneDamage.hurt(level, caster, target, amount);
-        if (target.isAlive()) {
-            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 360, 4, true, false));
-            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 360, 3, true, false));
+    private static void tickDelayedBlasts(ServerLevel level, long now) {
+        Iterator<DelayedBlastCore> iterator = DELAYED_BLASTS.iterator();
+        while (iterator.hasNext()) {
+            DelayedBlastCore core = iterator.next();
+            if (core.level != level) continue;
+            Entity rawOwner = level.getEntity(core.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved()) {
+                if (rawOwner instanceof LivingEntity living)
+                    WorldMagicService.cancelRelease(living, "delayed_blast_fireball");
+                iterator.remove();
+                continue;
+            }
+            if (now < core.detonatesAt) continue;
+            detonateDelayedBlast(core, owner);
+            WorldMagicService.cancelRelease(owner, "delayed_blast_fireball");
+            iterator.remove();
         }
-        level.playSound(null, target.blockPosition(), SoundEvents.WITHER_HURT,
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .95F, .62F);
-        return true;
+    }
+
+    private static void detonateDelayedBlast(DelayedBlastCore core, LivingEntity caster) {
+        ServerLevel level = core.level;
+        double vertical = Math.max(9.0, core.shockRadius * .58);
+        for (LivingEntity target : enemies(level, caster, core.center, core.shockRadius, vertical)) {
+            double distance = Math.sqrt(core.center.distanceToSqr(target.position()));
+            boolean breachZone = distance <= core.radius;
+            double normalized = Math.min(1.0, distance / Math.max(1.0, breachZone ? core.radius : core.shockRadius));
+            double falloff = Math.max(breachZone ? .48 : .38, 1.0 - normalized * (breachZone ? .52 : .62));
+            float damage = (float) (core.power * (breachZone ? 1.18 : .30) * falloff);
+            ArcaneDamage.hurt(level, caster, target, damage);
+            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), breachZone ? 360 : 140));
+            Vec3 away = horizontalAway(core.center, target.position());
+            double kick = (breachZone ? 1.55 : .88) + falloff * (breachZone ? .95 : .42);
+            target.push(away.x * kick, (breachZone ? .52 : .25) + falloff * .38, away.z * kick);
+        }
+        if (core.destructiveTerrain && caster instanceof ServerPlayer player)
+            DestructiveMagicService.impact(player, "delayed_blast_fireball", core.center, core.radius, core.power * 1.12);
+        level.playSound(null, BlockPos.containing(core.center), SoundEvents.GENERIC_EXPLODE.value(),
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.42F, .52F);
+    }
+
+    private static void clearDelayedBlastOwned(UUID ownerId) {
+        Iterator<DelayedBlastCore> iterator = DELAYED_BLASTS.iterator();
+        while (iterator.hasNext()) {
+            DelayedBlastCore core = iterator.next();
+            if (!core.ownerId.equals(ownerId)) continue;
+            Entity raw = core.level.getEntity(ownerId);
+            if (raw instanceof LivingEntity owner)
+                WorldMagicService.cancelRelease(owner, "delayed_blast_fireball");
+            iterator.remove();
+        }
     }
 
     private static boolean fireStorm(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                      double range, double power, boolean destructiveTerrain) {
+        clearFireStormOwned(caster.getUUID());
         Vec3 center = snapshot.target();
-        double patternRadius = 5.0;
-        double pillarRadius = 3.75;
-        List<Vec3> pillars = new ArrayList<>(6);
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.PI * 2.0 * i / 6.0;
-            pillars.add(center.add(Math.cos(angle) * patternRadius, 0.0, Math.sin(angle) * patternRadius));
-        }
+        double patternRadius = fireStormPatternRadius(range);
+        double pillarRadius = fireStormPillarRadius(range);
+        long now = level.getGameTime();
+        FIRE_STORMS.add(new FireStormField(level, caster.getUUID(), center, patternRadius, pillarRadius,
+                power, destructiveTerrain, now + FIRE_STORM_SEQUENCE_TICKS, now));
+        return true;
+    }
 
-        AABB field = new AABB(center, center).inflate(patternRadius + pillarRadius + 2.0, 8.0,
-                patternRadius + pillarRadius + 2.0);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, field,
+    private static void tickFireStorms(ServerLevel level, long now) {
+        Iterator<FireStormField> iterator = FIRE_STORMS.iterator();
+        while (iterator.hasNext()) {
+            FireStormField field = iterator.next();
+            if (field.level != level) continue;
+            Entity rawOwner = level.getEntity(field.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved()) {
+                if (rawOwner instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "fire_storm");
+                iterator.remove();
+                continue;
+            }
+            if (field.strikeIndex >= 6 || now >= field.expiresAt) {
+                WorldMagicService.cancelRelease(owner, "fire_storm");
+                iterator.remove();
+                continue;
+            }
+            if (now < field.nextStrike) continue;
+            strikeFireStorm(field, owner, field.strikeIndex);
+            field.strikeIndex++;
+            field.nextStrike = now + FIRE_STORM_STRIKE_INTERVAL;
+        }
+    }
+
+    private static void strikeFireStorm(FireStormField field, LivingEntity caster, int index) {
+        double angle = Math.PI * 2.0 * index / 6.0;
+        Vec3 pillar = field.center.add(Math.cos(angle) * field.patternRadius, 0.0,
+                Math.sin(angle) * field.patternRadius);
+        AABB box = new AABB(pillar, pillar).inflate(field.pillarRadius,
+                Math.max(9.0, field.pillarRadius * 2.2), field.pillarRadius);
+        for (LivingEntity target : field.level.getEntitiesOfClass(LivingEntity.class, box,
                 value -> validEnemy(caster, value))) {
-            double nearest = pillars.stream().mapToDouble(p -> p.distanceToSqr(target.position())).min().orElse(Double.MAX_VALUE);
-            if (nearest > pillarRadius * pillarRadius) continue;
-            double falloff = Math.max(.58, 1.0 - Math.sqrt(nearest) / pillarRadius * .42);
-            ArcaneDamage.hurt(level, caster, target, (float) (power * falloff));
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 260));
+            double horizontal = Math.hypot(target.getX() - pillar.x, target.getZ() - pillar.z);
+            if (horizontal > field.pillarRadius + target.getBbWidth() * .35) continue;
+            int prior = field.hitCounts.getOrDefault(target.getUUID(), 0);
+            double falloff = Math.max(.58, 1.0 - horizontal / Math.max(1.0, field.pillarRadius) * .42);
+            double multiplier = prior == 0 ? .90 : .24;
+            ArcaneDamage.hurt(field.level, caster, target, (float) (field.power * multiplier * falloff));
+            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), prior == 0 ? 280 : 120));
+            field.hitCounts.put(target.getUUID(), prior + 1);
         }
+        if (field.destructiveTerrain && caster instanceof ServerPlayer player)
+            DestructiveMagicService.impact(player, "fire_storm", pillar, field.pillarRadius, field.power * .78);
+        field.level.playSound(null, BlockPos.containing(pillar), SoundEvents.BLAZE_SHOOT,
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.08F, .55F + index * .035F);
+    }
 
-        if (destructiveTerrain && caster instanceof ServerPlayer player) {
-            for (Vec3 pillar : pillars)
-                DestructiveMagicService.impact(player, "fire_storm", pillar, pillarRadius, power * .72);
+    private static void clearFireStormOwned(UUID ownerId) {
+        Iterator<FireStormField> iterator = FIRE_STORMS.iterator();
+        while (iterator.hasNext()) {
+            FireStormField field = iterator.next();
+            if (!field.ownerId.equals(ownerId)) continue;
+            Entity raw = field.level.getEntity(ownerId);
+            if (raw instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "fire_storm");
+            iterator.remove();
         }
-        level.playSound(null, BlockPos.containing(center), SoundEvents.BLAZE_SHOOT,
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.15F, .58F);
-        return snapshot.validFor(caster);
     }
 
     /** Seven authored rays, seven deterministic bands, each ray owns its own narrow hit test. */
@@ -467,6 +555,7 @@ public final class SeventhCircleSpellService {
             if (!(rawTarget instanceof LivingEntity target) || !target.isAlive() || target.isRemoved()
                     || !(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved()
                     || now >= state.expiresAt) {
+                if (rawOwner instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "forcecage");
                 iterator.remove();
                 continue;
             }
@@ -637,6 +726,39 @@ public final class SeventhCircleSpellService {
         Vec3 horizontal = new Vec3(value.x, 0.0, value.z);
         if (horizontal.lengthSqr() < 1.0E-8) return new Vec3(1.0, 0.0, 0.0);
         return horizontal.normalize();
+    }
+
+    private record DelayedBlastCore(ServerLevel level, UUID ownerId, Vec3 center, double radius,
+                                    double shockRadius, double power, boolean destructiveTerrain,
+                                    long detonatesAt) {}
+
+    private static final class FireStormField {
+        private final ServerLevel level;
+        private final UUID ownerId;
+        private final Vec3 center;
+        private final double patternRadius;
+        private final double pillarRadius;
+        private final double power;
+        private final boolean destructiveTerrain;
+        private final long expiresAt;
+        private final Map<UUID, Integer> hitCounts = new HashMap<>();
+        private long nextStrike;
+        private int strikeIndex;
+
+        private FireStormField(ServerLevel level, UUID ownerId, Vec3 center,
+                               double patternRadius, double pillarRadius, double power,
+                               boolean destructiveTerrain, long expiresAt, long nextStrike) {
+            this.level = level;
+            this.ownerId = ownerId;
+            this.center = center;
+            this.patternRadius = patternRadius;
+            this.pillarRadius = pillarRadius;
+            this.power = power;
+            this.destructiveTerrain = destructiveTerrain;
+            this.expiresAt = expiresAt;
+            this.nextStrike = nextStrike;
+            this.strikeIndex = 0;
+        }
     }
 
     private static final class NpcEtherealState {
