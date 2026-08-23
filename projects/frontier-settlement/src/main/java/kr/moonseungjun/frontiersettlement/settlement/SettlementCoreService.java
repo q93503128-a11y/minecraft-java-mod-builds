@@ -138,7 +138,7 @@ public final class SettlementCoreService {
                 || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY) || state.is(Blocks.SNOW_BLOCK);
     }
 
-    /** Civic-core blocks are non-economic settlement infrastructure and must never become a drop farm. */
+    /** Civic-core blocks and the authoritative starter stockpile must not become drops or softlocks. */
     public static void onBreakBlock(BreakBlockEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
@@ -148,6 +148,12 @@ public final class SettlementCoreService {
 
         BlockPos pos = event.getPos();
         BlockState current = level.getBlockState(pos);
+        if (pos.equals(data.stockpilePos()) && current.is(Blocks.BARREL)) {
+            event.setCanceled(true);
+            event.setNotifyClient(true);
+            return;
+        }
+
         // Protect the matching civic state from every tier, not only the current tier. A temporary
         // population drop must not turn formerly automatic public works into recoverable free items.
         for (SettlementTier tier : SettlementTier.values()) {
