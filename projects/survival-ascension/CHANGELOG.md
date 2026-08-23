@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.26.0-alpha.1
+- Added 18 rare regional field incidents: one bounded hostile ambush and one action-rush incident for each of the nine expedition regions.
+- Eligible players inside a discovered region receive a 10% incident roll every 30 seconds. Incidents last 45–60 seconds and expose remaining enemies/action progress/time through a boss bar.
+- Added ambush variants for Woodland, Arid, Wetland, Highlands, Ocean, Deep, Frozen, Nether and End using bounded `EntitySpawnReason.TRIGGERED` vanilla spawns. Ocean ambushes require water spawn slots.
+- Added action-rush variants that reuse authoritative Survival Ascension action hooks: natural smart-tree logs, protected/material-backed scaled Construction, mature crops, successful dashes, water/vessel voyage, valid pickaxe mining and legitimate traversal.
+- Incidents fail after 10 seconds outside the matching expedition region or 48-block event radius, but never erase existing directive progress.
+- Failed/logged-out incidents clean tracked mobs and boss-bar viewers; stale in-JVM incident state is removed when a different server instance is detected.
+- Added an Ascension Trial exclusion window based on the existing persisted trial-ready tick so regional incidents cannot overlap the main Stage-2 combat encounter.
+- Extended `expedition_v1` with optional `incident_rewards` bits while keeping the same SavedData ID and all existing 0.23–0.25 migration semantics.
+- A region incident pays its success bundle once per player: Stage0 skill XP100 + Emerald4 + Amethyst8; Stage1 XP150 + Diamond2 + Echo4; Stage2 XP200 + Diamond4 + Echo8.
+- First incident resolution in an incomplete region also grants at most 20% progress to its first unfinished directive task. This is one-time and follows the normal directive-completion/milestone path rather than bypassing it.
+- `/ascension stats` now reports resolved incidents x/9 in addition to discoveries, completed directives and active task progress.
+- Studied Enhanced Celestials Tweaks (MIT) only for the high-level temporary-event modifier/lifecycle idea; the regional incident catalog, spawn rules, boss bars, rewards and persistence are independent and no source/assets/config are bundled.
+- Majrusz's Progressive Difficulty is reference-only for rare forced-encounter pacing because the current public repository root does not expose a license file; no source/assets/data are copied.
+- Extended Guide, README/PROJECT canon, source audit and JAR verification for incident cadence, cleanup, one-time rewards, trial separation, 20% bonus cap and the new runtime classes.
+
 ## 0.25.0-alpha.1
 - Replaced one fixed field objective per expedition region with two persistent directive options per region, for 18 total directives across the nine expedition regions.
 - New region discoveries randomly select one directive per player and persist the choice in `expedition_v1`; leaving/re-entering the biome or restarting the server does not reroll it.
