@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.combat;
 
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
@@ -82,8 +83,9 @@ public final class CombatProgression {
         int cooldown = combatLevel >= 100 ? 50 : 60;
         if (now < player.getPersistentData().getLongOr(SHOCKWAVE_READY_KEY, 0L)) return false;
 
-        double radius = combatLevel >= 100 ? 6.5D : 5.5D;
-        int targetLimit = combatLevel >= 100 ? 16 : 12;
+        boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        double radius = fieldMastery ? 7.5D : (combatLevel >= 100 ? 6.5D : 5.5D);
+        int targetLimit = fieldMastery ? 20 : (combatLevel >= 100 ? 16 : 12);
         double fraction = combatLevel >= 100 ? 0.55D : 0.45D;
         player.getPersistentData().putLong(SHOCKWAVE_READY_KEY, now + cooldown);
         List<LivingEntity> nearby = level.getEntitiesOfClass(
@@ -135,6 +137,9 @@ public final class CombatProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 I · 주변 적 2체까지 연쇄 타격"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 II · 반경/대상이 크게 확장됩니다."));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 완공 시 질주 공격이 360° 충격파로 승격"));
-        if (oldLevel < 100 && newLevel >= 100) player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f파급 10체/5블록 · 훈련장 충격파 6.5블록/16체"));
+        if (oldLevel < 100 && newLevel >= 100) {
+            String shockwave = ExpeditionProgression.hasFieldMastery(player) ? "7.5블록/20체" : "6.5블록/16체";
+            player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f파급 10체/5블록 · 훈련장 충격파 " + shockwave));
+        }
     }
 }
