@@ -65,10 +65,17 @@ public final class SettlementMarketService {
             int payout = tradeValue(goods);
             if (payout <= 0 || !hasEmeraldRoom(container, slot, goods.getCount() == 1, payout)) return;
 
+            ItemStack sold = goods.copyWithCount(1);
             goods.shrink(1);
             if (goods.isEmpty()) container.setItem(slot, ItemStack.EMPTY);
             ItemStack remainder = SettlementInventory.insert(container, new ItemStack(Items.EMERALD, payout));
-            if (!remainder.isEmpty()) throw new IllegalStateException("market payout capacity changed during same-tick trade");
+            if (!remainder.isEmpty()) {
+                int inserted = payout - remainder.getCount();
+                if (inserted > 0) removeEmeralds(container, inserted);
+                SettlementInventory.insert(container, sold);
+                container.setChanged();
+                return;
+            }
             container.setChanged();
             trader.swing(InteractionHand.MAIN_HAND);
             return;
@@ -100,6 +107,18 @@ public final class SettlementMarketService {
             if (room >= payout) return true;
         }
         return room >= payout;
+    }
+
+    private static void removeEmeralds(Container container, int amount) {
+        int left = amount;
+        for (int slot = container.getContainerSize() - 1; slot >= 0 && left > 0; slot--) {
+            ItemStack current = container.getItem(slot);
+            if (!current.is(Items.EMERALD)) continue;
+            int take = Math.min(left, current.getCount());
+            current.shrink(take);
+            if (current.isEmpty()) container.setItem(slot, ItemStack.EMPTY);
+            left -= take;
+        }
     }
 
     private static Villager ensureTrader(ServerLevel level, BuildingRecord market) {
