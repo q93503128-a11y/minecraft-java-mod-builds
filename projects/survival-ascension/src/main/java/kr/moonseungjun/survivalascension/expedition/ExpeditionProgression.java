@@ -60,7 +60,7 @@ public final class ExpeditionProgression {
         if (amount <= 0 || player.isCreative() || player.isSpectator() || !(player.level() instanceof ServerLevel level)) return;
         int worldStage = WorldAscensionData.get(level.getServer()).stage();
         ExpeditionRegion region = matchingRegion(level.getBiome(player.blockPosition()), worldStage, skill);
-        if (region == null) return;
+        if (region == null || region == ExpeditionRegion.OCEAN) return;
         ensureDiscovered(player, region);
         addObjectiveProgress(player, region, amount);
     }
