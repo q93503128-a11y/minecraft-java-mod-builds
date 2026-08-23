@@ -1,7 +1,8 @@
 JAR VERIFY PASS
-version=0.38.0-alpha.1
+version=0.39.0-alpha.1
 physical_commissioning_runtime=present
 physical_warehouse_runtime=present
+outpost_fortification_runtime=present
 outpost_siege_runtime=present
 expedition_operation_runtime=present
 expedition_complication_runtime=present
@@ -10,5 +11,5 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=461839
-sha256=e7997ebd374cfab6b6e1a029e1381e081daa29e93ab1fb0e8bc5bfd9e8ad9274
+size=469320
+sha256=85b3a545832332a1f6d62a66a35c3903283af924aa32feb8ab7733d602d3b1ad

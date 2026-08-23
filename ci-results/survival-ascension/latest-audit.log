@@ -1,9 +1,9 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.38 turns an active physical outpost into an explicit three-wave defendable objective with breach pressure
-- siege requires active outpost within4, supply1, structure/owner radius64, breach radius6/limit200, loaded TRIGGERED spawns only
-- attackers advance toward the physical anchor and only engage a nearby defending owner, preventing long-range kiting from defeating the objective
-- stage difficulty changes mob-role composition instead of adding a blanket HP multiplier
-- siege excludes incident/operation/Apex/Trial overlap and siege deaths do not consume field recovery
-- no new SavedData/packet/client coordinate/force-load; runtime is bounded and cleaned on logout/stale reload
+- 0.39 validates a loaded-only physical fortification annulus radius6..12 with >=12 unique x/z columns in each quadrant
+- walls/iron bars/nether-brick fence remain real world blocks; no fortified SavedData flag, auto-builder or passive defense multiplier
+- bastion defense is optional supply2/four-wave/five-minute combat; normal 0.38 supply1/three-wave/four-minute defense remains
+- fortification is revalidated between bastion waves and first spawn succeeds before supply consumption
+- siege pressure remains anchor-directed radius6/limit200 with stage/mode difficulty from mob roles rather than blanket HP/attack scaling
+- no new packet/client coordinate/force-load; Incident/Operation/Apex/Trial and Field Recovery boundaries remain shared
 - 0.37 warehouse clusters,0.36 commissioning,0.35 offload,0.34 inputs,0.33 complications,0.32 sorties and older regressions retained
