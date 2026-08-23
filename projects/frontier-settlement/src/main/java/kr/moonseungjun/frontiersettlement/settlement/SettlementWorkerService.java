@@ -5,7 +5,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -27,18 +26,19 @@ public final class SettlementWorkerService {
     private static final String FARM_WORKER_NAME = "농사 주민";
     private static final String QUARRY_WORKER_NAME = "채석 주민";
     private static final String MINE_WORKER_NAME = "광산 주민";
-    private static final String TRANSPORT_WORKER_NAME = "운송 주민";
     private static final long ARRIVAL_FOOD_COST = 4L;
     private static final int TREE_SEARCH_RADIUS = 18;
     private static final int MAX_LOGS_PER_TRIP = 6;
     private static final int MAX_CROPS_PER_TRIP = 8;
     private static final int MAX_STONE_PER_TRIP = 6;
-    private static final int MAX_TRANSPORT_STACK = 16;
 
     private SettlementWorkerService() {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
         ServerLevel level = server.overworld();
+        if (server.getTickCount() % 10 == 0) {
+            SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data);
+        }
         if (server.getTickCount() % 600 == 0) tryAttractWorker(server, level, data);
         if (server.getTickCount() % 10 != 0) return;
 
@@ -46,10 +46,7 @@ public final class SettlementWorkerService {
         runBuildingWorkers(level, data, BuildingType.FARM, FARM_WORKER_NAME, SettlementWorkerService::workFarm);
         runBuildingWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, SettlementWorkerService::workQuarry);
         runBuildingWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME, SettlementWorkerService::workMine);
-
-        List<Villager> transport = workersByName(level, data.centerPos(), TRANSPORT_WORKER_NAME);
-        int transportCount = Math.min(data.outposts().size(), transport.size());
-        for (int i = 0; i < transportCount; i++) workTransport(level, data, transport.get(i), data.outposts().get(i));
+        SettlementOutpostLogisticsService.tick(level, data);
     }
 
     @FunctionalInterface
@@ -70,9 +67,14 @@ public final class SettlementWorkerService {
         List<Villager> farm = workersByName(level, data.centerPos(), FARM_WORKER_NAME);
         List<Villager> quarry = workersByName(level, data.centerPos(), QUARRY_WORKER_NAME);
         List<Villager> mine = workersByName(level, data.centerPos(), MINE_WORKER_NAME);
-        List<Villager> transport = workersByName(level, data.centerPos(), TRANSPORT_WORKER_NAME);
-        int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size() + transport.size();
-        if (data.population() != actualPopulation) data.setPopulation(actualPopulation);
+
+        // Remote entities are legitimately unloaded. Only reconcile authoritative population when
+        // every outpost route is loaded, otherwise a sleeping remote transporter would look dead.
+        if (SettlementOutpostLogisticsService.allRoutesLoaded(level, data)) {
+            int transport = SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data);
+            int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size() + transport;
+            if (data.population() != actualPopulation) data.setPopulation(actualPopulation);
+        }
         if (data.population() >= data.housingCapacity()) return;
 
         if (tryFillJob(server, level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber.size())) return;
@@ -80,11 +82,10 @@ public final class SettlementWorkerService {
         if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry.size())) return;
         if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine.size())) return;
 
-        int desiredTransport = data.outposts().size();
-        if (transport.size() < desiredTransport) {
+        OutpostRecord missing = SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data);
+        if (missing != null) {
             if (!consumeArrivalFood(level, data)) return;
-            OutpostRecord outpost = data.outposts().get(transport.size());
-            spawnWorker(level, outpost.center().above(), TRANSPORT_WORKER_NAME);
+            SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing);
             finishArrival(server, data);
         }
     }
@@ -180,43 +181,6 @@ public final class SettlementWorkerService {
         if (ore == null) return;
         ItemStack mined = mineOre(level, ore);
         if (!mined.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
-    }
-
-    private static void workTransport(ServerLevel level, SettlementData data,
-                                      Villager worker, OutpostRecord outpost) {
-        ItemStack carried = worker.getMainHandItem();
-        if (carried.isEmpty()) {
-            BlockPos stock = outpost.stockpile();
-            if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D) > 9.0D) {
-                move(worker, stock, 0.85D); return;
-            }
-            if (!(level.getBlockEntity(stock) instanceof Container container)) return;
-            ItemStack picked = takeFirstStack(container, MAX_TRANSPORT_STACK);
-            if (!picked.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, picked);
-            else move(worker, outpost.center().above(), 0.6D);
-            return;
-        }
-        if (outpost.roadIndex() >= 0 && outpost.roadIndex() < data.roads().size()) {
-            RoadSegment road = data.roads().get(outpost.roadIndex());
-            BlockPos roadStart = road.start().above();
-            if (worker.distanceToSqr(roadStart.getX() + 0.5D, roadStart.getY(), roadStart.getZ() + 0.5D) > 16.0D) {
-                move(worker, roadStart, 0.9D); return;
-            }
-        }
-        deliverToTownStorage(level, data, worker, carried);
-    }
-
-    private static ItemStack takeFirstStack(Container container, int maxCount) {
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            ItemStack current = container.getItem(slot);
-            if (current.isEmpty()) continue;
-            int take = Math.min(maxCount, current.getCount());
-            ItemStack result = current.copyWithCount(take);
-            current.shrink(take);
-            container.setChanged();
-            return result;
-        }
-        return ItemStack.EMPTY;
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
