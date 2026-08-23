@@ -16,7 +16,19 @@ import java.util.function.Predicate;
 public final class SettlementStorageService {
     private SettlementStorageService() {}
 
+    /**
+     * Construction-office material bays are intentionally first for extraction so the existing
+     * builder automatically prefers staged physical material without gaining a second construction
+     * authority. They remain part of the same ItemStack ledger.
+     */
     public static List<BlockPos> storagePositions(SettlementData data) {
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        positions.addAll(constructionOfficeSupplyPositions(data));
+        positions.addAll(ordinaryStoragePositions(data));
+        return new ArrayList<>(positions);
+    }
+
+    public static List<BlockPos> ordinaryStoragePositions(SettlementData data) {
         Set<BlockPos> positions = new LinkedHashSet<>();
         positions.add(data.stockpilePos());
         for (BuildingRecord building : data.buildings()) {
@@ -27,6 +39,16 @@ public final class SettlementStorageService {
             }
         }
         return new ArrayList<>(positions);
+    }
+
+    public static List<BlockPos> constructionOfficeSupplyPositions(SettlementData data) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() == BuildingType.CONSTRUCTION_OFFICE) {
+                positions.addAll(ConstructionOfficeLayout.materialPositions(building));
+            }
+        }
+        return positions;
     }
 
     public static List<BlockPos> cartStationFreightPositions(SettlementData data) {
@@ -102,11 +124,18 @@ public final class SettlementStorageService {
     public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
         ItemStack remaining = stack.copy();
-        for (BlockPos pos : storagePositions(data)) {
+        for (BlockPos pos : depositPositions(data, stack)) {
             if (remaining.isEmpty()) break;
             remaining = insertAt(level, pos, remaining);
         }
         return remaining;
+    }
+
+    private static List<BlockPos> depositPositions(SettlementData data, ItemStack stack) {
+        // Wood/stone production can naturally feed the construction office. Food, metal and random
+        // loot stay out of its dedicated material bays unless a player deliberately puts them there.
+        if (SettlementInventory.isWood(stack) || SettlementInventory.isStone(stack)) return storagePositions(data);
+        return ordinaryStoragePositions(data);
     }
 
     public static ItemStack insertAt(ServerLevel level, BlockPos pos, ItemStack stack) {
@@ -117,7 +146,7 @@ public final class SettlementStorageService {
     }
 
     public static BlockPos findDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
-        for (BlockPos pos : storagePositions(data)) {
+        for (BlockPos pos : depositPositions(data, stack)) {
             if (!level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             if (hasRoom(container, stack)) return pos;
@@ -136,8 +165,13 @@ public final class SettlementStorageService {
     }
 
     public static BlockPos findExtractionTarget(ServerLevel level, SettlementData data, Predicate<ItemStack> predicate) {
+        return findExtractionTargetExcluding(level, data, predicate, Set.of());
+    }
+
+    public static BlockPos findExtractionTargetExcluding(ServerLevel level, SettlementData data,
+                                                         Predicate<ItemStack> predicate, Set<BlockPos> excluded) {
         for (BlockPos pos : storagePositions(data)) {
-            if (!level.hasChunkAt(pos)) continue;
+            if (excluded.contains(pos) || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             for (int slot = 0; slot < container.getContainerSize(); slot++) {
                 ItemStack stack = container.getItem(slot);
@@ -145,6 +179,12 @@ public final class SettlementStorageService {
             }
         }
         return null;
+    }
+
+    public static boolean hasRoomAt(ServerLevel level, BlockPos pos, ItemStack incoming) {
+        if (!level.hasChunkAt(pos)) return false;
+        if (!(level.getBlockEntity(pos) instanceof Container container)) return false;
+        return hasRoom(container, incoming);
     }
 
     public static ItemStack extract(ServerLevel level, BlockPos source, Predicate<ItemStack> predicate, int maxCount) {
