@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import net.minecraft.world.phys.Vec3;
 
@@ -78,9 +79,9 @@ final class AuthoredHighCircleTimeline {
             case "dominate_monster" -> dominateMonster(m, direction, target, p, t, release);
             case "earthquake" -> earthquake(m, target, range, p, t, release, seed);
             case "feeblemind" -> feeblemind(m, direction, target, p, t, release);
-            case "incendiary_cloud" -> incendiaryCloud(m, target, range, p, t, release);
+            case "incendiary_cloud" -> incendiaryCloud(m, direction, target, range, p, t, release, age);
             case "maze" -> maze(m, target, p, t, release);
-            case "sunburst" -> sunburst(m, target, p, t, release, age);
+            case "sunburst" -> sunburst(m, target, range, p, t, release, age);
             case "astral_prison" -> astralPrison(m, target, p, t, release);
             case "phoenix_requiem" -> phoenixRequiem(m, direction, p, t, release, age);
 
@@ -180,7 +181,6 @@ final class AuthoredHighCircleTimeline {
     // 8th circle -------------------------------------------------------------------------------
     private static void antimagic(ArcaneWorldMesh.Builder m, double p, double t, boolean release) {
         ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double spin=release?0:t*.018,r=3.0;
-        // Intentionally incomplete: a null field should not resemble a stable protective circle.
         arc(m,g,Vec3.ZERO,r,.18+spin,Math.PI*1.28,46,MAJOR,.72F);arc(m,g,Vec3.ZERO,r*.72,-2.3-spin,Math.PI*.78,32,MID,.48F);arc(m,g,new Vec3(0,.85,0),r*.44,.9,Math.PI*1.05,28,DETAIL,.30F);
         for(int i=0;i<8;i++){double a=i*Math.PI/4;Vec3 out=g.point(a,r*.90);line(m,out,g.point(a+.16*(i%2==0?1:-1),r*.22),i%2==0?MID:DETAIL,i%2==0?.42F:.26F);}
     }
@@ -209,7 +209,8 @@ final class AuthoredHighCircleTimeline {
     }
 
     private static void earthquake(ArcaneWorldMesh.Builder m, Vec3 target, double range, double p, double t, boolean release, long seed) {
-        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double r=Math.max(5.0,range*.22);
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();
+        double full=EighthCircleSpellService.earthquakeRadius(range),r=full*(release?1.0:.42+.58*p);
         ring(m,g,target,r*.42,46,MID,.40F);ring(m,g,target,r*.78,58,DETAIL,.28F);
         for(int i=0;i<12;i++){double a=i*Math.PI/6+((seed>>i)&3)*.035;Vec3 a0=target.add(g.point(a,r*.08)),a1=target.add(g.point(a+.13*Math.sin(i*1.7),r*.48)),a2=target.add(g.point(a-.09*Math.cos(i),r*.92));line(m,a0,a1,i%3==0?MAJOR:MID,i%3==0?.68F:.42F);line(m,a1,a2,DETAIL,.28F);if(release&&i%3==0)line(m,a1,a1.add(0,.8+.15*(i%4),0),DETAIL,.32F);}
     }
@@ -220,10 +221,16 @@ final class AuthoredHighCircleTimeline {
         for(int i=0;i<6;i++){double a=i*Math.PI/3;Vec3 inner=head.add(f.point(a,r*.42)),outer=head.add(f.point(a+(i%2==0?.18:-.14),r*(release?1.45:1.02)));line(m,inner,outer,i%3==0?MID:DETAIL,i%3==0?.44F:.26F);}
     }
 
-    private static void incendiaryCloud(ArcaneWorldMesh.Builder m, Vec3 target, double range, double p, double t, boolean release) {
-        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double r=Math.max(4.2,range*.18);Vec3 canopy=target.add(0,4.8,0);
+    private static void incendiaryCloud(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target, double range,
+                                        double p, double t, boolean release, double age) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();Vec3 forward=flat(direction);
+        double r=EighthCircleSpellService.incendiaryRadius(range);
+        double travel=release?Math.min(EighthCircleSpellService.INCENDIARY_DRIFT_PER_TICK*20.0*12.0,
+                t*EighthCircleSpellService.INCENDIARY_DRIFT_PER_TICK*20.0):0.0;
+        Vec3 front=target.add(forward.scale(travel)),canopy=front.add(0,4.8,0);
         ring(m,g,canopy,r,62,MAJOR,.62F);poly(m,g,canopy,r*.72,8,t*.012,MID,.44F);
-        for(int i=0;i<10;i++){double a=i*Math.PI/5+t*.016;Vec3 cell=canopy.add(g.point(a,r*(.52+.08*(i%2))));marker(m,g,cell,.18,DETAIL,.28F);if(release)line(m,cell,target.add(g.point(a,r*.72)),i%3==0?MID:DETAIL,i%3==0?.40F:.24F);}
+        for(int i=0;i<10;i++){double a=i*Math.PI/5+t*.016;Vec3 cell=canopy.add(g.point(a,r*(.52+.08*(i%2))));marker(m,g,cell,.18,DETAIL,.28F);if(release)line(m,cell,front.add(g.point(a,r*.72)),i%3==0?MID:DETAIL,i%3==0?.40F:.24F);}
+        if(release&&travel>.2){int nodes=Math.min(10,1+(int)Math.floor(travel/4.0));double fade=.30-.08*age;for(int i=1;i<=nodes;i++){double d=travel*i/(nodes+1.0);Vec3 wake=front.subtract(forward.scale(d));ring(m,g,wake,r*.56,30,i%3==0?MID:DETAIL,(float)Math.max(.16,fade));}}
     }
 
     private static void maze(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release) {
@@ -232,9 +239,12 @@ final class AuthoredHighCircleTimeline {
         for(int layer=0;layer<3;layer++){double rr=r*(1-layer*.19);Vec3 a=target.add(g.point(Math.PI/4+(layer*.17)+(layer*3+2)*Math.PI/2,rr));Vec3 b=target.add(g.point(Math.PI/4+((layer+1)*.17)+(layer*3+2)*Math.PI/2,r*(1-(layer+1)*.19)));line(m,a,b,MID,.38F);}
     }
 
-    private static void sunburst(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release, double age) {
-        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double r=4.8*(release?Math.min(1,age*2.6):.55+.45*p);
-        ring(m,g,target,r*.34,40,MAJOR,.72F);for(int i=0;i<20;i++){double a=i*Math.PI/10;double end=r*(i%4==0?1.08:i%2==0?.88:.72);line(m,target.add(g.point(a,r*.36)),target.add(g.point(a,end)),i%4==0?MAJOR:i%2==0?MID:DETAIL,i%4==0?.76F:i%2==0?.46F:.26F);}
+    private static void sunburst(ArcaneWorldMesh.Builder m, Vec3 target, double range, double p, double t, boolean release, double age) {
+        ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();double full=EighthCircleSpellService.sunburstRadius(range);
+        double bloom=release?Math.min(1.0,age*8.0):.38+.62*p,r=full*bloom;
+        ring(m,g,target,r*.34,40,MAJOR,.72F);
+        for(int i=0;i<20;i++){double a=i*Math.PI/10;double end=r*(i%4==0?1.08:i%2==0?.88:.72);line(m,target.add(g.point(a,r*.36)),target.add(g.point(a,end)),i%4==0?MAJOR:i%2==0?MID:DETAIL,i%4==0?.76F:i%2==0?.46F:.26F);}
+        if(release&&age>.04){ring(m,g,target,full*.96,72,MID,.34F);ring(m,g,target,full*.72,56,DETAIL,.22F);for(int i=0;i<8;i++){double a=i*Math.PI/4+t*.03;line(m,target.add(g.point(a,full*.74)),target.add(g.point(a,full*.98)),i%2==0?MID:DETAIL,i%2==0?.38F:.24F);}}
     }
 
     private static void astralPrison(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release) {
@@ -251,7 +261,6 @@ final class AuthoredHighCircleTimeline {
     // 9th circle -------------------------------------------------------------------------------
     private static void meteorSwarm(ArcaneWorldMesh.Builder m, Vec3 target, double p, double t, boolean release, double age) {
         ArcaneWorldMesh.Basis g=ArcaneWorldMesh.Basis.ground();Vec3 sky=target.add(0,22,0);double r=7.8;
-        // Predictor only; the alpha.42 cinematic remains the actual meteor body.
         ring(m,g,sky,r,84,MAJOR,.62F);ring(m,g,sky,r*.66,60,DETAIL,.26F);
         for(int i=0;i<16;i++){double a=i*Math.PI/8;Vec3 tick=sky.add(g.point(a,r*.92));line(m,tick,sky.add(g.point(a,r*(i%4==0?.72:.82))),i%4==0?MAJOR:DETAIL,i%4==0?.62F:.24F);if(i%4==0)marker(m,g,tick,.20,MID,.38F);}
         if(release){double sweep=age*Math.PI*2;line(m,sky,sky.add(g.point(sweep,r*.62)),MID,.40F);}
