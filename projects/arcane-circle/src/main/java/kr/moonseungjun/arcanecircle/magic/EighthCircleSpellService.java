@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,11 @@ public final class EighthCircleSpellService {
     public static final int EARTHQUAKE_TICKS = 180;
     public static final int NPC_FEEBLEMIND_TICKS = 1800;
     public static final int INCENDIARY_CLOUD_TICKS = 240;
+    public static final int SUNBURST_TICKS = 240;
     public static final int NPC_MAZE_TICKS = 480;
+    public static final double INCENDIARY_DRIFT_PER_TICK = .16;
+    private static final int INCENDIARY_WAKE_STEP_TICKS = 16;
+    private static final int MAX_INCENDIARY_WAKE_ZONES = 16;
 
     private static final Map<UUID, NpcAntimagicState> NPC_ANTIMAGIC = new HashMap<>();
     private static final Map<UUID, NpcWeatherState> NPC_WEATHER = new HashMap<>();
@@ -56,11 +61,24 @@ public final class EighthCircleSpellService {
     private static final Map<UUID, NpcCloneState> NPC_CLONES = new HashMap<>();
     private static final List<EarthquakeField> EARTHQUAKES = new ArrayList<>();
     private static final List<IncendiaryCloudField> INCENDIARY_CLOUDS = new ArrayList<>();
+    private static final List<SunburstField> SUNBURSTS = new ArrayList<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
     private EighthCircleSpellService() {}
 
     public static boolean handles(String spellId) { return HANDLED.contains(spellId); }
+
+    public static double earthquakeRadius(double range) {
+        return Math.max(16.0, Math.min(28.0, range * .46));
+    }
+
+    public static double incendiaryRadius(double range) {
+        return Math.max(11.0, Math.min(16.0, range * .30));
+    }
+
+    public static double sunburstRadius(double range) {
+        return Math.max(16.0, Math.min(24.0, range * .40));
+    }
 
     public static boolean execute(ServerPlayer caster, String spellId, double range, double power,
                                   CastTargetSnapshot snapshot) {
@@ -130,6 +148,7 @@ public final class EighthCircleSpellService {
         tickNpcClones(level, now);
         tickEarthquakes(level, now);
         tickIncendiaryClouds(level, now);
+        tickSunbursts(level, now);
     }
 
     public static void clear(LivingEntity subject) {
@@ -147,6 +166,7 @@ public final class EighthCircleSpellService {
         removeCloneRelated(id);
         clearEarthquakeRelated(id);
         clearIncendiaryRelated(id);
+        clearSunburstRelated(id);
     }
 
     public static void clearAll() {
@@ -163,19 +183,21 @@ public final class EighthCircleSpellService {
         NPC_CLONES.clear();
         EARTHQUAKES.clear();
         INCENDIARY_CLOUDS.clear();
+        SUNBURSTS.clear();
         LAST_TICK.clear();
     }
 
     private static boolean earthquake(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                       double range, double power, boolean destructiveTerrain) {
         Vec3 center = snapshot.target();
-        double radius = Math.max(14.0, Math.min(22.0, range * .40));
+        double radius = earthquakeRadius(range);
+        Vec3 faultAxis = horizontal(snapshot.launchDirection());
         EARTHQUAKES.removeIf(field -> field.ownerId.equals(caster.getUUID()));
-        EARTHQUAKES.add(new EarthquakeField(level, caster.getUUID(), center, radius, power,
+        EARTHQUAKES.add(new EarthquakeField(level, caster.getUUID(), center, faultAxis, radius, power,
                 level.getGameTime() + EARTHQUAKE_TICKS, level.getGameTime()));
-        pulseEarthquake(level, caster, center, radius, power * .34);
+        pulseEarthquake(level, caster, center, faultAxis, radius, power * .32, 0);
         if (destructiveTerrain && caster instanceof ServerPlayer player)
-            DestructiveMagicService.impact(player, "earthquake", center, radius, power);
+            DestructiveMagicService.quakeField(player, center, radius, power);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.25F, .48F);
         return true;
@@ -194,31 +216,47 @@ public final class EighthCircleSpellService {
             }
             if (now < field.nextPulse) continue;
             field.nextPulse = now + 10L;
-            pulseEarthquake(level, owner, field.center, field.radius, field.power * .18);
+            field.pulseIndex++;
+            pulseEarthquake(level, owner, field.center, field.faultAxis, field.radius,
+                    field.power * .16, field.pulseIndex);
         }
     }
 
-    private static void pulseEarthquake(ServerLevel level, LivingEntity caster, Vec3 center,
-                                        double radius, double pulsePower) {
+    private static void pulseEarthquake(ServerLevel level, LivingEntity caster, Vec3 center, Vec3 faultAxis,
+                                        double radius, double pulsePower, int pulseIndex) {
+        Vec3 sideAxis = new Vec3(-faultAxis.z, 0.0, faultAxis.x);
+        double phase = (pulseIndex & 1) == 0 ? 1.0 : -1.0;
         for (LivingEntity target : enemies(level, caster, center, radius, Math.max(8.0, radius * .45))) {
             double distance = Math.sqrt(center.distanceToSqr(target.position()));
             double falloff = Math.max(.46, 1.0 - distance / Math.max(1.0, radius) * .54);
             ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 16, 3, true, false));
+            Vec3 motion = target.getDeltaMovement();
+            target.setDeltaMovement(motion.x * .42, motion.y * .72, motion.z * .42);
+            if (target instanceof Mob mob) mob.getNavigation().stop();
             Vec3 away = horizontal(target.position().subtract(center));
-            double kick = .22 + falloff * .30;
-            target.push(away.x * kick, .32 + falloff * .42, away.z * kick);
+            double sideSign = Math.signum(target.position().subtract(center).dot(sideAxis));
+            if (sideSign == 0.0) sideSign = phase;
+            double kick = .18 + falloff * .26;
+            double shear = (.12 + falloff * .16) * sideSign * phase;
+            target.push(away.x * kick + sideAxis.x * shear,
+                    .16 + falloff * .28,
+                    away.z * kick + sideAxis.z * shear);
         }
     }
 
     private static boolean incendiaryCloud(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                            double range, double power) {
         Vec3 center = snapshot.target();
-        Vec3 drift = horizontal(snapshot.launchDirection()).scale(.16);
-        double radius = Math.max(10.0, Math.min(16.0, range * .30));
+        Vec3 drift = horizontal(snapshot.launchDirection()).scale(INCENDIARY_DRIFT_PER_TICK);
+        double radius = incendiaryRadius(range);
         INCENDIARY_CLOUDS.removeIf(field -> field.ownerId.equals(caster.getUUID()));
-        INCENDIARY_CLOUDS.add(new IncendiaryCloudField(level, caster.getUUID(), center, drift, radius, power,
-                level.getGameTime() + INCENDIARY_CLOUD_TICKS, level.getGameTime()));
-        pulseIncendiary(level, caster, center, radius, power * .25);
+        long now = level.getGameTime();
+        IncendiaryCloudField field = new IncendiaryCloudField(level, caster.getUUID(), center, drift, radius, power,
+                now + INCENDIARY_CLOUD_TICKS, now, now + INCENDIARY_WAKE_STEP_TICKS);
+        field.wake.add(new ScorchedZone(center, field.expiresAt));
+        INCENDIARY_CLOUDS.add(field);
+        pulseIncendiary(level, caster, center, radius, power * .22);
         return true;
     }
 
@@ -236,7 +274,13 @@ public final class EighthCircleSpellService {
             field.center = field.center.add(field.drift);
             if (now < field.nextPulse) continue;
             field.nextPulse = now + 8L;
-            pulseIncendiary(level, owner, field.center, field.radius, field.power * .15);
+            if (now >= field.nextWake) {
+                field.nextWake = now + INCENDIARY_WAKE_STEP_TICKS;
+                if (field.wake.size() >= MAX_INCENDIARY_WAKE_ZONES) field.wake.remove(0);
+                field.wake.add(new ScorchedZone(field.center, field.expiresAt));
+            }
+            pulseIncendiary(level, owner, field.center, field.radius, field.power * .12);
+            pulseScorchedWake(level, owner, field);
         }
     }
 
@@ -247,26 +291,96 @@ public final class EighthCircleSpellService {
             double falloff = Math.max(.52, 1.0 - distance / Math.max(1.0, radius) * .48);
             ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff));
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 120));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 1, true, false));
+        }
+    }
+
+    private static void pulseScorchedWake(ServerLevel level, LivingEntity caster, IncendiaryCloudField field) {
+        Set<UUID> hit = new HashSet<>();
+        double wakeRadius = Math.max(5.5, field.radius * .56);
+        for (ScorchedZone zone : field.wake) {
+            for (LivingEntity target : enemies(level, caster, zone.center, wakeRadius, Math.max(5.0, wakeRadius * .55))) {
+                if (!hit.add(target.getUUID())) continue;
+                if (field.center.distanceToSqr(target.position()) <= field.radius * field.radius) continue;
+                double distance = Math.sqrt(zone.center.distanceToSqr(target.position()));
+                double falloff = Math.max(.58, 1.0 - distance / Math.max(1.0, wakeRadius) * .42);
+                ArcaneDamage.hurt(level, caster, target, (float) (field.power * .035 * falloff));
+                target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100));
+                target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 2, true, false));
+            }
         }
     }
 
     private static boolean sunburst(ServerLevel level, LivingEntity caster, CastTargetSnapshot snapshot,
                                     double range, double power) {
         Vec3 center = snapshot.target();
-        double radius = Math.max(15.0, Math.min(23.0, range * .39));
-        boolean hit = false;
-        for (LivingEntity target : enemies(level, caster, center, radius, Math.max(10.0, radius * .62))) {
-            double distance = Math.sqrt(center.distanceToSqr(target.position()));
-            double falloff = Math.max(.58, 1.0 - distance / Math.max(1.0, radius) * .42);
-            ArcaneDamage.hurt(level, caster, target, (float) (power * 1.18 * falloff));
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 140));
-            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 260, 2, true, false));
-            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 300, 0, true, false));
-            hit = true;
-        }
+        double radius = sunburstRadius(range);
+        SUNBURSTS.removeIf(field -> field.ownerId.equals(caster.getUUID()));
+        SunburstField field = new SunburstField(level, caster.getUUID(), center, radius, power,
+                level.getGameTime() + SUNBURST_TICKS, level.getGameTime());
+        SUNBURSTS.add(field);
+        judgeSunburst(level, caster, center, radius, power);
+        applySolarLaw(level, caster, field);
         level.playSound(null, BlockPos.containing(center), SoundEvents.BEACON_POWER_SELECT,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.25F, 1.55F);
-        return hit || snapshot.validFor(caster);
+        return snapshot.validFor(caster);
+    }
+
+    private static void tickSunbursts(ServerLevel level, long now) {
+        Iterator<SunburstField> iterator = SUNBURSTS.iterator();
+        while (iterator.hasNext()) {
+            SunburstField field = iterator.next();
+            if (field.level != level) continue;
+            Entity rawOwner = level.getEntity(field.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved() || now >= field.expiresAt) {
+                cancelOwnerVisual(level, field.ownerId, "sunburst");
+                iterator.remove();
+                continue;
+            }
+            if (now < field.nextPulse) continue;
+            field.nextPulse = now + 8L;
+            applySolarLaw(level, owner, field);
+        }
+    }
+
+    private static void judgeSunburst(ServerLevel level, LivingEntity caster, Vec3 center,
+                                      double radius, double power) {
+        double vertical = Math.max(10.0, radius * .62);
+        AABB box = new AABB(center, center).inflate(radius, vertical, radius);
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
+                value -> value != caster && value.isAlive() && !value.isRemoved() && !caster.isAlliedTo(value)
+                        && center.distanceToSqr(value.position()) <= radius * radius + vertical * vertical * .12)) {
+            boolean concealed = target.hasEffect(MobEffects.INVISIBILITY);
+            boolean darkened = target.hasEffect(MobEffects.DARKNESS);
+            boolean necrotic = target.hasEffect(MobEffects.WITHER);
+            double distance = Math.sqrt(center.distanceToSqr(target.position()));
+            double falloff = Math.max(.58, 1.0 - distance / Math.max(1.0, radius) * .42);
+            double judgment = 1.0 + (concealed ? .20 : 0.0) + (darkened ? .20 : 0.0) + (necrotic ? .25 : 0.0);
+            ArcaneDamage.hurt(level, caster, target, (float) (power * 1.05 * falloff * judgment));
+            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 120));
+            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 160, 1, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 300, 0, true, false));
+        }
+    }
+
+    private static void applySolarLaw(ServerLevel level, LivingEntity caster, SunburstField field) {
+        double vertical = Math.max(10.0, field.radius * .62);
+        AABB box = new AABB(field.center, field.center).inflate(field.radius, vertical, field.radius);
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
+                value -> value.isAlive() && !value.isRemoved()
+                        && field.center.distanceToSqr(value.position()) <= field.radius * field.radius + vertical * vertical * .12)) {
+            boolean hostile = target != caster && !caster.isAlliedTo(target);
+            target.removeEffect(MobEffects.INVISIBILITY);
+            target.removeEffect(MobEffects.DARKNESS);
+            if (hostile) {
+                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 18, 0, true, false));
+                if (target.hasEffect(MobEffects.WITHER))
+                    target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 18, 2, true, false));
+            } else {
+                target.removeEffect(MobEffects.BLINDNESS);
+                target.removeEffect(MobEffects.WITHER);
+            }
+        }
     }
 
     private static boolean npcAntimagic(ServerLevel level, Mob caster, double range) {
@@ -632,6 +746,7 @@ public final class EighthCircleSpellService {
         removeCloneRelated(id);
         clearEarthquakeRelated(id);
         clearIncendiaryRelated(id);
+        clearSunburstRelated(id);
     }
 
     private static void removeDominateRelated(UUID id) {
@@ -675,11 +790,33 @@ public final class EighthCircleSpellService {
     }
 
     private static void clearEarthquakeRelated(UUID id) {
-        EARTHQUAKES.removeIf(field -> field.ownerId.equals(id));
+        Iterator<EarthquakeField> iterator = EARTHQUAKES.iterator();
+        while (iterator.hasNext()) {
+            EarthquakeField field = iterator.next();
+            if (!field.ownerId.equals(id)) continue;
+            cancelOwnerVisual(field.level, field.ownerId, "earthquake");
+            iterator.remove();
+        }
     }
 
     private static void clearIncendiaryRelated(UUID id) {
-        INCENDIARY_CLOUDS.removeIf(field -> field.ownerId.equals(id));
+        Iterator<IncendiaryCloudField> iterator = INCENDIARY_CLOUDS.iterator();
+        while (iterator.hasNext()) {
+            IncendiaryCloudField field = iterator.next();
+            if (!field.ownerId.equals(id)) continue;
+            cancelOwnerVisual(field.level, field.ownerId, "incendiary_cloud");
+            iterator.remove();
+        }
+    }
+
+    private static void clearSunburstRelated(UUID id) {
+        Iterator<SunburstField> iterator = SUNBURSTS.iterator();
+        while (iterator.hasNext()) {
+            SunburstField field = iterator.next();
+            if (!field.ownerId.equals(id)) continue;
+            cancelOwnerVisual(field.level, field.ownerId, "sunburst");
+            iterator.remove();
+        }
     }
 
     private static void discardNpcClone(NpcCloneState state) {
@@ -746,22 +883,36 @@ public final class EighthCircleSpellService {
     }
 
     private static final class EarthquakeField {
-        private final ServerLevel level; private final UUID ownerId; private final Vec3 center;
-        private final double radius, power; private final long expiresAt; private long nextPulse;
-        private EarthquakeField(ServerLevel level, UUID ownerId, Vec3 center, double radius, double power,
-                                long expiresAt, long nextPulse) {
-            this.level=level; this.ownerId=ownerId; this.center=center; this.radius=radius;
-            this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse;
+        private final ServerLevel level; private final UUID ownerId; private final Vec3 center, faultAxis;
+        private final double radius, power; private final long expiresAt; private long nextPulse; private int pulseIndex;
+        private EarthquakeField(ServerLevel level, UUID ownerId, Vec3 center, Vec3 faultAxis,
+                                double radius, double power, long expiresAt, long nextPulse) {
+            this.level=level; this.ownerId=ownerId; this.center=center; this.faultAxis=faultAxis; this.radius=radius;
+            this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse; this.pulseIndex=0;
         }
     }
 
     private static final class IncendiaryCloudField {
         private final ServerLevel level; private final UUID ownerId; private Vec3 center;
-        private final Vec3 drift; private final double radius, power; private final long expiresAt; private long nextPulse;
+        private final Vec3 drift; private final double radius, power; private final long expiresAt;
+        private final List<ScorchedZone> wake = new ArrayList<>();
+        private long nextPulse, nextWake;
         private IncendiaryCloudField(ServerLevel level, UUID ownerId, Vec3 center, Vec3 drift, double radius,
-                                     double power, long expiresAt, long nextPulse) {
+                                     double power, long expiresAt, long nextPulse, long nextWake) {
             this.level=level; this.ownerId=ownerId; this.center=center; this.drift=drift;
-            this.radius=radius; this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse;
+            this.radius=radius; this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse; this.nextWake=nextWake;
+        }
+    }
+
+    private record ScorchedZone(Vec3 center, long expiresAt) {}
+
+    private static final class SunburstField {
+        private final ServerLevel level; private final UUID ownerId; private final Vec3 center;
+        private final double radius, power; private final long expiresAt; private long nextPulse;
+        private SunburstField(ServerLevel level, UUID ownerId, Vec3 center, double radius, double power,
+                              long expiresAt, long nextPulse) {
+            this.level=level; this.ownerId=ownerId; this.center=center; this.radius=radius;
+            this.power=power; this.expiresAt=expiresAt; this.nextPulse=nextPulse;
         }
     }
 
