@@ -1,5 +1,6 @@
 package kr.moonseungjun.arcanecircle.client;
 
+import kr.moonseungjun.arcanecircle.magic.SeventhCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.SpellDefinition;
 import net.minecraft.world.phys.Vec3;
 
@@ -48,6 +49,9 @@ final class HighCircleMaintenanceOverlay {
         if (spell == null || spell.circle() < 7) return m.build();
         double t = Math.max(0.0, elapsedSeconds);
         switch (spell.id()) {
+            case "delayed_blast_fireball" -> delayedBlastAuthority(m, target, spell.range(), t);
+            case "fire_storm" -> fireStormAuthority(m, target, spell.range(), t);
+            case "teleport" -> teleportAuthority(m, target, t);
             case "antimagic_field" -> antimagic(m, 1.0, t, true);
             case "meteor_swarm" -> meteorSwarm(m, target, 1.0, t, true);
             case "shapechange" -> shapechange(m, 1.0, t, true);
@@ -81,6 +85,76 @@ final class HighCircleMaintenanceOverlay {
                 m.line(f.point(a, r * .94).add(f.normal().scale(-.44)).add(0, .92, 0),
                         f.point(a + .08, r * .72).add(f.normal().scale(.44)).add(0, .92, 0),
                         i % 3 == 0 ? 1.02F : .42F, i % 3 == 0 ? 1.0F : .72F, i % 3 == 0 ? .72F : .34F);
+            }
+        }
+    }
+
+    /** Alpha.68: authoritative main blast and overpressure radii, with the real 3.6 s fuse. */
+    private static void delayedBlastAuthority(ArcaneWorldMesh.Builder m, Vec3 target, double range, double t) {
+        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+        double core = SeventhCircleSpellService.delayedBlastRadius(range);
+        double shock = SeventhCircleSpellService.delayedBlastShockRadius(range);
+        double fuseSeconds = SeventhCircleSpellService.DELAYED_BLAST_FUSE_TICKS / 20.0;
+        double arm = clamp(t / fuseSeconds, 0.0, 1.0);
+        double pulse = .88 + .12 * Math.sin(Math.min(t, fuseSeconds) * (2.2 + arm * 4.8));
+        m.circle(g, target, core, 88, 1.12F);
+        m.circle(g, target, shock, 104, .44F);
+        m.circle(g, target.add(0, .05, 0), core * (.20 + .55 * arm) * pulse, 62, .72F);
+        for (int i = 0; i < 12; i++) {
+            double a = i * Math.PI / 6.0;
+            Vec3 outer = target.add(g.point(a, shock));
+            Vec3 inner = target.add(g.point(a + .035 * Math.sin(i * 1.7), core * (.78 - .24 * arm)));
+            m.line(outer, inner, i % 3 == 0 ? .78F : .30F);
+        }
+        if (t >= fuseSeconds) {
+            double blast = clamp((t - fuseSeconds) / .70, 0.0, 1.0);
+            m.circle(g, target.add(0, .08, 0), core * (.24 + .76 * blast), 92, 1.18F);
+            m.circle(g, target.add(0, .12, 0), shock * (.20 + .80 * blast), 110, .66F);
+        }
+    }
+
+    /** Alpha.68: six real pillar footprints light in the same 0.4 s sequence as server damage. */
+    private static void fireStormAuthority(ArcaneWorldMesh.Builder m, Vec3 target, double range, double t) {
+        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+        double pattern = SeventhCircleSpellService.fireStormPatternRadius(range);
+        double pillar = SeventhCircleSpellService.fireStormPillarRadius(range);
+        double interval = .40;
+        Vec3 sky = target.add(0, 11.5, 0);
+        m.circle(g, target, pattern, 72, .40F);
+        for (int i = 0; i < 6; i++) {
+            double a = i * Math.PI / 3.0;
+            Vec3 hit = target.add(g.point(a, pattern));
+            Vec3 top = sky.add(g.point(a, pattern));
+            double local = t - i * interval;
+            float footprint = local < 0.0 ? .28F : local < .44 ? 1.12F : .52F;
+            m.circle(g, hit, pillar, 42, footprint);
+            m.diamond(g, top, .20, a, 1.05F, .16F);
+            if (local >= 0.0 && local <= .58)
+                m.line(top, hit, local < .18 ? 1.18F : .72F, 1.0F, local < .18 ? .86F : .48F);
+        }
+    }
+
+    /** Alpha.68: visible 7 m pickup law and six-slot safe arrival formation. */
+    private static void teleportAuthority(ArcaneWorldMesh.Builder m, Vec3 target, double t) {
+        ArcaneWorldMesh.Basis g = ArcaneWorldMesh.Basis.ground();
+        double gather = SeventhCircleSpellService.TELEPORT_GATHER_RADIUS;
+        m.circle(g, Vec3.ZERO, gather, 88, .62F);
+        for (int i = 0; i < SeventhCircleSpellService.TELEPORT_MAX_COMPANIONS; i++) {
+            double a = i * Math.PI * 2.0 / SeventhCircleSpellService.TELEPORT_MAX_COMPANIONS;
+            Vec3 pickup = g.point(a, gather * .78);
+            m.diamond(g, pickup, .24, a, i < 3 ? .84F : .48F, .18F);
+            m.line(pickup, Vec3.ZERO, .26F);
+        }
+        if (target.lengthSqr() > 4.0) {
+            double fade = Math.max(.25, 1.0 - clamp(t / 1.10, 0.0, 1.0) * .60);
+            m.circle(g, target, 2.6, 54, .82F);
+            m.circle(g, target, 4.2, 66, .42F);
+            for (int i = 0; i < SeventhCircleSpellService.TELEPORT_MAX_COMPANIONS; i++) {
+                double a = i * Math.PI * 2.0 / SeventhCircleSpellService.TELEPORT_MAX_COMPANIONS;
+                double r = i < 3 ? 2.6 : 4.2;
+                Vec3 slot = target.add(g.point(a, r));
+                m.diamond(g, slot, .22, a, .72F, (float) (.18 * fade));
+                m.line(Vec3.ZERO, slot, .24F, .64F, (float) (.22 * fade));
             }
         }
     }
