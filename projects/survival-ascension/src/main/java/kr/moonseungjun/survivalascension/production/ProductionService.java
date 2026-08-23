@@ -11,6 +11,7 @@ public final class ProductionService {
     public static final String ACTION_PREFIX = "produce:";
     public static final String ACTION_STATUS = "production_status";
     public static final String ACTION_DISPATCH = "dispatch_supply";
+    public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
 
     private ProductionService() {}
 
@@ -29,6 +30,10 @@ public final class ProductionService {
         }
         if (ACTION_DISPATCH.equals(action)) {
             dispatchSupply(player);
+            return;
+        }
+        if (ACTION_DEPOT_TOGGLE.equals(action)) {
+            FieldDepotService.toggleNearest(player);
             return;
         }
         if (!action.startsWith(ACTION_PREFIX)) {
@@ -71,7 +76,8 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7보급권 1개 출고: 금32 + 자수정16 + 메아리2. 정점 사냥·시련·장비 재료로 자유롭게 사용합니다."));
+        player.sendSystemMessage(Component.literal("§7보급권은 실물 출고 또는 현장 물류 거점 등록에 사용합니다. 실물 출고1회: 금32 + 자수정16 + 메아리2."));
+        FieldDepotService.sendStatus(player);
     }
 
     private static void dispatchSupply(ServerPlayer player) {
