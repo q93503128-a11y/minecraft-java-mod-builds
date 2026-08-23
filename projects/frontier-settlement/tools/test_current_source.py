@@ -21,6 +21,7 @@ required = [
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementBenefitService.java',
     JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/SettlementExternalContentService.java',
     JAVA / 'settlement/SettlementMarketService.java', JAVA / 'settlement/MarketLayout.java', JAVA / 'settlement/MarketBuildingBlueprint.java',
+    JAVA / 'settlement/SettlementWorkshopService.java', JAVA / 'settlement/WorkshopLayout.java', JAVA / 'settlement/WorkshopBuildingBlueprint.java',
     JAVA / 'settlement/BuildingType.java', JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java',
     JAVA / 'settlement/SettlementTier.java',
     JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
@@ -39,7 +40,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.32'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.33'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -52,7 +53,7 @@ for token in ('survival -> settlement growth', 'One world/server has one shared 
     if token not in plan: raise SystemExit(f'canonical plan invariant missing: {token}')
 
 original = (ROOT / 'ORIGINAL_DESIGN_v0.2.md').read_text(encoding='utf-8')
-for token in ('외부 모드팩 연동 방향', '15~20개 계열', '작은 다리', '수레 정거장', '감시탑', '병영', '시장', '고급 제작소'):
+for token in ('외부 모드팩 연동 방향', '15~20개 계열', '작은 다리', '수레 정거장', '감시탑', '병영', '시장', '작업장', '고급 제작소'):
     if token not in original: raise SystemExit(f'original v0.2 scope invariant missing: {token}')
 
 companion = (ROOT / 'COMPANION_MODS.md').read_text(encoding='utf-8')
@@ -75,15 +76,20 @@ for required_mod in ('terralith', 'dungeons_and_taverns', 'repurposed_structures
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
               'SettlementOutpostService::onBreakBlock', 'SettlementCoreService::onBreakBlock',
-              'SettlementTierInfrastructureService::onBreakBlock', 'SettlementMarketService::onBreakBlock'):
+              'SettlementTierInfrastructureService::onBreakBlock', 'SettlementMarketService::onBreakBlock',
+              'SettlementWorkshopService::onBreakBlock'):
     if token not in entry: raise SystemExit(f'active infrastructure protection missing: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService.tick(server, data)', 'SettlementRoadService.tick(server, data)',
-              'SettlementOutpostService.tick(server, data)', 'SettlementMarketService.tick(server, data)'):
+              'SettlementOutpostService.tick(server, data)', 'SettlementMarketService.tick(server, data)',
+              'SettlementWorkshopService.tick(server, data)'):
     if service.count(token) != 1: raise SystemExit(f'server tick authority must have exactly one call: {token}')
-if service.index('SettlementMarketService.tick(server, data)') < service.index('else {'):
-    raise SystemExit('market trading must remain in the daytime/non-rest branch')
+for daytime in ('SettlementMarketService.tick(server, data)', 'SettlementWorkshopService.tick(server, data)'):
+    if service.index(daytime) < service.index('else {'):
+        raise SystemExit(f'daytime service escaped non-rest branch: {daytime}')
+for token in ('type == BuildingType.WORKSHOP', 'SettlementWorkshopService.lockedReason(data)'):
+    if token not in service: raise SystemExit(f'workshop unlock mask invariant missing: {token}')
 
 guidance = (JAVA / 'settlement/SettlementGuidanceService.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService.phaseLabel(data.construction())',
@@ -92,7 +98,7 @@ for token in ('SettlementConstructionService.phaseLabel(data.construction())',
               'data.houseCount() < 1', 'data.lumberCampCount() < 1', 'BuildingType.FARM', 'BuildingType.QUARRY',
               'data.roads().isEmpty()', 'data.outposts().isEmpty()', 'data.population() < 4', 'BuildingType.MARKET',
               'BuildingType.MINE', 'data.outposts().size() < 2', 'data.population() < 8', 'BuildingType.BLACKSMITH',
-              'data.outposts().size() < 4', 'data.population() < 16', 'BuildingType.GUARD_POST'):
+              'BuildingType.WORKSHOP', 'data.outposts().size() < 4', 'data.population() < 16', 'BuildingType.GUARD_POST'):
     if token not in guidance: raise SystemExit(f'next-goal invariant missing: {token}')
 if 'reward' in guidance.lower() or 'quest' in guidance.lower():
     raise SystemExit('next-goal helper must remain guidance-only')
@@ -114,12 +120,14 @@ for token in ('GRADE_STEP_OFFSET = 1_000_000', 'BUILD_STEP_OFFSET = 2_000_000',
     if token not in outpost_state: raise SystemExit(f'alpha.26 outpost phase persistence invariant missing: {token}')
 
 building_type = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-8')
-if 'MARKET("market", "시장", 96, 48, 11, 11, 8, 0' not in building_type:
-    raise SystemExit('alpha.32 market building definition missing or changed unexpectedly')
+for token in ('MARKET("market", "시장", 96, 48, 11, 11, 8, 0',
+              'WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0'):
+    if token not in building_type: raise SystemExit(f'functional building definition missing: {token}')
 
 blueprints = (JAVA / 'settlement/BuildingBlueprints.java').read_text(encoding='utf-8')
-if 'case MARKET -> MarketBuildingBlueprint.create(origin);' not in blueprints:
-    raise SystemExit('alpha.32 market blueprint routing missing')
+for token in ('case MARKET -> MarketBuildingBlueprint.create(origin);',
+              'case WORKSHOP -> WorkshopBuildingBlueprint.create(origin);'):
+    if token not in blueprints: raise SystemExit(f'functional blueprint routing missing: {token}')
 
 market_layout = (JAVA / 'settlement/MarketLayout.java').read_text(encoding='utf-8')
 for token in ('TRADE_X = 5', 'TRADE_Y = 1', 'TRADE_Z = 5', 'tradeCrate(BuildingRecord market)', 'market.localToWorld'):
@@ -129,6 +137,17 @@ market_blueprint = (JAVA / 'settlement/MarketBuildingBlueprint.java').read_text(
 for token in ('MarketLayout.tradeCrate(origin)', 'Blocks.BARREL.defaultBlockState()', 'Blocks.BELL.defaultBlockState()',
               'BuildingBlueprints.Phase.FINISH', 'Blocks.STONE_BRICKS.defaultBlockState()', 'Blocks.SPRUCE_PLANKS.defaultBlockState()'):
     if token not in market_blueprint: raise SystemExit(f'alpha.32 market blueprint invariant missing: {token}')
+
+workshop_layout = (JAVA / 'settlement/WorkshopLayout.java').read_text(encoding='utf-8')
+for token in ('SERVICE_X = 5', 'SERVICE_Y = 1', 'SERVICE_Z = 4',
+              'serviceCrate(BlockPos origin)', 'serviceCrate(BuildingRecord workshop)', 'workshop.localToWorld'):
+    if token not in workshop_layout: raise SystemExit(f'alpha.33 workshop layout invariant missing: {token}')
+
+workshop_blueprint = (JAVA / 'settlement/WorkshopBuildingBlueprint.java').read_text(encoding='utf-8')
+for token in ('WorkshopLayout.serviceCrate(origin)', 'Blocks.BARREL.defaultBlockState()', 'Blocks.GRINDSTONE.defaultBlockState()',
+              'Blocks.SMITHING_TABLE.defaultBlockState()', 'Blocks.ANVIL.defaultBlockState()', 'Blocks.BLAST_FURNACE.defaultBlockState()',
+              'BuildingBlueprints.Phase.FINISH'):
+    if token not in workshop_blueprint: raise SystemExit(f'alpha.33 workshop blueprint invariant missing: {token}')
 
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtractionTarget', 'EquipmentSlot.MAINHAND',
@@ -217,12 +236,17 @@ for token in ('SettlementOutpostLogisticsService.migrateLegacyWorkers(level, dat
               'SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data)',
               'SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data)',
               'SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing)',
+              'SettlementWorkshopService.allAssignmentsLoaded(level, data)',
+              'SettlementWorkshopService.loadedAssignedWorkerCount(level, data)',
+              'SettlementWorkshopService.firstMissingLoadedAssignment(level, data)',
+              'SettlementWorkshopService.spawnAssignedWorker(level, missingWorkshop)',
               'LUMBER_WORK_PERIOD_TICKS = 100', 'FARM_WORK_PERIOD_TICKS = 120',
               'QUARRY_WORK_PERIOD_TICKS = 80', 'MINING_WORK_PERIOD_TICKS = 160',
               'MAX_LOGS_PER_TRIP = 4', 'MAX_CROPS_PER_TRIP = 4', 'MAX_STONE_PER_TRIP = 3',
+              'ARRIVAL_FOOD_COST = 4L', 'consumeArrivalFood(level, data)', 'finishArrival(server, data)',
               'workDue(', 'worker.swing(InteractionHand.MAIN_HAND)', 'level.hasChunkAt(',
               '!level.getBlockState(pos.above()).isAir()'):
-    if token not in worker: raise SystemExit(f'alpha.30 bounded town-worker invariant missing: {token}')
+    if token not in worker: raise SystemExit(f'bounded worker/population invariant missing: {token}')
 for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
     if forbidden in worker: raise SystemExit(f'legacy UUID-order transport backend remains in worker service: {forbidden}')
 
@@ -245,8 +269,8 @@ for forbidden in ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching('
 routine = (JAVA / 'settlement/SettlementResidentRoutineService.java').read_text(encoding='utf-8')
 for token in ('SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG',
               'SettlementOutpostProductionService.PRODUCTION_WORKER_TAG', 'assignedTransportOutpost(',
-              'settlementBounds(', 'moveToHouseSlot(', 'villager.getNavigation().stop()'):
-    if token not in routine: raise SystemExit(f'alpha.29 resident routine invariant missing: {token}')
+              'settlementBounds(', 'moveToHouseSlot(', 'villager.getNavigation().stop()', '"작업장 주민"'):
+    if token not in routine: raise SystemExit(f'resident routine invariant missing: {token}')
 if '"운송 주민"' in routine:
     raise SystemExit('night routine must use transport assignment tags, not legacy generic name matching')
 
@@ -267,6 +291,7 @@ for token in ('ExternalContentTags.SETTLEMENT_WOOD', 'ExternalContentTags.C_STON
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract(',
+              'isMetalStack(ItemStack stack)', 'SettlementStorageService::isMetalStack',
               'ExternalContentTags.C_INGOTS', 'ExternalContentTags.C_RAW_MATERIALS', 'ExternalContentTags.SETTLEMENT_METAL'):
     if token not in storage: raise SystemExit(f'physical/external storage invariant missing: {token}')
 
@@ -289,14 +314,35 @@ for forbidden in ('SettlementStorageService.extract(', 'SettlementStorageService
                   'SettlementStorageService.consume(', 'destroyBlock(', 'dropResources('):
     if forbidden in market: raise SystemExit(f'market must not auto-sell shared storage or create loose drops: {forbidden}')
 
+workshop = (JAVA / 'settlement/SettlementWorkshopService.java').read_text(encoding='utf-8')
+for token in ('WORKSHOP_WORKER_TAG', 'WORKSHOP_ASSIGNMENT_PREFIX', 'SERVICE_PERIOD_TICKS = 100', 'REPAIR_PER_METAL = 64',
+              'lockedReason(SettlementData data)', 'BuildingType.BLACKSMITH', 'WorkshopLayout.serviceCrate(workshop)',
+              'SettlementExternalContentService.isExternalWeapon', 'SettlementStorageService.storageAvailable(level, data)',
+              'SettlementStorageService.findExtractionTarget(level, data, SettlementStorageService::isMetalStack)',
+              'SettlementStorageService.extract(level, source, SettlementStorageService::isMetalStack, 1)',
+              'EquipmentSlot.MAINHAND', 'worker.swing(InteractionHand.MAIN_HAND)', 'returnCarriedItem(',
+              'SettlementInventory.insert(container, carried)', 'allAssignmentsLoaded(', 'loadedAssignedWorkerCount(',
+              'firstMissingLoadedAssignment(', 'spawnAssignedWorker(', 'level.hasChunkAt(',
+              'BreakBlockEvent', 'event.setCanceled(true)', 'event.setNotifyClient(true)', '"작업장 주민"'):
+    if token not in workshop: raise SystemExit(f'alpha.33 physical workshop invariant missing: {token}')
+for forbidden in ('SettlementStorageService.insert(level, data, carried)', 'SettlementStorageService.storagePositions(',
+                  'destroyBlock(', 'dropResources('):
+    if forbidden in workshop: raise SystemExit(f'workshop violated physical opt-in/hauling invariant: {forbidden}')
+
 commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
 for token in ('SettlementExternalContentService.snapshot', '탐험 연동 | 유물', '외부 무기',
-              'Commands.literal("market")', 'BuildingType.MARKET', ' | 시장 '):
-    if token not in commands: raise SystemExit(f'alpha.32 command/status invariant missing: {token}')
+              'Commands.literal("market")', 'BuildingType.MARKET', ' | 시장 ',
+              'Commands.literal("workshop")', 'BuildingType.WORKSHOP', ' | 작업장 ',
+              'SettlementWorkshopService.lockedReason(data)'):
+    if token not in commands: raise SystemExit(f'command/status invariant missing: {token}')
+
+network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
+for token in ('PROTOCOL = "7"', 'type == BuildingType.WORKSHOP', 'SettlementWorkshopService.lockedReason(data)'):
+    if token not in network: raise SystemExit(f'network/server workshop guard missing: {token}')
 
 palette = (JAVA / 'client/BuildingPaletteScreen.java').read_text(encoding='utf-8')
-for token in ('BuildingType.MARKET', '물류·교역', '시장/경비←마을 단계'):
-    if token not in palette: raise SystemExit(f'alpha.32 compact palette invariant missing: {token}')
+for token in ('BuildingType.MARKET', 'BuildingType.WORKSHOP', '물류·교역', '작업장←대장간'):
+    if token not in palette: raise SystemExit(f'compact palette invariant missing: {token}')
 
 for tag_name in ('settlement_wood', 'settlement_stone', 'settlement_metal', 'settlement_food', 'expedition_relics'):
     tag = json.loads((RES / f'data/frontier_settlement/tags/item/{tag_name}.json').read_text(encoding='utf-8'))
@@ -310,8 +356,6 @@ for token in ('minecraft:echo_shard', 'minecraft:heart_of_the_sea', 'minecraft:h
 snapshot = (JAVA / 'network/SettlementSnapshotPayload.java').read_text(encoding='utf-8')
 for token in ('int buildingUnlockMask, String nextGoal', 'buf.writeUtf(payload.nextGoal())', 'buf.readUtf()'):
     if token not in snapshot: raise SystemExit(f'guidance snapshot invariant missing: {token}')
-network = (JAVA / 'network/SettlementNetwork.java').read_text(encoding='utf-8')
-if 'PROTOCOL = "7"' not in network: raise SystemExit('snapshot shape requires network protocol 7')
 
 placement = (JAVA / 'client/BuildingPlacementClient.java').read_text(encoding='utf-8')
 for token in ('GLFW.GLFW_KEY_B', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE'):
@@ -331,8 +375,9 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
              JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
              JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementWorkerService.java',
              JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
-             JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementMarketService.java'):
+             JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementMarketService.java',
+             JAVA / 'settlement/SettlementWorkshopService.java'):
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.32 source audit: PASS')
+print('Frontier Settlement alpha.33 source audit: PASS')
