@@ -40,6 +40,10 @@ public final class ExpeditionIncidentSystem {
 
     private ExpeditionIncidentSystem() {}
 
+    public static boolean isActive(ServerPlayer player) {
+        return ACTIVE.containsKey(player.getUUID());
+    }
+
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
         if (player.tickCount % 5 != 0) return;
