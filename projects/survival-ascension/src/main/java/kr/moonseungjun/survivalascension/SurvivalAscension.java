@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
     public static final String VERSION = "0.31.0-alpha.1";
-    // 0.31 canonical: outposts support a prepaid, death-bound one-use field recovery contract; no normal fast travel.
+    // 0.31 canonical contract: prepaid one-use field recovery is death-bound, challenge-excluded and never normal fast travel.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
