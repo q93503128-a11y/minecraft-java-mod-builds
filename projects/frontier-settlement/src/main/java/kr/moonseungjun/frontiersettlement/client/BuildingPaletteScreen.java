@@ -36,6 +36,7 @@ public final class BuildingPaletteScreen extends Screen {
         addBuilding(BuildingType.MARKET, innerX, innerY + 68, columnWidth);
         addBuilding(BuildingType.CART_STATION, innerX, innerY + 88, columnWidth);
         addBuilding(BuildingType.GUARD_POST, innerX, innerY + 124, columnWidth);
+        addBuilding(BuildingType.WATCHTOWER, innerX, innerY + 144, columnWidth);
 
         addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 12, columnWidth);
         addBuilding(BuildingType.FARM, rightX, innerY + 32, columnWidth);
@@ -44,7 +45,7 @@ public final class BuildingPaletteScreen extends Screen {
         addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 92, columnWidth);
         addBuilding(BuildingType.WORKSHOP, rightX, innerY + 112, columnWidth);
 
-        int infraY = innerY + 148;
+        int infraY = innerY + 176;
         addRenderableWidget(Button.builder(Component.literal("도로 계획"), button -> {
             RoadPlacementClient.beginPlacement();
             this.minecraft.gui.setScreen(null);
@@ -95,12 +96,8 @@ public final class BuildingPaletteScreen extends Screen {
         graphics.text(this.font, Component.literal("물류·교역"), innerX, innerY + 56, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("방어"), innerX, innerY + 112, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("생산"), rightX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 136, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 164, 0xFFFFD58A, true);
 
-        String lock1 = "잠금: 농장←주택 · 채석장←벌목소 · 광산←채석장+전초기지 · 창고←농장";
-        String lock2 = "대장간←광산 · 작업장←대장간 · 정거장←도로+전초 · 시장/경비←마을";
-        graphics.text(this.font, Component.literal(lock1), panelX + 12, panelY + panelHeight - 31, 0xFFB8B8B8, false);
-        graphics.text(this.font, Component.literal(lock2), panelX + 12, panelY + panelHeight - 17, 0xFFD0D0D0, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
