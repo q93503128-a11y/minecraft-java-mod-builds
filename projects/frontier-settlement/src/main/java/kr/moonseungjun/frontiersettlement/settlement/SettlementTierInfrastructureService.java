@@ -4,24 +4,29 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
-import java.util.Comparator;
 import java.util.List;
 
 /**
- * High-tier settlement benefits without extra micromanagement screens.
- * Existing warehouses and guard posts gain stronger roles as the settlement grows.
+ * Visible tier infrastructure that stays behind the existing compact interaction model.
+ *
+ * Alpha.29 deliberately does not own transport navigation. Alpha.27's tagged road logistics remain
+ * the single authority for outpost transport; tier growth is expressed through safe public works
+ * and stronger loaded guard-post garrisons instead of a second UUID/name-based logistics backend.
  */
 public final class SettlementTierInfrastructureService {
-    private static final String TRANSPORT_WORKER_NAME = "운송 주민";
-    private static final int LOGISTICS_INTERVAL_TICKS = 10;
+    private static final int PUBLIC_WORKS_INTERVAL_TICKS = 100;
     private static final int GARRISON_INTERVAL_TICKS = 200;
+    private static final int FRONTIER_TOWN_LAMP_SPACING = 16;
+    private static final int DOMAIN_LAMP_SPACING = 10;
+    private static final int PUBLIC_WORKS_UPDATE = 3;
 
     private SettlementTierInfrastructureService() {}
 
@@ -31,71 +36,113 @@ public final class SettlementTierInfrastructureService {
 
         ServerLevel level = server.overworld();
         int tick = server.getTickCount();
-        if (!SettlementResidentRoutineService.isRestTime(level)
-                && tick % LOGISTICS_INTERVAL_TICKS == 0
-                && data.buildingCount(BuildingType.WAREHOUSE) > 0) {
-            reinforcePhysicalLogistics(level, data, tier);
-        }
+        if (tick % PUBLIC_WORKS_INTERVAL_TICKS == 0) maintainRoadPublicWorks(level, data, tier);
         if (tick % GARRISON_INTERVAL_TICKS == 0
                 && data.buildingCount(BuildingType.BLACKSMITH) > 0) {
             maintainTierGarrison(level, data, tier);
         }
     }
 
-    private static void reinforcePhysicalLogistics(ServerLevel level, SettlementData data, SettlementTier tier) {
-        int carryLimit = tier == SettlementTier.DOMAIN ? 48 : 32;
-        double moveSpeed = tier == SettlementTier.DOMAIN ? 1.15D : 1.05D;
-
-        List<Villager> transports = transportWorkers(level, data.centerPos());
-        int count = Math.min(transports.size(), data.outposts().size());
-        for (int i = 0; i < count; i++) {
-            Villager worker = transports.get(i);
-            OutpostRecord outpost = data.outposts().get(i);
-            ItemStack carried = worker.getMainHandItem();
-            if (carried.isEmpty()) continue;
-
-            BlockPos outpostStock = outpost.stockpile();
-            if (worker.distanceToSqr(outpostStock.getX() + 0.5D, outpostStock.getY() + 0.5D,
-                    outpostStock.getZ() + 0.5D) <= 9.0D
-                    && level.getBlockEntity(outpostStock) instanceof Container container) {
-                topUpMatching(container, carried, carryLimit);
-            }
-
-            if (outpost.roadIndex() >= 0 && outpost.roadIndex() < data.roads().size()) {
-                BlockPos roadStart = data.roads().get(outpost.roadIndex()).start().above();
-                if (worker.distanceToSqr(roadStart.getX() + 0.5D, roadStart.getY(), roadStart.getZ() + 0.5D) > 16.0D) {
-                    worker.getNavigation().moveTo(roadStart.getX() + 0.5D, roadStart.getY(), roadStart.getZ() + 0.5D, moveSpeed);
+    private static void maintainRoadPublicWorks(ServerLevel level, SettlementData data, SettlementTier tier) {
+        int spacing = tier == SettlementTier.DOMAIN ? DOMAIN_LAMP_SPACING : FRONTIER_TOWN_LAMP_SPACING;
+        int changed = 0;
+        for (int roadIndex = 0; roadIndex < data.roads().size() && changed < 2; roadIndex++) {
+            List<BlockPos> centers = data.roads().get(roadIndex).centers();
+            if (centers.size() < 5) continue;
+            int offset = Math.max(2, spacing / 2);
+            for (int index = offset; index < centers.size() - 2 && changed < 2; index += spacing) {
+                LampSite site = lampSite(level, data, centers, roadIndex, index);
+                if (site == null) continue;
+                BlockState post = level.getBlockState(site.post());
+                if (!post.is(Blocks.OAK_FENCE)) {
+                    if (!canPlacePublicWork(level, site.post())) continue;
+                    level.setBlock(site.post(), Blocks.OAK_FENCE.defaultBlockState(), PUBLIC_WORKS_UPDATE);
+                    changed++;
                     continue;
                 }
-            }
-
-            BlockPos townStorage = SettlementStorageService.findDepositTarget(level, data, carried);
-            if (worker.distanceToSqr(townStorage.getX() + 0.5D, townStorage.getY(), townStorage.getZ() + 0.5D) > 9.0D) {
-                worker.getNavigation().moveTo(townStorage.getX() + 0.5D, townStorage.getY(), townStorage.getZ() + 0.5D, moveSpeed);
+                BlockState light = level.getBlockState(site.light());
+                if (!light.is(Blocks.LANTERN) && canPlacePublicWork(level, site.light())) {
+                    level.setBlock(site.light(), Blocks.LANTERN.defaultBlockState(), PUBLIC_WORKS_UPDATE);
+                    changed++;
+                }
             }
         }
     }
 
-    private static void topUpMatching(Container container, ItemStack carried, int carryLimit) {
-        int hardLimit = Math.min(carryLimit, carried.getMaxStackSize());
-        int needed = hardLimit - carried.getCount();
-        if (needed <= 0) return;
+    private static LampSite lampSite(ServerLevel level, SettlementData data, List<BlockPos> centers,
+                                     int roadIndex, int index) {
+        BlockPos center = centers.get(index);
+        int[] direction = directionAt(centers, index);
+        if (direction[0] == 0 && direction[1] == 0) return null;
+        int side = ((roadIndex + index) & 1) == 0 ? 2 : -2;
+        LampSite preferred = candidate(level, data, center, direction, side);
+        if (preferred != null) return preferred;
+        return candidate(level, data, center, direction, -side);
+    }
 
-        for (int slot = 0; slot < container.getContainerSize() && needed > 0; slot++) {
-            ItemStack stock = container.getItem(slot);
-            if (stock.isEmpty() || !ItemStack.isSameItemSameComponents(stock, carried)) continue;
-            int take = Math.min(needed, stock.getCount());
-            stock.shrink(take);
-            carried.grow(take);
-            needed -= take;
+    private static LampSite candidate(ServerLevel level, SettlementData data, BlockPos center,
+                                      int[] direction, int side) {
+        BlockPos ground = center.offset(-direction[1] * side, 0, direction[0] * side);
+        if (!level.hasChunkAt(ground)) return null;
+        if (protectedXZ(data, ground)) return null;
+        if (level.getBlockEntity(ground) != null) return null;
+        BlockState groundState = level.getBlockState(ground);
+        if (!groundState.getFluidState().isEmpty() || !isShoulderGround(groundState)) return null;
+        BlockPos post = ground.above();
+        BlockPos light = ground.above(2);
+        if (!level.hasChunkAt(post) || !level.hasChunkAt(light)) return null;
+        if ((!level.getBlockState(post).is(Blocks.OAK_FENCE) && !canPlacePublicWork(level, post))
+                || (!level.getBlockState(light).is(Blocks.LANTERN) && !canPlacePublicWork(level, light))) {
+            return null;
         }
-        container.setChanged();
+        return new LampSite(post, light);
+    }
+
+    private static boolean canPlacePublicWork(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) != null) return false;
+        BlockState current = level.getBlockState(pos);
+        if (!current.getFluidState().isEmpty()) return false;
+        return current.isAir() || current.canBeReplaced();
+    }
+
+    private static boolean isShoulderGround(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.PODZOL) || state.is(Blocks.ROOTED_DIRT)
+                || state.is(Blocks.STONE) || state.is(Blocks.COBBLESTONE)
+                || state.is(Blocks.ANDESITE) || state.is(Blocks.DIORITE) || state.is(Blocks.GRANITE)
+                || state.is(Blocks.TUFF) || state.is(Blocks.GRAVEL) || state.is(Blocks.DIRT_PATH);
+    }
+
+    private static boolean protectedXZ(SettlementData data, BlockPos pos) {
+        if (Math.abs(pos.getX() - data.centerPos().getX()) <= 7
+                && Math.abs(pos.getZ() - data.centerPos().getZ()) <= 7) return true;
+        for (BuildingRecord building : data.buildings()) if (building.protectsXZ(pos, 1)) return true;
+        for (OutpostRecord outpost : data.outposts()) if (outpost.protectsXZ(pos, 1)) return true;
+        return false;
+    }
+
+    private static int[] directionAt(List<BlockPos> centers, int index) {
+        BlockPos from = centers.get(Math.max(0, index - 1));
+        BlockPos to = centers.get(Math.min(centers.size() - 1, index + 1));
+        int dx = Integer.signum(to.getX() - from.getX());
+        int dz = Integer.signum(to.getZ() - from.getZ());
+        if (Math.abs(dx) + Math.abs(dz) == 1) return new int[] {dx, dz};
+        BlockPos current = centers.get(index);
+        if (index + 1 < centers.size()) {
+            BlockPos next = centers.get(index + 1);
+            dx = Integer.signum(next.getX() - current.getX());
+            dz = Integer.signum(next.getZ() - current.getZ());
+            if (Math.abs(dx) + Math.abs(dz) == 1) return new int[] {dx, dz};
+        }
+        return new int[] {0, 0};
     }
 
     private static void maintainTierGarrison(ServerLevel level, SettlementData data, SettlementTier tier) {
         int reinforcementsPerPost = tier == SettlementTier.DOMAIN ? 2 : 1;
         for (BuildingRecord post : data.buildings()) {
             if (post.buildingType() != BuildingType.GUARD_POST) continue;
+            BlockPos center = post.workCenter();
+            if (!level.hasChunkAt(center)) continue;
             for (int index = 1; index <= reinforcementsPerPost; index++) {
                 maintainReinforcement(level, post, index);
             }
@@ -123,14 +170,33 @@ public final class SettlementTierInfrastructureService {
         return "개척 수비대 [" + post.originX() + "," + post.originZ() + "] #" + index;
     }
 
-    private static List<Villager> transportWorkers(ServerLevel level, BlockPos center) {
-        AABB search = new AABB(
-                center.getX() - 256.0D, center.getY() - 96.0D, center.getZ() - 256.0D,
-                center.getX() + 257.0D, center.getY() + 97.0D, center.getZ() + 257.0D);
-        List<Villager> result = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.getCustomName() != null
-                        && TRANSPORT_WORKER_NAME.equals(villager.getCustomName().getString()));
-        result.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
-        return result;
+    public static void onBreakBlock(BreakBlockEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        MinecraftServer server = level.getServer();
+        if (level != server.overworld()) return;
+        SettlementData data = SettlementData.get(server);
+        SettlementTier tier = SettlementTier.current(data);
+        if (tier.ordinal() < SettlementTier.FRONTIER_TOWN.ordinal()) return;
+
+        BlockPos pos = event.getPos();
+        Block block = level.getBlockState(pos).getBlock();
+        if (block != Blocks.OAK_FENCE && block != Blocks.LANTERN) return;
+        int spacing = tier == SettlementTier.DOMAIN ? DOMAIN_LAMP_SPACING : FRONTIER_TOWN_LAMP_SPACING;
+        for (int roadIndex = 0; roadIndex < data.roads().size(); roadIndex++) {
+            List<BlockPos> centers = data.roads().get(roadIndex).centers();
+            int offset = Math.max(2, spacing / 2);
+            for (int index = offset; index < centers.size() - 2; index += spacing) {
+                LampSite site = lampSite(level, data, centers, roadIndex, index);
+                if (site == null) continue;
+                if ((pos.equals(site.post()) && block == Blocks.OAK_FENCE)
+                        || (pos.equals(site.light()) && block == Blocks.LANTERN)) {
+                    event.setCanceled(true);
+                    event.setNotifyClient(true);
+                    return;
+                }
+            }
+        }
     }
+
+    private record LampSite(BlockPos post, BlockPos light) {}
 }
