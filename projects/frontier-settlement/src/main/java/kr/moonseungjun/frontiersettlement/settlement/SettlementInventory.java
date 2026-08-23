@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
@@ -45,7 +46,9 @@ public final class SettlementInventory {
     }
 
     public static boolean isWood(ItemStack stack) {
-        return stack.is(ItemTags.LOGS) || stack.is(ItemTags.PLANKS);
+        return stack.is(ItemTags.LOGS)
+                || stack.is(ItemTags.PLANKS)
+                || stack.is(ExternalContentTags.SETTLEMENT_WOOD);
     }
 
     public static boolean isStone(ItemStack stack) {
@@ -56,7 +59,10 @@ public final class SettlementInventory {
                 || stack.is(Items.ANDESITE)
                 || stack.is(Items.DIORITE)
                 || stack.is(Items.GRANITE)
-                || stack.is(Items.TUFF);
+                || stack.is(Items.TUFF)
+                || stack.is(ExternalContentTags.C_STONES)
+                || stack.is(ExternalContentTags.C_COBBLESTONES)
+                || stack.is(ExternalContentTags.SETTLEMENT_STONE);
     }
 
     public static boolean isFood(ItemStack stack) {
@@ -67,7 +73,9 @@ public final class SettlementInventory {
         return stack.is(Items.WHEAT)
                 || stack.is(Items.CARROT)
                 || stack.is(Items.POTATO)
-                || stack.is(Items.BEETROOT);
+                || stack.is(Items.BEETROOT)
+                || stack.is(ExternalContentTags.C_FOODS)
+                || stack.is(ExternalContentTags.SETTLEMENT_FOOD);
     }
 
     private static long count(Container container, java.util.function.Predicate<ItemStack> predicate) {
