@@ -80,7 +80,6 @@ final class HighCirclePrestigeOverlay {
         int visible = release ? ordinary : Math.max(6, (int) Math.ceil(ordinary * (.10 + .90 * p)));
         int stride = Math.max(1, ordinary / Math.max(1, visible));
 
-        // Three offset nine-point constellations identify this as a targeting observatory, not a seal.
         for (int arm = 0; arm < 3; arm++) {
             double rot = arm * Math.PI * 2.0 / 3.0 + (arm == 1 ? .18 : -.08);
             double outer = mapRadius * (1.0 - arm * .12);
@@ -109,7 +108,6 @@ final class HighCirclePrestigeOverlay {
             m.line(port, port.add(vector.scale(lineFraction)), i % 11 == 0 ? .82F : .28F);
         }
 
-        // Crown is a distinct descending nine-bladed key at the map center.
         double crownSize = 3.2 + NinthCircleMagnitude.crownScale(range) * .72;
         Vec3 crown = skyHub.add(0, 3.0, 0);
         m.star(g, crown, crownSize, crownSize * .32, 9, t * .009, 1.46F);
@@ -141,12 +139,12 @@ final class HighCirclePrestigeOverlay {
         m.line(mark.add(f.up().scale(r * 1.42)), mark.add(f.up().scale(-r * 1.42)), 1.64F);
     }
 
-    /** Prismatic Wall: seven independent vertical laws; no enclosing circle. */
+    /** Prismatic Wall: seven independent vertical laws; its authored width equals the server barrier width. */
     private static void sevenLawWall(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
                                      double range, double p, double t, boolean release) {
         ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
         Vec3 right = f.right();
-        double width = Math.max(18.0, Math.min(38.0, range * .62));
+        double width = Math.max(26.0, Math.min(52.0, range * .64));
         double height = 14.0;
         for (int law = 0; law < 7; law++) {
             double x0 = -width * .5 + width * law / 7.0;
@@ -165,7 +163,6 @@ final class HighCirclePrestigeOverlay {
                 if (glyph < 4) m.line(c, c.add(right.scale((law % 2 == 0 ? 1 : -1) * width / 26.0)).add(0, 1.8, 0), .28F);
             }
         }
-        // Cross-law braces make a woven wall rather than seven disconnected bars.
         for (int row = 1; row <= 4; row++) {
             double y = row * height / 5.0;
             Vec3 a = target.add(right.scale(-width * .5)).add(0, y, 0);
@@ -244,7 +241,6 @@ final class HighCirclePrestigeOverlay {
         double minute = release ? 1.86 : 1.86 + t * .045;
         m.line(hub, hub.add(x.point(second, dial * .84)), 1.52F);
         m.line(hub, hub.add(x.point(minute, dial * .62)), 1.02F);
-        // Radius marker is angular, not a rune circle: four frozen cross-axes show actual field size.
         for (int axis = 0; axis < 4; axis++) {
             double a = axis * Math.PI / 2.0;
             Vec3 edge = g.point(a, r);
@@ -353,8 +349,9 @@ final class HighCirclePrestigeOverlay {
     /** Gate: two physical doorway frames and a perspective corridor between them. */
     private static void pairedWorldDoor(ArcaneWorldMesh.Builder m, Vec3 direction, Vec3 target,
                                         double p, double t, boolean release) {
-        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(safe(direction));
-        Vec3 near = new Vec3(0, 2.25, 0);
+        Vec3 forward = safe(direction);
+        ArcaneWorldMesh.Basis f = ArcaneWorldMesh.Basis.facing(forward);
+        Vec3 near = forward.scale(2.6).add(0, 2.25, 0);
         Vec3 far = target.add(0, 2.25, 0);
         double nearW = 3.4, nearH = 4.5;
         double farW = 4.2, farH = 5.2;
@@ -413,7 +410,6 @@ final class HighCirclePrestigeOverlay {
             m.line(mid, end, path == 4 ? 1.22F : .42F);
             m.diamond(f, end, path == 4 ? .34 : .18, path * .27, path == 4 ? 1.16F : .66F, .20F);
         }
-        // Three discarded futures cross out while the central one stays continuous.
         for (int path : new int[]{1, 3, 7}) {
             double q = (path - 4) / 4.0;
             Vec3 c = forward.scale(7.0 + path * .35).add(f.right().scale(q * (3.2 + p * 3.4)));
