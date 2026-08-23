@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
     public static final String VERSION = "0.30.0-alpha.1";
-    // 0.30 canonical: real camp-backed outposts extend local logistics and suppress NATURAL hostiles only.
+    // 0.30 canonical: interactable camp-backed outposts extend local logistics and suppress NATURAL hostiles only.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
