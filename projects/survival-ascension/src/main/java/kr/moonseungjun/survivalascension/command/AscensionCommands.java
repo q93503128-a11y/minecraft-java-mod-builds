@@ -51,8 +51,8 @@ public final class AscensionCommands {
         player.sendSystemMessage(Component.literal(expedition.summary(player)));
         for (ExpeditionRegion region : ExpeditionRegion.values()) {
             if (!expedition.isDiscovered(player, region) || expedition.isComplete(player, region)) continue;
-            player.sendSystemMessage(Component.literal("§e" + region.koreanName() + " §7· §f" + region.objectiveName()
-                    + " §e" + expedition.progress(player, region) + "/" + region.objectiveTarget()));
+            player.sendSystemMessage(Component.literal("§e" + region.koreanName() + " §7· §f"
+                    + expedition.directiveSummary(player, region)));
         }
         return 1;
     }
