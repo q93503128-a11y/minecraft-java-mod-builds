@@ -12,30 +12,23 @@ public final class ProductionService {
     public static final String ACTION_STATUS = "production_status";
     public static final String ACTION_DISPATCH = "dispatch_supply";
     public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
+    public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
 
     private ProductionService() {}
 
     public static void perform(ServerPlayer player, String action) {
         if (player.isCreative() || player.isSpectator()) {
-            player.sendSystemMessage(Component.literal("§3[산업 생산망] §f크리에이티브/관전자 상태에서는 생산 배치를 처리할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[산업 생산망] §f크리에이티브/관전자 상태에서는 생산/물류 작업을 처리할 수 없습니다."));
             return;
         }
         if (!InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
             player.sendSystemMessage(Component.literal("§3[산업 생산망] §f먼저 §b산업 가공소§f를 완공해야 합니다."));
             return;
         }
-        if (ACTION_STATUS.equals(action)) {
-            sendStatus(player);
-            return;
-        }
-        if (ACTION_DISPATCH.equals(action)) {
-            dispatchSupply(player);
-            return;
-        }
-        if (ACTION_DEPOT_TOGGLE.equals(action)) {
-            FieldDepotService.toggleNearest(player);
-            return;
-        }
+        if (ACTION_STATUS.equals(action)) { sendStatus(player); return; }
+        if (ACTION_DISPATCH.equals(action)) { dispatchSupply(player); return; }
+        if (ACTION_DEPOT_TOGGLE.equals(action)) { FieldDepotService.toggleNearest(player); return; }
+        if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
         if (!action.startsWith(ACTION_PREFIX)) {
             player.sendSystemMessage(Component.literal("§c[산업 생산망] §f알 수 없는 생산 작업입니다."));
             return;
@@ -76,8 +69,9 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7보급권은 실물 출고 또는 현장 물류 거점 등록에 사용합니다. 실물 출고1회: 금32 + 자수정16 + 메아리2."));
+        player.sendSystemMessage(Component.literal("§7보급권: 실물 출고1 / 배럴 거점 등록1 / 전초기지 승격2. 출고1회는 금32+자수정16+메아리2."));
         FieldDepotService.sendStatus(player);
+        OutpostService.sendStatus(player);
     }
 
     private static void dispatchSupply(ServerPlayer player) {
