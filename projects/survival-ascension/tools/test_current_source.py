@@ -114,7 +114,6 @@ need(production_data, ['"production_v1"', "MAX_BUFFER = 3", "MAX_SUPPLY_CHARGES 
                        "normalizeCycles(state)", "while (state.supplyCharges < MAX_SUPPLY_CHARGES",
                        "state.metalworks--", "state.timberworks--", "state.provisions--", "state.precision--",
                        "state.cycles++", "state.supplyCharges++", "consumeSupplyCharge"], "production persistence/cycle")
-# Dispatch must free a charge then immediately normalize any queued complete four-line sets.
 ordered(production_data, ["public boolean consumeSupplyCharge", "state.supplyCharges--;", "normalizeCycles(state);", "setDirty();"],
         "queued cycle normalization after dispatch")
 
@@ -125,7 +124,6 @@ need(production_service, ['ACTION_PREFIX = "produce:"', 'ACTION_STATUS = "produc
                           "data.consumeSupplyCharge(player)", "new ItemStack(Items.GOLD_INGOT, 32)",
                           "new ItemStack(Items.AMETHYST_SHARD, 16)", "new ItemStack(Items.ECHO_SHARD, 2)",
                           "if (!player.getInventory().add(stack)) player.drop(stack, false)"], "production service")
-# Capacity and complete-material checks must happen before any batch input consumption.
 ordered(production_service, ["if (!data.canAccept(player, program))", "if (!hasAll(player, program))",
                              "for (ProductionProgram.Input input : program.inputs()) consume", "data.addBatch(player, program)"],
         "atomic production batch ordering")
@@ -145,7 +143,7 @@ need(production_ui, ['"시설 투자"', '"제련 배치"', '"구조재 배치"',
                      "InfrastructureService.ACTION_FUND", "ProductionService.ACTION_DISPATCH", "ProductionService.ACTION_PREFIX"],
      "production radial")
 commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
-need(commands, ["ProductionData.get(player)", '"§3[산업 생산망]", "production.cycles(player)", "production.supplyCharges(player)"],
+need(commands, ["ProductionData.get(player)", "§3[산업 생산망]", "production.cycles(player)", "production.supplyCharges(player)"],
      "production stats")
 
 # 0.25/0.26 expedition regressions
@@ -218,7 +216,7 @@ readme = read("README.md")
 third = read("THIRD_PARTY_NOTICES.md")
 need(project, ["0.28 Industrial Works", "production_v1", "Cycle normalization", "Gold Ingots32", "protocol remains8"], "PROJECT canon")
 need(readme, ["0.28.0-alpha.1", "Industrial Works / Four-line Production", "Raw Iron96", "Supply storage is capped at3"], "README canon")
-need(third, ["Create — design reference for 0.28", "code is MIT", "All Rights Reserved", "No Create source implementation"], "Create policy")
+need(third, ["Create — design reference for 0.28", "code MIT", "All Rights Reserved", "No Create source implementation"], "Create policy")
 
 for rel in [
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
