@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.infrastructure;
 
+import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
@@ -47,9 +48,15 @@ public final class InfrastructureService {
         InfrastructureData data = InfrastructureData.get(player);
         boolean wasComplete = data.isComplete(project);
         if (wasComplete) {
-            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+            if (project == InfrastructureProject.APEX_TRACKING_POST) {
+                ApexHuntSystem.tryStart(player);
+            } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
                 if (ExpeditionIncidentSystem.isActive(player)) {
                     player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 §e현장 사건§f을 먼저 끝내거나 실패 처리한 뒤 시작하세요."));
+                    return;
+                }
+                if (ApexHuntSystem.isActive(player)) {
+                    player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 §e정점 사냥§f을 먼저 끝내거나 실패 처리한 뒤 시작하세요."));
                     return;
                 }
                 AscensionTrialSystem.tryStart(player);
@@ -82,7 +89,9 @@ public final class InfrastructureService {
             MinecraftServer server = ((ServerLevel) player.level()).getServer();
             Component message = Component.literal("§6[인프라 완공] §e" + project.koreanName() + " §f— " + project.benefit());
             for (ServerPlayer online : server.getPlayerList().getPlayers()) online.sendSystemMessage(message);
-            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+            if (project == InfrastructureProject.APEX_TRACKING_POST) {
+                player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 M → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
+            } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
                 player.sendSystemMessage(Component.literal("§5[승천 시련] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 시련을 개방할 수 있습니다."));
             }
         }
@@ -97,7 +106,9 @@ public final class InfrastructureService {
         InfrastructureData data = InfrastructureData.get(player);
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
-            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+            if (project == InfrastructureProject.APEX_TRACKING_POST) {
+                player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
+            } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
                 player.sendSystemMessage(Component.literal("  §5- 승천 시련 입장 §f메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8"));
             }
             return;
