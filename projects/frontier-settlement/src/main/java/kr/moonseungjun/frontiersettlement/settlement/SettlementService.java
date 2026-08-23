@@ -27,6 +27,7 @@ public final class SettlementService {
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
         }
         SettlementCoreService.tick(server, data);
+        SettlementBarracksService.tick(server, data);
         if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
         else {
             SettlementWorkerService.tick(server, data);
@@ -47,7 +48,6 @@ public final class SettlementService {
         sync(player, data);
     }
 
-    /** Legacy debug seam. Normal survival play uses the pioneer marker item. */
     public static boolean found(ServerPlayer founder) { return foundInternal(founder, founder.blockPosition(), false).founded(); }
     public static FoundResult foundAt(ServerPlayer founder, BlockPos markerPos) { return foundInternal(founder, markerPos, true); }
 
@@ -61,10 +61,7 @@ public final class SettlementService {
         if (placeMarker && !isSafeMarkerPosition(level, center)) return new FoundResult(false, "표식을 세울 2블록 높이의 빈 공간과 단단한 지면이 필요합니다.");
         BlockPos stockpile = findStockpilePosition(level, center);
         if (stockpile == null) return new FoundResult(false, "표식 주변에 공동 창고를 둘 안전한 자리가 없습니다.");
-        if (placeMarker) {
-            level.setBlock(center, Blocks.OAK_FENCE.defaultBlockState(), 3);
-            level.setBlock(center.above(), Blocks.TORCH.defaultBlockState(), 3);
-        }
+        if (placeMarker) { level.setBlock(center, Blocks.OAK_FENCE.defaultBlockState(), 3); level.setBlock(center.above(), Blocks.TORCH.defaultBlockState(), 3); }
         level.setBlock(stockpile, Blocks.BARREL.defaultBlockState(), 3);
         data.found(center, stockpile);
         SettlementConstructionService.ensureBuilder(level, center);
@@ -74,32 +71,24 @@ public final class SettlementService {
     }
 
     private static boolean isSafeMarkerPosition(ServerLevel level, BlockPos pos) {
-        BlockState current = level.getBlockState(pos);
-        BlockState above = level.getBlockState(pos.above());
-        BlockState below = level.getBlockState(pos.below());
+        BlockState current = level.getBlockState(pos), above = level.getBlockState(pos.above()), below = level.getBlockState(pos.below());
         if (level.getBlockEntity(pos) != null || level.getBlockEntity(pos.above()) != null) return false;
         if (!current.getFluidState().isEmpty() || !above.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
         if ((!current.isAir() && !current.canBeReplaced()) || (!above.isAir() && !above.canBeReplaced())) return false;
         return !below.isAir() && !below.canBeReplaced();
     }
 
-    public static boolean refreshResources(MinecraftServer server, SettlementData data) {
-        if (!data.founded()) return false;
-        return data.updateResources(SettlementStorageService.scan(server.overworld(), data));
-    }
+    public static boolean refreshResources(MinecraftServer server, SettlementData data) { return data.founded() && data.updateResources(SettlementStorageService.scan(server.overworld(), data)); }
 
     private static BlockPos findStockpilePosition(ServerLevel level, BlockPos center) {
-        BlockPos[] candidates = new BlockPos[] {center.offset(2,0,0), center.offset(-2,0,0), center.offset(0,0,2), center.offset(0,0,-2),
-                center.offset(2,0,2), center.offset(-2,0,2), center.offset(2,0,-2), center.offset(-2,0,-2)};
+        BlockPos[] candidates = {center.offset(2,0,0),center.offset(-2,0,0),center.offset(0,0,2),center.offset(0,0,-2),center.offset(2,0,2),center.offset(-2,0,2),center.offset(2,0,-2),center.offset(-2,0,-2)};
         for (BlockPos candidate : candidates) if (isSafeStockpilePosition(level, candidate)) return candidate;
         return null;
     }
 
     private static boolean isSafeStockpilePosition(ServerLevel level, BlockPos pos) {
-        BlockState current = level.getBlockState(pos);
-        BlockState below = level.getBlockState(pos.below());
-        if (level.getBlockEntity(pos) != null) return false;
-        if (!current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
+        BlockState current=level.getBlockState(pos), below=level.getBlockState(pos.below());
+        if (level.getBlockEntity(pos)!=null || !current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
         if (!current.isAir() && !current.canBeReplaced()) return false;
         return !below.isAir() && !below.canBeReplaced();
     }
@@ -111,6 +100,7 @@ public final class SettlementService {
             if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
             else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
             else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
+            else if (type == BuildingType.BARRACKS) locked = SettlementBarracksService.lockedReason(data);
             else locked = SettlementConstructionService.lockedReason(data, type);
             if (locked == null) mask |= 1 << type.ordinal();
         }
@@ -118,12 +108,8 @@ public final class SettlementService {
     }
 
     public static void sync(ServerPlayer player, SettlementData data) {
-        SettlementResources r = data.resources();
-        SettlementNetwork.sendSnapshot(player, new SettlementSnapshotPayload(data.founded(), r.wood(), r.stone(), r.metal(), r.food(),
-                data.population(), SettlementTier.current(data).displayName(), buildingUnlockMask(data), SettlementGuidanceService.nextGoal(data)));
+        SettlementResources r=data.resources();
+        SettlementNetwork.sendSnapshot(player,new SettlementSnapshotPayload(data.founded(),r.wood(),r.stone(),r.metal(),r.food(),data.population(),SettlementTier.current(data).displayName(),buildingUnlockMask(data),SettlementGuidanceService.nextGoal(data)));
     }
-
-    public static void broadcast(MinecraftServer server, SettlementData data) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) sync(player, data);
-    }
+    public static void broadcast(MinecraftServer server, SettlementData data) { for(ServerPlayer player:server.getPlayerList().getPlayers()) sync(player,data); }
 }
