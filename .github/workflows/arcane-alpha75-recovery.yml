@@ -4,14 +4,19 @@ on:
   workflow_run:
     workflows: ['Build Arcane Circle']
     types: [completed]
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
   actions: write
+  issues: write
 
 jobs:
   finalize:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'issues' && github.event.issue.title == 'arcane-alpha75-recovery-trigger')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -56,3 +61,17 @@ jobs:
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/build-arcane-circle.yml/dispatches" \
             -d '{"ref":"main"}'
           echo "Dispatched canonical Build Arcane Circle for $FINAL_SOURCE_SHA"
+
+      - name: Close one-shot trigger issue
+        if: github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/${{ github.event.issue.number }}" \
+            -d '{"state":"closed","state_reason":"completed"}' >/dev/null
