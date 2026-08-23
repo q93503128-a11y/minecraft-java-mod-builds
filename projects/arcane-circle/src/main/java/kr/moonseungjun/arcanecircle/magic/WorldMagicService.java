@@ -114,6 +114,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
@@ -146,6 +147,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = fourthCircleVisualDuration(spell.id(), duration);
         duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, power);
@@ -186,6 +188,21 @@ public final class WorldMagicService {
         NPC_RELEASES.clear();
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
+    }
+
+    private static int fourthCircleVisualDuration(String spellId, int baseDuration) {
+        return switch (spellId) {
+            case "wall_of_fire" -> Math.max(baseDuration, FourthCircleSpellService.WALL_TICKS);
+            case "ice_storm" -> Math.max(baseDuration, FourthCircleSpellService.ICE_STORM_TICKS);
+            case "greater_invisibility" -> Math.max(baseDuration, FourthCircleSpellService.GREATER_INVISIBILITY_TICKS);
+            case "resilient_sphere" -> Math.max(baseDuration, FourthCircleSpellService.SPHERE_TICKS);
+            case "stoneskin" -> Math.max(baseDuration, FourthCircleSpellService.STONESKIN_TICKS);
+            case "confusion" -> Math.max(baseDuration, FourthCircleSpellService.CONFUSION_TICKS);
+            case "blight" -> Math.max(baseDuration, FourthCircleSpellService.BLIGHT_TICKS);
+            case "freedom_of_movement" -> Math.max(baseDuration, FourthCircleSpellService.FREEDOM_TICKS);
+            case "phantasmal_killer" -> Math.max(baseDuration, FourthCircleSpellService.PHANTASM_TICKS);
+            default -> baseDuration;
+        };
     }
 
     private static int fifthCircleVisualDuration(String spellId, int baseDuration) {

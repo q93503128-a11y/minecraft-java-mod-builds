@@ -28,6 +28,8 @@ required = {
     'kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class',
+    'kr/moonseungjun/arcanecircle/magic/FourthCircleSpellSummary.class',
+    'kr/moonseungjun/arcanecircle/client/FourthCircleAuthorityOverlay.class',
     'kr/moonseungjun/arcanecircle/magic/FifthCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/FifthCircleSpellSummary.class',
     'kr/moonseungjun/arcanecircle/client/FifthCircleAuthorityOverlay.class',
@@ -83,8 +85,8 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.70':
-        raise SystemExit(f'unexpected alpha.70 package version: {version}')
+    if version != '0.12.1-alpha.71':
+        raise SystemExit(f'unexpected alpha.71 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles') != list(range(1, 10)) or index.get('direct_spells') != 90 or index.get('fusion_spells') != 19:
@@ -94,6 +96,17 @@ with zipfile.ZipFile(jar) as archive:
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
+
+    expected4 = {
+        'ice_storm': '6s_fixed_anti_air_hail_suppression_with_0.5s_pulses',
+        'phantasmal_killer': '14s_single_target_terror_bond_forced_retreat_and_owner_damage_denial',
+    }
+    if index.get('fourth_circle_value_pass_1') != expected4:
+        raise SystemExit(f'alpha.71 fourth-circle value metadata mismatch: {index.get("fourth_circle_value_pass_1")}')
+    roles4 = index.get('fourth_circle_role_audit', {})
+    expected_roles4 = {'wall_of_fire','ice_storm','greater_invisibility','resilient_sphere','dimension_door','stoneskin','confusion','blight','freedom_of_movement','phantasmal_killer'}
+    if set(roles4) != expected_roles4 or len(set(roles4.values())) != 10:
+        raise SystemExit('alpha.71 fourth-circle role separation contract missing')
 
     expected5 = {
         'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
@@ -180,7 +193,12 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.70 JAR verification: PASS')
+print('Arcane Circle alpha.71 JAR verification: PASS')
+print('alpha71_fourth_circle_value_pass_1=PASS')
+print('alpha71_ice_storm_6s_anti_air_suppression=PASS')
+print('alpha71_phantasmal_killer_14s_terror_bond=PASS')
+print('alpha71_fourth_circle_role_separation=PASS')
+print('alpha71_fourth_circle_npc_parity=PASS')
 print('alpha70_fifth_circle_value_pass_1=PASS')
 print('alpha70_flame_strike_4s_vertical_column=PASS')
 print('alpha70_dominate_person_30s_person_scale_control=PASS')

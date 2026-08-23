@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.70",
+  "version": "0.12.1-alpha.71",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -263,7 +263,7 @@
   "third_circle_npc_parity": true,
   "fourth_circle_deep_audit": [
     "persistent_fire_wall",
-    "five_pulse_ice_storm",
+    "six_second_anti_air_hail_suppression",
     "combat_greater_invisibility",
     "two_way_resilient_sphere",
     "companion_dimension_door",
@@ -271,7 +271,7 @@
     "decision_scramble_confusion",
     "anti_heal_blight",
     "movement_control_freedom",
-    "forced_flee_phantasmal_killer"
+    "fourteen_second_terror_bond_damage_denial"
   ],
   "fourth_circle_npc_parity": true,
   "fifth_circle_deep_audit": [
@@ -451,5 +451,31 @@
     "mass_cure_wounds",
     "passwall",
     "insect_plague"
+  ],
+  "fourth_circle_value_pass_1": {
+    "ice_storm": "6s_fixed_anti_air_hail_suppression_with_0.5s_pulses",
+    "phantasmal_killer": "14s_single_target_terror_bond_forced_retreat_and_owner_damage_denial"
+  },
+  "fourth_circle_role_audit": {
+    "wall_of_fire": "fixed_crossing_burn_barrier",
+    "ice_storm": "fixed_vertical_anti_air_hail_suppression",
+    "greater_invisibility": "combat_concealment_and_direct_attack_evasion",
+    "resilient_sphere": "two_way_damage_and_casting_isolation",
+    "dimension_door": "same_dimension_duo_safe_redeployment",
+    "stoneskin": "attacker_caused_physical_damage_ward",
+    "confusion": "area_decision_scramble_and_intermittent_cast_disruption",
+    "blight": "single_target_anti_heal_attrition",
+    "freedom_of_movement": "continuous_movement_control_immunity",
+    "phantasmal_killer": "single_target_owner_damage_denial_terror_bond"
+  },
+  "fourth_circle_preserved_authority": [
+    "wall_of_fire",
+    "greater_invisibility",
+    "resilient_sphere",
+    "dimension_door",
+    "stoneskin",
+    "confusion",
+    "blight",
+    "freedom_of_movement"
   ]
 }

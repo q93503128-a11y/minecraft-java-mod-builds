@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.70')
-need(main, 'VERSION = "0.12.1-alpha.70"')
-assert index['version'] == '0.12.1-alpha.70'
+need(gradle, 'mod_version=0.12.1-alpha.71')
+need(main, 'VERSION = "0.12.1-alpha.71"')
+assert index['version'] == '0.12.1-alpha.71'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -34,7 +34,7 @@ spells = direct | fusions
 assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
-need(text(magic / 'SpellDefinition.java'), 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
+need(text(magic / 'SpellDefinition.java'), 'FourthCircleSpellSummary.summary(id)', 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
 
 circle_specs = {
     'FirstCircleSpellService.java': ['magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'],
@@ -59,6 +59,40 @@ need(text(magic / 'SecondCircleSpellService.java'), 'new RaySalvo(level, caster.
 need(text(magic / 'ThirdCircleSpellService.java'), 'ArcaneDamage.isResolving()', 'SLEET_ZONES.add(new SleetZone')
 need(text(magic / 'FourthCircleSpellService.java'), 'FIRE_WALLS.add(new FireWall', 'ICE_STORMS.add(new IceStorm')
 need(text(magic / 'FifthCircleSpellService.java'), 'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)', 'DOMINATED.put')
+
+# Alpha.71 fourth-circle battlefield-authority value pass.
+fourth = text(magic / 'FourthCircleSpellService.java')
+fourth_summary = text(magic / 'FourthCircleSpellSummary.java')
+fourth_authority = text(client / 'FourthCircleAuthorityOverlay.java')
+world_magic_4 = text(magic / 'WorldMagicService.java')
+tracker_4 = text(client / 'WorldMagicTracker.java')
+need(fourth,
+     'ICE_STORM_TICKS = 120', 'ICE_STORM_PULSE_TICKS = 10',
+     'ICE_STORM_PULSES = ICE_STORM_TICKS / ICE_STORM_PULSE_TICKS', 'PHANTASM_TICKS = 280',
+     'public static double iceStormRadius(double range)', 'state.power * .10',
+     'target.removeEffect(MobEffects.LEVITATION);', 'target.push(0.0, -.30, 0.0);',
+     'FearState terror = FEAR.get(attacker.getUUID());', 'terror.ownerId.equals(target.getUUID())',
+     '시전자에게 직접 피해를 줄 수 없고 2초마다 정신 피해')
+need(fourth_summary,
+     '6초 고정 우박 제압구역', '반복 강제 하강으로 공중 이동을 억제',
+     '14초 단일 공포 결속', '시전자에게 직접 피해를 줄 수 없으며')
+need(world_magic_4,
+     'duration = fourthCircleVisualDuration(spell.id(), duration);',
+     'case "ice_storm" -> Math.max(baseDuration, FourthCircleSpellService.ICE_STORM_TICKS);',
+     'case "phantasmal_killer" -> Math.max(baseDuration, FourthCircleSpellService.PHANTASM_TICKS);')
+need(fourth_authority,
+     '"ice_storm".equals(spell.id())', 'FourthCircleSpellService.iceStormRadius(range)',
+     'double pulse = 1.0 - ((t % .50) / .50);')
+need(tracker_4, 'if(v.spell.circle()==4){', 'FourthCircleAuthorityOverlay.release(')
+expected4 = {
+    'ice_storm': '6s_fixed_anti_air_hail_suppression_with_0.5s_pulses',
+    'phantasmal_killer': '14s_single_target_terror_bond_forced_retreat_and_owner_damage_denial',
+}
+assert index['fourth_circle_value_pass_1'] == expected4
+roles4 = index['fourth_circle_role_audit']
+assert set(roles4) == {'wall_of_fire','ice_storm','greater_invisibility','resilient_sphere','dimension_door','stoneskin','confusion','blight','freedom_of_movement','phantasmal_killer'}
+assert len(set(roles4.values())) == 10
+assert index['fourth_circle_npc_parity'] is True
 
 # Alpha.70 fifth-circle battlefield-command value pass.
 fifth = text(magic / 'FifthCircleSpellService.java')
@@ -247,13 +281,18 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.70', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.71', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha71_ice_storm_6s_anti_air_suppression=PASS')
+print('alpha71_phantasmal_killer_14s_terror_bond=PASS')
+print('alpha71_fourth_circle_visual_hitbox_lifetime_sync=PASS')
+print('alpha71_fourth_circle_role_audit=PASS')
+print('alpha71_fourth_circle_value_pass_1=PASS')
 print('alpha70_flame_strike_4s_vertical_column=PASS')
 print('alpha70_dominate_person_30s_person_scale_control=PASS')
 print('alpha70_fifth_circle_visual_hitbox_lifetime_sync=PASS')

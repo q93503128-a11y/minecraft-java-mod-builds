@@ -45,14 +45,16 @@ public final class FourthCircleSpellService {
             "freedom_of_movement", "phantasmal_killer");
 
     public static final int WALL_TICKS = 240;
-    public static final int ICE_STORM_PULSES = 5;
+    public static final int ICE_STORM_TICKS = 120;
+    public static final int ICE_STORM_PULSE_TICKS = 10;
+    public static final int ICE_STORM_PULSES = ICE_STORM_TICKS / ICE_STORM_PULSE_TICKS;
     public static final int GREATER_INVISIBILITY_TICKS = 780;
     public static final int SPHERE_TICKS = 400;
     public static final int STONESKIN_TICKS = 760;
     public static final int CONFUSION_TICKS = 240;
     public static final int BLIGHT_TICKS = 160;
     public static final int FREEDOM_TICKS = 520;
-    public static final int PHANTASM_TICKS = 220;
+    public static final int PHANTASM_TICKS = 280;
 
     private static final List<FireWall> FIRE_WALLS = new ArrayList<>();
     private static final List<IceStorm> ICE_STORMS = new ArrayList<>();
@@ -148,6 +150,20 @@ public final class FourthCircleSpellService {
                 if (attackerSphere != null && attackerSphere.level == attacker.level()
                         && attackerSphere.expiresAt > now) {
                     event.setCanceled(true);
+                    return;
+                }
+            }
+        }
+
+        if (!event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            Entity terrorSource = event.getSource().getEntity();
+            if (terrorSource instanceof LivingEntity attacker) {
+                FearState terror = FEAR.get(attacker.getUUID());
+                if (terror != null && terror.level == target.level() && terror.expiresAt > now
+                        && terror.ownerId.equals(target.getUUID())) {
+                    event.setCanceled(true);
+                    terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE,
+                            target instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .62F, .74F);
                     return;
                 }
             }
@@ -275,13 +291,20 @@ public final class FourthCircleSpellService {
         }
     }
 
+    public static double iceStormRadius(double range) {
+        return Math.max(6.0, Math.min(10.0, SpellMetrics.effectRadius("ice_storm", range, 4)));
+    }
+
     private static boolean iceStorm(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
-        double radius = Math.max(6.0, Math.min(10.0, SpellMetrics.effectRadius("ice_storm", range, 4)));
+        double radius = iceStormRadius(range);
         ICE_STORMS.removeIf(state -> state.ownerId.equals(caster.getUUID()));
         ICE_STORMS.add(new IceStorm(level, caster.getUUID(), center, radius, power,
                 level.getGameTime(), ICE_STORM_PULSES));
         level.playSound(null, BlockPos.containing(center), SoundEvents.GLASS_BREAK,
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .85F, .72F);
+        if (caster instanceof ServerPlayer player) {
+            ArcaneNoticeService.push(player, Component.literal("§b[아이스 스톰] §f6초 · 0.5초마다 우박 충격 · 동결/둔화 + 반복 강제 하강으로 공중 이동을 억제합니다."), 82);
+        }
         return true;
     }
 
@@ -299,13 +322,14 @@ public final class FourthCircleSpellService {
             AABB box = new AABB(state.center, state.center).inflate(state.radius, Math.max(6.0, state.radius * .75), state.radius);
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                     value -> enemy(owner, value) && state.center.distanceToSqr(value.position()) <= state.radius * state.radius)) {
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.6, state.power * .24));
+                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.45, state.power * .10));
                 target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 45));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 30, 2, true, false));
-                target.push(0.0, -.12, 0.0);
+                target.removeEffect(MobEffects.LEVITATION);
+                target.push(0.0, -.30, 0.0);
             }
             state.remaining--;
-            state.nextPulse = now + 8L;
+            state.nextPulse = now + ICE_STORM_PULSE_TICKS;
             level.playSound(null, BlockPos.containing(state.center), SoundEvents.GLASS_BREAK,
                     owner instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE,
                     .62F, .72F + state.remaining * .06F);
@@ -565,6 +589,9 @@ public final class FourthCircleSpellService {
         FEAR.put(target.getUUID(), new FearState(level, caster.getUUID(), target.getUUID(), power,
                 now + PHANTASM_TICKS, now + 40L));
         target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, PHANTASM_TICKS, 0, true, false));
+        if (caster instanceof ServerPlayer player) {
+            ArcaneNoticeService.push(player, Component.literal("§5[환영 살해자] §f14초 · 대상은 강제로 도주하며 시전자에게 직접 피해를 줄 수 없고 2초마다 정신 피해를 받습니다."), 88);
+        }
         return true;
     }
 
