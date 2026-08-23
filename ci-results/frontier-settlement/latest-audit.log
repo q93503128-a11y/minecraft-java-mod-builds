@@ -1,1 +1,1 @@
-Frontier Settlement alpha.23 source audit: PASS
+next-goal invariant missing: data.construction().step() == 0
