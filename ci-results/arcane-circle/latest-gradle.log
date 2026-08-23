@@ -1,7 +1,8 @@
 Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 69, in <module>
-    need(kinetics,'MeteorBarragePattern.rememberRange(seed, cast.range());','MeteorBarragePattern.count(cast.range())','MeteorBarragePattern.strike(seed, cast.range(), 0)','MeteorBarragePattern.withContext(seed, range,','MeteorCataclysmService.crownImpact(player, pending.targetSnapshot().target(),','MeteorBarragePattern.isCrownStrike(range, pending.pulseIndex())')
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 16, in <module>
+    need(gradle,'mod_version=0.12.1-alpha.64'); need(main,'VERSION = "0.12.1-alpha.64"')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/tools/test_current_source.py", line 12, in need
     for token in tokens: assert token in body, token
                                 ^^^^^^^^^^^^^
-AssertionError: MeteorCataclysmService.crownImpact(player, pending.targetSnapshot().target(),
+AssertionError: mod_version=0.12.1-alpha.64
