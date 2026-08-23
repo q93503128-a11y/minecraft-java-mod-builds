@@ -52,7 +52,7 @@ public final class FieldRecoveryData extends SavedData {
         int recoveries;
 
         State(RecoveryPoint armed, RecoveryPoint pending, int recoveries) {
-            this.armed = armed;
+            this.armed = pending == null ? armed : null;
             this.pending = pending;
             this.recoveries = Math.max(0, recoveries);
         }
@@ -94,6 +94,7 @@ public final class FieldRecoveryData extends SavedData {
 
     public void arm(ServerPlayer player, String dimension, BlockPos pos) {
         State state = state(player);
+        state.pending = null;
         state.armed = new RecoveryPoint(dimension, pos.getX(), pos.getY(), pos.getZ());
         setDirty();
     }
