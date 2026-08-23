@@ -36,7 +36,7 @@ Primary direct interactions remain approximately:
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
-Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics, Alpha.35 road terrain adaptation and Alpha.36 watchtower defense require no new player management menus.
+Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics, road terrain adaptation, watchtower defense and barracks recruitment require no separate player-management dashboard.
 
 ## 3. Multiplayer authority
 
@@ -67,7 +67,7 @@ Functional settlement buildings use official blueprints. Player/vanilla building
 
 Original target remains roughly **15–20 meaningful building families**.
 
-Current Alpha.36 functional families: **12**.
+Current Alpha.37 functional families: **13**.
 
 - house;
 - lumber camp;
@@ -79,10 +79,11 @@ Current Alpha.36 functional families: **12**.
 - workshop;
 - guard post;
 - watchtower;
+- barracks;
 - market;
 - cart station.
 
-Original families still to close include construction office, barracks and advanced workshop. Town center currently exists through the civic-core progression rather than a separate placement family.
+Original families still to close include construction office and advanced workshop. Town center currently exists through the civic-core progression rather than a separate placement family. Additional late territory/production families remain allowed where they serve the original scope rather than padding the count.
 
 Construction UX:
 
@@ -110,23 +111,39 @@ Terrain rules:
 - roof before support and visually floating foundations are invalid;
 - enclosed completed buildings need deliberate windows/lighting.
 
-Tall structures such as Alpha.36 watchtowers reuse the persisted scaffold/building workflow. They do not get an instant-placement exception.
+Tall/large structures such as watchtowers and barracks reuse the persisted scaffold/building workflow. They do not get an instant-placement exception.
 
 ## 6. Citizens, jobs and defense roles
 
 Vanilla villager trading/professions are not the settlement progression authority.
 
-Implemented role families include builder, logger, farmer, quarry worker, miner, workshop artisan, guards/service behavior, market merchant presentation and road-bound transport.
+Implemented role families include builder, logger, farmer, quarry worker, miner, workshop artisan, guards/service behavior, market merchant presentation, road-bound transport and a supplied barracks garrison.
 
-Defense role separation:
+Defense role separation is authoritative:
 
 - guard post: close local routine defense;
 - watchtower: loaded-area longer-range threat observation/response with one tower-assigned response guard;
-- barracks: later formal multi-soldier/military resident layer.
+- barracks: formal multi-slot garrison whose replacements cost physical settlement supplies.
 
-The watchtower must not silently become the barracks system. Watch guards are defense units and do not inflate settlement population.
+Watch guards and barracks soldiers are defense capacity, not civilian population. They must not inflate population-based tier thresholds. Barracks bunks are military capacity and must not be consumed by ordinary civilian worker assignment.
 
-Still planned from original scope: stronger blacksmith presentation, merchant depth, specialist crafter/high-tier crafting and soldier/barracks roles.
+### Alpha.37 barracks rule
+
+- unlock at `FRONTIER_TOWN` after at least one watchtower and one blacksmith;
+- one barracks has 3 military slots;
+- each missing loaded slot may be replenished automatically at a bounded cadence;
+- one recruit costs 8 physical food + 2 physical metal from loaded shared settlement storage;
+- food and metal availability is validated together before mutation;
+- a soldier is assigned by persistent barracks coordinates + stable slot tag, not UUID ordering;
+- unloaded patrol areas are not treated as dead/missing soldiers;
+- no chunk force-loading for patrol or recruitment;
+- garrison death drops are cleared so the combat proxy cannot become a resource farm;
+- current combat body is an Iron Golem proxy, not final humanoid soldier presentation;
+- final equipment/loadout/class/formation depth remains later work and should reuse external combat/weapon content where useful.
+
+The former tier-based free frontier-town/domain reinforcement backend is removed. `SettlementTierInfrastructureService` owns public works only; barracks is the formal high-tier garrison authority.
+
+Still planned from original scope: stronger blacksmith presentation, merchant depth and specialist crafter/high-tier crafting.
 
 Job slots should fill automatically from housing, food and workplaces. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
 
@@ -140,6 +157,7 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 
 - workers deposit real ItemStacks;
 - construction consumes real ItemStacks;
+- barracks recruitment consumes real food/metal ItemStacks;
 - avoid every-tick scanning of arbitrary player chests;
 - use tags/categories so compatible external materials can participate;
 - warehouses and cart-station freight bays add physical storage positions rather than abstract capacity currency.
@@ -152,7 +170,7 @@ Alpha.27 tagged road logistics remains the single authority for outpost transpor
 
 ### Alpha.34 cart-station rule
 
-The cart station is a **town-side physical freight hub**, not a new logistics simulator.
+The cart station is a town-side physical freight hub, not a new logistics simulator.
 
 - unlock: village tier + at least one road and road-connected outpost;
 - placement must be within 12 blocks of an existing road;
@@ -164,7 +182,7 @@ The cart station is a **town-side physical freight hub**, not a new logistics si
 - no teleport cargo, no force-load and no abstract freight currency;
 - no `SettlementCartStationService.tick` or second navigation authority.
 
-The visible short rail/loading lane is presentation. A future moving wagon, if added, must remain presentation/vehicle behavior driven by the existing route authority rather than a duplicate economic simulation.
+A future moving wagon must remain presentation/vehicle behavior driven by the existing route authority rather than a duplicate economic simulation.
 
 ## 8. Roads, outposts and territory
 
@@ -207,22 +225,26 @@ tier-visible public works may make established territory more readable, but only
 This is not a constant wave-defense game.
 
 - guard posts handle close routine local threats;
-- Alpha.36 watchtowers extend loaded-area observation/response without starting mandatory waves;
+- watchtowers extend loaded-area observation/response;
+- barracks provide supplied regular garrison capacity at frontier-town scale;
 - occasional meaningful threats are allowed;
 - do not spam mandatory waves.
 
-Alpha.36 watchtower rule:
+Watchtower rule:
 
-- unlock after at least one guard post;
-- physical 7×7 tower, wood 96 / stone 72, clear height 14;
-- tower is constructed through normal grading, hauling and scaffolding;
-- one tagged iron-golem response guard is assigned to each loaded tower;
-- every 100 ticks it may select a nearby loaded `Monster` inside roughly 40 horizontal blocks;
-- creepers are excluded from forced watchtower targeting to avoid dragging explosion risk toward settlement infrastructure;
-- no eligible threat means the guard drops the forced target and returns toward the tower;
-- no chunk force-loading and no global radar claim;
-- external hostile mobs inheriting the normal `Monster` hierarchy may participate automatically, but actual companion behavior must be tested;
-- a future player-facing alert UI must stay compact rather than becoming another management dashboard.
+- one tagged response guard per loaded tower;
+- roughly 40-block loaded threat response at 100-tick cadence;
+- creepers excluded from forced pursuit;
+- no global radar or chunk force-load.
+
+Barracks rule:
+
+- three barracks-owned stable slots;
+- replenishment is supply-backed, not free tier magic;
+- patrol remains local and loaded;
+- creepers are excluded from forced pursuit;
+- military capacity is visible separately from civilian population;
+- Iron Golem combat proxy is temporary presentation, not the final soldier-art claim.
 
 Exploration content should include ruins, mines, camps, nests, structures, dungeons, caravans, rare resources, bosses and rare NPCs primarily through the external content stack where strong implementations already exist.
 
@@ -232,17 +254,7 @@ Frontier's job is to connect exploration outcomes back into settlement growth ra
 
 External mods are not merely optional visual recommendations. The intended complete play experience uses them to supply content breadth while Frontier remains the settlement/progression glue.
 
-Current candidate 26.2 stack is locked in `COMPANION_LOCK.json` and includes:
-
-- Terralith + Lithostitched;
-- Dungeons and Taverns;
-- Repurposed Structures;
-- Better Combat + required libraries;
-- Weapons Expanded;
-- Lootr;
-- Sophisticated Backpacks + Core;
-- Jade;
-- Xaero's Minimap.
+Current candidate 26.2 stack is locked in `COMPANION_LOCK.json` and includes Terralith + Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat + required libraries, Weapons Expanded, Lootr, Sophisticated Backpacks + Core, Jade and Xaero's Minimap.
 
 Rules:
 
@@ -259,62 +271,32 @@ The lock stays `candidate_runtime_lock` until all entries are launched together 
 ## 11. External-content / settlement bridges implemented
 
 ### Alpha.31
-
-- additive settlement wood/stone/metal/food tags;
-- conventional `c:` material compatibility where applicable;
-- additive `frontier_settlement:expedition_relics` tag;
-- physical storage scanning for expedition relics;
-- recognized external weapon namespace support, initially Weapons Expanded;
-- no companion `ModList` requirement merely to classify physical content.
+- additive settlement material/relic tags and external weapon recognition.
 
 ### Alpha.32 market
-
-- village-tier market;
-- dedicated protected trade barrel;
-- ordinary shared settlement storage is never auto-sold;
-- only deliberately deposited expedition relics are eligible;
-- loaded daytime visiting merchant physically approaches the crate;
-- payout is a physical emerald ItemStack;
-- insufficient output capacity safely stalls/rolls back;
-- no abstract trade points or separate shop dashboard.
+- deliberately deposited expedition relics become physical emerald value without auto-selling shared storage.
 
 ### Alpha.33 workshop
-
-- workshop unlocks after blacksmith;
-- dedicated protected service barrel;
-- only deliberately deposited damaged recognized external weapons are serviced;
-- assigned artisan follows settlement housing/food/population rules;
-- artisan physically collects one real metal item from loaded settlement storage;
-- one metal repairs 64 durability;
-- unused material is physically returned.
+- external weapons deliberately deposited for service are repaired using physically fetched settlement metal.
 
 ### Alpha.34 cart station
-
-- road-adjacent physical freight depot;
-- four freight barrels become physical settlement storage;
-- existing road-bound transport deposits there preferentially;
-- per-trip cargo doubles from 16 to 32;
-- route authority remains unchanged.
+- road-adjacent physical freight depot, preferred outpost delivery and trip capacity 16→32 with one logistics authority.
 
 ### Alpha.35 road terrain adaptation
-
-- one-block road rises become cobblestone stairs;
-- short water crossings become bounded 3-wide stone-brick decks;
-- max automatic bridge span is 6 centerline blocks;
-- bridge profile is save-compatible optional active-construction metadata;
-- physical stone hauling/cost remains authoritative;
-- no free economic bridge supports, water deletion or second road/logistics backend.
+- one-block road stairs and bounded 3-wide short-water stone bridges with real stone cost.
 
 ### Alpha.36 watchtower defense
+- physical climbable tower, persistent loaded response guard, bounded threat radius and no forced creeper pursuit.
 
-- original watchtower family becomes a real physical building;
-- guard-post prerequisite;
-- tall climbable tower uses normal builder/scaffold construction;
-- one persistently tagged response guard per loaded tower;
-- 40-block loaded threat response at 100-tick cadence;
-- creepers excluded from forced targeting;
-- response guard returns home when no eligible threat remains;
-- no new key, no mandatory wave loop, no population inflation and no chunk force-load.
+### Alpha.37 barracks garrison
+- physical 15×11 barracks and drill yard;
+- three separate military slots per barracks;
+- bounded automatic recruitment at 8 food + 2 metal per replacement;
+- persistent barracks/slot assignment;
+- loaded patrol and no force-load;
+- garrison does not alter civilian population/housing or tier progression;
+- death drops suppressed to prevent iron/resource farming;
+- old free tier-garrison backend removed.
 
 ## 12. UI and controls
 
@@ -334,7 +316,7 @@ Normal gameplay controls remain:
 - `Enter`: confirm the active building/road/outpost placement;
 - `Backspace`: reset/cancel the road start selection step.
 
-Alpha.36 adds watchtower to the existing compact defense section and adds no new gameplay key.
+Alpha.37 adds barracks below guard post/watchtower in the existing compact defense section. No new gameplay key or military-management screen is introduced. `/frontier status` may expose military capacity/recruitment state for debugging/readability without becoming required micromanagement.
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
@@ -361,14 +343,14 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.36
+## 14. Current playable slice after Alpha.37
 
 The playable slice now includes:
 
 - one shared authoritative settlement;
 - protected founding stockpile and civic core;
 - compact B/R/Enter/Backspace interaction;
-- **12 functional building families**;
+- **13 functional building families**;
 - physical site grading and construction hauling;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
@@ -382,22 +364,23 @@ The playable slice now includes:
 - Alpha.33 staffed physical workshop;
 - Alpha.34 road-adjacent physical cart-station freight hub with 32-item transport trips;
 - Alpha.35 persisted road bridge profile + real-stone stair/bridge paving;
-- Alpha.36 climbable physical watchtower + loaded long-range response guard.
+- Alpha.36 physical watchtower + loaded long-range response guard;
+- Alpha.37 physical barracks + separate three-slot supply-backed regular garrison.
 
 This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md` remains authoritative for unfinished breadth.
 
-## 15. Next priorities after Alpha.36
+## 15. Next priorities after Alpha.37
 
 Unless real-play regression overrides them:
 
-1. require final Alpha.36 source audit + Java25 build + JAR verify on the final docs/source SHA;
-2. continue the military track with barracks/formal soldier roles without turning the game into constant wave defense;
-3. add construction office and advanced workshop/high-tier crafting while reusing external rare materials/content;
-4. add river/coast fishing/trade and dangerous-region military outpost specializations;
-5. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
-6. design coarse unloaded simulation without breaking physical item authority;
-7. close UI status/progress/notification gaps, including compact watchtower threat feedback if useful;
-8. real-play audit tower construction/scaffolds, guard return behavior, Alpha.35 stair/bridge navigation and companion hostile behavior;
+1. require final Alpha.37 source audit + Java25 build + JAR verify on the final docs/source SHA;
+2. add construction office and advanced workshop/high-tier crafting while reusing external rare materials/content;
+3. add river/coast fishing/trade and dangerous-region military outpost specializations;
+4. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
+5. design coarse unloaded simulation without breaking physical item authority;
+6. close UI status/progress/notification gaps;
+7. real-play audit barracks construction, three-slot replacement cadence, garrison patrol/return behavior, watchtower overlap and Alpha.35 road navigation;
+8. later replace/improve the Iron Golem military proxy only when doing so materially improves soldier presentation and works with the external combat/weapon stack;
 9. perform full survival + multiplayer acceptance across founding -> settlement -> roads/outposts -> freight station -> external dungeon loot -> market/workshop -> defense -> higher tiers.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
