@@ -12,7 +12,8 @@ public enum BuildingType {
     BLACKSMITH("blacksmith", "대장간", 80, 52, 9, 9, 9, 0, "광산 1곳 필요"),
     WORKSHOP("workshop", "작업장", 88, 44, 11, 9, 10, 0, "대장간 1곳 필요"),
     GUARD_POST("guard_post", "경비초소", 64, 48, 9, 9, 8, 0, "마을 단계 필요"),
-    MARKET("market", "시장", 96, 48, 11, 11, 8, 0, "마을 단계 필요");
+    MARKET("market", "시장", 96, 48, 11, 11, 8, 0, "마을 단계 필요"),
+    CART_STATION("cart_station", "수레 정거장", 104, 56, 13, 9, 8, 0, "도로 + 전초기지 필요");
 
     private final String id;
     private final String displayName;
