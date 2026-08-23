@@ -120,6 +120,7 @@ public final class CombatProgression {
         if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         LivingEntity victim = event.getEntity();
         if (victim == player || victim instanceof Player) return;
+        if (victim instanceof Enemy) ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
         int xp = Math.max(1, (int) Math.ceil(xpForKill(victim) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
