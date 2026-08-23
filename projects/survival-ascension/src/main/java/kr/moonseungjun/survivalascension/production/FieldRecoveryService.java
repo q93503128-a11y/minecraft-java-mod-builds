@@ -93,7 +93,7 @@ public final class FieldRecoveryService {
 
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = ((ServerLevel) player.level()).getServer();
         server.execute(() -> tryRecoverNow(player, false));
     }
 
@@ -114,7 +114,8 @@ public final class FieldRecoveryService {
         FieldRecoveryData data = FieldRecoveryData.get(player);
         FieldRecoveryData.RecoveryPoint pending = data.pending(player);
         if (pending == null) return false;
-        ServerLevel target = findLevel(player.getServer(), pending.dimension());
+        MinecraftServer server = ((ServerLevel) player.level()).getServer();
+        ServerLevel target = findLevel(server, pending.dimension());
         if (target == null || !OutpostData.get(player).isOutpost(player, pending.dimension(), pending.pos())
                 || !OutpostService.isRecoveryOperational(player, target, pending.dimension(), pending.pos())) {
             if (manual) player.sendSystemMessage(Component.literal("§a[현장 복귀] §f대상 전초기지가 현재 작동하지 않습니다."));
