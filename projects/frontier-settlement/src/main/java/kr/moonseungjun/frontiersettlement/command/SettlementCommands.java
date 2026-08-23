@@ -9,9 +9,11 @@ import kr.moonseungjun.frontiersettlement.settlement.OutpostConstructionState;
 import kr.moonseungjun.frontiersettlement.settlement.OutpostRecord;
 import kr.moonseungjun.frontiersettlement.settlement.RoadConstructionState;
 import kr.moonseungjun.frontiersettlement.settlement.RoadSegment;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementExternalContentService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostLogisticsService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
@@ -46,7 +48,8 @@ public final class SettlementCommands {
                         .then(Commands.literal("blacksmith").executes(context -> build(context, BuildingType.BLACKSMITH)))
                         .then(Commands.literal("workshop").executes(context -> build(context, BuildingType.WORKSHOP)))
                         .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))
-                        .then(Commands.literal("market").executes(context -> build(context, BuildingType.MARKET)))));
+                        .then(Commands.literal("market").executes(context -> build(context, BuildingType.MARKET)))
+                        .then(Commands.literal("cart_station").executes(context -> build(context, BuildingType.CART_STATION)))));
     }
 
     private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -64,9 +67,10 @@ public final class SettlementCommands {
         ServerPlayer player = context.getSource().getPlayerOrException();
         SettlementData data = SettlementData.get(player.level().getServer());
         if (data.outpostConstruction().active()) { player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요.")); return 0; }
-        String locked = type == BuildingType.WORKSHOP
-                ? SettlementWorkshopService.lockedReason(data)
-                : SettlementConstructionService.lockedReason(data, type);
+        String locked;
+        if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
+        else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
+        else locked = SettlementConstructionService.lockedReason(data, type);
         if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
         SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
         player.sendSystemMessage(Component.literal(result.message()));
@@ -102,7 +106,11 @@ public final class SettlementCommands {
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
                 + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 작업장 " + data.buildingCount(BuildingType.WORKSHOP)
                 + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST) + " | 시장 " + data.buildingCount(BuildingType.MARKET)
+                + " | 수레 정거장 " + data.buildingCount(BuildingType.CART_STATION)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
+        player.sendSystemMessage(Component.literal("물류 | 운송 1회 적재 "
+                + SettlementOutpostLogisticsService.transportBatchSize(data)
+                + " | 수레 정거장 화물 배럴 " + (data.buildingCount(BuildingType.CART_STATION) * 4)));
 
         SettlementExternalContentService.Snapshot external = SettlementExternalContentService.snapshot(player.level().getServer().overworld(), data);
         if (external.storageLoaded()) {
