@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import kr.moonseungjun.survivalascension.apex.ApexHuntData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
@@ -57,6 +58,11 @@ public final class AscensionCommands {
                     + expedition.directiveSummary(player, region)
                     + (expedition.incidentResolved(player, region) ? " §6· 사건 해결 완료" : "")));
         }
+
+        ApexHuntData apex = ApexHuntData.get(player);
+        player.sendSystemMessage(Component.literal("§4[정점 사냥] §f최초 격파 §e" + apex.uniqueDefeated(player)
+                + "/9 §7· 총 승리 §f" + apex.victories(player)
+                + (apex.masteryClaimed(player) ? " §6· 9종 완주 보상 수령" : "")));
         return 1;
     }
 
