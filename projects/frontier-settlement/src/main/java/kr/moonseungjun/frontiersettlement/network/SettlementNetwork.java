@@ -1,6 +1,7 @@
 package kr.moonseungjun.frontiersettlement.network;
 
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementAdvancedWorkshopService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOfficeService;
@@ -42,6 +43,7 @@ public final class SettlementNetwork {
         if(type==null){context.reply(new PlacementPreviewPayload(payload.nonce(),payload.buildingType(),false,false,0,0,0,payload.rotation(),"알 수 없는 건물입니다."));return;}
         SettlementData data=SettlementData.get(player.level().getServer()); String lock=null;
         if(type==BuildingType.WORKSHOP)lock=SettlementWorkshopService.lockedReason(data);
+        else if(type==BuildingType.ADVANCED_WORKSHOP)lock=SettlementAdvancedWorkshopService.lockedReason(data);
         else if(type==BuildingType.CART_STATION)lock=SettlementCartStationService.lockedReason(data);
         else if(type==BuildingType.WATCHTOWER)lock=SettlementWatchtowerService.lockedReason(data);
         else if(type==BuildingType.BARRACKS)lock=SettlementBarracksService.lockedReason(data);
