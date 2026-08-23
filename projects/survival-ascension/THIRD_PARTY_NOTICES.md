@@ -94,6 +94,12 @@ License: All Rights Reserved
 
 Survival Ascension studies only the product-level separation of task progress, completion state and later stage rewards. 0.25 also studies the high-level idea that one quest can contain multiple tasks which must all be satisfied. `expedition_v1` uses its own Codec, masks, directive map, action counters and vanilla/NeoForge events. No FTB Quests source, assets, quest files, task/reward classes, UI, namespace or runtime dependency is copied or bundled.
 
+## Enhanced Celestials Tweaks — design reference only for 0.26
+Source project: `SxilverKat/Enhanced-Celestials-Tweaks`  
+License: MIT
+
+Survival Ascension 0.26 studies only the product-level idea that a temporary world event can bundle duration, spawn-pressure changes, reward rules and a defined lifecycle. The regional field incident implementation is independent Survival Ascension code using its own region catalog, action hooks, vanilla triggered spawns, boss bars, cooldowns, per-player persistence and rewards. No Enhanced Celestials Tweaks source, assets, configuration data, namespaces or runtime dependency is copied or bundled, so no additional runtime license payload is packaged for this design-only reference.
+
 ## Repurposed Structures — reference only for 0.23+
 License: LGPL-3.0-only
 
@@ -130,10 +136,11 @@ License: LGPL-3.0
 
 ParCool is **reference-only** for Survival Ascension. Its public movement vocabulary was studied to identify what makes traversal mechanically interesting. Survival Ascension's Mobility implementation is independent and uses vanilla/NeoForge 26.2 attributes plus its own server-authoritative dash logic. No ParCool source, animations, assets or namespace are copied or bundled.
 
-## Majrusz's Progressive Difficulty
-Source project: `Majrusz/MajruszsProgressiveDifficultyMod`
+## Majrusz's Progressive Difficulty — reference only for 0.26
+Source project: `Majrusz/MajruszsProgressiveDifficultyMod`  
+License status: no license file exposed in the current public repository root checked for this work
 
-Studied only as a progression/difficulty design reference. Survival Ascension does not bundle or copy its source/assets under the current policy.
+Survival Ascension studies only the high-level pacing of rare forced encounters such as the public Undead Army concept. Because a reusable source-code license was not confirmed from the current public repository root, Majrusz's Progressive Difficulty remains strictly reference-only: no source code, event data, assets, namespaced content or implementation is copied or bundled.
 
 ## Other restricted/reference-only mods
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.
