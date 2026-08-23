@@ -5,6 +5,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionServi
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -51,6 +52,14 @@ public final class SettlementNetwork {
             return;
         }
         SettlementData data = SettlementData.get(player.level().getServer());
+        if (type == BuildingType.WORKSHOP) {
+            String locked = SettlementWorkshopService.lockedReason(data);
+            if (locked != null) {
+                context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
+                        0, 0, 0, payload.rotation(), locked));
+                return;
+            }
+        }
         if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
             context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
                     0, 0, 0, payload.rotation(), "현재 공사가 끝난 뒤 새 건물을 배치해 주세요."));
