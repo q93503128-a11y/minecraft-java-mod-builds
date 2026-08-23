@@ -26,7 +26,8 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("관개 시설", "구리512 · 철128 · 레드스톤128 · 유리128 · 슬라임32", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),
             new Entry("건축 공방", "석재벽돌1024 · 철256 · 구리256 · 레드스톤128 · 흑요석64", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),
             new Entry("전투 훈련장", "철512 · 금256 · 에메랄드128 · 레드스톤128 · 메아리32", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),
-            new Entry("승천 중추", "종말 전용 · 네더별4 · 숨결64 · 흑요석512 · 자수정512 · 메아리64", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
+            new Entry("정점 추적소", "전설 · 철512 · 금256 · 자수정256 · 메아리32 · 네더별1", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),
+            new Entry("승천 중추", "종말 · 네더별4 · 숨결64 · 흑요석512 · 자수정512 · 메아리64", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
             new Entry("진행도", "월드 승천 단계 + 공동 프로젝트 현황", new ItemStack(Items.MAP), null, Action.STATUS),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), null, Action.BACK)
     };
