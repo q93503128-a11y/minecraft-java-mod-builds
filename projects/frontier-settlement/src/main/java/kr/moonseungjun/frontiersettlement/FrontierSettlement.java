@@ -4,9 +4,11 @@ import kr.moonseungjun.frontiersettlement.command.SettlementCommands;
 import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementCoreService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementTierInfrastructureService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -25,5 +27,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementConstructionService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementRoadService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementOutpostService::onBreakBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementCoreService::onBreakBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementTierInfrastructureService::onBreakBlock);
     }
 }
