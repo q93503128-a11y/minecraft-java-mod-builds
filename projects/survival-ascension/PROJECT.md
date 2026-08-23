@@ -1,14 +1,14 @@
 # Survival Ascension
 
-- Mod version: `0.23.0-alpha.1`
+- Mod version: `0.24.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: 기존 `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, Elite/Warband/종말 변이 persistent NBT, affix CustomData와 채굴 모드를 유지한다. 0.23은 새 플레이어별 SavedData `expedition_v1`만 추가한다.
+- Existing-world compatibility: 기존 `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, Elite/Warband/종말 변이 persistent NBT, affix CustomData와 채굴 모드를 유지한다. 0.24는 `expedition_v1` player entry에 optional completion/progress/reward 필드만 추가한다.
 
 ## 핵심 방향
-숙련 상승은 단순 수치 상승이 아니라 물리적 작업 규모와 행동 선택지 증가다. 플레이어가 강해질수록 적의 행동/조합, 세계 진행, 탐험 목표, 인프라와 자원 소비처도 함께 커져야 한다. 0.23의 탐험은 도감 수집이 아니라 최종 행동 체급으로 환류한다.
+숙련 상승은 단순 수치 상승이 아니라 물리적 작업 규모와 행동 선택지 증가다. 플레이어가 강해질수록 적의 행동/조합, 세계 진행, 탐험 목표, 인프라와 자원 소비처도 함께 커져야 한다. 0.24부터 탐험은 바이옴에 발만 찍는 도감이 아니라 기존 숙련 행동을 해당 지역에서 실제 수행하는 현장 콘텐츠다.
 
 ## 기본 숙련 VI · Lv.100
 - 채굴: 11×11, 광맥/추출192, 채석장 터널7×7×10.
@@ -18,68 +18,59 @@
 - 건축: 선49, 벽/바닥11×11, 공방 입체7×7×7.
 - 기동: 단차2, 안전낙하16, dash1.80/16틱, Stage2+중추에서 공중 돌진3회.
 
-## 0.23 대원정
-### 플레이어별 저장
-- `expedition_v1`은 UUID별 `discoveredMask`와 `milestoneMask`를 저장한다.
-- 발견/마일스톤은 서버 권한이며 creative/spectator는 획득하지 못한다.
-- 실제 플레이어 바이옴을 20틱마다 검사한다. 한 지역은 플레이어마다 최초 1회만 발견된다.
-- `/ascension stats`에서 9지역 진행률과 발견 목록을 확인한다.
+## 0.24 대원정 현장 목표
+### 발견과 완수 분리
+- 서버가 20틱마다 실제 플레이어 바이옴을 확인해 원정권을 `발견`한다.
+- 발견만으로 지역 보상/마일스톤/현장 숙련을 완료하지 않는다.
+- 발견한 원정권 안에서 해당 현장 행동을 누적해 목표량을 채워야 `완수`한다.
+- creative/spectator는 발견/진행/보상 대상에서 제외한다.
+- `/ascension stats`에서 발견 x/9, 완수 x/9, 진행 중 각 원정의 목표 수치를 확인한다.
 
-### 원정권 9종
-Stage 0:
-- 삼림권 → 벌목 XP300
-- 건조권 → 건축 XP300
-- 습지권 → 농사 XP300
-- 고산권 → 기동 XP350
-- 대양권 → 기동 XP350
+### Stage 0
+- 삼림권: Veinminer++식 잎 검증을 통과한 자연 나무 bulk-fell queue에서 실제 파괴된 로그 96.
+- 건조권: Construction의 material-backed/protected bulk queue에서 실제 성공한 secondary placement 128.
+- 습지권: 실제 성숙 작물 파괴 96. 틱 큐가 추가로 수확한 블록도 정상 break event 기준으로 각각 기록한다.
+- 고산권: 기존 Mobility가 XP로 인정하는 정상 도보 질주 거리 600.
+- 대양권: 수영/수중/탑승 상태의 실제 수평 이동 800. 1초 이동량 24블록 초과는 텔레포트성 이동으로 거부하며 일반 Mobility 기록 경로에서는 대양 진행을 차단한다.
 
-Stage 1에서 추가:
-- 심층권 → 채굴 XP500
-- 빙설권 → 기동 XP450
-- 네더권 → 전투 XP600
+### Stage 1
+- 심층권: 심층 biome family 안에서 정상 pickaxe-valid block 파괴 192. 광역/광맥/추출/터널의 정상 destroyBlock 후속 이벤트도 실제 블록 단위로 기록된다.
+- 빙설권: 정상 도보 질주 거리 600. 탑승/비행/겉날개/수영/비정상 대이동 제외.
+- 네더권: 네더 원정 biome 안에서 플레이어가 직접 처치한 hostile `Enemy` 24.
 
-Stage 2에서 추가:
-- 엔드권 → 전투 XP800
+### Stage 2
+- 엔드권: 엔드 원정 biome 안에서 플레이어가 직접 처치한 hostile `Enemy` 32.
 
-월드 생성물을 새로 억지로 배치하지 않고 현재 바닐라 biome family를 원정권으로 사용한다. 따라서 기존 월드에서도 계속 진행할 수 있다.
+### 진행/보상 안전
+- `expedition_v1`은 UUID별 `discoveredMask`, `completedMask`, objective progress map, `regionRewardMask`, milestoneMask를 저장한다.
+- 지역 숙련 XP는 새 0.24 플레이어에게 현장 목표 완수 시 1회만 지급한다.
+- 0.23 저장 데이터에는 `region_rewards` 필드가 없으므로 로드시 기존 discoveredMask를 이미 지역 XP가 지급된 것으로 migration한다. 따라서 옛 발견을 0.24에서 완수해도 숙련 XP를 중복 지급하지 않는다.
+- 0.23에서 `MILESTONE_MASTER`를 이미 받은 플레이어는 9개 completed로 migration해 기존 현장 숙련을 잃지 않는다.
+- 기존 milestoneMask를 보존하므로 과거 자원/Mythic 마일스톤도 재지급되지 않는다.
 
 ### 플레이어별 1회 마일스톤
-- Stage0 원정권 5종 중 4종: 다이아4 + 에메랄드16 + 자수정32.
-- Stage1 이상, 총7종 + 심층권 + 네더권: 네더라이트 파편2 + 다이아16 + 메아리32.
-- Stage2 + 9종 전부: 신화III 장비1 + 네더라이트 파편4 + 메아리64 + 드래곤의 숨결16 + XP500 + 현장 숙련.
-- 마일스톤 비트는 영구 저장되어 바이옴 재진입이나 멀티플레이로 보상을 복제할 수 없다.
+- Stage0 목표 5종 중 4종 완수: 다이아4 + 에메랄드16 + 자수정32.
+- Stage1 이상, 총7종 완수 + 심층권 + 네더권 필수: 네더라이트 파편2 + 다이아16 + 메아리32.
+- Stage2 + 9종 전부 완수: 신화III 장비1 + 네더라이트 파편4 + 메아리64 + 드래곤의 숨결16 + XP500 + 현장 숙련.
 
 ## 현장 숙련 · Field Mastery
-조건: World Ascension Stage2 + 9개 원정권 전부 발견. 효과는 해당 숙련이 Lv.100일 때만 기본 숙련 VI 위에 추가된다.
+조건: World Ascension Stage2 + 9개 원정권 현장 목표 전부 완수. 효과는 해당 숙련이 Lv.100일 때만 기본 숙련 VI 위에 추가된다.
 
-- 채굴: 채석장 터널 `7×7×10 → 7×7×12`. pending cap은 640으로 한 작업을 담을 만큼만 확대하며 처리량은 계속 12/player·64/global 블록/tick.
-- 벌목: 자연 나무 `384 → 448` 로그. 기존 잎 검증 및 12/player·64/global 틱 큐 유지.
-- 농사: `11×11 → 13×13`. 0.23부터 광역 수확 전체를 12/player·64/global 틱 큐로 전환하고 pending384로 제한한다.
-- 전투: 훈련장 질주 충격파 `6.5/16 → 7.5블록/20체`. 피해비율55%와 50틱 쿨은 유지한다.
-- 건축: `선49 → 65`, `벽/바닥11×11 → 13×13`. 입체는7³ 유지. 실제 재료/보호 훅/global64/pending512 유지.
+- 채굴: 채석장 터널 `7×7×10 → 7×7×12`. pending cap640은 한 작업을 담기 위한 용량일 뿐 처리량은 계속 12/player·64/global block/tick.
+- 벌목: 자연 나무 `384 → 448` 로그. 잎 검증 및 12/player·64/global 틱 큐 유지.
+- 농사: `11×11 → 13×13`. 광역 수확 전체 12/player·64/global 틱 큐, pending384.
+- 전투: 훈련장 질주 충격파 `6.5/16 → 7.5블록/20체`. 피해비율55%와 50틱 쿨 유지.
+- 건축: `선49 → 65`, `벽/바닥11×11 → 13×13`. 입체7³ 유지. 실제 재료/보호 훅/global64/pending512 유지.
 - 기동: Stage2+승천 중추 Lv.100 공중 돌진 `3 → 4회`. 착지 초기화와 기존 쿨 공유 유지.
 
 현장 숙련은 Lv.100 이전 행동을 조기 해금하지 않는다. Shift 정밀 모드도 계속 우선한다.
 
-## 월드 승천 / 종말
-- 0 각성 → 위더 최초 격파 1 전설 → 엔더 드래곤 최초 격파 2 종말.
-- 단계가 Elite 확률과 Warband 규모/빈도를 높인다.
-- Stage2 자연 생성 대상 일부는 Withered / Phase / Plague 변이를 얻고 스포너 출신은 제외한다.
-- 변이는 Elite 랭크·Warband 역할과 중첩 가능하다.
-
-## 승천 시련
-- Stage2 + 승천 중추 완공 뒤 완공 중추를 다시 선택해 연다.
-- 입장: 메아리32 + 자수정64 + 드래곤의 숨결8.
-- 4웨이브, 웨이브당60초, 사이5초, 교리 `쇄도/추격/봉쇄`, 웨이브별 증원 최대1회.
-- 별도 HP 배율 없이 바닐라 역할 조합, Elite/Warband/변이가 정상 생성 경로에서 중첩한다.
-- Evoker 직접 구성 제외, 10초 owner grace, 96블록 중복 방지, 120초 cooldown, restart orphan/stale-server cleanup 유지.
-
-## 각성 신화 장비
-- 정상 Mythic III 정확히3 affix만 각성 가능. 서버 검증 성공 후에만 재료를 소비한다.
-- 각성 비용: 자수정256 + 다이아24 + 네더라이트 파편8 + 메아리64 + 드래곤의 숨결16.
-- 기존3 affix 유지 + 빠진 affix1개 추가 =4 affix.
-- 각성 재련: 자수정128 + 다이아16 + 파편4 + 메아리16, 4-affix 유지.
-- affix는 기존 숙련 액션을 조기 해금하지 않는다.
+## 기존 종말 루프
+- World Stage: 각성0 → 최초 Wither 격파 전설1 → 최초 Ender Dragon 격파 종말2.
+- Stage2 자연 생성 대상 일부는 Withered / Phase / Plague 변이를 얻으며 Elite/Warband 역할과 중첩 가능하다.
+- Stage2 + 승천 중추 완공 후 중추 재선택으로 승천 시련을 연다.
+- 승천 시련은 4웨이브/60초, 교리 `쇄도/추격/봉쇄`, 웨이브별 증원 최대1회, 별도 blanket HP multiplier 없음.
+- 정상 Mythic III 정확히3 affix만 각성 가능하며, 검증 뒤 대량 자원을 소비해 4-affix 각성 신화로 만든다.
 
 ## 안전 계약
 - Shift = 광역 작업 강제 정밀 모드.
@@ -87,11 +78,14 @@ Stage 2에서 추가:
 - 추가 파괴는 정상 `player.gameMode.destroyBlock` 경로를 사용한다.
 - 건축/재파종은 실제 재료 소비 + 상호작용/배치 보호 훅을 유지한다.
 - 스포너 기반 Elite/Warband/종말 변이 보상 농장을 차단한다.
-- 시련 증원은 웨이브당 최대1회이고 타이머를 늘리지 않는다.
-- 원정 보상은 플레이어별 discovery/milestone bit로 1회만 지급한다.
+- 원정 목표는 플레이어의 현재 region + world stage를 서버에서 다시 검증한다.
+- 대양은 수영/수중/탑승 이동만 전용 tracker로 인정하며 일반 육상 기동 카운트와 분리한다.
+- 원정 완료/지역 XP/마일스톤 보상은 각각 영구 비트로 1회만 지급한다.
 
 ## 외부 소스 정책
-- Gateways to Eternity(MIT): 시련 순차 웨이브/상태 정보와 modifier 개념을 고수준 적응, 기존 MIT 고지 패키징 유지.
+- Gateways to Eternity(MIT): 순차 웨이브/상태 정보와 modifier 아이디어 적응, MIT 고지 패키징 유지.
 - Apotheosis(MIT): rarity/category/affix 분리 철학 적응.
-- Lootr(MIT): 0.23에서 멀티 탐험 보상을 플레이어별로 보존하는 제품 설계 원칙만 참고했으며 Lootr 코드/블록/에셋/namespace는 사용하지 않는다.
-- Repurposed Structures(LGPL-3.0), Explorer's Compass/Nature's Compass(CC-BY-NC-SA)는 탐험 동기와 바닐라 월드 재활용 설계만 참고한다. 소스·에셋·worldgen은 복사하지 않는다.
+- Lootr(MIT): 플레이어별 탐험 보상 공정성 설계만 참고, 코드/블록/에셋/namespace 미사용.
+- Bountiful(LGPL-3.0): 지역/상황에 맞는 objective→reward 계약 구조를 행동 설계로만 참고. 소스/에셋/데이터 미사용.
+- FTB Quests(All Rights Reserved): discovery/task/completion과 플레이어별 누적 진행/단계 보상 분리만 UX·설계 참고. 소스/에셋/quest data/namespace 미사용.
+- Repurposed Structures 및 Compass 계열은 탐험 동기/바닐라 월드 재활용 참고용이며 소스·에셋·worldgen은 복사하지 않는다.
