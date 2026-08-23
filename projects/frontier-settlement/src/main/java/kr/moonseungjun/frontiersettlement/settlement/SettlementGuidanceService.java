@@ -25,6 +25,7 @@ public final class SettlementGuidanceService {
         if (data.roads().isEmpty()) return "다음 목표 · B 팔레트 → 도로 계획";
         if (data.outposts().isEmpty()) return "다음 목표 · B 팔레트 → 도로 끝에 전초기지";
         if (data.population() < 4) return populationGoal(data, 4);
+        if (data.buildingCount(BuildingType.MARKET) < 1) return buildingGoal(data, BuildingType.MARKET);
         if (data.buildingCount(BuildingType.MINE) < 1) return buildingGoal(data, BuildingType.MINE);
         if (data.outposts().size() < 2) return "다음 목표 · 두 번째 도로·전초기지 확보";
         if (data.population() < 8) return populationGoal(data, 8);
@@ -33,7 +34,7 @@ public final class SettlementGuidanceService {
         if (data.outposts().size() < 4) return "다음 목표 · 전초기지 4곳까지 영토 확장";
         if (data.population() < 16) return populationGoal(data, 16);
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
-        return "영지 운영 · 도로망과 전문 전초기지를 계속 확장";
+        return "영지 운영 · 도로망·전문 전초기지·시장 교역을 계속 확장";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
