@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.35"
+    "frontier_settlement": "0.1.0-alpha.36"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
