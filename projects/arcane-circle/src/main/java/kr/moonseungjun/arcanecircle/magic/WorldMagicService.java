@@ -40,6 +40,7 @@ public final class WorldMagicService {
         Vec3 target = targetPoint(player, spell, range, direction, aimed);
         Vec3 center = presentationCenter(player, spell, target, direction);
         long seed = chargeSeed(player, spell);
+        if ("meteor_swarm".equals(spell.id())) MeteorBarragePattern.rememberRange(seed, range);
         send(player, encode("charge", player, spell, fusion, ingredients.size(), center, target,
                 direction, range, spell.power(), clamp01(progress), 8, 0, seed));
     }
@@ -53,6 +54,7 @@ public final class WorldMagicService {
             default -> null;
         };
         long seed = releaseSeed(player, spell);
+        if ("meteor_swarm".equals(spell.id())) MeteorBarragePattern.rememberRange(seed, range);
         return new CastTargetSnapshot(spell.id(), player.getUUID(), player.level().dimension(),
                 player.getEyePosition(), target, direction, entityId, impactSurface(spell, target),
                 HOMING_SPELLS.contains(spell.id()), seed);
@@ -73,7 +75,10 @@ public final class WorldMagicService {
         SpellPresentationProfile.Profile profile = SpellPresentationProfile.profile(spell);
         Vec3 target;
         if (targetEntity == null) {
-            target = caster.getEyePosition().add(direction.scale(Math.max(3.0, range)));
+            Vec3 far = caster.getEyePosition().add(direction.scale(Math.max(3.0, range)));
+            target = spell.sigilAnchor() == SpellDefinition.SigilAnchor.GROUND_TARGET
+                    ? GroundTargetResolver.surface((ServerLevel) caster.level(), far)
+                    : far;
         } else {
             target = switch (spell.sigilAnchor()) {
                 case GROUND_TARGET -> groundUnder(caster, targetEntity.position());
@@ -85,6 +90,7 @@ public final class WorldMagicService {
             };
         }
         UUID entityId = targetEntity == null ? null : targetEntity.getUUID();
+        if ("meteor_swarm".equals(spell.id())) MeteorBarragePattern.rememberRange(barrageSeed, range);
         return new CastTargetSnapshot(spell.id(), caster.getUUID(), caster.level().dimension(),
                 caster.getEyePosition(), target, direction, entityId, impactSurface(spell, target),
                 false, barrageSeed);
@@ -103,10 +109,10 @@ public final class WorldMagicService {
         double travelDistance = Math.max(0.0, target.distanceTo(center));
         double kineticDistance = kineticDistanceForVisual(spell, cast.range(), center, target);
         int impactTicks = "meteor_swarm".equals(spell.id())
-                ? MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())
+                ? MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.impactDelayTicks(spell, kineticDistance);
         int duration = "meteor_swarm".equals(spell.id())
-                ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
+                ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
         duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
         duration = eighthCircleVisualDuration(spell.id(), duration);
@@ -133,10 +139,10 @@ public final class WorldMagicService {
         Vec3 center = presentationCenter(caster, spell, snapshot.target(), snapshot.launchDirection());
         double distance = snapshot.target().distanceTo(center);
         int impact = "meteor_swarm".equals(spell.id())
-                ? MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed())
+                ? MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.impactDelayTicks(spell, Math.max(0.0, distance));
         int duration = "meteor_swarm".equals(spell.id())
-                ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed())
+                ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
         duration = seventhCircleVisualDuration(spell.id(), duration, power);
         duration = eighthCircleVisualDuration(spell.id(), duration);
@@ -313,15 +319,7 @@ public final class WorldMagicService {
     }
 
     private static Vec3 groundUnder(LivingEntity caster, Vec3 around) {
-        ServerLevel level = (ServerLevel) caster.level();
-        BlockPos base = BlockPos.containing(around);
-        for (int down = 0; down <= 8; down++) {
-            BlockPos floor = base.below(down);
-            BlockState state = level.getBlockState(floor);
-            if (state.isFaceSturdy(level, floor, Direction.UP))
-                return Vec3.atCenterOf(floor.above()).add(0.0, -0.48, 0.0);
-        }
-        return around;
+        return GroundTargetResolver.surface((ServerLevel) caster.level(), around);
     }
 
     private static BlockPos impactSurface(SpellDefinition spell, Vec3 target) {
@@ -378,9 +376,17 @@ public final class WorldMagicService {
             }
         }
         if (bestVisibleFloor != null) return bestVisibleFloor;
+
+        // High-altitude and horizontal casts must never inherit the caster's Y. Resolve the far
+        // requested X/Z against the actual loaded terrain column instead of falling back to 3 m.
         Vec3 flat = new Vec3(direction.x, 0.0, direction.z);
         if (flat.lengthSqr() < 1.0E-8) flat = new Vec3(0.0, 0.0, 1.0);
-        return player.position().add(flat.normalize().scale(Math.min(3.0, range))).add(0.0, 0.055, 0.0);
+        flat = flat.normalize();
+        double distance = Math.max(8.0, Math.min(max, max * .88));
+        Vec3 desired = player.position().add(flat.scale(distance));
+        return GroundTargetResolver.safeStanding(level, desired, 10)
+                .map(GroundTargetResolver::standing)
+                .orElseGet(() -> GroundTargetResolver.surface(level, desired));
     }
 
     static Vec3 lockedTarget(ServerPlayer player, SpellDefinition spell, double range) {
