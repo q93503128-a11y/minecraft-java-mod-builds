@@ -29,7 +29,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.29'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.30'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -68,8 +68,10 @@ if 'reward' in guidance.lower() or 'quest' in guidance.lower():
     raise SystemExit('next-goal helper must remain guidance-only')
 
 construction_state = (JAVA / 'settlement/ConstructionState.java').read_text(encoding='utf-8')
-for token in ('int scaffoldMask', 'optionalFieldOf("scaffold_mask", 0)', 'ownsScaffold(int index)', 'withScaffoldMask(int nextMask)'):
-    if token not in construction_state: raise SystemExit(f'construction persistence invariant missing: {token}')
+for token in ('int scaffoldMask', 'optionalFieldOf("scaffold_mask", 0)', 'ownsScaffold(int index)', 'withScaffoldMask(int nextMask)',
+              'GRADE_STEP_OFFSET = 1_000_000', 'BUILD_STEP_OFFSET = 2_000_000', 'grading()', 'physicalBuilding()',
+              'legacyPreparedBuilding()', 'gradeStep()', 'buildStep()'):
+    if token not in construction_state: raise SystemExit(f'alpha.30 construction persistence invariant missing: {token}')
 
 road_state = (JAVA / 'settlement/RoadConstructionState.java').read_text(encoding='utf-8')
 for token in ('GRADE_STEP_OFFSET = 1_000_000', 'PAVE_STEP_OFFSET = 2_000_000', 'step >= GRADE_STEP_OFFSET',
@@ -86,10 +88,21 @@ for token in ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtractionTa
               'SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)', 'builder.setInvulnerable(true)',
               'builder.setInvulnerable(false)', 'builder.swing(InteractionHand.MAIN_HAND)',
               'villager.entityTags().contains(BUILDER_TAG)', 'construction.ownsScaffold(towerIndex)',
-              'removeConstructionScaffolds'):
-    if token not in construction: raise SystemExit(f'physical building construction invariant missing: {token}')
+              'removeConstructionScaffolds',
+              'data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET)', 'construction.grading()',
+              'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCell(',
+              'ConstructionState.BUILD_STEP_OFFSET', 'Blocks.COARSE_DIRT.defaultBlockState()',
+              'GRADE_INTERVAL_TICKS = 8', 'MAX_GRADE_FILL_DEPTH = 3', 'construction.buildStep()',
+              '건물 부지 정리', 'level.hasChunkAt(supply)'):
+    if token not in construction: raise SystemExit(f'alpha.30 physical building invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)' in construction:
     raise SystemExit('building approval still deletes full material cost')
+if 'prepareSite(' in construction:
+    raise SystemExit('building terrain is still magically prepared at approval')
+if 'level.setBlock(top, Blocks.COBBLESTONE.defaultBlockState()' in construction:
+    raise SystemExit('building approval still generates a free cobblestone foundation')
+if 'destroyBlock(' in construction or 'dropResources(' in construction:
+    raise SystemExit('building construction must not create loose drops')
 if 'towerOwned(' in construction:
     raise SystemExit('scaffold ownership must come from persisted state')
 
@@ -158,16 +171,22 @@ for token in ('SettlementOutpostLogisticsService.migrateLegacyWorkers(level, dat
               'SettlementOutpostLogisticsService.allRoutesLoaded(level, data)',
               'SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data)',
               'SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data)',
-              'SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing)'):
-    if token not in worker: raise SystemExit(f'alpha.27 worker/logistics integration missing: {token}')
+              'SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing)',
+              'LUMBER_WORK_PERIOD_TICKS = 100', 'FARM_WORK_PERIOD_TICKS = 120',
+              'QUARRY_WORK_PERIOD_TICKS = 80', 'MINING_WORK_PERIOD_TICKS = 160',
+              'MAX_LOGS_PER_TRIP = 4', 'MAX_CROPS_PER_TRIP = 4', 'MAX_STONE_PER_TRIP = 3',
+              'workDue(', 'worker.swing(InteractionHand.MAIN_HAND)', 'level.hasChunkAt(',
+              '!level.getBlockState(pos.above()).isAir()'):
+    if token not in worker: raise SystemExit(f'alpha.30 bounded town-worker invariant missing: {token}')
 for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
     if forbidden in worker: raise SystemExit(f'legacy UUID-order transport backend remains in worker service: {forbidden}')
 
 core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
 for token in ('level.getBlockEntity(placement.pos())', 'BreakBlockEvent', 'event.setCanceled(true)',
               'event.setNotifyClient(true)', 'desired(data)', 'desired(SettlementData data, SettlementTier tier)',
-              'for (SettlementTier tier : SettlementTier.values())'):
-    if token not in core: raise SystemExit(f'alpha.29 civic-core protection invariant missing: {token}')
+              'for (SettlementTier tier : SettlementTier.values())',
+              'pos.equals(data.stockpilePos()) && current.is(Blocks.BARREL)'):
+    if token not in core: raise SystemExit(f'alpha.30 civic/stockpile protection invariant missing: {token}')
 
 tier_infra = (JAVA / 'settlement/SettlementTierInfrastructureService.java').read_text(encoding='utf-8')
 for token in ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 8', 'LAMP_START_OFFSET = 8',
@@ -187,6 +206,10 @@ for token in ('SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG',
     if token not in routine: raise SystemExit(f'alpha.29 resident routine invariant missing: {token}')
 if '"운송 주민"' in routine:
     raise SystemExit('night routine must use transport assignment tags, not legacy generic name matching')
+
+benefit = (JAVA / 'settlement/SettlementBenefitService.java').read_text(encoding='utf-8')
+for token in ('if (!level.hasChunkAt(work)) continue;', 'if (!level.hasChunkAt(center)) continue;'):
+    if token not in benefit: raise SystemExit(f'alpha.30 loaded-guard invariant missing: {token}')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract('):
@@ -220,4 +243,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.29 source audit: PASS')
+print('Frontier Settlement alpha.30 source audit: PASS')
