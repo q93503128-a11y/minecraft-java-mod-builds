@@ -22,13 +22,15 @@ import java.util.Set;
  *
  * Transport workers are permanently assigned to one outpost through entity tags. They follow the
  * persisted road network instead of being paired by UUID order, and the service never force-loads
- * remote chunks just to keep logistics simulation running.
+ * remote chunks just to keep logistics simulation running. A completed cart station only changes
+ * the town-side freight destination/capacity; it never becomes a second route-navigation authority.
  */
 public final class SettlementOutpostLogisticsService {
     public static final String TRANSPORT_WORKER_TAG = "frontier_settlement_transport_worker";
     public static final String TRANSPORT_OUTPOST_TAG_PREFIX = "frontier_settlement_transport_outpost_";
     private static final String LEGACY_TRANSPORT_WORKER_NAME = "운송 주민";
-    private static final int MAX_TRANSPORT_STACK = 16;
+    private static final int BASE_TRANSPORT_STACK = 16;
+    private static final int CART_STATION_TRANSPORT_STACK = 32;
     private static final int ROAD_WAYPOINT_STRIDE = 3;
     private static final double ROAD_JOIN_RANGE_SQR = 25.0D;
     private static final double ENDPOINT_RANGE_SQR = 16.0D;
@@ -58,6 +60,12 @@ public final class SettlementOutpostLogisticsService {
             if (worker.isNoAi()) worker.setNoAi(false);
             workTransport(level, data, outpost, worker, route);
         }
+    }
+
+    public static int transportBatchSize(SettlementData data) {
+        return data.buildingCount(BuildingType.CART_STATION) > 0
+                ? CART_STATION_TRANSPORT_STACK
+                : BASE_TRANSPORT_STACK;
     }
 
     /** Only safe to use for authoritative population reconciliation when all routes are loaded. */
@@ -180,7 +188,7 @@ public final class SettlementOutpostLogisticsService {
                 return;
             }
             if (!(level.getBlockEntity(stock) instanceof Container container)) return;
-            ItemStack picked = takeFirstTransportStack(container, outpost, MAX_TRANSPORT_STACK);
+            ItemStack picked = takeFirstTransportStack(container, outpost, transportBatchSize(data));
             if (!picked.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, picked);
             else move(worker, outpost.center().above(), 0.6D);
             return;
@@ -224,7 +232,7 @@ public final class SettlementOutpostLogisticsService {
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              Villager worker, ItemStack carried) {
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) {
             worker.getNavigation().stop();
             return;
@@ -234,7 +242,7 @@ public final class SettlementOutpostLogisticsService {
             move(worker, target, 0.85D);
             return;
         }
-        worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementStorageService.insert(level, data, carried));
+        worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementStorageService.insertAt(level, target, carried));
     }
 
     /** Follow persisted road centers in short strides so L-corners and chained roads remain visible. */
