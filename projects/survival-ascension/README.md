@@ -2,35 +2,53 @@
 
 Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
-Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies and long-term production consume that larger output again.
+Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies, production and field logistics consume that larger output again.
 
-## 0.28.0-alpha.1 — Industrial Works / Four-line Production
-0.28 connects the mod's large mining, woodcutting and harvesting output to a repeatable Stage-1 economy instead of letting late-game materials simply accumulate in storage.
+## 0.29.0-alpha.1 — Physical Field Depots
+0.29 makes the 0.28 industrial cycle affect actual world work instead of stopping at inventory rewards.
 
-### Industrial Works
-A new shared Stage-1 infrastructure project is available from `M -> Infrastructure -> 산업 가공소`.
-- Build: Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
-- Before completion, the nested radial contains `시설 투자`; after completion the same radial runs production.
-- Existing `infrastructure_v1` is not migrated or rewritten. Industrial Works only creates new funding keys.
+### Register a real barrel as a field depot
+From `M -> Infrastructure -> 산업 가공소 -> 물류 거점 연결`:
+- Stand within 4 blocks of a vanilla Barrel.
+- Registering an unlinked barrel consumes one stored `현장 보급권`.
+- Selecting one of your already-linked nearby barrels removes that link; the charge is not refunded.
+- Each player may own at most 3 linked depots.
+- A barrel already claimed by another player cannot be linked again.
+- Depot ownership persists independently in `field_depots_v1`.
 
-### Four production lines
-Every batch is server-authoritative and atomic: line capacity and all inputs are checked before any item is consumed.
-- `제련 배치`: Raw Iron96 + Raw Copper96 + Coal64.
-- `구조재 배치`: any vanilla/log-tag logs192 + Cobblestone384 + Iron32.
-- `식량 배치`: Wheat128 + Carrot64 + Potato64 + Beetroot32.
-- `정밀 부품 배치`: Redstone128 + Amethyst64 + Gold32 + Quartz64.
+### Real stock, real distance
+A field depot is not a virtual inventory.
+- Only the actual Barrel container at the saved block position can provide materials.
+- The player must be in the same dimension and within 32 blocks.
+- The barrel chunk must already be loaded; Survival Ascension never force-loads depot chunks.
+- `mayInteract` is checked before remote material access.
+- If a loaded linked barrel no longer exists, its stale link is removed automatically.
+- Player inventory is always consumed first, then usable linked barrels are searched nearest-first.
 
-`production_v1` is per-player SavedData. Each line has a buffer of at most3 completed batches. One industrial cycle requires one stored batch from every line; a player cannot progress the cycle by overproducing only one category.
+### Bulk Construction logistics
+Scaled Construction keeps the existing protection and placement lifecycle, but material availability now includes nearby linked depots.
+- Line / wall / floor / volume jobs may continue after the carried stack runs out if a linked barrel contains the exact BlockItem.
+- A successful secondary placement consumes exactly one real item from player inventory or the depot.
+- If material disappearance is detected after placement, the just-added block is rolled back rather than granting a free block.
+- Existing 64 global tick budget and 512 pending/player limit remain unchanged.
 
-### Supply cycle
-- One complete four-line set is consumed into one `현장 보급권`.
-- Supply storage is capped at3.
-- If storage is full, completed line batches may wait in their buffers. Dispatching a charge immediately normalizes any waiting complete sets into newly available charge slots, avoiding a deadlocked full buffer.
-- Dispatch one charge to receive Gold Ingots32 + Amethyst Shards16 + Echo Shards2.
-- Output is tangible inventory/drop loot, so it can support Apex Hunts, Ascension Trials, equipment rerolls/awakening or any other normal resource sink.
-- `/ascension stats` reports lifetime industrial cycles and stored supply charges.
+### Irrigation logistics
+Irrigation auto-replant uses the same material source rule.
+- Wheat seeds, carrots, potatoes, beetroot seeds and nether wart are taken from the player first, then a nearby linked depot.
+- Protection/place hooks still run before final replant consumption.
+- A failed consumption after placement rolls the young crop back.
 
-This loop is intentionally a throughput conversion, not a permanent percentage buff. The large inputs keep mining, forestry, farming and Nether/resource collection relevant after their mastery actions become very large.
+`/ascension stats` now reports registered depots and how many are currently usable from the player's location.
+
+No new packet schema was added. Depot registration uses the existing `InfrastructureActionPayload(projectId, action)` path, so network protocol remains `8`.
+
+## 0.28 — Industrial Works / Four-line Production
+- Stage-1 `산업 가공소`: Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
+- Four atomic large-batch lines: Raw Iron/Copper/Coal, logs/cobblestone/iron, crops, and redstone/amethyst/gold/quartz.
+- `production_v1` stores per-player line buffers, lifetime cycles and supply charges.
+- One cycle requires one batch from all four lines. Buffers and supply charges are capped at3.
+- Dispatching a charge can still produce Gold32 + Amethyst16 + Echo2.
+- 0.29 adds a second use for the same charge: commissioning a physical field depot.
 
 ## 0.27 — Apex Hunts
 - Stage-1 `정점 추적소`: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
@@ -62,8 +80,8 @@ At Lv.100 and after the nine-region completion:
 - Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs.
 
 ## External references
-- Create current repository license split was rechecked for 0.28: code is MIT while files under `src/main/resources/assets/` are All Rights Reserved. Survival Ascension studies only high-level high-throughput/multi-step processing and logistics progression for 0.28; no Create assets, recipes, machine code, data, namespaces or Ponder content are copied.
-- Apotheosis official GitHub `26.1` code is MIT; packaged assets/distribution rights are treated separately and no Apotheosis assets are bundled.
+- Create's current repository license split remains code MIT / `src/main/resources/assets/` All Rights Reserved. 0.29 studies only the product-level logistics idea of stock-backed requests and local restocking. The field depot system is independent Survival Ascension SavedData + vanilla Barrel access; no Create source, assets, machines, package formats, GUI/data, namespace or Ponder content are copied.
+- Building Gadgets 2 remains the MIT reference for material-backed protected Construction behavior. 0.29 does not copy storage/network code from it; the depot material resolver is new Survival Ascension code.
 - Other permissive adaptations and reference-only projects are documented in `THIRD_PARTY_NOTICES.md` and packaged notices.
 
 Main radial: Skills / Mining / Construction / Equipment / Infrastructure / Guide / Close. Shift remains the precision override for scaled work.
