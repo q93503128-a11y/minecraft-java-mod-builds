@@ -180,7 +180,7 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.69 JAR verification: PASS')
+print('Arcane Circle alpha.70 JAR verification: PASS')
 print('alpha70_fifth_circle_value_pass_1=PASS')
 print('alpha70_flame_strike_4s_vertical_column=PASS')
 print('alpha70_dominate_person_30s_person_scale_control=PASS')
