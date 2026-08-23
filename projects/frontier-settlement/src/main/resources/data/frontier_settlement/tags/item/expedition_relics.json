@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:echo_shard",
+    "minecraft:heart_of_the_sea",
+    "minecraft:enchanted_golden_apple",
+    "minecraft:heavy_core",
+    "minecraft:trial_key",
+    "minecraft:ominous_trial_key",
+    "minecraft:ominous_bottle"
+  ]
+}
