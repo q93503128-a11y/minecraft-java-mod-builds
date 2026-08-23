@@ -21,6 +21,7 @@ import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.production.FieldRecoveryService;
 import kr.moonseungjun.survivalascension.production.OutpostService;
+import kr.moonseungjun.survivalascension.production.OutpostSiegeSystem;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
 import net.neoforged.bus.api.IEventBus;
@@ -31,8 +32,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.37.0-alpha.1";
-    // 0.37 final contract: one physical depot anchor may own a bounded cluster of real nearby Barrel inventories.
+    public static final String VERSION = "0.38.0-alpha.1";
+    // 0.38 final contract: a real operational outpost can become a defendable world objective instead of only a logistics radius.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -53,6 +54,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
@@ -67,6 +69,9 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onServerTick);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(OutpostService::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
@@ -83,6 +88,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical warehouse logistics + commissioning + sorties", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical warehouse logistics + defendable outposts + sorties", VERSION);
     }
 }

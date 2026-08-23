@@ -50,6 +50,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/FieldDepotService.class",
         "kr/moonseungjun/survivalascension/production/OutpostData.class",
         "kr/moonseungjun/survivalascension/production/OutpostService.class",
+        "kr/moonseungjun/survivalascension/production/OutpostSiegeSystem.class",
         "kr/moonseungjun/survivalascension/production/FieldRecoveryData.class",
         "kr/moonseungjun/survivalascension/production/FieldRecoveryService.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
@@ -107,6 +108,8 @@ jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding=
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("physical_commissioning_runtime=present")
+print("physical_warehouse_runtime=present")
+print("outpost_siege_runtime=present")
 print("expedition_operation_runtime=present")
 print("expedition_complication_runtime=present")
 print("apex_runtime=present")

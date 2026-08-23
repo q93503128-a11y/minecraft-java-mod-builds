@@ -77,8 +77,9 @@ public final class FieldRecoveryService {
         FieldRecoveryData data = FieldRecoveryData.get(player);
         FieldRecoveryData.RecoveryPoint armed = data.armed(player);
         if (armed == null || data.pending(player) != null) return;
-        if (ExpeditionIncidentSystem.isActive(player) || ApexHuntSystem.isActive(player) || AscensionTrialSystem.isActive(player)) {
-            player.sendSystemMessage(Component.literal("§7[현장 복귀] 사건·정점 사냥·승천 시련 중 사망은 복귀 계약을 소비하지 않습니다."));
+        if (ExpeditionIncidentSystem.isActive(player) || ApexHuntSystem.isActive(player)
+                || AscensionTrialSystem.isActive(player) || OutpostSiegeSystem.isActive(player)) {
+            player.sendSystemMessage(Component.literal("§7[현장 복귀] 사건·전초 방어·정점 사냥·승천 시련 중 사망은 복귀 계약을 소비하지 않습니다."));
             return;
         }
         if (!(player.level() instanceof ServerLevel level)) return;

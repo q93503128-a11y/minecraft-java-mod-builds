@@ -1,34 +1,33 @@
 # Changelog
 
+## 0.38.0-alpha.1
+- Added `Defendable Physical Outposts / 전초 방어전`: an active owned outpost can now host an explicit three-wave defense encounter instead of serving only as a logistics/safety radius.
+- Added `ProductionService.ACTION_OUTPOST_SIEGE = "outpost_siege"` and a Shield entry in the existing Industrial Works radial; no packet schema or protocol bump.
+- Siege start requires the owner inside4 of an active physical outpost and consumes one field-supply charge only after the first wave has been successfully spawned.
+- Added a four-minute total deadline, three authored waves and a three-second regroup window between waves.
+- Added physical breach pressure: living siege mobs inside6 of the anchor add `breachers * 5` pressure every five server ticks, pressure drains by10 while clear, and200 pressure fails the defense.
+- Siege mobs are anchor-directed instead of being freely kiteable: outside the16-block immediate defense area they clear the distant player target and navigate toward the physical outpost anchor.
+- Defense continuously revalidates owner same-dimension/within64 and the real outpost Barrel + Bed/Campfire/Crafting/Furnace structure through `OutpostService.isRecoveryOperational`; invalid state for200 ticks fails.
+- Authored waves use `EntitySpawnReason.TRIGGERED` in already-loaded radius26~34 open terrain, so NATURAL-only outpost spawn suppression does not cancel them.
+- Stage1/2 difficulty is raised through mixed skeleton/spider/zombie/pillager/vindicator/witch/ravager/enderman compositions rather than a siege-only blanket health/attack multiplier.
+- Added bounded overlap rules: a siege cannot start during Incident/Operation/Apex/Trial; starting one reserves existing Incident/Apex/Trial ready windows; new Operation and manual Apex/Trial starts reject an active siege.
+- Siege deaths now explicitly do not consume a prepaid Field Recovery contract.
+- Success rewards Stage1 Combat XP350 + Diamond2 + Amethyst24 + Echo3 + vanilla XP120, Stage2 Combat XP500 + Diamond4 + Echo6 + Dragon Breath2 + vanilla XP200; nearby allies inside48 gain XP40.
+- Added runtime cleanup on logout and stale tagged-mob rejection without adding siege SavedData, virtual structures, client coordinate trust or chunk force-loading.
+- Updated Guide/README/PROJECT/source audit/JAR verification while retaining 0.37 warehouse clusters,0.36 commissioning,0.35 offload,0.34 integrated inputs,0.33 complications and older safety contracts.
+
 ## 0.37.0-alpha.1
 - Added `Physical Warehouse Clusters / 물리 창고군` so high-throughput storage scales by building more real Barrels instead of introducing a virtual warehouse.
 - Extended existing `field_depots_v1` with optional `warehouse_links`; old saves decode with no links and retain all existing depot/outpost state.
-- Added `MAX_LINKED_BARRELS_PER_DEPOT = 8` and `MAX_LINK_RADIUS = 6` plus load-time sanitation for missing anchors, over-range links, per-anchor caps and globally double-claimed physical positions.
-- Added `ProductionService.ACTION_WAREHOUSE_TOGGLE = "toggle_warehouse_barrel"` and a `창고 배럴 연결` entry to the existing Industrial Works radial.
-- Linking resolves the target real Barrel within4 server-side, requires `mayInteract`, rejects registered anchors and other players' links, then resolves an owned loaded/interactable anchor within6. Re-selecting the player's linked Barrel unlinks it.
-- Satellite Barrel linking costs no supply charge. Crafted physical Barrel capacity is the cost; unlinking never deletes the Barrel or its contents.
-- Removing or pruning a depot anchor also removes only that anchor's stored warehouse link records; Outpost removal behavior remains unchanged.
-- Expanded the shared logistics resolver so a usable depot contributes its anchor plus currently usable linked real Barrel Containers.
-- Linked Barrel chunks are never force-loaded. An unloaded link is skipped and preserved; a loaded missing/non-Barrel/non-Container link is pruned individually.
-- Resolved anchor + satellite Containers are sorted nearest-first by physical Barrel position before input consumption or offload insertion.
-- Preserved inventory-first sink ordering and 0.35 merge-before-empty / component-equality / `canPlaceItem` / finite-capacity / source-remainder behavior.
-- Split status meaning so `activeDepotCount` remains usable anchor count and `activeStorageBarrelCount` reports actual usable anchor+satellite Containers.
-- Added no new packet, protocol bump, automatic pickup routing, cross-dimension access, global inventory, background scan or chunk force-load.
-- Updated Guide/README/PROJECT/source audit to lock migration, ownership, link limits, loaded-only behavior, nearest-first real-stock use and all 0.36/older regressions.
+- Added max8 linked Barrels/anchor inside radius6, explicit no-supply-charge link/unlink, global physical-position ownership and loaded-only nearest-first real-Container resolution.
+- Unloaded links are preserved; loaded invalid linked positions prune individually. No virtual capacity, automatic routing, cross-dimension access or force-load.
 
 ## 0.36.0-alpha.1
-- Added `InfrastructureSiteService` and bounded real-world commissioning for Industrial Works, Apex Tracking Post and Ascension Nexus before finalizable funding can cross completion.
+- Added bounded real-world commissioning for Industrial Works, Apex Tracking Post and Ascension Nexus before finalizable funding can cross completion.
 - Final site validation runs before any project material is consumed in that final call; existing completed projects remain compatible.
-- Industrial profile: Barrel + Stone Bricks48 + Iron Blocks4 + Blast Furnaces2 + Stonecutter1 + Hoppers2 in radius6.
-- Apex profile: owned registered Barrel + Stone Bricks32 + Gold Blocks4 + Lodestone1 + Cartography Table1 + Targets4.
-- Nexus profile: owned registered Barrel + Obsidian32 + Crying Obsidian8 + Beacon1 + Enchanting Table1 + Ender Chest1.
-- No new SavedData, packet, background maintenance scan or chunk force-load.
 
 ## 0.35.0-alpha.1
-- Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock.
-- Hotbar0..8, equipment and offhand remain untouched.
-- Matching stacks fill before empty slots; item components, `canPlaceItem`, real capacity and unaccepted remainders are preserved.
-- No item-pickup hook or automatic routing.
+- Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock; hotbar/equipment remain untouched.
 
 ## 0.34.0-alpha.1
 - Added one shared inventory-first + nearest real-Barrel resolver for industrial batches, unfinished infrastructure and equipment reforge/awakening.
@@ -36,7 +35,6 @@
 
 ## 0.33.0-alpha.1
 - Added exactly one bounded sortie complication to each new operation: DEEP_FRONT, FORWARD_SHIFT or HOT_EXTRACTION.
-- Existing0.32 active operations may migrate as NONE.
 
 ## 0.32.0-alpha.1
 - Added nine repeatable physical out-and-back expedition operations staged from active regional outposts.

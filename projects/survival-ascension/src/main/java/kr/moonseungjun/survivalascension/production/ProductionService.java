@@ -16,6 +16,7 @@ public final class ProductionService {
     public static final String ACTION_WAREHOUSE_TOGGLE = "toggle_warehouse_barrel";
     public static final String ACTION_BULK_OFFLOAD = "bulk_offload";
     public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
+    public static final String ACTION_OUTPOST_SIEGE = "outpost_siege";
     public static final String ACTION_FIELD_RECOVERY = "field_recovery";
     public static final String ACTION_FIELD_OPERATION = "field_operation";
 
@@ -36,8 +37,16 @@ public final class ProductionService {
         if (ACTION_WAREHOUSE_TOGGLE.equals(action)) { FieldDepotService.toggleWarehouseNearest(player); return; }
         if (ACTION_BULK_OFFLOAD.equals(action)) { bulkOffload(player); return; }
         if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
+        if (ACTION_OUTPOST_SIEGE.equals(action)) { OutpostSiegeSystem.startOrStatus(player); return; }
         if (ACTION_FIELD_RECOVERY.equals(action)) { FieldRecoveryService.configure(player); return; }
-        if (ACTION_FIELD_OPERATION.equals(action)) { ExpeditionOperationSystem.startOrStatus(player); return; }
+        if (ACTION_FIELD_OPERATION.equals(action)) {
+            if (OutpostSiegeSystem.isActive(player)) {
+                player.sendSystemMessage(Component.literal("§6[원정 작전] §f진행 중인 §c전초 방어전§f을 먼저 끝내세요."));
+                return;
+            }
+            ExpeditionOperationSystem.startOrStatus(player);
+            return;
+        }
         if (!action.startsWith(ACTION_PREFIX)) {
             player.sendSystemMessage(Component.literal("§c[산업 생산망] §f알 수 없는 생산 작업입니다."));
             return;
@@ -84,12 +93,13 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고. 보급권: 실물 출고1 / 거점1 / 전초2 / 복귀1 / 원정1."));
+        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 복귀1 / 원정1."));
         player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 배럴 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
         player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 배럴부터 채웁니다."));
         player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
+        OutpostSiegeSystem.sendStatus(player);
         FieldRecoveryService.sendStatus(player);
         ExpeditionOperationSystem.sendStatus(player);
     }
