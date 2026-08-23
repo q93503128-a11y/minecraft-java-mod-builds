@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.39
+## Current version: 0.1.0-alpha.40
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,7 +29,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.39 adds no new gameplay key, crafting dashboard or manual job-priority UI.
+Alpha.40 adds no new gameplay key, fishing dashboard or manual job-priority UI.
 
 ## Functional building families
 
@@ -51,7 +51,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: coast/river trade-fishing, dangerous-region military specialization, richer high-tier crafting, unloaded simulation and companion/UI integration remain unfinished.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 adds the first coast/river fishing-trade specialization, while dangerous-region military specialization, richer port/trade presentation, unloaded simulation and companion/UI integration remain unfinished.
 
 ## Physical construction
 
@@ -72,7 +72,7 @@ Roads and outposts likewise use physical grading and real hauled resources.
 
 ## Residents, production and road logistics
 
-- builder, logger, farmer, quarry worker, miner, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior and transport roles are implemented;
+- builder, logger, farmer, quarry worker, miner, fishing outpost worker, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior and transport roles are implemented;
 - loaded town production is paced and bounded;
 - outpost production is specialization-specific and loaded-chunk only;
 - transport workers are persistently assigned to one outpost;
@@ -170,7 +170,7 @@ Alpha.38 closes the original construction-office family without adding an abstra
 - office material barrels join the same physical settlement ItemStack ledger;
 - for construction wood/stone they are ordered ahead of ordinary town storage, so the existing builder naturally prefers nearby staged stock;
 - automated non-construction cargo such as food/metal/random loot is kept out of the dedicated material bays;
-- one persistent office-assigned construction supply runner keeps the bays stocked only while a building project is active;
+- one persistent office-assigned **construction supply runner** keeps the bays stocked only while a building project is active;
 - the runner uses loaded ordinary settlement storage as source, physically walks to it, extracts a real wood/stone stack, carries up to 32 items in hand and walks back before depositing;
 - target staged reserve is 96 wood + 96 stone per office;
 - source search is bounded to 24 blocks and checked along loaded corridor points; no chunk force-load or teleport inventory transfer is introduced;
@@ -202,6 +202,23 @@ Alpha.39 adds the first real high-tier crafting loop instead of turning rare exp
 
 Role separation is intentional: **market = relic→trade value, workshop = metal→repair, advanced workshop = external weapon + relic + metal→high-tier forge**. The current advanced specialist is a building-bound visible service NPC rather than a civilian population slot; broader citizen-job reconciliation remains later cleanup. Alpha.39 is the first high-tier forge path, not a claim that every future specialized recipe/crafting family is complete.
 
+## Alpha.40 — coast/river fishing-trade outpost
+
+Alpha.40 makes water geography matter without adding a new management screen or a second long-distance logistics controller.
+
+- an otherwise-`general` completed outpost is checked only while its local chunks are loaded;
+- within a 12-block radius it must have at least 24 open surface-water columns plus a safe dry bank;
+- qualifying outposts expose the effective role `어업·수변교역` in `/frontier status`;
+- one outpost-assigned fishing villager appears with a fishing rod in the off hand;
+- the worker physically walks from the outpost to the detected bank and fishes only while the water position remains valid and loaded;
+- work cadence is 140 ticks, producing 1–3 real cod/salmon ItemStacks per successful catch;
+- caught fish are carried in the worker's main hand back to the **existing physical outpost stockpile**;
+- fish are ordinary edible ItemStacks, so the existing Alpha.27 outpost transporter already accepts them through the normal food cargo rule and follows the persisted road network to town/cart-station storage;
+- no new route authority, teleport cargo, global water scan, forced chunk loading, emerald generation or abstract trade points are introduced;
+- if the shoreline is not loaded or no longer qualifies, production pauses instead of simulating catches remotely.
+
+The `수변교역` part currently means the fishing commodity participates in the established physical outpost→road→town economy. Alpha.40 does **not** claim a dedicated harbor, boats, waterborne merchant NPCs or a separate fish-for-emerald market. Those remain possible later presentation/economic breadth.
+
 ## External content stack
 
 `COMPANION_LOCK.json` is the exact candidate lock for the next fresh-world compatibility test. `COMPANION_MODS.md` explains the strategy and `EXTERNAL_CONTENT_REGISTER.md` records reuse/license boundaries.
@@ -214,10 +231,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–38 source audit plus Alpha.39 advanced-forging extension;
+1. the complete established Alpha.23–39 source audit plus Alpha.40 waterborne-outpost extension;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat, stair/bridge appearance or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on shoreline pathfinding, fishing cadence/balance, advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.
