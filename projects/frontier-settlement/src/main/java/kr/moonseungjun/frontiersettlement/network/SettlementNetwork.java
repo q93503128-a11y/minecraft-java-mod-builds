@@ -1,6 +1,7 @@
 package kr.moonseungjun.frontiersettlement.network;
 
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
@@ -25,116 +26,31 @@ public final class SettlementNetwork {
     private static Consumer<OutpostPreviewPayload> outpostPreviewSink = payload -> {};
 
     private SettlementNetwork() {}
-
     public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(PROTOCOL);
-        registrar.playToClient(SettlementSnapshotPayload.TYPE, SettlementSnapshotPayload.CODEC,
-                (payload, context) -> snapshotSink.accept(payload));
-        registrar.playToClient(PlacementPreviewPayload.TYPE, PlacementPreviewPayload.CODEC,
-                (payload, context) -> placementPreviewSink.accept(payload));
-        registrar.playToClient(RoadPreviewPayload.TYPE, RoadPreviewPayload.CODEC,
-                (payload, context) -> roadPreviewSink.accept(payload));
-        registrar.playToClient(OutpostPreviewPayload.TYPE, OutpostPreviewPayload.CODEC,
-                (payload, context) -> outpostPreviewSink.accept(payload));
-        registrar.playToServer(PlacementRequestPayload.TYPE, PlacementRequestPayload.CODEC,
-                SettlementNetwork::handlePlacementRequest);
-        registrar.playToServer(RoadPlacementRequestPayload.TYPE, RoadPlacementRequestPayload.CODEC,
-                SettlementNetwork::handleRoadPlacementRequest);
-        registrar.playToServer(OutpostPlacementRequestPayload.TYPE, OutpostPlacementRequestPayload.CODEC,
-                SettlementNetwork::handleOutpostPlacementRequest);
+        PayloadRegistrar registrar=event.registrar(PROTOCOL);
+        registrar.playToClient(SettlementSnapshotPayload.TYPE,SettlementSnapshotPayload.CODEC,(p,c)->snapshotSink.accept(p));
+        registrar.playToClient(PlacementPreviewPayload.TYPE,PlacementPreviewPayload.CODEC,(p,c)->placementPreviewSink.accept(p));
+        registrar.playToClient(RoadPreviewPayload.TYPE,RoadPreviewPayload.CODEC,(p,c)->roadPreviewSink.accept(p));
+        registrar.playToClient(OutpostPreviewPayload.TYPE,OutpostPreviewPayload.CODEC,(p,c)->outpostPreviewSink.accept(p));
+        registrar.playToServer(PlacementRequestPayload.TYPE,PlacementRequestPayload.CODEC,SettlementNetwork::handlePlacementRequest);
+        registrar.playToServer(RoadPlacementRequestPayload.TYPE,RoadPlacementRequestPayload.CODEC,SettlementNetwork::handleRoadPlacementRequest);
+        registrar.playToServer(OutpostPlacementRequestPayload.TYPE,OutpostPlacementRequestPayload.CODEC,SettlementNetwork::handleOutpostPlacementRequest);
     }
-
-    private static void handlePlacementRequest(PlacementRequestPayload payload,
-                                               net.neoforged.neoforge.network.handling.IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
-        BuildingType type = BuildingType.fromId(payload.buildingType());
-        if (type == null) {
-            context.reply(new PlacementPreviewPayload(payload.nonce(), payload.buildingType(), false, false,
-                    0, 0, 0, payload.rotation(), "알 수 없는 건물입니다."));
-            return;
-        }
-        SettlementData data = SettlementData.get(player.level().getServer());
-        String specialLock = null;
-        if (type == BuildingType.WORKSHOP) specialLock = SettlementWorkshopService.lockedReason(data);
-        else if (type == BuildingType.CART_STATION) specialLock = SettlementCartStationService.lockedReason(data);
-        else if (type == BuildingType.WATCHTOWER) specialLock = SettlementWatchtowerService.lockedReason(data);
-        if (specialLock != null) {
-            context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
-                    0, 0, 0, payload.rotation(), specialLock));
-            return;
-        }
-        if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
-            context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
-                    0, 0, 0, payload.rotation(), "현재 공사가 끝난 뒤 새 건물을 배치해 주세요."));
-            return;
-        }
-        BlockPos selectedCenter = new BlockPos(payload.centerX(), payload.centerY(), payload.centerZ());
-        if (type == BuildingType.CART_STATION) {
-            String placementLock = SettlementCartStationService.placementReason(data, selectedCenter);
-            if (placementLock != null) {
-                context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
-                        0, 0, 0, payload.rotation(), placementLock));
-                return;
-            }
-        }
-        SettlementConstructionService.PlacementCheck check =
-                SettlementConstructionService.checkPlacement(player, type, selectedCenter, payload.rotation());
-        if (!check.valid()) {
-            context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
-                    0, 0, 0, payload.rotation(), check.message()));
-            return;
-        }
-        if (!payload.confirm()) {
-            context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), true, false,
-                    check.origin().getX(), check.origin().getY(), check.origin().getZ(), payload.rotation(), check.message()));
-            return;
-        }
-        SettlementConstructionService.StartResult result =
-                SettlementConstructionService.startAt(player, type, selectedCenter, payload.rotation());
-        player.sendSystemMessage(Component.literal(result.message()));
-        context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), result.started(), result.started(),
-                check.origin().getX(), check.origin().getY(), check.origin().getZ(), payload.rotation(), result.message()));
+    private static void handlePlacementRequest(PlacementRequestPayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context){
+        if(!(context.player() instanceof ServerPlayer player))return; BuildingType type=BuildingType.fromId(payload.buildingType());
+        if(type==null){context.reply(new PlacementPreviewPayload(payload.nonce(),payload.buildingType(),false,false,0,0,0,payload.rotation(),"알 수 없는 건물입니다."));return;}
+        SettlementData data=SettlementData.get(player.level().getServer()); String lock=null;
+        if(type==BuildingType.WORKSHOP)lock=SettlementWorkshopService.lockedReason(data); else if(type==BuildingType.CART_STATION)lock=SettlementCartStationService.lockedReason(data); else if(type==BuildingType.WATCHTOWER)lock=SettlementWatchtowerService.lockedReason(data); else if(type==BuildingType.BARRACKS)lock=SettlementBarracksService.lockedReason(data);
+        if(lock!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),lock));return;}
+        if(data.construction().active()||data.roadConstruction().active()||data.outpostConstruction().active()){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),"현재 공사가 끝난 뒤 새 건물을 배치해 주세요."));return;}
+        BlockPos center=new BlockPos(payload.centerX(),payload.centerY(),payload.centerZ());
+        if(type==BuildingType.CART_STATION){String p=SettlementCartStationService.placementReason(data,center);if(p!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),p));return;}}
+        var check=SettlementConstructionService.checkPlacement(player,type,center,payload.rotation());
+        if(!check.valid()){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),check.message()));return;}
+        if(!payload.confirm()){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),true,false,check.origin().getX(),check.origin().getY(),check.origin().getZ(),payload.rotation(),check.message()));return;}
+        var result=SettlementConstructionService.startAt(player,type,center,payload.rotation()); player.sendSystemMessage(Component.literal(result.message())); context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),result.started(),result.started(),check.origin().getX(),check.origin().getY(),check.origin().getZ(),payload.rotation(),result.message()));
     }
-
-    private static void handleRoadPlacementRequest(RoadPlacementRequestPayload payload,
-                                                   net.neoforged.neoforge.network.handling.IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
-        BlockPos start = new BlockPos(payload.startX(), payload.startY(), payload.startZ());
-        BlockPos end = new BlockPos(payload.endX(), payload.endY(), payload.endZ());
-        SettlementRoadService.RouteCheck check = SettlementRoadService.checkRoute(player, start, end);
-        if (!payload.confirm() || !check.valid()) {
-            context.reply(RoadPreviewPayload.fromCheck(payload.nonce(), check, false));
-            return;
-        }
-        SettlementRoadService.StartResult result = SettlementRoadService.startAt(player, start, end);
-        player.sendSystemMessage(Component.literal(result.message()));
-        if (result.started()) context.reply(RoadPreviewPayload.fromCheck(payload.nonce(), check, true));
-        else {
-            RoadPreviewPayload failed = RoadPreviewPayload.fromCheck(payload.nonce(), check, false);
-            context.reply(new RoadPreviewPayload(payload.nonce(), false, false, failed.stoneCost(), failed.path(), result.message()));
-        }
-    }
-
-    private static void handleOutpostPlacementRequest(OutpostPlacementRequestPayload payload,
-                                                      net.neoforged.neoforge.network.handling.IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
-        BlockPos selected = new BlockPos(payload.targetX(), payload.targetY(), payload.targetZ());
-        SettlementOutpostService.PlacementCheck check = SettlementOutpostService.checkPlacement(player, selected);
-        if (!payload.confirm() || !check.valid()) {
-            context.reply(OutpostPreviewPayload.fromCheck(payload.nonce(), check, false));
-            return;
-        }
-        SettlementOutpostService.StartResult result = SettlementOutpostService.startAt(player, check.roadIndex());
-        player.sendSystemMessage(Component.literal(result.message()));
-        if (result.started()) context.reply(OutpostPreviewPayload.fromCheck(payload.nonce(), check, true));
-        else context.reply(new OutpostPreviewPayload(payload.nonce(), false, false,
-                check.roadIndex(), check.gate().getX(), check.gate().getY(), check.gate().getZ(),
-                check.directionX(), check.directionZ(), check.specialization(), result.message()));
-    }
-
-    public static void setSnapshotSink(Consumer<SettlementSnapshotPayload> sink) { snapshotSink = sink == null ? payload -> {} : sink; }
-    public static void setPlacementPreviewSink(Consumer<PlacementPreviewPayload> sink) { placementPreviewSink = sink == null ? payload -> {} : sink; }
-    public static void setRoadPreviewSink(Consumer<RoadPreviewPayload> sink) { roadPreviewSink = sink == null ? payload -> {} : sink; }
-    public static void setOutpostPreviewSink(Consumer<OutpostPreviewPayload> sink) { outpostPreviewSink = sink == null ? payload -> {} : sink; }
-    public static void sendSnapshot(ServerPlayer player, SettlementSnapshotPayload payload) { PacketDistributor.sendToPlayer(player, payload); }
+    private static void handleRoadPlacementRequest(RoadPlacementRequestPayload p, net.neoforged.neoforge.network.handling.IPayloadContext c){if(!(c.player() instanceof ServerPlayer player))return;BlockPos s=new BlockPos(p.startX(),p.startY(),p.startZ()),e=new BlockPos(p.endX(),p.endY(),p.endZ());var check=SettlementRoadService.checkRoute(player,s,e);if(!p.confirm()||!check.valid()){c.reply(RoadPreviewPayload.fromCheck(p.nonce(),check,false));return;}var r=SettlementRoadService.startAt(player,s,e);player.sendSystemMessage(Component.literal(r.message()));if(r.started())c.reply(RoadPreviewPayload.fromCheck(p.nonce(),check,true));else{var f=RoadPreviewPayload.fromCheck(p.nonce(),check,false);c.reply(new RoadPreviewPayload(p.nonce(),false,false,f.stoneCost(),f.path(),r.message()));}}
+    private static void handleOutpostPlacementRequest(OutpostPlacementRequestPayload p, net.neoforged.neoforge.network.handling.IPayloadContext c){if(!(c.player() instanceof ServerPlayer player))return;BlockPos selected=new BlockPos(p.targetX(),p.targetY(),p.targetZ());var check=SettlementOutpostService.checkPlacement(player,selected);if(!p.confirm()||!check.valid()){c.reply(OutpostPreviewPayload.fromCheck(p.nonce(),check,false));return;}var r=SettlementOutpostService.startAt(player,check.roadIndex());player.sendSystemMessage(Component.literal(r.message()));if(r.started())c.reply(OutpostPreviewPayload.fromCheck(p.nonce(),check,true));else c.reply(new OutpostPreviewPayload(p.nonce(),false,false,check.roadIndex(),check.gate().getX(),check.gate().getY(),check.gate().getZ(),check.directionX(),check.directionZ(),check.specialization(),r.message()));}
+    public static void setSnapshotSink(Consumer<SettlementSnapshotPayload> s){snapshotSink=s==null?p->{}:s;} public static void setPlacementPreviewSink(Consumer<PlacementPreviewPayload>s){placementPreviewSink=s==null?p->{}:s;} public static void setRoadPreviewSink(Consumer<RoadPreviewPayload>s){roadPreviewSink=s==null?p->{}:s;} public static void setOutpostPreviewSink(Consumer<OutpostPreviewPayload>s){outpostPreviewSink=s==null?p->{}:s;} public static void sendSnapshot(ServerPlayer p,SettlementSnapshotPayload payload){PacketDistributor.sendToPlayer(p,payload);}
 }
