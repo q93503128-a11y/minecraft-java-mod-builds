@@ -1,7 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.41 Civil Works consumes a large Stage1 material sink plus a real registered-Barrel commissioning yard
-- Construction Lv60+ causeway uses existing protected queue for 3-wide forward physical roads/bridges at 17/33/49/65 length
-- causeway targets are loaded-only and retain player-first/physical-depot materials, mayInteract, placement hooks and 64-global/8-local tick budgets
-- 0.40 breachers,0.39 fortification,0.38 defense,0.37 warehouse,0.36 commissioning and older progression contracts remain
-- no new SavedData ID, packet, client coordinate, second builder engine, getChunk, ticket or force-load
+- 0.42 real Chest Minecart freight physically moves existing bulk stock between two different active owned outpost Barrel clusters
+- freight uses exact endpoint anchor+warehouse Containers, loaded rail, owner/origin cart NBT, partial real-capacity unload and the 0.35 bulk whitelist
+- no new SavedData/packet/reward/supply fee/cart spawn/auto-drive/teleport/cross-dimension/getChunk/ticket/force-load
+- 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain
