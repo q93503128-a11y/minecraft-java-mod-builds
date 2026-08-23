@@ -14,8 +14,9 @@ required = [
     JAVA / 'settlement/SettlementCoreService.java', JAVA / 'settlement/SettlementResidentRoutineService.java',
     JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementConstructionService.java',
     JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/SettlementOutpostService.java',
-    JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementWorkerService.java',
-    JAVA / 'settlement/SettlementBenefitService.java', JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/BuildingType.java',
+    JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
+    JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementBenefitService.java',
+    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/BuildingType.java',
     JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/ClientSettlementState.java', JAVA / 'client/FrontierSettlementClient.java',
@@ -28,14 +29,15 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.26'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.27'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
 for token in ('survival -> settlement growth', 'One world/server has one shared settlement',
               'Resources remain physical Minecraft items', '`B`: settlement palette',
               '`R`: rotate current building placement', '`Enter`: confirm', '`Backspace`: reset/cancel',
-              'builder walks from actual settlement storage carrying real wood/stone stacks'):
+              'builder walks from actual settlement storage carrying real wood/stone stacks',
+              'Transport workers belong to a specific outpost', 'pause at unloaded route boundaries'):
     if token not in plan: raise SystemExit(f'canonical plan invariant missing: {token}')
 
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
@@ -124,6 +126,27 @@ if 'while (placed < 2' in outpost:
 if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
     raise SystemExit('outpost construction must not create loose drops')
 
+logistics = (JAVA / 'settlement/SettlementOutpostLogisticsService.java').read_text(encoding='utf-8')
+for token in ('TRANSPORT_WORKER_TAG', 'TRANSPORT_OUTPOST_TAG_PREFIX', 'migrateLegacyWorkers(',
+              'routeFromTown(', 'appendRoadPrefixFromTown(', 'road.centers()', 'ROAD_WAYPOINT_STRIDE = 3',
+              'routeFullyLoaded(', 'level.hasChunkAt(', 'firstMissingLoadedAssignment(',
+              'takeFirstTransportStack(', 'SettlementInventory.isWood', 'SettlementInventory.isStone',
+              'SettlementInventory.isFood', 'isMiningCargo(', 'EquipmentSlot.MAINHAND'):
+    if token not in logistics: raise SystemExit(f'alpha.27 outpost logistics invariant missing: {token}')
+if 'forceChunk' in logistics or 'setChunkForced' in logistics:
+    raise SystemExit('outpost logistics must not force-load route chunks')
+
+worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
+for token in ('SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data)',
+              'SettlementOutpostLogisticsService.tick(level, data)',
+              'SettlementOutpostLogisticsService.allRoutesLoaded(level, data)',
+              'SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data)',
+              'SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data)',
+              'SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing)'):
+    if token not in worker: raise SystemExit(f'alpha.27 worker/logistics integration missing: {token}')
+for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
+    if forbidden in worker: raise SystemExit(f'legacy UUID-order transport backend remains in worker service: {forbidden}')
+
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract('):
     if token not in storage: raise SystemExit(f'physical storage invariant missing: {token}')
@@ -151,8 +174,9 @@ for legacy in ('key.frontier_settlement.next_building', 'key.frontier_settlement
 for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/SettlementCoreService.java',
              JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
              JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementWorkerService.java',
-             JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementTierInfrastructureService.java'):
+             JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
+             JAVA / 'settlement/SettlementTierInfrastructureService.java'):
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.26 source audit: PASS')
+print('Frontier Settlement alpha.27 source audit: PASS')
