@@ -4,20 +4,35 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then scales enemies, world stages and shared infrastructure back against that growth.
 
-## 0.21.0-alpha.1 — Ascension Trial
-Stage 2 now has a repeatable endgame combat loop instead of ending after the Ascension Nexus is completed.
+## 0.22.0-alpha.1 — Tactical Trials + Awakened Mythic
+The Stage-2 loop now varies by behavior and enemy composition instead of replaying the same four fixed waves, and Mythic III loot now has a costly final purpose beyond ordinary rerolling.
 
-- Complete the Stage-2 Ascension Nexus, then select the completed Nexus again from `M -> Infrastructure` to open an Ascension Trial.
-- Entry consumes real resources every run: 32 Echo Shards + 64 Amethyst Shards + 8 Dragon's Breath.
-- Four timed waves use mixed vanilla combat roles rather than another blanket HP-sponge layer: undead pressure, ranged slow/support, illager/wither pressure, then a Ravager/Vindicator/Pillager/Witch end wave. Summon-producing Evokers are deliberately excluded so failed/completed trials cannot leave untracked Vex behind.
-- Each wave has a 60-second limit and a 5-second inter-wave setup. A vanilla boss bar shows wave, remaining enemies and time.
-- The owner gets a 10-second grace window for death/dimension/64-block arena departure. Active trials require 96 blocks of separation and have a 120-second start cooldown to prevent spam.
-- Successful completion guarantees one Mythic III affix item, 2 Netherite Scraps, 4 Diamonds and 200 XP; nearby helpers receive XP without duplicating the owner loot package.
-- Triggered trial mobs still pass through normal NeoForge spawn finalization, so Stage-2 mutations, Elite ranks and existing tactical systems may layer onto the encounter naturally.
-- Runtime trial state is cleared when a different server instance becomes active, and persisted tagged trial mobs are rejected after restart unless they still belong to the active trial.
-- Fixed stale infrastructure benefit text so Lv.100 Quarry / Builder Foundry / Ascension Nexus descriptions match the actual Mastery VI rules.
+### Ascension Trial doctrines
+- Every run randomly selects one tactical doctrine: `쇄도 / 추격 / 봉쇄`.
+- `쇄도` emphasizes melee pressure with Husk, Vindicator, Wither Skeleton and Ravager-heavy compositions.
+- `추격` uses Spider, Enderman, Husk, Wither Skeleton and Vindicator pressure; distant pursuit mobs are actively driven back toward the owner instead of idling at the edge of the arena.
+- `봉쇄` emphasizes Skeleton/Stray/Pillager/Witch control and ranged lane pressure.
+- Each wave triggers one bounded doctrine-specific reinforcement when the initial force falls to roughly half strength. The wave timer is not extended, so reinforcement changes the fight instead of becoming free extra loot time.
+- No doctrine adds a new blanket HP multiplier. Existing Elite ranks, Stage-2 mutations and Warband roles can still layer onto trial mobs through the normal triggered spawn path.
+- Evokers remain excluded from direct trial compositions so Vex cannot become untracked residual entities after success/failure.
 
-The timed-wave lifecycle and boss-bar encounter information model are adapted from the MIT-licensed Gateways to Eternity project; runtime attribution is packaged in the JAR.
+### Awakened Mythic gear
+- `M -> Equipment` now contains `신화 각성` inside the existing MineMenu-derived radial instead of adding a separate rectangular GUI.
+- A normal Mythic III item has 3 affixes. One-time awakening preserves all existing affixes and adds one missing affix for a 4-affix Awakened Mythic item.
+- Awakening cost: 256 Amethyst Shards + 24 Diamonds + 8 Netherite Scraps + 64 Echo Shards + 16 Dragon's Breath.
+- Awakened Mythic rerolls preserve the four-affix state and cost 128 Amethyst Shards + 16 Diamonds + 4 Netherite Scraps + 16 Echo Shards per reroll.
+- Affixes still cannot unlock scaled skill actions early; they only amplify actions already unlocked by the relevant skill level.
+- Awakening uses the existing affix CustomData format, so no new custom item registry or texture dependency is introduced.
+
+## Existing Stage-2 loop
+- Complete the Ascension Nexus, then re-select it from `M -> Infrastructure` to open an Ascension Trial.
+- Entry consumes 32 Echo Shards + 64 Amethyst Shards + 8 Dragon's Breath.
+- Four waves, 60 seconds per wave, 5-second setup between waves, boss-bar wave/enemy/time state.
+- Owner death/dimension/64-block departure has a 10-second grace window; active trials require 96-block separation and a 120-second start cooldown.
+- Completion guarantees one Mythic III affix item, 2 Netherite Scraps, 4 Diamonds and 200 XP; nearby helpers receive XP without duplicating owner loot.
+- Restart/stale-server guards reject orphan tagged trial mobs and clear old in-JVM trial references.
+
+The timed-wave lifecycle, boss-bar encounter model and the idea of wave-changing modifiers are adapted at a high level from the MIT-licensed Gateways to Eternity project; runtime attribution remains packaged in the JAR.
 
 ## Existing Mastery VI scale
 - Mining: 11x11 excavation, vein/extract cap 192, Quarry Network Tunnel 7x7x10.
