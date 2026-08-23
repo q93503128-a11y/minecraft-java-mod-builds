@@ -82,15 +82,17 @@ License: MIT
 
 Survival Ascension studies Lootr's player-fair exploration philosophy: one player's discovery/reward should not consume another player's exploration progression. The resulting `expedition_v1` implementation is independent Survival Ascension SavedData and vanilla-item reward code. No Lootr source code, custom chests, textures, assets, namespace, loot-table implementation or runtime dependency is copied or bundled.
 
-## Bountiful — reference only for 0.24
-License: LGPL-3.0-only
+## Bountiful — reference only for 0.24+
+Source project: `ejektaflex/Bountiful`  
+License: GPL-3.0
 
-Survival Ascension 0.24 studies only the high-level objective-to-reward contract concept: a player should perform a concrete contextual objective before a reward/progression state completes. Survival Ascension's region matching, block/kill/travel counters, persistence, reward thresholds and messages are independently implemented. No Bountiful source, bounty data, UI, assets, board/item code, namespace or runtime dependency is copied or bundled.
+Survival Ascension studies only Bountiful's high-level variable bounty / objective-to-reward contract philosophy. 0.25 uses that product idea to give each region more than one possible persistent field directive. Survival Ascension's region matching, directive assignment, multi-task counters, persistence, reward thresholds and messages are independently implemented. No Bountiful source, bounty/decree data, GUI, assets, board/item code, namespace or runtime dependency is copied or bundled.
 
-## FTB Quests — reference only for 0.24
+## FTB Quests — reference only for 0.24+
+Source project: `FTBTeam/FTB-Quests`  
 License: All Rights Reserved
 
-Survival Ascension 0.24 studies only the product-level separation of task progress, completion state and later stage rewards. `expedition_v1` uses its own codec, masks, objective counters and vanilla/NeoForge events. No FTB Quests source, assets, quest files, task/reward classes, UI, namespace or runtime dependency is copied or bundled.
+Survival Ascension studies only the product-level separation of task progress, completion state and later stage rewards. 0.25 also studies the high-level idea that one quest can contain multiple tasks which must all be satisfied. `expedition_v1` uses its own Codec, masks, directive map, action counters and vanilla/NeoForge events. No FTB Quests source, assets, quest files, task/reward classes, UI, namespace or runtime dependency is copied or bundled.
 
 ## Repurposed Structures — reference only for 0.23+
 License: LGPL-3.0-only
