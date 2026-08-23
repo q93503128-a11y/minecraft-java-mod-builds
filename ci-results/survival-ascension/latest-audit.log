@@ -1,12 +1,7 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_current_source.py", line 65, in <module>
-    for rel in required: read(rel)
-                         ^^^^^^^^^
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_current_source.py", line 13, in read
-    return path.read_text(encoding="utf-8")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/pathlib.py", line 1030, in read_text
-    return f.read()
-           ^^^^^^^^
-  File "<frozen codecs>", line 322, in decode
-UnicodeDecodeError: 'utf-8' codec can't decode byte 0xdd in position 55: invalid continuation byte
+SOURCE AUDIT PASS
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
+- 18 persistent expedition directives remain legacy-safe and require all assigned tasks
+- 18 rare regional incidents add bounded ambush/action-rush events with bossbar lifecycle
+- incident rewards are one-time per player/region, fail-safe, two-way Trial-separated and max +20% directive bonus
+- Mastery VI, Field Mastery, tick budgets, normal destroy/material/protection contracts retained
+- doctrine trials, awakened Mythic, world stages, mutations, warbands and elite regressions retained
