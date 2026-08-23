@@ -72,6 +72,10 @@ public final class SettlementConstructionService {
                 && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
             return "경비초소는 마을 단계에 도달하면 열립니다.";
         }
+        if (type == BuildingType.MARKET
+                && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
+            return "시장은 마을 단계에 도달하면 열립니다.";
+        }
         return null;
     }
 
