@@ -1,4 +1,1 @@
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/tools/test_current_source.py", line 294
-    'Commands.literal("market")', 'BuildingType.MARKET', '시장 "):
-                                                         ^
-SyntaxError: unterminated string literal (detected at line 294)
+Frontier Settlement alpha.32 source audit: PASS
