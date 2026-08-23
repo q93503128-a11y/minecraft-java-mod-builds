@@ -31,19 +31,20 @@ public final class BuildingPaletteScreen extends Screen {
         int columnWidth = (panelWidth - 34) / 2;
         int rightX = innerX + columnWidth + gap;
 
-        addBuilding(BuildingType.HOUSE, innerX, innerY + 14, columnWidth);
-        addBuilding(BuildingType.WAREHOUSE, innerX, innerY + 60, columnWidth);
-        addBuilding(BuildingType.MARKET, innerX, innerY + 84, columnWidth);
-        addBuilding(BuildingType.GUARD_POST, innerX, innerY + 108, columnWidth);
+        addBuilding(BuildingType.HOUSE, innerX, innerY + 12, columnWidth);
+        addBuilding(BuildingType.WAREHOUSE, innerX, innerY + 32, columnWidth);
+        addBuilding(BuildingType.MARKET, innerX, innerY + 68, columnWidth);
+        addBuilding(BuildingType.CART_STATION, innerX, innerY + 88, columnWidth);
+        addBuilding(BuildingType.GUARD_POST, innerX, innerY + 124, columnWidth);
 
-        addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 14, columnWidth);
-        addBuilding(BuildingType.FARM, rightX, innerY + 36, columnWidth);
-        addBuilding(BuildingType.QUARRY, rightX, innerY + 58, columnWidth);
-        addBuilding(BuildingType.MINE, rightX, innerY + 80, columnWidth);
-        addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 102, columnWidth);
-        addBuilding(BuildingType.WORKSHOP, rightX, innerY + 124, columnWidth);
+        addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 12, columnWidth);
+        addBuilding(BuildingType.FARM, rightX, innerY + 32, columnWidth);
+        addBuilding(BuildingType.QUARRY, rightX, innerY + 52, columnWidth);
+        addBuilding(BuildingType.MINE, rightX, innerY + 72, columnWidth);
+        addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 92, columnWidth);
+        addBuilding(BuildingType.WORKSHOP, rightX, innerY + 112, columnWidth);
 
-        int infraY = innerY + 151;
+        int infraY = innerY + 148;
         addRenderableWidget(Button.builder(Component.literal("도로 계획"), button -> {
             RoadPlacementClient.beginPlacement();
             this.minecraft.gui.setScreen(null);
@@ -68,7 +69,7 @@ public final class BuildingPaletteScreen extends Screen {
         Button button = Button.builder(label, clicked -> {
             BuildingPlacementClient.beginPlacement(type);
             this.minecraft.gui.setScreen(null);
-        }).bounds(x, y, width, 20).build();
+        }).bounds(x, y, width, 18).build();
         button.active = unlocked;
         addRenderableWidget(button);
     }
@@ -91,13 +92,13 @@ public final class BuildingPaletteScreen extends Screen {
         int rightX = innerX + columnWidth + gap;
 
         graphics.text(this.font, Component.literal("기반"), innerX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("물류·교역"), innerX, innerY + 46, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("방어"), innerX, innerY + 94, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("물류·교역"), innerX, innerY + 56, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("방어"), innerX, innerY + 112, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("생산"), rightX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 137, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 136, 0xFFFFD58A, true);
 
         String lock1 = "잠금: 농장←주택 · 채석장←벌목소 · 광산←채석장+전초기지 · 창고←농장";
-        String lock2 = "대장간←광산 · 작업장←대장간 · 시장/경비←마을   |   R 회전 · Enter 확정";
+        String lock2 = "대장간←광산 · 작업장←대장간 · 정거장←도로+전초 · 시장/경비←마을";
         graphics.text(this.font, Component.literal(lock1), panelX + 12, panelY + panelHeight - 31, 0xFFB8B8B8, false);
         graphics.text(this.font, Component.literal(lock2), panelX + 12, panelY + panelHeight - 17, 0xFFD0D0D0, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
