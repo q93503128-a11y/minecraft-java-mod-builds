@@ -4,6 +4,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import kr.moonseungjun.survivalascension.apex.ApexHuntData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
+import kr.moonseungjun.survivalascension.production.FieldDepotData;
+import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.production.ProductionData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
@@ -66,8 +68,11 @@ public final class AscensionCommands {
                 + (apex.masteryClaimed(player) ? " §6· 9종 완주 보상 수령" : "")));
 
         ProductionData production = ProductionData.get(player);
+        FieldDepotData depots = FieldDepotData.get(player);
         player.sendSystemMessage(Component.literal("§3[산업 생산망] §f누적 사이클 §b" + production.cycles(player)
-                + " §7· 현장 보급권 §e" + production.supplyCharges(player) + "/" + ProductionData.MAX_SUPPLY_CHARGES));
+                + " §7· 현장 보급권 §e" + production.supplyCharges(player) + "/" + ProductionData.MAX_SUPPLY_CHARGES
+                + " §7· 물류 거점 §f" + depots.count(player) + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
+                + " §7(현재 활성 §a" + FieldDepotService.activeDepotCount(player) + "§7)"));
         return 1;
     }
 
