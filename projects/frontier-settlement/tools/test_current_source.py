@@ -29,7 +29,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.28'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.29'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -37,13 +37,15 @@ for token in ('survival -> settlement growth', 'One world/server has one shared 
               'Resources remain physical Minecraft items', '`B`: settlement palette',
               '`R`: rotate current building placement', '`Enter`: confirm', '`Backspace`: reset/cancel',
               'builder walks from actual settlement storage carrying real wood/stone stacks',
-              'Transport workers belong to a specific outpost', 'pause at unloaded route boundaries'):
+              'Transport workers belong to a specific outpost', 'pause at unloaded route boundaries',
+              'tier-visible public works', 'single authority for outpost transport'):
     if token not in plan: raise SystemExit(f'canonical plan invariant missing: {token}')
 
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
-              'SettlementOutpostService::onBreakBlock'):
-    if token not in entry: raise SystemExit(f'active construction protection missing: {token}')
+              'SettlementOutpostService::onBreakBlock', 'SettlementCoreService::onBreakBlock',
+              'SettlementTierInfrastructureService::onBreakBlock'):
+    if token not in entry: raise SystemExit(f'active infrastructure protection missing: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
 if service.count('SettlementConstructionService.tick(server, data)') != 1:
@@ -161,6 +163,28 @@ for token in ('SettlementOutpostLogisticsService.migrateLegacyWorkers(level, dat
 for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
     if forbidden in worker: raise SystemExit(f'legacy UUID-order transport backend remains in worker service: {forbidden}')
 
+core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
+for token in ('level.getBlockEntity(placement.pos())', 'BreakBlockEvent', 'event.setCanceled(true)',
+              'event.setNotifyClient(true)', 'desired(data)'):
+    if token not in core: raise SystemExit(f'alpha.29 civic-core protection invariant missing: {token}')
+
+tier_infra = (JAVA / 'settlement/SettlementTierInfrastructureService.java').read_text(encoding='utf-8')
+for token in ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 10',
+              'maintainRoadPublicWorks(', 'lampSite(', 'level.hasChunkAt(', 'protectedXZ(',
+              'maintainTierGarrison(', 'BreakBlockEvent', 'event.setCanceled(true)'):
+    if token not in tier_infra: raise SystemExit(f'alpha.29 tier public-works invariant missing: {token}')
+for forbidden in ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching(', 'Comparator.comparing'):
+    if forbidden in tier_infra: raise SystemExit(f'legacy tier transport authority remains: {forbidden}')
+
+routine = (JAVA / 'settlement/SettlementResidentRoutineService.java').read_text(encoding='utf-8')
+for token in ('SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG',
+              'SettlementOutpostProductionService.PRODUCTION_WORKER_TAG',
+              'assignedTransportOutpost(', 'settlementBounds(', 'moveToHouseSlot(',
+              'villager.getNavigation().stop()'):
+    if token not in routine: raise SystemExit(f'alpha.29 resident routine invariant missing: {token}')
+if '"운송 주민"' in routine:
+    raise SystemExit('night routine must use transport assignment tags, not legacy generic name matching')
+
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract('):
     if token not in storage: raise SystemExit(f'physical storage invariant missing: {token}')
@@ -193,4 +217,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.28 source audit: PASS')
+print('Frontier Settlement alpha.29 source audit: PASS')
