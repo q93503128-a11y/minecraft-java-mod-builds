@@ -177,7 +177,7 @@ must(barracks, ('SOLDIER_TAG = "frontier_settlement_barracks_soldier"', 'BARRACK
                 'firstMissingLoadedAssignment(', 'militaryCapacity(', 'loadedSoldierCount(', 'militaryStateLoaded(',
                 'level.hasChunkAt(', 'Monster.class', '!(monster instanceof Creeper)', 'soldier.addTag(SOLDIER_TAG)',
                 'event.getDrops().clear()'), 'alpha.37 supplied barracks garrison')
-forbid(barracks, ('forceChunk', 'setChunkForced', 'data.addPopulation(', 'data.setPopulation(',
+forbid(barracks, ('forceChunk', 'setChunkForced', 'data.addPopulation(', 'data.setPopulation('),
        'barracks must not force-load or inflate civilian population')
 
 construction = text(JAVA / 'settlement/SettlementConstructionService.java')
