@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.28.0-alpha.1
+- Added Stage-1 shared infrastructure `산업 가공소 / Industrial Works`: Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
+- Added a MineMenu-style nested `산업 생산망` radial instead of a generic machine/quest rectangle. The submenu contains facility funding, four production lines, supply dispatch, status and back navigation.
+- Added four large-batch production lines that deliberately consume different survival output categories: `제련 배치` Raw Iron96 + Raw Copper96 + Coal64; `구조재 배치` any logs192 + Cobblestone384 + Iron32; `식량 배치` Wheat128 + Carrot64 + Potato64 + Beetroot32; `정밀 부품 배치` Redstone128 + Amethyst64 + Gold32 + Quartz64.
+- Added per-player `production_v1` SavedData with four bounded line buffers, lifetime cycle count and stored supply charges. Each line buffer is capped at3 and supply charges are capped at3.
+- A production cycle requires at least one completed batch from all four lines. The system consumes exactly one from each line and creates one supply charge; a single abundant resource line cannot complete cycles by itself.
+- Added queued-cycle normalization: if supply storage is full while complete four-line sets remain buffered, dispatching a charge immediately assembles waiting sets until the charge cap is reached, preventing a permanent buffer deadlock.
+- Batch execution is atomic: the server checks line capacity and every input amount before consuming anything. Failed/partial-material requests do not eat resources.
+- Added tangible supply dispatch: one stored supply charge produces Gold Ingots32 + Amethyst Shards16 + Echo Shards2, delivered to inventory or dropped if full. This keeps the output usable across Apex Hunts, Ascension Trials and equipment sinks rather than hiding a special-case discount inside one subsystem.
+- `/ascension stats` now reports industrial lifetime cycles and stored supply charges.
+- Existing `infrastructure_v1` schema is unchanged; Industrial Works uses new project funding keys only. Existing saves therefore retain all old infrastructure progress. `production_v1` is a new independent per-player store.
+- No new network payload was added; the existing string-based `InfrastructureActionPayload` routes production actions, so protocol remains8.
+- Rechecked Create's current repository license split: code is MIT and files under `src/main/resources/assets/` are All Rights Reserved. 0.28 studies only the high-level multi-step/high-throughput processing and logistics progression; no Create assets, recipes, machines, data or namespaces are copied.
+- Updated Guide, README/PROJECT canon, source audit and JAR verification for the new production runtime/persistence/UI classes and resource-safety contracts.
+
 ## 0.27.0-alpha.1
 - Added Stage-1 shared infrastructure `정점 추적소 / Apex Tracking Post`: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
 - Completed tracking posts can be re-selected inside an already completed expedition region to start a 90-second behavior-driven regional Apex Hunt for Echo8 + Amethyst32 + Gold32.
@@ -34,60 +49,22 @@
 - Extended Guide, README/PROJECT canon, source audit and JAR verification for incident cadence, cleanup, one-time rewards, trial separation, 20% bonus cap and the new runtime classes.
 
 ## 0.25.0-alpha.1
-- Replaced one fixed field objective per expedition region with two persistent directive options per region, for 18 total directives across the nine expedition regions.
-- New region discoveries randomly select one directive per player and persist the choice in `expedition_v1`; leaving/re-entering the biome or restarting the server does not reroll it.
-- Standard directives preserve the 0.24 objectives. Mixed directives combine two real gameplay tasks and require both before the region becomes completed.
-- Added `ExpeditionAction` vocabulary for actual smart-tree log breaks, protected bulk construction placements, mature crop harvests, legitimate travel, water/vessel voyage, pickaxe block breaks, hostile kills and successful R dash uses.
-- Added mixed directives including Woodland logs64+travel240, Arid build96+travel240, Wetland crops64+hostile8, Highlands travel360+dash12, Ocean voyage500+hostile8, Deep mining128+hostile10, Frozen travel360+dash12, Nether hostile16+mining96 and End hostile20+travel360.
-- Directive progress is only credited from existing authoritative gameplay hooks. Inventory stockpiles, manual single-block building, passive kills, invalid movement and rejected/cooldown dash requests do not satisfy the corresponding scaled-action tasks.
-- `/ascension stats` now shows the assigned directive name and every active task's current/target value for discovered incomplete regions.
-- Extended `expedition_v1` with optional per-region directive indices and per-action progress keys while retaining the same SavedData ID.
-- Added 0.24 migration: old discovered regions receive the standard directive, legacy single-objective progress moves into the standard directive's first task, completed regions remain completed, and 0.23/0.24 reward bits still prevent duplicate XP/material/Mythic rewards.
-- Existing 0.23 master-milestone owners remain fully completed and keep Field Mastery.
-- Field Mastery itself is unchanged: Quarry7x7x12, Woodcut448, Harvest13x13, Academy shockwave7.5/20, Construction line65/plane13x13 and four Stage-2 Nexus air dashes.
-- FTB Quests (All Rights Reserved) and Bountiful (GPL-3.0) are reference-only for multi-task quest and variable contract ideas. No source, UI, quest/bounty data, assets or namespaces are bundled.
-- Extended in-game Guide, README/PROJECT canon, source audit and JAR verification for the new directive classes, migration rules, all-task completion and successful-dash accounting.
+- Replaced one fixed field objective per expedition region with two persistent directive options per region, for18 total directives across nine expedition regions.
+- New region discoveries randomly select one directive per player and persist it in `expedition_v1`; standard directives preserve 0.24 behavior and legacy progress/reward migration.
+- Mixed directives combine two actual gameplay tasks and require every task before region completion.
+- Field Mastery remains unchanged: Quarry7x7x12, Woodcut448, Harvest13x13, Academy shockwave7.5/20, Construction line65/plane13x13 and four Stage-2 Nexus air dashes.
 
 ## 0.24.0-alpha.1
-- Reworked Expeditions from instant biome discovery rewards into persistent `discovered -> field objective -> completed` progression. Entering a region now only discovers it; milestone rewards and Field Mastery require actual regional work.
-- Added nine explicit field objectives: Woodland natural-tree bulk felling96, Arid scaled bulk placements128, Wetland mature harvests96, Highlands legitimate on-foot traversal600, Ocean swim/vessel travel800, Deep pickaxe blocks192, Frozen legitimate on-foot traversal600, Nether hostile kills24 and End hostile kills32.
-- Woodland progress is credited only after successful smart-tree queued log destruction, so stockpiled logs or ordinary placed-log demolition cannot bypass the objective.
-- Arid progress is credited only from successful secondary Construction queue placements after the existing real-material, survival and protection checks.
-- Wetland and Deep objectives reuse normal block-break events, so every actual tick-queued crop harvest and every normal area/vein/extract/tunnel pickaxe break can contribute while the player remains in the correct expedition biome.
-- Highlands/Frozen reuse Mobility's legitimate sprint-distance filter, excluding passengers, flight, elytra, swimming and teleport-like displacement.
-- Ocean uses a separate water/vessel voyage tracker with a 24-block-per-second displacement sanity cap. Normal land Mobility progress is explicitly forbidden from advancing Ocean, preventing frozen-ocean sprint shortcuts.
-- Nether/End count only player kills of hostile `Enemy` entities in the matching region; passive livestock kills do not contribute.
-- `/ascension stats` reports discovered/completed counts and exact progress for each discovered-but-incomplete field objective.
-- Extended `expedition_v1` with optional `completed`, objective `progress` and `region_rewards` state while retaining the same SavedData ID for existing worlds.
-- Added 0.23 migration safety: old discoveries remain discovered, old per-region skill XP is marked already paid, old milestone bits remain claimed, and master-milestone owners migrate to all nine completed so Field Mastery is never lost.
-- Field Mastery scale remains the final Lv.100 layer: Quarry7x7x12, Woodcut448, Harvest13x13, Academy shockwave7.5/20, Construction line65/plane13x13 and four Stage-2 Nexus air dashes.
+- Reworked expeditions from instant biome discovery rewards into persistent `discovered -> field objective -> completed` progression with nine explicit regional objectives and legacy reward migration.
 
 ## 0.23.0-alpha.1
-- Added per-player `expedition_v1` SavedData with nine stage-gated vanilla-biome expedition regions: Woodland, Arid, Wetland, Highlands, Ocean, Deep, Frozen, Nether and End.
-- Stage 0 exposes five Overworld regions, Stage 1 unlocks Deep/Frozen/Nether, and Stage 2 unlocks End.
-- Added per-player milestone rewards and final Stage-2 nine-region completion.
-- Completing all nine regions at Stage 2 unlocks `Field Mastery`, a final Lv.100 physical-action scale layer rather than another flat stat multiplier.
-- Field Mastery Mining extends Quarry Network tunnel 7x7x10 -> 7x7x12 while retaining 12/player and 64/global destruction budgets.
-- Woodcutting extends 384 -> 448 logs, Harvesting 11x11 -> 13x13, Combat Academy 6.5/16 -> 7.5/20, Construction line49 -> 65 and plane11x11 -> 13x13, Mobility Nexus air dashes3 -> 4.
+- Added `expedition_v1`, nine stage-gated vanilla-biome expedition regions, milestone rewards and final Stage-2 Field Mastery.
 
 ## 0.22.0-alpha.1
-- Added randomized Ascension Trial tactical doctrines `쇄도 / 추격 / 봉쇄` with different vanilla-mob role mixtures and one bounded mid-wave reinforcement.
-- No doctrine adds blanket HP scaling; existing Stage-2 mutations, Elite ranks and Warband roles still layer through normal triggered spawns.
-- Added `M -> Equipment -> 신화 각성`. Valid Mythic III gear preserves its three affixes and adds one missing fourth affix after a large endgame resource cost.
-- Awakened Mythic rerolls preserve four affixes and remain expensive.
-- Kept Evokers out of direct trial composition so untracked Vex cannot survive encounter cleanup.
+- Added randomized Ascension Trial doctrines `쇄도 / 추격 / 봉쇄` and 4-affix Awakened Mythic progression.
 
 ## 0.21.0-alpha.1
-- Added repeatable Stage-2 `Ascension Trial` behind the completed Ascension Nexus.
-- Added four timed waves, 5-second setup, boss-bar state, owner/distance grace, active-trial separation, persistent cooldown, orphan mob rejection and stale-server cleanup.
-- Completion guarantees one Mythic III affix item + Netherite Scraps + Diamonds + XP.
-- Adapted timed sequential-wave / boss-bar lifecycle from Gateways to Eternity under MIT and packaged its notice.
+- Added repeatable Stage-2 four-wave Ascension Trial behind the completed Ascension Nexus.
 
 ## 0.20.0-alpha.1
-- Added final Lv.100 `Mastery VI` tier across all six active skills.
-- Mining: 11x11 excavation, 192 vein/extract cap, Quarry tunnel7x7x10.
-- Woodcutting: 384 natural logs with leaf safety and tick drain.
-- Harvesting: 11x11 mature crops with seed-backed irrigation replant.
-- Combat: cleave10/5-block/70%; Combat Academy shockwave6.5/16/55%/50ticks.
-- Construction: line49, plane11x11, Builder Foundry volume7x7x7.
-- Mobility: step2.0, safe fall16, dash1.80/16ticks, Stage-2 Nexus air dash3.
+- Added final Lv.100 Mastery VI across all six active skills.
