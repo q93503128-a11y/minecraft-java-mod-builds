@@ -57,6 +57,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onServerTick);
         NeoForge.EVENT_BUS.addListener(WarbandDirector::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onServerTick);
+        NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
