@@ -18,6 +18,7 @@ import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
+import kr.moonseungjun.survivalascension.production.FieldRecoveryService;
 import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
@@ -29,14 +30,15 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.30.0-alpha.1";
-    // 0.30 canonical: interactable camp-backed outposts extend local logistics and suppress NATURAL hostiles only.
+    public static final String VERSION = "0.31.0-alpha.1";
+    // 0.31 canonical: outposts support a prepaid, death-bound one-use field recovery contract; no normal fast travel.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
         modEventBus.addListener(SkillNetwork::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerRespawn);
+        NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(BoreMiningService::onServerTick);
@@ -48,6 +50,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(IrrigationReplantService::onServerTick);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
@@ -76,6 +79,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial production + physical field outposts", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial outposts + death-bound field recovery", VERSION);
     }
 }
