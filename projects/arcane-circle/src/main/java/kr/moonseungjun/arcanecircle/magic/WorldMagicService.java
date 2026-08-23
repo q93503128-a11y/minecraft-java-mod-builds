@@ -203,6 +203,7 @@ public final class WorldMagicService {
             case "feeblemind" -> Math.max(baseDuration, EighthCircleSpellService.NPC_FEEBLEMIND_TICKS);
             case "incendiary_cloud" -> Math.max(baseDuration, EighthCircleSpellService.INCENDIARY_CLOUD_TICKS);
             case "maze" -> Math.max(baseDuration, EighthCircleSpellService.NPC_MAZE_TICKS);
+            case "sunburst" -> Math.max(baseDuration, EighthCircleSpellService.SUNBURST_TICKS);
             default -> baseDuration;
         };
     }
