@@ -118,6 +118,26 @@ public final class OutpostService {
         return isOutpost(player, depot) && isActive(player, depot.dimension(), depot.pos());
     }
 
+    public static OutpostData.OutpostEntry nearestActiveOutpost(ServerPlayer player, int radius) {
+        String dimension = player.level().dimension().toString();
+        BlockPos origin = player.blockPosition();
+        double max = radius * radius;
+        return OutpostData.get(player).outposts(player).stream()
+                .filter(outpost -> outpost.dimension().equals(dimension))
+                .filter(outpost -> outpost.pos().distSqr(origin) <= max)
+                .filter(outpost -> isActive(player, outpost.dimension(), outpost.pos()))
+                .min(Comparator.comparingDouble(outpost -> outpost.pos().distSqr(origin)))
+                .orElse(null);
+    }
+
+    public static boolean isRecoveryOperational(ServerPlayer player, ServerLevel level, String dimension, BlockPos anchor) {
+        if (!dimension.equals(level.dimension().toString())) return false;
+        if (!OutpostData.get(player).isOutpost(player, dimension, anchor)) return false;
+        if (!level.hasChunkAt(anchor) || !level.getBlockState(anchor).is(Blocks.BARREL)) return false;
+        if (!level.mayInteract(player, anchor)) return false;
+        return inspectStructure(player, level, anchor).complete();
+    }
+
     public static void onDepotRemoved(ServerPlayer player, String dimension, BlockPos pos) {
         OutpostData.get(player).remove(player, dimension, pos);
     }
@@ -151,10 +171,7 @@ public final class OutpostService {
     private static boolean isActive(ServerPlayer player, String dimension, BlockPos anchor) {
         if (!dimension.equals(player.level().dimension().toString())) return false;
         if (anchor.distSqr(player.blockPosition()) > ACTIVE_OWNER_RADIUS * ACTIVE_OWNER_RADIUS) return false;
-        ServerLevel level = (ServerLevel) player.level();
-        if (!level.hasChunkAt(anchor) || !level.getBlockState(anchor).is(Blocks.BARREL)) return false;
-        if (!level.mayInteract(player, anchor)) return false;
-        return inspectStructure(player, level, anchor).complete();
+        return isRecoveryOperational(player, (ServerLevel) player.level(), dimension, anchor);
     }
 
     private static FieldDepotData.DepotEntry nearestOwnedDepot(ServerPlayer player, int radius) {
