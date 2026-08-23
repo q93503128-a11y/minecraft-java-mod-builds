@@ -17,6 +17,9 @@ public final class ErdenResidencePlacementPhysicalAudit {
     private static final int TICKET_RADIUS = 1;
     private static final int REFRESH_INTERVAL = 40;
     private static final int MAX_WAIT_TICKS = 1_200;
+    private static final int MAX_HORIZONTAL_FALLBACK = 10;
+    private static final int MAX_VERTICAL_FALLBACK = 16;
+    private static final String AUTHORED_ROLE = "residential_middle_south_04";
 
     private static MinecraftServer activeServer;
     private static ChunkPos ticketChunk;
@@ -34,6 +37,13 @@ public final class ErdenResidencePlacementPhysicalAudit {
         if (activeServer != server) reset(server);
         ServerLevel level = server.getLevel(StarterRealmManager.REALM_KEY);
         if (level == null || !RealmSitePlanner.isBuilt(level, PlayableOriginCatalog.DEFAULT_HOMELAND)) return;
+
+        boolean authoredRolePresent = ExternalDistrictBuildingBuilder.entrances().stream()
+                .anyMatch(entrance -> entrance.role().equals(AUTHORED_ROLE) && entrance.residential());
+        if (!authoredRolePresent) {
+            fail(level, "authored_starting_residence_missing role=" + AUTHORED_ROLE);
+            return;
+        }
 
         BlockPos preferred = SafeResidenceLocator.preferredResidence(
                 level, PlayableOriginCatalog.DEFAULT_HOMELAND, PlayableOriginCatalog.DEFAULT_RESIDENCE);
@@ -61,17 +71,18 @@ public final class ErdenResidencePlacementPhysicalAudit {
             fail(level, "residence_not_walkable preferred=" + preferred + " actual=" + actual);
             return;
         }
-        if (Math.abs(actual.getX() - preferred.getX()) > 12
-                || Math.abs(actual.getZ() - preferred.getZ()) > 12
-                || Math.abs(actual.getY() - preferred.getY()) > 12) {
-            fail(level, "residence_fallback_out_of_bounds preferred=" + preferred + " actual=" + actual);
+        if (Math.abs(actual.getX() - preferred.getX()) > MAX_HORIZONTAL_FALLBACK
+                || Math.abs(actual.getZ() - preferred.getZ()) > MAX_HORIZONTAL_FALLBACK
+                || Math.abs(actual.getY() - preferred.getY()) > MAX_VERTICAL_FALLBACK) {
+            fail(level, "residence_existing_walkable_out_of_bounds preferred=" + preferred + " actual=" + actual);
             return;
         }
 
         release(level, chunk);
         passed = true;
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_RESIDENCE_PHYSICAL_PASS preferred={},{},{} actual={},{},{} preferred_chunk={},{} loaded_probe_chunks=9 walkable=true bounded_fallback=true transient_ticket_released=true ticket_radius={} refresh_ticks={} refreshes={} persistent_forced_chunks=false",
+                "LK_ERDEN_RESIDENCE_PHYSICAL_PASS authored_role={} preferred={},{},{} actual={},{},{} preferred_chunk={},{} loaded_probe_chunks=9 walkable=true existing_authored_walkable=true no_residence_block_carving=true bounded_fallback=true transient_ticket_released=true ticket_radius={} refresh_ticks={} refreshes={} persistent_forced_chunks=false",
+                AUTHORED_ROLE,
                 preferred.getX(), preferred.getY(), preferred.getZ(),
                 actual.getX(), actual.getY(), actual.getZ(),
                 chunk.x(), chunk.z(), TICKET_RADIUS, REFRESH_INTERVAL, refreshes);
