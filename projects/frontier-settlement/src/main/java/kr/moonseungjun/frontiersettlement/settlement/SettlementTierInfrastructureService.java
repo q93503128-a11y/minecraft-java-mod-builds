@@ -25,7 +25,8 @@ public final class SettlementTierInfrastructureService {
     private static final int PUBLIC_WORKS_INTERVAL_TICKS = 100;
     private static final int GARRISON_INTERVAL_TICKS = 200;
     private static final int FRONTIER_TOWN_LAMP_SPACING = 16;
-    private static final int DOMAIN_LAMP_SPACING = 10;
+    private static final int DOMAIN_LAMP_SPACING = 8;
+    private static final int LAMP_START_OFFSET = 8;
     private static final int PUBLIC_WORKS_UPDATE = 3;
 
     private SettlementTierInfrastructureService() {}
@@ -49,9 +50,8 @@ public final class SettlementTierInfrastructureService {
         for (int roadIndex = 0; roadIndex < data.roads().size() && changed < 2; roadIndex++) {
             List<BlockPos> centers = data.roads().get(roadIndex).centers();
             if (centers.size() < 5) continue;
-            int offset = Math.max(2, spacing / 2);
-            for (int index = offset; index < centers.size() - 2 && changed < 2; index += spacing) {
-                LampSite site = lampSite(level, data, centers, roadIndex, index);
+            for (int index = LAMP_START_OFFSET; index < centers.size() - 2 && changed < 2; index += spacing) {
+                LampSite site = lampSite(level, data, centers, roadIndex, index, spacing);
                 if (site == null) continue;
                 BlockState post = level.getBlockState(site.post());
                 if (!post.is(Blocks.OAK_FENCE)) {
@@ -70,11 +70,12 @@ public final class SettlementTierInfrastructureService {
     }
 
     private static LampSite lampSite(ServerLevel level, SettlementData data, List<BlockPos> centers,
-                                     int roadIndex, int index) {
+                                     int roadIndex, int index, int spacing) {
         BlockPos center = centers.get(index);
         int[] direction = directionAt(centers, index);
         if (direction[0] == 0 && direction[1] == 0) return null;
-        int side = ((roadIndex + index) & 1) == 0 ? 2 : -2;
+        int sequence = Math.max(0, (index - LAMP_START_OFFSET) / Math.max(1, spacing));
+        int side = ((roadIndex + sequence) & 1) == 0 ? 2 : -2;
         LampSite preferred = candidate(level, data, center, direction, side);
         if (preferred != null) return preferred;
         return candidate(level, data, center, direction, -side);
@@ -175,27 +176,35 @@ public final class SettlementTierInfrastructureService {
         MinecraftServer server = level.getServer();
         if (level != server.overworld()) return;
         SettlementData data = SettlementData.get(server);
-        SettlementTier tier = SettlementTier.current(data);
-        if (tier.ordinal() < SettlementTier.FRONTIER_TOWN.ordinal()) return;
+        if (!data.founded()) return;
 
         BlockPos pos = event.getPos();
         Block block = level.getBlockState(pos).getBlock();
         if (block != Blocks.OAK_FENCE && block != Blocks.LANTERN) return;
-        int spacing = tier == SettlementTier.DOMAIN ? DOMAIN_LAMP_SPACING : FRONTIER_TOWN_LAMP_SPACING;
+
+        // Protect either spacing pattern even after a temporary tier downgrade. Domain's 8-block
+        // pattern is aligned so all former 16-block frontier-town lamps remain a subset.
+        if (matchesLampPlan(level, data, pos, block, DOMAIN_LAMP_SPACING)
+                || matchesLampPlan(level, data, pos, block, FRONTIER_TOWN_LAMP_SPACING)) {
+            event.setCanceled(true);
+            event.setNotifyClient(true);
+        }
+    }
+
+    private static boolean matchesLampPlan(ServerLevel level, SettlementData data, BlockPos pos,
+                                           Block block, int spacing) {
         for (int roadIndex = 0; roadIndex < data.roads().size(); roadIndex++) {
             List<BlockPos> centers = data.roads().get(roadIndex).centers();
-            int offset = Math.max(2, spacing / 2);
-            for (int index = offset; index < centers.size() - 2; index += spacing) {
-                LampSite site = lampSite(level, data, centers, roadIndex, index);
+            for (int index = LAMP_START_OFFSET; index < centers.size() - 2; index += spacing) {
+                LampSite site = lampSite(level, data, centers, roadIndex, index, spacing);
                 if (site == null) continue;
-                if ((pos.equals(site.post()) && block == Blocks.OAK_FENCE)
-                        || (pos.equals(site.light()) && block == Blocks.LANTERN)) {
-                    event.setCanceled(true);
-                    event.setNotifyClient(true);
-                    return;
-                }
+                if (pos.equals(site.post()) && block == Blocks.OAK_FENCE
+                        && level.getBlockState(site.light()).is(Blocks.LANTERN)) return true;
+                if (pos.equals(site.light()) && block == Blocks.LANTERN
+                        && level.getBlockState(site.post()).is(Blocks.OAK_FENCE)) return true;
             }
         }
+        return false;
     }
 
     private record LampSite(BlockPos post, BlockPos light) {}
