@@ -41,6 +41,15 @@ public enum InfrastructureProject {
                     new Requirement(Items.REDSTONE, "레드스톤", 128),
                     new Requirement(Items.ECHO_SHARD, "메아리 조각", 32)
             )),
+    INDUSTRIAL_WORKS(
+            "industrial_works", "산업 가공소", "전설 단계 · 채굴·벌목·농사·정밀자원을 4계통 대량 생산망으로 연결", 1,
+            List.of(
+                    new Requirement(Items.STONE_BRICKS, "석재 벽돌", 1024),
+                    new Requirement(Items.IRON_INGOT, "철 주괴", 512),
+                    new Requirement(Items.COPPER_INGOT, "구리 주괴", 512),
+                    new Requirement(Items.REDSTONE, "레드스톤", 256),
+                    new Requirement(Items.AMETHYST_SHARD, "자수정 조각", 128)
+            )),
     APEX_TRACKING_POST(
             "apex_tracking_post", "정점 추적소", "전설 단계 · 완수한 원정권에서 반복 정점 사냥 개방", 1,
             List.of(
