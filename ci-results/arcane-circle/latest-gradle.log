@@ -1,54 +1,33 @@
-To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
-Daemon will be stopped at the end of the build 
-
-> Configure project :
-Creating Minecraft artifacts without recompilation.
-
-> Task :clean UP-TO-DATE
-
-> Task :createMinecraftArtifacts
-Loaded 134 artifacts from /home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
-[1m*** Started working on [4mdownloadManifest[0m[0m
-  ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
- [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.38s
-[1m*** Started working on [4mdownloadJson[0m[0m
- [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.00s
-[1m*** Started working on [4mdownloadClient[0m[0m
-[1m*** Started working on [4mdownloadServer[0m[0m
- [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.04s
- [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.05s
-[1m*** Started working on [4mpreProcessJar[0m[0m
- [1m[92m♻[0m Used cache of [4mpreProcessJar[0m in 0.00s
-[1m*** Started working on [4mbinaryPatch[0m[0m
- [1m[92m♻[0m Used cache of [4mbinaryPatch[0m in 0.00s
-[1m*** Started working on [4mcopyUnpatchedClasses[0m[0m
- [1m[92m♻[0m Used cache of [4mcopyUnpatchedClasses[0m in 0.00s
-[1m*** Started working on [4mapplyDevTransforms[0m[0m
- [1m[92m♻[0m Used cache of [4mapplyDevTransforms[0m in 0.00s
-Total runtime: 1.34s
-
-
-> Task :compileJava
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-
-> Task :generateModMetadata
-> Task :generateSpellbookResources
-> Task :generateStaffTextures
-> Task :processResources
-> Task :classes
-> Task :jarJar NO-SOURCE
-> Task :jar
-> Task :assemble
-> Task :compileTestJava NO-SOURCE
-> Task :processTestResources NO-SOURCE
-> Task :testClasses UP-TO-DATE
-> Task :test NO-SOURCE
-> Task :check UP-TO-DATE
-> Task :build
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1787468078482.json
-
-[Incubating] Problems report is available at: file:///home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/arcane-circle/build/reports/problems/problems-report.html
-
-BUILD SUCCESSFUL in 22s
-8 actionable tasks: 7 executed, 1 up-to-date
+Arcane Circle current-source audit: PASS
+catalog_90_direct_19_fusion=PASS
+all_109_explicit_effect_summaries=PASS
+alpha72_haste_player_npc_arcane_tempo_parity=PASS
+alpha72_dispel_magic_circle_1_to_3_ceiling=PASS
+alpha72_blink_solid_geometry_phase_relocation=PASS
+alpha72_third_circle_visual_hitbox_lifetime_sync=PASS
+alpha72_third_circle_role_audit=PASS
+alpha72_third_circle_value_pass_1=PASS
+alpha71_ice_storm_6s_anti_air_suppression=PASS
+alpha71_phantasmal_killer_14s_terror_bond=PASS
+alpha71_fourth_circle_visual_hitbox_lifetime_sync=PASS
+alpha71_fourth_circle_role_audit=PASS
+alpha71_fourth_circle_value_pass_1=PASS
+alpha70_flame_strike_4s_vertical_column=PASS
+alpha70_dominate_person_30s_person_scale_control=PASS
+alpha70_fifth_circle_visual_hitbox_lifetime_sync=PASS
+alpha70_fifth_circle_role_audit=PASS
+alpha70_fifth_circle_value_pass_1=PASS
+alpha69_mass_suggestion_20s_group_disengage=PASS
+alpha69_move_earth_precision_engineering=PASS
+alpha69_sunbeam_6s_solar_corridor=PASS
+alpha69_freezing_sphere_10s_denial=PASS
+alpha69_circle_of_death_no_execution_reentry=PASS
+alpha69_sixth_circle_visual_hitbox_lifetime_sync=PASS
+alpha69_sixth_circle_role_audit=PASS
+alpha69_sixth_circle_value_pass_1=PASS
+alpha68_seventh_circle_value_pass_1=PASS
+alpha67_eighth_circle_value_pass_2=PASS
+alpha66_eighth_circle_value_pass=PASS
+alpha65_ground_target_and_ninth_circle_regressions=PASS
+alpha65_common_grand_array_forbidden=PASS
+alpha65_lifecycle_and_grimoire_regressions=PASS
