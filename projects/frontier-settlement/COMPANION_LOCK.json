@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.32"
+    "frontier_settlement": "0.1.0-alpha.33"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -15,175 +15,22 @@
     "Dungeons and Taverns uses the official 26.2 NeoForge distribution; its Modrinth datapack ID is recorded only as provenance because the NeoForge JAR is distributed separately on CurseForge."
   ],
   "entries": [
-    {
-      "id": "terralith",
-      "name": "Terralith",
-      "side": "server_worldgen",
-      "source": "modrinth",
-      "project_id": "8oi3bsk5",
-      "version_id": "lqrGyTjO",
-      "version": "2.6.4",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": ["lithostitched"]
-    },
-    {
-      "id": "lithostitched",
-      "name": "Lithostitched",
-      "side": "server_worldgen_library",
-      "source": "modrinth",
-      "project_id": "XaDC71GB",
-      "version_id": "6MLzMiOP",
-      "version": "1.7.13-neoforge-26.2",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "dungeons_and_taverns",
-      "name": "Dungeons and Taverns",
-      "side": "server_worldgen",
-      "source": "curseforge",
-      "curseforge_project_id": 853794,
-      "version": "5.3.0",
-      "loader": "neoforge",
-      "required": true,
-      "provenance_modrinth_datapack_project_id": "tpehi7ww",
-      "provenance_modrinth_datapack_version_id": "QcyHA7j1",
-      "dependencies": []
-    },
-    {
-      "id": "repurposed_structures",
-      "name": "Repurposed Structures",
-      "side": "server_worldgen",
-      "source": "modrinth",
-      "project_id": "QDNS5oAT",
-      "version_id": "wfwxYEm3",
-      "version": "7.7.5+26.2-neoforge",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "better_combat",
-      "name": "Better Combat",
-      "side": "client_server",
-      "source": "modrinth",
-      "project_id": "5sy6g3kz",
-      "version_id": "5mMhM6lS",
-      "version": "3.2.2+26.2-neoforge",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": ["cloth_config", "player_animation_library"]
-    },
-    {
-      "id": "cloth_config",
-      "name": "Cloth Config API",
-      "side": "client_server_library",
-      "source": "modrinth",
-      "project_id": "9s6osm5g",
-      "version_id": "zErG1kOw",
-      "version": "26.2.155+neoforge",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "player_animation_library",
-      "name": "Player Animation Library",
-      "side": "client_server_library",
-      "source": "modrinth",
-      "project_id": "ha1mEyJS",
-      "version_id": "OQqtEQC6",
-      "version": "1.2.5+26.2",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "weapons_expanded",
-      "name": "Weapons Expanded",
-      "side": "client_server",
-      "source": "modrinth",
-      "project_id": "8pBLL0kb",
-      "version_id": "hrnymhP0",
-      "version": "1.9.3",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "lootr",
-      "name": "Lootr",
-      "side": "client_server",
-      "source": "modrinth",
-      "project_id": "EltpO5cN",
-      "version_id": "mWjELssH",
-      "version": "1.24.39.121",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "sophisticated_backpacks",
-      "name": "Sophisticated Backpacks",
-      "side": "client_server",
-      "source": "modrinth",
-      "project_id": "TyCTlI4b",
-      "version_id": "kdqsadAt",
-      "version": "26.2-3.25.88.2065",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": ["sophisticated_core"]
-    },
-    {
-      "id": "sophisticated_core",
-      "name": "Sophisticated Core",
-      "side": "client_server_library",
-      "source": "modrinth",
-      "project_id": "nmoqTijg",
-      "version_id": "lXohixCg",
-      "version": "26.2-1.4.92.2207",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "jade",
-      "name": "Jade",
-      "side": "client_server",
-      "source": "modrinth",
-      "project_id": "nvQzSEkH",
-      "version_id": "HLYMycSr",
-      "version": "26.2.2+neoforge",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    },
-    {
-      "id": "xaeros_minimap",
-      "name": "Xaero's Minimap",
-      "side": "client_preferred",
-      "source": "modrinth",
-      "project_id": "1bokaNcj",
-      "version_id": "IqOn6XCo",
-      "version": "26.4.2",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": []
-    }
+    {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},
+    {"id":"lithostitched","name":"Lithostitched","side":"server_worldgen_library","source":"modrinth","project_id":"XaDC71GB","version_id":"6MLzMiOP","version":"1.7.13-neoforge-26.2","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"dungeons_and_taverns","name":"Dungeons and Taverns","side":"server_worldgen","source":"curseforge","curseforge_project_id":853794,"version":"5.3.0","loader":"neoforge","required":true,"provenance_modrinth_datapack_project_id":"tpehi7ww","provenance_modrinth_datapack_version_id":"QcyHA7j1","dependencies":[]},
+    {"id":"repurposed_structures","name":"Repurposed Structures","side":"server_worldgen","source":"modrinth","project_id":"QDNS5oAT","version_id":"wfwxYEm3","version":"7.7.5+26.2-neoforge","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"better_combat","name":"Better Combat","side":"client_server","source":"modrinth","project_id":"5sy6g3kz","version_id":"5mMhM6lS","version":"3.2.2+26.2-neoforge","loader":"neoforge","required":true,"dependencies":["cloth_config","player_animation_library"]},
+    {"id":"cloth_config","name":"Cloth Config API","side":"client_server_library","source":"modrinth","project_id":"9s6osm5g","version_id":"zErG1kOw","version":"26.2.155+neoforge","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"player_animation_library","name":"Player Animation Library","side":"client_server_library","source":"modrinth","project_id":"ha1mEyJS","version_id":"OQqtEQC6","version":"1.2.5+26.2","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"weapons_expanded","name":"Weapons Expanded","side":"client_server","source":"modrinth","project_id":"8pBLL0kb","version_id":"hrnymhP0","version":"1.9.3","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"lootr","name":"Lootr","side":"client_server","source":"modrinth","project_id":"EltpO5cN","version_id":"mWjELssH","version":"1.24.39.121","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"sophisticated_backpacks","name":"Sophisticated Backpacks","side":"client_server","source":"modrinth","project_id":"TyCTlI4b","version_id":"kdqsadAt","version":"26.2-3.25.88.2065","loader":"neoforge","required":true,"dependencies":["sophisticated_core"]},
+    {"id":"sophisticated_core","name":"Sophisticated Core","side":"client_server_library","source":"modrinth","project_id":"nmoqTijg","version_id":"lXohixCg","version":"26.2-1.4.92.2207","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"jade","name":"Jade","side":"client_server","source":"modrinth","project_id":"nvQzSEkH","version_id":"HLYMycSr","version":"26.2.2+neoforge","loader":"neoforge","required":true,"dependencies":[]},
+    {"id":"xaeros_minimap","name":"Xaero's Minimap","side":"client_preferred","source":"modrinth","project_id":"1bokaNcj","version_id":"IqOn6XCo","version":"26.4.2","loader":"neoforge","required":true,"dependencies":[]}
   ],
   "deferred": [
-    {
-      "id": "variants_and_ventures",
-      "project_id": "lNDRiXkY",
-      "version_id": "e7ZWTYfe",
-      "version": "1.0.26+mc26.2",
-      "reason": "add after baseline stack passes spawn-density and compatibility smoke test"
-    },
-    {
-      "id": "alexs_mobs_continued",
-      "reason": "large content gain but requires separate stability/spawn-balance pass before promotion"
-    }
+    {"id":"variants_and_ventures","project_id":"lNDRiXkY","version_id":"e7ZWTYfe","version":"1.0.26+mc26.2","reason":"add after baseline stack passes spawn-density and compatibility smoke test"},
+    {"id":"alexs_mobs_continued","reason":"large content gain but requires separate stability/spawn-balance pass before promotion"}
   ]
 }
