@@ -1,104 +1,127 @@
 # Survival Ascension
 
-- Mod version: `0.31.0-alpha.1`
+- Mod version: `0.32.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.31 adds independent `field_recovery_v1`; no prior SavedData ID or packet schema is rewritten.
+- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.32 adds independent `expedition_operations_v1`; no prior SavedData ID or packet schema is rewritten.
 
 ## Core direction
 Progression must enlarge physical actions rather than only percentages. Larger actions create larger material throughput; world stages, behavior-rich enemies, exploration goals, infrastructure, production, logistics and field bases must consume that throughput again. Shift remains the precision/single-action safety override.
 
-## 0.31 Death-bound Field Recovery
+## 0.32 Out-and-back Expedition Operations
 ### Purpose
-0.30 made outposts valuable while the owner is physically operating around them. 0.31 adds a bounded death-recovery role so distant expeditions do not become repeated long corpse runs, without adding ordinary fast travel that would bypass Mobility or exploration.
+0.23–0.26 established regional discovery/directives/incidents, 0.30 established physical outposts, and 0.31 established bounded death recovery. 0.32 connects them into repeatable sorties where a player physically leaves a completed-region outpost, works beyond its immediate support radius, and returns to the exact same base to claim the operation.
 
-### Arming contract
-`M -> Infrastructure -> 산업 가공소 -> 현장 복귀 계약` reuses the existing Industrial Works action payload.
-- Player must be Survival/non-spectator and within4 blocks of an **active** owned outpost.
-- First arm consumes exactly one existing `production_v1` supply charge in advance.
-- The paid one-use token is stored in new independent `field_recovery_v1` as one `armed` recovery point.
-- A currently armed paid token may be retargeted to another active outpost for no additional charge; this moves the existing token rather than minting another.
-- Re-selecting the same armed outpost does not consume another charge.
-- No normal/manual outpost teleport exists. `configure()` may only teleport when a previous qualifying death is already in `pending` state.
+This is not another quest-book layer and not a generic counter expansion. The operation lifecycle is `launch from physical outpost -> cross range line -> perform validated regional actions away from base -> return to exact origin outpost`.
 
-### Death qualification contract
-`FieldRecoveryService.onLivingDeath` may move `armed -> pending` only when all conditions hold:
-- dead entity is the owning `ServerPlayer`;
-- a paid `armed` point exists and no `pending` point already exists;
-- player is not currently in a Regional Incident, Apex Hunt or Ascension Trial;
-- death dimension exactly matches the armed outpost dimension;
-- death position is within96 blocks of the saved outpost anchor;
-- the anchor is still recorded in `outpost_v1`;
-- the target outpost is recovery-operational: loaded real Barrel, interactable anchor, and the interactable Bed/Campfire/Crafting/Furnace camp structure remains complete.
+### Launch contract
+`M -> Infrastructure -> 산업 가공소 -> 원정 작전` reuses the existing string action payload.
+- Survival/non-spectator player only.
+- Server finds the nearest active owned outpost within4 blocks; no client position is trusted.
+- Server reads the biome at the saved outpost anchor and resolves one of the existing nine ExpeditionRegion values.
+- The player's original `expedition_v1` directive for that region must already be complete.
+- Launch costs exactly one stored `production_v1` supply charge after validation.
+- One active operation/player maximum.
+- Apex Hunt and Ascension Trial cannot be started while an operation is active and an operation cannot launch while either is active.
+- Regional Incidents are deliberately allowed to occur during operations because they are ambient regional risk, not a second manually started boss encounter.
 
-Challenge deaths explicitly do not queue or consume the recovery contract. The existing Incident/Apex/Trial failure rules therefore remain authoritative and field recovery cannot become an extra life inside those encounters.
+### Nine authored operations
+Each operation has exactly two validated-action tasks plus an outbound range requirement and return requirement.
 
-### `field_recovery_v1`
-Independent per-player SavedData.
-Per-player fields:
-- uuid
-- optional one-entry `armed` list
-- optional one-entry `pending` list
-- lifetime successful `recoveries`
+Stage0, 20 minutes:
+- WOODLAND `심림 순환 벌채`: range96, LOGS_FELLED128 + TRAVEL_DISTANCE240.
+- ARID `사막 보급로 개척`: range96, BLOCKS_BUILT96 + TRAVEL_DISTANCE240.
+- WETLAND `습지 채집·소탕`: range96, CROPS_HARVESTED80 + HOSTILES_KILLED8.
+- HIGHLANDS `능선 장거리 순찰`: range128, TRAVEL_DISTANCE600 + DASHES_USED12.
+- OCEAN `외해 순항`: range128, OCEAN_VOYAGE900 + HOSTILES_KILLED8.
 
-Recovery point:
-- dimension string
-- x/y/z outpost anchor
+Stage1, 25 minutes:
+- DEEP `심층 채굴 회수`: range128, BLOCKS_MINED192 + HOSTILES_KILLED10.
+- FROZEN `백설 장거리 순찰`: range128, TRAVEL_DISTANCE600 + HOSTILES_KILLED10.
+- NETHER `네더 전진 작전`: range160, HOSTILES_KILLED24 + BLOCKS_MINED96.
 
-Load sanitation takes at most the first armed and first pending entry. Existing worlds have no entry and load with no recovery contract.
+Stage2, 30 minutes:
+- END `공허 외곽 소탕`: range160, HOSTILES_KILLED28 + TRAVEL_DISTANCE360.
 
-State transitions:
-- first paid setup -> `armed`
-- qualifying death -> `pending`, while `armed` is cleared
-- successful recovery -> `pending` cleared and lifetime recovery count incremented
-- failed recovery -> `pending` retained
-- manual pending recovery retry may use the same target; if it remains unusable while the player stands beside another active outpost, `rearmPending` moves the prepaid token to that outpost without another supply charge.
+### Outbound/work/return rules
+- Range is measured from the saved origin outpost anchor.
+- Stage-specific range must be reached before any operation task progress may be recorded.
+- After the range line is reached, task actions count only while the player is at least48 blocks from the origin outpost and current `ExpeditionProgression.currentRegion(player)` equals the operation region.
+- Operation progress reuses the same server-authoritative actions already feeding expedition directives/incidents: natural smart-tree logs, successful protected/material-backed Construction placements, mature crops, legitimate travel, ocean voyage, valid pickaxe mining, hostile kills and validated successful dash uses.
+- No raw client movement, inventory click, fake placement or near-base work is accepted.
+- Completing both field objectives only changes the operation to return-ready state; reward is not granted remotely.
+- Player must return to within8 blocks of the exact saved origin anchor before deadline.
+- On return, `OutpostService.isRecoveryOperational` revalidates outpost ownership, real loaded Barrel, `mayInteract`, Bed/Campfire/Crafting/Furnace camp structure and loaded world state.
+- No chunk ticket/force-loading and no client-supplied return coordinate.
 
-### Respawn recovery
-`FieldRecoveryService.onPlayerRespawn` schedules a server-side recovery attempt after vanilla respawn processing.
-- The target `ServerLevel` is resolved from the saved dimension string.
-- No chunk loading/forcing is requested; the outpost anchor and candidate arrival blocks must already be loaded.
-- `OutpostService.isRecoveryOperational` revalidates outpost record, real Barrel, `mayInteract`, and the real four-part camp layout.
-- Safe arrival scan stays within the physical camp radius and requires:
-  - loaded candidate;
-  - `mayInteract` at feet;
-  - sturdy floor below;
-  - empty body and head collision shapes;
-  - no fluid in body/head cells.
-- `ServerPlayer.teleportTo` must report success before the token is consumed.
-- On success movement is zeroed and fall distance cleared.
-- If target/arrival/teleport fails, the pending token remains available rather than being lost.
+### Failure / persistence
+Operation fails and clears active state with no supply refund when:
+- owner dies;
+- owner changes dimension;
+- owner switches to creative/spectator;
+- deadline expires.
 
-### UI / status
-The existing MineMenu-derived Industrial Works radial adds `현장 복귀 계약` with a Compass icon.
-- text states active-outpost requirement, supply1 cost,96-block general-death scope and one-use behavior;
-- Industrial status reports armed/pending/unset state and lifetime successful recoveries;
-- `/ascension stats` reports the same compact state;
-- no new generic rectangular GUI and no new packet type are introduced.
+Breaking or unloading the origin outpost does not silently fabricate a return. Active operation stays persistent until return/failure; return can only complete when the real origin is loaded and operational again.
+
+`expedition_operations_v1` persists per player:
+- active region or empty;
+- origin dimension/x/y/z;
+- absolute game-time deadline;
+- range-reached flag;
+- two bounded task progress counters;
+- first-return completed-region bitmask;
+- lifetime successful-return count;
+- one-time all-nine mastery reward flag.
+
+Malformed active region names or incomplete active records sanitize to no active operation. Progress values clamp to the authored targets. Existing worlds simply have no `expedition_operations_v1` entry.
+
+### Rewards
+Successful return always awards the operation region's skill plus vanilla resources, and then clears active state.
+- Stage0: skill XP250 + experience75 + Emerald8 + Amethyst8.
+- Stage1: skill XP400 + experience125 + Diamond2 + Amethyst16 + Echo2.
+- Stage2: skill XP600 + experience200 + Diamond4 + Echo4 + Dragon Breath2.
+
+First successful return in each region sets that region bit. First time all nine bits are present grants exactly one extra package:
+- Netherite Scrap2
+- Echo Shard16
+- Amethyst Shard64
+- Dragon Breath8
+- experience300
+
+No permanent flat combat/stat multiplier is attached to operation completion.
+
+### UI/status
+- Existing MineMenu-derived Industrial Works radial adds `원정 작전` with a Spyglass icon.
+- Selecting while no operation is active attempts launch; selecting while active reports progress/status instead of starting or charging again.
+- `/ascension stats` reports operation first-return count, lifetime returns, active region and 9/9 reward state.
+- Guide explains range/work/return rules.
+- No new generic rectangular quest GUI and no new packet type.
+
+## 0.31 Death-bound Field Recovery retained
+- active outpost within4; first arm consumes supply1, retargeting already-paid armed token is free.
+- same-dimension ordinary death within96 and operational outpost required.
+- Regional Incident/Apex/Trial death excluded.
+- independent `field_recovery_v1`; pending survives failed target/arrival/teleport.
+- safe arrival requires loaded/interactable outpost, sturdy floor, empty body/head collision and no fluid.
+- token is consumed only after successful teleport; no ordinary living-player fast travel.
+
+0.32 operation death deliberately fails the operation. Field recovery remains a separate ordinary-death contract: if its own 96-block qualification succeeds, it may still return the player after the failed sortie. Stage1/2 operation range requirements can exceed96, so deeper sorties are not automatically covered by recovery.
 
 ## 0.30 Physical Field Outposts retained
-### Upgrade contract
 - nearest owned registered Barrel within4;
 - interactable Bed + Campfire/Soul Campfire + Crafting Table + Furnace/Blast Furnace/Smoker all within5;
 - upgrade cost supply2 + Iron32 + Gold8 + Coal32;
-- physical camp component blocks and Barrel must pass `mayInteract` checks;
 - exact anchor persists in `outpost_v1`, max3/player, and removing underlying depot removes its upgrade.
-
-### Active-state / benefits
-- owner online/non-spectator, same dimension, within64;
-- anchor and camp chunks already loaded; no force loading;
-- Barrel and interactable camp still physically present;
-- ordinary depot radius32, active outpost depot radius64;
-- NATURAL hostile spawns only are suppressed within24;
+- owner-nearby active state gives ordinary depot32 -> outpost64 logistics and NATURAL-hostile-only safe radius24.
 - TRIGGERED Regional Incident/Apex/Trial spawns remain untouched.
+- no chunk force-loading.
 
 ## 0.29 Physical Field Depots retained
 - nearest vanilla Barrel within4 blocks; registration cost one supply charge.
 - max3/player and one owner per physical position.
 - same-dimension loaded Barrel inventory within32 blocks, `mayInteract` checked.
-- no force-loaded chunks or virtual stock.
 - player inventory first, linked Barrels nearest-first.
 - Construction and irrigation consume actual stock after normal protection/place validation and roll back on unexpected post-place consume failure.
 - `field_depots_v1` remains unchanged and is the ownership source of truth for outpost anchors.
@@ -112,12 +135,12 @@ Four atomic lines:
 3. `PROVISIONS`: Wheat128 + Carrot64 + Potato64 + Beetroot32.
 4. `PRECISION`: Redstone128 + Amethyst64 + Gold32 + Quartz64.
 
-`production_v1` keeps buffers0..3, lifetime cycles and charges0..3. One cycle consumes one batch from all four lines. Supply charge consumption may free storage and immediately normalize waiting complete sets. `consumeSupplyCharges(player, amount)` remains the atomic multi-charge path for outpost upgrades; single-charge consumption is used for recovery contracts.
+`production_v1` keeps buffers0..3, lifetime cycles and charges0..3. One cycle consumes one batch from all four lines. Supply charge consumption may free storage and immediately normalize waiting complete sets.
 
 ## 0.27 Apex Hunts retained
 - Stage1 Apex Tracking Post: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
 - completed-region hunt entry: Echo8 + Amethyst32 + Gold32.
--90-second owner-scoped encounter and nine separate patterns CHARGE / REINFORCE / PLAGUE / SKIRMISH / PULL / LEAP / FROST / WITHER / VOID.
+- 90-second owner-scoped encounter and nine separate patterns CHARGE / REINFORCE / PLAGUE / SKIRMISH / PULL / LEAP / FROST / WITHER / VOID.
 - `apex_hunt_v1` tracks first defeats, total victories and one-time9/9 reward.
 
 ## Expeditions / Field Mastery retained
@@ -130,25 +153,26 @@ Four atomic lines:
 ## Endgame retained
 - stage0 Awakening -> Wither Stage1 Legendary -> Dragon Stage2 Endgame.
 - Stage2 Withered/Phase/Plague mutation subset, Elite ranks and Warbands.
-- Ascension Nexus four-wave Trial; `AscensionTrialSystem.isActive(player)` is a read-only overlap check added for recovery exclusion and does not alter Trial lifecycle.
+- Ascension Nexus four-wave Trial; Evoker remains excluded.
 - valid Mythic III 3-affix gear can awaken once to4 affixes.
 
 ## Safety contracts
 - large mining/wood/farm/construction work remains tick-budgeted.
 - secondary destruction uses normal `player.gameMode.destroyBlock`.
 - Construction/replant preserve interaction/protection hooks and actual resource consumption.
-- depot/outpost/recovery targets are server-resolved from saved/owned coordinates, loaded-chunk-only and `mayInteract` revalidated; no client coordinate trust or chunk tickets.
-- outpost safe zone is owner-nearby and structure-backed, canceling NATURAL hostile spawn only.
-- TRIGGERED combat from incidents/Apex/Trial remains unaffected.
-- recovery cannot queue during those encounters and cannot be invoked as normal fast travel.
-- pending recovery is consumed only after successful teleport.
-- production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery has at most one armed and one pending point.
-- no new packet schema in0.31; protocol remains8.
+- depot/outpost/recovery/operation origins are server-resolved from saved/owned coordinates; no client coordinate trust or chunk tickets.
+- outpost safe zone cancels NATURAL hostile spawn only; TRIGGERED combat remains unaffected.
+- operation progress only accepts preexisting validated ExpeditionAction hooks after range gate and outside48.
+- operation completion requires physical return to origin within8 and outpost revalidation.
+- operation cannot overlap manually started Apex/Trial encounters; Regional Incidents may coexist.
+- production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery one token; operation one active/player.
+- no new packet schema in0.32; protocol remains8.
 
 ## External-source policy
-- Waystones (`TwelveIterations/Waystones`): current 26.2 branch license is All Rights Reserved. 0.31 uses only the product-level comparison around teleport convenience and intentionally does not implement always-available outpost fast travel. No source, blocks/items, warp/return mechanics, menus, data, assets or namespace are copied.
-- Corpse (`denmeh/Corpse`): LGPL-3.0. 0.31 uses only the high-level product goal of reducing repetitive death-recovery travel. No corpse entity/container, inventory-storage/transfer implementation, source, data, assets or namespace are copied.
+- Heracles (`terrarium-earth/Heracles`): current repository license MIT. 0.32 studies only product-level explicit multi-step objective/completion state. No Heracles source structures, quest data, editor/UI, assets or namespace are copied.
+- Bountiful (`ejektaflex/Bountiful`): GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets copied.
+- Waystones 26.2 ARR and Corpse LGPL-3.0 remain reference-only for 0.31 travel/death friction.
 - MineColonies remains GPLv3 reference-only for physical forward-base product lessons.
-- Create (`Creators-of-Create/Create`): code/assets split remains code MIT and `src/main/resources/assets/` ARR. Survival Ascension uses only high-level throughput/local-restocking ideas; no logistics implementation/package formats/blocks/assets/data/UI/namespaces are copied.
-- Building Gadgets2 (MIT): earlier material-backed protected Construction reference only; field depot/outpost resolution is independent code.
+- Create code/assets split remains MIT/ARR; no Create logistics implementation/assets/data are copied.
+- Building Gadgets2 MIT reference remains limited to material-backed protected Construction behavior.
 - Existing packaged MIT/CC0 notices and all reference-only restrictions remain in `THIRD_PARTY_NOTICES.md`.
