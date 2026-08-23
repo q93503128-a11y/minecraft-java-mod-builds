@@ -1,13 +1,13 @@
 # Survival Ascension
 
-- Mod version: `0.20.0-alpha.1`
+- Mod version: `0.21.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
-- Existing-world compatibility: 기존 스킬 SavedData, `infrastructure_v1`, `world_ascension_v1`, 강화 적/전술 분대/종말 변이 persistent NBT, affix CustomData, 채굴 모드 persistent data를 유지한다. 0.20은 저장 스키마를 바꾸지 않고 Lv.100 해금 규칙만 확장한다.
+- Existing-world compatibility: 기존 스킬 SavedData, `infrastructure_v1`, `world_ascension_v1`, 강화 적/전술 분대/종말 변이 persistent NBT, affix CustomData, 채굴 모드 persistent data를 유지한다. 0.21은 새 SavedData 스키마를 만들지 않고 승천 시련 런타임 상태와 플레이어 persistent cooldown만 추가한다.
 
 ## 핵심 방향
-숙련 상승은 단순 수치 상승이 아니라 물리적 작업 규모와 행동 선택지 증가다. Lv.100은 최종 `숙련 VI`로 취급한다.
+숙련 상승은 단순 수치 상승이 아니라 물리적 작업 규모와 행동 선택지 증가다. Lv.100은 최종 `숙련 VI`로 취급한다. 플레이어의 작업 체급이 커진 만큼 종말 단계에도 반복해서 자원과 전투력을 소모할 실제 목적이 있어야 한다.
 
 ## 숙련 VI · Lv.100
 - 채굴: 11×11, 광맥/추출 192, 채석장 터널 7×7×10.
@@ -24,13 +24,24 @@
 - 종말 자연 생성 좀비/스켈레톤 일부는 Withered / Phase / Plague 변이를 얻고 스포너 출신은 제외한다.
 - 변이는 엘리트 랭크·전술 분대 역할과 중첩 가능하다.
 
+## 0.21 승천 시련
+- Stage 2 + 승천 중추 완공 후 `M → 인프라 → 승천 중추`를 다시 선택해 반복 시련을 연다.
+- 입장 비용은 실제 인벤토리에서 메아리 조각32 + 자수정 조각64 + 드래곤의 숨결8을 소비한다.
+- 4개 웨이브, 웨이브당 60초, 웨이브 사이 5초 준비시간. 보스바로 웨이브/남은 적/시간을 표시한다.
+- 웨이브는 단순 HP 배율 대신 좀비·스켈레톤 → 허스크·스트레이·마녀 → 위더 스켈레톤·일리저 → 라베저·소환사·변명자 혼합으로 역할과 행동 패턴을 늘린다.
+- `EntitySpawnReason.TRIGGERED` 정상 생성 경로를 사용해 기존 Stage-2 변이·Elite·전술 시스템이 자연스럽게 추가 중첩될 수 있다.
+- 소유자 사망/다른 차원/중심 64블록 이탈은 10초 유예 후 실패. 웨이브 제한시간 초과도 실패. 실패 시 남은 시련 몹을 정리하며 입장 재료는 반환하지 않는다.
+- 동일 플레이어는 동시에 하나만 진행하고, 활성 시련끼리는 96블록 간격을 요구한다. 시작 후 120초 재개방 cooldown은 플레이어 persistent NBT에 기록한다.
+- 완료 소유자 보상: 신화 III affix 장비 1개 보장 + 네더라이트 파편2 + 다이아4 + 경험치200. 48블록 내 협동 플레이어는 경험치80을 받지만 소유자 전리품은 복제하지 않는다.
+- 시련 자체는 서버 재시작 후 복구하지 않는 런타임 encounter다. 재시작을 이용한 중복 보상은 없고 이미 지불한 비용/cooldown은 유지된다.
+
 ## 경제와 인프라
-- affix 장비 → 재련/분해.
-- 채석장 네트워크 → 터널.
+- affix 장비 → 재련/분해 → 승천 시련에서 신화 장비 파밍의 반복 목적.
+- 채석장 네트워크 → Lv.90 터널5×5×8 / Lv.100 7×7×10.
 - 관개 시설 → 씨앗 소비 자동 재파종.
-- 건축 공방 → 입체 건축.
+- 건축 공방 → Lv.90 입체5³ / Lv.100 7³.
 - 전투 훈련장 → 질주 충격파.
-- 승천 중추 → 종말 단계 전용 공중 돌진 확장.
+- 승천 중추 → 종말 단계 전용 공중 돌진 확장 + 반복 승천 시련.
 
 ## 안전 계약
 - Shift는 광역 작업 강제 단일 정밀 모드.
@@ -38,7 +49,8 @@
 - 추가 채굴은 정상 destroyBlock 경로.
 - 건축/재파종은 실제 재료 소비 + 상호작용/배치 보호 훅.
 - 스포너 기반 엘리트/분대/종말 변이 보상 농장 차단.
-- 0.20의 더 큰 작업 범위 때문에 동기식 처리 예산을 올리지 않는다.
+- 승천 시련은 실제 소모 재료·중복 거리·플레이어별 단일 활성·cooldown으로 무상 반복 소환을 차단한다.
+- Lv.100의 더 큰 작업 범위 때문에 기존 동기식 처리 예산을 올리지 않는다.
 
 ## 외부 소스 정책
-Skill Proficiencies, Veinminer++, MineMenu, Building Gadgets 2, Mob Champions, Apotheosis, Mekanism, Warband 등 permissive 소스는 고지와 함께 필요한 구조를 적응한다. Hostiles Are Too Easy는 CC0이며 월드 난도/종말 변이 어휘를 적응한다. 제한 라이선스 프로젝트는 기능/UX만 참고하고 소스·에셋은 복사하지 않는다.
+Skill Proficiencies, Veinminer++, MineMenu, Building Gadgets 2, Mob Champions, Apotheosis, Mekanism, Warband 등 permissive 소스는 고지와 함께 필요한 구조를 적응한다. Hostiles Are Too Easy는 CC0이며 월드 난도/종말 변이 어휘를 적응한다. Gateways to Eternity는 MIT이며 0.21 승천 시련의 순차 웨이브/제한시간/보스바/완료 보상 lifecycle을 참고·적응한다. 제한 라이선스 프로젝트는 기능/UX만 참고하고 소스·에셋은 복사하지 않는다.
