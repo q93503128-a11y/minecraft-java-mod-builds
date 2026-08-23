@@ -42,6 +42,8 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/ProductionProgram.class",
         "kr/moonseungjun/survivalascension/production/ProductionData.class",
         "kr/moonseungjun/survivalascension/production/ProductionService.class",
+        "kr/moonseungjun/survivalascension/production/FieldDepotData.class",
+        "kr/moonseungjun/survivalascension/production/FieldDepotService.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
@@ -97,5 +99,6 @@ print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("apex_runtime=present")
 print("production_runtime=present")
+print("field_depot_runtime=present")
 print(f"size={jar.stat().st_size}")
 print(f"sha256={sha}")
