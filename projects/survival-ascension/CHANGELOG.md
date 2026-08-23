@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.40.0-alpha.1
+- Added `Physical Siege Breachers / 물리 공성 파괴자` so the unique fourth Bastion wave can physically answer the player-built wall instead of only increasing enemy statistics.
+- Added `OutpostSiegeBreachService` and registered it on the server tick bus.
+- Breaching is Bastion-only by reusing the existing siege owner/wave NBT and requiring wave4; normal three-wave Outpost Defense never enters the block-breaking path.
+- Only Ravagers and Vindicators may breach: Ravager successful-break cooldown30 ticks, Vindicator60 ticks.
+- Breakers search only a tiny local area around themselves and only target the same qualifying fortification materials: vanilla `WALLS`, Iron Bars and Nether Brick Fence inside the outpost annulus radius6..12.
+- Candidate blocks must lie generally forward toward the outpost anchor, preventing arbitrary scenery behind the attacker from being selected.
+- Added full protection chain: active siege owner, same-dimension operational owned outpost, loaded position, `EventHooks.canEntityGrief`, owner `mayInteract`, `state.canEntityDestroy`, `EventHooks.onEntityDestroyBlock`, and no block entity.
+- Fortification destruction uses normal item drops, letting the defender recover material and rebuild with the existing Construction system.
+- Added no arbitrary terrain destruction, storage/anchor destruction, new packet, new SavedData ID, client coordinate trust, custom block/item, `getChunk`, region ticket or force-load.
+- Updated Guide/README/PROJECT/source audit/JAR verification while retaining 0.39 Bastion qualification/rewards and every older logistics/expedition/endgame boundary.
+
 ## 0.39.0-alpha.1
 - Added `Physical Bastion Defense / 물리 요새 방어` so large player-built fortifications around an existing outpost become optional combat infrastructure instead of a passive number bonus.
 - Added `OutpostFortificationService` with a loaded-only annulus scan at radius6..12 and vertical allowance Y-3..+4.

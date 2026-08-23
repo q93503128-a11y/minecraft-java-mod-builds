@@ -1,14 +1,73 @@
 # Survival Ascension
 
-- Mod version: `0.39.0-alpha.1`
+- Mod version: `0.40.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: all existing SavedData IDs remain unchanged. 0.39 adds no new SavedData ID or migration; physical fortification qualification is derived from currently loaded real blocks around an existing `outpost_v1` anchor.
+- Existing-world compatibility: all existing SavedData IDs remain unchanged. 0.40 adds no migration and no new persistent structure state; breacher cooldowns live only on authored siege-mob persistent NBT while the active encounter exists.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, bases, expeditions and behavior-driven enemies must consume it again. Shift remains the precision/single-action safety override.
+
+## 0.40 Physical Siege Breachers / 물리 공성 파괴자
+### Purpose
+0.39 made player-built fortification a real pathing object, but a sufficiently thick wall could still turn the hardest bastion wave into passive pathfinding abuse. 0.40 gives only the unique final Bastion wave a tightly bounded infrastructure response: heavy/sapper attackers can physically open the qualifying wall itself.
+
+This is not a global mob-griefing overhaul and does not change ordinary hostile mobs or the retained three-wave Outpost Defense.
+
+### Eligibility
+`OutpostSiegeBreachService` runs only while `OutpostSiegeSystem.isActive(owner)` and only considers mobs whose existing siege NBT says:
+- matching `survivalascension_outpost_siege_owner`;
+- `survivalascension_outpost_siege_wave >= 4`.
+
+Because normal Outpost Defense has only three waves, the rule is Bastion-only without adding another packet or SavedData flag.
+
+Breaker roles:
+- `EntityType.RAVAGER`: break cooldown `30` ticks;
+- `EntityType.VINDICATOR`: break cooldown `60` ticks.
+
+Other siege mobs remain ordinary combat/pathing roles.
+
+### Physical target boundary
+A breaker searches only a `2`-block horizontal / Y-1..+2 local neighborhood around itself.
+
+A candidate must:
+- be inside the same physical fortification annulus radius6..12 around an owned operational outpost;
+- be a vanilla `WALLS` tag block, Iron Bars or Nether Brick Fence;
+- contain no block entity;
+- lie generally forward from the mob toward the outpost anchor.
+
+The service does not target the Barrel anchor, Bed, Campfire, Crafting Table, Furnace-family camp, storage barrels, terrain, doors, chests or arbitrary player builds.
+
+### Protection chain
+Before `destroyBlock(..., true, mob)` the server requires:
+1. same-dimension owned outpost and owner within64;
+2. `OutpostService.isRecoveryOperational` for that outpost;
+3. already-loaded candidate position only;
+4. `EventHooks.canEntityGrief(level, mob)`;
+5. `level.mayInteract(owner, pos)`;
+6. `state.canEntityDestroy(level, pos, mob)`;
+7. `EventHooks.onEntityDestroyBlock(mob, pos, state)` not canceled.
+
+The destroyed fortification drops normally. This deliberately allows immediate manual or Construction-mastery repair instead of silently deleting invested materials.
+
+### Performance / lifecycle
+- service ticks once per5 server ticks;
+- scans only players with an active defense runtime;
+- only nearby mobs within96 of that owner are considered;
+- only Ravager/Vindicator with matching wave4 siege tags enter target search;
+- each owner has max3 outposts and target search is a tiny local cube;
+- no chunk load, chunk ticket or background world scan.
+
+### Gameplay effect
+The final Bastion wave now has an infrastructure-vs-counter-infrastructure loop:
+- walls initially obstruct the anchor-directed wave;
+- Ravagers/Vindicators that reach the wall can open holes;
+- holes expose the radius6 breach-pressure objective;
+- dropped blocks and existing large-scale Construction let the defender physically respond.
+
+No breacher-only health, damage, armor, player debuff or permanent stat reward is added.
 
 ## 0.39 Physical Bastion Defense / 물리 요새 방어
 ### Purpose
@@ -49,28 +108,13 @@ Scanning is server-side and already-loaded-only via `level.hasChunkAt`. There is
 The player's wall itself is the truth. 0.39 stores no `fortified=true` bit and gives no passive armor percentage. If the player tears the wall down, later validation sees that immediately. This avoids stale virtual state and keeps the build visible in the world.
 
 ### Bastion encounter
-`OutpostSiegeSystem` now has two modes:
+`OutpostSiegeSystem` has two modes:
 - OUTPOST: retained 3 waves / 4800 ticks / supply1;
-- BASTION: new 4 waves / 6000 ticks / supply2.
+- BASTION: 4 waves / 6000 ticks / supply2.
 
-Both retain:
-- owner inside64;
-- real outpost operational through `OutpostService.isRecoveryOperational`;
-- anchor-directed attackers;
-- engage radius16;
-- breach radius6;
-- breach limit200;
-- breach pressure `+ breachers * 5` every five ticks and `-10` while clear;
-- loaded radius26~34 `TRIGGERED` spawns;
-- 3-second regroup window;
-- common Incident/Operation/Apex/Trial overlap exclusion and Field Recovery death exclusion.
+Both retain owner64, real-outpost validation, anchor-directed attackers, engage16, breach6/200, loaded TRIGGERED spawns, common overlap exclusion and Field Recovery death exclusion.
 
 Bastion mode revalidates all four physical fortification quadrants between waves. The wall's ordinary collision/pathfinding obstruction is its real combat value; there is no bastion-only HP, attack, armor or damage-reduction modifier.
-
-### Authored bastion pressure
-Stage1 moves from mixed undead/ranged pressure into pillager/vindicator/witch overlap and then multiple Ravagers in the final wave.
-
-Stage2 increases simultaneous role overlap further and ends with three Ravagers plus ranged/melee/disruption pressure. Evokers remain absent so the Ascension Trial keeps its own encounter identity and Vex spam does not bypass the intended wall geometry.
 
 ### Rewards
 Stage1: Combat XP650 + Construction XP250 + Diamond4 + Amethyst32 + Echo6 + vanilla XP220.
@@ -108,4 +152,4 @@ Lv100 base: Mining11×11+vein192, Wood384, Harvest11×11, Construction49/11×11,
 After all nine regions: Quarry7×7×12, Wood448, Harvest13×13, Construction65/13×13, combat7.5/20, air dash4.
 
 ## External-source policy
-0.39 adds no new external implementation or assets. Existing reference-only and packaged-license boundaries remain in `THIRD_PARTY_NOTICES.md`.
+0.40 keeps the existing permissive-code/reference-only split. The new breacher implementation is independent Survival Ascension code; no other mod's AI goal, block-breaking source, assets or configuration are bundled.

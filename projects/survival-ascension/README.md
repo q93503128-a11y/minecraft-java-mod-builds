@@ -4,6 +4,43 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.40.0-alpha.1 — Physical Siege Breachers / 물리 공성 파괴자
+0.39 made a player-built wall matter through collision and pathing. 0.40 lets the unique final bastion wave answer that infrastructure physically instead of merely receiving more health or damage.
+
+### Bastion-only wall breaking
+Only siege mobs tagged as wave `4` are eligible, which makes this behavior exclusive to the four-wave Bastion encounter. Normal three-wave Outpost Defense does not gain block destruction.
+
+Eligible breakers:
+- Ravager: one successful fortification break per `30` ticks at most;
+- Vindicator: one successful fortification break per `60` ticks at most.
+
+They search only a tiny local area around themselves while approaching the outpost and may destroy only the same blocks that qualify as physical fortification:
+- vanilla `WALLS` tag blocks;
+- Iron Bars;
+- Nether Brick Fence;
+- only while the block lies inside the outpost fortification annulus radius `6..12`.
+
+The target must also be in front of the attacker toward the outpost anchor. This prevents the system from chewing arbitrary scenery behind the wave.
+
+### Protection and world-safety contract
+A break is allowed only if all of the following remain true:
+- the owning player still has an active defense runtime;
+- the attacker carries the matching siege-owner tag and bastion-only wave4 tag;
+- the outpost is same-dimension, owner-within64 and still physically operational;
+- the candidate position is already loaded;
+- `EventHooks.canEntityGrief(level, mob)` allows mob griefing;
+- the owning player's `level.mayInteract(owner, pos)` protection gate allows interaction;
+- the block itself allows entity destruction;
+- NeoForge `EventHooks.onEntityDestroyBlock` is not canceled;
+- the target has no block entity.
+
+Destroyed fortification uses ordinary `destroyBlock(..., true, mob)` drops, so the wall material falls into the world and can be picked up and rebuilt with the existing Construction system. Barrels, beds, crafting/furnace blocks and arbitrary terrain are never selected by this breacher service.
+
+No new SavedData, packet, client coordinate, custom block, custom item, chunk ticket, `getChunk` or force-load is added.
+
+### Why this exists
+The final bastion wave now creates a real physical failure mode: a wall that stops pathing can be opened by heavy/sapper attackers, after which the existing radius6 breach-pressure objective becomes much harder to hold. Construction mastery therefore matters both before and during defense without adding a generic armor percentage or second auto-builder.
+
 ## 0.39.0-alpha.1 — Physical Bastion Defense / 물리 요새 방어
 0.38 made the outpost itself worth defending. 0.39 makes the player's large construction scale matter inside that defense loop without adding a second auto-builder or a passive flat armor percentage.
 
@@ -85,4 +122,4 @@ After Lv100 + all nine expedition regions:
 Large work remains tick-budgeted and uses normal protection/material paths. Shift remains the precision override.
 
 ## External references
-0.39 adds no new third-party implementation, data, UI asset or art. Existing notices and reference-only boundaries remain in `THIRD_PARTY_NOTICES.md`.
+0.40 keeps the existing permissive-code/reference-only policy in `THIRD_PARTY_NOTICES.md`. The new breacher implementation is independent Survival Ascension code and does not bundle another mod's source, assets, AI goals or configuration data.

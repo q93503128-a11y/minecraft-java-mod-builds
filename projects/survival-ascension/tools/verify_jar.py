@@ -52,6 +52,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/OutpostService.class",
         "kr/moonseungjun/survivalascension/production/OutpostFortificationService.class",
         "kr/moonseungjun/survivalascension/production/OutpostSiegeSystem.class",
+        "kr/moonseungjun/survivalascension/production/OutpostSiegeBreachService.class",
         "kr/moonseungjun/survivalascension/production/FieldRecoveryData.class",
         "kr/moonseungjun/survivalascension/production/FieldRecoveryService.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
@@ -98,7 +99,7 @@ with zipfile.ZipFile(jar) as zf:
     ]:
         text = zf.read(notice).decode("utf-8")
         if line not in text: raise SystemExit(f"invalid packaged notice: {notice}")
-    forbidden = [name for name in names if name.endswith(".java") or name.startswith("tools/") or name.startswith(".github/")]
+    forbidden = [n for n in names if n.endswith(".java") or n.startswith("tools/") or n.startswith(".github/")]
     if forbidden: raise SystemExit("development files leaked into JAR: " + ", ".join(forbidden[:10]))
     metadata = zf.read("META-INF/neoforge.mods.toml").decode("utf-8")
     if 'modId="survivalascension"' not in metadata: raise SystemExit("wrong mod id in metadata")
@@ -112,6 +113,7 @@ print("physical_commissioning_runtime=present")
 print("physical_warehouse_runtime=present")
 print("outpost_fortification_runtime=present")
 print("outpost_siege_runtime=present")
+print("physical_siege_breacher_runtime=present")
 print("expedition_operation_runtime=present")
 print("expedition_complication_runtime=present")
 print("apex_runtime=present")

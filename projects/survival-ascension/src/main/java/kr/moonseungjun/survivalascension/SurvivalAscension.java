@@ -21,6 +21,7 @@ import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.production.FieldRecoveryService;
 import kr.moonseungjun.survivalascension.production.OutpostService;
+import kr.moonseungjun.survivalascension.production.OutpostSiegeBreachService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeSystem;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
@@ -32,8 +33,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.39.0-alpha.1";
-    // 0.39 final contract: player-built distributed fortification columns admit an optional harder physical bastion defense without passive flat armor.
+    public static final String VERSION = "0.40.0-alpha.1";
+    // 0.40 final contract: the unique bastion final wave can physically breach qualifying fortification blocks through normal NeoForge grief/protection hooks.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -70,6 +71,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onServerTick);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeBreachService::onServerTick);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(OutpostService::onFinalizeSpawn);
@@ -88,6 +90,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical warehouse logistics + bastion defense + sorties", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical logistics + destructible bastion defense + sorties", VERSION);
     }
 }
