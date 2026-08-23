@@ -29,6 +29,11 @@ public final class SettlementService {
         SettlementCoreService.tick(server, data);
         SettlementConstructionOfficeService.tick(server, data);
         SettlementBarracksService.tick(server, data);
+        if (tick % 600 == 0) {
+            BuildingRecord missingAdvanced = SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(server.overworld(), data);
+            if (missingAdvanced != null) SettlementAdvancedWorkshopService.spawnAssignedWorker(server.overworld(), missingAdvanced);
+        }
+        SettlementAdvancedWorkshopService.tick(server, data);
         if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
         else {
             SettlementWorkerService.tick(server, data);
@@ -99,6 +104,7 @@ public final class SettlementService {
         for (BuildingType type : BuildingType.values()) {
             String locked;
             if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
+            else if (type == BuildingType.ADVANCED_WORKSHOP) locked = SettlementAdvancedWorkshopService.lockedReason(data);
             else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
             else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
             else if (type == BuildingType.BARRACKS) locked = SettlementBarracksService.lockedReason(data);
