@@ -15,6 +15,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SkillsScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java",
     "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
@@ -26,6 +27,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
     "src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialDoctrine.java",
     "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
@@ -43,9 +45,9 @@ def need(text, needles, label):
         if needle not in text: errors.append(f"{label} missing: {needle}")
 
 props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
-need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.21.0-alpha.1"],"gradle.properties")
+need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.22.0-alpha.1"],"gradle.properties")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
-need(main,['VERSION = "0.21.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick","AscensionTrialSystem::onEntityJoin"],"main registration")
+need(main,['VERSION = "0.22.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick","AscensionTrialSystem::onEntityJoin"],"main registration")
 
 tuning=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java").read_text(encoding="utf-8")
 need(tuning,[
@@ -77,15 +79,20 @@ service=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/infrastructure/In
 need(service,["world.stage() < project.requiredWorldStage()","countItem","consumeItem","player.isCreative() || player.isSpectator()","AscensionTrialSystem.tryStart(player)","메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8"],"infrastructure regression")
 
 trial=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java").read_text(encoding="utf-8")
+doctrine=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialDoctrine.java").read_text(encoding="utf-8")
 need(trial,[
     "Gateways to Eternity", "ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
     "TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "EXCLUSION_RADIUS = 96.0D",
+    "AscensionTrialDoctrine.random", "maybeReinforce", "reinforcementTypeId", "reinforcementsTriggered", "initialWaveCount",
     "InfrastructureProject.ASCENSION_NEXUS", "WorldAscensionData.get(server).stage() < 2", "EntitySpawnReason.TRIGGERED",
-    "ServerBossEvent", "BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)", "BuiltInRegistries.ENTITY_TYPE.getValue(identifier)", '"minecraft:ravager"', '"minecraft:pillager"', '"minecraft:wither_skeleton"',
+    "ServerBossEvent", "BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)", "BuiltInRegistries.ENTITY_TYPE.getValue(identifier)",
+    '"minecraft:ravager"', '"minecraft:pillager"', '"minecraft:wither_skeleton"', '"minecraft:enderman"', '"minecraft:witch"',
+    "trial.doctrine == AscensionTrialDoctrine.PURSUIT", "mob.getNavigation().moveTo(owner, 1.35D)",
     "AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3)", "Items.NETHERITE_SCRAP, 2", "Items.DIAMOND, 4",
     "onEntityJoin(EntityJoinLevelEvent event)", "TRIAL_OWNER_KEY", "active.mobIds.contains(mob.getUUID())", "event.setCanceled(true)",
     "removeStaleServerTrials(server)", "trial.level.getServer() != server", "distanceToCenterSqr", "입장 재료는 반환되지 않습니다"
-],"Ascension Trial")
+],"Ascension Trial doctrine regression")
+need(doctrine,["ONSLAUGHT","PURSUIT","SIEGE","쇄도","추격","봉쇄","reinforcementCount","RandomSource"],"Ascension Trial doctrine")
 if '"minecraft:evoker"' in trial:
     errors.append("Ascension Trial must not spawn untracked summon-producing evokers")
 
@@ -108,14 +115,24 @@ construction=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/construction
 need(construction,["MAX_PENDING_BLOCKS_PER_PLAYER = 512","level >= 100 ? 7 : 5","InfrastructureProject.BUILDER_FOUNDRY","[건축 숙련 VI]"],"mastery VI construction")
 
 guide=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java").read_text(encoding="utf-8")
-need(guide,["숙련 VI","Lv.100 11×11+광맥192","Lv.100 384","Lv.100 파급10/5블록","입체7³","Lv.100은 3회","종말 변이","승천 시련"],"guide")
+need(guide,["숙련 VI","Lv.100 11×11+광맥192","Lv.100 384","Lv.100 파급10/5블록","입체7³","Lv.100은 3회","종말 변이","승천 시련","시련 교리","신화 각성","자수정256"],"guide")
 third=(ROOT/"THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
 need(third,["Hostiles Are Too Easy","CC0 1.0 Universal","0.19","Warband","Veinminer++","Gateways to Eternity","Copyright (c) 2020 Brennan Ward"],"third-party notices")
 
 affix=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java").read_text(encoding="utf-8")
-need(affix,["AFFIX_POOL","reroll","adjustMiningArea","adjustWoodcuttingLimit","adjustHarvestArea"],"affix regression")
+need(affix,[
+    "AFFIX_POOL", 'AWAKENED = "awakened"', "public static boolean awaken", "public static boolean isAwakened",
+    "awakened ? 4 : rarity", "chosen.add(missing.get", "§5[각성 신화]", "adjustMiningArea","adjustWoodcuttingLimit","adjustHarvestArea",
+    "if (base <= 1", "if (base <= 0.0D"
+],"awakened affix regression")
 reforge=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java").read_text(encoding="utf-8")
-need(reforge,["ACTION_REFORGE","ACTION_SALVAGE","Items.AMETHYST_SHARD","Items.NETHERITE_SCRAP"],"reforge regression")
+need(reforge,[
+    "ACTION_REFORGE", "ACTION_SALVAGE", "ACTION_AWAKEN", "awakeningCosts", "AscensionAffixes.awaken",
+    "Items.AMETHYST_SHARD, 256", "Items.DIAMOND, 24", "Items.NETHERITE_SCRAP, 8", "Items.ECHO_SHARD, 64", "Items.DRAGON_BREATH, 16",
+    "Items.AMETHYST_SHARD, 128", "Items.NETHERITE_SCRAP, 4", "Items.ECHO_SHARD, 16"
+],"Mythic awakening economy")
+equipment_ui=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java").read_text(encoding="utf-8")
+need(equipment_ui,["신화 각성","Items.NETHER_STAR","Action.AWAKEN","ACTION_AWAKEN","4번째 affix 개방","자수정256 · 다이아24 · 파편8","메아리64 · 드래곤숨결16"],"equipment radial awakening")
 
 for rel in ["src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java","src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java","src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java"]:
     text=(ROOT/rel).read_text(encoding="utf-8")
@@ -131,5 +148,6 @@ if errors:
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
 print("- Lv.100 mastery VI scale and existing tick/protection/material contracts retained")
-print("- Stage-2 Ascension Trial adds paid four-wave repeatable endgame with boss-bar state, timeout, overlap, stale-server and restart-orphan guards")
+print("- Stage-2 Ascension Trial now varies by tactical doctrine and adds one bounded mid-wave reinforcement without HP-only scaling")
+print("- Mythic III awakening preserves unlock gates, consumes endgame resources, adds one affix, and keeps four-affix rerolls expensive")
 print("- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained")
