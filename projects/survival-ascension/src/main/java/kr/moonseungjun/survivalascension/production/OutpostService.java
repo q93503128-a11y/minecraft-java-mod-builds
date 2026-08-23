@@ -58,10 +58,10 @@ public final class OutpostService {
             return;
         }
 
-        StructureCheck check = inspectStructure(level, anchor);
+        StructureCheck check = inspectStructure(player, level, anchor);
         if (!check.complete()) {
             player.sendSystemMessage(Component.literal("§2[전초기지] §f배럴 반경 " + STRUCTURE_RADIUS
-                    + "블록 안에 §e침대 · 모닥불 · 작업대 · 화로 계열§f이 각각 1개 이상 필요합니다."));
+                    + "블록 안에 §e침대 · 모닥불 · 작업대 · 화로 계열§f이 각각 1개 이상 필요하며 모두 상호작용 가능한 위치여야 합니다."));
             player.sendSystemMessage(Component.literal("  §7현재: 침대 " + yes(check.bed()) + " · 모닥불 " + yes(check.campfire())
                     + " · 작업대 " + yes(check.crafting()) + " · 화로 " + yes(check.furnace())));
             return;
@@ -154,7 +154,7 @@ public final class OutpostService {
         ServerLevel level = (ServerLevel) player.level();
         if (!level.hasChunkAt(anchor) || !level.getBlockState(anchor).is(Blocks.BARREL)) return false;
         if (!level.mayInteract(player, anchor)) return false;
-        return inspectStructure(level, anchor).complete();
+        return inspectStructure(player, level, anchor).complete();
     }
 
     private static FieldDepotData.DepotEntry nearestOwnedDepot(ServerPlayer player, int radius) {
@@ -170,13 +170,13 @@ public final class OutpostService {
                 .orElse(null);
     }
 
-    private static StructureCheck inspectStructure(ServerLevel level, BlockPos anchor) {
+    private static StructureCheck inspectStructure(ServerPlayer player, ServerLevel level, BlockPos anchor) {
         boolean bed = false, campfire = false, crafting = false, furnace = false;
         for (int dx = -STRUCTURE_RADIUS; dx <= STRUCTURE_RADIUS; dx++) {
             for (int dy = -STRUCTURE_RADIUS; dy <= STRUCTURE_RADIUS; dy++) {
                 for (int dz = -STRUCTURE_RADIUS; dz <= STRUCTURE_RADIUS; dz++) {
                     BlockPos pos = anchor.offset(dx, dy, dz);
-                    if (!level.hasChunkAt(pos)) continue;
+                    if (!level.hasChunkAt(pos) || !level.mayInteract(player, pos)) continue;
                     BlockState state = level.getBlockState(pos);
                     if (state.getBlock() instanceof BedBlock) bed = true;
                     if (state.is(Blocks.CAMPFIRE) || state.is(Blocks.SOUL_CAMPFIRE)) campfire = true;
