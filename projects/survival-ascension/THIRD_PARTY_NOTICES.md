@@ -76,21 +76,31 @@ Assets license: All Rights Reserved
 
 Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled.
 
-## Lootr — design reference only for 0.23
+## Lootr — design reference only for 0.23+
 Source project: Lootr  
 License: MIT
 
-Survival Ascension 0.23 studies Lootr's player-fair exploration philosophy: one player's discovery/reward should not consume another player's exploration progression. The resulting `expedition_v1` implementation is independent Survival Ascension SavedData and vanilla-item reward code. No Lootr source code, custom chests, textures, assets, namespace, loot-table implementation or runtime dependency is copied or bundled.
+Survival Ascension studies Lootr's player-fair exploration philosophy: one player's discovery/reward should not consume another player's exploration progression. The resulting `expedition_v1` implementation is independent Survival Ascension SavedData and vanilla-item reward code. No Lootr source code, custom chests, textures, assets, namespace, loot-table implementation or runtime dependency is copied or bundled.
 
-## Repurposed Structures — reference only for 0.23
+## Bountiful — reference only for 0.24
+License: LGPL-3.0-only
+
+Survival Ascension 0.24 studies only the high-level objective-to-reward contract concept: a player should perform a concrete contextual objective before a reward/progression state completes. Survival Ascension's region matching, block/kill/travel counters, persistence, reward thresholds and messages are independently implemented. No Bountiful source, bounty data, UI, assets, board/item code, namespace or runtime dependency is copied or bundled.
+
+## FTB Quests — reference only for 0.24
+License: All Rights Reserved
+
+Survival Ascension 0.24 studies only the product-level separation of task progress, completion state and later stage rewards. `expedition_v1` uses its own codec, masks, objective counters and vanilla/NeoForge events. No FTB Quests source, assets, quest files, task/reward classes, UI, namespace or runtime dependency is copied or bundled.
+
+## Repurposed Structures — reference only for 0.23+
 License: LGPL-3.0-only
 
 Used only as a design reference for making the existing vanilla world worth revisiting through broader biome/region goals instead of requiring every exploration objective to be a newly generated custom structure. Survival Ascension does not copy or bundle Repurposed Structures source, templates, processors, world-generation data, assets or namespace.
 
-## Explorer's Compass / Nature's Compass — reference only for 0.23
+## Explorer's Compass / Nature's Compass — reference only for 0.23+
 License: CC-BY-NC-SA-4.0
 
-Used only to study the value of explicit destination-driven exploration. Survival Ascension 0.23 does not copy source, textures, item code, search algorithms, UI or assets from either project; it uses direct vanilla biome presence around the player and its own stage-gated per-player expedition record.
+Used only to study the value of explicit destination-driven exploration. Survival Ascension does not copy source, textures, item code, search algorithms, UI or assets from either project; it uses direct vanilla biome presence around the player and its own stage-gated per-player expedition record.
 
 ## MIT License text
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -107,8 +117,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Project MMO 2.0
 Project MMO 2.0 is **reference-only**. No source, assets, textures, data, namespaces or implementation markers are copied or bundled.
