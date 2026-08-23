@@ -1,8 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
-- expedition_v1 separates discovery, in-region field objective progress, completion and one-time rewards
-- 0.23 expedition saves migrate without duplicate region XP or loss of already-unlocked Field Mastery
-- objectives require real smart-tree/bulk-build/mature-crop/traversal/ocean-voyage/pickaxe/hostile-kill actions
-- Ocean travel is isolated from normal land Mobility progress and teleport-like voyage deltas are rejected
-- Field Mastery remains Lv.100-only: bore 7x7x12, wood448, harvest13x13, shockwave7.5/20, construction65/13, air dash4
-- doctrine trials, awakened Mythic, world stages, mutations, Nexus, warbands, elites and bounded tick budgets retained
+- 18 persistent field directives provide two options per expedition region; mixed directives require all tasks
+- 0.24 discovered/progress/completed saves migrate to standard directives without duplicate region XP
+- directive counters originate from real scaled work, legitimate movement/voyage, hostile kills and successful dash actions
+- Field Mastery scale/tick budgets, tactical trials, awakened Mythic and world progression regressions retained
