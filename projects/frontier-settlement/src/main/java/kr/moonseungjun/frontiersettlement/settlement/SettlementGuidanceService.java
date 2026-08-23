@@ -1,6 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
-/** A single server-authored next step. This is guidance, not a quest system. */
+/** A single server-authored next step. Guidance only; no extra management layer. */
 public final class SettlementGuidanceService {
     private SettlementGuidanceService() {}
 
