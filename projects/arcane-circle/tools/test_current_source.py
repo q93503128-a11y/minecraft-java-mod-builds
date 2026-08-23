@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.69')
-need(main, 'VERSION = "0.12.1-alpha.69"')
-assert index['version'] == '0.12.1-alpha.69'
+need(gradle, 'mod_version=0.12.1-alpha.70')
+need(main, 'VERSION = "0.12.1-alpha.70"')
+assert index['version'] == '0.12.1-alpha.70'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -34,7 +34,7 @@ spells = direct | fusions
 assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
-need(text(magic / 'SpellDefinition.java'), 'NinthCircleSpellSummary.summary(id)')
+need(text(magic / 'SpellDefinition.java'), 'FifthCircleSpellSummary.summary(id)', 'NinthCircleSpellSummary.summary(id)')
 
 circle_specs = {
     'FirstCircleSpellService.java': ['magic_missile','fire_bolt','ray_of_frost','shield','feather_fall','light','grease','sleep','thunderwave','mage_armor'],
@@ -59,6 +59,38 @@ need(text(magic / 'SecondCircleSpellService.java'), 'new RaySalvo(level, caster.
 need(text(magic / 'ThirdCircleSpellService.java'), 'ArcaneDamage.isResolving()', 'SLEET_ZONES.add(new SleetZone')
 need(text(magic / 'FourthCircleSpellService.java'), 'FIRE_WALLS.add(new FireWall', 'ICE_STORMS.add(new IceStorm')
 need(text(magic / 'FifthCircleSpellService.java'), 'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)', 'DOMINATED.put')
+
+# Alpha.70 fifth-circle battlefield-command value pass.
+fifth = text(magic / 'FifthCircleSpellService.java')
+fifth_summary = text(magic / 'FifthCircleSpellSummary.java')
+fifth_authority = text(client / 'FifthCircleAuthorityOverlay.java')
+world_magic_5 = text(magic / 'WorldMagicService.java')
+tracker_5 = text(client / 'WorldMagicTracker.java')
+need(fifth,
+     'FLAME_STRIKE_TICKS = 80', 'FLAME_STRIKE_PULSE_TICKS = 10',
+     'DOMINATE_PERSON_TICKS = 600', 'tickFlameStrikes(level, now);',
+     'state.power * .09', 'if (top < center.y - .60 || bottom > center.y + 13.5) continue;',
+     'public static double flameStrikeRadius(double range)',
+     '의 의지를 30초간 장악했습니다.')
+need(fifth_summary,
+     '4초 천공 화염기둥', '0.5초마다 내부 적을 다시 태웁니다.',
+     '인간형 체급 비플레이어 적 하나의 전투 진영을 30초 탈취')
+need(world_magic_5,
+     'duration = fifthCircleVisualDuration(spell.id(), duration);',
+     'case "flame_strike" -> Math.max(baseDuration, FifthCircleSpellService.FLAME_STRIKE_TICKS);')
+need(fifth_authority,
+     '"flame_strike".equals(spell.id())', 'FifthCircleSpellService.flameStrikeRadius(range)',
+     'Vec3 top = floor.add(0.0, 13.5, 0.0);')
+need(tracker_5, 'if(v.spell.circle()==5){', 'FifthCircleAuthorityOverlay.release(')
+expected5 = {
+    'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+    'dominate_person': '30s_person_scale_combat_asset_control',
+}
+assert index['fifth_circle_value_pass_1'] == expected5
+roles5 = index['fifth_circle_role_audit']
+assert set(roles5) == {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
+assert len(set(roles5.values())) == 10
+assert index['fifth_circle_npc_parity'] is True
 
 # Alpha.69 sixth-circle Grand Archmage value pass.
 sixth = text(magic / 'SixthCircleSpellService.java')
@@ -215,12 +247,18 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.69', 'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.70', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha70_flame_strike_4s_vertical_column=PASS')
+print('alpha70_dominate_person_30s_person_scale_control=PASS')
+print('alpha70_fifth_circle_visual_hitbox_lifetime_sync=PASS')
+print('alpha70_fifth_circle_role_audit=PASS')
+print('alpha70_fifth_circle_value_pass_1=PASS')
 print('alpha69_mass_suggestion_20s_group_disengage=PASS')
 print('alpha69_move_earth_precision_engineering=PASS')
 print('alpha69_sunbeam_6s_solar_corridor=PASS')

@@ -33,7 +33,7 @@ import java.util.WeakHashMap;
  *
  * Fifth circle is battlefield-command magic: Cone of Cold owns a real widening cone, Wall of
  * Force blocks hostile bodies and spell trajectories, Cloudkill is a drifting poison front,
- * Telekinesis is a sustained grab and throw, Flame Strike is a vertical impact, Hold Monster is
+ * Telekinesis is a sustained grab and throw, Flame Strike is a four-second vertical fire column, Hold Monster is
  * hard control that even large creatures only partially resist, Mass Cure is true allied healing,
  * Passwall opens and later restores a physical tunnel, Dominate Person turns a person-scale foe
  * into a temporary combat proxy, and Insect Plague is a fixed concentration-breaking swarm field.
@@ -435,6 +435,9 @@ private static boolean pulseFlameStrike(ServerLevel level, LivingEntity caster, 
     for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
         double horizontal = new Vec3(target.getX() - center.x, 0.0, target.getZ() - center.z).length();
         if (horizontal > radius + target.getBbWidth()) continue;
+        double bottom = target.getY();
+        double top = bottom + target.getBbHeight();
+        if (top < center.y - .60 || bottom > center.y + 13.5) continue;
         double falloff = Math.max(.62, 1.0 - horizontal / Math.max(1.0, radius) * .38);
         if (ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff))) hit = true;
         target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), initial ? 220 : 90));

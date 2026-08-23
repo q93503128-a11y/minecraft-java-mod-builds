@@ -29,6 +29,8 @@ required = {
     'kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/FifthCircleSpellService.class',
+    'kr/moonseungjun/arcanecircle/magic/FifthCircleSpellSummary.class',
+    'kr/moonseungjun/arcanecircle/client/FifthCircleAuthorityOverlay.class',
     'kr/moonseungjun/arcanecircle/magic/SixthCircleSpellService.class',
     'kr/moonseungjun/arcanecircle/magic/SixthCircleSpellSummary.class',
     'kr/moonseungjun/arcanecircle/magic/MoveEarthService.class',
@@ -81,7 +83,7 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.69':
+    if version != '0.12.1-alpha.70':
         raise SystemExit(f'unexpected alpha.69 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
@@ -92,6 +94,17 @@ with zipfile.ZipFile(jar) as archive:
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
+
+    expected5 = {
+    'flame_strike': '4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses',
+    'dominate_person': '30s_person_scale_combat_asset_control',
+}
+if index.get('fifth_circle_value_pass_1') != expected5:
+    raise SystemExit(f'alpha.70 fifth-circle value metadata mismatch: {index.get("fifth_circle_value_pass_1")}')
+roles5 = index.get('fifth_circle_role_audit', {})
+expected_roles5 = {'cone_of_cold','wall_of_force','cloudkill','telekinesis','flame_strike','hold_monster','mass_cure_wounds','passwall','dominate_person','insect_plague'}
+if set(roles5) != expected_roles5 or len(set(roles5.values())) != 10:
+    raise SystemExit('alpha.70 fifth-circle role separation contract missing')
 
     expected6 = {
         'mass_suggestion': '20s_group_retreat_and_arcane_suppression',
@@ -168,6 +181,11 @@ with zipfile.ZipFile(jar) as archive:
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
 print('Arcane Circle alpha.69 JAR verification: PASS')
+print('alpha70_fifth_circle_value_pass_1=PASS')
+print('alpha70_flame_strike_4s_vertical_column=PASS')
+print('alpha70_dominate_person_30s_person_scale_control=PASS')
+print('alpha70_fifth_circle_role_separation=PASS')
+print('alpha70_fifth_circle_npc_parity=PASS')
 print('alpha69_sixth_circle_value_pass_1=PASS')
 print('alpha69_mass_suggestion_20s_group_disengage=PASS')
 print('alpha69_move_earth_precision_engineering=PASS')

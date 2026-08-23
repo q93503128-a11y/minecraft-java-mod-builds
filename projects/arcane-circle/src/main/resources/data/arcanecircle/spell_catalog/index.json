@@ -1,15 +1,52 @@
 {
-  "version": "0.12.1-alpha.69",
+  "version": "0.12.1-alpha.70",
   "world": "Ninefold Arcane Dominion",
-  "implemented_circles": [1,2,3,4,5,6,7,8,9],
+  "implemented_circles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
   "direct_spells": 90,
   "fusion_spells": 19,
   "world_max_circle": 9,
   "economy": "single persistent Arcana wallet",
-  "survival_replacement": ["vanilla hunger","vanilla survival respawn","magic progression","arcana economy"],
-  "academy": ["central rotunda","four faculties","library","shop","training arena"],
-  "faculties": ["ARCANE","DIVINE","OCCULT","PRIMAL"],
-  "sigil_families": ["LANCE","STAR","HEX","PORTAL","EYE","SEAL","CLOCK","SPIRAL","STORM","CROWN"],
+  "survival_replacement": [
+    "vanilla hunger",
+    "vanilla survival respawn",
+    "magic progression",
+    "arcana economy"
+  ],
+  "academy": [
+    "central rotunda",
+    "four faculties",
+    "library",
+    "shop",
+    "training arena"
+  ],
+  "faculties": [
+    "ARCANE",
+    "DIVINE",
+    "OCCULT",
+    "PRIMAL"
+  ],
+  "sigil_families": [
+    "LANCE",
+    "STAR",
+    "HEX",
+    "PORTAL",
+    "EYE",
+    "SEAL",
+    "CLOCK",
+    "SPIRAL",
+    "STORM",
+    "CROWN"
+  ],
   "source_policy": "CC-BY SRD spell roles plus public-domain ceremonial geometry; no proprietary setting material",
   "crafting_progression": true,
   "villager_currency": false,
@@ -17,84 +54,402 @@
   "fusion_casting": "charged_release",
   "particle_core_calls": 0,
   "release_geometry": "bounded_primitive_batches",
-  "signature_models": ["meteor","tornado","portal","force_cage","barrier_wall","barrier_dome"],
-  "performance_guard": {"voxel_boolean_unions":0,"charge_primitive_cap":2200,"release_primitive_cap":2600,"frame_primitive_cap":20000,"charge_progress_steps":20,"terrain_block_changes_per_tick":720,"terrain_scans_per_tick":48000},
+  "signature_models": [
+    "meteor",
+    "tornado",
+    "portal",
+    "force_cage",
+    "barrier_wall",
+    "barrier_dome"
+  ],
+  "performance_guard": {
+    "voxel_boolean_unions": 0,
+    "charge_primitive_cap": 2200,
+    "release_primitive_cap": 2600,
+    "frame_primitive_cap": 20000,
+    "charge_progress_steps": 20,
+    "terrain_block_changes_per_tick": 720,
+    "terrain_scans_per_tick": 48000
+  },
   "catastrophe_destruction": "visible_footprint_tiled_across_bounded_ticks",
   "maintained_authority_key": "G",
   "mage_residents": true,
-  "mage_entity_circles": [1,2,3,4,5,6,7,8,9],
+  "mage_entity_circles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
   "mage_currency": "arcana",
   "commission_currency": "arcana",
-  "arcana_uses": ["faculty","spellbooks","staves","mage_services"],
-  "circle_hierarchy": {"6":"grand_archmage","7":"transcendent","8":"mythic","9":"world_unique_final_boss"},
-  "natural_circle_weights": {"1":59000,"2":25000,"3":10000,"4":4000,"5":1500,"6":400,"7":80,"8":20,"9":0},
-  "affiliations": ["UNBOUND","ARCANE","DIVINE","OCCULT","PRIMAL"],
-  "affiliation_display": {"ARCANE":"왕국 마도연맹","DIVINE":"백은 성약","OCCULT":"녹월 결사","PRIMAL":"재의 밀약"},
-  "mage_roles": ["WANDERER","HOUSEHOLD","LICENSED","WARDEN","SCHOLAR","VILLAIN"],
+  "arcana_uses": [
+    "faculty",
+    "spellbooks",
+    "staves",
+    "mage_services"
+  ],
+  "circle_hierarchy": {
+    "6": "grand_archmage",
+    "7": "transcendent",
+    "8": "mythic",
+    "9": "world_unique_final_boss"
+  },
+  "natural_circle_weights": {
+    "1": 59000,
+    "2": 25000,
+    "3": 10000,
+    "4": 4000,
+    "5": 1500,
+    "6": 400,
+    "7": 80,
+    "8": 20,
+    "9": 0
+  },
+  "affiliations": [
+    "UNBOUND",
+    "ARCANE",
+    "DIVINE",
+    "OCCULT",
+    "PRIMAL"
+  ],
+  "affiliation_display": {
+    "ARCANE": "왕국 마도연맹",
+    "DIVINE": "백은 성약",
+    "OCCULT": "녹월 결사",
+    "PRIMAL": "재의 밀약"
+  },
+  "mage_roles": [
+    "WANDERER",
+    "HOUSEHOLD",
+    "LICENSED",
+    "WARDEN",
+    "SCHOLAR",
+    "VILLAIN"
+  ],
   "spell_damage_attribution": "caster_bound",
   "fusion_ui": "circle_hierarchy",
   "fusion_input": "number_key_chord",
   "fusion_power_floor": "125_percent_of_strongest_source_or_145_percent_for_triple",
-  "mage_gear": ["hat","two_slot_robe","boots"],
+  "mage_gear": [
+    "hat",
+    "two_slot_robe",
+    "boots"
+  ],
   "feather_fall_ticks": 120,
   "robe_equipment": "atomic_chest_and_visual_hem",
   "cast_release": "hold_to_release_even_when_cast_time_is_zero",
   "visual_identity": "per_spell_fingerprint_and_circle_scale_hierarchy",
-  "presentation_scale_grammar": {"1-2":"hand_scale_immediate","3-4":"combat_space","5-6":"multi_plane_grand_magic","7":"fortress_planar_authority","8":"regional_reality_authority","9":"world_law_catastrophe"},
-  "high_circle_prestige": ["seven_circle_fortress_scale","eight_circle_regional_scale","nine_circle_individual_authored_authority","precision_spells_use_dense_compact_seals","catastrophes_use_world_footprints"],
-  "death_doctrine": {"circle_of_death":"wide_life_erosion_no_execution","finger_of_death":"single_target_soul_rupture_no_threshold_execution","power_word_kill":"exclusive_ninth_circle_execution_with_fallback_life_collapse"},
+  "presentation_scale_grammar": {
+    "1-2": "hand_scale_immediate",
+    "3-4": "combat_space",
+    "5-6": "multi_plane_grand_magic",
+    "7": "fortress_planar_authority",
+    "8": "regional_reality_authority",
+    "9": "world_law_catastrophe"
+  },
+  "high_circle_prestige": [
+    "seven_circle_fortress_scale",
+    "eight_circle_regional_scale",
+    "nine_circle_individual_authored_authority",
+    "precision_spells_use_dense_compact_seals",
+    "catastrophes_use_world_footprints"
+  ],
+  "death_doctrine": {
+    "circle_of_death": "wide_life_erosion_no_execution",
+    "finger_of_death": "single_target_soul_rupture_no_threshold_execution",
+    "power_word_kill": "exclusive_ninth_circle_execution_with_fallback_life_collapse"
+  },
   "crown_meteor": "range_scaled_grounded_cityfall_barrage_then_delayed_crown_cataclysm",
   "ninth_circle_divine_scale_phase": "grounded_targeting_and_individual_sigil_authority",
   "common_high_circle_array_overlay": "removed_and_forbidden",
-  "ninth_circle_visual_authority": ["meteor_celestial_artillery","power_word_kill_execution_judgment","prismatic_wall_seven_law_lattice","shapechange_mythic_body_lattice","time_stop_frozen_clockwork","true_polymorph_morph_blueprint","weird_escape_or_die_nightmare_domain","wish_reality_rewrite_manuscript","gate_two_point_depth_portal","foresight_causality_fan"],
-  "meteor_cityfall": {"baseline_radius":112,"baseline_strikes":49,"range_scaled":true,"projectile_scaling":["count","spacing","body_scale","fall_height"],"impact_surface":"actual_loaded_surface_per_strike_xz","terminal_shock":"full_cityfall_radius_with_inner_lethal_core","terrain":"budgeted_citywide_crater_lattice"},
+  "ninth_circle_visual_authority": [
+    "meteor_celestial_artillery",
+    "power_word_kill_execution_judgment",
+    "prismatic_wall_seven_law_lattice",
+    "shapechange_mythic_body_lattice",
+    "time_stop_frozen_clockwork",
+    "true_polymorph_morph_blueprint",
+    "weird_escape_or_die_nightmare_domain",
+    "wish_reality_rewrite_manuscript",
+    "gate_two_point_depth_portal",
+    "foresight_causality_fan"
+  ],
+  "meteor_cityfall": {
+    "baseline_radius": 112,
+    "baseline_strikes": 49,
+    "range_scaled": true,
+    "projectile_scaling": [
+      "count",
+      "spacing",
+      "body_scale",
+      "fall_height"
+    ],
+    "impact_surface": "actual_loaded_surface_per_strike_xz",
+    "terminal_shock": "full_cityfall_radius_with_inner_lethal_core",
+    "terrain": "budgeted_citywide_crater_lattice"
+  },
   "meteor_ground_contract": "actual_surface_per_authoritative_strike",
   "gate_target_contract": "entity_independent_safe_ground_pair",
   "weird_contract": "caster_excluded_escape_or_die_domain",
   "world_sunder_contract": "horizontal_fault_corridor",
   "grimoire_ui": "isolated_slot_strip_plus_clicked_effect_detail_inspector",
-  "high_utility_identity": ["cross_dimension_plane_shift","persistent_demiplane_room","commandable_simulacrum","bound_combat_clone","full_maze_exile"],
-  "high_control_identity": ["behavioral_mass_suggestion","physical_forcecage","sixty_second_faction_dominate_monster","ninety_second_arcane_shutdown_feeblemind"],
-  "high_ward_identity": ["globe_blocks_hostile_circle_1_to_5_spells","circle_6_plus_and_physical_pass_through","player_and_npc_cast_interception"],
+  "high_utility_identity": [
+    "cross_dimension_plane_shift",
+    "persistent_demiplane_room",
+    "commandable_simulacrum",
+    "bound_combat_clone",
+    "full_maze_exile"
+  ],
+  "high_control_identity": [
+    "behavioral_mass_suggestion",
+    "physical_forcecage",
+    "sixty_second_faction_dominate_monster",
+    "ninety_second_arcane_shutdown_feeblemind"
+  ],
+  "high_ward_identity": [
+    "globe_blocks_hostile_circle_1_to_5_spells",
+    "circle_6_plus_and_physical_pass_through",
+    "player_and_npc_cast_interception"
+  ],
   "grimoire_effect_compendium": true,
   "spell_contract_audit": "109_explicit_summaries_and_runtime_routes",
-  "copy_source_targeting": ["simulacrum_target_28","clone_target_32"],
-  "first_circle_deep_audit": ["magic_missile_locked_salvo","fire_bolt_nonhoming_impact","single_beam_ray_of_frost","reactive_shield","lifecycle_safe_feather_fall","refcounted_real_light","persistent_grease_slip","weak_target_damage_wake_sleep","physical_thunderwave","regenerating_mage_armor"],
+  "copy_source_targeting": [
+    "simulacrum_target_28",
+    "clone_target_32"
+  ],
+  "first_circle_deep_audit": [
+    "magic_missile_locked_salvo",
+    "fire_bolt_nonhoming_impact",
+    "single_beam_ray_of_frost",
+    "reactive_shield",
+    "lifecycle_safe_feather_fall",
+    "refcounted_real_light",
+    "persistent_grease_slip",
+    "weak_target_damage_wake_sleep",
+    "physical_thunderwave",
+    "regenerating_mage_armor"
+  ],
   "first_circle_npc_parity": true,
-  "second_circle_deep_audit": ["timed_three_ray_scorching_salvo","safe_misty_step","persistent_web_field","direct_attack_mirror_images","aggro_breaking_invisibility","line_force_gust","restricted_hold_person","single_center_shatter","direct_attack_blur","rise_safe_descent_levitate"],
+  "second_circle_deep_audit": [
+    "timed_three_ray_scorching_salvo",
+    "safe_misty_step",
+    "persistent_web_field",
+    "direct_attack_mirror_images",
+    "aggro_breaking_invisibility",
+    "line_force_gust",
+    "restricted_hold_person",
+    "single_center_shatter",
+    "direct_attack_blur",
+    "rise_safe_descent_levitate"
+  ],
   "second_circle_npc_parity": true,
-  "third_circle_deep_audit": ["falloff_fireball_blast","piercing_lightning_line","lifecycle_real_flight","arcane_tempo_haste","custom_state_dispel_magic","actual_damage_vampiric_drain","persistent_slow_field","energy_only_recharging_ward","casting_break_sleet_storm","safe_long_blink"],
+  "third_circle_deep_audit": [
+    "falloff_fireball_blast",
+    "piercing_lightning_line",
+    "lifecycle_real_flight",
+    "arcane_tempo_haste",
+    "custom_state_dispel_magic",
+    "actual_damage_vampiric_drain",
+    "persistent_slow_field",
+    "energy_only_recharging_ward",
+    "casting_break_sleet_storm",
+    "safe_long_blink"
+  ],
   "third_circle_npc_parity": true,
-  "fourth_circle_deep_audit": ["persistent_fire_wall","five_pulse_ice_storm","combat_greater_invisibility","two_way_resilient_sphere","companion_dimension_door","physical_only_stoneskin","decision_scramble_confusion","anti_heal_blight","movement_control_freedom","forced_flee_phantasmal_killer"],
+  "fourth_circle_deep_audit": [
+    "persistent_fire_wall",
+    "five_pulse_ice_storm",
+    "combat_greater_invisibility",
+    "two_way_resilient_sphere",
+    "companion_dimension_door",
+    "physical_only_stoneskin",
+    "decision_scramble_confusion",
+    "anti_heal_blight",
+    "movement_control_freedom",
+    "forced_flee_phantasmal_killer"
+  ],
   "fourth_circle_npc_parity": true,
-  "fifth_circle_deep_audit": ["widening_cone_of_cold","spell_intercepting_force_wall","drifting_cloudkill_front","sustained_telekinesis_throw","vertical_flame_strike","boss_resisted_hold_monster","allied_mass_cure","restoring_physical_passwall","person_scale_combat_domination","casting_break_insect_plague"],
+  "fifth_circle_deep_audit": [
+    "immediate_directional_cone_of_cold",
+    "spell_intercepting_force_wall",
+    "drifting_cloudkill_front",
+    "sustained_telekinesis_throw",
+    "four_second_vertical_flame_column",
+    "boss_resisted_hold_monster",
+    "allied_mass_cure",
+    "restoring_physical_passwall",
+    "thirty_second_person_scale_domination",
+    "casting_break_insect_plague"
+  ],
   "fifth_circle_npc_parity": true,
-  "sixth_circle_deep_audit": ["material_disintegrate_ray","npc_parity_invulnerability_globe","twenty_second_group_retreat_order","directional_trench_and_dual_berm_engineering","six_second_piercing_solar_corridor","persistent_true_seeing","ten_second_cryogenic_denial_field","fear_weakness_eyebite","casting_block_petrification","wide_life_erosion_no_execution"],
-  "sixth_circle_value_pass_1": {"mass_suggestion":"20s_group_retreat_and_arcane_suppression","move_earth":"20_to_36m_directional_trench_and_dual_berm_using_relocated_surface_blocks","sunbeam":"6s_locked_piercing_solar_corridor_with_0.5s_pulses","freezing_sphere":"10s_10.5_to_15.5m_cryogenic_denial_with_0.5s_refreeze_pulses"},
-  "sixth_circle_role_audit": {"disintegrate":"precision_material_deletion_ray","globe_of_invulnerability":"circle_1_to_5_hostile_spell_interception","mass_suggestion":"twenty_second_group_combat_disengage","move_earth":"directional_trench_and_berm_engineering","sunbeam":"six_second_piercing_solar_corridor","true_seeing":"sixty_second_anti_concealment_revelation","freezing_sphere":"ten_second_area_cryogenic_denial","eyebite":"eighteen_second_single_target_fear_retreat","flesh_to_stone":"eighteen_second_total_petrification","circle_of_death":"wide_life_erosion_no_execution"},
+  "sixth_circle_deep_audit": [
+    "material_disintegrate_ray",
+    "npc_parity_invulnerability_globe",
+    "twenty_second_group_retreat_order",
+    "directional_trench_and_dual_berm_engineering",
+    "six_second_piercing_solar_corridor",
+    "persistent_true_seeing",
+    "ten_second_cryogenic_denial_field",
+    "fear_weakness_eyebite",
+    "casting_block_petrification",
+    "wide_life_erosion_no_execution"
+  ],
+  "sixth_circle_value_pass_1": {
+    "mass_suggestion": "20s_group_retreat_and_arcane_suppression",
+    "move_earth": "20_to_36m_directional_trench_and_dual_berm_using_relocated_surface_blocks",
+    "sunbeam": "6s_locked_piercing_solar_corridor_with_0.5s_pulses",
+    "freezing_sphere": "10s_10.5_to_15.5m_cryogenic_denial_with_0.5s_refreeze_pulses"
+  },
+  "sixth_circle_role_audit": {
+    "disintegrate": "precision_material_deletion_ray",
+    "globe_of_invulnerability": "circle_1_to_5_hostile_spell_interception",
+    "mass_suggestion": "twenty_second_group_combat_disengage",
+    "move_earth": "directional_trench_and_berm_engineering",
+    "sunbeam": "six_second_piercing_solar_corridor",
+    "true_seeing": "sixty_second_anti_concealment_revelation",
+    "freezing_sphere": "ten_second_area_cryogenic_denial",
+    "eyebite": "eighteen_second_single_target_fear_retreat",
+    "flesh_to_stone": "eighteen_second_total_petrification",
+    "circle_of_death": "wide_life_erosion_no_execution"
+  },
   "sixth_circle_npc_terrain_safety": "move_earth_retains_battlefield_split_but_skips_npc_world_edit",
   "sixth_circle_npc_parity": true,
-  "seventh_circle_deep_audit": ["time_locked_siege_core_with_overpressure","preserved_ethereal_phase","canonical_single_soul_rupture_no_execution","sequential_six_pillar_siege_bombardment","preserved_physical_forcecage","preserved_player_plane_shift","seven_independent_prismatic_rays","maintained_reverse_gravity","preserved_commandable_simulacrum","same_dimension_tactical_group_teleport"],
-  "seventh_circle_preserved_authority": ["etherealness","forcecage","plane_shift","simulacrum"],
-  "seventh_circle_value_pass_1": {"delayed_blast_fireball":"3.6s_time_locked_siege_core_with_primary_breach_and_overpressure_shock","finger_of_death":"canonical_death_doctrine_single_soul_rupture_no_execution_threshold","fire_storm":"six_step_0.4s_siege_bombardment_with_repeat_hit_attenuation","teleport":"same_dimension_7m_gather_tactical_group_relocation_up_to_6_companions"},
-  "seventh_circle_role_audit": {"delayed_blast_fireball":"time_locked_fortress_demolition","etherealness":"phase_immunity_and_mobility","finger_of_death":"single_target_soul_rupture","fire_storm":"staggered_multi_point_siege_bombardment","forcecage":"physical_spatial_prison","plane_shift":"cross_dimension_party_transport","prismatic_spray":"seven_independent_ray_conditions","reverse_gravity":"local_gravity_law_inversion","simulacrum":"commandable_combat_proxy","teleport":"same_dimension_group_redeployment"},
+  "seventh_circle_deep_audit": [
+    "time_locked_siege_core_with_overpressure",
+    "preserved_ethereal_phase",
+    "canonical_single_soul_rupture_no_execution",
+    "sequential_six_pillar_siege_bombardment",
+    "preserved_physical_forcecage",
+    "preserved_player_plane_shift",
+    "seven_independent_prismatic_rays",
+    "maintained_reverse_gravity",
+    "preserved_commandable_simulacrum",
+    "same_dimension_tactical_group_teleport"
+  ],
+  "seventh_circle_preserved_authority": [
+    "etherealness",
+    "forcecage",
+    "plane_shift",
+    "simulacrum"
+  ],
+  "seventh_circle_value_pass_1": {
+    "delayed_blast_fireball": "3.6s_time_locked_siege_core_with_primary_breach_and_overpressure_shock",
+    "finger_of_death": "canonical_death_doctrine_single_soul_rupture_no_execution_threshold",
+    "fire_storm": "six_step_0.4s_siege_bombardment_with_repeat_hit_attenuation",
+    "teleport": "same_dimension_7m_gather_tactical_group_relocation_up_to_6_companions"
+  },
+  "seventh_circle_role_audit": {
+    "delayed_blast_fireball": "time_locked_fortress_demolition",
+    "etherealness": "phase_immunity_and_mobility",
+    "finger_of_death": "single_target_soul_rupture",
+    "fire_storm": "staggered_multi_point_siege_bombardment",
+    "forcecage": "physical_spatial_prison",
+    "plane_shift": "cross_dimension_party_transport",
+    "prismatic_spray": "seven_independent_ray_conditions",
+    "reverse_gravity": "local_gravity_law_inversion",
+    "simulacrum": "commandable_combat_proxy",
+    "teleport": "same_dimension_group_redeployment"
+  },
   "seventh_circle_npc_parity": true,
   "seventh_circle_npc_plane_shift_role": "safe_planar_disengage_without_target_damage",
   "seventh_circle_teleport_companion_policy": "players_crouch_opt_in_allied_nonplayers_auto_nearest_up_to_6_safe_slots",
-  "eighth_circle_deep_audit": ["preserved_antimagic_field","bound_90s_combat_clone","preserved_control_weather","preserved_persistent_demiplane","sixty_second_combat_faction_domination","regional_fault_earthquake_with_unstable_ground","ninety_second_arcane_shutdown_feeblemind","moving_firefront_with_scorched_route_denial","twenty_four_second_maze_exile_with_aftershock","solar_revelation_and_purification_domain"],
-  "eighth_circle_preserved_authority": ["antimagic_field","control_weather","demiplane"],
-  "eighth_circle_value_pass_1": {"clone":"90s_single_bound_combat_copy_no_equipment_duplication","dominate_monster":"60s_enemy_combat_asset_theft","feeblemind":"90s_total_arcane_shutdown_and_severe_combat_degradation","maze":"24s_total_battlefield_exile_plus_6s_aftershock"},
-  "eighth_circle_value_pass_2": {"earthquake":"9s_regional_fault_disaster_with_budgeted_player_terrain_and_unstable_ground","incendiary_cloud":"12s_moving_firefront_with_scorched_wake_route_denial","sunburst":"12s_solar_revelation_purification_and_darkness_denial_domain"},
-  "eighth_circle_role_audit": {"antimagic_field":"magic_rule_denial_field","clone":"bound_combat_proxy","control_weather":"regional_weather_and_commanded_lightning","demiplane":"persistent_personal_pocket_space","dominate_monster":"enemy_combat_asset_theft","earthquake":"terrain_and_movement_disaster","feeblemind":"long_arcane_and_combat_collapse","incendiary_cloud":"moving_route_denial_firefront","maze":"single_target_battlefield_removal","sunburst":"solar_reveal_purify_darkness_denial_domain"},
+  "eighth_circle_deep_audit": [
+    "preserved_antimagic_field",
+    "bound_90s_combat_clone",
+    "preserved_control_weather",
+    "preserved_persistent_demiplane",
+    "sixty_second_combat_faction_domination",
+    "regional_fault_earthquake_with_unstable_ground",
+    "ninety_second_arcane_shutdown_feeblemind",
+    "moving_firefront_with_scorched_route_denial",
+    "twenty_four_second_maze_exile_with_aftershock",
+    "solar_revelation_and_purification_domain"
+  ],
+  "eighth_circle_preserved_authority": [
+    "antimagic_field",
+    "control_weather",
+    "demiplane"
+  ],
+  "eighth_circle_value_pass_1": {
+    "clone": "90s_single_bound_combat_copy_no_equipment_duplication",
+    "dominate_monster": "60s_enemy_combat_asset_theft",
+    "feeblemind": "90s_total_arcane_shutdown_and_severe_combat_degradation",
+    "maze": "24s_total_battlefield_exile_plus_6s_aftershock"
+  },
+  "eighth_circle_value_pass_2": {
+    "earthquake": "9s_regional_fault_disaster_with_budgeted_player_terrain_and_unstable_ground",
+    "incendiary_cloud": "12s_moving_firefront_with_scorched_wake_route_denial",
+    "sunburst": "12s_solar_revelation_purification_and_darkness_denial_domain"
+  },
+  "eighth_circle_role_audit": {
+    "antimagic_field": "magic_rule_denial_field",
+    "clone": "bound_combat_proxy",
+    "control_weather": "regional_weather_and_commanded_lightning",
+    "demiplane": "persistent_personal_pocket_space",
+    "dominate_monster": "enemy_combat_asset_theft",
+    "earthquake": "terrain_and_movement_disaster",
+    "feeblemind": "long_arcane_and_combat_collapse",
+    "incendiary_cloud": "moving_route_denial_firefront",
+    "maze": "single_target_battlefield_removal",
+    "sunburst": "solar_reveal_purify_darkness_denial_domain"
+  },
   "eighth_circle_npc_parity": true,
   "eighth_circle_npc_demiplane_role": "timed_pocket_sanctuary_without_persistent_player_room",
   "eighth_circle_npc_maze_role": "24s_combat_exile_plus_6s_aftershock_without_cross_dimension_player_relocation",
   "eighth_circle_npc_dominate_player_role": "60s_casting_and_combat_compulsion",
   "eighth_circle_npc_terrain_safety": "earthquake_keeps_movement_disaster_but_skips_npc_world_damage",
-  "ninth_circle_deep_audit": ["grounded_range_scaled_cityfall_meteor_swarm","exclusive_execution_power_word_kill","seven_layer_physical_prismatic_wall","preserved_shapechange","preserved_time_stop","preserved_true_polymorph","escape_or_die_weird_domain","preserved_reality_wish","safe_ground_pair_gate","preserved_foresight"],
-  "ninth_circle_preserved_authority": ["shapechange","time_stop","true_polymorph","wish","foresight"],
+  "ninth_circle_deep_audit": [
+    "grounded_range_scaled_cityfall_meteor_swarm",
+    "exclusive_execution_power_word_kill",
+    "seven_layer_physical_prismatic_wall",
+    "preserved_shapechange",
+    "preserved_time_stop",
+    "preserved_true_polymorph",
+    "escape_or_die_weird_domain",
+    "preserved_reality_wish",
+    "safe_ground_pair_gate",
+    "preserved_foresight"
+  ],
+  "ninth_circle_preserved_authority": [
+    "shapechange",
+    "time_stop",
+    "true_polymorph",
+    "wish",
+    "foresight"
+  ],
   "ninth_circle_npc_parity": true,
   "ninth_circle_npc_true_polymorph_player_role": "combat_and_casting_suppression_without_player_entity_type_swap",
   "ninth_circle_npc_wish_role": "full_recovery_cleanse_without_player_mana_cooldown_state",
-  "ninth_circle_gate_role": "two_way_same_dimension_safe_ground_entity_portal"
+  "ninth_circle_gate_role": "two_way_same_dimension_safe_ground_entity_portal",
+  "fifth_circle_value_pass_1": {
+    "flame_strike": "4s_locked_vertical_fire_column_with_initial_breach_and_0.5s_pulses",
+    "dominate_person": "30s_person_scale_combat_asset_control"
+  },
+  "fifth_circle_role_audit": {
+    "cone_of_cold": "immediate_directional_frost_sweep",
+    "wall_of_force": "physical_and_arcane_barrier",
+    "cloudkill": "moving_toxic_front",
+    "telekinesis": "sustained_grab_and_throw",
+    "flame_strike": "four_second_vertical_fire_column",
+    "hold_monster": "boss_aware_total_restraint",
+    "mass_cure_wounds": "allied_battlefield_recovery",
+    "passwall": "temporary_restoring_terrain_tunnel",
+    "dominate_person": "thirty_second_person_scale_combat_asset",
+    "insect_plague": "persistent_damage_and_cast_disruption_field"
+  },
+  "fifth_circle_preserved_authority": [
+    "cone_of_cold",
+    "wall_of_force",
+    "cloudkill",
+    "telekinesis",
+    "hold_monster",
+    "mass_cure_wounds",
+    "passwall",
+    "insect_plague"
+  ]
 }
