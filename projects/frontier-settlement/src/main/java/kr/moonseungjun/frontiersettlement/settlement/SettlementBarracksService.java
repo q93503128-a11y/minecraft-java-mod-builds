@@ -26,12 +26,14 @@ public final class SettlementBarracksService {
     public static final long RECRUIT_FOOD_COST = 8L;
     public static final long RECRUIT_METAL_COST = 2L;
 
+    private static final String LEGACY_FREE_GARRISON_NAME_PREFIX = "개척 수비대 [";
     private static final int PATROL_INTERVAL_TICKS = 40;
     private static final int RECRUIT_INTERVAL_TICKS = 600;
     private static final int PATROL_RADIUS = 24;
     private static final double THREAT_RADIUS = 28.0D;
-    private static final double SOLDIER_SEARCH_RADIUS = 36.0D;
+    private static final double SOLDIER_SEARCH_RADIUS = 40.0D;
     private static final double HOME_RADIUS_SQR = 12.0D * 12.0D;
+    private static final double PATROL_LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;
 
     private SettlementBarracksService() {}
 
@@ -48,6 +50,7 @@ public final class SettlementBarracksService {
         ServerLevel level = server.overworld();
         int tick = server.getTickCount();
         if (tick % RECRUIT_INTERVAL_TICKS == 0) {
+            cleanupLegacyFreeGarrison(level, data);
             Assignment missing = firstMissingLoadedAssignment(level, data);
             if (missing != null && tryRecruit(level, data, missing)) {
                 SettlementService.refreshResources(server, data);
@@ -118,10 +121,16 @@ public final class SettlementBarracksService {
 
     private static void patrol(ServerLevel level, BuildingRecord barracks, int slot, IronGolem soldier) {
         BlockPos home = soldierHome(barracks, slot);
+        double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
+        if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
+            if (soldier.getTarget() != null) soldier.setTarget(null);
+            soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.95D);
+            return;
+        }
         Monster threat = nearestThreat(level, barracks.workCenter());
         if (threat != null) { soldier.setTarget(threat); return; }
         if (soldier.getTarget() != null) soldier.setTarget(null);
-        if (soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > HOME_RADIUS_SQR) {
+        if (homeDistance > HOME_RADIUS_SQR) {
             soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.9D);
         }
     }
@@ -153,6 +162,20 @@ public final class SettlementBarracksService {
         List<IronGolem> soldiers = level.getEntitiesOfClass(IronGolem.class, search,
                 soldier -> soldier.entityTags().contains(SOLDIER_TAG) && soldier.entityTags().contains(assignment) && soldier.entityTags().contains(slotTag));
         return soldiers.isEmpty() ? null : soldiers.getFirst();
+    }
+
+    /** Remove loaded pre-Alpha37 free reinforcement golems so old saves do not bypass barracks economics. */
+    private static void cleanupLegacyFreeGarrison(ServerLevel level, SettlementData data) {
+        for (BuildingRecord post : data.buildings()) {
+            if (post.buildingType() != BuildingType.GUARD_POST) continue;
+            BlockPos center = post.workCenter();
+            if (!level.hasChunkAt(center)) continue;
+            AABB search = new AABB(center).inflate(28.0D, 12.0D, 28.0D);
+            List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
+                    guard -> guard.getCustomName() != null
+                            && guard.getCustomName().getString().startsWith(LEGACY_FREE_GARRISON_NAME_PREFIX));
+            for (IronGolem guard : legacy) guard.discard();
+        }
     }
 
     private static boolean patrolAreaLoaded(ServerLevel level, BuildingRecord barracks) {
