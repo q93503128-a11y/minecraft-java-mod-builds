@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.infrastructure;
 
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -47,6 +48,10 @@ public final class InfrastructureService {
         boolean wasComplete = data.isComplete(project);
         if (wasComplete) {
             if (project == InfrastructureProject.ASCENSION_NEXUS) {
+                if (ExpeditionIncidentSystem.isActive(player)) {
+                    player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 §e현장 사건§f을 먼저 끝내거나 실패 처리한 뒤 시작하세요."));
+                    return;
+                }
                 AscensionTrialSystem.tryStart(player);
             } else {
                 player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + "§f은 이미 완공되었습니다."));
