@@ -33,7 +33,8 @@ public final class BuildingPaletteScreen extends Screen {
 
         addBuilding(BuildingType.HOUSE, innerX, innerY + 14, columnWidth);
         addBuilding(BuildingType.WAREHOUSE, innerX, innerY + 60, columnWidth);
-        addBuilding(BuildingType.GUARD_POST, innerX, innerY + 106, columnWidth);
+        addBuilding(BuildingType.MARKET, innerX, innerY + 84, columnWidth);
+        addBuilding(BuildingType.GUARD_POST, innerX, innerY + 108, columnWidth);
 
         addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 14, columnWidth);
         addBuilding(BuildingType.FARM, rightX, innerY + 38, columnWidth);
@@ -89,13 +90,13 @@ public final class BuildingPaletteScreen extends Screen {
         int rightX = innerX + columnWidth + gap;
 
         graphics.text(this.font, Component.literal("기반"), innerX, innerY, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("물류"), innerX, innerY + 46, 0xFFFFD58A, true);
-        graphics.text(this.font, Component.literal("방어"), innerX, innerY + 92, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("물류·교역"), innerX, innerY + 46, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("방어"), innerX, innerY + 94, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("생산"), rightX, innerY, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 137, 0xFFFFD58A, true);
 
         String lock1 = "잠금: 농장←주택 · 채석장←벌목소 · 광산←채석장+전초기지 · 창고←농장";
-        String lock2 = "대장간←광산 · 경비초소←마을 단계   |   선택 후 R 회전 · Enter 확정";
+        String lock2 = "대장간←광산 · 시장/경비←마을 단계   |   R 회전 · Enter 확정";
         graphics.text(this.font, Component.literal(lock1), panelX + 12, panelY + panelHeight - 31, 0xFFB8B8B8, false);
         graphics.text(this.font, Component.literal(lock2), panelX + 12, panelY + panelHeight - 17, 0xFFD0D0D0, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
