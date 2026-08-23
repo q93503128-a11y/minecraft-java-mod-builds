@@ -20,15 +20,13 @@ public final class BuildingPlacementClient {
             Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "construction"));
     public static final KeyMapping TOGGLE = new KeyMapping(
             "key.frontier_settlement.build_mode", GLFW.GLFW_KEY_B, CATEGORY);
-    public static final KeyMapping NEXT = new KeyMapping(
-            "key.frontier_settlement.next_building", GLFW.GLFW_KEY_N, CATEGORY);
     public static final KeyMapping ROTATE = new KeyMapping(
             "key.frontier_settlement.rotate_building", GLFW.GLFW_KEY_R, CATEGORY);
     public static final KeyMapping CONFIRM = new KeyMapping(
             "key.frontier_settlement.confirm_building", GLFW.GLFW_KEY_ENTER, CATEGORY);
 
     private static boolean active;
-    private static int selectedIndex;
+    private static BuildingType selectedType = BuildingType.HOUSE;
     private static BuildingRotation rotation = BuildingRotation.NONE;
     private static BlockPos target = BlockPos.ZERO;
     private static PlacementPreviewPayload preview;
@@ -41,7 +39,6 @@ public final class BuildingPlacementClient {
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
         event.register(TOGGLE);
-        event.register(NEXT);
         event.register(ROTATE);
         event.register(CONFIRM);
     }
@@ -54,23 +51,17 @@ public final class BuildingPlacementClient {
         }
 
         while (TOGGLE.consumeClick()) {
-            active = !active;
-            preview = null;
-            refreshTicks = 0;
-            if (active) {
-                RoadPlacementClient.cancel();
-                OutpostPlacementClient.cancel();
-                rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
-                target = resolveTarget(minecraft);
+            cancel();
+            RoadPlacementClient.cancel();
+            OutpostPlacementClient.cancel();
+            if (minecraft.gui.screen() instanceof BuildingPaletteScreen) {
+                minecraft.gui.setScreen(null);
+            } else {
+                minecraft.gui.setScreen(new BuildingPaletteScreen());
             }
         }
         if (!active) return;
 
-        while (NEXT.consumeClick()) {
-            selectedIndex = (selectedIndex + 1) % BuildingType.values().length;
-            preview = null;
-            refreshTicks = 0;
-        }
         while (ROTATE.consumeClick()) {
             rotation = rotation.next();
             preview = null;
@@ -91,6 +82,19 @@ public final class BuildingPlacementClient {
         while (CONFIRM.consumeClick()) {
             if (preview != null && preview.valid() && previewMatchesSelection()) send(true);
         }
+    }
+
+    public static void beginPlacement(BuildingType type) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null || type == null) return;
+        selectedType = type;
+        active = true;
+        preview = null;
+        refreshTicks = 0;
+        rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
+        target = resolveTarget(minecraft);
+        RoadPlacementClient.cancel();
+        OutpostPlacementClient.cancel();
     }
 
     private static BlockPos resolveTarget(Minecraft minecraft) {
@@ -121,7 +125,7 @@ public final class BuildingPlacementClient {
     }
 
     public static boolean active() { return active; }
-    public static BuildingType selectedType() { return BuildingType.values()[selectedIndex]; }
+    public static BuildingType selectedType() { return selectedType; }
     public static BuildingRotation rotation() { return rotation; }
     public static PlacementPreviewPayload preview() { return previewMatchesSelection() ? preview : null; }
 
@@ -139,6 +143,7 @@ public final class BuildingPlacementClient {
         PlacementPreviewPayload p = preview();
         String state = p == null ? "확인 중" : (p.valid() ? "배치 가능" : p.message());
         return "건설 | " + selectedType().displayName()
+                + " | 목재 " + selectedType().woodCost() + " · 석재 " + selectedType().stoneCost()
                 + " | 회전 " + (rotation.id() * 90) + "° | " + state;
     }
 
