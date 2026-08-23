@@ -28,7 +28,7 @@ public final class SettlementCoreService {
     public static void tick(MinecraftServer server, SettlementData data) {
         if (!data.founded() || server.getTickCount() % 10 != 0) return;
         ServerLevel level = server.overworld();
-        if (!level.hasChunkAt(data.stockpilePos())) return;
+        if (!level.hasChunkAt(data.centerPos())) return;
 
         int changed = 0;
         for (Placement placement : desired(data)) {
@@ -42,7 +42,9 @@ public final class SettlementCoreService {
     }
 
     private static List<Placement> desired(SettlementData data) {
-        BlockPos center = data.stockpilePos();
+        // The civic core is anchored to the physical pioneer marker. The stockpile may sit a few
+        // blocks away and remains an ordinary physical container rather than becoming the town center.
+        BlockPos center = data.centerPos();
         LinkedHashMap<BlockPos, Placement> placements = new LinkedHashMap<>();
         SettlementTier tier = SettlementTier.current(data);
 
@@ -97,6 +99,7 @@ public final class SettlementCoreService {
     }
 
     private static void addCampMarker(Map<BlockPos, Placement> out, BlockPos c) {
+        // The actual pioneer marker occupies c and is deliberately never replaced here.
         put(out, c.offset(-1, 0, 0), Blocks.CAMPFIRE.defaultBlockState(), false);
         int[][] posts = {{1,1}, {1,-1}, {-1,1}, {-1,-1}};
         for (int[] p : posts) {
