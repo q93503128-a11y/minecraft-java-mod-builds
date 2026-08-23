@@ -1,8 +1,4 @@
-SOURCE AUDIT PASS
-- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
-- 18 persistent expedition directives and 18 one-time-reward regional incidents retained
-- Stage-1 Apex Tracking Post opens nine behavior-driven region hunts with bounded lifecycle and resource sinks
-- Apex first defeats persist in apex_hunt_v1; 9/9 reward is one-time and Trial remains deterministic Mythic source
-- incidents, Apex Hunts and Ascension Trial have explicit overlap guards
-- Mastery VI, Field Mastery, tick budgets, normal destroy/material/protection contracts retained
-- awakened Mythic, world stages, mutations, warbands and elite regressions retained
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_current_source.py", line 148
+    need(commands, ["ProductionData.get(player)", '"§3[산업 생산망]", "production.cycles(player)", "production.supplyCharges(player)"],
+                                                  ^
+SyntaxError: unterminated string literal (detected at line 148)
