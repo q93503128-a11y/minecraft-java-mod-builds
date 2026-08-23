@@ -488,7 +488,7 @@ public final class SpellGameplayService {
             int pulses = Math.min(3, targets.size());
             for (int i = 0; i < pulses; i++) {
                 LivingEntity target = targets.get(Math.floorMod(i * 7 + (int) now, targets.size()));
-                ArcaneDamage.hurt(level, owner, target, (float) (state.power() * .16));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) (state.power() * .16), "control_weather");
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 35, 2));
                 level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER,
                         SoundSource.WEATHER, .54F, 1.22F + i * .05F);
@@ -516,7 +516,7 @@ public final class SpellGameplayService {
                 Vec3 strike = groundStrike(level, requested);
                 summonLightning(level, strike);
                 for (LivingEntity target : enemies(owner, strike, 3.4, 6.0)) {
-                    ArcaneDamage.hurt(level, owner, target, (float) (barrage.power() * .44));
+                    ArcaneDamage.hurtAttributed(level, owner, target, (float) (barrage.power() * .44), "control_weather");
                     target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 3));
                 }
             }
