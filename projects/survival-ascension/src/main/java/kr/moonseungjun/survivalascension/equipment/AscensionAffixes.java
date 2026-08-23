@@ -34,6 +34,7 @@ public final class AscensionAffixes {
     private static final String MASTERY = "mastery";
     private static final String SECONDARY = "secondary";
     private static final String UTILITY = "utility";
+    private static final String AWAKENED = "awakened";
     private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
 
     private AscensionAffixes() {}
@@ -54,7 +55,7 @@ public final class AscensionAffixes {
         int rarity = Math.max(1, Math.min(3, rankId));
         Category category = Category.values()[random.nextInt(4)];
         ItemStack stack = new ItemStack(baseItem(category, rarity));
-        rollAffixes(stack, random, rarity, category);
+        rollAffixes(stack, random, rarity, category, false);
         return stack;
     }
 
@@ -62,26 +63,49 @@ public final class AscensionAffixes {
         int rarity = rarity(stack);
         Category category = category(stack);
         if (rarity <= 0 || category == Category.NONE) return false;
-        rollAffixes(stack, random, rarity, category);
+        boolean awakened = isAwakened(stack);
+        rollAffixes(stack, random, awakened ? 4 : rarity, category, awakened);
         return true;
     }
 
-    private static void rollAffixes(ItemStack stack, RandomSource random, int rarity, Category category) {
+    public static boolean awaken(ItemStack stack, RandomSource random) {
+        if (rarity(stack) != 3 || isAwakened(stack)) return false;
+        Category category = category(stack);
+        if (category == Category.NONE) return false;
+
+        List<String> chosen = currentAffixes(stack);
+        List<String> missing = new ArrayList<>();
+        for (String key : AFFIX_POOL) if (!chosen.contains(key)) missing.add(key);
+        if (missing.isEmpty()) return false;
+        chosen.add(missing.get(random.nextInt(missing.size())));
+        writeAffixes(stack, 3, category, chosen, true);
+        return true;
+    }
+
+    private static void rollAffixes(ItemStack stack, RandomSource random, int count, Category category, boolean awakened) {
         List<String> pool = new ArrayList<>(AFFIX_POOL);
         Collections.shuffle(pool, new java.util.Random(random.nextLong()));
-        List<String> chosen = List.copyOf(pool.subList(0, Math.min(rarity, pool.size())));
+        int affixCount = Math.max(1, Math.min(count, pool.size()));
+        List<String> chosen = new ArrayList<>(pool.subList(0, affixCount));
+        writeAffixes(stack, Math.max(1, Math.min(3, count)), category, chosen, awakened);
+    }
 
+    private static void writeAffixes(ItemStack stack, int rarity, Category category, List<String> chosen, boolean awakened) {
         stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, data -> data.update(tag -> {
             CompoundTag root = new CompoundTag();
             root.putInt(RARITY, rarity);
             root.putString(CATEGORY, category.id);
+            root.putBoolean(AWAKENED, awakened);
             for (String key : AFFIX_POOL) root.putBoolean(key, chosen.contains(key));
             tag.put(ROOT, root);
         }));
+        updateDisplayName(stack, rarity, category, chosen, awakened);
+    }
 
+    private static void updateDisplayName(ItemStack stack, int rarity, Category category, List<String> chosen, boolean awakened) {
         String vanillaName = new ItemStack(stack.getItem()).getHoverName().getString();
         String affixes = chosen.stream().map(key -> affixName(category, key)).reduce((a, b) -> a + "·" + b).orElse("");
-        String prefix = switch (rarity) {
+        String prefix = awakened ? "§5[각성 신화] " : switch (rarity) {
             case 1 -> "§b[정예] ";
             case 2 -> "§d[승천] ";
             default -> "§6[신화] ";
@@ -132,7 +156,7 @@ public final class AscensionAffixes {
         if (base <= 1 || category(stack) != Category.HOE) return base;
         int bonus = 0;
         if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
-        if (has(stack, SECONDARY)) bonus += rarity(stack) >= 3 ? 2 : (rarity(stack) >= 2 ? 2 : 0);
+        if (has(stack, SECONDARY)) bonus += rarity(stack) >= 2 ? 2 : 0;
         return base + bonus;
     }
 
@@ -154,7 +178,13 @@ public final class AscensionAffixes {
 
     public static boolean isAffixGear(ItemStack stack) { return rarity(stack) > 0; }
 
+    public static boolean isAwakened(ItemStack stack) {
+        CompoundTag root = affixTag(stack);
+        return root != null && root.getIntOr(RARITY, 0) == 3 && root.getBooleanOr(AWAKENED, false);
+    }
+
     public static String rarityName(ItemStack stack) {
+        if (isAwakened(stack)) return "각성 신화";
         return switch (rarity(stack)) { case 1 -> "정예"; case 2 -> "승천"; case 3 -> "신화"; default -> "일반"; };
     }
 
@@ -169,6 +199,12 @@ public final class AscensionAffixes {
     public static int rarity(ItemStack stack) {
         CompoundTag root = affixTag(stack);
         return root == null ? 0 : root.getIntOr(RARITY, 0);
+    }
+
+    private static List<String> currentAffixes(ItemStack stack) {
+        List<String> chosen = new ArrayList<>();
+        for (String key : AFFIX_POOL) if (has(stack, key)) chosen.add(key);
+        return chosen;
     }
 
     private static boolean has(ItemStack stack, String key) {
