@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.27.0-alpha.1
+- Added Stage-1 shared infrastructure `정점 추적소 / Apex Tracking Post`: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
+- Completed tracking posts can be re-selected inside an already completed expedition region to start a 90-second behavior-driven regional Apex Hunt for Echo8 + Amethyst32 + Gold32.
+- Added nine regional Apex archetypes: Woodland Breaker, Arid Commander, Wetland Plagueheart, Highland Hunter, Ocean Tyrant, Deep Stalker, Frozen Warden, Nether Reaver and End Harbinger.
+- Added distinct combat patterns instead of one blanket HP scale: telegraphed charge, health-threshold reinforcements, poison/heal field, skirmish repositioning, pull, leap, frost slow field, wither pulse and levitation/void pressure.
+- Apex bosses use archetype-specific additive health/armor/attack tuning, tagged triggered vanilla spawns, boss bars and bounded escort compositions.
+- Added owner lifecycle safety: 64-block/current-region validation, 10-second grace, 90-second timeout, 48-block escort recall, 96-block hunt separation, logout/failure cleanup, stale-server cleanup and tagged-orphan rejection.
+- Apex Hunt cannot start during a field incident; hunt activation pushes field-incident readiness past the hunt window; Ascension Trial activation is refused while that player owns an active Apex Hunt.
+- Added `apex_hunt_v1` per-player SavedData with nine first-defeat bits, total victories and one-time 9/9 mastery reward state.
+- Stage1 hunt victory: Ascended II gear + Diamond2 + Echo4 + XP120. Stage2: Ascended II gear with 20% Mythic III chance + Diamond3 + Echo6 + Netherite Scrap1 + XP180. Nearby helpers get XP50 without duplicate owner loot.
+- First defeats of all nine Apex archetypes grant guaranteed Mythic III + Netherite Scrap4 + Echo32 + Dragon Breath16 + XP500 once.
+- `/ascension stats` now reports Apex first defeats x/9 and total hunt victories.
+- Added the tracking post to the existing MineMenu-style Infrastructure radial instead of introducing another generic rectangular menu.
+- Clarified Apotheosis licensing: the official `Shadows-of-Fire/Apotheosis` GitHub 26.1 code license is MIT; distribution-page/assets rights are treated separately and no Apotheosis assets are bundled.
+- Silent Gear (MIT) is reference-only for the high-level long-lived gear/resource-sink philosophy; no Silent Gear source, material/part system, blueprints, data or assets are copied.
+- Updated Guide, README/PROJECT canon, source audit and JAR verifier for the new hunt runtime and persistence classes.
+
 ## 0.26.0-alpha.1
 - Added 18 rare regional field incidents: one bounded hostile ambush and one action-rush incident for each of the nine expedition regions.
 - Eligible players inside a discovered region receive a 10% incident roll every 30 seconds. Incidents last 45–60 seconds and expose remaining enemies/action progress/time through a boss bar.
