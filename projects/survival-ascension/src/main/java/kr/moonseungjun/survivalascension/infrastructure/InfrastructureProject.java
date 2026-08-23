@@ -41,6 +41,15 @@ public enum InfrastructureProject {
                     new Requirement(Items.REDSTONE, "레드스톤", 128),
                     new Requirement(Items.ECHO_SHARD, "메아리 조각", 32)
             )),
+    APEX_TRACKING_POST(
+            "apex_tracking_post", "정점 추적소", "전설 단계 · 완수한 원정권에서 반복 정점 사냥 개방", 1,
+            List.of(
+                    new Requirement(Items.IRON_INGOT, "철 주괴", 512),
+                    new Requirement(Items.GOLD_INGOT, "금 주괴", 256),
+                    new Requirement(Items.AMETHYST_SHARD, "자수정 조각", 256),
+                    new Requirement(Items.ECHO_SHARD, "메아리 조각", 32),
+                    new Requirement(Items.NETHER_STAR, "네더의 별", 1)
+            )),
     ASCENSION_NEXUS(
             "ascension_nexus", "승천 중추", "종말 단계 · 기동 Lv.90 공중 돌진 2회 / Lv.100 3회 · 완공 후 승천 시련", 2,
             List.of(
