@@ -85,6 +85,7 @@ need(second_summary,
      '3초 상승시킨 뒤 4초 정점에 붙잡아 두고 종료 후 4초 안전 하강')
 need(world_magic_2,
      'duration = secondCircleVisualDuration(spell.id(), duration);',
+     'case "scorching_ray" -> Math.max(baseDuration, 20);',
      'case "web" -> Math.max(baseDuration, SecondCircleSpellService.WEB_TICKS);',
      'case "mirror_image" -> Math.max(baseDuration, SecondCircleSpellService.MIRROR_TICKS);',
      'case "invisibility" -> Math.max(baseDuration, SecondCircleSpellService.INVISIBILITY_TICKS);',
@@ -107,6 +108,7 @@ assert index['second_circle_visual_lifetime_sync'] == 'maintained_server_effects
 assert index['second_circle_dispel_visual_cleanup'] is True
 assert index['second_circle_npc_terrain_safety'] == 'gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit'
 assert index['second_circle_npc_parity'] is True
+assert index['second_circle_scorching_ray_visual_ticks'] == 20
 
 # Alpha.72 third-circle authority/value pass.
 third = text(magic / 'ThirdCircleSpellService.java')
@@ -388,6 +390,7 @@ need(verify,
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha73_scorching_ray_full_salvo_visual_window=PASS')
 print('alpha73_misty_step_line_of_sight_role_boundary=PASS')
 print('alpha73_levitate_apex_hover_authority=PASS')
 print('alpha73_second_circle_visual_lifetime_sync=PASS')

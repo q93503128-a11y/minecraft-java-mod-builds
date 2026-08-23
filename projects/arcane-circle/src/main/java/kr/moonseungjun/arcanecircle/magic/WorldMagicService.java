@@ -196,6 +196,7 @@ public final class WorldMagicService {
 
     private static int secondCircleVisualDuration(String spellId, int baseDuration) {
         return switch (spellId) {
+            case "scorching_ray" -> Math.max(baseDuration, 20);
             case "web" -> Math.max(baseDuration, SecondCircleSpellService.WEB_TICKS);
             case "mirror_image" -> Math.max(baseDuration, SecondCircleSpellService.MIRROR_TICKS);
             case "invisibility" -> Math.max(baseDuration, SecondCircleSpellService.INVISIBILITY_TICKS);

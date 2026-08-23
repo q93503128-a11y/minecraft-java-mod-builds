@@ -533,5 +533,6 @@
   },
   "second_circle_visual_lifetime_sync": "maintained_server_effects_and_release_vfx_aligned",
   "second_circle_dispel_visual_cleanup": true,
-  "second_circle_npc_terrain_safety": "gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit"
+  "second_circle_npc_terrain_safety": "gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit",
+  "second_circle_scorching_ray_visual_ticks": 20
 }

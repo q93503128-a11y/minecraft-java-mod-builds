@@ -118,6 +118,8 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit('alpha.73 second-circle dispel visual cleanup missing')
     if index.get('second_circle_npc_terrain_safety') != 'gust_and_shatter_keep_combat_authority_but_skip_npc_world_edit':
         raise SystemExit('alpha.73 second-circle NPC terrain safety missing')
+    if index.get('second_circle_scorching_ray_visual_ticks') != 20:
+        raise SystemExit('alpha.73 Scorching Ray full-salvo visual window missing')
 
     expected3 = {
         'haste': '30s_player_and_npc_arcane_tempo_acceleration_0.72_cast_0.85_cooldown',
@@ -231,6 +233,7 @@ digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
 print('Arcane Circle alpha.73 JAR verification: PASS')
 print('alpha73_second_circle_value_pass_1=PASS')
+print('alpha73_scorching_ray_full_salvo_visual_window=PASS')
 print('alpha73_misty_step_line_of_sight_role_boundary=PASS')
 print('alpha73_levitate_apex_hover_authority=PASS')
 print('alpha73_second_circle_visual_lifetime_sync=PASS')
