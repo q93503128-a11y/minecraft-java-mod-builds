@@ -1,6 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
-/** A single server-authored next step. Guidance only; no extra management layer. */
+/** A single server-authored next step. This stays lightweight guidance rather than a separate task system. */
 public final class SettlementGuidanceService {
     private SettlementGuidanceService() {}
 
@@ -8,7 +8,10 @@ public final class SettlementGuidanceService {
         if (!data.founded()) return "";
         if (data.construction().active()) {
             BuildingType type = BuildingType.fromId(data.construction().type());
-            return "진행 중 · " + (type == null ? "건물" : type.displayName()) + " 건설";
+            String name = type == null ? "건물" : type.displayName();
+            return data.construction().step() == 0
+                    ? "진행 중 · " + name + " 자재 운반"
+                    : "진행 중 · " + name + " 건설";
         }
         if (data.roadConstruction().active()) return "진행 중 · 도로 공사";
         if (data.outpostConstruction().active()) return "진행 중 · 전초기지 건설";

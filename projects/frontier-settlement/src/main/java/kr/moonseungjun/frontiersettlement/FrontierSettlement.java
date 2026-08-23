@@ -3,6 +3,7 @@ package kr.moonseungjun.frontiersettlement;
 import kr.moonseungjun.frontiersettlement.command.SettlementCommands;
 import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -19,5 +20,6 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SettlementService::onServerTick);
         NeoForge.EVENT_BUS.addListener(SettlementService::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(SettlementConstructionService::onBreakBlock);
     }
 }

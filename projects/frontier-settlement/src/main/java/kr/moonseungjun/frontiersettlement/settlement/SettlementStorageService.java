@@ -48,6 +48,10 @@ public final class SettlementStorageService {
         return new SettlementResources(wood, stone, metal, food);
     }
 
+    public static boolean storageAvailable(ServerLevel level, SettlementData data) {
+        return allStorageChunksLoaded(level, storagePositions(data));
+    }
+
     public static boolean consume(ServerLevel level, SettlementData data, long wood, long stone, long food) {
         List<BlockPos> positions = storagePositions(data);
         if (!allStorageChunksLoaded(level, positions)) return false;
@@ -88,6 +92,33 @@ public final class SettlementStorageService {
             if (hasRoom(container, stack)) return pos;
         }
         return data.stockpilePos();
+    }
+
+    public static BlockPos findExtractionTarget(ServerLevel level, SettlementData data, Predicate<ItemStack> predicate) {
+        for (BlockPos pos : storagePositions(data)) {
+            if (!level.hasChunkAt(pos)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (!stack.isEmpty() && predicate.test(stack)) return pos;
+            }
+        }
+        return null;
+    }
+
+    public static ItemStack extract(ServerLevel level, BlockPos source, Predicate<ItemStack> predicate, int maxCount) {
+        if (maxCount <= 0 || !level.hasChunkAt(source)) return ItemStack.EMPTY;
+        if (!(level.getBlockEntity(source) instanceof Container container)) return ItemStack.EMPTY;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack current = container.getItem(slot);
+            if (current.isEmpty() || !predicate.test(current)) continue;
+            int take = Math.min(maxCount, current.getCount());
+            ItemStack result = current.copyWithCount(take);
+            current.shrink(take);
+            container.setChanged();
+            return result;
+        }
+        return ItemStack.EMPTY;
     }
 
     private static boolean allStorageChunksLoaded(ServerLevel level, List<BlockPos> positions) {
