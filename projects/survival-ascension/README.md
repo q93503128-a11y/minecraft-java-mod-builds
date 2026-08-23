@@ -64,6 +64,6 @@ Complete all nine region directives at Stage 2:
 - Stage 1, seven completed including Deep and Nether: 2 Netherite Scraps + 16 Diamonds + 32 Echo Shards.
 - Stage 2, all nine completed: guaranteed Mythic III + 4 Netherite Scraps + 64 Echo Shards + 16 Dragon's Breath + 500 XP + Field Mastery.
 
-The multi-task quest structure is independently implemented after studying FTB Quests' multi-task/progression concepts and Bountiful's variable contract/reward philosophy. FTB Quests is All Rights Reserved and Bountiful is GPL-3.0; both are reference-only here. No source, assets, quest data, UI or namespaces from either project are bundled. citeturn766979search1turn766979search0
+The multi-task quest structure is independently implemented after studying FTB Quests' multi-task/progression concepts and Bountiful's variable contract/reward philosophy. FTB Quests is All Rights Reserved and Bountiful is GPL-3.0; both are reference-only here. No source, assets, quest data, UI or namespaces from either project are bundled.
 
 M main radial: Skills / Mining / Construction / Equipment / Infrastructure / Guide / Close. Shift remains the precision override for scaled work.
