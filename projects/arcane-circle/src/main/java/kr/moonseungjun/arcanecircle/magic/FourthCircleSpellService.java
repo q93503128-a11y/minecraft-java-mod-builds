@@ -162,7 +162,7 @@ public final class FourthCircleSpellService {
                 if (terror != null && terror.level == target.level() && terror.expiresAt > now
                         && terror.ownerId.equals(target.getUUID())) {
                     event.setCanceled(true);
-                    terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE,
+                    terror.level.playSound(null, target.blockPosition(), SoundEvents.SOUL_ESCAPE.value(),
                             target instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .62F, .74F);
                     return;
                 }
