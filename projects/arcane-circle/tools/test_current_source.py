@@ -13,8 +13,8 @@ def need(body,*tokens):
 
 gradle=text(root/'gradle.properties'); main=text(root/'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index=json.loads(text(root/'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle,'mod_version=0.12.1-alpha.67'); need(main,'VERSION = "0.12.1-alpha.67"')
-assert index['version']=='0.12.1-alpha.67' and index['implemented_circles']==list(range(1,10))
+need(gradle,'mod_version=0.12.1-alpha.68'); need(main,'VERSION = "0.12.1-alpha.68"')
+assert index['version']=='0.12.1-alpha.68' and index['implemented_circles']==list(range(1,10))
 assert index['direct_spells']==90 and index['fusion_spells']==19
 
 catalog=text(magic/'SpellCatalog.java')
@@ -44,7 +44,33 @@ need(text(magic/'ThirdCircleSpellService.java'),'ArcaneDamage.isResolving()','SL
 need(text(magic/'FourthCircleSpellService.java'),'FIRE_WALLS.add(new FireWall','ICE_STORMS.add(new IceStorm')
 need(text(magic/'FifthCircleSpellService.java'),'public static boolean intercepts(LivingEntity caster, CastTargetSnapshot snapshot)','DOMINATED.put')
 need(text(magic/'SixthCircleSpellService.java'),'DestructiveMagicService.ray(player, "disintegrate"','NPC_PETRIFY.put')
-need(text(magic/'SeventhCircleSpellService.java'),'case "plane_shift" -> PlanarSpellService.execute(caster, spellId);','for (int band = 0; band < 7; band++)')
+
+seventh=text(magic/'SeventhCircleSpellService.java')
+need(seventh,'case "plane_shift" -> PlanarSpellService.execute(caster, spellId);','for (int band = 0; band < 7; band++)',
+     'DELAYED_BLAST_FUSE_TICKS = 72','DELAYED_BLAST_VISUAL_TICKS = 90',
+     'FIRE_STORM_SEQUENCE_TICKS = 48','FIRE_STORM_VISUAL_TICKS = 70','FIRE_STORM_STRIKE_INTERVAL = 8',
+     'DELAYED_BLASTS.add(new DelayedBlastCore','radius * 1.35','now + DELAYED_BLAST_FUSE_TICKS',
+     'FIRE_STORMS.add(new FireStormField','field.hitCounts.getOrDefault','prior == 0 ? .90 : .24',
+     'case "finger_of_death" -> DeathDoctrineService.execute(caster, spellId, range, power, snapshot);',
+     'DeathDoctrineService.executeNpc(level, caster, target, spell.id(), range, power, snapshot)',
+     'TELEPORT_GATHER_RADIUS = 7.0','TELEPORT_MAX_COMPANIONS = 6','teleportCompanion(caster, value)',
+     '.limit(TELEPORT_MAX_COMPANIONS).toList()','player.isCrouching()','private static boolean teleportSingle')
+assert 'double threshold = Math.max(32.0, power * .72)' not in seventh
+
+summary7=text(magic/'SeventhCircleSpellSummary.java')
+need(summary7,'약 3.6초 동안 압축','플레이어와 NPC 모두 하나의 죽음 권능 규칙','약 0.4초 간격으로 순차 낙하',
+     '시전자 주변 7m','최대 6명을 함께 옮깁니다','NPC 마법사도 같은 아군 집단 재배치')
+
+maintenance=text(client/'HighCircleMaintenanceOverlay.java')
+need(maintenance,'SeventhCircleSpellService.delayedBlastRadius(range)','SeventhCircleSpellService.delayedBlastShockRadius(range)',
+     'SeventhCircleSpellService.DELAYED_BLAST_FUSE_TICKS / 20.0','private static void fireStormAuthority',
+     'double interval = .40','SeventhCircleSpellService.fireStormPillarRadius(range)',
+     'SeventhCircleSpellService.TELEPORT_GATHER_RADIUS','SeventhCircleSpellService.TELEPORT_MAX_COMPANIONS',
+     'm.circle(g, target, 2.6','m.circle(g, target, 4.2')
+
+world_magic=text(magic/'WorldMagicService.java')
+need(world_magic,'case "delayed_blast_fireball" -> Math.max(baseDuration, SeventhCircleSpellService.DELAYED_BLAST_VISUAL_TICKS);',
+     'case "fire_storm" -> Math.max(baseDuration, SeventhCircleSpellService.FIRE_STORM_VISUAL_TICKS);')
 
 eighth=text(magic/'EighthCircleSpellService.java')
 need(eighth,'EARTHQUAKES.add(new EarthquakeField','INCENDIARY_CLOUDS.add(field)','SUNBURSTS.add(field)',
@@ -102,7 +128,6 @@ need(alpha65,'Set.<Relative>of()')
 
 kinetics=text(magic/'SpellKineticsService.java')
 need(kinetics,'import net.minecraft.world.phys.Vec3;','MeteorBarragePattern.rememberRange(targetSnapshot.barrageSeed(), cast.range())','Alpha65NinthCircleRuntime.worldSunder(player, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.executeOrDelegate(player, spellId, range, power, targetSnapshot)','Alpha65NinthCircleRuntime.meteorImpact(player','Alpha65NinthCircleRuntime.groundedBarrageCenter')
-world_magic=text(magic/'WorldMagicService.java')
 need(world_magic,'GroundTargetResolver.surface((ServerLevel) caster.level(), around)','GroundTargetResolver.safeStanding(level, desired, 10)','MeteorBarragePattern.firstImpactTick(snapshot.barrageSeed(), cast.range())','MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())','EighthCircleSpellService.NPC_DOMINATE_TICKS','EighthCircleSpellService.NPC_FEEBLEMIND_TICKS','EighthCircleSpellService.NPC_MAZE_TICKS','EighthCircleSpellService.SUNBURST_TICKS')
 assert 'scale(Math.min(3.0, range))' not in world_magic
 
@@ -140,6 +165,18 @@ assert index['gate_target_contract']=='entity_independent_safe_ground_pair'
 assert index['weird_contract']=='caster_excluded_escape_or_die_domain'
 assert index['world_sunder_contract']=='horizontal_fault_corridor'
 assert index['grimoire_ui']=='isolated_slot_strip_plus_clicked_effect_detail_inspector'
+
+assert index['seventh_circle_preserved_authority']==['etherealness','forcecage','plane_shift','simulacrum']
+value7=index['seventh_circle_value_pass_1']
+assert value7=={
+ 'delayed_blast_fireball':'3.6s_time_locked_siege_core_with_primary_breach_and_overpressure_shock',
+ 'finger_of_death':'canonical_death_doctrine_single_soul_rupture_no_execution_threshold',
+ 'fire_storm':'six_step_0.4s_siege_bombardment_with_repeat_hit_attenuation',
+ 'teleport':'same_dimension_7m_gather_tactical_group_relocation_up_to_6_companions'}
+roles7=index['seventh_circle_role_audit']; assert set(roles7)=={'delayed_blast_fireball','etherealness','finger_of_death','fire_storm','forcecage','plane_shift','prismatic_spray','reverse_gravity','simulacrum','teleport'}
+assert len(set(roles7.values()))==10
+assert index['seventh_circle_teleport_companion_policy']=='players_crouch_opt_in_allied_nonplayers_auto_nearest_up_to_6_safe_slots'
+
 assert index['eighth_circle_preserved_authority']==['antimagic_field','control_weather','demiplane']
 value=index['eighth_circle_value_pass_1']
 assert set(value)=={'clone','dominate_monster','feeblemind','maze'}
@@ -157,7 +194,7 @@ assert len(set(roles.values()))==10
 assert index['eighth_circle_npc_terrain_safety']=='earthquake_keeps_movement_disaster_but_skips_npc_world_damage'
 
 need(text(magic/'HighControlSpellService.java'),'NinthCircleSpellService.clear(subject);'); need(text(magic/'ThirdCircleSpellService.java'),'HighControlSpellService.clear(target);'); need(text(magic/'ArcaneFieldService.java'),'HighControlSpellService.clear(entity);')
-verify=text(root/'tools/verify_jar.py'); need(verify,'0.12.1-alpha.67','Alpha65NinthCircleRuntime.class','GroundTargetResolver.class','alpha65_grounded_meteor=PASS','alpha67_eighth_circle_value_pass_2=PASS')
+verify=text(root/'tools/verify_jar.py'); need(verify,'0.12.1-alpha.68','Alpha65NinthCircleRuntime.class','GroundTargetResolver.class','alpha65_grounded_meteor=PASS','alpha67_eighth_circle_value_pass_2=PASS','alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS'); print('all_109_explicit_effect_summaries=PASS'); print('alpha53_65_regression_anchors=PASS')
@@ -165,6 +202,8 @@ print('alpha66_bound_clone=PASS'); print('alpha66_dominate_faction_theft=PASS');
 print('alpha66_maze_exile_aftershock=PASS'); print('alpha66_eighth_circle_npc_parity=PASS'); print('alpha66_eighth_circle_value_pass=PASS')
 print('alpha67_earthquake_fault_disaster=PASS'); print('alpha67_incendiary_firefront_wake=PASS'); print('alpha67_sunburst_solar_domain=PASS')
 print('alpha67_eighth_circle_visual_hitbox_lifetime_sync=PASS'); print('alpha67_eighth_circle_role_audit=PASS'); print('alpha67_eighth_circle_value_pass_2=PASS')
+print('alpha68_delayed_blast_siege_core=PASS'); print('alpha68_fire_storm_sequence=PASS'); print('alpha68_finger_death_doctrine=PASS')
+print('alpha68_group_teleport=PASS'); print('alpha68_seventh_circle_visual_authority_sync=PASS'); print('alpha68_seventh_circle_role_audit=PASS'); print('alpha68_seventh_circle_value_pass_1=PASS')
 print('alpha65_ground_target_contract=PASS'); print('alpha65_meteor_surface_per_strike=PASS'); print('alpha65_gate_safe_ground_pair=PASS')
 print('alpha65_weird_escape_or_die=PASS'); print('alpha65_world_sunder_horizontal_fault=PASS')
 print('alpha65_individual_ninth_circle_visuals=PASS'); print('alpha65_common_grand_array_forbidden=PASS')
