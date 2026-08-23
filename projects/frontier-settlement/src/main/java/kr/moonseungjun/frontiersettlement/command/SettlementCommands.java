@@ -11,6 +11,7 @@ import kr.moonseungjun.frontiersettlement.settlement.RoadConstructionState;
 import kr.moonseungjun.frontiersettlement.settlement.RoadSegment;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementExternalContentService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementResources;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
@@ -96,6 +97,15 @@ public final class SettlementCommands {
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
                 + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
+
+        SettlementExternalContentService.Snapshot external = SettlementExternalContentService.snapshot(player.level().getServer().overworld(), data);
+        if (external.storageLoaded()) {
+            player.sendSystemMessage(Component.literal("탐험 연동 | 유물 " + external.expeditionRelics()
+                    + " | 외부 무기 " + external.externalWeapons()));
+        } else {
+            player.sendSystemMessage(Component.literal("탐험 연동 | 마을 저장소 청크가 로드되면 물리 전리품을 확인합니다."));
+        }
+
         if (!data.roads().isEmpty()) {
             RoadSegment last = data.roads().get(data.roads().size() - 1);
             player.sendSystemMessage(Component.literal("최근 도로 끝점 | " + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ()));
