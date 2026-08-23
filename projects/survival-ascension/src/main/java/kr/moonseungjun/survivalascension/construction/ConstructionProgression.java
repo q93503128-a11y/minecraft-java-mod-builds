@@ -9,6 +9,7 @@ package kr.moonseungjun.survivalascension.construction;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
@@ -21,7 +22,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -122,7 +122,7 @@ public final class ConstructionProgression {
                 if (result == PlaceResult.OUT_OF_MATERIAL) {
                     removePending(job.playerId, job.remaining());
                     job.clear();
-                    player.sendSystemMessage(Component.literal("§6[건축] §f재료가 부족해 대량 배치를 중단했습니다."));
+                    player.sendSystemMessage(Component.literal("§6[건축] §f인벤토리와 현장 물류 거점의 재료가 모두 부족해 대량 배치를 중단했습니다."));
                     break;
                 }
             }
@@ -142,7 +142,7 @@ public final class ConstructionProgression {
 
         Item item = state.getBlock().asItem();
         if (item == Items.AIR || !(item instanceof BlockItem)) return PlaceResult.SKIPPED;
-        if (!player.isCreative() && !hasMaterial(player, item)) return PlaceResult.OUT_OF_MATERIAL;
+        if (!player.isCreative() && !FieldDepotService.hasMaterial(player, item)) return PlaceResult.OUT_OF_MATERIAL;
 
         UUID uuid = player.getUUID();
         INTERNAL_PLACE_GUARD.add(uuid);
@@ -154,25 +154,11 @@ public final class ConstructionProgression {
         }
         if (denied) return PlaceResult.SKIPPED;
         if (!level.setBlockAndUpdate(target, state)) return PlaceResult.SKIPPED;
-        if (!player.isCreative()) consumeOne(player, item);
+        if (!player.isCreative() && !FieldDepotService.consumeOne(player, item)) {
+            level.removeBlock(target, false);
+            return PlaceResult.OUT_OF_MATERIAL;
+        }
         return PlaceResult.PLACED;
-    }
-
-    private static boolean hasMaterial(ServerPlayer player, Item item) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            if (player.getInventory().getItem(slot).is(item)) return true;
-        }
-        return false;
-    }
-
-    private static void consumeOne(ServerPlayer player, Item item) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
-            stack.shrink(1);
-            player.getInventory().setChanged();
-            return;
-        }
     }
 
     private static List<BlockPos> computeTargets(ServerPlayer player, BlockPos center, ConstructionMode mode, int level) {
