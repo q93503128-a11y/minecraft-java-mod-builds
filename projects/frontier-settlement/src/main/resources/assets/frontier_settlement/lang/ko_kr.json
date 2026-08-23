@@ -1,4 +1,5 @@
 {
+  "item.frontier_settlement.pioneer_marker": "개척 표식",
   "key.category.frontier_settlement.construction": "Frontier Settlement 건설",
   "key.frontier_settlement.build_mode": "건설 모드 열기/닫기",
   "key.frontier_settlement.next_building": "다음 건물",
