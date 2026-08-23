@@ -165,7 +165,7 @@ for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
 
 core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
 for token in ('level.getBlockEntity(placement.pos())', 'BreakBlockEvent', 'event.setCanceled(true)',
-              'event.setNotifyClient(true)', 'desired(data)', 'desired(data, SettlementTier tier)',
+              'event.setNotifyClient(true)', 'desired(data)', 'desired(SettlementData data, SettlementTier tier)',
               'for (SettlementTier tier : SettlementTier.values())'):
     if token not in core: raise SystemExit(f'alpha.29 civic-core protection invariant missing: {token}')
 
