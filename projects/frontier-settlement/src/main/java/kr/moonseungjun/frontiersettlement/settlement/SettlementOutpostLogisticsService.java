@@ -40,7 +40,9 @@ public final class SettlementOutpostLogisticsService {
     /** Assign old pre-Alpha.27 generic transport villagers without charging arrival food again. */
     public static void migrateLegacyWorkers(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeLoaded(level, data, outpost)) continue;
+            // Migration/replacement is deliberately stricter than normal travel: all route chunks
+            // must be loaded so an already-existing sleeping transporter cannot be duplicated.
+            if (!routeFullyLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) != null) continue;
             Villager legacy = findLegacyWorker(level, data, outpost);
             if (legacy != null) assignWorker(legacy, outpost);
@@ -49,11 +51,12 @@ public final class SettlementOutpostLogisticsService {
 
     public static void tick(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeLoaded(level, data, outpost)) continue;
-            Villager worker = findAssignedWorker(level, data, outpost);
+            List<BlockPos> route = routeFromTown(data, outpost);
+            if (route.isEmpty()) continue;
+            Villager worker = findAssignedWorker(level, data, outpost, route);
             if (worker == null) continue;
             if (worker.isNoAi()) worker.setNoAi(false);
-            workTransport(level, data, outpost, worker);
+            workTransport(level, data, outpost, worker, route);
         }
     }
 
@@ -61,7 +64,7 @@ public final class SettlementOutpostLogisticsService {
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
         int count = 0;
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeLoaded(level, data, outpost)) continue;
+            if (!routeFullyLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) != null) count++;
         }
         return count;
@@ -69,15 +72,15 @@ public final class SettlementOutpostLogisticsService {
 
     public static boolean allRoutesLoaded(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeLoaded(level, data, outpost)) return false;
+            if (!routeFullyLoaded(level, data, outpost)) return false;
         }
         return true;
     }
 
-    /** Returns one loaded outpost that truly lacks its assigned transporter. */
+    /** Returns one fully-loaded outpost route that truly lacks its assigned transporter. */
     public static OutpostRecord firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeLoaded(level, data, outpost)) continue;
+            if (!routeFullyLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) == null) return outpost;
         }
         return null;
@@ -113,6 +116,11 @@ public final class SettlementOutpostLogisticsService {
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
+        return findAssignedWorker(level, data, outpost, route);
+    }
+
+    private static Villager findAssignedWorker(ServerLevel level, SettlementData data,
+                                               OutpostRecord outpost, List<BlockPos> route) {
         if (route.isEmpty()) return null;
         String assignment = outpostTag(outpost);
         List<Villager> found = level.getEntitiesOfClass(Villager.class, routeBounds(data, outpost, route),
@@ -157,17 +165,15 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void workTransport(ServerLevel level, SettlementData data,
-                                      OutpostRecord outpost, Villager worker) {
-        List<BlockPos> route = routeFromTown(data, outpost);
-        if (route.isEmpty()) {
-            worker.getNavigation().stop();
-            return;
-        }
-
+                                      OutpostRecord outpost, Villager worker, List<BlockPos> route) {
         ItemStack carried = worker.getMainHandItem();
         if (carried.isEmpty()) {
-            if (!moveAlongRoute(worker, route, true)) return;
+            if (!moveAlongRoute(level, worker, route, true)) return;
             BlockPos stock = outpost.stockpile();
+            if (!level.hasChunkAt(stock)) {
+                worker.getNavigation().stop();
+                return;
+            }
             if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
                     > STORAGE_INTERACTION_RANGE_SQR) {
                 move(worker, stock, 0.82D);
@@ -182,7 +188,7 @@ public final class SettlementOutpostLogisticsService {
 
         // A pre-Alpha.27 worker may be migrated while carrying a legacy stack. Preserve it and
         // return it safely rather than deleting it, even if it is not normal specialized cargo.
-        if (!moveAlongRoute(worker, route, false)) return;
+        if (!moveAlongRoute(level, worker, route, false)) return;
         deliverToTownStorage(level, data, worker, carried);
     }
 
@@ -219,6 +225,10 @@ public final class SettlementOutpostLogisticsService {
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              Villager worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target)) {
+            worker.getNavigation().stop();
+            return;
+        }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
             move(worker, target, 0.85D);
@@ -228,11 +238,16 @@ public final class SettlementOutpostLogisticsService {
     }
 
     /** Follow persisted road centers in short strides so L-corners and chained roads remain visible. */
-    private static boolean moveAlongRoute(Villager worker, List<BlockPos> route, boolean towardOutpost) {
+    private static boolean moveAlongRoute(ServerLevel level, Villager worker,
+                                          List<BlockPos> route, boolean towardOutpost) {
         if (route.isEmpty()) return false;
         int nearest = nearestRouteIndex(worker, route);
         int endpoint = towardOutpost ? route.size() - 1 : 0;
         BlockPos nearestPos = route.get(nearest).above();
+        if (!level.hasChunkAt(nearestPos)) {
+            worker.getNavigation().stop();
+            return false;
+        }
         double nearestDistance = worker.distanceToSqr(
                 nearestPos.getX() + 0.5D, nearestPos.getY(), nearestPos.getZ() + 0.5D);
         if (nearestDistance > ROAD_JOIN_RANGE_SQR) {
@@ -242,6 +257,10 @@ public final class SettlementOutpostLogisticsService {
 
         if (nearest == endpoint) {
             BlockPos end = route.get(endpoint).above();
+            if (!level.hasChunkAt(end)) {
+                worker.getNavigation().stop();
+                return false;
+            }
             double endDistance = worker.distanceToSqr(end.getX() + 0.5D, end.getY(), end.getZ() + 0.5D);
             if (endDistance <= ENDPOINT_RANGE_SQR) return true;
             move(worker, end, 0.88D);
@@ -251,7 +270,12 @@ public final class SettlementOutpostLogisticsService {
         int next = towardOutpost
                 ? Math.min(endpoint, nearest + ROAD_WAYPOINT_STRIDE)
                 : Math.max(endpoint, nearest - ROAD_WAYPOINT_STRIDE);
-        move(worker, route.get(next).above(), 0.9D);
+        BlockPos nextPos = route.get(next).above();
+        if (!level.hasChunkAt(nextPos)) {
+            worker.getNavigation().stop();
+            return false;
+        }
+        move(worker, nextPos, 0.9D);
         return false;
     }
 
@@ -361,7 +385,7 @@ public final class SettlementOutpostLogisticsService {
         return dx * dx + dz * dz;
     }
 
-    private static boolean routeLoaded(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+    private static boolean routeFullyLoaded(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
         if (route.isEmpty()) return false;
         if (!level.hasChunkAt(data.stockpilePos()) || !level.hasChunkAt(outpost.stockpile())) return false;
