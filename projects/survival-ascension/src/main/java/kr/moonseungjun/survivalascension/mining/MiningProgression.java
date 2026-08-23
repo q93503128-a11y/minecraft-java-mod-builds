@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.mining;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.*;
@@ -79,6 +80,7 @@ public final class MiningProgression {
         BlockPos center = event.getPos();
         ItemStack tool = player.getMainHandItem();
         if (!isValidPickaxeBreak(player, level, center, centerState, tool)) return;
+        ExpeditionProgression.recordSkillAction(player, SkillType.MINING, 1);
         if (!player.isCreative() && !player.isSpectator()) {
             int xp = Math.max(1, (int) Math.ceil(xpForBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
             announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
@@ -184,7 +186,6 @@ public final class MiningProgression {
         }
     }
 
-    /* Target-filtered bounded search adapted from the Digital Miner design in Mekanism (MIT). */
     private static void extractMatchingOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
         OreVeinMatcher matcher = OreVeinMatcher.forOrigin(originState);
         List<BlockPos> candidates = new ArrayList<>();
