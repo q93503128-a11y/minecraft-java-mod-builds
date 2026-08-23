@@ -10,12 +10,12 @@ required = [
     ROOT / 'build.gradle', ROOT / 'gradle.properties', ROOT / 'PROJECT.md', ROOT / 'CANONICAL_PLAN.md', ROOT / 'README.md',
     JAVA / 'FrontierSettlement.java', JAVA / 'content/FrontierContent.java', JAVA / 'content/PioneerMarkerItem.java',
     JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/ConstructionState.java', JAVA / 'settlement/RoadConstructionState.java',
-    JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/SettlementGuidanceService.java', JAVA / 'settlement/SettlementCoreService.java',
-    JAVA / 'settlement/SettlementResidentRoutineService.java', JAVA / 'settlement/SettlementTierInfrastructureService.java',
-    JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
-    JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementOutpostProductionService.java',
-    JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementBenefitService.java',
-    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/BuildingType.java',
+    JAVA / 'settlement/OutpostConstructionState.java', JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/SettlementGuidanceService.java',
+    JAVA / 'settlement/SettlementCoreService.java', JAVA / 'settlement/SettlementResidentRoutineService.java',
+    JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementConstructionService.java',
+    JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/SettlementOutpostService.java',
+    JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementWorkerService.java',
+    JAVA / 'settlement/SettlementBenefitService.java', JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/BuildingType.java',
     JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java', JAVA / 'settlement/SettlementTier.java',
     JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/ClientSettlementState.java', JAVA / 'client/FrontierSettlementClient.java',
@@ -28,7 +28,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.25'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.26'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -39,7 +39,8 @@ for token in ('survival -> settlement growth', 'One world/server has one shared 
     if token not in plan: raise SystemExit(f'canonical plan invariant missing: {token}')
 
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
-for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock'):
+for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
+              'SettlementOutpostService::onBreakBlock'):
     if token not in entry: raise SystemExit(f'active construction protection missing: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
@@ -47,10 +48,13 @@ if service.count('SettlementConstructionService.tick(server, data)') != 1:
     raise SystemExit('construction service must have exactly one canonical server tick call')
 if service.count('SettlementRoadService.tick(server, data)') != 1:
     raise SystemExit('road service must have exactly one canonical server tick call')
+if service.count('SettlementOutpostService.tick(server, data)') != 1:
+    raise SystemExit('outpost service must have exactly one canonical server tick call')
 
 guidance = (JAVA / 'settlement/SettlementGuidanceService.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService.phaseLabel(data.construction())',
-              'SettlementRoadService.phaseLabel(data.roadConstruction())', 'data.outpostConstruction().active()',
+              'SettlementRoadService.phaseLabel(data.roadConstruction())',
+              'SettlementOutpostService.phaseLabel(data.outpostConstruction())',
               'data.houseCount() < 1', 'data.lumberCampCount() < 1', 'BuildingType.FARM', 'BuildingType.QUARRY',
               'data.roads().isEmpty()', 'data.outposts().isEmpty()', 'data.population() < 4', 'BuildingType.MINE',
               'data.outposts().size() < 2', 'data.population() < 8', 'BuildingType.BLACKSMITH',
@@ -64,9 +68,14 @@ for token in ('int scaffoldMask', 'optionalFieldOf("scaffold_mask", 0)', 'ownsSc
     if token not in construction_state: raise SystemExit(f'construction persistence invariant missing: {token}')
 
 road_state = (JAVA / 'settlement/RoadConstructionState.java').read_text(encoding='utf-8')
-for token in ('GRADE_STEP_OFFSET = 1_000_000', 'step >= GRADE_STEP_OFFSET',
-              'return grading() ? step - GRADE_STEP_OFFSET : -1', 'centers.size(), GRADE_STEP_OFFSET'):
+for token in ('GRADE_STEP_OFFSET = 1_000_000', 'PAVE_STEP_OFFSET = 2_000_000', 'step >= GRADE_STEP_OFFSET',
+              'physicalPaving()', 'legacyPrepaidPaving()', 'centers.size(), GRADE_STEP_OFFSET'):
     if token not in road_state: raise SystemExit(f'alpha.25 road phase persistence invariant missing: {token}')
+
+outpost_state = (JAVA / 'settlement/OutpostConstructionState.java').read_text(encoding='utf-8')
+for token in ('GRADE_STEP_OFFSET = 1_000_000', 'BUILD_STEP_OFFSET = 2_000_000',
+              'physicalBuilding()', 'legacyPrepaidBuilding()', 'buildStep()', 'legacyStep()'):
+    if token not in outpost_state: raise SystemExit(f'alpha.26 outpost phase persistence invariant missing: {token}')
 
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtractionTarget', 'EquipmentSlot.MAINHAND',
@@ -86,7 +95,7 @@ for token in ('SettlementStorageService.storageAvailable(level, data)', 'RoadCon
               'tickPaving(', 'SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone)',
               'HAUL_BATCH_SIZE = 16', 'EquipmentSlot.MAINHAND', 'consumeCarriedStone(', 'returnCarriedToStorage(',
               'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)', 'builder.swing(InteractionHand.MAIN_HAND)',
-              'case', 'BreakBlockEvent', 'event.setNotifyClient(true)', '도로 지반 정리', '도로 석재 운반·포설'):
+              'BreakBlockEvent', 'event.setNotifyClient(true)', '도로 지반 정리', '도로 석재 운반·포설'):
     if token not in road: raise SystemExit(f'alpha.25 physical road invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, 0L, check.stoneCost(), 0L)' in road:
     raise SystemExit('road approval still deletes full stone cost')
@@ -94,6 +103,26 @@ if 'prepareRoute(level, check.centers())' in road:
     raise SystemExit('road terrain is still magically prepared at approval')
 if 'destroyBlock(' in road or 'dropResources(' in road:
     raise SystemExit('road construction must not create loose drops')
+
+outpost = (JAVA / 'settlement/SettlementOutpostService.java').read_text(encoding='utf-8')
+for token in ('SettlementStorageService.storageAvailable(level, data)',
+              'data.replaceOutpostConstructionStep(OutpostConstructionState.GRADE_STEP_OFFSET)',
+              'state.grading()', 'tickGrading(', 'applyGradeCell(', 'Blocks.COARSE_DIRT.defaultBlockState()',
+              'state.legacyPrepaidBuilding()', 'tickLegacyPrepaid(', 'tickPhysicalBuilding(',
+              'SettlementStorageService.findExtractionTarget(level, data, predicate)', 'HAUL_BATCH_SIZE = 16',
+              'EquipmentSlot.MAINHAND', 'consumeCarried(', 'returnCarriedToStorage(',
+              'materialCostDelta(', 'isWoodPlacement(', 'isStonePlacement(',
+              'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)', 'builder.swing(InteractionHand.MAIN_HAND)',
+              'BreakBlockEvent', 'event.setNotifyClient(true)', '전초기지 부지 정리', '전초기지 자재 운반·시공'):
+    if token not in outpost: raise SystemExit(f'alpha.26 physical outpost invariant missing: {token}')
+if 'SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)' in outpost:
+    raise SystemExit('outpost approval still deletes full material cost')
+if 'prepareSite(level, gate, road.directionX(), road.directionZ())' in outpost:
+    raise SystemExit('outpost terrain is still magically prepared at approval')
+if 'while (placed < 2' in outpost:
+    raise SystemExit('legacy two-block outpost burst still present')
+if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
+    raise SystemExit('outpost construction must not create loose drops')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)', 'findExtractionTarget(', 'findDepositTarget(', 'extract('):
@@ -126,4 +155,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.25 source audit: PASS')
+print('Frontier Settlement alpha.26 source audit: PASS')

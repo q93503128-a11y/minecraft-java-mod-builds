@@ -14,7 +14,9 @@ public final class SettlementGuidanceService {
         if (data.roadConstruction().active()) {
             return "진행 중 · " + SettlementRoadService.phaseLabel(data.roadConstruction());
         }
-        if (data.outpostConstruction().active()) return "진행 중 · 전초기지 건설";
+        if (data.outpostConstruction().active()) {
+            return "진행 중 · " + SettlementOutpostService.phaseLabel(data.outpostConstruction());
+        }
 
         if (data.houseCount() < 1) return buildingGoal(data, BuildingType.HOUSE);
         if (data.lumberCampCount() < 1) return buildingGoal(data, BuildingType.LUMBER_CAMP);

@@ -8,6 +8,12 @@ public record OutpostConstructionState(int roadIndex,
                                        int gateX, int gateY, int gateZ,
                                        int directionX, int directionZ,
                                        int step) {
+    /**
+     * Phase markers stay inside the existing persisted step field so old saves decode unchanged.
+     * Small values are Alpha.25-or-earlier prepaid building, 1M+ is grading, and 2M+ is Alpha.26 physical building.
+     */
+    public static final int GRADE_STEP_OFFSET = 1_000_000;
+    public static final int BUILD_STEP_OFFSET = 2_000_000;
     public static final OutpostConstructionState EMPTY =
             new OutpostConstructionState(-1, 0, 0, 0, 0, 0, 0);
 
@@ -23,6 +29,30 @@ public record OutpostConstructionState(int roadIndex,
 
     public boolean active() {
         return roadIndex >= 0 && (directionX != 0 || directionZ != 0);
+    }
+
+    public boolean grading() {
+        return active() && step >= GRADE_STEP_OFFSET && step < BUILD_STEP_OFFSET;
+    }
+
+    public boolean physicalBuilding() {
+        return active() && step >= BUILD_STEP_OFFSET;
+    }
+
+    public boolean legacyPrepaidBuilding() {
+        return active() && step >= 0 && step < GRADE_STEP_OFFSET;
+    }
+
+    public int gradeStep() {
+        return grading() ? step - GRADE_STEP_OFFSET : -1;
+    }
+
+    public int buildStep() {
+        return physicalBuilding() ? step - BUILD_STEP_OFFSET : -1;
+    }
+
+    public int legacyStep() {
+        return legacyPrepaidBuilding() ? step : -1;
     }
 
     public BlockPos gate() {
