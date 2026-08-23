@@ -32,6 +32,7 @@ public final class SettlementService {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
             SettlementMarketService.tick(server, data);
+            SettlementWorkshopService.tick(server, data);
         }
         SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);
@@ -105,7 +106,12 @@ public final class SettlementService {
 
     private static int buildingUnlockMask(SettlementData data) {
         int mask = 0;
-        for (BuildingType type : BuildingType.values()) if (SettlementConstructionService.lockedReason(data, type) == null) mask |= 1 << type.ordinal();
+        for (BuildingType type : BuildingType.values()) {
+            String locked = type == BuildingType.WORKSHOP
+                    ? SettlementWorkshopService.lockedReason(data)
+                    : SettlementConstructionService.lockedReason(data, type);
+            if (locked == null) mask |= 1 << type.ordinal();
+        }
         return mask;
     }
 
