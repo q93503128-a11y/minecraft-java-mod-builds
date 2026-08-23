@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.infrastructure;
 
+import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -45,7 +46,11 @@ public final class InfrastructureService {
         InfrastructureData data = InfrastructureData.get(player);
         boolean wasComplete = data.isComplete(project);
         if (wasComplete) {
-            player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + "§f은 이미 완공되었습니다."));
+            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+                AscensionTrialSystem.tryStart(player);
+            } else {
+                player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + "§f은 이미 완공되었습니다."));
+            }
             return;
         }
 
@@ -72,6 +77,9 @@ public final class InfrastructureService {
             MinecraftServer server = ((ServerLevel) player.level()).getServer();
             Component message = Component.literal("§6[인프라 완공] §e" + project.koreanName() + " §f— " + project.benefit());
             for (ServerPlayer online : server.getPlayerList().getPlayers()) online.sendSystemMessage(message);
+            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+                player.sendSystemMessage(Component.literal("§5[승천 시련] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 시련을 개방할 수 있습니다."));
+            }
         }
     }
 
@@ -84,6 +92,9 @@ public final class InfrastructureService {
         InfrastructureData data = InfrastructureData.get(player);
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
+            if (project == InfrastructureProject.ASCENSION_NEXUS) {
+                player.sendSystemMessage(Component.literal("  §5- 승천 시련 입장 §f메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8"));
+            }
             return;
         }
         player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §7· §f" + project.benefit()));
