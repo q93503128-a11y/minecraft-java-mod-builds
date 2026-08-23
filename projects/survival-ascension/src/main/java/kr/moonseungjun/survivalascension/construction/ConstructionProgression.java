@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.construction;
  * NeoForge placement hooks, and tick-budgeted bulk work.
  */
 
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
@@ -176,9 +177,10 @@ public final class ConstructionProgression {
         double xLook = Math.abs(player.getLookAngle().x);
         double zLook = Math.abs(player.getLookAngle().z);
         boolean lookingMostlyX = xLook >= zLook;
+        boolean fieldMastery = level >= 100 && ExpeditionProgression.hasFieldMastery(player);
 
         if (mode == ConstructionMode.LINE) {
-            int size = SkillTuning.constructionLineLength(level);
+            int size = fieldMastery ? 65 : SkillTuning.constructionLineLength(level);
             int half = size / 2;
             for (int offset = -half; offset <= half; offset++) {
                 BlockPos pos = lookingMostlyX ? center.offset(0, 0, offset) : center.offset(offset, 0, 0);
@@ -201,7 +203,7 @@ public final class ConstructionProgression {
             return targets;
         }
 
-        int size = SkillTuning.constructionPlaneSize(level);
+        int size = fieldMastery ? 13 : SkillTuning.constructionPlaneSize(level);
         if (size <= 1) return targets;
         int half = size / 2;
         if (mode == ConstructionMode.FLOOR) {
@@ -239,7 +241,10 @@ public final class ConstructionProgression {
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 3×3 · 선 배치 9블록"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 5×5 · 선 배치 17블록"));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§6[건축 해금] §f벽/바닥 9×9 · 선 33블록. 건축 공방 완공 시 입체 5×5×5 추가."));
-        if (oldLevel < 100 && newLevel >= 100) player.sendSystemMessage(Component.literal("§6[건축 숙련 VI] §f선 49 · 벽/바닥 11×11 · 건축 공방 입체 7×7×7"));
+        if (oldLevel < 100 && newLevel >= 100) {
+            String field = ExpeditionProgression.hasFieldMastery(player) ? "선 65 · 벽/바닥 13×13" : "선 49 · 벽/바닥 11×11";
+            player.sendSystemMessage(Component.literal("§6[건축 숙련 VI] §f" + field + " · 건축 공방 입체 7×7×7"));
+        }
     }
 
     private enum PlaceResult { PLACED, SKIPPED, OUT_OF_MATERIAL }
