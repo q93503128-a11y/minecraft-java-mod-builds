@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.31.0-alpha.1
+- Added prepaid, one-use `현장 복귀 계약` to active physical outposts without adding ordinary waystone-style fast travel.
+- `M -> Infrastructure -> 산업 가공소 -> 현장 복귀 계약` requires an active outpost within4 blocks; first arming consumes one stored field-supply charge in advance.
+- An already-paid armed contract may be retargeted to another active outpost without another charge; selecting the same target does not double-charge.
+- Added independent `field_recovery_v1` SavedData with optional armed point, optional pending point and lifetime successful recovery count per player. Older worlds start unset.
+- Recovery qualifies only for same-dimension general deaths within96 blocks of the armed outpost while the real loaded/interactable Barrel + Bed/Campfire/Crafting/Furnace structure remains operational.
+- Regional Incident, Apex Hunt and Ascension Trial deaths explicitly do not queue or consume field recovery, preventing encounter extra-life abuse.
+- A qualifying death atomically moves the prepaid state from armed to pending. Respawn then attempts a server-side return to a safe standing position around the outpost.
+- Safe arrival requires loaded blocks, `mayInteract`, sturdy floor, empty feet/head collision and no fluid. No chunk force-loading is added.
+- Pending recovery is consumed only after `ServerPlayer.teleportTo` succeeds. Failed target validation, arrival search or teleport preserves the pending contract.
+- A pending contract can be retried. If its original target is unavailable, standing by another active outpost allows the prepaid token to be rearmed there without another supply charge.
+- Successful recovery clears movement/fall state and increments lifetime recovery count.
+- Added `AscensionTrialSystem.isActive(player)` as a read-only overlap check while retaining the full four-wave Trial lifecycle and rewards.
+- Production radial, Industrial status, `/ascension stats` and Guide now expose recovery setup/state/counter. No new packet schema was added; protocol remains8.
+- Waystones 26.2 is All Rights Reserved and Corpse is LGPL-3.0; both are reference-only for product-level death/travel friction. No source, blocks/entities, inventory-transfer logic, assets, data or namespaces are copied.
+- Updated README/PROJECT canon, third-party policy, source audit and JAR verification for recovery persistence, death qualification, challenge exclusion, safe arrival and no-fast-travel/no-force-load contracts.
+
 ## 0.30.0-alpha.1
 - Added physical field outposts that upgrade an existing registered Barrel depot into a forward base instead of introducing a virtual claim or generic management GUI.
 - `M -> Infrastructure -> 산업 가공소 -> 전초기지 승격` finds the nearest owned depot within4 blocks server-side; no client coordinate is trusted.
