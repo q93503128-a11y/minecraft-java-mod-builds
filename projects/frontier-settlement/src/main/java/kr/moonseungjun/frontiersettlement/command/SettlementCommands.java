@@ -43,7 +43,8 @@ public final class SettlementCommands {
                         .then(Commands.literal("mine").executes(context -> build(context, BuildingType.MINE)))
                         .then(Commands.literal("warehouse").executes(context -> build(context, BuildingType.WAREHOUSE)))
                         .then(Commands.literal("blacksmith").executes(context -> build(context, BuildingType.BLACKSMITH)))
-                        .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))));
+                        .then(Commands.literal("guard_post").executes(context -> build(context, BuildingType.GUARD_POST)))
+                        .then(Commands.literal("market").executes(context -> build(context, BuildingType.MARKET)))));
     }
 
     private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -96,6 +97,7 @@ public final class SettlementCommands {
                 + " | 농장 " + data.buildingCount(BuildingType.FARM) + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
                 + " | 광산 " + data.buildingCount(BuildingType.MINE) + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
                 + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH) + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST)
+                + " | 시장 " + data.buildingCount(BuildingType.MARKET)
                 + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
 
         SettlementExternalContentService.Snapshot external = SettlementExternalContentService.snapshot(player.level().getServer().overworld(), data);
