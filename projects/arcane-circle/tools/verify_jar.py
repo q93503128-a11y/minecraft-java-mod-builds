@@ -10,7 +10,7 @@ jar=Path(sys.argv[1])
 if not jar.is_file(): raise SystemExit(f'missing JAR: {jar}')
 
 staff_recipes={'data/arcanecircle/recipe/aegis_staff.json','data/arcanecircle/recipe/archmage_staff.json','data/arcanecircle/recipe/ember_staff.json','data/arcanecircle/recipe/glacial_staff.json','data/arcanecircle/recipe/rift_staff.json','data/arcanecircle/recipe/sage_staff.json','data/arcanecircle/recipe/verdant_staff.json','data/arcanecircle/recipe/zephyr_staff.json'}
-required={'META-INF/neoforge.mods.toml','META-INF/THIRD_PARTY_NOTICES.md','kr/moonseungjun/arcanecircle/ArcaneCircle.class','kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/FifthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SixthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SeventhCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/EighthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/EighthCircleSpellSummary.class','kr/moonseungjun/arcanecircle/magic/NinthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/Alpha65NinthCircleRuntime.class','kr/moonseungjun/arcanecircle/magic/GroundTargetResolver.class','kr/moonseungjun/arcanecircle/magic/NinthCircleMagnitude.class','kr/moonseungjun/arcanecircle/magic/DeathDoctrineService.class','kr/moonseungjun/arcanecircle/magic/MeteorBarragePattern.class','kr/moonseungjun/arcanecircle/magic/MeteorCataclysmService.class','kr/moonseungjun/arcanecircle/magic/NinthCircleSpellSummary.class','kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class','kr/moonseungjun/arcanecircle/magic/ArcaneFieldService.class','kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class','kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class','kr/moonseungjun/arcanecircle/magic/HighWardSpellService.class','kr/moonseungjun/arcanecircle/magic/PlanarSpellService.class','kr/moonseungjun/arcanecircle/magic/SimulacrumService.class','kr/moonseungjun/arcanecircle/world/NpcMeteorBarrageService.class','kr/moonseungjun/arcanecircle/client/AuthoredHighCircleTimeline.class','kr/moonseungjun/arcanecircle/client/HighCirclePrestigeOverlay.class','kr/moonseungjun/arcanecircle/client/CircleScaleEnvelope.class','kr/moonseungjun/arcanecircle/client/PrimaryGrimoireScreen.class','data/arcanecircle/spell_catalog/index.json','assets/arcanecircle/items/spellbook_meteor_swarm.json','assets/arcanecircle/items/spellbook_wish.json','assets/arcanecircle/items/spellbook_gate.json'} | staff_recipes
+required={'META-INF/neoforge.mods.toml','META-INF/THIRD_PARTY_NOTICES.md','kr/moonseungjun/arcanecircle/ArcaneCircle.class','kr/moonseungjun/arcanecircle/magic/FirstCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SecondCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/ThirdCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/FourthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/FifthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SixthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SeventhCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/SeventhCircleSpellSummary.class','kr/moonseungjun/arcanecircle/magic/EighthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/EighthCircleSpellSummary.class','kr/moonseungjun/arcanecircle/magic/NinthCircleSpellService.class','kr/moonseungjun/arcanecircle/magic/Alpha65NinthCircleRuntime.class','kr/moonseungjun/arcanecircle/magic/GroundTargetResolver.class','kr/moonseungjun/arcanecircle/magic/NinthCircleMagnitude.class','kr/moonseungjun/arcanecircle/magic/DeathDoctrineService.class','kr/moonseungjun/arcanecircle/magic/MeteorBarragePattern.class','kr/moonseungjun/arcanecircle/magic/MeteorCataclysmService.class','kr/moonseungjun/arcanecircle/magic/NinthCircleSpellSummary.class','kr/moonseungjun/arcanecircle/magic/SpellKineticsService.class','kr/moonseungjun/arcanecircle/magic/ArcaneFieldService.class','kr/moonseungjun/arcanecircle/magic/HighUtilitySpellService.class','kr/moonseungjun/arcanecircle/magic/HighControlSpellService.class','kr/moonseungjun/arcanecircle/magic/HighWardSpellService.class','kr/moonseungjun/arcanecircle/magic/PlanarSpellService.class','kr/moonseungjun/arcanecircle/magic/SimulacrumService.class','kr/moonseungjun/arcanecircle/world/NpcMeteorBarrageService.class','kr/moonseungjun/arcanecircle/client/AuthoredHighCircleTimeline.class','kr/moonseungjun/arcanecircle/client/HighCircleMaintenanceOverlay.class','kr/moonseungjun/arcanecircle/client/HighCirclePrestigeOverlay.class','kr/moonseungjun/arcanecircle/client/CircleScaleEnvelope.class','kr/moonseungjun/arcanecircle/client/PrimaryGrimoireScreen.class','data/arcanecircle/spell_catalog/index.json','assets/arcanecircle/items/spellbook_meteor_swarm.json','assets/arcanecircle/items/spellbook_wish.json','assets/arcanecircle/items/spellbook_gate.json'} | staff_recipes
 
 with zipfile.ZipFile(jar) as archive:
     names=archive.namelist(); name_set=set(names)
@@ -23,12 +23,28 @@ with zipfile.ZipFile(jar) as archive:
     if packaged!=staff_recipes: raise SystemExit(f'staff recipe set mismatch: {sorted(packaged)}')
     index=json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version=index.get('version')
-    if version!='0.12.1-alpha.67': raise SystemExit(f'unexpected alpha.67 package version: {version}')
+    if version!='0.12.1-alpha.68': raise SystemExit(f'unexpected alpha.68 package version: {version}')
     if jar.name!=f'arcanecircle-{version}.jar': raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
     if index.get('implemented_circles')!=list(range(1,10)) or index.get('direct_spells')!=90 or index.get('fusion_spells')!=19: raise SystemExit('catalogue is not full 1-9 / 90+19')
     if index.get('spell_contract_audit')!='109_explicit_summaries_and_runtime_routes': raise SystemExit('109-spell audit metadata missing')
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True: raise SystemExit(f'{c} NPC parity metadata missing')
+
+    value7=index.get('seventh_circle_value_pass_1',{})
+    expected7={
+        'delayed_blast_fireball':'3.6s_time_locked_siege_core_with_primary_breach_and_overpressure_shock',
+        'finger_of_death':'canonical_death_doctrine_single_soul_rupture_no_execution_threshold',
+        'fire_storm':'six_step_0.4s_siege_bombardment_with_repeat_hit_attenuation',
+        'teleport':'same_dimension_7m_gather_tactical_group_relocation_up_to_6_companions'}
+    if value7!=expected7: raise SystemExit(f'alpha.68 seventh-circle value metadata mismatch: {value7}')
+    roles7=index.get('seventh_circle_role_audit',{})
+    expected_roles7={'delayed_blast_fireball','etherealness','finger_of_death','fire_storm','forcecage','plane_shift','prismatic_spray','reverse_gravity','simulacrum','teleport'}
+    if set(roles7)!=expected_roles7 or len(set(roles7.values()))!=10: raise SystemExit('alpha.68 seventh-circle role separation contract missing')
+    if index.get('seventh_circle_preserved_authority')!=['etherealness','forcecage','plane_shift','simulacrum']:
+        raise SystemExit('alpha.68 preserved seventh-circle authority mismatch')
+    if index.get('seventh_circle_teleport_companion_policy')!='players_crouch_opt_in_allied_nonplayers_auto_nearest_up_to_6_safe_slots':
+        raise SystemExit('alpha.68 tactical group teleport policy missing')
+
     value=index.get('eighth_circle_value_pass_1',{})
     expected={
         'clone':'90s_single_bound_combat_copy_no_equipment_duplication',
@@ -49,6 +65,7 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit('alpha.67 NPC earthquake terrain safety contract missing')
     if index.get('eighth_circle_preserved_authority')!=['antimagic_field','control_weather','demiplane']:
         raise SystemExit('alpha.66 preserved eighth-circle authority mismatch')
+
     city=index.get('meteor_cityfall',{})
     if city.get('baseline_radius')!=112 or city.get('baseline_strikes')!=49 or city.get('range_scaled') is not True: raise SystemExit('alpha.65 Meteor Cityfall magnitude metadata mismatch')
     if set(city.get('projectile_scaling',[]))!={'count','spacing','body_scale','fall_height'}: raise SystemExit('alpha.65 projectile scaling metadata mismatch')
@@ -72,7 +89,14 @@ with zipfile.ZipFile(jar) as archive:
 
 digest=hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name+'.sha256').write_text(f'{digest}  {jar.name}\n',encoding='utf-8')
-print('Arcane Circle alpha.67 JAR verification: PASS')
+print('Arcane Circle alpha.68 JAR verification: PASS')
+print('alpha68_seventh_circle_value_pass_1=PASS')
+print('alpha68_delayed_blast_siege_core=PASS')
+print('alpha68_fire_storm_sequence=PASS')
+print('alpha68_finger_death_doctrine=PASS')
+print('alpha68_group_teleport=PASS')
+print('alpha68_seventh_circle_role_separation=PASS')
+print('alpha68_seventh_circle_npc_parity=PASS')
 print('alpha67_eighth_circle_value_pass_2=PASS')
 print('alpha67_earthquake_fault_disaster=PASS')
 print('alpha67_incendiary_firefront_wake=PASS')
