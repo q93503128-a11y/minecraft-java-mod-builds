@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.client;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureService;
 import kr.moonseungjun.survivalascension.network.InfrastructureActionPayload;
 import kr.moonseungjun.survivalascension.production.ProductionService;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ import org.joml.Matrix3x2f;
 
 public final class ProductionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
+            new Entry("시설 투자", "산업 가공소 건설 재료를 현재 인벤토리에서 투입", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
             new Entry("제련 배치", "철원석96 · 구리원석96 · 석탄64", new ItemStack(Items.BLAST_FURNACE), "metalworks", Action.PRODUCE),
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
@@ -61,7 +63,12 @@ public final class ProductionRadialMenuScreen extends Screen {
         if (event.button() != 0) return false;
         Entry entry = ENTRIES[selectedIndex()];
         if (entry.action() == Action.BACK) { this.minecraft.gui.setScreen(new InfrastructureRadialMenuScreen()); return true; }
-        String action = entry.action() == Action.STATUS ? ProductionService.ACTION_STATUS : ProductionService.ACTION_PREFIX + entry.programId();
+        String action = switch (entry.action()) {
+            case FUND -> InfrastructureService.ACTION_FUND;
+            case STATUS -> ProductionService.ACTION_STATUS;
+            case PRODUCE -> ProductionService.ACTION_PREFIX + entry.programId();
+            case BACK -> "";
+        };
         ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureProject.INDUSTRIAL_WORKS.id(), action));
         this.minecraft.gui.setScreen(null);
         return true;
@@ -70,7 +77,7 @@ public final class ProductionRadialMenuScreen extends Screen {
     private static int selectedIndex() { double a=correctAngle(360-(getMouseAngle()-ANGLE_PER_ITEM/2)); return Mth.clamp((int)Math.floor(a/ANGLE_PER_ITEM),0,ITEM_COUNT-1); }
     private static double getMouseAngle(){Minecraft m=Minecraft.getInstance();double ox=m.getWindow().getScreenWidth()*.5,oy=m.getWindow().getScreenHeight()*.5;return correctAngle(-Math.toDegrees(Math.atan2(m.mouseHandler.xpos()-ox,m.mouseHandler.ypos()-oy)));}
     private static double correctAngle(double a){while(a<0)a+=360;while(a>=360)a-=360;return a;}
-    private enum Action { PRODUCE, STATUS, BACK }
+    private enum Action { FUND, PRODUCE, STATUS, BACK }
     private record Entry(String title,String detail,ItemStack icon,String programId,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}
