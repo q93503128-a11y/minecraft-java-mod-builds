@@ -126,6 +126,7 @@ public final class ProductionData extends SavedData {
         State state = state(player);
         if (state.supplyCharges <= 0) return false;
         state.supplyCharges--;
+        // Freeing a supply slot immediately drains any already-complete four-line sets into that slot.
         normalizeCycles(state);
         setDirty();
         return true;
