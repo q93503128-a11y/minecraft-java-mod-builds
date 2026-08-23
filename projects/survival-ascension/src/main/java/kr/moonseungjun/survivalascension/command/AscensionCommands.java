@@ -10,6 +10,7 @@ import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -42,7 +43,7 @@ public final class AscensionCommands {
         for (SkillType skill : SkillType.values()) sendSkillLine(player, data, skill);
 
         ExpeditionData expedition = ExpeditionData.get(player);
-        String stage = WorldAscensionData.get(player.server).stageName();
+        String stage = WorldAscensionData.get(((ServerLevel) player.level()).getServer()).stageName();
         player.sendSystemMessage(Component.literal("§2[원정] §f" + expedition.count(player) + "/9 조사 · §7" + stage
                 + (expedition.isMasterSurveyComplete(player) ? " §6· 현장 숙련 해방" : "")));
         player.sendSystemMessage(Component.literal(expedition.summary(player)));
