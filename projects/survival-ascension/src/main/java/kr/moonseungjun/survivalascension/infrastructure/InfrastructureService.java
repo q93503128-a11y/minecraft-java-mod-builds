@@ -32,7 +32,9 @@ public final class InfrastructureService {
             return;
         }
         if (project == InfrastructureProject.INDUSTRIAL_WORKS
-                && (ProductionService.ACTION_STATUS.equals(action) || action.startsWith(ProductionService.ACTION_PREFIX))) {
+                && (ProductionService.ACTION_STATUS.equals(action)
+                || ProductionService.ACTION_DISPATCH.equals(action)
+                || action.startsWith(ProductionService.ACTION_PREFIX))) {
             ProductionService.perform(player, action);
             return;
         }
@@ -117,7 +119,7 @@ public final class InfrastructureService {
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
             if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
-                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 배치 1세트 → 현장 보급권1 · 계통 버퍼 최대3"));
+                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 배치 1세트 → 현장 보급권1 · 출고 금32/자수정16/메아리2"));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
