@@ -122,6 +122,8 @@ Resources remain physical Minecraft items. The HUD ledger is a cached view, not 
 
 Construction should visibly communicate logistics. The builder should walk to a real storage source, visibly carry actual item stacks, place them into a construction supply cache, and then build at a readable pace. Do not instantly delete all resources at approval and magically spawn the structure.
 
+Distant outpost logistics should remain spatial and physical. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual output stacks, and pause at unloaded route boundaries rather than teleporting or force-loading the territory. Worker absence/replacement must never confuse an unloaded entity with a dead one.
+
 ## 8. Roads, outposts and territory
 
 Roads/outposts are the spatial-growth layer; do not endlessly enlarge a single flat base.
@@ -205,9 +207,9 @@ Development sequence:
 
 Do not force-push over concurrent work. Other projects share the repository and CI result bots may advance `main`; always re-read `main` before committing and rebase only the Frontier Settlement changes.
 
-## 13. Current playable slice after Alpha.25
+## 13. Current playable slice after Alpha.27
 
-Alpha.25 preserves the shared-settlement loop and now makes both buildings and roads readable physical work instead of approval-time resource deletion plus magical completion:
+Alpha.27 preserves the shared-settlement loop and now extends the physical-work model through buildings, roads, outpost construction and road-connected outpost logistics:
 
 - one shared server settlement and territory state;
 - physical shared storage with cached HUD ledger;
@@ -217,30 +219,38 @@ Alpha.25 preserves the shared-settlement loop and now makes both buildings and r
 - one-line server-authored next-goal and active construction-phase guidance;
 - starter and advanced functional buildings;
 - worker jobs and housing/population progression;
-- roads, productive outposts and tier progression toward a domain;
+- roads, productive specialized outposts and tier progression toward a domain;
 - safe building blueprints with no-drop terrain preparation;
 - builder walks from actual settlement storage carrying real wood/stone stacks;
 - building construction uses real storage extraction, visible carried stacks, an on-site supply barrel and gradual material consumption;
 - building construction exposes hauling / foundation / frame-walls / roof / finish phases and uses persisted, owned temporary work scaffolds for high work when safe;
 - road approval validates the full stone requirement but does not instantly delete it;
-- new roads physically progress through worker grading, shallow earthwork, real stone hauling and gradual 3-wide paving;
-- road grading does not silently destroy protected structures and uses no-drop direct updates only on route-safe material;
-- road stone is consumed from actual carried stone-family stacks and surplus is returned to physical storage;
-- active road/building transaction blocks are protected from break-and-rebuild resource exploits;
-- long road jobs keep tracking the dedicated tagged construction worker across the settlement-to-work corridor rather than spawning duplicate builders when the worker travels beyond the original town search radius;
+- roads physically progress through worker grading, shallow earthwork, real stone hauling and gradual 3-wide paving;
 - shallow road earthwork uses soil-like fill rather than generating free recoverable stone beneath completed roads;
 - old active road saves remain compatible and resume their already-prepared paving state without being re-graded or charged the original prepaid stone cost a second time;
-- building and road workers perform visible placement swings and return to normal vulnerability when the active job completes.
+- outpost approval validates wood/stone cost without deleting it at approval;
+- outposts physically progress through 9×9 worker grading, validated shallow earthwork, actual wood/stone hauling and gradual blueprint construction;
+- old pre-Alpha.26 active outpost saves stay on their prepaid completion path and are not charged a second time;
+- finished outposts detect lumber / quarry / mining / agriculture specialization and create local physical production;
+- each transport worker is persistently tagged to one outpost rather than paired by UUID order;
+- pre-Alpha.27 generic transport villagers migrate to nearby existing outposts without charging arrival food again;
+- outpost-to-town routes are reconstructed from persisted road centers, including chained and branched older road connections;
+- transport walks short road waypoints in both directions, so L-corners and the built road network remain meaningful;
+- specialized outpost transport extracts only appropriate production categories rather than taking arbitrary player junk from the stockpile;
+- actual transport can advance through currently loaded road segments and pauses safely before an unloaded next segment without force-loading it;
+- legacy migration, missing-worker replacement and authoritative population reconciliation only occur when the complete relevant routes are loaded, avoiding duplicate workers caused by sleeping remote entities;
+- active road/building/outpost transaction blocks are protected from break-and-rebuild resource exploits;
+- construction workers perform visible placement swings and return to normal vulnerability when active jobs finish.
 
 ## 14. Near-term priorities
 
-After Alpha.25 automated validation is stable, keep the sequence narrow:
+After Alpha.27 automated validation is stable, keep the sequence narrow:
 
-1. inspect real screenshots/gameplay for building scaffold navigation, long road pathing, haul round-trip pacing, grading readability and any worker stalls or duplicate-worker symptoms;
-2. fix real-play root causes before adding more breadth if those tests expose navigation, transaction or visual-quality problems;
-3. bring outpost construction onto the same physical approval -> hauling -> visible work -> completion transaction model instead of inventing a separate interaction system;
-4. deepen outpost specialization and the road-connected logistics loop so distant production visibly feeds the shared settlement rather than behaving like duplicate mini-towns;
-5. only after the building/road/outpost spatial loop feels good, expand exploration/conquest inputs and additional building families;
+1. inspect real screenshots/gameplay for building scaffold navigation, long-road turns, outpost grading/build pacing, transport road adherence, unload/reload pauses, stockpile pressure and duplicate-worker symptoms;
+2. fix real-play root causes before adding more breadth if those tests expose navigation, transaction, migration or visual-quality problems;
+3. deepen outpost specialization quality: local work presentation, production rates, depletion/recovery behavior and useful differences between lumber/quarry/mining/agriculture sites;
+4. improve logistics pacing and storage pressure only if actual play shows trips are too empty, too slow or visually unreadable; do not replace physical travel with teleportation;
+5. only after the building/road/outpost/logistics spatial loop feels good, expand exploration/conquest inputs and additional building families;
 6. keep UI/controls compact while expanding simulation depth behind the scenes.
 
 Real-play observations override assumptions in this file. If screenshots or symptoms expose a problem, fix the root cause before adding more content.
