@@ -28,6 +28,18 @@
       "dependencies": ["lithostitched"]
     },
     {
+      "id": "lithostitched",
+      "name": "Lithostitched",
+      "side": "server_worldgen_library",
+      "source": "modrinth",
+      "project_id": "XaDC71GB",
+      "version_id": "6MLzMiOP",
+      "version": "1.7.13-neoforge-26.2",
+      "loader": "neoforge",
+      "required": true,
+      "dependencies": []
+    },
+    {
       "id": "dungeons_and_taverns",
       "name": "Dungeons and Taverns",
       "side": "server_worldgen",
@@ -159,18 +171,6 @@
       "loader": "neoforge",
       "required": true,
       "dependencies": []
-    },
-    {
-      "id": "lithostitched",
-      "name": "Lithostitched",
-      "side": "server_worldgen_library",
-      "source": "modrinth",
-      "project_slug": "lithostitched",
-      "version": "latest compatible 26.2 NeoForge",
-      "loader": "neoforge",
-      "required": true,
-      "dependencies": [],
-      "verification": "exact version id pending pack assembly; Terralith 2.6.x declares Lithostitched required"
     }
   ],
   "deferred": [
