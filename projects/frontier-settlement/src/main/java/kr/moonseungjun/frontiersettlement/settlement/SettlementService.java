@@ -31,6 +31,7 @@ public final class SettlementService {
         else {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
+            SettlementMarketService.tick(server, data);
         }
         SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);
