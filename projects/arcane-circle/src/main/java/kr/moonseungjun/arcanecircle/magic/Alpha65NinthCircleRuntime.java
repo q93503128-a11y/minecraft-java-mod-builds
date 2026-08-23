@@ -11,7 +11,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -179,7 +179,6 @@ public final class Alpha65NinthCircleRuntime {
             }
 
             if (now < field.expiresAt) continue;
-            // Verdict is evaluated after one last escape check.
             for (UUID targetId : new ArrayList<>(field.oldTargets.keySet())) {
                 Entity raw = level.getEntity(targetId);
                 if (!(raw instanceof LivingEntity target) || !target.isAlive() || target.isRemoved()) continue;
@@ -261,8 +260,6 @@ public final class Alpha65NinthCircleRuntime {
                 caster.position().add(forward.scale(2.6)), 8);
 
         Vec3 requested = snapshot.target();
-        // The old aim fallback could collapse to three blocks in front of a high-altitude caster.
-        // If that happened, reconstruct a distant X/Z request and search the entire loaded column.
         if (GroundTargetResolver.horizontalDistanceSqr(caster.position(), requested) < 12.0 * 12.0) {
             double travel = Math.max(20.0, Math.min(80.0, range * .82));
             requested = caster.position().add(forward.scale(travel));
@@ -340,7 +337,7 @@ public final class Alpha65NinthCircleRuntime {
         entity.stopRiding();
         if (entity instanceof ServerPlayer player) {
             boolean moved = player.teleportTo(level, destination.x, destination.y, destination.z,
-                    Set.<TeleportTransition.Relative>of(), player.getYRot(), player.getXRot(), true);
+                    Set.<Relative>of(), player.getYRot(), player.getXRot(), true);
             if (!moved) return false;
         } else {
             if (entity instanceof Mob mob) mob.getNavigation().stop();
@@ -386,7 +383,6 @@ public final class Alpha65NinthCircleRuntime {
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 200, 3, true, false));
         }
 
-        // Physical terrain follows the visible axis instead of one spherical Y-sensitive crater.
         for (int i = -6; i <= 6; i++) {
             Vec3 node = GroundTargetResolver.surface(level, center.add(forward.scale(i * half / 6.0)));
             double nodeRadius = 7.5 + (6 - Math.abs(i)) * .70;
@@ -395,7 +391,6 @@ public final class Alpha65NinthCircleRuntime {
         }
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.PLAYERS, 1.35F, .42F);
-        // Terrain-authority fusion remains a valid cast even if no enemy stands on the fault.
         return hit || center != null;
     }
 
@@ -414,8 +409,9 @@ public final class Alpha65NinthCircleRuntime {
         NightmareField owned = NIGHTMARES.remove(id);
         if (owned != null) restoreNightmare(owned);
         for (NightmareField field : NIGHTMARES.values()) {
+            boolean wasVictim = field.oldTargets.containsKey(id);
             UUID oldTarget = field.oldTargets.remove(id);
-            if (oldTarget != null || field.oldTargets.containsKey(id)) restoreNightmareVictim(field.level, subject, oldTarget);
+            if (wasVictim) restoreNightmareVictim(field.level, subject, oldTarget);
         }
         boolean gate = GATES.removeIf(field -> field.ownerId.equals(id));
         GATE_COOLDOWNS.remove(id);
