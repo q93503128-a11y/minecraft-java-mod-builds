@@ -79,9 +79,21 @@ The Survival Ascension implementation is independent: `field_depots_v1`, `outpos
 
 ## MineColonies — reference only for 0.30
 Source project: MineColonies  
-Current public release pages: GNU General Public License version 3 (GPLv3)
+License: GNU General Public License version 3 (GPLv3)
 
 Survival Ascension studies only the high-level product lesson that a forward settlement becomes meaningful when physical facilities, supply and local defense are combined. The 0.30 outpost is independent Survival Ascension code using a registered vanilla Barrel plus nearby Bed/Campfire/Crafting/Furnace blocks, owner-nearby activation and a NATURAL-hostile-only spawn filter. No MineColonies source code, citizens/workers, builders/couriers, blueprints, structures, claims, research tree, raids, quests, GUI, assets, data files or namespaces are copied or bundled.
+
+## Waystones — reference only for 0.31
+Source project: `TwelveIterations/Waystones`  
+Current official `26.2` branch license: All Rights Reserved
+
+Survival Ascension studies only the product-level tradeoff between travel convenience and preserving the value of world traversal. 0.31 deliberately does **not** implement general waystone/outpost fast travel: the independent `field_recovery_v1` system only returns a player after a qualifying death and only with a prepaid one-use contract. No Waystones source code, Waystone/Warp Stone/Return Scroll blocks or items, teleport network, menus, data, assets, icons, models, recipes, configuration or namespace are copied or bundled.
+
+## Corpse — reference only for 0.31
+Source project: `denmeh/Corpse`  
+License: GNU Lesser General Public License version 3 (LGPL-3.0)
+
+Survival Ascension studies only the high-level product goal of reducing repetitive travel after death. 0.31 does not create or copy a corpse container/entity and does not preserve, move or expose dropped inventory through a Corpse-style system. Field recovery is independent Survival Ascension SavedData plus server-side death qualification and safe post-respawn teleport. No Corpse source code, inventory-storage/transfer implementation, entity, GUI, data, assets, configuration or namespace are copied or bundled.
 
 ## Silent Gear — design reference only for 0.27
 Source project: Silent Gear  
