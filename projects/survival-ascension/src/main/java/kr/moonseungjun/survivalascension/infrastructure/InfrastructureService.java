@@ -36,6 +36,7 @@ public final class InfrastructureService {
                 && (ProductionService.ACTION_STATUS.equals(action)
                 || ProductionService.ACTION_DISPATCH.equals(action)
                 || ProductionService.ACTION_DEPOT_TOGGLE.equals(action)
+                || ProductionService.ACTION_BULK_OFFLOAD.equals(action)
                 || ProductionService.ACTION_OUTPOST_UPGRADE.equals(action)
                 || ProductionService.ACTION_FIELD_RECOVERY.equals(action)
                 || ProductionService.ACTION_FIELD_OPERATION.equals(action)

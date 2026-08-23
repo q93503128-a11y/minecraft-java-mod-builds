@@ -13,6 +13,7 @@ public final class ProductionService {
     public static final String ACTION_STATUS = "production_status";
     public static final String ACTION_DISPATCH = "dispatch_supply";
     public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
+    public static final String ACTION_BULK_OFFLOAD = "bulk_offload";
     public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
     public static final String ACTION_FIELD_RECOVERY = "field_recovery";
     public static final String ACTION_FIELD_OPERATION = "field_operation";
@@ -31,6 +32,7 @@ public final class ProductionService {
         if (ACTION_STATUS.equals(action)) { sendStatus(player); return; }
         if (ACTION_DISPATCH.equals(action)) { dispatchSupply(player); return; }
         if (ACTION_DEPOT_TOGGLE.equals(action)) { FieldDepotService.toggleNearest(player); return; }
+        if (ACTION_BULK_OFFLOAD.equals(action)) { bulkOffload(player); return; }
         if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
         if (ACTION_FIELD_RECOVERY.equals(action)) { FieldRecoveryService.configure(player); return; }
         if (ACTION_FIELD_OPERATION.equals(action)) { ExpeditionOperationSystem.startOrStatus(player); return; }
@@ -81,11 +83,37 @@ public final class ProductionService {
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
         player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 등록 배럴/전초 재고. 보급권: 실물 출고1 / 배럴 거점1 / 전초 승격2 / 복귀 계약1 / 원정 작전1."));
+        player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 배럴부터 채웁니다."));
         player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
         FieldRecoveryService.sendStatus(player);
         ExpeditionOperationSystem.sendStatus(player);
+    }
+
+    private static void bulkOffload(ServerPlayer player) {
+        int depots = FieldDepotService.activeDepotCount(player);
+        if (depots <= 0) {
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 등록 배럴/전초가 없습니다."));
+            return;
+        }
+        int eligible = FieldDepotService.countOffloadableMainInventory(player);
+        if (eligible <= 0) {
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f주 인벤토리에 적재할 대량 자원이 없습니다. §7핫바/장비는 대상에서 제외됩니다."));
+            return;
+        }
+        int moved = FieldDepotService.offloadBulkMaterials(player);
+        if (moved <= 0) {
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f사용 가능한 배럴에 남은 적재 공간이 없습니다."));
+            return;
+        }
+        if (moved < eligible) {
+            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 배럴부터 적재했습니다. §7대상 "
+                    + eligible + "개 중 일부만 수용됨 · 핫바/장비 유지"));
+        } else {
+            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved
+                    + "§f개를 가까운 배럴부터 적재했습니다. §7핫바/장비 유지"));
+        }
     }
 
     private static void dispatchSupply(ServerPlayer player) {

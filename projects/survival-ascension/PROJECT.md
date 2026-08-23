@@ -1,14 +1,85 @@
 # Survival Ascension
 
-- Mod version: `0.34.0-alpha.1`
+- Mod version: `0.35.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, `expedition_operations_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.34 adds no SavedData field, ID or packet; it only routes additional stationary resource sinks through the existing physical logistics resolver. 0.33 complication migration remains unchanged and 0.32 active operations still decode with complication `NONE`.
+- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, `expedition_operations_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.35 adds no SavedData field, ID or packet; it adds one explicit bulk-offload action that writes only to already-usable physical linked Barrels. 0.34 integrated-input behavior, 0.33 complication migration and 0.32 active-operation compatibility remain unchanged.
 
 ## Core direction
 Progression must enlarge physical actions rather than only percentages. Larger actions create larger material throughput; world stages, behavior-rich enemies, exploration goals, infrastructure, production, logistics and field bases must consume that throughput again. Shift remains the precision/single-action safety override.
+
+## 0.35 High-volume Field Offload / 현장 일괄 적재
+### Purpose
+0.34 solved the input-side contradiction: stationary industrial/infrastructure/equipment sinks can consume nearby physical Barrel stock. But the output side was still manual. A player with Quarry-style mining, 448-log felling or 13×13 harvest could generate several inventory rows of material in seconds and then had to drag those stacks into Barrels one by one.
+
+0.35 adds one bounded explicit logistics action instead of automatic pickup routing, another virtual inventory, or a background warehouse simulation.
+
+### Explicit action
+`M -> Infrastructure -> 산업 가공소 -> 현장 일괄 적재` reuses the existing `InfrastructureActionPayload(projectId, action)` string packet and `ProductionService` route.
+
+`ProductionService.ACTION_BULK_OFFLOAD = "bulk_offload"`:
+- requires normal survival/non-spectator Industrial Works access through the existing `perform` gate;
+- requires at least one currently usable linked Barrel/outpost;
+- counts the eligible main-inventory material before moving anything;
+- calls `FieldDepotService.offloadBulkMaterials` once;
+- reports full, partial or zero-capacity result explicitly.
+
+There is no toggle, periodic tick, pickup interception or hidden movement. The user decides when storage happens.
+
+### Inventory safety boundary
+`FieldDepotService` defines:
+- `MAIN_INVENTORY_FIRST_SLOT = 9`
+- `MAIN_INVENTORY_END_EXCLUSIVE = 36`
+
+Only slots9..35 are scanned. Hotbar0..8 remains physically carried. Equipment/offhand live outside that authored range and are not moved. This deliberately lets the player keep tools, construction stock, encounter admission materials or anything else they want immediate access to by placing it in the hotbar.
+
+### Authored bulk-material set
+`isBulkMaterial(ItemStack)` accepts only progression-scale raw/storage materials rather than every stack in the player's inventory.
+
+Included categories:
+- vanilla logs through `ItemTags.LOGS`;
+- raw iron/copper/gold, ingots, coal/charcoal, redstone, lapis, diamond, emerald, amethyst, quartz, echo, netherite scrap, nether star, dragon breath;
+- cobblestone, cobbled deepslate, stone, deepslate, stone bricks, netherrack, end stone, obsidian, sand/red sand, gravel, dirt, glass, slime;
+- wheat/carrot/potato/beetroot and the authored crop seeds.
+
+Weapons, armor, tools, arbitrary food, potions, books, containers and unrelated miscellaneous stacks are not eligible merely because the player pressed the button.
+
+### Container insertion contract
+Offload obtains targets only from the same private `usableContainers(player)` resolver used by 0.34:
+1. current dimension only;
+2. ordinary linked depot within32, active physical outpost within64;
+3. target chunk already loaded;
+4. target still a real vanilla Barrel with Container block entity;
+5. `mayInteract` passes;
+6. loaded stale/non-Barrel link is pruned and its outpost callback runs;
+7. eligible Barrels are distance-sorted nearest-first.
+
+For each source stack and each Barrel:
+- matching non-empty target stacks are processed before empty slots;
+- matching uses `ItemStack.isSameItemSameComponents`, preserving per-stack component identity;
+- `Container.canPlaceItem(slot, source)` must pass;
+- the move limit is bounded by both `Container.getMaxStackSize(source)` and `ItemStack.getMaxStackSize()`;
+- empty target slots receive `source.copyWithCount(move)`;
+- the original inventory stack shrinks only by the amount actually inserted;
+- changed containers call `setChanged()`;
+- after any successful transfer, player inventory is marked changed and the current menu broadcasts changes.
+
+A full network therefore causes a partial transfer, not deletion: unaccepted remainder stays in the player's original inventory stack.
+
+### Throughput loop after 0.35
+`large physical skill action -> player gathers bulk output -> explicit nearby offload -> real linked Barrel stock -> 0.34 local industrial/infrastructure/reforge input -> production/outposts/operations/endgame`.
+
+0.35 does not add universal storage, cross-dimension access, automatic sorting, remote chunk loading or infinite capacity. It specifically removes repetitive stack dragging while preserving the physical-location and finite-container constraints that make the logistics system matter.
+
+### Compatibility / presentation
+- no new SavedData;
+- no new packet or protocol bump (`8` remains);
+- one additional entry in the existing Industrial Works radial, using a vanilla Hopper icon;
+- the preexisting `시설 투자` radial description is corrected from outdated inventory-only wording to inventory + usable logistics stock;
+- Guide/status explain main-inventory-only offload and hotbar/equipment preservation;
+- all 0.34 and older gameplay contracts remain unchanged.
 
 ## 0.34 Integrated Logistics Backbone / 통합 물류 백본
 ### Purpose
@@ -183,8 +254,9 @@ No permanent flat combat/stat multiplier is attached to operation completion.
 - nearest vanilla Barrel within4 blocks; registration cost one supply charge.
 - max3/player and one owner per physical position.
 - same-dimension loaded Barrel inventory within32 blocks, `mayInteract` checked; active outpost version extends to64.
-- player inventory first, linked Barrels nearest-first.
-- 0.34 shares the same resolver with Construction, irrigation, industrial batches, post-Industrial infrastructure funding and equipment reforge/awakening.
+- player inventory first, linked Barrels nearest-first for sinks.
+- 0.34 shares the resolver with Construction, irrigation, industrial batches, post-Industrial infrastructure funding and equipment reforge/awakening.
+- 0.35 uses the same target resolver for explicit main-inventory bulk offload, preserving hotbar/equipment and finite real Barrel capacity.
 - `field_depots_v1` remains unchanged and is the ownership source of truth for outpost anchors.
 
 ## 0.28 Industrial Works retained
@@ -224,16 +296,18 @@ Four atomic lines:
 - depot/outpost/recovery/operation origins are server-resolved from saved/owned coordinates; no client coordinate trust or chunk tickets.
 - all 0.34 logistics sinks use the existing usable-depot path: current dimension,32/64 radius, loaded real Barrel, `mayInteract`, inventory-first and nearest-Barrel-first.
 - matcher-backed production cannot reach an unlinked/unloaded/out-of-range/cross-dimension container.
-- Apex/Trial entry costs remain inventory-only and dispatch remains player-carried; 0.34 is not universal remote payment.
+- 0.35 offload scans only slots9..35, targets only authored bulk materials, fills nearest usable Barrels, respects stack components/slot acceptance/capacity, and leaves every unaccepted remainder in the source inventory.
+- 0.35 never touches hotbar0..8, equipment or offhand and never runs automatically.
+- Apex/Trial entry costs remain inventory-only and dispatch remains player-carried; 0.34/0.35 are not universal remote payment/storage.
 - outpost safe zone cancels NATURAL hostile spawn only; TRIGGERED combat remains unaffected.
 - operation progress only accepts preexisting validated ExpeditionAction hooks after range gate and outside48, then applies the selected0.33 complication gate.
 - operation completion requires physical return to origin within8 and outpost revalidation.
 - operation cannot overlap manually started Apex/Trial encounters; Regional Incidents may coexist.
 - production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery one token; operation one active/player and one complication/operation.
-- no new SavedData or packet schema in0.34; protocol remains8.
+- no new SavedData or packet schema in0.35; protocol remains8.
 
 ## External-source policy
-- 0.34 introduces no new external-code or asset reference; it is an integration of existing Survival Ascension systems.
+- 0.35 introduces no new external gameplay implementation or assets; it extends the existing Survival Ascension physical Barrel model using vanilla/NeoForge Container behavior.
 - Deep Rock Galactic and Warframe Sortie/Deep Archimedea are 0.33 product-level design references for bounded mission modifiers and extraction pressure. No source code, data, UI, assets, audio, namespaced content or proprietary game content is copied or bundled.
 - Heracles (`terrarium-earth/Heracles`): current repository license MIT. 0.32 studies only product-level explicit multi-step objective/completion state. No Heracles source structures, quest data, editor/UI, assets or namespace are copied.
 - Bountiful (`ejektaflex/Bountiful`): GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets copied.

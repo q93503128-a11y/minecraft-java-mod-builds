@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.35.0-alpha.1
+- Added explicit `현장 일괄 적재 / High-volume Field Offload` to close the output side of the scaled-gathering logistics loop.
+- Added `ProductionService.ACTION_BULK_OFFLOAD = "bulk_offload"` and routed it through the existing Industrial Works action packet; no packet schema or protocol change.
+- Added a Hopper-icon `현장 일괄 적재` entry to the existing Industrial Works radial. Also corrected the old `시설 투자` detail text that still incorrectly described infrastructure funding as inventory-only after 0.34.
+- Bulk offload scans only player main inventory slots9..35. Hotbar0..8, equipped gear and offhand are explicitly outside the authored range and never moved.
+- Added an authored bulk-material predicate covering logs, raw ores/ingots/minerals, common stone/terrain stock, crops/seeds and current progression/infrastructure materials instead of sweeping arbitrary inventory contents.
+- Offload targets use the existing nearest-first `usableContainers` path: same dimension, ordinary depot32 / active outpost64, already-loaded chunk, real vanilla Barrel Container, `mayInteract`, stale-link pruning and no chunk force-load.
+- Each target Barrel fills matching existing stacks before empty slots. Transfers require `ItemStack.isSameItemSameComponents`, `Container.canPlaceItem`, and the applicable container/item stack-size limit.
+- Source inventory stacks shrink only by the amount actually inserted. Full/partial Barrel capacity leaves every unaccepted remainder in the original inventory stack; changed containers and the player inventory are marked/broadcast after successful movement.
+- Kept offload fully explicit: no item-pickup hook, server-tick automation, hidden toggle, virtual warehouse, cross-dimension storage or background routing.
+- Updated Guide/status/README/PROJECT and source audit to lock the offload slot boundary, material whitelist, nearest physical Barrel routing, component/capacity safety and all 0.34/older regressions.
+
 ## 0.34.0-alpha.1
 - Added an integrated physical logistics backbone for large stationary resource sinks instead of adding another independent progression layer.
 - Generalized `FieldDepotService` with matcher-backed `countMatching` / `consumeMatching`, allowing exact items and tag-style inputs such as mixed logs to share the same real inventory + linked-Barrel resolution path.

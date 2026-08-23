@@ -79,16 +79,64 @@ for rel in required:
     if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.34.0-alpha.1"], "toolchain/version")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.35.0-alpha.1"], "toolchain/version")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.34.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath", "ExpeditionOperationSystem::onPlayerTick",
+need(main, ['VERSION = "0.35.0-alpha.1"', "ExpeditionOperationSystem::onLivingDeath", "ExpeditionOperationSystem::onPlayerTick",
             "FieldRecoveryService::onLivingDeath", "FieldRecoveryService::onPlayerRespawn", "OutpostService::onFinalizeSpawn",
             "ApexHuntSystem::onServerTick", "AscensionTrialSystem::onServerTick"], "main registration")
+if "FieldDepotService::on" in main:
+    errors.append("0.35 offload must remain explicit and must not add a FieldDepotService background event listener")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "network protocol")
 
-# 0.34: one local physical logistics resolver, inventory first then nearest usable Barrels.
+# 0.35: explicit output-side bulk offload into the existing real physical logistics network.
 depot = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")
+need(depot, [
+    "MAIN_INVENTORY_FIRST_SLOT = 9", "MAIN_INVENTORY_END_EXCLUSIVE = 36",
+    "countOffloadableMainInventory", "offloadBulkMaterials", "isBulkMaterial", "insertIntoContainers",
+    "ItemTags.LOGS", "Items.RAW_IRON", "Items.RAW_GOLD", "Items.COBBLED_DEEPSLATE", "Items.NETHERRACK",
+    "Items.WHEAT", "Items.WHEAT_SEEDS", "Items.NETHER_STAR", "Items.DRAGON_BREATH",
+    "ItemStack.isSameItemSameComponents(source, existing)", "container.canPlaceItem(slot, source)",
+    "container.getMaxStackSize(source)", "existing.getMaxStackSize()", "source.getMaxStackSize()",
+    "container.setItem(slot, source.copyWithCount(move))", "source.shrink(move)", "container.setChanged()",
+    "player.containerMenu.broadcastChanges()"
+], "0.35 explicit bulk offload")
+offload_start = depot.find("public static int offloadBulkMaterials")
+insert_start = depot.find("private static int insertIntoContainers")
+usable_start = depot.find("private static List<Container> usableContainers")
+if offload_start < 0 or insert_start < 0 or usable_start < 0:
+    errors.append("0.35 offload method boundaries missing")
+else:
+    offload_body = depot[offload_start:insert_start]
+    need(offload_body, ["List<Container> containers = usableContainers(player);",
+                        "Math.min(MAIN_INVENTORY_END_EXCLUSIVE, player.getInventory().getContainerSize())",
+                        "for (int slot = MAIN_INVENTORY_FIRST_SLOT; slot < end; slot++)",
+                        "if (!isBulkMaterial(source)) continue;",
+                        "moved += insertIntoContainers(source, containers);"], "0.35 offload main-inventory boundary")
+    if "for (int slot = 0;" in offload_body:
+        errors.append("0.35 offload must not scan hotbar slot0 or equipment through a full-inventory loop")
+    insert_body = depot[insert_start:usable_start]
+    ordered(insert_body, ["if (existing.isEmpty()) continue;",
+                          "if (!ItemStack.isSameItemSameComponents(source, existing)) continue;",
+                          "existing.grow(move);",
+                          "if (!existing.isEmpty() || !container.canPlaceItem(slot, source)) continue;",
+                          "container.setItem(slot, source.copyWithCount(move));"], "0.35 merge-before-empty insertion")
+
+production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
+need(production, [
+    'ACTION_BULK_OFFLOAD = "bulk_offload"', "if (ACTION_BULK_OFFLOAD.equals(action)) { bulkOffload(player); return; }",
+    "FieldDepotService.activeDepotCount(player)", "FieldDepotService.countOffloadableMainInventory(player)",
+    "FieldDepotService.offloadBulkMaterials(player)", "대상에서 제외", "남은 적재 공간", "핫바/장비 유지",
+    "new ItemStack(Items.GOLD_INGOT, 32)", "new ItemStack(Items.AMETHYST_SHARD, 16)", "new ItemStack(Items.ECHO_SHARD, 2)"
+], "0.35 production offload action")
+infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
+need(infra, ["ProductionService.ACTION_BULK_OFFLOAD.equals(action)", "FieldDepotService.countMaterial(player, item)",
+             "FieldDepotService.consume(player, item, amount)"], "0.35 infrastructure action routing")
+radial = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
+need(radial, ["현장 일괄 적재", "Items.HOPPER", "Action.OFFLOAD", "case OFFLOAD -> ProductionService.ACTION_BULK_OFFLOAD;",
+              "인벤토리+사용 가능 물류 배럴", "채집 → 일괄 적재 → 생산/인프라"], "0.35 radial presentation")
+
+# 0.34: one local physical logistics resolver, inventory first then nearest usable Barrels.
 need(depot, [
     "REGISTER_RADIUS = 4", "SUPPLY_RADIUS = 32", "Predicate<ItemStack>",
     "public static int countMatching(ServerPlayer player, Predicate<ItemStack> matcher)",
@@ -101,34 +149,27 @@ need(depot, [
 ], "0.34 physical logistics resolver")
 ordered(depot, ["for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)",
                 "for (Container container : usableContainers(player))"], "0.34 count inventory-before-depot")
-# consumeMatching also must encounter the inventory loop before its container loop.
 consume_start = depot.find("public static boolean consumeMatching")
 if consume_start >= 0:
-    consume_body = depot[consume_start:]
+    consume_body = depot[consume_start:offload_start if offload_start > consume_start else None]
     ordered(consume_body, ["for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++)",
                            "for (Container container : usableContainers(player))"], "0.34 consume inventory-before-depot")
 if any(token in depot for token in ["setChunkForced", "addRegionTicket", "getChunk("]):
-    errors.append("0.34 physical logistics must not force-load chunks")
-
-production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
+    errors.append("0.34/0.35 physical logistics must not force-load chunks")
 need(production, [
     "FieldDepotService.countMatching(player, input::matches)",
     "FieldDepotService.consumeMatching(player, input::matches, amount)",
-    "인벤토리 우선 → 가까운 물류 배럴 순으로 투입",
-    "new ItemStack(Items.GOLD_INGOT, 32)", "new ItemStack(Items.AMETHYST_SHARD, 16)", "new ItemStack(Items.ECHO_SHARD, 2)"
+    "인벤토리 우선 → 가까운 물류 배럴 순으로 투입"
 ], "0.34 industrial logistics")
 if "for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++)" in production:
-    errors.append("ProductionService must not keep an inventory-only batch counter in 0.34")
-
-infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
+    errors.append("ProductionService must not keep an inventory-only batch counter")
 need(infra, [
     "FieldDepotService.countMaterial(player, item)", "FieldDepotService.consume(player, item, amount)",
     "인벤토리 우선 → 가까운 물류 배럴 순으로 인출", "투입원: 인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고",
     "ProductionService.ACTION_FIELD_OPERATION.equals(action)", "ExpeditionOperationSystem.isActive(player)"
 ], "0.34 infrastructure logistics")
 if "stack.shrink(take)" in infra:
-    errors.append("InfrastructureService must not keep a direct inventory-only funding loop in 0.34")
-
+    errors.append("InfrastructureService must not keep a direct inventory-only funding loop")
 reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
 need(reforge, [
     "FieldDepotService.countMaterial(player, cost.item())", "FieldDepotService.consume(player, cost.item(), cost.count())",
@@ -144,7 +185,7 @@ need(apex, ["ECHO_SHARD_COST = 8", "AMETHYST_COST = 32", "GOLD_COST = 32",
 need(trial, ["ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
              "count(player, Items.ECHO_SHARD)", "consume(player, Items.DRAGON_BREATH, DRAGON_BREATH_COST)"], "Trial carried entry cost")
 if "FieldDepotService" in apex or "FieldDepotService" in trial:
-    errors.append("0.34 must not make Apex/Trial entry a remote Barrel payment")
+    errors.append("0.34/0.35 must not make Apex/Trial entry a remote Barrel payment")
 
 # 0.29/0.30 physical constraints still gate the resolver.
 outpost = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostService.java")
@@ -157,7 +198,6 @@ if any(token in outpost for token in ["setChunkForced", "addRegionTicket", "getC
     errors.append("outposts must not force-load chunks")
 if '"TRIGGERED".equals(event.getSpawnType().name())' in outpost:
     errors.append("outpost safe zone must not cancel TRIGGERED spawns")
-
 depot_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java")
 need(depot_data, ['"field_depots_v1"', "MAX_DEPOTS_PER_PLAYER = 3", "CLAIMED_BY_OTHER"], "0.29 depot persistence")
 production_data = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionData.java")
@@ -174,7 +214,6 @@ need(opdata, ['"expedition_operations_v1"', 'optionalFieldOf("complication", "NO
               "ExpeditionComplication.valueOf(entry.complication())", "ExpeditionComplication.NONE",
               "beginForwardShift", "completeForwardShift", "armExtraction", "Math.min(state.deadline, extractionDeadline)",
               "sanitizeComplicationState", "state.totalCompletions++", "state.clearActive()"], "0.33 operation persistence")
-
 operation = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperation.java")
 need(operation, [
     'WOODLAND(ExpeditionRegion.WOODLAND, "심림 순환 벌채", 96, 24000',
@@ -190,7 +229,6 @@ need(operation, [
 ], "0.32 nine-operation catalog")
 if operation.count("ExpeditionRegion.") < 9:
     errors.append("operation catalog must contain all nine regions")
-
 opsys = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.java")
 need(opsys, ["START_RADIUS = 4", "WORK_RADIUS = 48", "RETURN_RADIUS = 8", "FORWARD_SHIFT_EXTRA = 48",
               "OutpostService.nearestActiveOutpost(player, START_RADIUS)", "production.consumeSupplyCharge(player)",
@@ -209,8 +247,6 @@ ordered(opsys, ["if (distanceSq < WORK_RADIUS * WORK_RADIUS) return;",
         "operation gate order")
 ordered(opsys, ["data.objectivesComplete(player, operation)", "distanceSq <= RETURN_RADIUS * RETURN_RADIUS",
                 "OutpostService.isRecoveryOperational", "complete(player, operation)"], "physical return gate")
-
-# Existing validated gameplay actions still feed incidents and operations.
 progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
 need(progression, ["ExpeditionIncidentSystem.recordAction(player, action, amount);",
                    "ExpeditionOperationSystem.recordAction(player, action, amount);",
@@ -277,17 +313,19 @@ need(affix, ['AWAKENED = "awakened"', "currentAffixes(stack).size() == 3", "miss
 
 # UI/canon lock.
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
-need(guide, ["통합 물류 백본", "통합 물류 투입", "인벤토리를 먼저 쓰고", "등록 배럴", "정점 / 승천 시련",
-             "전선 고착", "전선 재전개", "긴급 철수", "Stage0 4:00 / Stage1 3:00 / Stage2 2:30"], "0.34 guide")
+need(guide, ["통합 물류 백본 / 현장 일괄 적재", "현장 일괄 적재", "슬롯9~35", "핫바0~8", "청크 강제로드",
+             "전선 고착", "전선 재전개", "긴급 철수", "Stage0 4:00 / Stage1 3:00 / Stage2 2:30"], "0.35 guide")
 readme = read("README.md")
 project = read("PROJECT.md")
 changelog = read("CHANGELOG.md")
 third = read("THIRD_PARTY_NOTICES.md")
-need(readme, ["0.34.0-alpha.1", "Integrated Logistics Backbone", "countMatching", "consumeMatching", "player-carried",
-              "0.33.0-alpha.1", "Sortie Complications", "expedition_operations_v1"], "README canon")
-need(project, ["0.34 Integrated Logistics Backbone", "inventory", "nearest-first", "32", "64", "Apex Hunt", "Ascension Trial",
-               "no new SavedData", "protocol remains8", "0.33 Sortie Complications"], "PROJECT canon")
-need(changelog, ["0.34.0-alpha.1", "matcher-backed", "Infrastructure", "Equipment", "inventory-only", "Network protocol remains8"], "CHANGELOG canon")
+need(readme, ["0.35.0-alpha.1", "High-volume Field Offload", "slots `9..35`", "Hotbar slots `0..8`",
+              "matching existing stacks", "canPlaceItem", "No new SavedData", "0.34.0-alpha.1", "0.33.0-alpha.1"], "README canon")
+need(project, ["0.35 High-volume Field Offload", "MAIN_INVENTORY_FIRST_SLOT = 9", "MAIN_INVENTORY_END_EXCLUSIVE = 36",
+               "ItemStack.isSameItemSameComponents", "Container.canPlaceItem", "no new SavedData", "protocol remains8",
+               "0.34 Integrated Logistics Backbone", "0.33 Sortie Complications"], "PROJECT canon")
+need(changelog, ["0.35.0-alpha.1", "ACTION_BULK_OFFLOAD", "slots9..35", "nearest-first", "isSameItemSameComponents",
+                 "no item-pickup hook", "0.34.0-alpha.1"], "CHANGELOG canon")
 need(third, ["Deep Rock Galactic — product reference only for 0.33", "Warframe — product reference only for 0.33",
              "Heracles — design reference only for 0.32", "Bountiful — reference only for 0.24+"], "third-party policy")
 
@@ -315,9 +353,8 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.34 integrates industrial batches, infrastructure funding and equipment reforge/awakening with nearby physical Barrel logistics")
-print("- stock resolution is inventory-first then nearest usable depot; same-dimension32/active-outpost64, loaded real Barrel and mayInteract boundaries remain")
-print("- matcher-backed production supports tag inputs without virtual/global storage")
-print("- Apex/Trial entry costs and industrial dispatch remain player-carried by design")
-print("- no new SavedData, packet, GUI, remote dimension access or chunk force-load")
-print("- 0.33 complication,0.32 nine-sortie,0.31 recovery,0.30 outpost,0.29 depot and mastery/encounter regressions retained")
+print("- 0.35 adds explicit main-inventory bulk offload into the existing nearby physical Barrel network")
+print("- slots9..35 only; hotbar0..8/equipment/offhand preserved; authored bulk-material whitelist only")
+print("- nearest usable Barrel first, merge-before-empty, same components, slot acceptance and finite stack capacity respected")
+print("- full/partial capacity preserves every unaccepted source remainder; no automatic pickup/tick routing")
+print("- 0.34 integrated inputs,0.33 complications,0.32 nine sorties,0.31 recovery,0.30 outpost and older regressions retained")

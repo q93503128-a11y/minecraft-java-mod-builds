@@ -4,6 +4,33 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
 
 Survival Ascension turns progression into larger physical actions, then makes world stages, expeditions, infrastructure, behavior-driven enemies, production, logistics and physical field bases consume that larger output again.
 
+## 0.35.0-alpha.1 — High-volume Field Offload / 현장 일괄 적재
+0.35 closes the **output side** of the high-throughput loop. 0.34 allowed large stationary sinks to consume stock already stored in nearby physical Barrels; 0.35 removes the opposite inventory-shuffling chore after 11×11 mining, 448-log felling or 13×13 harvesting.
+
+### Explicit one-click offload
+`M -> Infrastructure -> 산업 가공소 -> 현장 일괄 적재` uses the existing Industrial Works radial and existing string action packet.
+- It is explicit, not automatic: no pickup event, background timer or silent inventory drain is added.
+- Only the 27-slot main inventory area, slots `9..35`, is scanned.
+- Hotbar slots `0..8`, equipped gear and offhand are never touched.
+- The target set is intentionally limited to bulk progression materials: logs; raw ores/ingots and major minerals; common stone/terrain stock; crops/seeds; and materials used by current infrastructure, production and equipment progression.
+- Tools, weapons, armor, food outside the authored crop set, potions, books, containers and arbitrary miscellaneous items are not swept into storage.
+
+### Same physical logistics rules
+Offload calls the same `usableContainers` path already used by 0.34 input logistics.
+1. same dimension only;
+2. ordinary linked Barrel radius32 / active physical outpost radius64;
+3. chunk must already be loaded;
+4. saved anchor must still be a real vanilla Barrel with a Container block entity;
+5. `mayInteract` must pass;
+6. missing loaded Barrels are pruned and their outpost upgrade is removed;
+7. linked Barrels remain nearest-first.
+
+Within each Barrel, matching existing stacks are filled before empty slots. Stack equality uses item + components, `Container.canPlaceItem` is respected, and the container/item maximum stack size is honored. If the available Barrels fill before the inventory stack is exhausted, only the accepted amount moves and the remainder stays in the original inventory stack.
+
+The result is now a complete physical loop: **scaled gathering -> explicit bulk offload -> nearby real Barrel stock -> 0.34 industrial/infrastructure/reforge consumption -> outposts/operations/endgame**.
+
+No new SavedData, packet type, protocol bump, global warehouse, cross-dimension storage or chunk force-load is introduced. Network protocol remains `8`.
+
 ## 0.34.0-alpha.1 — Integrated Logistics Backbone / 통합 물류 백본
 0.34 closes the remaining gap between high-throughput skills and the physical Barrel/outpost network. Large base-side resource sinks no longer require the player to manually move hundreds of items into personal inventory when those items already exist in a nearby usable owned logistics Barrel.
 
@@ -124,7 +151,8 @@ No new packet schema was added; the existing string-based `InfrastructureActionP
 ## 0.29 — Physical Field Depots
 - Register a real vanilla Barrel within4 blocks for one field-supply charge; max3/player and one owner per physical position.
 - Same-dimension loaded Barrel stock supplies bulk Construction, irrigation, Industrial Works batches, post-Industrial infrastructure funding and equipment reforge/awakening within the applicable32/64 logistics radius.
-- Player inventory is consumed first; linked Barrels are nearest-first.
+- 0.35 adds explicit nearest-first offload of authored bulk resources from main inventory slots9..35 into that same real stock, while preserving hotbar/equipment/offhand.
+- Player inventory is consumed first by resource sinks; linked Barrels are nearest-first for both input consumption and offload target order.
 - `mayInteract` is rechecked and linked chunks are never force-loaded.
 - Missing loaded Barrels prune stale links. Construction/replant roll back newly placed blocks if post-place material consumption unexpectedly fails.
 - `field_depots_v1` is independent SavedData.
@@ -166,6 +194,7 @@ At Lv.100 and after the nine-region completion:
 - Mythic III gear can be awakened once from exactly3 affixes to4 affixes with large resource costs; 0.34 allows those stationary upgrade costs to draw from the local physical logistics network.
 
 ## External references
+- 0.35 introduces no new third-party implementation or asset source; it extends Survival Ascension's existing Barrel logistics with vanilla/NeoForge Container contracts.
 - Deep Rock Galactic mission mutators/extraction and Warframe Sortie/Deep Archimedea mission modifiers are 0.33 product-level design references only. Survival Ascension copies no source, data, UI, assets, names, audio or proprietary content from either game.
 - Heracles (`terrarium-earth/Heracles`) is MIT. 0.32 studies only the product-level idea that repeatable multi-step tasks should have explicit objective/completion state; the out-and-back physical-base loop, persistence, rewards and action hooks are independent Survival Ascension code. No Heracles quest data, UI, source structures, assets or namespace are copied.
 - Bountiful remains GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets are copied.

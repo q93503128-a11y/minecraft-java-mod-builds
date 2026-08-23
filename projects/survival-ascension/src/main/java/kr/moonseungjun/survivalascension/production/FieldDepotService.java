@@ -6,9 +6,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
@@ -20,6 +22,8 @@ import java.util.function.Predicate;
 public final class FieldDepotService {
     public static final int REGISTER_RADIUS = 4;
     public static final int SUPPLY_RADIUS = 32;
+    public static final int MAIN_INVENTORY_FIRST_SLOT = 9;
+    public static final int MAIN_INVENTORY_END_EXCLUSIVE = 36;
 
     private FieldDepotService() {}
 
@@ -87,6 +91,7 @@ public final class FieldDepotService {
         int active = activeDepotCount(player);
         player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
                 + " §7· 현재 사용 가능 §a" + active + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
+        player.sendSystemMessage(Component.literal("  §7- 현장 일괄 적재: 주 인벤토리 슬롯9~35의 대량 자원만 가까운 사용 가능 배럴부터 적재 · 핫바/장비 유지"));
         if (depots.isEmpty()) {
             player.sendSystemMessage(Component.literal("  §7- 4블록 내 배럴에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
             return;
@@ -155,7 +160,86 @@ public final class FieldDepotService {
         return remaining == 0;
     }
 
+    public static int countOffloadableMainInventory(ServerPlayer player) {
+        int found = 0;
+        int end = Math.min(MAIN_INVENTORY_END_EXCLUSIVE, player.getInventory().getContainerSize());
+        for (int slot = MAIN_INVENTORY_FIRST_SLOT; slot < end; slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (isBulkMaterial(stack)) found += stack.getCount();
+        }
+        return found;
+    }
+
+    public static int offloadBulkMaterials(ServerPlayer player) {
+        List<Container> containers = usableContainers(player);
+        if (containers.isEmpty()) return 0;
+        int moved = 0;
+        int end = Math.min(MAIN_INVENTORY_END_EXCLUSIVE, player.getInventory().getContainerSize());
+        for (int slot = MAIN_INVENTORY_FIRST_SLOT; slot < end; slot++) {
+            ItemStack source = player.getInventory().getItem(slot);
+            if (!isBulkMaterial(source)) continue;
+            moved += insertIntoContainers(source, containers);
+        }
+        if (moved > 0) {
+            player.getInventory().setChanged();
+            player.containerMenu.broadcastChanges();
+        }
+        return moved;
+    }
+
+    public static boolean isBulkMaterial(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        return stack.is(ItemTags.LOGS)
+                || stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)
+                || stack.is(Items.IRON_INGOT) || stack.is(Items.COPPER_INGOT) || stack.is(Items.GOLD_INGOT)
+                || stack.is(Items.COAL) || stack.is(Items.CHARCOAL) || stack.is(Items.REDSTONE)
+                || stack.is(Items.LAPIS_LAZULI) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)
+                || stack.is(Items.AMETHYST_SHARD) || stack.is(Items.QUARTZ) || stack.is(Items.ECHO_SHARD)
+                || stack.is(Items.NETHERITE_SCRAP) || stack.is(Items.NETHER_STAR) || stack.is(Items.DRAGON_BREATH)
+                || stack.is(Items.COBBLESTONE) || stack.is(Items.COBBLED_DEEPSLATE) || stack.is(Items.STONE)
+                || stack.is(Items.DEEPSLATE) || stack.is(Items.STONE_BRICKS) || stack.is(Items.NETHERRACK)
+                || stack.is(Items.END_STONE) || stack.is(Items.OBSIDIAN) || stack.is(Items.SAND)
+                || stack.is(Items.RED_SAND) || stack.is(Items.GRAVEL) || stack.is(Items.DIRT)
+                || stack.is(Items.GLASS) || stack.is(Items.SLIME_BALL)
+                || stack.is(Items.WHEAT) || stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)
+                || stack.is(Items.WHEAT_SEEDS) || stack.is(Items.BEETROOT_SEEDS)
+                || stack.is(Items.MELON_SEEDS) || stack.is(Items.PUMPKIN_SEEDS);
+    }
+
     public static int activeDepotCount(ServerPlayer player) { return usableContainers(player).size(); }
+
+    private static int insertIntoContainers(ItemStack source, List<Container> containers) {
+        int before = source.getCount();
+        for (Container container : containers) {
+            boolean changed = false;
+            for (int slot = 0; slot < container.getContainerSize() && !source.isEmpty(); slot++) {
+                ItemStack existing = container.getItem(slot);
+                if (existing.isEmpty()) continue;
+                if (!ItemStack.isSameItemSameComponents(source, existing)) continue;
+                if (!container.canPlaceItem(slot, source)) continue;
+                int limit = Math.min(container.getMaxStackSize(source), existing.getMaxStackSize());
+                int space = limit - existing.getCount();
+                if (space <= 0) continue;
+                int move = Math.min(space, source.getCount());
+                existing.grow(move);
+                source.shrink(move);
+                changed = true;
+            }
+            for (int slot = 0; slot < container.getContainerSize() && !source.isEmpty(); slot++) {
+                ItemStack existing = container.getItem(slot);
+                if (!existing.isEmpty() || !container.canPlaceItem(slot, source)) continue;
+                int limit = Math.min(container.getMaxStackSize(source), source.getMaxStackSize());
+                if (limit <= 0) continue;
+                int move = Math.min(limit, source.getCount());
+                container.setItem(slot, source.copyWithCount(move));
+                source.shrink(move);
+                changed = true;
+            }
+            if (changed) container.setChanged();
+            if (source.isEmpty()) break;
+        }
+        return before - source.getCount();
+    }
 
     private static List<Container> usableContainers(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
