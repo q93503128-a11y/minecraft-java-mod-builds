@@ -11,7 +11,7 @@ public final class FrontierContent {
     public static final DeferredItem<PioneerMarkerItem> PIONEER_MARKER = ITEMS.registerItem(
             "pioneer_marker",
             PioneerMarkerItem::new,
-            new net.minecraft.world.item.Item.Properties().stacksTo(1));
+            properties -> properties.stacksTo(1));
 
     private FrontierContent() {}
 
