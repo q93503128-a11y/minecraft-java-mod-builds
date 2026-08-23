@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative settlement-growth mod.
 
 Canonical direction: see `CANONICAL_PLAN.md`.
 
-## Current version: 0.1.0-alpha.29
+## Current version: 0.1.0-alpha.30
 
 Frontier Settlement currently provides a server-authoritative shared settlement vertical slice covering founding, building, population/workers, roads, outposts, tier growth and compact world-space controls.
 
@@ -113,28 +113,39 @@ Alpha.28 makes specialization affect actual work cadence and local resource beha
 - each production worker is persistently tagged to its own outpost, with legacy visible-name workers adopted into the tag identity instead of duplicated;
 - lumber work is limited to nearby natural trees with leaf canopies, requires the worker to walk to the trunk, performs a visible swing, and removes at most 4 logs per roughly 5-second work cycle;
 - quarry work is limited to exposed nearby stone, requires physical approach and a swing, removes at most 3 exposed blocks per roughly 4-second cycle, and no longer hollows hidden adjacent stone beneath intact ground;
-- mining work now has a readable minehead cycle: the worker returns to the outpost work point and performs one finite underground ore extraction roughly every 8 seconds instead of mining continuously every half-second;
+- mining work has a readable minehead cycle and performs one finite underground ore extraction roughly every 8 seconds;
 - mined ore remains physically depleted in the world by replacement with ordinary stone, so a mining site is not an infinite abstract generator;
 - agriculture uses vanilla crop growth as the renewable specialization and harvests at most 4 mature wheat per roughly 6-second work cycle;
 - the agriculture plot is initialized only from the pristine completed coarse-dirt floor; once established, missing crops/farmland are not magically recreated every production tick;
-- already-created Alpha.27 agriculture plots remain valid, while a pristine legacy plot can be initialized once on load;
 - full stockpiles naturally stall local production because workers keep carrying undelivered output instead of deleting or abstracting it.
 
 ### Alpha.29 — tier-visible settlement growth and authority cleanup
 
-Alpha.29 makes higher settlement tiers visibly change the lived-in territory while removing one hidden pre-Alpha.27 regression.
+- Alpha.27 tagged road logistics is the single transport authority at every tier; the hidden high-tier generic-name/UUID transport backend is gone;
+- `FRONTIER_TOWN` and `DOMAIN` add deterministic settlement-owned road-shoulder lighting along already-built loaded roads, densifying from 16-block to aligned 8-block spacing;
+- road public works only use clear loaded shoulders, skip fluids/block entities and protected footprints, and are protected from break-and-respawn drop farming;
+- civic-core public works are protected across tier changes;
+- higher tiers retain stronger guard-post garrisons on loaded guard posts;
+- night routines understand transport assignment tags and production-worker tags instead of relying on the legacy generic transport name;
+- town workers return to houses, loaded outpost production workers return to their outpost shelter, and remote haulers between safe anchors stop rather than receiving cross-territory night paths.
 
-- `SettlementTierInfrastructureService` no longer searches for generic `운송 주민`, pairs villagers by UUID order or issues its own transport navigation; Alpha.27 tagged road logistics is the single transport authority at every tier;
-- `FRONTIER_TOWN` and `DOMAIN` add deterministic settlement-owned road-shoulder lighting along already-built loaded roads, with denser spacing at domain tier;
-- road public works only use clear loaded shoulders, skip fluids/block entities and skip protected building/outpost/core footprints rather than overwriting player work;
-- tier road lamps are protected from normal breaking so non-economic public works cannot become a free lantern/fence drop farm;
-- the civic core now also rejects block entities/fluids during its gradual visual upgrade and its deterministic core blocks are protected from break-and-respawn item exploits;
-- higher tiers retain stronger guard-post garrisons, but only loaded guard posts are maintained;
-- night routines now understand Alpha.27 transport assignment tags and Alpha.28 production-worker tags instead of relying on the legacy generic transport name;
-- town workers return to houses, loaded outpost production workers return to their outpost shelter, and transport workers rest at a nearby loaded outpost or town housing anchor;
-- a transport worker already far between safe rest anchors simply stops for the night instead of receiving a cross-territory path request through unloaded terrain.
+### Alpha.30 — test-readiness physical consistency pass
 
-The interaction budget remains B/R/Enter/Backspace. Alpha.29 adds visible settlement life and fixes authority conflicts behind the existing controls.
+Alpha.30 is a manual code/gameplay-readiness pass before the next bundled real-play test. It closes the largest remaining inconsistencies rather than adding a new control surface.
+
+- a newly approved building no longer clears terrain, creates a barrel or generates a free cobblestone foundation at approval time;
+- new building construction begins with a persisted `건물 부지 정리` phase in which the actual builder walks the footprint and one-block apron, validates each loaded cell and clears only safe natural/replaceable material;
+- shallow foundation support now uses coarse dirt rather than recoverable cobblestone and never uses loose-drop destruction;
+- after grading, the existing physical transaction resumes: the builder creates the protected work crate when its loaded site is usable, hauls real wood/stone in batches, consumes project cost gradually and builds at the existing readable pace;
+- old pre-Alpha.30 active building saves keep their small legacy step and resume on the already-prepared construction path instead of being re-graded or double-charged;
+- the authoritative starter settlement barrel is protected from normal breaking so destroying one fixed saved storage coordinate cannot softlock early progression;
+- main-settlement logger / farmer / quarry / miner work is now bounded similarly to outpost production: roughly 5s / 6s / 4s / 8s work cycles with 4 / 4 / 3 collection caps where applicable;
+- town workers only inspect already-loaded work/resource cells, successful work uses a visible hand swing, and quarry cluster harvesting only removes individually exposed stone cells;
+- town mining only consumes already-loaded real ore and remains finite;
+- blacksmith repair and ordinary guard maintenance skip unloaded work centers so unloaded infrastructure is not treated as a missing active entity target;
+- no new gameplay key, dashboard or micromanagement layer was added.
+
+Alpha.30 has automated source/build/JAR validation, but it is not a claim that the new grading/navigation/pacing has already passed hands-on Minecraft play. Those qualities remain the next real-play focus.
 
 ### Validation
 
