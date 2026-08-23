@@ -38,6 +38,7 @@ public final class SettlementService {
         else {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
+            SettlementFishingOutpostService.tick(server, data);
             SettlementMarketService.tick(server, data);
             SettlementWorkshopService.tick(server, data);
         }
@@ -94,7 +95,7 @@ public final class SettlementService {
 
     private static boolean isSafeStockpilePosition(ServerLevel level, BlockPos pos) {
         BlockState current=level.getBlockState(pos), below=level.getBlockState(pos.below());
-        if (level.getBlockEntity(pos)!=null || !current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
+        if(level.getBlockEntity(pos)!=null || !current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
         if (!current.isAir() && !current.canBeReplaced()) return false;
         return !below.isAir() && !below.canBeReplaced();
     }
