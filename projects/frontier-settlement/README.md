@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative settlement-growth mod.
 
 Canonical direction: see `CANONICAL_PLAN.md`.
 
-## Current version: 0.1.0-alpha.27
+## Current version: 0.1.0-alpha.28
 
 Frontier Settlement currently provides a server-authoritative shared settlement vertical slice covering founding, building, population/workers, roads, outposts, tier growth and compact world-space controls.
 
@@ -75,51 +75,52 @@ Construction rejects unsafe overlaps and unsuitable terrain instead of silently 
 
 ### Alpha.25 — physical road grading and stone hauling
 
-Alpha.25 brings roads onto the same physical-work direction as buildings without adding new player micromanagement.
-
 - road approval validates the full stone requirement but no longer deletes it instantly;
 - newly approved routed roads begin with a persisted worker grading phase before surface paving;
 - the construction worker walks the planned 3-wide footprint, clears only route-safe material with no-drop updates, fills shallow validated support gaps, and establishes a walkable graded base;
-- old active road saves from Alpha.24 remain compatible: their normal non-encoded `step` resumes the already-prepared paving path instead of re-grading the route;
+- old active road saves from Alpha.24 remain compatible;
 - after grading, the worker extracts actual stone-family stacks from loaded settlement storage in batches and visibly carries them to the active work front;
 - the project stone cost is consumed gradually from the carried physical stack as road placements advance;
-- removing settlement stone while work is underway causes resupply to pause naturally instead of creating abstract reserved resources;
-- surplus carried stone is returned to physical settlement storage before the road is registered complete;
-- the active builder is protected during the road job and restored to normal vulnerability when the transaction finishes;
-- already-correct road surface blocks are protected from player breaking while the road is active, preventing drop/rebuild cost exploits;
-- final validation repairs missing safe surface blocks from the already-paid project transaction without rewinding the stone-cost progression;
-- HUD guidance distinguishes `도로 지반 정리`, `도로 석재 운반·포설`, and `도로 마감 확인`.
+- surplus carried stone is returned to physical settlement storage before completion;
+- active road transaction blocks are protected from break/rebuild exploits.
 
 ### Alpha.26 — physical outpost construction
 
-Alpha.26 moves outposts onto the same physical transaction model as buildings and roads.
-
-- approval validates the full wood 72 / stone 48 requirement without deleting it up front;
+- approval validates wood 72 / stone 48 without deleting it up front;
 - a persisted grading phase walks the 9×9 site and performs only validated shallow earthwork;
-- grading uses soil-like support fill instead of generating free recoverable stone;
 - the builder then extracts actual wood/stone-family stacks from loaded settlement storage and carries them to the work front;
-- blueprint material cost is consumed gradually from the builder's carried physical stack according to the current placement material family;
+- blueprint material cost is consumed gradually from the carried physical stack;
 - work pauses on shortages or new obstructions rather than generating resources or overwriting player changes;
-- active outpost transaction blocks and graded ground are protected while construction is in progress;
-- old pre-Alpha.26 active outpost saves remain on their prepaid construction path and are not charged wood/stone a second time;
-- surplus carried construction material is returned to settlement storage before the finished outpost is registered;
-- completion then detects the site's lumber / quarry / mining / agriculture specialization and activates local production.
+- old pre-Alpha.26 active outpost saves remain on their prepaid construction path;
+- completion detects lumber / quarry / mining / agriculture specialization and activates local production.
 
 ### Alpha.27 — road-bound outpost logistics
 
-Alpha.27 makes the connection between specialized outposts and the shared settlement persistent and physically readable.
-
 - every transport villager is permanently assigned to one outpost with settlement-owned entity tags and a visible `운송 주민 #<id>` identity;
-- old generic `운송 주민` entities are migrated to nearby existing outposts without charging arrival food again;
-- transport no longer pairs generic villagers with `outposts[i]` through UUID sorting, preventing silent reassignment after death/reload/order changes;
-- a route is reconstructed from persisted `RoadSegment.centers()` and follows chained/branched roads back through older network connections toward the settlement;
-- empty outbound and loaded inbound trips advance through short road waypoints so L-corners and chained roads remain meaningful instead of collapsing into one direct navigation target;
-- normal travel needs only the worker's current/next route chunks to be loaded; an unloaded next segment pauses the worker without force-loading it;
-- only fully loaded routes are used for legacy migration, missing-worker replacement and authoritative population reconciliation, preventing an unloaded transporter from being mistaken for a dead one;
-- stockpile extraction is specialization-filtered: lumber carries wood, quarry carries stone, agriculture carries food staples and mining carries mined outputs; unrelated player junk is left in the outpost chest;
-- a migrated legacy worker already carrying an item returns that item safely to town storage rather than deleting it.
+- old generic transport villagers migrate without charging arrival food again;
+- transport no longer pairs generic villagers with `outposts[i]` through UUID sorting;
+- routes reconstruct from persisted `RoadSegment.centers()` and follow chained/branched roads toward the settlement;
+- outbound and inbound trips advance through short road waypoints so L-corners remain meaningful;
+- an unloaded next segment pauses the worker without force-loading it;
+- only fully loaded routes are used for migration, missing-worker replacement and authoritative population reconciliation;
+- stockpile extraction is specialization-filtered so unrelated player junk stays in the outpost chest.
 
-Road/outpost route planning and the B/R/Enter/Backspace interaction budget remain unchanged. Alpha.27 deepens the simulation behind the same controls.
+### Alpha.28 — distinct physical outpost production
+
+Alpha.28 makes specialization affect actual work cadence and local resource behavior instead of only changing the output item category.
+
+- production only runs when the outpost and its required local chunks are already loaded; no production path force-loads remote territory;
+- each production worker is persistently tagged to its own outpost, with legacy visible-name workers adopted into the tag identity instead of duplicated;
+- lumber work is limited to nearby natural trees with leaf canopies, requires the worker to walk to the trunk, performs a visible swing, and removes at most 4 logs per roughly 5-second work cycle;
+- quarry work is limited to exposed nearby stone, requires physical approach and a swing, removes at most 3 exposed blocks per roughly 4-second cycle, and no longer hollows hidden adjacent stone beneath intact ground;
+- mining work now has a readable minehead cycle: the worker returns to the outpost work point and performs one finite underground ore extraction roughly every 8 seconds instead of mining continuously every half-second;
+- mined ore remains physically depleted in the world by replacement with ordinary stone, so a mining site is not an infinite abstract generator;
+- agriculture uses vanilla crop growth as the renewable specialization and harvests at most 4 mature wheat per roughly 6-second work cycle;
+- the agriculture plot is initialized only from the pristine completed coarse-dirt floor; once established, missing crops/farmland are not magically recreated every production tick;
+- already-created Alpha.27 agriculture plots remain valid, while a pristine legacy plot can be initialized once on load;
+- full stockpiles naturally stall local production because workers keep carrying undelivered output instead of deleting or abstracting it.
+
+The interaction budget remains B/R/Enter/Backspace. Alpha.28 changes simulation quality behind those controls, not player micromanagement.
 
 ### Validation
 
