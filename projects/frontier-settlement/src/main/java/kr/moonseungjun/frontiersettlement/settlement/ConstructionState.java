@@ -4,8 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 
-public record ConstructionState(String type, int originX, int originY, int originZ, int rotation, int step) {
-    public static final ConstructionState EMPTY = new ConstructionState("", 0, 0, 0, 0, 0);
+public record ConstructionState(String type, int originX, int originY, int originZ, int rotation, int step, int scaffoldMask) {
+    public static final ConstructionState EMPTY = new ConstructionState("", 0, 0, 0, 0, 0, 0);
 
     public static final Codec<ConstructionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.optionalFieldOf("type", "").forGetter(ConstructionState::type),
@@ -13,11 +13,16 @@ public record ConstructionState(String type, int originX, int originY, int origi
             Codec.INT.optionalFieldOf("origin_y", 0).forGetter(ConstructionState::originY),
             Codec.INT.optionalFieldOf("origin_z", 0).forGetter(ConstructionState::originZ),
             Codec.INT.optionalFieldOf("rotation", 0).forGetter(ConstructionState::rotation),
-            Codec.INT.optionalFieldOf("step", 0).forGetter(ConstructionState::step)
+            Codec.INT.optionalFieldOf("step", 0).forGetter(ConstructionState::step),
+            Codec.INT.optionalFieldOf("scaffold_mask", 0).forGetter(ConstructionState::scaffoldMask)
     ).apply(instance, ConstructionState::new));
 
+    public ConstructionState(String type, int originX, int originY, int originZ, int rotation, int step) {
+        this(type, originX, originY, originZ, rotation, step, 0);
+    }
+
     public ConstructionState(String type, int originX, int originY, int originZ, int step) {
-        this(type, originX, originY, originZ, 0, step);
+        this(type, originX, originY, originZ, 0, step, 0);
     }
 
     public boolean active() {
@@ -32,7 +37,19 @@ public record ConstructionState(String type, int originX, int originY, int origi
         return BuildingRotation.fromId(rotation);
     }
 
+    public boolean ownsScaffold(int index) {
+        return index >= 0 && index < Integer.SIZE && (scaffoldMask & (1 << index)) != 0;
+    }
+
     public ConstructionState advance() {
-        return new ConstructionState(type, originX, originY, originZ, rotation, step + 1);
+        return new ConstructionState(type, originX, originY, originZ, rotation, step + 1, scaffoldMask);
+    }
+
+    public ConstructionState withStep(int nextStep) {
+        return new ConstructionState(type, originX, originY, originZ, rotation, Math.max(0, nextStep), scaffoldMask);
+    }
+
+    public ConstructionState withScaffoldMask(int nextMask) {
+        return new ConstructionState(type, originX, originY, originZ, rotation, step, Math.max(0, nextMask));
     }
 }

@@ -9,7 +9,7 @@ RES = ROOT / 'src/main/resources'
 required = [
     ROOT / 'build.gradle', ROOT / 'gradle.properties', ROOT / 'PROJECT.md', ROOT / 'CANONICAL_PLAN.md', ROOT / 'README.md',
     JAVA / 'FrontierSettlement.java', JAVA / 'content/FrontierContent.java', JAVA / 'content/PioneerMarkerItem.java',
-    JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/SettlementService.java',
+    JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/ConstructionState.java', JAVA / 'settlement/SettlementService.java',
     JAVA / 'settlement/SettlementGuidanceService.java', JAVA / 'settlement/SettlementCoreService.java',
     JAVA / 'settlement/SettlementResidentRoutineService.java', JAVA / 'settlement/SettlementTierInfrastructureService.java',
     JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
@@ -65,6 +65,16 @@ for token in ('SettlementConstructionService.phaseLabel(data.construction())', '
 if 'reward' in guidance.lower() or 'quest' in guidance.lower():
     raise SystemExit('next-goal helper must remain guidance-only, not become a quest/reward system')
 
+construction_state = (JAVA / 'settlement/ConstructionState.java').read_text(encoding='utf-8')
+for token in ('int scaffoldMask', 'optionalFieldOf("scaffold_mask", 0)', 'ownsScaffold(int index)',
+              'withScaffoldMask(int nextMask)', 'step + 1, scaffoldMask'):
+    if token not in construction_state: raise SystemExit(f'construction persistence invariant missing: {token}')
+
+settlement_data = (JAVA / 'settlement/SettlementData.java').read_text(encoding='utf-8')
+for token in ('setConstructionScaffoldMask(int scaffoldMask)', 'construction.withScaffoldMask(scaffoldMask)',
+              'construction.withStep(step)'):
+    if token not in settlement_data: raise SystemExit(f'construction state update invariant missing: {token}')
+
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('HAUL_BATCH_SIZE = 16', 'BUILD_INTERVAL_TICKS = 10', 'Blocks.BARREL.defaultBlockState()',
               'SettlementStorageService.storageAvailable(level, data)', 'SettlementStorageService.findExtractionTarget',
@@ -73,13 +83,14 @@ for token in ('HAUL_BATCH_SIZE = 16', 'BUILD_INTERVAL_TICKS = 10', 'Blocks.BARRE
               'costAtStep(long totalCost', 'BreakBlockEvent', 'event.setNotifyClient(true)',
               'supplyPosition(origin, type, rotation)', 'returnCrateExtras'):
     if token not in construction: raise SystemExit(f'physical construction logistics invariant missing: {token}')
-for token in ('WORK_POSITION_REACHED_SQR = 2.25D', 'HIGH_WORK_RANGE_SQR = 100.0D',
-              'MAX_SCAFFOLD_STEP = 7', 'ensureConstructionScaffolds(level, construction, type, supply)',
+for token in ('WORK_POSITION_REACHED_SQR = 2.25D', 'HIGH_WORK_RANGE_SQR = 49.0D',
+              'MAX_SCAFFOLD_STEP = 7', 'ensureConstructionScaffolds(level, data, type, supply)',
               'moveBuilderToWorkPosition', 'Blocks.OAK_FENCE.defaultBlockState()', 'Blocks.OAK_PLANKS.defaultBlockState()',
               'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)',
-              'builder.swing(InteractionHand.MAIN_HAND)', 'returnNonConstructionCrateItems',
+              'builder.swing(InteractionHand.MAIN_HAND)', 'relieveCratePressure',
               'villager.entityTags().contains(BUILDER_TAG)', 'case FLOOR -> "기초 시공"',
-              'case ROOF -> "지붕 시공"', 'removeConstructionScaffolds'):
+              'case ROOF -> "지붕 시공"', 'construction.ownsScaffold(towerIndex)',
+              'canClaimFreshTower', 'placeClaimedTower', 'repairClaimedTower', 'removeConstructionScaffolds'):
     if token not in construction: raise SystemExit(f'alpha.24 construction presentation invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)' in construction:
     raise SystemExit('building approval still deletes the full material cost before physical hauling')
@@ -87,6 +98,8 @@ if 'placed < 2' in construction:
     raise SystemExit('legacy two-block construction burst still present')
 if 'destroyBlock(' in construction or 'dropResources(' in construction:
     raise SystemExit('construction must not create loose drops through destructive removal paths')
+if 'towerOwned(' in construction:
+    raise SystemExit('scaffold ownership must come from persisted construction state, not visual pattern guessing')
 
 storage = (JAVA / 'settlement/SettlementStorageService.java').read_text(encoding='utf-8')
 for token in ('storageAvailable(ServerLevel level, SettlementData data)',

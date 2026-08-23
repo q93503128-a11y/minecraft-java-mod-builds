@@ -137,7 +137,7 @@ public final class SettlementData extends SavedData {
     }
 
     public void beginConstruction(BuildingType type, BlockPos origin, BuildingRotation rotation) {
-        this.construction = new ConstructionState(type.id(), origin.getX(), origin.getY(), origin.getZ(), rotation.id(), 0);
+        this.construction = new ConstructionState(type.id(), origin.getX(), origin.getY(), origin.getZ(), rotation.id(), 0, 0);
         setDirty();
     }
 
@@ -149,9 +149,13 @@ public final class SettlementData extends SavedData {
 
     public void replaceConstructionStep(int step) {
         if (!construction.active()) return;
-        this.construction = new ConstructionState(
-                construction.type(), construction.originX(), construction.originY(),
-                construction.originZ(), construction.rotation(), Math.max(0, step));
+        this.construction = construction.withStep(step);
+        setDirty();
+    }
+
+    public void setConstructionScaffoldMask(int scaffoldMask) {
+        if (!construction.active() || construction.scaffoldMask() == scaffoldMask) return;
+        this.construction = construction.withScaffoldMask(scaffoldMask);
         setDirty();
     }
 

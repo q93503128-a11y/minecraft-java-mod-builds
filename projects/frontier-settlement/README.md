@@ -72,14 +72,15 @@ Alpha.24 keeps the Alpha.23 physical hauling transaction intact and improves the
 
 - construction guidance now reports the current blueprint phase: hauling, foundation, frame/walls, roof, interior/finish or final validation;
 - the active builder is protected from ordinary damage while carrying/placing settlement construction resources, then returns to normal vulnerability when the job finishes;
-- two temporary wooden work towers are attempted beside the site using fence supports and plank treads;
-- scaffold pieces are only placed into air/replaceable positions and never overwrite fluids, block entities or solid player/world obstructions;
-- high wall/roof placements use a reachable elevated scaffold step only when a complete safe tower exists and the target is within the bounded elevated work range;
-- blocked scaffold space causes a safe fallback to the previous ground work position rather than clearing the obstruction;
-- scaffold blocks are protected while the construction is active and removed with direct no-drop updates after completion;
+- up to four temporary wooden work towers are attempted around the site using fence supports and plank treads, giving high wall/roof work a closer physical work position;
+- scaffold pieces are only claimed where every required position is air/replaceable and free of fluids/block entities; solid existing world/player structures are not cleared to make room;
+- scaffold ownership is persisted in the active `ConstructionState`, so restart/reconnect recovery and final cleanup do not infer ownership merely from a matching oak-fence/plank shape;
+- high wall/roof placements use an elevated scaffold step only when the saved, complete tower exists and the target is within the bounded elevated work range;
+- if all scaffold approaches are blocked, construction safely falls back to the previous ground work behavior instead of deleting the obstruction or deadlocking the job;
+- owned scaffold blocks are protected while construction is active and only those owned/matching pieces are removed with direct no-drop updates after completion;
 - the builder now performs a visible main-hand swing when a blueprint block is actually placed;
-- if the construction barrel is jammed with unrelated player-added items, the builder first attempts to return those extras to loaded settlement storage before remaining stuck with a carried material stack;
-- builder lookup prefers the dedicated settlement builder tag and only falls back to the legacy custom-name match for old worlds.
+- if the construction barrel is jammed by unrelated items or excessive wood/stone of one category, the builder attempts to return removable surplus to loaded settlement storage before remaining stuck with a carried stack;
+- builder lookup prefers the dedicated settlement builder tag using the Minecraft 26.2 `entityTags()` API and falls back to the legacy custom-name match for old worlds.
 
 Road/outpost construction still uses its existing stable transaction path; building construction is the presentation-quality reference before the same physical treatment is generalized.
 
