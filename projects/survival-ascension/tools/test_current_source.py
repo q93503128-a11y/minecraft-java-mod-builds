@@ -33,125 +33,144 @@ required = [
     "src/main/resources/META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt",
     "src/main/resources/META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
+    "src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java",
+    "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
+    "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java",
+    "src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java",
     "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.java",
+    "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java",
+    "src/main/java/kr/moonseungjun/survivalascension/harvesting/IrrigationReplantService.java",
     "src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialDoctrine.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java",
+    "src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
 ]
-for rel in required:
-    if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
+for rel in required: read(rel)
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.25.0-alpha.1"], "toolchain/version")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.26.0-alpha.1"], "gradle properties")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.25.0-alpha.1"', "ExpeditionProgression::onPlayerTick", "ExpeditionProgression::onPlayerLoggedOut",
-            "AscensionTrialSystem::onServerTick", "WorldAscensionProgression::onLivingDeath"], "main registration")
+need(main, ['VERSION = "0.26.0-alpha.1"', "ExpeditionIncidentSystem::onPlayerTick", "ExpeditionIncidentSystem::onPlayerLoggedOut",
+            "AscensionTrialSystem::onServerTick", "WarbandDirector::onServerTick"], "main registration")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "network protocol")
 
+# 0.25 persistent directive regressions
 action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")
 need(action, ["LOGS_FELLED", "BLOCKS_BUILT", "CROPS_HARVESTED", "TRAVEL_DISTANCE", "OCEAN_VOYAGE",
-              "BLOCKS_MINED", "HOSTILES_KILLED", "DASHES_USED", "fromSkill"], "expedition action vocabulary")
-
+              "BLOCKS_MINED", "HOSTILES_KILLED", "DASHES_USED"], "expedition actions")
 directive = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionDirective.java")
-for token in [
-    "WOODLAND_STANDARD", "WOODLAND_PATROL", "ARID_STANDARD", "ARID_ROUTE", "WETLAND_STANDARD", "WETLAND_CLEARANCE",
-    "HIGHLANDS_STANDARD", "HIGHLANDS_DASH", "OCEAN_STANDARD", "OCEAN_PATROL", "DEEP_STANDARD", "DEEP_CLEARANCE",
-    "FROZEN_STANDARD", "FROZEN_DASH", "NETHER_STANDARD", "NETHER_SUPPLY", "END_STANDARD", "END_TRAVERSE",
-    "LOGS_FELLED, 96", "LOGS_FELLED, 64", "TRAVEL_DISTANCE, 240", "BLOCKS_BUILT, 128", "CROPS_HARVESTED, 96",
-    "DASHES_USED, 12", "OCEAN_VOYAGE, 800", "BLOCKS_MINED, 192", "HOSTILES_KILLED, 24", "HOSTILES_KILLED, 32",
-    "optionCount", "select(ExpeditionRegion region, int index)"
-]:
-    if token not in directive: errors.append(f"field directives missing: {token}")
-if directive.count("(ExpeditionRegion.") < 18:
-    errors.append("field directives must contain at least 18 region-bound directives")
+for marker in ["WOODLAND_STANDARD", "WOODLAND_PATROL", "ARID_STANDARD", "ARID_ROUTE", "WETLAND_STANDARD", "WETLAND_CLEARANCE",
+               "HIGHLANDS_STANDARD", "HIGHLANDS_DASH", "OCEAN_STANDARD", "OCEAN_PATROL", "DEEP_STANDARD", "DEEP_CLEARANCE",
+               "FROZEN_STANDARD", "FROZEN_DASH", "NETHER_STANDARD", "NETHER_SUPPLY", "END_STANDARD", "END_TRAVERSE"]:
+    need(directive, [marker], "18 directive catalog")
+need(directive, ["List<ExpeditionDirective> forRegion", "optionCount", "List<Task> tasks"], "directive selection")
 
 data = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java")
-need(data, [
-    '"expedition_v1"', 'optionalFieldOf("directives", Map.of())', 'optionalFieldOf("region_rewards", -1)',
-    "this.directives.putIfAbsent(regionKey(region), 0)", "legacyProgressKey(region)", "taskProgressKey(region, first.action())",
-    "MILESTONE_MASTER", "migratedCompleted = ALL_REGIONS_MASK", "discover(ServerPlayer player, ExpeditionRegion region, int directiveIndex)",
-    "Math.floorMod(directiveIndex, ExpeditionDirective.optionCount(region))", "directive(ServerPlayer player, ExpeditionRegion region)",
-    "addProgress(ServerPlayer player, ExpeditionRegion region, ExpeditionAction action, int amount)", "directiveComplete(state, region, directive)",
-    "claimRegionReward", "directiveSummary", "countStageZeroCompleted", "isMasterSurveyComplete"
-], "directive persistence/migration")
+need(data, ['"expedition_v1"', 'optionalFieldOf("directives", Map.of())', 'optionalFieldOf("region_rewards", -1)',
+            'optionalFieldOf("incident_rewards", 0)', "directiveComplete", "firstIncompleteTask", "claimIncidentReward",
+            "incidentResolved", "MILESTONE_MASTER", "legacyProgressKey", "taskProgressKey"], "expedition saved data")
+need(data, ["for (ExpeditionDirective.Task task : directive.tasks())", "return false;"], "all-task completion")
 
-expedition = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
-need(expedition, [
-    "ExpeditionAction.fromSkill(skill)", "recordAction(ServerPlayer player, ExpeditionAction action, int amount)",
-    "player.level().getRandom().nextInt(ExpeditionDirective.optionCount(region))", "data.discover(player, region, option)",
-    "data.addProgress(player, region, action, amount)", "result.taskCompletedNow()", "result.regionCompletedNow()",
-    "ExpeditionAction.OCEAN_VOYAGE", "player.isPassenger() || player.isSwimming() || player.isInWater()",
-    "distance > 24.0D", "기존 0.23 발견 보상 승계", "countStageZeroCompleted(player) >= 4",
-    "data.isComplete(player, ExpeditionRegion.DEEP)", "data.isComplete(player, ExpeditionRegion.NETHER)",
-    "AscensionAffixes.createEliteDrop", "hasFieldMastery"
-], "multi-task expedition progression")
+progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
+need(progression, ["public static ExpeditionRegion currentRegion", "ExpeditionDirective.optionCount", "data.discover(player, region, option)",
+                   "ExpeditionIncidentSystem.recordAction(player, action, amount)", "ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount)",
+                   "grantIncidentBonus", "data.claimRegionReward", "data.claimMilestone"], "expedition progression")
 
-mobility = read("src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java")
-need(mobility, [
-    "ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1)",
-    "ExpeditionProgression.recordSkillAction(player, SkillType.MOBILITY, units * 6)",
-    "!player.isPassenger()", "!player.getAbilities().flying", "!player.isFallFlying()", "!player.isSwimming()",
-    "ExpeditionProgression.hasFieldMastery(player)", "return 4;", "AIR_DASH_COUNT.put(uuid, 0)"
-], "mobility directive/field mastery")
+# 0.26 rare incidents
+incident = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncident.java")
+for marker in ["WOODLAND_AMBUSH", "WOODLAND_RUSH", "ARID_AMBUSH", "ARID_RUSH", "WETLAND_AMBUSH", "WETLAND_RUSH",
+               "HIGHLANDS_AMBUSH", "HIGHLANDS_RUSH", "OCEAN_AMBUSH", "OCEAN_RUSH", "DEEP_AMBUSH", "DEEP_RUSH",
+               "FROZEN_AMBUSH", "FROZEN_RUSH", "NETHER_AMBUSH", "NETHER_RUSH", "END_AMBUSH", "END_RUSH"]:
+    need(incident, [marker], "18 incident catalog")
+need(incident, ["Kind { AMBUSH, ACTION_RUSH }", "ExpeditionAction.LOGS_FELLED, 24", "ExpeditionAction.BLOCKS_BUILT, 24",
+                "ExpeditionAction.CROPS_HARVESTED, 20", "ExpeditionAction.DASHES_USED, 4", "ExpeditionAction.OCEAN_VOYAGE, 180",
+                "ExpeditionAction.BLOCKS_MINED, 48", "ExpeditionAction.TRAVEL_DISTANCE, 180", '"minecraft:drowned"',
+                '"minecraft:wither_skeleton"', '"minecraft:shulker"'], "incident definitions")
 
-mining = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")
-wood = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
-harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
-construction = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
-combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
-need(mining, ["ExpeditionProgression.recordSkillAction(player, SkillType.MINING, 1)", "player.gameMode.destroyBlock"], "mining objective source")
-need(wood, ["ExpeditionProgression.recordSkillAction(player, SkillType.WOODCUTTING, 1)", "hasLeavesNearby", "GLOBAL_LOG_BUDGET_PER_TICK = 64", "LOCAL_LOG_BUDGET_PER_TICK = 12"], "wood objective source")
-need(harvest, ["ExpeditionProgression.recordSkillAction(player, SkillType.HARVESTING, 1)", "GLOBAL_HARVEST_BUDGET_PER_TICK = 64", "LOCAL_HARVEST_BUDGET_PER_TICK = 12", "player.gameMode.destroyBlock"], "harvest objective source")
-need(construction, ["ExpeditionProgression.recordSkillAction(player, SkillType.CONSTRUCTION", "GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "EventHooks.onBlockPlace", "consumeOne(player, item)"], "construction objective source")
-need(combat, ["if (victim instanceof Enemy) ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1)"], "combat objective source")
+incident_system = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java")
+need(incident_system, ["CHECK_INTERVAL_TICKS = 600", "START_CHANCE = 0.10D", "START_COOLDOWN_TICKS = 3600",
+                       "TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600", "OUTSIDE_GRACE_TICKS = 200", "EVENT_RADIUS = 48.0D",
+                       "ServerBossEvent", "EntitySpawnReason.TRIGGERED", "findWaterSpawn", "spawned.size() < minimum",
+                       "cleanupMobs", "removeStaleServerIncidents", "data.incidentResolved(player, region)",
+                       "data.claimIncidentReward", "bonusTask.target() / 5", "ExpeditionProgression.grantIncidentBonus",
+                       "Items.EMERALD, 4", "Items.AMETHYST_SHARD, 8", "Items.DIAMOND, 2", "Items.ECHO_SHARD, 4",
+                       "Items.DIAMOND, 4", "Items.ECHO_SHARD, 8"], "incident lifecycle and rewards")
+commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
+need(commands, ["사건 해결", "expedition.incidentResolved(player, region)"], "incident stats")
 
+# Core physical-scale safety regressions
+tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
+need(tuning, ["if (level >= 100) return 11;", "if (level >= 100) return 192;", "if (level >= 100) return 384;",
+              "if (level >= 100) return 49;", "if (level >= 100) return 2.0D;", "if (level >= 100) return 16.0D;"], "Mastery VI tuning")
 bore = read("src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java")
-need(bore, ["MAX_PENDING_PER_PLAYER = 640", "GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "LOCAL_BLOCK_BUDGET_PER_TICK = 12",
-            "fieldMastery ? 12", "player.gameMode.destroyBlock(target)"], "field mastery bore")
-need(wood, ["FIELD_MASTERY_LOG_LIMIT = 448"], "field mastery wood")
-need(harvest, ["baseSize = 13", "MAX_PENDING_PER_PLAYER = 384"], "field mastery harvest")
-need(combat, ["fieldMastery ? 7.5D", "fieldMastery ? 20", "0.55D"], "field mastery combat")
-need(construction, ["fieldMastery ? 65", "fieldMastery ? 13", "MAX_PENDING_BLOCKS_PER_PLAYER = 512"], "field mastery construction")
+need(bore, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "LOCAL_BLOCK_BUDGET_PER_TICK = 12", "MAX_PENDING_PER_PLAYER = 640",
+            "fieldMastery ? 12", "player.gameMode.destroyBlock(target)"], "bore safety")
+wood = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
+need(wood, ["GLOBAL_LOG_BUDGET_PER_TICK = 64", "LOCAL_LOG_BUDGET_PER_TICK = 12", "FIELD_MASTERY_LOG_LIMIT = 448",
+            "hasLeavesNearby", "player.gameMode.destroyBlock(target)"], "woodcut safety")
+harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
+need(harvest, ["GLOBAL_HARVEST_BUDGET_PER_TICK = 64", "LOCAL_HARVEST_BUDGET_PER_TICK = 12", "MAX_PENDING_PER_PLAYER = 384",
+               "baseSize = 13", "player.gameMode.destroyBlock(target)"], "harvest safety")
+construction = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
+need(construction, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "MAX_PENDING_BLOCKS_PER_PLAYER = 512", "fieldMastery ? 65", "fieldMastery ? 13",
+                    "EventHooks.onBlockPlace", "consumeOne(player, item)"], "construction safety")
+combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
+need(combat, ["fieldMastery ? 7.5D", "fieldMastery ? 20", "combatLevel >= 100 ? 0.55D : 0.45D", "InfrastructureProject.COMBAT_ACADEMY"], "combat Field Mastery")
+mobility = read("src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java")
+need(mobility, ["ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1)", "return 4;", "DASH_READY_TICK", "AIR_DASH_COUNT"], "mobility action validation")
 
+# Endgame/economy regressions
+world = read("src/main/java/kr/moonseungjun/survivalascension/world/WorldAscensionData.java")
+need(world, ["world_ascension_v1", "MAX_STAGE = 2"], "world ascension")
 trial = read("src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java")
-doctrine = read("src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialDoctrine.java")
-need(trial, ["TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "AscensionTrialDoctrine.random", "maybeReinforce",
-             "ServerBossEvent", "removeStaleServerTrials", "AscensionAffixes.createEliteDrop"], "Ascension Trial regression")
-need(doctrine, ["ONSLAUGHT", "PURSUIT", "SIEGE", "쇄도", "추격", "봉쇄"], "trial doctrine regression")
-if '"minecraft:evoker"' in trial:
-    errors.append("Ascension Trial must not spawn untracked summon-producing evokers")
-
+need(trial, ["TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "AscensionTrialDoctrine.random",
+             "maybeReinforce", "EntitySpawnReason.TRIGGERED", "ServerBossEvent", "removeStaleServerTrials"], "Ascension Trial")
+if '"minecraft:evoker"' in trial: errors.append("Ascension Trial must not directly spawn evokers")
+mutation = read("src/main/java/kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.java")
+need(mutation, ["MUTATION_CHANCE = 0.18D", "Mutation.WITHERED", "Mutation.PHASE", "Mutation.PLAGUE", "contains(\"SPAWNER\")"], "endgame mutations")
+warband = read("src/main/java/kr/moonseungjun/survivalascension/elite/WarbandDirector.java")
+need(warband, ["ROUT_TICKS = 160", "3 + worldStage", "6 + worldStage"], "warband")
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
+need(affix, ['AWAKENED = "awakened"', "canAwaken", "currentAffixes(stack).size() == 3", "missing.size() != 2", "awakened ? 4 : rarity"], "awakened Mythic")
 reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
-need(affix, ["AWAKENED", "currentAffixes(stack).size() == 3", "missing.size() != 2", "awakened ? 4 : rarity", "§5[각성 신화]"], "awakened Mythic regression")
-need(reforge, ["ACTION_AWAKEN", "Items.AMETHYST_SHARD, 256", "Items.DIAMOND, 24", "Items.NETHERITE_SCRAP, 8", "Items.ECHO_SHARD, 64", "Items.DRAGON_BREATH, 16"], "awakening economy")
+need(reforge, ["ACTION_AWAKEN", "AscensionAffixes.canAwaken(held)", "Items.AMETHYST_SHARD, 256", "Items.DRAGON_BREATH, 16"], "awakening economy")
+
+# Documentation/reference policy
+project = read("PROJECT.md")
+readme = read("README.md")
+need(project, ["0.26 희귀 현장 사건", "incident_rewards", "Enhanced Celestials Tweaks(MIT)", "Majrusz's Progressive Difficulty"], "PROJECT canon")
+need(readme, ["0.26.0-alpha.1", "Rare Regional Field Incidents", "18 region incidents", "once per player per region"], "README canon")
 
 for rel in [
     "src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
-    "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java"
+    "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java",
 ]:
     text = read(rel)
-    if re.search(r"setBlock\s*\([^\n]*AIR", text):
-        errors.append(f"scaled destruction bypasses normal destroy path: {rel}")
+    if re.search(r"setBlock\s*\([^\n]*AIR", text): errors.append(f"scaled destruction bypasses normal destroy path: {rel}")
 
-for forbidden in ["harmonised.pmmo", "alrex.parcool", "com.alrex", "mekanism.common", "com.warband", "vbonedra.hostiles_are_too_easy", "ftbquests", "ejektaflex.bountiful"]:
+for forbidden in ["harmonised.pmmo", "alrex.parcool", "com.alrex", "mekanism.common", "com.warband",
+                  "vbonedra.hostiles_are_too_easy", "com.telepathicgrunt.repurposedstructures", "dev.ftb.mods.ftbquests"]:
     for path in (ROOT / "src").rglob("*.java"):
         if forbidden in path.read_text(encoding="utf-8", errors="ignore").lower():
-            errors.append(f"reference-only namespace leaked: {path.relative_to(ROOT)} -> {forbidden}")
+            errors.append(f"forbidden/reference namespace leaked: {path.relative_to(ROOT)} -> {forbidden}")
 
 if errors:
     print("SOURCE AUDIT FAILED")
@@ -160,7 +179,8 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8")
-print("- 18 persistent field directives provide two options per expedition region; mixed directives require all tasks")
-print("- 0.24 discovered/progress/completed saves migrate to standard directives without duplicate region XP")
-print("- directive counters originate from real scaled work, legitimate movement/voyage, hostile kills and successful dash actions")
-print("- Field Mastery scale/tick budgets, tactical trials, awakened Mythic and world progression regressions retained")
+print("- 18 persistent expedition directives remain legacy-safe and require all assigned tasks")
+print("- 18 rare regional incidents add bounded ambush/action-rush events with bossbar lifecycle")
+print("- incident rewards are one-time per player/region, fail-safe, Trial-separated and max +20% directive bonus")
+print("- Mastery VI, Field Mastery, tick budgets, normal destroy/material/protection contracts retained")
+print("- doctrine trials, awakened Mythic, world stages, mutations, warbands and elite regressions retained")
