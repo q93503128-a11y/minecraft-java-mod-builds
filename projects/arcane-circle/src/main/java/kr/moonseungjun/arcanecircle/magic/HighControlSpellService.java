@@ -25,7 +25,7 @@ import java.util.WeakHashMap;
 public final class HighControlSpellService {
     private static final Set<String> HANDLED = Set.of(
             "mass_suggestion", "forcecage", "dominate_monster", "feeblemind");
-    private static final int MASS_SUGGESTION_TICKS = 160;
+    public static final int MASS_SUGGESTION_TICKS = 400;
     private static final int FORCECAGE_TICKS = 400;
     private static final int DOMINATE_TICKS = 1200;
     private static final int FEEBLEMIND_TICKS = 1800;
@@ -126,7 +126,7 @@ public final class HighControlSpellService {
         }
         if (affected <= 0) return false;
         ArcaneNoticeService.push(caster, Component.literal("§d[대규모 제안] §f" + affected
-                + "체에게 전투에서 물러나라는 정신 명령을 내렸습니다. §7약 8초 동안 공격을 끊고 전장을 이탈합니다."), 90);
+                + "체에게 전투에서 물러나라는 정신 명령을 내렸습니다. §7약 20초 동안 공격·Arcane 시전을 끊고 전장을 이탈합니다."), 100);
         level.playSound(null, caster.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
                 SoundSource.PLAYERS, 1.0F, .92F);
         return true;
@@ -191,6 +191,7 @@ public final class HighControlSpellService {
 
     private static void applySuggestion(Mob target, State state) {
         target.setTarget(null);
+        WorldMagicService.stop(target);
         if (target.position().distanceToSqr(state.anchor) > 9.0)
             target.getNavigation().moveTo(state.anchor.x, state.anchor.y, state.anchor.z, 1.20);
     }
