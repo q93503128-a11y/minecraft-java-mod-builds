@@ -1,6 +1,7 @@
 package kr.moonseungjun.arcanecircle;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.arcanecircle.magic.Alpha65NinthCircleRuntime;
 import kr.moonseungjun.arcanecircle.magic.ArcaneFieldService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneLightService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 @Mod(ArcaneCircle.MOD_ID)
 public final class ArcaneCircle {
     public static final String MOD_ID = "arcanecircle";
-    public static final String VERSION = "0.12.1-alpha.64";
+    public static final String VERSION = "0.12.1-alpha.65";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ArcaneCircle(IEventBus modEventBus) {
@@ -134,6 +135,7 @@ public final class ArcaneCircle {
         SeventhCircleSpellService.clear(player);
         EighthCircleSpellService.clear(player);
         NinthCircleSpellService.clear(player);
+        Alpha65NinthCircleRuntime.clear(player);
         ArcaneFieldService.clear(player.getUUID());
         SimulacrumService.clear(player);
         HighUtilitySpellService.clear(player);
@@ -198,6 +200,7 @@ public final class ArcaneCircle {
         HighWardSpellService.tick(level);
         HighControlSpellService.tick(level);
         NinthCircleSpellService.tick(level);
+        Alpha65NinthCircleRuntime.tick(level);
         // Field suppression runs after the circle runtimes; Time Stop/Antimagic win the tick.
         ArcaneFieldService.tick(level);
         MagicPlayerData data = MagicPlayerData.get(level.getServer());
@@ -216,6 +219,7 @@ public final class ArcaneCircle {
         SeventhCircleSpellService.clearAll();
         EighthCircleSpellService.clearAll();
         NinthCircleSpellService.clearAll();
+        Alpha65NinthCircleRuntime.clearAll();
         SpellGameplayService.clearAll();
         SimulacrumService.clearAll();
         HighUtilitySpellService.clearAll();
