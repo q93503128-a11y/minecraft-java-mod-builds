@@ -23,7 +23,7 @@ import org.joml.Matrix3x2f;
 
 public final class ProductionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
-            new Entry("시설 투자", "인벤토리+사용 가능 물류 배럴에서 산업 가공소 건설 재료 투입", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
+            new Entry("시설 투자", "산업 가공소 투자 · 마지막 투입은 실제 배럴 준공 현장 필요", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
             new Entry("제련 배치", "철원석96 · 구리원석96 · 석탄64", new ItemStack(Items.BLAST_FURNACE), "metalworks", Action.PRODUCE),
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
@@ -61,7 +61,7 @@ public final class ProductionRadialMenuScreen extends Screen {
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), cx - this.font.width(entry.title()) / 2, cy - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), cx - this.font.width(entry.detail()) / 2, cy + 8, 0xFFB8B8B8, false);
-        String caption = "채집 → 일괄 적재 → 생산/인프라 → 전초기지 → 원정";
+        String caption = "채집 → 적재 → 물리 준공 → 생산/전초 → 원정";
         graphics.text(this.font, caption, cx - this.font.width(caption) / 2, cy - 102, 0xFFE0E0E0, true);
     }
 

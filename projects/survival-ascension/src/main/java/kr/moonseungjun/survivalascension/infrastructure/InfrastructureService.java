@@ -90,6 +90,12 @@ public final class InfrastructureService {
             return;
         }
 
+        boolean siteValidatedForCompletion = false;
+        if (InfrastructureSiteService.requiresSite(project) && canFullyFundNow(player, data, project)) {
+            if (!InfrastructureSiteService.validateForFinalFunding(player, project)) return;
+            siteValidatedForCompletion = true;
+        }
+
         int consumed = 0;
         for (int i = 0; i < project.requirements().size(); i++) {
             InfrastructureProject.Requirement requirement = project.requirements().get(i);
@@ -114,6 +120,9 @@ public final class InfrastructureService {
             MinecraftServer server = ((ServerLevel) player.level()).getServer();
             Component message = Component.literal("§6[인프라 완공] §e" + project.koreanName() + " §f— " + project.benefit());
             for (ServerPlayer online : server.getPlayerList().getPlayers()) online.sendSystemMessage(message);
+            if (siteValidatedForCompletion) {
+                player.sendSystemMessage(Component.literal("§a[물리 준공] §f실제 월드의 준공 현장을 확인한 뒤 마지막 자원 투입까지 완료했습니다."));
+            }
             if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
                 player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 배럴 물류 → 물리 전초기지 → 원정 작전/현장 복귀까지 단계적으로 확장할 수 있습니다."));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
@@ -122,6 +131,16 @@ public final class InfrastructureService {
                 player.sendSystemMessage(Component.literal("§5[승천 시련] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 시련을 개방할 수 있습니다."));
             }
         }
+    }
+
+    private static boolean canFullyFundNow(ServerPlayer player, InfrastructureData data, InfrastructureProject project) {
+        for (int i = 0; i < project.requirements().size(); i++) {
+            InfrastructureProject.Requirement requirement = project.requirements().get(i);
+            int remaining = data.remaining(project, i);
+            if (remaining <= 0) continue;
+            if (countItem(player, requirement.item()) < remaining) return false;
+        }
+        return true;
     }
 
     public static void sendStatus(ServerPlayer player, InfrastructureProject project) {
@@ -148,6 +167,7 @@ public final class InfrastructureService {
             int current = data.contributed(project, i);
             player.sendSystemMessage(Component.literal("  §7- §f" + requirement.label() + " §e" + current + "§7/§f" + requirement.amount()));
         }
+        InfrastructureSiteService.sendStatus(player, project);
         if (InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
             player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고"));
         }

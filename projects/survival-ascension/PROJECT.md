@@ -1,318 +1,149 @@
 # Survival Ascension
 
-- Mod version: `0.35.0-alpha.1`
+- Mod version: `0.36.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, `expedition_operations_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.35 adds no SavedData field, ID or packet; it adds one explicit bulk-offload action that writes only to already-usable physical linked Barrels. 0.34 integrated-input behavior, 0.33 complication migration and 0.32 active-operation compatibility remain unchanged.
+- Existing-world compatibility: `mining_progress_v1`, `infrastructure_v1`, `world_ascension_v1`, `expedition_v1`, `apex_hunt_v1`, `production_v1`, `field_depots_v1`, `outpost_v1`, `field_recovery_v1`, `expedition_operations_v1`, Elite/Warband/mutation persistent NBT, affix CustomData and mining modes remain intact. 0.36 adds no SavedData field, ID or packet. The existing completed-project branch runs before commissioning, so existing completed Industrial Works/Apex Tracking Post/Ascension Nexus stay complete. 0.35 offload and all earlier persistence contracts remain unchanged.
 
 ## Core direction
 Progression must enlarge physical actions rather than only percentages. Larger actions create larger material throughput; world stages, behavior-rich enemies, exploration goals, infrastructure, production, logistics and field bases must consume that throughput again. Shift remains the precision/single-action safety override.
 
-## 0.35 High-volume Field Offload / 현장 일괄 적재
+## 0.36 Physical Commissioning Sites / 물리 준공 현장
 ### Purpose
-0.34 solved the input-side contradiction: stationary industrial/infrastructure/equipment sinks can consume nearby physical Barrel stock. But the output side was still manual. A player with Quarry-style mining, 448-log felling or 13×13 harvest could generate several inventory rows of material in seconds and then had to drag those stacks into Barrels one by one.
+0.34 connected large stationary inputs to physical Barrel stock and 0.35 connected high-volume gathering outputs back into that stock. The remaining contradiction was infrastructure itself: a player could fund thousands of materials into a project counter and gain a major facility without constructing a facility in the world.
 
-0.35 adds one bounded explicit logistics action instead of automatic pickup routing, another virtual inventory, or a background warehouse simulation.
+0.36 does not create another blueprint/autobuilder subsystem. Existing Construction already provides protected, material-backed, tick-budgeted physical building. Instead, late infrastructure gains a bounded **commissioning proof** at the final funding line.
 
-### Explicit action
-`M -> Infrastructure -> 산업 가공소 -> 현장 일괄 적재` reuses the existing `InfrastructureActionPayload(projectId, action)` string packet and `ProductionService` route.
+### Finalization order
+The original `infrastructure_v1` funding state remains the source of truth.
+1. Existing `data.isComplete(project)` is checked first. This is the explicit existing completed compatibility boundary.
+2. Incomplete projects may receive partial material funding exactly as before.
+3. `canFullyFundNow(player, data, project)` asks whether current inventory + usable local logistics stock can satisfy every remaining project material.
+4. Only when the current action is finalizable and the project is one of the three late facilities does `InfrastructureSiteService.validateForFinalFunding` run.
+5. Site validation runs before `int consumed = 0` and therefore before any project material is removed by that finalizable call.
+6. An incomplete site aborts the call and consumes zero project material.
+7. A valid site allows the existing inventory-first + nearest-Barrel funding loop to finish and the original completion behavior fires.
 
-`ProductionService.ACTION_BULK_OFFLOAD = "bulk_offload"`:
-- requires normal survival/non-spectator Industrial Works access through the existing `perform` gate;
-- requires at least one currently usable linked Barrel/outpost;
-- counts the eligible main-inventory material before moving anything;
-- calls `FieldDepotService.offloadBulkMaterials` once;
-- reports full, partial or zero-capacity result explicitly.
+The site is a commissioning gate rather than ongoing maintenance state. No new persistence or per-tick structure monitor is introduced; protocol remains `8`.
 
-There is no toggle, periodic tick, pickup interception or hidden movement. The user decides when storage happens.
+### Physical scan contract
+`InfrastructureSiteService` defines:
+- `ANCHOR_RADIUS = 4`
+- `SITE_RADIUS = 6`
 
-### Inventory safety boundary
-`FieldDepotService` defines:
-- `MAIN_INVENTORY_FIRST_SLOT = 9`
-- `MAIN_INVENTORY_END_EXCLUSIVE = 36`
+All anchors and components are server-resolved:
+- current dimension only;
+- site anchor must be within4 of the player;
+- target chunks must already be loaded through `level.hasChunkAt`;
+- every counted position must pass `level.mayInteract(player, pos)`;
+- Barrel anchor must still be vanilla `Blocks.BARREL` with a `Container` block entity;
+- site scan is a radius6 sphere around the anchor rather than an unlimited cube;
+- no `getChunk`, chunk ticket, force-load or client coordinate is used.
 
-Only slots9..35 are scanned. Hotbar0..8 remains physically carried. Equipment/offhand live outside that authored range and are not moved. This deliberately lets the player keep tools, construction stock, encounter admission materials or anything else they want immediate access to by placing it in the hotbar.
+The authored site blocks remain in the world after commissioning. They are not an additional hidden item sink.
 
-### Authored bulk-material set
-`isBulkMaterial(ItemStack)` accepts only progression-scale raw/storage materials rather than every stack in the player's inventory.
+### Industrial Works profile
+Because `field_depots_v1` cannot normally exist before Industrial Works is complete, its first commissioning anchor is any real interactable Barrel within4. Inside radius6:
+- `STONE_BRICKS` 48
+- `IRON_BLOCK` 4
+- `BLAST_FURNACE` 2
+- `STONECUTTER` 1
+- `HOPPER` 2
 
-Included categories:
-- vanilla logs through `ItemTags.LOGS`;
-- raw iron/copper/gold, ingots, coal/charcoal, redstone, lapis, diamond, emerald, amethyst, quartz, echo, netherite scrap, nether star, dragon breath;
-- cobblestone, cobbled deepslate, stone, deepslate, stone bricks, netherrack, end stone, obsidian, sand/red sand, gravel, dirt, glass, slime;
-- wheat/carrot/potato/beetroot and the authored crop seeds.
+Original funding remains Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
 
-Weapons, armor, tools, arbitrary food, potions, books, containers and unrelated miscellaneous stacks are not eligible merely because the player pressed the button.
+### Apex Tracking Post profile
+Requires one of the player's own `field_depots_v1` registered Barrels within4. Inside radius6:
+- `STONE_BRICKS` 32
+- `GOLD_BLOCK` 4
+- `LODESTONE` 1
+- `CARTOGRAPHY_TABLE` 1
+- `TARGET` 4
 
-### Container insertion contract
-Offload obtains targets only from the same private `usableContainers(player)` resolver used by 0.34:
-1. current dimension only;
-2. ordinary linked depot within32, active physical outpost within64;
-3. target chunk already loaded;
-4. target still a real vanilla Barrel with Container block entity;
-5. `mayInteract` passes;
-6. loaded stale/non-Barrel link is pruned and its outpost callback runs;
-7. eligible Barrels are distance-sorted nearest-first.
+Original funding remains Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
 
-For each source stack and each Barrel:
-- matching non-empty target stacks are processed before empty slots;
-- matching uses `ItemStack.isSameItemSameComponents`, preserving per-stack component identity;
-- `Container.canPlaceItem(slot, source)` must pass;
-- the move limit is bounded by both `Container.getMaxStackSize(source)` and `ItemStack.getMaxStackSize()`;
-- empty target slots receive `source.copyWithCount(move)`;
-- the original inventory stack shrinks only by the amount actually inserted;
-- changed containers call `setChanged()`;
-- after any successful transfer, player inventory is marked changed and the current menu broadcasts changes.
+### Ascension Nexus profile
+Requires one of the player's own registered Barrels within4. Inside radius6:
+- `OBSIDIAN` 32
+- `CRYING_OBSIDIAN` 8
+- `BEACON` 1
+- `ENCHANTING_TABLE` 1
+- `ENDER_CHEST` 1
 
-A full network therefore causes a partial transfer, not deletion: unaccepted remainder stays in the player's original inventory stack.
+Original funding remains Nether Star4 + Dragon Breath64 + Obsidian512 + Amethyst512 + Echo64.
 
-### Throughput loop after 0.35
-`large physical skill action -> player gathers bulk output -> explicit nearby offload -> real linked Barrel stock -> 0.34 local industrial/infrastructure/reforge input -> production/outposts/operations/endgame`.
+### Presentation and compatibility
+- `InfrastructureService.sendStatus` reports the commissioning anchor and per-block site counts while a gated project is incomplete.
+- Industrial and Infrastructure radial details explicitly warn that late final funding needs a physical site.
+- Guide lists all three profiles and explains that failed commissioning consumes no final-call project materials.
+- completed facilities do not receive retroactive site checks;
+- Stage0 Quarry/Irrigation/Builder/Combat projects retain their old material-only completion behavior;
+- no new packet, SavedData, background event listener, force-load or generic management GUI.
 
-0.35 does not add universal storage, cross-dimension access, automatic sorting, remote chunk loading or infinite capacity. It specifically removes repetitive stack dragging while preserving the physical-location and finite-container constraints that make the logistics system matter.
+## 0.35 High-volume Field Offload / 현장 일괄 적재
+`ProductionService.ACTION_BULK_OFFLOAD = "bulk_offload"` explicitly moves authored bulk materials from main inventory slots9..35 into already-usable linked Barrels. `MAIN_INVENTORY_FIRST_SLOT = 9`; `MAIN_INVENTORY_END_EXCLUSIVE = 36`. Hotbar0..8, equipment and offhand remain carried.
 
-### Compatibility / presentation
-- no new SavedData;
-- no new packet or protocol bump (`8` remains);
-- one additional entry in the existing Industrial Works radial, using a vanilla Hopper icon;
-- the preexisting `시설 투자` radial description is corrected from outdated inventory-only wording to inventory + usable logistics stock;
-- Guide/status explain main-inventory-only offload and hotbar/equipment preservation;
-- all 0.34 and older gameplay contracts remain unchanged.
+`ItemStack.isSameItemSameComponents`, `Container.canPlaceItem`, actual container/item stack caps, merge-before-empty ordering and source-remainder preservation are mandatory. No pickup hook/tick automation/virtual inventory is introduced.
 
 ## 0.34 Integrated Logistics Backbone / 통합 물류 백본
-### Purpose
-0.29 created physical Barrel depots, 0.30 upgraded some into physical outposts, and large Construction/irrigation already consumed their actual stock. But the largest stationary sinks — Industrial Works batches, unfinished infrastructure projects and equipment reforge/awakening — still required every item to be moved into player inventory first. That breaks the intended high-throughput loop once skills are processing hundreds of blocks at a time.
+`FieldDepotService.countMatching` and `consumeMatching` are the shared inventory-first + nearest usable Barrel resolver. Industrial batches, incomplete infrastructure funding and equipment reforge/awakening use it; Apex/Trial admission remains carried inventory.
 
-0.34 closes that gap without creating a virtual warehouse, global storage network or new GUI. The physical registered Barrel remains the source of truth.
-
-### Shared physical stock resolver
-`FieldDepotService` now exposes matcher-backed stock operations:
-- `countMatching(ServerPlayer, Predicate<ItemStack>)`
-- `consumeMatching(ServerPlayer, Predicate<ItemStack>, amount)`
-- exact-item `countMaterial/consume` delegate to those generic paths.
-
-This allows both exact materials and tag-like production requirements such as mixed logs to use the same physical inventory contract.
-
-Resolution is deterministic:
-1. player inventory is counted/consumed first;
-2. eligible linked Barrels are sorted by distance and consumed nearest-first;
-3. an ordinary depot is usable only inside32 blocks;
-4. an active physical outpost extends only its own depot to64 blocks;
-5. depot must be in the player's current dimension;
-6. its chunk must already be loaded;
-7. the saved block must still be a vanilla Barrel with a Container block entity;
-8. `mayInteract` must pass.
-
-A loaded missing/non-Barrel link is pruned through existing `field_depots_v1` cleanup and its outpost upgrade is removed through the existing callback. No chunk tickets, force-loads, cross-dimension access, client coordinates or virtual material balances are added.
-
-### Integrated stationary sinks
-**Industrial production**
-- all four `ProductionProgram` lines count and consume from inventory + usable linked Barrel stock;
-- `TIMBERWORKS` log tags work through the matcher path, so mixed vanilla logs across inventory/Barrels can satisfy the batch;
-- the precheck is still performed before consumption;
-- player stock is consumed before nearest linked Barrel stock;
-- buffers/cycles/supply-charge caps remain unchanged.
-
-**Infrastructure funding**
-- unfinished projects use `FieldDepotService.countMaterial/consume` instead of local inventory-only loops;
-- once a physical logistics network exists, large later projects such as Apex Tracking Post / Ascension Nexus can consume nearby stored throughput directly;
-- `INDUSTRIAL_WORKS` itself is naturally inventory-funded on a normal new world because registering a depot requires Industrial Works to already be complete; no bootstrap shortcut is introduced.
-
-**Equipment economy**
-- Elite/Ascension/Mythic reforge costs and Mythic III awakening costs use the same local physical stock resolver;
-- held gear still remains in the player's main hand and all affix validation/mutation rules remain unchanged;
-- salvage output still goes to player inventory/drop and does not silently inject rewards into linked Barrels.
-
-### Deliberate boundary: field encounter preparation
-Apex Hunt and Ascension Trial entry costs intentionally remain inventory-only. These costs are field-combat preparation, not stationary base processing. A player still physically carries Echo/Amethyst/Gold for an Apex and Echo/Amethyst/Dragon Breath for the Trial.
-
-Industrial supply dispatch likewise remains a physical output to player inventory/drop. 0.34 is therefore a **local base-side input logistics** expansion, not universal remote payment.
-
-### Compatibility / presentation
-- no new SavedData;
-- no new packet or protocol bump (`8` remains);
-- no new radial/menu page;
-- Guide and status text explain inventory-first + nearest usable Barrel resolution and the combat-entry exception;
-- all 0.33 sortie complication rules and older gameplay contracts remain unchanged.
+Resolver boundary: same dimension, ordinary radius32 / active-outpost radius64, loaded real Barrel Container, `mayInteract`, stale-link pruning, no force-load.
 
 ## 0.33 Sortie Complications / 원정 작전 변수
-### Purpose
-0.32 established a persistent physical loop: `launch from exact outpost -> cross outbound range -> perform validated regional actions -> return to exact outpost`. 0.33 adds replay variation by changing the **rules of that route** rather than adding more objective counters, another triggered encounter, generic quest UI, blanket HP scaling or permanent stat inflation.
-
-Every new launch receives exactly one server-chosen `ExpeditionComplication`:
-- `DEEP_FRONT / 전선 고착`: after the outbound range has been crossed, operation actions count only while the player remains at or beyond that operation's authored outbound radius. The normal 48-block work radius is not sufficient for this complication.
-- `FORWARD_SHIFT / 전선 재전개`: the first completed field objective pauses all remaining objective progress. The player must reach a second line at `operation.rangeTarget + 48` while still in the matching ExpeditionRegion. After that line is reached, the remaining validated actions resume.
-- `HOT_EXTRACTION / 긴급 철수`: when both field objectives become complete, an extraction deadline is armed. Stage0 window 4800 ticks / 4:00, Stage1 3600 / 3:00, Stage2 3000 / 2:30. The extraction deadline is never later than the operation's original deadline.
-
-### Selection and persistence
-- Complication selection is server-side and uses server game time, player UUID and lifetime completion count only as entropy; the client never selects or supplies complication state.
-- Exactly one complication per active operation/player. `NONE` exists only as migration/compatibility state for 0.32 active sorties.
-- `expedition_operations_v1` keeps the same SavedData identifier and adds optional `complication`, `complication_state`, `extraction_deadline` fields.
-- Missing complication fields decode as `NONE`, `0`, `0`, so an already-paid 0.32 active operation continues under its original rules instead of receiving a surprise modifier after updating.
-- Malformed complication names sanitize to `NONE`. Forward-shift state is bounded; extraction state accepts only the authored armed value; extraction deadlines are capped to the original operation deadline.
-- Complication state survives logout/server restart together with the original operation state.
-
-### Runtime boundaries
-- Complications reuse only the existing validated `ExpeditionAction` plumbing. They do not create an alternate client counter or inventory-based progress path.
-- `DEEP_FRONT` adds a distance gate before `addProgress`.
-- `FORWARD_SHIFT` locks `addProgress` while its second-line state is pending and unlocks only after a server-side distance + matching-region check.
-- `HOT_EXTRACTION` starts only when both objectives are actually complete and fails through the same operation failure path if the return clock expires.
-- Physical completion is still only at the exact saved origin within8 blocks after `OutpostService.isRecoveryOperational` revalidates the real loaded/interactable Barrel and camp structure.
-- Death, dimension exit, creative/spectator change and base operation deadline remain failures. No supply refund.
-- Regional Incidents remain ambient and may coexist. Apex Hunt and Ascension Trial remain manually mutually exclusive with operations.
-- No operation teleport, no client destination, no chunk ticket/force-load, no new packet. Protocol remains8.
-
-### Presentation
-The existing Industrial Works radial action is unchanged. Launch/status system messages expose the selected complication, pending forward redeployment line or active emergency-extraction timer. The Guide explains all three. There is no new generic quest screen.
-
-### External design references
-- Deep Rock Galactic is used only for the product-level idea that a repeatable mission can carry a bounded mutator and a distinct post-objective extraction phase.
-- Warframe Sorties / Deep Archimedea are used only for the product-level idea that mission modifiers should change strategy without replacing the base mission's objective identity.
-- No source code, data, UI, assets, audio, namespaced content or proprietary game content from either product is copied or bundled.
+New sorties get exactly one of `DEEP_FRONT`, `FORWARD_SHIFT`, `HOT_EXTRACTION`; existing 0.32 active runs decode as `NONE`. Emergency extraction remains Stage0 4800 / Stage1 3600 / Stage2 3000 ticks and never extends the original deadline.
 
 ## 0.32 Out-and-back Expedition Operations
-### Purpose
-0.23–0.26 established regional discovery/directives/incidents, 0.30 established physical outposts, and 0.31 established bounded death recovery. 0.32 connects them into repeatable sorties where a player physically leaves a completed-region outpost, works beyond its immediate support radius, and returns to the exact same base to claim the operation.
+One active operation/player. Start at nearest active owned outpost within4 after that region's directive is complete; supply1. Cross authored range, perform two validated real actions in the matching region and outside48 from origin, then return within8 to the same operational physical outpost. Death/dimension/game-mode/deadline failure gives no refund.
 
-This is not another quest-book layer and not a generic counter expansion. The operation lifecycle is `launch from physical outpost -> cross range line -> perform validated regional actions away from base -> return to exact origin outpost`.
+Profiles remain:
+- WOODLAND range96, logs128 + travel240, 20m
+- ARID range96, build96 + travel240, 20m
+- WETLAND range96, crops80 + kills8, 20m
+- HIGHLANDS range128, travel600 + dashes12, 20m
+- OCEAN range128, voyage900 + kills8, 20m
+- DEEP range128, mine192 + kills10, 25m
+- FROZEN range128, travel600 + kills10, 25m
+- NETHER range160, kills24 + mine96, 25m
+- END range160, kills28 + travel360, 30m
 
-### Launch contract
-`M -> Infrastructure -> 산업 가공소 -> 원정 작전` reuses the existing string action payload.
-- Survival/non-spectator player only.
-- Server finds the nearest active owned outpost within4 blocks; no client position is trusted.
-- Server reads the biome at the saved outpost anchor and resolves one of the existing nine ExpeditionRegion values.
-- The player's original `expedition_v1` directive for that region must already be complete.
-- Launch costs exactly one stored `production_v1` supply charge after validation.
-- One active operation/player maximum.
-- Apex Hunt and Ascension Trial cannot be started while an operation is active and an operation cannot launch while either is active.
-- Regional Incidents are deliberately allowed to occur during operations because they are ambient regional risk, not a second manually started boss encounter.
-
-### Nine authored operations
-Each operation has exactly two validated-action tasks plus an outbound range requirement and return requirement.
-
-Stage0, 20 minutes:
-- WOODLAND `심림 순환 벌채`: range96, LOGS_FELLED128 + TRAVEL_DISTANCE240.
-- ARID `사막 보급로 개척`: range96, BLOCKS_BUILT96 + TRAVEL_DISTANCE240.
-- WETLAND `습지 채집·소탕`: range96, CROPS_HARVESTED80 + HOSTILES_KILLED8.
-- HIGHLANDS `능선 장거리 순찰`: range128, TRAVEL_DISTANCE600 + DASHES_USED12.
-- OCEAN `외해 순항`: range128, OCEAN_VOYAGE900 + HOSTILES_KILLED8.
-
-Stage1, 25 minutes:
-- DEEP `심층 채굴 회수`: range128, BLOCKS_MINED192 + HOSTILES_KILLED10.
-- FROZEN `백설 장거리 순찰`: range128, TRAVEL_DISTANCE600 + HOSTILES_KILLED10.
-- NETHER `네더 전진 작전`: range160, HOSTILES_KILLED24 + BLOCKS_MINED96.
-
-Stage2, 30 minutes:
-- END `공허 외곽 소탕`: range160, HOSTILES_KILLED28 + TRAVEL_DISTANCE360.
-
-### Outbound/work/return rules
-- Range is measured from the saved origin outpost anchor.
-- Stage-specific range must be reached before any operation task progress may be recorded.
-- `WORK_RADIUS = 48`: after the range line is reached, task actions count only while the player is at least48 blocks from the origin outpost and current `ExpeditionProgression.currentRegion(player)` equals the operation region.
-- Operation progress reuses the same server-authoritative actions already feeding expedition directives/incidents: natural smart-tree logs, successful protected/material-backed Construction placements, mature crops, legitimate travel, ocean voyage, valid pickaxe mining, hostile kills and validated successful dash uses.
-- No raw client movement, inventory click, fake placement or near-base work is accepted.
-- Completing both field objectives only changes the operation to return-ready state; reward is not granted remotely.
-- Player must return to within8 blocks of the exact saved origin anchor before deadline.
-- On return, `OutpostService.isRecoveryOperational` revalidates outpost ownership, real loaded Barrel, `mayInteract`, Bed/Campfire/Crafting/Furnace camp structure and loaded world state.
-- No chunk ticket/force-loading and no client-supplied return coordinate.
-
-### Failure / persistence
-Operation fails and clears active state with no supply refund when owner dies, changes dimension, switches creative/spectator or exceeds the deadline. Breaking/unloading the origin does not fabricate a return; the real origin must become operational again.
-
-`expedition_operations_v1` persists active region/origin/deadline/range flag/two task counters/first-return bitmask/lifetime returns/9-of-9 reward plus the optional 0.33 complication state. Malformed active records sanitize to bounded/no-active states.
-
-### Rewards
-- Stage0: skill XP250 + experience75 + Emerald8 + Amethyst8.
-- Stage1: skill XP400 + experience125 + Diamond2 + Amethyst16 + Echo2.
-- Stage2: skill XP600 + experience200 + Diamond4 + Echo4 + Dragon Breath2.
-- First successful return in all nine: Netherite Scrap2 + Echo16 + Amethyst64 + Dragon Breath8 + experience300 once.
-
-No permanent flat combat/stat multiplier is attached to operation completion.
-
-## 0.31 Death-bound Field Recovery retained
-- active outpost within4; first arm consumes supply1, retargeting already-paid armed token is free.
-- same-dimension ordinary death within96 and operational outpost required.
-- Regional Incident/Apex/Trial death excluded.
-- independent `field_recovery_v1`; pending survives failed target/arrival/teleport.
-- safe arrival requires loaded/interactable outpost, sturdy floor, empty body/head collision and no fluid.
-- token is consumed only after successful teleport; no ordinary living-player fast travel.
-
-0.32+ operation death deliberately fails the operation. Field recovery remains a separate ordinary-death contract under its own same-dimension/96-block rules.
+## 0.31 Field Recovery retained
+Active outpost within4, first arm supply1, one prepaid token. Same-dimension ordinary death within96 only. Incident/Apex/Trial excluded. Safe teleport happens after real loaded outpost + safe-floor validation; token consumes only after successful move. No ordinary fast travel/force-load.
 
 ## 0.30 Physical Field Outposts retained
-- nearest owned registered Barrel within4;
-- interactable Bed + Campfire/Soul Campfire + Crafting Table + Furnace/Blast Furnace/Smoker all within5;
-- upgrade cost supply2 + Iron32 + Gold8 + Coal32;
-- exact anchor persists in `outpost_v1`, max3/player, and removing underlying depot removes its upgrade.
-- owner-nearby active state gives ordinary depot32 -> outpost64 logistics and NATURAL-hostile-only safe radius24.
-- TRIGGERED Regional Incident/Apex/Trial spawns remain untouched.
-- no chunk force-loading.
+Nearest owned registered Barrel within4; structure within5 must include Bed + Campfire/Soul + Crafting Table + Furnace/Blast/Smoker. Cost supply2 + Iron32 + Gold8 + Coal32. Active same-dim owner-nearby outpost extends its depot to64 and NATURAL-only hostile safe radius24. TRIGGERED combat remains unaffected.
 
 ## 0.29 Physical Field Depots retained
-- nearest vanilla Barrel within4 blocks; registration cost one supply charge.
-- max3/player and one owner per physical position.
-- same-dimension loaded Barrel inventory within32 blocks, `mayInteract` checked; active outpost version extends to64.
-- player inventory first, linked Barrels nearest-first for sinks.
-- 0.34 shares the resolver with Construction, irrigation, industrial batches, post-Industrial infrastructure funding and equipment reforge/awakening.
-- 0.35 uses the same target resolver for explicit main-inventory bulk offload, preserving hotbar/equipment and finite real Barrel capacity.
-- `field_depots_v1` remains unchanged and is the ownership source of truth for outpost anchors.
+`field_depots_v1`, max3/player, one owner/physical Barrel. Same-dim loaded real Barrel, `mayInteract`, ordinary32 / active outpost64. Player inventory first for sinks, linked Barrels nearest-first. 0.35 offload reverses direction only for explicitly authored main-inventory bulk stacks.
 
-## 0.28 Industrial Works retained
-`INDUSTRIAL_WORKS / 산업 가공소` is Stage1: Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
+## 0.28 Industrial production retained
+Four lines:
+1. METALWORKS Raw Iron96 + Raw Copper96 + Coal64
+2. TIMBERWORKS logs192 + Cobblestone384 + Iron32
+3. PROVISIONS Wheat128 + Carrot64 + Potato64 + Beetroot32
+4. PRECISION Redstone128 + Amethyst64 + Gold32 + Quartz64
 
-Four atomic lines:
-1. `METALWORKS`: Raw Iron96 + Raw Copper96 + Coal64.
-2. `TIMBERWORKS`: logs192 + Cobblestone384 + Iron32.
-3. `PROVISIONS`: Wheat128 + Carrot64 + Potato64 + Beetroot32.
-4. `PRECISION`: Redstone128 + Amethyst64 + Gold32 + Quartz64.
+Buffers0..3, supply charges0..3. One full four-line set creates supply1. Dispatch gives Gold32 + Amethyst16 + Echo2 physically.
 
-`production_v1` keeps buffers0..3, lifetime cycles and charges0..3. One cycle consumes one batch from all four lines. Supply charge consumption may free storage and immediately normalize waiting complete sets.
+## Apex / Trial retained
+- Apex: nine behavior identities CHARGE / REINFORCE / PLAGUE / SKIRMISH / PULL / LEAP / FROST / WITHER / VOID, 90s. Entry inventory-only Echo8 + Amethyst32 + Gold32.
+- Trial: Stage2 Nexus, four waves, Evoker excluded. Entry inventory-only Echo32 + Amethyst64 + Dragon Breath8.
+- Operation manual starts are mutually exclusive with Apex/Trial; Regional Incidents may coexist.
 
-## 0.27 Apex Hunts retained
-- Stage1 Apex Tracking Post: Iron512 + Gold256 + Amethyst256 + Echo32 + Nether Star1.
-- completed-region hunt entry remains **player-carried** Echo8 + Amethyst32 + Gold32.
-- 90-second owner-scoped encounter and nine separate patterns CHARGE / REINFORCE / PLAGUE / SKIRMISH / PULL / LEAP / FROST / WITHER / VOID.
-- `apex_hunt_v1` tracks first defeats, total victories and one-time9/9 reward.
-
-## Expeditions / Field Mastery retained
-- nine regions, two persistent directives each =18.
-- 18 rare incidents, one ambush + one action rush per region.
-- actual gameplay hooks only; incident bonus max20% of first unfinished task once/region.
-- all nine complete at Stage2 unlock Lv100 Field Mastery.
-- Field values remain Quarry7x7x12, Wood448, Harvest13x13, Academy7.5/20, Construction line65/plane13x13, air dash4.
-
-## Endgame retained
-- stage0 Awakening -> Wither Stage1 Legendary -> Dragon Stage2 Endgame.
-- Stage2 Withered/Phase/Plague mutation subset, Elite ranks and Warbands.
-- Ascension Nexus four-wave Trial; Evoker remains excluded; Trial entry cost remains player-carried.
-- valid Mythic III 3-affix gear can awaken once to4 affixes; its stationary resource cost can use local physical logistics in0.34.
+## Mastery / Field Mastery retained
+Lv100 base final scale remains Mining11×11 + vein192, Wood384, Harvest11×11, Construction49/11×11, combat6.5/16, air dashes3. Nine-region Field Mastery expands to Quarry7×7×12, Wood448, Harvest13×13, Construction65/13×13, combat7.5/20, air dash4.
 
 ## Safety contracts
-- large mining/wood/farm/construction work remains tick-budgeted.
-- secondary destruction uses normal `player.gameMode.destroyBlock`.
-- Construction/replant preserve interaction/protection hooks and actual resource consumption.
-- depot/outpost/recovery/operation origins are server-resolved from saved/owned coordinates; no client coordinate trust or chunk tickets.
-- all 0.34 logistics sinks use the existing usable-depot path: current dimension,32/64 radius, loaded real Barrel, `mayInteract`, inventory-first and nearest-Barrel-first.
-- matcher-backed production cannot reach an unlinked/unloaded/out-of-range/cross-dimension container.
-- 0.35 offload scans only slots9..35, targets only authored bulk materials, fills nearest usable Barrels, respects stack components/slot acceptance/capacity, and leaves every unaccepted remainder in the source inventory.
-- 0.35 never touches hotbar0..8, equipment or offhand and never runs automatically.
-- Apex/Trial entry costs remain inventory-only and dispatch remains player-carried; 0.34/0.35 are not universal remote payment/storage.
-- outpost safe zone cancels NATURAL hostile spawn only; TRIGGERED combat remains unaffected.
-- operation progress only accepts preexisting validated ExpeditionAction hooks after range gate and outside48, then applies the selected0.33 complication gate.
-- operation completion requires physical return to origin within8 and outpost revalidation.
-- operation cannot overlap manually started Apex/Trial encounters; Regional Incidents may coexist.
-- production remains bounded: line buffers3, supply charges3; depots3; outposts3; recovery one token; operation one active/player and one complication/operation.
-- no new SavedData or packet schema in0.35; protocol remains8.
+- large destruction/build/harvest is tick-budgeted;
+- secondary destruction uses normal destroy paths;
+- Construction and irrigation use material/protection hooks;
+- logistics/outpost/recovery/operation/commissioning scans never force-load chunks;
+- no client coordinate drives a physical anchor;
+- no generic quest GUI, blanket enemy HP layer or permanent flat-stat reward is introduced;
+- Apex/Trial admission remains carried inventory;
+- protocol remains `8`.
 
 ## External-source policy
-- 0.35 introduces no new external gameplay implementation or assets; it extends the existing Survival Ascension physical Barrel model using vanilla/NeoForge Container behavior.
-- Deep Rock Galactic and Warframe Sortie/Deep Archimedea are 0.33 product-level design references for bounded mission modifiers and extraction pressure. No source code, data, UI, assets, audio, namespaced content or proprietary game content is copied or bundled.
-- Heracles (`terrarium-earth/Heracles`): current repository license MIT. 0.32 studies only product-level explicit multi-step objective/completion state. No Heracles source structures, quest data, editor/UI, assets or namespace are copied.
-- Bountiful (`ejektaflex/Bountiful`): GPL-3.0 reference-only for objective/reward contract philosophy; no source/data/UI/assets copied.
-- Waystones26.2 ARR and Corpse LGPL-3.0 remain reference-only for0.31 travel/death friction.
-- MineColonies remains GPLv3 reference-only for physical forward-base product lessons.
-- Create code/assets split remains MIT/ARR; no Create logistics implementation/assets/data are copied.
-- Building Gadgets2 MIT reference remains limited to material-backed protected Construction behavior.
-- Existing packaged MIT/CC0 notices and all reference-only restrictions remain in `THIRD_PARTY_NOTICES.md`.
+0.36 adds no new external source/assets. Deep Rock Galactic and Warframe remain product references only for0.33; Heracles is design reference only for0.32; Bountiful, Waystones, Corpse, MineColonies, Create, Building Gadgets2 and packaged permissive notices retain the boundaries in `THIRD_PARTY_NOTICES.md`.
