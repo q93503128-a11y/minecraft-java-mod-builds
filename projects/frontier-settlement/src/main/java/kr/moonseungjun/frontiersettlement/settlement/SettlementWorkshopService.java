@@ -57,14 +57,14 @@ public final class SettlementWorkshopService {
         ItemStack carried = worker.getMainHandItem();
 
         if (targetSlot < 0) {
-            if (!carried.isEmpty()) returnCarriedMetal(level, data, worker, carried);
+            if (!carried.isEmpty()) returnCarriedItem(level, data, worker, carried);
             else moveOrStop(worker, workshop.workCenter(), 0.68D);
             return;
         }
 
         if (!carried.isEmpty()) {
             if (!SettlementStorageService.isMetalStack(carried)) {
-                returnCarriedMetal(level, data, worker, carried);
+                returnCarriedItem(level, data, worker, carried);
                 return;
             }
             if (worker.distanceToSqr(cratePos.getX() + 0.5D, cratePos.getY() + 0.5D, cratePos.getZ() + 0.5D)
@@ -77,7 +77,7 @@ public final class SettlementWorkshopService {
             ItemStack weapon = crate.getItem(targetSlot);
             if (weapon.isEmpty() || !SettlementExternalContentService.isExternalWeapon(weapon)
                     || weapon.getDamageValue() <= 0) {
-                returnCarriedMetal(level, data, worker, carried);
+                returnCarriedItem(level, data, worker, carried);
                 return;
             }
             weapon.setDamageValue(Math.max(0, weapon.getDamageValue() - REPAIR_PER_METAL));
@@ -126,17 +126,24 @@ public final class SettlementWorkshopService {
         return Math.floorMod(server.getTickCount() + salt, SERVICE_PERIOD_TICKS) < 10;
     }
 
-    private static void returnCarriedMetal(ServerLevel level, SettlementData data, Villager worker, ItemStack carried) {
-        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
-        worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
-        if (!remaining.isEmpty()) {
-            BlockPos target = SettlementStorageService.findDepositTarget(level, data, remaining);
-            if (level.hasChunkAt(target)) {
-                worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.8D);
-            } else {
-                worker.getNavigation().stop();
-            }
+    private static void returnCarriedItem(ServerLevel level, SettlementData data, Villager worker, ItemStack carried) {
+        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target)) {
+            worker.getNavigation().stop();
+            return;
         }
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                > INTERACTION_RANGE_SQR) {
+            worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.8D);
+            return;
+        }
+        if (!(level.getBlockEntity(target) instanceof Container container)) {
+            worker.getNavigation().stop();
+            return;
+        }
+        ItemStack remaining = SettlementInventory.insert(container, carried);
+        worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        if (remaining.isEmpty()) worker.getNavigation().stop();
     }
 
     private static Villager ensureWorker(ServerLevel level, BuildingRecord workshop) {
