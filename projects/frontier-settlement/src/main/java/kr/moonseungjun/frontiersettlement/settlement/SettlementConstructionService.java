@@ -34,7 +34,9 @@ public final class SettlementConstructionService {
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 16;
     private static final long MAX_SITE_RESERVE_PER_CATEGORY = 12L;
+    private static final int GRADE_INTERVAL_TICKS = 8;
     private static final int BUILD_INTERVAL_TICKS = 10;
+    private static final int MAX_GRADE_FILL_DEPTH = 3;
     private static final int COMMAND_PLACEMENT_DISTANCE = 10;
     private static final int MAX_MAIN_SETTLEMENT_RADIUS = 72;
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
@@ -45,6 +47,7 @@ public final class SettlementConstructionService {
     public record StartResult(boolean started, String message) {}
     public record PlacementCheck(boolean valid, BlockPos origin, String message) {}
     private record Site(BlockPos origin) {}
+    private record GradeCell(BlockPos floor, boolean foundation) {}
     private record ScaffoldPiece(BlockPos pos, BlockState state) {}
     private record ScaffoldTower(BlockPos anchor, List<ScaffoldPiece> pieces, List<BlockPos> steps) {}
 
@@ -147,18 +150,12 @@ public final class SettlementConstructionService {
         }
 
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
-        prepareSite(level, check.origin(), type, rotation);
-        BlockPos supply = supplyPosition(check.origin(), type, rotation);
-        if (!(level.getBlockEntity(supply) instanceof Container)) {
-            return new StartResult(false, "건설 자재함을 만들 수 없어 착공을 취소했습니다. 자원은 차감되지 않았습니다.");
-        }
         data.beginConstruction(type, check.origin(), rotation);
+        data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
         Villager builder = ensureBuilder(level, data.centerPos());
         if (builder != null) builder.setInvulnerable(true);
-        ensureConstructionScaffolds(level, data, type, supply);
-        SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
-        return new StartResult(true, type.displayName() + " 착공. 건설 주민이 공동 창고에서 실제 자재를 운반하고, 고층 공정은 안전한 임시 작업 비계를 사용할 수 있으면 올라가 시공합니다."
+        return new StartResult(true, type.displayName() + " 착공. 건설 주민이 먼저 부지를 실제로 정리한 뒤 공동 창고에서 실제 자재를 운반해 시공합니다."
                 + " (필요 목재 " + type.woodCost() + ", 석재 " + type.stoneCost() + ")");
     }
 
@@ -174,24 +171,30 @@ public final class SettlementConstructionService {
             return true;
         }
 
-        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
         Villager builder = ensureBuilder(level, data.centerPos());
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
 
+        if (construction.grading()) return tickGrading(server, data, type, builder);
+
+        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
         BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
         Container crate = ensureSupplyCrate(level, supply);
         if (crate == null) return false;
         ensureConstructionScaffolds(level, data, type, supply);
         construction = data.construction();
+        int buildStep = construction.buildStep();
 
-        if (construction.step() >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
         if (!stageRemainingMaterials(server, data, type, plan.size(), builder, crate, supply)) return false;
         if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
 
-        BuildingBlueprints.Placement placement = plan.get(data.construction().step());
-        if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;
+        construction = data.construction();
+        buildStep = construction.buildStep();
+        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        BuildingBlueprints.Placement placement = plan.get(buildStep);
+        if (!moveBuilderToWorkPosition(level, construction, type, placement, builder, supply)) return false;
 
         BlockPos target = placement.pos();
         BlockState current = level.getBlockState(target);
@@ -200,10 +203,10 @@ public final class SettlementConstructionService {
             return false;
         }
 
-        long woodDelta = costAtStep(type.woodCost(), data.construction().step() + 1, plan.size())
-                - costAtStep(type.woodCost(), data.construction().step(), plan.size());
-        long stoneDelta = costAtStep(type.stoneCost(), data.construction().step() + 1, plan.size())
-                - costAtStep(type.stoneCost(), data.construction().step(), plan.size());
+        long woodDelta = costAtStep(type.woodCost(), buildStep + 1, plan.size())
+                - costAtStep(type.woodCost(), buildStep, plan.size());
+        long stoneDelta = costAtStep(type.stoneCost(), buildStep + 1, plan.size())
+                - costAtStep(type.stoneCost(), buildStep, plan.size());
         if (!SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)) return false;
 
         if (current.isAir()) {
@@ -211,13 +214,111 @@ public final class SettlementConstructionService {
             builder.swing(InteractionHand.MAIN_HAND);
         }
         data.advanceConstruction();
-        if (data.construction().step() >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        if (data.construction().buildStep() >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
         return false;
+    }
+
+    private static boolean tickGrading(MinecraftServer server, SettlementData data,
+                                       BuildingType type, Villager builder) {
+        ServerLevel level = server.overworld();
+        ConstructionState construction = data.construction();
+        List<GradeCell> plan = createGradePlan(construction, type);
+        int gradeStep = construction.gradeStep();
+        if (gradeStep >= plan.size()) {
+            data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
+            return false;
+        }
+
+        GradeCell cell = plan.get(gradeStep);
+        if (!canGradeCell(level, construction, type, cell)) {
+            builder.getNavigation().stop();
+            return false;
+        }
+        if (server.getTickCount() % GRADE_INTERVAL_TICKS != 0) return false;
+
+        BlockPos work = gradeWorkPosition(level, cell.floor());
+        if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 4.0D) {
+            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 0.82D);
+            return false;
+        }
+
+        applyGradeCell(level, construction, type, cell);
+        builder.swing(InteractionHand.MAIN_HAND);
+        data.advanceConstruction();
+        if (data.construction().gradeStep() >= plan.size()) {
+            data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
+        }
+        return false;
+    }
+
+    private static List<GradeCell> createGradePlan(ConstructionState construction, BuildingType type) {
+        BuildingRotation rotation = construction.buildingRotation();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        List<GradeCell> result = new ArrayList<>((width + 2) * (depth + 2));
+        for (int x = -1; x <= width; x++) {
+            for (int z = -1; z <= depth; z++) {
+                boolean foundation = x >= 0 && x < width && z >= 0 && z < depth;
+                result.add(new GradeCell(construction.origin().offset(x, -1, z), foundation));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean canGradeCell(ServerLevel level, ConstructionState construction,
+                                        BuildingType type, GradeCell cell) {
+        if (!level.hasChunkAt(cell.floor())) return false;
+        BlockPos column = cell.floor().above();
+        for (int y = 0; y <= type.clearHeight(); y++) {
+            BlockPos pos = column.above(y);
+            BlockState state = level.getBlockState(pos);
+            if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
+            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;
+            if (y <= 1 && isNaturalGround(state)) continue;
+            return false;
+        }
+        if (!cell.foundation()) return true;
+
+        BlockState floorState = level.getBlockState(cell.floor());
+        if (level.getBlockEntity(cell.floor()) != null || !floorState.getFluidState().isEmpty()) return false;
+        if (!floorState.isAir() && !floorState.canBeReplaced() && !isNaturalGround(floorState)) return false;
+
+        for (int depth = 1; depth <= MAX_GRADE_FILL_DEPTH; depth++) {
+            BlockPos support = cell.floor().below(depth);
+            BlockState state = level.getBlockState(support);
+            if (level.getBlockEntity(support) != null || !state.getFluidState().isEmpty()) return false;
+            if (!state.isAir() && !state.canBeReplaced()) return true;
+        }
+        return false;
+    }
+
+    private static BlockPos gradeWorkPosition(ServerLevel level, BlockPos floor) {
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, floor.getX(), floor.getZ());
+        return new BlockPos(floor.getX(), y, floor.getZ());
+    }
+
+    private static void applyGradeCell(ServerLevel level, ConstructionState construction,
+                                       BuildingType type, GradeCell cell) {
+        BlockPos column = cell.floor().above();
+        for (int y = type.clearHeight(); y >= 0; y--) {
+            BlockPos pos = column.above(y);
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        }
+        if (!cell.foundation()) return;
+
+        level.setBlock(cell.floor(), Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        for (int depth = 1; depth <= MAX_GRADE_FILL_DEPTH; depth++) {
+            BlockPos support = cell.floor().below(depth);
+            BlockState state = level.getBlockState(support);
+            if (!state.isAir() && !state.canBeReplaced()) break;
+            level.setBlock(support, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        }
     }
 
     private static boolean stageRemainingMaterials(MinecraftServer server, SettlementData data, BuildingType type,
                                                    int totalSteps, Villager builder, Container crate, BlockPos supply) {
-        int step = data.construction().step();
+        int step = data.construction().buildStep();
         long spentWood = costAtStep(type.woodCost(), step, totalSteps);
         long spentStone = costAtStep(type.stoneCost(), step, totalSteps);
         long remainingWood = Math.max(0L, type.woodCost() - spentWood);
@@ -314,12 +415,14 @@ public final class SettlementConstructionService {
 
     public static String phaseLabel(ConstructionState construction) {
         if (construction == null || !construction.active()) return "";
+        if (construction.grading()) return "건물 부지 정리";
         BuildingType type = BuildingType.fromId(construction.type());
         if (type == null) return "건설";
         List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
-        if (construction.step() <= 0) return "자재 운반";
-        if (construction.step() >= plan.size()) return "마감 확인";
-        return switch (plan.get(construction.step()).phase()) {
+        int step = construction.buildStep();
+        if (step <= 0) return "자재 운반";
+        if (step >= plan.size()) return "마감 확인";
+        return switch (plan.get(step).phase()) {
             case FLOOR -> "기초 시공";
             case FRAME_AND_WALLS -> "골조·벽체 시공";
             case ROOF -> "지붕 시공";
@@ -375,6 +478,7 @@ public final class SettlementConstructionService {
     }
 
     private static Container ensureSupplyCrate(ServerLevel level, BlockPos supply) {
+        if (!level.hasChunkAt(supply)) return null;
         if (level.getBlockEntity(supply) instanceof Container crate) return crate;
         BlockState current = level.getBlockState(supply);
         if (!current.isAir() && !current.canBeReplaced()) return null;
@@ -487,6 +591,7 @@ public final class SettlementConstructionService {
 
     private static boolean canClaimFreshTower(ServerLevel level, ScaffoldTower tower) {
         for (ScaffoldPiece piece : tower.pieces()) {
+            if (!level.hasChunkAt(piece.pos())) return false;
             BlockState current = level.getBlockState(piece.pos());
             if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) return false;
             if (!current.isAir() && !current.canBeReplaced()) return false;
@@ -496,6 +601,7 @@ public final class SettlementConstructionService {
 
     private static void placeClaimedTower(ServerLevel level, ScaffoldTower tower) {
         for (ScaffoldPiece piece : tower.pieces()) {
+            if (!level.hasChunkAt(piece.pos())) continue;
             BlockState current = level.getBlockState(piece.pos());
             if (current.isAir() || current.canBeReplaced()) {
                 level.setBlock(piece.pos(), piece.state(), DIRECT_BLOCK_UPDATE);
@@ -505,6 +611,7 @@ public final class SettlementConstructionService {
 
     private static void repairClaimedTower(ServerLevel level, ScaffoldTower tower) {
         for (ScaffoldPiece piece : tower.pieces()) {
+            if (!level.hasChunkAt(piece.pos())) continue;
             BlockState current = level.getBlockState(piece.pos());
             if (current.is(piece.state().getBlock())) continue;
             if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) continue;
@@ -516,7 +623,7 @@ public final class SettlementConstructionService {
 
     private static boolean towerUsable(ServerLevel level, ScaffoldTower tower) {
         for (ScaffoldPiece piece : tower.pieces()) {
-            if (!level.getBlockState(piece.pos()).is(piece.state().getBlock())) return false;
+            if (!level.hasChunkAt(piece.pos()) || !level.getBlockState(piece.pos()).is(piece.state().getBlock())) return false;
         }
         return true;
     }
@@ -529,6 +636,7 @@ public final class SettlementConstructionService {
             List<ScaffoldPiece> pieces = towers.get(towerIndex).pieces();
             for (int i = pieces.size() - 1; i >= 0; i--) {
                 ScaffoldPiece piece = pieces.get(i);
+                if (!level.hasChunkAt(piece.pos())) continue;
                 if (level.getBlockState(piece.pos()).is(piece.state().getBlock())) {
                     level.setBlock(piece.pos(), Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
                 }
@@ -560,8 +668,10 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = construction.buildingRotation();
         BlockPos pos = event.getPos();
         BlockPos supply = supplyPosition(construction.origin(), type, rotation);
+        BlockState current = level.getBlockState(pos);
 
-        if (pos.equals(supply) || isProtectedScaffoldBlock(level, construction, type, supply, pos)) {
+        if ((pos.equals(supply) && current.is(Blocks.BARREL))
+                || isProtectedScaffoldBlock(level, construction, type, supply, pos)) {
             event.setCanceled(true);
             event.setNotifyClient(true);
             return;
@@ -571,13 +681,13 @@ public final class SettlementConstructionService {
         int depth = rotation.rotatedDepth(type);
         if (pos.getY() == construction.originY() - 1
                 && pos.getX() >= construction.originX() && pos.getX() < construction.originX() + width
-                && pos.getZ() >= construction.originZ() && pos.getZ() < construction.originZ() + depth) {
+                && pos.getZ() >= construction.originZ() && pos.getZ() < construction.originZ() + depth
+                && (current.is(Blocks.COARSE_DIRT) || current.is(Blocks.COBBLESTONE))) {
             event.setCanceled(true);
             event.setNotifyClient(true);
             return;
         }
 
-        BlockState current = level.getBlockState(pos);
         for (BuildingBlueprints.Placement placement : RotatedBlueprints.create(type, construction.origin(), construction.rotation())) {
             if (placement.pos().equals(pos) && current.is(placement.state().getBlock())) {
                 event.setCanceled(true);
@@ -727,34 +837,5 @@ public final class SettlementConstructionService {
 
     private static BlockPos supplyPosition(BlockPos origin, BuildingType type, BuildingRotation rotation) {
         return origin.offset(-2, 0, Math.max(1, rotation.rotatedDepth(type) / 2));
-    }
-
-    private static void prepareSite(ServerLevel level, BlockPos origin, BuildingType type, BuildingRotation rotation) {
-        int width = rotation.rotatedWidth(type);
-        int depth = rotation.rotatedDepth(type);
-        for (int y = type.clearHeight(); y >= 0; y--) {
-            for (int x = -1; x <= width; x++) {
-                for (int z = -1; z <= depth; z++) {
-                    BlockPos pos = origin.offset(x, y, z);
-                    if (!level.getBlockState(pos).isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-                }
-            }
-        }
-        BlockPos supply = supplyPosition(origin, type, rotation);
-        if (!level.getBlockState(supply).isAir()) level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-        if (!level.getBlockState(supply.above()).isAir()) level.setBlock(supply.above(), Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-
-        for (int x = 0; x < width; x++) {
-            for (int z = 0; z < depth; z++) {
-                BlockPos top = origin.offset(x, -1, z);
-                level.setBlock(top, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-                for (int down = 2; down <= 4; down++) {
-                    BlockPos support = origin.offset(x, -down, z);
-                    if (!level.getBlockState(support).isAir()) break;
-                    level.setBlock(support, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-                }
-            }
-        }
-        level.setBlock(supply, Blocks.BARREL.defaultBlockState(), DIRECT_BLOCK_UPDATE);
     }
 }
