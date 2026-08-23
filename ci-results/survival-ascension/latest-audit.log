@@ -1,6 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8
-- Lv.100 mastery VI scale and existing tick/protection/material contracts retained
-- Stage-2 Ascension Trial varies by tactical doctrine and adds one bounded mid-wave reinforcement without HP-only scaling
-- Mythic III awakening validates exact three-affix source state before resource consumption, preserves unlock gates, and keeps four-affix rerolls expensive
-- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained
+- expedition_v1 persists nine per-player stage-gated region discoveries and one-time milestone rewards
+- Stage-2 nine-region completion unlocks Lv.100 Field Mastery physical scale without deleting base Mastery VI
+- Field Mastery: bore 7x7x12, wood 448, harvest 13x13, shockwave 7.5/20, construction line65/plane13, air dash4
+- Mining/wood/harvest/construction bulk work keeps bounded tick queues; Shift/material/protection contracts remain
+- doctrine trials, awakened Mythic, world stages, mutations, Nexus, warbands and elites regressions retained
