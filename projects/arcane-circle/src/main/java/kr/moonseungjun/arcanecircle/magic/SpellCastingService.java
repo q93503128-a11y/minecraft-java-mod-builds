@@ -477,6 +477,7 @@ public final class SpellCastingService {
             return;
         }
 
+        applyDeferredSettlement(player, CombatGrowthService.takeDeferred(player, spell.id()));
         CombatGrowthService.Snapshot snapshot = CombatGrowthService.capture(player, cast.range());
         releasePrelude(player, cast);
         data.beginCast(player, cast);
@@ -497,6 +498,7 @@ public final class SpellCastingService {
         long marksEarned = kr.moonseungjun.arcanecircle.world.ArcaneEconomyService
                 .awardCombat(player, impact, spell.circle());
         MagicPlayerData.CastProgress progress = data.completeCastProgress(player, cast, impact);
+        CombatGrowthService.startDeferred(player, spell.id(), spell.circle(), impact);
         ArcaneQuestData.get(((ServerLevel) player.level()).getServer())
                 .recordCast(player, impact, spell.circle(), cast.fusion());
         MagicPlayerData.MageState state = data.state(player);
@@ -536,6 +538,36 @@ public final class SpellCastingService {
                     + "써클§f로 확장되었습니다. 해당 써클 주문서를 해독할 수 있습니다."));
             level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                     SoundSource.PLAYERS, 1.0F, 0.8F);
+        }
+    }
+
+    public static void tickDeferredCombat(ServerPlayer player) {
+        for (CombatGrowthService.DeferredSettlement settlement : CombatGrowthService.drainReady(player))
+            applyDeferredSettlement(player, settlement);
+    }
+
+    private static void applyDeferredSettlement(ServerPlayer player, CombatGrowthService.DeferredSettlement settlement) {
+        if (player == null || settlement == null || settlement.impact() == null || !settlement.impact().meaningful()) return;
+        CombatGrowthService.Impact impact = settlement.impact();
+        MagicPlayerData data = data(player);
+        long marksEarned = kr.moonseungjun.arcanecircle.world.ArcaneEconomyService
+                .awardCombat(player, impact, settlement.spellCircle());
+        MagicPlayerData.CastProgress progress = data.awardDeferredCombat(player, settlement.spellId(), impact);
+        ArcaneQuestData.get(((ServerLevel) player.level()).getServer()).recordCombatImpact(player, impact);
+        String name = SpellCatalog.spell(settlement.spellId()).map(SpellDefinition::name).orElse(settlement.spellId());
+        player.sendSystemMessage(Component.literal("§5[지속 주문 정산] §f" + name + " §7· 적중 " + impact.hits()
+                + " · 처치 " + impact.kills() + " · 피해 " + impact.damage() + " · 숙련 +" + impact.masteryGain()
+                + " · 통찰 +" + impact.insightGain() + " · 아르카나 +" + marksEarned));
+        ServerLevel level = (ServerLevel) player.level();
+        if (progress.mastery().registered()) {
+            player.sendSystemMessage(Component.literal("§6[융합 각인] §f" + name
+                    + "의 지속 전투 회로까지 완성되어 마력핵에 각인되었습니다."));
+            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0F, 1.2F);
+        }
+        if (progress.circle().advanced()) {
+            player.sendSystemMessage(Component.literal("§d[써클 승급] §f지속 주문의 전투 통찰로 마력핵이 §5"
+                    + progress.circle().current() + "써클§f로 확장되었습니다."));
+            level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0F, .8F);
         }
     }
 

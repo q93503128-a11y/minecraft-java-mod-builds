@@ -321,7 +321,7 @@ public final class FifthCircleSpellService {
                     value -> enemy(owner, value) && state.center.distanceToSqr(value.position()) <= state.radius * state.radius)) {
                 double ratio = target.getHealth() / Math.max(1.0F, target.getMaxHealth());
                 double executePressure = ratio <= .35 ? 1.45 : 1.0;
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.6, state.power * .065 * executePressure));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.6, state.power * .065 * executePressure), "cloudkill");
                 target.addEffect(new MobEffectInstance(MobEffects.POISON, 28, ratio <= .35 ? 2 : 1, true, false));
                 target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 18, 0, true, false));
                 target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 24, 1, true, false));
@@ -439,7 +439,7 @@ private static boolean pulseFlameStrike(ServerLevel level, LivingEntity caster, 
         double top = bottom + target.getBbHeight();
         if (top < center.y - .60 || bottom > center.y + 13.5) continue;
         double falloff = Math.max(.62, 1.0 - horizontal / Math.max(1.0, radius) * .38);
-        if (ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff))) hit = true;
+        if (ArcaneDamage.hurtAttributed(level, caster, target, (float) (pulsePower * falloff), "flame_strike")) hit = true;
         target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), initial ? 220 : 90));
         if (initial) target.push(0.0, .26 * falloff, 0.0);
     }
@@ -725,7 +725,7 @@ private static boolean holdMonster(ServerLevel level, LivingEntity caster, Livin
             AABB box = new AABB(state.center, state.center).inflate(state.radius, Math.max(5.0, state.radius * .70), state.radius);
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                     value -> enemy(owner, value) && state.center.distanceToSqr(value.position()) <= state.radius * state.radius)) {
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.5, state.power * .05));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.5, state.power * .05), "insect_plague");
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 1, true, false));
                 target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 18, 1, true, false));
                 target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 18, 2, true, false));

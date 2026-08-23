@@ -181,6 +181,17 @@ public final class ArcaneQuestData extends SavedData {
         } if(changed)setDirty();
     }
 
+    public void recordCombatImpact(ServerPlayer player, CombatGrowthService.Impact impact) {
+        List<Quest> list=active.get(key(player)); if(list==null||list.isEmpty()||impact==null||!impact.meaningful())return; boolean changed=false;
+        for(Quest q:list){ if(q.progress>=q.target)continue;
+            int delta=switch(q.id){case "hits"->Math.max(0,impact.hits());case "kills"->Math.max(0,impact.kills());
+                case "damage"->Math.max(0,impact.damage());case "threat"->Math.max(0,impact.threatPoints());default->0;};
+            if(delta<=0)continue;int before=q.progress;q.progress=Math.min(q.target,q.progress+delta);changed|=before!=q.progress;
+            if(before<q.target&&q.progress>=q.target)ArcaneNoticeService.push(player,Component.literal("§6[의뢰 완료] §f"
+                    +difficultyName(q.difficulty)+" · "+description(q.id)+" §7· 보상 §6"+q.reward+" 아르카나"),140);
+        }if(changed)setDirty();
+    }
+
     private List<PlayerEntry> entries(){java.util.Set<String> keys=new java.util.HashSet<>();keys.addAll(active.keySet());keys.addAll(offered.keySet());keys.addAll(offerSerial.keySet());
         return keys.stream().sorted().map(uuid->{List<QuestEntry> qs=active.getOrDefault(uuid,List.of()).stream().limit(MAX_ACTIVE).map(ArcaneQuestData::encode).toList();
             QuestEntry proposal=offered.containsKey(uuid)?encode(offered.get(uuid)):QuestEntry.EMPTY;Quest legacy=active.getOrDefault(uuid,List.of()).stream().findFirst().orElse(null);

@@ -374,15 +374,15 @@ public final class NinthCircleSpellService {
                                             double power, int layer) {
         switch (layer) {
             case 0 -> {
-                ArcaneDamage.hurt(level, owner, target, (float) (power * .20));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) (power * .20), "prismatic_wall");
                 target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 180));
             }
             case 1 -> {
-                ArcaneDamage.hurt(level, owner, target, (float) (power * .18));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) (power * .18), "prismatic_wall");
                 target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 260));
             }
             case 2 -> {
-                ArcaneDamage.hurt(level, owner, target, (float) (power * .22));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) (power * .22), "prismatic_wall");
                 target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
             }
             case 3 -> {
@@ -398,7 +398,7 @@ public final class NinthCircleSpellService {
                 target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 4, true, false));
             }
             default -> {
-                ArcaneDamage.hurt(level, owner, target, (float) (power * .28));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) (power * .28), "prismatic_wall");
                 Vec3 away = horizontal(target.position().subtract(owner.position()));
                 target.push(away.x * .75, .24, away.z * .75);
             }
@@ -696,7 +696,7 @@ public final class NinthCircleSpellService {
             }
             if (now >= state.nextPulse) {
                 state.nextPulse = now + 10L;
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(1.0, state.power * .075));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(1.0, state.power * .075), "weird");
             }
             applyWeird(owner, target);
         }

@@ -285,7 +285,7 @@ public final class FourthCircleSpellService {
                 double lateral = Math.abs(delta.dot(right));
                 double depth = Math.abs(delta.dot(state.forward));
                 if (lateral > state.halfWidth + target.getBbWidth() || depth > 1.35 + target.getBbWidth()) continue;
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.5, state.power * .055));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.5, state.power * .055), "wall_of_fire");
                 target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 70));
             }
         }
@@ -322,7 +322,7 @@ public final class FourthCircleSpellService {
             AABB box = new AABB(state.center, state.center).inflate(state.radius, Math.max(6.0, state.radius * .75), state.radius);
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                     value -> enemy(owner, value) && state.center.distanceToSqr(value.position()) <= state.radius * state.radius)) {
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.45, state.power * .10));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.45, state.power * .10), "ice_storm");
                 target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 45));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 30, 2, true, false));
                 target.removeEffect(MobEffects.LEVITATION);
@@ -537,7 +537,7 @@ public final class FourthCircleSpellService {
                 continue;
             }
             if (state.remainingPulses <= 0 || now < state.nextPulse) continue;
-            ArcaneDamage.hurt(level, owner, target, (float) Math.max(.5, state.power * .18));
+            ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.5, state.power * .18), "blight");
             state.remainingPulses--;
             state.nextPulse = now + 20L;
         }
@@ -619,7 +619,7 @@ public final class FourthCircleSpellService {
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 8, 1, true, false));
             target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 8, 0, true, false));
             if (now >= state.nextPulse) {
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.5, state.power * .10));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.5, state.power * .10), "phantasmal_killer");
                 state.nextPulse = now + 40L;
             }
         }

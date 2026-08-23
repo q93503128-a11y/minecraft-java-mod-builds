@@ -517,7 +517,7 @@ public final class ThirdCircleSpellService {
             AABB box = new AABB(zone.center, zone.center).inflate(zone.radius, Math.max(5.0, zone.radius * .76), zone.radius);
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                     value -> enemy(owner, value) && zone.center.distanceToSqr(value.position()) <= zone.radius * zone.radius)) {
-                ArcaneDamage.hurt(level, owner, target, (float) Math.max(.5, zone.power * .055));
+                ArcaneDamage.hurtAttributed(level, owner, target, (float) Math.max(.5, zone.power * .055), "sleet_storm");
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 16, 3, true, false));
                 target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 16, 0, true, false));
                 target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 24));

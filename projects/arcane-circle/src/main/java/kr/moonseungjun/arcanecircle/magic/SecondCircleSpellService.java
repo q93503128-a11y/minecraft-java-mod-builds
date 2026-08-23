@@ -267,7 +267,7 @@ public final class SecondCircleSpellService {
 
     private static boolean rayHit(ServerLevel level, LivingEntity caster, LivingEntity target, double power) {
         if (!enemy(caster, target)) return false;
-        boolean hit = ArcaneDamage.hurt(level, caster, target, (float) power);
+        boolean hit = ArcaneDamage.hurtAttributed(level, caster, target, (float) power, "scorching_ray");
         if (hit) {
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100));
             level.playSound(null, target.blockPosition(), SoundEvents.BLAZE_SHOOT,

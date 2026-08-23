@@ -7,6 +7,7 @@ import kr.moonseungjun.arcanecircle.magic.ArcaneLightService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneNoticeService;
 import kr.moonseungjun.arcanecircle.magic.ArcaneVitalityService;
 import kr.moonseungjun.arcanecircle.magic.DestructiveMagicService;
+import kr.moonseungjun.arcanecircle.magic.CombatGrowthService;
 import kr.moonseungjun.arcanecircle.magic.EighthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FifthCircleSpellService;
 import kr.moonseungjun.arcanecircle.magic.FirstCircleSpellService;
@@ -144,6 +145,7 @@ public final class ArcaneCircle {
         HighWardSpellService.clear(player);
         HighControlSpellService.clear(player);
         SpellGameplayService.clear(player);
+        CombatGrowthService.clear(player.getUUID());
         WorldMagicService.stop(player);
         WorldMagicService.clearVisuals(player);
     }
@@ -205,6 +207,7 @@ public final class ArcaneCircle {
         Alpha65NinthCircleRuntime.tick(level);
         // Field suppression runs after the circle runtimes; Time Stop/Antimagic win the tick.
         ArcaneFieldService.tick(level);
+        SpellCastingService.tickDeferredCombat(player);
         MagicPlayerData data = MagicPlayerData.get(level.getServer());
         if (player.tickCount % 10 == 0) data.regenerate(player);
         if (player.tickCount % 5 == 0) ArcaneNetwork.sync(player);
@@ -228,6 +231,7 @@ public final class ArcaneCircle {
         HighWardSpellService.clearAll();
         HighControlSpellService.clearAll();
         ArcaneFieldService.clearAll();
+        CombatGrowthService.clearAll();
         DestructiveMagicService.clearAll();
         SpellCastingService.clearAllSessions();
         SpellKineticsService.clearAll();

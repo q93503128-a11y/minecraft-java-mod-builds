@@ -606,5 +606,36 @@
     ],
     "zero_cooldown_below_ticks": 2,
     "zero_cast_below_ticks": 1
+  },
+  "deferred_damage_attribution": {
+    "mode": "server_authoritative_arcane_damage_ledger",
+    "initial_damage": "synchronous_snapshot_only_no_double_count",
+    "same_spell_recast": "previous_ledger_settled_before_new_release",
+    "per_cast_mastery_cap": 30,
+    "per_cast_insight_cap": 8,
+    "quest_combat_credit": true,
+    "player_damage_source": "player_attack_even_through_living_entity_runtime",
+    "tracked_spells": [
+      "scorching_ray",
+      "sleet_storm",
+      "wall_of_fire",
+      "ice_storm",
+      "blight",
+      "phantasmal_killer",
+      "cloudkill",
+      "flame_strike",
+      "insect_plague",
+      "sunbeam",
+      "freezing_sphere",
+      "delayed_blast_fireball",
+      "fire_storm",
+      "earthquake",
+      "incendiary_cloud",
+      "prismatic_wall",
+      "weird",
+      "fire_shield",
+      "wall_of_ice",
+      "winter_domain"
+    ]
   }
 }

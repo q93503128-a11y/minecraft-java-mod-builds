@@ -124,6 +124,14 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit('alpha.75 equipment floor drift')
 
 
+    deferred = index.get('deferred_damage_attribution', {})
+    if deferred.get('mode') != 'server_authoritative_arcane_damage_ledger':
+        raise SystemExit('alpha.75 deferred damage attribution metadata missing')
+    if deferred.get('per_cast_mastery_cap') != 30 or deferred.get('per_cast_insight_cap') != 8:
+        raise SystemExit('alpha.75 deferred combat cap drift')
+    if len(deferred.get('tracked_spells', [])) != 20:
+        raise SystemExit('alpha.75 deferred spell coverage drift')
+
     expected1 = {
         'shield': '8.5s_two_reactive_barriers_player_npc_same_damage_contract',
         'light': '90s_five_point_refcounted_real_light_player_npc',
@@ -278,6 +286,8 @@ print('alpha75_successful_use_mastery_floor=PASS')
 print('alpha75_hostile_only_insight_economy=PASS')
 print('alpha75_academy_server_circle_gate=PASS')
 print('alpha75_global_curve_preserved=PASS')
+print('alpha75_deferred_damage_exact_attribution=PASS')
+print('alpha75_player_attack_damage_source=PASS')
 print('alpha74_first_circle_value_pass_1=PASS')
 print('alpha74_first_circle_player_npc_ward_parity=PASS')
 print('alpha74_first_circle_light_npc_world_parity=PASS')

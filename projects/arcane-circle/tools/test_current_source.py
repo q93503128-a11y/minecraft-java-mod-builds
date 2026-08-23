@@ -65,6 +65,23 @@ assert index['global_progression_audit'] == {
     'academy_purchase_gate': 'server_authoritative_current_circle_or_lower',
     'high_circle_spellbook_rarity': 'circle_4_to_9_epic',
 }
+assert index['deferred_damage_attribution']['mode'] == 'server_authoritative_arcane_damage_ledger'
+assert index['deferred_damage_attribution']['per_cast_mastery_cap'] == 30
+assert index['deferred_damage_attribution']['per_cast_insight_cap'] == 8
+assert len(index['deferred_damage_attribution']['tracked_spells']) == 20
+need(text(magic / 'ArcaneDamage.java'),
+     'if (caster instanceof ServerPlayer player) return hurt(level, player, target, amount);',
+     'public static boolean hurtAttributed(', 'CombatGrowthService.recordAttributed(')
+need(growth, 'public static DeferredSettlement takeDeferred(', 'public static void startDeferred(',
+     'public static void recordAttributed(', 'public static List<DeferredSettlement> drainReady(',
+     'same-spell ledger before a recast')
+need(casting, 'applyDeferredSettlement(player, CombatGrowthService.takeDeferred(player, spell.id()));',
+     'CombatGrowthService.startDeferred(player, spell.id(), spell.circle(), impact);',
+     'public static void tickDeferredCombat(ServerPlayer player)', '§5[지속 주문 정산]')
+need(text(world / 'ArcaneQuestData.java'), 'public void recordCombatImpact(ServerPlayer player, CombatGrowthService.Impact impact)')
+need(main, 'CombatGrowthService.clear(player.getUUID());', 'SpellCastingService.tickDeferredCombat(player);', 'CombatGrowthService.clearAll();')
+need(text(magic / 'SeventhCircleSpellService.java'), '"delayed_blast_fireball"', 'hurtAttributed(level, caster, target, damage')
+need(text(magic / 'NinthCircleSpellService.java'), 'hurtAttributed(level, owner, target', '"prismatic_wall"', '"weird"')
 assert index['global_curve_preserved'] == {
     'same_circle_cast_ticks': [6, 10, 16, 26, 42, 68, 105, 155, 220],
     'base_max_mana': [100, 180, 300, 480, 750, 1150, 1800, 2800, 4500],
@@ -488,6 +505,8 @@ print('alpha75_successful_use_mastery_floor=PASS')
 print('alpha75_hostile_only_insight_economy=PASS')
 print('alpha75_academy_server_circle_gate=PASS')
 print('alpha75_global_curve_preserved=PASS')
+print('alpha75_deferred_damage_exact_attribution=PASS')
+print('alpha75_player_attack_damage_source=PASS')
 print('alpha74_first_circle_player_npc_ward_parity=PASS')
 print('alpha74_first_circle_light_npc_world_parity=PASS')
 print('alpha74_first_circle_grease_sleep_exact_footprints=PASS')

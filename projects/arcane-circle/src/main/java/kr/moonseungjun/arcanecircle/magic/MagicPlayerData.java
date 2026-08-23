@@ -384,6 +384,29 @@ public final class MagicPlayerData extends SavedData {
         return result.meaningful() ? Math.max(1, result.masteryGain()) : 1;
     }
 
+    public CastProgress awardDeferredCombat(ServerPlayer player, String spellId, CombatGrowthService.Impact impact) {
+        CombatGrowthService.Impact result = impact == null ? CombatGrowthService.Impact.NONE : impact;
+        if (!result.meaningful()) return new CastProgress(new CircleAdvance(state(player).circle, state(player).circle), MasteryProgress.none());
+        MageState state = state(player);
+        int before = state.mastery.getOrDefault(spellId, 0);
+        int after = Math.min(100000, before + Math.max(0, result.masteryGain()));
+        if (after != before) state.mastery.put(spellId, after);
+        state.insight = Math.min(1_000_000, state.insight + Math.max(0, result.insightGain()));
+        int previousCircle = state.circle;
+        if (state.circle < SpellCatalog.IMPLEMENTED_MAX_CIRCLE
+                && state.insight >= SpellCatalog.circleInsightThreshold(state.circle + 1)) state.circle++;
+        if (state.circle > previousCircle) state.mana = effectiveStats(player).maxMana();
+        MasteryProgress mastery = MasteryProgress.none();
+        if (SpellCatalog.fusion(spellId).isPresent()) {
+            int required = SpellCatalog.masteryRequired(spellId);
+            boolean registered = after >= required && state.known.add(spellId);
+            if (registered) equipIntoFirstEmptySlot(state, spellId);
+            mastery = new MasteryProgress(true, registered, spellId, after, required);
+        }
+        setDirty();
+        return new CastProgress(new CircleAdvance(previousCircle, state.circle), mastery);
+    }
+
     public CastProgress completeCast(ServerPlayer player, CastPreparation cast,
                                      CombatGrowthService.Impact impact) {
         beginCast(player, cast);

@@ -299,7 +299,7 @@ public final class SixthCircleSpellService {
     }
 
     private static void pulseSunbeam(SunbeamField field, LivingEntity caster, double pulsePower) {
-        lineDamage(field.level, caster, field.start, field.end, sunbeamHalfWidth(), pulsePower, target -> {
+        lineDamage(field.level, caster, field.start, field.end, sunbeamHalfWidth(), pulsePower, "sunbeam", target -> {
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 80));
             target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 1, true, false));
             target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 30, 0, true, false));
@@ -353,7 +353,7 @@ public final class SixthCircleSpellService {
                 value -> enemy(caster, value) && field.center.distanceToSqr(value.position()) <= field.radius * field.radius)) {
             double distance = Math.sqrt(field.center.distanceToSqr(target.position()));
             double falloff = Math.max(.62, 1.0 - distance / Math.max(1.0, field.radius) * .38);
-            ArcaneDamage.hurt(field.level, caster, target, (float) Math.max(.5, pulsePower * falloff));
+            ArcaneDamage.hurtAttributed(field.level, caster, target, (float) Math.max(.5, pulsePower * falloff), "freezing_sphere");
             target.setRemainingFireTicks(0);
             target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + (initial ? 520 : 120)));
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 5, true, false));
@@ -585,6 +585,12 @@ public final class SixthCircleSpellService {
     private static boolean lineDamage(ServerLevel level, LivingEntity caster, Vec3 start, Vec3 end,
                                       double halfWidth, double power,
                                       java.util.function.Consumer<LivingEntity> afterHit) {
+        return lineDamage(level, caster, start, end, halfWidth, power, null, afterHit);
+    }
+
+    private static boolean lineDamage(ServerLevel level, LivingEntity caster, Vec3 start, Vec3 end,
+                                      double halfWidth, double power, String spellId,
+                                      java.util.function.Consumer<LivingEntity> afterHit) {
         Vec3 delta = end.subtract(start);
         double length = Math.max(.001, delta.length());
         Vec3 unit = delta.scale(1.0 / length);
@@ -596,7 +602,10 @@ public final class SixthCircleSpellService {
             if (projection < 0.0 || projection > length) continue;
             double allowed = halfWidth + target.getBbWidth() * .50;
             if (relative.subtract(unit.scale(projection)).lengthSqr() > allowed * allowed) continue;
-            if (ArcaneDamage.hurt(level, caster, target, (float) power)) hit = true;
+            boolean damaged = spellId == null
+                    ? ArcaneDamage.hurt(level, caster, target, (float) power)
+                    : ArcaneDamage.hurtAttributed(level, caster, target, (float) power, spellId);
+            if (damaged) hit = true;
             afterHit.accept(target);
         }
         return hit;

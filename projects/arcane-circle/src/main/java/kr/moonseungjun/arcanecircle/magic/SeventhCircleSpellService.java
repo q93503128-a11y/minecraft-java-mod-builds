@@ -227,7 +227,7 @@ public final class SeventhCircleSpellService {
             double normalized = Math.min(1.0, distance / Math.max(1.0, breachZone ? core.radius : core.shockRadius));
             double falloff = Math.max(breachZone ? .48 : .38, 1.0 - normalized * (breachZone ? .52 : .62));
             float damage = (float) (core.power * (breachZone ? 1.18 : .30) * falloff);
-            ArcaneDamage.hurt(level, caster, target, damage);
+            ArcaneDamage.hurtAttributed(level, caster, target, damage, "delayed_blast_fireball");
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), breachZone ? 360 : 140));
             Vec3 away = horizontalAway(core.center, target.position());
             double kick = (breachZone ? 1.55 : .88) + falloff * (breachZone ? .95 : .42);
@@ -299,7 +299,7 @@ public final class SeventhCircleSpellService {
             int prior = field.hitCounts.getOrDefault(target.getUUID(), 0);
             double falloff = Math.max(.58, 1.0 - horizontal / Math.max(1.0, field.pillarRadius) * .42);
             double multiplier = prior == 0 ? .90 : .24;
-            ArcaneDamage.hurt(field.level, caster, target, (float) (field.power * multiplier * falloff));
+            ArcaneDamage.hurtAttributed(field.level, caster, target, (float) (field.power * multiplier * falloff), "fire_storm");
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), prior == 0 ? 280 : 120));
             field.hitCounts.put(target.getUUID(), prior + 1);
         }

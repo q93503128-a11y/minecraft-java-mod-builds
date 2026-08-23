@@ -229,7 +229,7 @@ public final class EighthCircleSpellService {
         for (LivingEntity target : enemies(level, caster, center, radius, Math.max(8.0, radius * .45))) {
             double distance = Math.sqrt(center.distanceToSqr(target.position()));
             double falloff = Math.max(.46, 1.0 - distance / Math.max(1.0, radius) * .54);
-            ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff));
+            ArcaneDamage.hurtAttributed(level, caster, target, (float) (pulsePower * falloff), "earthquake");
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 16, 3, true, false));
             Vec3 motion = target.getDeltaMovement();
             target.setDeltaMovement(motion.x * .42, motion.y * .72, motion.z * .42);
@@ -289,7 +289,7 @@ public final class EighthCircleSpellService {
         for (LivingEntity target : enemies(level, caster, center, radius, Math.max(7.0, radius * .65))) {
             double distance = Math.sqrt(center.distanceToSqr(target.position()));
             double falloff = Math.max(.52, 1.0 - distance / Math.max(1.0, radius) * .48);
-            ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff));
+            ArcaneDamage.hurtAttributed(level, caster, target, (float) (pulsePower * falloff), "incendiary_cloud");
             target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 120));
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 1, true, false));
         }
@@ -304,7 +304,7 @@ public final class EighthCircleSpellService {
                 if (field.center.distanceToSqr(target.position()) <= field.radius * field.radius) continue;
                 double distance = Math.sqrt(zone.center.distanceToSqr(target.position()));
                 double falloff = Math.max(.58, 1.0 - distance / Math.max(1.0, wakeRadius) * .42);
-                ArcaneDamage.hurt(level, caster, target, (float) (field.power * .035 * falloff));
+                ArcaneDamage.hurtAttributed(level, caster, target, (float) (field.power * .035 * falloff), "incendiary_cloud");
                 target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 100));
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 2, true, false));
             }
