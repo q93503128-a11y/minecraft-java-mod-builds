@@ -26,7 +26,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
             new Entry("정밀 부품 배치", "레드128 · 자수정64 · 금32 · 석영64", new ItemStack(Items.COMPARATOR), "precision", Action.PRODUCE),
-            new Entry("생산 현황", "4계통 버퍼 · 누적 사이클 · 현장 보급권", new ItemStack(Items.LEDGER), "", Action.STATUS),
+            new Entry("생산 현황", "4계통 버퍼 · 누적 사이클 · 현장 보급권", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
             new Entry("뒤로", "인프라 메뉴로 돌아가기", new ItemStack(Items.ARROW), "", Action.BACK)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
