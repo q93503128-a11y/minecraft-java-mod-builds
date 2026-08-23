@@ -11,7 +11,12 @@ public record RoadConstructionState(int startX, int startY, int startZ,
                                     int directionX, int directionZ,
                                     int length, int step,
                                     List<Integer> path) {
+    /**
+     * Phase markers live inside the existing persisted step field so older saves decode unchanged.
+     * Small steps are Alpha.24-or-earlier prepaid paving, 1M+ is grading, and 2M+ is Alpha.25 physical paving.
+     */
     public static final int GRADE_STEP_OFFSET = 1_000_000;
+    public static final int PAVE_STEP_OFFSET = 2_000_000;
     public static final RoadConstructionState EMPTY = new RoadConstructionState(0, 0, 0, 0, 0, 0, 0, List.of());
 
     public static final Codec<RoadConstructionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -21,7 +26,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
             Codec.INT.optionalFieldOf("direction_x", 0).forGetter(RoadConstructionState::directionX),
             Codec.INT.optionalFieldOf("direction_z", 0).forGetter(RoadConstructionState::directionZ),
             Codec.INT.optionalFieldOf("length", 0).forGetter(RoadConstructionState::length),
-            Codec.INT.optionalFieldOf("step", 0).forGetter(RoadConstructionState::step),
+            Codec.INT.optionalFieldOf("step", 0).forGetter(RoadConstructionState::encodedStep),
             Codec.INT.listOf().optionalFieldOf("path", List.of()).forGetter(RoadConstructionState::path)
     ).apply(instance, RoadConstructionState::new));
 
@@ -57,11 +62,35 @@ public record RoadConstructionState(int startX, int startY, int startZ,
     }
 
     public boolean grading() {
-        return hasPath() && step >= GRADE_STEP_OFFSET;
+        return hasPath() && step >= GRADE_STEP_OFFSET && step < PAVE_STEP_OFFSET;
+    }
+
+    public boolean physicalPaving() {
+        return hasPath() && step >= PAVE_STEP_OFFSET;
+    }
+
+    public boolean legacyPrepaidPaving() {
+        return active() && step >= 0 && step < GRADE_STEP_OFFSET;
     }
 
     public int gradeStep() {
         return grading() ? step - GRADE_STEP_OFFSET : -1;
+    }
+
+    /**
+     * Runtime callers historically use step() as the paving cursor. New physical paving exposes the
+     * logical cursor; legacy prepaid roads intentionally report completion so SettlementRoadService
+     * enters its cost-free final validation/repair path instead of charging their stone a second time.
+     */
+    @Override
+    public int step() {
+        if (physicalPaving()) return step - PAVE_STEP_OFFSET;
+        if (legacyPrepaidPaving()) return Integer.MAX_VALUE;
+        return step;
+    }
+
+    private int encodedStep() {
+        return step;
     }
 
     public BlockPos start() {
@@ -73,7 +102,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         if (hasPath()) {
             List<BlockPos> centers = new ArrayList<>(path.size() / 3);
             for (int i = 0; i + 2 < path.size(); i += 3) {
-                centers.add(new BlockPos(path.get(i), path.get(i + 1), path.get(i + 2)));
+                centers.add(new BlockPos(path.get(i), path.get(i + 1), path.get(i + 2));
             }
             return List.copyOf(centers);
         }
@@ -90,7 +119,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
     }
 
     public RoadConstructionState withStep(int nextStep) {
-        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length,
-                Math.max(0, nextStep), path);
+        int encoded = grading() && nextStep == 0 ? PAVE_STEP_OFFSET : Math.max(0, nextStep);
+        return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length, encoded, path);
     }
 }
