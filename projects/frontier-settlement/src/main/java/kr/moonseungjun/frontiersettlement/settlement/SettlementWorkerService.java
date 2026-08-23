@@ -77,11 +77,13 @@ public final class SettlementWorkerService {
         List<Villager> quarry = workersByName(level, data.centerPos(), QUARRY_WORKER_NAME);
         List<Villager> mine = workersByName(level, data.centerPos(), MINE_WORKER_NAME);
 
-        // Remote entities are legitimately unloaded. Only reconcile authoritative population when
-        // every outpost route is loaded, otherwise a sleeping remote transporter would look dead.
-        if (SettlementOutpostLogisticsService.allRoutesLoaded(level, data)) {
+        // Remote entities are legitimately unloaded. Reconcile population only while both road-bound
+        // transport assignments and local workshop assignment evidence are completely visible.
+        if (SettlementOutpostLogisticsService.allRoutesLoaded(level, data)
+                && SettlementWorkshopService.allAssignmentsLoaded(level, data)) {
             int transport = SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data);
-            int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size() + transport;
+            int workshop = SettlementWorkshopService.loadedAssignedWorkerCount(level, data);
+            int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size() + transport + workshop;
             if (data.population() != actualPopulation) data.setPopulation(actualPopulation);
         }
         if (data.population() >= data.housingCapacity()) return;
@@ -90,6 +92,14 @@ public final class SettlementWorkerService {
         if (tryFillJob(server, level, data, BuildingType.FARM, FARM_WORKER_NAME, farm.size())) return;
         if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry.size())) return;
         if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine.size())) return;
+
+        BuildingRecord missingWorkshop = SettlementWorkshopService.firstMissingLoadedAssignment(level, data);
+        if (missingWorkshop != null) {
+            if (!consumeArrivalFood(level, data)) return;
+            SettlementWorkshopService.spawnAssignedWorker(level, missingWorkshop);
+            finishArrival(server, data);
+            return;
+        }
 
         OutpostRecord missing = SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data);
         if (missing != null) {
