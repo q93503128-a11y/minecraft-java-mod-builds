@@ -66,6 +66,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: randomized multi-task regional directives + legacy-safe expeditions + Lv.100 field mastery", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: persistent 18-directive expedition set + all-task completion + legacy-safe Field Mastery", VERSION);
     }
 }
