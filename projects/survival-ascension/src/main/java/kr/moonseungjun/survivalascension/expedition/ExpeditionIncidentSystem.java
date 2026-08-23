@@ -1,6 +1,5 @@
 package kr.moonseungjun.survivalascension.expedition;
 
-import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -30,9 +29,11 @@ import java.util.UUID;
 
 public final class ExpeditionIncidentSystem {
     private static final String READY_TICK_KEY = "survivalascension_expedition_incident_ready";
+    private static final String TRIAL_READY_TICK_KEY = "survivalascension_ascension_trial_ready";
     private static final int CHECK_INTERVAL_TICKS = 600;
     private static final double START_CHANCE = 0.10D;
     private static final int START_COOLDOWN_TICKS = 3600;
+    private static final int TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600;
     private static final int OUTSIDE_GRACE_TICKS = 200;
     private static final double EVENT_RADIUS = 48.0D;
     private static final Map<UUID, ActiveIncident> ACTIVE = new HashMap<>();
@@ -51,9 +52,10 @@ public final class ExpeditionIncidentSystem {
         }
 
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0 || player.isCreative() || player.isSpectator() || !player.isAlive()) return;
-        if (AscensionTrialSystem.isActive(player)) return;
         long now = level.getGameTime();
         if (now < player.getPersistentData().getLongOr(READY_TICK_KEY, 0L)) return;
+        long trialReady = player.getPersistentData().getLongOr(TRIAL_READY_TICK_KEY, 0L);
+        if (trialReady > 0L && now < trialReady + TRIAL_EXCLUSION_AFTER_READY_TICKS) return;
 
         ExpeditionRegion region = ExpeditionProgression.currentRegion(player);
         if (region == null) return;
@@ -161,7 +163,8 @@ public final class ExpeditionIncidentSystem {
         List<String> types = active.incident.mobTypeIds();
         for (int i = 0; i < active.incident.spawnCount(); i++) {
             String typeId = types.get(i % types.size());
-            Mob mob = spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN, typeId, i, active.incident.spawnCount());
+            Mob mob = spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN,
+                    typeId, i, active.incident.spawnCount());
             if (mob == null) continue;
             mob.setTarget(player);
             spawned.add(mob.getUUID());
@@ -177,7 +180,8 @@ public final class ExpeditionIncidentSystem {
         for (int attempt = 0; attempt < 10; attempt++) {
             double angle = Math.PI * 2.0D * (index + attempt * 0.37D) / Math.max(1, count);
             int radius = 7 + level.getRandom().nextInt(7);
-            BlockPos base = center.offset((int) Math.round(Math.cos(angle) * radius), 0, (int) Math.round(Math.sin(angle) * radius));
+            BlockPos base = center.offset((int) Math.round(Math.cos(angle) * radius), 0,
+                    (int) Math.round(Math.sin(angle) * radius));
             BlockPos pos = water ? findWaterSpawn(level, base) : findOpenSpawn(level, base);
             if (pos == null) continue;
             Entity entity = type.spawn(level, pos, EntitySpawnReason.TRIGGERED);
@@ -232,7 +236,8 @@ public final class ExpeditionIncidentSystem {
         }
 
         player.sendSystemMessage(Component.literal("§a[현장 사건 해결] §f" + active.incident.region().koreanName() + " · §e"
-                + active.incident.koreanName() + " §7· " + active.incident.region().rewardSkill().koreanName() + " 숙련 XP +" + skillXp));
+                + active.incident.koreanName() + " §7· " + active.incident.region().rewardSkill().koreanName()
+                + " 숙련 XP +" + skillXp));
 
         ExpeditionDirective.Task bonusTask = data.firstIncompleteTask(player, active.incident.region());
         if (bonusTask != null) {
@@ -262,7 +267,8 @@ public final class ExpeditionIncidentSystem {
         } else {
             active.bossBar.setName(Component.literal("§6현장 사건 §7[" + active.incident.koreanName() + "] §f"
                     + active.actionProgress + "/" + active.incident.actionTarget() + " · " + seconds + "초"));
-            float progress = active.incident.actionTarget() <= 0 ? 0.0F : (float) active.actionProgress / active.incident.actionTarget();
+            float progress = active.incident.actionTarget() <= 0 ? 0.0F
+                    : (float) active.actionProgress / active.incident.actionTarget();
             active.bossBar.setProgress(Math.max(0.0F, Math.min(1.0F, progress)));
         }
     }
