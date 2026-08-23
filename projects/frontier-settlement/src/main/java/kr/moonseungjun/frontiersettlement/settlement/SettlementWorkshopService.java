@@ -35,6 +35,12 @@ public final class SettlementWorkshopService {
 
     private SettlementWorkshopService() {}
 
+    public static String lockedReason(SettlementData data) {
+        return data.buildingCount(BuildingType.BLACKSMITH) < 1
+                ? "작업장은 대장간 1곳을 완성하면 열립니다."
+                : null;
+    }
+
     public static void tick(MinecraftServer server, SettlementData data) {
         if (server.getTickCount() % 10 != 0) return;
         ServerLevel level = server.overworld();
