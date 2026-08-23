@@ -62,7 +62,8 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
     "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
 ]
-for rel in required: read(rel)
+for rel in required:
+    if not (ROOT / rel).exists(): errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
 need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.26.0-alpha.1"], "gradle properties")
