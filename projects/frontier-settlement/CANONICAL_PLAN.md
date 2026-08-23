@@ -54,6 +54,8 @@ The intended start is:
 - players gather the first resources manually;
 - the builder performs the first physical construction work.
 
+The starter stockpile is an authoritative physical container whose saved position drives the early resource loop. It must not be casually destroyed into a progression softlock.
+
 Debug commands may remain during development, but normal survival interaction must use world-space interaction and the compact palette rather than commands.
 
 ## 5. Buildings
@@ -69,8 +71,9 @@ Construction UX:
 3. see a transparent 3D completed preview;
 4. choose position and rotation;
 5. validate terrain / overlap / cost;
-6. establish the work site;
-7. workers haul resources and build it physically.
+6. establish the work transaction without mutating the world immediately;
+7. the builder physically clears/grades the safe site;
+8. workers haul resources and build it physically.
 
 Construction phase intention:
 
@@ -78,11 +81,12 @@ Construction phase intention:
 
 Terrain rules:
 
-- small terrain differences may be automatically cleared / filled;
+- small terrain differences may be automatically cleared / filled by visible worker action, not at approval time;
 - medium differences should later require explicit approval;
 - extreme terrain must be rejected;
 - player containers, valuable blocks, fluids, existing structures and protected infrastructure must not be silently destroyed;
 - construction preparation must not create loose item drops;
+- grading/fill must not create recoverable free economic materials merely because a project was approved;
 - roofs must never appear before their supports;
 - foundations/floors must not visibly float;
 - completed enclosed buildings require deliberate windows and sufficient lighting.
@@ -106,7 +110,7 @@ Initial role families:
 
 Job slots should fill automatically when housing, food and relevant workplaces permit it.
 
-Loaded areas should show physical work. Unloaded areas use coarse simulation where appropriate; do not force-load chunks just to keep worker animations running.
+Loaded areas should show physical work. Unloaded areas use coarse simulation where appropriate; do not force-load chunks just to keep worker animations running. Ordinary town production should also respect loaded-chunk boundaries and readable work cadence rather than running much faster than distant specialized production simply because it lives near the center.
 
 Night routines should preserve the same authority model as daytime work. Town workers may return to housing, outpost workers may return to their local shelter, and remote haulers may stop between anchors; night behavior must not introduce a second navigation system that overrides road logistics.
 
@@ -126,7 +130,7 @@ Construction should visibly communicate logistics. The builder walks from actual
 
 Distant outpost logistics should remain spatial and physical. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual output stacks, and pause at unloaded route boundaries rather than teleporting or force-loading the territory. Worker absence/replacement must never confuse an unloaded entity with a dead one.
 
-Alpha.27 tagged road logistics is the single authority for outpost transport. Higher settlement tiers may improve the surrounding infrastructure or capacity later, but must not reintroduce generic-name/UUID pairing or a second navigation controller for transport workers.
+Alpha.27 tagged road logistics is the single authority for outpost transport. Higher settlement tiers may improve the surrounding infrastructure or capacity later, but must not reintroduce generic-name/UUID pairing or a second navigation controller for transport workers. This remains the single authority for outpost transport.
 
 Specialized outpost production follows the same physical rule. Loaded workers must visibly approach local work, real nearby resources are finite where appropriate, and renewable production should come from an actual renewable world process such as crop growth rather than a timer that creates abstract items. Production must not force-load remote chunks.
 
@@ -215,50 +219,54 @@ Development sequence:
 
 Do not force-push over concurrent work. Other work shares the repository and CI result bots may advance `main`; always re-read `main` before committing and rebase only the Frontier Settlement changes.
 
-## 13. Current playable slice after Alpha.29
+## 13. Current playable slice after Alpha.30
 
-Alpha.29 preserves the shared-settlement loop and extends the physical-work model through buildings, roads, outpost construction, road-connected logistics, distinct local production and visible tier growth:
+Alpha.30 preserves the complete shared-settlement spatial loop and closes the largest code-visible inconsistencies before the next bundled hands-on test:
 
 - one shared server settlement and territory state;
 - physical shared storage with cached HUD ledger;
-- pioneer marker founding;
+- pioneer marker founding and a protected authoritative starter stockpile;
 - compact B-key palette and world-space building/road/outpost placement;
 - B / R / Enter / Backspace unified controls;
 - one-line server-authored next-goal and active construction-phase guidance;
 - starter and advanced functional buildings;
 - worker jobs and housing/population progression;
 - roads, productive specialized outposts and tier progression toward a domain;
-- safe building blueprints with no-drop terrain preparation;
-- building construction uses real storage extraction, visible carried stacks, an on-site supply barrel and gradual material consumption;
+- new building approval records the transaction without clearing terrain or generating a free foundation immediately;
+- new buildings physically progress through a persisted worker grading phase before their existing hauling/building transaction;
+- building grading visits the footprint and one-block apron, refuses block entities/fluids/unsafe obstructions/unloaded work cells and uses shallow coarse-dirt support rather than recoverable cobblestone;
+- old pre-Alpha.30 active building saves remain on their already-prepared small-step path so migration does not re-grade or double-charge them;
+- building construction then uses real storage extraction, visible carried stacks, an on-site supply barrel and gradual wood/stone consumption;
 - road approval validates cost without instant deletion and roads physically progress through grading, hauling and 3-wide paving;
 - outposts physically progress through 9×9 grading, actual wood/stone hauling and gradual blueprint construction;
 - finished outposts detect lumber / quarry / mining / agriculture specialization;
 - each transport worker is persistently tagged to one outpost and follows persisted road-center waypoints;
 - transport pauses at unloaded route boundaries and carries only appropriate specialization output;
-- each specialized production worker is persistently tagged to its own outpost and legacy visible-name workers are adopted rather than duplicated;
-- outpost production only examines already-loaded chunks and never force-loads remote resource areas;
+- Alpha.27 road logistics remains the single authority for outpost transport at every tier;
+- each specialized production worker is persistently tagged to its own outpost and production only examines already-loaded chunks;
 - lumber workers physically approach nearby natural trees and harvest at a throttled cadence;
 - quarry workers physically approach exposed stone and only remove exposed cells;
 - mining workers perform a readable minehead cycle and consume finite actual underground ore;
 - agriculture is renewable through vanilla wheat growth, with a one-time outpost plot instead of continuous magical repair;
+- main-settlement logger / farmer / quarry / miner production is also throttled to readable roughly 5s / 6s / 4s / 8s cycles, uses loaded cells only and swings visibly on successful work;
+- main-settlement quarry cluster work only removes individually exposed stone cells rather than hidden adjacent material;
 - full local stockpiles naturally stall workers carrying undelivered output, preserving storage pressure;
-- Alpha.27 road logistics remains the single authority for outpost transport at every tier; the old high-tier generic-name/UUID transport backend is gone;
-- frontier-town and domain tiers add deterministic settlement-owned lighting on safe loaded road shoulders, with denser spacing at domain tier;
-- public road lights skip protected footprints, fluids, block entities and unloaded chunks;
+- frontier-town and domain tiers add deterministic settlement-owned lighting on safe loaded road shoulders, with aligned denser spacing at domain tier;
 - civic-core and tier-public-work blocks are protected from break-and-respawn drop exploits;
-- higher tiers reinforce loaded guard posts without touching transport navigation;
-- town, transport and outpost-production villagers now have tag-aware night routines, while remote haulers between safe rest anchors stop instead of receiving cross-territory night paths;
+- ordinary guard and blacksmith maintenance ignore unloaded work centers rather than treating unloaded infrastructure as an active missing target;
+- town, transport and outpost-production villagers retain tag-aware night routines while remote haulers between safe rest anchors stop rather than forcing cross-territory night paths;
 - active building/road/outpost transaction blocks remain protected from break-and-rebuild resource exploits.
 
 ## 14. Near-term priorities
 
-After Alpha.29 automated validation is stable, keep the sequence narrow:
+Alpha.30 is the code-level test-readiness checkpoint. The next sequence should stay narrow and hands-on:
 
-1. inspect real screenshots/gameplay for civic-core appearance, road-lamp spacing/shoulder placement, night worker movement, guard density, transport adherence, production-worker movement, quarry holes, forest depletion, crop readability and unload/reload pauses;
-2. fix real-play root causes before adding breadth if those tests expose navigation, visual clutter, terrain damage, duplication, migration or public-works placement problems;
-3. if tier progression still feels too subtle in real play, improve the physical distinction between village / frontier town / domain through existing buildings, public-space dressing and NPC behavior before adding another dashboard or hotkey;
-4. decide from play whether depleted lumber/quarry sites need explicit recovery mechanics or whether depletion should intentionally push further territorial expansion; do not add abstract regeneration merely to keep a node infinite;
-5. after the building/road/outpost/logistics/production/tier spatial loop feels good, expand exploration/conquest inputs and additional meaningful building families;
-6. keep UI/controls compact while expanding simulation depth behind the scenes.
+1. run the real survival loop from founding through first house / lumber camp / farm, then road -> outpost -> specialized production -> transport -> tier growth, with particular attention to the new building grading phase;
+2. test save/reload during building grading and during physical hauling/building, and if an older active-build world is available verify that the pre-Alpha.30 prepared-site migration resumes without regrading or extra material charge;
+3. inspect builder navigation around the one-block grading apron, scaffold approaches, road turns, outpost grading/build pacing, transport adherence, stockpile pressure, production cadence, night routines and tier road lamps;
+4. verify the starter stockpile and automated civic/public-work blocks remain safe under ordinary player interaction; explosion behavior is not yet claimed as a tested protection path;
+5. one lower-severity manual-audit item remains: same-role town workers are still pooled by visible role name / UUID order rather than permanently tagged to one town workplace. If real play shows noticeable workplace swapping after reload/death, make per-building town-worker identity the next stabilization fix instead of adding content breadth;
+6. fix any real-play root cause before adding breadth; only after the building/road/outpost/logistics/production/tier loop feels stable should exploration/conquest inputs and additional meaningful building families expand;
+7. keep UI/controls compact while simulation depth expands behind the scenes.
 
 Real-play observations override assumptions in this file. If screenshots or symptoms expose a problem, fix the root cause before adding more content.
