@@ -32,11 +32,13 @@ Primary direct interactions remain approximately:
 2. choose a building and its position/rotation;
 3. choose an outpost location;
 4. choose road start/end and only necessary route guidance;
-5. explore/fight and decide which rare/external loot to commit to settlement progression or trade.
+5. explore/fight and decide which rare/external loot to commit to settlement progression, trade or maintenance.
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
 The Alpha.32 market follows the same rule: the player signals sale intent by putting an eligible relic into one dedicated physical trade barrel; there is no extra market hotkey or shop spreadsheet.
+
+The Alpha.33 workshop uses the same pattern: the player signals maintenance intent by putting a damaged recognized external weapon into one dedicated physical service barrel. Workers handle metal retrieval and service automatically; there is no repair-management menu.
 
 ## 3. Multiplayer authority
 
@@ -69,7 +71,7 @@ Functional settlement buildings use official blueprints. Player/vanilla building
 
 Original target remains roughly **15–20 meaningful building families**, not hundreds of shallow types.
 
-Current Alpha.32 functional families:
+Current Alpha.33 functional families:
 
 - house;
 - lumber camp;
@@ -78,10 +80,13 @@ Current Alpha.32 functional families:
 - mine;
 - warehouse;
 - blacksmith;
+- workshop;
 - guard post;
 - market.
 
-Original families still to close include construction office, workshop, cart station, watchtower, barracks and advanced workshop; infrastructure also still needs small bridges/stairs.
+Original families still to close include construction office, cart station, watchtower, barracks and advanced crafting; infrastructure also still needs small bridges/stairs.
+
+**Workshop and advanced crafting remain distinct.** Workshop is a normal production/maintenance building for routine equipment upkeep and ordinary production support. Advanced crafting remains a frontier-town/late-game family for special recipes, rare external materials and stronger progression rewards.
 
 Construction UX:
 
@@ -113,13 +118,15 @@ Terrain rules:
 
 Vanilla villager trading/professions are not the settlement progression authority.
 
-Implemented role families include builder, logger, farmer, quarry worker, miner, guard/service behavior and road-bound transport. Market uses a visible tagged visiting merchant rather than silently converting items in the background.
+Implemented role families include builder, logger, farmer, quarry worker, miner, workshop artisan, guard/service behavior and road-bound transport. Market uses a visible tagged visiting merchant rather than silently converting items in the background.
 
-Still planned from original scope: stronger dedicated blacksmith presentation, merchant depth, specialist crafter and soldier/barracks role.
+Workshop artisans are true settlement residents: one stable assignment belongs to one workshop, arrival uses the same housing/food/population constraints as other resident jobs, and assignment reconciliation is conservative when relevant chunks are not loaded.
+
+Still planned from original scope: stronger dedicated blacksmith presentation, merchant depth, specialist advanced crafter and soldier/barracks role.
 
 Job slots should fill automatically from housing, food and workplaces. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
 
-Night routines must preserve daytime authority. Transport/night behavior must not introduce a second route controller.
+Night routines must preserve daytime authority. Transport/night behavior must not introduce a second route controller. Workshop artisans join the town house routine at night.
 
 No family/children simulation in planned scope.
 
@@ -134,6 +141,8 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 - warehouses add physical storage positions rather than abstract capacity currency.
 
 Construction presentation invariant: the builder walks from actual settlement storage carrying real wood/stone stacks and visibly stages/uses them at the site.
+
+Workshop maintenance follows the same physical rule: an assigned artisan walks to loaded settlement storage, extracts one real metal item, carries it visibly to the workshop, consumes it during service, and physically returns unused carried material if the queued weapon disappears.
 
 Distant logistics remains spatial. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
 
@@ -213,7 +222,7 @@ Alpha.31 established a soft, data-driven bridge:
 - recognized external weapon namespace support, initially Weapons Expanded;
 - no companion `ModList` requirement merely to classify physical content.
 
-This is the compatibility substrate for later market, workshop, military and progression integrations.
+This is the compatibility substrate for market, workshop, military and progression integrations.
 
 ## 12. Alpha.32 physical market
 
@@ -235,9 +244,31 @@ Market rules:
 
 Current baseline values are intentionally simple and should be adjusted from actual play, especially after real DnT/Repurposed Structures/Lootr loot density is known.
 
-The market is not the final trading system: high-tier trade, external-item recipes and specialist crafting remain original-scope work.
+## 13. Alpha.33 physical workshop
 
-## 13. UI and controls
+Workshop is the first original-scope production building that directly consumes the external weapon/content bridge.
+
+Workshop rules:
+
+- unlock after one blacksmith is complete;
+- cost wood 88 / stone 44;
+- physical 11×9 workshop with a protected dedicated service barrel;
+- ordinary shared settlement storage weapons are never auto-selected or moved;
+- only damaged external weapons deliberately placed in the service barrel are eligible;
+- external weapon recognition currently starts with the Weapons Expanded namespace via the existing soft bridge;
+- one stable tagged artisan assignment belongs to one workshop;
+- the artisan joins through housing/population and real food 4 consumption;
+- actual metal classification reuses settlement/common compatibility tags;
+- the artisan walks to actual loaded storage, extracts one real metal item, carries it in the main hand and walks back;
+- one metal item repairs 64 durability per readable service cycle;
+- if the queue changes while material is carried, the artisan physically returns the material to storage rather than teleporting it;
+- workshop/storage assignment evidence must be loaded before missing-worker reconciliation; no force loading;
+- workshop service runs during daytime and artisan joins normal house rest at night;
+- no abstract repair currency or separate repair UI.
+
+This does not replace the later advanced crafting family.
+
+## 14. UI and controls
 
 Reference hierarchy from original design remains:
 
@@ -259,7 +290,7 @@ Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per f
 
 Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications.
 
-## 14. Engineering rules
+## 15. Engineering rules
 
 Target:
 
@@ -280,14 +311,14 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 15. Current playable slice after Alpha.32
+## 16. Current playable slice after Alpha.33
 
 The playable slice now includes:
 
 - one shared authoritative settlement;
 - protected founding stockpile and civic core;
 - compact B/R/Enter/Backspace interaction;
-- 9 functional building families;
+- 10 functional building families;
 - physical site grading and construction hauling;
 - paced loaded town production;
 - physical roads;
@@ -297,22 +328,23 @@ The playable slice now includes:
 - loaded-only remote production/logistics;
 - tier growth and safe public works;
 - Alpha.31 external physical material/relic/weapon recognition;
-- Alpha.32 physical village market converting deliberately deposited expedition relics into real emerald proceeds.
+- Alpha.32 physical village market converting deliberately deposited expedition relics into real emerald proceeds;
+- Alpha.33 staffed physical workshop turning actual settlement metal into maintenance for deliberately queued external weapons.
 
 This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md` remains authoritative for unfinished breadth.
 
-## 16. Next priorities after Alpha.32
+## 17. Next priorities after Alpha.33
 
 Unless real-play regression overrides them:
 
-1. finish documentation/CI consistency for Alpha.32;
+1. finish Alpha.33 source/docs/CI consistency;
 2. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
-3. continue missing building breadth without new controls: workshop, cart station, watchtower are strong next candidates;
-4. connect external weapons/loot to workshop/advanced crafting rather than merely counting them;
+3. continue missing original breadth without new controls: cart station, watchtower/barracks and construction office are strong next candidates;
+4. keep advanced crafting separate from workshop and reserve it for rare/external late-game recipes;
 5. add small road stairs/bridges and stronger steep-route handling;
 6. add river/coast trade/fishing and military outpost specializations;
 7. design coarse unloaded simulation without breaking physical item authority;
 8. close UI status/progress/notification gaps;
-9. perform full survival + multiplayer acceptance pass across founding -> settlement -> roads/outposts -> external dungeon loot -> market/trade -> higher tiers.
+9. perform full survival + multiplayer acceptance pass across founding -> settlement -> roads/outposts -> external dungeon loot -> market/trade -> workshop maintenance -> higher tiers.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
