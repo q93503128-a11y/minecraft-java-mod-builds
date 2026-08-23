@@ -55,6 +55,7 @@ public final class ProductionData extends SavedData {
             this.precision = clampBuffer(precision);
             this.cycles = Math.max(0, cycles);
             this.supplyCharges = Math.max(0, Math.min(MAX_SUPPLY_CHARGES, supplyCharges));
+            normalizeCycles(this);
         }
     }
 
@@ -113,17 +114,7 @@ public final class ProductionData extends SavedData {
             case PROVISIONS -> state.provisions++;
             case PRECISION -> state.precision++;
         }
-        boolean cycleCompleted = false;
-        if (state.supplyCharges < MAX_SUPPLY_CHARGES && state.metalworks > 0 && state.timberworks > 0
-                && state.provisions > 0 && state.precision > 0) {
-            state.metalworks--;
-            state.timberworks--;
-            state.provisions--;
-            state.precision--;
-            state.cycles++;
-            state.supplyCharges++;
-            cycleCompleted = true;
-        }
+        boolean cycleCompleted = normalizeCycles(state) > 0;
         setDirty();
         return new BatchResult(true, cycleCompleted, state.supplyCharges);
     }
@@ -135,8 +126,24 @@ public final class ProductionData extends SavedData {
         State state = state(player);
         if (state.supplyCharges <= 0) return false;
         state.supplyCharges--;
+        normalizeCycles(state);
         setDirty();
         return true;
+    }
+
+    private static int normalizeCycles(State state) {
+        int completed = 0;
+        while (state.supplyCharges < MAX_SUPPLY_CHARGES && state.metalworks > 0 && state.timberworks > 0
+                && state.provisions > 0 && state.precision > 0) {
+            state.metalworks--;
+            state.timberworks--;
+            state.provisions--;
+            state.precision--;
+            state.cycles++;
+            state.supplyCharges++;
+            completed++;
+        }
+        return completed;
     }
 
     private static int clampBuffer(int value) { return Math.max(0, Math.min(MAX_BUFFER, value)); }
