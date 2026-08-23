@@ -126,6 +126,8 @@ public final class SpellGameplayService {
         return switch (spellId) {
             case "time_stop" -> ArcaneFieldService.TIME_STOP_TICKS;
             case "antimagic_field" -> ArcaneFieldService.ANTIMAGIC_TICKS;
+            case "weird" -> Alpha65NinthCircleRuntime.WEIRD_ESCAPE_TICKS;
+            case "gate" -> Alpha65NinthCircleRuntime.GATE_TICKS;
             case "feather_fall" -> 120;
             case "sleep" -> 140;
             case "mass_suggestion" -> 160;
@@ -482,7 +484,6 @@ public final class SpellGameplayService {
             if (now < state.nextPulse()) continue;
             WEATHER.put(state.ownerId(), new WeatherState(level, state.ownerId(), state.radius(), state.power(),
                     state.expiresAt(), now + 20));
-            // Passive storm pressure remains useful without stealing the identity of the active G-key barrage.
             List<LivingEntity> targets = enemies(owner, owner.position(), state.radius(), state.radius() * .78);
             int pulses = Math.min(3, targets.size());
             for (int i = 0; i < pulses; i++) {
