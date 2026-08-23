@@ -11,6 +11,9 @@ public final class SettlementCartStationService {
     private SettlementCartStationService() {}
 
     public static String lockedReason(SettlementData data) {
+        if (SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
+            return "수레 정거장은 마을 단계에 도달한 뒤 열립니다.";
+        }
         if (data.roads().isEmpty() || data.outposts().isEmpty()) {
             return "수레 정거장은 도로와 연결된 전초기지를 만든 뒤 열립니다.";
         }
