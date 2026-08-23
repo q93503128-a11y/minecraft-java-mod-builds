@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
     public static final String VERSION = "0.32.0-alpha.1";
-    // 0.32 canonical contract: completed regions gain prepaid out-and-back operations staged from physical outposts.
+    // 0.32 final contract: completed-region outposts launch prepaid, persistent outbound-work-return expedition operations.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
