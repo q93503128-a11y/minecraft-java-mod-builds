@@ -107,9 +107,10 @@ public final class SettlementService {
     private static int buildingUnlockMask(SettlementData data) {
         int mask = 0;
         for (BuildingType type : BuildingType.values()) {
-            String locked = type == BuildingType.WORKSHOP
-                    ? SettlementWorkshopService.lockedReason(data)
-                    : SettlementConstructionService.lockedReason(data, type);
+            String locked;
+            if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
+            else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
+            else locked = SettlementConstructionService.lockedReason(data, type);
             if (locked == null) mask |= 1 << type.ordinal();
         }
         return mask;
