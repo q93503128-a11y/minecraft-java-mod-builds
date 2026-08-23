@@ -1,10 +1,12 @@
 package kr.moonseungjun.survivalascension.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
 import kr.moonseungjun.survivalascension.progress.SkillType;
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -38,6 +40,12 @@ public final class AscensionCommands {
         SkillProgressData data = SkillProgressData.get(player);
         player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f숙련 현황"));
         for (SkillType skill : SkillType.values()) sendSkillLine(player, data, skill);
+
+        ExpeditionData expedition = ExpeditionData.get(player);
+        String stage = WorldAscensionData.get(player.server).stageName();
+        player.sendSystemMessage(Component.literal("§2[원정] §f" + expedition.count(player) + "/9 조사 · §7" + stage
+                + (expedition.isMasterSurveyComplete(player) ? " §6· 현장 숙련 해방" : "")));
+        player.sendSystemMessage(Component.literal(expedition.summary(player)));
         return 1;
     }
 
