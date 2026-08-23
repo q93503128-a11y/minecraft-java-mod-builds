@@ -36,6 +36,7 @@ public final class BuildingBlueprints {
             case BLACKSMITH, GUARD_POST -> AdvancedBuildingBlueprints.create(type, origin);
             case WORKSHOP -> WorkshopBuildingBlueprint.create(origin);
             case MARKET -> MarketBuildingBlueprint.create(origin);
+            case CART_STATION -> CartStationBuildingBlueprint.create(origin);
         };
     }
 
