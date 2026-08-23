@@ -81,7 +81,7 @@ need(trial,[
     "Gateways to Eternity", "ECHO_SHARD_COST = 32", "AMETHYST_COST = 64", "DRAGON_BREATH_COST = 8",
     "TOTAL_WAVES = 4", "WAVE_TIMEOUT_TICKS = 1200", "START_COOLDOWN_TICKS = 2400", "EXCLUSION_RADIUS = 96.0D",
     "InfrastructureProject.ASCENSION_NEXUS", "WorldAscensionData.get(server).stage() < 2", "EntitySpawnReason.TRIGGERED",
-    "ServerBossEvent", "EntityType.byString(typeId)", '"minecraft:ravager"', '"minecraft:evoker"', '"minecraft:wither_skeleton"',
+    "ServerBossEvent", "BuiltInRegistries.ENTITY_TYPE.containsKey(identifier)", "BuiltInRegistries.ENTITY_TYPE.getValue(identifier)", '"minecraft:ravager"', '"minecraft:evoker"', '"minecraft:wither_skeleton"',
     "AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3)", "Items.NETHERITE_SCRAP, 2", "Items.DIAMOND, 4",
     "onEntityJoin(EntityJoinLevelEvent event)", "TRIAL_OWNER_KEY", "active.mobIds.contains(mob.getUUID())", "event.setCanceled(true)",
     "distanceToCenterSqr", "입장 재료는 반환되지 않습니다"
