@@ -13,6 +13,7 @@ public final class ProductionService {
     public static final String ACTION_STATUS = "production_status";
     public static final String ACTION_DISPATCH = "dispatch_supply";
     public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
+    public static final String ACTION_WAREHOUSE_TOGGLE = "toggle_warehouse_barrel";
     public static final String ACTION_BULK_OFFLOAD = "bulk_offload";
     public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
     public static final String ACTION_FIELD_RECOVERY = "field_recovery";
@@ -32,6 +33,7 @@ public final class ProductionService {
         if (ACTION_STATUS.equals(action)) { sendStatus(player); return; }
         if (ACTION_DISPATCH.equals(action)) { dispatchSupply(player); return; }
         if (ACTION_DEPOT_TOGGLE.equals(action)) { FieldDepotService.toggleNearest(player); return; }
+        if (ACTION_WAREHOUSE_TOGGLE.equals(action)) { FieldDepotService.toggleWarehouseNearest(player); return; }
         if (ACTION_BULK_OFFLOAD.equals(action)) { bulkOffload(player); return; }
         if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
         if (ACTION_FIELD_RECOVERY.equals(action)) { FieldRecoveryService.configure(player); return; }
@@ -56,7 +58,7 @@ public final class ProductionService {
                 int have = count(player, input);
                 player.sendSystemMessage(Component.literal("  §7- §f" + input.label() + " §e" + have + "§7/§f" + input.amount()));
             }
-            player.sendSystemMessage(Component.literal("  §7인벤토리 + 현재 사용 가능한 등록 배럴/전초 재고를 합산합니다."));
+            player.sendSystemMessage(Component.literal("  §7인벤토리 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고를 합산합니다."));
             return;
         }
         for (ProductionProgram.Input input : program.inputs()) {
@@ -66,7 +68,7 @@ public final class ProductionService {
             }
         }
         ProductionData.BatchResult result = data.addBatch(player, program);
-        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료. §7인벤토리 우선 → 가까운 물류 배럴 순으로 투입"));
+        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료. §7인벤토리 우선 → 가까운 실제 물류 배럴 순으로 투입"));
         if (result.cycleCompleted()) {
             player.sendSystemMessage(Component.literal("§b[산업 사이클 완성] §f4계통 배치를 결합해 §e현장 보급권 +1§f을 확보했습니다. §7보유 "
                     + result.supplyCharges() + "/" + ProductionData.MAX_SUPPLY_CHARGES));
@@ -82,8 +84,9 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 등록 배럴/전초 재고. 보급권: 실물 출고1 / 배럴 거점1 / 전초 승격2 / 복귀 계약1 / 원정 작전1."));
-        player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 배럴부터 채웁니다."));
+        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고. 보급권: 실물 출고1 / 거점1 / 전초2 / 복귀1 / 원정1."));
+        player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 배럴 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
+        player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 배럴부터 채웁니다."));
         player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
@@ -92,9 +95,9 @@ public final class ProductionService {
     }
 
     private static void bulkOffload(ServerPlayer player) {
-        int depots = FieldDepotService.activeDepotCount(player);
-        if (depots <= 0) {
-            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 등록 배럴/전초가 없습니다."));
+        int storageBarrels = FieldDepotService.activeStorageBarrelCount(player);
+        if (storageBarrels <= 0) {
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 거점/창고 배럴이 없습니다."));
             return;
         }
         int eligible = FieldDepotService.countOffloadableMainInventory(player);
@@ -104,15 +107,15 @@ public final class ProductionService {
         }
         int moved = FieldDepotService.offloadBulkMaterials(player);
         if (moved <= 0) {
-            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f사용 가능한 배럴에 남은 적재 공간이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f사용 가능한 실제 배럴들에 남은 적재 공간이 없습니다."));
             return;
         }
         if (moved < eligible) {
-            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 배럴부터 적재했습니다. §7대상 "
-                    + eligible + "개 중 일부만 수용됨 · 핫바/장비 유지"));
+            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 실제 배럴부터 적재했습니다. §7대상 "
+                    + eligible + "개 중 일부만 수용됨 · 사용 배럴 " + storageBarrels + " · 핫바/장비 유지"));
         } else {
             player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved
-                    + "§f개를 가까운 배럴부터 적재했습니다. §7핫바/장비 유지"));
+                    + "§f개를 가까운 실제 배럴부터 적재했습니다. §7사용 배럴 " + storageBarrels + " · 핫바/장비 유지"));
         }
     }
 

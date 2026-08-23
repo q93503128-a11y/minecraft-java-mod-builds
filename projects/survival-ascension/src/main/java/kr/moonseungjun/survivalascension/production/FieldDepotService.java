@@ -52,7 +52,15 @@ public final class FieldDepotService {
         if (depots.owns(player, dimension, barrel)) {
             depots.remove(player, dimension, barrel);
             OutpostService.onDepotRemoved(player, dimension, barrel);
-            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f배럴 거점 연결을 해제했습니다. §7전초기지 승격도 함께 해제되며 보급권/승격 재료는 반환되지 않습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f배럴 거점 연결을 해제했습니다. §7이 앵커의 창고 배럴 링크와 전초기지 승격도 함께 해제되며 재료는 반환되지 않습니다."));
+            return;
+        }
+        if (depots.isLinkedByOwner(player, dimension, barrel)) {
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 자신의 창고 확장 배럴입니다. §7먼저 '창고 배럴 연결'에서 해제하세요."));
+            return;
+        }
+        if (depots.isLinkedByAny(dimension, barrel)) {
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 다른 물류 창고군에 이미 연결되어 있습니다."));
             return;
         }
         if (depots.count(player) >= FieldDepotData.MAX_DEPOTS_PER_PLAYER) {
@@ -69,7 +77,7 @@ public final class FieldDepotService {
 
         FieldDepotData.AddResult result = depots.add(player, dimension, barrel);
         if (result == FieldDepotData.AddResult.CLAIMED_BY_OTHER) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 다른 플레이어의 물류 거점으로 이미 등록되어 있습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 다른 물류 거점/창고군에 이미 연결되어 있습니다."));
             return;
         }
         if (result != FieldDepotData.AddResult.ADDED) {
@@ -82,15 +90,77 @@ public final class FieldDepotService {
             return;
         }
         player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f배럴 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
-                + "§f을 거점으로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 대량 건축/관개/산업 투입이 재료를 인출합니다."));
+                + "§f을 거점 앵커로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 배럴 최대 "
+                + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 확장 가능"));
+    }
+
+    public static void toggleWarehouseNearest(ServerPlayer player) {
+        if (player.isCreative() || player.isSpectator()) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f크리에이티브/관전자 상태에서는 창고 배럴을 연결할 수 없습니다."));
+            return;
+        }
+        if (!InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f먼저 §b산업 가공소§f를 완공해야 합니다."));
+            return;
+        }
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos target = findNearestBarrel(level, player.blockPosition());
+        if (target == null) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f4블록 이내에 대상 §6배럴§f이 없습니다."));
+            return;
+        }
+        if (!level.mayInteract(player, target)) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴에는 상호작용할 권한이 없습니다."));
+            return;
+        }
+
+        String dimension = level.dimension().toString();
+        FieldDepotData data = FieldDepotData.get(player);
+        if (data.isRegisteredAnchor(dimension, target)) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f등록 거점 앵커 자체는 확장 배럴 대상이 아닙니다. §7연결할 배럴 쪽에 더 가까이 서서 다시 선택하세요."));
+            return;
+        }
+        if (data.isLinkedByOwner(player, dimension, target)) {
+            data.removeLink(player, dimension, target);
+            player.sendSystemMessage(Component.literal("§3[창고 배럴 해제] §f배럴 §e" + coords(target) + "§f을 현재 창고군에서 해제했습니다. §7내용물은 실제 배럴 안에 그대로 남습니다."));
+            return;
+        }
+        if (data.isLinkedByAny(dimension, target)) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴은 다른 플레이어의 창고군에 이미 연결되어 있습니다."));
+            return;
+        }
+
+        FieldDepotData.DepotEntry depot = nearestOwnedDepotForTarget(player, level, target);
+        if (depot == null) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴에서 §e" + FieldDepotData.MAX_LINK_RADIUS
+                    + "블록§f 안에 로딩·상호작용 가능한 자신의 등록 거점 앵커가 없습니다."));
+            return;
+        }
+        FieldDepotData.LinkResult result = data.addLink(player, depot, target);
+        if (result == FieldDepotData.LinkResult.LIMIT_REACHED) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 거점은 이미 확장 배럴 §e"
+                    + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개§f를 사용 중입니다."));
+            return;
+        }
+        if (result != FieldDepotData.LinkResult.ADDED) {
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f창고 배럴을 연결하지 못했습니다. §7(" + result.name() + ")"));
+            return;
+        }
+        player.sendSystemMessage(Component.literal("§b[창고 배럴 연결] §f배럴 §e" + coords(target) + "§f → 거점 §e" + coords(depot.pos())
+                + " §7· " + data.linkedCount(player, depot) + "/" + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT
+                + " · 별도 보급권 없음 · 실제 배럴 용량 그대로 사용"));
     }
 
     public static void sendStatus(ServerPlayer player) {
         FieldDepotData data = FieldDepotData.get(player);
         List<FieldDepotData.DepotEntry> depots = data.depots(player);
-        int active = activeDepotCount(player);
-        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
-                + " §7· 현재 사용 가능 §a" + active + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
+        int activeDepots = activeDepotCount(player);
+        int activeBarrels = activeStorageBarrelCount(player);
+        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
+                + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 배럴 §b" + activeBarrels
+                + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
+        player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 배럴 최대 "
+                + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 연결 · 전체 링크 " + data.totalLinkedCount(player)));
         player.sendSystemMessage(Component.literal("  §7- 현장 일괄 적재: 주 인벤토리 슬롯9~35의 대량 자원만 가까운 사용 가능 배럴부터 적재 · 핫바/장비 유지"));
         if (depots.isEmpty()) {
             player.sendSystemMessage(Component.literal("  §7- 4블록 내 배럴에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
@@ -101,9 +171,10 @@ public final class FieldDepotService {
             BlockPos pos = depot.pos();
             boolean sameDimension = depot.dimension().equals(currentDimension);
             boolean outpost = OutpostService.isOutpost(player, depot);
-            String state = sameDimension && isUsableBarrel(player, depot) ? "§a사용 가능" : "§8비활성/미로딩";
-            player.sendSystemMessage(Component.literal("  §7- §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
-                    + " §7· " + (outpost ? "§2전초기지 §7· " : "") + state + (sameDimension ? "" : " §7· 다른 차원")));
+            String state = sameDimension && isUsableAnchor(player, depot) ? "§a사용 가능" : "§8비활성/미로딩";
+            player.sendSystemMessage(Component.literal("  §7- §f" + coords(pos) + " §7· " + (outpost ? "§2전초기지 §7· " : "")
+                    + state + " §7· 창고 §b" + data.linkedCount(player, depot) + "/" + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT
+                    + (sameDimension ? "" : " §7· 다른 차원")));
         }
     }
 
@@ -206,7 +277,15 @@ public final class FieldDepotService {
                 || stack.is(Items.MELON_SEEDS) || stack.is(Items.PUMPKIN_SEEDS);
     }
 
-    public static int activeDepotCount(ServerPlayer player) { return usableContainers(player).size(); }
+    public static int activeDepotCount(ServerPlayer player) {
+        int active = 0;
+        for (FieldDepotData.DepotEntry depot : new ArrayList<>(FieldDepotData.get(player).depots(player))) {
+            if (isUsableAnchor(player, depot)) active++;
+        }
+        return active;
+    }
+
+    public static int activeStorageBarrelCount(ServerPlayer player) { return usableContainers(player).size(); }
 
     private static int insertIntoContainers(ItemStack source, List<Container> containers) {
         int before = source.getCount();
@@ -245,28 +324,48 @@ public final class FieldDepotService {
         ServerLevel level = (ServerLevel) player.level();
         String dimension = level.dimension().toString();
         FieldDepotData data = FieldDepotData.get(player);
-        List<FieldDepotData.DepotEntry> depots = new ArrayList<>(data.depots(player));
-        depots.sort(Comparator.comparingDouble(depot -> depot.pos().distSqr(player.blockPosition())));
-        List<Container> out = new ArrayList<>();
-        for (FieldDepotData.DepotEntry depot : depots) {
+        List<ResolvedContainer> resolved = new ArrayList<>();
+        for (FieldDepotData.DepotEntry depot : new ArrayList<>(data.depots(player))) {
             if (!depot.dimension().equals(dimension)) continue;
             int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
-            BlockPos pos = depot.pos();
-            if (pos.distSqr(player.blockPosition()) > radius * radius) continue;
-            if (!level.hasChunkAt(pos)) continue;
-            if (!level.getBlockState(pos).is(Blocks.BARREL)) {
+            BlockPos anchor = depot.pos();
+            if (anchor.distSqr(player.blockPosition()) > radius * radius) continue;
+            if (!level.hasChunkAt(anchor)) continue;
+            if (!level.getBlockState(anchor).is(Blocks.BARREL)) {
                 data.remove(player, depot);
-                OutpostService.onDepotRemoved(player, depot.dimension(), pos);
+                OutpostService.onDepotRemoved(player, depot.dimension(), anchor);
                 continue;
             }
-            if (!level.mayInteract(player, pos)) continue;
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof Container container) out.add(container);
+            if (!level.mayInteract(player, anchor)) continue;
+            BlockEntity anchorEntity = level.getBlockEntity(anchor);
+            if (!(anchorEntity instanceof Container anchorContainer)) {
+                data.remove(player, depot);
+                OutpostService.onDepotRemoved(player, depot.dimension(), anchor);
+                continue;
+            }
+            resolved.add(new ResolvedContainer(anchor, anchorContainer));
+
+            for (FieldDepotData.LinkedBarrel link : new ArrayList<>(data.linkedBarrels(player, depot))) {
+                BlockPos pos = link.pos();
+                if (!level.hasChunkAt(pos)) continue;
+                if (!level.getBlockState(pos).is(Blocks.BARREL)) {
+                    data.removeLink(player, dimension, pos);
+                    continue;
+                }
+                if (!level.mayInteract(player, pos)) continue;
+                BlockEntity blockEntity = level.getBlockEntity(pos);
+                if (blockEntity instanceof Container container) {
+                    resolved.add(new ResolvedContainer(pos, container));
+                } else {
+                    data.removeLink(player, dimension, pos);
+                }
+            }
         }
-        return out;
+        resolved.sort(Comparator.comparingDouble(value -> value.pos().distSqr(player.blockPosition())));
+        return resolved.stream().map(ResolvedContainer::container).toList();
     }
 
-    private static boolean isUsableBarrel(ServerPlayer player, FieldDepotData.DepotEntry depot) {
+    private static boolean isUsableAnchor(ServerPlayer player, FieldDepotData.DepotEntry depot) {
         ServerLevel level = (ServerLevel) player.level();
         if (!depot.dimension().equals(level.dimension().toString())) return false;
         int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
@@ -278,7 +377,31 @@ public final class FieldDepotService {
             OutpostService.onDepotRemoved(player, depot.dimension(), pos);
             return false;
         }
-        return level.mayInteract(player, pos) && level.getBlockEntity(pos) instanceof Container;
+        if (!level.mayInteract(player, pos)) return false;
+        if (!(level.getBlockEntity(pos) instanceof Container)) {
+            FieldDepotData.get(player).remove(player, depot);
+            OutpostService.onDepotRemoved(player, depot.dimension(), pos);
+            return false;
+        }
+        return true;
+    }
+
+    private static FieldDepotData.DepotEntry nearestOwnedDepotForTarget(ServerPlayer player, ServerLevel level, BlockPos target) {
+        String dimension = level.dimension().toString();
+        double max = FieldDepotData.MAX_LINK_RADIUS * FieldDepotData.MAX_LINK_RADIUS;
+        return FieldDepotData.get(player).depots(player).stream()
+                .filter(depot -> depot.dimension().equals(dimension))
+                .filter(depot -> depot.pos().distSqr(target) <= max)
+                .filter(depot -> isPhysicalAnchor(player, level, depot.pos()))
+                .min(Comparator.comparingDouble(depot -> depot.pos().distSqr(target)))
+                .orElse(null);
+    }
+
+    private static boolean isPhysicalAnchor(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) return false;
+        if (!level.getBlockState(pos).is(Blocks.BARREL)) return false;
+        if (!level.mayInteract(player, pos)) return false;
+        return level.getBlockEntity(pos) instanceof Container;
     }
 
     private static BlockPos findNearestBarrel(ServerLevel level, BlockPos origin) {
@@ -300,4 +423,7 @@ public final class FieldDepotService {
         }
         return best;
     }
+
+    private static String coords(BlockPos pos) { return pos.getX() + ", " + pos.getY() + ", " + pos.getZ(); }
+    private record ResolvedContainer(BlockPos pos, Container container) {}
 }
