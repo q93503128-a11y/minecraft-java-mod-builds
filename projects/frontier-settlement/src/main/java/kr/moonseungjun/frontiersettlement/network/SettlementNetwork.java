@@ -67,6 +67,14 @@ public final class SettlementNetwork {
             return;
         }
         BlockPos selectedCenter = new BlockPos(payload.centerX(), payload.centerY(), payload.centerZ());
+        if (type == BuildingType.CART_STATION) {
+            String placementLock = SettlementCartStationService.placementReason(data, selectedCenter);
+            if (placementLock != null) {
+                context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
+                        0, 0, 0, payload.rotation(), placementLock));
+                return;
+            }
+        }
         SettlementConstructionService.PlacementCheck check =
                 SettlementConstructionService.checkPlacement(player, type, selectedCenter, payload.rotation());
         if (!check.valid()) {
