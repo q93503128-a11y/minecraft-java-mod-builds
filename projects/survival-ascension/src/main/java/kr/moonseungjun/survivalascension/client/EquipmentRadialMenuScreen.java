@@ -23,6 +23,7 @@ import org.joml.Matrix3x2f;
 public final class EquipmentRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("재련", new ItemStack(Items.ANVIL), Action.REFORGE),
+            new Entry("신화 각성", new ItemStack(Items.NETHER_STAR), Action.AWAKEN),
             new Entry("분해", new ItemStack(Items.GRINDSTONE), Action.SALVAGE),
             new Entry("장비 정보", new ItemStack(Items.SPYGLASS), Action.INFO),
             new Entry("뒤로", new ItemStack(Items.ARROW), Action.BACK)
@@ -60,6 +61,12 @@ public final class EquipmentRadialMenuScreen extends Screen {
         String detail = detail(entry.action(), held, rarity);
         graphics.text(this.font, title, cx - this.font.width(title) / 2, cy - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, detail, cx - this.font.width(detail) / 2, cy + 8, rarity > 0 ? 0xFFE0E0E0 : 0xFFFF7777, false);
+        if (entry.action() == Action.AWAKEN && rarity == 3 && !AscensionAffixes.isAwakened(held)) {
+            String costTop = "자수정256 · 다이아24 · 파편8";
+            String costBottom = "메아리64 · 드래곤숨결16";
+            graphics.text(this.font, costTop, cx - this.font.width(costTop) / 2, cy + 20, 0xFFD7B4FF, false);
+            graphics.text(this.font, costBottom, cx - this.font.width(costBottom) / 2, cy + 31, 0xFFD7B4FF, false);
+        }
         String caption = rarity > 0
                 ? AscensionAffixes.rarityName(held) + " · " + AscensionAffixes.affixSummary(held)
                 : "주 손에 희귀 장비를 드세요";
@@ -70,7 +77,8 @@ public final class EquipmentRadialMenuScreen extends Screen {
         if (action == Action.BACK) return "통합 메뉴로 돌아가기";
         if (rarity <= 0) return "정예 / 승천 / 신화 장비 필요";
         return switch (action) {
-            case REFORGE -> "비용 · " + EquipmentReforgeService.costText(rarity);
+            case REFORGE -> "비용 · " + EquipmentReforgeService.costText(held);
+            case AWAKEN -> rarity < 3 ? "신화 III 장비 필요" : (AscensionAffixes.isAwakened(held) ? "이미 각성 완료" : "4번째 affix 개방");
             case SALVAGE -> "환급 · " + EquipmentReforgeService.salvageText(rarity);
             case INFO -> AscensionAffixes.affixSummary(held);
             case BACK -> "통합 메뉴로 돌아가기";
@@ -87,8 +95,13 @@ public final class EquipmentRadialMenuScreen extends Screen {
         }
         if (action == Action.INFO) return true;
         if (this.minecraft.player == null || !AscensionAffixes.isAffixGear(this.minecraft.player.getMainHandItem())) return true;
-        int id = action == Action.REFORGE ? EquipmentReforgeService.ACTION_REFORGE : EquipmentReforgeService.ACTION_SALVAGE;
-        ClientPacketDistributor.sendToServer(new EquipmentActionPayload(id));
+        int id = switch (action) {
+            case REFORGE -> EquipmentReforgeService.ACTION_REFORGE;
+            case AWAKEN -> EquipmentReforgeService.ACTION_AWAKEN;
+            case SALVAGE -> EquipmentReforgeService.ACTION_SALVAGE;
+            default -> -1;
+        };
+        if (id >= 0) ClientPacketDistributor.sendToServer(new EquipmentActionPayload(id));
         this.minecraft.gui.setScreen(null);
         return true;
     }
@@ -112,7 +125,7 @@ public final class EquipmentRadialMenuScreen extends Screen {
     }
 
     private record Entry(String title, ItemStack icon, Action action) {}
-    private enum Action { REFORGE, SALVAGE, INFO, BACK }
+    private enum Action { REFORGE, AWAKEN, SALVAGE, INFO, BACK }
 
     private record WheelElement(RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
                                 int x, int y, int selected, ScreenRectangle scissorArea,
