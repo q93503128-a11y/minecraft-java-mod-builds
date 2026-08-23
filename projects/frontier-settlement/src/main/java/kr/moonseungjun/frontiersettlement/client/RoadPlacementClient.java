@@ -2,14 +2,11 @@ package kr.moonseungjun.frontiersettlement.client;
 
 import kr.moonseungjun.frontiersettlement.network.RoadPlacementRequestPayload;
 import kr.moonseungjun.frontiersettlement.network.RoadPreviewPayload;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -17,13 +14,6 @@ import java.util.List;
 import java.util.Set;
 
 public final class RoadPlacementClient {
-    public static final KeyMapping TOGGLE = new KeyMapping(
-            "key.frontier_settlement.road_mode", GLFW.GLFW_KEY_J, BuildingPlacementClient.CATEGORY);
-    public static final KeyMapping CONFIRM = new KeyMapping(
-            "key.frontier_settlement.road_confirm", GLFW.GLFW_KEY_ENTER, BuildingPlacementClient.CATEGORY);
-    public static final KeyMapping RESET = new KeyMapping(
-            "key.frontier_settlement.road_reset", GLFW.GLFW_KEY_BACKSPACE, BuildingPlacementClient.CATEGORY);
-
     private static boolean active;
     private static BlockPos start;
     private static BlockPos target = BlockPos.ZERO;
@@ -34,10 +24,16 @@ public final class RoadPlacementClient {
 
     private RoadPlacementClient() {}
 
-    public static void registerKeys(RegisterKeyMappingsEvent event) {
-        event.register(TOGGLE);
-        event.register(CONFIRM);
-        event.register(RESET);
+    public static void beginPlacement() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) return;
+        active = true;
+        start = null;
+        preview = null;
+        refreshTicks = 0;
+        target = resolveTarget(minecraft);
+        BuildingPlacementClient.cancel();
+        OutpostPlacementClient.cancel();
     }
 
     public static void tick(ClientTickEvent.Post event) {
@@ -46,25 +42,7 @@ public final class RoadPlacementClient {
             cancel();
             return;
         }
-
-        while (TOGGLE.consumeClick()) {
-            active = !active;
-            start = null;
-            preview = null;
-            refreshTicks = 0;
-            if (active) {
-                BuildingPlacementClient.cancel();
-                OutpostPlacementClient.cancel();
-                target = resolveTarget(minecraft);
-            }
-        }
-        if (!active) return;
-
-        while (RESET.consumeClick()) {
-            start = null;
-            preview = null;
-            refreshTicks = 0;
-        }
+        if (!active || minecraft.gui.screen() != null) return;
 
         BlockPos nextTarget = resolveTarget(minecraft);
         if (!nextTarget.equals(target)) {
@@ -73,20 +51,28 @@ public final class RoadPlacementClient {
             refreshTicks = 0;
         }
 
-        while (CONFIRM.consumeClick()) {
-            if (start == null) {
-                start = target;
-                preview = null;
-                refreshTicks = 0;
-            } else if (preview != null && preview.valid()) {
-                send(true);
-            }
-        }
-
         if (start != null && refreshTicks-- <= 0) {
             send(false);
             refreshTicks = 5;
         }
+    }
+
+    public static void confirm() {
+        if (!active) return;
+        if (start == null) {
+            start = target;
+            preview = null;
+            refreshTicks = 0;
+        } else if (preview != null && preview.valid()) {
+            send(true);
+        }
+    }
+
+    public static void resetStart() {
+        if (!active) return;
+        start = null;
+        preview = null;
+        refreshTicks = 0;
     }
 
     private static BlockPos resolveTarget(Minecraft minecraft) {

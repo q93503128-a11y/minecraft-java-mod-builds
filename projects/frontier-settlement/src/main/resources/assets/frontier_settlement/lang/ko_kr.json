@@ -1,13 +1,8 @@
 {
   "item.frontier_settlement.pioneer_marker": "개척 표식",
   "key.category.frontier_settlement.construction": "Frontier Settlement 건설",
-  "key.frontier_settlement.build_mode": "건설 모드 열기/닫기",
-  "key.frontier_settlement.next_building": "다음 건물",
+  "key.frontier_settlement.build_mode": "마을 건설 팔레트",
   "key.frontier_settlement.rotate_building": "건물 90도 회전",
-  "key.frontier_settlement.confirm_building": "건설 위치 확정",
-  "key.frontier_settlement.road_mode": "도로 계획 모드 열기/닫기",
-  "key.frontier_settlement.road_confirm": "도로 시작점/경로 확정",
-  "key.frontier_settlement.road_reset": "도로 시작점 다시 선택",
-  "key.frontier_settlement.outpost_mode": "전초기지 배치 모드 열기/닫기",
-  "key.frontier_settlement.outpost_confirm": "전초기지 건설 확정"
+  "key.frontier_settlement.confirm_building": "현재 계획 확정",
+  "key.frontier_settlement.road_reset": "도로 시작점 다시 선택"
 }

@@ -15,7 +15,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.function.Consumer;
 
 public final class SettlementNetwork {
-    private static final String PROTOCOL = "5";
+    private static final String PROTOCOL = "6";
     private static Consumer<SettlementSnapshotPayload> snapshotSink = payload -> {};
     private static Consumer<PlacementPreviewPayload> placementPreviewSink = payload -> {};
     private static Consumer<RoadPreviewPayload> roadPreviewSink = payload -> {};

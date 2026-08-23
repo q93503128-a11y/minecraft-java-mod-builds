@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.client;
 
+import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -19,8 +20,8 @@ public final class BuildingPaletteScreen extends Screen {
 
     @Override
     protected void init() {
-        panelWidth = Math.min(400, Math.max(300, this.width - 24));
-        panelHeight = Math.min(194, Math.max(170, this.height - 24));
+        panelWidth = Math.min(430, Math.max(320, this.width - 24));
+        panelHeight = Math.min(238, Math.max(212, this.height - 24));
         panelX = (this.width - panelWidth) / 2;
         panelY = Math.max(12, (this.height - panelHeight) / 2);
 
@@ -40,22 +41,39 @@ public final class BuildingPaletteScreen extends Screen {
         addBuilding(BuildingType.MINE, rightX, innerY + 86, columnWidth);
         addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 110, columnWidth);
 
+        int infraY = innerY + 151;
+        addRenderableWidget(Button.builder(Component.literal("도로 계획"), button -> {
+            RoadPlacementClient.beginPlacement();
+            this.minecraft.gui.setScreen(null);
+        }).bounds(innerX, infraY, columnWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("전초기지"), button -> {
+            OutpostPlacementClient.beginPlacement();
+            this.minecraft.gui.setScreen(null);
+        }).bounds(rightX, infraY, columnWidth, 20).build());
+
         addRenderableWidget(Button.builder(Component.literal("닫기"), button -> this.onClose())
                 .bounds(panelX + panelWidth - 58, panelY + 7, 46, 20)
                 .build());
     }
 
     private void addBuilding(BuildingType type, int x, int y, int width) {
-        Component label = Component.literal(type.displayName() + "   목 " + type.woodCost() + " · 석 " + type.stoneCost());
-        addRenderableWidget(Button.builder(label, button -> {
+        SettlementSnapshotPayload data = ClientSettlementState.snapshot();
+        boolean unlocked = (data.buildingUnlockMask() & (1 << type.ordinal())) != 0;
+        boolean affordable = data.wood() >= type.woodCost() && data.stone() >= type.stoneCost();
+        String state = unlocked ? (affordable ? "" : " · 자원부족") : " · 잠김";
+        Component label = Component.literal(type.displayName() + "  목" + type.woodCost()
+                + " 석" + type.stoneCost() + state);
+        Button button = Button.builder(label, clicked -> {
             BuildingPlacementClient.beginPlacement(type);
             this.minecraft.gui.setScreen(null);
-        }).bounds(x, y, width, 20).build());
+        }).bounds(x, y, width, 20).build();
+        button.active = unlocked;
+        addRenderableWidget(button);
     }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // Intentionally no blur or full-screen dim: the build palette is an in-world planning tool.
+        // No blur/full-screen dim: keep the Minecraft world readable while choosing construction.
     }
 
     @Override
@@ -74,9 +92,12 @@ public final class BuildingPaletteScreen extends Screen {
         graphics.text(this.font, Component.literal("물류"), innerX, innerY + 46, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("방어"), innerX, innerY + 92, 0xFFFFD58A, true);
         graphics.text(this.font, Component.literal("생산"), rightX, innerY, 0xFFFFD58A, true);
+        graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 137, 0xFFFFD58A, true);
 
-        String hint = "건물 선택 → 월드에서 R 회전 · Enter 건설   |   J 도로 · K 전초기지";
-        graphics.text(this.font, Component.literal(hint), panelX + 12, panelY + panelHeight - 15, 0xFFD0D0D0, false);
+        String lock1 = "잠금: 농장←주택 · 채석장←벌목소 · 광산←채석장+전초기지 · 창고←농장";
+        String lock2 = "대장간←광산 · 경비초소←마을 단계   |   선택 후 R 회전 · Enter 확정";
+        graphics.text(this.font, Component.literal(lock1), panelX + 12, panelY + panelHeight - 31, 0xFFB8B8B8, false);
+        graphics.text(this.font, Component.literal(lock2), panelX + 12, panelY + panelHeight - 17, 0xFFD0D0D0, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 

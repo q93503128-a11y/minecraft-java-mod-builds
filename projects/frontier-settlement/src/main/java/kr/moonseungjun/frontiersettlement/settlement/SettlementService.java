@@ -134,11 +134,21 @@ public final class SettlementService {
         return !below.isAir() && !below.canBeReplaced();
     }
 
+    private static int buildingUnlockMask(SettlementData data) {
+        int mask = 0;
+        for (BuildingType type : BuildingType.values()) {
+            if (SettlementConstructionService.lockedReason(data, type) == null) {
+                mask |= 1 << type.ordinal();
+            }
+        }
+        return mask;
+    }
+
     public static void sync(ServerPlayer player, SettlementData data) {
         SettlementResources r = data.resources();
         SettlementNetwork.sendSnapshot(player, new SettlementSnapshotPayload(
                 data.founded(), r.wood(), r.stone(), r.metal(), r.food(), data.population(),
-                SettlementTier.current(data).displayName()));
+                SettlementTier.current(data).displayName(), buildingUnlockMask(data)));
     }
 
     public static void broadcast(MinecraftServer server, SettlementData data) {

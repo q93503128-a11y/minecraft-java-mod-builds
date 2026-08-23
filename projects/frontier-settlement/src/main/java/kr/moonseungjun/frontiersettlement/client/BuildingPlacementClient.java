@@ -18,12 +18,14 @@ import org.lwjgl.glfw.GLFW;
 public final class BuildingPlacementClient {
     public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(
             Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "construction"));
-    public static final KeyMapping TOGGLE = new KeyMapping(
+    public static final KeyMapping PALETTE = new KeyMapping(
             "key.frontier_settlement.build_mode", GLFW.GLFW_KEY_B, CATEGORY);
     public static final KeyMapping ROTATE = new KeyMapping(
             "key.frontier_settlement.rotate_building", GLFW.GLFW_KEY_R, CATEGORY);
     public static final KeyMapping CONFIRM = new KeyMapping(
             "key.frontier_settlement.confirm_building", GLFW.GLFW_KEY_ENTER, CATEGORY);
+    public static final KeyMapping RESET = new KeyMapping(
+            "key.frontier_settlement.road_reset", GLFW.GLFW_KEY_BACKSPACE, CATEGORY);
 
     private static boolean active;
     private static BuildingType selectedType = BuildingType.HOUSE;
@@ -38,36 +40,47 @@ public final class BuildingPlacementClient {
 
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
-        event.register(TOGGLE);
+        event.register(PALETTE);
         event.register(ROTATE);
         event.register(CONFIRM);
+        event.register(RESET);
     }
 
     public static void tick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
-            cancel();
+            cancelAllModes();
             return;
         }
 
-        while (TOGGLE.consumeClick()) {
-            cancel();
-            RoadPlacementClient.cancel();
-            OutpostPlacementClient.cancel();
-            if (minecraft.gui.screen() instanceof BuildingPaletteScreen) {
-                minecraft.gui.setScreen(null);
-            } else {
-                minecraft.gui.setScreen(new BuildingPaletteScreen());
-            }
+        while (PALETTE.consumeClick()) {
+            cancelAllModes();
+            minecraft.gui.setScreen(new BuildingPaletteScreen());
         }
-        if (!active) return;
+        if (minecraft.gui.screen() != null) return;
+
+        while (RESET.consumeClick()) {
+            if (RoadPlacementClient.active()) RoadPlacementClient.resetStart();
+        }
 
         while (ROTATE.consumeClick()) {
+            if (!active) continue;
             rotation = rotation.next();
             preview = null;
             refreshTicks = 0;
         }
 
+        while (CONFIRM.consumeClick()) {
+            if (active) {
+                if (preview != null && preview.valid() && previewMatchesSelection()) send(true);
+            } else if (RoadPlacementClient.active()) {
+                RoadPlacementClient.confirm();
+            } else if (OutpostPlacementClient.active()) {
+                OutpostPlacementClient.confirm();
+            }
+        }
+
+        if (!active) return;
         BlockPos nextTarget = resolveTarget(minecraft);
         if (!nextTarget.equals(target)) {
             target = nextTarget;
@@ -77,10 +90,6 @@ public final class BuildingPlacementClient {
         if (refreshTicks-- <= 0) {
             send(false);
             refreshTicks = 5;
-        }
-
-        while (CONFIRM.consumeClick()) {
-            if (preview != null && preview.valid() && previewMatchesSelection()) send(true);
         }
     }
 
@@ -93,6 +102,12 @@ public final class BuildingPlacementClient {
         refreshTicks = 0;
         rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
         target = resolveTarget(minecraft);
+        RoadPlacementClient.cancel();
+        OutpostPlacementClient.cancel();
+    }
+
+    public static void cancelAllModes() {
+        cancel();
         RoadPlacementClient.cancel();
         OutpostPlacementClient.cancel();
     }

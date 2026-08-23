@@ -22,8 +22,6 @@ public final class FrontierSettlementClient {
         SettlementNetwork.setOutpostPreviewSink(OutpostPlacementClient::acceptPreview);
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
-        modBus.addListener(RegisterKeyMappingsEvent.class, RoadPlacementClient::registerKeys);
-        modBus.addListener(RegisterKeyMappingsEvent.class, OutpostPlacementClient::registerKeys);
         NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(RoadPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(OutpostPlacementClient::tick);

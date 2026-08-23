@@ -28,17 +28,17 @@ public final class SettlementHudOverlay {
         if (BuildingPlacementClient.active()) {
             drawModePanel(graphics, minecraft, x, y + 23,
                     BuildingPlacementClient.statusLine(),
-                    "B 종료   N 건물   R 회전   Enter 건설");
+                    "B 팔레트   R 회전   Enter 건설");
         } else if (RoadPlacementClient.active()) {
             String controls = RoadPlacementClient.start() == null
-                    ? "J 종료   Enter 시작점"
-                    : "J 종료   Backspace 시작점 재선택   Enter 확정";
+                    ? "B 팔레트   Enter 시작점"
+                    : "B 팔레트   Backspace 시작점 재선택   Enter 확정";
             drawModePanel(graphics, minecraft, x, y + 23,
                     RoadPlacementClient.statusLine(), controls);
         } else if (OutpostPlacementClient.active()) {
             drawModePanel(graphics, minecraft, x, y + 23,
                     OutpostPlacementClient.statusLine(),
-                    "K 종료   도로 끝 조준   Enter 전초기지 건설");
+                    "B 팔레트   도로 끝 조준   Enter 건설");
         }
     }
 
