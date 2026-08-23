@@ -13,7 +13,7 @@ import java.util.Set;
 
 public final class SettlementResidentRoutineService {
     private static final Set<String> TOWN_WORKER_NAMES = Set.of(
-            "벌목 주민", "농사 주민", "채석 주민", "광산 주민");
+            "벌목 주민", "농사 주민", "채석 주민", "광산 주민", "작업장 주민");
     private static final int[] REST_X = {2, 6, 2, 6};
     private static final int[] REST_Z = {3, 3, 5, 5};
     private static final double OUTPOST_REST_RADIUS_SQR = 32.0D * 32.0D;
