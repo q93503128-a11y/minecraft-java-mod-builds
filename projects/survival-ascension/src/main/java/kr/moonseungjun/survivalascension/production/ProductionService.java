@@ -5,10 +5,12 @@ import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public final class ProductionService {
     public static final String ACTION_PREFIX = "produce:";
     public static final String ACTION_STATUS = "production_status";
+    public static final String ACTION_DISPATCH = "dispatch_supply";
 
     private ProductionService() {}
 
@@ -23,6 +25,10 @@ public final class ProductionService {
         }
         if (ACTION_STATUS.equals(action)) {
             sendStatus(player);
+            return;
+        }
+        if (ACTION_DISPATCH.equals(action)) {
+            dispatchSupply(player);
             return;
         }
         if (!action.startsWith(ACTION_PREFIX)) {
@@ -65,7 +71,20 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7보급권은 다음 정점 사냥에서 금32를 대체하고 자수정 비용을 32→16으로 낮춥니다. 메아리8은 그대로 필요합니다."));
+        player.sendSystemMessage(Component.literal("§7보급권 1개 출고: 금32 + 자수정16 + 메아리2. 정점 사냥·시련·장비 재료로 자유롭게 사용합니다."));
+    }
+
+    private static void dispatchSupply(ServerPlayer player) {
+        ProductionData data = ProductionData.get(player);
+        if (!data.consumeSupplyCharge(player)) {
+            player.sendSystemMessage(Component.literal("§3[산업 출고] §f사용 가능한 현장 보급권이 없습니다."));
+            return;
+        }
+        giveOrDrop(player, new ItemStack(Items.GOLD_INGOT, 32));
+        giveOrDrop(player, new ItemStack(Items.AMETHYST_SHARD, 16));
+        giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 2));
+        player.sendSystemMessage(Component.literal("§b[산업 출고] §f현장 보급 물자 지급: §6금32 §7· §d자수정16 §7· §b메아리2"
+                + " §7· 남은 보급권 " + data.supplyCharges(player) + "/" + ProductionData.MAX_SUPPLY_CHARGES));
     }
 
     private static boolean hasAll(ServerPlayer player, ProductionProgram program) {
@@ -92,5 +111,9 @@ public final class ProductionService {
             remaining -= take;
         }
         player.getInventory().setChanged();
+    }
+
+    private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 }
