@@ -36,7 +36,7 @@ Primary direct interactions remain approximately:
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
-Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics and Alpha.35 road terrain adaptation require no new player logistics/road menus.
+Market sale intent is expressed by putting an eligible relic in the market barrel. Workshop maintenance intent is expressed by putting an eligible weapon in the workshop service barrel. Cart-station logistics, Alpha.35 road terrain adaptation and Alpha.36 watchtower defense require no new player management menus.
 
 ## 3. Multiplayer authority
 
@@ -67,7 +67,7 @@ Functional settlement buildings use official blueprints. Player/vanilla building
 
 Original target remains roughly **15–20 meaningful building families**.
 
-Current Alpha.35 functional families: **11**.
+Current Alpha.36 functional families: **12**.
 
 - house;
 - lumber camp;
@@ -78,10 +78,11 @@ Current Alpha.35 functional families: **11**.
 - blacksmith;
 - workshop;
 - guard post;
+- watchtower;
 - market;
 - cart station.
 
-Original families still to close include construction office, watchtower, barracks and advanced workshop. Town center currently exists through the civic-core progression rather than a separate placement family.
+Original families still to close include construction office, barracks and advanced workshop. Town center currently exists through the civic-core progression rather than a separate placement family.
 
 Construction UX:
 
@@ -109,11 +110,21 @@ Terrain rules:
 - roof before support and visually floating foundations are invalid;
 - enclosed completed buildings need deliberate windows/lighting.
 
-## 6. Citizens and jobs
+Tall structures such as Alpha.36 watchtowers reuse the persisted scaffold/building workflow. They do not get an instant-placement exception.
+
+## 6. Citizens, jobs and defense roles
 
 Vanilla villager trading/professions are not the settlement progression authority.
 
 Implemented role families include builder, logger, farmer, quarry worker, miner, workshop artisan, guards/service behavior, market merchant presentation and road-bound transport.
+
+Defense role separation:
+
+- guard post: close local routine defense;
+- watchtower: loaded-area longer-range threat observation/response with one tower-assigned response guard;
+- barracks: later formal multi-soldier/military resident layer.
+
+The watchtower must not silently become the barracks system. Watch guards are defense units and do not inflate settlement population.
 
 Still planned from original scope: stronger blacksmith presentation, merchant depth, specialist crafter/high-tier crafting and soldier/barracks roles.
 
@@ -176,7 +187,7 @@ Roads should avoid destructive tunneling and reckless cliff modification. Alpha.
 - completed roads still persist the ordinary centerline `RoadSegment`, so logistics authority remains unchanged;
 - deep/large/unsafe crossings, dangerous fluids, 2+ block abrupt grades, protected blocks and unsafe headroom remain rejected.
 
-Large ravine bridges, tunnels, retaining-wall roads and monumental bridge architecture remain outside this Alpha.35 slice and should be treated as later terrain/civil-engineering breadth rather than silently generated.
+Large ravine bridges, tunnels, retaining-wall roads and monumental bridge architecture remain later civil-engineering breadth rather than something to generate silently.
 
 No early teleport network; roads/logistics must retain meaning.
 
@@ -195,9 +206,23 @@ tier-visible public works may make established territory more readable, but only
 
 This is not a constant wave-defense game.
 
-- guards handle routine local threats;
+- guard posts handle close routine local threats;
+- Alpha.36 watchtowers extend loaded-area observation/response without starting mandatory waves;
 - occasional meaningful threats are allowed;
 - do not spam mandatory waves.
+
+Alpha.36 watchtower rule:
+
+- unlock after at least one guard post;
+- physical 7×7 tower, wood 96 / stone 72, clear height 14;
+- tower is constructed through normal grading, hauling and scaffolding;
+- one tagged iron-golem response guard is assigned to each loaded tower;
+- every 100 ticks it may select a nearby loaded `Monster` inside roughly 40 horizontal blocks;
+- creepers are excluded from forced watchtower targeting to avoid dragging explosion risk toward settlement infrastructure;
+- no eligible threat means the guard drops the forced target and returns toward the tower;
+- no chunk force-loading and no global radar claim;
+- external hostile mobs inheriting the normal `Monster` hierarchy may participate automatically, but actual companion behavior must be tested;
+- a future player-facing alert UI must stay compact rather than becoming another management dashboard.
 
 Exploration content should include ruins, mines, camps, nests, structures, dungeons, caravans, rare resources, bosses and rare NPCs primarily through the external content stack where strong implementations already exist.
 
@@ -265,7 +290,6 @@ The lock stays `candidate_runtime_lock` until all entries are launched together 
 
 ### Alpha.34 cart station
 
-- first original-scope cart-station logistics building;
 - road-adjacent physical freight depot;
 - four freight barrels become physical settlement storage;
 - existing road-bound transport deposits there preferentially;
@@ -280,6 +304,17 @@ The lock stays `candidate_runtime_lock` until all entries are launched together 
 - bridge profile is save-compatible optional active-construction metadata;
 - physical stone hauling/cost remains authoritative;
 - no free economic bridge supports, water deletion or second road/logistics backend.
+
+### Alpha.36 watchtower defense
+
+- original watchtower family becomes a real physical building;
+- guard-post prerequisite;
+- tall climbable tower uses normal builder/scaffold construction;
+- one persistently tagged response guard per loaded tower;
+- 40-block loaded threat response at 100-tick cadence;
+- creepers excluded from forced targeting;
+- response guard returns home when no eligible threat remains;
+- no new key, no mandatory wave loop, no population inflation and no chunk force-load.
 
 ## 12. UI and controls
 
@@ -298,6 +333,8 @@ Normal gameplay controls remain:
 - `R`: rotate current building placement;
 - `Enter`: confirm the active building/road/outpost placement;
 - `Backspace`: reset/cancel the road start selection step.
+
+Alpha.36 adds watchtower to the existing compact defense section and adds no new gameplay key.
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
@@ -324,14 +361,14 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.35
+## 14. Current playable slice after Alpha.36
 
 The playable slice now includes:
 
 - one shared authoritative settlement;
 - protected founding stockpile and civic core;
 - compact B/R/Enter/Backspace interaction;
-- **11 functional building families**;
+- **12 functional building families**;
 - physical site grading and construction hauling;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
@@ -344,22 +381,23 @@ The playable slice now includes:
 - Alpha.32 physical village market;
 - Alpha.33 staffed physical workshop;
 - Alpha.34 road-adjacent physical cart-station freight hub with 32-item transport trips;
-- Alpha.35 persisted road bridge profile + real-stone stair/bridge paving.
+- Alpha.35 persisted road bridge profile + real-stone stair/bridge paving;
+- Alpha.36 climbable physical watchtower + loaded long-range response guard.
 
 This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md` remains authoritative for unfinished breadth.
 
-## 15. Next priorities after Alpha.35
+## 15. Next priorities after Alpha.36
 
 Unless real-play regression overrides them:
 
-1. require final Alpha.35 source audit + Java25 build + JAR verify on the final docs/source SHA;
-2. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
-3. continue missing original building breadth without new controls: watchtower/barracks and construction office are strong candidates;
-4. add advanced workshop/high-tier crafting that consumes external rare materials rather than inventing a parallel item ecosystem;
-5. add river/coast fishing/trade and dangerous-region military outpost specializations;
+1. require final Alpha.36 source audit + Java25 build + JAR verify on the final docs/source SHA;
+2. continue the military track with barracks/formal soldier roles without turning the game into constant wave defense;
+3. add construction office and advanced workshop/high-tier crafting while reusing external rare materials/content;
+4. add river/coast fishing/trade and dangerous-region military outpost specializations;
+5. assemble and launch the full `COMPANION_LOCK.json` stack in a fresh 26.2 NeoForge world before declaring external runtime compatibility;
 6. design coarse unloaded simulation without breaking physical item authority;
-7. close UI status/progress/notification gaps;
-8. real-play audit Alpha.35 stair facing, bridge bank transitions, builder navigation and Terralith water/terrain profiles;
-9. perform full survival + multiplayer acceptance across founding -> settlement -> roads/outposts -> freight station -> external dungeon loot -> market/workshop -> higher tiers.
+7. close UI status/progress/notification gaps, including compact watchtower threat feedback if useful;
+8. real-play audit tower construction/scaffolds, guard return behavior, Alpha.35 stair/bridge navigation and companion hostile behavior;
+9. perform full survival + multiplayer acceptance across founding -> settlement -> roads/outposts -> freight station -> external dungeon loot -> market/workshop -> defense -> higher tiers.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
