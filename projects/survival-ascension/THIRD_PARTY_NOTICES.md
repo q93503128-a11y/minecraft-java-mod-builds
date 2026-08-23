@@ -73,7 +73,7 @@ Survival Ascension adapts timed sequential-wave encounter lifecycle, boss-bar st
 Source project: `Creators-of-Create/Create`  
 Current repository `LICENSE.md`: code MIT; all files under `./src/main/resources/assets/` All Rights Reserved.
 
-Survival Ascension 0.28 studies only the high-level product philosophy of turning large throughput into multi-input processing stages and logistics value. 0.29 additionally studies the product-level idea visible in Create's modern logistics system that stock can be summarized/requested and local restocking can pull from linked inventory rather than requiring every item in the player's hand.
+Survival Ascension 0.28 studies only the high-level product philosophy of turning large throughput into multi-input processing stages and logistics value. 0.29 additionally studies the product-level stock-backed request/local-restocking idea visible in Create's modern logistics system: stock can be summarized/requested and local restocking can pull from linked inventory rather than requiring every item in the player's hand.
 
 The Survival Ascension implementation is independent: `field_depots_v1`, vanilla Barrel block positions, same-dimension/radius checks, loaded-chunk-only container access, `mayInteract`, and player-first exact-item consumption. No Create logistics source implementation, Packager/Stock Link/Stock Ticker/Requester code, package formats, blocks, assets, textures, models, sounds, recipes, processing data, machines, GUI/data, namespaces or Ponder content are copied or bundled. Because no substantial Create software portion is incorporated, no new Create runtime payload is added.
 
