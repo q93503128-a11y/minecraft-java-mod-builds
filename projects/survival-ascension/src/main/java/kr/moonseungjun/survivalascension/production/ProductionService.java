@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.production;
 
+import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import net.minecraft.network.chat.Component;
@@ -14,6 +15,7 @@ public final class ProductionService {
     public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
     public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
     public static final String ACTION_FIELD_RECOVERY = "field_recovery";
+    public static final String ACTION_FIELD_OPERATION = "field_operation";
 
     private ProductionService() {}
 
@@ -31,6 +33,7 @@ public final class ProductionService {
         if (ACTION_DEPOT_TOGGLE.equals(action)) { FieldDepotService.toggleNearest(player); return; }
         if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
         if (ACTION_FIELD_RECOVERY.equals(action)) { FieldRecoveryService.configure(player); return; }
+        if (ACTION_FIELD_OPERATION.equals(action)) { ExpeditionOperationSystem.startOrStatus(player); return; }
         if (!action.startsWith(ACTION_PREFIX)) {
             player.sendSystemMessage(Component.literal("§c[산업 생산망] §f알 수 없는 생산 작업입니다."));
             return;
@@ -71,10 +74,11 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7보급권: 실물 출고1 / 배럴 거점 등록1 / 전초기지 승격2 / 현장 복귀 계약1. 출고1회는 금32+자수정16+메아리2."));
+        player.sendSystemMessage(Component.literal("§7보급권: 실물 출고1 / 배럴 거점1 / 전초 승격2 / 복귀 계약1 / 원정 작전1. 출고1회는 금32+자수정16+메아리2."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
         FieldRecoveryService.sendStatus(player);
+        ExpeditionOperationSystem.sendStatus(player);
     }
 
     private static void dispatchSupply(ServerPlayer player) {
