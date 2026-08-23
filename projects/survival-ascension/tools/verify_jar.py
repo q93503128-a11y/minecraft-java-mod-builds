@@ -39,6 +39,9 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/apex/ApexArchetype.class",
         "kr/moonseungjun/survivalascension/apex/ApexHuntData.class",
         "kr/moonseungjun/survivalascension/apex/ApexHuntSystem.class",
+        "kr/moonseungjun/survivalascension/production/ProductionProgram.class",
+        "kr/moonseungjun/survivalascension/production/ProductionData.class",
+        "kr/moonseungjun/survivalascension/production/ProductionService.class",
         "kr/moonseungjun/survivalascension/elite/EliteMobSystem.class",
         "kr/moonseungjun/survivalascension/elite/WarbandDirector.class",
         "kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class",
@@ -50,6 +53,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.class",
+        "kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.class",
         "kr/moonseungjun/survivalascension/client/GuideScreen.class",
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
@@ -92,5 +96,6 @@ jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding=
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("apex_runtime=present")
+print("production_runtime=present")
 print(f"size={jar.stat().st_size}")
 print(f"sha256={sha}")
