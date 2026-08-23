@@ -11,12 +11,8 @@ public final class SettlementGuidanceService {
             String name = type == null ? "건물" : type.displayName();
             return "진행 중 · " + name + " " + SettlementConstructionService.phaseLabel(data.construction());
         }
-        if (data.roadConstruction().active()) {
-            return "진행 중 · " + SettlementRoadService.phaseLabel(data.roadConstruction());
-        }
-        if (data.outpostConstruction().active()) {
-            return "진행 중 · " + SettlementOutpostService.phaseLabel(data.outpostConstruction());
-        }
+        if (data.roadConstruction().active()) return "진행 중 · " + SettlementRoadService.phaseLabel(data.roadConstruction());
+        if (data.outpostConstruction().active()) return "진행 중 · " + SettlementOutpostService.phaseLabel(data.outpostConstruction());
 
         if (data.houseCount() < 1) return buildingGoal(data, BuildingType.HOUSE);
         if (data.lumberCampCount() < 1) return buildingGoal(data, BuildingType.LUMBER_CAMP);
@@ -37,7 +33,8 @@ public final class SettlementGuidanceService {
         if (data.population() < 16) return populationGoal(data, 16);
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
         if (data.buildingCount(BuildingType.WATCHTOWER) < 1) return buildingGoal(data, BuildingType.WATCHTOWER);
-        return "영지 운영 · 도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망을 계속 확장";
+        if (data.buildingCount(BuildingType.BARRACKS) < 1) return buildingGoal(data, BuildingType.BARRACKS);
+        return "영지 운영 · 도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망·주둔 병력을 계속 확장";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
