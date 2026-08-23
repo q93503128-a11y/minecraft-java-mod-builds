@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.harvesting;
 
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.core.BlockPos;
@@ -10,7 +11,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -56,27 +56,10 @@ public final class IrrigationReplantService {
         if (!current.canBeReplaced()) return;
         BlockState young = kind.youngState();
         if (!young.canSurvive(level, pos)) return;
-        if (!hasSeed(player, kind.seed())) return;
+        if (!FieldDepotService.hasMaterial(player, kind.seed())) return;
         if (EventHooks.onBlockPlace(player, BlockSnapshot.create(level.dimension(), level, pos), Direction.UP)) return;
         if (!level.setBlockAndUpdate(pos, young)) return;
-        consumeOne(player, kind.seed());
-    }
-
-    private static boolean hasSeed(ServerPlayer player, Item item) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            if (player.getInventory().getItem(slot).is(item)) return true;
-        }
-        return false;
-    }
-
-    private static void consumeOne(ServerPlayer player, Item item) {
-        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
-            ItemStack stack = player.getInventory().getItem(slot);
-            if (!stack.is(item)) continue;
-            stack.shrink(1);
-            player.getInventory().setChanged();
-            return;
-        }
+        if (!FieldDepotService.consumeOne(player, kind.seed())) level.removeBlock(pos, false);
     }
 
     private enum ReplantKind {
