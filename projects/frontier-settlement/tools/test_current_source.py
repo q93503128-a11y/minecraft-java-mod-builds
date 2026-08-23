@@ -29,7 +29,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.27'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.28'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -126,6 +126,20 @@ if 'while (placed < 2' in outpost:
 if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
     raise SystemExit('outpost construction must not create loose drops')
 
+production = (JAVA / 'settlement/SettlementOutpostProductionService.java').read_text(encoding='utf-8')
+for token in ('PRODUCTION_WORKER_TAG', 'PRODUCTION_OUTPOST_TAG_PREFIX', 'outpostLoaded(',
+              'level.hasChunkAt(', 'LUMBER_WORK_PERIOD_TICKS = 100', 'QUARRY_WORK_PERIOD_TICKS = 80',
+              'MINING_WORK_PERIOD_TICKS = 160', 'AGRICULTURE_WORK_PERIOD_TICKS = 120',
+              'MAX_LOGS = 4', 'MAX_STONE = 3', 'MAX_CROPS = 4', 'workDue(',
+              'worker.swing(InteractionHand.MAIN_HAND)', 'pristineLegacyAgriculturePlot(',
+              'initializeSpecializationSite(', 'findMatureCrop(', 'isMatureWheat(',
+              '!level.getBlockState(pos.above()).isAir()', 'level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3)'):
+    if token not in production: raise SystemExit(f'alpha.28 outpost production invariant missing: {token}')
+if 'ensureAgriculturePlot(level, data, outpost)' in production:
+    raise SystemExit('agriculture plot must not be rebuilt every production tick')
+if 'forceChunk' in production or 'setChunkForced' in production:
+    raise SystemExit('outpost production must not force-load remote chunks')
+
 logistics = (JAVA / 'settlement/SettlementOutpostLogisticsService.java').read_text(encoding='utf-8')
 for token in ('TRANSPORT_WORKER_TAG', 'TRANSPORT_OUTPOST_TAG_PREFIX', 'migrateLegacyWorkers(',
               'routeFromTown(', 'appendRoadPrefixFromTown(', 'road.centers()', 'ROAD_WAYPOINT_STRIDE = 3',
@@ -179,4 +193,4 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.27 source audit: PASS')
+print('Frontier Settlement alpha.28 source audit: PASS')
