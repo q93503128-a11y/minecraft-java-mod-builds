@@ -22,17 +22,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-/**
- * Explicit high-circle utility state transitions. These spells are intentionally not represented
- * by generic potion/control aliases: Clone creates another creature, True Polymorph swaps the
- * target's active body, Maze removes the target from combat, and Etherealness phases the caster.
- */
+/** High-circle utility spells with real persistent state instead of generic potion aliases. */
 public final class HighUtilitySpellService {
     private static final Set<String> HANDLED = Set.of("clone", "true_polymorph", "maze", "etherealness");
     private static final int CLONE_TICKS = 1800;
@@ -47,9 +42,7 @@ public final class HighUtilitySpellService {
 
     private HighUtilitySpellService() {}
 
-    public static boolean handles(String spellId) {
-        return HANDLED.contains(spellId);
-    }
+    public static boolean handles(String spellId) { return HANDLED.contains(spellId); }
 
     public static boolean execute(ServerPlayer player, String spellId, double range, double power,
                                   CastTargetSnapshot snapshot) {
@@ -112,9 +105,9 @@ public final class HighUtilitySpellService {
         ServerLevel level = (ServerLevel) player.level();
         CloneState old = CLONES.remove(player.getUUID());
         if (old != null) discardClone(old);
-
         Entity rawClone = source.getType().create(level, EntitySpawnReason.EVENT);
         if (!(rawClone instanceof Mob clone)) return false;
+
         Vec3 look = player.getLookAngle();
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
         right = right.lengthSqr() < 1.0E-8 ? new Vec3(1.0, 0.0, 0.0) : right.normalize();
@@ -127,15 +120,15 @@ public final class HighUtilitySpellService {
         clone.setPersistenceRequired();
         clone.addTag("arcanecircle_clone");
         clone.addTag("arcanecircle_clone_owner_" + player.getUUID());
-        if (source.getTarget() != null && source.getTarget().isAlive() && source.getTarget() != player)
-            clone.setTarget(source.getTarget());
+        LivingEntity initial = source.getTarget();
+        if (initial != null && initial.isAlive() && initial != player && !player.isAlliedTo(initial)) clone.setTarget(initial);
         level.addFreshEntityWithPassengers(clone);
         CLONES.put(player.getUUID(), new CloneState(level, player.getUUID(), clone.getUUID(),
                 level.getGameTime() + CLONE_TICKS));
         level.playSound(null, clone.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                 SoundSource.PLAYERS, 1.05F, .72F);
         ArcaneNoticeService.push(player, Component.literal("§d[클론] §f" + source.getName().getString()
-                + "의 전투 육체를 90초간 복제했습니다. §7클론은 시전자를 호위하며 시전자나 자신을 공격하는 적을 자동 반격합니다."), 110);
+                + "의 전투 육체를 90초간 복제했습니다. §7한 번에 1체만 유지되며 시전자나 자신을 공격하는 적을 자동 반격합니다."), 110);
         return true;
     }
 
@@ -155,9 +148,43 @@ public final class HighUtilitySpellService {
         AttributeInstance from = source.getAttribute(attribute);
         AttributeInstance to = clone.getAttribute(attribute);
         if (from == null || to == null) return;
-        double value = Double.isNaN(explicitMinimum) ? from.getBaseValue()
-                : Math.max(explicitMinimum, from.getBaseValue());
+        double value = Double.isNaN(explicitMinimum) ? from.getBaseValue() : Math.max(explicitMinimum, from.getBaseValue());
         to.setBaseValue(value);
+    }
+
+    private static void tickClones(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, CloneState>> iterator = CLONES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            CloneState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity rawOwner = level.getEntity(state.ownerId);
+            Entity rawClone = level.getEntity(state.cloneId);
+            if (!(rawOwner instanceof ServerPlayer owner) || !owner.isAlive() || owner.isSpectator()
+                    || !(rawClone instanceof Mob clone) || !clone.isAlive() || clone.isRemoved()
+                    || now >= state.expiresAt) {
+                discardClone(state);
+                iterator.remove();
+                continue;
+            }
+            LivingEntity current = clone.getTarget();
+            if (current != null && (!current.isAlive() || current == owner || owner.isAlliedTo(current))) clone.setTarget(null);
+            if (clone.getTarget() == null) {
+                Mob threat = level.getEntitiesOfClass(Mob.class, clone.getBoundingBox().inflate(24.0),
+                                candidate -> candidate != clone && candidate.isAlive() && !candidate.isRemoved()
+                                        && !owner.isAlliedTo(candidate)
+                                        && (candidate.getTarget() == owner || candidate.getTarget() == clone))
+                        .stream().min(Comparator.comparingDouble(clone::distanceToSqr)).orElse(null);
+                if (threat != null) clone.setTarget(threat);
+            }
+            if (clone.getTarget() == null && clone.distanceToSqr(owner) > 100.0) clone.getNavigation().moveTo(owner, 1.16);
+        }
+    }
+
+    private static void discardClone(CloneState state) {
+        Entity rawClone = state.level.getEntity(state.cloneId);
+        if (rawClone instanceof Mob clone && !clone.isRemoved()) clone.discard();
+        Entity rawOwner = state.level.getEntity(state.ownerId);
+        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "clone");
     }
 
     private static boolean truePolymorph(ServerPlayer player, CastTargetSnapshot snapshot) {
@@ -165,7 +192,6 @@ public final class HighUtilitySpellService {
         if (original == null) return false;
         PolymorphState existing = POLYMORPHS.remove(original.getUUID());
         if (existing != null) restorePolymorph(existing, false);
-
         ServerLevel level = (ServerLevel) player.level();
         Mob proxy = createPolymorphBody(level, original);
         if (proxy == null) return false;
@@ -177,10 +203,8 @@ public final class HighUtilitySpellService {
         proxy.setPersistenceRequired();
         proxy.addTag("arcanecircle_true_polymorph_proxy");
         level.addFreshEntityWithPassengers(proxy);
-
-        long expiresAt = level.getGameTime() + TRUE_POLYMORPH_TICKS;
         PolymorphState state = new PolymorphState(level, player.getUUID(), original.getUUID(), proxy.getUUID(),
-                anchor, original.getYRot(), original.getXRot(), original.getHealth(), expiresAt,
+                anchor, original.getYRot(), original.getXRot(), original.getHealth(), level.getGameTime() + TRUE_POLYMORPH_TICKS,
                 original.isInvisible(), original.isInvulnerable(), original.isNoGravity(), original.isSilent(),
                 original.isNoAi(), original.noPhysics);
         POLYMORPHS.put(original.getUUID(), state);
@@ -201,6 +225,46 @@ public final class HighUtilitySpellService {
         };
     }
 
+    private static void tickPolymorphs(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, PolymorphState>> iterator = POLYMORPHS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            PolymorphState state = iterator.next().getValue();
+            if (state.level != level) continue;
+            Entity rawProxy = level.getEntity(state.proxyId);
+            if (rawProxy instanceof Mob proxy && proxy.isAlive() && !proxy.isRemoved()) {
+                state.lastPosition = proxy.position();
+                state.lastYRot = proxy.getYRot();
+                state.lastXRot = proxy.getXRot();
+                if (now < state.expiresAt) continue;
+                restorePolymorph(state, false);
+                iterator.remove();
+                continue;
+            }
+            restorePolymorph(state, true);
+            iterator.remove();
+        }
+    }
+
+    private static void restorePolymorph(PolymorphState state, boolean proxyBroken) {
+        Entity rawOriginal = state.level.getEntity(state.originalId);
+        if (!(rawOriginal instanceof Mob original)) return;
+        Entity rawProxy = state.level.getEntity(state.proxyId);
+        if (rawProxy instanceof Mob proxy && !proxy.isRemoved()) {
+            state.lastPosition = proxy.position();
+            state.lastYRot = proxy.getYRot();
+            state.lastXRot = proxy.getXRot();
+            proxy.discard();
+        }
+        restoreMobFlags(original, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
+                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
+        Vec3 pos = state.lastPosition == null ? state.anchor : state.lastPosition;
+        original.snapTo(pos.x, pos.y, pos.z, state.lastYRot, state.lastXRot);
+        original.setDeltaMovement(Vec3.ZERO);
+        original.setHealth(proxyBroken ? Math.max(1.0F, state.originalHealth * .35F) : state.originalHealth);
+        Entity rawOwner = state.level.getEntity(state.ownerId);
+        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "true_polymorph");
+    }
+
     private static boolean maze(ServerPlayer player, CastTargetSnapshot snapshot) {
         Mob target = targetMob(player, snapshot);
         if (target == null) return false;
@@ -219,6 +283,32 @@ public final class HighUtilitySpellService {
         ArcaneNoticeService.push(player, Component.literal("§5[미궁] §f" + target.getName().getString()
                 + "을 24초간 전장에서 완전히 추방했습니다. §7귀환 뒤 6초 동안 미궁 후유증으로 방향감각과 전투력이 흔들립니다."), 100);
         return true;
+    }
+
+    private static void tickMazes(ServerLevel level, long now) {
+        Iterator<Map.Entry<UUID, MazeState>> iterator = MAZES.entrySet().iterator();
+        while (iterator.hasNext()) {
+            MazeState state = iterator.next().getValue();
+            if (state.level != level || now < state.expiresAt) continue;
+            restoreMaze(state);
+            iterator.remove();
+        }
+    }
+
+    private static void restoreMaze(MazeState state) {
+        Entity raw = state.level.getEntity(state.targetId);
+        if (!(raw instanceof Mob target)) return;
+        restoreMobFlags(target, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
+                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
+        target.removeTag("arcanecircle_maze_exile");
+        target.snapTo(state.anchor.x, state.anchor.y, state.anchor.z, state.yRot, state.xRot);
+        target.setDeltaMovement(Vec3.ZERO);
+        target.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 120, 1, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 3, true, false));
+        target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, true, false));
+        Entity rawOwner = state.level.getEntity(state.ownerId);
+        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "maze");
     }
 
     private static boolean etherealness(ServerPlayer player, double power) {
@@ -253,66 +343,6 @@ public final class HighUtilitySpellService {
         }
     }
 
-    private static void tickClones(ServerLevel level, long now) {
-        Iterator<Map.Entry<UUID, CloneState>> iterator = CLONES.entrySet().iterator();
-        while (iterator.hasNext()) {
-            CloneState state = iterator.next().getValue();
-            if (state.level != level) continue;
-            Entity rawOwner = level.getEntity(state.ownerId);
-            Entity rawClone = level.getEntity(state.cloneId);
-            if (!(rawOwner instanceof ServerPlayer owner) || !owner.isAlive() || owner.isSpectator()
-                    || !(rawClone instanceof Mob clone) || !clone.isAlive() || clone.isRemoved()
-                    || now >= state.expiresAt) {
-                discardClone(state);
-                iterator.remove();
-                continue;
-            }
-            LivingEntity current = clone.getTarget();
-            if (current != null && (!current.isAlive() || current == owner || owner.isAlliedTo(current)))
-                clone.setTarget(null);
-            if (clone.getTarget() == null) {
-                Mob threat = level.getEntitiesOfClass(Mob.class, clone.getBoundingBox().inflate(24.0),
-                                candidate -> candidate != clone && candidate.isAlive() && !candidate.isRemoved()
-                                        && !owner.isAlliedTo(candidate)
-                                        && (candidate.getTarget() == owner || candidate.getTarget() == clone))
-                        .stream().min(Comparator.comparingDouble(clone::distanceToSqr)).orElse(null);
-                if (threat != null) clone.setTarget(threat);
-            }
-            if (clone.getTarget() == null && clone.distanceToSqr(owner) > 100.0)
-                clone.getNavigation().moveTo(owner, 1.16);
-        }
-    }
-
-    private static void tickPolymorphs(ServerLevel level, long now) {
-        Iterator<Map.Entry<UUID, PolymorphState>> iterator = POLYMORPHS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            PolymorphState state = iterator.next().getValue();
-            if (state.level != level) continue;
-            Entity rawProxy = level.getEntity(state.proxyId);
-            if (rawProxy instanceof Mob proxy && proxy.isAlive() && !proxy.isRemoved()) {
-                state.lastPosition = proxy.position();
-                state.lastYRot = proxy.getYRot();
-                state.lastXRot = proxy.getXRot();
-                if (now < state.expiresAt) continue;
-                restorePolymorph(state, false);
-                iterator.remove();
-                continue;
-            }
-            restorePolymorph(state, true);
-            iterator.remove();
-        }
-    }
-
-    private static void tickMazes(ServerLevel level, long now) {
-        Iterator<Map.Entry<UUID, MazeState>> iterator = MAZES.entrySet().iterator();
-        while (iterator.hasNext()) {
-            MazeState state = iterator.next().getValue();
-            if (state.level != level || now < state.expiresAt) continue;
-            restoreMaze(state);
-            iterator.remove();
-        }
-    }
-
     private static void applyEthereal(ServerPlayer player) {
         player.noPhysics = true;
         player.setNoGravity(true);
@@ -325,7 +355,7 @@ public final class HighUtilitySpellService {
     private static void restoreEthereal(ServerPlayer player, EtherealState state) {
         player.noPhysics = state.oldNoPhysics;
         player.setNoGravity(state.oldNoGravity);
-        player.setInvisible(state.oldInvisible;
+        player.setInvisible(state.oldInvisible);
         player.getAbilities().mayfly = state.oldMayfly;
         player.getAbilities().flying = state.oldFlying && state.oldMayfly;
         player.onUpdateAbilities();
@@ -333,61 +363,14 @@ public final class HighUtilitySpellService {
         WorldMagicService.cancelRelease(player, "etherealness");
     }
 
-    private static void discardClone(CloneState state) {
-        Entity rawClone = state.level.getEntity(state.cloneId);
-        if (rawClone instanceof Mob clone && !clone.isRemoved()) clone.discard();
-        Entity rawOwner = state.level.getEntity(state.ownerId);
-        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "clone");
-    }
-
-    private static void restorePolymorph(PolymorphState state, boolean proxyBroken) {
-        Entity rawOriginal = state.level.getEntity(state.originalId);
-        if (!(rawOriginal instanceof Mob original)) return;
-        Entity rawProxy = state.level.getEntity(state.proxyId);
-        if (rawProxy instanceof Mob proxy && !proxy.isRemoved()) {
-            state.lastPosition = proxy.position();
-            state.lastYRot = proxy.getYRot();
-            state.lastXRot = proxy.getXRot();
-            proxy.discard();
-        }
-        restoreMobFlags(original, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
-                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
-        Vec3 pos = state.lastPosition == null ? state.anchor : state.lastPosition;
-        original.snapTo(pos.x, pos.y, pos.z, state.lastYRot, state.lastXRot);
-        original.setDeltaMovement(Vec3.ZERO);
-        original.setHealth(proxyBroken ? Math.max(1.0F, state.originalHealth * .35F) : state.originalHealth);
-        Entity rawOwner = state.level.getEntity(state.ownerId);
-        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "true_polymorph");
-    }
-
-    private static void restoreMaze(MazeState state) {
-        Entity raw = state.level.getEntity(state.targetId);
-        if (!(raw instanceof Mob target)) return;
-        restoreMobFlags(target, state.oldInvisible, state.oldInvulnerable, state.oldNoGravity,
-                state.oldSilent, state.oldNoAi, state.oldNoPhysics);
-        target.removeTag("arcanecircle_maze_exile");
-        target.snapTo(state.anchor.x, state.anchor.y, state.anchor.z, state.yRot, state.xRot);
-        target.setDeltaMovement(Vec3.ZERO);
-        target.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 120, 1, true, false));
-        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 3, true, false));
-        target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 3, true, false));
-        target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, true, false));
-        Entity rawOwner = state.level.getEntity(state.ownerId);
-        if (rawOwner instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "maze");
-    }
-
     private static void restoreOwnedStates(UUID ownerId) {
-        CloneState clone = CLONES.remove(ownerId);
-        if (clone != null) discardClone(clone);
-        List<UUID> polymorphs = POLYMORPHS.entrySet().stream()
-                .filter(entry -> entry.getValue().ownerId.equals(ownerId)).map(Map.Entry::getKey).toList();
-        for (UUID id : polymorphs) {
+        for (UUID id : POLYMORPHS.entrySet().stream()
+                .filter(entry -> entry.getValue().ownerId.equals(ownerId)).map(Map.Entry::getKey).toList()) {
             PolymorphState state = POLYMORPHS.remove(id);
             if (state != null) restorePolymorph(state, false);
         }
-        List<UUID> mazes = MAZES.entrySet().stream()
-                .filter(entry -> entry.getValue().ownerId.equals(ownerId)).map(Map.Entry::getKey).toList();
-        for (UUID id : mazes) {
+        for (UUID id : MAZES.entrySet().stream()
+                .filter(entry -> entry.getValue().ownerId.equals(ownerId)).map(Map.Entry::getKey).toList()) {
             MazeState state = MAZES.remove(id);
             if (state != null) restoreMaze(state);
         }
@@ -422,122 +405,52 @@ public final class HighUtilitySpellService {
         return POLYMORPHS.containsKey(mob.getUUID()) || MAZES.containsKey(mob.getUUID()) ? null : mob;
     }
 
-    private static String one(double value) {
-        return String.format(java.util.Locale.ROOT, "%.1f", value);
-    }
+    private static String one(double value) { return String.format(java.util.Locale.ROOT, "%.1f", value); }
 
     private static final class EtherealState {
-        private final ServerLevel level;
-        private final UUID playerId;
-        private final long expiresAt;
-        private final boolean oldMayfly;
-        private final boolean oldFlying;
-        private final boolean oldNoPhysics;
-        private final boolean oldNoGravity;
-        private final boolean oldInvisible;
-
+        private final ServerLevel level; private final UUID playerId; private final long expiresAt;
+        private final boolean oldMayfly, oldFlying, oldNoPhysics, oldNoGravity, oldInvisible;
         private EtherealState(ServerLevel level, UUID playerId, long expiresAt, boolean oldMayfly,
-                              boolean oldFlying, boolean oldNoPhysics, boolean oldNoGravity,
-                              boolean oldInvisible) {
-            this.level = level;
-            this.playerId = playerId;
-            this.expiresAt = expiresAt;
-            this.oldMayfly = oldMayfly;
-            this.oldFlying = oldFlying;
-            this.oldNoPhysics = oldNoPhysics;
-            this.oldNoGravity = oldNoGravity;
-            this.oldInvisible = oldInvisible;
+                              boolean oldFlying, boolean oldNoPhysics, boolean oldNoGravity, boolean oldInvisible) {
+            this.level=level; this.playerId=playerId; this.expiresAt=expiresAt; this.oldMayfly=oldMayfly;
+            this.oldFlying=oldFlying; this.oldNoPhysics=oldNoPhysics; this.oldNoGravity=oldNoGravity; this.oldInvisible=oldInvisible;
         }
-
         private boolean active() { return level.getGameTime() < expiresAt; }
     }
 
     private static final class CloneState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID cloneId;
-        private final long expiresAt;
-
+        private final ServerLevel level; private final UUID ownerId, cloneId; private final long expiresAt;
         private CloneState(ServerLevel level, UUID ownerId, UUID cloneId, long expiresAt) {
-            this.level = level;
-            this.ownerId = ownerId;
-            this.cloneId = cloneId;
-            this.expiresAt = expiresAt;
+            this.level=level; this.ownerId=ownerId; this.cloneId=cloneId; this.expiresAt=expiresAt;
         }
     }
 
     private static final class PolymorphState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID originalId;
-        private final UUID proxyId;
-        private final Vec3 anchor;
-        private final float originalHealth;
-        private final long expiresAt;
-        private final boolean oldInvisible;
-        private final boolean oldInvulnerable;
-        private final boolean oldNoGravity;
-        private final boolean oldSilent;
-        private final boolean oldNoAi;
-        private final boolean oldNoPhysics;
-        private Vec3 lastPosition;
-        private float lastYRot;
-        private float lastXRot;
-
+        private final ServerLevel level; private final UUID ownerId, originalId, proxyId; private final Vec3 anchor;
+        private final float originalHealth; private final long expiresAt;
+        private final boolean oldInvisible, oldInvulnerable, oldNoGravity, oldSilent, oldNoAi, oldNoPhysics;
+        private Vec3 lastPosition; private float lastYRot, lastXRot;
         private PolymorphState(ServerLevel level, UUID ownerId, UUID originalId, UUID proxyId,
                                Vec3 anchor, float yRot, float xRot, float originalHealth, long expiresAt,
                                boolean oldInvisible, boolean oldInvulnerable, boolean oldNoGravity,
                                boolean oldSilent, boolean oldNoAi, boolean oldNoPhysics) {
-            this.level = level;
-            this.ownerId = ownerId;
-            this.originalId = originalId;
-            this.proxyId = proxyId;
-            this.anchor = anchor;
-            this.originalHealth = originalHealth;
-            this.expiresAt = expiresAt;
-            this.oldInvisible = oldInvisible;
-            this.oldInvulnerable = oldInvulnerable;
-            this.oldNoGravity = oldNoGravity;
-            this.oldSilent = oldSilent;
-            this.oldNoAi = oldNoAi;
-            this.oldNoPhysics = oldNoPhysics;
-            this.lastPosition = anchor;
-            this.lastYRot = yRot;
-            this.lastXRot = xRot;
+            this.level=level; this.ownerId=ownerId; this.originalId=originalId; this.proxyId=proxyId; this.anchor=anchor;
+            this.originalHealth=originalHealth; this.expiresAt=expiresAt; this.oldInvisible=oldInvisible;
+            this.oldInvulnerable=oldInvulnerable; this.oldNoGravity=oldNoGravity; this.oldSilent=oldSilent;
+            this.oldNoAi=oldNoAi; this.oldNoPhysics=oldNoPhysics; this.lastPosition=anchor; this.lastYRot=yRot; this.lastXRot=xRot;
         }
     }
 
     private static final class MazeState {
-        private final ServerLevel level;
-        private final UUID ownerId;
-        private final UUID targetId;
-        private final Vec3 anchor;
-        private final float yRot;
-        private final float xRot;
-        private final long expiresAt;
-        private final boolean oldInvisible;
-        private final boolean oldInvulnerable;
-        private final boolean oldNoGravity;
-        private final boolean oldSilent;
-        private final boolean oldNoAi;
-        private final boolean oldNoPhysics;
-
-        private MazeState(ServerLevel level, UUID ownerId, UUID targetId, Vec3 anchor, float yRot,
-                          float xRot, long expiresAt, boolean oldInvisible, boolean oldInvulnerable,
-                          boolean oldNoGravity, boolean oldSilent, boolean oldNoAi, boolean oldNoPhysics) {
-            this.level = level;
-            this.ownerId = ownerId;
-            this.targetId = targetId;
-            this.anchor = anchor;
-            this.yRot = yRot;
-            this.xRot = xRot;
-            this.expiresAt = expiresAt;
-            this.oldInvisible = oldInvisible;
-            this.oldInvulnerable = oldInvulnerable;
-            this.oldNoGravity = oldNoGravity;
-            this.oldSilent = oldSilent;
-            this.oldNoAi = oldNoAi;
-            this.oldNoPhysics = oldNoPhysics;
+        private final ServerLevel level; private final UUID ownerId, targetId; private final Vec3 anchor;
+        private final float yRot, xRot; private final long expiresAt;
+        private final boolean oldInvisible, oldInvulnerable, oldNoGravity, oldSilent, oldNoAi, oldNoPhysics;
+        private MazeState(ServerLevel level, UUID ownerId, UUID targetId, Vec3 anchor, float yRot, float xRot,
+                          long expiresAt, boolean oldInvisible, boolean oldInvulnerable, boolean oldNoGravity,
+                          boolean oldSilent, boolean oldNoAi, boolean oldNoPhysics) {
+            this.level=level; this.ownerId=ownerId; this.targetId=targetId; this.anchor=anchor; this.yRot=yRot; this.xRot=xRot;
+            this.expiresAt=expiresAt; this.oldInvisible=oldInvisible; this.oldInvulnerable=oldInvulnerable;
+            this.oldNoGravity=oldNoGravity; this.oldSilent=oldSilent; this.oldNoAi=oldNoAi; this.oldNoPhysics=oldNoPhysics;
         }
     }
 }
