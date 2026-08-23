@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.68",
+  "version": "0.12.1-alpha.69",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [1,2,3,4,5,6,7,8,9],
   "direct_spells": 90,
@@ -69,7 +69,10 @@
   "fourth_circle_npc_parity": true,
   "fifth_circle_deep_audit": ["widening_cone_of_cold","spell_intercepting_force_wall","drifting_cloudkill_front","sustained_telekinesis_throw","vertical_flame_strike","boss_resisted_hold_monster","allied_mass_cure","restoring_physical_passwall","person_scale_combat_domination","casting_break_insect_plague"],
   "fifth_circle_npc_parity": true,
-  "sixth_circle_deep_audit": ["material_disintegrate_ray","npc_parity_invulnerability_globe","behavioral_mass_suggestion","physical_move_earth","piercing_sunbeam","persistent_true_seeing","fixed_freezing_sphere","fear_weakness_eyebite","casting_block_petrification","wide_life_erosion_no_execution"],
+  "sixth_circle_deep_audit": ["material_disintegrate_ray","npc_parity_invulnerability_globe","twenty_second_group_retreat_order","directional_trench_and_dual_berm_engineering","six_second_piercing_solar_corridor","persistent_true_seeing","ten_second_cryogenic_denial_field","fear_weakness_eyebite","casting_block_petrification","wide_life_erosion_no_execution"],
+  "sixth_circle_value_pass_1": {"mass_suggestion":"20s_group_retreat_and_arcane_suppression","move_earth":"20_to_36m_directional_trench_and_dual_berm_using_relocated_surface_blocks","sunbeam":"6s_locked_piercing_solar_corridor_with_0.5s_pulses","freezing_sphere":"10s_10.5_to_15.5m_cryogenic_denial_with_0.5s_refreeze_pulses"},
+  "sixth_circle_role_audit": {"disintegrate":"precision_material_deletion_ray","globe_of_invulnerability":"circle_1_to_5_hostile_spell_interception","mass_suggestion":"twenty_second_group_combat_disengage","move_earth":"directional_trench_and_berm_engineering","sunbeam":"six_second_piercing_solar_corridor","true_seeing":"sixty_second_anti_concealment_revelation","freezing_sphere":"ten_second_area_cryogenic_denial","eyebite":"eighteen_second_single_target_fear_retreat","flesh_to_stone":"eighteen_second_total_petrification","circle_of_death":"wide_life_erosion_no_execution"},
+  "sixth_circle_npc_terrain_safety": "move_earth_retains_battlefield_split_but_skips_npc_world_edit",
   "sixth_circle_npc_parity": true,
   "seventh_circle_deep_audit": ["time_locked_siege_core_with_overpressure","preserved_ethereal_phase","canonical_single_soul_rupture_no_execution","sequential_six_pillar_siege_bombardment","preserved_physical_forcecage","preserved_player_plane_shift","seven_independent_prismatic_rays","maintained_reverse_gravity","preserved_commandable_simulacrum","same_dimension_tactical_group_teleport"],
   "seventh_circle_preserved_authority": ["etherealness","forcecage","plane_shift","simulacrum"],
