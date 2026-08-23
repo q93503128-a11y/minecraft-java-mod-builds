@@ -1,6 +1,7 @@
 package kr.moonseungjun.frontiersettlement.network;
 
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
@@ -52,13 +53,13 @@ public final class SettlementNetwork {
             return;
         }
         SettlementData data = SettlementData.get(player.level().getServer());
-        if (type == BuildingType.WORKSHOP) {
-            String locked = SettlementWorkshopService.lockedReason(data);
-            if (locked != null) {
-                context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
-                        0, 0, 0, payload.rotation(), locked));
-                return;
-            }
+        String specialLock = null;
+        if (type == BuildingType.WORKSHOP) specialLock = SettlementWorkshopService.lockedReason(data);
+        else if (type == BuildingType.CART_STATION) specialLock = SettlementCartStationService.lockedReason(data);
+        if (specialLock != null) {
+            context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
+                    0, 0, 0, payload.rotation(), specialLock));
+            return;
         }
         if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
             context.reply(new PlacementPreviewPayload(payload.nonce(), type.id(), false, false,
