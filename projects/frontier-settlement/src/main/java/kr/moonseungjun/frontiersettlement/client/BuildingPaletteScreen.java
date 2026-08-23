@@ -37,10 +37,11 @@ public final class BuildingPaletteScreen extends Screen {
         addBuilding(BuildingType.GUARD_POST, innerX, innerY + 108, columnWidth);
 
         addBuilding(BuildingType.LUMBER_CAMP, rightX, innerY + 14, columnWidth);
-        addBuilding(BuildingType.FARM, rightX, innerY + 38, columnWidth);
-        addBuilding(BuildingType.QUARRY, rightX, innerY + 62, columnWidth);
-        addBuilding(BuildingType.MINE, rightX, innerY + 86, columnWidth);
-        addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 110, columnWidth);
+        addBuilding(BuildingType.FARM, rightX, innerY + 36, columnWidth);
+        addBuilding(BuildingType.QUARRY, rightX, innerY + 58, columnWidth);
+        addBuilding(BuildingType.MINE, rightX, innerY + 80, columnWidth);
+        addBuilding(BuildingType.BLACKSMITH, rightX, innerY + 102, columnWidth);
+        addBuilding(BuildingType.WORKSHOP, rightX, innerY + 124, columnWidth);
 
         int infraY = innerY + 151;
         addRenderableWidget(Button.builder(Component.literal("도로 계획"), button -> {
@@ -96,7 +97,7 @@ public final class BuildingPaletteScreen extends Screen {
         graphics.text(this.font, Component.literal("인프라"), innerX, innerY + 137, 0xFFFFD58A, true);
 
         String lock1 = "잠금: 농장←주택 · 채석장←벌목소 · 광산←채석장+전초기지 · 창고←농장";
-        String lock2 = "대장간←광산 · 시장/경비←마을 단계   |   R 회전 · Enter 확정";
+        String lock2 = "대장간←광산 · 작업장←대장간 · 시장/경비←마을   |   R 회전 · Enter 확정";
         graphics.text(this.font, Component.literal(lock1), panelX + 12, panelY + panelHeight - 31, 0xFFB8B8B8, false);
         graphics.text(this.font, Component.literal(lock2), panelX + 12, panelY + panelHeight - 17, 0xFFD0D0D0, false);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
