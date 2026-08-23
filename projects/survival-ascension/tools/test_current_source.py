@@ -12,6 +12,7 @@ required = [
     "src/main/resources/META-INF/third-party/MEKANISM_MIT.txt", "src/main/resources/META-INF/third-party/WARBAND_MIT.txt",
     "src/main/resources/META-INF/third-party/HOSTILES_ARE_TOO_EASY_CC0.txt", "src/main/resources/META-INF/third-party/GATEWAYS_TO_ETERNITY_MIT.txt",
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
+    "src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/SkillsScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
@@ -48,6 +49,8 @@ props=(ROOT/"gradle.properties").read_text(encoding="utf-8")
 need(props,["minecraft_version=26.2","neo_version=26.2.0.38-beta","mod_id=survivalascension","mod_version=0.22.0-alpha.1"],"gradle.properties")
 main=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java").read_text(encoding="utf-8")
 need(main,['VERSION = "0.22.0-alpha.1"',"WorldAscensionProgression::onLivingDeath","WarbandDirector::onServerTick","EndgameMutationSystem::onFinalizeSpawn","EndgameMutationSystem::onDamagePost","EndgameMutationSystem::onLivingDeath","AscensionTrialSystem::onServerTick","AscensionTrialSystem::onEntityJoin"],"main registration")
+network=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java").read_text(encoding="utf-8")
+need(network,['PROTOCOL = "8"',"EquipmentActionPayload.TYPE","EquipmentReforgeService.perform(player, payload.action())"],"network protocol 8")
 
 tuning=(ROOT/"src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java").read_text(encoding="utf-8")
 need(tuning,["if (level >= 100) return 11;","if (level >= 100) return 192;","if (level >= 100) return 384;","if (level >= 100) return 10;","if (level >= 100) return 5.0D;","if (level >= 100) return 0.70D;","if (level >= 100) return 49;","if (level >= 100) return 2.0D;","if (level >= 100) return 16.0D;","if (level >= 100) return 1.80D;","if (level >= 100) return 16;","if (level >= 100) return 6;"],"mastery VI tuning")
@@ -114,8 +117,8 @@ if errors:
     for e in errors: print("-",e)
     sys.exit(1)
 print("SOURCE AUDIT PASS")
-print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25")
+print("- Minecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25 / network protocol 8")
 print("- Lv.100 mastery VI scale and existing tick/protection/material contracts retained")
-print("- Stage-2 Ascension Trial now varies by tactical doctrine and adds one bounded mid-wave reinforcement without HP-only scaling")
+print("- Stage-2 Ascension Trial varies by tactical doctrine and adds one bounded mid-wave reinforcement without HP-only scaling")
 print("- Mythic III awakening validates exact three-affix source state before resource consumption, preserves unlock gates, and keeps four-affix rerolls expensive")
 print("- world stages, mutations, Nexus, warbands, elites and equipment economy regressions retained")
