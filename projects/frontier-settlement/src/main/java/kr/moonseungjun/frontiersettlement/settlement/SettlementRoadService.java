@@ -5,10 +5,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +30,8 @@ public final class SettlementRoadService {
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double BUILDER_WORK_RANGE_SQR = 18.0D;
+    private static final double STORAGE_INTERACTION_RANGE_SQR = 9.0D;
+    private static final int HAUL_BATCH_SIZE = 16;
     private static final long PLAYER_ENDPOINT_RANGE_SQR = 16L * 16L;
 
     private SettlementRoadService() {}
@@ -92,22 +98,20 @@ public final class SettlementRoadService {
         if (!check.valid()) return new StartResult(false, check.message());
 
         ServerLevel level = server.overworld();
+        if (!SettlementStorageService.storageAvailable(level, data)) {
+            return new StartResult(false, "공동 창고가 모두 로드된 상태에서 도로를 착공해 주세요. 자원은 차감되지 않았습니다.");
+        }
         SettlementService.refreshResources(server, data);
         if (data.resources().stone() < check.stoneCost()) {
             return new StartResult(false, "도로 필요 석재 " + check.stoneCost() + " | 현재 석재 " + data.resources().stone());
         }
-        if (!SettlementStorageService.consume(level, data, 0L, check.stoneCost(), 0L)) {
-            SettlementService.refreshResources(server, data);
-            return new StartResult(false, "공동 창고 자원이 착공 직전에 변경되어 도로를 시작하지 못했습니다. 자원은 차감되지 않았습니다.");
-        }
 
-        prepareRoute(level, check.centers());
         data.beginRoadConstruction(check.centers());
         SettlementConstructionService.ensureBuilder(level, data.centerPos());
-        SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
         return new StartResult(true, "개척 도로 착공: " + check.centers().size()
-                + "블록 경로, 3칸 폭. 석재 -" + check.stoneCost());
+                + "블록 경로, 3칸 폭. 건설 주민이 지반을 정리한 뒤 공동 창고의 실제 석재 "
+                + check.stoneCost() + "개를 운반하며 포설합니다.");
     }
 
     public static boolean tick(MinecraftServer server, SettlementData data) {
@@ -115,28 +119,67 @@ public final class SettlementRoadService {
         if (!road.active()) return false;
 
         List<Placement> plan = createPlan(road);
-        if (road.step() >= plan.size()) return finishIfValid(server, data, road, plan);
+        if (plan.isEmpty()) {
+            data.clearRoadConstruction();
+            return true;
+        }
 
         ServerLevel level = server.overworld();
         Villager builder = SettlementConstructionService.ensureBuilder(level, data.centerPos());
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
+        builder.setInvulnerable(true);
 
-        Placement placement = plan.get(road.step());
+        if (road.grading()) return tickGrading(server, data, road, plan, builder);
+        if (road.step() >= plan.size()) return finishIfValid(server, data, road, plan, builder);
+        return tickPaving(server, data, road, plan, builder);
+    }
+
+    private static boolean tickGrading(MinecraftServer server, SettlementData data, RoadConstructionState road,
+                                       List<Placement> plan, Villager builder) {
+        int gradeStep = road.gradeStep();
+        if (gradeStep >= plan.size()) {
+            data.replaceRoadConstructionStep(0);
+            SettlementService.broadcast(server, data);
+            return false;
+        }
+
+        ServerLevel level = server.overworld();
+        Placement placement = plan.get(gradeStep);
+        if (!moveBuilderToCurrentSurface(level, builder, placement.pos())) return false;
+        if (!canGradePlacement(level, placement.pos())) {
+            builder.getNavigation().stop();
+            return false;
+        }
+
+        applyGradePlacement(level, placement.pos());
+        builder.swing(InteractionHand.MAIN_HAND);
+        data.advanceRoadConstruction();
+        RoadConstructionState next = data.roadConstruction();
+        if (next.grading() && next.gradeStep() >= plan.size()) {
+            data.replaceRoadConstructionStep(0);
+            SettlementService.broadcast(server, data);
+        }
+        return false;
+    }
+
+    private static boolean tickPaving(MinecraftServer server, SettlementData data, RoadConstructionState road,
+                                      List<Placement> plan, Villager builder) {
+        int step = road.step();
+        int totalCost = stoneCost(road.centers().size());
+        long spentBefore = costAtStep(totalCost, step, plan.size());
+        long spentAfter = costAtStep(totalCost, step + 1, plan.size());
+        long stoneDelta = spentAfter - spentBefore;
+        long remainingCost = Math.max(0L, totalCost - spentBefore);
+        if (!ensurePavingMaterial(server, data, builder, stoneDelta, remainingCost)) return false;
+
+        ServerLevel level = server.overworld();
+        Placement placement = plan.get(step);
+        if (!moveBuilderToCurrentSurface(level, builder, placement.pos())) return false;
+
         BlockPos target = placement.pos();
-        BlockPos work = target.above();
-        double distance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
-        if (distance > BUILDER_WORK_RANGE_SQR) {
-            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 0.85D);
-            return false;
-        }
-
         BlockState current = level.getBlockState(target);
-        if (current.is(placement.state().getBlock())) {
-            data.advanceRoadConstruction();
-            return false;
-        }
-        if (!current.isAir() && !isRoadGround(current)) {
+        if (!current.is(placement.state().getBlock()) && !current.isAir() && !isRoadGround(current)) {
             builder.getNavigation().stop();
             return false;
         }
@@ -145,13 +188,115 @@ public final class SettlementRoadService {
             builder.getNavigation().stop();
             return false;
         }
+        if (!consumeCarriedStone(builder, stoneDelta)) return false;
 
-        level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE);
+        if (!current.is(placement.state().getBlock())) {
+            level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE);
+            builder.swing(InteractionHand.MAIN_HAND);
+        }
         data.advanceRoadConstruction();
         if (data.roadConstruction().step() >= plan.size()) {
-            return finishIfValid(server, data, data.roadConstruction(), plan);
+            return finishIfValid(server, data, data.roadConstruction(), plan, builder);
         }
         return false;
+    }
+
+    private static boolean ensurePavingMaterial(MinecraftServer server, SettlementData data, Villager builder,
+                                                long requiredNow, long remainingCost) {
+        ItemStack carried = builder.getMainHandItem();
+        if (!carried.isEmpty() && !SettlementInventory.isStone(carried)) {
+            return returnCarriedToStorage(server, data, builder);
+        }
+        if (requiredNow <= 0L) return true;
+        if (!carried.isEmpty() && carried.getCount() >= requiredNow) return true;
+        if (!carried.isEmpty()) return returnCarriedToStorage(server, data, builder);
+
+        ServerLevel level = server.overworld();
+        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+        if (source == null) return false;
+        if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.9D);
+            return false;
+        }
+
+        int amount = (int) Math.min((long) HAUL_BATCH_SIZE, Math.max(requiredNow, remainingCost));
+        ItemStack extracted = SettlementStorageService.extract(level, source, SettlementInventory::isStone, amount);
+        if (extracted.isEmpty()) return false;
+        builder.setItemSlot(EquipmentSlot.MAINHAND, extracted);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
+        return false;
+    }
+
+    private static boolean consumeCarriedStone(Villager builder, long amount) {
+        if (amount <= 0L) return true;
+        ItemStack carried = builder.getMainHandItem();
+        if (carried.isEmpty() || !SettlementInventory.isStone(carried) || carried.getCount() < amount) return false;
+        carried.shrink((int) amount);
+        if (carried.isEmpty()) builder.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        return true;
+    }
+
+    private static boolean returnCarriedToStorage(MinecraftServer server, SettlementData data, Villager builder) {
+        ItemStack carried = builder.getMainHandItem();
+        if (carried.isEmpty()) return true;
+        ServerLevel level = server.overworld();
+        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.9D);
+            return false;
+        }
+        int before = carried.getCount();
+        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
+        builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        if (remaining.getCount() < before) {
+            SettlementService.refreshResources(server, data);
+            SettlementService.broadcast(server, data);
+        }
+        return remaining.isEmpty();
+    }
+
+    private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
+        int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
+        BlockPos work = new BlockPos(target.getX(), workY, target.getZ());
+        double distance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+        if (distance <= BUILDER_WORK_RANGE_SQR) return true;
+        builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 0.85D);
+        return false;
+    }
+
+    private static boolean canGradePlacement(ServerLevel level, BlockPos target) {
+        BlockState current = level.getBlockState(target);
+        if (level.getBlockEntity(target) != null || !current.getFluidState().isEmpty()) return false;
+        if (!current.isAir() && !current.canBeReplaced() && !isRoadGround(current)) return false;
+
+        for (int y = target.getY() + 1; y <= target.getY() + 2; y++) {
+            BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
+            BlockState state = level.getBlockState(pos);
+            if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
+            if (!isClearableForRoad(state)) return false;
+        }
+        return hasOrCanMakeSupport(level, target.below());
+    }
+
+    private static void applyGradePlacement(ServerLevel level, BlockPos target) {
+        for (int y = target.getY() + 2; y >= target.getY() + 1; y--) {
+            BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
+            if (!level.getBlockState(pos).isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        }
+        BlockPos cursor = target.below();
+        for (int depth = 0; depth <= MAX_FILL_DEPTH; depth++) {
+            BlockState state = level.getBlockState(cursor);
+            if (!state.isAir() && !state.canBeReplaced()) break;
+            level.setBlock(cursor, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            cursor = cursor.below();
+        }
+        BlockState targetState = level.getBlockState(target);
+        if (targetState.isAir() || targetState.canBeReplaced()) {
+            level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        }
     }
 
     public static int totalSteps(RoadConstructionState road) {
@@ -162,22 +307,66 @@ public final class SettlementRoadService {
         return Math.max(6, (centerlineLength * 3 + 1) / 2);
     }
 
+    public static String phaseLabel(RoadConstructionState road) {
+        if (road == null || !road.active()) return "도로 공사";
+        List<Placement> plan = createPlan(road);
+        if (road.grading()) return "도로 지반 정리";
+        if (road.step() < plan.size()) return "도로 석재 운반·포설";
+        return "도로 마감 확인";
+    }
+
+    private static long costAtStep(long totalCost, int step, int totalSteps) {
+        if (totalCost <= 0L || step <= 0 || totalSteps <= 0) return 0L;
+        if (step >= totalSteps) return totalCost;
+        return totalCost * step / totalSteps;
+    }
+
     private static boolean finishIfValid(MinecraftServer server, SettlementData data,
-                                         RoadConstructionState road, List<Placement> plan) {
+                                         RoadConstructionState road, List<Placement> plan, Villager builder) {
         ServerLevel level = server.overworld();
-        for (int i = 0; i < plan.size(); i++) {
-            Placement placement = plan.get(i);
-            if (!level.getBlockState(placement.pos()).is(placement.state().getBlock())) {
-                data.replaceRoadConstructionStep(i);
+        for (Placement placement : plan) {
+            BlockState current = level.getBlockState(placement.pos());
+            if (current.is(placement.state().getBlock())) continue;
+            if (!current.isAir() && !isRoadGround(current)) {
+                builder.getNavigation().stop();
                 return false;
             }
+            BlockState support = level.getBlockState(placement.pos().below());
+            if (support.isAir() || support.canBeReplaced() || !support.getFluidState().isEmpty()) {
+                builder.getNavigation().stop();
+                return false;
+            }
+            if (!moveBuilderToCurrentSurface(level, builder, placement.pos())) return false;
+            level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+            builder.swing(InteractionHand.MAIN_HAND);
+            return false;
         }
 
+        if (!returnCarriedToStorage(server, data, builder)) return false;
         data.completeRoad(RoadSegment.fromPath(road.centers()));
-        Villager builder = SettlementConstructionService.ensureBuilder(level, data.centerPos());
-        if (builder != null) builder.getNavigation().stop();
+        builder.getNavigation().stop();
+        builder.setInvulnerable(false);
+        SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
         return true;
+    }
+
+    public static void onBreakBlock(BreakBlockEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        MinecraftServer server = level.getServer();
+        if (level != server.overworld()) return;
+        SettlementData data = SettlementData.get(server);
+        RoadConstructionState road = data.roadConstruction();
+        if (!road.active()) return;
+        BlockPos pos = event.getPos();
+        BlockState current = level.getBlockState(pos);
+        for (Placement placement : createPlan(road)) {
+            if (placement.pos().equals(pos) && current.is(placement.state().getBlock())) {
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                return;
+            }
+        }
     }
 
     private static RouteCandidate assessCandidate(ServerLevel level, SettlementData data,
@@ -313,23 +502,6 @@ public final class SettlementRoadService {
             cursor = cursor.below();
         }
         return false;
-    }
-
-    private static void prepareRoute(ServerLevel level, List<BlockPos> centers) {
-        Map<BlockPos, Boolean> footprints = footprintMap(centers);
-        for (BlockPos roadPos : footprints.keySet()) {
-            for (int y = roadPos.getY() + 2; y >= roadPos.getY(); y--) {
-                BlockPos pos = new BlockPos(roadPos.getX(), y, roadPos.getZ());
-                if (!level.getBlockState(pos).isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-            }
-            BlockPos support = roadPos.below();
-            for (int depth = 0; depth <= MAX_FILL_DEPTH; depth++) {
-                BlockPos fill = support.below(depth);
-                BlockState current = level.getBlockState(fill);
-                if (!current.isAir() && !current.canBeReplaced()) break;
-                level.setBlock(fill, Blocks.COBBLESTONE.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-            }
-        }
     }
 
     private static List<Placement> createPlan(RoadConstructionState road) {

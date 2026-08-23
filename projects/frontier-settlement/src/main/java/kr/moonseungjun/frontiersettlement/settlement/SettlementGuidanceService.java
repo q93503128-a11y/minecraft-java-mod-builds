@@ -11,7 +11,9 @@ public final class SettlementGuidanceService {
             String name = type == null ? "건물" : type.displayName();
             return "진행 중 · " + name + " " + SettlementConstructionService.phaseLabel(data.construction());
         }
-        if (data.roadConstruction().active()) return "진행 중 · 도로 공사";
+        if (data.roadConstruction().active()) {
+            return "진행 중 · " + SettlementRoadService.phaseLabel(data.roadConstruction());
+        }
         if (data.outpostConstruction().active()) return "진행 중 · 전초기지 건설";
 
         if (data.houseCount() < 1) return buildingGoal(data, BuildingType.HOUSE);

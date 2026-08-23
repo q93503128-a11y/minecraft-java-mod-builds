@@ -11,6 +11,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
                                     int directionX, int directionZ,
                                     int length, int step,
                                     List<Integer> path) {
+    public static final int GRADE_STEP_OFFSET = 1_000_000;
     public static final RoadConstructionState EMPTY = new RoadConstructionState(0, 0, 0, 0, 0, 0, 0, List.of());
 
     public static final Codec<RoadConstructionState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -43,7 +44,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
             encoded.add(center.getZ());
         }
         return new RoadConstructionState(first.getX(), first.getY(), first.getZ(),
-                directionX, directionZ, centers.size(), 0, List.copyOf(encoded));
+                directionX, directionZ, centers.size(), GRADE_STEP_OFFSET, List.copyOf(encoded));
     }
 
     public boolean active() {
@@ -53,6 +54,14 @@ public record RoadConstructionState(int startX, int startY, int startZ,
 
     public boolean hasPath() {
         return path != null && path.size() >= 6 && path.size() % 3 == 0;
+    }
+
+    public boolean grading() {
+        return hasPath() && step >= GRADE_STEP_OFFSET;
+    }
+
+    public int gradeStep() {
+        return grading() ? step - GRADE_STEP_OFFSET : -1;
     }
 
     public BlockPos start() {
