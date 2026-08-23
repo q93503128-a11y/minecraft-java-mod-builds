@@ -4,6 +4,7 @@
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
+- Network protocol: `8` (0.22의 EquipmentAction `신화 각성` 의미 추가로 0.21 클라이언트/서버 혼용 차단)
 - Existing-world compatibility: 기존 스킬 SavedData, `infrastructure_v1`, `world_ascension_v1`, 강화 적/전술 분대/종말 변이 persistent NBT, affix CustomData, 채굴 모드 persistent data를 유지한다. 0.22는 새 SavedData 스키마를 만들지 않고 기존 승천 시련 런타임 상태와 affix CustomData 안에 전술 교리 런타임 선택/`awakened` 플래그만 추가한다.
 
 ## 핵심 방향
@@ -38,8 +39,9 @@
 - 완료 보상은 신화 III 장비1 + 네더라이트 파편2 + 다이아4 + XP200, 근처 협동 플레이어 XP80.
 
 ## 각성 신화 장비
-- 일반 Mythic III는 3 affix다.
+- 일반 Mythic III는 정확히 3 affix여야 한다.
 - `M → 장비 → 신화 각성`에서 1회만 각성 가능하며 기존 3 affix를 보존하고 빠진 affix 하나를 추가해 4 affix로 만든다.
+- 각성 전에 서버가 rarity/category/정확히 3개의 알려진 affix를 다시 검증한다. 비정상 CustomData면 자원을 소비하지 않고 거절한다.
 - 각성 비용: 자수정256 + 다이아24 + 네더라이트 파편8 + 메아리64 + 드래곤의 숨결16.
 - 각성 신화 재련은 4 affix 상태를 유지하며 비용은 자수정128 + 다이아16 + 네더라이트 파편4 + 메아리16.
 - 각성은 affix 수만 늘리고 숙련 액션의 조기 해금 규칙을 건드리지 않는다. 기존 `base <= 1`/`base <= 0` 해금 보호를 그대로 통과해야 증폭된다.
@@ -58,6 +60,7 @@
 - 스포너 기반 엘리트/분대/종말 변이 보상 농장 차단.
 - 승천 시련은 실재 입장 비용·중복 거리·단일 활성·cooldown·잔존 엔티티 정리 계약 유지.
 - 교리 증원은 웨이브당 최대 1회이며 타이머를 연장하지 않는다.
+- Mythic 각성은 검증 성공 뒤에만 자원 소비를 시작한다.
 - Lv.100 작업 범위 증가 때문에 기존 동기식 처리 예산을 올리지 않는다.
 
 ## 외부 소스 정책
