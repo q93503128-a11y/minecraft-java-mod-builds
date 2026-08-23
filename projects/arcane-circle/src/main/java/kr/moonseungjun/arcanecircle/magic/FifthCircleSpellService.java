@@ -46,13 +46,16 @@ public final class FifthCircleSpellService {
     public static final int FORCE_WALL_TICKS = 240;
     public static final int CLOUDKILL_TICKS = 220;
     public static final int TELEKINESIS_TICKS = 100;
+    public static final int FLAME_STRIKE_TICKS = 80;
+    public static final int FLAME_STRIKE_PULSE_TICKS = 10;
     public static final int HOLD_MONSTER_TICKS = 300;
     public static final int PASSWALL_TICKS = 240;
-    public static final int DOMINATE_PERSON_TICKS = 260;
+    public static final int DOMINATE_PERSON_TICKS = 600;
     public static final int INSECT_PLAGUE_TICKS = 220;
 
     private static final List<ForceWall> FORCE_WALLS = new ArrayList<>();
     private static final List<CloudkillZone> CLOUDS = new ArrayList<>();
+    private static final List<FlameStrikeField> FLAME_STRIKES = new ArrayList<>();
     private static final List<InsectZone> INSECTS = new ArrayList<>();
     private static final Map<UUID, TelekinesisState> TELEKINESIS = new HashMap<>();
     private static final Map<UUID, HoldState> HOLDS = new HashMap<>();
@@ -136,6 +139,7 @@ public final class FifthCircleSpellService {
         if (previous != null && previous == now) return;
         tickForceWalls(level, now);
         tickClouds(level, now);
+        tickFlameStrikes(level, now);
         tickInsects(level, now);
         tickTelekinesis(level, now);
         tickHolds(level, now);
@@ -150,6 +154,7 @@ public final class FifthCircleSpellService {
         if (id == null) return;
         FORCE_WALLS.removeIf(state -> state.ownerId.equals(id));
         CLOUDS.removeIf(state -> state.ownerId.equals(id));
+        FLAME_STRIKES.removeIf(state -> state.ownerId.equals(id));
         INSECTS.removeIf(state -> state.ownerId.equals(id));
         SWARM_JAM.remove(id);
 
@@ -190,6 +195,7 @@ public final class FifthCircleSpellService {
         for (PasswallState state : PASSWALLS) restorePasswall(state);
         FORCE_WALLS.clear();
         CLOUDS.clear();
+        FLAME_STRIKES.clear();
         INSECTS.clear();
         TELEKINESIS.clear();
         HOLDS.clear();
@@ -384,25 +390,60 @@ public final class FifthCircleSpellService {
         target.setDeltaMovement(look.scale(2.25).add(0.0, .72, 0.0));
     }
 
-    private static boolean flameStrike(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
-        double radius = Math.max(5.5, Math.min(8.0, SpellMetrics.effectRadius("flame_strike", range, 5)));
-        AABB box = new AABB(center, center).inflate(radius, 9.0, radius);
-        boolean hit = false;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
-            double horizontal = new Vec3(target.getX() - center.x, 0.0, target.getZ() - center.z).length();
-            if (horizontal > radius + target.getBbWidth()) continue;
-            double falloff = Math.max(.65, 1.0 - horizontal / Math.max(1.0, radius) * .35);
-            if (ArcaneDamage.hurt(level, caster, target, (float) (power * 1.08 * falloff))) hit = true;
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 220));
-            target.push(0.0, .28 * falloff, 0.0);
-        }
-        if (caster instanceof ServerPlayer player) DestructiveMagicService.impact(player, "flame_strike", center, radius, power);
-        level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.15F, .76F);
-        return hit || center != null;
-    }
+    public static double flameStrikeRadius(double range) {
+    return Math.max(5.5, Math.min(8.0, SpellMetrics.effectRadius("flame_strike", range, 5)));
+}
 
-    private static boolean holdMonster(ServerLevel level, LivingEntity caster, LivingEntity target) {
+private static boolean flameStrike(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
+    double radius = flameStrikeRadius(range);
+    boolean hit = pulseFlameStrike(level, caster, center, radius, power * .92, true);
+    FLAME_STRIKES.removeIf(state -> state.ownerId.equals(caster.getUUID()));
+    long now = level.getGameTime();
+    FLAME_STRIKES.add(new FlameStrikeField(level, caster.getUUID(), center, radius, power,
+            now + FLAME_STRIKE_TICKS, now + FLAME_STRIKE_PULSE_TICKS));
+    if (caster instanceof ServerPlayer player) {
+        DestructiveMagicService.impact(player, "flame_strike", center, radius, power);
+        ArcaneNoticeService.push(player, Component.literal(
+                "§6[화염 기둥] §f초기 천공 타격 후 4초 동안 같은 지점을 불태웁니다. §70.5초마다 내부 적을 다시 태웁니다."), 82);
+    }
+    level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
+            caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.15F, .76F);
+    return hit || center != null;
+}
+
+private static void tickFlameStrikes(ServerLevel level, long now) {
+    Iterator<FlameStrikeField> iterator = FLAME_STRIKES.iterator();
+    while (iterator.hasNext()) {
+        FlameStrikeField state = iterator.next();
+        if (state.level != level) continue;
+        Entity rawOwner = level.getEntity(state.ownerId);
+        if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || now >= state.expiresAt) {
+            iterator.remove();
+            continue;
+        }
+        while (state.nextPulse < state.expiresAt && now >= state.nextPulse) {
+            pulseFlameStrike(level, owner, state.center, state.radius, state.power * .09, false);
+            state.nextPulse += FLAME_STRIKE_PULSE_TICKS;
+        }
+    }
+}
+
+private static boolean pulseFlameStrike(ServerLevel level, LivingEntity caster, Vec3 center,
+                                        double radius, double pulsePower, boolean initial) {
+    AABB box = new AABB(center, center).inflate(radius, 13.5, radius);
+    boolean hit = false;
+    for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
+        double horizontal = new Vec3(target.getX() - center.x, 0.0, target.getZ() - center.z).length();
+        if (horizontal > radius + target.getBbWidth()) continue;
+        double falloff = Math.max(.62, 1.0 - horizontal / Math.max(1.0, radius) * .38);
+        if (ArcaneDamage.hurt(level, caster, target, (float) (pulsePower * falloff))) hit = true;
+        target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), initial ? 220 : 90));
+        if (initial) target.push(0.0, .26 * falloff, 0.0);
+    }
+    return hit;
+}
+
+private static boolean holdMonster(ServerLevel level, LivingEntity caster, LivingEntity target) {
         if (!enemy(caster, target)) return false;
         long duration = holdDuration(target);
         HoldState previous = HOLDS.remove(target.getUUID());
@@ -604,7 +645,7 @@ public final class FifthCircleSpellService {
         WorldMagicService.stop(mob);
         if (caster instanceof ServerPlayer player) {
             ArcaneNoticeService.push(player, Component.literal("§d[인간형 지배] §f" + mob.getName().getString()
-                    + "의 의지를 13초간 장악했습니다. §7시전자를 공격하지 않고 주변 위협과 싸우며 비전투 시 따라옵니다."), 88);
+                    + "의 의지를 30초간 장악했습니다. §7인간형 체급에만 적용되며 시전자를 공격하지 않고 주변 위협과 싸우며 비전투 시 따라옵니다."), 92);
         }
         return true;
     }
@@ -741,6 +782,16 @@ public final class FifthCircleSpellService {
         Vec3 right() { return new Vec3(-forward.z, 0.0, forward.x); }
         boolean active() { return level.getGameTime() < expiresAt; }
     }
+
+    private static final class FlameStrikeField {
+    final ServerLevel level; final UUID ownerId; final Vec3 center; final double radius; final double power;
+    final long expiresAt; long nextPulse;
+    FlameStrikeField(ServerLevel level, UUID ownerId, Vec3 center, double radius, double power,
+                     long expiresAt, long nextPulse) {
+        this.level = level; this.ownerId = ownerId; this.center = center; this.radius = radius;
+        this.power = power; this.expiresAt = expiresAt; this.nextPulse = nextPulse;
+    }
+}
 
     private static final class CloudkillZone {
         final ServerLevel level; final UUID ownerId; Vec3 center; final Vec3 drift;

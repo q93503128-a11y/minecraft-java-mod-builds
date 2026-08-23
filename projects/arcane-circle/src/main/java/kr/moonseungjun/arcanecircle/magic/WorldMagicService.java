@@ -114,6 +114,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), cast.range())
                 : SpellPresentationProfile.releaseDurationTicks(spell, travelDistance);
+        duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, cast.power());
         duration = eighthCircleVisualDuration(spell.id(), duration);
@@ -145,6 +146,7 @@ public final class WorldMagicService {
         int duration = "meteor_swarm".equals(spell.id())
                 ? MeteorBarragePattern.durationTicks(snapshot.barrageSeed(), range)
                 : SpellPresentationProfile.releaseDurationTicks(spell, Math.max(0.0, distance));
+        duration = fifthCircleVisualDuration(spell.id(), duration);
         duration = sixthCircleVisualDuration(spell.id(), duration);
         duration = seventhCircleVisualDuration(spell.id(), duration, power);
         duration = eighthCircleVisualDuration(spell.id(), duration);
@@ -185,6 +187,13 @@ public final class WorldMagicService {
         PLAYER_CHARGE_SEEDS.clear();
         NPC_CHARGE_SEEDS.clear();
     }
+
+    private static int fifthCircleVisualDuration(String spellId, int baseDuration) {
+    return switch (spellId) {
+        case "flame_strike" -> Math.max(baseDuration, FifthCircleSpellService.FLAME_STRIKE_TICKS);
+        default -> baseDuration;
+    };
+}
 
     private static int sixthCircleVisualDuration(String spellId, int baseDuration) {
         return switch (spellId) {
