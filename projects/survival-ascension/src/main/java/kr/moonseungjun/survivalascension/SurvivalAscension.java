@@ -18,6 +18,7 @@ import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
+import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
 import net.neoforged.bus.api.IEventBus;
@@ -28,8 +29,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.29.0-alpha.1";
-    // 0.29 canonical: loaded vanilla Barrel stock only; same-dimension local logistics never force-load chunks.
+    public static final String VERSION = "0.30.0-alpha.1";
+    // 0.30 canonical: physical outposts require real camp blocks; only NATURAL hostile spawns are suppressed.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -59,6 +60,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(OutpostService::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
@@ -74,6 +76,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial production + physical barrel field logistics", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial production + physical field outposts", VERSION);
     }
 }
