@@ -36,7 +36,11 @@ public final class SettlementGuidanceService {
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
         if (data.buildingCount(BuildingType.WATCHTOWER) < 1) return buildingGoal(data, BuildingType.WATCHTOWER);
         if (data.buildingCount(BuildingType.BARRACKS) < 1) return buildingGoal(data, BuildingType.BARRACKS);
-        return "영지 운영 · 건설소 보급·도로망·전문 전초기지·수레 정거장·시장 교역·작업장 정비·감시망·주둔 병력을 계속 확장";
+        if (data.buildingCount(BuildingType.ADVANCED_WORKSHOP) < 1
+                && SettlementAdvancedWorkshopService.lockedReason(data) == null) {
+            return buildingGoal(data, BuildingType.ADVANCED_WORKSHOP);
+        }
+        return "영지 운영 · 고급 제작 의뢰·건설소 보급·도로망·전문 전초기지·시장 교역·감시망·주둔 병력을 계속 확장";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
