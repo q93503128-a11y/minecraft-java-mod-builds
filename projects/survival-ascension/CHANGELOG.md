@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.32.0-alpha.1
+- Added repeatable out-and-back `원정 작전` for all nine expedition regions, staged from an active physical outpost in a region whose original directive is already complete.
+- Launch from `M -> Infrastructure -> 산업 가공소 -> 원정 작전`; the server resolves the nearest active owned outpost within4 blocks and derives its expedition region from the saved anchor biome. Launch costs one stored field-supply charge.
+- Added nine authored operation profiles: Woodland/Arid/Wetland range96, Highlands/Ocean/Deep/Frozen range128, Nether/End range160, each with exactly two existing validated ExpeditionAction objectives and a20/25/30-minute deadline by stage.
+- Operation objectives do not count until the outbound range line has been crossed, then count only outside48 blocks of the origin and while the player is physically inside the matching expedition region.
+- Reused the same real server-authoritative action hooks as directives/incidents: smart-tree logs, successful material/protection-backed Construction placements, mature crops, legitimate movement, ocean voyage, valid pickaxe mining, hostile kills and successful dash uses.
+- Completing field objectives does not grant rewards remotely; the player must return to within8 blocks of the exact launching outpost, which is revalidated as a real loaded/interactable Barrel + four-part camp before completion.
+- Added independent `expedition_operations_v1` persistence for active region, origin dimension/position, deadline, range-reached state, two bounded progress counters, first-return region mask, lifetime return count and one-time9/9 reward flag. Active operations survive logout/restart.
+- Death, dimension exit, creative/spectator switching or timeout fails the active operation with no supply refund. Origin chunks are never force-loaded.
+- 0.31 field recovery remains independent: an operation death fails the sortie, while the prepaid recovery contract may still qualify under its own same-dimension/96-block ordinary-death rules.
+- Apex Hunt and Ascension Trial manual starts are mutually exclusive with active operations. Regional Incidents may still occur naturally during a sortie.
+- Repeatable return rewards scale by world stage: Stage0 skillXP250/XP75/Emerald8/Amethyst8; Stage1 skillXP400/XP125/Diamond2/Amethyst16/Echo2; Stage2 skillXP600/XP200/Diamond4/Echo4/DragonBreath2.
+- First successful return in all nine regions grants one extra logistics-endgame package: Netherite Scrap2 + Echo16 + Amethyst64 + Dragon Breath8 + XP300. No permanent flat-stat multiplier is added.
+- Industrial radial, Production status, `/ascension stats` and Guide now expose operation launch/progress/first-clear/lifetime-return state. No new packet schema; protocol remains8.
+- Heracles is MIT and is used only as a product-level reference for explicit multi-step objective/completion state. Bountiful remains GPL-3.0 reference-only. No quest data/UI/source structures/assets/namespaces are copied.
+- Updated README/PROJECT canon, third-party policy, source audit and JAR verification for `expedition_operations_v1`, exact operation catalog, range/work/return gates, persistence, failure rules, challenge overlap and old-system regressions.
+
 ## 0.31.0-alpha.1
 - Added prepaid, one-use `현장 복귀 계약` to active physical outposts without adding ordinary waystone-style fast travel.
 - `M -> Infrastructure -> 산업 가공소 -> 현장 복귀 계약` requires an active outpost within4 blocks; first arming consumes one stored field-supply charge in advance.
@@ -30,25 +47,14 @@
 - Added atomic multi-charge production consumption for the two-charge outpost cost while retaining queued four-line cycle normalization.
 - Production status, `/ascension stats`, Industrial Works radial and Guide now report/operate upgraded and active outposts.
 - No packet schema changed; the outpost action reuses the existing string-based Industrial Works payload and network protocol remains8.
-- MineColonies is reference-only for the product-level idea that a forward settlement combines physical facilities, supply and local defense. Current public release pages identify GPLv3; no MineColonies source, blueprints, citizens, building data, UI, assets, research, raid code or namespaces are copied.
-- Updated README/PROJECT canon, third-party policy, source audit and JAR verification for physical structure checks, costs, outpost persistence,64-block logistics,24-block NATURAL-only safe zone and old-system regressions.
 
 ## 0.29.0-alpha.1
 - Added physical field depots backed by real vanilla Barrel inventories. `M -> Infrastructure -> 산업 가공소 -> 물류 거점 연결` finds the nearest Barrel within4 blocks and registers it for one stored industrial supply charge.
 - Added independent per-player `field_depots_v1` persistence with dimension + x/y/z entries, maximum3 depots/player, duplicate sanitation and one-owner-per-physical-barrel enforcement.
-- Re-selecting an already-owned nearby Barrel unlinks it without refund; another player's claimed Barrel cannot be registered.
-- Field depot stock is usable only in the same dimension, within32 blocks, while the chunk is already loaded and `mayInteract` succeeds. The system never force-loads depot chunks.
-- Loaded stale links are automatically pruned if the saved block is no longer a Barrel.
-- Material resolution always consumes player inventory first, then usable depots nearest-first.
-- Bulk Construction can continue line/wall/floor/volume jobs from linked Barrel stock after the carried stack runs out while preserving protection hooks and tick limits.
-- Irrigation replant draws its real seed/crop items from player inventory then linked depots with rollback on unexpected post-place consume failure.
-- Production status and `/ascension stats` expose registered/active depots; protocol remains8.
+- Same-dimension loaded Barrel stock supplies bulk Construction and irrigation within32 blocks; player inventory is consumed first and chunks are never force-loaded.
 
 ## 0.28.0-alpha.1
-- Added Stage-1 shared infrastructure `산업 가공소 / Industrial Works`: Stone Bricks1024 + Iron512 + Copper512 + Redstone256 + Amethyst128.
-- Added a MineMenu-style nested industrial radial and four atomic large-batch production lines.
-- Added `production_v1` with four bounded line buffers, lifetime cycle count and stored supply charges, all capped/normalized to prevent deadlock.
-- One four-line cycle creates one supply charge; dispatch may create Gold32 + Amethyst16 + Echo2.
+- Added Stage-1 shared infrastructure `산업 가공소 / Industrial Works`, four atomic large-batch production lines, bounded buffers and stored field-supply charges.
 
 ## 0.27.0-alpha.1
 - Added Stage-1 `정점 추적소 / Apex Tracking Post` and nine regional behavior-driven Apex Hunts with bounded lifecycle and one-time9/9 reward.
@@ -58,7 +64,6 @@
 
 ## 0.25.0-alpha.1
 - Replaced one fixed field objective per expedition region with two persistent directive options per region, for18 total directives across nine expedition regions.
-- Field Mastery remains Quarry7x7x12, Wood448, Harvest13x13, Academy7.5/20, Construction65/13x13 and four Stage2 air dashes.
 
 ## 0.24.0-alpha.1
 - Reworked expeditions from instant biome discovery rewards into persistent `discovered -> field objective -> completed` progression.
