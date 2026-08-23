@@ -1,0 +1,37 @@
+name: Arcane alpha73 self patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/arcane-alpha73-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply audited second-circle patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+          python3 .github/arcane-alpha73-patch.py
+          rm -f .github/arcane-alpha73-patch.py .github/arcane-alpha73-trigger.txt .github/workflows/arcane-alpha73-selfpatch.yml
+          git add -A
+          git diff --check
+          git commit -m 'Arcane alpha.73 second-circle authority audit [skip ci]'
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then pushed=1; break; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          test "$pushed" -eq 1
