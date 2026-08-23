@@ -98,7 +98,7 @@ must(construction_office, ('SUPPLY_RUNNER_TAG = "frontier_settlement_constructio
      'alpha.38 physical construction supply runner')
 forbid(construction_office, ('forceChunk', 'setChunkForced', 'destroyBlock(', 'dropResources(',
                              'data.addPopulation(', 'data.setPopulation(',
-                             'SettlementConstructionService.tick(', 'level.setBlock('),
+                             'SettlementConstructionService.tick(', 'level.setBlock(')),
        'alpha.38 construction office must not create a second builder or abstract population path')
 
 commands = text(JAVA / 'command/SettlementCommands.java')
