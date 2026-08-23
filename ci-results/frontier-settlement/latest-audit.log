@@ -1,1 +1,4 @@
-canonical property missing: mod_version=0.1.0-alpha.36
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/tools/test_current_source.py", line 180
+    forbid(barracks, ('forceChunk', 'setChunkForced', 'data.addPopulation(', 'data.setPopulation(',
+          ^
+SyntaxError: '(' was never closed
