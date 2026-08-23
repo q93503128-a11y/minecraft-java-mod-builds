@@ -14,23 +14,24 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
 /**
- * Server-authoritative deep runtime for the ten direct 6th-circle spells.
+ * Server-authoritative Grand Archmage runtime for the ten direct 6th-circle spells.
  *
- * Sixth circle is battlefield domination rather than a larger generic damage tier. Disintegrate
- * owns a narrow material-breaking ray, NPC Globes reproduce the same lower-circle interception
- * contract as player Globes, NPC Mass Suggestion maintains real retreat behavior, Move Earth is a
- * broad physical upheaval, Sunbeam is a wide piercing radiant line, NPC True Seeing repeatedly
- * reveals hidden life, Freezing Sphere is a fixed radial cryogenic burst, Eyebite maintains a long
- * fear/weakness retreat, NPC Flesh to Stone is a maintained casting-blocking petrification, and
- * Circle of Death preferentially executes weak ordinary enemies instead of acting as a flat blast.
+ * Sixth circle owns strong professional authority rather than inflated lower-circle damage:
+ * Disintegrate is precision material deletion, Globe rejects hostile 1-5C magic, Mass Suggestion
+ * imposes a long group retreat order, Move Earth performs deliberate battlefield engineering,
+ * Sunbeam holds a piercing solar corridor, True Seeing breaks concealment, Freezing Sphere locks
+ * an area into cryogenic denial, Eyebite forces sustained retreat, Flesh to Stone petrifies, and
+ * Circle of Death is routed only through the canonical non-execution death doctrine.
  */
 public final class SixthCircleSpellService {
     private static final Set<String> HANDLED = Set.of(
@@ -38,10 +39,14 @@ public final class SixthCircleSpellService {
             "true_seeing", "freezing_sphere", "eyebite", "flesh_to_stone", "circle_of_death");
 
     public static final int NPC_GLOBE_TICKS = HighWardSpellService.GLOBE_TICKS;
-    public static final int NPC_SUGGESTION_TICKS = 160;
+    public static final int NPC_SUGGESTION_TICKS = HighControlSpellService.MASS_SUGGESTION_TICKS;
     public static final int NPC_TRUE_SEEING_TICKS = 1200;
     public static final int NPC_PETRIFY_TICKS = 360;
     public static final int EYEBITE_TICKS = 360;
+    public static final int SUNBEAM_TICKS = 120;
+    public static final int FREEZING_SPHERE_TICKS = 200;
+    private static final int SUNBEAM_PULSE_TICKS = 10;
+    private static final int FREEZING_PULSE_TICKS = 10;
     private static final int MAX_GLOBE_BLOCKED_CIRCLE = 5;
 
     private static final Map<UUID, NpcGlobe> NPC_GLOBES = new HashMap<>();
@@ -49,11 +54,26 @@ public final class SixthCircleSpellService {
     private static final Map<UUID, TrueSightState> NPC_TRUE_SIGHT = new HashMap<>();
     private static final Map<UUID, FearState> EYEBITE_FEAR = new HashMap<>();
     private static final Map<UUID, PetrifyState> NPC_PETRIFY = new HashMap<>();
+    private static final List<SunbeamField> SUNBEAMS = new ArrayList<>();
+    private static final List<FreezingField> FREEZING_FIELDS = new ArrayList<>();
     private static final Map<ServerLevel, Long> LAST_TICK = new WeakHashMap<>();
 
     private SixthCircleSpellService() {}
 
     public static boolean handles(String spellId) { return HANDLED.contains(spellId); }
+
+    public static double massSuggestionRadius(double range) {
+        return Math.max(8.0, Math.min(14.0, range * .30));
+    }
+
+    public static double moveEarthLength(double range) { return MoveEarthService.length(range); }
+    public static double moveEarthTrenchHalfWidth(double range) { return MoveEarthService.trenchHalfWidth(range); }
+    public static double moveEarthBermOffset(double range) { return MoveEarthService.bermOffset(range); }
+    public static double sunbeamHalfWidth() { return 1.55; }
+
+    public static double freezingSphereRadius(double range) {
+        return Math.max(10.5, Math.min(15.5, Math.max(0.0, range) * .28));
+    }
 
     public static boolean execute(ServerPlayer caster, String spellId, double range, double power,
                                   CastTargetSnapshot snapshot) {
@@ -69,7 +89,7 @@ public final class SixthCircleSpellService {
             case "freezing_sphere" -> freezingSphere(level, caster, range, power, snapshot.target());
             case "eyebite" -> eyebite(level, caster, snapshot.targetEntity(caster).orElse(null), power);
             case "flesh_to_stone" -> SpellGameplayService.execute(caster, spellId, range, power, snapshot);
-            case "circle_of_death" -> circleOfDeath(level, caster, range, power, snapshot.target());
+            case "circle_of_death" -> DeathDoctrineService.execute(caster, spellId, range, power, snapshot);
             default -> false;
         };
     }
@@ -90,7 +110,8 @@ public final class SixthCircleSpellService {
             case "freezing_sphere" -> freezingSphere(level, caster, range, power, snapshot.target());
             case "eyebite" -> eyebite(level, caster, designatedTarget, power);
             case "flesh_to_stone" -> npcPetrify(level, caster, designatedTarget, power);
-            case "circle_of_death" -> circleOfDeath(level, caster, range, power, snapshot.target());
+            case "circle_of_death" -> DeathDoctrineService.executeNpc(level, caster, designatedTarget,
+                    spell.id(), range, power, snapshot);
             default -> false;
         };
     }
@@ -141,6 +162,8 @@ public final class SixthCircleSpellService {
         tickTrueSight(level, now);
         tickEyebiteFear(level, now);
         tickPetrify(level, now);
+        tickSunbeams(level, now);
+        tickFreezingFields(level, now);
     }
 
     public static void clear(LivingEntity subject) { if (subject != null) clear(subject.getUUID()); }
@@ -170,6 +193,8 @@ public final class SixthCircleSpellService {
             restorePetrify(state);
             stones.remove();
         }
+        clearSunbeams(id);
+        clearFreezingFields(id);
     }
 
     public static void clearAll() {
@@ -181,6 +206,8 @@ public final class SixthCircleSpellService {
         NPC_TRUE_SIGHT.clear();
         EYEBITE_FEAR.clear();
         NPC_PETRIFY.clear();
+        SUNBEAMS.clear();
+        FREEZING_FIELDS.clear();
         LAST_TICK.clear();
     }
 
@@ -202,62 +229,147 @@ public final class SixthCircleSpellService {
         return hit || snapshot.validFor(caster);
     }
 
+    /**
+     * Grand-Archmage earthwork: a long engineered corridor, not a radial earthquake. Player casts
+     * physically relocate surface material into a trench and two berms; NPC casts preserve the same
+     * battlefield split/knockback authority without editing shared terrain.
+     */
     private static boolean moveEarth(ServerLevel level, LivingEntity caster, double range, double power,
                                      CastTargetSnapshot snapshot) {
         Vec3 center = snapshot.target();
-        double radius = Math.max(9.0, Math.min(15.0, SpellMetrics.effectRadius("move_earth", range, 6)));
+        Vec3 forward = horizontal(snapshot.launchDirection());
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
+        double length = moveEarthLength(range);
+        double controlHalfWidth = moveEarthBermOffset(range) + 1.8;
+        AABB box = new AABB(center, center).inflate(length * .58, 8.0, length * .58);
         boolean hit = false;
-        AABB box = new AABB(center, center).inflate(radius, Math.max(7.0, radius * .72), radius);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                value -> enemy(caster, value) && center.distanceToSqr(value.position()) <= radius * radius)) {
-            double distance = Math.sqrt(center.distanceToSqr(target.position()));
-            double pressure = Math.max(.55, 1.0 - distance / Math.max(1.0, radius) * .45);
-            if (ArcaneDamage.hurt(level, caster, target, (float) (power * .78 * pressure))) hit = true;
-            Vec3 away = horizontal(target.position().subtract(center));
-            target.push(away.x * (1.05 + .55 * pressure), .72 + .68 * pressure, away.z * (1.05 + .55 * pressure));
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, value -> enemy(caster, value))) {
+            Vec3 relative = target.position().subtract(center);
+            double along = relative.dot(forward);
+            double lateral = relative.dot(right);
+            if (Math.abs(along) > length * .52 || Math.abs(lateral) > controlHalfWidth) continue;
+            double pressure = Math.max(.58, 1.0 - Math.abs(lateral) / Math.max(1.0, controlHalfWidth) * .42);
+            if (ArcaneDamage.hurt(level, caster, target, (float) (power * .44 * pressure))) hit = true;
+            double side = lateral < 0.0 ? -1.0 : 1.0;
+            target.push(right.x * side * (1.05 + .42 * pressure), .36 + .30 * pressure,
+                    right.z * side * (1.05 + .42 * pressure));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 50, 1, true, false));
         }
         if (caster instanceof ServerPlayer player) {
-            DestructiveMagicService.impact(player, "move_earth", center, radius, power);
+            int moved = MoveEarthService.execute(player, center, forward, range);
             ArcaneNoticeService.push(player, Component.literal(
-                    "§6[대지 이동] §f고정된 지면을 실제로 뒤엎고 주변 적을 바깥·위쪽으로 밀어 올립니다."), 72);
+                    "§6[대지 이동] §f약 " + Math.round(length) + "m 전선을 가로질러 중앙 참호와 양측 토루를 실제 토사 이동으로 조성했습니다."
+                            + (moved > 0 ? " §7이동 블록 " + moved + "개" : "")), 86);
         }
         level.playSound(null, BlockPos.containing(center), SoundEvents.GENERIC_EXPLODE.value(),
                 caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.05F, .52F);
         return hit || snapshot.validFor(caster);
     }
 
+    /** Six-second locked solar corridor; enemies can leave the line, but cannot ignore it while inside. */
     private static boolean sunbeam(ServerLevel level, LivingEntity caster, double range, double power,
                                    CastTargetSnapshot snapshot) {
+        clearSunbeams(caster.getUUID());
         Vec3 start = snapshot.launchOrigin();
         Vec3 end = snapshot.target();
-        boolean hit = lineDamage(level, caster, start, end, 1.55, power, target -> {
-            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 160));
-            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 180, 1, true, false));
-            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
-        });
+        SunbeamField field = new SunbeamField(level, caster.getUUID(), start, end, power,
+                level.getGameTime() + SUNBEAM_TICKS, level.getGameTime());
+        SUNBEAMS.add(field);
+        pulseSunbeam(field, caster, power * .30);
         level.playSound(null, BlockPos.containing(end), SoundEvents.BEACON_POWER_SELECT,
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .82F, 1.48F);
-        return hit || snapshot.validFor(caster);
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .94F, 1.48F);
+        return true;
     }
 
-    private static boolean freezingSphere(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
-        double radius = Math.max(7.5, Math.min(11.5, SpellMetrics.effectRadius("freezing_sphere", range, 6)));
-        boolean hit = false;
-        AABB box = new AABB(center, center).inflate(radius, Math.max(6.0, radius * .72), radius);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                value -> enemy(caster, value) && center.distanceToSqr(value.position()) <= radius * radius)) {
-            double distance = Math.sqrt(center.distanceToSqr(target.position()));
-            double falloff = Math.max(.62, 1.0 - distance / Math.max(1.0, radius) * .38);
-            if (ArcaneDamage.hurt(level, caster, target, (float) (power * falloff))) hit = true;
-            target.setRemainingFireTicks(0);
-            target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + 520));
-            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 220, 4, true, false));
-            Vec3 away = horizontal(target.position().subtract(center));
-            target.push(away.x * .36, .10, away.z * .36);
+    private static void tickSunbeams(ServerLevel level, long now) {
+        Iterator<SunbeamField> iterator = SUNBEAMS.iterator();
+        while (iterator.hasNext()) {
+            SunbeamField field = iterator.next();
+            if (field.level != level) continue;
+            Entity rawOwner = level.getEntity(field.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved() || now >= field.expiresAt) {
+                if (rawOwner instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "sunbeam");
+                iterator.remove();
+                continue;
+            }
+            if (now < field.nextPulse) continue;
+            field.nextPulse = now + SUNBEAM_PULSE_TICKS;
+            pulseSunbeam(field, owner, field.power * .16);
         }
+    }
+
+    private static void pulseSunbeam(SunbeamField field, LivingEntity caster, double pulsePower) {
+        lineDamage(field.level, caster, field.start, field.end, sunbeamHalfWidth(), pulsePower, target -> {
+            target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(), 80));
+            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 1, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 30, 0, true, false));
+        });
+    }
+
+    private static void clearSunbeams(UUID ownerId) {
+        Iterator<SunbeamField> iterator = SUNBEAMS.iterator();
+        while (iterator.hasNext()) {
+            SunbeamField field = iterator.next();
+            if (!field.ownerId.equals(ownerId)) continue;
+            Entity raw = field.level.getEntity(ownerId);
+            if (raw instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "sunbeam");
+            iterator.remove();
+        }
+    }
+
+    /** Ten-second cryogenic denial field, distinct from Cone of Cold or the one-shot Ice Storm. */
+    private static boolean freezingSphere(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
+        clearFreezingFields(caster.getUUID());
+        double radius = freezingSphereRadius(range);
+        FreezingField field = new FreezingField(level, caster.getUUID(), center, radius, power,
+                level.getGameTime() + FREEZING_SPHERE_TICKS, level.getGameTime() + FREEZING_PULSE_TICKS);
+        FREEZING_FIELDS.add(field);
+        pulseFreezing(field, caster, power * .62, true);
         level.playSound(null, BlockPos.containing(center), SoundEvents.GLASS_BREAK,
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.10F, .48F);
-        return hit || center != null;
+                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, 1.14F, .46F);
+        return true;
+    }
+
+    private static void tickFreezingFields(ServerLevel level, long now) {
+        Iterator<FreezingField> iterator = FREEZING_FIELDS.iterator();
+        while (iterator.hasNext()) {
+            FreezingField field = iterator.next();
+            if (field.level != level) continue;
+            Entity rawOwner = level.getEntity(field.ownerId);
+            if (!(rawOwner instanceof LivingEntity owner) || !owner.isAlive() || owner.isRemoved() || now >= field.expiresAt) {
+                if (rawOwner instanceof LivingEntity living) WorldMagicService.cancelRelease(living, "freezing_sphere");
+                iterator.remove();
+                continue;
+            }
+            if (now < field.nextPulse) continue;
+            field.nextPulse = now + FREEZING_PULSE_TICKS;
+            pulseFreezing(field, owner, field.power * .075, false);
+        }
+    }
+
+    private static void pulseFreezing(FreezingField field, LivingEntity caster, double pulsePower, boolean initial) {
+        AABB box = new AABB(field.center, field.center).inflate(field.radius, Math.max(7.0, field.radius * .72), field.radius);
+        for (LivingEntity target : field.level.getEntitiesOfClass(LivingEntity.class, box,
+                value -> enemy(caster, value) && field.center.distanceToSqr(value.position()) <= field.radius * field.radius)) {
+            double distance = Math.sqrt(field.center.distanceToSqr(target.position()));
+            double falloff = Math.max(.62, 1.0 - distance / Math.max(1.0, field.radius) * .38);
+            ArcaneDamage.hurt(field.level, caster, target, (float) Math.max(.5, pulsePower * falloff));
+            target.setRemainingFireTicks(0);
+            target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + (initial ? 520 : 120)));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 18, 5, true, false));
+            target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 18, 3, true, false));
+        }
+    }
+
+    private static void clearFreezingFields(UUID ownerId) {
+        Iterator<FreezingField> iterator = FREEZING_FIELDS.iterator();
+        while (iterator.hasNext()) {
+            FreezingField field = iterator.next();
+            if (!field.ownerId.equals(ownerId)) continue;
+            Entity raw = field.level.getEntity(ownerId);
+            if (raw instanceof LivingEntity owner) WorldMagicService.cancelRelease(owner, "freezing_sphere");
+            iterator.remove();
+        }
     }
 
     private static boolean eyebite(ServerLevel level, LivingEntity caster, LivingEntity target, double power) {
@@ -317,32 +429,6 @@ public final class SixthCircleSpellService {
         target.setTarget(resolveOldTarget(state.level, state.oldTargetId));
     }
 
-    private static boolean circleOfDeath(ServerLevel level, LivingEntity caster, double range, double power, Vec3 center) {
-        double radius = Math.max(10.0, Math.min(16.0, SpellMetrics.effectRadius("circle_of_death", range, 6)));
-        boolean hit = false;
-        int executions = 0;
-        AABB box = new AABB(center, center).inflate(radius, Math.max(7.0, radius * .70), radius);
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
-                value -> enemy(caster, value) && center.distanceToSqr(value.position()) <= radius * radius)) {
-            float effectivePool = target.getHealth() + target.getAbsorptionAmount();
-            boolean ordinary = target.getMaxHealth() <= Math.max(80.0, power * 1.55)
-                    && target.getBbWidth() <= 2.6F && target.getBbHeight() <= 4.2F;
-            boolean weak = effectivePool <= Math.max(18.0, power * .92);
-            float damage = ordinary && weak ? Math.max((float) (power * 1.35), effectivePool + 8.0F)
-                    : (float) Math.max(1.0, power * .72);
-            if (ArcaneDamage.hurt(level, caster, target, damage)) hit = true;
-            if (ordinary && weak) executions++;
-            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 2, true, false));
-        }
-        if (caster instanceof ServerPlayer player) {
-            ArcaneNoticeService.push(player, Component.literal("§5[죽음의 원] §f대형 생명 파동 전개"
-                    + (executions <= 0 ? "" : " · 약한 일반 적 처형 압박 " + executions + "체")), 75);
-        }
-        level.playSound(null, BlockPos.containing(center), SoundEvents.WITHER_SPAWN,
-                caster instanceof ServerPlayer ? SoundSource.PLAYERS : SoundSource.HOSTILE, .70F, .62F);
-        return hit || center != null;
-    }
-
     private static boolean npcGlobe(ServerLevel level, Mob caster, double power) {
         double radius = Math.max(6.0, Math.min(8.0, 6.0 + Math.max(0.0, power - 52.0) / 90.0));
         NPC_GLOBES.put(caster.getUUID(), new NpcGlobe(level, caster.getUUID(), radius,
@@ -364,7 +450,7 @@ public final class SixthCircleSpellService {
     }
 
     private static boolean npcMassSuggestion(ServerLevel level, Mob caster, double range, Vec3 center) {
-        double radius = Math.max(8.0, Math.min(14.0, range * .30));
+        double radius = massSuggestionRadius(range);
         long expiresAt = level.getGameTime() + NPC_SUGGESTION_TICKS;
         int affected = 0;
         AABB box = new AABB(center, center).inflate(radius, Math.max(6.0, radius * .70), radius);
@@ -574,4 +660,24 @@ public final class SixthCircleSpellService {
                              long expiresAt) {}
     private record PetrifyState(ServerLevel level, UUID ownerId, UUID targetId, UUID oldTargetId,
                                 long expiresAt) {}
+
+    private static final class SunbeamField {
+        private final ServerLevel level; private final UUID ownerId; private final Vec3 start, end; private final double power;
+        private final long expiresAt; private long nextPulse;
+        private SunbeamField(ServerLevel level, UUID ownerId, Vec3 start, Vec3 end, double power,
+                             long expiresAt, long nextPulse) {
+            this.level=level; this.ownerId=ownerId; this.start=start; this.end=end; this.power=power;
+            this.expiresAt=expiresAt; this.nextPulse=nextPulse;
+        }
+    }
+
+    private static final class FreezingField {
+        private final ServerLevel level; private final UUID ownerId; private final Vec3 center;
+        private final double radius, power; private final long expiresAt; private long nextPulse;
+        private FreezingField(ServerLevel level, UUID ownerId, Vec3 center, double radius, double power,
+                              long expiresAt, long nextPulse) {
+            this.level=level; this.ownerId=ownerId; this.center=center; this.radius=radius; this.power=power;
+            this.expiresAt=expiresAt; this.nextPulse=nextPulse;
+        }
+    }
 }
