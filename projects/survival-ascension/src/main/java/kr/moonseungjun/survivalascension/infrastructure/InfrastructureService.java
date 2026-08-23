@@ -39,6 +39,7 @@ public final class InfrastructureService {
                 || ProductionService.ACTION_DEPOT_TOGGLE.equals(action)
                 || ProductionService.ACTION_WAREHOUSE_TOGGLE.equals(action)
                 || ProductionService.ACTION_BULK_OFFLOAD.equals(action)
+                || ProductionService.ACTION_FREIGHT.equals(action)
                 || ProductionService.ACTION_OUTPOST_UPGRADE.equals(action)
                 || ProductionService.ACTION_OUTPOST_SIEGE.equals(action)
                 || ProductionService.ACTION_BASTION_SIEGE.equals(action)
@@ -138,7 +139,7 @@ public final class InfrastructureService {
             if (project == InfrastructureProject.CIVIL_WORKS) {
                 player.sendSystemMessage(Component.literal("§6[토목 시공] §f건축 Lv.60부터 M → 건축 → 도로/교량. 바라보는 방향으로 같은 실제 블록을 3폭 장거리 바닥으로 시공합니다."));
             } else if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
-                player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 물류 거점/창고군 → 물리 전초기지 → 전초/요새 방어 → 원정 작전/현장 복귀까지 확장할 수 있습니다."));
+                player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 물류 거점/창고군 → 물리 전초기지 → 물리 화물 수레 → 전초/요새 방어 → 원정 작전/현장 복귀까지 확장할 수 있습니다."));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 M → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
@@ -167,9 +168,9 @@ public final class InfrastructureService {
         if (data.isComplete(project)) {
             player.sendSystemMessage(Component.literal("§6[인프라] §e" + project.koreanName() + " §a완공 §7· §f" + project.benefit()));
             if (project == InfrastructureProject.CIVIL_WORKS) {
-                player.sendSystemMessage(Component.literal("  §6- 도로/교량 §f건축 Lv.60 · 3폭 × 17/33/49 · 현장 숙련65 · Shift는 단일"));
+                player.sendSystemMessage(Component.literal("  §6- 도로/교량 §f건축 Lv.60 · 3폭 × 17/33/49 · 현장 숙련65 · 산업 가공소까지 완공하면 전초 간 상자 광산수레 대량화물 적재/하역"));
             } else if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
-                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 1세트 → 보급권1 · 배럴 거점/창고군 · 물리 전초기지 · 전초/요새 방어 · 반복 원정 작전 · 1회 현장 복귀"));
+                player.sendSystemMessage(Component.literal("  §3- 산업 생산망 §f4계통 1세트 → 보급권1 · 배럴 거점/창고군 · 물리 전초기지 · 물리 화물 수레 · 전초/요새 방어 · 반복 원정 작전 · 1회 현장 복귀"));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {

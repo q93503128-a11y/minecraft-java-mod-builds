@@ -31,13 +31,14 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("물류 거점 연결", "4블록 내 배럴 앵커 등록/해제 · 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
             new Entry("창고 배럴 연결", "4블록 내 실제 배럴 ↔ 반경6 자신의 거점 · 거점당 최대8 · 보급권 없음", new ItemStack(Items.CHEST), "", Action.WAREHOUSE),
             new Entry("현장 일괄 적재", "주 인벤토리 대량자원 → 가까운 사용 가능 실제 배럴 · 핫바/장비 유지", new ItemStack(Items.HOPPER), "", Action.OFFLOAD),
+            new Entry("물리 화물 수레", "산업+토목 · 활성 전초+레일 위 상자 광산수레 · 창고↔다른 전초 실제 운송", new ItemStack(Items.CHEST_MINECART), "", Action.FREIGHT),
             new Entry("전초기지 승격", "등록 배럴+침대+모닥불+작업대+화로 · 보급권2/철32/금8/석탄32", new ItemStack(Items.CAMPFIRE), "", Action.OUTPOST),
             new Entry("전초 방어전", "활성 전초4블록 · 보급권1 · 3공세 · 앵커6블록 돌파압력 방어", new ItemStack(Items.SHIELD), "", Action.SIEGE),
             new Entry("요새 방어전", "반경6~12 실제 벽 사분면12열씩 · 보급권2 · 4공세 · 별도 방어력 보너스 없음", new ItemStack(Items.STONE_BRICK_WALL), "", Action.BASTION),
             new Entry("원정 작전", "완수 지역 전초에서 보급권1 · 전진선 돌파→현지 작업→같은 전초 귀환", new ItemStack(Items.SPYGLASS), "", Action.OPERATION),
             new Entry("현장 복귀 계약", "활성 전초기지에서 보급권1 · 일반 사망 96블록 내 1회 복귀", new ItemStack(Items.COMPASS), "", Action.RECOVERY),
             new Entry("현장 보급 출고", "보급권1 → 금32 · 자수정16 · 메아리2", new ItemStack(Items.MINECART), "", Action.DISPATCH),
-            new Entry("생산 현황", "생산·창고군·전초·요새 방어진지·방어전·복귀·원정 상태", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
+            new Entry("생산 현황", "생산·창고군·물리 화물·전초·요새·복귀·원정 상태", new ItemStack(Items.WRITABLE_BOOK), "", Action.STATUS),
             new Entry("뒤로", "인프라 메뉴로 돌아가기", new ItemStack(Items.ARROW), "", Action.BACK)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
@@ -64,7 +65,7 @@ public final class ProductionRadialMenuScreen extends Screen {
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), cx - this.font.width(entry.title()) / 2, cy - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), cx - this.font.width(entry.detail()) / 2, cy + 8, 0xFFB8B8B8, false);
-        String caption = "채집 → 적재 → 전초 건설 → 물리 요새화/방어 → 원정";
+        String caption = "채집 → 적재 → 도로/레일 → 물리 화물 → 전초/방어 → 원정";
         graphics.text(this.font, caption, cx - this.font.width(caption) / 2, cy - 102, 0xFFE0E0E0, true);
     }
 
@@ -79,6 +80,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             case DEPOT -> ProductionService.ACTION_DEPOT_TOGGLE;
             case WAREHOUSE -> ProductionService.ACTION_WAREHOUSE_TOGGLE;
             case OFFLOAD -> ProductionService.ACTION_BULK_OFFLOAD;
+            case FREIGHT -> ProductionService.ACTION_FREIGHT;
             case OUTPOST -> ProductionService.ACTION_OUTPOST_UPGRADE;
             case SIEGE -> ProductionService.ACTION_OUTPOST_SIEGE;
             case BASTION -> ProductionService.ACTION_BASTION_SIEGE;
@@ -95,7 +97,7 @@ public final class ProductionRadialMenuScreen extends Screen {
     private static int selectedIndex() { double a=correctAngle(360-(getMouseAngle()-ANGLE_PER_ITEM/2)); return Mth.clamp((int)Math.floor(a/ANGLE_PER_ITEM),0,ITEM_COUNT-1); }
     private static double getMouseAngle(){Minecraft m=Minecraft.getInstance();double ox=m.getWindow().getScreenWidth()*.5,oy=m.getWindow().getScreenHeight()*.5;return correctAngle(-Math.toDegrees(Math.atan2(m.mouseHandler.xpos()-ox,m.mouseHandler.ypos()-oy)));}
     private static double correctAngle(double a){while(a<0)a+=360;while(a>=360)a-=360;return a;}
-    private enum Action { FUND, PRODUCE, DEPOT, WAREHOUSE, OFFLOAD, OUTPOST, SIEGE, BASTION, OPERATION, RECOVERY, DISPATCH, STATUS, BACK }
+    private enum Action { FUND, PRODUCE, DEPOT, WAREHOUSE, OFFLOAD, FREIGHT, OUTPOST, SIEGE, BASTION, OPERATION, RECOVERY, DISPATCH, STATUS, BACK }
     private record Entry(String title,String detail,ItemStack icon,String programId,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}

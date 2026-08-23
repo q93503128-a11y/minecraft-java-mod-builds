@@ -1,53 +1,50 @@
 # Changelog
 
+## 0.42.0-alpha.1
+- Added `Physical Freight Relay / 물리 화물 중계` so actual logistics stock can move between physical outposts instead of roads/rails remaining decorative infrastructure.
+- Added `FreightService` using vanilla Chest Minecarts, rails, real Barrel Containers and existing `FieldDepotData`/warehouse links; no new custom entity/block/item or dependency.
+- Added `ProductionService.ACTION_FREIGHT = "physical_freight"` and `물리 화물 수레` to the existing Industrial Works radial; existing network protocol8 and InfrastructureActionPayload are reused.
+- Freight requires both completed Industrial Works and Civil Works, an active owned outpost within4, a Chest Minecart within4 and already-loaded rail at/below the cart.
+- Departure loading requires a completely empty cart and moves only the existing `FieldDepotService.isBulkMaterial` whitelist from that exact outpost's registered Barrel anchor + its linked warehouse Barrels.
+- Loaded freight stores only owner UUID and origin outpost dimension/x/y/z on the Chest Minecart's persistent NBT; no global route/freight SavedData is added.
+- The same physical cart must arrive at a different active owned outpost in the same dimension before unloading is allowed.
+- Destination unloading inserts only into that destination's actual anchor + linked warehouse Barrels; partial unload is allowed and remainder stays in the cart.
+- Freight insertion keeps component-equal merge-first behavior, `Container.canPlaceItem`, real stack/container limits and empty-slot fallback; source stacks shrink only by actually accepted quantities.
+- Freight has no generated reward and no supply-charge cost. There is therefore no short-route reward exploit; the useful result is only physical relocation of existing stock.
+- Added no cart spawn/auto-drive, cart/player teleport, abstract route registration, universal remote storage, `getChunk`, region ticket, force-load or cross-dimension transport.
+- Create remains design-reference-only for the product lesson of physical stock movement. No Create train/contraption/package/Stock Link/routing source or assets are bundled.
+- Retained 0.41 Civil Works causeways, 0.40 physical breachers, 0.39 Bastion defense, 0.38 Outpost defense, 0.37 warehouse clusters and older logistics/expedition/endgame contracts.
+
 ## 0.41.0-alpha.1
 - Added `Civil Works Causeways / 토목 공사소·도로 교량 시공` to reconnect large resource throughput with persistent world engineering instead of adding another combat tier.
-- Added Stage1 `CIVIL_WORKS` infrastructure project: Stone Bricks2048 + Cobblestone1536 + Gravel1536 + Iron256 + Copper256.
-- Civil Works uses existing inventory-first + physical logistics Barrel funding and stores progress inside existing `infrastructure_v1`; no new SavedData ID or migration.
-- Extended `InfrastructureSiteService` with a registered-Barrel Civil Works yard: radius6 Stone Bricks48 + Scaffolding16 + Iron Blocks4 + Stonecutters2 + Crafting Table1.
-- Finalizable Civil Works funding validates that real loaded commissioning yard before consuming any material in the final call; later dismantling does not disable the completed project.
-- Added `ConstructionMode.CAUSEWAY`, server-gated by Construction Lv60 and completed Civil Works.
-- Added a `도로/교량` entry to the existing Construction radial and a `토목 공사소` entry to the Infrastructure radial; no packet schema/protocol bump.
-- Causeway places the player's actual chosen BlockItem as a flat three-wide deck extending forward in dominant horizontal look direction: Lv60 3×17, Lv90 3×33, Lv100 3×49, Field Mastery 3×65.
-- Causeway uses the same Construction queue, max512 pending targets/player, global64/tick and local8/tick work budget instead of a second auto-builder.
-- Added explicit loaded-only bulk construction target check with `level.hasChunkAt(target)` before block-state/protection work. Unloaded segments skip; no `getChunk`, ticket or force-load.
-- Retained player/physical-depot material consumption, `mayInteract`, replaceability, block survival, NeoForge `EventHooks.onBlockPlace`, rollback on material race and Shift precision override.
-- Causeway does not erase terrain, auto-level ground, generate free support pillars or choose decorative palettes; the resulting real deck/bridge is the world consequence.
-- Building Gadgets 2 remains covered by the existing MIT notice; 0.41 extends the already-adapted material/protection/tick-distribution principles without bundling external assets or a new dependency.
-- Retained 0.40 physical breachers, 0.39 Bastion defense, 0.38 Outpost defense, 0.37 warehouse clusters and older logistics/expedition/endgame contracts.
+- Added Stage1 `CIVIL_WORKS`: Stone Bricks2048 + Cobblestone1536 + Gravel1536 + Iron256 + Copper256, funded through existing physical logistics.
+- Added registered-Barrel Civil Works commissioning yard: radius6 Stone Bricks48 + Scaffolding16 + Iron Blocks4 + Stonecutters2 + Crafting Table1.
+- Added `ConstructionMode.CAUSEWAY`: actual selected BlockItem as flat 3-wide forward deck at 17/33/49/65 length using the existing Construction queue.
+- Added explicit `level.hasChunkAt(target)` bulk-placement boundary; no chunk tickets or force-load.
 
 ## 0.40.0-alpha.1
-- Added `Physical Siege Breachers / 물리 공성 파괴자` so the unique fourth Bastion wave can physically answer the player-built wall instead of only increasing enemy statistics.
-- Added `OutpostSiegeBreachService` and registered it on the server tick bus.
-- Breaching is Bastion-only by reusing the existing siege owner/wave NBT and requiring wave4; normal three-wave Outpost Defense never enters the block-breaking path.
-- Only Ravagers and Vindicators may breach: Ravager successful-break cooldown30 ticks, Vindicator60 ticks.
-- Breakers search only a tiny local area around themselves and only target vanilla `WALLS`, Iron Bars and Nether Brick Fence inside the outpost annulus radius6..12.
-- Added full protection chain: active siege owner, same-dimension operational owned outpost, loaded position, `EventHooks.canEntityGrief`, owner `mayInteract`, `state.canEntityDestroy`, `EventHooks.onEntityDestroyBlock`, and no block entity.
-- Fortification destruction uses normal item drops, letting the defender recover material and rebuild with the existing Construction system.
-- Added no arbitrary terrain destruction, storage/anchor destruction, new packet, new SavedData ID, client coordinate trust, custom block/item, `getChunk`, region ticket or force-load.
+- Added Bastion-final-wave physical Ravager/Vindicator breachers targeting only qualifying fortification with full grief/protection hooks and ordinary block drops.
 
 ## 0.39.0-alpha.1
-- Added `Physical Bastion Defense / 물리 요새 방어`: radius6..12 physical wall ring, four quadrants each12 unique fortified x/z columns, supply2 /4 waves /6000 ticks.
-- Bastion revalidates the physical ring between waves and scales through authored role overlap rather than a blanket HP/attack multiplier.
+- Added `Physical Bastion Defense`: radius6..12 real fortification, four quadrants each12 unique fortified columns, supply2 /4 waves /6000 ticks.
 
 ## 0.38.0-alpha.1
-- Added `Defendable Physical Outposts / 전초 방어전`: active outpost, supply1, three waves, anchor-directed mobs, breach radius6/limit200 and owner64 physical-defense requirement.
+- Added `Defendable Physical Outposts`: active outpost, supply1, three waves, anchor-directed mobs, breach radius6/limit200 and owner64 requirement.
 
 ## 0.37.0-alpha.1
-- Added `Physical Warehouse Clusters / 물리 창고군`: each depot anchor may link max8 additional real Barrels inside radius6, with optional `warehouse_links` in `field_depots_v1`.
+- Added `Physical Warehouse Clusters`: each depot anchor may link max8 additional real Barrels inside radius6 in `field_depots_v1`.
 
 ## 0.36.0-alpha.1
-- Added bounded real-world commissioning for Industrial Works, Apex Tracking Post and Ascension Nexus before finalizable funding can cross completion.
+- Added bounded real-world commissioning before finalizable late-project funding.
 
 ## 0.35.0-alpha.1
-- Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock; hotbar/equipment remain untouched.
+- Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock.
 
 ## 0.34.0-alpha.1
-- Added one shared inventory-first + nearest real-Barrel resolver for industrial batches, unfinished infrastructure and equipment reforge/awakening.
-- Apex/Trial entry remained physically player-carried.
+- Added shared inventory-first + nearest real-Barrel resolver for industrial batches, unfinished infrastructure and equipment spending. Apex/Trial entry stayed player-carried.
 
 ## 0.33.0-alpha.1
-- Added exactly one bounded sortie complication to each new operation: DEEP_FRONT, FORWARD_SHIFT or HOT_EXTRACTION.
+- Added one bounded sortie complication to each new operation: DEEP_FRONT, FORWARD_SHIFT or HOT_EXTRACTION.
 
 ## 0.32.0-alpha.1
 - Added nine repeatable physical out-and-back expedition operations staged from active regional outposts.

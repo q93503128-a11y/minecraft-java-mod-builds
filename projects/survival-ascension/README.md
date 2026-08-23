@@ -4,82 +4,72 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
-## 0.41.0-alpha.1 — Civil Works Causeways / 토목 공사소·도로 교량 시공
-0.41 moves back from combat escalation to the core loop: large gathering and physical storage now feed a large engineering sink that leaves useful infrastructure in the world.
+## 0.42.0-alpha.1 — Physical Freight Relay / 물리 화물 중계
+0.41 made it practical to build long roads and bridges. 0.42 makes transport infrastructure matter to actual inventory location: a real vanilla Chest Minecart can physically carry bulk stock from one owned active outpost warehouse cluster to another.
 
-### Civil Works project
-New Stage1 infrastructure project `CIVIL_WORKS / 토목 공사소`:
-- Stone Bricks `2048`
-- Cobblestone `1536`
-- Gravel `1536`
-- Iron Ingots `256`
-- Copper Ingots `256`
+### Player flow
+Use `M -> Infrastructure -> 산업 가공소 -> 물리 화물 수레`.
 
-Funding uses the retained 0.34 resolver: player inventory first, then nearest usable physical logistics Barrels. No virtual warehouse or remote universal payment is added.
+Requirements:
+- Industrial Works complete;
+- Civil Works complete;
+- survival/non-spectator player;
+- an active owned outpost within4;
+- a real Chest Minecart within4 standing on already-loaded vanilla rail.
 
-The finalizable funding call also reuses the 0.36 physical commissioning contract. Within4 of the player there must be an owned registered Barrel, and inside radius6 of that anchor the loaded world must contain:
-- Stone Bricks48
-- Scaffolding16
-- Iron Blocks4
-- Stonecutters2
-- Crafting Table1
+At the departure outpost the cart must be completely empty. The action takes only the same authored bulk-material whitelist used by 0.35 High-volume Field Offload from that exact outpost's registered Barrel anchor and its linked warehouse Barrels, then inserts the actual stacks into the actual Chest Minecart inventory.
 
-The site is checked before the final material call consumes anything. As with existing commissioning sites, this is one-time proof of a real yard; dismantling it later does not disable the completed project.
+After loading, the same cart stores only a small manifest on its own persistent entity NBT: owner UUID and origin outpost dimension/x/y/z. There is no route SavedData, virtual cargo account or generated reward.
 
-### Road / bridge construction mode
-After Civil Works is complete, Construction Lv60 unlocks `도로/교량` in the existing Construction radial.
+Move that physical cart over the player's real rail network to a different active owned outpost in the same dimension and select the same action again. Cargo is inserted into that destination outpost's real Barrel anchor and linked warehouse Barrels. If destination capacity is insufficient, only accepted items move and the remainder stays inside the cart. When no bulk cargo remains, the manifest is removed.
 
-Place the first ordinary BlockItem while the mode is selected. The same block is then queued forward in the player's horizontal look direction as a flat three-wide deck:
-- Lv60: `3 × 17`
-- Lv90: `3 × 33`
-- Lv100: `3 × 49`
-- Lv100 + all nine expedition regions / Field Mastery: `3 × 65`
+### Inventory truth and safety
+Freight never teleports stock. Loading shrinks source Barrel stacks only by the quantity accepted by the cart. Unloading shrinks cart stacks only by the quantity accepted by destination Containers.
 
-The mode is deliberately forward-only instead of centering around the first block, so repeated placements naturally extend roads, raised causeways and bridges across real terrain. It does not auto-level terrain, delete obstacles, create supports from nowhere or choose another block palette.
+Insertion keeps the existing logistics rules:
+- merge only `ItemStack.isSameItemSameComponents` stacks first;
+- respect `Container.canPlaceItem`;
+- respect stack and Container limits;
+- then use valid empty slots;
+- preserve every remainder physically.
 
-### Existing Construction engine only
-0.41 does not add a second builder engine. Causeway targets enter the same `ConstructionProgression` queue and retain:
-- global budget64 placed attempts/tick;
-- player-local budget8/tick;
-- max512 queued blocks/player;
-- player inventory + usable real physical logistics material consumption;
-- `level.mayInteract` protection;
-- NeoForge `EventHooks.onBlockPlace`;
-- block survival/replacement checks;
-- Shift precision override.
+Endpoints use only the outpost's own anchor and stored warehouse links. Every Barrel position must already be loaded, still be a real vanilla Barrel Container and pass owner `mayInteract`.
 
-0.41 also makes bulk placement explicitly loaded-only with `level.hasChunkAt(target)` before block-state/protection work. Unloaded road segments are skipped; no `getChunk`, ticket or force-load is used.
+The cart itself must be on `BlockTags.RAILS` at its position or immediately below. The system never spawns a cart, drives it, teleports it, registers an abstract route, force-loads chunks or reaches across dimensions.
+
+There is no supply-charge cost because this action creates no reward or duplicate output; the investment is the rails, Chest Minecart, physical warehouse capacity and travel itself.
 
 ### External reference boundary
-The causeway work extends the already-noticed Building Gadgets 2 MIT design/code-study boundary: material-backed bulk placement, protection checks and tick-distributed work. Survival Ascension's Civil Works funding, physical commissioning yard, three-wide forward geometry and field-logistics integration are its own code. No Building Gadgets assets, item models, GUI assets, templates or namespaces are bundled.
+Create remains design-reference-only for this feature. Survival Ascension studies the high-level value of making logistics physically move stock, but 0.42 does not copy Create trains, contraptions, packages, stock links, routing code, assets, models, sounds or data. The freight implementation uses only vanilla Chest Minecart/rail/Container behavior and Survival Ascension's existing physical-Barrel data.
+
+## 0.41.0-alpha.1 — Civil Works Causeways / 토목 공사소·도로 교량 시공
+Stage1 `CIVIL_WORKS / 토목 공사소` consumes Stone Bricks2048 + Cobblestone1536 + Gravel1536 + Iron256 + Copper256 through inventory-first then real logistics Barrels.
+
+Its finalizable funding call requires an owned registered Barrel within4 and a loaded radius6 commissioning yard containing Stone Bricks48, Scaffolding16, Iron Blocks4, Stonecutters2 and Crafting Table1. Validation occurs before final-call material consumption; commissioning is one-time proof, not maintenance.
+
+After completion, Construction Lv60 gains `도로/교량`. The manually placed BlockItem becomes a flat three-wide deck extending forward: Lv60 3×17, Lv90 3×33, Lv100 3×49, Field Mastery 3×65. It uses the existing Construction queue, loaded-only targets, player/real-Barrel materials, `mayInteract`, NeoForge placement hooks and Shift precision. It does not auto-level terrain, delete obstacles or create free supports.
 
 ## 0.40.0-alpha.1 — Physical Siege Breachers / 물리 공성 파괴자
-0.39 made a player-built wall matter through collision and pathing. 0.40 lets the unique final bastion wave answer that infrastructure physically instead of merely receiving more health or damage.
-
-Only siege mobs tagged as wave4 are eligible, so normal three-wave Outpost Defense does not gain block destruction. Ravagers may break one eligible fortification at most every30 ticks and Vindicators every60 ticks. They target only vanilla `WALLS`, Iron Bars or Nether Brick Fence inside the physical fortification annulus radius6..12 and generally forward toward the anchor.
-
-Every break still requires loaded terrain, `EventHooks.canEntityGrief`, owner `mayInteract`, block entity-destroy permission and `EventHooks.onEntityDestroyBlock`. Destroyed fortification drops normally for physical repair. No arbitrary terrain/storage/anchor destruction or force-load is added.
+Only Bastion wave4 Ravagers/Vindicators may physically break qualifying wall blocks. Ravager cooldown30 ticks, Vindicator60. Every break requires loaded terrain, `mobGriefing`, owner `mayInteract`, entity-destroy permission and NeoForge destroy-event approval. Normal three-wave defense remains non-destructive.
 
 ## 0.39.0-alpha.1 — Physical Bastion Defense / 물리 요새 방어
-A distributed wall ring around an active outpost admits the optional four-wave Bastion defense. The server scans radius6..12, Y-3..+4 and requires at least12 fortified x/z columns in each NE/NW/SE/SW quadrant. Valid materials are `WALLS`, Iron Bars and Nether Brick Fence. Same-column vertical stacking counts once.
-
-Bastion costs supply2, lasts6000 ticks, revalidates the physical ring between waves and retains breach radius6/limit200. Normal Outpost Defense remains supply1/3 waves/4800 ticks. Difficulty is composition-driven rather than a bastion-only blanket HP/attack multiplier.
+A real outpost fortification ring uses radius6..12, Y-3..+4, vanilla WALLS/Iron Bars/Nether Brick Fence and at least12 unique fortified x/z columns in each quadrant. Bastion costs supply2, has4 waves/6000 ticks and revalidates the physical ring between waves. No passive defense percentage or blanket combat stat multiplier.
 
 ## 0.38.0-alpha.1 — Defendable Physical Outposts / 전초 방어전
-Active real outposts can host a three-wave defense. Siege mobs advance toward the real anchor; enemies inside6 generate breach pressure and200 fails the defense. The owner must remain within64 and keep the actual outpost structure operational.
+Active real outposts can host a supply1 three-wave defense. Attackers advance toward the actual anchor; enemies inside6 generate breach pressure and200 fails the defense. Owner must remain within64 and keep the physical outpost structure operational.
 
 ## 0.37.0-alpha.1 — Physical Warehouse Clusters / 물리 창고군
 Each registered Barrel remains an anchor and may explicitly link up to8 additional real Barrels inside radius6. `field_depots_v1` keeps optional `warehouse_links`; unloaded satellites are skipped/preserved and loaded-invalid links prune individually.
 
 ## 0.36.0-alpha.1 — Physical Commissioning Sites / 물리 준공 현장
-Industrial Works, Apex Tracking Post and Ascension Nexus require a real bounded commissioning site before a finalizable funding call can cross completion. 0.41 extends this existing engine to Civil Works. Existing completed projects remain compatible.
+Major late projects require a bounded real commissioning site before a finalizable funding call can cross completion. Existing completed projects remain compatible.
 
 ## Retained field loop
 - 0.34 Integrated Logistics Backbone: stationary sinks consume inventory first, then nearest usable real logistics Barrels.
-- 0.35 High-volume Field Offload: explicit main inventory slots9..35 -> nearest physical Barrel capacity; hotbar/equipment remain carried.
+- 0.35 High-volume Field Offload: main inventory slots9..35 -> nearest real Barrel capacity; hotbar/equipment remain carried.
 - 0.30 Physical Outposts: owned depot + Bed/Campfire/Crafting/Furnace; logistics64 and NATURAL-hostile safety24 while active.
 - 0.31 Field Recovery: prepaid one-use ordinary-death return within96; authored encounter deaths stay excluded.
-- 0.32/0.33 Expedition Operations: physical out-and-back regional sorties with one bounded complication per new sortie.
+- 0.32/0.33 Expedition Operations: physical out-and-back regional sorties with one bounded complication per sortie.
 
 ## Combat / endgame boundaries
 Apex entry remains player-carried Echo8 + Amethyst32 + Gold32. Ascension Trial entry remains player-carried Echo32 + Amethyst64 + Dragon Breath8. Physical logistics never become remote encounter payment.
@@ -96,4 +86,4 @@ After Lv100 + all nine expedition regions:
 Large work remains tick-budgeted and uses normal protection/material paths. Shift remains the precision override.
 
 ## External references
-Permissive-code and reference-only boundaries are documented in `THIRD_PARTY_NOTICES.md`. 0.41 adds no third-party assets or dependency and keeps Building Gadgets 2 under its existing MIT notice.
+Permissive-code and reference-only boundaries are documented in `THIRD_PARTY_NOTICES.md`. 0.42 adds no third-party asset or dependency and introduces no new SavedData ID or packet.

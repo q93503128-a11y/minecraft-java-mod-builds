@@ -15,6 +15,7 @@ public final class ProductionService {
     public static final String ACTION_DEPOT_TOGGLE = "toggle_field_depot";
     public static final String ACTION_WAREHOUSE_TOGGLE = "toggle_warehouse_barrel";
     public static final String ACTION_BULK_OFFLOAD = "bulk_offload";
+    public static final String ACTION_FREIGHT = "physical_freight";
     public static final String ACTION_OUTPOST_UPGRADE = "upgrade_outpost";
     public static final String ACTION_OUTPOST_SIEGE = "outpost_siege";
     public static final String ACTION_BASTION_SIEGE = "bastion_siege";
@@ -37,6 +38,7 @@ public final class ProductionService {
         if (ACTION_DEPOT_TOGGLE.equals(action)) { FieldDepotService.toggleNearest(player); return; }
         if (ACTION_WAREHOUSE_TOGGLE.equals(action)) { FieldDepotService.toggleWarehouseNearest(player); return; }
         if (ACTION_BULK_OFFLOAD.equals(action)) { bulkOffload(player); return; }
+        if (ACTION_FREIGHT.equals(action)) { FreightService.transferNearest(player); return; }
         if (ACTION_OUTPOST_UPGRADE.equals(action)) { OutpostService.upgradeNearest(player); return; }
         if (ACTION_OUTPOST_SIEGE.equals(action)) { OutpostSiegeSystem.startOrStatus(player); return; }
         if (ACTION_BASTION_SIEGE.equals(action)) { OutpostSiegeSystem.startBastionOrStatus(player); return; }
@@ -98,9 +100,11 @@ public final class ProductionService {
         player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
         player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 배럴 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
         player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 배럴부터 채웁니다."));
+        player.sendSystemMessage(Component.literal("§7물리 화물: 산업+토목 완공 후 활성 전초의 실제 배럴 재고를 레일 위 빈 상자 광산수레에 싣고 다른 활성 전초 창고군으로 실제 운반합니다."));
         player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
+        FreightService.sendStatus(player);
         OutpostSiegeSystem.sendStatus(player);
         OutpostFortificationService.sendStatus(player);
         FieldRecoveryService.sendStatus(player);

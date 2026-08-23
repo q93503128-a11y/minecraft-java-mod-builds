@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.41.0-alpha.1";
-    // 0.41 final contract: Civil Works turns bulk stored material into loaded-only 3-wide physical roads/bridges through the existing protected Construction queue.
+    public static final String VERSION = "0.42.0-alpha.1";
+    // 0.42 final contract: actual Chest Minecarts physically relay existing bulk stock between two active owned outpost Barrel clusters; no virtual route or teleported inventory.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -90,6 +90,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical logistics + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
