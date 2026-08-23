@@ -87,6 +87,18 @@ public final class SettlementStorageService {
         return true;
     }
 
+    /** Atomic physical recruitment cost: never eat food first and then fail on missing metal. */
+    public static boolean consumeMetalAndFood(ServerLevel level, SettlementData data, long metal, long food) {
+        if (metal < 0L || food < 0L) return false;
+        List<BlockPos> positions = storagePositions(data);
+        if (!allStorageChunksLoaded(level, positions)) return false;
+        SettlementResources resources = scan(level, data);
+        if (resources.metal() < metal || resources.food() < food) return false;
+        remove(level, positions, metal, SettlementStorageService::isMetalStack);
+        remove(level, positions, food, SettlementInventory::isFood);
+        return true;
+    }
+
     public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
         ItemStack remaining = stack.copy();
