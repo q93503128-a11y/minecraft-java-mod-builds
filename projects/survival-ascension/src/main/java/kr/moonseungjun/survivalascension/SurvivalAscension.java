@@ -11,6 +11,7 @@ import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
 import kr.moonseungjun.survivalascension.harvesting.IrrigationReplantService;
@@ -30,8 +31,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.31.0-alpha.1";
-    // 0.31 canonical contract: one prepaid token returns only after a qualifying general death; boss encounters never consume it.
+    public static final String VERSION = "0.32.0-alpha.1";
+    // 0.32 canonical contract: completed regions gain prepaid out-and-back operations staged from physical outposts.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -51,6 +52,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
@@ -60,6 +62,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onPlayerLoggedOut);
@@ -79,6 +83,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial outposts + death-bound field recovery", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + industrial outposts + out-and-back expedition operations", VERSION);
     }
 }
