@@ -171,7 +171,7 @@ public final class SettlementData extends SavedData {
         switch (type) {
             case HOUSE -> houseCount++;
             case LUMBER_CAMP -> lumberCampCount++;
-            case FARM, QUARRY, MINE, WAREHOUSE, BLACKSMITH, GUARD_POST -> { }
+            case FARM, QUARRY, MINE, WAREHOUSE, BLACKSMITH, WORKSHOP, CART_STATION, GUARD_POST, MARKET -> { }
         }
         housingCapacity += type.housingGain();
 
@@ -198,7 +198,11 @@ public final class SettlementData extends SavedData {
     }
 
     public void beginRoadConstruction(List<BlockPos> centers) {
-        RoadConstructionState next = RoadConstructionState.fromPath(centers);
+        beginRoadConstruction(centers, List.of());
+    }
+
+    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
+        RoadConstructionState next = RoadConstructionState.fromPath(centers, profile);
         if (!next.active()) return;
         infrastructure = new SettlementInfrastructureState(
                 buildings(), roads(), next, outposts(), outpostConstruction());
