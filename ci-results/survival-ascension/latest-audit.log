@@ -1,8 +1,3 @@
-SOURCE AUDIT PASS
-- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.37 extends each physical depot anchor with up to8 explicitly linked real Barrels inside radius6
-- field_depots_v1 keeps backward-compatible optional warehouse_links; global physical positions cannot be double-claimed
-- linked storage is loaded-only, mayInteract-gated, real-Container-backed and sorted nearest-first with anchor stock
-- unloaded linked Barrels are preserved; loaded missing/non-Barrel links prune without deleting other storage
-- linking costs no supply charge and adds no virtual capacity, background scan, new packet or chunk force-load
-- 0.36 commissioning,0.35 offload,0.34 integrated inputs,0.33 complications,0.32 sorties and older regressions retained
+SOURCE AUDIT FAIL
+- harvest budget/field scale missing: GLOBAL_BLOCK_BUDGET_PER_TICK = 64
+- harvest budget/field scale missing: LOCAL_BLOCK_BUDGET_PER_TICK = 12
