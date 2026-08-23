@@ -3,8 +3,8 @@ package kr.moonseungjun.survivalascension.endgame;
 /*
  * Wave lifecycle and boss-bar encounter presentation are adapted from the MIT-licensed
  * Gateways to Eternity project (Copyright (c) 2020 Brennan Ward).
- * Survival Ascension uses its own activation economy, vanilla-mob compositions,
- * world/infrastructure gates, failure rules and rewards.
+ * Survival Ascension uses its own activation economy, tactical doctrines,
+ * vanilla-mob compositions, world/infrastructure gates, failure rules and rewards.
  */
 
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
@@ -115,11 +115,13 @@ public final class AscensionTrialSystem {
         consume(player, Items.DRAGON_BREATH, DRAGON_BREATH_COST);
         persistent.putLong(READY_TICK_KEY, now + START_COOLDOWN_TICKS);
 
-        Trial trial = new Trial(player.getUUID(), level, center, now + SETUP_TICKS);
+        AscensionTrialDoctrine doctrine = AscensionTrialDoctrine.random(level.getRandom());
+        Trial trial = new Trial(player.getUUID(), level, center, now + SETUP_TICKS, doctrine);
         ACTIVE.put(player.getUUID(), trial);
         trial.bossBar.addPlayer(player);
         trial.bossBar.setVisible(true);
-        player.sendSystemMessage(Component.literal("§5[승천 시련] §f개방되었습니다. §d4개 웨이브§f를 제한시간 안에 격파하세요. §7이탈/사망 10초 지속 시 실패"));
+        player.sendSystemMessage(Component.literal("§5[승천 시련] §f전술 교리 §d" + doctrine.koreanName() + " §7· §f" + doctrine.description()));
+        player.sendSystemMessage(Component.literal("§5[승천 시련] §f4개 웨이브를 제한시간 안에 격파하세요. §7각 웨이브 중반에 교리별 증원이 도착합니다."));
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -170,12 +172,13 @@ public final class AscensionTrialSystem {
 
         pruneAndRecall(trial, owner);
         if (!trial.mobIds.isEmpty()) {
+            maybeReinforce(trial, owner);
             if (now >= trial.waveDeadline) {
                 fail(trial, owner, "웨이브 제한시간을 초과했습니다.");
                 return true;
             }
             int seconds = Math.max(0, (int) ((trial.waveDeadline - now + 19L) / 20L));
-            trial.bossBar.setName(Component.literal("§5승천 시련 §f· " + trial.wave + "/" + TOTAL_WAVES + " 웨이브 §7· 적 " + trial.mobIds.size() + "체 · " + seconds + "초"));
+            trial.bossBar.setName(Component.literal("§5승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· " + trial.wave + "/" + TOTAL_WAVES + " §7· 적 " + trial.mobIds.size() + "체 · " + seconds + "초"));
             float remaining = (trial.waveDeadline - now) / (float) WAVE_TIMEOUT_TICKS;
             trial.bossBar.setProgress(Mth.clamp(remaining, 0.0F, 1.0F));
             return false;
@@ -197,7 +200,7 @@ public final class AscensionTrialSystem {
 
         if (now < trial.nextWaveTick) {
             int seconds = Math.max(0, (int) ((trial.nextWaveTick - now + 19L) / 20L));
-            trial.bossBar.setName(Component.literal("§5승천 시련 §f· 다음 웨이브까지 §d" + seconds + "초"));
+            trial.bossBar.setName(Component.literal("§5승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· 다음 웨이브까지 §d" + seconds + "초"));
             trial.bossBar.setProgress(Mth.clamp((trial.nextWaveTick - now) / (float) SETUP_TICKS, 0.0F, 1.0F));
             return false;
         }
@@ -212,14 +215,13 @@ public final class AscensionTrialSystem {
     private static boolean spawnWave(Trial trial) {
         trial.wave++;
         trial.waveResolved = false;
+        trial.reinforcementsTriggered = false;
         int target = WAVE_COUNTS[trial.wave - 1];
         Set<UUID> spawned = new HashSet<>();
         for (int i = 0; i < target; i++) {
-            Mob mob = spawnOne(trial.level, trial.center, waveTypeId(trial.wave, i), i, target);
+            Mob mob = spawnOne(trial.level, trial.center, waveTypeId(trial.doctrine, trial.wave, i), i, target);
             if (mob == null) continue;
-            mob.setPersistenceRequired();
-            mob.getPersistentData().putString(TRIAL_OWNER_KEY, trial.owner.toString());
-            mob.getPersistentData().putInt(TRIAL_WAVE_KEY, trial.wave);
+            markTrialMob(mob, trial);
             spawned.add(mob.getUUID());
         }
         if (spawned.size() < Math.max(4, target * 2 / 3)) {
@@ -232,9 +234,36 @@ public final class AscensionTrialSystem {
         }
         trial.mobIds.clear();
         trial.mobIds.addAll(spawned);
+        trial.initialWaveCount = spawned.size();
         trial.waveDeadline = trial.level.getGameTime() + WAVE_TIMEOUT_TICKS;
         trial.bossBar.setProgress(1.0F);
         return true;
+    }
+
+    private static void maybeReinforce(Trial trial, ServerPlayer owner) {
+        if (trial.reinforcementsTriggered || trial.initialWaveCount <= 0) return;
+        int threshold = Math.max(2, trial.initialWaveCount / 2);
+        if (trial.mobIds.size() > threshold) return;
+        trial.reinforcementsTriggered = true;
+
+        int requested = trial.doctrine.reinforcementCount(trial.wave);
+        int added = 0;
+        for (int i = 0; i < requested; i++) {
+            Mob mob = spawnOne(trial.level, trial.center, reinforcementTypeId(trial.doctrine, trial.wave, i), 100 + i, Math.max(1, requested));
+            if (mob == null) continue;
+            markTrialMob(mob, trial);
+            trial.mobIds.add(mob.getUUID());
+            added++;
+        }
+        if (owner != null && added > 0) {
+            owner.sendSystemMessage(Component.literal("§c[교리 증원] §f" + trial.doctrine.koreanName() + " 증원 §c" + added + "체§f가 전장에 진입했습니다."));
+        }
+    }
+
+    private static void markTrialMob(Mob mob, Trial trial) {
+        mob.setPersistenceRequired();
+        mob.getPersistentData().putString(TRIAL_OWNER_KEY, trial.owner.toString());
+        mob.getPersistentData().putInt(TRIAL_WAVE_KEY, trial.wave);
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, String typeId, int index, int count) {
@@ -279,27 +308,49 @@ public final class AscensionTrialSystem {
         return open;
     }
 
-    private static String waveTypeId(int wave, int index) {
-        return switch (wave) {
-            case 1 -> index % 2 == 0 ? "minecraft:zombie" : "minecraft:skeleton";
-            case 2 -> switch (index % 5) {
-                case 0, 1 -> "minecraft:husk";
-                case 2, 3 -> "minecraft:stray";
-                default -> "minecraft:witch";
+    private static String waveTypeId(AscensionTrialDoctrine doctrine, int wave, int index) {
+        return switch (doctrine) {
+            case ONSLAUGHT -> switch (wave) {
+                case 1 -> index % 3 == 0 ? "minecraft:husk" : "minecraft:zombie";
+                case 2 -> index % 4 == 0 ? "minecraft:vindicator" : "minecraft:husk";
+                case 3 -> index % 3 == 0 ? "minecraft:vindicator" : "minecraft:wither_skeleton";
+                default -> switch (index) {
+                    case 0 -> "minecraft:ravager";
+                    case 1, 2, 3, 4, 5 -> "minecraft:vindicator";
+                    default -> "minecraft:wither_skeleton";
+                };
             };
-            case 3 -> switch (index % 5) {
-                case 0, 1 -> "minecraft:wither_skeleton";
-                case 2 -> "minecraft:vindicator";
-                case 3 -> "minecraft:pillager";
-                default -> "minecraft:witch";
+            case PURSUIT -> switch (wave) {
+                case 1 -> index % 2 == 0 ? "minecraft:spider" : "minecraft:zombie";
+                case 2 -> index % 4 == 0 ? "minecraft:enderman" : (index % 2 == 0 ? "minecraft:spider" : "minecraft:husk");
+                case 3 -> index % 3 == 0 ? "minecraft:enderman" : (index % 2 == 0 ? "minecraft:wither_skeleton" : "minecraft:spider");
+                default -> switch (index) {
+                    case 0 -> "minecraft:ravager";
+                    case 1, 2, 3 -> "minecraft:enderman";
+                    case 4, 5, 6, 7 -> "minecraft:vindicator";
+                    default -> "minecraft:spider";
+                };
             };
-            default -> switch (index) {
-                case 0 -> "minecraft:ravager";
-                case 1, 2, 3 -> "minecraft:vindicator";
-                case 4, 5 -> "minecraft:wither_skeleton";
-                case 6, 7 -> "minecraft:pillager";
-                default -> "minecraft:witch";
+            case SIEGE -> switch (wave) {
+                case 1 -> index % 2 == 0 ? "minecraft:skeleton" : "minecraft:zombie";
+                case 2 -> index % 5 == 0 ? "minecraft:witch" : (index % 2 == 0 ? "minecraft:stray" : "minecraft:skeleton");
+                case 3 -> index % 5 == 0 ? "minecraft:witch" : (index % 2 == 0 ? "minecraft:pillager" : "minecraft:wither_skeleton");
+                default -> switch (index) {
+                    case 0 -> "minecraft:ravager";
+                    case 1, 2, 3, 4 -> "minecraft:pillager";
+                    case 5, 6 -> "minecraft:witch";
+                    case 7, 8 -> "minecraft:stray";
+                    default -> "minecraft:vindicator";
+                };
             };
+        };
+    }
+
+    private static String reinforcementTypeId(AscensionTrialDoctrine doctrine, int wave, int index) {
+        return switch (doctrine) {
+            case ONSLAUGHT -> wave >= 3 ? "minecraft:wither_skeleton" : "minecraft:husk";
+            case PURSUIT -> wave >= 3 ? "minecraft:enderman" : "minecraft:spider";
+            case SIEGE -> wave >= 3 ? "minecraft:witch" : "minecraft:stray";
         };
     }
 
@@ -311,7 +362,9 @@ public final class AscensionTrialSystem {
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
             alive.add(id);
             if (owner != null && mob.getTarget() == null) mob.setTarget(owner);
-            if (distanceToCenterSqr(mob, trial.center) > RECALL_RADIUS * RECALL_RADIUS) {
+            if (owner != null && trial.doctrine == AscensionTrialDoctrine.PURSUIT && mob.distanceToSqr(owner) > 100.0D) {
+                mob.getNavigation().moveTo(owner, 1.35D);
+            } else if (distanceToCenterSqr(mob, trial.center) > RECALL_RADIUS * RECALL_RADIUS) {
                 mob.getNavigation().moveTo(trial.center.getX() + 0.5D, trial.center.getY(), trial.center.getZ() + 0.5D, 1.25D);
             }
         }
@@ -339,7 +392,7 @@ public final class AscensionTrialSystem {
             giveOrDrop(owner, AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3));
             giveOrDrop(owner, new ItemStack(Items.NETHERITE_SCRAP, 2));
             giveOrDrop(owner, new ItemStack(Items.DIAMOND, 4));
-            owner.sendSystemMessage(Component.literal("§d[승천 시련 완료] §f신화 III 장비 1개 §7· 네더라이트 파편 2 · 다이아 4 · 경험치 +200"));
+            owner.sendSystemMessage(Component.literal("§d[승천 시련 완료] §f" + trial.doctrine.koreanName() + " 교리 돌파 · 신화 III 장비 1개 §7· 네더라이트 파편 2 · 다이아 4 · 경험치 +200"));
         }
         for (ServerPlayer player : trial.level.getServer().getPlayerList().getPlayers()) {
             if (player == owner || player.level() != trial.level || !player.isAlive() || player.isSpectator()) continue;
@@ -357,8 +410,12 @@ public final class AscensionTrialSystem {
             if (entity != null) entity.discard();
         }
         trial.mobIds.clear();
-        if (owner != null) owner.sendSystemMessage(Component.literal("§c[승천 시련 실패] §f" + reason + " §7· 입장 재료는 반환되지 않습니다."));
+        if (owner != null) playerFailureMessage(owner, trial, reason);
         closeBossBar(trial);
+    }
+
+    private static void playerFailureMessage(ServerPlayer owner, Trial trial, String reason) {
+        owner.sendSystemMessage(Component.literal("§c[승천 시련 실패] §f" + trial.doctrine.koreanName() + " 교리 · " + reason + " §7· 입장 재료는 반환되지 않습니다."));
     }
 
     private static void removeStaleServerTrials(MinecraftServer server) {
@@ -421,20 +478,24 @@ public final class AscensionTrialSystem {
         final UUID owner;
         final ServerLevel level;
         final BlockPos center;
+        final AscensionTrialDoctrine doctrine;
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
         int wave;
+        int initialWaveCount;
         long waveDeadline;
         long nextWaveTick;
         int ownerAbsentTicks;
         boolean waveResolved = true;
+        boolean reinforcementsTriggered;
 
-        Trial(UUID owner, ServerLevel level, BlockPos center, long nextWaveTick) {
+        Trial(UUID owner, ServerLevel level, BlockPos center, long nextWaveTick, AscensionTrialDoctrine doctrine) {
             this.owner = owner;
             this.level = level;
             this.center = center.immutable();
             this.nextWaveTick = nextWaveTick;
-            this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal("§5승천 시련"), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
+            this.doctrine = doctrine;
+            this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal("§5승천 시련 §7[" + doctrine.koreanName() + "]"), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
             this.bossBar.setProgress(1.0F);
         }
     }
