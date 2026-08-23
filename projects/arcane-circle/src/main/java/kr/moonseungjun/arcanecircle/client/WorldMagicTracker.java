@@ -186,6 +186,12 @@ public final class WorldMagicTracker {
                         ()->CircleScaleEnvelope.release(v.spell,v.direction,targetOffset(v),v.range,elapsedSeconds));
                 if(scaleEnvelope.size()>0)entries.add(new RenderEntry(center,scaleEnvelope,color,86,opacity));
 
+                if(v.spell.circle()==6){
+                    ArcaneWorldMesh authority=SixthCircleAuthorityOverlay.release(v.spell,v.direction,targetOffset(v),
+                            v.range,elapsedSeconds,durationSeconds);
+                    if(authority.size()>0)entries.add(new RenderEntry(center,authority,color,96,opacity));
+                }
+
                 if(v.spell.circle()>=7){
                     ArcaneWorldMesh timeline=MeteorBarragePattern.withSeed(v.seed,
                             ()->AuthoredHighCircleTimeline.release(v.spell,v.direction,targetOffset(v),v.range,
