@@ -38,9 +38,9 @@ Survival Ascension adapts Mob Champions' permissively licensed 26.2 patterns for
 ## Apotheosis
 Source project: `Shadows-of-Fire/Apotheosis`  
 Copyright (c) 2018-2025 Stormraven Studios, LLC  
-License: MIT License
+Official GitHub `26.1` code license: MIT License
 
-Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from Apotheosis. No Apotheosis assets or data files are bundled. Full notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
+Survival Ascension adapts the high-level separation of loot rarity, item category and affix generation from the MIT-licensed official GitHub source. The current CurseForge distribution page can carry separate All Rights Reserved labeling, so Survival Ascension treats source-code permission and distributed assets/package rights separately. No Apotheosis textures, models, sounds, data files, GUI assets, datapacks or other packaged assets are bundled. Full code notice: `META-INF/third-party/APOTHEOSIS_MIT.txt`.
 
 ## Mekanism
 Source project: `mekanism/Mekanism`  
@@ -75,6 +75,12 @@ Code license: MIT
 Assets license: All Rights Reserved
 
 Survival Ascension studies Create's progression philosophy of turning large material throughput into staged infrastructure and new physical work capabilities. No Create source code, assets, textures, models, sound, data, namespaces, machines or Ponder content are bundled.
+
+## Silent Gear — design reference only for 0.27
+Source project: Silent Gear  
+Current project license: MIT
+
+Survival Ascension 0.27 studies only the high-level product philosophy that long-lived equipment progression should preserve item identity while continuing to create reasons to spend gathered resources. Apex Hunts do not copy Silent Gear's material system, parts, blueprints, grading, traits, recipes, data formats, source code, assets or namespace. No additional runtime license payload is packaged because no Silent Gear code or substantial software portion is incorporated.
 
 ## Lootr — design reference only for 0.23+
 Source project: Lootr  
@@ -138,9 +144,9 @@ ParCool is **reference-only** for Survival Ascension. Its public movement vocabu
 
 ## Majrusz's Progressive Difficulty — reference only for 0.26
 Source project: `Majrusz/MajruszsProgressiveDifficultyMod`  
-License status: no license file exposed in the current public repository root checked for this work
+License status: no reusable source license was confirmed during the 0.26 review
 
-Survival Ascension studies only the high-level pacing of rare forced encounters such as the public Undead Army concept. Because a reusable source-code license was not confirmed from the current public repository root, Majrusz's Progressive Difficulty remains strictly reference-only: no source code, event data, assets, namespaced content or implementation is copied or bundled.
+Survival Ascension studies only the high-level pacing of rare forced encounters such as the public Undead Army concept. Majrusz's Progressive Difficulty remains strictly reference-only: no source code, event data, assets, namespaced content or implementation is copied or bundled.
 
 ## Other restricted/reference-only mods
 Handwerk, NeoEnchant+ and other custom-license/ARR projects are used only for behavior and UX study unless their exact license explicitly permits reuse. No restricted source or assets are bundled.
