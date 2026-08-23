@@ -61,6 +61,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: mastery VI + tactical warbands + world ascension + doctrine trials + awakened mythic gear", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: mastery VI + tactical warbands + doctrine trials/reinforcements + validated awakened mythic endgame", VERSION);
     }
 }
