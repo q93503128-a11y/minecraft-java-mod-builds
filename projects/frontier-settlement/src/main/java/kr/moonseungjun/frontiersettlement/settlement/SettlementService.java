@@ -22,16 +22,7 @@ public final class SettlementService {
         if (!data.founded()) return;
         int tick = server.getTickCount();
         if (tick % 5 == 0) {
-            if (data.construction().active()) {
-                ConstructionState before = data.construction();
-                BuildingType type = BuildingType.fromId(before.type());
-                if (SettlementConstructionLogisticsService.tick(server, data)) {
-                    SettlementConstructionService.tick(server, data);
-                    SettlementConstructionLogisticsService.afterPlacementTick(server, data, before, type);
-                }
-            } else {
-                SettlementConstructionLogisticsService.tick(server, data);
-            }
+            if (data.construction().active()) SettlementConstructionService.tick(server, data);
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
         }
