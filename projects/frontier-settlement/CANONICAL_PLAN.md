@@ -205,35 +205,41 @@ Development sequence:
 
 Do not force-push over concurrent work. Other projects share the repository and CI result bots may advance `main`; always re-read `main` before committing and rebase only the Frontier Settlement changes.
 
-## 13. Current playable slice after Alpha.23
+## 13. Current playable slice after Alpha.25
 
-Alpha.23 is intended to preserve the existing Alpha.22 systems and add physical construction logistics:
+Alpha.25 preserves the shared-settlement loop and now makes both buildings and roads readable physical work instead of approval-time resource deletion plus magical completion:
 
-- one shared server settlement;
-- physical shared storage and cached HUD ledger;
+- one shared server settlement and territory state;
+- physical shared storage with cached HUD ledger;
 - pioneer marker founding;
-- compact B-key palette;
-- world-space building/road/outpost placement;
+- compact B-key palette and world-space building/road/outpost placement;
 - B / R / Enter / Backspace unified controls;
-- one-line server-authored next-goal guidance;
+- one-line server-authored next-goal and active construction-phase guidance;
 - starter and advanced functional buildings;
 - worker jobs and housing/population progression;
-- roads and productive outposts;
-- tier progression toward a domain;
+- roads, productive outposts and tier progression toward a domain;
 - safe building blueprints with no-drop terrain preparation;
-- builder walks from actual settlement storage carrying real wood/stone stacks;
-- active construction has a physical on-site supply barrel;
-- materials are consumed gradually from the site supply as blocks are placed;
-- building placement pace is deliberately slower/readable instead of two-block bursts every 5 ticks.
+- building construction uses real storage extraction, visible carried stacks, an on-site supply barrel and gradual material consumption;
+- building construction exposes hauling / foundation / frame-walls / roof / finish phases and uses persisted, owned temporary work scaffolds for high work when safe;
+- road approval validates the full stone requirement but does not instantly delete it;
+- new roads physically progress through worker grading, shallow earthwork, real stone hauling and gradual 3-wide paving;
+- road grading does not silently destroy protected structures and uses no-drop direct updates only on route-safe material;
+- road stone is consumed from actual carried stone-family stacks and surplus is returned to physical storage;
+- active road/building transaction blocks are protected from break-and-rebuild resource exploits;
+- long road jobs keep tracking the dedicated tagged construction worker across the settlement-to-work corridor rather than spawning duplicate builders when the worker travels beyond the original town search radius;
+- shallow road earthwork uses soil-like fill rather than generating free recoverable stone beneath completed roads;
+- old active road saves remain compatible and resume their already-prepared paving state rather than being re-graded;
+- building and road workers perform visible placement swings and return to normal vulnerability when the active job completes.
 
 ## 14. Near-term priorities
 
-After Alpha.23 is stable in real play:
+After Alpha.25 automated validation is stable, keep the sequence narrow:
 
-1. inspect real screenshots/gameplay for builder pathing, construction timing, site crate placement and building visual quality;
-2. improve construction phase readability and scaffolding/work positions if the builder still looks magical;
-3. continue road construction presentation and terrain-quality work;
-4. expand outpost specialization and logistics only after the base loop feels good;
-5. keep UI/controls compact while expanding depth behind the scenes.
+1. inspect real screenshots/gameplay for building scaffold navigation, long road pathing, haul round-trip pacing, grading readability and any worker stalls or duplicate-worker symptoms;
+2. fix real-play root causes before adding more breadth if those tests expose navigation, transaction or visual-quality problems;
+3. bring outpost construction onto the same physical approval -> hauling -> visible work -> completion transaction model instead of inventing a separate interaction system;
+4. deepen outpost specialization and the road-connected logistics loop so distant production visibly feeds the shared settlement rather than behaving like duplicate mini-towns;
+5. only after the building/road/outpost spatial loop feels good, expand exploration/conquest inputs and additional building families;
+6. keep UI/controls compact while expanding simulation depth behind the scenes.
 
 Real-play observations override assumptions in this file. If screenshots or symptoms expose a problem, fix the root cause before adding more content.
