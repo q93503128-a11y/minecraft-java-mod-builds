@@ -8,7 +8,8 @@ RES = ROOT / 'src/main/resources'
 
 required = [
     ROOT / 'build.gradle', ROOT / 'gradle.properties', ROOT / 'PROJECT.md', ROOT / 'CANONICAL_PLAN.md', ROOT / 'README.md',
-    ROOT / 'ORIGINAL_DESIGN_v0.2.md', ROOT / 'COMPLETION_GAP_AUDIT.md', ROOT / 'COMPANION_MODS.md', ROOT / 'EXTERNAL_CONTENT_REGISTER.md',
+    ROOT / 'ORIGINAL_DESIGN_v0.2.md', ROOT / 'COMPLETION_GAP_AUDIT.md', ROOT / 'COMPANION_MODS.md',
+    ROOT / 'EXTERNAL_CONTENT_REGISTER.md', ROOT / 'COMPANION_LOCK.json',
     JAVA / 'FrontierSettlement.java', JAVA / 'content/FrontierContent.java', JAVA / 'content/PioneerMarkerItem.java',
     JAVA / 'compat/ExternalContentTags.java',
     JAVA / 'settlement/SettlementData.java', JAVA / 'settlement/ConstructionState.java', JAVA / 'settlement/RoadConstructionState.java',
@@ -18,8 +19,10 @@ required = [
     JAVA / 'settlement/SettlementRoadService.java', JAVA / 'settlement/SettlementOutpostService.java',
     JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
     JAVA / 'settlement/SettlementWorkerService.java', JAVA / 'settlement/SettlementBenefitService.java',
-    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/SettlementExternalContentService.java', JAVA / 'settlement/BuildingType.java',
-    JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java', JAVA / 'settlement/SettlementTier.java',
+    JAVA / 'settlement/SettlementStorageService.java', JAVA / 'settlement/SettlementExternalContentService.java',
+    JAVA / 'settlement/SettlementMarketService.java', JAVA / 'settlement/MarketLayout.java', JAVA / 'settlement/MarketBuildingBlueprint.java',
+    JAVA / 'settlement/BuildingType.java', JAVA / 'settlement/BuildingBlueprints.java', JAVA / 'settlement/AdvancedBuildingBlueprints.java',
+    JAVA / 'settlement/SettlementTier.java',
     JAVA / 'network/SettlementNetwork.java', JAVA / 'network/SettlementSnapshotPayload.java',
     JAVA / 'client/ClientSettlementState.java', JAVA / 'client/FrontierSettlementClient.java',
     JAVA / 'client/BuildingPlacementClient.java', JAVA / 'client/BuildingPaletteScreen.java',
@@ -36,7 +39,7 @@ missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]
 if missing: raise SystemExit('missing required files: ' + ', '.join(missing))
 
 props = (ROOT / 'gradle.properties').read_text(encoding='utf-8')
-for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.31'):
+for token in ('minecraft_version=26.2', 'neo_version=26.2.0.38-beta', 'mod_id=frontier_settlement', 'mod_version=0.1.0-alpha.32'):
     if token not in props: raise SystemExit(f'missing canonical property: {token}')
 
 plan = (ROOT / 'CANONICAL_PLAN.md').read_text(encoding='utf-8')
@@ -61,27 +64,34 @@ register = (ROOT / 'EXTERNAL_CONTENT_REGISTER.md').read_text(encoding='utf-8')
 for token in ('DEPENDENCY', 'REFERENCE', 'CODE_REUSE', 'ASSET_REUSE', 'Weapons Expanded', 'Lootr'):
     if token not in register: raise SystemExit(f'external-content register invariant missing: {token}')
 
+lock = json.loads((ROOT / 'COMPANION_LOCK.json').read_text(encoding='utf-8'))
+if lock.get('target', {}).get('minecraft') != '26.2' or lock.get('target', {}).get('loader') != 'neoforge':
+    raise SystemExit('companion lock target drifted from 26.2 NeoForge')
+lock_ids = {entry.get('id') for entry in lock.get('entries', [])}
+for required_mod in ('terralith', 'dungeons_and_taverns', 'repurposed_structures', 'better_combat',
+                     'weapons_expanded', 'lootr', 'sophisticated_backpacks', 'jade', 'xaeros_minimap', 'lithostitched'):
+    if required_mod not in lock_ids: raise SystemExit(f'companion lock missing: {required_mod}')
+
 entry = (JAVA / 'FrontierSettlement.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService::onBreakBlock', 'SettlementRoadService::onBreakBlock',
               'SettlementOutpostService::onBreakBlock', 'SettlementCoreService::onBreakBlock',
-              'SettlementTierInfrastructureService::onBreakBlock'):
+              'SettlementTierInfrastructureService::onBreakBlock', 'SettlementMarketService::onBreakBlock'):
     if token not in entry: raise SystemExit(f'active infrastructure protection missing: {token}')
 
 service = (JAVA / 'settlement/SettlementService.java').read_text(encoding='utf-8')
-if service.count('SettlementConstructionService.tick(server, data)') != 1:
-    raise SystemExit('construction service must have exactly one canonical server tick call')
-if service.count('SettlementRoadService.tick(server, data)') != 1:
-    raise SystemExit('road service must have exactly one canonical server tick call')
-if service.count('SettlementOutpostService.tick(server, data)') != 1:
-    raise SystemExit('outpost service must have exactly one canonical server tick call')
+for token in ('SettlementConstructionService.tick(server, data)', 'SettlementRoadService.tick(server, data)',
+              'SettlementOutpostService.tick(server, data)', 'SettlementMarketService.tick(server, data)'):
+    if service.count(token) != 1: raise SystemExit(f'server tick authority must have exactly one call: {token}')
+if service.index('SettlementMarketService.tick(server, data)') < service.index('else {'):
+    raise SystemExit('market trading must remain in the daytime/non-rest branch')
 
 guidance = (JAVA / 'settlement/SettlementGuidanceService.java').read_text(encoding='utf-8')
 for token in ('SettlementConstructionService.phaseLabel(data.construction())',
               'SettlementRoadService.phaseLabel(data.roadConstruction())',
               'SettlementOutpostService.phaseLabel(data.outpostConstruction())',
               'data.houseCount() < 1', 'data.lumberCampCount() < 1', 'BuildingType.FARM', 'BuildingType.QUARRY',
-              'data.roads().isEmpty()', 'data.outposts().isEmpty()', 'data.population() < 4', 'BuildingType.MINE',
-              'data.outposts().size() < 2', 'data.population() < 8', 'BuildingType.BLACKSMITH',
+              'data.roads().isEmpty()', 'data.outposts().isEmpty()', 'data.population() < 4', 'BuildingType.MARKET',
+              'BuildingType.MINE', 'data.outposts().size() < 2', 'data.population() < 8', 'BuildingType.BLACKSMITH',
               'data.outposts().size() < 4', 'data.population() < 16', 'BuildingType.GUARD_POST'):
     if token not in guidance: raise SystemExit(f'next-goal invariant missing: {token}')
 if 'reward' in guidance.lower() or 'quest' in guidance.lower():
@@ -103,18 +113,35 @@ for token in ('GRADE_STEP_OFFSET = 1_000_000', 'BUILD_STEP_OFFSET = 2_000_000',
               'physicalBuilding()', 'legacyPrepaidBuilding()', 'buildStep()', 'legacyStep()'):
     if token not in outpost_state: raise SystemExit(f'alpha.26 outpost phase persistence invariant missing: {token}')
 
+building_type = (JAVA / 'settlement/BuildingType.java').read_text(encoding='utf-8')
+if 'MARKET("market", "시장", 96, 48, 11, 11, 8, 0' not in building_type:
+    raise SystemExit('alpha.32 market building definition missing or changed unexpectedly')
+
+blueprints = (JAVA / 'settlement/BuildingBlueprints.java').read_text(encoding='utf-8')
+if 'case MARKET -> MarketBuildingBlueprint.create(origin);' not in blueprints:
+    raise SystemExit('alpha.32 market blueprint routing missing')
+
+market_layout = (JAVA / 'settlement/MarketLayout.java').read_text(encoding='utf-8')
+for token in ('TRADE_X = 5', 'TRADE_Y = 1', 'TRADE_Z = 5', 'tradeCrate(BuildingRecord market)', 'market.localToWorld'):
+    if token not in market_layout: raise SystemExit(f'alpha.32 market layout invariant missing: {token}')
+
+market_blueprint = (JAVA / 'settlement/MarketBuildingBlueprint.java').read_text(encoding='utf-8')
+for token in ('MarketLayout.tradeCrate(origin)', 'Blocks.BARREL.defaultBlockState()', 'Blocks.BELL.defaultBlockState()',
+              'BuildingBlueprints.Phase.FINISH', 'Blocks.STONE_BRICKS.defaultBlockState()', 'Blocks.SPRUCE_PLANKS.defaultBlockState()'):
+    if token not in market_blueprint: raise SystemExit(f'alpha.32 market blueprint invariant missing: {token}')
+
 construction = (JAVA / 'settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
 for token in ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtractionTarget', 'EquipmentSlot.MAINHAND',
               'SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)', 'builder.setInvulnerable(true)',
               'builder.setInvulnerable(false)', 'builder.swing(InteractionHand.MAIN_HAND)',
               'villager.entityTags().contains(BUILDER_TAG)', 'construction.ownsScaffold(towerIndex)',
-              'removeConstructionScaffolds',
-              'data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET)', 'construction.grading()',
-              'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCell(',
+              'removeConstructionScaffolds', 'data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET)',
+              'construction.grading()', 'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCell(',
               'ConstructionState.BUILD_STEP_OFFSET', 'Blocks.COARSE_DIRT.defaultBlockState()',
               'GRADE_INTERVAL_TICKS = 8', 'MAX_GRADE_FILL_DEPTH = 3', 'construction.buildStep()',
-              '건물 부지 정리', 'level.hasChunkAt(supply)'):
-    if token not in construction: raise SystemExit(f'alpha.30 physical building invariant missing: {token}')
+              '건물 부지 정리', 'level.hasChunkAt(supply)', 'type == BuildingType.MARKET',
+              '시장은 마을 단계에 도달하면 열립니다.'):
+    if token not in construction: raise SystemExit(f'physical building/market invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost(), 0L)' in construction:
     raise SystemExit('building approval still deletes full material cost')
 if 'prepareSite(' in construction:
@@ -147,10 +174,10 @@ for token in ('SettlementStorageService.storageAvailable(level, data)',
               'state.grading()', 'tickGrading(', 'applyGradeCell(', 'Blocks.COARSE_DIRT.defaultBlockState()',
               'state.legacyPrepaidBuilding()', 'tickLegacyPrepaid(', 'tickPhysicalBuilding(',
               'SettlementStorageService.findExtractionTarget(level, data, predicate)', 'HAUL_BATCH_SIZE = 16',
-              'EquipmentSlot.MAINHAND', 'consumeCarried(', 'returnCarriedToStorage(',
-              'materialCostDelta(', 'isWoodPlacement(', 'isStonePlacement(',
-              'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)', 'builder.swing(InteractionHand.MAIN_HAND)',
-              'BreakBlockEvent', 'event.setNotifyClient(true)', '전초기지 부지 정리', '전초기지 자재 운반·시공'):
+              'EquipmentSlot.MAINHAND', 'consumeCarried(', 'returnCarriedToStorage(', 'materialCostDelta(',
+              'isWoodPlacement(', 'isStonePlacement(', 'builder.setInvulnerable(true)', 'builder.setInvulnerable(false)',
+              'builder.swing(InteractionHand.MAIN_HAND)', 'BreakBlockEvent', 'event.setNotifyClient(true)',
+              '전초기지 부지 정리', '전초기지 자재 운반·시공'):
     if token not in outpost: raise SystemExit(f'alpha.26 physical outpost invariant missing: {token}')
 if 'SettlementStorageService.consume(level, data, WOOD_COST, STONE_COST, 0L)' in outpost:
     raise SystemExit('outpost approval still deletes full material cost')
@@ -162,11 +189,10 @@ if 'destroyBlock(' in outpost or 'dropResources(' in outpost:
     raise SystemExit('outpost construction must not create loose drops')
 
 production = (JAVA / 'settlement/SettlementOutpostProductionService.java').read_text(encoding='utf-8')
-for token in ('PRODUCTION_WORKER_TAG', 'PRODUCTION_OUTPOST_TAG_PREFIX', 'outpostLoaded(',
-              'level.hasChunkAt(', 'LUMBER_WORK_PERIOD_TICKS = 100', 'QUARRY_WORK_PERIOD_TICKS = 80',
-              'MINING_WORK_PERIOD_TICKS = 160', 'AGRICULTURE_WORK_PERIOD_TICKS = 120',
-              'MAX_LOGS = 4', 'MAX_STONE = 3', 'MAX_CROPS = 4', 'workDue(',
-              'worker.swing(InteractionHand.MAIN_HAND)', 'pristineLegacyAgriculturePlot(',
+for token in ('PRODUCTION_WORKER_TAG', 'PRODUCTION_OUTPOST_TAG_PREFIX', 'outpostLoaded(', 'level.hasChunkAt(',
+              'LUMBER_WORK_PERIOD_TICKS = 100', 'QUARRY_WORK_PERIOD_TICKS = 80', 'MINING_WORK_PERIOD_TICKS = 160',
+              'AGRICULTURE_WORK_PERIOD_TICKS = 120', 'MAX_LOGS = 4', 'MAX_STONE = 3', 'MAX_CROPS = 4',
+              'workDue(', 'worker.swing(InteractionHand.MAIN_HAND)', 'pristineLegacyAgriculturePlot(',
               'initializeSpecializationSite(', 'findMatureCrop(', 'isMatureWheat(',
               '!level.getBlockState(pos.above()).isAir()', 'level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3)'):
     if token not in production: raise SystemExit(f'alpha.28 outpost production invariant missing: {token}')
@@ -178,17 +204,16 @@ if 'forceChunk' in production or 'setChunkForced' in production:
 logistics = (JAVA / 'settlement/SettlementOutpostLogisticsService.java').read_text(encoding='utf-8')
 for token in ('TRANSPORT_WORKER_TAG', 'TRANSPORT_OUTPOST_TAG_PREFIX', 'migrateLegacyWorkers(',
               'routeFromTown(', 'appendRoadPrefixFromTown(', 'road.centers()', 'ROAD_WAYPOINT_STRIDE = 3',
-              'routeFullyLoaded(', 'level.hasChunkAt(', 'firstMissingLoadedAssignment(',
-              'takeFirstTransportStack(', 'SettlementInventory.isWood', 'SettlementInventory.isStone',
-              'SettlementInventory.isFood', 'isMiningCargo(', 'EquipmentSlot.MAINHAND'):
+              'routeFullyLoaded(', 'level.hasChunkAt(', 'firstMissingLoadedAssignment(', 'takeFirstTransportStack(',
+              'SettlementInventory.isWood', 'SettlementInventory.isStone', 'SettlementInventory.isFood',
+              'isMiningCargo(', 'EquipmentSlot.MAINHAND'):
     if token not in logistics: raise SystemExit(f'alpha.27 outpost logistics invariant missing: {token}')
 if 'forceChunk' in logistics or 'setChunkForced' in logistics:
     raise SystemExit('outpost logistics must not force-load route chunks')
 
 worker = (JAVA / 'settlement/SettlementWorkerService.java').read_text(encoding='utf-8')
 for token in ('SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data)',
-              'SettlementOutpostLogisticsService.tick(level, data)',
-              'SettlementOutpostLogisticsService.allRoutesLoaded(level, data)',
+              'SettlementOutpostLogisticsService.tick(level, data)', 'SettlementOutpostLogisticsService.allRoutesLoaded(level, data)',
               'SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data)',
               'SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data)',
               'SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing)',
@@ -204,15 +229,14 @@ for forbidden in ('TRANSPORT_WORKER_NAME', 'workTransport(', 'takeFirstStack('):
 core = (JAVA / 'settlement/SettlementCoreService.java').read_text(encoding='utf-8')
 for token in ('level.getBlockEntity(placement.pos())', 'BreakBlockEvent', 'event.setCanceled(true)',
               'event.setNotifyClient(true)', 'desired(data)', 'desired(SettlementData data, SettlementTier tier)',
-              'for (SettlementTier tier : SettlementTier.values())',
-              'pos.equals(data.stockpilePos()) && current.is(Blocks.BARREL)'):
+              'for (SettlementTier tier : SettlementTier.values())', 'pos.equals(data.stockpilePos()) && current.is(Blocks.BARREL)'):
     if token not in core: raise SystemExit(f'alpha.30 civic/stockpile protection invariant missing: {token}')
 
 tier_infra = (JAVA / 'settlement/SettlementTierInfrastructureService.java').read_text(encoding='utf-8')
 for token in ('FRONTIER_TOWN_LAMP_SPACING = 16', 'DOMAIN_LAMP_SPACING = 8', 'LAMP_START_OFFSET = 8',
               'maintainRoadPublicWorks(', 'lampSite(', 'level.hasChunkAt(', 'protectedXZ(',
-              'maintainTierGarrison(', 'BreakBlockEvent', 'event.setCanceled(true)',
-              'matchesLampPlan(', 'matchesLampPlan(level, data, pos, block, DOMAIN_LAMP_SPACING)',
+              'maintainTierGarrison(', 'BreakBlockEvent', 'event.setCanceled(true)', 'matchesLampPlan(',
+              'matchesLampPlan(level, data, pos, block, DOMAIN_LAMP_SPACING)',
               'matchesLampPlan(level, data, pos, block, FRONTIER_TOWN_LAMP_SPACING)'):
     if token not in tier_infra: raise SystemExit(f'alpha.29 tier public-works invariant missing: {token}')
 for forbidden in ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching(', 'Comparator.comparing'):
@@ -220,9 +244,8 @@ for forbidden in ('TRANSPORT_WORKER_NAME', 'transportWorkers(', 'topUpMatching('
 
 routine = (JAVA / 'settlement/SettlementResidentRoutineService.java').read_text(encoding='utf-8')
 for token in ('SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG',
-              'SettlementOutpostProductionService.PRODUCTION_WORKER_TAG',
-              'assignedTransportOutpost(', 'settlementBounds(', 'moveToHouseSlot(',
-              'villager.getNavigation().stop()'):
+              'SettlementOutpostProductionService.PRODUCTION_WORKER_TAG', 'assignedTransportOutpost(',
+              'settlementBounds(', 'moveToHouseSlot(', 'villager.getNavigation().stop()'):
     if token not in routine: raise SystemExit(f'alpha.29 resident routine invariant missing: {token}')
 if '"운송 주민"' in routine:
     raise SystemExit('night routine must use transport assignment tags, not legacy generic name matching')
@@ -255,9 +278,25 @@ for token in ('SettlementStorageService.storageAvailable(level, data)', 'Externa
 if 'ModList' in external:
     raise SystemExit('external-content bridge must not require companion loader classes just to read physical content')
 
+market = (JAVA / 'settlement/SettlementMarketService.java').read_text(encoding='utf-8')
+for token in ('MARKET_TRADER_TAG', 'MARKET_ASSIGNMENT_PREFIX', 'TRADE_PERIOD_TICKS = 100',
+              'ExternalContentTags.EXPEDITION_RELICS', 'MarketLayout.tradeCrate(market)',
+              'SettlementInventory.insert(container, new ItemStack(Items.EMERALD, payout))',
+              'hasEmeraldRoom(', 'trader.swing(InteractionHand.MAIN_HAND)', 'level.hasChunkAt(',
+              'BreakBlockEvent', 'event.setCanceled(true)', 'event.setNotifyClient(true)', '방문 상인'):
+    if token not in market: raise SystemExit(f'alpha.32 physical market invariant missing: {token}')
+for forbidden in ('SettlementStorageService.extract(', 'SettlementStorageService.storagePositions(',
+                  'SettlementStorageService.consume(', 'destroyBlock(', 'dropResources('):
+    if forbidden in market: raise SystemExit(f'market must not auto-sell shared storage or create loose drops: {forbidden}')
+
 commands = (JAVA / 'command/SettlementCommands.java').read_text(encoding='utf-8')
-for token in ('SettlementExternalContentService.snapshot', '탐험 연동 | 유물', '외부 무기'):
-    if token not in commands: raise SystemExit(f'alpha.31 external-content status missing: {token}')
+for token in ('SettlementExternalContentService.snapshot', '탐험 연동 | 유물', '외부 무기',
+              'Commands.literal("market")', 'BuildingType.MARKET', '시장 "):
+    if token not in commands: raise SystemExit(f'alpha.32 command/status invariant missing: {token}')
+
+palette = (JAVA / 'client/BuildingPaletteScreen.java').read_text(encoding='utf-8')
+for token in ('BuildingType.MARKET', '물류·교역', '시장/경비←마을 단계'):
+    if token not in palette: raise SystemExit(f'alpha.32 compact palette invariant missing: {token}')
 
 for tag_name in ('settlement_wood', 'settlement_stone', 'settlement_metal', 'settlement_food', 'expedition_relics'):
     tag = json.loads((RES / f'data/frontier_settlement/tags/item/{tag_name}.json').read_text(encoding='utf-8'))
@@ -292,8 +331,8 @@ for path in (JAVA / 'settlement/SettlementService.java', JAVA / 'settlement/Sett
              JAVA / 'settlement/SettlementConstructionService.java', JAVA / 'settlement/SettlementRoadService.java',
              JAVA / 'settlement/SettlementOutpostService.java', JAVA / 'settlement/SettlementWorkerService.java',
              JAVA / 'settlement/SettlementOutpostProductionService.java', JAVA / 'settlement/SettlementOutpostLogisticsService.java',
-             JAVA / 'settlement/SettlementTierInfrastructureService.java'):
+             JAVA / 'settlement/SettlementTierInfrastructureService.java', JAVA / 'settlement/SettlementMarketService.java'):
     text = path.read_text(encoding='utf-8')
     if 'destroyBlock(' in text or 'dropResources(' in text: raise SystemExit(f'loose-drop destruction path forbidden: {path.name}')
 
-print('Frontier Settlement alpha.31 source audit: PASS')
+print('Frontier Settlement alpha.32 source audit: PASS')
