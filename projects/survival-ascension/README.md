@@ -8,7 +8,7 @@ Survival Ascension turns progression into larger physical actions, then makes wo
 0.34 closes the remaining gap between high-throughput skills and the physical Barrel/outpost network. Large base-side resource sinks no longer require the player to manually move hundreds of items into personal inventory when those items already exist in a nearby usable owned logistics Barrel.
 
 ### One physical stock resolver
-`FieldDepotService` now exposes generic matcher-backed stock counting/consumption in addition to exact-item access. This means the same real-stock path can resolve exact materials and tag-based inputs such as mixed vanilla logs.
+`FieldDepotService` now exposes generic matcher-backed stock counting/consumption in addition to exact-item access. The internal shared paths are `countMatching` and `consumeMatching`, so the same real-stock path can resolve exact materials and tag-based inputs such as mixed vanilla logs.
 
 Resolution order remains strict:
 1. player inventory first;
