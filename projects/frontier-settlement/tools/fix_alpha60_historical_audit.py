@@ -2,9 +2,22 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# The legacy Alpha.37 cumulative audit used the old helper name as evidence that physical grading
+# existed. Alpha.60 replaces that helper with the stronger reversible transaction implementation.
+legacy_path = ROOT / 'tools/test_current_source.py'
+legacy = legacy_path.read_text(encoding='utf-8')
+old_legacy = "'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCell(', 'ConstructionState.BUILD_STEP_OFFSET',"
+new_legacy = "'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCellTransactional(', 'ConstructionState.BUILD_STEP_OFFSET',"
+if old_legacy not in legacy:
+    raise SystemExit('legacy physical construction helper-name anchor missing')
+legacy = legacy.replace(old_legacy, new_legacy, 1)
+legacy_path.write_text(legacy, encoding='utf-8')
+
+# Alpha.44 historically required retaining stone consumption before grade placement. Alpha.60
+# intentionally reverses commit order while preserving physical staging/consumption and adding rollback.
 path = ROOT / 'tools/test_alpha44_source.py'
 source = path.read_text(encoding='utf-8')
-
 old_token = "    'SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)',\n"
 new_token = "    'cell.retainingStone()',\n"
 if old_token not in source:
@@ -17,4 +30,4 @@ if old_order not in source:
     raise SystemExit('alpha.44 retaining ordering anchor missing')
 source = source.replace(old_order, new_order, 1)
 path.write_text(source, encoding='utf-8')
-print('Updated Alpha.44 cumulative audit for Alpha.60 transaction supersession.')
+print('Updated legacy/Alpha.44 cumulative audits for Alpha.60 transaction supersession.')
