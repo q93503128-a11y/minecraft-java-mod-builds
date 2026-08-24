@@ -39,8 +39,14 @@ public final class SettlementRoadService {
     private static final int MAX_LONG_BRIDGE_PIER_DEPTH = 12;
     private static final int LONG_BRIDGE_PIER_INTERVAL = 6;
     private static final int MAX_TUNNEL_SPAN = 24;
+    private static final int MIN_TUNNEL_SPAN = 3;
+    private static final int MAX_TUNNEL_BENDS = 1;
+    private static final int MIN_BENT_TUNNEL_LEG = 3;
     private static final int MIN_TUNNEL_COVER = 4;
     private static final int TUNNEL_CLEAR_HEIGHT = 3;
+    private static final int TUNNEL_PORTAL_HALF_WIDTH = 2;
+    private static final int TUNNEL_PORTAL_HEIGHT = 4;
+    private static final int TUNNEL_PORTAL_FRAME_BLOCKS = 22;
     private static final int TUNNEL_SURCHARGE_PER_CENTER = 1;
     private static final int BRIDGE_SURCHARGE_PER_CENTER = 2;
     private static final int BRIDGE_SUPPORT_SURCHARGE = 1;
@@ -61,7 +67,8 @@ public final class SettlementRoadService {
     public record RouteCheck(boolean valid, List<BlockPos> centers, int stoneCost, String message) {}
     private record RouteCandidate(boolean valid, List<BlockPos> centers, List<Integer> profile,
                                   List<BlockPos> supports, int score, String message) {}
-    private record Placement(BlockPos pos, BlockState state, boolean bridge, boolean support, boolean tunnel) {}
+    private record Placement(BlockPos pos, BlockState state, boolean bridge, boolean support,
+                             boolean tunnel, boolean portal) {}
     private record FootprintSpec(boolean centerline, boolean bridge, boolean tunnel, Direction stairFacing) {}
     private record SurfaceSample(int y, BlockState state, boolean water) {}
     private record TunnelCell(BlockPos target, BlockPos work) {}
@@ -113,6 +120,8 @@ public final class SettlementRoadService {
             return invalid("교각이 필요한 장교량·협곡 횡단은 마을 단계부터 건설할 수 있습니다.");
         }
         int tunnels = tunnelCenterCount(chosen.profile());
+        int tunnelBends = tunnelBendCount(chosen.centers(), chosen.profile());
+        int tunnelRuns = tunnelRunCount(chosen.profile());
         if (tunnels > 0 && (SettlementTier.current(data).ordinal() < SettlementTier.FRONTIER_TOWN.ordinal()
                 || data.buildingCount(BuildingType.CONSTRUCTION_OFFICE) < 1)) {
             return invalid("자동 터널은 개척 도시 + 건설소 단계부터 사용할 수 있습니다.");
@@ -127,7 +136,9 @@ public final class SettlementRoadService {
         String bridgeDetail = bridges == 0 ? ""
                 : chosen.supports().isEmpty() ? " · 소교량 " + bridges
                 : " · 장교량 " + bridges + " · 교각 " + chosen.supports().size();
-        String tunnelDetail = tunnels == 0 ? "" : " · 터널 " + tunnels;
+        String tunnelDetail = tunnels == 0 ? "" : " · 터널 " + tunnels
+                + (tunnelBends == 0 ? "" : " · 굴곡 " + tunnelBends)
+                + " · 석재 포털 " + (tunnelRuns * 2);
         String terrain = (stairs == 0 && bridges == 0 && tunnels == 0) ? ""
                 : " | 계단 " + stairs + bridgeDetail + tunnelDetail;
         return new RouteCheck(true, chosen.centers(), cost,
@@ -161,7 +172,11 @@ public final class SettlementRoadService {
         String bridge = chosen.supports().isEmpty() ? ""
                 : " 장교량/협곡 교각 " + chosen.supports().size() + "블록 포함.";
         int tunnels = tunnelCenterCount(chosen.profile());
-        String tunnel = tunnels == 0 ? "" : " 직선 터널 " + tunnels + "블록 포함.";
+        int tunnelBends = tunnelBendCount(chosen.centers(), chosen.profile());
+        int tunnelRuns = tunnelRunCount(chosen.profile());
+        String tunnel = tunnels == 0 ? "" : " 터널 " + tunnels + "블록"
+                + (tunnelBends == 0 ? "" : "(90도 굴곡 " + tunnelBends + "회)")
+                + " + 실제 석재 포털 " + (tunnelRuns * 2) + "개 포함.";
         return new StartResult(true, "개척 도로 착공: " + chosen.centers().size()
                 + "블록 경로, 3칸 폭." + bridge + tunnel + " 건설 주민이 지반·계단·교량·터널을 정리한 뒤 공동 창고의 실제 석재 "
                 + requiredStone + "개를 운반하며 포설합니다.");
@@ -263,7 +278,7 @@ public final class SettlementRoadService {
             return false;
         }
         if (level.getBlockEntity(cell.target()) != null || !current.getFluidState().isEmpty()
-                || !isNaturalTunnelExcavation(current)) {
+                || (!isNaturalTunnelExcavation(current) && !isNaturalTunnelPortalBlock(current))) {
             builder.getNavigation().stop();
             return false;
         }
@@ -304,10 +319,12 @@ public final class SettlementRoadService {
             return false;
         }
         if (!placement.bridge()) {
-            BlockState support = level.getBlockState(target.below());
-            if (support.isAir() || support.canBeReplaced() || !support.getFluidState().isEmpty()) {
-                builder.getNavigation().stop();
-                return false;
+            if (!placement.portal()) {
+                BlockState support = level.getBlockState(target.below());
+                if (support.isAir() || support.canBeReplaced() || !support.getFluidState().isEmpty()) {
+                    builder.getNavigation().stop();
+                    return false;
+                }
             }
         }
 
@@ -329,6 +346,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean canReplaceForPlacement(BlockState current, Placement placement) {
+        if (placement.portal()) return current.isAir() || current.canBeReplaced();
         if (placement.support()) {
             return current.isAir() || current.canBeReplaced() || current.getFluidState().is(FluidTags.WATER);
         }
@@ -401,6 +419,14 @@ public final class SettlementRoadService {
             builder.getNavigation().stop();
             return false;
         }
+        if (placement.portal()) {
+            BlockPos approach = tunnelPortalApproach(level, placement.pos());
+            if (approach == null) return false;
+            double distance = builder.distanceToSqr(approach.getX() + 0.5D, approach.getY() + 1.0D, approach.getZ() + 0.5D);
+            if (distance <= BUILDER_WORK_RANGE_SQR) return true;
+            builder.getNavigation().moveTo(approach.getX() + 0.5D, approach.getY() + 1.0D, approach.getZ() + 0.5D, 0.82D);
+            return false;
+        }
         if (placement.tunnel()) {
             double x = placement.pos().getX() + 0.5D;
             double y = placement.pos().getY() + 1.0D;
@@ -428,6 +454,20 @@ public final class SettlementRoadService {
             }
         }
         return moveBuilderToCurrentSurface(level, builder, placement.pos());
+    }
+
+    private static BlockPos tunnelPortalApproach(ServerLevel level, BlockPos target) {
+        for (int down = 1; down <= TUNNEL_PORTAL_HEIGHT; down++) {
+            int y = target.getY() - down;
+            for (int dx = -TUNNEL_PORTAL_HALF_WIDTH; dx <= TUNNEL_PORTAL_HALF_WIDTH; dx++) {
+                for (int dz = -TUNNEL_PORTAL_HALF_WIDTH; dz <= TUNNEL_PORTAL_HALF_WIDTH; dz++) {
+                    BlockPos candidate = new BlockPos(target.getX() + dx, y, target.getZ() + dz);
+                    if (!level.hasChunkAt(candidate)) continue;
+                    if (isRoadPavingBlock(level.getBlockState(candidate))) return candidate;
+                }
+            }
+        }
+        return null;
     }
 
     private static BlockPos bridgeApproach(ServerLevel level, BlockPos target) {
@@ -464,6 +504,7 @@ public final class SettlementRoadService {
         BlockPos target = placement.pos();
         BlockState current = level.getBlockState(target);
         if (level.getBlockEntity(target) != null) return false;
+        if (placement.portal()) return tunnelPortalCellSafe(level, target);
         if (placement.support()) {
             if (!current.getFluidState().isEmpty() && !current.getFluidState().is(FluidTags.WATER)) return false;
             return current.is(placement.state().getBlock()) || current.isAir() || current.canBeReplaced()
@@ -483,7 +524,7 @@ public final class SettlementRoadService {
     }
 
     private static void applyGradePlacement(ServerLevel level, Placement placement) {
-        if (placement.support() || placement.tunnel()) return;
+        if (placement.support() || placement.tunnel() || placement.portal()) return;
         BlockPos target = placement.pos();
         for (int y = target.getY() + 2; y >= target.getY() + 1; y--) {
             BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
@@ -527,6 +568,7 @@ public final class SettlementRoadService {
                 + bridgeCenterCount(candidate.profile()) * BRIDGE_SURCHARGE_PER_CENTER
                 + candidate.supports().size() * BRIDGE_SUPPORT_SURCHARGE
                 + tunnelCenterCount(candidate.profile()) * TUNNEL_SURCHARGE_PER_CENTER
+                + tunnelRunCount(candidate.profile()) * TUNNEL_PORTAL_FRAME_BLOCKS
                 + stairCenterCount(candidate.centers(), candidate.profile()) * STAIR_SURCHARGE_PER_CENTER;
     }
 
@@ -535,6 +577,7 @@ public final class SettlementRoadService {
                 + road.bridgeCenterCount() * BRIDGE_SURCHARGE_PER_CENTER
                 + road.bridgeSupportCount() * BRIDGE_SUPPORT_SURCHARGE
                 + road.tunnelCenterCount() * TUNNEL_SURCHARGE_PER_CENTER
+                + tunnelRunCount(road.profile()) * TUNNEL_PORTAL_FRAME_BLOCKS
                 + stairCenterCount(road.centers(), road.profile()) * STAIR_SURCHARGE_PER_CENTER;
     }
 
@@ -545,7 +588,8 @@ public final class SettlementRoadService {
                 : road.bridgeSupportCount() > 0 ? "도로 장교량·교각 자리 검사"
                 : road.bridgeCenterCount() > 0 ? "도로 지반·교량 자리 정리" : "도로 지반 정리";
         if (road.tunneling()) return "도로 터널 굴착 " + road.tunnelStep() + "/" + tunnelExcavationPlan(road).size();
-        if (road.step() < plan.size()) return road.bridgeSupportCount() > 0 ? "도로 장교량·교각 석재 운반·시공"
+        if (road.step() < plan.size()) return road.hasTunnel() ? "도로 터널 포장·석재 포털 운반·시공"
+                : road.bridgeSupportCount() > 0 ? "도로 장교량·교각 석재 운반·시공"
                 : road.bridgeCenterCount() > 0 ? "도로 계단·교량 석재 운반·포설" : "도로 석재 운반·포설";
         return "도로 마감 확인";
     }
@@ -570,10 +614,12 @@ public final class SettlementRoadService {
                 return false;
             }
             if (!placement.bridge()) {
-                BlockState support = level.getBlockState(placement.pos().below());
-                if (support.isAir() || support.canBeReplaced() || !support.getFluidState().isEmpty()) {
-                    builder.getNavigation().stop();
-                    return false;
+                if (!placement.portal()) {
+                    BlockState support = level.getBlockState(placement.pos().below());
+                    if (support.isAir() || support.canBeReplaced() || !support.getFluidState().isEmpty()) {
+                        builder.getNavigation().stop();
+                        return false;
+                    }
                 }
             }
             if (!legacyPrepaidRepair && !ensurePavingMaterial(server, data, builder, 1L, 1L)) return false;
@@ -743,15 +789,11 @@ public final class SettlementRoadService {
                     if (surfaces.get(j).y() < grade + MIN_TUNNEL_COVER) { covered = false; break; }
                 }
                 if (!covered) continue;
-                int dx = Integer.signum(flat.get(i).getX() - flat.get(i - 1).getX());
-                int dz = Integer.signum(flat.get(i).getZ() - flat.get(i - 1).getZ());
-                boolean straight = true;
-                for (int j = i; j <= tunnelEnd + 1; j++) {
-                    int sdx = Integer.signum(flat.get(j).getX() - flat.get(j - 1).getX());
-                    int sdz = Integer.signum(flat.get(j).getZ() - flat.get(j - 1).getZ());
-                    if (sdx != dx || sdz != dz) { straight = false; break; }
-                }
-                if (!straight) continue;
+                int span = tunnelEnd - i + 1;
+                if (span < MIN_TUNNEL_SPAN) continue;
+                int turns = tunnelTurnCount(flat, i, tunnelEnd);
+                if (turns > MAX_TUNNEL_BENDS) continue;
+                if (turns == 1 && !bentTunnelLegsLongEnough(flat, i, tunnelEnd)) continue;
                 bestEnd = tunnelEnd; bestY = grade; break;
             }
             if (bestEnd < 0) continue;
@@ -832,6 +874,9 @@ public final class SettlementRoadService {
                 }
             }
         }
+        String tunnelPortalError = validateTunnelPortals(level, data, centers, profile);
+        if (!tunnelPortalError.isBlank()) return invalidCandidate(tunnelPortalError);
+        score += tunnelBendCount(centers, profile) * 12;
         SupportPlan supports = planBridgeSupports(level, centers, profile);
         if (!supports.valid()) return invalidCandidate(supports.message());
         score += supports.positions().size() * 2;
@@ -881,22 +926,165 @@ public final class SettlementRoadService {
                 || state.is(Blocks.TUFF) || state.is(Blocks.CLAY) || state.is(BlockTags.DIRT);
     }
 
+    private static boolean isNaturalTunnelPortalBlock(BlockState state) {
+        return isNaturalTunnelExcavation(state) || state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.SNOW)
+                || state.is(Blocks.SNOW_BLOCK);
+    }
+
+    private static int tunnelTurnCount(List<BlockPos> centers, int runStart, int runEnd) {
+        int turns = 0;
+        int previousDx = 0;
+        int previousDz = 0;
+        int firstEdge = Math.max(1, runStart);
+        int lastEdge = Math.min(centers.size() - 1, runEnd + 1);
+        for (int edge = firstEdge; edge <= lastEdge; edge++) {
+            int dx = Integer.signum(centers.get(edge).getX() - centers.get(edge - 1).getX());
+            int dz = Integer.signum(centers.get(edge).getZ() - centers.get(edge - 1).getZ());
+            if (Math.abs(dx) + Math.abs(dz) != 1) return Integer.MAX_VALUE;
+            if (previousDx != 0 || previousDz != 0) {
+                if (dx != previousDx || dz != previousDz) turns++;
+            }
+            previousDx = dx;
+            previousDz = dz;
+        }
+        return turns;
+    }
+
+    private static boolean bentTunnelLegsLongEnough(List<BlockPos> centers, int runStart, int runEnd) {
+        int firstDx = Integer.signum(centers.get(runStart).getX() - centers.get(runStart - 1).getX());
+        int firstDz = Integer.signum(centers.get(runStart).getZ() - centers.get(runStart - 1).getZ());
+        for (int edge = runStart + 1; edge <= runEnd + 1 && edge < centers.size(); edge++) {
+            int dx = Integer.signum(centers.get(edge).getX() - centers.get(edge - 1).getX());
+            int dz = Integer.signum(centers.get(edge).getZ() - centers.get(edge - 1).getZ());
+            if (dx == firstDx && dz == firstDz) continue;
+            int beforeTurn = edge - runStart;
+            int afterTurn = runEnd - edge + 2;
+            return beforeTurn >= MIN_BENT_TUNNEL_LEG && afterTurn >= MIN_BENT_TUNNEL_LEG;
+        }
+        return true;
+    }
+
+    private static int tunnelRunCount(List<Integer> profile) {
+        int runs = 0;
+        boolean inside = false;
+        for (int value : profile) {
+            boolean tunnel = value == RoadConstructionState.PROFILE_TUNNEL;
+            if (tunnel && !inside) runs++;
+            inside = tunnel;
+        }
+        return runs;
+    }
+
+    private static int tunnelBendCount(List<BlockPos> centers, List<Integer> profile) {
+        int bends = 0;
+        int runStart = 0;
+        while (runStart < centers.size()) {
+            if (runStart >= profile.size() || profile.get(runStart) != RoadConstructionState.PROFILE_TUNNEL) {
+                runStart++;
+                continue;
+            }
+            int runEnd = runStart;
+            while (runEnd + 1 < centers.size() && runEnd + 1 < profile.size()
+                    && profile.get(runEnd + 1) == RoadConstructionState.PROFILE_TUNNEL) runEnd++;
+            int count = tunnelTurnCount(centers, runStart, runEnd);
+            if (count != Integer.MAX_VALUE) bends += count;
+            runStart = runEnd + 1;
+        }
+        return bends;
+    }
+
+    private static List<BlockPos> tunnelPortalFrameAt(List<BlockPos> centers, int index) {
+        if (index < 0 || index >= centers.size()) return List.of();
+        BlockPos center = centers.get(index);
+        int[] direction = directionAt(centers, index);
+        List<BlockPos> frame = new ArrayList<>(11);
+        for (int side : new int[] {-TUNNEL_PORTAL_HALF_WIDTH, TUNNEL_PORTAL_HALF_WIDTH}) {
+            int x = center.getX() - direction[1] * side;
+            int z = center.getZ() + direction[0] * side;
+            for (int y = 1; y < TUNNEL_PORTAL_HEIGHT; y++) {
+                frame.add(new BlockPos(x, center.getY() + y, z));
+            }
+        }
+        for (int side = -TUNNEL_PORTAL_HALF_WIDTH; side <= TUNNEL_PORTAL_HALF_WIDTH; side++) {
+            int x = center.getX() - direction[1] * side;
+            int z = center.getZ() + direction[0] * side;
+            frame.add(new BlockPos(x, center.getY() + TUNNEL_PORTAL_HEIGHT, z));
+        }
+        return List.copyOf(frame);
+    }
+
+    private static List<BlockPos> tunnelPortalFramePositions(List<BlockPos> centers, List<Integer> profile) {
+        Set<BlockPos> frames = new LinkedHashSet<>();
+        int runStart = 0;
+        while (runStart < centers.size()) {
+            if (runStart >= profile.size() || profile.get(runStart) != RoadConstructionState.PROFILE_TUNNEL) {
+                runStart++;
+                continue;
+            }
+            int runEnd = runStart;
+            while (runEnd + 1 < centers.size() && runEnd + 1 < profile.size()
+                    && profile.get(runEnd + 1) == RoadConstructionState.PROFILE_TUNNEL) runEnd++;
+            frames.addAll(tunnelPortalFrameAt(centers, runStart));
+            frames.addAll(tunnelPortalFrameAt(centers, runEnd));
+            runStart = runEnd + 1;
+        }
+        return List.copyOf(frames);
+    }
+
+    private static boolean tunnelPortalCellSafe(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null) return false;
+        BlockState state = level.getBlockState(pos);
+        if (!state.getFluidState().isEmpty()) return false;
+        return state.isAir() || state.canBeReplaced() || state.is(Blocks.STONE_BRICKS)
+                || isNaturalTunnelPortalBlock(state);
+    }
+
+    private static String validateTunnelPortals(ServerLevel level, SettlementData data,
+                                                List<BlockPos> centers, List<Integer> profile) {
+        for (BlockPos pos : tunnelPortalFramePositions(centers, profile)) {
+            if (overlapsBuildingOrOutpost(data, pos)) return "터널 석재 포털이 기존 건물이나 전초기지와 겹칩니다.";
+            if (overlapsExistingRoad(data.roads(), pos)) return "터널 석재 포털이 기존 도로와 겹칩니다.";
+            if (!tunnelPortalCellSafe(level, pos)) {
+                return "터널 석재 포털 범위에 광석·유체·컨테이너·플레이어/비자연 블록이 있습니다.";
+            }
+        }
+        return "";
+    }
+
     private static List<TunnelCell> tunnelExcavationPlan(RoadConstructionState road) {
         List<BlockPos> centers = road.centers();
         List<Integer> profile = road.profile();
-        List<TunnelCell> cells = new ArrayList<>();
-        for (int i = 0; i < centers.size(); i++) {
-            if (i >= profile.size() || profile.get(i) != RoadConstructionState.PROFILE_TUNNEL) continue;
-            BlockPos center = centers.get(i);
-            BlockPos work = i > 0 ? centers.get(i - 1) : center;
-            int[] direction = directionAt(centers, i);
-            for (int side : new int[] {0, -1, 1}) {
-                int x = center.getX() - direction[1] * side;
-                int z = center.getZ() + direction[0] * side;
-                for (int y = 1; y <= TUNNEL_CLEAR_HEIGHT; y++) {
-                    cells.add(new TunnelCell(new BlockPos(x, center.getY() + y, z), work));
+        Map<BlockPos, BlockPos> ordered = new LinkedHashMap<>();
+        int runStart = 0;
+        while (runStart < centers.size()) {
+            if (runStart >= profile.size() || profile.get(runStart) != RoadConstructionState.PROFILE_TUNNEL) {
+                runStart++;
+                continue;
+            }
+            int runEnd = runStart;
+            while (runEnd + 1 < centers.size() && runEnd + 1 < profile.size()
+                    && profile.get(runEnd + 1) == RoadConstructionState.PROFILE_TUNNEL) runEnd++;
+            BlockPos startWork = runStart > 0 ? centers.get(runStart - 1) : centers.get(runStart);
+            for (BlockPos frame : tunnelPortalFrameAt(centers, runStart)) ordered.putIfAbsent(frame, startWork);
+            for (int i = runStart; i <= runEnd; i++) {
+                BlockPos center = centers.get(i);
+                BlockPos work = i > runStart ? centers.get(i - 1) : startWork;
+                int[] direction = directionAt(centers, i);
+                for (int side : new int[] {0, -1, 1}) {
+                    int x = center.getX() - direction[1] * side;
+                    int z = center.getZ() + direction[0] * side;
+                    for (int y = 1; y <= TUNNEL_CLEAR_HEIGHT; y++) {
+                        ordered.putIfAbsent(new BlockPos(x, center.getY() + y, z), work);
+                    }
                 }
             }
+            BlockPos endWork = centers.get(runEnd);
+            for (BlockPos frame : tunnelPortalFrameAt(centers, runEnd)) ordered.putIfAbsent(frame, endWork);
+            runStart = runEnd + 1;
+        }
+        List<TunnelCell> cells = new ArrayList<>(ordered.size());
+        for (Map.Entry<BlockPos, BlockPos> entry : ordered.entrySet()) {
+            cells.add(new TunnelCell(entry.getKey(), entry.getValue()));
         }
         return List.copyOf(cells);
     }
@@ -1050,7 +1238,8 @@ public final class SettlementRoadService {
     private static List<Placement> createPlan(RoadConstructionState road) {
         List<BlockPos> centers = road.centers();
         Map<BlockPos, FootprintSpec> footprints = footprintMap(centers, road.profile());
-        List<Placement> placements = new ArrayList<>(footprints.size() + road.bridgeSupportCount());
+        List<BlockPos> tunnelPortals = tunnelPortalFramePositions(centers, road.profile());
+        List<Placement> placements = new ArrayList<>(footprints.size() + road.bridgeSupportCount() + tunnelPortals.size());
         for (Map.Entry<BlockPos, FootprintSpec> entry : footprints.entrySet()) {
             FootprintSpec spec = entry.getValue();
             BlockState state;
@@ -1058,10 +1247,13 @@ public final class SettlementRoadService {
             else if (spec.stairFacing() != null) {
                 state = Blocks.COBBLESTONE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, spec.stairFacing());
             } else state = spec.centerline() ? Blocks.GRAVEL.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState();
-            placements.add(new Placement(entry.getKey(), state, spec.bridge(), false, spec.tunnel()));
+            placements.add(new Placement(entry.getKey(), state, spec.bridge(), false, spec.tunnel(), false));
         }
         for (BlockPos support : road.bridgeSupportPositions()) {
-            placements.add(new Placement(support, Blocks.STONE_BRICKS.defaultBlockState(), true, true, false));
+            placements.add(new Placement(support, Blocks.STONE_BRICKS.defaultBlockState(), true, true, false, false));
+        }
+        for (BlockPos portal : tunnelPortals) {
+            placements.add(new Placement(portal, Blocks.STONE_BRICKS.defaultBlockState(), false, false, true, true));
         }
         return placements;
     }

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.53`
+현재 구현 기준: `0.1.0-alpha.54`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.53에서 bounded 직선 터널 1차까지 추가되어도 더 깊은 기념비급 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.54에서 bounded 단일굴곡 터널과 실제 석재 포털까지 추가되어도 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -60,7 +60,8 @@
 | 대형 옹벽/테라스 | **완료/부분** | Alpha.51 1-block outer ring, exposed edge 3–7 high, exact cobblestone physical retaining first pass |
 | 대형 협곡/장교량 | **완료/부분** | Alpha.52 max24 straight crossing + persisted physical stone piers, real-play breadth 남음 |
 | 직선 도로 터널 | **완료/부분** | Alpha.53 max24, width3/clear-height3, no-drop physical excavation first pass |
-| 더 깊은/곡선 기념비급 토목 | **미구현/부분** | Alpha.53 범위 밖 |
+| 단일굴곡 터널/석재 포털 | **완료/부분** | Alpha.54 max24 유지, 90도 1회, 양 leg 최소3, 5×4 portal 2개/실물 stone22 |
+| 더 거대한 기념비급 토목 | **선택/부분** | real-play에서 실제 필요성이 확인될 때만; WorldEdit식 확대는 범위 밖 |
 | 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
 | 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
 | 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
@@ -175,7 +176,26 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - frontier-town + construction office unlock;
 - completed road는 same RoadSegment / Alpha.27 logistics authority; force-load/teleport/second authority 없음.
 
-따라서 **bounded straight tunnel은 완료/부분**으로 전진했다. curved/very-long/underground-station/monumental crossing은 여전히 미구현/부분이다.
+따라서 **bounded straight tunnel은 완료/부분**으로 전진했다. Alpha.54는 single-bend/portal breadth를 추가하며 very-long/underground-station/WorldEdit-scale bores는 범위 밖으로 유지한다.
+
+### Alpha.54 one-bend tunnel / physical portal 감사
+
+- Alpha.53 max24 ceiling 그대로 유지, 단순 수치 확대 없음;
+- 한 tunnel run에서 90도 turn 최대1회;
+- bend 양쪽 tunnel leg 최소3 center;
+- persisted centers + `PROFILE_TUNNEL=2`만으로 save/reload bend 재구성, 새 save authority 없음;
+- 기존 width3 / clear-height3 / loaded-only / non-ore / non-fluid / no-cave / player-block protection 유지;
+- tunnel run당 입구/출구 5폭 × 4높이 `STONE_BRICKS` portal frame 2개 결정론적 계획;
+- portal frame 전체도 block entity/fluid/non-natural/infrastructure overlap 사전 거부;
+- portal 자리 자연 블록은 기존 tunneling phase에서 one-cell `setBlock(AIR)` no-drop 굴착;
+- portal stone은 run당22 실제 stone 비용, 같은 road builder가 settlement storage에서 물리 운반;
+- portal world placement 성공 뒤 기존 paving ItemStack consume/state advance 권위 사용;
+- active interior/floor/portal protection 유지;
+- completed road는 same RoadSegment, `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지;
+- **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지;
+- 새 key/building/currency/dashboard/force-load/teleport/second authority 없음.
+
+따라서 Alpha.52–54에서 장교량 + 직선 터널 + bounded 단일굴곡/실물 포털까지 첫 대형 횡단 breadth가 형성됐다. 더 큰 토목은 자동 다음 우선순위가 아니라 실플레이 필요성으로만 재개한다.
 
 ## 4. 주민 / 생산 / 방어
 
@@ -293,20 +313,21 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. **deeper monumental crossing civil-engineering pass** — Alpha.52 long bridge보다 큰/복잡한 crossing breadth를 실물 자원·player protection 안에서 구현;
-2. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
-3. stable seam이 있을 때 companion-biome-aware outpost specialization;
-4. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
-5. long survival + two-player multiplayer acceptance;
+1. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
+2. stable seam이 있을 때 companion-biome-aware outpost specialization;
+3. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
+4. long survival + two-player multiplayer acceptance;
+5. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
 7. Alpha.43 Jade/Xaero/HUD acceptance;
 8. Alpha.46 waterfront pathing/trade acceptance;
 9. Alpha.48 humanoid render/attack/migration acceptance;
 10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion/resupply/cargo-return/terrain-safety acceptance;
 11. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/protection acceptance;
-12. full companion lock fresh-world client/server runtime;
-12. true Xaero marker는 stable supported API가 생길 때만;
-13. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+12. Alpha.54 one-bend/corner clearance/portal excavation/physical stone22/save-reload acceptance;
+13. full companion lock fresh-world client/server runtime;
+14. true Xaero marker는 stable supported API가 생길 때만;
+15. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 

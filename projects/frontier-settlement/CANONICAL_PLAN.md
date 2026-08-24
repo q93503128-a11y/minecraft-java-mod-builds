@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.53**.
+Current canonical implementation: **0.1.0-alpha.54**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–53 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–54 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -435,7 +435,27 @@ Alpha.53 stays inside the same road endpoint/preview/approval authority. It does
 - completed tunnel road remains an ordinary RoadSegment, so Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
 - no force-load, teleport, `destroyBlock`, `dropResources`, second builder/economy/logistics authority or hard companion dependency.
 
-Curved tunnels, >24-cell bores, underground stations and unrestricted mountain deletion remain unfinished/outside this slice.
+Alpha.54 adds one bounded 90-degree bend and physical portals. >24-cell bores, underground stations and unrestricted mountain deletion remain outside the intended product.
+
+### Alpha.54 bounded one-bend tunnel / physical portal pass
+
+Alpha.54 is deliberately qualitative rather than a larger WorldEdit envelope. The total tunnel run remains max24 cells, while one persisted Manhattan bend and physical portal presentation are added inside the same road authority.
+
+- max tunnel run remains24 centerline cells; no larger excavation cap;
+- at most one90-degree centerline bend is accepted, with at least3 tunnel centers on both legs around the turn;
+- bend geometry is reconstructed only from persisted road centers + `PROFILE_TUNNEL=2`, so old saves and Alpha.53 phase encoding remain compatible;
+- tunnel interior remains width3 / clear height3 and keeps the same loaded natural non-ore/non-fluid/no-cave/no-player-block safety contract;
+- each tunnel run deterministically owns two 5-wide × 4-high stone-brick portal frames;
+- portal cells are prevalidated for loaded/block-entity/fluid/non-natural/infrastructure overlap and are included in the no-drop tunnel excavation plan;
+- the existing road builder physically advances through excavation, then hauls real settlement stone and places `STONE_BRICKS` portal cells through the same paving authority;
+- each run adds22 real-stone portal units; excavation never mints replacement stone, earthBank or currency;
+- active tunnel interior, floor and portal cells are project-protected;
+- successful road/portal placement precedes carried-stone consumption/state advance, retaining Alpha.52/53 physical authority;
+- completed tunnel is still one ordinary `RoadSegment`: Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- **Transport workers belong to a specific outpost** and **pause at unloaded route boundaries**;
+- no new key/building/currency/dashboard, second builder/economy/logistics authority, force-load, teleport or hard companion dependency.
+
+This closes the first bounded straight + single-bend tunnel breadth. Very-long bores, underground stations and unrestricted mountain deletion are not required to call the original road/civil loop functionally broad; real-play acceptance still governs release readiness.
 
 ## 10. Exploration, crafting and settlement feedback
 
@@ -499,7 +519,7 @@ Xaero:
 - do not fake completion through internal waypoint sets/reflection/mixins;
 - true settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
 
-Alpha.53 road/civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
+Alpha.54 road/civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
 
 ## 12. UI and information hierarchy
 
@@ -546,7 +566,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.53
+## 14. Current playable slice after Alpha.54
 
 Current implemented slice includes:
 
@@ -557,7 +577,7 @@ Current implemented slice includes:
 - physical construction/hauling and bounded Alpha.44 building terrain;
 - construction-office staging;
 - loaded production and resident work;
-- physical roads/stairs/short bridges, Alpha.52 bounded long bridges, and Alpha.53 bounded straight physical road tunnels;
+- physical roads/stairs/short bridges, Alpha.52 bounded long bridges, Alpha.53 straight tunnels, and Alpha.54 bounded one-bend tunnels with physically built stone-brick portals;
 - specialized outposts, fishing, dangerous military overlay;
 - same-authority physical road logistics and reverse supply;
 - bounded unloaded work debt without virtual resources/cargo;
@@ -570,15 +590,15 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.53
+## 15. Unfinished original-scope priorities after Alpha.54
 
 Unless real-play regression overrides them:
 
-1. **deeper monumental crossing civil-engineering pass** — curved/longer special crossings only if they stay bounded, physical and non-WorldEdit;
-2. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
-3. better companion-biome-aware outpost specialization where a stable data seam exists;
-4. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
-5. long survival + two-player multiplayer acceptance;
+1. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
+2. better companion-biome-aware outpost specialization where a stable data seam exists;
+3. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
+4. long survival + two-player multiplayer acceptance;
+5. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
 7. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance;
 8. Alpha.46 waterfront pathing/site/reverse-supply/trade-balance acceptance;
@@ -586,9 +606,10 @@ Unless real-play regression overrides them:
 10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion-resupply/return-cargo/terrain-safety acceptance;
 11. Alpha.52 long-bridge pier planning/save-reload/stone depletion/physical repair/pathing acceptance;
 12. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/player-protection acceptance;
-13. full companion lock fresh-world client/server runtime;
-14. true Xaero markers only if a stable supported API appears;
-15. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+13. Alpha.54 one-bend detection/corner clearance/portal excavation/22-stone physical portal/save-reload acceptance;
+14. full companion lock fresh-world client/server runtime;
+15. true Xaero markers only if a stable supported API appears;
+16. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 

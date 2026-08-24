@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.53
+## Current version: 0.1.0-alpha.54
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.53 key was added.
+No new Alpha.54 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–52 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–54 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -74,6 +74,23 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
 
+## Alpha.54 — bounded one-bend tunnels and physical portals
+
+Alpha.54 deepens the same automatic road/tunnel authority instead of making tunnels longer or adding another tool.
+
+- the total automatic tunnel ceiling remains **24 centerline cells**;
+- one tunnel run may contain at most **one 90-degree bend**, and both legs around that bend must contain at least **3 tunnel centers** so the corner is not a tiny accidental notch;
+- the persisted centerline path + existing `PROFILE_TUNNEL=2` fully determines the bend after save/reload; there is no new save authority or route controller;
+- the same width-3 / clear-height-3 conservative excavation remains in force, including loaded-only, non-ore, non-fluid, non-container, non-player-block validation;
+- each tunnel run receives exactly **two deterministic stone-brick portal frames**, one at each end. The frame envelope is **5 blocks wide × 4 blocks high** and is validated before approval;
+- portal frame cells are included in the no-drop physical excavation phase, then the same road builder carries real settlement stone and places `STONE_BRICKS` during the established paving phase;
+- the two frames add **22 real-stone units per tunnel run**; no visual-only/free portal block, virtual stone or excavated-stone refund exists;
+- active tunnel interior/floor/portal cells remain project-protected, and unsafe edits pause rather than being overwritten;
+- completed bent tunnels are still ordinary `RoadSegment`s. Alpha.27 remains the **single authority for outpost transport**, **Transport workers belong to a specific outpost**, and workers **pause at unloaded route boundaries**;
+- no new key, building family, currency, dashboard, second builder, second logistics authority, force-load or teleport is introduced.
+
+Alpha.54 closes the first qualitative curved/monumental tunnel slice without raising the destruction ceiling. Very-long bores, underground stations and unrestricted mountain deletion remain outside the intended product.
+
 ## Alpha.53 — bounded straight road tunnels
 
 Alpha.53 fills the next civil-engineering gap without adding a tunnel dashboard, new key or second construction authority.
@@ -89,7 +106,7 @@ Alpha.53 fills the next civil-engineering gap without adding a tunnel dashboard,
 - tunnel works require the existing **frontier-town + construction office** stage;
 - no force-load, teleport, `destroyBlock`, `dropResources`, second builder, second road authority or companion hard dependency is introduced.
 
-This is the first bounded road-tunnel slice. Curved tunnels, very long bores, underground stations and unrestricted mountain deletion remain outside the current pass.
+This is the first bounded road-tunnel slice. Alpha.54 adds the bounded one-bend/portal pass; very long bores, underground stations and unrestricted mountain deletion remain outside the intended product.
 
 ## Alpha.52 — bounded long bridges and ravine crossings
 
