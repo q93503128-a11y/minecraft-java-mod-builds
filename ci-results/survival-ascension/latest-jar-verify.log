@@ -2,6 +2,7 @@ JAR VERIFY PASS
 version=0.47.0-alpha.1
 external_equipment_imprint_runtime=present
 bop_expedition_biome_bridge=present
+major_external_target_runtime=present
 standard_shovel_affix_bridge=present
 shovel_mining_earthworks_runtime=present
 physical_freight_runtime=present
