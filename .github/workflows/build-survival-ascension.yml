@@ -58,7 +58,7 @@ jobs:
           ./gradlew --version
           python3 tools/test_release_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-audit.log"
           python3 tools/test_release_content_pack.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log"
-          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py
+          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
           git diff --check
           git diff --exit-code
 
@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
-          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR" | tee "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log"
+          python3 tools/verify_release_jar.py "build/libs/$EXPECTED_JAR" | tee "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log"
           mkdir -p "$GITHUB_WORKSPACE/deliverables"
           cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables/"
           cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
