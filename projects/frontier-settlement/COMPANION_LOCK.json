@@ -6,13 +6,15 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.44"
+    "frontier_settlement": "0.1.0-alpha.45"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
     "It is not marked runtime-tested until the full client/server pack is launched together.",
     "World-generation entries must be present before the test world is created.",
-    "Dungeons and Taverns uses the official 26.2 NeoForge distribution; its Modrinth datapack ID is recorded only as provenance because the NeoForge JAR is distributed separately on CurseForge."
+    "Dungeons and Taverns uses the official 26.2 NeoForge distribution; its Modrinth datapack ID is recorded only as provenance because the NeoForge JAR is distributed separately on CurseForge.",
+    "Alpha.45 detects already-loaded external structure pieces by registry namespace without hard companion classes; structure generation remains owned by companion/worldgen mods.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.45 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},
