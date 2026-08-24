@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: survival-ascension-v045-apply
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply:
@@ -29,297 +29,215 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Rebase worktree on latest main
+      - name: Reset to latest main
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main
           git reset --hard origin/main
 
-      - name: Apply Survival Ascension 0.45 source and audit patch
+      - name: Apply 0.45 patch
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
 
-          ROOT = Path("projects/survival-ascension")
+          P = Path("projects/survival-ascension")
 
           def read(rel):
-              return (ROOT / rel).read_text(encoding="utf-8")
+              return (P / rel).read_text(encoding="utf-8")
 
           def write(rel, text):
-              (ROOT / rel).write_text(text, encoding="utf-8")
+              (P / rel).write_text(text, encoding="utf-8")
 
-          def replace_once(rel, old, new):
+          def repl(rel, old, new):
               text = read(rel)
-              if new in text and old not in text:
-                  return
               if old not in text:
-                  raise SystemExit(f"missing replacement anchor in {rel}: {old[:120]!r}")
+                  raise SystemExit(f"anchor missing in {rel}: {old[:100]!r}")
               write(rel, text.replace(old, new, 1))
 
-          def insert_before_once(rel, marker, addition, sentinel):
+          def before(rel, marker, addition):
               text = read(rel)
-              if sentinel in text:
-                  return
               if marker not in text:
-                  raise SystemExit(f"missing insertion marker in {rel}: {marker[:120]!r}")
+                  raise SystemExit(f"marker missing in {rel}: {marker[:100]!r}")
               write(rel, text.replace(marker, addition + marker, 1))
 
-          def insert_after_once(rel, marker, addition, sentinel):
+          def after(rel, marker, addition):
               text = read(rel)
-              if sentinel in text:
-                  return
               if marker not in text:
-                  raise SystemExit(f"missing insertion marker in {rel}: {marker[:120]!r}")
+                  raise SystemExit(f"marker missing in {rel}: {marker[:100]!r}")
               write(rel, text.replace(marker, marker + addition, 1))
 
-          replace_once("gradle.properties", "mod_version=0.44.0-alpha.1", "mod_version=0.45.0-alpha.1")
-          replace_once(
-              "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
-              'public static final String VERSION = "0.44.0-alpha.1";\n    // 0.44: standard-tagged external swords/tools can be imprinted into the existing affix/mastery system without hard optional-mod dependencies.',
-              'public static final String VERSION = "0.45.0-alpha.1";\n    // 0.45: optional expedition Biome Tags bridge external worldgen while generic Enemy/BOSSES and standard item tags keep content-pack integration dependency-free.'
-          )
-          replace_once(
-              "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
-              'LOGGER.info("Survival Ascension {} loaded: scaled mastery + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);',
-              'LOGGER.info("Survival Ascension {} loaded: scaled mastery + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);'
-          )
+          # Version + runtime identity.
+          repl("gradle.properties", "mod_version=0.44.0-alpha.1", "mod_version=0.45.0-alpha.1")
+          repl("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
+               'public static final String VERSION = "0.44.0-alpha.1";',
+               'public static final String VERSION = "0.45.0-alpha.1";')
+          repl("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
+               '// 0.44: standard-tagged external swords/tools can be imprinted into the existing affix/mastery system without hard optional-mod dependencies.',
+               '// 0.45: optional expedition Biome Tags extend external worldgen while generic Enemy/BOSSES and standard item tags remain the compatibility seam.')
+          repl("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
+               'scaled mastery + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense',
+               'scaled mastery + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense')
 
-          write(
-              "src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json",
-              '{\n  "replace": false,\n  "values": [\n    {"id":"biomesoplenty:glowing_grotto","required":false},\n    {"id":"biomesoplenty:spider_nest","required":false}\n  ]\n}\n'
-          )
+          # BOP cave bridge correction.
+          write("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json", '''{
+            "replace": false,
+            "values": [
+              {"id":"biomesoplenty:glowing_grotto","required":false},
+              {"id":"biomesoplenty:spider_nest","required":false}
+            ]
+          }
+          '''.replace("          ", ""))
 
-          guide_marker = '                h("외부 장비와 승천 각인"), p("콘텐츠 팩이나 다른 모드의 장비가 표준 검/곡괭이/도끼/괭이 아이템 태그를 사용하면 장비 메뉴의 승천 각인으로 Survival Ascension affix 체계에 편입할 수 있습니다. 각성 단계는 정예, 전설 단계는 승천, 종말 단계는 신화 등급으로 각인합니다."),\n'
-          guide_add = '                h("외부 바이옴 원정"), p("외부 월드젠 모드가 Survival Ascension 원정 바이옴 태그에 포함되면 기존 9지역 원정 판정에 그대로 합류합니다. Biomes O’ Plenty의 지하 Glowing Grotto와 Spider Nest는 심층권으로 취급되며, 외부 모드가 없어도 바닐라 원정 판정은 그대로 작동합니다."),\n'
-          insert_after_once(
-              "src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java",
-              guide_marker, guide_add, 'h("외부 바이옴 원정")'
-          )
+          # Player-facing guide: current-state wording, not patch notes.
+          guide_anchor = '                h("외부 장비와 승천 각인"), p("콘텐츠 팩이나 다른 모드의 장비가 표준 검/곡괭이/도끼/괭이 아이템 태그를 사용하면 장비 메뉴의 승천 각인으로 Survival Ascension affix 체계에 편입할 수 있습니다. 각성 단계는 정예, 전설 단계는 승천, 종말 단계는 신화 등급으로 각인합니다."),\n'
+          guide_line = '                h("외부 바이옴 원정"), p("외부 월드젠 바이옴은 Survival Ascension 원정 태그를 통해 기존 9지역 판정에 합류합니다. Biomes O’ Plenty의 Glowing Grotto와 Spider Nest는 심층권이며, 외부 모드가 없어도 바닐라 원정 판정은 그대로 작동합니다."),\n'
+          after("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java", guide_anchor, guide_line)
 
-          readme_045 = '''## 0.45.0-alpha.1 — External World Integration / 외부 월드 원정 통합
-Biomes O' Plenty worldgen now participates in the existing nine-region Expedition system through optional Survival Ascension biome tags rather than Java implementation dependencies. `ExpeditionRegion` checks `survivalascension:expedition/<region>` before its vanilla biome fallback, so tagged external biomes inherit the existing discovery, operation and return rules without a second expedition system.
+          # Canonical docs.
+          readme = '''## 0.45.0-alpha.1 — External World Integration / 외부 월드 원정 통합
+          Biomes O' Plenty 바이옴을 별도 원정 체계로 만들지 않고 기존 9지역 원정에 데이터 태그로 편입한다. `ExpeditionRegion`은 `survivalascension:expedition/<region>`을 바닐라 fallback보다 먼저 판정하며 BOP registry ID는 `required:false`라서 BOP가 없어도 코어가 로드된다.
 
-The BOP cave audit found one real omission in the 0.44 compatibility patch: `biomesoplenty:spider_nest` was absent while BOP classifies it alongside `glowing_grotto` as cave content. 0.45 adds Spider Nest to `expedition/deep`; both entries are `required:false`, so BOP remains optional and Survival Ascension still loads when it is absent.
+          0.44 호환 패치의 실제 누락이었던 `biomesoplenty:spider_nest`를 `glowing_grotto`와 함께 심층권에 추가했다. The Birth of Steve 핵심 적은 이미 Minecraft `Enemy` 계약을 따르므로 기존 전투 숙련에 들어오며, 비-Enemy 보스는 NeoForge 공용 `BOSSES` 태그 계약을 사용한다. 따라서 TBS 전용 Java 하드코딩은 추가하지 않는다.
 
-All nine expedition tag files are now regression-audited for optional BOP entries and duplicate BOP biome IDs. The packaged JAR verifier also checks the nine tag resources and the Deep bridge itself.
+          0.44 외부 장비 승천 각인과 모든 물리 물류/전초/방어/원정 규칙은 그대로 유지한다. 그래픽 클라이언트·실제 외부 월드젠 스모크는 아직 실행하지 않았으므로 통과했다고 주장하지 않는다.
 
-The Birth of Steve was audited separately before adding any special-case bridge. Its core hostile encounter entities derive from Minecraft hostile/Monster behavior, so the existing generic `Enemy` contract already feeds Survival Ascension combat targeting/mastery. NeoForge's common `BOSSES` tag remains the fallback for non-Enemy bosses. A TBS-specific Java dependency would duplicate the existing compatibility seam and is deliberately not added.
+          '''.replace("          ", "")
+          before("README.md", "## 0.44.0-alpha.1", readme)
 
-No BOP/TBS code, textures, models, sounds or JARs are copied into Survival Ascension. External files remain original Modrinth content-pack dependencies. Graphical client and real external-worldgen smoke are still separate tests and are not claimed by source/build CI.
+          repl("PROJECT.md", "- Mod version: `0.44.0-alpha.1`", "- Mod version: `0.45.0-alpha.1`")
+          project = '''## 0.45 External World Integration / 외부 월드 원정 통합
+          - 기존 9지역 원정이 정본이며 외부 바이옴용 별도 퀘스트/진행 시스템을 만들지 않는다.
+          - `ExpeditionRegion.matches`는 `survivalascension:expedition/<region>` 태그를 먼저 보고 바닐라 바이옴 fallback을 유지한다.
+          - BOP 항목은 데이터 전용 `required:false`; Deep에는 `glowing_grotto`와 `spider_nest`가 모두 들어간다.
+          - The Birth of Steve 적은 기존 `Enemy` 계약, 비-Enemy 보스는 NeoForge `BOSSES` 공용 태그로 전투 숙련과 상호 운용한다.
+          - optional-mod Java import, 새 SavedData/packet/entity, force-load, 외부 코드/리소스 복사는 추가하지 않는다.
+          - 실제 graphical client / external worldgen smoke는 별도 검증 전까지 미실행 상태다.
 
-'''
-          insert_before_once("README.md", "## 0.44.0-alpha.1", readme_045, "## 0.45.0-alpha.1")
+          '''.replace("          ", "")
+          before("PROJECT.md", "## 0.44 Content-pack Equipment Imprint", project)
 
-          replace_once("PROJECT.md", "- Mod version: `0.44.0-alpha.1`", "- Mod version: `0.45.0-alpha.1`")
-          project_045 = '''## 0.45 External World Integration / 외부 월드 원정 통합
-### Purpose
-External worldgen should enlarge the physical world that Survival Ascension asks the player to traverse, not exist as disconnected scenery. The existing nine-region Expedition model remains canonical; optional biome tags extend its recognition surface without adding a second mission/progression layer.
+          change = '''## 0.45.0-alpha.1
+          - BOP 원정 브리지를 정식 현재 버전에 포함하고 `spider_nest`를 Deep 원정에 추가했다.
+          - 9개 원정 태그의 BOP 항목이 모두 optional(`required:false`)인지, BOP ID가 지역 간 중복되지 않는지 source audit에 고정했다.
+          - packaged JAR이 9개 원정 태그와 Deep의 `glowing_grotto`/`spider_nest`를 실제 포함하는지 verifier에 추가했다.
+          - The Birth of Steve 핵심 적은 기존 `Enemy` 계약으로 이미 편입됨을 감사하여 전용 하드 의존을 추가하지 않았다.
+          - 0.44 외부 장비 각인과 기존 물리 물류/화물/토목/전초/방어/원정 체급을 회귀 유지했다.
+          - datagen, GameTest, dedicated server smoke, graphical client/external worldgen smoke는 실행하지 않았다.
 
-### Biome-tag contract
-`ExpeditionRegion` owns `survivalascension:expedition/<region>` `TagKey<Biome>` contracts for woodland, arid, wetland, highlands, ocean, deep, frozen, nether and end. `matches(Holder<Biome>)` checks the integration tag first, then retains the authored vanilla biome fallback.
+          '''.replace("          ", "")
+          after("CHANGELOG.md", "# Changelog\n\n", change)
 
-BOP entries are data-only and use `{\"id\":\"biomesoplenty:...\",\"required\":false}`. BOP absence therefore cannot become a hard mod-load dependency. The 0.45 cave audit adds the previously omitted `biomesoplenty:spider_nest` beside `biomesoplenty:glowing_grotto` in the Deep region.
+          matrix_line = '- 원정 바이옴: 9개 `survivalascension:expedition/<region>` Biome Tag를 바닐라 fallback보다 먼저 판정한다. BOP ID는 `required:false` 데이터 항목이며 `glowing_grotto`와 `spider_nest`는 심층권에 포함한다.\n'
+          after("MODPACK_COMPAT_MATRIX.md",
+                '- 전투 XP는 실제 적/보스 처치에만 지급한다. 가축·중립 비전투 생물을 반복 처치해 전투 숙련을 올리던 기존 우회는 제거한다.\n',
+                matrix_line)
+          repl("MODPACK_COMPAT_MATRIX.md",
+               '이 단계는 **태그/타입 기반 1차 통합**이다. 외부 장비의 고유 기능을 보존하면서 Ascension affix를 부여하는 장비 통합, 외부 차원/바이옴을 원정과 연결하는 지역 통합, 특정 보스의 월드 승천 역할은 각각 별도 검증 뒤 추가한다.',
+               '현재는 **태그/타입 기반 1차 통합 + 외부 장비 승천 각인 + BOP 원정 바이옴 브리지**까지 연결되어 있다. The Birth of Steve 핵심 적은 기존 `Enemy` 계약으로 이미 전투 숙련에 들어오므로 전용 하드코딩을 추가하지 않는다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하는 일은 실제 게임 검증 뒤에만 한다.')
 
-### Enemy/boss interoperability audit
-The Birth of Steve's core hostile encounter entities follow Minecraft hostile Monster/Enemy behavior. They therefore already enter `ContentPackCompatibility.isCombatTarget` through `Enemy`; a separate TBS namespace/class bridge would be redundant. Non-Enemy external bosses remain eligible through NeoForge `Tags.EntityTypes.BOSSES`.
+          plan = '''## 현재 0.45 통합 상태
+          - BOP 바이옴은 9지역 원정 태그를 통해 기존 발견/작업/복귀 규칙에 들어간다. Deep은 `glowing_grotto` + `spider_nest`다.
+          - TBS 핵심 적은 `Enemy`, 비-Enemy 외부 보스는 NeoForge 공용 `BOSSES` 계약을 사용한다.
+          - 표준 검/곡괭이/도끼/괭이 태그 장비는 0.44 승천 각인을 그대로 사용한다.
+          - BOP 신규 월드 생성, TBS 던전/보스, Amethyst Resonance 고유 장비 기능 보존은 실제 그래픽 클라이언트 스모크가 남아 있다.
 
-### Boundaries
-- no optional-mod Java imports;
-- no BOP/TBS source or asset copying;
-- no new SavedData, packet, entity or force-load behavior;
-- no new generic quest UI or parallel expedition tracker;
-- no claim of graphical-client/external-worldgen smoke until that is actually run.
-
-'''
-          insert_before_once("PROJECT.md", "## 0.44 Content-pack Equipment Imprint", project_045, "## 0.45 External World Integration")
-
-          changelog_045 = '''## 0.45.0-alpha.1
-- Formalized the optional external-world bridge as part of the current version: all nine `survivalascension:expedition/<region>` biome tags remain the extension seam ahead of vanilla fallback matching.
-- Fixed the BOP cave audit omission by adding `biomesoplenty:spider_nest` to the Deep expedition tag alongside `biomesoplenty:glowing_grotto`.
-- Kept every BOP biome entry `required:false`; BOP is not a hard dependency and no BOP Java implementation class is imported.
-- Added source-audit checks for the nine expedition tag files, optional BOP entry shape, duplicate BOP biome IDs, Deep Glowing Grotto/Spider Nest coverage and tag-first `ExpeditionRegion` matching.
-- Added content-pack audit coverage for the same biome bridge while retaining generic `Enemy` + NeoForge common `BOSSES` combat interoperability.
-- Audited The Birth of Steve before adding any special case; its core hostile entities already use the generic hostile contract, so no redundant TBS namespace/class dependency was added.
-- Extended JAR verification to require and parse all nine packaged expedition biome tags and verify the Deep BOP bridge.
-- Updated README, project canonical notes, in-game guide, compatibility matrix, modpack plan and third-party boundary notes.
-- Retained 0.44 external equipment imprint, physical storage-first logistics, freight, causeways, outposts, defenses and all existing action-scale contracts.
-- No datagen, GameTest, dedicated-server smoke or graphical client/external-worldgen smoke is claimed by this source change.
-
-'''
-          insert_after_once("CHANGELOG.md", "# Changelog\n\n", changelog_045, "## 0.45.0-alpha.1")
-
-          matrix_bullet = '- 원정 바이옴: 9개 `survivalascension:expedition/<region>` Biome Tag가 바닐라 fallback보다 먼저 판정된다. BOP registry ID는 모두 `required:false` 데이터 엔트리로만 연결하며, 지하 `glowing_grotto`와 `spider_nest`는 심층권에 포함한다. BOP가 빠져도 Survival Ascension 단독 로드는 유지된다.\n'
-          insert_after_once(
-              "MODPACK_COMPAT_MATRIX.md",
-              '- 전투 XP는 실제 적/보스 처치에만 지급한다. 가축·중립 비전투 생물을 반복 처치해 전투 숙련을 올리던 기존 우회는 제거한다.\n',
-              matrix_bullet,
-              '지하 `glowing_grotto`와 `spider_nest`는 심층권'
-          )
-          replace_once(
-              "MODPACK_COMPAT_MATRIX.md",
-              '이 단계는 **태그/타입 기반 1차 통합**이다. 외부 장비의 고유 기능을 보존하면서 Ascension affix를 부여하는 장비 통합, 외부 차원/바이옴을 원정과 연결하는 지역 통합, 특정 보스의 월드 승천 역할은 각각 별도 검증 뒤 추가한다.',
-              '현재는 **태그/타입 기반 1차 통합 + 외부 장비 각인 + BOP 원정 바이옴 브리지**까지 연결되어 있다. The Birth of Steve 핵심 적은 기존 `Enemy` 계약으로 이미 전투 숙련에 들어오므로 전용 하드코딩을 추가하지 않는다. 특정 외부 보스를 월드 승천의 필수 보스로 승격하거나 외부 차원을 별도 원정 단계로 만드는 작업은 실제 진행/월드젠 검증 뒤에만 추가한다.'
-          )
-
-          plan_045 = '''## 현재 0.45 통합 상태
-- BOP는 9지역 원정의 데이터 태그 브리지로 편입된다. 태그가 먼저 판정되고 바닐라 fallback이 뒤를 잇는다.
-- BOP 지하 `glowing_grotto`와 `spider_nest`는 심층권으로 분류한다. 외부 registry ID는 `required:false`라서 모드가 없어도 코어 로드가 깨지지 않는다.
-- The Birth of Steve 핵심 적은 Minecraft `Enemy` 공용 계약으로 기존 전투 숙련에 자연 합류한다. 비-Enemy 보스는 NeoForge 공용 `BOSSES` 태그 계약을 사용한다.
-- 표준 검/곡괭이/도끼/괭이 태그 장비는 0.44 승천 각인 경로를 그대로 사용하며 외부 아이템의 기존 컴포넌트를 교체하지 않는다.
-- 실제 그래픽 클라이언트 신규 월드, BOP 월드젠, TBS 던전/보스, Amethyst Resonance 고유 장비 기능 보존은 아직 별도 실플레이 스모크 대상이다.
-
-'''
-          insert_before_once("MODPACK_PLAN_DRAFT.md", "## 2차 확장", plan_045, "## 현재 0.45 통합 상태")
+          '''.replace("          ", "")
+          before("MODPACK_PLAN_DRAFT.md", "## 2차 확장", plan)
 
           notices = '''## Biomes O' Plenty — content-pack original / registry reference only
-Source project: `Glitchfiend/BiomesOPlenty`  
-Distribution/content license: All Rights Reserved
+          Distribution/content license: All Rights Reserved.
 
-Survival Ascension does not copy BOP source, biome JSON, textures, models, sounds or other resources. Compatibility uses independently authored Survival Ascension biome-tag JSON containing public BOP registry identifiers with `required:false`; the original BOP JAR remains an external Modrinth content-pack file.
+          Survival Ascension은 BOP 코드·바이옴 데이터·텍스처·모델·사운드를 복사하지 않는다. 공개 registry identifier만 독립 작성한 Survival Ascension Biome Tag에서 `required:false`로 참조하며 BOP JAR은 Modrinth 원본 콘텐츠팩 파일로 유지한다.
 
-## The Birth of Steve — content-pack original / behavior reference only
-Source project: `MeherBenSalem/The-Birth-Of-Steve`  
-Distribution/content license: All Rights Reserved
+          ## The Birth of Steve — content-pack original / behavior reference only
+          Distribution/content license: All Rights Reserved.
 
-The 0.45 interoperability audit reads public type/registry behavior only to determine whether a special bridge is necessary. Core hostile entities already satisfy Minecraft's generic hostile contract, so no TBS implementation class, source, dungeon data, models, textures, sounds or other resources are copied or linked into Survival Ascension. The original TBS JAR remains external.
+          0.45 감사에서는 전용 브리지가 필요한지만 공개 타입/레지스트리 동작으로 확인했다. 핵심 적이 Minecraft 공용 적대 계약을 따르므로 TBS 구현 클래스·던전 데이터·모델·텍스처·사운드·코드를 Survival Ascension에 복사하거나 링크하지 않는다.
 
-'''
-          insert_after_once("THIRD_PARTY_NOTICES.md", "# Third-party notices\n\n", notices, "## Biomes O' Plenty — content-pack original")
+          '''.replace("          ", "")
+          after("THIRD_PARTY_NOTICES.md", "# Third-party notices\n\n", notices)
 
-          # Source audit: current version and the dependency-free biome-tag contract.
-          replace_once("tools/test_current_source.py", "from pathlib import Path\nimport sys\n", "from pathlib import Path\nimport re\nimport sys\n")
-          replace_once("tools/test_current_source.py", '"mod_version=0.44.0-alpha.1"', '"mod_version=0.45.0-alpha.1"')
-          replace_once("tools/test_current_source.py", '\'VERSION = "0.44.0-alpha.1"\'', '\'VERSION = "0.45.0-alpha.1"\'')
-          audit_marker = '# Current guide/pacing/mining/logistics-priority contracts.\n'
-          audit_block = '''# 0.45 optional external-world expedition bridge.
+          # Source audit version + explicit 0.45 biome bridge invariants.
+          repl("tools/test_current_source.py", "from pathlib import Path\nimport sys\n", "from pathlib import Path\nimport re\nimport sys\n")
+          repl("tools/test_current_source.py", "mod_version=0.44.0-alpha.1", "mod_version=0.45.0-alpha.1")
+          repl("tools/test_current_source.py", 'VERSION = "0.44.0-alpha.1"', 'VERSION = "0.45.0-alpha.1"')
+          repl("tools/test_current_source.py",
+               '\'h("외부 장비와 승천 각인")\', \'h("승천 각인")\'',
+               '\'h("외부 장비와 승천 각인")\', \'h("외부 바이옴 원정")\', \'h("승천 각인")\'')
+          audit = '''# 0.45 optional external-world expedition bridge.
           expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
-          need(expedition_region, [
-              "private final TagKey<Biome> integrationTag;",
-              'Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition/" + name().toLowerCase(Locale.ROOT))',
-              "if (biome.is(integrationTag)) return true;"
-          ], "0.45 expedition tag-first bridge")
+          need(expedition_region, ["private final TagKey<Biome> integrationTag;", "if (biome.is(integrationTag)) return true;"], "0.45 expedition tag-first bridge")
           forbid(expedition_region, ["biomesoplenty.", "tbos.", "amethyst_resonance."], "0.45 hard optional-mod biome dependency")
-
-          expedition_regions = ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end")
-          all_bop_ids = []
-          for region in expedition_regions:
+          bop_ids = []
+          for region in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end"):
               tag_text = read(f"src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/{region}.json")
               need(tag_text, ['"replace": false'], f"0.45 expedition tag {region}")
-              raw_ids = re.findall(r'"id"\\s*:\\s*"(biomesoplenty:[^"]+)"', tag_text)
-              entries = re.findall(r'\\{\\s*"id"\\s*:\\s*"(biomesoplenty:[^"]+)"\\s*,\\s*"required"\\s*:\\s*(true|false)\\s*\\}', tag_text)
-              if len(raw_ids) != len(entries):
-                  errors.append(f"0.45 expedition tag {region} has BOP id without explicit required flag")
-              for biome_id, required in entries:
-                  if required != "false":
-                      errors.append(f"0.45 expedition tag {region} hard-requires optional biome: {biome_id}")
-                  all_bop_ids.append(biome_id)
-          if len(all_bop_ids) != len(set(all_bop_ids)):
-              errors.append("0.45 duplicate BOP biome id across expedition region tags")
+              ids = re.findall(r'"id"\\s*:\\s*"(biomesoplenty:[^"]+)"', tag_text)
+              soft = re.findall(r'\\{\\s*"id"\\s*:\\s*"(biomesoplenty:[^"]+)"\\s*,\\s*"required"\\s*:\\s*false\\s*\\}', tag_text)
+              if ids != soft:
+                  errors.append(f"0.45 expedition tag {region} contains non-optional or malformed BOP entry")
+              bop_ids.extend(ids)
+          if len(bop_ids) != len(set(bop_ids)):
+              errors.append("0.45 duplicate BOP biome id across expedition tags")
           deep_tag = read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json")
-          need(deep_tag, ['"biomesoplenty:glowing_grotto"', '"biomesoplenty:spider_nest"'], "0.45 BOP deep expedition bridge")
+          need(deep_tag, ['"biomesoplenty:glowing_grotto"', '"biomesoplenty:spider_nest"'], "0.45 BOP deep bridge")
 
-'''
-          insert_before_once("tools/test_current_source.py", audit_marker, audit_block, "# 0.45 optional external-world expedition bridge.")
-          replace_once(
-              "tools/test_current_source.py",
-              "'h(\"외부 장비와 승천 각인\")', 'h(\"승천 각인\")', \"표준 검/곡괭이/도끼/괭이 태그 장비\",",
-              "'h(\"외부 장비와 승천 각인\")', 'h(\"외부 바이옴 원정\")', 'h(\"승천 각인\")', \"표준 검/곡괭이/도끼/괭이 태그 장비\","
-          )
-          replace_once(
-              "tools/test_current_source.py",
-              'print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies")',
-              'print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback while keeping optional mods dependency-free")\nprint("- BOP Deep includes glowing_grotto + spider_nest; all BOP tag entries are required=false and duplicate IDs are rejected")\nprint("- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted through the existing affix system without hard optional-mod dependencies")'
-          )
+          '''.replace("          ", "")
+          before("tools/test_current_source.py", "if errors:\n", audit)
+          repl("tools/test_current_source.py",
+               'print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies")',
+               'print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")\nprint("- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies")')
 
-          # Content-pack audit: assert the same public-contract integration seam.
-          content_anchor = '    ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")\n'
-          content_add = '    expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")\n    expedition_tags = {region: read(f"src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/{region}.json") for region in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end")}\n'
-          insert_after_once("tools/test_content_pack_source.py", content_anchor, content_add, "expedition_tags = {region:")
-          cp_marker = '    # 0.44 external gear bridge: standard item tags and existing affix system only.\n'
-          cp_block = '''    # 0.45 external-world bridge: data tags first, vanilla fallback second, optional IDs soft.
+          # Content-pack source audit: lock the public-contract bridge without optional implementation imports.
+          after("tools/test_content_pack_source.py",
+                '    ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")\n',
+                '    expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")\n    deep_expedition = json.loads(read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json"))\n')
+          cp = '''    # 0.45 optional external-world bridge.
               require("if (biome.is(integrationTag)) return true;" in expedition_region,
-                      "external expedition biome tags must be checked before vanilla fallback")
+                      "external expedition tag must be checked before vanilla fallback")
               require("biomesoplenty" not in expedition_region.lower() and "tbos" not in expedition_region.lower(),
-                      "optional world/content mod implementation dependency leaked into ExpeditionRegion")
-              seen_bop = set()
-              for region, text in expedition_tags.items():
-                  doc = json.loads(text)
-                  require(doc.get("replace") is False, f"expedition tag must extend rather than replace: {region}")
-                  for entry in doc.get("values", []):
-                      if isinstance(entry, dict) and str(entry.get("id", "")).startswith("biomesoplenty:"):
-                          require(entry.get("required") is False, f"BOP biome must remain optional: {entry}")
-                          require(entry["id"] not in seen_bop, f"duplicate BOP expedition biome: {entry['id']}")
-                          seen_bop.add(entry["id"])
-              deep_values = {entry.get("id") for entry in json.loads(expedition_tags["deep"]).get("values", []) if isinstance(entry, dict)}
-              require("biomesoplenty:glowing_grotto" in deep_values, "BOP Glowing Grotto deep expedition bridge missing")
-              require("biomesoplenty:spider_nest" in deep_values, "BOP Spider Nest deep expedition bridge missing")
-              require("spider_nest" in matrix and "Enemy" in matrix,
-                      "compat matrix must document BOP deep and generic hostile integration")
+                      "optional implementation dependency leaked into ExpeditionRegion")
+              deep_ids = {entry.get("id") for entry in deep_expedition.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
+              require("biomesoplenty:glowing_grotto" in deep_ids and "biomesoplenty:spider_nest" in deep_ids,
+                      "BOP deep expedition bridge incomplete")
 
-'''
-          insert_before_once("tools/test_content_pack_source.py", cp_marker, cp_block, "# 0.45 external-world bridge:")
-          replace_once(
-              "tools/test_content_pack_source.py",
-              '    print("external_equipment_imprint=PASS")\n',
-              '    print("external_equipment_imprint=PASS")\n    print("bop_expedition_bridge=PASS")\n    print("generic_enemy_boss_bridge=PASS")\n'
-          )
+          '''.replace("              ", "    ")
+          before("tools/test_content_pack_source.py", "    # 0.44 external gear bridge: standard item tags and existing affix system only.\n", cp)
+          repl("tools/test_content_pack_source.py",
+               '    print("external_equipment_imprint=PASS")\n',
+               '    print("external_equipment_imprint=PASS")\n    print("bop_expedition_bridge=PASS")\n    print("generic_enemy_boss_bridge=PASS")\n')
 
-          # JAR verifier: ensure the packaged data bridge cannot silently disappear.
-          replace_once("tools/verify_jar.py", "import hashlib, re, sys, zipfile", "import hashlib, json, re, sys, zipfile")
-          jar_anchor = '        "kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.class",\n'
-          jar_entries = ''.join(f'        "data/survivalascension/tags/worldgen/biome/expedition/{region}.json",\n' for region in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end"))
-          insert_after_once("tools/verify_jar.py", jar_anchor, jar_entries, '"data/survivalascension/tags/worldgen/biome/expedition/spider_sentinel.json"')
-          # The sentinel above intentionally never exists; detect actual inserted entry instead before a second pass.
-          verifier = read("tools/verify_jar.py")
-          if verifier.count('"data/survivalascension/tags/worldgen/biome/expedition/deep.json"') > 1:
-              raise SystemExit("duplicate expedition JAR entries inserted")
-          verify_marker = '    if f\'version="{expected_version}"\' not in metadata:\n        raise SystemExit(f"wrong mod version in metadata: expected {expected_version}")\n'
-          verify_add = '''
-              expedition_docs = {}
-              seen_bop = set()
-              for region in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end"):
-                  entry_name = f"data/survivalascension/tags/worldgen/biome/expedition/{region}.json"
-                  doc = json.loads(zf.read(entry_name).decode("utf-8"))
-                  if doc.get("replace") is not False:
-                      raise SystemExit(f"expedition tag replaces upstream values: {region}")
-                  expedition_docs[region] = doc
-                  for value in doc.get("values", []):
-                      if isinstance(value, dict) and str(value.get("id", "")).startswith("biomesoplenty:"):
-                          if value.get("required") is not False:
-                              raise SystemExit(f"hard optional BOP biome dependency in JAR: {value}")
-                          if value["id"] in seen_bop:
-                              raise SystemExit(f"duplicate BOP expedition biome in JAR: {value['id']}")
-                          seen_bop.add(value["id"])
-              deep_ids = {value.get("id") for value in expedition_docs["deep"].get("values", []) if isinstance(value, dict)}
+          # JAR verifier: packaged data contract must be present, not just source-side.
+          repl("tools/verify_jar.py", "import hashlib, re, sys, zipfile", "import hashlib, json, re, sys, zipfile")
+          entries = ''.join(f'        "data/survivalascension/tags/worldgen/biome/expedition/{r}.json",\\n' for r in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end"))
+          after("tools/verify_jar.py", '        "kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.class",\n', entries)
+          jarcheck = '''    deep_doc = json.loads(zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json").decode("utf-8"))
+              deep_ids = {entry.get("id") for entry in deep_doc.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
               if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
                   raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
-'''
-          insert_after_once("tools/verify_jar.py", verify_marker, verify_add, "expedition_docs = {}")
-          replace_once(
-              "tools/verify_jar.py",
-              'print("external_equipment_imprint_runtime=present")\n',
-              'print("external_equipment_imprint_runtime=present")\nprint("bop_expedition_biome_bridge=present")\n'
-          )
 
-          # Fix idempotence sentinel used for the generated JAR entry block.
-          # The block itself is identified by deep.json; no fake entry is written.
+          '''.replace("              ", "    ")
+          before("tools/verify_jar.py", "    for notice, line in [\n", jarcheck)
+          repl("tools/verify_jar.py",
+               'print("external_equipment_imprint_runtime=present")\n',
+               'print("external_equipment_imprint_runtime=present")\nprint("bop_expedition_biome_bridge=present")\n')
 
-          # Remove this one-shot workflow from the source commit after it has done its job.
+          # This workflow is only an applicator and should not survive the source commit.
           Path(".github/workflows/apply-survival-ascension-v045.yml").unlink()
           PY
 
-      - name: Manual/source audit and clean build
+      - name: Audit and Java 25 clean build before commit
         working-directory: projects/survival-ascension
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
+          python3 -m py_compile tools/test_current_source.py tools/test_content_pack_source.py tools/verify_jar.py tools/build_mrpack.py
           python3 tools/test_current_source.py
           python3 tools/test_content_pack_source.py
-          python3 -m py_compile tools/test_current_source.py tools/test_content_pack_source.py tools/verify_jar.py tools/build_mrpack.py
           git diff --check
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
           test -f build/libs/survivalascension-0.45.0-alpha.1.jar
@@ -327,7 +245,7 @@ The 0.45 interoperability audit reads public type/registry behavior only to dete
           python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.45.0-alpha.1.jar --output build/Survival-Ascension-0.45.0-alpha.1-content-preview.mrpack
           test -s build/Survival-Ascension-0.45.0-alpha.1-content-preview.mrpack
 
-      - name: Commit Survival Ascension 0.45 onto latest main
+      - name: Commit verified source to main
         shell: bash
         run: |
           set -euo pipefail
@@ -337,12 +255,9 @@ The 0.45 interoperability audit reads public type/registry behavior only to dete
           git diff --cached --check
           git commit -m "Survival Ascension 0.45 external world integration"
           for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
+            if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
             git rebase origin/main
             sleep $((attempt * 2))
           done
-          echo "failed to fast-forward Survival Ascension 0.45 onto current main" >&2
           exit 1
