@@ -27,7 +27,8 @@ import java.util.List;
  * long-distance movement to the existing road transporter. No emeralds, virtual trade points or
  * force-loaded water simulation are created here. Alpha.41 gives an actively dangerous general
  * outpost military precedence. Alpha.42 only remembers the last loaded overlay and elapsed unloaded
- * work time; catches are still created one physical loaded fishing action at a time.
+ * work time; catches are still created one physical loaded fishing action at a time. Alpha.46 lets
+ * the same worker temporarily prioritize real-wood waterfront construction before ordinary fishing.
  */
 public final class SettlementFishingOutpostService {
     public static final String FISHING_WORKER_TAG = "frontier_settlement_fishing_outpost_worker";
@@ -45,7 +46,7 @@ public final class SettlementFishingOutpostService {
 
     private SettlementFishingOutpostService() {}
 
-    private record FishingSpot(BlockPos bank, BlockPos water) {}
+    public record FishingSpot(BlockPos bank, BlockPos water) {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
         if (server.getTickCount() % 20 != 0) return;
@@ -72,8 +73,19 @@ public final class SettlementFishingOutpostService {
             SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
                     SettlementDeferredOutpostService.OVERLAY_FISHING);
             if (worker == null) worker = spawnAssignedWorker(level, outpost);
-            if (worker != null) work(level, outpost, spot, worker);
+            if (worker == null) continue;
+            if (SettlementWaterfrontService.isConstructionActive(server, outpost)) continue;
+            work(level, outpost, spot, worker);
         }
+    }
+
+    public static boolean hasFishingShoreline(ServerLevel level, OutpostRecord outpost) {
+        return level.hasChunkAt(outpost.center()) && findFishingSpot(level, outpost) != null;
+    }
+
+    public static Villager ensureAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+        Villager worker = findAssignedWorker(level, outpost);
+        return worker != null ? worker : spawnAssignedWorker(level, outpost);
     }
 
     public static int activeFishingOutpostCount(ServerLevel level, SettlementData data) {
@@ -91,7 +103,10 @@ public final class SettlementFishingOutpostService {
         if (!"general".equals(outpost.specialization())) return outpost.specializationDisplayName();
         if (!level.hasChunkAt(outpost.center())) return "일반(환경 판정 대기)";
         if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) return "위험지역 군사거점";
-        return findFishingSpot(level, outpost) != null ? "어업·수변교역" : "일반";
+        if (findFishingSpot(level, outpost) == null) return "일반";
+        return SettlementWaterfrontService.isComplete(level.getServer(), outpost)
+                ? "어업·수변교역·계류장"
+                : "어업·수변교역";
     }
 
     private static Villager spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
