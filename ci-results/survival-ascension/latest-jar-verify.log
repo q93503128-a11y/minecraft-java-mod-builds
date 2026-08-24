@@ -1,0 +1,21 @@
+JAR VERIFY PASS
+version=0.45.0-alpha.1
+external_equipment_imprint_runtime=present
+bop_expedition_biome_bridge=present
+physical_freight_runtime=present
+physical_freight_railhead_runtime=present
+civil_works_runtime=present
+protected_causeway_construction_runtime=present
+physical_commissioning_runtime=present
+physical_warehouse_runtime=present
+outpost_fortification_runtime=present
+outpost_siege_runtime=present
+physical_siege_breacher_runtime=present
+expedition_operation_runtime=present
+apex_runtime=present
+production_runtime=present
+field_depot_runtime=present
+outpost_runtime=present
+field_recovery_runtime=present
+size=500813
+sha256=8c45b014dcfdc087eabd894b1f8cbe6451d923b1cf78af7c0fcf670a27b041b8
