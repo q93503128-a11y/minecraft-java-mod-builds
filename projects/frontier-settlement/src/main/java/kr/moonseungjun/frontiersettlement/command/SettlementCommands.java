@@ -42,209 +42,73 @@ public final class SettlementCommands {
     }
 
     private static int found(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        SettlementData data = SettlementData.get(server);
-        if (data.founded()) { player.sendSystemMessage(Component.literal("이미 공동 마을이 세워져 있습니다.")); return 0; }
-        if (player.level() != server.overworld()) { player.sendSystemMessage(Component.literal("현재는 오버월드에서 마을을 시작해 주세요.")); return 0; }
-        if (!SettlementService.found(player)) { player.sendSystemMessage(Component.literal("주변에 공동 창고를 둘 빈 공간이 없습니다.")); return 0; }
-        player.sendSystemMessage(Component.literal("공동 개척지가 시작되었습니다. 건물은 위치만 정하면 주민이 건설합니다."));
-        return 1;
+        ServerPlayer player=context.getSource().getPlayerOrException(); MinecraftServer server=player.level().getServer(); SettlementData data=SettlementData.get(server);
+        if(data.founded()){player.sendSystemMessage(Component.literal("이미 공동 마을이 세워져 있습니다."));return 0;}
+        if(player.level()!=server.overworld()){player.sendSystemMessage(Component.literal("현재는 오버월드에서 마을을 시작해 주세요."));return 0;}
+        if(!SettlementService.found(player)){player.sendSystemMessage(Component.literal("주변에 공동 창고를 둘 빈 공간이 없습니다."));return 0;}
+        player.sendSystemMessage(Component.literal("공동 개척지가 시작되었습니다. 건물은 위치만 정하면 주민이 건설합니다.")); return 1;
     }
 
     private static int build(CommandContext<CommandSourceStack> context, BuildingType type) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        SettlementData data = SettlementData.get(server);
-        if (SettlementCivilWorkData.get(server).project().active()) {
-            player.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 건물을 시작해 주세요."));
-            return 0;
-        }
-        if (data.outpostConstruction().active()) {
-            player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요."));
-            return 0;
-        }
+        ServerPlayer player=context.getSource().getPlayerOrException(); MinecraftServer server=player.level().getServer(); SettlementData data=SettlementData.get(server);
+        if(SettlementCivilWorkData.get(server).project().active()){player.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 건물을 시작해 주세요."));return 0;}
+        if(data.outpostConstruction().active()){player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요."));return 0;}
         String locked;
-        if (type == BuildingType.WORKSHOP) locked = SettlementWorkshopService.lockedReason(data);
-        else if (type == BuildingType.ADVANCED_WORKSHOP) locked = SettlementAdvancedWorkshopService.lockedReason(data);
-        else if (type == BuildingType.CART_STATION) locked = SettlementCartStationService.lockedReason(data);
-        else if (type == BuildingType.WATCHTOWER) locked = SettlementWatchtowerService.lockedReason(data);
-        else if (type == BuildingType.BARRACKS) locked = SettlementBarracksService.lockedReason(data);
-        else if (type == BuildingType.CONSTRUCTION_OFFICE) locked = SettlementConstructionOfficeService.lockedReason(data);
-        else locked = SettlementConstructionService.lockedReason(data, type);
-        if (locked != null) { player.sendSystemMessage(Component.literal(locked)); return 0; }
-        if (type == BuildingType.CART_STATION) {
-            BlockPos center = player.blockPosition().relative(player.getDirection(), 10);
-            String placement = SettlementCartStationService.placementReason(data, center);
-            if (placement != null) { player.sendSystemMessage(Component.literal(placement)); return 0; }
-        }
-        SettlementConstructionService.StartResult result = SettlementConstructionService.start(player, type);
-        player.sendSystemMessage(Component.literal(result.message()));
-        return result.started() ? 1 : 0;
+        if(type==BuildingType.WORKSHOP) locked=SettlementWorkshopService.lockedReason(data);
+        else if(type==BuildingType.ADVANCED_WORKSHOP) locked=SettlementAdvancedWorkshopService.lockedReason(data);
+        else if(type==BuildingType.CART_STATION) locked=SettlementCartStationService.lockedReason(data);
+        else if(type==BuildingType.WATCHTOWER) locked=SettlementWatchtowerService.lockedReason(data);
+        else if(type==BuildingType.BARRACKS) locked=SettlementBarracksService.lockedReason(data);
+        else if(type==BuildingType.CONSTRUCTION_OFFICE) locked=SettlementConstructionOfficeService.lockedReason(data);
+        else locked=SettlementConstructionService.lockedReason(data,type);
+        if(locked!=null){player.sendSystemMessage(Component.literal(locked));return 0;}
+        if(type==BuildingType.CART_STATION){BlockPos center=player.blockPosition().relative(player.getDirection(),10);String p=SettlementCartStationService.placementReason(data,center);if(p!=null){player.sendSystemMessage(Component.literal(p));return 0;}}
+        SettlementConstructionService.StartResult result=SettlementConstructionService.start(player,type); player.sendSystemMessage(Component.literal(result.message())); return result.started()?1:0;
     }
 
-    private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        SettlementData data = SettlementData.get(server);
-        if (SettlementCivilWorkData.get(server).project().active()) {
-            player.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 도로를 시작해 주세요."));
-            return 0;
-        }
-        if (data.outpostConstruction().active()) {
-            player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 도로를 시작해 주세요."));
-            return 0;
-        }
-        var result = SettlementRoadService.start(player);
-        player.sendSystemMessage(Component.literal(result.message()));
-        return result.started() ? 1 : 0;
-    }
-
-    private static int outpost(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        if (SettlementCivilWorkData.get(server).project().active()) {
-            player.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 전초기지를 시작해 주세요."));
-            return 0;
-        }
-        var result = SettlementOutpostService.start(player);
-        player.sendSystemMessage(Component.literal(result.message()));
-        return result.started() ? 1 : 0;
-    }
+    private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); SettlementData d=SettlementData.get(s); if(SettlementCivilWorkData.get(s).project().active()){p.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 도로를 시작해 주세요."));return 0;} if(d.outpostConstruction().active()){p.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 도로를 시작해 주세요."));return 0;} var r=SettlementRoadService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
+    private static int outpost(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); if(SettlementCivilWorkData.get(s).project().active()){p.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 전초기지를 시작해 주세요."));return 0;} var r=SettlementOutpostService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
 
     private static int status(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        SettlementData data = SettlementData.get(server);
-        if (!data.founded()) { player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found")); return 0; }
-        SettlementResources resources = data.resources();
-        player.sendSystemMessage(Component.literal("마을 단계 | " + SettlementTier.current(data).displayName()));
-        player.sendSystemMessage(Component.literal("마을 자원 | 목재 " + resources.wood() + " | 석재 " + resources.stone()
-                + " | 금속 " + resources.metal() + " | 식량 " + resources.food()
-                + " | 인구 " + data.population() + " | 주거 " + data.housingCapacity()));
-        player.sendSystemMessage(Component.literal("인프라 | 주택 " + data.houseCount()
-                + " | 벌목소 " + data.lumberCampCount()
-                + " | 농장 " + data.buildingCount(BuildingType.FARM)
-                + " | 채석장 " + data.buildingCount(BuildingType.QUARRY)
-                + " | 광산 " + data.buildingCount(BuildingType.MINE)
-                + " | 창고 " + data.buildingCount(BuildingType.WAREHOUSE)
-                + " | 건설소 " + data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)
-                + " | 대장간 " + data.buildingCount(BuildingType.BLACKSMITH)
-                + " | 작업장 " + data.buildingCount(BuildingType.WORKSHOP)
-                + " | 고급 제작소 " + data.buildingCount(BuildingType.ADVANCED_WORKSHOP)
-                + " | 경비초소 " + data.buildingCount(BuildingType.GUARD_POST)
-                + " | 감시탑 " + data.buildingCount(BuildingType.WATCHTOWER)
-                + " | 병영 " + data.buildingCount(BuildingType.BARRACKS)
-                + " | 시장 " + data.buildingCount(BuildingType.MARKET)
-                + " | 수레 정거장 " + data.buildingCount(BuildingType.CART_STATION)
-                + " | 도로 " + data.roads().size() + " | 전초기지 " + data.outposts().size()));
-        if (data.buildingCount(BuildingType.CONSTRUCTION_OFFICE) > 0) {
-            SettlementConstructionOfficeService.SupplySnapshot supply = SettlementConstructionOfficeService.snapshot(server.overworld(), data);
-            player.sendSystemMessage(Component.literal("건설 보급 | 집결 목재 " + supply.wood() + " | 석재 " + supply.stone() + " | 보급 주민 " + supply.runners()));
-        }
-
-        CivilWorkState civil = SettlementCivilWorkData.get(server).project();
-        if (civil.active()) {
-            int importedRemaining = SettlementCivilFillSupplyService.remainingImportedFill(server.overworld(), civil);
-            int availableFill = SettlementCivilFillSupplyService.availableFill(server.overworld(), data);
-            String imported = importedRemaining < 0 ? "확인 대기" : Integer.toString(importedRemaining);
-            String storage = availableFill < 0 ? "미로드" : Integer.toString(availableFill);
-            player.sendSystemMessage(Component.literal("토목 | " + SettlementCivilWorkService.phaseLabel(server) + " " + civil.progressPercent()
-                    + "% | " + civil.width() + "×" + civil.depth()
-                    + " | 절토 " + civil.initialCutBlocks() + " | 성토 " + civil.initialFillBlocks()
-                    + " | 현장 토사 " + civil.earthBank() + " | 외부 흙 필요 " + imported
-                    + " | 공동 창고 흙 " + storage + " | 가상 토사 0"));
-        } else {
-            String civilLock = SettlementCivilWorkService.lockedReason(data);
-            player.sendSystemMessage(Component.literal(civilLock == null
-                    ? "토목 | B 팔레트 · 최대 13×13 / 절토·성토 ±5 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0"
-                    : "토목 | " + civilLock));
-        }
-
-        if (data.buildingCount(BuildingType.ADVANCED_WORKSHOP) > 0) {
-            String reforge = SettlementAdvancedWorkshopService.reforgeUnlocked(data)
-                    ? " | 영지 재련 준비 " + SettlementAdvancedWorkshopService.readyReforgeCommissionCount(server.overworld(), data)
-                    + " | 재련 유물 " + SettlementAdvancedWorkshopService.REFORGE_RELIC_COST
-                    + " + 금속 " + SettlementAdvancedWorkshopService.REFORGE_METAL_COST
-                    + " | 재련력 " + SettlementAdvancedWorkshopService.REFORGE_POWER
+        ServerPlayer player=context.getSource().getPlayerOrException(); MinecraftServer server=player.level().getServer(); SettlementData data=SettlementData.get(server);
+        if(!data.founded()){player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다. /frontier found"));return 0;}
+        SettlementResources r=data.resources();
+        player.sendSystemMessage(Component.literal("마을 단계 | "+SettlementTier.current(data).displayName()));
+        player.sendSystemMessage(Component.literal("마을 자원 | 목재 "+r.wood()+" | 석재 "+r.stone()+" | 금속 "+r.metal()+" | 식량 "+r.food()+" | 인구 "+data.population()+" | 주거 "+data.housingCapacity()));
+        player.sendSystemMessage(Component.literal("인프라 | 주택 "+data.houseCount()+" | 벌목소 "+data.lumberCampCount()+" | 농장 "+data.buildingCount(BuildingType.FARM)+" | 채석장 "+data.buildingCount(BuildingType.QUARRY)+" | 광산 "+data.buildingCount(BuildingType.MINE)+" | 창고 "+data.buildingCount(BuildingType.WAREHOUSE)+" | 건설소 "+data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)+" | 대장간 "+data.buildingCount(BuildingType.BLACKSMITH)+" | 작업장 "+data.buildingCount(BuildingType.WORKSHOP)+" | 고급 제작소 "+data.buildingCount(BuildingType.ADVANCED_WORKSHOP)+" | 경비초소 "+data.buildingCount(BuildingType.GUARD_POST)+" | 감시탑 "+data.buildingCount(BuildingType.WATCHTOWER)+" | 병영 "+data.buildingCount(BuildingType.BARRACKS)+" | 시장 "+data.buildingCount(BuildingType.MARKET)+" | 수레 정거장 "+data.buildingCount(BuildingType.CART_STATION)+" | 도로 "+data.roads().size()+" | 전초기지 "+data.outposts().size()));
+        if(data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)>0){SettlementConstructionOfficeService.SupplySnapshot supply=SettlementConstructionOfficeService.snapshot(server.overworld(),data);player.sendSystemMessage(Component.literal("건설 보급 | 집결 목재 "+supply.wood()+" | 석재 "+supply.stone()+" | 보급 주민 "+supply.runners()));}
+        CivilWorkState civil=SettlementCivilWorkData.get(server).project();
+        if(civil.active()) {
+            int importedRemaining=SettlementCivilFillSupplyService.remainingImportedFill(server.overworld(),civil);
+            int availableFill=SettlementCivilFillSupplyService.availableFill(server.overworld(),data);
+            String imported=importedRemaining<0?"확인 대기":Integer.toString(importedRemaining);
+            String storage=availableFill<0?"미로드":Integer.toString(availableFill);
+            player.sendSystemMessage(Component.literal("토목 | "+SettlementCivilWorkService.phaseLabel(server)+" "+civil.progressPercent()+"% | "+civil.width()+"×"+civil.depth()+" | 절토 "+civil.initialCutBlocks()+" | 성토 "+civil.initialFillBlocks()+" | 현장 토사 "+civil.earthBank()+" | 외부 흙 필요 "+imported+" | 공동 창고 흙 "+storage+" | 가상 토사 0"));
+        } else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | B 팔레트 · 최대 13×13 / 절토·성토 ±5 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0":"토목 | "+civilLock)); }
+        if(data.buildingCount(BuildingType.ADVANCED_WORKSHOP)>0){
+            String reforge=SettlementAdvancedWorkshopService.reforgeUnlocked(data)
+                    ? " | 영지 재련 준비 "+SettlementAdvancedWorkshopService.readyReforgeCommissionCount(server.overworld(),data)+" | 재련 유물 "+SettlementAdvancedWorkshopService.REFORGE_RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.REFORGE_METAL_COST+" | 재련력 "+SettlementAdvancedWorkshopService.REFORGE_POWER
                     : " | 영지 재련 잠김";
-            player.sendSystemMessage(Component.literal("고급 제작 | 준비 의뢰 "
-                    + SettlementAdvancedWorkshopService.readyCommissionCount(server.overworld(), data)
-                    + " | 1회 유물 " + SettlementAdvancedWorkshopService.RELIC_COST
-                    + " + 금속 " + SettlementAdvancedWorkshopService.METAL_COST
-                    + " | 강화력 " + SettlementAdvancedWorkshopService.ENCHANTMENT_POWER + reforge));
+            player.sendSystemMessage(Component.literal("고급 제작 | 준비 의뢰 "+SettlementAdvancedWorkshopService.readyCommissionCount(server.overworld(),data)+" | 1회 유물 "+SettlementAdvancedWorkshopService.RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.METAL_COST+" | 강화력 "+SettlementAdvancedWorkshopService.ENCHANTMENT_POWER+reforge));
         }
-        if (SettlementBarracksService.militaryStateLoaded(server.overworld(), data)) {
-            player.sendSystemMessage(Component.literal("군사 | 주둔병 " + SettlementBarracksService.loadedSoldierCount(server.overworld(), data)
-                    + " / " + SettlementBarracksService.militaryCapacity(data)
-                    + " | 충원비 1명당 식량 " + SettlementBarracksService.RECRUIT_FOOD_COST
-                    + " 금속 " + SettlementBarracksService.RECRUIT_METAL_COST));
-        } else {
-            player.sendSystemMessage(Component.literal("군사 | 병영 주변 청크가 로드되면 주둔병 상태를 확인합니다."));
-        }
-        SettlementMilitaryOutpostService.SupplySnapshot militarySupply = SettlementMilitaryOutpostService.activeSupplySnapshot(server.overworld(), data);
-        player.sendSystemMessage(Component.literal("위험지역 전초 | 활성 " + SettlementMilitaryOutpostService.activeMilitaryOutpostCount(server.overworld(), data)
-                + "곳 | 로드된 전초 수비대 " + SettlementMilitaryOutpostService.loadedSentryCount(server.overworld(), data)
-                + " | 현지 보급 식량 " + militarySupply.food() + " 금속 " + militarySupply.metal()
-                + " | 충원비 식량 " + SettlementMilitaryOutpostService.RECRUIT_FOOD_COST
-                + " 금속 " + SettlementMilitaryOutpostService.RECRUIT_METAL_COST));
-        player.sendSystemMessage(Component.literal("물류 | 운송 1회 적재 " + SettlementOutpostLogisticsService.transportBatchSize(data)
-                + " | 수레 정거장 화물 배럴 " + (data.buildingCount(BuildingType.CART_STATION) * 4)
-                + " | 군사 전초도 같은 도로 운송자가 역방향 보급 | 수변 공사 목재도 같은 운송자"));
-        player.sendSystemMessage(Component.literal("수변 전초 | 로드된 어업·수변교역 "
-                + SettlementFishingOutpostService.activeFishingOutpostCount(server.overworld(), data)
-                + "곳 | 위험지역 군사 역할이 우선 | 완공 계류장 " + SettlementWaterfrontService.completedWaterfrontCount(server, data)
-                + "곳 | 교역통 대구/연어 " + SettlementWaterfrontService.TRADE_FISH_COST
-                + "개 → 에메랄드 1 | 일반 stockpile 자동판매 없음"));
-        SettlementDeferredOutpostService.Snapshot deferred = SettlementDeferredOutpostService.snapshot(server, data);
-        player.sendSystemMessage(Component.literal("언로드 보정 | 생산 작업시간 " + deferred.productionTicks() + "틱 / "
-                + deferred.productionBacklogOutposts() + "전초 | 물류 작업시간 " + deferred.logisticsTicks() + "틱 / "
-                + deferred.logisticsBacklogOutposts() + "전초 | 가상 자원·가상 화물 0"));
-        SettlementExternalContentService.Snapshot external = SettlementExternalContentService.snapshot(server.overworld(), data);
-        player.sendSystemMessage(Component.literal(external.storageLoaded()
-                ? "탐험 연동 | 유물 " + external.expeditionRelics() + " | 외부 무기 " + external.externalWeapons()
-                : "탐험 연동 | 마을 저장소 청크가 로드되면 물리 전리품을 확인합니다."));
-        player.sendSystemMessage(Component.literal("개척 진척 | 외부 구조물 " + data.discoveredExternalStructures().size()
-                + "종 | 정복 강적 " + data.defeatedExternalBosses().size() + "종 | 진척 " + data.explorationScore()
-                + " / 8 | 동일 종류 반복은 중복 없음"));
-        if (!data.roads().isEmpty()) {
-            RoadSegment last = data.roads().getLast();
-            player.sendSystemMessage(Component.literal("최근 도로 끝점 | " + last.end().getX() + ", " + last.end().getY() + ", " + last.end().getZ()));
-        }
-        if (!data.outposts().isEmpty()) {
-            OutpostRecord last = data.outposts().getLast();
-            player.sendSystemMessage(Component.literal("최근 전초기지 | " + last.centerX() + ", " + last.centerY() + ", " + last.centerZ()
-                    + " | 특화 " + SettlementFishingOutpostService.specializationDisplayName(server.overworld(), last)));
-        }
-        ConstructionState construction = data.construction();
-        if (construction.active()) {
-            BuildingType type = BuildingType.fromId(construction.type());
-            if (type != null) {
-                int total = SettlementConstructionService.totalSteps(type, construction.origin());
-                player.sendSystemMessage(Component.literal("공사 중 | " + type.displayName() + " "
-                        + (total <= 0 ? 0 : Math.min(100, construction.step() * 100 / total)) + "%"));
-            }
-        }
-        RoadConstructionState road = data.roadConstruction();
-        if (road.active()) {
-            int total = SettlementRoadService.totalSteps(road);
-            player.sendSystemMessage(Component.literal("도로 공사 중 | " + (total <= 0 ? 0 : Math.min(100, road.step() * 100 / total)) + "%"));
-        }
-        OutpostConstructionState outpost = data.outpostConstruction();
-        if (outpost.active()) {
-            int total = SettlementOutpostService.totalSteps(outpost);
-            player.sendSystemMessage(Component.literal("전초기지 공사 중 | " + (total <= 0 ? 0 : Math.min(100, outpost.step() * 100 / total)) + "%"));
-        }
+        if(SettlementBarracksService.militaryStateLoaded(server.overworld(),data)) player.sendSystemMessage(Component.literal("군사 | 주둔병 "+SettlementBarracksService.loadedSoldierCount(server.overworld(),data)+" / "+SettlementBarracksService.militaryCapacity(data)+" | 충원비 1명당 식량 "+SettlementBarracksService.RECRUIT_FOOD_COST+" 금속 "+SettlementBarracksService.RECRUIT_METAL_COST));
+        else player.sendSystemMessage(Component.literal("군사 | 병영 주변 청크가 로드되면 주둔병 상태를 확인합니다."));
+        SettlementMilitaryOutpostService.SupplySnapshot militarySupply=SettlementMilitaryOutpostService.activeSupplySnapshot(server.overworld(),data);
+        player.sendSystemMessage(Component.literal("위험지역 전초 | 활성 "+SettlementMilitaryOutpostService.activeMilitaryOutpostCount(server.overworld(),data)+"곳 | 로드된 전초 수비대 "+SettlementMilitaryOutpostService.loadedSentryCount(server.overworld(),data)+" | 현지 보급 식량 "+militarySupply.food()+" 금속 "+militarySupply.metal()+" | 충원비 식량 "+SettlementMilitaryOutpostService.RECRUIT_FOOD_COST+" 금속 "+SettlementMilitaryOutpostService.RECRUIT_METAL_COST));
+        player.sendSystemMessage(Component.literal("물류 | 운송 1회 적재 "+SettlementOutpostLogisticsService.transportBatchSize(data)+" | 수레 정거장 화물 배럴 "+(data.buildingCount(BuildingType.CART_STATION)*4)+" | 군사 전초도 같은 도로 운송자가 역방향 보급 | 수변 공사 목재도 같은 운송자"));
+        player.sendSystemMessage(Component.literal("수변 전초 | 로드된 어업·수변교역 "+SettlementFishingOutpostService.activeFishingOutpostCount(server.overworld(),data)+"곳 | 위험지역 군사 역할이 우선 | 완공 계류장 "+SettlementWaterfrontService.completedWaterfrontCount(server,data)+"곳 | 교역통 대구/연어 "+SettlementWaterfrontService.TRADE_FISH_COST+"개 → 에메랄드 1 | 일반 stockpile 자동판매 없음"));
+        SettlementDeferredOutpostService.Snapshot deferred=SettlementDeferredOutpostService.snapshot(server,data);
+        player.sendSystemMessage(Component.literal("언로드 보정 | 생산 작업시간 "+deferred.productionTicks()+"틱 / "+deferred.productionBacklogOutposts()+"전초 | 물류 작업시간 "+deferred.logisticsTicks()+"틱 / "+deferred.logisticsBacklogOutposts()+"전초 | 가상 자원·가상 화물 0"));
+        SettlementExternalContentService.Snapshot external=SettlementExternalContentService.snapshot(server.overworld(),data);
+        player.sendSystemMessage(Component.literal(external.storageLoaded()?"탐험 연동 | 유물 "+external.expeditionRelics()+" | 외부 무기 "+external.externalWeapons():"탐험 연동 | 마을 저장소 청크가 로드되면 물리 전리품을 확인합니다."));
+        player.sendSystemMessage(Component.literal("개척 진척 | 외부 구조물 "+data.discoveredExternalStructures().size()+"종 | 정복 강적 "+data.defeatedExternalBosses().size()+"종 | 진척 "+data.explorationScore()+" / 8 | 동일 종류 반복은 중복 없음"));
+        if(!data.roads().isEmpty()){RoadSegment last=data.roads().getLast();player.sendSystemMessage(Component.literal("최근 도로 끝점 | "+last.end().getX()+", "+last.end().getY()+", "+last.end().getZ()));}
+        if(!data.outposts().isEmpty()){OutpostRecord last=data.outposts().getLast();player.sendSystemMessage(Component.literal("최근 전초기지 | "+last.centerX()+", "+last.centerY()+", "+last.centerZ()+" | 특화 "+SettlementFishingOutpostService.specializationDisplayName(server.overworld(),last)));}
+        ConstructionState c=data.construction(); if(c.active()){BuildingType t=BuildingType.fromId(c.type()); if(t!=null){int total=SettlementConstructionService.totalSteps(t,c.origin());player.sendSystemMessage(Component.literal("공사 중 | "+t.displayName()+" "+(total<=0?0:Math.min(100,c.step()*100/total))+"%"));}}
+        RoadConstructionState road=data.roadConstruction(); if(road.active()){int total=SettlementRoadService.totalSteps(road);player.sendSystemMessage(Component.literal("도로 공사 중 | "+(total<=0?0:Math.min(100,road.step()*100/total))+"%"));}
+        OutpostConstructionState o=data.outpostConstruction(); if(o.active()){int total=SettlementOutpostService.totalSteps(o);player.sendSystemMessage(Component.literal("전초기지 공사 중 | "+(total<=0?0:Math.min(100,o.step()*100/total))+"%"));}
         return 1;
     }
 
-    private static int rescan(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
-        MinecraftServer server = player.level().getServer();
-        SettlementData data = SettlementData.get(server);
-        if (!data.founded()) return 0;
-        SettlementService.refreshResources(server, data);
-        SettlementService.broadcast(server, data);
-        return status(context);
-    }
+    private static int rescan(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); SettlementData d=SettlementData.get(s); if(!d.founded())return 0; SettlementService.refreshResources(s,d); SettlementService.broadcast(s,d); return status(context); }
 }
