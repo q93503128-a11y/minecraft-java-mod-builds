@@ -6,6 +6,7 @@ import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementAdvancedWorkshopService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementCivilWorkService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOfficeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCoreService;
@@ -37,6 +38,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementConstructionService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementRoadService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementOutpostService::onBreakBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementCivilWorkService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementWaterfrontService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementCoreService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementTierInfrastructureService::onBreakBlock);
