@@ -28,6 +28,8 @@ def main() -> None:
     affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
     reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
     equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
+    production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
+    production_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
     ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")
     expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
     deep_expedition = json.loads(read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json"))
@@ -52,7 +54,7 @@ def main() -> None:
 
     require(lock.get("minecraft") == "26.2", "modpack lock Minecraft version drifted")
     require(lock.get("neoforge") == "26.2.0.38-beta", "modpack lock NeoForge version drifted")
-    require(lock.get("version") == "0.47.0-alpha.1-content-preview.1", "modpack preview version drifted")
+    require(lock.get("version") == "0.48.0-alpha.1-content-preview.1", "modpack preview version drifted")
     mods = lock.get("mods") or []
     require(len(mods) >= 6, "first-wave content pack unexpectedly small")
     project_ids = [entry.get("project_id") for entry in mods]
@@ -117,6 +119,44 @@ def main() -> None:
     require(all(entry.get("required") is False for entry in major_entries),
             "TBS major-target entries must remain optional")
 
+    # 0.48 physical frontline stock ties freight to operations without turning cargo into virtual currency.
+    for token in (
+        "startSiegeWithLocalSupply(player, false)",
+        "startSiegeWithLocalSupply(player, true)",
+        "startOperationWithLocalSupply(player)",
+        "prepareLocalOutpostSupply",
+        "consumeLocalOutpostSupply",
+        "exactOutpostContainers",
+        "data.linkedBarrels(player, depot)",
+        "level.hasChunkAt(pos)",
+        "level.mayInteract(player, pos)",
+        "Blocks.BARREL",
+        "blockEntity instanceof Container",
+        "new LocalRequirement(\"식량\", 32",
+        "new LocalRequirement(\"철 주괴\", 8",
+        "new LocalRequirement(\"연료\", 8",
+        "new LocalRequirement(\"식량\", 48",
+        "new LocalRequirement(\"철 주괴\", 16",
+        "new LocalRequirement(\"통나무\", 32",
+        "new LocalRequirement(\"식량\", 96",
+        "new LocalRequirement(\"철 주괴\", 32",
+        "new LocalRequirement(\"석재 벽돌\", 128",
+    ):
+        require(token in production, f"0.48 frontline local supply missing: {token}")
+    require("FieldDepotService.consumeMatching" not in production[production.find("prepareLocalOutpostSupply"):production.find("private static void bulkOffload")],
+            "0.48 frontline stock must not fall back to the global logistics/player-inventory resolver")
+    require("플레이어 인벤토리나 다른 근처 거점으로 대체하지 않습니다" in production,
+            "0.48 frontline stock fallback policy message missing")
+    require("OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply" in production
+            and "ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply" in production,
+            "0.48 local stock must only be charged after an encounter/operation actually starts")
+    for token in (
+        "전초재고(식량48/철16/통나무32)",
+        "전초재고(식량96/철32/석재벽돌128)",
+        "전초재고(식량32/철8/연료8)",
+    ):
+        require(token in production_ui, f"0.48 production radial cost disclosure missing: {token}")
+
     # 0.45 optional external-world bridge.
     require("if (biome.is(integrationTag)) return true;" in expedition_region,
             "external expedition tag must be checked before vanilla fallback")
@@ -140,13 +180,13 @@ def main() -> None:
     require('new Entry("승천 각인"' in equipment_ui and "EquipmentReforgeService.ACTION_IMPRINT" in equipment_ui,
             "equipment radial imprint action missing")
     require("Category.SHOVEL" in affix and "adjustShovelArea" in affix and "Items.NETHERITE_SHOVEL" in affix,
-  "shovel affix category is incomplete")
+            "shovel affix category is incomplete")
     require("ItemTags.SHOVELS" in mining and "BlockTags.MINEABLE_WITH_SHOVEL" in mining and "breakShovelArea" in mining,
-  "standard shovel Mining bridge missing")
+            "standard shovel Mining bridge missing")
     require("a3ac49a6202b7918d2ed22030df0b6e2906cdec8" in matrix,
-  "locked Amethyst Resonance binary audit hash missing from compatibility matrix")
+            "locked Amethyst Resonance binary audit hash missing from compatibility matrix")
     require("4d55c51685bff4247fa533c925f7641ce4880db3" in matrix,
-  "locked The Birth of Steve 0.7 binary audit hash missing from compatibility matrix")
+            "locked The Birth of Steve 0.7 binary audit hash missing from compatibility matrix")
 
     for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
         require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")
@@ -162,6 +202,7 @@ def main() -> None:
     print("loader_specific_artifact_selection=PASS")
     print("skill_xp_normalization=PASS")
     print("content_pack_progression_bridge=PASS")
+    print("frontline_local_supply_bridge=PASS")
     print("external_equipment_imprint=PASS")
     print("amethyst_resonance_shovel_bridge=PASS")
     print("external_component_preservation_contract=PASS")
