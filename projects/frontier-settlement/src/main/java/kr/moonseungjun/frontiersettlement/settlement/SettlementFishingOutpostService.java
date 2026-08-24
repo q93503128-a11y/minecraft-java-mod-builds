@@ -74,7 +74,8 @@ public final class SettlementFishingOutpostService {
                     SettlementDeferredOutpostService.OVERLAY_FISHING);
             if (worker == null) worker = spawnAssignedWorker(level, outpost);
             if (worker == null) continue;
-            if (SettlementWaterfrontService.isConstructionActive(server, outpost)) continue;
+            if (SettlementWaterfrontService.isConstructionActive(server, outpost)
+                    && (worker.getMainHandItem().isEmpty() || SettlementInventory.isWood(worker.getMainHandItem()))) continue;
             work(level, outpost, spot, worker);
         }
     }
