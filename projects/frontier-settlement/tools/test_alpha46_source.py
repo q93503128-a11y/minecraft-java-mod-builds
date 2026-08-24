@@ -80,8 +80,10 @@ must(fishing, (
     'hasFishingShoreline(ServerLevel level, OutpostRecord outpost)',
     'ensureAssignedWorker(ServerLevel level, OutpostRecord outpost)',
     'SettlementWaterfrontService.isConstructionActive(server, outpost)',
+    'worker.getMainHandItem().isEmpty() || SettlementInventory.isWood(worker.getMainHandItem())',
+    'work(level, outpost, spot, worker)',
     '어업·수변교역·계류장',
-), 'alpha.46 fishing/waterfront role integration')
+), 'alpha.46 fishing/waterfront role integration and pre-construction cargo return')
 
 must(logistics, (
     'WATERFRONT_SUPPLY_TRIP_TAG',
@@ -91,6 +93,7 @@ must(logistics, (
     'deliverWaterfrontSupply(level, outpost, worker, carried)',
     'SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood)',
     'SettlementStorageService.extract(level, source, SettlementInventory::isWood, amount)',
+    'there is still only one authority for long-distance outpost transport',
 ), 'alpha.46 same-transporter waterfront reverse supply')
 if logistics.count('public static void tick(ServerLevel level, SettlementData data)') != 1:
     raise SystemExit('alpha.46 must not create a second outpost logistics tick authority')
@@ -106,7 +109,8 @@ must(commands, (
     '완공 계류장 ',
     'SettlementWaterfrontService.TRADE_FISH_COST',
     '일반 stockpile 자동판매 없음',
-    '군사·수변 공사 역보급도 같은 도로 운송자',
+    '군사 전초도 같은 도로 운송자가 역방향 보급',
+    '수변 공사 목재도 같은 운송자',
 ), 'alpha.46 compact status')
 must(context, (
     'SettlementWaterfrontService.tradeCrate(server, outpost)',
