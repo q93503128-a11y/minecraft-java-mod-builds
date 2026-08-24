@@ -33,6 +33,7 @@ TBS 0.7 바이너리 감사에서 추가 Modrinth 의존성은 없었고, 실제
 - 벌목: 기존 `minecraft:logs` + `minecraft:leaves` 계약을 그대로 사용한다. 따라서 이 태그를 정상적으로 제공하는 외부 수종은 별도 모드 ID 분기 없이 자연 나무 연결 벌목에 들어온다.
 - 농사: `CropBlock` 계열 외부 작물은 기존 성숙 판정/광역 수확에 자연 합류한다. 반대로 전용 성장 로직을 가진 비표준 작물은 씨앗/성숙 상태를 추측해서 파괴하지 않는다. 자동 재파종은 안전하게 정의된 작물만 유지한다.
 - 전투: Minecraft `Enemy`와 NeoForge 공용 보스 태그를 함께 실제 전투 대상으로 취급한다. 외부 보스가 `Enemy` 구현을 쓰지 않아도 공용 보스 태그를 제공하면 파급/충격파/전투 숙련에 합류한다.
+- 원거리 장비: NeoForge 공용 `c:tools/bow` / `c:tools/crossbow` 태그를 쓰는 장비는 승천 각인에 합류한다. 발사체는 발사 순간 Survival affix/Shift 정밀 상태만 자체 persistent NBT에 스냅샷하며, 외부 활/쇠뇌 구현 클래스를 직접 참조하지 않는다.
 - 강적: `survivalascension:expedition_major_targets` EntityType Tag를 사용한다. 현재 TBS의 Hour Cantor와 The Last Curator가 `required:false` 데이터 항목으로 들어가며 Java에는 `tbos` 레지스트리 ID나 구현 클래스를 넣지 않는다.
 - 강적 처치 가중치: 일반 적의 기존 처치 크레딧 +1은 그대로 유지하고 강적이면 +3을 추가한다. 추가분은 현재 9지역의 현장 지령과 이미 진행 중인 같은 지역 원정 작전에만 적용한다. 사건 카운터에는 추가 +3을 넣지 않아 보스 한 마리가 사건을 통째로 끝내지 못한다.
 - 외부 차원 경계: Fractured Archive처럼 `currentRegion == null`인 별도 차원에서는 9지역 진행을 만들지 않는다. 원정 작전의 기존 '다른 차원 이탈 시 실패' 규칙도 완화하지 않는다. 대신 강적은 전투 숙련 XP 계산에서 더 높은 체력 계수와 최대 600 XP 상한을 사용한다.
@@ -41,7 +42,7 @@ TBS 0.7 바이너리 감사에서 추가 Modrinth 의존성은 없었고, 실제
 - Amethyst Resonance: locked 26.2 NeoForge 1.0.0 binary audit confirmed vanilla sword/pickaxe/axe/shovel/hoe tags. 0.46 adds the previously missing shovel imprint; Resonant Pickaxe class perks and the separate persistent Resonant armor DataComponent are preserved because Survival Ascension does not replace the item or clear unrelated components. Locked SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`.
 - 외부 모드가 하나 빠져도 이 계층 자체는 로드된다. `biomesoplenty`, `tbos`, `amethyst_resonance` 구현 클래스에 대한 하드 의존은 두지 않는다.
 
-현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + BOP 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
+현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + BOP 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
 
 ## 2차 후보
 

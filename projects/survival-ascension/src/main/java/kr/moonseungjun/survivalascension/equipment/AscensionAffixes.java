@@ -236,27 +236,27 @@ public final class AscensionAffixes {
 
     public static double projectileDamageMultiplier(Entity direct) {
         if (!isRangedProjectile(direct)) return 1.0D;
-        return Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_DAMAGE_PERMILLE, 1000) / 1000.0D);
+        return Math.min(1.25D, Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_DAMAGE_PERMILLE, 1000) / 1000.0D));
     }
 
     public static double projectileXpMultiplier(Entity direct) {
         if (!isRangedProjectile(direct)) return 1.0D;
-        return Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_XP_PERMILLE, 1000) / 1000.0D);
+        return Math.min(1.50D, Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_XP_PERMILLE, 1000) / 1000.0D));
     }
 
     public static double projectileBurstRadiusBonus(Entity direct) {
         if (!isRangedProjectile(direct)) return 0.0D;
-        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_RADIUS_TENTHS, 0)) / 10.0D;
+        return Math.min(1.5D, Math.max(0, direct.getPersistentData().getIntOr(RANGED_RADIUS_TENTHS, 0)) / 10.0D);
     }
 
     public static int projectileBurstTargetBonus(Entity direct) {
         if (!isRangedProjectile(direct)) return 0;
-        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_TARGET_BONUS, 0));
+        return Math.min(4, Math.max(0, direct.getPersistentData().getIntOr(RANGED_TARGET_BONUS, 0)));
     }
 
     public static double projectileBurstFractionBonus(Entity direct) {
         if (!isRangedProjectile(direct)) return 0.0D;
-        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_FRACTION_PERMILLE, 0)) / 1000.0D;
+        return Math.min(0.15D, Math.max(0, direct.getPersistentData().getIntOr(RANGED_FRACTION_PERMILLE, 0)) / 1000.0D);
     }
 
     public static double armorDamageMultiplier(ServerPlayer player, float incomingAmount, boolean environmental) {

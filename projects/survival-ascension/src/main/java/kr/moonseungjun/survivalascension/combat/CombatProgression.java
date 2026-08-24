@@ -38,6 +38,7 @@ public final class CombatProgression {
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel) || !(event.getEntity() instanceof Projectile projectile)) return;
+        if (AscensionAffixes.isRangedProjectile(projectile)) return;
         if (!(projectile.getOwner() instanceof ServerPlayer player)) return;
         ItemStack weapon = player.getMainHandItem();
         if (!AscensionAffixes.isRangedWeapon(weapon)) weapon = player.getOffhandItem();

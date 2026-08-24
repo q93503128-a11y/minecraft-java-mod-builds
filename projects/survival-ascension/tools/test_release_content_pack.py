@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_LOCK_VERSION = "0.48.0-alpha.1-content-preview.1"
-REQUIRED_LOCK_VERSION = "0.51.0-alpha.1-content-preview.1"
+REQUIRED_LOCK_VERSION = "0.52.0-alpha.1-content-preview.1"
 errors: list[str] = []
 
 
@@ -60,6 +60,11 @@ need(affix, [
 ], "0.51 armor content-pack bridge")
 need(equipment_ui, ["방어구 표준 태그 장비 필요"], "0.51 armor player flow")
 need(combat, ["armorDamageMultiplier", "armorXpMultiplier"], "0.51 armor runtime flow")
+need(affix, ["Tags.Items.TOOLS_BOW", "Tags.Items.TOOLS_CROSSBOW", "Category.RANGED", "snapshotRangedProjectile", "projectileDamageMultiplier", "projectileXpMultiplier"], "0.52 ranged content-pack bridge")
+need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"], "0.52 ranged imprint player flow")
+need(combat, ["onEntityJoin(EntityJoinLevelEvent event)", "tryRangedBurst", "isPrecisionRangedProjectile", "fieldMastery ? 6.0D", "fieldMastery ? 10"], "0.52 ranged runtime flow")
+matrix = read("MODPACK_COMPAT_MATRIX.md")
+need(matrix, ["c:tools/bow", "c:tools/crossbow", "발사체 스냅샷"], "0.52 generic ranged compatibility docs")
 
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
@@ -70,7 +75,7 @@ if errors:
 baseline_path = ROOT / "tools/test_content_pack_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)
-baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.51.0-alpha.1`')
+baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.52.0-alpha.1`')
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -92,4 +97,5 @@ if exit_code != 0:
 print("frontline_freight_manifest=PASS")
 print("regional_logistics_scale=PASS")
 print("armor_affix_content_bridge=PASS")
+print("ranged_affix_projectile_bridge=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")

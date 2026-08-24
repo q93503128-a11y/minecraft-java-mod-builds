@@ -1,14 +1,24 @@
 # Survival Ascension
 
-- Mod version: `0.51.0-alpha.1`
+- Mod version: `0.52.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.51 adds the existing affix category `armor` to standard humanoid armor and reads effects only from currently equipped pieces; 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.52 Ranged Combat Ascension / 원거리 전투 승천
+- NeoForge common bow/crossbow tags (`c:tools/bow`, `c:tools/crossbow`) now join Ascension Imprint, reforge, Mythic awakening, salvage and elite affix drops without optional-mod Java dependencies.
+- Every player-fired tagged bow/crossbow projectile snapshots its ranged affix multipliers and Shift precision state at entity launch. Changing the held item after firing cannot change that shot's damage, Combat XP or burst modifiers.
+- Combat Lv30/60/90/100 expands ranged impact bursts at the hit position: base 2.5/2, 3.5/4, 4.25/6, 5.0/8 radius/targets; Lv100 Field Mastery reaches base 6.0 blocks / 10 targets.
+- Shift at launch is precision mode: direct-hit damage and snapshotted affixes remain, but the impact burst is disabled for that projectile.
+- Ranged affixes reuse the five existing slots with authored roles: `강궁` direct damage (+8/+15/+25%), `산개` burst radius (+0.5/+1.0/+1.5), `숙련` Combat XP (+10/+25/+50%), `연쇄` extra targets (+1/+2/+4), `충격` burst fraction (+5/+10/+15 percentage points).
+- Burst fraction is hard-capped at 65%. Persisted projectile bonuses are independently clamped to damage1.25x, XP1.50x, radius+1.5, targets+4 and fraction+0.15 so malformed NBT cannot create unbounded combat scale.
+- Already-snapshotted projectiles are not re-snapshotted when re-entering the level, preserving launch-time ownership across chunk unload/reload.
+- No custom projectile/entity, new SavedData, packet/protocol change, force-load, background simulation or optional-mod implementation import.
 
 ## 0.51 Armor Ascension / 방어구 승천 성장
 - Standard humanoid armor tags (`HEAD_ARMOR`, `CHEST_ARMOR`, `LEG_ARMOR`, `FOOT_ARMOR`) now join the existing Ascension Imprint / reforge / Mythic-awakening path without optional-mod Java dependencies.

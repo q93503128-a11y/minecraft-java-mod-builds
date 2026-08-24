@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.52.0-alpha.1
+- Added `Ranged Combat Ascension / 원거리 전투 승천`: standard NeoForge bow/crossbow tags now join imprint/reforge/Mythic awakening/salvage and elite affix drops.
+- Added launch-time projectile snapshots for ranged affix damage, Combat XP, burst radius/targets/fraction and Shift precision, preventing post-shot weapon-swap changes.
+- Added mastery-scaled ranged impact bursts: Lv30 2.5/2, Lv60 3.5/4, Lv90 4.25/6, Lv100 5/8, Field Mastery 6/10 base radius/targets.
+- Shift-fired ranged shots remain direct single-target precision shots with no impact burst.
+- Added ranged affix roles: 강궁 direct damage, 산개 radius, 숙련 Combat XP, 연쇄 target bonus, 충격 burst fraction.
+- Hard-capped burst fraction at 65% and clamped persisted projectile affix values to authored maxima; already-snapshotted projectiles are not re-snapshotted on level re-entry.
+- Kept network protocol8 and added no custom projectile/entity, SavedData, force-load, background simulation or optional-mod Java dependency.
+- Bumped the one-import content-preview lock to `0.52.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
 ## 0.51.0-alpha.1
 - Added `Armor Ascension / 방어구 승천 성장`: standard head/chest/leg/foot armor tags now join the existing affix imprint, reforge, Mythic-awakening and salvage flow.
 - Elite affix loot can now roll iron/diamond/netherite armor across all four equipment slots.

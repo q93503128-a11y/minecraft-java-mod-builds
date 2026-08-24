@@ -92,9 +92,18 @@ with zipfile.ZipFile(jar) as zf:
         if token not in equipment_ui:
             raise SystemExit(f"0.51 compiled armor imprint UI routing token missing: {token!r}")
 
+    for token in [b"TOOLS_BOW", b"TOOLS_CROSSBOW", b"snapshotRangedProjectile", b"survivalascension_ranged_projectile", b"projectileDamageMultiplier", b"projectileXpMultiplier"]:
+        if token not in affix:
+            raise SystemExit(f"0.52 compiled ranged-affix token missing: {token!r}")
+    for token in [b"onEntityJoin", b"tryRangedBurst", b"isPrecisionRangedProjectile", b"projectileBurstRadiusBonus", b"projectileBurstTargetBonus"]:
+        if token not in combat:
+            raise SystemExit(f"0.52 compiled ranged-combat token missing: {token!r}")
+
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
 print("regional_logistics_scale_runtime=present")
 print("regional_logistics_scale_release_verify=PASS")
 print("armor_affix_runtime=present")
 print("armor_affix_release_verify=PASS")
+print("ranged_combat_runtime=present")
+print("ranged_combat_release_verify=PASS")

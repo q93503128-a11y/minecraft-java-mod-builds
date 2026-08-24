@@ -4,6 +4,15 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.52.0-alpha.1 — Ranged Combat Ascension / 원거리 전투 승천
+Combat progression now gives bows and crossbows the same physical-scale growth principle as melee combat instead of leaving ranged play as only a numeric damage multiplier. NeoForge common `c:tools/bow` / `c:tools/crossbow` items can enter Ascension Imprint and elite affix drops can roll vanilla Bow/Crossbow bases.
+
+A fired projectile snapshots its ranged affix values and Shift precision flag at launch. Swapping weapons after release cannot change the projectile's direct-damage affix, mastery-XP affix or impact-burst modifiers. Already-snapshotted projectiles keep that launch state when re-entering the level.
+
+Ranged impact burst grows with Combat mastery: Lv30 2.5 blocks/2 targets, Lv60 3.5/4, Lv90 4.25/6, Lv100 5/8, and Lv100 + Field Mastery 6/10 before equipment bonuses. Shift at launch disables the burst for deliberate single-target precision. Ranged affixes are 강궁 damage, 산개 radius, 숙련 Combat XP, 연쇄 target count and 충격 burst fraction. The burst fraction is capped at 65%, and projectile-stored bonuses are clamped to their authored Mythic maxima.
+
+This uses only the actual projectile's persistent NBT; it adds no custom projectile/entity, SavedData, packet/protocol bump, force-load, background combat simulation or optional-mod implementation dependency.
+
 ## 0.51.0-alpha.1 — Armor Ascension / 방어구 승천 성장
 Armor is now part of the same ascension equipment loop as weapons and tools. Standard helmet/chestplate/leggings/boots tags can be used with `M -> 장비 -> 승천 각인`, then use the existing reforge, Mythic awakening and salvage path without replacing the original item or clearing unrelated components. Elite affix drops can also roll iron/diamond/netherite armor pieces.
 

@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.51.0-alpha.1"
+REQUIRED_VERSION = "0.52.0-alpha.1"
 errors: list[str] = []
 
 
@@ -103,10 +103,27 @@ need(combat, [
     "AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental)",
     "AscensionAffixes.armorXpMultiplier(player)"
 ], "0.51 worn armor runtime")
-need(reforge, ["검/곡괭이/도끼/삽/괭이/방어구 태그 장비"], "0.51 armor imprint server flow")
-need(equipment_ui, ["검/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"], "0.51 armor imprint UI")
-need(main_mod, ["VERSION = \"0.51.0-alpha.1\"", "armor affix progression"], "0.51 runtime banner")
+need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비"], "0.52 ranged/armor imprint server flow")
+need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
+need(main_mod, ["VERSION = \"0.52.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
+
+# 0.52 ranged combat ascension: launch-time snapshots and bounded physical impact scale.
+need(affix, [
+    "Tags.Items.TOOLS_BOW", "Tags.Items.TOOLS_CROSSBOW", "Category.RANGED", 'RANGED("ranged")',
+    'RANGED_PROJECTILE = "survivalascension_ranged_projectile"',
+    "snapshotRangedProjectile(Projectile projectile, ItemStack weapon, boolean precision)",
+    "projectileDamageMultiplier", "projectileXpMultiplier", "projectileBurstRadiusBonus", "projectileBurstTargetBonus", "projectileBurstFractionBonus",
+    "Math.min(1.25D", "Math.min(1.50D", "Math.min(1.5D", "Math.min(4", "Math.min(0.15D"
+], "0.52 ranged affix/projectile snapshot")
+need(combat, [
+    "onEntityJoin(EntityJoinLevelEvent event)", "AscensionAffixes.isRangedProjectile(projectile)",
+    "snapshotRangedProjectile(projectile, weapon, player.isShiftKeyDown())", "tryRangedBurst",
+    "AscensionAffixes.isPrecisionRangedProjectile(direct)", "fieldMastery ? 6.0D", "fieldMastery ? 10",
+    "Math.min(0.65D", "projectileXpMultiplier(direct)"
+], "0.52 ranged combat runtime")
+need(main_mod, ["CombatProgression::onEntityJoin", "ranged projectile snapshots/impact bursts"], "0.52 ranged event wiring")
+forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.52 ranged world-loading policy")
 
 # User-facing docs are part of the release contract, not an uncommitted CI-side patch.
 project_doc = read("PROJECT.md")
@@ -114,7 +131,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(project_doc, [
-    "Mod version: `0.51.0-alpha.1`",
+    "Mod version: `0.52.0-alpha.1`",
     "## 0.51 Armor Ascension / 방어구 승천 성장",
     "hard-capped at 35%",
     "hard-capped at +32% Combat XP"
@@ -135,6 +152,14 @@ need(guide, [
     "최대35%",
     "최대32%"
 ], "0.51 in-game guide")
+need(project_doc, [
+    "## 0.52 Ranged Combat Ascension / 원거리 전투 승천", "6.0 blocks / 10 targets", "hard-capped at 65%"
+], "0.52 PROJECT docs")
+need(readme, [
+    "## 0.52.0-alpha.1 — Ranged Combat Ascension / 원거리 전투 승천", "Lv100 + Field Mastery 6/10", "capped at 65%"
+], "0.52 README docs")
+need(changelog, ["## 0.52.0-alpha.1", "Ranged Combat Ascension / 원거리 전투 승천", "6/10", "65%"], "0.52 CHANGELOG docs")
+need(guide, ['h("원거리 전투 파급")', "현장 숙련=6블록/10체", "Shift 발사는 파급 없는 단일 정밀 타격"], "0.52 in-game guide")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -147,6 +172,7 @@ baseline_path = ROOT / "tools/test_current_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)
 baseline = baseline.replace("MAX_DEPOTS_PER_PLAYER = 3", "MAX_DEPOTS_PER_PLAYER = 9")
+baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비")
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -166,4 +192,5 @@ print("- 0.49 frontline freight manifest and physical-only transport remain inta
 print("- 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-first before resource mutation")
 print("- 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops")
 print("- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%")
-print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.51")
+print("- 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded")
+print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.52")
