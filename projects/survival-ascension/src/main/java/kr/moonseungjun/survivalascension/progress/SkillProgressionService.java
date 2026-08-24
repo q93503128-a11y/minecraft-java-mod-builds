@@ -11,7 +11,9 @@ public final class SkillProgressionService {
 
     public static SkillProgressData.AddXpResult award(ServerPlayer player, SkillType skill, long amount) {
         SkillProgressData data = SkillProgressData.get(player);
-        SkillProgressData.AddXpResult result = data.addXp(player, skill, amount);
+        int currentLevel = data.level(player, skill);
+        long scaledAmount = SkillTuning.scaleSkillXp(skill, currentLevel, amount);
+        SkillProgressData.AddXpResult result = data.addXp(player, skill, scaledAmount);
         if (result.newXp() != result.oldXp()) {
             SkillNetwork.sendUpdate(player, new SkillUpdatePayload(skill.id(), result.oldXp(), result.newXp(), result.oldLevel(), result.newLevel()));
         }

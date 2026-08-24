@@ -1,0 +1,45 @@
+{
+  "format": 1,
+  "name": "Survival Ascension",
+  "version": "0.42.1-alpha.1-content-preview.1",
+  "minecraft": "26.2",
+  "neoforge": "26.2.0.38-beta",
+  "mods": [
+    {
+      "name": "Biomes O' Plenty",
+      "project_id": "HXF82T3G",
+      "version_id": "kYz8T08F",
+      "required": true
+    },
+    {
+      "name": "GlitchCore",
+      "project_id": "s3dmwKy5",
+      "version_id": "POAebwFo",
+      "required": true
+    },
+    {
+      "name": "The Birth of Steve",
+      "project_id": "gKOBlOap",
+      "version_id": "12SBAmcX",
+      "required": true
+    },
+    {
+      "name": "Amethyst Resonance",
+      "project_id": "8RyryQ7j",
+      "version_id": "no0B3Ssy",
+      "required": true
+    },
+    {
+      "name": "Architectury API",
+      "project_id": "lhGA9TYQ",
+      "version_id": "LKQeKupY",
+      "required": true
+    },
+    {
+      "name": "Cloth Config API",
+      "project_id": "9s6osm5g",
+      "version_id": "zErG1kOw",
+      "required": true
+    }
+  ]
+}

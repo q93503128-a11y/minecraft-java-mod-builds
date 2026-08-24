@@ -57,6 +57,8 @@ jobs:
           java -version
           ./gradlew --version
           python3 tools/test_current_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-audit.log"
+          python3 tools/test_content_pack_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log"
+          python3 -m py_compile tools/build_mrpack.py tools/test_content_pack_source.py
           git diff --check
           git diff --exit-code
 
@@ -68,7 +70,7 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-gradle.log"
 
-      - name: Verify runtime JAR and create report
+      - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -78,7 +80,27 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/deliverables"
           cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables/"
           cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
+
+      - name: Build one-import Modrinth content pack
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          python3 tools/build_mrpack.py \
+            --survival-jar "build/libs/$EXPECTED_JAR" \
+            --output "$GITHUB_WORKSPACE/deliverables/Survival-Ascension-$MOD_VERSION-content-preview.mrpack" \
+            2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-modpack.log"
+
+      - name: Create build and runtime report
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
           sha="$(cut -d' ' -f1 "build/libs/$EXPECTED_JAR.sha256")"
+          pack="$GITHUB_WORKSPACE/deliverables/Survival-Ascension-$MOD_VERSION-content-preview.mrpack"
+          test -f "$pack"
+          pack_sha="$(sha256sum "$pack" | cut -d' ' -f1)"
           cat > "$GITHUB_WORKSPACE/deliverables/BUILD_AND_RUNTIME_REPORT.md" <<REPORT
           # Survival Ascension Build and Runtime Report
 
@@ -90,12 +112,16 @@ jobs:
           - Gradle: 9.2.1 wrapper
           - clean build: PASS
           - source audit: PASS
+          - content-pack source audit: PASS
           - JAR verification: PASS
-          - SHA-256: $sha
+          - JAR SHA-256: $sha
+          - Modrinth content-pack metadata/dependency/package validation: PASS
+          - content-preview .mrpack SHA-256: $pack_sha
+          - external content mods: referenced from their original Modrinth CDN; not embedded in the Survival Ascension JAR
           - datagen: NOT RUN (not implemented in alpha.1)
           - GameTest: NOT RUN (not implemented in alpha.1)
           - dedicated server smoke test: NOT RUN
-          - graphical client smoke test: NOT RUN
+          - graphical client / external-mod worldgen smoke test: NOT RUN
           REPORT
 
       - uses: actions/upload-artifact@v4
@@ -112,8 +138,10 @@ jobs:
           name: survivalascension-${{ env.MOD_VERSION }}-logs
           path: |
             survival-ascension-audit.log
+            survival-ascension-content-pack-audit.log
             survival-ascension-gradle.log
             survival-ascension-jar-verify.log
+            survival-ascension-modpack.log
           if-no-files-found: warn
           retention-days: 14
 
@@ -138,11 +166,17 @@ jobs:
           if test -f "$GITHUB_WORKSPACE/survival-ascension-audit.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-audit.log" /tmp/survival-ascension-result/latest-audit.log
           fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log" /tmp/survival-ascension-result/latest-content-pack-audit.log
+          fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-gradle.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-gradle.log" /tmp/survival-ascension-result/latest-gradle.log
           fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log" /tmp/survival-ascension-result/latest-jar-verify.log
+          fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-modpack.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-modpack.log" /tmp/survival-ascension-result/latest-modpack.log
           fi
 
           git config user.name 'github-actions[bot]'

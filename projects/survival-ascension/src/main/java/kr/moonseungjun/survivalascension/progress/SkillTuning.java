@@ -42,6 +42,37 @@ public final class SkillTuning {
         return Math.max(0L, totalXp - xpAtLevel(level));
     }
 
+    /**
+     * Different skills produce validated actions at radically different rates.
+     * Mining already scales its action count through area/vein work, while construction,
+     * mobility and time-gated farming are much slower in ordinary survival play.
+     * These factors normalize real play time rather than pretending one raw XP point has
+     * identical effort across every skill. The opening receives the strongest correction;
+     * by Lv60 the factors settle to their late-game values because area/chain actions are
+     * already generating more validated actions naturally.
+     */
+    public static double skillXpMultiplier(SkillType skill, int currentLevel) {
+        int level = clamp(currentLevel);
+        double early;
+        double late;
+        switch (skill) {
+            case MINING -> { early = 1.25D; late = 1.10D; }
+            case WOODCUTTING -> { early = 1.60D; late = 1.25D; }
+            case HARVESTING -> { early = 1.50D; late = 1.20D; }
+            case COMBAT -> { early = 1.25D; late = 1.15D; }
+            case CONSTRUCTION -> { early = 2.75D; late = 1.75D; }
+            case MOBILITY -> { early = 2.10D; late = 1.40D; }
+            default -> { early = 1.0D; late = 1.0D; }
+        }
+        double progress = Math.min(1.0D, level / 60.0D);
+        return early + (late - early) * progress;
+    }
+
+    public static long scaleSkillXp(SkillType skill, int currentLevel, long rawXp) {
+        if (rawXp <= 0L) return 0L;
+        return Math.max(1L, (long) Math.ceil(rawXp * skillXpMultiplier(skill, currentLevel)));
+    }
+
     public static double miningSpeedMultiplier(int level) {
         int clamped = clamp(level);
         return 1.0D + 0.03D * clamped + 0.0004D * clamped * clamped;
