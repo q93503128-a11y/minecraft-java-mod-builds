@@ -34,7 +34,9 @@ public final class PlayerResidencePlacementManager {
     }
 
     public static synchronized void queue(ServerPlayer player, OriginProfile profile) {
-        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        MinecraftServer server = player.level().getServer();
+        if (activeServer != server) resetFor(server);
+        ServerLevel realm = server.getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return;
         PENDING.putIfAbsent(player.getUUID(), new Pending(profile));
         ensureTicket(realm, profile);
