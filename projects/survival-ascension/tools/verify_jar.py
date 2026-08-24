@@ -57,6 +57,9 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/ProductionProgram.class",
         "kr/moonseungjun/survivalascension/production/ProductionData.class",
         "kr/moonseungjun/survivalascension/production/ProductionService.class",
+        "kr/moonseungjun/survivalascension/production/ProductionService$LocalLoadout.class",
+        "kr/moonseungjun/survivalascension/production/ProductionService$LocalRequirement.class",
+        "kr/moonseungjun/survivalascension/production/ProductionService$PreparedLocalSupply.class",
         "kr/moonseungjun/survivalascension/production/FreightService.class",
         "kr/moonseungjun/survivalascension/production/FreightRailheadService.class",
         "kr/moonseungjun/survivalascension/production/FieldDepotData.class",
@@ -115,11 +118,16 @@ with zipfile.ZipFile(jar) as zf:
     if not major_entries or not all(entry.get("required") is False for entry in major_entries):
         raise SystemExit("TBS major-target entries must remain optional in packaged JAR")
 
+    production_class = zf.read("kr/moonseungjun/survivalascension/production/ProductionService.class")
     affix_class = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
     mining_class = zf.read("kr/moonseungjun/survivalascension/mining/MiningProgression.class")
     compat_class = zf.read("kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.class")
     combat_class = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
     expedition_class = zf.read("kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class")
+    for token in (b"startSiegeWithLocalSupply", b"startOperationWithLocalSupply", b"prepareLocalOutpostSupply",
+                  b"consumeLocalOutpostSupply", b"exactOutpostContainers", b"consumeFromContainers"):
+        if token not in production_class:
+            raise SystemExit(f"compiled frontline local-supply bridge missing: {token.decode()}")
     if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:
         raise SystemExit("compiled shovel affix bridge missing")
     if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
@@ -159,6 +167,7 @@ sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding="utf-8")
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
+print("frontline_local_supply_runtime=present")
 print("external_equipment_imprint_runtime=present")
 print("bop_expedition_biome_bridge=present")
 print("major_external_target_runtime=present")
