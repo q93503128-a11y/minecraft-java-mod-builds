@@ -1,7 +1,10 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.42.1 guide scrolls and documents current World Ascension instead of embedding patch-history wording
-- early mastery requirements are discounted through Lv59 and converge to the retained late quadratic curve at Lv60
-- mining XP is material-tiered; copper7/8 no longer outranks obsidian16/crying18
+- 0.43 physical freight requires a loaded real railhead at both exact active-outpost endpoints
+- railhead minimums: radius6, rails6+, powered rail1+, hopper1+, lever/redstone control1+, with powered/hopper/control near the actual cart rail
+- freight still moves only existing bulk stacks in the same physical Chest Minecart; no reward, auto-drive, virtual route, SavedData, teleport or force-load
+- guide scrolls and documents current World Ascension instead of embedding patch-history wording
+- early mastery requirements remain discounted through Lv59 and converge to the retained late quadratic curve at Lv60
+- mining XP remains material-tiered; copper7/8 no longer outranks obsidian16/crying18
 - logistics-backed costs consume nearest usable physical Barrel/통 storage before carried inventory; vanilla crafting and Apex/Trial carried admissions remain separate
-- 0.42 physical freight, 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain
+- 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain
