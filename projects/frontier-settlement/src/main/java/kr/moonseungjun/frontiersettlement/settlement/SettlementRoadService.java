@@ -617,6 +617,12 @@ public final class SettlementRoadService {
         for (int i = 0; i < plan.size(); i++) {
             Placement placement = plan.get(i);
             BlockPos surface = placement.pos();
+            // The natural tunnel floor is future paving/support and must not be removed mid-project.
+            if (placement.tunnel() && surface.equals(pos)) {
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                return;
+            }
             if (surface.equals(pos) && current.is(placement.state().getBlock())) {
                 event.setCanceled(true);
                 event.setNotifyClient(true);
