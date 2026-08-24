@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.45.0-alpha.1
+- BOP 원정 브리지를 정식 현재 버전에 포함하고 `spider_nest`를 Deep 원정에 추가했다.
+- 9개 원정 태그의 BOP 항목이 모두 optional(`required:false`)인지, BOP ID가 지역 간 중복되지 않는지 source audit에 고정했다.
+- packaged JAR이 9개 원정 태그와 Deep의 `glowing_grotto`/`spider_nest`를 실제 포함하는지 verifier에 추가했다.
+- The Birth of Steve 핵심 적은 기존 `Enemy` 계약으로 이미 편입됨을 감사하여 전용 하드 의존을 추가하지 않았다.
+- 0.44 외부 장비 각인과 기존 물리 물류/화물/토목/전초/방어/원정 체급을 회귀 유지했다.
+- datagen, GameTest, dedicated server smoke, graphical client/external worldgen smoke는 실행하지 않았다.
+
 ## 0.44.0-alpha.1
 - Added `Ascension Imprint / 승천 각인` so standard-tagged external swords, pickaxes, axes and hoes can enter Survival Ascension's existing affix/mastery progression instead of remaining disconnected content-pack gear.
 - Imprint eligibility is dependency-free and uses Minecraft item tags (`ItemTags.SWORDS/PICKAXES/AXES/HOES`) rather than optional-mod implementation classes or registry hardcoding.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import hashlib, re, sys, zipfile
+import hashlib, json, re, sys, zipfile
 
 if len(sys.argv) != 2:
     raise SystemExit("usage: verify_jar.py <jar>")
@@ -35,6 +35,15 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/world/WorldAscensionData.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionProgression.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.class",
+        "data/survivalascension/tags/worldgen/biome/expedition/woodland.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/arid.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/wetland.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/highlands.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/ocean.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/deep.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/frozen.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/nether.json",
+        "data/survivalascension/tags/worldgen/biome/expedition/end.json",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionData.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.class",
@@ -88,6 +97,11 @@ with zipfile.ZipFile(jar) as zf:
     ]:
         if name not in names:
             raise SystemExit(f"required JAR entry missing: {name}")
+    deep_doc = json.loads(zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json").decode("utf-8"))
+    deep_ids = {entry.get("id") for entry in deep_doc.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
+    if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
+        raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
+
     for notice, line in [
         ("META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt", "Copyright (c) 2026 balovich-matje"),
         ("META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt", "Copyright (c) 2026 Kestalkayden"),
@@ -117,6 +131,7 @@ jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding=
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("external_equipment_imprint_runtime=present")
+print("bop_expedition_biome_bridge=present")
 print("physical_freight_runtime=present")
 print("physical_freight_railhead_runtime=present")
 print("civil_works_runtime=present")

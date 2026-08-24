@@ -1,6 +1,6 @@
 # Survival Ascension
 
-- Mod version: `0.44.0-alpha.1`
+- Mod version: `0.45.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
@@ -9,6 +9,14 @@
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.45 External World Integration / 외부 월드 원정 통합
+- 기존 9지역 원정이 정본이며 외부 바이옴용 별도 퀘스트/진행 시스템을 만들지 않는다.
+- `ExpeditionRegion.matches`는 `survivalascension:expedition/<region>` 태그를 먼저 보고 바닐라 바이옴 fallback을 유지한다.
+- BOP 항목은 데이터 전용 `required:false`; Deep에는 `glowing_grotto`와 `spider_nest`가 모두 들어간다.
+- The Birth of Steve 적은 기존 `Enemy` 계약, 비-Enemy 보스는 NeoForge `BOSSES` 공용 태그로 전투 숙련과 상호 운용한다.
+- optional-mod Java import, 새 SavedData/packet/entity, force-load, 외부 코드/리소스 복사는 추가하지 않는다.
+- 실제 graphical client / external worldgen smoke는 별도 검증 전까지 미실행 상태다.
 
 ## 0.44 Content-pack Equipment Imprint / 외부 장비 승천 각인
 ### Purpose

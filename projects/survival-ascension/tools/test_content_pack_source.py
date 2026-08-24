@@ -27,6 +27,8 @@ def main() -> None:
     reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
     equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
     ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")
+    expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
+    deep_expedition = json.loads(read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json"))
     plan = read("MODPACK_PLAN_DRAFT.md")
     matrix = read("MODPACK_COMPAT_MATRIX.md")
     builder = read("tools/build_mrpack.py")
@@ -86,6 +88,15 @@ def main() -> None:
     require("block instanceof CropBlock" in harvest,
             "harvesting must continue to accept modded CropBlock implementations")
 
+    # 0.45 optional external-world bridge.
+    require("if (biome.is(integrationTag)) return true;" in expedition_region,
+            "external expedition tag must be checked before vanilla fallback")
+    require("biomesoplenty" not in expedition_region.lower() and "tbos" not in expedition_region.lower(),
+            "optional implementation dependency leaked into ExpeditionRegion")
+    deep_ids = {entry.get("id") for entry in deep_expedition.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
+    require("biomesoplenty:glowing_grotto" in deep_ids and "biomesoplenty:spider_nest" in deep_ids,
+            "BOP deep expedition bridge incomplete")
+
     # 0.44 external gear bridge: standard item tags and existing affix system only.
     for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES"):
         require(tag in affix, f"external equipment standard tag missing: {tag}")
@@ -115,6 +126,8 @@ def main() -> None:
     print("skill_xp_normalization=PASS")
     print("content_pack_progression_bridge=PASS")
     print("external_equipment_imprint=PASS")
+    print("bop_expedition_bridge=PASS")
+    print("generic_enemy_boss_bridge=PASS")
     print("passive_combat_xp_farm=REMOVED")
 
 

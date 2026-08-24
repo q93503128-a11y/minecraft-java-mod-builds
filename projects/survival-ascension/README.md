@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.45.0-alpha.1 — External World Integration / 외부 월드 원정 통합
+Biomes O' Plenty 바이옴을 별도 원정 체계로 만들지 않고 기존 9지역 원정에 데이터 태그로 편입한다. `ExpeditionRegion`은 `survivalascension:expedition/<region>`을 바닐라 fallback보다 먼저 판정하며 BOP registry ID는 `required:false`라서 BOP가 없어도 코어가 로드된다.
+
+0.44 호환 패치의 실제 누락이었던 `biomesoplenty:spider_nest`를 `glowing_grotto`와 함께 심층권에 추가했다. The Birth of Steve 핵심 적은 이미 Minecraft `Enemy` 계약을 따르므로 기존 전투 숙련에 들어오며, 비-Enemy 보스는 NeoForge 공용 `BOSSES` 태그 계약을 사용한다. 따라서 TBS 전용 Java 하드코딩은 추가하지 않는다.
+
+0.44 외부 장비 승천 각인과 모든 물리 물류/전초/방어/원정 규칙은 그대로 유지한다. 그래픽 클라이언트·실제 외부 월드젠 스모크는 아직 실행하지 않았으므로 통과했다고 주장하지 않는다.
+
 ## 0.44.0-alpha.1 — External Gear Ascension Imprint / 외부 장비 승천 각인
 The content pack now has additional equipment sources, so compatible external gear can be pulled into the same Survival Ascension rarity/affix/mastery loop instead of living beside it as disconnected loot.
 

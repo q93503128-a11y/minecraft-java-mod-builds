@@ -1,5 +1,15 @@
 # Third-party notices
 
+## Biomes O' Plenty — content-pack original / registry reference only
+Distribution/content license: All Rights Reserved.
+
+Survival Ascension은 BOP 코드·바이옴 데이터·텍스처·모델·사운드를 복사하지 않는다. 공개 registry identifier만 독립 작성한 Survival Ascension Biome Tag에서 `required:false`로 참조하며 BOP JAR은 Modrinth 원본 콘텐츠팩 파일로 유지한다.
+
+## The Birth of Steve — content-pack original / behavior reference only
+Distribution/content license: All Rights Reserved.
+
+0.45 감사에서는 전용 브리지가 필요한지만 공개 타입/레지스트리 동작으로 확인했다. 핵심 적이 Minecraft 공용 적대 계약을 따르므로 TBS 구현 클래스·던전 데이터·모델·텍스처·사운드·코드를 Survival Ascension에 복사하거나 링크하지 않는다.
+
 ## Skill Proficiencies
 Source project: `balovich-matje/skill-proficiencies`  
 Copyright (c) 2026 balovich-matje  

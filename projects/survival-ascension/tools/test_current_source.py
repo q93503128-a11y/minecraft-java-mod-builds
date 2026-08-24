@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,11 +74,11 @@ for rel in required:
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.44.0-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.45.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.44.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.45.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
 # 0.44 external/content-pack equipment imprint.
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
@@ -111,7 +112,7 @@ need(guide, [
     "mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)",
     "graphics.enableScissor", "graphics.disableScissor", "maxScroll", "scrollOffset",
     'h("월드 승천")', "위더를 처음 격파하면 전설 단계(1)", "엔더 드래곤을 처음 격파하면 종말 단계(2)",
-    'h("외부 장비와 승천 각인")', 'h("승천 각인")', "표준 검/곡괭이/도끼/괭이 태그 장비",
+    'h("외부 장비와 승천 각인")', 'h("외부 바이옴 원정")', 'h("승천 각인")', "표준 검/곡괭이/도끼/괭이 태그 장비",
     "물류 통과 창고군", "일반 바닐라 작업대 조합은 조합칸/인벤토리 규칙을 그대로 따릅니다.",
     'h("화물 하역장")', "레일6개 이상", "동력레일1개 이상", "호퍼1개 이상"
 ], "0.44 scrollable current-state guide")
@@ -239,6 +240,24 @@ need(bore, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "LOCAL_BLOCK_BUDGET_PER_TICK = 
 need(wood, ["GLOBAL_LOG_BUDGET_PER_TICK = 64", "LOCAL_LOG_BUDGET_PER_TICK = 12", "448"], "wood scale")
 need(harvest, ["GLOBAL_HARVEST_BUDGET_PER_TICK = 64", "LOCAL_HARVEST_BUDGET_PER_TICK = 12", "baseSize = 13"], "harvest scale")
 
+# 0.45 optional external-world expedition bridge.
+expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
+need(expedition_region, ["private final TagKey<Biome> integrationTag;", "if (biome.is(integrationTag)) return true;"], "0.45 expedition tag-first bridge")
+forbid(expedition_region, ["biomesoplenty.", "tbos.", "amethyst_resonance."], "0.45 hard optional-mod biome dependency")
+bop_ids = []
+for region in ("woodland", "arid", "wetland", "highlands", "ocean", "deep", "frozen", "nether", "end"):
+    tag_text = read(f"src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/{region}.json")
+    need(tag_text, ['"replace": false'], f"0.45 expedition tag {region}")
+    ids = re.findall(r'"id"\s*:\s*"(biomesoplenty:[^"]+)"', tag_text)
+    soft = re.findall(r'\{\s*"id"\s*:\s*"(biomesoplenty:[^"]+)"\s*,\s*"required"\s*:\s*false\s*\}', tag_text)
+    if ids != soft:
+        errors.append(f"0.45 expedition tag {region} contains non-optional or malformed BOP entry")
+    bop_ids.extend(ids)
+if len(bop_ids) != len(set(bop_ids)):
+    errors.append("0.45 duplicate BOP biome id across expedition tags")
+deep_tag = read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json")
+need(deep_tag, ['"biomesoplenty:glowing_grotto"', '"biomesoplenty:spider_nest"'], "0.45 BOP deep bridge")
+
 if errors:
     print("SOURCE AUDIT FAIL")
     for error in errors:
@@ -247,7 +266,8 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies")
+print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")
+print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies")
 print("- imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials")
 print("- external item components stay on the same stack; Survival Ascension writes only nested affix CustomData/display name with a retained base name")
 print("- 0.43 physical freight still requires a loaded real railhead at both exact active-outpost endpoints")
