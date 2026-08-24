@@ -43,13 +43,7 @@ public final class RealmCodexClient {
      */
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!(event.getScreen() instanceof InventoryScreen screen) || event.getButton() != 0) return;
-        Panel p = panel(screen.width, screen.height);
-        double mx = event.getMouseX();
-        double my = event.getMouseY();
-        String page = null;
-        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) page = "overview";
-        else if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) page = "map";
-        else if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) page = "skills";
+        String page = pageAt(screen.width, screen.height, event.getMouseX(), event.getMouseY());
         if (page == null) return;
         request(page);
         event.setCanceled(true);
@@ -73,6 +67,24 @@ public final class RealmCodexClient {
         customButton(g, p.x() + 7, p.y() + 24, 96, 19, "인물·소속", inside(mx, my, p.x() + 7, p.y() + 24, 96, 19));
         customButton(g, p.x() + 7, p.y() + 46, 46, 19, "지도 M", inside(mx, my, p.x() + 7, p.y() + 46, 46, 19));
         customButton(g, p.x() + 57, p.y() + 46, 46, 19, "기술", inside(mx, my, p.x() + 57, p.y() + 46, 46, 19));
+    }
+
+    static String pageAt(int screenWidth, int screenHeight, double mx, double my) {
+        Panel p = panel(screenWidth, screenHeight);
+        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) return "overview";
+        if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) return "map";
+        if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) return "skills";
+        return null;
+    }
+
+    static boolean directPanelHitTestForTest() {
+        Panel desktop = panel(854, 480);
+        Panel compact = panel(320, 240);
+        return "overview".equals(pageAt(854, 480, desktop.x() + 55, desktop.y() + 33))
+                && "map".equals(pageAt(854, 480, desktop.x() + 30, desktop.y() + 55))
+                && "skills".equals(pageAt(854, 480, desktop.x() + 80, desktop.y() + 55))
+                && pageAt(854, 480, desktop.x() + 1, desktop.y() + 1) == null
+                && "overview".equals(pageAt(320, 240, compact.x() + 55, compact.y() + 33));
     }
 
     private static void customButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, boolean hover) {
