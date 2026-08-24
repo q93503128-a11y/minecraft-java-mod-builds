@@ -30,133 +30,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bootstrap Alpha.51 retaining terrace
-        id: bootstrap
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          (
-            set -euo pipefail
-            if test -f projects/frontier-settlement/tools/test_alpha51_source.py && test -f projects/frontier-settlement/tools/test_alpha51_docs.py; then
-              exit 0
-            fi
-            if ! test -f .github/workflows/frontier-alpha51-apply.yml; then
-              exit 0
-            fi
-            if ! grep -q '^mod_version=0.1.0-alpha.51$' projects/frontier-settlement/gradle.properties; then
-              exit 0
-            fi
-            echo 'ALPHA51_BOOTSTRAP=1' >> "$GITHUB_ENV"
-            python3 - <<'PY'
-          from pathlib import Path
-          import shutil
-
-          apply_path = Path('.github/workflows/frontier-alpha51-apply.yml')
-          workflow = apply_path.read_text(encoding='utf-8')
-          marker = "          python3 - <<'PY'\n"
-          start = workflow.index(marker) + len(marker)
-          end = workflow.index("\n          PY\n", start)
-          raw = workflow[start:end].splitlines()
-          normalized = []
-          in_triple = False
-          for line in raw:
-              current = line if in_triple else (line[10:] if line.startswith('          ') else line)
-              normalized.append(current)
-              if line.count("'''") % 2 == 1:
-                  in_triple = not in_triple
-          code = '\n'.join(normalized)
-
-          strict = '''def replace_once(path, old, new):\n    text = read(path)\n    count = text.count(old)\n    if count != 1:\n        raise SystemExit(f'{path}: expected exactly one occurrence, found {count}: {old[:120]!r}')\n    write(path, text.replace(old, new, 1))'''
-          tolerant = '''def replace_once(path, old, new):\n    text = read(path)\n    count = text.count(old)\n    if count == 1:\n        write(path, text.replace(old, new, 1))\n        return\n    if count == 0 and new in text:\n        return\n    raise SystemExit(f'{path}: expected old once or new already present, found old={count}: {old[:120]!r}')'''
-          if strict not in code:
-              raise SystemExit('Alpha.51 applicator replace_once definition changed unexpectedly')
-          code = code.replace(strict, tolerant, 1)
-          code = code.replace('현장 earthBank 우선 · 부족분 실제 흙 운반 · 가상 토사 0',
-                              '현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0')
-          code = code.replace("'\"창고 조약돌 \"'", "'창고 조약돌 '")
-          namespace = {'__name__': '__main__', '__file__': str(apply_path)}
-          exec(compile(code, str(apply_path) + '::<embedded>', 'exec'), namespace, namespace)
-
-          source_audit = Path('projects/frontier-settlement/tools/test_alpha51_source.py')
-          source = source_audit.read_text(encoding='utf-8')
-          anchor = "building_type = text(JAVA / 'settlement/BuildingType.java')\n"
-          if 'actual_families = [' not in source:
-              exact = """enum_block = building_type.split('public enum BuildingType {', 1)[1].split(';', 1)[0]
-          actual_families = [line.strip().split('(', 1)[0] for line in enum_block.splitlines() if '(' in line]
-          expected_families = ['HOUSE', 'LUMBER_CAMP', 'FARM', 'QUARRY', 'MINE', 'WAREHOUSE',
-                               'CONSTRUCTION_OFFICE', 'BLACKSMITH', 'WORKSHOP', 'ADVANCED_WORKSHOP',
-                               'GUARD_POST', 'WATCHTOWER', 'BARRACKS', 'MARKET', 'CART_STATION']
-          if actual_families != expected_families:
-              raise SystemExit(f'alpha.51 expected exact 15 functional building families, got: {actual_families}')
-          """
-              if source.count(anchor) != 1:
-                  raise SystemExit('alpha.51 audit building_type anchor mismatch')
-              source = source.replace(anchor, anchor + exact, 1)
-          source = source.replace('if sum(building_type.count(token) for token in (',
-                                  'if False and sum(building_type.count(token) for token in (', 1)
-          source_audit.write_text(source, encoding='utf-8')
-
-          canonical = Path('projects/frontier-settlement/CANONICAL_PLAN.md')
-          plan = canonical.read_text(encoding='utf-8')
-          exact_logistics = 'there is still only one authority for long-distance outpost transport'
-          if exact_logistics not in plan:
-              anchor_line = 'Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. **There is still only one authority for long-distance outpost transport.**'
-              if plan.count(anchor_line) != 1:
-                  raise SystemExit('alpha.51 canonical logistics authority anchor mismatch')
-              plan = plan.replace(anchor_line,
-                                  anchor_line + '\n\nThe invariant remains: **there is still only one authority for long-distance outpost transport**.',
-                                  1)
-              canonical.write_text(plan, encoding='utf-8')
-          PY
-
-            # The embedded applicator intentionally rewrites/deletes workflow helpers; Actions cannot push
-            # workflow-file changes with its token, so keep those out of the product commit.
-            git checkout -- .github/workflows
-            python3 projects/frontier-settlement/tools/test_alpha51_source.py
-            python3 projects/frontier-settlement/tools/test_alpha51_docs.py
-            git diff --check
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -A projects/frontier-settlement
-            git diff --cached --check
-            git commit -m 'Finalize Frontier alpha.51 retaining-heavy terraces'
-            pushed=0
-            for attempt in 1 2 3 4 5 6; do
-              if git pull --rebase origin main && git push origin HEAD:main; then
-                pushed=1
-                break
-              fi
-              git rebase --abort >/dev/null 2>&1 || true
-              sleep $((attempt * 2))
-            done
-            test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha51-bootstrap.log
-
-      - name: Record Alpha.51 bootstrap failure
-        if: steps.bootstrap.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git reset --hard "$GITHUB_SHA"
-          mkdir -p ci-results/frontier-alpha51-bootstrap
-          cp /tmp/frontier-alpha51-bootstrap.log ci-results/frontier-alpha51-bootstrap/latest.log
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci-results/frontier-alpha51-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.51 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
-          for attempt in 1 2 3 4 5 6; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
-            git rebase --abort >/dev/null 2>&1 || true
-            sleep $((attempt * 2))
-          done
-          exit 1
-
-      - name: Stop bootstrap source run after finalization push
-        if: env.ALPHA51_BOOTSTRAP == '1' && steps.bootstrap.outcome == 'success'
-        shell: bash
-        run: exit 1
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -228,7 +101,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always() && env.ALPHA51_BOOTSTRAP != '1'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -241,7 +114,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always() && env.ALPHA51_BOOTSTRAP != '1'
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -269,7 +142,7 @@ jobs:
             if test -f "$GITHUB_WORKSPACE/$file"; then cp "$GITHUB_WORKSPACE/$file" "/tmp/frontier-settlement-result/latest-${file#frontier-settlement-}"; fi
           done
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+users.noreply.github.com'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           recorded=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
