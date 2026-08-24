@@ -1,0 +1,226 @@
+name: Apply Survival Ascension 0.50
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-survival-050.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply 0.50 regional logistics scale
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          ROOT = Path('projects/survival-ascension')
+
+          def read(rel):
+              return (ROOT / rel).read_text(encoding='utf-8')
+
+          def write(rel, text):
+              (ROOT / rel).write_text(text, encoding='utf-8')
+
+          def replace(rel, old, new, count=-1):
+              text = read(rel)
+              if old not in text:
+                  raise SystemExit(f'missing replacement marker in {rel}: {old[:120]!r}')
+              text = text.replace(old, new, count)
+              write(rel, text)
+
+          # Version + core banner.
+          replace('gradle.properties', 'mod_version=0.49.0-alpha.1', 'mod_version=0.50.0-alpha.1')
+          replace('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java',
+                  'public static final String VERSION = "0.49.0-alpha.1";',
+                  'public static final String VERSION = "0.50.0-alpha.1";')
+          main = read('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java')
+          main = re.sub(r'    // 0\.[0-9]+:.*\n',
+                        '    // 0.50: regional logistics scale expands physical depot/outpost capacity 3 -> 6 -> 9 with infrastructure progression.\n',
+                        main, count=1)
+          main = main.replace('scaled mastery + frontline local supply + tagged major targets',
+                              'scaled mastery + regional 3/6/9 logistics + frontline local supply + tagged major targets')
+          write('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java', main)
+
+          # Field depot storage schema stays field_depots_v1; absolute safe storage cap becomes 9.
+          replace('src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java',
+                  '    public static final int MAX_DEPOTS_PER_PLAYER = 3;',
+                  '    public static final int BASE_DEPOTS_PER_PLAYER = 3;\n'
+                  '    public static final int CIVIL_DEPOTS_PER_PLAYER = 6;\n'
+                  '    public static final int MAX_DEPOTS_PER_PLAYER = 9;')
+          replace('src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java',
+                  '    public AddResult add(ServerPlayer player, String dimension, BlockPos pos) {',
+                  '    public AddResult add(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed) {')
+          replace('src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java',
+                  '        List<DepotEntry> own = state(player);\n        for (DepotEntry depot : own)',
+                  '        List<DepotEntry> own = state(player);\n'
+                  '        int limit = Math.max(0, Math.min(MAX_DEPOTS_PER_PLAYER, maxAllowed));\n'
+                  '        for (DepotEntry depot : own)')
+          replace('src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java',
+                  '        if (own.size() >= MAX_DEPOTS_PER_PLAYER) return AddResult.LIMIT_REACHED;',
+                  '        if (own.size() >= limit) return AddResult.LIMIT_REACHED;')
+
+          # Outpost storage schema stays outpost_v1; runtime cap follows current infrastructure.
+          replace('src/main/java/kr/moonseungjun/survivalascension/production/OutpostData.java',
+                  '    public boolean upgrade(ServerPlayer player, String dimension, BlockPos pos) {\n'
+                  '        if (isOutpost(player, dimension, pos) || state(player).size() >= MAX_OUTPOSTS_PER_PLAYER) return false;',
+                  '    public boolean upgrade(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed) {\n'
+                  '        if (isOutpost(player, dimension, pos)) return false;\n'
+                  '        int limit = Math.max(0, Math.min(MAX_OUTPOSTS_PER_PLAYER, maxAllowed));\n'
+                  '        if (state(player).size() >= limit) return false;')
+
+          # Dynamic 3 -> 6 -> 9 registration limit.
+          field_rel = 'src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java'
+          field = read(field_rel)
+          marker = '    private FieldDepotService() {}\n'
+          if marker not in field:
+              raise SystemExit('FieldDepotService constructor marker missing')
+          addition = '''    private FieldDepotService() {}\n\n    public static int registrationLimit(ServerPlayer player) {\n        InfrastructureData infrastructure = InfrastructureData.get(player);\n        if (infrastructure.isComplete(InfrastructureProject.ASCENSION_NEXUS)) return FieldDepotData.MAX_DEPOTS_PER_PLAYER;\n        if (infrastructure.isComplete(InfrastructureProject.CIVIL_WORKS)) return FieldDepotData.CIVIL_DEPOTS_PER_PLAYER;\n        return FieldDepotData.BASE_DEPOTS_PER_PLAYER;\n    }\n\n    private static String nextRegistrationUnlock(int currentLimit) {\n        if (currentLimit < FieldDepotData.CIVIL_DEPOTS_PER_PLAYER) return "토목 공사소 완공 시 6개";\n        if (currentLimit < FieldDepotData.MAX_DEPOTS_PER_PLAYER) return "승천 중추 완공 시 9개";\n        return "최종 지역 물류 한도 9개";\n    }\n'''
+          field = field.replace(marker, addition, 1)
+          old_limit = '''        if (depots.count(player) >= FieldDepotData.MAX_DEPOTS_PER_PLAYER) {\n            player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 가능한 거점은 플레이어당 최대 §e"\n                    + FieldDepotData.MAX_DEPOTS_PER_PLAYER + "개§f입니다."));\n            return;\n        }\n'''
+          new_limit = '''        int depotLimit = registrationLimit(player);\n        if (depots.count(player) >= depotLimit) {\n            player.sendSystemMessage(Component.literal("§3[현장 물류] §f현재 인프라의 거점 한도는 §e" + depotLimit\n                    + "개§f입니다. §7" + nextRegistrationUnlock(depotLimit)));\n            return;\n        }\n'''
+          if old_limit not in field:
+              raise SystemExit('FieldDepotService cap block missing')
+          field = field.replace(old_limit, new_limit, 1)
+          field = field.replace('FieldDepotData.AddResult result = depots.add(player, dimension, barrel);',
+                                'FieldDepotData.AddResult result = depots.add(player, dimension, barrel, depotLimit);')
+          old_status = '''        int activeDepots = activeDepotCount(player);\n        int activeBarrels = activeStorageBarrelCount(player);\n        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER\n                + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels\n                + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));\n'''
+          new_status = '''        int activeDepots = activeDepotCount(player);\n        int activeBarrels = activeStorageBarrelCount(player);\n        int depotLimit = registrationLimit(player);\n        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + depotLimit\n                + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels\n                + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));\n        player.sendSystemMessage(Component.literal("  §7- 지역 한도: 산업 3 · 토목 6 · 승천 중추 9 §7· " + nextRegistrationUnlock(depotLimit)));\n'''
+          if old_status not in field:
+              raise SystemExit('FieldDepotService status block missing')
+          field = field.replace(old_status, new_status, 1)
+          write(field_rel, field)
+
+          # Outpost promotion observes the same dynamic cap before materials are spent.
+          out_rel = 'src/main/java/kr/moonseungjun/survivalascension/production/OutpostService.java'
+          outpost = read(out_rel)
+          existing_marker = '''        if (outposts.isOutpost(player, dimension, anchor)) {\n            player.sendSystemMessage(Component.literal("§2[전초기지] §f이 물류 거점은 이미 전초기지로 승격되어 있습니다."));\n            sendStatus(player);\n            return;\n        }\n\n        StructureCheck check = inspectStructure(player, level, anchor);\n'''
+          replacement = '''        if (outposts.isOutpost(player, dimension, anchor)) {\n            player.sendSystemMessage(Component.literal("§2[전초기지] §f이 물류 거점은 이미 전초기지로 승격되어 있습니다."));\n            sendStatus(player);\n            return;\n        }\n        int outpostLimit = FieldDepotService.registrationLimit(player);\n        if (outposts.count(player) >= outpostLimit) {\n            player.sendSystemMessage(Component.literal("§2[전초기지] §f현재 인프라의 전초 한도는 §e" + outpostLimit\n                    + "개§f입니다. §7산업 3 · 토목 6 · 승천 중추 9"));\n            return;\n        }\n\n        StructureCheck check = inspectStructure(player, level, anchor);\n'''
+          if existing_marker not in outpost:
+              raise SystemExit('OutpostService insertion marker missing')
+          outpost = outpost.replace(existing_marker, replacement, 1)
+          outpost = outpost.replace('if (!outposts.upgrade(player, dimension, anchor)) {',
+                                    'if (!outposts.upgrade(player, dimension, anchor, outpostLimit)) {', 1)
+          old_send = '''        OutpostData data = OutpostData.get(player);\n        int active = activeCount(player);\n        player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 §e" + data.count(player) + "/" + OutpostData.MAX_OUTPOSTS_PER_PLAYER\n                + " §7· 현재 활성 §a" + active + " §7· 물류 " + EXTENDED_SUPPLY_RADIUS + " / 안전권 " + SAFE_RADIUS));\n'''
+          new_send = '''        OutpostData data = OutpostData.get(player);\n        int active = activeCount(player);\n        int outpostLimit = FieldDepotService.registrationLimit(player);\n        player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 §e" + data.count(player) + "/" + outpostLimit\n                + " §7· 현재 활성 §a" + active + " §7· 물류 " + EXTENDED_SUPPLY_RADIUS + " / 안전권 " + SAFE_RADIUS));\n'''
+          if old_send not in outpost:
+              raise SystemExit('OutpostService status marker missing')
+          outpost = outpost.replace(old_send, new_send, 1)
+          write(out_rel, outpost)
+
+          # Player-facing menus and guide.
+          ui_rel = 'src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java'
+          replace(ui_rel,
+                  '4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 최대3',
+                  '4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 한도3→토목6→중추9')
+
+          guide_rel = 'src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java'
+          guide = read(guide_rel)
+          guide = guide.replace(
+              '산업 가공소 완공 후 마인크래프트 기본 통(Barrel)을 물류 거점으로 등록합니다. 거점 통 하나에 반경6의 실제 통을 최대8개 연결하며, 가상 창고가 아니라 각 통의 실제 인벤토리를 그대로 사용합니다.',
+              '산업 가공소 완공 후 마인크래프트 기본 통(Barrel)을 물류 거점으로 등록합니다. 등록 한도는 산업 단계 3개, 토목 공사소 완공 후 6개, 종말 단계 승천 중추 완공 후 9개로 늘어 9지역 전선을 장기 유지할 수 있습니다. 거점 통 하나에 반경6의 실제 통을 최대8개 연결하며 실제 인벤토리를 그대로 사용합니다.')
+          guide = guide.replace(
+              '산업 가공소 완공 후 4블록 내 기본 통을 거점으로 등록합니다. 거점당 반경6 실제 통 최대8개를 추가 연결할 수 있습니다.',
+              '산업 가공소 완공 후 4블록 내 기본 통을 거점으로 등록합니다. 거점 한도는 3개 → 토목 공사소 6개 → 승천 중추 9개이며, 거점당 반경6 실제 통 최대8개를 추가 연결할 수 있습니다.')
+          write(guide_rel, guide)
+
+          # Content-pack lock only changes Survival release label; external versions stay pinned.
+          lock_rel = 'modpack/content-lock.json'
+          lock = json.loads(read(lock_rel))
+          lock['version'] = '0.50.0-alpha.1-content-preview.1'
+          write(lock_rel, json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+
+          # README / PROJECT current-state docs.
+          readme_rel = 'README.md'
+          readme = read(readme_rel)
+          section = '''\n## 0.50.0-alpha.1 — Regional Logistics Scale / 지역 물류망 확장\nPhysical depot/outpost capacity now grows with infrastructure instead of staying permanently capped at three: Industrial Works = 3, Civil Works = 6, Ascension Nexus = 9. The nine-slot absolute save cap uses the existing `field_depots_v1` and `outpost_v1` data, so no migration or new network protocol is introduced.\n\nThis is a capacity unlock, not automation. Every depot is still a real Barrel, every outpost still needs its physical structure, freight remains a real Chest Minecart on loaded rails, and only nearby/loaded structures become active. The change removes repeated teardown/re-registration as the player expands across the nine expedition regions without creating remote storage or passive maintenance.\n'''
+          if '## 0.50.0-alpha.1' not in readme:
+              idx = readme.find('\n## 0.')
+              if idx < 0: raise SystemExit('README release insertion point missing')
+              readme = readme[:idx] + section + readme[idx:]
+          write(readme_rel, readme)
+
+          project_rel = 'PROJECT.md'
+          project = read(project_rel)
+          project = re.sub(r'- Mod version: `0\.[^`]+`', '- Mod version: `0.50.0-alpha.1`', project, count=1)
+          project_section = '''\n## 0.50 Regional Logistics Scale / 지역 물류망 확장\n- Existing `field_depots_v1` and `outpost_v1` schemas remain; the absolute persisted cap is raised to9 without a data-ID migration.\n- Runtime registration/promotion cap is derived from completed infrastructure: Industrial Works3, Civil Works6, Ascension Nexus9.\n- The higher cap exists to support the already-physical 9-region expedition/freight/frontline loop, not to add remote storage or passive automation.\n- Depot anchors, linked Barrels, outpost physical structures, loaded-only access, same-dimension freight and owner-nearby activation rules are unchanged.\n- Existing worlds with <=3 depots/outposts load identically; higher-cap data is never truncated back to3 after upgrading.\n'''
+          if '## 0.50 Regional Logistics Scale' not in project:
+              idx = project.find('\n## 0.')
+              if idx < 0: raise SystemExit('PROJECT release insertion point missing')
+              project = project[:idx] + project_section + project[idx:]
+          write(project_rel, project)
+
+          # 0.50 release source audit layered on top of the full 0.49 + 0.48 regression contract.
+          src_audit_rel = 'tools/test_release_source.py'
+          audit = read(src_audit_rel)
+          audit = audit.replace('REQUIRED_VERSION = "0.49.0-alpha.1"', 'REQUIRED_VERSION = "0.50.0-alpha.1"')
+          marker = 'if errors:\n    print("RELEASE SOURCE AUDIT FAIL")'
+          checks = '''# 0.50 regional logistics scale.\ndepot_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java")\ndepot_service = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")\noutpost_data = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostData.java")\noutpost_service = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostService.java")\nguide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")\nneed(depot_data, ["BASE_DEPOTS_PER_PLAYER = 3", "CIVIL_DEPOTS_PER_PLAYER = 6", "MAX_DEPOTS_PER_PLAYER = 9", "int maxAllowed", "own.size() >= limit"], "0.50 depot persistence cap")\nneed(depot_service, ["registrationLimit(ServerPlayer player)", "InfrastructureProject.CIVIL_WORKS", "InfrastructureProject.ASCENSION_NEXUS", "depots.add(player, dimension, barrel, depotLimit)", "산업 3 · 토목 6 · 승천 중추 9"], "0.50 dynamic depot limit")\nneed(outpost_data, ["upgrade(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed)", "state(player).size() >= limit"], "0.50 outpost persistence cap")\nneed(outpost_service, ["FieldDepotService.registrationLimit(player)", "outposts.upgrade(player, dimension, anchor, outpostLimit)", "산업 3 · 토목 6 · 승천 중추 9"], "0.50 dynamic outpost limit")\nneed(production_ui, ["한도3→토목6→중추9"], "0.50 logistics UI")\nneed(guide, ["산업 단계 3개, 토목 공사소 완공 후 6개", "승천 중추 완공 후 9개"], "0.50 logistics guide")\nforbid(depot_data + outpost_data, ["field_depots_v2", "outpost_v2"], "0.50 saved-data migration")\n\n'''
+          if '# 0.50 regional logistics scale.' not in audit:
+              if marker not in audit: raise SystemExit('release source audit insertion point missing')
+              audit = audit.replace(marker, checks + marker, 1)
+          audit = audit.replace('print("RELEASE SOURCE AUDIT PASS")',
+                                'print("RELEASE SOURCE AUDIT PASS")\nprint("- 0.50 regional logistics capacity scales 3 -> 6 -> 9 through Industrial/Civil/Nexus while retaining physical-only activation and existing SavedData IDs")', 1)
+          write(src_audit_rel, audit)
+
+          pack_audit_rel = 'tools/test_release_content_pack.py'
+          pack_audit = read(pack_audit_rel)
+          pack_audit = pack_audit.replace('REQUIRED_LOCK_VERSION = "0.49.0-alpha.1-content-preview.1"',
+                                          'REQUIRED_LOCK_VERSION = "0.50.0-alpha.1-content-preview.1"')
+          pack_marker = 'if errors:\n    print("RELEASE CONTENT-PACK AUDIT FAIL")'
+          pack_checks = '''depot_service = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")\nneed(depot_service, ["CIVIL_WORKS", "ASCENSION_NEXUS", "registrationLimit", "산업 3 · 토목 6 · 승천 중추 9"], "0.50 regional logistics content-pack flow")\nneed(ui, ["한도3→토목6→중추9"], "0.50 regional logistics player flow")\n\n'''
+          if '0.50 regional logistics content-pack flow' not in pack_audit:
+              if pack_marker not in pack_audit: raise SystemExit('release content-pack insertion point missing')
+              pack_audit = pack_audit.replace(pack_marker, pack_checks + pack_marker, 1)
+          pack_audit = pack_audit.replace('print("frontline_freight_manifest=PASS")',
+                                          'print("frontline_freight_manifest=PASS")\nprint("regional_logistics_scale=PASS")', 1)
+          write(pack_audit_rel, pack_audit)
+
+          verify_rel = 'tools/verify_release_jar.py'
+          verify = read(verify_rel)
+          runtime = '''\n    depot_data_name = "kr/moonseungjun/survivalascension/production/FieldDepotData.class"\n    depot_service_name = "kr/moonseungjun/survivalascension/production/FieldDepotService.class"\n    outpost_service_name = "kr/moonseungjun/survivalascension/production/OutpostService.class"\n    for name in [depot_data_name, depot_service_name, outpost_service_name]:\n        if name not in zf.namelist():\n            raise SystemExit(f"0.50 regional logistics runtime class missing: {name}")\n    depot_data = zf.read(depot_data_name)\n    depot_service = zf.read(depot_service_name)\n    outpost_service = zf.read(outpost_service_name)\n    for token in [b"BASE_DEPOTS_PER_PLAYER", b"CIVIL_DEPOTS_PER_PLAYER", b"MAX_DEPOTS_PER_PLAYER"]:\n        if token not in depot_data:\n            raise SystemExit(f"0.50 compiled depot-cap token missing: {token!r}")\n    for token in [b"registrationLimit", b"CIVIL_WORKS", b"ASCENSION_NEXUS"]:\n        if token not in depot_service:\n            raise SystemExit(f"0.50 compiled dynamic-limit token missing: {token!r}")\n    if b"registrationLimit" not in outpost_service:\n        raise SystemExit("0.50 compiled outpost limit routing missing")\n'''
+          verify_marker = '\nprint("frontline_freight_manifest_runtime=present")'
+          if 'depot_data_name = "kr/moonseungjun/survivalascension/production/FieldDepotData.class"' not in verify:
+              if verify_marker not in verify: raise SystemExit('release JAR verifier insertion point missing')
+              verify = verify.replace(verify_marker, runtime + verify_marker, 1)
+          verify += '\nprint("regional_logistics_scale_runtime=present")\nprint("regional_logistics_scale_release_verify=PASS")\n'
+          write(verify_rel, verify)
+          PY
+
+          rm .github/workflows/apply-survival-050.yml
+
+          cd projects/survival-ascension
+          chmod +x gradlew
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+          python3 -m py_compile tools/test_release_source.py tools/test_release_content_pack.py tools/verify_release_jar.py tools/build_mrpack.py
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          test -f build/libs/survivalascension-0.50.0-alpha.1.jar
+          python3 tools/verify_release_jar.py build/libs/survivalascension-0.50.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.50.0-alpha.1.jar --output ../../deliverables/Survival-Ascension-0.50.0-alpha.1-content-preview.mrpack
+          cd ../..
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/apply-survival-050.yml
+          git commit -m 'Implement Survival Ascension 0.50 regional logistics scale [skip ci]'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
