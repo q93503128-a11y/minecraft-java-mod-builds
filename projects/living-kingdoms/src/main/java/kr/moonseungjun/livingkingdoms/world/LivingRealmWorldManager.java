@@ -3,6 +3,7 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
+import kr.moonseungjun.livingkingdoms.network.PlacementConfirmedPayload;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
 import net.minecraft.core.BlockPos;
@@ -10,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Map;
 import java.util.Set;
@@ -76,8 +78,10 @@ public final class LivingRealmWorldManager {
             PENDING_RESIDENCE.remove(player.getUUID());
             player.setDeltaMovement(0.0D, 0.0D, 0.0D);
             player.fallDistance = 0.0F;
+            PacketDistributor.sendToPlayer(player, new PlacementConfirmedPayload(
+                    feet.getX(), feet.getY(), feet.getZ()));
             LivingKingdoms.LOGGER.info(
-                    "LK_PLAYER_RESIDENCE_PLACEMENT player={} target={} authored_interior=true synthetic_fallback=false",
+                    "LK_PLAYER_RESIDENCE_PLACEMENT player={} target={} authored_interior=true synthetic_fallback=false placement_confirmed=true",
                     player.getUUID(), feet);
             player.sendSystemMessage(Component.literal(
                     "§6[살아있는 왕국] §f" + residence.displayName() + "에서 에르덴 왕국 시민으로 삶을 시작합니다."
