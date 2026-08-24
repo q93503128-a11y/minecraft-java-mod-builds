@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.43
+## Current version: 0.1.0-alpha.45
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -15,10 +15,11 @@ The current implementation is a broad playable alpha, not the final 1.0 scope. D
 `survival -> settlement growth -> better exploration -> external exploration / conquest -> NPCs / resources / technology -> settlement growth`
 
 - one shared settlement per world/server;
-- server-authoritative resources/buildings/population/roads/outposts;
+- server-authoritative resources/buildings/population/roads/outposts/progression;
 - actual Minecraft ItemStacks remain resource authority;
 - repeated hauling/production/job assignment is automated;
-- players keep exploring, fighting and choosing where the settlement expands.
+- players keep exploring, fighting and choosing where the settlement expands;
+- Alpha.45 lets real exploration/conquest feed settlement growth without turning it into a spendable currency or replacing physical resources.
 
 ## Controls
 
@@ -29,7 +30,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.43 adds no new gameplay key, management dashboard or manual status menu. It exposes more context through the existing HUD, compact side notices and optional Jade tooltips.
+Alpha.43–45 add no new gameplay key or management dashboard. Alpha.43 exposes compact HUD/notices/Jade context, Alpha.44 extends the existing placement/construction workflow to bounded medium terrain, and Alpha.45 records exploration/conquest automatically from play.
 
 ## Functional building families
 
@@ -51,7 +52,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization, Alpha.41 added dangerous-region military specialization, Alpha.42 added bounded unloaded-work catch-up, and Alpha.43 adds compact status/Jade presentation without inventing a 16th building. Medium terrain works, exploration-progression bridges, Xaero marker synchronization and broader presentation remain unfinished.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is inside that range, but this is not scope completion: Alpha.40 added coast/river fishing-trade specialization, Alpha.41 dangerous-region military specialization, Alpha.42 bounded unloaded-work catch-up, Alpha.43 compact status/Jade presentation, Alpha.44 bounded medium-terrain construction, and Alpha.45 exploration/conquest progression without inventing meaningless extra buildings. Large civil engineering, selected-area cut/fill, broader specialized crafting/trade, final soldier presentation and full companion runtime acceptance remain later work.
 
 ## Physical construction
 
@@ -60,7 +61,14 @@ Building approval does not instantly mutate the world or delete the full project
 `approval -> physical grading -> real material hauling -> foundation/frame/walls/roof/finish -> completion`
 
 - builder visits loaded work cells and grades only validated terrain;
+- height span 0–2 uses the established small-terrain grading path;
+- height span 3–4 is explicitly reported as `지형 공사 포함` and remains inside the same construction project authority;
+- terrain span above 4, unsafe fluids/block entities or excessive support/cut requirements are rejected rather than flattening a mountain;
+- medium-terrain cut is bounded to natural ground and at most three blocks above the project grade plane;
 - shallow support uses coarse dirt rather than free recoverable economic material;
+- exposed edge foundation with two-or-more-block support depth uses a visible cobblestone retaining/foundation column;
+- retaining cobblestone is never free: the builder physically fetches real settlement stone, stages it in the protected site barrel and consumes it before the retaining cell is placed;
+- additional retaining-stone cost is bounded to 96 per project and is included in placement/start resource validation;
 - real wood/stone stacks are extracted from loaded settlement storage in bounded batches;
 - a protected physical site barrel stages materials;
 - tall/large buildings reuse the persisted construction-scaffold system rather than appearing instantly;
@@ -68,7 +76,7 @@ Building approval does not instantly mutate the world or delete the full project
 - no `destroyBlock` / loose-drop construction path;
 - save migration preserves older active projects.
 
-Roads and outposts likewise use physical grading and real hauled resources.
+Roads and outposts likewise use physical grading and real hauled resources. Arbitrary selected-area cut/fill, large ravine works and monumental terraforming are not claimed complete by Alpha.44.
 
 ## Residents, production and road logistics
 
@@ -81,7 +89,8 @@ Roads and outposts likewise use physical grading and real hauled resources.
 - Alpha.27 tagged road logistics remains the **single authority for outpost transport**;
 - Alpha.41 lets that same transporter carry real food/metal from town back to an active dangerous-region outpost;
 - Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority;
-- Alpha.43 derives presentation-only building/outpost/project context from those existing authoritative states. The context payload cannot spend resources, place blocks or become a second settlement ledger.
+- Alpha.43 derives presentation-only building/outpost/project context from those existing authoritative states. The context payload cannot spend resources, place blocks or become a second settlement ledger;
+- Alpha.45 exploration progress is likewise non-spendable shared progression metadata and does not become a second resource ledger.
 
 ## Alpha.31 — external content becomes a Frontier input
 
@@ -133,7 +142,7 @@ The current station is a physical freight depot, not yet a moving wagon entity.
 - optional active-road bridge profile remains save-compatible with older roads;
 - completed road centerlines remain ordinary `RoadSegment` paths, preserving transport compatibility.
 
-This does not claim large ravine bridges, tunnels, retaining walls or arbitrary mountain-road terraforming.
+This does not claim large ravine bridges, tunnels or arbitrary mountain-road terraforming.
 
 ## Alpha.36 — watchtower / loaded threat response
 
@@ -272,10 +281,47 @@ Alpha.43 implements the first stronger status/readability pass directly from the
 - Jade 26.2.2 is compiled through the exact candidate-lock artifact as `compileOnly`; all Jade API references are quarantined under `compat/jade`, so Frontier core code does not gain a Jade runtime/boot dependency;
 - when Jade is installed, looking at blocks inside authoritative Frontier stockpile/building/outpost bounds can show at most the target title and one compact role/status line, with project progress when relevant;
 - when Xaero's Minimap is detected, the Frontier resource HUD shifts down from the default top-left region to reduce overlap with the minimap;
-- Alpha.43 does **not** claim Xaero waypoint/marker synchronization. Xaero has no stable documented public marker API for this target, so no brittle internal-class link or reflection seam is introduced in this alpha;
 - no new key, giant dashboard, per-worker management screen or new gameplay authority is added.
 
 Jade tooltip behavior and actual multi-mod screen overlap remain runtime/visual acceptance items. The companion lock therefore remains `candidate_runtime_lock`.
+
+## Alpha.44 — bounded medium terrain works
+
+Alpha.44 closes the original “medium height difference” gap for ordinary functional building projects without introducing a separate terraforming authority.
+
+- footprint surface span 0–2 keeps the existing small grading path;
+- span 3–4 is accepted with explicit `지형 공사 포함` placement feedback;
+- span above 4 is rejected;
+- natural-ground cut is bounded to three blocks relative to the chosen project grade plane;
+- fill/support remains bounded by the existing three-block support-depth rule;
+- a deep exposed outer-edge foundation requires real retaining stone, with total extra retaining cost capped at 96;
+- the builder uses the same physical shared-storage → carried ItemStack → protected site barrel path before each retaining cell consumes its stone;
+- deep retaining/foundation cells use cobblestone for visible structural support, while ordinary shallow fill stays coarse dirt;
+- project approval does not grant recoverable drops or free cobblestone;
+- `SettlementConstructionService` remains the single authority for building grading and placement;
+- no force-load, teleport, `destroyBlock`, loose-drop excavation or arbitrary mountain deletion.
+
+Alpha.44 does not claim selected-area cut/fill tools, large ravine civil works, tunnels or arbitrary road terraforming.
+
+## Alpha.45 — exploration/conquest feeds settlement progression
+
+Alpha.45 creates the first direct bridge from the locked external adventure stack back into shared settlement growth.
+
+- every 100 server ticks Frontier checks only each online player's **already-loaded current position** for structure pieces;
+- structures are read from the dynamic structure registry, so external structures can participate without hard imports from Dungeons and Taverns, Repurposed Structures or another structure mod;
+- `minecraft`, `frontier_settlement` and `neoforge` structure namespaces are excluded from the external-structure milestone path;
+- a structure counts by **unique structure type**, not by every generated instance, so repeatedly entering copies of the same structure does not farm progression;
+- direct player kills of the Ender Dragon/Wither count as conquest milestones;
+- an external `Mob` with at least 80 maximum health can also count when directly killed by a player, again only once per entity type;
+- discovered external structure types are bounded to 64 and defeated boss/strong-enemy types to 32 in shared settlement SavedData;
+- exploration score is derived and capped at 8: unique external structure type = +1, unique conquest type = +3;
+- this score is **not a resource**: it cannot be spent, traded or converted into ItemStacks;
+- legacy settlement-tier routes remain valid exactly as before. Exploration provides alternative accelerator routes: frontier town can be reached at population7 + 2 outposts + mine + quarry + score2, while domain can be reached at population14 + 3 outposts + mine + two farms + score5;
+- the old non-exploration routes (frontier town population8/2 outposts, domain population16/4 outposts) remain accepted, so existing worlds do not lose progression because their exploration list starts empty;
+- `/frontier status` shows unique external structure types, unique conquest types and the bounded score;
+- no world-wide locate scan, chunk generation, chunk force-load, teleport, loot minting, companion structure mutation or second resource authority is introduced.
+
+This is progression glue, not a claim that Frontier owns the companion dungeon/boss content. Actual companion structure detection and external-boss breadth remain part of the final full-stack real-play acceptance.
 
 ## External content stack
 
@@ -283,16 +329,20 @@ Jade tooltip behavior and actual multi-mod screen overlap remain runtime/visual 
 
 Current candidate stack includes Terralith + Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat + its libraries, Weapons Expanded, Lootr, Sophisticated Backpacks + Core, Jade and Xaero's Minimap.
 
+Alpha.45 can observe already-loaded external structure registry entries without depending on a companion's Java classes. Structure generation and loot remain entirely owned by those companion/worldgen mods.
+
 The lock deliberately remains `candidate_runtime_lock` until the full client/server set is actually launched together. World-generation entries must be installed before creating that test world.
+
+Xaero marker synchronization is still not claimed. Exact compile investigation against locked Xaero's Minimap 26.4.2 confirmed the historical public `WaypointsManager` API is absent; Frontier therefore keeps Alpha.43 HUD collision avoidance rather than adding brittle internal/mixin/reflection waypoint injection.
 
 ## Validation
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–42 source audit plus Alpha.43 compact-context/Jade extension;
+1. the complete established Alpha.23–44 source audit plus Alpha.45 exploration/conquest extension;
 2. Java 25 clean Gradle build, including compilation against the exact locked Jade 26.2.2 API artifact;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, full companion structure detection, external-boss balance, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require final real Minecraft play acceptance.
