@@ -19,7 +19,9 @@ import java.util.Map;
 import java.util.Set;
 
 public final class FieldDepotData extends SavedData {
-    public static final int MAX_DEPOTS_PER_PLAYER = 3;
+    public static final int BASE_DEPOTS_PER_PLAYER = 3;
+    public static final int CIVIL_DEPOTS_PER_PLAYER = 6;
+    public static final int MAX_DEPOTS_PER_PLAYER = 9;
     public static final int MAX_LINKED_BARRELS_PER_DEPOT = 8;
     public static final int MAX_LINK_RADIUS = 6;
 
@@ -173,17 +175,18 @@ public final class FieldDepotData extends SavedData {
         return isRegisteredAnchor(dimension, pos) || isLinkedByAny(dimension, pos);
     }
 
-    public AddResult add(ServerPlayer player, String dimension, BlockPos pos) {
+    public AddResult add(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed) {
         DepotEntry candidate = new DepotEntry(dimension, pos.getX(), pos.getY(), pos.getZ());
         String playerId = player.getUUID().toString();
         List<DepotEntry> own = state(player);
+        int limit = Math.max(0, Math.min(MAX_DEPOTS_PER_PLAYER, maxAllowed));
         for (DepotEntry depot : own) if (depot.key().equals(candidate.key())) return AddResult.ALREADY_OWNED;
         if (isLinkedByAny(dimension, pos)) return AddResult.CLAIMED_BY_OTHER;
         for (Map.Entry<String, List<DepotEntry>> entry : players.entrySet()) {
             if (entry.getKey().equals(playerId)) continue;
             for (DepotEntry depot : entry.getValue()) if (depot.key().equals(candidate.key())) return AddResult.CLAIMED_BY_OTHER;
         }
-        if (own.size() >= MAX_DEPOTS_PER_PLAYER) return AddResult.LIMIT_REACHED;
+        if (own.size() >= limit) return AddResult.LIMIT_REACHED;
         own.add(candidate);
         setDirty();
         return AddResult.ADDED;
