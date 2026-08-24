@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.56`
+현재 구현 기준: `0.1.0-alpha.57`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.55에서 비농사형 탐험 지식이 기존 전초 운영에 실제 효과를 주어도 실물 군사 armory, companion-biome/NPC 특화 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.57에서 본진 병영 실물 외부무기 armament까지 들어가도 원격 군사 무기 보급, rare-NPC breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -34,6 +34,7 @@
 | 외부 재료 태그 수용 | 완료/부분 | additive Frontier + `c:` 태그, full pack 미검증 |
 | 병영 충원 실제 자원 | 완료 | food8 + metal2 |
 | 군사 전초 충원 실제 자원 | 완료/부분 | local food6 + metal2 + reverse supply |
+| 본진 병영 실물 외부무기 armory/loadout | **완료/부분** | Alpha.57 shared storage→soldier physical walk→exact MAINHAND ItemStack; remote sentry weapon supply는 미구현/부분 |
 | 건설/옹벽 실제 자원 | 완료 | real wood/stone haul/stage/consume |
 | 수변 계류장 실제 자원 | 완료/부분 | real outpost wood + same transporter reverse supply |
 | 수변 교역 실제 아이템 | 완료 | dedicated barrel 16 fish→1 emerald, ordinary stockpile 자동판매 없음 |
@@ -289,6 +290,25 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - Alpha.39 first forge relic1+metal4/power30 유지;
 - no hard Weapons Expanded class/item reference.
 
+### Alpha.57 본진 병영 실물 무장 감사
+
+- 새 BuildingType/armory UI/장비 재화/개별 병사 메뉴 없음;
+- loaded town barracks soldier만 1차 대상, remote military sentry는 의도적으로 제외;
+- shared storage 전체 loaded + 실제 recognized external weapon 존재가 전제;
+- idle/unarmed soldier가 nearest concrete weapon storage까지 최대160블록 물리 이동;
+- 3블록 interaction range 도달 뒤 exact external weapon 1개만 실제 extraction;
+- vanilla MAINHAND ItemStack으로 장착되어 damage/enchantment/components + entity save/sync 유지;
+- active barracks threat가 armory trip보다 우선;
+- renderer는 physical MAINHAND가 있으면 실제 무기를 표시하고 없을 때만 Alpha.48 client service sword fallback;
+- death에서 일반 soldier/body drops는 계속 제거하되 실제 장착 external weapon 1개만 recovery drop으로 복원;
+- weapon은 사전에 shared storage에서 제거된 동일 stack이므로 free mint/duplication 아님;
+- no hard Weapons Expanded/Better Combat class dependency, force-load, teleport, second worker/economy/logistics authority 없음;
+- remote weapon supply는 **군사 전초도 같은 도로 운송자가 역방향 보급**할 수 있을 때만 후속 허용;
+- **위험지역 군사 역할이 우선**, `single authority for outpost transport`, `there is still only one authority for long-distance outpost transport` 유지;
+- **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지.
+
+따라서 physical military armory/loadout은 **본진 병영 기준 완료/부분**으로 전진했다. 원격 수비대 무기 ItemStack 역보급은 별도 남은 범위다.
+
 ## 7. 도로 / 전초 / 영토
 
 | 요구사항 | 상태 | 현재 |
@@ -346,8 +366,8 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
-2. long survival + two-player multiplayer acceptance;
+1. long survival + two-player multiplayer acceptance;
+2. remote military external-weapon supply는 기존 road-bound reverse-supply transporter가 실제 ItemStack을 운반할 수 있을 때만; town barracks armory는 Alpha.57 완료/부분;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
@@ -358,9 +378,10 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 11. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/protection acceptance;
 12. Alpha.54 one-bend/corner clearance/portal excavation/physical stone22/save-reload acceptance;
 13. Alpha.56 common-biome-tag borderline specialization + companion installed/absent acceptance;
-14. full companion lock fresh-world client/server runtime;
-15. true Xaero marker는 stable supported API가 생길 때만;
-16. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+14. Alpha.57 shared-storage weapon walk/extract/persistence/render/death-recovery/no-dup acceptance;
+15. full companion lock fresh-world client/server runtime;
+16. true Xaero marker는 stable supported API가 생길 때만;
+17. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 

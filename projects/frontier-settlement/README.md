@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.56
+## Current version: 0.1.0-alpha.57
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.56 key was added.
+No new Alpha.57 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–56 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–57 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,24 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.57 — automated physical barracks armament
+
+Alpha.57 closes the first physical military armory/loadout slice without adding soldier-by-soldier menus or a 16th building.
+
+- only loaded **town barracks** soldiers participate in this first slice; dangerous-region remote sentries remain unchanged until weapons can travel through the existing road transporter authority;
+- an idle barracks soldier with an empty MAINHAND checks real shared settlement storage only when the ordinary storage authority is fully loaded;
+- if a Frontier-recognized external weapon exists, the soldier walks to the **nearest concrete storage container within 160 blocks**; no teleport, force-load, virtual armory inventory or instant remote transfer;
+- after reaching normal 3-block interaction range, the soldier extracts **exactly one real external weapon ItemStack** and equips it in vanilla `EquipmentSlot.MAINHAND`; damage/enchantments/components stay on that exact stack and vanilla Mob equipment persistence/sync owns save/reload/client state;
+- hostile defense has priority over an armament trip, so soldiers do not abandon an active barracks threat to fetch gear;
+- the humanoid renderer shows the real synced MAINHAND weapon when present and keeps Alpha.48's client-only iron service sword only as the un-upgraded fallback;
+- soldier death still clears ordinary body/iron drops, but if a real external weapon was assigned, exactly that one stack is re-added as the sole recoverable military drop. The source stack previously left settlement storage, so this is recovery rather than minting;
+- `/frontier status` adds only the loaded physically armed garrison count; no new screen/key/manual assignment list;
+- `SettlementExternalContentService.isExternalWeapon` remains the soft registry recognizer, so no Weapons Expanded Java class or Better Combat class becomes a hard dependency;
+- remote sentry weapon supply is **not** faked. When/if implemented, **군사 전초도 같은 도로 운송자가 역방향 보급** and **위험지역 군사 역할이 우선** must still hold;
+- `Transport workers belong to a specific outpost`, `pause at unloaded route boundaries`, Alpha.27 remains the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport**.
+
+This is automated physical loadout rather than per-soldier micromanagement: players only put useful weapons into the same shared storage they already use.
 
 ## Alpha.56 — soft biome-aware outpost specialization
 

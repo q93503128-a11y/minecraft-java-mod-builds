@@ -7,8 +7,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.animal.golem.IronGolem;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
@@ -32,7 +34,7 @@ public final class SettlementBarracksService {
     private static final int RECRUIT_INTERVAL_TICKS = 600;
     private static final int PATROL_RADIUS = 24;
     private static final double THREAT_RADIUS = 28.0D;
-    private static final double SOLDIER_SEARCH_RADIUS = 40.0D;
+    private static final double SOLDIER_SEARCH_RADIUS = 176.0D;
     private static final double HOME_RADIUS_SQR = 12.0D * 12.0D;
     private static final double PATROL_LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;
 
@@ -63,7 +65,7 @@ public final class SettlementBarracksService {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
                 FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
-                if (soldier != null) patrol(level, barracks, slot, soldier);
+                if (soldier != null) patrol(level, data, barracks, slot, soldier);
             }
         }
     }
@@ -82,6 +84,18 @@ public final class SettlementBarracksService {
             }
         }
         return counted.size();
+    }
+
+    public static int loadedArmedSoldierCount(ServerLevel level, SettlementData data) {
+        int count = 0;
+        for (BuildingRecord barracks : barracks(data)) {
+            if (!patrolAreaLoaded(level, barracks)) continue;
+            for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
+                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
+                if (soldier != null && SettlementExternalContentService.isExternalWeapon(soldier.getMainHandItem())) count++;
+            }
+        }
+        return count;
     }
 
     public static boolean militaryStateLoaded(ServerLevel level, SettlementData data) {
@@ -115,22 +129,31 @@ public final class SettlementBarracksService {
         return true;
     }
 
-    /** Supplied soldiers are combat/service units and never an item/iron farm. */
+    /** Supplied soldiers never become an iron/body-drop farm; one physically assigned weapon is recoverable. */
     public static void onLivingDrops(LivingDropsEvent event) {
-        if (event.getEntity().entityTags().contains(SOLDIER_TAG)) event.getDrops().clear();
+        if (!event.getEntity().entityTags().contains(SOLDIER_TAG)) return;
+        ItemStack weapon = event.getEntity().getMainHandItem();
+        event.getDrops().clear();
+        if (!SettlementExternalContentService.isExternalWeapon(weapon)) return;
+        ItemStack recovered = weapon.copy();
+        event.getDrops().add(new ItemEntity(
+                event.getEntity().level(), event.getEntity().getX(), event.getEntity().getY(), event.getEntity().getZ(), recovered));
     }
 
-    private static void patrol(ServerLevel level, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier) {
+    private static void patrol(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier) {
         BlockPos home = soldierHome(barracks, slot);
-        double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
-        if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
-            if (soldier.getTarget() != null) soldier.setTarget(null);
-            soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.95D);
-            return;
-        }
         Monster threat = nearestThreat(level, barracks.workCenter());
         if (threat != null) { soldier.setTarget(threat); return; }
         if (soldier.getTarget() != null) soldier.setTarget(null);
+
+        // Defense always wins. Only an idle, loaded garrison walks to real shared storage for one real weapon.
+        if (SettlementMilitaryArmoryService.tickArmament(level, data, soldier)) return;
+
+        double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
+        if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
+            soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.95D);
+            return;
+        }
         if (homeDistance > HOME_RADIUS_SQR) {
             soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.9D);
         }

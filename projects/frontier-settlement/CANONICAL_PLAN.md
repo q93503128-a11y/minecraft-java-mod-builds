@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.56**.
+Current canonical implementation: **0.1.0-alpha.57**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–56 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–57 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -342,6 +342,23 @@ Alpha.55 extends Alpha.45 without creating a second progression or reward author
 - no free loot, population, abstract survey currency, new UI tree, second economy or second transport authority;
 - **builder walks from actual settlement storage carrying real wood/stone stacks** remains true;
 - **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and Alpha.27 is the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
+### Alpha.57 automated physical barracks armory
+
+Alpha.57 deliberately uses the existing barracks + shared-storage authorities. It does not create a new armory BuildingType, equipment currency, soldier-management UI or remote logistics path.
+
+- loaded town barracks soldiers only in the first slice;
+- no active barracks threat -> unarmed soldier may seek equipment; defense always has priority;
+- shared settlement storage must be fully loaded and must physically contain a recognized external weapon;
+- soldier itself walks to the nearest concrete weapon-containing storage within160 blocks and only extracts at <=3-block interaction range;
+- extraction count is exactly1; no copy/mint/free fallback server ItemStack;
+- actual weapon becomes the soldier's vanilla MAINHAND equipment, preserving the original ItemStack components/damage/enchantments through vanilla entity persistence/sync;
+- client renderer shows that synced physical weapon; Alpha.48 service sword remains only the client fallback when no physical upgrade exists;
+- barracks death drops are still cleared except the exact assigned external weapon, which is re-added once for recovery;
+- loaded armed count is compact status only;
+- remote military sentries remain generic until actual weapon cargo can reuse the same road-bound transporter. **군사 전초도 같은 도로 운송자가 역방향 보급** remains the only acceptable remote extension;
+- no hard Weapons Expanded/Better Combat class dependency, force-load, teleport, new worker or second logistics authority;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, Alpha.27 stays the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport**.
 
 ### Alpha.56 common-biome-tag outpost specialization
 
@@ -599,7 +616,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.56
+## 14. Current playable slice after Alpha.57
 
 Current implemented slice includes:
 
@@ -619,16 +636,17 @@ Current implemented slice includes:
 - unique external structure/conquest progression bridge;
 - market, repair, first advanced forge and DOMAIN reforge;
 - supplied humanoid military presentation with unchanged physical recruitment economics;
+- Alpha.57 loaded town-garrison physical external-weapon armament from shared storage, with exact weapon recovery;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.56
+## 15. Unfinished original-scope priorities after Alpha.57
 
 Unless real-play regression overrides them:
 
-1. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
-2. long survival + two-player multiplayer acceptance;
+1. long survival + two-player multiplayer acceptance;
+2. remote military external-weapon supply only if the actual weapon ItemStack can ride the existing road-bound reverse-supply transporter; town barracks physical armament is covered by Alpha.57;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
@@ -640,9 +658,10 @@ Unless real-play regression overrides them:
 12. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/player-protection acceptance;
 13. Alpha.54 one-bend detection/corner clearance/portal excavation/22-stone physical portal/save-reload acceptance;
 14. Alpha.56 common-biome-tag borderline specialization / companion-installed-and-absent acceptance;
-15. full companion lock fresh-world client/server runtime;
-16. true Xaero markers only if a stable supported API appears;
-17. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+15. Alpha.57 weapon storage→soldier walk/extract/save-reload/render/death-recovery/no-dup acceptance;
+16. full companion lock fresh-world client/server runtime;
+17. true Xaero markers only if a stable supported API appears;
+18. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 
