@@ -23,24 +23,11 @@ repositories {
         }
         filter { includeGroup 'maven.modrinth' }
     }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'XaeroOfficial'
-                url = 'https://chocolateminecraft.com/maven'
-            }
-        }
-        filter {
-            includeGroup 'xaero.minimap'
-            includeGroup 'xaero.lib'
-        }
-    }
 }
 
 dependencies {
-    // Compile against exact candidate-lock companion APIs without making either mod a Frontier runtime dependency.
+    // Compile against the exact candidate-lock Jade API without making Jade a Frontier runtime dependency.
     compileOnly "maven.modrinth:nvQzSEkH:${project.jade_version_id}"
-    compileOnly "xaero.minimap:xaerominimap-neoforge-${project.minecraft_version}:${project.xaero_minimap_version}"
 }
 
 neoForge {

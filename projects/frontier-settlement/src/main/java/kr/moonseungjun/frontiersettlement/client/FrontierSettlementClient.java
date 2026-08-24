@@ -1,12 +1,10 @@
 package kr.moonseungjun.frontiersettlement.client;
 
 import kr.moonseungjun.frontiersettlement.FrontierSettlement;
-import kr.moonseungjun.frontiersettlement.compat.xaero.FrontierXaeroWaypoints;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -33,9 +31,6 @@ public final class FrontierSettlementClient {
         NeoForge.EVENT_BUS.addListener(RoadGhostRenderer::submit);
         NeoForge.EVENT_BUS.addListener(OutpostGhostRenderer::extract);
         NeoForge.EVENT_BUS.addListener(OutpostGhostRenderer::submit);
-        if (ModList.get().isLoaded("xaerominimap")) {
-            NeoForge.EVENT_BUS.addListener(FrontierXaeroWaypoints::tick);
-        }
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {

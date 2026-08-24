@@ -22,79 +22,72 @@ def forbid(source, tokens, label):
             raise SystemExit(f'{label}: {token}')
 
 
-# Preserve every Alpha.23-43 contract. Alpha.44 only advances version and adds the safe Xaero marker seam.
+# Preserve every Alpha.23-43 invariant, then extend the same physical construction authority for medium terrain.
 alpha43_source = text(ALPHA43)
 alpha43_source = alpha43_source.replace("print('Frontier Settlement alpha.43 source audit: PASS')", 'pass')
 alpha43_source = alpha43_source.replace('0.1.0-alpha.43', '0.1.0-alpha.44')
 namespace = {'__file__': str(ALPHA43), '__name__': '__main__'}
 exec(compile(alpha43_source, str(ALPHA43), 'exec'), namespace, namespace)
 
-xaero_path = JAVA / 'compat/xaero/FrontierXaeroWaypoints.java'
-if not xaero_path.is_file():
-    raise SystemExit('alpha.44 missing Xaero custom-waypoint compat seam')
-xaero = text(xaero_path)
-must(xaero, (
-    'private static final String MOD_KEY = "frontier_settlement"',
-    'WaypointsManager.getCustomWaypoints(MOD_KEY)',
-    'customWaypoints.clear()',
-    '"stockpile".equals(target.kind())',
-    '"outpost".equals(target.kind())',
-    'String name = settlement ? "개척마을" : target.title()',
-    'String symbol = settlement ? "M" : "O"',
-    'new Waypoint(',
-    'WaypointColor.GRAY',
-    'catch (LinkageError error)',
-    'disabled = true',
-    'Xaero 마커 연동 비활성 · 버전 확인 필요',
-    'clearOwnedWaypoints()',
-    'RESYNC_TICKS = 20',
-), 'alpha.44 bounded Xaero settlement/outpost markers')
-forbid(xaero, (
-    'BuiltInHudModules', 'currentSession', 'worldManager', 'getWaypointSet(',
-    'Mixin', 'org.spongepowered.asm.mixin', 'Class.forName(', 'java.lang.reflect',
-    'setBlock(', 'ItemStack', 'Container', 'teleportTo(', 'setChunkForced', 'forceChunk',
-), 'alpha.44 Xaero seam must avoid internal/mixin/gameplay authority')
+construction = text(JAVA / 'settlement/SettlementConstructionService.java')
+must(construction, (
+    'SMALL_TERRAIN_SPAN = 2',
+    'MAX_TERRAIN_WORK_SPAN = 4',
+    'MAX_TERRAIN_CUT_HEIGHT = 3',
+    'MAX_TERRAIN_RETAINING_STONE = 96',
+    'boolean terrainWork, int terrainStoneCost',
+    'private record Site(BlockPos origin, int terrainSpan, int terrainStoneCost)',
+    'private record GradeCell(BlockPos floor, boolean foundation, int retainingStone)',
+    'terrainSpan > MAX_TERRAIN_WORK_SPAN',
+    '지형 공사 포함',
+    '옹벽/기초 추가 석재',
+    'long requiredStone = type.stoneCost() + check.terrainStoneCost()',
+    'createGradePlan(level, construction, type)',
+    'fillDepthToSupport(level, floor)',
+    'edge && fillDepth >= 2 ? fillDepth : 0',
+    'stageTerrainStone(server, data, builder, crate, supply, cell.retainingStone())',
+    'SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone)',
+    'SettlementStorageService.extract(level, source, SettlementInventory::isStone, amount)',
+    'SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)',
+    'Blocks.COBBLESTONE.defaultBlockState()',
+    'Blocks.COARSE_DIRT.defaultBlockState()',
+    'int minFoundationY = construction.originY() - 1 - MAX_GRADE_FILL_DEPTH',
+    'relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state)',
+), 'alpha.44 bounded medium terrain construction')
+forbid(construction, (
+    'destroyBlock(', 'dropResources(', 'setChunkForced', 'forceChunk', 'teleportTo(',
+    'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost()',
+), 'alpha.44 terrain work must stay physical/bounded')
 
-# Do not turn every building or road point into map clutter.
-if '"building".equals(target.kind())' in xaero or '"construction".equals(target.kind())' in xaero:
-    raise SystemExit('alpha.44 Xaero marker scope expanded beyond settlement/outpost location awareness')
-if 'RoadSegment' in xaero or 'road.points' in xaero or 'waypoints()' in xaero:
-    raise SystemExit('alpha.44 Xaero marker seam must not mirror road centerline points')
+# Cobblestone retaining/foundation blocks must never be free: every retaining cell stages and consumes real stone first.
+consume_pos = construction.find('SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)')
+apply_pos = construction.find('applyGradeCell(level, construction, type, cell)')
+if consume_pos < 0 or apply_pos < 0 or consume_pos > apply_pos:
+    raise SystemExit('alpha.44 retaining stone is not consumed before physical grade placement')
 
+# The failed historical Xaero custom-waypoint probe is intentionally removed. Keep only Alpha.43 layout collision avoidance.
+xaero_compat = JAVA / 'compat/xaero/FrontierXaeroWaypoints.java'
+if xaero_compat.exists():
+    raise SystemExit('alpha.44 brittle Xaero compat probe must be removed after 26.4.2 API rejection')
 client = text(JAVA / 'client/FrontierSettlementClient.java')
-must(client, (
-    'ModList.get().isLoaded("xaerominimap")',
-    'NeoForge.EVENT_BUS.addListener(FrontierXaeroWaypoints::tick)',
-), 'alpha.44 optional client registration')
-
 build = text(ROOT / 'build.gradle')
+forbid(client, ('FrontierXaeroWaypoints', 'import xaero.'), 'alpha.44 no direct Xaero runtime link')
+forbid(build, ('chocolateminecraft.com', 'xaero.minimap:', "includeGroup 'xaero.lib'"),
+       'alpha.44 Xaero compile probe must not remain in the runtime build')
+
 props = text(ROOT / 'gradle.properties')
 lock = text(ROOT / 'COMPANION_LOCK.json')
-must(build, (
-    "url = 'https://chocolateminecraft.com/maven'",
-    "includeGroup 'xaero.minimap'",
-    "includeGroup 'xaero.lib'",
-    'compileOnly "xaero.minimap:xaerominimap-neoforge-${project.minecraft_version}:${project.xaero_minimap_version}"',
-), 'alpha.44 official Xaero compile seam')
 must(props, (
-    'xaero_minimap_version=26.4.2',
+    'jade_version_id=HLYMycSr',
     'mod_version=0.1.0-alpha.44',
-), 'alpha.44 locked Xaero/version properties')
+    'bounded medium-terrain work using real retaining stone',
+), 'alpha.44 build properties')
+forbid(props, ('xaero_minimap_version=',), 'alpha.44 removed Xaero compile probe property')
 must(lock, (
     '"frontier_settlement": "0.1.0-alpha.44"',
-    '"version_id":"IqOn6XCo"',
+    '"id":"xaeros_minimap"',
     '"version":"26.4.2"',
     '"status": "candidate_runtime_lock"',
-), 'alpha.44 companion lock')
-if 'implementation "xaero.minimap:' in build:
-    raise SystemExit('alpha.44 Xaero must not become a runtime implementation dependency')
-
-# All direct Xaero classes stay quarantined under compat/xaero. Core/client may only use the mod-id string and compat class.
-for path in JAVA.rglob('*.java'):
-    if 'compat/xaero' in path.as_posix():
-        continue
-    source = text(path)
-    if 'import xaero.' in source or 'xaero.common.' in source or 'xaero.hud.' in source:
-        raise SystemExit(f'alpha.44 hard Xaero reference outside compat seam: {path.relative_to(ROOT)}')
+), 'alpha.44 companion candidate remains locked, not runtime-tested')
 
 print('Frontier Settlement alpha.44 source audit: PASS')

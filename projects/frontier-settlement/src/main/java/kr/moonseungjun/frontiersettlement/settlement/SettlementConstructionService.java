@@ -37,6 +37,10 @@ public final class SettlementConstructionService {
     private static final int GRADE_INTERVAL_TICKS = 8;
     private static final int BUILD_INTERVAL_TICKS = 10;
     private static final int MAX_GRADE_FILL_DEPTH = 3;
+    private static final int SMALL_TERRAIN_SPAN = 2;
+    private static final int MAX_TERRAIN_WORK_SPAN = 4;
+    private static final int MAX_TERRAIN_CUT_HEIGHT = 3;
+    private static final int MAX_TERRAIN_RETAINING_STONE = 96;
     private static final int COMMAND_PLACEMENT_DISTANCE = 10;
     private static final int MAX_MAIN_SETTLEMENT_RADIUS = 72;
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
@@ -45,9 +49,14 @@ public final class SettlementConstructionService {
     private SettlementConstructionService() {}
 
     public record StartResult(boolean started, String message) {}
-    public record PlacementCheck(boolean valid, BlockPos origin, String message) {}
-    private record Site(BlockPos origin) {}
-    private record GradeCell(BlockPos floor, boolean foundation) {}
+    public record PlacementCheck(boolean valid, BlockPos origin, String message,
+                                 boolean terrainWork, int terrainStoneCost) {}
+    private record Site(BlockPos origin, int terrainSpan, int terrainStoneCost) {
+        boolean terrainWork() {
+            return terrainSpan > SMALL_TERRAIN_SPAN || terrainStoneCost > 0;
+        }
+    }
+    private record GradeCell(BlockPos floor, boolean foundation, int retainingStone) {}
     private record ScaffoldPiece(BlockPos pos, BlockState state) {}
     private record ScaffoldTower(BlockPos anchor, List<ScaffoldPiece> pieces, List<BlockPos> steps) {}
 
@@ -86,21 +95,21 @@ public final class SettlementConstructionService {
     public static PlacementCheck checkPlacement(ServerPlayer player, BuildingType type, BlockPos selectedCenter, int rotationId) {
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
-        if (!data.founded()) return new PlacementCheck(false, BlockPos.ZERO, "공동 마을이 없습니다.");
-        if (player.level() != server.overworld()) return new PlacementCheck(false, BlockPos.ZERO, "오버월드에서만 배치할 수 있습니다.");
+        if (!data.founded()) return invalidPlacement("공동 마을이 없습니다.");
+        if (player.level() != server.overworld()) return invalidPlacement("오버월드에서만 배치할 수 있습니다.");
         String locked = lockedReason(data, type);
-        if (locked != null) return new PlacementCheck(false, BlockPos.ZERO, locked);
+        if (locked != null) return invalidPlacement(locked);
 
         long pdx = (long) selectedCenter.getX() - player.blockPosition().getX();
         long pdz = (long) selectedCenter.getZ() - player.blockPosition().getZ();
         if (pdx * pdx + pdz * pdz > (long) MAX_PLAYER_PLACEMENT_DISTANCE * MAX_PLAYER_PLACEMENT_DISTANCE) {
-            return new PlacementCheck(false, BlockPos.ZERO, "건설 위치는 플레이어 24블록 안에서 지정해 주세요.");
+            return invalidPlacement("건설 위치는 플레이어 24블록 안에서 지정해 주세요.");
         }
 
         long dx = (long) selectedCenter.getX() - data.centerPos().getX();
         long dz = (long) selectedCenter.getZ() - data.centerPos().getZ();
         if (dx * dx + dz * dz > (long) MAX_MAIN_SETTLEMENT_RADIUS * MAX_MAIN_SETTLEMENT_RADIUS) {
-            return new PlacementCheck(false, BlockPos.ZERO, "본진 기능 건물은 마을 중심 72블록 안에 배치해 주세요. 먼 지역은 전초기지를 사용합니다.");
+            return invalidPlacement("본진 기능 건물은 마을 중심 72블록 안에 배치해 주세요. 먼 지역은 전초기지를 사용합니다.");
         }
 
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
@@ -111,13 +120,21 @@ public final class SettlementConstructionService {
         ServerLevel level = server.overworld();
         Site site = assessSite(level, originX, originZ, type, rotation);
         if (site == null) {
-            return new PlacementCheck(false, BlockPos.ZERO,
-                    "선택한 부지가 안전하지 않습니다. 높이 차 2블록 이하의 물·나무·기존 건축물이 없는 곳을 선택해 주세요.");
+            return invalidPlacement("선택한 부지가 안전하지 않습니다. 높이 차 4블록 이하·최대 3블록 성토 범위의 물·기존 건축물이 없는 곳을 선택해 주세요.");
         }
         if (overlapsInfrastructure(data, site.origin(), type, rotation)) {
-            return new PlacementCheck(false, BlockPos.ZERO, "선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
+            return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
         }
-        return new PlacementCheck(true, site.origin(), "배치 가능");
+        String message = "배치 가능";
+        if (site.terrainWork()) {
+            message += " · 지형 공사 포함";
+            if (site.terrainStoneCost() > 0) message += " · 옹벽/기초 추가 석재 " + site.terrainStoneCost();
+        }
+        return new PlacementCheck(true, site.origin(), message, site.terrainWork(), site.terrainStoneCost());
+    }
+
+    private static PlacementCheck invalidPlacement(String message) {
+        return new PlacementCheck(false, BlockPos.ZERO, message, false, 0);
     }
 
     public static StartResult startAt(ServerPlayer player, BuildingType type, BlockPos selectedCenter) {
@@ -147,10 +164,12 @@ public final class SettlementConstructionService {
         }
         SettlementService.refreshResources(server, data);
         SettlementResources resources = data.resources();
-        if (resources.wood() < type.woodCost() || resources.stone() < type.stoneCost()) {
+        long requiredStone = type.stoneCost() + check.terrainStoneCost();
+        if (resources.wood() < type.woodCost() || resources.stone() < requiredStone) {
             return new StartResult(false, type.displayName() + " 필요 자원: 목재 " + type.woodCost()
-                    + ", 석재 " + type.stoneCost() + " | 현재 목재 " + resources.wood()
-                    + ", 석재 " + resources.stone());
+                    + ", 석재 " + requiredStone
+                    + (check.terrainStoneCost() > 0 ? " (건물 " + type.stoneCost() + " + 지형 공사 " + check.terrainStoneCost() + ")" : "")
+                    + " | 현재 목재 " + resources.wood() + ", 석재 " + resources.stone());
         }
 
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
@@ -159,8 +178,12 @@ public final class SettlementConstructionService {
         Villager builder = ensureBuilder(level, data.centerPos());
         if (builder != null) builder.setInvulnerable(true);
         SettlementService.broadcast(server, data);
-        return new StartResult(true, type.displayName() + " 착공. 건설 주민이 먼저 부지를 실제로 정리한 뒤 공동 창고에서 실제 자재를 운반해 시공합니다."
-                + " (필요 목재 " + type.woodCost() + ", 석재 " + type.stoneCost() + ")");
+        String terrain = check.terrainWork()
+                ? " 지형 공사 포함: 건설 주민이 절토·성토와 노출 기초 옹벽을 먼저 시공합니다."
+                : "";
+        return new StartResult(true, type.displayName() + " 착공." + terrain
+                + " 건설 주민이 공동 창고에서 실제 자재를 운반해 시공합니다."
+                + " (필요 목재 " + type.woodCost() + ", 석재 " + requiredStone + ")");
     }
 
     public static boolean tick(MinecraftServer server, SettlementData data) {
@@ -226,7 +249,7 @@ public final class SettlementConstructionService {
                                        BuildingType type, Villager builder) {
         ServerLevel level = server.overworld();
         ConstructionState construction = data.construction();
-        List<GradeCell> plan = createGradePlan(construction, type);
+        List<GradeCell> plan = createGradePlan(level, construction, type);
         int gradeStep = construction.gradeStep();
         if (gradeStep >= plan.size()) {
             data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
@@ -238,6 +261,13 @@ public final class SettlementConstructionService {
             builder.getNavigation().stop();
             return false;
         }
+
+        if (cell.retainingStone() > 0) {
+            BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+            Container crate = ensureSupplyCrate(level, supply);
+            if (crate == null) return false;
+            if (!stageTerrainStone(server, data, builder, crate, supply, cell.retainingStone())) return false;
+        }
         if (server.getTickCount() % GRADE_INTERVAL_TICKS != 0) return false;
 
         BlockPos work = gradeWorkPosition(level, cell.floor());
@@ -246,6 +276,13 @@ public final class SettlementConstructionService {
             return false;
         }
 
+        if (cell.retainingStone() > 0) {
+            BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+            Container crate = ensureSupplyCrate(level, supply);
+            if (crate == null || !SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)) return false;
+            SettlementService.refreshResources(server, data);
+            SettlementService.broadcast(server, data);
+        }
         applyGradeCell(level, construction, type, cell);
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
@@ -255,7 +292,7 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    private static List<GradeCell> createGradePlan(ConstructionState construction, BuildingType type) {
+    private static List<GradeCell> createGradePlan(ServerLevel level, ConstructionState construction, BuildingType type) {
         BuildingRotation rotation = construction.buildingRotation();
         int width = rotation.rotatedWidth(type);
         int depth = rotation.rotatedDepth(type);
@@ -263,7 +300,11 @@ public final class SettlementConstructionService {
         for (int x = -1; x <= width; x++) {
             for (int z = -1; z <= depth; z++) {
                 boolean foundation = x >= 0 && x < width && z >= 0 && z < depth;
-                result.add(new GradeCell(construction.origin().offset(x, -1, z), foundation));
+                boolean edge = foundation && (x == 0 || x == width - 1 || z == 0 || z == depth - 1);
+                BlockPos floor = construction.origin().offset(x, -1, z);
+                int fillDepth = foundation ? fillDepthToSupport(level, floor) : 0;
+                int retainingStone = edge && fillDepth >= 2 ? fillDepth : 0;
+                result.add(new GradeCell(floor, foundation, retainingStone));
             }
         }
         return List.copyOf(result);
@@ -278,7 +319,7 @@ public final class SettlementConstructionService {
             BlockState state = level.getBlockState(pos);
             if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
             if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;
-            if (y <= 1 && isNaturalGround(state)) continue;
+            if (y <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state)) continue;
             return false;
         }
         if (!cell.foundation()) return true;
@@ -286,14 +327,20 @@ public final class SettlementConstructionService {
         BlockState floorState = level.getBlockState(cell.floor());
         if (level.getBlockEntity(cell.floor()) != null || !floorState.getFluidState().isEmpty()) return false;
         if (!floorState.isAir() && !floorState.canBeReplaced() && !isNaturalGround(floorState)) return false;
+        return fillDepthToSupport(level, cell.floor()) >= 0;
+    }
 
+    private static int fillDepthToSupport(ServerLevel level, BlockPos floor) {
+        BlockState floorState = level.getBlockState(floor);
+        if (level.getBlockEntity(floor) != null || !floorState.getFluidState().isEmpty()) return -1;
+        if (!floorState.isAir() && !floorState.canBeReplaced()) return isNaturalGround(floorState) ? 0 : -1;
         for (int depth = 1; depth <= MAX_GRADE_FILL_DEPTH; depth++) {
-            BlockPos support = cell.floor().below(depth);
+            BlockPos support = floor.below(depth);
             BlockState state = level.getBlockState(support);
-            if (level.getBlockEntity(support) != null || !state.getFluidState().isEmpty()) return false;
-            if (!state.isAir() && !state.canBeReplaced()) return true;
+            if (level.getBlockEntity(support) != null || !state.getFluidState().isEmpty()) return -1;
+            if (!state.isAir() && !state.canBeReplaced()) return isNaturalGround(state) ? depth : -1;
         }
-        return false;
+        return -1;
     }
 
     private static BlockPos gradeWorkPosition(ServerLevel level, BlockPos floor) {
@@ -311,13 +358,54 @@ public final class SettlementConstructionService {
         }
         if (!cell.foundation()) return;
 
-        level.setBlock(cell.floor(), Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        BlockState fill = cell.retainingStone() > 0
+                ? Blocks.COBBLESTONE.defaultBlockState()
+                : Blocks.COARSE_DIRT.defaultBlockState();
+        level.setBlock(cell.floor(), fill, DIRECT_BLOCK_UPDATE);
         for (int depth = 1; depth <= MAX_GRADE_FILL_DEPTH; depth++) {
             BlockPos support = cell.floor().below(depth);
             BlockState state = level.getBlockState(support);
             if (!state.isAir() && !state.canBeReplaced()) break;
-            level.setBlock(support, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            level.setBlock(support, fill, DIRECT_BLOCK_UPDATE);
         }
+    }
+
+    private static boolean stageTerrainStone(MinecraftServer server, SettlementData data, Villager builder,
+                                             Container crate, BlockPos supply, int requiredStone) {
+        long missing = Math.max(0L, requiredStone - SettlementInventory.countStone(crate));
+        if (missing <= 0L) return true;
+        ItemStack carried = builder.getMainHandItem();
+        if (!carried.isEmpty()) {
+            if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
+                    > SUPPLY_INTERACTION_RANGE_SQR) {
+                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.9D);
+                return false;
+            }
+            int before = carried.getCount();
+            ItemStack remaining = SettlementInventory.insert(crate, carried);
+            builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+            if (remaining.getCount() < before) {
+                SettlementService.refreshResources(server, data);
+                SettlementService.broadcast(server, data);
+            }
+            return false;
+        }
+
+        ServerLevel level = server.overworld();
+        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+        if (source == null) return false;
+        if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
+                > SUPPLY_INTERACTION_RANGE_SQR) {
+            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.9D);
+            return false;
+        }
+        int amount = (int) Math.min((long) HAUL_BATCH_SIZE, missing);
+        ItemStack extracted = SettlementStorageService.extract(level, source, SettlementInventory::isStone, amount);
+        if (extracted.isEmpty()) return false;
+        builder.setItemSlot(EquipmentSlot.MAINHAND, extracted);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
+        return false;
     }
 
     private static boolean stageRemainingMaterials(MinecraftServer server, SettlementData data, BuildingType type,
@@ -683,7 +771,8 @@ public final class SettlementConstructionService {
 
         int width = rotation.rotatedWidth(type);
         int depth = rotation.rotatedDepth(type);
-        if (pos.getY() == construction.originY() - 1
+        int minFoundationY = construction.originY() - 1 - MAX_GRADE_FILL_DEPTH;
+        if (pos.getY() >= minFoundationY && pos.getY() <= construction.originY() - 1
                 && pos.getX() >= construction.originX() && pos.getX() < construction.originX() + width
                 && pos.getZ() >= construction.originZ() && pos.getZ() < construction.originZ() + depth
                 && (current.is(Blocks.COARSE_DIRT) || current.is(Blocks.COBBLESTONE))) {
@@ -752,25 +841,40 @@ public final class SettlementConstructionService {
                 max = Math.max(max, height);
             }
         }
-        if (max - min > 2) return null;
+        int terrainSpan = max - min;
+        if (terrainSpan > MAX_TERRAIN_WORK_SPAN) return null;
         Collections.sort(heights);
         int baseY = heights.get(heights.size() / 2);
         BlockPos origin = new BlockPos(originX, baseY, originZ);
 
         for (int x = -1; x <= width; x++) {
             for (int z = -1; z <= depth; z++) {
-                for (int y = -3; y <= type.clearHeight(); y++) {
+                for (int y = -MAX_GRADE_FILL_DEPTH; y <= type.clearHeight(); y++) {
                     BlockPos pos = origin.offset(x, y, z);
                     if (level.getBlockEntity(pos) != null) return null;
                     BlockState state = level.getBlockState(pos);
                     if (!state.getFluidState().isEmpty()) return null;
                     if (y >= 0 && !isSafeAboveGround(state, y)) return null;
-                    if (y == -1 && !state.isAir() && !isNaturalGround(state)) return null;
+                    if (y == -1 && !state.isAir() && !state.canBeReplaced() && !isNaturalGround(state)) return null;
+                }
+            }
+        }
+
+        int terrainStoneCost = 0;
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
+                BlockPos floor = origin.offset(x, -1, z);
+                int fillDepth = fillDepthToSupport(level, floor);
+                if (fillDepth < 0) return null;
+                boolean edge = x == 0 || x == width - 1 || z == 0 || z == depth - 1;
+                if (edge && fillDepth >= 2) {
+                    terrainStoneCost += fillDepth;
+                    if (terrainStoneCost > MAX_TERRAIN_RETAINING_STONE) return null;
                 }
             }
         }
         if (!isSafeSupplyPosition(level, supplyPosition(origin, type, rotation))) return null;
-        return new Site(origin);
+        return new Site(origin, terrainSpan, terrainStoneCost);
     }
 
     private static boolean isSafeSupplyPosition(ServerLevel level, BlockPos supply) {
@@ -817,7 +921,7 @@ public final class SettlementConstructionService {
 
     private static boolean isSafeAboveGround(BlockState state, int relativeY) {
         if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) return true;
-        return relativeY <= 1 && isNaturalGround(state);
+        return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
     }
 
     private static boolean isNaturalGround(BlockState state) {
