@@ -14,13 +14,16 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 import java.util.ArrayList;
@@ -38,8 +41,15 @@ public final class AscensionAffixes {
     private static final String SECONDARY = "secondary";
     private static final String UTILITY = "utility";
     private static final String AWAKENED = "awakened";
+    private static final String RANGED_PROJECTILE = "survivalascension_ranged_projectile";
+    private static final String RANGED_PRECISION = "survivalascension_ranged_precision";
+    private static final String RANGED_DAMAGE_PERMILLE = "survivalascension_ranged_damage_permille";
+    private static final String RANGED_XP_PERMILLE = "survivalascension_ranged_xp_permille";
+    private static final String RANGED_RADIUS_TENTHS = "survivalascension_ranged_radius_tenths";
+    private static final String RANGED_TARGET_BONUS = "survivalascension_ranged_target_bonus";
+    private static final String RANGED_FRACTION_PERMILLE = "survivalascension_ranged_fraction_permille";
     private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
-    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.ARMOR);
+    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.RANGED, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.ARMOR);
     private static final List<EquipmentSlot> ARMOR_SLOTS = List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
 
     private AscensionAffixes() {}
@@ -65,18 +75,23 @@ public final class AscensionAffixes {
     }
 
     /**
-     * Content-pack bridge: any single-stack sword/pickaxe/axe/shovel/hoe or humanoid armor item that
-     * participates in the normal Minecraft item tags can receive Survival Ascension affixes without
-     * linking the optional mod's Java classes. Existing item components remain intact; only our
-     * nested CustomData key and display name are changed.
+     * Content-pack bridge: any single-stack sword/bow/crossbow/pickaxe/axe/shovel/hoe or humanoid armor item that
+     * participates in standard Minecraft/NeoForge item tags can receive Survival Ascension affixes without
+     * linking the optional mod's Java classes. Existing item components remain intact; only our nested
+     * CustomData key and display name are changed.
      */
     public static boolean canImprint(ItemStack stack) {
         return !stack.isEmpty() && stack.getMaxStackSize() == 1 && rarity(stack) <= 0 && categoryForItem(stack) != Category.NONE;
     }
 
+    public static boolean isRangedWeapon(ItemStack stack) {
+        return categoryForItem(stack) == Category.RANGED;
+    }
+
     public static String imprintCategoryName(ItemStack stack) {
         return switch (categoryForItem(stack)) {
             case WEAPON -> "무기";
+            case RANGED -> "원거리";
             case PICKAXE -> "곡괭이";
             case AXE -> "도끼";
             case SHOVEL -> "삽";
@@ -166,7 +181,7 @@ public final class AscensionAffixes {
     public static double toolSpeedMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
         Category category = category(stack);
-        if (rarity <= 0 || category == Category.WEAPON || category == Category.ARMOR || category == Category.NONE) return 1.0D;
+        if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.ARMOR || category == Category.NONE) return 1.0D;
         double result = 1.0D;
         if (has(stack, PRIMARY)) result *= switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
         if (has(stack, UTILITY)) result *= switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
@@ -181,8 +196,67 @@ public final class AscensionAffixes {
 
     public static double xpMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
-        if (rarity <= 0 || category(stack) == Category.ARMOR || !has(stack, MASTERY)) return 1.0D;
+        Category category = category(stack);
+        if (rarity <= 0 || category == Category.ARMOR || category == Category.RANGED || !has(stack, MASTERY)) return 1.0D;
         return switch (rarity) { case 1 -> 1.10D; case 2 -> 1.25D; default -> 1.50D; };
+    }
+
+    public static void snapshotRangedProjectile(Projectile projectile, ItemStack weapon, boolean precision) {
+        if (!isRangedWeapon(weapon)) return;
+        CompoundTag data = projectile.getPersistentData();
+        data.putBoolean(RANGED_PROJECTILE, true);
+        data.putBoolean(RANGED_PRECISION, precision);
+        int rarity = rarity(weapon);
+        int damage = 1000;
+        int xp = 1000;
+        int radiusTenths = 0;
+        int targets = 0;
+        int fraction = 0;
+        if (rarity > 0) {
+            if (has(weapon, PRIMARY)) damage = switch (rarity) { case 1 -> 1080; case 2 -> 1150; default -> 1250; };
+            if (has(weapon, MASTERY)) xp = switch (rarity) { case 1 -> 1100; case 2 -> 1250; default -> 1500; };
+            if (has(weapon, SCALE)) radiusTenths = switch (rarity) { case 1 -> 5; case 2 -> 10; default -> 15; };
+            if (has(weapon, SECONDARY)) targets = switch (rarity) { case 1 -> 1; case 2 -> 2; default -> 4; };
+            if (has(weapon, UTILITY)) fraction = switch (rarity) { case 1 -> 50; case 2 -> 100; default -> 150; };
+        }
+        data.putInt(RANGED_DAMAGE_PERMILLE, damage);
+        data.putInt(RANGED_XP_PERMILLE, xp);
+        data.putInt(RANGED_RADIUS_TENTHS, radiusTenths);
+        data.putInt(RANGED_TARGET_BONUS, targets);
+        data.putInt(RANGED_FRACTION_PERMILLE, fraction);
+    }
+
+    public static boolean isRangedProjectile(Entity direct) {
+        return direct != null && direct.getPersistentData().getBooleanOr(RANGED_PROJECTILE, false);
+    }
+
+    public static boolean isPrecisionRangedProjectile(Entity direct) {
+        return isRangedProjectile(direct) && direct.getPersistentData().getBooleanOr(RANGED_PRECISION, false);
+    }
+
+    public static double projectileDamageMultiplier(Entity direct) {
+        if (!isRangedProjectile(direct)) return 1.0D;
+        return Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_DAMAGE_PERMILLE, 1000) / 1000.0D);
+    }
+
+    public static double projectileXpMultiplier(Entity direct) {
+        if (!isRangedProjectile(direct)) return 1.0D;
+        return Math.max(1.0D, direct.getPersistentData().getIntOr(RANGED_XP_PERMILLE, 1000) / 1000.0D);
+    }
+
+    public static double projectileBurstRadiusBonus(Entity direct) {
+        if (!isRangedProjectile(direct)) return 0.0D;
+        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_RADIUS_TENTHS, 0)) / 10.0D;
+    }
+
+    public static int projectileBurstTargetBonus(Entity direct) {
+        if (!isRangedProjectile(direct)) return 0;
+        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_TARGET_BONUS, 0));
+    }
+
+    public static double projectileBurstFractionBonus(Entity direct) {
+        if (!isRangedProjectile(direct)) return 0.0D;
+        return Math.max(0, direct.getPersistentData().getIntOr(RANGED_FRACTION_PERMILLE, 0)) / 1000.0D;
     }
 
     public static double armorDamageMultiplier(ServerPlayer player, float incomingAmount, boolean environmental) {
@@ -307,6 +381,7 @@ public final class AscensionAffixes {
 
     private static Category categoryForItem(ItemStack stack) {
         if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;
+        if (stack.is(Tags.Items.TOOLS_BOW) || stack.is(Tags.Items.TOOLS_CROSSBOW)) return Category.RANGED;
         if (stack.is(ItemTags.PICKAXES)) return Category.PICKAXE;
         if (stack.is(ItemTags.AXES)) return Category.AXE;
         if (stack.is(ItemTags.SHOVELS)) return Category.SHOVEL;
@@ -330,6 +405,7 @@ public final class AscensionAffixes {
     private static Item baseItem(Category category, int rarity, RandomSource random) {
         return switch (category) {
             case WEAPON -> switch (rarity) { case 1 -> Items.IRON_SWORD; case 2 -> Items.DIAMOND_SWORD; default -> Items.NETHERITE_SWORD; };
+            case RANGED -> random.nextBoolean() ? Items.BOW : Items.CROSSBOW;
             case PICKAXE -> switch (rarity) { case 1 -> Items.IRON_PICKAXE; case 2 -> Items.DIAMOND_PICKAXE; default -> Items.NETHERITE_PICKAXE; };
             case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };
             case SHOVEL -> switch (rarity) { case 1 -> Items.IRON_SHOVEL; case 2 -> Items.DIAMOND_SHOVEL; default -> Items.NETHERITE_SHOVEL; };
@@ -346,20 +422,20 @@ public final class AscensionAffixes {
 
     private static String affixName(Category category, String key) {
         if (MASTERY.equals(key)) return "숙련";
-        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.ARMOR ? "수호" : "가속";
+        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.ARMOR ? "수호" : "가속";
         if (SCALE.equals(key)) return switch (category) {
-            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case ARMOR -> "불굴"; default -> "증폭";
+            case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case ARMOR -> "불굴"; default -> "증폭";
         };
         if (SECONDARY.equals(key)) return switch (category) {
-            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case ARMOR -> "완강"; default -> "특화";
+            case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case ARMOR -> "완강"; default -> "특화";
         };
         return switch (category) {
-            case WEAPON -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case ARMOR -> "보호"; default -> "보조";
+            case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case ARMOR -> "보호"; default -> "보조";
         };
     }
 
     private enum Category {
-        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), ARMOR("armor"), NONE("none");
+        WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), ARMOR("armor"), NONE("none");
         final String id;
         Category(String id) { this.id = id; }
     }
