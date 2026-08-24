@@ -81,10 +81,13 @@ public final class SettlementCommands {
         if(civil.active()) {
             int importedRemaining=SettlementCivilFillSupplyService.remainingImportedFill(server.overworld(),civil);
             int availableFill=SettlementCivilFillSupplyService.availableFill(server.overworld(),data);
+            int availableRetaining=SettlementCivilRetainingService.availableRetaining(server.overworld(),data);
             String imported=importedRemaining<0?"확인 대기":Integer.toString(importedRemaining);
             String storage=availableFill<0?"미로드":Integer.toString(availableFill);
-            player.sendSystemMessage(Component.literal("토목 | "+SettlementCivilWorkService.phaseLabel(server)+" "+civil.progressPercent()+"% | "+civil.width()+"×"+civil.depth()+" | 절토 "+civil.initialCutBlocks()+" | 성토 "+civil.initialFillBlocks()+" | 현장 토사 "+civil.earthBank()+" | 외부 흙 필요 "+imported+" | 공동 창고 흙 "+storage+" | 가상 토사 0"));
-        } else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | B 팔레트 · 최대 13×13 / 절토·성토 ±5 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0":"토목 | "+civilLock)); }
+            String retaining=civil.initialRetainingBlocks()<=0?"없음":civil.remainingRetainingBlocks()+" / "+civil.initialRetainingBlocks();
+            String retainingStorage=availableRetaining<0?"미로드":Integer.toString(availableRetaining);
+            player.sendSystemMessage(Component.literal("토목 | "+SettlementCivilWorkService.phaseLabel(server)+" "+civil.progressPercent()+"% | "+civil.width()+"×"+civil.depth()+" | 절토 "+civil.initialCutBlocks()+" | 성토 "+civil.initialFillBlocks()+" | 현장 토사 "+civil.earthBank()+" | 외부 흙 필요 "+imported+" | 공동 창고 흙 "+storage+" | 옹벽 잔여 "+retaining+" | 창고 조약돌 "+retainingStorage+" | 가상 토사 0"));
+        } else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | B 팔레트 · 최대 17×17 / 절토·성토 ±7 · 3블록+ 노출 가장자리 실제 조약돌 옹벽 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0":"토목 | "+civilLock)); }
         if(data.buildingCount(BuildingType.ADVANCED_WORKSHOP)>0){
             String reforge=SettlementAdvancedWorkshopService.reforgeUnlocked(data)
                     ? " | 영지 재련 준비 "+SettlementAdvancedWorkshopService.readyReforgeCommissionCount(server.overworld(),data)+" | 재련 유물 "+SettlementAdvancedWorkshopService.REFORGE_RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.REFORGE_METAL_COST+" | 재련력 "+SettlementAdvancedWorkshopService.REFORGE_POWER
