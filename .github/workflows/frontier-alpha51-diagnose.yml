@@ -1,0 +1,100 @@
+name: Diagnose and Apply Frontier Alpha 51
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha51-diagnose.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha51-diagnostic-apply
+  cancel-in-progress: false
+
+jobs:
+  diagnose-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Execute existing Alpha.51 patcher
+        id: patch
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 - <<'PY' 2>&1 | tee /tmp/frontier-alpha51-patch.log
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/frontier-alpha51-apply.yml').read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY\n", start)
+          code = textwrap.dedent(workflow[start:end])
+          namespace = {'__name__': '__main__', '__file__': '.github/workflows/frontier-alpha51-apply.yml'}
+          exec(compile(code, '.github/workflows/frontier-alpha51-apply.yml::<embedded>', 'exec'), namespace, namespace)
+          PY
+
+      - name: Run Alpha.51 audits
+        id: audit
+        if: steps.patch.outcome == 'success'
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          {
+            python3 projects/frontier-settlement/tools/test_alpha51_source.py
+            python3 projects/frontier-settlement/tools/test_alpha51_docs.py
+            git diff --check
+          } 2>&1 | tee /tmp/frontier-alpha51-audit.log
+
+      - name: Commit Alpha.51 if clean
+        if: steps.patch.outcome == 'success' && steps.audit.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/frontier-alpha51-diagnose.yml
+          rm -rf ci-results/frontier-alpha51-apply
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement .github/workflows/build-frontier-settlement.yml .github/workflows/frontier-alpha51-apply.yml .github/workflows/frontier-alpha51-diagnose.yml ci-results/frontier-alpha51-apply || true
+          git diff --cached --check
+          git commit -m 'Implement Frontier alpha.51 retaining-heavy terraces'
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort >/dev/null 2>&1 || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Record applicator failure
+        if: steps.patch.outcome != 'success' || steps.audit.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          mkdir -p ci-results/frontier-alpha51-apply
+          {
+            echo "trigger_sha=$GITHUB_SHA"
+            echo "patch_outcome=${{ steps.patch.outcome }}"
+            echo "audit_outcome=${{ steps.audit.outcome }}"
+            echo '--- patch ---'
+            cat /tmp/frontier-alpha51-patch.log 2>/dev/null || true
+            echo '--- audit ---'
+            cat /tmp/frontier-alpha51-audit.log 2>/dev/null || true
+          } > ci-results/frontier-alpha51-apply/latest.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/frontier-alpha51-apply/latest.log
+          git commit -m "Record Frontier alpha.51 applicator failure for ${GITHUB_SHA::7} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort >/dev/null 2>&1 || true
+            sleep $((attempt * 2))
+          done
+          exit 1
