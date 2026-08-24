@@ -18,11 +18,11 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 0.42 physical freight relay.
+ * 0.43 physical freight relay with physical railhead endpoints.
  *
- * The mod never teleports stock. A real Chest Minecart standing on rail at an active owned outpost
- * is loaded from that outpost's real Barrel cluster, then the same entity must physically arrive at
- * another active owned outpost before its bulk cargo can be unloaded into that destination cluster.
+ * The mod never teleports stock. A real Chest Minecart standing inside a validated railhead at an
+ * active owned outpost is loaded from that outpost's real Barrel cluster, then the same entity must
+ * physically arrive at another active owned outpost with its own validated railhead before unload.
  */
 public final class FreightService {
     private static final String OWNER_KEY = "survivalascension_freight_owner";
@@ -62,6 +62,7 @@ public final class FreightService {
             player.sendSystemMessage(Component.literal("§3[물리 화물] §f상자 광산수레가 현재 로딩된 §e레일 위§f에 있어야 합니다."));
             return;
         }
+        if (!FreightRailheadService.validate(player, outpost, cart)) return;
 
         String taggedOwner = cart.getPersistentData().getStringOr(OWNER_KEY, "");
         if (taggedOwner.isEmpty()) load(player, level, outpost, cart);
@@ -70,14 +71,20 @@ public final class FreightService {
 
     public static void sendStatus(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
+        OutpostData.OutpostEntry outpost = OutpostService.nearestActiveOutpost(player, INTERACTION_RADIUS);
         MinecartChest cart = nearestCart(player, level);
-        if (cart == null) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f근처 상자 광산수레 없음 §7· 활성 전초4블록 + 레일 위 수레에서 적재/하역"));
+        if (outpost == null) {
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f근처 활성 전초 없음 §7· 전초4블록 안에서 출발/도착 하역장을 사용합니다."));
             return;
         }
+        if (cart == null) {
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f근처 상자 광산수레 없음 §7· 활성 전초4블록 + 실제 하역장 레일 위 수레 필요"));
+            return;
+        }
+        FreightRailheadService.sendStatus(player, outpost, cart);
         String owner = cart.getPersistentData().getStringOr(OWNER_KEY, "");
         if (owner.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f근처 수레 §7· " + (isEmpty(cart) ? "§a빈 수레 · 적재 가능" : "§e일반 화물 존재 · 자동 적재 불가")));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f근처 수레 §7· " + (isEmpty(cart) ? "§a빈 수레 · 하역장 완성 시 적재 가능" : "§e일반 화물 존재 · 자동 적재 불가")));
             return;
         }
         boolean mine = owner.equals(player.getUUID().toString());
@@ -92,12 +99,12 @@ public final class FreightService {
         }
         FieldDepotData.DepotEntry depot = depotForOutpost(player, outpost);
         if (depot == null) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f이 전초의 등록 배럴 물류 앵커를 확인할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f이 전초의 등록 통 물류 앵커를 확인할 수 없습니다."));
             return;
         }
         List<Container> source = storageForDepot(player, level, depot);
         if (source.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f이 전초에서 현재 로딩·상호작용 가능한 물류 배럴이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f이 전초에서 현재 로딩·상호작용 가능한 물류 통이 없습니다."));
             return;
         }
 
@@ -115,7 +122,7 @@ public final class FreightService {
         data.putInt(ORIGIN_Z_KEY, outpost.z());
         cart.setChanged();
         player.sendSystemMessage(Component.literal("§b[물리 화물 적재] §f전초 창고군 → 상자 광산수레 §e" + moved
-                + "개§f 적재. §7이 수레를 실제 레일망으로 다른 자신의 활성 전초까지 운반한 뒤 같은 메뉴를 선택하세요."));
+                + "개§f 적재. §7이 수레를 실제 레일망으로 다른 자신의 활성 전초 하역장까지 운반한 뒤 같은 메뉴를 선택하세요."));
     }
 
     private static void unload(ServerPlayer player, ServerLevel level, OutpostData.OutpostEntry destination, MinecartChest cart, String taggedOwner) {
@@ -137,12 +144,12 @@ public final class FreightService {
 
         FieldDepotData.DepotEntry depot = depotForOutpost(player, destination);
         if (depot == null) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초의 등록 배럴 물류 앵커를 확인할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초의 등록 통 물류 앵커를 확인할 수 없습니다."));
             return;
         }
         List<Container> targets = storageForDepot(player, level, depot);
         if (targets.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초에서 현재 사용할 수 있는 물류 배럴이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초에서 현재 사용할 수 있는 물류 통이 없습니다."));
             return;
         }
 
@@ -155,7 +162,7 @@ public final class FreightService {
         int moved = moveBulkOut(cart, targets);
         int remaining = countBulk(cart);
         if (moved <= 0) {
-            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초의 실제 배럴들에 남은 적재 공간이 없습니다. §7수레 화물은 그대로 유지됩니다."));
+            player.sendSystemMessage(Component.literal("§3[물리 화물] §f도착 전초의 실제 통들에 남은 적재 공간이 없습니다. §7수레 화물은 그대로 유지됩니다."));
             return;
         }
         if (remaining <= 0) clearManifest(cart);

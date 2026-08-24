@@ -4,6 +4,23 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.43.0-alpha.1 — Physical Freight Railheads / 물리 화물 하역장
+0.42 made real Chest Minecarts carry actual outpost stock, but a single arbitrary rail beside an outpost was enough to use the system. 0.43 makes both endpoints into small real loading yards without turning freight into an automatic train network.
+
+Use the existing `M -> Infrastructure -> 산업 가공소 -> 물리 화물 수레` action. At both departure and arrival, the exact active outpost `통(Barrel)` anchor must have a loaded radius6 railhead containing:
+- at least6 blocks in `BlockTags.RAILS`;
+- at least1 Powered Rail;
+- at least1 Hopper;
+- at least1 Lever or Redstone Block.
+
+The Chest Minecart's actual rail must be inside that same railhead. A Powered Rail and Hopper must be within squared distance9 of the cart rail, and a control block within squared distance16, so scattered checklist blocks do not count as a working platform.
+
+The yard is not registered or saved. Every freight action reads the actual blocks with loaded-only and `mayInteract` checks. Break the yard and freight stops; rebuild it and freight immediately works again.
+
+Everything important from 0.42 remains: Industrial Works + Civil Works, active owned outposts, same physical Chest Minecart, same dimension, different destination, exact source/destination `통` cluster, existing bulk whitelist, real Container capacity and partial unloading. There is still no generated freight reward or supply fee.
+
+No auto-driving, pathfinding, virtual route, station SavedData, new packet, custom train/block/item/entity, teleport or force-load is added.
+
 ## 0.42.1-alpha.1 — Guide / Early Mastery / Logistics Priority
 This pass fixes first-play readability and pacing without adding another subsystem.
 
@@ -65,7 +82,8 @@ Requirements:
 - Civil Works complete;
 - survival/non-spectator player;
 - an active owned outpost within4;
-- a real Chest Minecart within4 standing on already-loaded vanilla rail.
+- a real Chest Minecart within4 standing on already-loaded vanilla rail;
+- the current endpoint's 0.43 physical railhead complete.
 
 At the departure outpost the cart must be completely empty. The action takes only the same authored bulk-material whitelist used by 0.35 High-volume Field Offload from that exact outpost's registered `통(Barrel)` anchor and its linked warehouse `통`, then inserts the actual stacks into the actual Chest Minecart inventory.
 
@@ -85,12 +103,12 @@ Insertion keeps the existing logistics rules:
 
 Endpoints use only the outpost's own anchor and stored warehouse links. Every `통` position must already be loaded, still be a real vanilla Barrel Container and pass owner `mayInteract`.
 
-The cart itself must be on `BlockTags.RAILS` at its position or immediately below. The system never spawns a cart, drives it, teleports it, registers an abstract route, force-loads chunks or reaches across dimensions.
+The cart itself must be on `BlockTags.RAILS` at its position or immediately below and inside a complete physical railhead. The system never spawns a cart, drives it, teleports it, registers an abstract route, force-loads chunks or reaches across dimensions.
 
-There is no supply-charge cost because this action creates no reward or duplicate output; the investment is the rails, Chest Minecart, physical warehouse capacity and travel itself.
+There is no supply-charge cost because this action creates no reward or duplicate output; the investment is the railhead, route, Chest Minecart, physical warehouse capacity and travel itself.
 
 ### External reference boundary
-Create remains design-reference-only for this feature. Survival Ascension studies the high-level value of making logistics physically move stock, but 0.42 does not copy Create trains, contraptions, packages, stock links, routing code, assets, models, sounds or data. The freight implementation uses only vanilla Chest Minecart/rail/Container behavior and Survival Ascension's existing physical-`통` data.
+Create remains design-reference-only for this feature. Survival Ascension studies the high-level value of making logistics physically move stock, but does not copy Create trains, contraptions, packages, stock links, routing code, assets, models, sounds or data. The freight implementation uses only vanilla Chest Minecart/rail/redstone/Container behavior and Survival Ascension's existing physical-`통` data.
 
 ## 0.41.0-alpha.1 — Civil Works Causeways / 토목 공사소·도로 교량 시공
 Stage1 `CIVIL_WORKS / 토목 공사소` consumes Stone Bricks2048 + Cobblestone1536 + Gravel1536 + Iron256 + Copper256 through nearby real logistics `통` first, then player inventory.
@@ -136,4 +154,4 @@ After Lv100 + all nine expedition regions:
 Large work remains tick-budgeted and uses normal protection/material paths. Shift remains the precision override.
 
 ## External references
-Permissive-code and reference-only boundaries are documented in `THIRD_PARTY_NOTICES.md`. 0.42.1 adds no third-party asset or dependency and introduces no new SavedData ID or packet.
+Permissive-code and reference-only boundaries are documented in `THIRD_PARTY_NOTICES.md`. 0.43 adds no third-party asset or dependency and introduces no new SavedData ID or packet.

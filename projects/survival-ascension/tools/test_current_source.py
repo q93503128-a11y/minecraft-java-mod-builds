@@ -37,6 +37,7 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java",
+    "src/main/java/kr/moonseungjun/survivalascension/production/FreightRailheadService.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/OutpostData.java",
@@ -69,22 +70,23 @@ for rel in required:
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.42.1-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.43.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.42.1-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.43.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
-# 0.42.1 guide/pacing/mining/logistics-priority pass.
+# Current guide/pacing/mining/logistics-priority contracts.
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(guide, [
     "CONTENT_TOP = 64", "CONTENT_BOTTOM_MARGIN = 44", "SCROLL_STEP = 30",
     "mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)",
     "graphics.enableScissor", "graphics.disableScissor", "maxScroll", "scrollOffset",
     'h("월드 승천")', "위더를 처음 격파하면 전설 단계(1)", "엔더 드래곤을 처음 격파하면 종말 단계(2)",
-    "물류 통과 창고군", "일반 바닐라 작업대 조합은 조합칸/인벤토리 규칙을 그대로 따릅니다."
-], "0.42.1 scrollable current-state guide")
-forbid(guide, ["0.42부터", "0.41부터", "0.40부터"], "guide patch-note policy")
+    "물류 통과 창고군", "일반 바닐라 작업대 조합은 조합칸/인벤토리 규칙을 그대로 따릅니다.",
+    'h("화물 하역장")', "레일6개 이상", "동력레일1개 이상", "호퍼1개 이상"
+], "0.43 scrollable current-state guide")
+forbid(guide, ["0.43부터", "0.42부터", "0.41부터", "0.40부터"], "guide patch-note policy")
 
 tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
 need(tuning, [
@@ -94,7 +96,7 @@ need(tuning, [
     "else if (level < 60) factor = 0.80D + 0.0065D * (level - 30);",
     "else factor = 1.0D;",
     "return Math.max(8L, Math.round(base * factor));"
-], "0.42.1 early mastery curve")
+], "early mastery curve")
 
 mining = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")
 need(mining, [
@@ -107,7 +109,7 @@ need(mining, [
     "if (state.is(Blocks.OBSIDIAN)) return 16;",
     "if (state.is(Blocks.CRYING_OBSIDIAN)) return 18;",
     "return Math.max(1, Math.min(8, (int) Math.ceil(hardness)));"
-], "0.42.1 mining XP tiers")
+], "mining XP tiers")
 forbid(mining, ["if (state.is(VALUABLE_ORES)) return 20;"], "flat valuable-ore XP")
 
 field = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")
@@ -115,19 +117,19 @@ need(field, [
     "재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터",
     "List<Container> containers = usableContainers(player);",
     "player.containerMenu.broadcastChanges();"
-], "0.42.1 logistics storage-first")
+], "logistics storage-first")
 ordered(field, [
     "public static boolean consumeMatching",
     "List<Container> containers = usableContainers(player);",
     "for (Container container : containers)",
     "player.getInventory().getContainerSize() && remaining > 0"
-], "0.42.1 storage before carried inventory")
+], "storage before carried inventory")
 forbid(field, ["setChunkForced", "addRegionTicket", "getChunk("], "physical logistics")
 
 prod_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
-need(prod_ui, ["창고 통 연결", "4블록 내 기본 통 앵커", "물리 화물 수레", "Items.CHEST_MINECART", "Action.FREIGHT", "ProductionService.ACTION_FREIGHT"], "0.42.1 logistics wording/freight UI")
+need(prod_ui, ["창고 통 연결", "4블록 내 기본 통 앵커", "물리 화물 수레", "레일6+·동력레일·호퍼·제어", "Items.CHEST_MINECART", "Action.FREIGHT", "ProductionService.ACTION_FREIGHT"], "0.43 logistics/freight UI")
 
-# 0.42 physical freight relay retained.
+# 0.43 physical freight railheads; 0.42 transfer semantics retained.
 freight = read("src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java")
 need(freight, [
     'OWNER_KEY = "survivalascension_freight_owner"',
@@ -141,6 +143,8 @@ need(freight, [
     "MinecartChest",
     "OutpostService.nearestActiveOutpost(player, INTERACTION_RADIUS)",
     "BlockTags.RAILS",
+    "FreightRailheadService.validate(player, outpost, cart)",
+    "FreightRailheadService.sendStatus(player, outpost, cart)",
     "FieldDepotService.isBulkMaterial",
     "FieldDepotData.get(player).linkedBarrels(player, depot)",
     "level.hasChunkAt(pos)",
@@ -153,22 +157,40 @@ need(freight, [
     "source.copyWithCount(move)",
     "destination.pos().equals(origin)",
     "clearManifest(cart)",
-], "0.42 freight")
+], "0.43 freight")
 forbid(freight, [
     "SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity",
     "teleportTo", "randomTeleport", "consumeSupplyCharge", "giveOrDrop", "award(",
-], "0.42 freight physical-only policy")
+], "freight physical-only policy")
+ordered(freight, [
+    "if (!isOnLoadedRail(level, cart))", "FreightRailheadService.validate(player, outpost, cart)",
+    "String taggedOwner = cart.getPersistentData().getStringOr(OWNER_KEY"
+], "0.43 railhead before freight mutation")
 ordered(freight, [
     "if (!isEmpty(cart))", "List<Container> source = storageForDepot", "int moved = moveBulkInto(source, cart)",
     "data.putString(OWNER_KEY", "data.putString(ORIGIN_DIMENSION_KEY"
-], "0.42 load order")
+], "freight load order")
 ordered(freight, [
     "destination.pos().equals(origin)", "List<Container> targets = storageForDepot", "int moved = moveBulkOut(cart, targets)", "if (remaining <= 0) clearManifest(cart)"
-], "0.42 unload order")
+], "freight unload order")
+
+railhead = read("src/main/java/kr/moonseungjun/survivalascension/production/FreightRailheadService.java")
+need(railhead, [
+    "RAILHEAD_RADIUS = 6", "MIN_RAIL_BLOCKS = 6", "MIN_POWERED_RAILS = 1", "MIN_HOPPERS = 1", "MIN_CONTROLS = 1",
+    "BlockTags.RAILS", "Blocks.POWERED_RAIL", "Blocks.HOPPER", "Blocks.LEVER", "Blocks.REDSTONE_BLOCK",
+    "level.hasChunkAt(pos)", "level.mayInteract(player, pos)", "cartRailPosition(level, cart)",
+    "POWERED_NEAR_CART_SQ = 9", "HOPPER_NEAR_CART_SQ = 9", "CONTROL_NEAR_CART_SQ = 16",
+    "poweredNearCart", "hopperNearCart", "controlNearCart", "inspection.complete()"
+], "0.43 physical railhead")
+forbid(railhead, [
+    "SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity",
+    "teleportTo", "randomTeleport", "consumeSupplyCharge", "award(",
+], "0.43 railhead no-automation/no-force-load policy")
+
 production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
-need(production, ['ACTION_FREIGHT = "physical_freight"', "FreightService.transferNearest(player)", "FreightService.sendStatus(player)"], "0.42 production routing")
+need(production, ['ACTION_FREIGHT = "physical_freight"', "FreightService.transferNearest(player)", "FreightService.sendStatus(player)", "레일6+·동력레일·호퍼·제어"], "production routing")
 infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
-need(infra, ["ProductionService.ACTION_FREIGHT", "project == InfrastructureProject.CIVIL_WORKS"], "0.42 infrastructure routing")
+need(infra, ["ProductionService.ACTION_FREIGHT", "project == InfrastructureProject.CIVIL_WORKS"], "infrastructure routing")
 
 # 0.41 Civil Works and causeway retained.
 project = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java")
@@ -236,8 +258,11 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.42.1 guide scrolls and documents current World Ascension instead of embedding patch-history wording")
-print("- early mastery requirements are discounted through Lv59 and converge to the retained late quadratic curve at Lv60")
-print("- mining XP is material-tiered; copper7/8 no longer outranks obsidian16/crying18")
+print("- 0.43 physical freight requires a loaded real railhead at both exact active-outpost endpoints")
+print("- railhead minimums: radius6, rails6+, powered rail1+, hopper1+, lever/redstone control1+, with powered/hopper/control near the actual cart rail")
+print("- freight still moves only existing bulk stacks in the same physical Chest Minecart; no reward, auto-drive, virtual route, SavedData, teleport or force-load")
+print("- guide scrolls and documents current World Ascension instead of embedding patch-history wording")
+print("- early mastery requirements remain discounted through Lv59 and converge to the retained late quadratic curve at Lv60")
+print("- mining XP remains material-tiered; copper7/8 no longer outranks obsidian16/crying18")
 print("- logistics-backed costs consume nearest usable physical Barrel/통 storage before carried inventory; vanilla crafting and Apex/Trial carried admissions remain separate")
-print("- 0.42 physical freight, 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain")
+print("- 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain")

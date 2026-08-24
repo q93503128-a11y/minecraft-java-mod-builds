@@ -1,14 +1,64 @@
 # Survival Ascension
 
-- Mod version: `0.42.1-alpha.1`
+- Mod version: `0.43.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1` and older data stay unchanged. Because skill level is derived from stored total XP, the new early threshold curve may resolve an existing character to a slightly higher level.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1` and older data stay unchanged. Physical freight railheads are validated from current world blocks and store no completion flag.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.43 Physical Freight Railheads / 물리 화물 하역장
+### Purpose
+0.42 proved that actual stock can move between real outpost warehouse clusters in a real vanilla Chest Minecart. Its weak point was the endpoint: a single arbitrary rail beside an active outpost was enough to trigger loading or unloading.
+
+0.43 makes the endpoint itself physical. Freight now works only when the exact active outpost has a small real railhead around its registered `통(Barrel)` anchor. This gives Civil Works/rails a visible persistent job without introducing a background logistics simulator.
+
+### Physical endpoint contract
+Before any freight mutation, `FreightRailheadService` inspects only already-loaded blocks around the exact active outpost anchor.
+
+Radius: `6` blocks around the outpost anchor.
+Minimum visible yard:
+- rail blocks using `BlockTags.RAILS`: `6+`;
+- `Powered Rail`: `1+`;
+- `Hopper`: `1+`;
+- control: `Lever` or `Redstone Block`: `1+`.
+
+The actual Chest Minecart rail must also be inside the same radius. To stop scattered checklist blocks from counting as a station, the active cart rail additionally needs:
+- a Powered Rail within squared distance `9`;
+- a Hopper within squared distance `9`;
+- a Lever/Redstone Block within squared distance `16`.
+
+Every scanned block must be in an already-loaded chunk and pass `level.mayInteract(player, pos)`.
+
+### Runtime behavior
+The railhead is not registered and has no SavedData flag. Every load/unload action checks the current physical blocks again. If the yard is broken, freight stops; rebuild it and freight works again.
+
+The 0.42 freight semantics remain:
+- Industrial Works + Civil Works complete;
+- survival/non-spectator;
+- active owned outpost within4;
+- real Chest Minecart within4;
+- cart standing on loaded rail;
+- empty cart required for departure loading;
+- source/destination inventory is only that exact outpost anchor + its persisted linked warehouse `통`;
+- same-dimension, different owned active destination;
+- only `FieldDepotService.isBulkMaterial` moves;
+- partial unloading leaves remainder in the same physical cart;
+- manifest remains only owner UUID + origin dimension/x/y/z on the cart entity.
+
+### Deliberate exclusions
+- no station SavedData or registration menu;
+- no route SavedData;
+- no automatic minecart driving or pathfinding;
+- no generated freight reward or supply-charge fee;
+- no item/cart/player teleport;
+- no custom train/block/item/entity;
+- no `getChunk`, region ticket or force-load;
+- no cross-dimension freight;
+- no passive maintenance timer.
 
 ## 0.42.1 Guide / Early Mastery / Logistics Priority
 ### Guide information architecture
@@ -87,7 +137,8 @@ Server prerequisites:
 - Civil Works complete;
 - active owned outpost within4;
 - real `MinecartChest` within4;
-- cart standing on already-loaded `BlockTags.RAILS` at cart position or one block below.
+- cart standing on already-loaded `BlockTags.RAILS` at cart position or one block below;
+- 0.43 physical railhead complete at the current endpoint.
 
 ### Departure loading
 The Chest Minecart must be completely empty and have no freight owner manifest.
@@ -114,7 +165,7 @@ At unloading time:
 - manifest owner must equal the acting player;
 - destination must be a different active owned outpost;
 - origin and destination must be in the same dimension;
-- cart must still be on loaded rail;
+- cart must still be on loaded rail inside a complete physical railhead;
 - destination resolves only its own physical anchor + linked warehouse `통`.
 
 Cargo insertion merges same item+components first, respects `Container.canPlaceItem` and real max stack/container limits, then uses empty slots. Partial unloading is valid. Anything not accepted stays inside the cart. When no eligible bulk cargo remains, the manifest is cleared.
@@ -136,7 +187,7 @@ Different outpost is required, but no artificial minimum distance is added becau
 - no universal warehouse resolver during freight: endpoint inventory is intentionally tied to one physical outpost cluster.
 
 ### External-source boundary
-Create remains design-reference-only. 0.42 studies the product-level value of physical stock movement but does not copy train, contraption, package, Stock Link, Stock Ticker, Requester, routing, GUI, asset, data or namespace implementation. FreightService is independent code using vanilla Chest Minecart/rail/Container behavior plus Survival Ascension's existing physical `통` records.
+Create remains design-reference-only. Survival Ascension studies the product-level value of physical stock movement but does not copy train, contraption, package, Stock Link, Stock Ticker, Requester, routing, GUI, asset, data or namespace implementation. FreightService and FreightRailheadService are independent code using vanilla Chest Minecart/rail/redstone/Container behavior plus Survival Ascension's existing physical `통` records.
 
 ## 0.41 Civil Works Causeways retained
 `CIVIL_WORKS` is Stage1: Stone Bricks2048 + Cobblestone1536 + Gravel1536 + Iron256 + Copper256. Final funding needs owned registered `통` within4 plus radius6 physical yard: Stone Bricks48, Scaffolding16, Iron Blocks4, Stonecutters2, Crafting Table1.
@@ -159,7 +210,7 @@ Normal defense remains supply1 /3 waves /4800 ticks with owner64, physical struc
 Civil Works, Industrial Works, Apex Tracking Post and Ascension Nexus use the same final-call real-world commissioning engine. It is one-time proof, not ongoing maintenance.
 
 ## 0.35 / 0.34 logistics retained
-High-volume offload scans main inventory9..35. Stationary logistics-backed material sinks now use nearest usable real `통` storage first, then player inventory. Apex/Trial admission stays player-carried.
+High-volume offload scans main inventory9..35. Stationary logistics-backed material sinks use nearest usable real `통` storage first, then player inventory. Apex/Trial admission stays player-carried.
 
 ## 0.33 / 0.32 expeditions retained
 Active regional outpost -> supply1 -> cross range -> two real validated objectives -> exact-origin return. One bounded complication per new sortie. No force-load.

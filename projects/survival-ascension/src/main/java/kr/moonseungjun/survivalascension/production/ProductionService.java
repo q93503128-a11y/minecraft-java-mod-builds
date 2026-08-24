@@ -71,7 +71,7 @@ public final class ProductionService {
                 int have = count(player, input);
                 player.sendSystemMessage(Component.literal("  §7- §f" + input.label() + " §e" + have + "§7/§f" + input.amount()));
             }
-            player.sendSystemMessage(Component.literal("  §7인벤토리 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고를 합산합니다."));
+            player.sendSystemMessage(Component.literal("  §7가까운 사용 가능 물류 통을 먼저 합산하고, 부족분은 인벤토리에서 사용합니다."));
             return;
         }
         for (ProductionProgram.Input input : program.inputs()) {
@@ -81,7 +81,7 @@ public final class ProductionService {
             }
         }
         ProductionData.BatchResult result = data.addBatch(player, program);
-        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료. §7인벤토리 우선 → 가까운 실제 물류 배럴 순으로 투입"));
+        player.sendSystemMessage(Component.literal("§3[산업 생산] §b" + program.koreanName() + " §f1배치 완료. §7가까운 실제 물류 통 우선 → 부족분 인벤토리"));
         if (result.cycleCompleted()) {
             player.sendSystemMessage(Component.literal("§b[산업 사이클 완성] §f4계통 배치를 결합해 §e현장 보급권 +1§f을 확보했습니다. §7보유 "
                     + result.supplyCharges() + "/" + ProductionData.MAX_SUPPLY_CHARGES));
@@ -97,10 +97,10 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7산업 투입: 인벤토리 우선 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
-        player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 배럴 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
-        player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 배럴부터 채웁니다."));
-        player.sendSystemMessage(Component.literal("§7물리 화물: 산업+토목 완공 후 활성 전초의 실제 배럴 재고를 레일 위 빈 상자 광산수레에 싣고 다른 활성 전초 창고군으로 실제 운반합니다."));
+        player.sendSystemMessage(Component.literal("§7산업 투입: 가까운 사용 가능 거점/창고 통 우선 + 부족분 인벤토리. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
+        player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 통 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
+        player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 통부터 채웁니다."));
+        player.sendSystemMessage(Component.literal("§7물리 화물: 산업+토목 완공 후 양쪽 활성 전초마다 반경6 소형 하역장(레일6+·동력레일·호퍼·제어)을 만들고 실제 상자 광산수레로 창고 재고를 운반합니다."));
         player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
@@ -114,7 +114,7 @@ public final class ProductionService {
     private static void bulkOffload(ServerPlayer player) {
         int storageBarrels = FieldDepotService.activeStorageBarrelCount(player);
         if (storageBarrels <= 0) {
-            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 거점/창고 배럴이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 거점/창고 통이 없습니다."));
             return;
         }
         int eligible = FieldDepotService.countOffloadableMainInventory(player);
@@ -124,15 +124,15 @@ public final class ProductionService {
         }
         int moved = FieldDepotService.offloadBulkMaterials(player);
         if (moved <= 0) {
-            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f사용 가능한 실제 배럴들에 남은 적재 공간이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f사용 가능한 실제 통들에 남은 적재 공간이 없습니다."));
             return;
         }
         if (moved < eligible) {
-            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 실제 배럴부터 적재했습니다. §7대상 "
-                    + eligible + "개 중 일부만 수용됨 · 사용 배럴 " + storageBarrels + " · 핫바/장비 유지"));
+            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 실제 통부터 적재했습니다. §7대상 "
+                    + eligible + "개 중 일부만 수용됨 · 사용 통 " + storageBarrels + " · 핫바/장비 유지"));
         } else {
             player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved
-                    + "§f개를 가까운 실제 배럴부터 적재했습니다. §7사용 배럴 " + storageBarrels + " · 핫바/장비 유지"));
+                    + "§f개를 가까운 실제 통부터 적재했습니다. §7사용 통 " + storageBarrels + " · 핫바/장비 유지"));
         }
     }
 

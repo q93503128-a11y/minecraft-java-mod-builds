@@ -47,6 +47,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/production/ProductionData.class",
         "kr/moonseungjun/survivalascension/production/ProductionService.class",
         "kr/moonseungjun/survivalascension/production/FreightService.class",
+        "kr/moonseungjun/survivalascension/production/FreightRailheadService.class",
         "kr/moonseungjun/survivalascension/production/FieldDepotData.class",
         "kr/moonseungjun/survivalascension/production/FieldDepotService.class",
         "kr/moonseungjun/survivalascension/production/OutpostData.class",
@@ -116,6 +117,7 @@ jar.with_name(jar.name + ".sha256").write_text(f"{sha}  {jar.name}\n", encoding=
 print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("physical_freight_runtime=present")
+print("physical_freight_railhead_runtime=present")
 print("civil_works_runtime=present")
 print("protected_causeway_construction_runtime=present")
 print("physical_commissioning_runtime=present")

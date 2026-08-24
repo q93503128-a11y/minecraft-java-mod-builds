@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.43.0-alpha.1
+- Added `Physical Freight Railheads / 물리 화물 하역장` so 0.42 freight can no longer load or unload from an arbitrary single rail beside an outpost.
+- Every freight endpoint now validates the exact active owned outpost anchor and an already-loaded radius6 physical railhead before any cargo mutation.
+- Minimum railhead: at least6 rail blocks, at least1 Powered Rail, at least1 Hopper and at least1 Lever or Redstone Block inside the outpost-anchor radius6.
+- The actual Chest Minecart rail must also be inside that radius; a Powered Rail and Hopper must be within squared distance9 of the cart rail, and a Lever/Redstone Block within squared distance16.
+- Railhead validation uses only real current-world blocks, `level.hasChunkAt` and `level.mayInteract`. It stores no completion flag, so breaking the yard disables freight immediately and rebuilding it restores freight immediately.
+- Freight still requires Industrial Works + Civil Works, active owned outpost within4, real Chest Minecart within4, same-dimension different destination, exact outpost Barrel cluster, and the existing bulk whitelist.
+- Retained partial unload, real Container capacity, component-equal merge-first insertion and the cart-local owner/origin manifest.
+- Added no automatic cart movement, route/path simulation, freight reward, supply cost, SavedData, packet/protocol, custom block/item/entity, teleport, chunk ticket or force-load.
+- Updated production status, radial UI, guide, source audit and JAR verification for the physical railhead contract.
+
 ## 0.42.1-alpha.1
 - Reworked the in-game guide into a scrollable gameplay reference: body scissor clipping, mouse-wheel scrolling and a visible scrollbar replace the old hard bottom cutoff.
 - Removed patch-note wording such as `0.42부터` from `GuideScreen`; release history remains in this file instead.
