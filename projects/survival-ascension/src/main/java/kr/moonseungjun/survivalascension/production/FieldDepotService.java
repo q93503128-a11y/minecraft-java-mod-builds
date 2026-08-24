@@ -63,9 +63,10 @@ public final class FieldDepotService {
             player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통은 다른 물류 창고군에 이미 연결되어 있습니다."));
             return;
         }
-        if (depots.count(player) >= FieldDepotData.MAX_DEPOTS_PER_PLAYER) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 가능한 거점은 플레이어당 최대 §e"
-                    + FieldDepotData.MAX_DEPOTS_PER_PLAYER + "개§f입니다."));
+        int depotLimit = FieldDepotData.registrationLimit(player);
+        if (depots.count(player) >= depotLimit) {
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f현재 인프라의 거점 한도는 §e" + depotLimit
+                    + "개§f입니다. §7산업 3 · 토목 6 · 승천 중추 9"));
             return;
         }
 
@@ -75,9 +76,14 @@ public final class FieldDepotService {
             return;
         }
 
-        FieldDepotData.AddResult result = depots.add(player, dimension, barrel);
+        FieldDepotData.AddResult result = depots.add(player, dimension, barrel, depotLimit);
         if (result == FieldDepotData.AddResult.CLAIMED_BY_OTHER) {
             player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통은 다른 물류 거점/창고군에 이미 연결되어 있습니다."));
+            return;
+        }
+        if (result == FieldDepotData.AddResult.LIMIT_REACHED) {
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f현재 인프라의 거점 한도는 §e" + depotLimit
+                    + "개§f입니다. §7산업 3 · 토목 6 · 승천 중추 9"));
             return;
         }
         if (result != FieldDepotData.AddResult.ADDED) {
@@ -90,7 +96,8 @@ public final class FieldDepotService {
             return;
         }
         player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f통 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
-                + "§f을 거점 앵커로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 통 최대 "
+                + "§f을 거점 앵커로 연결했습니다. §7현재 " + depots.count(player) + "/" + depotLimit
+                + " · 같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 확장 가능"));
     }
 
@@ -156,9 +163,11 @@ public final class FieldDepotService {
         List<FieldDepotData.DepotEntry> depots = data.depots(player);
         int activeDepots = activeDepotCount(player);
         int activeBarrels = activeStorageBarrelCount(player);
-        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
+        int depotLimit = FieldDepotData.registrationLimit(player);
+        player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + depotLimit
                 + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels
                 + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
+        player.sendSystemMessage(Component.literal("  §7- 지역 한도: 산업 3 · 토목 6 · 승천 중추 9"));
         player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 연결 · 전체 링크 " + data.totalLinkedCount(player)));
         player.sendSystemMessage(Component.literal("  §7- 재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터, 부족분만 플레이어 인벤토리에서 사용"));
