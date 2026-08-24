@@ -53,7 +53,8 @@ public final class SettlementService {
             boolean changed = refreshResources(server, data);
             boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
             boolean civilProject = SettlementCivilWorkData.get(server).project().active();
-            if (changed || activeProject || civilProject) broadcast(server, data);
+            if (changed || activeProject) broadcast(server, data);
+            else if (civilProject) broadcast(server, data);
             else if (explorationChanged) broadcast(server, data);
         }
     }
