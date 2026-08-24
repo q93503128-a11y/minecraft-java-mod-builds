@@ -1,4 +1,4 @@
-# trigger: execute after workflow registration
+# trigger: exact YAML block indentation extraction
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -30,13 +30,13 @@ jobs:
           set -o pipefail
           python3 - <<'PY' 2>&1 | tee /tmp/frontier-alpha51-patch.log
           from pathlib import Path
-          import textwrap
 
           workflow = Path('.github/workflows/frontier-alpha51-apply.yml').read_text(encoding='utf-8')
           marker = "          python3 - <<'PY'\n"
           start = workflow.index(marker) + len(marker)
           end = workflow.index("\n          PY\n", start)
-          code = textwrap.dedent(workflow[start:end])
+          raw = workflow[start:end].splitlines()
+          code = '\n'.join(line[10:] if line.startswith('          ') else line for line in raw)
           namespace = {'__name__': '__main__', '__file__': '.github/workflows/frontier-alpha51-apply.yml'}
           exec(compile(code, '.github/workflows/frontier-alpha51-apply.yml::<embedded>', 'exec'), namespace, namespace)
           PY
