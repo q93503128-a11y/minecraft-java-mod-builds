@@ -1,4 +1,4 @@
-# trigger: preserve embedded Python triple-quoted literals
+# trigger: preserve inherited physical-dirt status wording
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -44,6 +44,8 @@ jobs:
               if line.count("'''") % 2 == 1:
                   in_triple = not in_triple
           code = '\n'.join(normalized)
+          code = code.replace('현장 earthBank 우선 · 부족분 실제 흙 운반 · 가상 토사 0',
+                              '현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0')
           namespace = {'__name__': '__main__', '__file__': '.github/workflows/frontier-alpha51-apply.yml'}
           exec(compile(code, '.github/workflows/frontier-alpha51-apply.yml::<embedded>', 'exec'), namespace, namespace)
           PY
