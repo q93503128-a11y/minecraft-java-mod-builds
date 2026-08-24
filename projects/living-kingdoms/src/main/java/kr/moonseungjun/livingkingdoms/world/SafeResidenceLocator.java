@@ -84,8 +84,7 @@ public final class SafeResidenceLocator {
         if (feet == null || !level.hasChunkAt(feet)) return false;
         return level.getBlockState(feet.below()).isSolid()
                 && level.getBlockState(feet).isAir()
-                && level.getBlockState(feet.above()).isAir()
-                && level.getBlockState(feet.above(2)).isAir();
+                && level.getBlockState(feet.above()).isAir();
     }
 
     private static void requestResidenceArea(
@@ -155,7 +154,7 @@ public final class SafeResidenceLocator {
         if (!level.hasChunkAt(feet)) return feet;
         BlockPos floorPos = feet.below();
         level.setBlock(floorPos, floor.defaultBlockState(), UPDATE_FLAGS);
-        for (int dy = 0; dy <= 2; dy++) {
+        for (int dy = 0; dy <= 1; dy++) {
             level.setBlock(feet.above(dy), Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
         }
         if (!isWalkable(level, feet)) {
