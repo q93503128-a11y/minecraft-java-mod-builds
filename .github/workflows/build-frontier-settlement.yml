@@ -30,37 +30,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bootstrap Alpha.53 bounded tunnels
-        id: bootstrap53
+      - name: Finalize Alpha.53 tunnel floor protection
+        id: finalize53
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           (
             set -euo pipefail
-            if ! grep -q '^mod_version=0.1.0-alpha.52$' "$PROJECT_DIR/gradle.properties" || ! test -f "$PROJECT_DIR/tools/apply_alpha53.py"; then
+            if ! grep -q '^mod_version=0.1.0-alpha.53$' "$PROJECT_DIR/gradle.properties" || ! test -f "$PROJECT_DIR/tools/fix_alpha53_tunnel_floor.py"; then
               exit 0
             fi
-            echo 'ALPHA53_BOOTSTRAP=1' >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/apply_alpha53.py"
-            python3 - <<'PY'
-          from pathlib import Path
-          p = Path('projects/frontier-settlement/gradle.properties')
-          s = p.read_text(encoding='utf-8')
-          old = 'bounded long-bridge/ravine crossings plus physical save-compatible straight tunnel excavation.'
-          new = 'bounded long-bridge/ravine crossings with persisted physical stone piers, plus physical save-compatible straight tunnel excavation.'
-          if old in s:
-              p.write_text(s.replace(old, new, 1), encoding='utf-8')
-          PY
+            echo 'ALPHA53_FINALIZE=1' >> "$GITHUB_ENV"
+            python3 "$PROJECT_DIR/tools/fix_alpha53_tunnel_floor.py"
+            rm -f "$PROJECT_DIR/tools/fix_alpha53_tunnel_floor.py"
             python3 "$PROJECT_DIR/tools/test_alpha53_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha53_docs.py"
             git diff --check
-            rm -f "$PROJECT_DIR/tools/apply_alpha53.py"
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -A "$PROJECT_DIR"
             git diff --cached --check
-            git commit -m 'Implement Frontier alpha.53 bounded straight tunnels'
+            git commit -m 'Protect Frontier alpha.53 active tunnel floors'
             pushed=0
             for attempt in 1 2 3 4 5 6; do
               if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
@@ -68,20 +59,20 @@ jobs:
               sleep $((attempt * 2))
             done
             test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha53-bootstrap.log
+          ) 2>&1 | tee /tmp/frontier-alpha53-finalize.log
 
-      - name: Record Alpha.53 bootstrap failure
-        if: steps.bootstrap53.outcome == 'failure'
+      - name: Record Alpha.53 finalizer failure
+        if: steps.finalize53.outcome == 'failure'
         shell: bash
         run: |
           set -euo pipefail
           git reset --hard "$GITHUB_SHA"
           mkdir -p ci-results/frontier-alpha53-bootstrap
-          cp /tmp/frontier-alpha53-bootstrap.log ci-results/frontier-alpha53-bootstrap/latest.log
+          cp /tmp/frontier-alpha53-finalize.log ci-results/frontier-alpha53-bootstrap/latest.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/frontier-alpha53-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.53 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          git commit -m "Record Frontier alpha.53 finalizer failure for ${GITHUB_SHA::7} [skip ci]"
           for attempt in 1 2 3 4 5 6; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
             git rebase --abort >/dev/null 2>&1 || true
@@ -89,8 +80,8 @@ jobs:
           done
           exit 1
 
-      - name: Stop source run after Alpha.53 product push
-        if: env.ALPHA53_BOOTSTRAP == '1' && steps.bootstrap53.outcome == 'success'
+      - name: Stop source run after Alpha.53 final product push
+        if: env.ALPHA53_FINALIZE == '1' && steps.finalize53.outcome == 'success'
         shell: bash
         run: exit 1
 
@@ -112,19 +103,19 @@ jobs:
           echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
 
-      - name: Alpha.52 cumulative source audit
+      - name: Alpha.53 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha52_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+          python3 tools/test_alpha53_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
 
-      - name: Alpha.52 canonical docs audit
+      - name: Alpha.53 canonical docs audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha52_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+          python3 tools/test_alpha53_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
 
       - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
