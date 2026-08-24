@@ -72,7 +72,10 @@ must(settlement_data, (
 service = text(JAVA / 'settlement/SettlementService.java')
 if service.count('SettlementExplorationService.tick(server, data)') != 1:
     raise SystemExit('alpha.45 exploration tick must have exactly one server authority call')
-must(service, ('changed || activeProject || explorationChanged',), 'alpha.45 exploration snapshot sync')
+must(service, (
+    'if (changed || activeProject) broadcast(server, data)',
+    'else if (explorationChanged) broadcast(server, data)',
+), 'alpha.45 exploration snapshot sync while preserving alpha.43 contract')
 
 entry = text(JAVA / 'FrontierSettlement.java')
 must(entry, (
