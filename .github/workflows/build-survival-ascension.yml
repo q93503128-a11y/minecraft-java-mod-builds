@@ -47,6 +47,9 @@ jobs:
 
           project = read('PROJECT.md')
           project = project.replace('- Mod version: `0.50.0-alpha.1`', '- Mod version: `0.51.0-alpha.1`', 1)
+          old_compat = '- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1` and older data stay unchanged. 0.50 raises only the persisted safety capacity of the existing depot/outpost lists to nine and derives the live 3/6/9 admission limit from already-existing Industrial Works / Civil Works / Ascension Nexus progression. Existing 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, 0.47 optional EntityType-tag integration, physical freight railheads and item CustomData boundaries remain unchanged.'
+          new_compat = '- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.51 adds the existing affix category `armor` to standard humanoid armor and reads effects only from currently equipped pieces; 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.'
+          project = project.replace(old_compat, new_compat, 1)
           if '## 0.51 Armor Ascension / 방어구 승천 성장' not in project:
               marker = '## 0.50 Regional Logistics Scale / 지역 물류망 확장\n'
               section = '''## 0.51 Armor Ascension / 방어구 승천 성장
@@ -109,15 +112,12 @@ jobs:
           guide_path.write_text(guide, encoding='utf-8')
           PY
 
-          if test -f .github/workflows/survival-051-docsync.yml; then
-            git rm .github/workflows/survival-051-docsync.yml
-          fi
           if git diff --quiet; then
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/survival-ascension .github/workflows/survival-051-docsync.yml || true
+          git add -A projects/survival-ascension
           git commit -m 'Synchronize Survival Ascension 0.51 docs [skip ci]'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
