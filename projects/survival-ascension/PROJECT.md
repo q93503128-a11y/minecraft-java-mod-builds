@@ -1,14 +1,33 @@
 # Survival Ascension
 
-- Mod version: `0.48.0-alpha.1`
+- Mod version: `0.50.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1` and older data stay unchanged. 0.48 adds no persistent schema: frontline readiness is derived live from the exact departure outpost's physical Barrel cluster. Existing 0.47 optional EntityType-tag integration, physical freight railheads and item CustomData boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1` and older data stay unchanged. 0.50 raises only the persisted safety capacity of the existing depot/outpost lists to nine and derives the live 3/6/9 admission limit from already-existing Industrial Works / Civil Works / Ascension Nexus progression. Existing 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, 0.47 optional EntityType-tag integration, physical freight railheads and item CustomData boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.50 Regional Logistics Scale / 지역 물류망 확장
+- Physical depot/outpost admission is no longer permanently capped at three: Industrial Works = 3, Civil Works = 6, Ascension Nexus = 9.
+- The absolute persisted safety cap is9 in the existing `field_depots_v1` and `outpost_v1` lists; no v2 data ID or migration is introduced.
+- `FieldDepotData.registrationLimit` derives the live admission limit from existing completed infrastructure. Data-layer `add`/`upgrade` overloads re-check the supplied limit, so callers cannot bypass the progression gate.
+- `FieldDepotService` shows and enforces the current 3/6/9 limit before spending the depot's supply charge.
+- `OutpostService` checks the current outpost limit before structure validation, material consumption or supply-charge consumption, preventing resources from being lost at a reached 3/6-stage limit.
+- Production status and the in-game guide expose the same current-state rule: 산업3 → 토목6 → 승천 중추9.
+- Capacity growth does not activate remote bases. Each depot remains a real loaded/interactable Barrel; each outpost still requires its existing physical structure and owner-nearby activation.
+- No automatic routing, remote storage, passive upkeep, custom block/item/entity, packet/protocol change, force-load or background simulation.
+
+## 0.49 Frontline Freight Manifest / 전선 보급 화물
+- Existing normal physical freight remains the default behavior.
+- Shift-selecting `물리 화물 수레` at a valid departure railhead loads one bounded frontline reserve: food176 + iron56 + fuel8 + logs32 + stone bricks128, exactly expedition1 + normal-defense1 + Bastion-defense1 local costs.
+- The source is only that departure outpost's registered Barrel + linked warehouse Barrels. Admission is all-or-nothing; missing any part removes nothing.
+- Selected material movement is deterministic and separate from general slot-order bulk loading, so dirt/cobblestone junk cannot consume the frontline reservation first.
+- If the cart cannot accept the complete prepared bundle, already moved items are returned to the same source cluster and the cart is not accepted as a valid manifest.
+- The manifest marker is only the physical Chest Minecart's persistent NBT. Destination unloading continues to respect real container capacity and leaves excess in the same cart.
+- No route SavedData, virtual cargo account, generated supplies, auto-driving, teleport, cross-dimension freight or force-load.
 
 ## 0.48 Frontline Local Supply / 전선 현지 보급
 - Physical freight now has a direct gameplay sink: frontline operations require real stock at the exact active departure outpost.
@@ -175,7 +194,7 @@ Physical fortification uses radius6..12, Y-3..+4, four quadrants each12 unique x
 Normal defense remains supply1 /3 waves /4800 ticks with owner64, physical structure validation and breach radius6/limit200.
 
 ## 0.37 Physical Warehouse Clusters retained
-`field_depots_v1` keeps max3 anchors/player, max8 satellite `통`/anchor inside6. Real Container contents only, loaded-only, no virtual capacity.
+`field_depots_v1` keeps the existing anchor/link schema, max8 satellite `통`/anchor inside6, and an absolute9-anchor safety capacity. Live registration is progression-gated 3/6/9 by Industrial/Civil/Nexus. Real Container contents only, loaded-only, no virtual capacity.
 
 ## 0.36 Physical Commissioning retained
 Civil Works, Industrial Works, Apex Tracking Post and Ascension Nexus use the same final-call real-world commissioning engine. It is one-time proof, not ongoing maintenance.
