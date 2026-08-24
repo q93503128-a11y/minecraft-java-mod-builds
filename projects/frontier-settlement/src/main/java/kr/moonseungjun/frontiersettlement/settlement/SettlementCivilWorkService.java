@@ -14,22 +14,21 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 /**
- * Alpha.49 bounded selected-area civil works.
+ * Alpha.49/50 bounded selected-area civil works.
  *
- * The first selected corner fixes the target surface Y. Up to 9x9 loaded natural terrain may be
- * flattened when every column needs at most four blocks of cut/fill and the initial cut volume is
- * at least the fill volume. Cut terrain never drops items; each actually removed natural block adds
- * one project-local earth unit, and each coarse-dirt fill consumes one. That earth bank can never be
- * spent outside this one project, so the feature is terrain relocation rather than a second economy.
+ * Alpha.49 established project-local cut-to-fill earth relocation. Alpha.50 expands the bounded
+ * work envelope and allows fill beyond on-site cut only when the shared builder physically hauls
+ * real dirt/coarse-dirt ItemStacks from loaded settlement storage. Project-local earth remains
+ * non-economic and imported fill never becomes a virtual balance.
  */
 public final class SettlementCivilWorkService {
-    public static final int MAX_WIDTH = 9;
-    public static final int MAX_DEPTH = 9;
+    public static final int MAX_WIDTH = 13;
+    public static final int MAX_DEPTH = 13;
     public static final int MAX_AREA = MAX_WIDTH * MAX_DEPTH;
-    public static final int MAX_CUT_DEPTH = 4;
-    public static final int MAX_FILL_DEPTH = 4;
-    private static final int MAX_PLAYER_DISTANCE = 28;
-    private static final int MAX_SETTLEMENT_RADIUS = 80;
+    public static final int MAX_CUT_DEPTH = 5;
+    public static final int MAX_FILL_DEPTH = 5;
+    private static final int MAX_PLAYER_DISTANCE = 36;
+    private static final int MAX_SETTLEMENT_RADIUS = 96;
     private static final int WORK_INTERVAL_TICKS = 8;
     private static final int BLOCK_UPDATE = 2;
     private static final double WORK_REACHED_SQR = 4.0D;
@@ -40,6 +39,9 @@ public final class SettlementCivilWorkService {
                         int cutBlocks, int fillBlocks, String message) {
         public int width() { return maxX - minX + 1; }
         public int depth() { return maxZ - minZ + 1; }
+        public int importedFillBlocks() {
+            return SettlementCivilFillSupplyService.importedFillRequired(cutBlocks, fillBlocks);
+        }
     }
     public record StartResult(boolean started, String message) {}
 
@@ -69,16 +71,16 @@ public final class SettlementCivilWorkService {
         int width = maxX - minX + 1;
         int depth = maxZ - minZ + 1;
         if (width > MAX_WIDTH || depth > MAX_DEPTH || width * depth > MAX_AREA) {
-            return invalid("토목 1회 범위는 최대 9×9입니다.");
+            return invalid("토목 1회 범위는 최대 13×13입니다.");
         }
 
         if (horizontalDistanceSqr(player.blockPosition(), first) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE
                 || horizontalDistanceSqr(player.blockPosition(), second) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE) {
-            return invalid("토목 영역은 플레이어 28블록 안에서 지정해 주세요.");
+            return invalid("토목 영역은 플레이어 36블록 안에서 지정해 주세요.");
         }
         BlockPos center = new BlockPos((minX + maxX) / 2, first.getY(), (minZ + maxZ) / 2);
         if (horizontalDistanceSqr(settlement.centerPos(), center) > (long) MAX_SETTLEMENT_RADIUS * MAX_SETTLEMENT_RADIUS) {
-            return invalid("본진 토목 영역은 마을 중심 80블록 안에서 지정해 주세요.");
+            return invalid("본진 토목 영역은 마을 중심 96블록 안에서 지정해 주세요.");
         }
         if (overlapsInfrastructure(settlement, minX, maxX, minZ, maxZ)) {
             return invalid("기존 건물·도로·전초기지·공동 창고와 겹치는 영역은 토목할 수 없습니다.");
@@ -95,7 +97,7 @@ public final class SettlementCivilWorkService {
                 int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 int delta = surfaceY - gradeY;
                 if (delta > MAX_CUT_DEPTH || delta < -MAX_FILL_DEPTH) {
-                    return invalid("각 지점의 절토·성토 높이 차는 최대 4블록입니다.");
+                    return invalid("각 지점의 절토·성토 높이 차는 최대 5블록입니다.");
                 }
                 String safety = validateColumn(level, x, z, surfaceY, gradeY);
                 if (safety != null) return invalid(safety);
@@ -104,12 +106,20 @@ public final class SettlementCivilWorkService {
             }
         }
         if (cut == 0 && fill == 0) return invalid("이미 선택 높이로 평탄한 영역입니다.");
-        if (fill > cut) {
-            return invalid("성토량 " + fill + " > 절토량 " + cut + " · 토목 1차는 현장 절토량 안에서만 성토합니다.");
+
+        int importedFill = SettlementCivilFillSupplyService.importedFillRequired(cut, fill);
+        if (importedFill > 0) {
+            int available = SettlementCivilFillSupplyService.availableFill(level, settlement);
+            if (available < 0) return invalid("공동 창고가 모두 로드된 상태에서 외부 성토 자재를 검사해 주세요.");
+            if (available < importedFill) {
+                return invalid("외부 성토 흙 부족 · 필요 " + importedFill + " / 공동 창고 " + available
+                        + " · 흙/거친 흙 ItemStack을 실제로 넣어 주세요.");
+            }
         }
         return new Check(true, minX, maxX, minZ, maxZ, gradeY, cut, fill,
                 "토목 가능 · " + width + "×" + depth + " · 절토 " + cut + " · 성토 " + fill
-                        + " · 외부 자원/가상 토사 생성 0");
+                        + (importedFill > 0 ? " · 실제 창고 흙 " + importedFill : " · 현장 토사만 사용")
+                        + " · 가상 토사 생성 0");
     }
 
     public static StartResult start(ServerPlayer player, BlockPos first, BlockPos second) {
@@ -132,7 +142,8 @@ public final class SettlementCivilWorkService {
         }
         SettlementService.broadcast(server, settlement);
         return new StartResult(true, "선택영역 토목 착공 · 절토 " + check.cutBlocks() + " / 성토 " + check.fillBlocks()
-                + " · 건설 주민이 현장 자연지형을 직접 재배치합니다.");
+                + (check.importedFillBlocks() > 0 ? " / 창고 흙 운반 " + check.importedFillBlocks() : "")
+                + " · 건설 주민이 현장 토사와 실제 창고 자재를 사용합니다.");
     }
 
     public static boolean tick(MinecraftServer server, SettlementData settlement) {
@@ -167,13 +178,19 @@ public final class SettlementCivilWorkService {
             finish(server, settlement, data, builder);
             return true;
         }
-        if (project.earthBank() <= 0) return false;
+        boolean importedFill = project.earthBank() <= 0;
+        if (importedFill && !SettlementCivilFillSupplyService.ensureCarriedFill(level, settlement, builder, project)) return false;
         BlockState current = level.getBlockState(target);
         if (level.getBlockEntity(target) != null || !current.getFluidState().isEmpty()
                 || (!current.isAir() && !current.canBeReplaced())) return false;
         if (!moveBuilder(level, builder, target)) return false;
         if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
-        level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), BLOCK_UPDATE);
+        if (importedFill) {
+            level.setBlock(target, SettlementCivilFillSupplyService.carriedFillState(builder), BLOCK_UPDATE);
+            SettlementCivilFillSupplyService.consumeOne(builder);
+        } else {
+            level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), BLOCK_UPDATE);
+        }
         builder.swing(InteractionHand.MAIN_HAND);
         data.replace(project.afterFill());
         return false;
@@ -186,7 +203,8 @@ public final class SettlementCivilWorkService {
     public static String phaseLabel(MinecraftServer server) {
         CivilWorkState state = SettlementCivilWorkData.get(server).project();
         if (!state.active()) return "";
-        return state.phase() == CivilWorkState.PHASE_CUT ? "선택영역 절토" : "선택영역 성토";
+        if (state.phase() == CivilWorkState.PHASE_CUT) return "선택영역 절토";
+        return state.earthBank() > 0 ? "선택영역 성토" : "선택영역 성토 · 창고 흙 운반";
     }
 
     public static void onBreakBlock(BreakBlockEvent event) {
