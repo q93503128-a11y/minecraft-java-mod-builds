@@ -1,1 +1,2 @@
-Alpha.66 bootstrap failed before product commit. Inspect the workflow step output.
+Frontier Settlement alpha.66 applicator: DONE
+alpha.44 companion candidate remains locked, not runtime-tested missing: "id":"xaeros_minimap"
