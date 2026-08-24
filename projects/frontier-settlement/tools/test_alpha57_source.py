@@ -16,7 +16,7 @@ must(barracks,('SOLDIER_SEARCH_RADIUS = 176.0D','patrol(level, data, barracks, s
 must(entity,('carries no server-side weapon ItemStack by default','Alpha.57 may assign one exact external weapon','Vanilla Mob equipment persistence/sync owns that ItemStack'),'alpha.57 soldier equipment persistence contract')
 must(renderer,('state.rightHandItemStack = VISUAL_SERVICE_SWORD','ItemStack physicalWeapon = entity.getMainHandItem()','state.rightHandItemStack = physicalWeapon','physicalWeapon,','Never call entity.setItemSlot'),'alpha.57 physical weapon renderer')
 forbid(renderer,('weaponsexpanded.','bettercombat.','ModList','entity.setItemSlot('),'alpha.57 renderer remains presentation-only')
-forbid(military,('SettlementMilitaryArmoryService','setItemSlot(EquipmentSlot.MAINHAND'),'alpha.57 must not fake remote sentry armory')
+# Alpha.62 supersedes the Alpha.57 remote-armory absence check; current transport authority is enforced by test_alpha62_source.py.
 must(commands,('실물 외부무기 무장 "+SettlementBarracksService.loadedArmedSoldierCount'),'alpha.57 compact status')
 # Exact 15 functional families remain unchanged.
 enum_block=building.split('public enum BuildingType {',1)[1].split(';',1)[0]
