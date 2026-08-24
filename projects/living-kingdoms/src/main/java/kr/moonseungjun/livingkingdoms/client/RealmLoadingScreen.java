@@ -9,6 +9,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 public final class RealmLoadingScreen extends Screen {
+    private static final double STAGING_CENTER_X = 0.5D;
+    private static final double STAGING_CENTER_Z = 24_000.5D;
+    private static final double STAGING_FLOOR_Y = 220.0D;
+
     private String homelandId = "unknown";
     private String phase = "preparing";
     private int percent;
@@ -41,7 +45,24 @@ public final class RealmLoadingScreen extends Screen {
 
     @Override
     public void tick() {
-        if (complete && ++completeTicks >= 12) Minecraft.getInstance().gui.setScreen(null);
+        if (!complete) {
+            completeTicks = 0;
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || stillOnConstructionStaging(minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ())) {
+            completeTicks = 0;
+            return;
+        }
+        if (++completeTicks >= 12) minecraft.gui.setScreen(null);
+    }
+
+    private static boolean stillOnConstructionStaging(double x, double y, double z) {
+        double dx = x - STAGING_CENTER_X;
+        double dz = z - STAGING_CENTER_Z;
+        return dx * dx + dz * dz <= 121.0D
+                && y >= STAGING_FLOOR_Y - 2.0D
+                && y <= STAGING_FLOOR_Y + 12.0D;
     }
 
     @Override
@@ -112,7 +133,7 @@ public final class RealmLoadingScreen extends Screen {
             case "chunks" -> "지역 준비 · 선택한 부지의 청크를 생성 중";
             case "planning" -> "건축 배치 · 도로와 시설 배치를 조립 중";
             case "building" -> "왕국 건설 · 구역별 작업을 적용 중";
-            case "complete" -> "완료 · 선택한 거주지로 이동 중";
+            case "complete" -> "완료 · 실제 시민구 거주지를 확인하고 이동 중";
             case "failed" -> "실패 · 왕국 생성 작업을 중단함";
             default -> "시작 준비 · 출신과 소속을 확인 중";
         };
