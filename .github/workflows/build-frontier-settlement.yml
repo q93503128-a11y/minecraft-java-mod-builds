@@ -44,6 +44,23 @@ jobs:
             test -f "$PROJECT_DIR/tools/apply_alpha52.py"
             echo 'ALPHA52_BOOTSTRAP=1' >> "$GITHUB_ENV"
             python3 "$PROJECT_DIR/tools/apply_alpha52.py"
+            python3 - <<'PY'
+          from pathlib import Path
+          path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementData.java')
+          text = path.read_text(encoding='utf-8')
+          old = '''    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
+                  beginRoadConstruction(centers, profile, List.of());
+              }'''
+          new = '''    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
+                  RoadConstructionState next = RoadConstructionState.fromPath(centers, profile);
+                  if (!next.active()) return;
+                  infrastructure = new SettlementInfrastructureState(buildings(), roads(), next, outposts(), outpostConstruction());
+                  setDirty();
+              }'''
+          if old not in text:
+              raise SystemExit('alpha.52 profiled-road compatibility patch anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
             python3 "$PROJECT_DIR/tools/test_alpha52_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha52_docs.py"
             git diff --check
