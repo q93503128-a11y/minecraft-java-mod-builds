@@ -58,8 +58,11 @@ public final class RealmEconomyManager {
         RealmEconomySavedData.Account account = data.account(player.getUUID());
         RealmEconomySavedData.MarketState market = data.updateMarket(currentDay(player));
         int wanted = wanted(player);
+        // Server game time is the monotonic kingdom clock. Unlike a client-local time sample it
+        // cannot jump backwards during dimension/chunk resynchronization, and sleeping is already
+        // disabled by the Erden gameplay rules so it remains aligned with the simulation calendar.
         long realmTime = player.level().dimension().equals(StarterRealmManager.REALM_KEY)
-                ? player.level().getDayTime()
+                ? player.level().getGameTime()
                 : 0L;
         PacketDistributor.sendToPlayer(player, new FantasyHudStatePayload(
                 account.silver(), account.renown(), wanted, professionName(account.profession()), realmTime,
