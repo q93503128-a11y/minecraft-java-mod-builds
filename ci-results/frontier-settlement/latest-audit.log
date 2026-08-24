@@ -1,0 +1,3 @@
+alpha.40 daytime production integration missing: SettlementOutpostProductionService.tick(server, data);
+            SettlementFishingOutpostService.tick(server, data);
+            SettlementMarketService.tick(server, data);
