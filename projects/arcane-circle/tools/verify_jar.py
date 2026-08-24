@@ -67,6 +67,9 @@ required = {
     'kr/moonseungjun/arcanecircle/client/HighCirclePrestigeOverlay.class',
     'kr/moonseungjun/arcanecircle/client/CircleScaleEnvelope.class',
     'kr/moonseungjun/arcanecircle/client/PrimaryGrimoireScreen.class',
+    'kr/moonseungjun/arcanecircle/client/GrimoireScreen.class',
+    'kr/moonseungjun/arcanecircle/client/ClientNetworkHandlers.class',
+    'kr/moonseungjun/arcanecircle/magic/DestructiveMagicService.class',
     'data/arcanecircle/spell_catalog/index.json',
     'assets/arcanecircle/items/spellbook_meteor_swarm.json',
     'assets/arcanecircle/items/spellbook_wish.json',
@@ -90,7 +93,7 @@ with zipfile.ZipFile(jar) as archive:
 
     index = json.loads(archive.read('data/arcanecircle/spell_catalog/index.json'))
     version = index.get('version')
-    if version != '0.12.1-alpha.75':
+    if version != '0.12.1-alpha.76':
         raise SystemExit(f'unexpected alpha.75 package version: {version}')
     if jar.name != f'arcanecircle-{version}.jar':
         raise SystemExit(f'JAR/version mismatch: {jar.name} vs {version}')
@@ -98,6 +101,15 @@ with zipfile.ZipFile(jar) as archive:
         raise SystemExit('catalogue is not full 1-9 / 90+19')
     if index.get('spell_contract_audit') != '109_explicit_summaries_and_runtime_routes':
         raise SystemExit('109-spell audit metadata missing')
+    expected76 = {
+        'grimoire_shell': 'all_non_sync_pages_use_responsive_grimoire_screen',
+        'circle_selector': 'all_1_to_9_entries_share_available_height_and_click_geometry',
+        'academy_spellbook_shop': 'responsive_offer_rows_restored_with_existing_server_purchase_gate',
+        'earthquake_terrain': 'six_radial_faults_bridge_core_to_96_percent_authoritative_radius_plus_tiled_footprint',
+        'npc_terrain_safety': 'unchanged_no_npc_world_edit',
+    }
+    if index.get('liveplay_alpha76_hotfix') != expected76:
+        raise SystemExit('alpha.76 live-play hotfix metadata mismatch')
     for c in ('first','second','third','fourth','fifth','sixth','seventh','eighth','ninth'):
         if index.get(f'{c}_circle_npc_parity') is not True:
             raise SystemExit(f'{c} NPC parity metadata missing')
@@ -288,6 +300,10 @@ with zipfile.ZipFile(jar) as archive:
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
 print('Arcane Circle alpha.75 JAR verification: PASS')
+print('alpha76_single_responsive_grimoire_shell=PASS')
+print('alpha76_all_nine_circle_selector_accessible=PASS')
+print('alpha76_academy_spellbook_shop_restored=PASS')
+print('alpha76_earthquake_full_radius_fault_terrain=PASS')
 print('alpha75_successful_use_mastery_floor=PASS')
 print('alpha75_hostile_only_insight_economy=PASS')
 print('alpha75_academy_server_circle_gate=PASS')

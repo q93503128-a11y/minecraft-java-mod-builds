@@ -1,3 +1,0 @@
-trigger=alpha76-liveplay-ui-earthquake
-issue_kick=32680648015
-connector_retrigger=2026-08-24T11:58+09:00

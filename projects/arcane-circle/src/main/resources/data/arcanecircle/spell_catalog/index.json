@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1-alpha.75",
+  "version": "0.12.1-alpha.76",
   "world": "Ninefold Arcane Dominion",
   "implemented_circles": [
     1,
@@ -72,6 +72,13 @@
     "terrain_scans_per_tick": 48000
   },
   "catastrophe_destruction": "visible_footprint_tiled_across_bounded_ticks",
+  "liveplay_alpha76_hotfix": {
+    "grimoire_shell": "all_non_sync_pages_use_responsive_grimoire_screen",
+    "circle_selector": "all_1_to_9_entries_share_available_height_and_click_geometry",
+    "academy_spellbook_shop": "responsive_offer_rows_restored_with_existing_server_purchase_gate",
+    "earthquake_terrain": "six_radial_faults_bridge_core_to_96_percent_authoritative_radius_plus_tiled_footprint",
+    "npc_terrain_safety": "unchanged_no_npc_world_edit"
+  },
   "maintained_authority_key": "G",
   "mage_residents": true,
   "mage_entity_circles": [

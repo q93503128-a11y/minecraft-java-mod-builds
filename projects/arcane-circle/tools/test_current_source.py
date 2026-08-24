@@ -21,9 +21,9 @@ def need(body, *tokens):
 gradle = text(root / 'gradle.properties')
 main = text(root / 'src/main/java/kr/moonseungjun/arcanecircle/ArcaneCircle.java')
 index = json.loads(text(root / 'src/main/resources/data/arcanecircle/spell_catalog/index.json'))
-need(gradle, 'mod_version=0.12.1-alpha.75')
-need(main, 'VERSION = "0.12.1-alpha.75"')
-assert index['version'] == '0.12.1-alpha.75'
+need(gradle, 'mod_version=0.12.1-alpha.76')
+need(main, 'VERSION = "0.12.1-alpha.76"')
+assert index['version'] == '0.12.1-alpha.76'
 assert index['implemented_circles'] == list(range(1, 10))
 assert index['direct_spells'] == 90 and index['fusion_spells'] == 19
 
@@ -35,6 +35,29 @@ assert (len(direct), len(fusions), len(spells)) == (90, 19, 109)
 summary = text(magic / 'SpellEffectSummary.java')
 assert set(re.findall(r'case "([a-z0-9_]+)"', summary)) == spells
 
+
+# Alpha.76 live-play grimoire / Earthquake regression pass.
+handlers = text(client / 'ClientNetworkHandlers.java')
+grimoire = text(client / 'GrimoireScreen.java')
+destructive = text(magic / 'DestructiveMagicService.java')
+need(handlers, 'Minecraft.getInstance().gui.setScreen(new GrimoireScreen(payload.page()));')
+assert 'new PrimaryGrimoireScreen' not in handlers
+need(grimoire,
+     'for(int c=1;c<=9;c++)if(inside(e.x(),e.y(),l.circleIndex(c)))',
+     'int circleStep(){int available=Math.max(9,contentBottom()-(body().y()+28));return Math.max(1,available/9);}',
+     'AcademyOfferCatalog.forCircle(academyCircle)', 'l.offerRow(i,scroll)')
+need(destructive,
+     'int branches = 6;', 'int steps = 4;',
+     'double fraction = .18 + .78 * (step / (double) steps);',
+     'six bounded zig-zag radial faults')
+need(main, 'DestructiveMagicService.tick(level);')
+assert index['liveplay_alpha76_hotfix'] == {
+    'grimoire_shell': 'all_non_sync_pages_use_responsive_grimoire_screen',
+    'circle_selector': 'all_1_to_9_entries_share_available_height_and_click_geometry',
+    'academy_spellbook_shop': 'responsive_offer_rows_restored_with_existing_server_purchase_gate',
+    'earthquake_terrain': 'six_radial_faults_bridge_core_to_96_percent_authoritative_radius_plus_tiled_footprint',
+    'npc_terrain_safety': 'unchanged_no_npc_world_edit',
+}
 
 # Alpha.75 integrated progression / economy authority pass.
 player_data = text(magic / 'MagicPlayerData.java')
@@ -499,13 +522,17 @@ need(main,
      'Alpha65NinthCircleRuntime.clear(player);', 'Alpha65NinthCircleRuntime.tick(level);', 'Alpha65NinthCircleRuntime.clearAll();')
 verify = text(root / 'tools/verify_jar.py')
 need(verify,
-     '0.12.1-alpha.75', 'FirstCircleAuthorityOverlay.class', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
+     '0.12.1-alpha.76', 'FirstCircleAuthorityOverlay.class', 'SecondCircleSpellSummary.class', 'SecondCircleAuthorityOverlay.class', 'ThirdCircleSpellSummary.class', 'ThirdCircleAuthorityOverlay.class', 'FourthCircleSpellSummary.class', 'FourthCircleAuthorityOverlay.class', 'FifthCircleSpellSummary.class', 'FifthCircleAuthorityOverlay.class',
      'MoveEarthService.class', 'SixthCircleAuthorityOverlay.class',
      'alpha69_sixth_circle_value_pass_1=PASS', 'alpha68_seventh_circle_value_pass_1=PASS')
 
 print('Arcane Circle current-source audit: PASS')
 print('catalog_90_direct_19_fusion=PASS')
 print('all_109_explicit_effect_summaries=PASS')
+print('alpha76_single_responsive_grimoire_shell=PASS')
+print('alpha76_all_nine_circle_selector_accessible=PASS')
+print('alpha76_academy_spellbook_shop_restored=PASS')
+print('alpha76_earthquake_full_radius_fault_terrain=PASS')
 print('alpha75_successful_use_mastery_floor=PASS')
 print('alpha75_hostile_only_insight_economy=PASS')
 print('alpha75_academy_server_circle_gate=PASS')

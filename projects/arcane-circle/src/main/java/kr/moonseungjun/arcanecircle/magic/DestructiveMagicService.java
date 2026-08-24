@@ -161,13 +161,26 @@ public final class DestructiveMagicService {
         ServerLevel level = (ServerLevel) player.level();
         double field = Math.max(11.0, Math.min(56.0, requestedRadius));
         int changed = impact(player, "earthquake", center.add(0, -.35, 0), field, power * 1.14);
-        for (int i = 0; i < 12; i++) {
-            double a = Math.PI * 2.0 * i / 12.0 + Math.sin(i * 1.91) * .15;
-            double d = field * (.38 + .038 * (i % 4));
-            Vec3 at = center.add(Math.cos(a) * d, -.22 - .08 * (i % 3), Math.sin(a) * d);
-            queue(level, new RuptureTask(player.getUUID(), "earthquake", at,
-                    Math.min(9.5, Math.max(4.0, field * (.16 + .012 * (i % 3)))),
-                    power * (.68 + .045 * (i % 4)), level.getGameTime() + 1 + i / 2));
+        // six bounded zig-zag radial faults bridge core to authoritative edge
+        int branches = 6;
+        int steps = 4;
+        for (int branch = 0; branch < branches; branch++) {
+            double angle = Math.PI * 2.0 * branch / branches
+                    + Math.sin(branch * 1.91 + player.getUUID().hashCode() * .001) * .12;
+            double dx = Math.cos(angle), dz = Math.sin(angle);
+            for (int step = 1; step <= steps; step++) {
+                double fraction = .18 + .78 * (step / (double) steps);
+                double side = ((branch + step) & 1) == 0 ? -1.0 : 1.0;
+                double lateral = side * Math.min(1.8, Math.max(.55, field * .04));
+                Vec3 at = center.add(dx * field * fraction - dz * lateral,
+                        -.24 - .09 * (step % 3), dz * field * fraction + dx * lateral);
+                double localRadius = Math.min(5.2,
+                        Math.max(2.6, field * (.095 + .006 * (step & 1))));
+                double localPower = power * (.78 - .16 * (step / (double) steps));
+                int serial = branch * steps + step - 1;
+                queue(level, new RuptureTask(player.getUUID(), "earthquake", at, localRadius,
+                        localPower, level.getGameTime() + 1 + serial / 5));
+            }
         }
         return changed;
     }
