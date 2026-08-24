@@ -160,6 +160,7 @@ must(canonical, (
     'Alpha.40–46 keep that number',
     'Current families are exactly:',
     'builder walks from actual settlement storage carrying real wood/stone stacks',
+    'Transport workers belong to a specific outpost',
     'single authority for outpost transport',
     'tier-visible public works',
     '### Alpha.46 waterfront reverse-supply and trade rule',
@@ -184,7 +185,7 @@ must(gap, (
     '### Alpha.46 waterfront 감사',
     'ordinary outpost stockpile 자동판매 없음',
     'military reverse supply가 항상 waterfront wood supply보다 우선',
-    'no boat logistics/teleport/force-load/virtual trade points/second transporter 없음',
+    'boat logistics/teleport/force-load/virtual trade points/second transporter 없음',
     '## 12. Alpha.44–46 추가 실플레이 acceptance',
 ), 'alpha.46 completion gap audit')
 forbid(gap, (
