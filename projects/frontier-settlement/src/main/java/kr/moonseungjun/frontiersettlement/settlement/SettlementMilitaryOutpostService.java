@@ -1,11 +1,12 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
+import kr.moonseungjun.frontiersettlement.content.FrontierSoldierEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
@@ -19,15 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Loaded-only dangerous-region military overlay for otherwise-general outposts.
- *
- * This is deliberately not a remote copy of the town barracks. A qualifying frontier outpost owns
- * one supplied sentry whose replacement consumes real food and metal already delivered to that
- * outpost stockpile. Danger is inferred from several pieces of loaded world evidence rather than a
- * menu toggle or a single mob-count threshold. When the evidence disappears the sentry stands down
- * and returns home instead of being deleted or interpreted as a casualty.
- */
+/** Loaded-only dangerous-region military overlay for otherwise-general outposts. */
 public final class SettlementMilitaryOutpostService {
     public static final String MILITARY_SENTRY_TAG = "frontier_settlement_military_outpost_sentry";
     public static final String MILITARY_OUTPOST_TAG_PREFIX = "frontier_settlement_military_outpost_";
@@ -75,15 +68,13 @@ public final class SettlementMilitaryOutpostService {
             DangerEvidence evidence = dangerEvidence(level, outpost);
             if (!evidence.loaded()) continue;
 
-            IronGolem sentry = findSentry(level, outpost);
+            FrontierSoldierEntity sentry = findSentry(level, outpost);
             if (!evidence.dangerous()) {
                 if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) standDown(outpost, sentry);
                 continue;
             }
 
-            if (sentry == null && tick % RECRUIT_INTERVAL_TICKS == 0) {
-                sentry = tryRecruit(level, outpost);
-            }
+            if (sentry == null && tick % RECRUIT_INTERVAL_TICKS == 0) sentry = tryRecruit(level, outpost);
             if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) patrol(level, outpost, sentry);
         }
     }
@@ -153,12 +144,12 @@ public final class SettlementMilitaryOutpostService {
         return new DangerEvidence(true, threats.size(), close, threatClasses.size(), enclosedDark);
     }
 
-    /** Military sentries are combat proxies, never iron farms. */
+    /** Military sentries are combat/service units and never item/iron farms. */
     public static void onLivingDrops(LivingDropsEvent event) {
         if (event.getEntity().entityTags().contains(MILITARY_SENTRY_TAG)) event.getDrops().clear();
     }
 
-    private static IronGolem tryRecruit(ServerLevel level, OutpostRecord outpost) {
+    private static FrontierSoldierEntity tryRecruit(ServerLevel level, OutpostRecord outpost) {
         if (!isActiveMilitaryOutpost(level, outpost) || findSentry(level, outpost) != null) return null;
         if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return null;
         if (SettlementInventory.countFood(container) < RECRUIT_FOOD_COST
@@ -166,7 +157,7 @@ public final class SettlementMilitaryOutpostService {
 
         BlockPos home = outpost.center().above();
         if (!level.hasChunkAt(home)) return null;
-        IronGolem sentry = new IronGolem(EntityTypes.IRON_GOLEM, level);
+        FrontierSoldierEntity sentry = new FrontierSoldierEntity(FrontierContent.FRONTIER_SOLDIER.get(), level);
         sentry.setPos(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         sentry.setCustomName(Component.literal("전초 수비대 #" + outpost.id()));
         sentry.setCustomNameVisible(true);
@@ -183,7 +174,7 @@ public final class SettlementMilitaryOutpostService {
         return sentry;
     }
 
-    private static void patrol(ServerLevel level, OutpostRecord outpost, IronGolem sentry) {
+    private static void patrol(ServerLevel level, OutpostRecord outpost, FrontierSoldierEntity sentry) {
         BlockPos home = outpost.center().above();
         double homeDistance = sentry.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         if (homeDistance > LEASH_RADIUS_SQR) {
@@ -192,10 +183,7 @@ public final class SettlementMilitaryOutpostService {
             return;
         }
         Monster threat = nearestCombatThreat(level, outpost.center());
-        if (threat != null) {
-            sentry.setTarget(threat);
-            return;
-        }
+        if (threat != null) { sentry.setTarget(threat); return; }
         standDown(outpost, sentry);
     }
 
@@ -204,27 +192,46 @@ public final class SettlementMilitaryOutpostService {
         return level.getEntitiesOfClass(Monster.class, area,
                         monster -> monster.isAlive() && !(monster instanceof Creeper)).stream()
                 .min(Comparator.comparingDouble(monster -> monster.distanceToSqr(
-                        center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D)))
-                .orElse(null);
+                        center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D))).orElse(null);
     }
 
-    private static void standDown(OutpostRecord outpost, IronGolem sentry) {
+    private static void standDown(OutpostRecord outpost, FrontierSoldierEntity sentry) {
         if (sentry.getTarget() != null) sentry.setTarget(null);
         BlockPos home = outpost.center().above();
         if (sentry.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > HOME_RADIUS_SQR) {
             sentry.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.88D);
-        } else {
-            sentry.getNavigation().stop();
-        }
+        } else sentry.getNavigation().stop();
     }
 
-    private static IronGolem findSentry(ServerLevel level, OutpostRecord outpost) {
+    private static FrontierSoldierEntity findSentry(ServerLevel level, OutpostRecord outpost) {
         String assignment = assignmentTag(outpost);
         AABB search = new AABB(outpost.center()).inflate(SENTRY_SEARCH_RADIUS, 16.0D, SENTRY_SEARCH_RADIUS);
-        List<IronGolem> sentries = level.getEntitiesOfClass(IronGolem.class, search,
-                sentry -> sentry.entityTags().contains(MILITARY_SENTRY_TAG)
+        List<FrontierSoldierEntity> sentries = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
+                sentry -> sentry.entityTags().contains(MILITARY_SENTRY_TAG) && sentry.entityTags().contains(assignment));
+        if (!sentries.isEmpty()) return sentries.getFirst();
+
+        // Alpha.41 save migration: presentation/body replacement is 1:1 and never charges recruitment again.
+        List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
+                sentry -> !(sentry instanceof FrontierSoldierEntity)
+                        && sentry.entityTags().contains(MILITARY_SENTRY_TAG)
                         && sentry.entityTags().contains(assignment));
-        return sentries.isEmpty() ? null : sentries.getFirst();
+        return legacy.isEmpty() ? null : migrateLegacySentry(level, legacy.getFirst());
+    }
+
+    private static FrontierSoldierEntity migrateLegacySentry(ServerLevel level, IronGolem legacy) {
+        FrontierSoldierEntity replacement = new FrontierSoldierEntity(FrontierContent.FRONTIER_SOLDIER.get(), level);
+        replacement.setPos(legacy.getX(), legacy.getY(), legacy.getZ());
+        replacement.setYRot(legacy.getYRot());
+        replacement.setXRot(legacy.getXRot());
+        replacement.setCustomName(legacy.getCustomName());
+        replacement.setCustomNameVisible(legacy.isCustomNameVisible());
+        replacement.setPersistenceRequired();
+        replacement.setPlayerCreated(true);
+        for (String tag : legacy.entityTags()) replacement.addTag(tag);
+        replacement.setHealth(Math.min(replacement.getMaxHealth(), legacy.getHealth()));
+        if (!level.addFreshEntity(replacement)) return null;
+        legacy.discard();
+        return replacement;
     }
 
     private static String assignmentTag(OutpostRecord outpost) {
