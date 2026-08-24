@@ -1,3 +1,1 @@
-alpha.40 daytime production integration missing: SettlementOutpostProductionService.tick(server, data);
-            SettlementFishingOutpostService.tick(server, data);
-            SettlementMarketService.tick(server, data);
+alpha.41 reverse military supply on existing road authority missing: there is still only one authority for long-distance outpost transport
