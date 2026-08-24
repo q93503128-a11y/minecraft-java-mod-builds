@@ -1,7 +1,13 @@
 {
   "replace": false,
   "values": [
-    {"id":"biomesoplenty:glowing_grotto","required":false},
-    {"id":"biomesoplenty:spider_nest","required":false}
+    {
+      "id": "biomesoplenty:glowing_grotto",
+      "required": false
+    },
+    {
+      "id": "biomesoplenty:spider_nest",
+      "required": false
+    }
   ]
 }
