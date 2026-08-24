@@ -81,11 +81,13 @@ public final class SettlementOutpostService {
         }
 
         BlockPos center = outpostCenter(gate, road.directionX(), road.directionZ());
-        String specialization = detectSpecialization(level, center);
+        String specialization = detectSpecialization(level, center, data);
+        long woodCost = SettlementExplorationBenefitService.outpostWoodCost(data);
+        long stoneCost = SettlementExplorationBenefitService.outpostStoneCost(data);
         SettlementService.refreshResources(server, data);
-        if (data.resources().wood() < WOOD_COST || data.resources().stone() < STONE_COST) {
+        if (data.resources().wood() < woodCost || data.resources().stone() < stoneCost) {
             return new PlacementCheck(false, roadIndex, gate, road.directionX(), road.directionZ(), specialization,
-                    "전초기지 필요 자원: 목재 " + WOOD_COST + " · 석재 " + STONE_COST);
+                    "전초기지 필요 자원: 목재 " + woodCost + " · 석재 " + stoneCost);
         }
 
         return new PlacementCheck(true, roadIndex, gate, road.directionX(), road.directionZ(), specialization,
@@ -119,16 +121,19 @@ public final class SettlementOutpostService {
             return new StartResult(false, "공동 창고가 모두 로드된 상태에서 전초기지를 착공해 주세요. 자원은 차감되지 않았습니다.");
         }
 
+        long woodCost = SettlementExplorationBenefitService.outpostWoodCost(data);
+        long stoneCost = SettlementExplorationBenefitService.outpostStoneCost(data);
         SettlementService.refreshResources(server, data);
-        if (data.resources().wood() < WOOD_COST || data.resources().stone() < STONE_COST) {
-            return new StartResult(false, "전초기지 필요 자원: 목재 " + WOOD_COST + " · 석재 " + STONE_COST);
+        if (data.resources().wood() < woodCost || data.resources().stone() < stoneCost) {
+            return new StartResult(false, "전초기지 필요 자원: 목재 " + woodCost + " · 석재 " + stoneCost);
         }
 
         data.beginOutpostConstruction(roadIndex, gate, road.directionX(), road.directionZ());
         data.replaceOutpostConstructionStep(OutpostConstructionState.GRADE_STEP_OFFSET);
         SettlementConstructionService.ensureBuilder(level, data.centerPos());
         SettlementService.broadcast(server, data);
-        return new StartResult(true, "전초기지 착공. 건설 주민이 부지를 정리한 뒤 실제 목재·석재를 운반하며 시공합니다.");
+        return new StartResult(true, "전초기지 착공. 건설 주민이 부지를 정리한 뒤 실제 목재·석재를 운반하며 시공합니다."
+                + " (탐험 정복 반영 비용: 목재 " + woodCost + " · 석재 " + stoneCost + ")");
     }
 
     public static boolean tick(MinecraftServer server, SettlementData data) {
@@ -267,12 +272,14 @@ public final class SettlementOutpostService {
         long remainingCost = 0L;
         Predicate<ItemStack> predicate = null;
         if (woodStep) {
-            requiredNow = materialCostDelta(plan, step, true, WOOD_COST);
-            remainingCost = materialRemainingCost(plan, step, true, WOOD_COST);
+            long totalWoodCost = SettlementExplorationBenefitService.outpostWoodCost(data);
+            requiredNow = materialCostDelta(plan, step, true, totalWoodCost);
+            remainingCost = materialRemainingCost(plan, step, true, totalWoodCost);
             predicate = SettlementInventory::isWood;
         } else if (stoneStep) {
-            requiredNow = materialCostDelta(plan, step, false, STONE_COST);
-            remainingCost = materialRemainingCost(plan, step, false, STONE_COST);
+            long totalStoneCost = SettlementExplorationBenefitService.outpostStoneCost(data);
+            requiredNow = materialCostDelta(plan, step, false, totalStoneCost);
+            remainingCost = materialRemainingCost(plan, step, false, totalStoneCost);
             predicate = SettlementInventory::isStone;
         }
 
@@ -421,7 +428,7 @@ public final class SettlementOutpostService {
         if (!returnCarriedToStorage(server, data, builder)) return false;
 
         BlockPos center = OutpostBlueprints.center(state);
-        String specialization = detectSpecialization(level, center);
+        String specialization = detectSpecialization(level, center, data);
         OutpostRecord outpost = new OutpostRecord(
                 data.outposts().size() + 1,
                 center.getX(), center.getY(), center.getZ(),
@@ -572,6 +579,10 @@ public final class SettlementOutpostService {
     }
 
     private static String detectSpecialization(ServerLevel level, BlockPos center) {
+        return detectSpecialization(level, center, null);
+    }
+
+    private static String detectSpecialization(ServerLevel level, BlockPos center, SettlementData data) {
         int ores = 0;
         int logs = 0;
         int fieldGround = 0;
@@ -588,6 +599,12 @@ public final class SettlementOutpostService {
                     if (dy >= -3 && dy <= 3 && isStone(state) && level.getBlockState(pos.above()).isAir()) exposedStone++;
                 }
             }
+        }
+        if (data != null) {
+            ores += SettlementExplorationBenefitService.oreEvidenceBonus(data);
+            logs += SettlementExplorationBenefitService.logEvidenceBonus(data);
+            fieldGround += SettlementExplorationBenefitService.fieldEvidenceBonus(data);
+            exposedStone += SettlementExplorationBenefitService.stoneEvidenceBonus(data);
         }
         if (ores >= 4) return "mining";
         if (logs >= 24) return "lumber";

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.54`
+현재 구현 기준: `0.1.0-alpha.55`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.54에서 bounded 단일굴곡 터널과 실제 석재 포털까지 추가되어도 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.55에서 비농사형 탐험 지식이 기존 전초 운영에 실제 효과를 주어도 실물 군사 armory, companion-biome/NPC 특화 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -197,6 +197,22 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 
 따라서 Alpha.52–54에서 장교량 + 직선 터널 + bounded 단일굴곡/실물 포털까지 첫 대형 횡단 breadth가 형성됐다. 더 큰 토목은 자동 다음 우선순위가 아니라 실플레이 필요성으로만 재개한다.
 
+### Alpha.55 탐험 지식 / 전초 가치 감사
+
+- Alpha.45 unique structure/boss persistence 그대로 사용, 새 save field 없음;
+- 외부 구조물 unique type 최대3단계 survey knowledge, 동일 ID 반복 0;
+- 강적 unique type 최대2단계 conquest knowledge, 동일 ID 반복 0;
+- survey는 기존 loaded 12-block 전초 특화 증거에 작은 bounded bias만 추가, 자원 생성/광석 생성 없음;
+- conquest는 신규 전초 physical total만 level당 wood4/stone2 절감, max wood8/stone4;
+- base72/48, 최저64/44이며 placement 승인과 actual builder ItemStack consume가 같은 effective cost를 사용;
+- free loot/refund/population/virtual currency 없음;
+- loaded-only exploration observation/companion soft dependency 유지;
+- `builder walks from actual settlement storage carrying real wood/stone stacks` 유지;
+- `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지;
+- **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지.
+
+따라서 generic exploration-to-settlement value는 **완료/부분**으로 전진했다. 다음 탐험 breadth는 companion biome/NPC의 안정적인 soft seam이 실제로 있을 때만 추가한다.
+
 ## 4. 주민 / 생산 / 방어
 
 | 요구사항 | 상태 | 현재 |
@@ -313,9 +329,9 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
-2. stable seam이 있을 때 companion-biome-aware outpost specialization;
-3. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
+1. stable seam이 있을 때 companion-biome/rare-NPC-aware outpost specialization; generic exploration value는 Alpha.55에서 1차 연결됨;
+2. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
+3. long survival + two-player multiplayer acceptance;
 4. long survival + two-player multiplayer acceptance;
 5. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.54**.
+Current canonical implementation: **0.1.0-alpha.55**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–54 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–55 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -326,6 +326,21 @@ Dangerous-outpost invariant:
 
 A physical external-weapon armory/loadout loop remains unfinished. If added, it must use actual ItemStacks and automation and must not require manually opening every soldier.
 
+### Alpha.55 exploration knowledge -> existing outpost value
+
+Alpha.55 extends Alpha.45 without creating a second progression or reward authority.
+
+- `surveyLevel = min(3, unique external structure types)`;
+- `conquestLevel = min(2, unique defeated conquest target types)`;
+- survey level only biases the existing loaded local specialization evidence: ore +0/0/1/1, logs +2/level, field ground +8/level, exposed stone +2/level; it never spawns or credits resources;
+- conquest level reduces only the physical material total for newly built outposts: wood `72 - 4*level`, stone `48 - 2*level`, minimum64/44;
+- those effective totals are used by placement approval and by the existing builder's actual ItemStack extraction/consumption math, so the discount cannot become a virtual refund or free construction;
+- benefits are deterministic from Alpha.45 persisted unique-ID lists; old saves need no migration field and repeated IDs remain non-farmable;
+- exploration observation remains loaded-only and never locates/generates external content;
+- no free loot, population, abstract survey currency, new UI tree, second economy or second transport authority;
+- **builder walks from actual settlement storage carrying real wood/stone stacks** remains true;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and Alpha.27 is the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
 ## 8. Resources and logistics
 
 Resources remain physical Minecraft items.
@@ -335,7 +350,7 @@ Resources remain physical Minecraft items.
 - avoid every-tick arbitrary player chest scanning;
 - common/additive tags let compatible external materials participate;
 - service/commission/trade barrels are not generic storage unless explicitly specified;
-- Alpha.45 exploration score and civil `earthBank` are not spendable resources.
+- Alpha.45 exploration score, Alpha.55 survey/conquest knowledge and civil `earthBank` are not spendable resources.
 
 **Transport workers belong to a specific outpost**, follow persisted road-network waypoints, carry actual cargo and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 
@@ -566,7 +581,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.54
+## 14. Current playable slice after Alpha.55
 
 Current implemented slice includes:
 
@@ -590,13 +605,13 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.54
+## 15. Unfinished original-scope priorities after Alpha.55
 
 Unless real-play regression overrides them:
 
-1. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
-2. better companion-biome-aware outpost specialization where a stable data seam exists;
-3. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
+1. better companion-biome-aware / rare-NPC outpost specialization only where a stable soft data seam exists; Alpha.55 already supplies the generic non-farmable exploration-value bridge;
+2. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
+3. long survival + two-player multiplayer acceptance;
 4. long survival + two-player multiplayer acceptance;
 5. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

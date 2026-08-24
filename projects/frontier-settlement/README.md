@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.54
+## Current version: 0.1.0-alpha.55
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.54 key was added.
+No new Alpha.55 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–54 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–55 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,22 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.55 — non-farmable exploration knowledge feeds existing outposts
+
+Alpha.55 makes the already-persisted Alpha.45 discovery/conquest milestones matter after tier acceleration without creating another progression tree.
+
+- unique external structure IDs yield a capped **survey level 0–3**; repeated copies of the same structure type still add nothing;
+- survey knowledge does not create ores/logs/food. It only adds a small bounded evidence bias to the existing loaded 12-block outpost-specialization survey, making mining/lumber/agriculture/quarry roles slightly easier to recognize after real exploration;
+- unique conquest target IDs yield a capped **conquest level 0–2**; repeated kills of the same boss type add nothing;
+- each conquest level reduces a **new** outpost's physical construction total by only 4 wood + 2 stone, capped at 8 wood + 4 stone; the builder still walks from real loaded settlement storage and consumes actual ItemStacks through the existing outpost construction authority;
+- base outpost costs remain 72 wood + 48 stone and the minimum Alpha.55 explored cost is 64 wood + 44 stone;
+- the benefit is computed directly from existing unique milestone lists, so old saves gain the correct value automatically and there is no new saved currency/claim flag;
+- no structure locator, force-load, companion class reference, generated reward chest, free item, population grant, second economy or second logistics authority is added;
+- compact `/frontier status` shows survey/conquest levels and the current physical new-outpost cost; no new dashboard or key is introduced;
+- `Transport workers belong to a specific outpost`, `pause at unloaded route boundaries`, and Alpha.27 remains the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
+This is intentionally a small settlement-value bridge, not a generic RPG skill tree. Companion-specific biome/NPC seams remain a later optional depth pass only where a stable API/data seam exists.
 
 ## Alpha.54 — bounded one-bend tunnels and physical portals
 
