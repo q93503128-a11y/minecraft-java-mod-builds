@@ -30,6 +30,10 @@ def main() -> None:
     equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
     production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
     production_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
+    guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
+    readme = read("README.md")
+    project_doc = read("PROJECT.md")
+    changelog = read("CHANGELOG.md")
     ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")
     expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
     deep_expedition = json.loads(read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json"))
@@ -143,8 +147,9 @@ def main() -> None:
         "new LocalRequirement(\"석재 벽돌\", 128",
     ):
         require(token in production, f"0.48 frontline local supply missing: {token}")
-    require("FieldDepotService.consumeMatching" not in production[production.find("prepareLocalOutpostSupply"):production.find("private static void bulkOffload")],
-            "0.48 frontline stock must not fall back to the global logistics/player-inventory resolver")
+    local_supply = production[production.find("private static PreparedLocalSupply prepareLocalOutpostSupply"):production.find("private static void bulkOffload")]
+    for forbidden in ("FieldDepotService.consumeMatching", "FieldDepotService.consume(", "player.getInventory().getItem"):
+        require(forbidden not in local_supply, f"0.48 frontline stock must not use global/player fallback: {forbidden}")
     require("플레이어 인벤토리나 다른 근처 거점으로 대체하지 않습니다" in production,
             "0.48 frontline stock fallback policy message missing")
     require("OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply" in production
@@ -156,6 +161,14 @@ def main() -> None:
         "전초재고(식량32/철8/연료8)",
     ):
         require(token in production_ui, f"0.48 production radial cost disclosure missing: {token}")
+    for token in ("전선 현지 보급", "원정은 식량32+철8+석탄/목탄8", "전초 방어는 식량48+철16+통나무32", "요새 방어는 식량96+철32+석재벽돌128", "전선 작전 재고"):
+        require(token in guide, f"0.48 in-game guide drifted: {token}")
+    require("0.48.0-alpha.1" in readme and "Frontline Local Supply" in readme and "exact departure outpost" in readme,
+            "0.48 README contract missing")
+    require("Mod version: `0.48.0-alpha.1`" in project_doc and "## 0.48 Frontline Local Supply" in project_doc,
+            "0.48 PROJECT contract missing")
+    require("## 0.48.0-alpha.1" in changelog and "Frontline Local Supply" in changelog,
+            "0.48 changelog entry missing")
 
     # 0.45 optional external-world bridge.
     require("if (biome.is(integrationTag)) return true;" in expedition_region,
@@ -203,6 +216,7 @@ def main() -> None:
     print("skill_xp_normalization=PASS")
     print("content_pack_progression_bridge=PASS")
     print("frontline_local_supply_bridge=PASS")
+    print("frontline_local_supply_docs=PASS")
     print("external_equipment_imprint=PASS")
     print("amethyst_resonance_shovel_bridge=PASS")
     print("external_component_preservation_contract=PASS")
