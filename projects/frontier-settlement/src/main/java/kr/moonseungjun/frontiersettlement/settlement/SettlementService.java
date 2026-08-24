@@ -40,6 +40,7 @@ public final class SettlementService {
         else {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
+            SettlementWaterfrontService.tick(server, data);
             SettlementFishingOutpostService.tick(server, data);
             SettlementMarketService.tick(server, data);
             SettlementWorkshopService.tick(server, data);
