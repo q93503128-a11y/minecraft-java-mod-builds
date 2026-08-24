@@ -4,6 +4,18 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.50.0-alpha.1 — Regional Logistics Scale / 지역 물류망 확장
+The physical logistics network can now grow with the world instead of remaining permanently capped at three anchors. Industrial Works supports 3 registered depots/outposts, completed Civil Works raises the live admission limit to 6, and completed Ascension Nexus raises it to 9 so all nine expedition fronts can remain established without repeated teardown and re-registration.
+
+This is a capacity unlock, not remote logistics or automation. Every depot is still a real Barrel, every promoted outpost still needs its Bed/Campfire/Crafting/Furnace structure, and only loaded/interactable physical storage participates. Freight remains the same real Chest Minecart + railhead system and frontline launch costs still use the exact departure outpost warehouse.
+
+Persistence stays on the existing `field_depots_v1` and `outpost_v1` SavedData IDs. Their absolute persisted safety cap is 9, while registration/promotion checks the player's current infrastructure before admitting a new position. The check occurs before outpost promotion materials or field-supply charges are consumed, so reaching a 3/6-stage limit cannot burn resources. Network protocol remains `8`; no new SavedData ID, packet, custom entity, force-load or background maintenance system is introduced.
+
+## 0.49.0-alpha.1 — Frontline Freight Manifest / 전선 보급 화물
+Physical freight gained an explicit frontline-loading mode without replacing ordinary bulk freight. At a valid departure railhead, normal selection keeps the existing general bulk load; Shift-selection on an empty Chest Minecart attempts one bounded frontline reserve manifest containing exactly expedition1 + normal-defense1 + Bastion-defense1 local loadout.
+
+The manifest is food176 + iron56 + fuel8 + logs32 + stone bricks128, total 400 items. It is admitted all-or-nothing from the exact departure outpost Barrel cluster so slot-order junk cannot crowd out frontline materials. If the cart layout cannot accept the complete prepared manifest, moved stock is rolled back to the same physical source cluster. The frontline marker exists only on that physical cart NBT; there is no virtual cargo account, generated stock, auto-driving, teleport or force-load.
+
 ## 0.48.0-alpha.1 — Frontline Local Supply / 전선 현지 보급
 Physical freight now feeds a concrete frontline sink instead of only rearranging bulk stock. Starting an expedition operation, normal outpost defense or Bastion defense still requires the existing global field-supply charge, but it also requires real material stock inside the exact departure outpost's registered Barrel + linked warehouse Barrels.
 
@@ -75,7 +87,7 @@ Use the existing `M -> Infrastructure -> 산업 가공소 -> 물리 화물 수�
 - at least1 Hopper;
 - at least1 Lever or Redstone Block.
 
-The Chest Minecart's actual rail must be inside that same railhead. A Powered Rail and Hopper must be within squared distance9 of the cart rail, and a control block within squared distance16, so scattered checklist blocks do not count as a working platform.
+The Chest Minecart's actual rail must also be inside that same railhead. A Powered Rail and Hopper must be within squared distance9 of the cart rail, and a control block within squared distance16, so scattered checklist blocks do not count as a working platform.
 
 The yard is not registered or saved. Every freight action reads the actual blocks with loaded-only and `mayInteract` checks. Break the yard and freight stops; rebuild it and freight immediately works again.
 
