@@ -42,23 +42,10 @@ public final class RealmCodexClient {
      */
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!(event.getScreen() instanceof InventoryScreen screen) || event.getButton() != 0) return;
-        Panel p = panel(screen.width, screen.height);
-        double mx = event.getMouseX();
-        double my = event.getMouseY();
-        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) {
-            request("overview");
-            event.setCanceled(true);
-            return;
-        }
-        if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) {
-            request("map");
-            event.setCanceled(true);
-            return;
-        }
-        if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) {
-            request("skills");
-            event.setCanceled(true);
-        }
+        String page = notebookActionAt(screen.width, screen.height, event.getMouseX(), event.getMouseY());
+        if (page == null) return;
+        request(page);
+        event.setCanceled(true);
     }
 
     public static void onScreenRender(ScreenEvent.Render.Post event) {
@@ -79,6 +66,27 @@ public final class RealmCodexClient {
         customButton(g, p.x() + 7, p.y() + 24, 96, 19, "인물·소속", inside(mx, my, p.x() + 7, p.y() + 24, 96, 19));
         customButton(g, p.x() + 7, p.y() + 46, 46, 19, "지도 M", inside(mx, my, p.x() + 7, p.y() + 46, 46, 19));
         customButton(g, p.x() + 57, p.y() + 46, 46, 19, "기술", inside(mx, my, p.x() + 57, p.y() + 46, 46, 19));
+    }
+
+    static String notebookActionAt(int screenWidth, int screenHeight, double mx, double my) {
+        Panel p = panel(screenWidth, screenHeight);
+        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) return "overview";
+        if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) return "map";
+        if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) return "skills";
+        return null;
+    }
+
+    /** Pure geometry regression used by the graphical CI; no packet or player is required. */
+    static boolean diagnosticNotebookRouting(int screenWidth, int screenHeight) {
+        Panel p = panel(screenWidth, screenHeight);
+        boolean overview = "overview".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 55, p.y() + 33));
+        boolean map = "map".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 30, p.y() + 55));
+        boolean skills = "skills".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 80, p.y() + 55));
+        boolean gap = notebookActionAt(screenWidth, screenHeight, p.x() + 55, p.y() + 55) == null;
+        return overview && map && skills && gap;
     }
 
     private static void customButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, boolean hover) {
