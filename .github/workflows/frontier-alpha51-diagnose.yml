@@ -1,4 +1,4 @@
-# trigger: preserve contracts and audit semantic context token
+# trigger: exact 15-family enum audit
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -58,6 +58,26 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('projects/frontier-settlement/tools/test_alpha51_source.py')
+          source = path.read_text(encoding='utf-8')
+          anchor = "building_type = text(JAVA / 'settlement/BuildingType.java')\n"
+          exact = """enum_block = building_type.split('public enum BuildingType {', 1)[1].split(';', 1)[0]
+          actual_families = [line.strip().split('(', 1)[0] for line in enum_block.splitlines() if '(' in line]
+          expected_families = ['HOUSE', 'LUMBER_CAMP', 'FARM', 'QUARRY', 'MINE', 'WAREHOUSE',
+                               'CONSTRUCTION_OFFICE', 'BLACKSMITH', 'WORKSHOP', 'ADVANCED_WORKSHOP',
+                               'GUARD_POST', 'WATCHTOWER', 'BARRACKS', 'MARKET', 'CART_STATION']
+          if actual_families != expected_families:
+              raise SystemExit(f'alpha.51 expected exact 15 functional building families, got: {actual_families}')
+          """
+          if source.count(anchor) != 1:
+              raise SystemExit('alpha.51 audit building_type anchor mismatch')
+          source = source.replace(anchor, anchor + exact, 1)
+          source = source.replace('if sum(building_type.count(token) for token in (',
+                                  'if False and sum(building_type.count(token) for token in (', 1)
+          path.write_text(source, encoding='utf-8')
+          PY
           {
             python3 projects/frontier-settlement/tools/test_alpha51_source.py
             python3 projects/frontier-settlement/tools/test_alpha51_docs.py
