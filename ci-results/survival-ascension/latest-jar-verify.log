@@ -1,5 +1,5 @@
 JAR VERIFY PASS
-version=0.52.0-alpha.1
+version=0.54.0-alpha.1
 frontline_local_supply_runtime=present
 external_equipment_imprint_runtime=present
 bop_expedition_biome_bridge=present
@@ -21,8 +21,8 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=524419
-sha256=33271aa23173d13d23cb77852d79b0610c40b0e7e32aad771cdbdca16478e415
+size=527990
+sha256=1de90582891c42072d7200d2526d7fe37982bc5148a2786d5988f89495c34551
 frontline_freight_manifest_runtime=present
 frontline_freight_release_verify=PASS
 regional_logistics_scale_runtime=present
@@ -32,3 +32,7 @@ armor_affix_release_verify=PASS
 ranged_combat_runtime=present
 ranged_combat_one_burst_per_projectile=present
 ranged_combat_release_verify=PASS
+shield_guard_wave_runtime=present
+shield_guard_wave_release_verify=PASS
+mace_outer_impact_runtime=present
+mace_outer_impact_release_verify=PASS
