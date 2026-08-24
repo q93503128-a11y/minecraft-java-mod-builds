@@ -26,7 +26,8 @@ import java.util.function.Predicate;
  * remote chunks just to keep logistics simulation running. A completed cart station only changes
  * the town-side freight destination/capacity; it never becomes a second route-navigation authority.
  * Alpha.41 also lets this same transporter carry real food/metal back to an active military outpost;
- * there is still only one authority for long-distance outpost transport.
+ * Alpha.46 lets that same worker reverse-supply real wood for an incomplete waterfront pier when no
+ * military supply job is active. There is still only one authority for long-distance outpost transport.
  *
  * Alpha.42 may redeem bounded unloaded logistics-time by raising the next real pickup batch. The
  * deferred number is never cargo: source extraction, carried ItemStack, road travel and destination
@@ -37,6 +38,8 @@ public final class SettlementOutpostLogisticsService {
     public static final String TRANSPORT_OUTPOST_TAG_PREFIX = "frontier_settlement_transport_outpost_";
     public static final String MILITARY_SUPPLY_TRIP_TAG = "frontier_settlement_military_supply_trip";
     public static final String MILITARY_RETURN_TRIP_TAG = "frontier_settlement_military_return_trip";
+    public static final String WATERFRONT_SUPPLY_TRIP_TAG = "frontier_settlement_waterfront_supply_trip";
+    public static final String WATERFRONT_RETURN_TRIP_TAG = "frontier_settlement_waterfront_return_trip";
     private static final String LEGACY_TRANSPORT_WORKER_NAME = "운송 주민";
     private static final int BASE_TRANSPORT_STACK = 16;
     private static final int CART_STATION_TRANSPORT_STACK = 32;
@@ -48,11 +51,8 @@ public final class SettlementOutpostLogisticsService {
 
     private SettlementOutpostLogisticsService() {}
 
-    /** Assign old pre-Alpha.27 generic transport villagers without charging arrival food again. */
     public static void migrateLegacyWorkers(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            // Migration/replacement is deliberately stricter than normal travel: all route chunks
-            // must be loaded so an already-existing sleeping transporter cannot be duplicated.
             if (!routeFullyLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) != null) continue;
             Villager legacy = findLegacyWorker(level, data, outpost);
@@ -78,7 +78,6 @@ public final class SettlementOutpostLogisticsService {
                 : BASE_TRANSPORT_STACK;
     }
 
-    /** Only safe to use for authoritative population reconciliation when all routes are loaded. */
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
         int count = 0;
         for (OutpostRecord outpost : data.outposts()) {
@@ -95,7 +94,6 @@ public final class SettlementOutpostLogisticsService {
         return true;
     }
 
-    /** Returns one fully-loaded outpost route that truly lacks its assigned transporter. */
     public static OutpostRecord firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
             if (!routeFullyLoaded(level, data, outpost)) continue;
@@ -185,9 +183,17 @@ public final class SettlementOutpostLogisticsService {
     private static void workTransport(ServerLevel level, SettlementData data,
                                       OutpostRecord outpost, Villager worker, List<BlockPos> route) {
         boolean military = SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost);
+        boolean waterfrontSupply = !military && SettlementWaterfrontService.woodSupplyShortage(level, outpost) > 0;
         if (!military) {
             worker.removeTag(MILITARY_SUPPLY_TRIP_TAG);
             worker.removeTag(MILITARY_RETURN_TRIP_TAG);
+        } else {
+            worker.removeTag(WATERFRONT_SUPPLY_TRIP_TAG);
+            worker.removeTag(WATERFRONT_RETURN_TRIP_TAG);
+        }
+        if (!waterfrontSupply) {
+            worker.removeTag(WATERFRONT_SUPPLY_TRIP_TAG);
+            worker.removeTag(WATERFRONT_RETURN_TRIP_TAG);
         }
 
         ItemStack carried = worker.getMainHandItem();
@@ -204,6 +210,23 @@ public final class SettlementOutpostLogisticsService {
             }
             if (carried.isEmpty()) {
                 worker.addTag(MILITARY_RETURN_TRIP_TAG);
+                return;
+            }
+        }
+
+        if (waterfrontSupply) {
+            if (!carried.isEmpty() && worker.entityTags().contains(WATERFRONT_SUPPLY_TRIP_TAG)) {
+                if (!moveAlongRoute(level, worker, route, true)) return;
+                deliverWaterfrontSupply(level, outpost, worker, carried);
+                return;
+            }
+            if (carried.isEmpty() && worker.entityTags().contains(WATERFRONT_RETURN_TRIP_TAG)) {
+                if (!moveAlongRoute(level, worker, route, false)) return;
+                loadWaterfrontSupply(level, data, outpost, worker);
+                return;
+            }
+            if (carried.isEmpty()) {
+                worker.addTag(WATERFRONT_RETURN_TRIP_TAG);
                 return;
             }
         }
@@ -234,16 +257,10 @@ public final class SettlementOutpostLogisticsService {
             return;
         }
 
-        // A pre-Alpha.27 worker may be migrated while carrying a legacy stack. Preserve it and
-        // return it safely rather than deleting it, even if it is not normal specialized cargo.
         if (!moveAlongRoute(level, worker, route, false)) return;
         deliverToTownStorage(level, data, worker, carried);
     }
 
-    /**
-     * The existing road transporter is the only military supply hauler. It extracts a real stack
-     * from fully-loaded town storage, carries it down the persisted route, and never teleports cargo.
-     */
     private static void loadMilitarySupply(ServerLevel level, SettlementData data,
                                            OutpostRecord outpost, Villager worker) {
         if (!SettlementStorageService.storageAvailable(level, data)) {
@@ -305,6 +322,55 @@ public final class SettlementOutpostLogisticsService {
         }
     }
 
+    private static void loadWaterfrontSupply(ServerLevel level, SettlementData data,
+                                             OutpostRecord outpost, Villager worker) {
+        if (!SettlementStorageService.storageAvailable(level, data)) {
+            worker.getNavigation().stop();
+            return;
+        }
+        int shortage = SettlementWaterfrontService.woodSupplyShortage(level, outpost);
+        if (shortage <= 0) {
+            worker.removeTag(WATERFRONT_RETURN_TRIP_TAG);
+            return;
+        }
+        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood);
+        if (source == null) {
+            worker.getNavigation().stop();
+            return;
+        }
+        if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            move(worker, source, 0.84D);
+            return;
+        }
+        int amount = Math.min(shortage, transportBatchSize(data));
+        ItemStack extracted = SettlementStorageService.extract(level, source, SettlementInventory::isWood, amount);
+        if (extracted.isEmpty()) return;
+        worker.setItemSlot(EquipmentSlot.MAINHAND, extracted);
+        worker.removeTag(WATERFRONT_RETURN_TRIP_TAG);
+        worker.addTag(WATERFRONT_SUPPLY_TRIP_TAG);
+        SettlementService.refreshResources(level.getServer(), data);
+        SettlementService.broadcast(level.getServer(), data);
+    }
+
+    private static void deliverWaterfrontSupply(ServerLevel level, OutpostRecord outpost,
+                                                Villager worker, ItemStack carried) {
+        BlockPos stock = outpost.stockpile();
+        if (!level.hasChunkAt(stock)) {
+            worker.getNavigation().stop();
+            return;
+        }
+        if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            move(worker, stock, 0.84D);
+            return;
+        }
+        if (!(level.getBlockEntity(stock) instanceof Container container)) return;
+        ItemStack remaining = SettlementInventory.insert(container, carried);
+        worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        if (remaining.isEmpty()) worker.removeTag(WATERFRONT_SUPPLY_TRIP_TAG);
+    }
+
     private static ItemStack takeFirstTransportStack(Container container, OutpostRecord outpost, int maxCount) {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack current = container.getItem(slot);
@@ -350,7 +416,6 @@ public final class SettlementOutpostLogisticsService {
         worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementStorageService.insertAt(level, target, carried));
     }
 
-    /** Follow persisted road centers in short strides so L-corners and chained roads remain visible. */
     private static boolean moveAlongRoute(ServerLevel level, Villager worker,
                                           List<BlockPos> route, boolean towardOutpost) {
         if (route.isEmpty()) return false;
