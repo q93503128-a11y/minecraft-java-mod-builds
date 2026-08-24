@@ -44,7 +44,9 @@ Intent is expressed physically wherever possible:
 - Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu;
 - Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no specialization or troop-management menu;
 - Alpha.42 unloaded catch-up is automatic bookkeeping of elapsed work time only and needs no player-facing management screen;
-- Alpha.43 status context is derived automatically from authoritative settlement state and surfaces through compact HUD/notifications/Jade rather than a new management screen.
+- Alpha.43 status context is derived automatically from authoritative settlement state and surfaces through compact HUD/notifications/Jade rather than a new management screen;
+- Alpha.44 medium terrain work stays inside the ordinary placement/construction flow and adds no terraforming dashboard;
+- Alpha.45 structure discovery/conquest milestones are observed automatically from normal exploration/combat and add no quest log, research tree or spendable point screen.
 
 ## 3. Multiplayer authority
 
@@ -54,6 +56,7 @@ One world/server has one shared settlement and territory state.
 - server is authoritative;
 - clients render state and submit bounded requests;
 - presentation snapshots/notifications are not gameplay authority and cannot spend resources or mutate progression;
+- Alpha.45 exploration records are shared settlement progression metadata, not per-player currency;
 - no independent per-player settlements in planned scope;
 - no internal player politics/tax distribution layer in initial scope.
 
@@ -74,7 +77,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–43 keep that number while deepening territory/simulation/status systems. The number alone is not completion because original trade, terrain-work, exploration integration and presentation breadth remains unfinished.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–45 keep that number while deepening territory, simulation, terrain, status and exploration systems. The number alone is not completion because original trade, selected-area civil engineering, exploration breadth and final presentation/runtime acceptance remain unfinished.
 
 Current families:
 
@@ -94,7 +97,7 @@ Current families:
 - market;
 - cart station.
 
-Town center currently exists through civic-core progression rather than a separate placement family. Later territory breadth remains unfinished.
+Town center currently exists through civic-core progression rather than a separate placement family. Do not add meaningless building families merely to inflate the count.
 
 Construction UX:
 
@@ -111,16 +114,22 @@ Construction intention:
 
 `site clearing -> hauling -> foundation -> frame -> walls -> roof -> interior -> completion`
 
-Terrain rules:
+Terrain rules after Alpha.44:
 
-- small differences may be graded by visible worker action;
-- medium differences should eventually show explicit terrain-work intent rather than silently flattening a mountain;
-- extreme/unsafe terrain is rejected;
+- footprint height span0–2 uses the established small visible grading path;
+- footprint height span3–4 is accepted only as bounded medium terrain and placement feedback explicitly says `지형 공사 포함`;
+- span above4 or unsafe block-entity/fluid/unsupported terrain is rejected rather than silently flattening a mountain;
+- medium cut is natural-ground only and bounded to at most3 blocks relative to project grade;
+- support/fill remains bounded to the established3-block support depth;
+- exposed outer-edge support depth>=2 gets visible cobblestone retaining/foundation treatment;
+- retaining cobblestone is never free: real settlement stone is physically hauled/staged/consumed before each retaining cell;
+- additional retaining stone is bounded to96/project and included in approval/start resource checks;
 - no silent destruction of player containers, fluids, valuable blocks or unrelated infrastructure;
 - no loose-drop terrain farming from project approval;
 - project grading must not create recoverable free economic materials;
 - roof before support and visually floating foundations are invalid;
-- enclosed completed buildings need deliberate windows/lighting.
+- enclosed completed buildings need deliberate windows/lighting;
+- arbitrary selected-area cut/fill, tunnels, large ravine civil works and monumental terraforming remain later breadth.
 
 Construction presentation invariant: builder walks from actual settlement storage carrying real wood/stone stacks and visibly stages/uses them at the site.
 
@@ -146,6 +155,17 @@ The construction office is a physical logistics accelerator, not an abstract bui
 - `SettlementConstructionService` remains the only authority for grading and blueprint placement.
 
 Actual time saved depends on town layout and must be evaluated in real play rather than claimed as a fixed percentage.
+
+### Alpha.44 bounded medium-terrain rule
+
+- the ordinary `SettlementConstructionService` remains the single terrain/building authority;
+- medium terrain is a project property, not a new independent terraforming simulation;
+- no full project cost is silently deleted at approval;
+- retaining stone follows the same physical storage/extraction/carry/site-barrel path as construction material;
+- retaining material is consumed before the corresponding cobblestone support appears;
+- unsafe terrain stalls/rejects instead of using `destroyBlock`, free drops, force-load or teleport;
+- deep project foundations are protected during active construction;
+- selected-area terraforming is explicitly still unfinished.
 
 ## 6. Citizens, jobs and defense roles
 
@@ -201,7 +221,8 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 - avoid every-tick scanning of arbitrary player chests;
 - use tags/categories so compatible external materials can participate;
 - warehouses, cart-station freight bays and construction-office material bays add real physical storage positions rather than abstract capacity currency;
-- opt-in service/commission barrels are not generic shared storage unless their specific system explicitly says so.
+- opt-in service/commission barrels are not generic shared storage unless their specific system explicitly says so;
+- Alpha.45 exploration score is not a resource and can never satisfy an ItemStack cost.
 
 Distant logistics remains spatial. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
 
@@ -283,7 +304,7 @@ Alpha.35 bounded terrain adaptation:
 - optional bridge profile is active-construction metadata compatible with older saves;
 - completed logistics path remains ordinary `RoadSegment` centerline.
 
-Large ravine bridges, tunnels, retaining walls and monumental civil engineering remain later breadth.
+Alpha.44 retaining work currently applies to functional building sites, not a claim that large roads gained arbitrary cliff engineering. Large ravine bridges, tunnels and monumental civil engineering remain later breadth.
 
 No early teleport network; roads/logistics must retain meaning.
 
@@ -330,6 +351,31 @@ Exploration content should include ruins, mines, camps, nests, structures, dunge
 
 Frontier connects exploration outcomes back into settlement growth instead of reimplementing all adventure content.
 
+### Alpha.45 exploration/conquest progression rule
+
+Alpha.45 is the first direct implementation of that bridge.
+
+- once every100 server ticks, only online players' current already-loaded positions are checked;
+- Frontier asks the normal dynamic structure registry/StructureManager whether the player is actually inside a structure piece; it does not `/locate`, search distant chunks or generate anything;
+- external structure namespaces are accepted generically, excluding `minecraft`, `frontier_settlement` and `neoforge`, so Dungeons and Taverns/Repurposed Structures can participate without hard Java imports;
+- progress is by unique structure **type**, not each generated instance; repeated copies of one structure cannot be farmed;
+- conquest requires direct player attribution;
+- Ender Dragon and Wither count as explicit vanilla conquest milestones;
+- external `Mob` types with max health>=80 may count as soft-compatible strong-enemy/boss milestones;
+- each conquest entity type counts once;
+- shared SavedData bounds discovered structure types to64 and conquest types to32;
+- derived exploration score is `min(8, unique structures + unique conquest types*3)`;
+- score is non-spendable metadata, never ItemStack/resource authority;
+- `/frontier status` exposes structure-type count, conquest-type count and score for transparency;
+- legacy settlement-tier routes remain valid: no old world is downgraded because its new exploration lists start empty;
+- alternate accelerator route for frontier town: population7 +2 outposts + mine + quarry + score2;
+- legacy frontier-town route remains population8 +2 outposts + mine + quarry;
+- alternate accelerator route for domain: population14 +3 outposts + mine +2 farms + score5;
+- legacy domain route remains population16 +4 outposts + mine +2 farms;
+- no loot generation, resource minting, companion content mutation, teleport, chunk force-load or global radar.
+
+Future exploration work may deepen rare-resource/NPC/boss-specific rewards, but must preserve the rule that Frontier is progression glue and companions own their adventure content.
+
 ## 10. External content is a core development accelerator
 
 External mods are not merely visual recommendations. The intended full play experience uses them to supply content breadth while Frontier remains settlement/progression glue.
@@ -352,12 +398,15 @@ Rules:
 - do not redundantly rebuild strong world/dungeon/combat/weapon systems supplied by companions;
 - common/additive tags are preferred over hard-coded companion classes;
 - optional companion API code must be isolated so absence/version drift cannot become core settlement authority;
+- soft registry observation such as Alpha.45 must not cause companion structure generation or remote scanning;
 - MIT/LGPL/clear public-license material may be reused only within license obligations and attribution;
 - ARR/ND/restricted content stays official dependency/reference-only;
 - public source visibility alone is not reuse permission;
 - `EXTERNAL_CONTENT_REGISTER.md` records the boundary.
 
 The lock stays `candidate_runtime_lock` until all entries launch together in the target client/server environment.
+
+Exact Alpha.44 investigation against locked Xaero's Minimap 26.4.2 established that the historical public `WaypointsManager` class/API is absent. Do not fake completed marker support by reaching into version-internal waypoint sets with reflection/mixins. Alpha.43 HUD collision avoidance remains the safe Xaero integration until a stable seam exists.
 
 ## 11. External-content / settlement bridges implemented
 
@@ -445,7 +494,7 @@ This closes the first original high-tier-crafting placement family, not every fu
 - qualifying otherwise-general outposts are recognized dynamically from loaded shoreline geometry;
 - radius12 scan requires at least24 open surface-water columns and a safe dry bank;
 - one outpost-assigned fishing villager carries a visible fishing rod in the off hand;
-- worker walks to the bank, waits on a 140-tick work cadence, then produces 1–3 real cod/salmon ItemStacks only if the water remains valid/loaded;
+- worker walks to the bank, waits on a140-tick work cadence, then produces1–3 real cod/salmon ItemStacks only if the water remains valid/loaded;
 - catch is carried back to the existing physical outpost stockpile;
 - existing food-cargo rule and the single road-transport authority move fish to town/cart-station storage;
 - status reports loaded fishing-trade outpost count and effective recent-outpost role;
@@ -467,8 +516,6 @@ The current waterborne trade identity comes from the catch entering the establis
 - military role has precedence over Alpha.40 fishing while active, and fishing/general behavior may resume after danger clears;
 - normal `Monster` subclasses from external content participate without a hard mod/class dependency;
 - no teleport, fast travel, force-load, free troop points, free iron, virtual supply or offline combat simulation.
-
-This is the first dangerous-territory foothold, not a replacement for the town barracks or a complete soldier-presentation system.
 
 ### Alpha.42 bounded unloaded-work catch-up
 
@@ -497,11 +544,24 @@ The first companion-facing status integration is deliberately presentation-only.
 - all `snownee.jade` references stay quarantined under `compat/jade`; core settlement/network/client logic has no Jade import;
 - the Jade provider is client-side presentation: crosshair position is matched against the synchronized authoritative context and shows at most a title plus one compact detail/progress line;
 - Jade absence must not affect the settlement data model, resources, jobs, construction, logistics or progression;
-- Xaero integration in Alpha.43 is **layout safety only**: if `xaerominimap` is present, the normal Frontier resource HUD moves below the expected top-left minimap region;
-- Alpha.43 deliberately does not link to Xaero internal waypoint classes or use reflection/mixins for markers because no stable documented public marker API has been established for the locked target;
-- actual Xaero settlement/outpost marker synchronization remains unfinished rather than being falsely claimed.
+- Xaero integration is layout safety only: if `xaerominimap` is present, the normal Frontier resource HUD moves below the expected top-left minimap region.
 
-This follows the original v0.2 rule: Jade supplies minimal contextual information; Xaero should eventually improve settlement/territory location awareness without becoming another management system.
+### Alpha.44 bounded medium terrain works
+
+- normal building footprint span3–4 gains explicit terrain-work acceptance;
+- >4 is rejected;
+- cut/support depth stays bounded;
+- exposed deep edge foundation uses real physically hauled/consumed stone before visible cobblestone support;
+- no free-drop terrain farming or duplicate terrain authority.
+
+### Alpha.45 exploration/conquest progression
+
+- already-loaded player-position external structure pieces feed unique shared discovery milestones;
+- direct player conquest of dragon/wither or external max-health>=80 Mob types feeds unique conquest milestones;
+- score cap8, structure+1, conquest+3;
+- no duplicate same-type farming;
+- score is non-spendable and only supplies alternate tier accelerator conditions;
+- legacy tier conditions remain accepted.
 
 ## 12. UI and controls
 
@@ -523,13 +583,14 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Alpha.43 status hierarchy:
+Current status hierarchy:
 
 - always-on: existing resource/tier/next-goal HUD;
 - while a project is active: one extra compact project/progress line;
 - important transitions: bounded right-side notice queue, max3 / 6 seconds;
 - when Jade is present: crosshair-local infrastructure title + one status/role line, not a management panel;
-- when Xaero is present: Frontier top-left HUD moves below the minimap area to avoid immediate overlap.
+- when Xaero is present: Frontier top-left HUD moves below the minimap area to avoid immediate overlap;
+- exploration structure/conquest milestones use rare event messages plus one existing `/frontier status` line, not a new quest screen.
 
 Still missing/partial from original UI scope: richer material/progress detail for some building/service states and true Xaero settlement/outpost/road-map synchronization. Do not solve those by adding a giant Frontier dashboard.
 
@@ -561,7 +622,7 @@ Optional companion integration rule:
 - isolate optional API references under compat boundaries;
 - if a companion exposes no stable API, prefer honest partial integration over brittle version-internal reflection that risks corrupting or boot-breaking the core mod.
 
-## 14. Current playable slice after Alpha.43
+## 14. Current playable slice after Alpha.45
 
 The playable slice now includes:
 
@@ -570,6 +631,7 @@ The playable slice now includes:
 - compact B/R/Enter/Backspace interaction;
 - **15 functional building families**;
 - physical site grading and construction hauling;
+- Alpha.44 bounded medium terrain works with real retaining stone;
 - physical construction material staging and supply runner;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
@@ -579,6 +641,7 @@ The playable slice now includes:
 - Alpha.42 bounded unloaded-work catch-up that never turns deferred numbers into resources/cargo;
 - Alpha.43 project-progress HUD line, bounded compact side notifications and optional Jade infrastructure context;
 - Xaero-aware HUD collision avoidance without claiming marker synchronization;
+- Alpha.45 unique external-structure/conquest milestones feeding alternate shared tier-growth routes;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
 - physical market and normal staffed repair workshop;
@@ -594,15 +657,15 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 Unless real-play regression overrides them:
 
 1. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test when the build reaches the user’s chosen test point;
-2. safe Xaero settlement/outpost marker synchronization (and road representation only if it can be done without brittle internal dependency);
-3. medium-terrain construction support such as explicit retaining/terrain-work intent;
-4. external structure/boss discovery feeding progression more directly;
-5. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
-6. broader high-tier recipe/specialized crafting only where exploration materials justify it;
-7. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
-8. long survival/multiplayer acceptance and balance/pathfinding audit;
-9. Alpha.42 unloaded catch-up pacing/reload/exploit validation before declaring that original gap fully closed;
-10. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance before declaring the UI-companion gap fully closed.
+2. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
+3. broader high-tier recipe/specialized crafting only where exploration materials justify it;
+4. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
+5. selected-area cut/fill and larger civil engineering only with strong safety/player-build protection;
+6. deeper companion exploration rewards/rare NPC or boss-specific bridges only if they remain soft and non-farmable;
+7. long survival/multiplayer acceptance and balance/pathfinding audit;
+8. Alpha.42 unloaded catch-up pacing/reload/exploit validation before declaring that original gap fully closed;
+9. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance before declaring the UI-companion gap fully closed;
+10. true Xaero settlement/outpost markers only if a stable supported API/seam becomes available; do not use brittle internal waypoint injection merely to check a box.
 
 Do not add meaningless building families merely to raise the count above15.
 
@@ -611,7 +674,9 @@ Do not add meaningless building families merely to raise the count above15.
 Automated CI is not a substitute for Minecraft play. Test, in order when the user reaches the planned test point:
 
 - founding -> house/lumber/farm/quarry/warehouse;
-- building grading/hauling and save/reload mid-project;
+- building small grading plus a real span3–4 Alpha.44 medium-terrain site; verify explicit terrain-work feedback, bounded cut/fill and visible real-stone retaining foundation;
+- verify >4 span/unsafe site rejection and no recoverable free material path;
+- building hauling and save/reload mid-project;
 - construction-office runner source selection, physical carrying, office staging and builder preference;
 - road stairs/short bridge navigation;
 - road -> outpost -> specialization production -> transport -> cart station;
@@ -619,6 +684,11 @@ Automated CI is not a substitute for Minecraft play. Test, in order when the use
 - with Jade installed, look at shared stockpile, several completed building blocks, active construction and an outpost; confirm no more than compact title/detail/progress context appears and vanilla/Jade information stays readable;
 - verify Jade absent does not prevent Frontier from loading or alter settlement behavior;
 - verify project-start/build-complete/outpost/tier notices appear once, stay on the side, cap at3 and disappear without requiring dismissal;
+- enter multiple actual external Dungeons and Taverns/Repurposed Structures structure types in a fresh companion world; verify only current loaded structure pieces count and repeat copies do not increase the type count;
+- directly kill Ender Dragon/Wither and any qualifying external strong enemy available in the final pack; verify same entity type only counts once and non-player deaths do not count;
+- verify exploration score persists save/reload, caps at8 and cannot be spent as resources;
+- verify a legacy no-exploration world can still reach frontier town/domain with the old population/outpost requirements;
+- verify exploration accelerator routes trigger only with their remaining infrastructure/population requirements;
 - place an otherwise-general outpost near a real river/coast, verify `어업·수변교역`, visible rod/bank movement, fish stockpile deposit and road transport;
 - verify small puddles/invalid shorelines do not produce fish;
 - leave a previously verified fishing/specialized outpost unloaded during server-running work time, return, and verify deferred work speeds only real physical actions rather than minting resources;
@@ -634,7 +704,7 @@ Automated CI is not a substitute for Minecraft play. Test, in order when the use
 - advanced workshop external-weapon compatibility, relic/metal no-loss failure behavior and completed enchanted weapon retrieval;
 - guard post -> watchtower -> barracks response and replacement cost;
 - day/night routines and loaded/unloaded boundaries;
-- two-player shared state/storage/construction/logistics;
+- two-player shared state/storage/construction/logistics/exploration progression;
 - full companion-stack fresh world.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
