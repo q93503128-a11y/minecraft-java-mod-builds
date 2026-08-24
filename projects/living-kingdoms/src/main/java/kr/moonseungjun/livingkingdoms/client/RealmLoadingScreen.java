@@ -9,10 +9,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 public final class RealmLoadingScreen extends Screen {
-    private static final double STAGING_CENTER_X = 0.5D;
-    private static final double STAGING_CENTER_Z = 24_000.5D;
-    private static final double STAGING_FLOOR_Y = 220.0D;
-
     private String homelandId = "unknown";
     private String phase = "preparing";
     private int percent;
@@ -45,24 +41,14 @@ public final class RealmLoadingScreen extends Screen {
 
     @Override
     public void tick() {
-        if (!complete) {
+        // A progress packet is not proof that the player actually left construction staging. Only
+        // LivingRealmWorldManager sends placement confirmation, and only after successful teleport
+        // into a verified authored apartment interior.
+        if (!complete || !ClientNetworkHandlers.placementConfirmed()) {
             completeTicks = 0;
             return;
         }
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || stillOnConstructionStaging(minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ())) {
-            completeTicks = 0;
-            return;
-        }
-        if (++completeTicks >= 12) minecraft.gui.setScreen(null);
-    }
-
-    private static boolean stillOnConstructionStaging(double x, double y, double z) {
-        double dx = x - STAGING_CENTER_X;
-        double dz = z - STAGING_CENTER_Z;
-        return dx * dx + dz * dz <= 121.0D
-                && y >= STAGING_FLOOR_Y - 2.0D
-                && y <= STAGING_FLOOR_Y + 12.0D;
+        if (++completeTicks >= 12) Minecraft.getInstance().gui.setScreen(null);
     }
 
     @Override
@@ -90,6 +76,8 @@ public final class RealmLoadingScreen extends Screen {
         int panelHeight = layout.height();
         ExternalRpgUi.window(graphics, left, top, panelWidth, panelHeight);
 
+        boolean placed = ClientNetworkHandlers.placementConfirmed();
+        boolean verifiedComplete = complete && placed;
         Item emblem = switch (homelandId) {
             case "silvana_forest" -> Items.OAK_SAPLING;
             case "kardum_league" -> Items.IRON_PICKAXE;
@@ -98,17 +86,24 @@ public final class RealmLoadingScreen extends Screen {
         int iconSize = panelHeight < 200 ? 42 : 52;
         ExternalRpgUi.iconFrame(graphics, emblem, left + 27, top + 30, iconSize);
         ExternalRpgUi.title(graphics, font,
-                failed ? "왕국 준비 실패" : complete ? "입국 준비 완료" : "왕국을 준비하고 있습니다",
+                failed ? "왕국 준비 실패"
+                        : verifiedComplete ? "입국 준비 완료"
+                        : complete ? "시민구 입주 확인 중"
+                        : "왕국을 준비하고 있습니다",
                 homelandName(), left + 92, top + 35);
         ExternalRpgUi.divider(graphics, left + 26, top + 91, panelWidth - 52);
 
-        graphics.text(font, Component.literal(phaseLabel()), left + 30, top + 108, 0xFF5D4632, false);
+        graphics.text(font, Component.literal(phaseLabel(placed)), left + 30, top + 108, 0xFF5D4632, false);
+        int shownPercent = complete && !placed ? 99 : percent;
         ExternalRpgUi.progress(graphics, font, left + 30, top + 126, panelWidth - 60,
-                "진행률", failed ? "중단" : percent + "%", percent / 100.0F,
-                failed ? 0xFF8E3E38 : complete ? 0xFF4F8259 : 0xFF4B6F8C);
+                "진행률", failed ? "중단" : shownPercent + "%", shownPercent / 100.0F,
+                failed ? 0xFF8E3E38 : verifiedComplete ? 0xFF4F8259 : 0xFF4B6F8C);
 
+        String shownMessage = complete && !placed
+                ? "실제 시민구 주거 내부가 준비될 때까지 입주 위치를 검증하고 있습니다."
+                : message;
         int messageY = top + 165;
-        for (var line : font.split(Component.literal(message), panelWidth - 70)) {
+        for (var line : font.split(Component.literal(shownMessage), panelWidth - 70)) {
             graphics.centeredText(font, line, width / 2, messageY, failed ? 0xFF8E3E38 : 0xFF3F342A);
             messageY += 11;
             if (messageY > top + panelHeight - 24) break;
@@ -127,13 +122,15 @@ public final class RealmLoadingScreen extends Screen {
                 panelWidth, panelHeight);
     }
 
-    private String phaseLabel() {
+    private String phaseLabel(boolean placed) {
         return switch (phase) {
             case "survey" -> "입지 조사 · 물과 절벽을 피해 수도 후보를 검토 중";
             case "chunks" -> "지역 준비 · 선택한 부지의 청크를 생성 중";
             case "planning" -> "건축 배치 · 도로와 시설 배치를 조립 중";
             case "building" -> "왕국 건설 · 구역별 작업을 적용 중";
-            case "complete" -> "완료 · 실제 시민구 거주지를 확인하고 이동 중";
+            case "complete" -> placed
+                    ? "완료 · 실제 시민구 주거 내부 배치 확인됨"
+                    : "입주 검증 · 실제 시민구 주거 내부를 준비 중";
             case "failed" -> "실패 · 왕국 생성 작업을 중단함";
             default -> "시작 준비 · 출신과 소속을 확인 중";
         };
