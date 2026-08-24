@@ -23,6 +23,7 @@ public final class LivingKingdomsNetwork {
         registrar.playToClient(OriginSubmissionResultPayload.TYPE, OriginSubmissionResultPayload.STREAM_CODEC);
         registrar.playToClient(RealmBuildProgressPayload.TYPE, RealmBuildProgressPayload.STREAM_CODEC);
         registrar.playToClient(FantasyHudStatePayload.TYPE, FantasyHudStatePayload.STREAM_CODEC);
+        registrar.playToClient(PlacementConfirmedPayload.TYPE, PlacementConfirmedPayload.STREAM_CODEC);
         registrar.playToClient(OpenCodexPayload.TYPE, OpenCodexPayload.STREAM_CODEC);
         registrar.playToServer(SubmitOriginPayload.TYPE, SubmitOriginPayload.STREAM_CODEC, LivingKingdomsNetwork::handleSubmit);
         registrar.playToServer(RequestCodexPayload.TYPE, RequestCodexPayload.STREAM_CODEC, LivingKingdomsNetwork::handleCodex);
