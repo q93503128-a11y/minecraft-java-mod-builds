@@ -85,8 +85,12 @@ with zipfile.ZipFile(jar) as zf:
     for token in [b"armorDamageMultiplier", b"armorXpMultiplier"]:
         if token not in combat:
             raise SystemExit(f"0.51 compiled worn-armor routing missing: {token!r}")
-    if b"ACTION_IMPRINT" not in equipment_ui or b"canImprint" not in equipment_ui:
-        raise SystemExit("0.51 compiled armor imprint UI routing missing")
+    # ACTION_IMPRINT is a compile-time constant and may be inlined away. Verify the actual
+    # compiled UI routing through the surviving action enum, affix admission call, payload type,
+    # and packet-dispatch path instead of relying on the source constant's field name.
+    for token in [b"IMPRINT", b"canImprint", b"EquipmentActionPayload", b"sendToServer"]:
+        if token not in equipment_ui:
+            raise SystemExit(f"0.51 compiled armor imprint UI routing token missing: {token!r}")
 
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
