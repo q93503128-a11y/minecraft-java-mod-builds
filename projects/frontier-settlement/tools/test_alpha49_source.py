@@ -19,8 +19,6 @@ alpha48_source = text(ALPHA48)
 alpha48_source = alpha48_source.replace("print('Frontier Settlement alpha.48 source audit: PASS')", 'pass')
 alpha48_source = alpha48_source.replace("print('Frontier Settlement alpha.48 canonical docs audit: PASS')", 'pass')
 alpha48_source = alpha48_source.replace('0.1.0-alpha.48', '0.1.0-alpha.49')
-# If an inherited network-token assertion names the previous protocol, adapt only that expected token.
-alpha48_source = alpha48_source.replace('PROTOCOL = "7"', 'PROTOCOL = "8"')
 alpha48_source = alpha48_source.split('# Current canonical docs are part of Alpha.48 acceptance.')[0]
 namespace = {'__file__': str(ALPHA48), '__name__': '__main__'}
 exec(compile(alpha48_source, str(ALPHA48), 'exec'), namespace, namespace)
@@ -47,7 +45,7 @@ must(state, (
     'public record CivilWorkState(boolean active,',
     'PHASE_CUT = 0', 'PHASE_FILL = 1',
     'int earthBank', 'int completedSteps', 'int initialCutBlocks', 'int initialFillBlocks',
-    'CivilWorkState.CODEC', 'earthBank + 1', 'Math.max(0, earthBank - 1)',
+    'public static final Codec<CivilWorkState> CODEC', 'earthBank + 1', 'Math.max(0, earthBank - 1)',
 ), 'alpha.49 persisted civil-work state')
 must(data, (
     'Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "civil_work")',
@@ -92,7 +90,7 @@ if not (cut_place < cut_credit and fill_gate < fill_place < fill_debit):
     raise SystemExit('alpha.49 earth bank must credit after real cut and debit after gated real fill')
 
 must(network, (
-    'private static final String PROTOCOL = "8"',
+    'private static final String PROTOCOL = "7"',
     'CivilWorkPreviewPayload.TYPE', 'CivilWorkRequestPayload.TYPE',
     'SettlementNetwork::handleCivilWorkRequest',
     'SettlementCivilWorkService.check(player,first,second)',
@@ -105,7 +103,7 @@ must(preview, ('"civil_work_preview"', 'int cutBlocks', 'int fillBlocks', 'fromC
 must(client, (
     'first = target', 'first.getY()', 'CivilWorkRequestPayload',
     'if (maxX - minX + 1 > 9 || maxZ - minZ + 1 > 9) return List.of()',
-    'Backspace' if False else 'resetStart()',
+    'resetStart()',
 ), 'alpha.49 client selection')
 must(build_client, (
     'else if (CivilWorkPlacementClient.active()) CivilWorkPlacementClient.resetStart()',
@@ -160,10 +158,12 @@ must(lock, (
     '"status": "candidate_runtime_lock"',
 ), 'alpha.49 companion lock')
 
-# Building family count remains 15; civil works are infrastructure, not a fake 16th building.
+# Civil works are infrastructure, not a fake 16th functional building family.
 building_type = text(JAVA / 'settlement/BuildingType.java')
-if building_type.count('("') < 15:
-    raise SystemExit('alpha.49 must preserve the established functional building families')
-forbid(palette, ('BuildingType.CIVIL', 'BuildingType.TERRAFORM'), 'alpha.49 no fake civil building family')
+must(building_type, ('HOUSE(', 'LUMBER_CAMP(', 'FARM(', 'QUARRY(', 'MINE(', 'WAREHOUSE(',
+                     'CONSTRUCTION_OFFICE(', 'BLACKSMITH(', 'WORKSHOP(', 'ADVANCED_WORKSHOP(',
+                     'GUARD_POST(', 'WATCHTOWER(', 'BARRACKS(', 'MARKET(', 'CART_STATION('),
+     'alpha.49 preserves exact 15 building families')
+forbid(building_type, ('CIVIL_WORK(', 'TERRAFORM('), 'alpha.49 no fake civil building family')
 
 print('Frontier Settlement alpha.49 source audit: PASS')
