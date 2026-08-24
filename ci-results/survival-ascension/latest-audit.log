@@ -1,10 +1,11 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.43 physical freight requires a loaded real railhead at both exact active-outpost endpoints
-- railhead minimums: radius6, rails6+, powered rail1+, hopper1+, lever/redstone control1+, with powered/hopper/control near the actual cart rail
-- freight still moves only existing bulk stacks in the same physical Chest Minecart; no reward, auto-drive, virtual route, SavedData, teleport or force-load
-- guide scrolls and documents current World Ascension instead of embedding patch-history wording
-- early mastery requirements remain discounted through Lv59 and converge to the retained late quadratic curve at Lv60
-- mining XP remains material-tiered; copper7/8 no longer outranks obsidian16/crying18
+- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies
+- imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials
+- external item components stay on the same stack; Survival Ascension writes only nested affix CustomData/display name with a retained base name
+- 0.43 physical freight still requires a loaded real railhead at both exact active-outpost endpoints
+- freight remains physical-only: no reward, auto-drive, virtual route, SavedData, teleport or force-load
+- guide scrolls and documents current World Ascension and equipment integration instead of embedding patch-history wording
+- early mastery requirements remain discounted through Lv59 and mining XP remains material-tiered
 - logistics-backed costs consume nearest usable physical Barrel/통 storage before carried inventory; vanilla crafting and Apex/Trial carried admissions remain separate
-- 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain
+- Civil Works causeways and physical defense contracts remain

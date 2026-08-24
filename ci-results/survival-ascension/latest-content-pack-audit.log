@@ -3,4 +3,5 @@ locked_external_mods=6
 loader_specific_artifact_selection=PASS
 skill_xp_normalization=PASS
 content_pack_progression_bridge=PASS
+external_equipment_imprint=PASS
 passive_combat_xp_farm=REMOVED
