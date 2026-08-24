@@ -27,6 +27,7 @@ public final class OutpostPlacementClient {
         target = resolveTarget(minecraft);
         BuildingPlacementClient.cancel();
         RoadPlacementClient.cancel();
+        CivilWorkPlacementClient.cancel();
     }
 
     public static void tick(ClientTickEvent.Post event) {
