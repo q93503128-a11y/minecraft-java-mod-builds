@@ -14,6 +14,20 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 repositories {
     mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    // Compile against the exact candidate-lock Jade API, but do not make Jade a runtime/boot dependency.
+    compileOnly "maven.modrinth:nvQzSEkH:${project.jade_version_id}"
 }
 
 neoForge {

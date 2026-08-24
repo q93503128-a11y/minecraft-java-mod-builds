@@ -4,5 +4,6 @@
   "key.frontier_settlement.build_mode": "마을 건설 팔레트",
   "key.frontier_settlement.rotate_building": "건물 90도 회전",
   "key.frontier_settlement.confirm_building": "현재 계획 확정",
-  "key.frontier_settlement.road_reset": "도로 시작점 다시 선택"
+  "key.frontier_settlement.road_reset": "도로 시작점 다시 선택",
+  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier 정착지 상태"
 }

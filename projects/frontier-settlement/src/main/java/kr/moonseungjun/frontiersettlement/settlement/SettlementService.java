@@ -46,7 +46,11 @@ public final class SettlementService {
         }
         SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);
-        if (tick % 20 == 0 && refreshResources(server, data)) broadcast(server, data);
+        if (tick % 20 == 0) {
+            boolean changed = refreshResources(server, data);
+            boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
+            if (changed || activeProject) broadcast(server, data);
+        }
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -120,7 +124,10 @@ public final class SettlementService {
 
     public static void sync(ServerPlayer player, SettlementData data) {
         SettlementResources r=data.resources();
-        SettlementNetwork.sendSnapshot(player,new SettlementSnapshotPayload(data.founded(),r.wood(),r.stone(),r.metal(),r.food(),data.population(),SettlementTier.current(data).displayName(),buildingUnlockMask(data),SettlementGuidanceService.nextGoal(data)));
+        SettlementNetwork.sendSnapshot(player,new SettlementSnapshotPayload(
+                data.founded(),r.wood(),r.stone(),r.metal(),r.food(),data.population(),
+                SettlementTier.current(data).displayName(),buildingUnlockMask(data),SettlementGuidanceService.nextGoal(data),
+                SettlementContextService.snapshot(player.level().getServer(), data)));
     }
     public static void broadcast(MinecraftServer server, SettlementData data) { for(ServerPlayer player:server.getPlayerList().getPlayers()) sync(player,data); }
 }

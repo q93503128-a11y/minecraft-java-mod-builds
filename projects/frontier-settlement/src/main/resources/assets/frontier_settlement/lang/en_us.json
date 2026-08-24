@@ -8,5 +8,6 @@
   "key.frontier_settlement.road_confirm": "Confirm Road Start/Route",
   "key.frontier_settlement.road_reset": "Reset Road Start",
   "key.frontier_settlement.outpost_mode": "Toggle Outpost Placement Mode",
-  "key.frontier_settlement.outpost_confirm": "Confirm Outpost Construction"
+  "key.frontier_settlement.outpost_confirm": "Confirm Outpost Construction",
+  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier settlement status"
 }

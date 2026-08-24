@@ -1,0 +1,119 @@
+package kr.moonseungjun.frontiersettlement.settlement;
+
+import kr.moonseungjun.frontiersettlement.network.SettlementContextPayload;
+import kr.moonseungjun.frontiersettlement.network.SettlementContextTarget;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** Server-authoritative, presentation-only context for compact HUD/Jade/Xaero consumers. */
+public final class SettlementContextService {
+    private SettlementContextService() {}
+
+    public static SettlementContextPayload snapshot(MinecraftServer server, SettlementData data) {
+        if (!data.founded()) return SettlementContextPayload.EMPTY;
+        ServerLevel level = server.overworld();
+        List<SettlementContextTarget> targets = new ArrayList<>();
+
+        ConstructionState construction = data.construction();
+        String projectLabel = "";
+        int projectProgress = -1;
+        if (construction.active()) {
+            BuildingType type = BuildingType.fromId(construction.type());
+            if (type != null) {
+                int width = construction.buildingRotation().rotatedWidth(type);
+                int depth = construction.buildingRotation().rotatedDepth(type);
+                int total = SettlementConstructionService.totalSteps(type, construction.origin());
+                int worked = construction.grading() ? 0 : Math.max(0, construction.buildStep());
+                projectProgress = percent(worked, total);
+                projectLabel = type.displayName() + " 공사";
+                targets.add(new SettlementContextTarget(
+                        "construction", "construction",
+                        construction.originX(), construction.originY() - 2, construction.originZ(),
+                        construction.originX() + width - 1, construction.originY() + type.clearHeight() + 2,
+                        construction.originZ() + depth - 1,
+                        construction.originX() + width / 2, construction.originY() + 1, construction.originZ() + depth / 2,
+                        type.displayName(), construction.grading() ? "부지 정리 중" : "자재 운반·시공 중", projectProgress));
+            }
+        } else if (data.roadConstruction().active()) {
+            RoadConstructionState road = data.roadConstruction();
+            projectLabel = "도로 공사";
+            projectProgress = percent(road.step(), SettlementRoadService.totalSteps(road));
+        } else if (data.outpostConstruction().active()) {
+            OutpostConstructionState outpost = data.outpostConstruction();
+            projectLabel = "전초기지 공사";
+            int total = SettlementOutpostService.totalSteps(outpost);
+            int worked = outpost.physicalBuilding() ? Math.max(0, outpost.buildStep())
+                    : outpost.legacyPrepaidBuilding() ? Math.max(0, outpost.legacyStep()) : 0;
+            projectProgress = percent(worked, total);
+        }
+
+        BlockPos stock = data.stockpilePos();
+        SettlementResources resources = data.resources();
+        targets.add(new SettlementContextTarget(
+                "stockpile", "stockpile",
+                stock.getX(), stock.getY(), stock.getZ(), stock.getX(), stock.getY(), stock.getZ(),
+                stock.getX(), stock.getY(), stock.getZ(),
+                "공동 창고",
+                "실물 권위 · 목재 " + resources.wood() + " · 석재 " + resources.stone()
+                        + " · 금속 " + resources.metal() + " · 식량 " + resources.food(), -1));
+
+        for (BuildingRecord building : data.buildings()) {
+            BuildingType type = building.buildingType();
+            if (type == null) continue;
+            int width = building.rotatedWidth();
+            int depth = building.rotatedDepth();
+            BlockPos marker = building.workCenter();
+            targets.add(new SettlementContextTarget(
+                    "building:" + type.id() + ":" + building.originX() + ":" + building.originY() + ":" + building.originZ(),
+                    "building",
+                    building.originX(), building.originY() - 1, building.originZ(),
+                    building.originX() + width - 1, building.originY() + type.clearHeight() + 2,
+                    building.originZ() + depth - 1,
+                    marker.getX(), marker.getY(), marker.getZ(),
+                    type.displayName(), buildingDetail(type), -1));
+        }
+
+        for (OutpostRecord outpost : data.outposts()) {
+            String role = SettlementFishingOutpostService.specializationDisplayName(level, outpost);
+            BlockPos center = outpost.center();
+            targets.add(new SettlementContextTarget(
+                    "outpost:" + outpost.id(), "outpost",
+                    outpost.centerX() - 5, outpost.centerY() - 2, outpost.centerZ() - 5,
+                    outpost.centerX() + 5, outpost.centerY() + 10, outpost.centerZ() + 5,
+                    center.getX(), center.getY() + 1, center.getZ(),
+                    "전초기지 #" + outpost.id(), "역할 · " + role + " · 도로 " + (outpost.roadIndex() + 1), -1));
+        }
+
+        return new SettlementContextPayload(data.buildings().size(), data.outposts().size(),
+                projectLabel, projectProgress, targets);
+    }
+
+    private static int percent(int worked, int total) {
+        if (total <= 0) return 0;
+        return Math.max(0, Math.min(99, worked * 100 / total));
+    }
+
+    private static String buildingDetail(BuildingType type) {
+        return switch (type) {
+            case HOUSE -> "완공 · 주거 +" + type.housingGain();
+            case LUMBER_CAMP -> "완공 · 자동 벌목";
+            case FARM -> "완공 · 자동 식량 생산";
+            case QUARRY -> "완공 · 자동 채석";
+            case MINE -> "완공 · 유한 광석 생산";
+            case WAREHOUSE -> "완공 · 실물 저장";
+            case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
+            case BLACKSMITH -> "완공 · 장비 지원";
+            case WORKSHOP -> "완공 · 금속 → 무기 수리";
+            case ADVANCED_WORKSHOP -> "완공 · 무기 + 유물 + 금속 → 고급 제작";
+            case GUARD_POST -> "완공 · 근거리 경비";
+            case WATCHTOWER -> "완공 · 로드 위협 대응";
+            case BARRACKS -> "완공 · 정식 주둔 3슬롯";
+            case MARKET -> "완공 · 유물 → 실물 교역";
+            case CART_STATION -> "완공 · 도로 화물 허브";
+        };
+    }
+}

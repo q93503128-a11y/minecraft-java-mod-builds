@@ -7,7 +7,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
 public record SettlementSnapshotPayload(boolean founded, long wood, long stone, long metal, long food,
-                                        int population, String tier, int buildingUnlockMask, String nextGoal)
+                                        int population, String tier, int buildingUnlockMask, String nextGoal,
+                                        SettlementContextPayload context)
         implements CustomPacketPayload {
     public static final Type<SettlementSnapshotPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "settlement_snapshot"));
@@ -23,10 +24,12 @@ public record SettlementSnapshotPayload(boolean founded, long wood, long stone, 
                 buf.writeUtf(payload.tier());
                 buf.writeVarInt(payload.buildingUnlockMask());
                 buf.writeUtf(payload.nextGoal());
+                SettlementContextPayload.CODEC.encode(buf, payload.context());
             },
             buf -> new SettlementSnapshotPayload(
                     buf.readBoolean(), buf.readVarLong(), buf.readVarLong(), buf.readVarLong(), buf.readVarLong(),
-                    buf.readVarInt(), buf.readUtf(), buf.readVarInt(), buf.readUtf())
+                    buf.readVarInt(), buf.readUtf(), buf.readVarInt(), buf.readUtf(),
+                    SettlementContextPayload.CODEC.decode(buf))
     );
 
     @Override
