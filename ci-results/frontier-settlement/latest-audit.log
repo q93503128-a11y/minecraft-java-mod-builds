@@ -1,2 +1,1 @@
-Frontier Settlement alpha.47 source audit: PASS
-Frontier Settlement alpha.47 canonical docs audit: PASS
+alpha.41 loaded dangerous-region military outpost missing: new IronGolem(EntityTypes.IRON_GOLEM, level)
