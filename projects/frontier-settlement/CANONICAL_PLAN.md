@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.60**.
+Current canonical implementation: **0.1.0-alpha.61**.
 
 ## 1. Product identity
 
@@ -87,6 +87,16 @@ One world/server has one shared settlement and one shared infrastructure/project
 - civil `earthBank` is project-local relocation accounting only and cannot be spent outside the active civil project;
 - imported civil fill is never a number ledger: only real DIRT/COARSE_DIRT ItemStacks in actual storage/worker hand have authority;
 - no per-player settlement or internal politics/tax layer in planned scope.
+
+### Alpha.61 outpost grade-cell transaction hardening
+
+- the existing outpost grading envelope and save phase remain unchanged;
+- each grade cell snapshots all changed BlockStates;
+- every clear/support/final-grade `setBlock` must succeed;
+- an unloaded required cell or failed placement rolls back successful partial changes in reverse order;
+- persisted outpost construction step advances only after the full grade cell succeeds;
+- grading still creates no loose drops, virtual soil, resource refund or second construction authority;
+- no save schema/key/building/worker/companion change.
 
 ### Alpha.60 ordinary construction transaction hardening
 
@@ -178,7 +188,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–60 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–61 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -661,7 +671,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.60
+## 14. Current playable slice after Alpha.61
 
 Current implemented slice includes:
 
@@ -685,11 +695,12 @@ Current implemented slice includes:
 - Alpha.58 shared-login snapshot rebroadcast + explicit MAIN-thread request serialization + client session reset pre-hardening;
 - Alpha.59 centralized service-level single-project authority for building/road/outpost/civil preview and start;
 - Alpha.60 rollback-safe ordinary building placement + Alpha.44 grade-cell physical material transactions;
+- Alpha.61 rollback-safe outpost grade-cell terrain mutation before persisted step advance;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.60
+## 15. Unfinished original-scope priorities after Alpha.61
 
 Unless real-play regression overrides them:
 
@@ -710,9 +721,10 @@ Unless real-play regression overrides them:
 16. Alpha.58 two-client shared-login refresh, logout/server-switch reset and reconnect acceptance;
 17. Alpha.59 simultaneous building/road/outpost/civil confirmation exclusivity acceptance;
 18. Alpha.60 building setBlock failure/rollback + terrain retaining rollback/pre-fill-cost acceptance;
-19. full companion lock fresh-world client/server runtime;
-20. true Xaero markers only if a stable supported API appears;
-21. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+19. Alpha.61 outpost grade-cell failure/rollback + unload/save-reload acceptance;
+20. full companion lock fresh-world client/server runtime;
+21. true Xaero markers only if a stable supported API appears;
+22. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 
@@ -725,7 +737,7 @@ At the final/test-worthy point verify at least:
 - ordinary small and Alpha.44 span3–4 construction terrain, including Alpha.60 no-loss failed placement and rollback-safe retaining transactions;
 - unsafe/>4 building terrain rejection and no free retaining materials;
 - construction office runner and builder physical hauling;
-- road stairs/short bridge and outpost route movement;
+- road stairs/short bridge and outpost route movement, including Alpha.61 rollback-safe outpost grading;
 - cart station freight fallback;
 - fishing shoreline qualification and invalid-puddle rejection;
 - dangerous-region military activation/supply/stand-down;

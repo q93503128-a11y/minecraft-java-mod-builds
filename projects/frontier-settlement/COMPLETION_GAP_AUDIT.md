@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.60`
+현재 구현 기준: `0.1.0-alpha.61`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -93,6 +93,18 @@
 | 일반 건물 world/item 거래 원자성 | **완료/부분** | Alpha.60 placement/grade rollback transaction; 실제 실패주입·save/reload acceptance 남음 |
 | 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
 | 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
+
+### Alpha.61 전초 grading transaction 감사
+
+- 기존 9×9 전초 footprint/최대 성토2/save phase 유지;
+- 한 grade cell에서 실제 변경 전 BlockState를 모두 snapshot;
+- clear/support/final grade `setBlock` 성공을 전부 확인;
+- 필요한 cell unload 또는 배치 실패 시 이미 성공한 변경을 역순 rollback;
+- complete grade cell 성공 뒤에만 persisted outpost step advance;
+- grading loose drop/virtual soil/refund/resource consume 없음;
+- 새 save field/worker/key/building/force-load/teleport 없음.
+
+실제 실패주입, 청크 경계 unload, save/reload acceptance는 아직 남는다.
 
 ### Alpha.60 일반 건설 transaction 감사
 
@@ -362,6 +374,7 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 | 대형 협곡/장교량 | 완료/부분 | Alpha.52 max24 + physical persisted piers |
 | 터널/더 깊은 대형 횡단 | 완료/부분 | Alpha.53 straight + Alpha.54 one-bend/physical portals; 더 거대한 토목은 선택적 |
 | 전초기지 물리 시공 | 완료 | persisted |
+| 전초기지 grading 원자성 | **완료/부분** | Alpha.61 grade-cell snapshot/rollback; 실제 실패주입·save/reload acceptance 남음 |
 | 전초 특화 | 완료/부분 | lumber/quarry/mining/agriculture + dynamic fishing/military |
 | 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
 | 위험지역 군사 특화 | 완료/부분 | one supplied humanoid sentry |
@@ -425,9 +438,10 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 15. Alpha.58 login-refresh/logout-reset/reconnect acceptance;
 16. Alpha.59 simultaneous building/road/outpost/civil confirm exclusivity acceptance;
 17. Alpha.60 building placement failure/rollback + grade retaining consume rollback/pre-fill-cost acceptance;
-18. full companion lock fresh-world client/server runtime;
-19. true Xaero marker는 stable supported API가 생길 때만;
-20. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+18. Alpha.61 outpost grade-cell failure/rollback + unload/save-reload acceptance;
+19. full companion lock fresh-world client/server runtime;
+20. true Xaero marker는 stable supported API가 생길 때만;
+21. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 

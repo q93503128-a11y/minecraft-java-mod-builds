@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.60"
+    "frontier_settlement": "0.1.0-alpha.61"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -29,7 +29,8 @@
     "Alpha.58 is multiplayer pre-acceptance hardening rather than new gameplay: serverbound placement handlers explicitly stay on NeoForge MAIN handling, a founded-world login republishes one refreshed authoritative settlement snapshot to all connected players, and client logout clears cached settlement/context/placement/notice state before another world/server can reuse it. Long two-player runtime acceptance is still not claimed.",
     "Alpha.59 centralizes building, road, outpost and civil-work exclusivity in one server-side SettlementProjectAuthority gate reused by every preview/start service path. UI, commands and stale client previews are not trusted as the final exclusivity authority; no new save field, worker, currency, key or companion dependency is added.",
     "Alpha.60 makes ordinary building placement and Alpha.44 terrain grading transaction-safe: required crate material is verified before mutation, successful world placement precedes ItemStack consumption/state advance, failed placement consumes nothing, and unexpected post-placement consumption failure rolls the newly changed blocks back. Existing already-paid final repair semantics are retained to avoid double charging.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.60 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.61 makes outpost grading rollback-safe: each loaded grade cell snapshots every changed BlockState, checks every setBlock result, restores successful partial mutations in reverse order on failure, and advances the persisted outpost step only after the complete grade cell succeeds. No new save field, resource, worker, key or companion dependency is added.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.61 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},

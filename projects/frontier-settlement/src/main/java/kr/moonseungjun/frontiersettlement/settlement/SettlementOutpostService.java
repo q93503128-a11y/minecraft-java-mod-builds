@@ -38,6 +38,7 @@ public final class SettlementOutpostService {
     private SettlementOutpostService() {}
 
     public record StartResult(boolean started, String message) {}
+    private record BlockSnapshot(BlockPos pos, BlockState state) {}
     public record PlacementCheck(boolean valid, int roadIndex, BlockPos gate,
                                  int directionX, int directionZ,
                                  String specialization, String message) {
@@ -207,7 +208,7 @@ public final class SettlementOutpostService {
             return false;
         }
 
-        applyGradeCell(level, target);
+        if (!applyGradeCell(level, target)) return false;
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceOutpostConstruction();
         OutpostConstructionState next = data.outpostConstruction();
@@ -543,25 +544,56 @@ public final class SettlementOutpostService {
         return hasOrCanMakeSupport(level, target.below());
     }
 
-    private static void applyGradeCell(ServerLevel level, BlockPos target) {
+    /** Apply one outpost grade cell as one reversible world transaction. */
+    private static boolean applyGradeCell(ServerLevel level, BlockPos target) {
+        List<BlockSnapshot> changed = new ArrayList<>();
         for (int y = target.getY() + OutpostBlueprints.CLEAR_HEIGHT; y >= target.getY() + 1; y--) {
             BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
-            if (!level.getBlockState(pos).isAir()) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (!level.hasChunkAt(pos)) { rollbackGradeMutation(level, changed); return false; }
+            if (!level.getBlockState(pos).isAir()
+                    && !setGradeBlock(level, pos, Blocks.AIR.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return false;
             }
         }
 
         BlockPos cursor = target.below();
         for (int depth = 0; depth <= MAX_FILL_DEPTH; depth++) {
+            if (!level.hasChunkAt(cursor)) { rollbackGradeMutation(level, changed); return false; }
             BlockState current = level.getBlockState(cursor);
             if (!current.isAir() && !current.canBeReplaced()) break;
-            level.setBlock(cursor, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (!setGradeBlock(level, cursor, Blocks.COARSE_DIRT.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return false;
+            }
             cursor = cursor.below();
         }
 
+        if (!level.hasChunkAt(target)) { rollbackGradeMutation(level, changed); return false; }
         BlockState current = level.getBlockState(target);
-        if (current.isAir() || current.canBeReplaced()) {
-            level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        if ((current.isAir() || current.canBeReplaced())
+                && !setGradeBlock(level, target, Blocks.COARSE_DIRT.defaultBlockState(), changed)) {
+            rollbackGradeMutation(level, changed);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean setGradeBlock(ServerLevel level, BlockPos pos, BlockState next,
+                                         List<BlockSnapshot> changed) {
+        BlockState current = level.getBlockState(pos);
+        if (current.equals(next)) return true;
+        if (!level.setBlock(pos, next, DIRECT_BLOCK_UPDATE)) return false;
+        changed.add(new BlockSnapshot(pos, current));
+        return true;
+    }
+
+    private static void rollbackGradeMutation(ServerLevel level, List<BlockSnapshot> changed) {
+        for (int i = changed.size() - 1; i >= 0; i--) {
+            BlockSnapshot snapshot = changed.get(i);
+            if (level.hasChunkAt(snapshot.pos())) {
+                level.setBlock(snapshot.pos(), snapshot.state(), DIRECT_BLOCK_UPDATE);
+            }
         }
     }
 
