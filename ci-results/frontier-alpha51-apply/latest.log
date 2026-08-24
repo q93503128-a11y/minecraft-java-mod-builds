@@ -1,10 +1,6 @@
-trigger_sha=da7c477d7e2cd5d827e6c95a7a46665695fa54cc
+trigger_sha=32e9a1a6509eb553697385bb1cdded7382f21200
 patch_outcome=failure
 audit_outcome=skipped
 --- patch ---
-Traceback (most recent call last):
-  File "<stdin>", line 10, in <module>
-  File ".github/workflows/frontier-alpha51-apply.yml::<embedded>", line 1
-    from pathlib import Path
-IndentationError: unexpected indent
+projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementCivilWorkService.java: expected exactly one occurrence, found 0: '    public record Check(boolean valid, int minX, int maxX, int minZ, int maxZ, int gradeY,\n              int cutBlocks, '
 --- audit ---
