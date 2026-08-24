@@ -30,64 +30,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Finalize Alpha.52 legacy road compatibility
-        id: postfix52
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          (
-            set -euo pipefail
-            if ! test -f "$PROJECT_DIR/tools/fix_alpha52_postaudit.py"; then
-              exit 0
-            fi
-            echo 'ALPHA52_POSTFIX=1' >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/fix_alpha52_postaudit.py"
-            rm -f "$PROJECT_DIR/tools/fix_alpha52_postaudit.py" "$PROJECT_DIR/tools/apply_alpha52.py"
-            python3 "$PROJECT_DIR/tools/test_alpha52_source.py"
-            python3 "$PROJECT_DIR/tools/test_alpha52_docs.py"
-            git diff --check
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -A "$PROJECT_DIR"
-            git diff --cached --check
-            git commit -m 'Finalize Frontier alpha.52 bounded long bridges'
-            pushed=0
-            for attempt in 1 2 3 4 5 6; do
-              if git pull --rebase origin main && git push origin HEAD:main; then
-                pushed=1
-                break
-              fi
-              git rebase --abort >/dev/null 2>&1 || true
-              sleep $((attempt * 2))
-            done
-            test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha52-postfix.log
-
-      - name: Record Alpha.52 postfix failure
-        if: steps.postfix52.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git reset --hard "$GITHUB_SHA"
-          mkdir -p ci-results/frontier-alpha52-bootstrap
-          cp /tmp/frontier-alpha52-postfix.log ci-results/frontier-alpha52-bootstrap/latest.log
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci-results/frontier-alpha52-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.52 postfix failure for ${GITHUB_SHA::7} [skip ci]"
-          for attempt in 1 2 3 4 5 6; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
-            git rebase --abort >/dev/null 2>&1 || true
-            sleep $((attempt * 2))
-          done
-          exit 1
-
-      - name: Stop source run after postfix product push
-        if: env.ALPHA52_POSTFIX == '1' && steps.postfix52.outcome == 'success'
-        shell: bash
-        run: exit 1
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -159,7 +101,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always() && env.ALPHA52_POSTFIX != '1'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -172,7 +114,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always() && env.ALPHA52_POSTFIX != '1'
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
