@@ -205,10 +205,14 @@ public final class FantasyWorldRules {
         OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
         if (realm == null || profile == null) return false;
 
-        BlockPos recovery = LivingRealmWorldManager.homePosition(realm, profile);
-        if (!SafeResidenceLocator.isWalkable(realm, recovery)) {
+        // This coordinate exists only after the same authored upper-room route used for initial
+        // placement has completed once. It can be recovered from saved route state while its chunk
+        // is unloaded; the transient residence lease is refreshed before teleport.
+        BlockPos recovery = SafeResidenceLocator.authoredRecoveryTarget(
+                realm, profile.homelandId(), profile.residenceId());
+        if (recovery == null) {
             LivingKingdoms.LOGGER.error(
-                    "Institutional recovery refused because authored residence is unavailable player={}",
+                    "Institutional recovery refused because no authored residence has ever completed player={}",
                     player.getUUID());
             return false;
         }
