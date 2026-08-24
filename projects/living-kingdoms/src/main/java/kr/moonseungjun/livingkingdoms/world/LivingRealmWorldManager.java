@@ -22,7 +22,23 @@ public final class LivingRealmWorldManager {
         RealmBuildCoordinator.requestPlayer(player, profile);
     }
 
+    /**
+     * Compatibility entry used by the realm build coordinator. A false physical attempt is converted
+     * into a residence-barrier request, so old coordinator completion packets cannot release the
+     * client before the actual room is available.
+     */
     static boolean finishPlacement(ServerPlayer player, OriginProfile profile) {
+        if (tryFinishPlacement(player, profile)) return true;
+        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        if (realm != null && RealmSitePlanner.isBuilt(realm, profile.homelandId())
+                && !PlayerResidencePlacementManager.pending(player.getUUID())) {
+            PlayerResidencePlacementManager.queue(player, profile);
+        }
+        return false;
+    }
+
+    /** Makes one physical attempt. Never creates a fallback and never recursively queues itself. */
+    static boolean tryFinishPlacement(ServerPlayer player, OriginProfile profile) {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null) {
             LivingKingdoms.LOGGER.error("Living Kingdoms realm is not loaded");
@@ -91,6 +107,11 @@ public final class LivingRealmWorldManager {
                 .filter(ResidenceAssignment::current)
                 .orElse(null);
         if (assignment != null) return assignment.position();
+        return SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
+    }
+
+    /** Legacy helper retained for non-player callers; it now returns only a verified authored room. */
+    public static BlockPos homePosition(ServerLevel realm, OriginProfile profile) {
         return SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
     }
 }
