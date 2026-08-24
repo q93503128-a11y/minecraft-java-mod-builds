@@ -1,4 +1,4 @@
-# trigger: exact YAML block indentation extraction
+# trigger: preserve embedded Python triple-quoted literals
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -36,7 +36,14 @@ jobs:
           start = workflow.index(marker) + len(marker)
           end = workflow.index("\n          PY\n", start)
           raw = workflow[start:end].splitlines()
-          code = '\n'.join(line[10:] if line.startswith('          ') else line for line in raw)
+          normalized = []
+          in_triple = False
+          for line in raw:
+              current = line if in_triple else (line[10:] if line.startswith('          ') else line)
+              normalized.append(current)
+              if line.count("'''") % 2 == 1:
+                  in_triple = not in_triple
+          code = '\n'.join(normalized)
           namespace = {'__name__': '__main__', '__file__': '.github/workflows/frontier-alpha51-apply.yml'}
           exec(compile(code, '.github/workflows/frontier-alpha51-apply.yml::<embedded>', 'exec'), namespace, namespace)
           PY
