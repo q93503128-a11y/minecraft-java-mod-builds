@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.51"
+    "frontier_settlement": "0.1.0-alpha.52"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -20,7 +20,8 @@
     "Alpha.49 adds bounded selected-area balanced earthworks using only already-loaded vanilla/companion terrain block state inspection; it never force-loads terrain, locates companion content, or adds a hard worldgen dependency.",
     "Alpha.50 expands bounded civil works to a 13x13 / plus-or-minus-5 envelope and allows fill beyond on-site cut only through real dirt/coarse-dirt ItemStacks physically hauled by the existing construction worker from loaded settlement storage; no companion class, worldgen lookup, virtual soil balance, or second construction authority is added.",
     "Alpha.51 expands the same civil tool to 17x17 / plus-or-minus-7 and adds a bounded one-block outer retaining ring when fill-facing edges stand at least three blocks above natural exterior ground; exact COBBLESTONE ItemStacks are physically hauled and consumed only after successful wall placement, with a seven-block retaining-height ceiling and no ravine bridge/tunnel claim.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.51 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.52 extends the existing road authority with bounded straight long-bridge and dry-ravine crossings up to 24 centerline cells; exact support cells are persisted, stone piers must reach natural support within 12 blocks, and the same road builder physically hauls stone with no second transport or construction authority.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.52 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},

@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.51
+## Current version: 0.1.0-alpha.52
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.51 key was added.
+No new Alpha.52 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–51 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–52 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -71,8 +71,27 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.44 ordinary building footprints support bounded medium terrain: span0–2 normal grading, span3–4 `지형 공사 포함`, >4 rejected. Deep exposed foundations use real hauled/staged retaining stone, not free cobblestone.
 - Alpha.27 road logistics remains the **single authority for outpost transport**. **Transport workers belong to a specific outpost** and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
-- Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone.
+- Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.52 — bounded long bridges and ravine crossings
+
+Alpha.52 advances the first item left after Alpha.51 without inventing a new road system. The existing road endpoint flow, shared builder and real settlement stone authority are reused.
+
+- ordinary Alpha.35 short-water bridges up to 6 centerline cells remain supported;
+- a straight water or abrupt dry-ravine bridge run may now span at most **24 centerline cells**;
+- dry ravine detection requires a bounded depression at least **4 blocks** below compatible shoulders;
+- bridge approaches still require bank/shoulder height difference of at most 1 block;
+- bridge runs needing structural support receive two stone pier columns at bounded stations rather than becoming floating decks;
+- every planned pier cell is persisted in `RoadConstructionState.bridge_supports`, so save/reload keeps the exact same support plan;
+- each pier must reach natural support ground within **12 blocks** below the deck. Unloaded cells, containers, lava/other fluids, player structures and non-natural support reject the route;
+- pier-required long bridges unlock at the existing village stage; no new key, building family, currency or dashboard is added;
+- the same road builder walks to real settlement storage, extracts real stone ItemStacks, and physically builds deck/support placements;
+- paving now treats world placement and ItemStack consumption atomically: successful `setBlock` precedes carried-stone shrink and state advance, with rollback if consumption unexpectedly fails;
+- final road repair no longer places missing road/bridge blocks for free; each repair fetches and consumes a real stone ItemStack;
+- no force-load, teleport logistics, second builder, second road authority or second outpost transport authority is introduced.
+
+Alpha.52 completes the **first bounded long-bridge/ravine-crossing slice**. Tunnels, more complex curved/deeper monumental crossings and final real-play acceptance remain unfinished.
 
 ## Alpha.51 — 17×17 retaining-heavy terraces
 
@@ -92,7 +111,7 @@ Alpha.51 is the next bounded civil-engineering pass. It expands the same late-ga
 - the active selected area plus retaining ring is break-protected while work is active;
 - no force-load, teleport inventory, `destroyBlock`, `dropResources`, virtual stone, second builder or second economy is introduced.
 
-Alpha.51 completes the first **retaining-heavy large-terrace** slice. Ravine-scale crossings, long bridges, tunnels and monumental civil engineering remain unfinished; unrestricted WorldEdit and mountain deletion remain outside scope.
+Alpha.51 completed the first **retaining-heavy large-terrace** slice. Alpha.52 now adds a bounded first long-bridge/ravine-crossing pass; tunnels and more complex monumental civil engineering remain unfinished. Unrestricted WorldEdit and mountain deletion remain outside scope.
 
 ## Alpha.50 — 13×13 civil work with physical imported fill
 
@@ -184,14 +203,14 @@ Alpha.46 deepens Alpha.40 fishing:
 
 `COMPANION_LOCK.json` remains `candidate_runtime_lock`. The current candidate stack includes Terralith/Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat and libraries, Weapons Expanded, Lootr, Sophisticated Backpacks/Core, Jade and Xaero's Minimap.
 
-Frontier must still boot without optional companions. Alpha.51 reads already-loaded ordinary terrain and physical storage only; it adds no Terralith/worldgen Java dependency.
+Frontier must still boot without optional companions. Alpha.52 reads already-loaded ordinary terrain and physical storage only; it adds no Terralith/worldgen Java dependency.
 
 ## Validation
 
-Canonical Alpha.51 CI order:
+Canonical Alpha.52 CI order:
 
-1. cumulative Alpha.23–51 source/runtime audit, preserving historical Alpha.23–50 files while superseding only the intended civil limits/retaining expansion;
-2. Alpha.51 canonical README/plan/gap docs audit;
+1. cumulative Alpha.23–52 source/runtime audit, preserving historical Alpha.23–50 files while superseding only the intended civil limits/retaining expansion;
+2. Alpha.52 canonical README/plan/gap docs audit;
 3. `git diff --check` + clean-worktree check;
 4. Java 25 `clean build` against Minecraft 26.2 / NeoForge 26.2.0.38-beta;
 5. runtime JAR verification and SHA-256;

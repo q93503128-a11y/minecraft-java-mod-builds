@@ -185,10 +185,17 @@ public final class SettlementData extends SavedData {
         setDirty();
     }
 
-    public void beginRoadConstruction(List<BlockPos> centers) { beginRoadConstruction(centers, List.of()); }
+    public void beginRoadConstruction(List<BlockPos> centers) { beginRoadConstruction(centers, List.of(), List.of()); }
 
     public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
         RoadConstructionState next = RoadConstructionState.fromPath(centers, profile);
+        if (!next.active()) return;
+        infrastructure = new SettlementInfrastructureState(buildings(), roads(), next, outposts(), outpostConstruction());
+        setDirty();
+    }
+
+    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile, List<BlockPos> bridgeSupports) {
+        RoadConstructionState next = RoadConstructionState.fromPath(centers, profile, bridgeSupports);
         if (!next.active()) return;
         infrastructure = new SettlementInfrastructureState(buildings(), roads(), next, outposts(), outpostConstruction());
         setDirty();

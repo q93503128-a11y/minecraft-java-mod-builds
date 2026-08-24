@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.51`
+현재 구현 기준: `0.1.0-alpha.52`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.51에서 retaining-heavy 대형 테라스 1차가 추가되어도 ravine-scale/장교량/터널 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.52에서 bounded 장교량/협곡 횡단 1차가 추가되어도 터널/더 깊은 기념비급 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -58,7 +58,8 @@
 | 선택 영역 절토/성토 | **완료/부분** | Alpha.51 DOMAIN 17×17 / ±7 current pass |
 | 외부 토사 반입/대형 성토 | **완료/부분** | Alpha.50 real dirt/coarse-dirt imported fill first expansion; 더 큰 성토는 남음 |
 | 대형 옹벽/테라스 | **완료/부분** | Alpha.51 1-block outer ring, exposed edge 3–7 high, exact cobblestone physical retaining first pass |
-| 대형 협곡 다리/터널/기념비급 토목 | **미구현** | 작은 road bridge + 13×13 토목까지만 |
+| 대형 협곡/장교량 | **완료/부분** | Alpha.52 max24 straight crossing + persisted physical stone piers, real-play breadth 남음 |
+| 터널/더 깊은 기념비급 토목 | **미구현/부분** | Alpha.52 범위 밖, 다음 civil-engineering slice |
 | 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
 | 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
 | 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
@@ -141,6 +142,24 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 
 따라서 **retaining-heavy large terrace는 Alpha.51에서 완료/부분으로 전진**했다. ravine-scale work, long bridge, tunnel, monumental engineering은 여전히 미구현이며 unrestricted WorldEdit나 mountain deletion은 범위 밖이다.
 
+
+### Alpha.52 long-bridge / ravine crossing 감사
+
+- 기존 road endpoint/preview/approval 흐름과 같은 건설 주민 재사용, 새 key/building/currency 없음;
+- Alpha.35 short bridge max6 유지, Alpha.52 straight bridge run max24;
+- dry ravine은 shoulder 대비 최소4블록 깊이의 bounded depression만 자동 횡단;
+- pier-required bridge는 village 단계부터;
+- exact pier block positions를 optional `bridge_supports`에 저장, old saves default empty;
+- 장교량 교각은 양쪽 edge column으로 계획되고 자연 지반을 최대12블록 안에서 찾아야 함;
+- unloaded / block entity / non-water fluid / non-natural-player obstruction / too-deep support 거부;
+- same shared road builder + actual settlement stone ItemStacks만 사용;
+- world setBlock 성공 → carried stone consume → road state advance 순서, consume 실패 시 placed block rollback;
+- final validation missing block도 physical stone1개를 가져와 성공 배치 후 소비하며 free repair 없음;
+- completed road는 기존 RoadSegment/Alpha.27 transport authority로 귀결, second logistics authority 없음;
+- force-load/teleport/virtual stone 없음.
+
+따라서 **bounded long bridge/ravine crossing은 완료/부분**으로 전진했다. 터널과 더 복잡하고 깊은 기념비급 횡단은 여전히 미구현/부분이다.
+
 ## 4. 주민 / 생산 / 방어
 
 | 요구사항 | 상태 | 현재 |
@@ -222,7 +241,8 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 | 물리 도로 시공 | 완료 | grading + hauling |
 | 1블록 단차 계단 | 완료 | cobblestone stairs |
 | 짧은 물길 다리 | 완료/부분 | max6 centerline bridge |
-| 대형 협곡/장교량/터널 | 미구현 | larger civil engineering priority |
+| 대형 협곡/장교량 | 완료/부분 | Alpha.52 max24 + physical persisted piers |
+| 터널/더 깊은 대형 횡단 | 미구현/부분 | larger civil engineering next priority |
 | 전초기지 물리 시공 | 완료 | persisted |
 | 전초 특화 | 완료/부분 | lumber/quarry/mining/agriculture + dynamic fishing/military |
 | 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
@@ -256,7 +276,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. **ravine-scale / long bridge / tunnel civil-engineering pass** — Alpha.51 terrace보다 큰 crossing breadth를 실물 자원·player protection 안에서 구현;
+1. **tunnel / deeper monumental crossing civil-engineering pass** — Alpha.52 long bridge보다 큰/복잡한 crossing breadth를 실물 자원·player protection 안에서 구현;
 2. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
 3. stable seam이 있을 때 companion-biome-aware outpost specialization;
 4. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
@@ -270,7 +290,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 12. true Xaero marker는 stable supported API가 생길 때만;
 13. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
-## 10. Alpha.51 추가 실플레이 acceptance
+## 10. Alpha.51/52 추가 실플레이 acceptance
 
 최종/test-worthy 시점에 최소 확인:
 
@@ -298,12 +318,18 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - mid-project cobblestone depletion은 pause, later resupply resume;
 - PHASE_RETAIN/save-reload에서 retaining count/item 중복·손실 없음;
 - 두 플레이어가 같은 civil project/progress/context를 봄.
+- Alpha.52 short6/long24 경계, dry-ravine 최소4 깊이, straight-only pier rule 정확성;
+- pier support depth12 허용/13 거부, water 허용/non-water fluid·container·player block 거부;
+- `bridge_supports` save/reload가 같은 exact support cells를 유지;
+- deck/support 모두 real stone depletion에서 pause/resupply resume;
+- road placement 성공 전에는 stone consume/state advance가 없고, failed/rollback 경로에서 free block이 남지 않음;
+- final missing road/bridge repair도 actual stone을 소비해 free repair가 없음.
 
 ## 11. 완료 판정 금지선
 
 다음이 남아 있는 동안 `원본 v0.2 완성`이라고 부르지 않는다.
 
-- ravine-scale / long bridge / tunnel larger civil engineering breadth;
+- tunnel / deeper or more complex monumental crossing civil engineering breadth;
 - meaningful companion/exploration breadth gaps;
 - physical military armory 여부;
 - long multiplayer acceptance;

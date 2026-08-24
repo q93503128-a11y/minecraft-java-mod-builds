@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.51**.
+Current canonical implementation: **0.1.0-alpha.52**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–51 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–52 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -386,6 +386,7 @@ Implemented:
 - physical road construction;
 - one-block longitudinal stair adaptation;
 - bounded short-water stone bridge/deck max6 centerline blocks;
+- Alpha.52 bounded straight long-water/dry-ravine bridge runs max24 with persisted physical stone pier cells;
 - persisted outpost construction;
 - lumber/quarry/mining/agriculture specialization;
 - loaded fishing overlay;
@@ -396,6 +397,26 @@ Implemented:
 **tier-visible public works** may improve territory readability only when safe, loaded, non-farmable and non-destructive to player work.
 
 Still partial: deeper companion-biome specialization and larger road/civil engineering.
+
+
+### Alpha.52 bounded long-bridge / ravine crossing
+
+Alpha.52 remains inside `SettlementRoadService` and the existing road construction state. It does not create a civil-work duplicate or another logistics controller.
+
+- Alpha.35 short-water bridges remain max6 centerline cells without new pier state;
+- straight water crossings and abrupt dry ravines may use bridge profile for at most24 centerline cells;
+- dry ravines require at least4 blocks of bounded depression and nearly level shoulders;
+- runs needing structural support persist exact pier cells in optional `bridge_supports`, default empty for old saves;
+- pier stations use two edge columns and each column must reach natural support within12 blocks;
+- loaded block entities, non-water fluid, player/non-natural obstruction or excessive depth reject the route;
+- pier-required bridges are village-stage public works;
+- deck and pier stone remain real ItemStacks hauled by the same road builder from actual settlement storage;
+- placement is atomic with resource authority: successful world `setBlock` happens before carried-stone shrink/state advance, and a failed consume rolls the placed block back;
+- final validation/repair also requires physical stone instead of free repair placement;
+- completed roads still become the same `RoadSegment`, so Alpha.27 remains the **single authority for outpost transport** and there is still only one authority for long-distance outpost transport;
+- no force-load, teleport, virtual stone, second builder or second route authority.
+
+This is the first long-bridge/ravine slice only. **Tunnels and more complex/deeper monumental crossings remain unfinished.**
 
 ## 10. Exploration, crafting and settlement feedback
 
@@ -459,7 +480,7 @@ Xaero:
 - do not fake completion through internal waypoint sets/reflection/mixins;
 - true settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
 
-Alpha.51 civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
+Alpha.52 road/civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
 
 ## 12. UI and information hierarchy
 
@@ -506,7 +527,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.51
+## 14. Current playable slice after Alpha.52
 
 Current implemented slice includes:
 
@@ -517,7 +538,7 @@ Current implemented slice includes:
 - physical construction/hauling and bounded Alpha.44 building terrain;
 - construction-office staging;
 - loaded production and resident work;
-- physical roads/stairs/short bridges;
+- physical roads/stairs/short bridges plus Alpha.52 bounded 24-cell long-water/dry-ravine bridges with persisted physical stone piers;
 - specialized outposts, fishing, dangerous military overlay;
 - same-authority physical road logistics and reverse supply;
 - bounded unloaded work debt without virtual resources/cargo;
@@ -530,11 +551,11 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.51
+## 15. Unfinished original-scope priorities after Alpha.52
 
 Unless real-play regression overrides them:
 
-1. **ravine-scale / long bridge / tunnel civil-engineering pass** — extend beyond Alpha.51 retaining terraces without becoming WorldEdit, force-loading or minting resources;
+1. **tunnel / deeper monumental crossing civil-engineering pass** — extend beyond Alpha.52 bounded long bridges without becoming WorldEdit, force-loading or minting resources;
 2. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
 3. better companion-biome-aware outpost specialization where a stable data seam exists;
 4. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
@@ -544,9 +565,10 @@ Unless real-play regression overrides them:
 8. Alpha.46 waterfront pathing/site/reverse-supply/trade-balance acceptance;
 9. Alpha.48 humanoid render/attack-animation + legacy migration acceptance;
 10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion-resupply/return-cargo/terrain-safety acceptance;
-11. full companion lock fresh-world client/server runtime;
-12. true Xaero markers only if a stable supported API appears;
-13. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+11. Alpha.52 long-bridge pier planning/save-reload/stone depletion/physical repair/pathing acceptance;
+12. full companion lock fresh-world client/server runtime;
+13. true Xaero markers only if a stable supported API appears;
+14. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 
@@ -588,6 +610,7 @@ At the final/test-worthy point verify at least:
 - exact cobblestone is checked at approval, physically hauled max16, consumed only after successful wall placement, and shortage pauses;
 - save/reload preserves PHASE_RETAIN + initial retaining count without duplicating cobblestone;
 - completed project leaves no spendable/transferable virtual earth or virtual stone;
+- Alpha.52 long bridge: 7–24-cell bound, dry ravine depth trigger, straight support run, pier natural-support depth<=12, save/reload support stability, real-stone depletion/resupply and no-free-repair behavior;
 - full companion-stack fresh world.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.

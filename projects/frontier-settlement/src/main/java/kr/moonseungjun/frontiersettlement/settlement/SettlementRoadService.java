@@ -20,8 +20,10 @@ import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class SettlementRoadService {
     public static final int LEGACY_ROAD_LENGTH = 16;
@@ -31,13 +33,19 @@ public final class SettlementRoadService {
     private static final int MAX_STEP_HEIGHT = 1;
     private static final int MAX_CROSS_SLOPE = 1;
     private static final int MAX_FILL_DEPTH = 2;
-    private static final int MAX_BRIDGE_SPAN = 6;
+    private static final int MAX_SHORT_BRIDGE_SPAN = 6;
+    private static final int MAX_LONG_BRIDGE_SPAN = 24;
+    private static final int MIN_RAVINE_DEPTH = 4;
+    private static final int MAX_LONG_BRIDGE_PIER_DEPTH = 12;
+    private static final int LONG_BRIDGE_PIER_INTERVAL = 6;
     private static final int BRIDGE_SURCHARGE_PER_CENTER = 2;
+    private static final int BRIDGE_SUPPORT_SURCHARGE = 1;
     private static final int STAIR_SURCHARGE_PER_CENTER = 1;
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double BUILDER_WORK_RANGE_SQR = 18.0D;
-    private static final double BRIDGE_WORK_RANGE_SQR = 64.0D;
+    private static final double BRIDGE_WORK_RANGE_SQR = 16.0D;
+    private static final double BRIDGE_SUPPORT_WORK_RANGE_SQR = 196.0D;
     private static final double STORAGE_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 16;
     private static final double ROAD_BUILDER_SEARCH_MARGIN = 96.0D;
@@ -47,10 +55,17 @@ public final class SettlementRoadService {
 
     public record StartResult(boolean started, String message) {}
     public record RouteCheck(boolean valid, List<BlockPos> centers, int stoneCost, String message) {}
-    private record RouteCandidate(boolean valid, List<BlockPos> centers, List<Integer> profile, int score, String message) {}
-    private record Placement(BlockPos pos, BlockState state, boolean bridge) {}
+    private record RouteCandidate(boolean valid, List<BlockPos> centers, List<Integer> profile,
+                                  List<BlockPos> supports, int score, String message) {}
+    private record Placement(BlockPos pos, BlockState state, boolean bridge, boolean support) {}
     private record FootprintSpec(boolean centerline, boolean bridge, Direction stairFacing) {}
     private record SurfaceSample(int y, BlockState state, boolean water) {}
+    private record SupportPlan(boolean valid, List<BlockPos> positions, String message) {
+        static SupportPlan invalid(String message) { return new SupportPlan(false, List.of(), message); }
+    }
+    private record PierColumn(boolean valid, List<BlockPos> positions, String message) {
+        static PierColumn invalid(String message) { return new PierColumn(false, List.of(), message); }
+    }
 
     public static StartResult start(ServerPlayer player) {
         int[] direction = horizontalDirection(player.getYRot());
@@ -89,6 +104,9 @@ public final class SettlementRoadService {
         if (!chosen.valid()) return invalid(chosen.message().isBlank()
                 ? "두 자동 경로 모두 안전한 3칸 폭 도로를 만들 수 없습니다." : chosen.message());
 
+        if (!chosen.supports().isEmpty() && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
+            return invalid("교각이 필요한 장교량·협곡 횡단은 마을 단계부터 건설할 수 있습니다.");
+        }
         int cost = stoneCost(chosen);
         SettlementService.refreshResources(server, data);
         String resource = data.resources().stone() < cost
@@ -96,7 +114,10 @@ public final class SettlementRoadService {
                 : " | 석재 " + cost;
         int bridges = bridgeCenterCount(chosen.profile());
         int stairs = stairCenterCount(chosen.centers(), chosen.profile());
-        String terrain = (stairs == 0 && bridges == 0) ? "" : " | 계단 " + stairs + " · 소교량 " + bridges;
+        String bridgeDetail = bridges == 0 ? ""
+                : chosen.supports().isEmpty() ? " · 소교량 " + bridges
+                : " · 장교량 " + bridges + " · 교각 " + chosen.supports().size();
+        String terrain = (stairs == 0 && bridges == 0) ? "" : " | 계단 " + stairs + bridgeDetail;
         return new RouteCheck(true, chosen.centers(), cost,
                 "경로 " + chosen.centers().size() + "블록" + terrain + resource);
     }
@@ -122,11 +143,13 @@ public final class SettlementRoadService {
             return new StartResult(false, "도로 필요 석재 " + requiredStone + " | 현재 석재 " + data.resources().stone());
         }
 
-        data.beginRoadConstruction(chosen.centers(), chosen.profile());
+        data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports());
         SettlementConstructionService.ensureBuilder(level, data.centerPos());
         SettlementService.broadcast(server, data);
+        String bridge = chosen.supports().isEmpty() ? ""
+                : " 장교량/협곡 교각 " + chosen.supports().size() + "블록 포함.";
         return new StartResult(true, "개척 도로 착공: " + chosen.centers().size()
-                + "블록 경로, 3칸 폭. 건설 주민이 지반·계단·짧은 수로 교량을 정리한 뒤 공동 창고의 실제 석재 "
+                + "블록 경로, 3칸 폭." + bridge + " 건설 주민이 지반·계단·교량을 정리한 뒤 공동 창고의 실제 석재 "
                 + requiredStone + "개를 운반하며 포설합니다.");
     }
 
@@ -179,12 +202,12 @@ public final class SettlementRoadService {
 
         ServerLevel level = server.overworld();
         Placement placement = plan.get(gradeStep);
-        if (!moveBuilderToPlacement(level, builder, placement)) return false;
         if (!canGradePlacement(level, placement)) {
             builder.getNavigation().stop();
             return false;
         }
-
+        // Bridge decks/supports occupy empty/water columns. Validation is enough here; physical stone work is paving.
+        if (!placement.bridge() && !moveBuilderToPlacement(level, builder, placement)) return false;
         applyGradePlacement(level, placement);
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceRoadConstruction();
@@ -212,7 +235,7 @@ public final class SettlementRoadService {
 
         BlockPos target = placement.pos();
         BlockState current = level.getBlockState(target);
-        if (!current.is(placement.state().getBlock()) && !current.isAir() && !isRoadGround(current)) {
+        if (!current.is(placement.state().getBlock()) && !canReplaceForPlacement(current, placement)) {
             builder.getNavigation().stop();
             return false;
         }
@@ -223,17 +246,29 @@ public final class SettlementRoadService {
                 return false;
             }
         }
-        if (!consumeCarriedStone(builder, stoneDelta)) return false;
 
+        boolean changed = false;
         if (!current.is(placement.state().getBlock())) {
-            level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE);
-            builder.swing(InteractionHand.MAIN_HAND);
+            if (!level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+            changed = true;
         }
+        if (!consumeCarriedStone(builder, stoneDelta)) {
+            if (changed) level.setBlock(target, current, DIRECT_BLOCK_UPDATE);
+            return false;
+        }
+        if (changed) builder.swing(InteractionHand.MAIN_HAND);
         data.advanceRoadConstruction();
         if (data.roadConstruction().step() >= plan.size()) {
             return finishIfValid(server, data, data.roadConstruction(), plan, builder);
         }
         return false;
+    }
+
+    private static boolean canReplaceForPlacement(BlockState current, Placement placement) {
+        if (placement.support()) {
+            return current.isAir() || current.canBeReplaced() || current.getFluidState().is(FluidTags.WATER);
+        }
+        return current.isAir() || isRoadGround(current);
     }
 
     private static boolean ensurePavingMaterial(MinecraftServer server, SettlementData data, Villager builder,
@@ -302,12 +337,46 @@ public final class SettlementRoadService {
             builder.getNavigation().stop();
             return false;
         }
+        if (placement.support()) {
+            BlockPos deck = findBridgeDeckAbove(level, placement.pos());
+            if (deck == null) return false;
+            double distance = builder.distanceToSqr(deck.getX() + 0.5D, deck.getY(), deck.getZ() + 0.5D);
+            if (distance <= BRIDGE_SUPPORT_WORK_RANGE_SQR) return true;
+            builder.getNavigation().moveTo(deck.getX() + 0.5D, deck.getY(), deck.getZ() + 0.5D, 0.82D);
+            return false;
+        }
         if (placement.bridge()) {
             double distance = builder.distanceToSqr(placement.pos().getX() + 0.5D,
                     placement.pos().getY(), placement.pos().getZ() + 0.5D);
             if (distance <= BRIDGE_WORK_RANGE_SQR) return true;
+            BlockPos approach = bridgeApproach(level, placement.pos());
+            if (approach != null) {
+                builder.getNavigation().moveTo(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D, 0.82D);
+                return false;
+            }
         }
         return moveBuilderToCurrentSurface(level, builder, placement.pos());
+    }
+
+    private static BlockPos bridgeApproach(ServerLevel level, BlockPos target) {
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos neighbor = target.relative(direction);
+            if (isRoadPavingBlock(level.getBlockState(neighbor))) return neighbor;
+        }
+        return null;
+    }
+
+    private static BlockPos findBridgeDeckAbove(ServerLevel level, BlockPos support) {
+        for (int dy = 1; dy <= MAX_LONG_BRIDGE_PIER_DEPTH; dy++) {
+            BlockPos candidate = support.above(dy);
+            if (level.getBlockState(candidate).is(Blocks.STONE_BRICKS)) return candidate;
+        }
+        return null;
+    }
+
+    private static boolean isRoadPavingBlock(BlockState state) {
+        return state.is(Blocks.GRAVEL) || state.is(Blocks.COBBLESTONE)
+                || state.is(Blocks.COBBLESTONE_STAIRS) || state.is(Blocks.STONE_BRICKS);
     }
 
     private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
@@ -322,7 +391,13 @@ public final class SettlementRoadService {
     private static boolean canGradePlacement(ServerLevel level, Placement placement) {
         BlockPos target = placement.pos();
         BlockState current = level.getBlockState(target);
-        if (level.getBlockEntity(target) != null || !current.getFluidState().isEmpty()) return false;
+        if (level.getBlockEntity(target) != null) return false;
+        if (placement.support()) {
+            if (!current.getFluidState().isEmpty() && !current.getFluidState().is(FluidTags.WATER)) return false;
+            return current.is(placement.state().getBlock()) || current.isAir() || current.canBeReplaced()
+                    || current.getFluidState().is(FluidTags.WATER);
+        }
+        if (!current.getFluidState().isEmpty()) return false;
         if (!current.isAir() && !current.canBeReplaced() && !isRoadGround(current)) return false;
 
         for (int y = target.getY() + 1; y <= target.getY() + 2; y++) {
@@ -335,6 +410,7 @@ public final class SettlementRoadService {
     }
 
     private static void applyGradePlacement(ServerLevel level, Placement placement) {
+        if (placement.support()) return;
         BlockPos target = placement.pos();
         for (int y = target.getY() + 2; y >= target.getY() + 1; y--) {
             BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
@@ -375,20 +451,24 @@ public final class SettlementRoadService {
     private static int stoneCost(RouteCandidate candidate) {
         return stoneCost(candidate.centers().size())
                 + bridgeCenterCount(candidate.profile()) * BRIDGE_SURCHARGE_PER_CENTER
+                + candidate.supports().size() * BRIDGE_SUPPORT_SURCHARGE
                 + stairCenterCount(candidate.centers(), candidate.profile()) * STAIR_SURCHARGE_PER_CENTER;
     }
 
     private static int stoneCost(RoadConstructionState road) {
         return stoneCost(road.centers().size())
                 + road.bridgeCenterCount() * BRIDGE_SURCHARGE_PER_CENTER
+                + road.bridgeSupportCount() * BRIDGE_SUPPORT_SURCHARGE
                 + stairCenterCount(road.centers(), road.profile()) * STAIR_SURCHARGE_PER_CENTER;
     }
 
     public static String phaseLabel(RoadConstructionState road) {
         if (road == null || !road.active()) return "도로 공사";
         List<Placement> plan = createPlan(road);
-        if (road.grading()) return road.bridgeCenterCount() > 0 ? "도로 지반·교량 자리 정리" : "도로 지반 정리";
-        if (road.step() < plan.size()) return road.bridgeCenterCount() > 0 ? "도로 계단·교량 석재 운반·포설" : "도로 석재 운반·포설";
+        if (road.grading()) return road.bridgeSupportCount() > 0 ? "도로 장교량·교각 자리 검사"
+                : road.bridgeCenterCount() > 0 ? "도로 지반·교량 자리 정리" : "도로 지반 정리";
+        if (road.step() < plan.size()) return road.bridgeSupportCount() > 0 ? "도로 장교량·교각 석재 운반·시공"
+                : road.bridgeCenterCount() > 0 ? "도로 계단·교량 석재 운반·포설" : "도로 석재 운반·포설";
         return "도로 마감 확인";
     }
 
@@ -404,7 +484,7 @@ public final class SettlementRoadService {
         for (Placement placement : plan) {
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
-            if (!current.isAir() && !isRoadGround(current)) {
+            if (!canReplaceForPlacement(current, placement)) {
                 builder.getNavigation().stop();
                 return false;
             }
@@ -415,8 +495,13 @@ public final class SettlementRoadService {
                     return false;
                 }
             }
+            if (!ensurePavingMaterial(server, data, builder, 1L, 1L)) return false;
             if (!moveBuilderToPlacement(level, builder, placement)) return false;
-            level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+            if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+            if (!consumeCarriedStone(builder, 1L)) {
+                level.setBlock(placement.pos(), current, DIRECT_BLOCK_UPDATE);
+                return false;
+            }
             builder.swing(InteractionHand.MAIN_HAND);
             return false;
         }
@@ -487,31 +572,62 @@ public final class SettlementRoadService {
         List<Integer> profile = new ArrayList<>(java.util.Collections.nCopies(flat.size(), RoadConstructionState.PROFILE_NORMAL));
         int[] bridgeY = new int[flat.size()];
         java.util.Arrays.fill(bridgeY, Integer.MIN_VALUE);
+
+        // Water crossing: Alpha.35 short bridges remain, Alpha.52 extends bounded straight spans to 24.
         for (int i = 1; i < flat.size() - 1; i++) {
             if (!surfaces.get(i).water()) continue;
             int startWater = i;
             int endWater = i;
             while (endWater + 1 < flat.size() && surfaces.get(endWater + 1).water()) endWater++;
             int span = endWater - startWater + 1;
-            if (endWater >= flat.size() - 1 || span > MAX_BRIDGE_SPAN) {
-                return invalidCandidate("자동 소교량은 양쪽 둑이 있는 최대 " + MAX_BRIDGE_SPAN + "칸 수로만 건널 수 있습니다.");
+            if (endWater >= flat.size() - 1 || span > MAX_LONG_BRIDGE_SPAN) {
+                return invalidCandidate("자동 교량은 양쪽 둑이 있는 최대 " + MAX_LONG_BRIDGE_SPAN + "칸 횡단까지만 지원합니다.");
             }
             SurfaceSample before = surfaces.get(startWater - 1);
             SurfaceSample after = surfaces.get(endWater + 1);
             if (before.water() || after.water() || Math.abs(before.y() - after.y()) > MAX_STEP_HEIGHT) {
-                return invalidCandidate("수로 양쪽 둑의 높이 차가 커서 작은 교량을 안전하게 놓을 수 없습니다.");
+                return invalidCandidate("교량 양쪽 접속 지면의 높이 차가 커서 안전하게 연결할 수 없습니다.");
             }
             int waterTop = Integer.MIN_VALUE;
             for (int j = startWater; j <= endWater; j++) waterTop = Math.max(waterTop, surfaces.get(j).y());
             int deckY = Math.max(Math.max(before.y(), after.y()), waterTop + 1);
             if (Math.abs(deckY - before.y()) > MAX_STEP_HEIGHT || Math.abs(deckY - after.y()) > MAX_STEP_HEIGHT) {
-                return invalidCandidate("수면과 둑 높이가 맞지 않아 작은 교량 접근 계단을 만들 수 없습니다.");
+                return invalidCandidate("수면과 접속 지면 높이가 맞지 않아 교량 접근부를 만들 수 없습니다.");
             }
             for (int j = startWater; j <= endWater; j++) {
                 profile.set(j, RoadConstructionState.PROFILE_BRIDGE);
                 bridgeY[j] = deckY;
             }
             i = endWater;
+        }
+
+        // Dry ravine crossing: only abrupt, bounded depressions with nearly level shoulders are bridged.
+        for (int i = 1; i < flat.size() - 1; i++) {
+            if (profile.get(i) == RoadConstructionState.PROFILE_BRIDGE || surfaces.get(i).water()) continue;
+            SurfaceSample before = surfaces.get(i - 1);
+            if (before.water() || before.y() - surfaces.get(i).y() < MIN_RAVINE_DEPTH) continue;
+            int startGap = i;
+            int endGap = i;
+            while (endGap + 1 < flat.size() - 1
+                    && profile.get(endGap + 1) != RoadConstructionState.PROFILE_BRIDGE
+                    && !surfaces.get(endGap + 1).water()
+                    && surfaces.get(endGap + 1).y() <= before.y() - MIN_RAVINE_DEPTH) {
+                endGap++;
+            }
+            SurfaceSample after = surfaces.get(endGap + 1);
+            if (after.water() || Math.abs(before.y() - after.y()) > MAX_STEP_HEIGHT) {
+                return invalidCandidate("협곡 양쪽 접속 지면의 높이 차가 커서 장교량으로 연결할 수 없습니다.");
+            }
+            int span = endGap - startGap + 1;
+            if (span > MAX_LONG_BRIDGE_SPAN) {
+                return invalidCandidate("협곡 장교량은 최대 " + MAX_LONG_BRIDGE_SPAN + "칸 횡단까지만 지원합니다.");
+            }
+            int deckY = Math.max(before.y(), after.y());
+            for (int j = startGap; j <= endGap; j++) {
+                profile.set(j, RoadConstructionState.PROFILE_BRIDGE);
+                bridgeY[j] = deckY;
+            }
+            i = endGap;
         }
 
         List<BlockPos> centers = new ArrayList<>(flat.size());
@@ -575,7 +691,10 @@ public final class SettlementRoadService {
                 }
             }
         }
-        return new RouteCandidate(true, List.copyOf(centers), List.copyOf(profile), score, "");
+        SupportPlan supports = planBridgeSupports(level, centers, profile);
+        if (!supports.valid()) return invalidCandidate(supports.message());
+        score += supports.positions().size() * 2;
+        return new RouteCandidate(true, List.copyOf(centers), List.copyOf(profile), supports.positions(), score, "");
     }
 
     private static SurfaceSample sampleSurface(ServerLevel level, int x, int z) {
@@ -598,11 +717,88 @@ public final class SettlementRoadService {
         }
         SurfaceSample natural = sampleSurface(level, target.getX(), target.getZ());
         if (!natural.water() && natural.y() > target.getY()) return false;
-        return natural.water() || target.getY() - natural.y() <= MAX_FILL_DEPTH + 1;
+        return natural.water() || target.getY() - natural.y() <= MAX_LONG_BRIDGE_PIER_DEPTH;
+    }
+
+    private static SupportPlan planBridgeSupports(ServerLevel level, List<BlockPos> centers, List<Integer> profile) {
+        Set<BlockPos> supports = new LinkedHashSet<>();
+        int runStart = 0;
+        while (runStart < centers.size()) {
+            if (runStart >= profile.size() || profile.get(runStart) != RoadConstructionState.PROFILE_BRIDGE) {
+                runStart++;
+                continue;
+            }
+            int runEnd = runStart;
+            while (runEnd + 1 < centers.size() && runEnd + 1 < profile.size()
+                    && profile.get(runEnd + 1) == RoadConstructionState.PROFILE_BRIDGE) runEnd++;
+            int span = runEnd - runStart + 1;
+            boolean needsPiers = span > MAX_SHORT_BRIDGE_SPAN;
+            for (int i = runStart; i <= runEnd && !needsPiers; i++) {
+                SurfaceSample natural = sampleSurface(level, centers.get(i).getX(), centers.get(i).getZ());
+                if (!natural.water() && centers.get(i).getY() - natural.y() >= MIN_RAVINE_DEPTH) needsPiers = true;
+            }
+            if (needsPiers) {
+                int[] straight = directionAt(centers, runStart);
+                for (int i = runStart + 1; i <= runEnd; i++) {
+                    int[] direction = directionAt(centers, i);
+                    if (direction[0] != straight[0] || direction[1] != straight[1]) {
+                        return SupportPlan.invalid("교각이 필요한 장교량은 현재 직선 구간에서만 시공할 수 있습니다.");
+                    }
+                }
+                List<Integer> stations = new ArrayList<>();
+                if (span <= MAX_SHORT_BRIDGE_SPAN) stations.add((runStart + runEnd) / 2);
+                else for (int station = runStart + LONG_BRIDGE_PIER_INTERVAL - 1;
+                          station < runEnd; station += LONG_BRIDGE_PIER_INTERVAL) stations.add(station);
+                for (int station : stations) {
+                    BlockPos center = centers.get(station);
+                    int[] direction = directionAt(centers, station);
+                    for (int side : new int[] {-1, 1}) {
+                        BlockPos deckEdge = new BlockPos(center.getX() - direction[1] * side,
+                                center.getY(), center.getZ() + direction[0] * side);
+                        PierColumn column = planPierColumn(level, deckEdge);
+                        if (!column.valid()) return SupportPlan.invalid(column.message());
+                        supports.addAll(column.positions());
+                    }
+                }
+            }
+            runStart = runEnd + 1;
+        }
+        return new SupportPlan(true, List.copyOf(supports), "");
+    }
+
+    private static PierColumn planPierColumn(ServerLevel level, BlockPos deckEdge) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (int depth = 1; depth <= MAX_LONG_BRIDGE_PIER_DEPTH; depth++) {
+            BlockPos pos = deckEdge.below(depth);
+            if (!level.hasChunkAt(pos)) return PierColumn.invalid("장교량 교각 예정 열이 로드되지 않았습니다.");
+            if (level.getBlockEntity(pos) != null) return PierColumn.invalid("장교량 교각 열에 보호해야 할 컨테이너가 있습니다.");
+            BlockState state = level.getBlockState(pos);
+            if (!state.getFluidState().isEmpty()) {
+                if (!state.getFluidState().is(FluidTags.WATER)) return PierColumn.invalid("장교량 교각 열에 물이 아닌 유체가 있습니다.");
+                positions.add(pos);
+                continue;
+            }
+            if (state.isAir() || state.canBeReplaced()) {
+                positions.add(pos);
+                continue;
+            }
+            if (isNaturalSupportGround(state)) return new PierColumn(true, List.copyOf(positions), "");
+            return PierColumn.invalid("장교량 교각 열에 플레이어 블록·구조물·비자연 지반이 있습니다.");
+        }
+        return PierColumn.invalid("장교량 교각 지지 지면은 최대 " + MAX_LONG_BRIDGE_PIER_DEPTH + "블록 아래까지만 허용합니다.");
+    }
+
+    private static boolean isNaturalSupportGround(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.PODZOL) || state.is(Blocks.ROOTED_DIRT) || state.is(Blocks.STONE)
+                || state.is(Blocks.DEEPSLATE) || state.is(Blocks.ANDESITE) || state.is(Blocks.DIORITE)
+                || state.is(Blocks.GRANITE) || state.is(Blocks.TUFF) || state.is(Blocks.SAND)
+                || state.is(Blocks.RED_SAND) || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY)
+                || state.is(Blocks.SNOW_BLOCK) || state.is(BlockTags.DIRT);
     }
 
     private static RouteCandidate invalidCandidate(String message) {
-        return new RouteCandidate(false, List.of(), List.of(), Integer.MAX_VALUE, message);
+        return new RouteCandidate(false, List.of(), List.of(), List.of(), Integer.MAX_VALUE, message);
     }
 
     private static RouteCandidate choose(RouteCandidate a, RouteCandidate b) {
@@ -673,7 +869,7 @@ public final class SettlementRoadService {
     private static List<Placement> createPlan(RoadConstructionState road) {
         List<BlockPos> centers = road.centers();
         Map<BlockPos, FootprintSpec> footprints = footprintMap(centers, road.profile());
-        List<Placement> placements = new ArrayList<>(footprints.size());
+        List<Placement> placements = new ArrayList<>(footprints.size() + road.bridgeSupportCount());
         for (Map.Entry<BlockPos, FootprintSpec> entry : footprints.entrySet()) {
             FootprintSpec spec = entry.getValue();
             BlockState state;
@@ -681,7 +877,10 @@ public final class SettlementRoadService {
             else if (spec.stairFacing() != null) {
                 state = Blocks.COBBLESTONE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, spec.stairFacing());
             } else state = spec.centerline() ? Blocks.GRAVEL.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState();
-            placements.add(new Placement(entry.getKey(), state, spec.bridge()));
+            placements.add(new Placement(entry.getKey(), state, spec.bridge(), false));
+        }
+        for (BlockPos support : road.bridgeSupportPositions()) {
+            placements.add(new Placement(support, Blocks.STONE_BRICKS.defaultBlockState(), true, true));
         }
         return placements;
     }
@@ -693,7 +892,7 @@ public final class SettlementRoadService {
             int[] direction = directionAt(centers, i);
             boolean bridge = i < profile.size() && profile.get(i) == RoadConstructionState.PROFILE_BRIDGE;
             Direction stairFacing = bridge ? null : stairFacingAt(centers, i);
-            for (int side = -1; side <= 1; side++) {
+            for (int side : new int[] {0, -1, 1}) {
                 BlockPos pos = new BlockPos(center.getX() - direction[1] * side, center.getY(), center.getZ() + direction[0] * side);
                 FootprintSpec incoming = new FootprintSpec(side == 0, bridge, stairFacing);
                 FootprintSpec existing = footprints.get(pos);
