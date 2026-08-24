@@ -22,9 +22,8 @@ def forbid(source, tokens, label):
             raise SystemExit(f'{label}: {token}')
 
 
-# Preserve every Alpha.23-46 source/runtime invariant while Alpha.47 docs are synchronized only after
-# the new 26.2 enchantment path has compiled successfully. Adapt the inherited final-version handoff,
-# then stop before Alpha.46's canonical-document section.
+# Preserve every Alpha.23-46 source/runtime invariant. Adapt the inherited final-version handoff,
+# then stop before Alpha.46's old canonical-document section; Alpha.47 owns current docs below.
 alpha46_source = text(ALPHA46)
 alpha46_source = alpha46_source.replace(
     "alpha45_source = alpha45_source.replace('0.1.0-alpha.45', '0.1.0-alpha.46')",
@@ -67,6 +66,7 @@ forbid(advanced, (
     'ModList', 'weaponsexpanded.',
 ), 'alpha.47 reforge safety/soft compatibility')
 
+# Existing enchantments must be preserved before any Alpha.47 resource mutation.
 select_index = advanced.find('List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment')
 add_index = advanced.find('reforged.enchant(addition.enchantment(), addition.level())')
 result_index = advanced.find('var result = EnchantmentHelper.getEnchantmentsForCrafting(reforged)')
@@ -79,6 +79,7 @@ if min(select_index, add_index, result_index, preserve_index, metal_index, relic
 if not (select_index < add_index < result_index < preserve_index < metal_index < relic_index < replace_index):
     raise SystemExit('alpha.47 reforge must validate improvement/preservation before consuming metal/relic')
 
+# Alpha.39's first forge remains a separate unchanged path.
 must(advanced, (
     'private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot)',
     'ItemStack enchanted = EnchantmentHelper.enchantItem',
@@ -101,6 +102,10 @@ must(commands, (
 
 must(props, (
     'mod_version=0.1.0-alpha.47',
+    'bounded medium-terrain work using real retaining stone',
+    'exploration/conquest milestones',
+    'real-wood fishing-outpost piers',
+    'opt-in physical fish trade',
     'domain relic reforging for compatible external weapons',
 ), 'alpha.47 build properties')
 must(lock, (
@@ -111,4 +116,61 @@ must(lock, (
     '"status": "candidate_runtime_lock"',
 ), 'alpha.47 companion lock')
 
+# Canonical docs are part of Alpha.47 acceptance. Later work depends on these files as the scope authority.
+readme = text(ROOT / 'README.md')
+canonical = text(ROOT / 'CANONICAL_PLAN.md')
+gap = text(ROOT / 'COMPLETION_GAP_AUDIT.md')
+
+must(readme, (
+    '## Current version: 0.1.0-alpha.47',
+    '## Alpha.47 — domain relic reforging',
+    'already-enchanted Frontier-recognized external weapon',
+    '**2 real expedition relics**',
+    '**8 real metal**',
+    'existing enchantments are never removed or downgraded',
+    'no relic or metal is consumed',
+    '유물2 + 금속8 / 재련력40',
+), 'alpha.47 README canonical state')
+forbid(readme, ('## Current version: 0.1.0-alpha.46',), 'alpha.47 README stale state')
+
+must(canonical, (
+    'Alpha.40–47 keep that number',
+    'Current families are exactly:',
+    'builder walks from actual settlement storage carrying real wood/stone stacks',
+    'Transport workers belong to a specific outpost',
+    'pause at unloaded route boundaries',
+    'single authority for outpost transport',
+    'tier-visible public works',
+    '### Alpha.47 domain relic reforge',
+    '**2 real expedition relics + 8 real metal**',
+    '**existing enchantments are never removed or downgraded**',
+    '**no relic or metal is consumed**',
+    '## 14. Current playable slice after Alpha.47',
+    '**humanoid/weaponized soldier presentation**',
+    'Alpha.47 external-weapon reforge compatibility/no-loss/duplicate-consumption acceptance',
+    'true Xaero settlement/outpost markers only if a stable supported API/seam appears',
+), 'alpha.47 canonical plan')
+forbid(canonical, (
+    '## 14. Current playable slice after Alpha.46',
+    '1. broader high-tier recipe/specialized crafting only where exploration materials justify it;',
+), 'alpha.47 canonical plan stale scope')
+
+must(gap, (
+    '현재 구현 기준: `0.1.0-alpha.47`',
+    '| 영지 재련 재료도 실제 자원 사용 | **완료/부분** |',
+    '| 사람형/무기 장비 병사 presentation | **미구현** |',
+    '### Alpha.47 domain reforge 감사',
+    '**existing enchantments are never removed or downgraded**',
+    'no-compatible/no-improvement 결과는 무기/금속/유물을 전혀 소비하지 않는다',
+    '현재 functional family는 정확히 **15**다',
+    '1. **사람형 병사/외부 무기 장비 프레젠테이션**',
+    '## 12. Alpha.44–47 추가 실플레이 acceptance',
+    '### Alpha.47',
+), 'alpha.47 completion gap audit')
+forbid(gap, (
+    '현재 구현 기준: `0.1.0-alpha.46`',
+    '1. **고급 제작 breadth**',
+), 'alpha.47 completion gap stale scope')
+
 print('Frontier Settlement alpha.47 source audit: PASS')
+print('Frontier Settlement alpha.47 canonical docs audit: PASS')
