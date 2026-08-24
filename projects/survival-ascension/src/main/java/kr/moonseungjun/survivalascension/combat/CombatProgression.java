@@ -12,10 +12,13 @@ import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
@@ -33,6 +36,15 @@ public final class CombatProgression {
 
     private CombatProgression() {}
 
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel) || !(event.getEntity() instanceof Projectile projectile)) return;
+        if (!(projectile.getOwner() instanceof ServerPlayer player)) return;
+        ItemStack weapon = player.getMainHandItem();
+        if (!AscensionAffixes.isRangedWeapon(weapon)) weapon = player.getOffhandItem();
+        if (!AscensionAffixes.isRangedWeapon(weapon)) return;
+        AscensionAffixes.snapshotRangedProjectile(projectile, weapon, player.isShiftKeyDown());
+    }
+
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getAmount() <= 0.0F) return;
 
@@ -47,15 +59,25 @@ public final class CombatProgression {
         UUID uuid = player.getUUID();
         if (CLEAVE_GUARD.contains(uuid) || SHOCKWAVE_GUARD.contains(uuid)) return;
 
+        Entity direct = event.getSource().getDirectEntity();
+        boolean rangedShot = AscensionAffixes.isRangedProjectile(direct);
         ItemStack weapon = player.getMainHandItem();
+        double equipmentDamage = direct == player ? AscensionAffixes.damageMultiplier(weapon)
+                : rangedShot ? AscensionAffixes.projectileDamageMultiplier(direct) : 1.0D;
         int level = SkillProgressData.get(player).level(player, SkillType.COMBAT);
-        float scaledDamage = (float) (event.getAmount() * SkillTuning.combatDamageMultiplier(level) * AscensionAffixes.damageMultiplier(weapon));
+        float scaledDamage = (float) (event.getAmount() * SkillTuning.combatDamageMultiplier(level) * equipmentDamage);
         event.setAmount(scaledDamage);
 
-        if (event.getSource().getDirectEntity() != player || !ContentPackCompatibility.isCombatTarget(event.getEntity())) return;
+        if (!ContentPackCompatibility.isCombatTarget(event.getEntity())) return;
         if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) return;
-
         LivingEntity primary = event.getEntity();
+
+        if (rangedShot) {
+            tryRangedBurst(player, serverLevel, primary, event, direct, scaledDamage, level);
+            return;
+        }
+        if (direct != player) return;
+
         if (tryShockwave(player, serverLevel, primary, event, scaledDamage, level)) return;
 
         double radius = SkillTuning.combatCleaveRadius(level);
@@ -79,6 +101,39 @@ public final class CombatProgression {
             for (LivingEntity candidate : nearby) {
                 if (hit >= targetLimit) break;
                 if (candidate.hurtServer(serverLevel, event.getSource(), cleaveDamage)) hit++;
+            }
+        } finally {
+            CLEAVE_GUARD.remove(uuid);
+        }
+    }
+
+    private static void tryRangedBurst(ServerPlayer player, ServerLevel level, LivingEntity primary,
+                                       LivingIncomingDamageEvent event, Entity direct, float scaledDamage, int combatLevel) {
+        if (combatLevel < 30 || AscensionAffixes.isPrecisionRangedProjectile(direct)) return;
+        boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        double radius = fieldMastery ? 6.0D : combatLevel >= 100 ? 5.0D : combatLevel >= 90 ? 4.25D : combatLevel >= 60 ? 3.5D : 2.5D;
+        int targetLimit = fieldMastery ? 10 : combatLevel >= 100 ? 8 : combatLevel >= 90 ? 6 : combatLevel >= 60 ? 4 : 2;
+        double fraction = combatLevel >= 100 ? 0.40D : combatLevel >= 90 ? 0.35D : combatLevel >= 60 ? 0.30D : 0.25D;
+        radius += AscensionAffixes.projectileBurstRadiusBonus(direct);
+        targetLimit += AscensionAffixes.projectileBurstTargetBonus(direct);
+        fraction = Math.min(0.65D, fraction + AscensionAffixes.projectileBurstFractionBonus(direct));
+
+        List<LivingEntity> nearby = level.getEntitiesOfClass(
+                LivingEntity.class,
+                primary.getBoundingBox().inflate(radius),
+                candidate -> candidate != primary && candidate != player && candidate.isAlive()
+                        && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate));
+        nearby.sort(Comparator.comparingDouble(primary::distanceToSqr));
+        if (nearby.isEmpty()) return;
+
+        float burstDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
+        UUID uuid = player.getUUID();
+        CLEAVE_GUARD.add(uuid);
+        try {
+            int hit = 0;
+            for (LivingEntity candidate : nearby) {
+                if (hit >= targetLimit) break;
+                if (candidate.hurtServer(level, event.getSource(), burstDamage)) hit++;
             }
         } finally {
             CLEAVE_GUARD.remove(uuid);
@@ -136,8 +191,12 @@ public final class CombatProgression {
         ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
         if (majorTarget) ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS);
 
+        Entity direct = event.getSource().getDirectEntity();
+        double equipmentXp = AscensionAffixes.isRangedProjectile(direct)
+                ? AscensionAffixes.projectileXpMultiplier(direct)
+                : AscensionAffixes.xpMultiplier(player.getMainHandItem());
         int xp = Math.max(1, (int) Math.ceil(xpForKill(victim, majorTarget)
-                * AscensionAffixes.xpMultiplier(player.getMainHandItem())
+                * equipmentXp
                 * AscensionAffixes.armorXpMultiplier(player)));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
@@ -153,12 +212,13 @@ public final class CombatProgression {
         if (!result.leveledUp()) return;
         int oldLevel = result.oldLevel(), newLevel = result.newLevel();
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§c[전투 해금] §f전투 숙련 피해 성장이 본격적으로 시작됩니다."));
-        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 I · 주변 적 2체까지 연쇄 타격"));
-        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 공격 파급 II · 반경/대상이 크게 확장됩니다."));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 완공 시 질주 공격이 360° 충격파로 승격"));
+        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 I + 원거리 충돌 파급 I · Shift 발사는 단일 정밀 타격"));
+        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접/원거리 파급 II · 반경과 연쇄 대상이 크게 확장됩니다."));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 질주 충격파 + 원거리 충돌 파급 III"));
         if (oldLevel < 100 && newLevel >= 100) {
             String shockwave = ExpeditionProgression.hasFieldMastery(player) ? "7.5블록/20체" : "6.5블록/16체";
-            player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f파급 10체/5블록 · 훈련장 충격파 " + shockwave));
+            String ranged = ExpeditionProgression.hasFieldMastery(player) ? "6블록/10체" : "5블록/8체";
+            player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f근접 파급 10체/5블록 · 훈련장 충격파 " + shockwave + " · 원거리 파급 " + ranged));
         }
     }
 }
