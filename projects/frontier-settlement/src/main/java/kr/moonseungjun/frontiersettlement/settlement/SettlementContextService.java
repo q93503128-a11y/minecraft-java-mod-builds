@@ -56,17 +56,22 @@ public final class SettlementContextService {
                 projectProgress = civil.progressPercent();
                 int importedRemaining = SettlementCivilFillSupplyService.remainingImportedFill(level, civil);
                 int availableFill = SettlementCivilFillSupplyService.availableFill(level, data);
+                int availableRetaining = SettlementCivilRetainingService.availableRetaining(level, data);
                 String imported = importedRemaining < 0
                         ? "외부 흙 확인 대기"
                         : "외부 흙 필요 " + importedRemaining;
                 String storage = availableFill < 0 ? "창고 흙 미로드" : "창고 흙 " + availableFill;
+                String retaining = civil.initialRetainingBlocks() <= 0
+                        ? "옹벽 없음"
+                        : "옹벽 잔여 " + civil.remainingRetainingBlocks() + " · 창고 조약돌 "
+                                + (availableRetaining < 0 ? "미로드" : availableRetaining);
                 targets.add(new SettlementContextTarget(
                         "civil_work", "civil_work",
-                        civil.minX(), civil.gradeY() - SettlementCivilWorkService.MAX_FILL_DEPTH, civil.minZ(),
-                        civil.maxX(), civil.gradeY() + SettlementCivilWorkService.MAX_CUT_DEPTH, civil.maxZ(),
+                        civil.minX() - 1, civil.gradeY() - SettlementCivilRetainingService.MAX_RETAINING_HEIGHT, civil.minZ() - 1,
+                        civil.maxX() + 1, civil.gradeY() + SettlementCivilWorkService.MAX_CUT_DEPTH, civil.maxZ() + 1,
                         civil.center().getX(), civil.gradeY(), civil.center().getZ(),
                         "선택영역 토목",
-                        "현장 토사 " + civil.earthBank() + " · " + imported + " · " + storage + " · 가상 토사 0",
+                        "현장 토사 " + civil.earthBank() + " · " + imported + " · " + storage + " · " + retaining + " · 가상 토사 0",
                         projectProgress));
             }
         }
