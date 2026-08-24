@@ -57,9 +57,12 @@ if errors:
         print("-", error)
     sys.exit(1)
 
+# Preserve the full 0.48 content-pack regression contract. Only the release-level
+# lock/current-project version assertions are intentionally superseded by 0.50.
 baseline_path = ROOT / "tools/test_content_pack_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)
+baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.50.0-alpha.1`')
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
