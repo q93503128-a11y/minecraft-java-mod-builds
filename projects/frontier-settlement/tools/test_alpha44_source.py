@@ -73,6 +73,7 @@ lock = text(ROOT / 'COMPANION_LOCK.json')
 must(build, (
     "url = 'https://chocolateminecraft.com/maven'",
     "includeGroup 'xaero.minimap'",
+    "includeGroup 'xaero.lib'",
     'compileOnly "xaero.minimap:xaerominimap-neoforge-${project.minecraft_version}:${project.xaero_minimap_version}"',
 ), 'alpha.44 official Xaero compile seam')
 must(props, (
