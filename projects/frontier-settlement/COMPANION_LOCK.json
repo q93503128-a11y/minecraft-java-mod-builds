@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.63"
+    "frontier_settlement": "0.1.0-alpha.64"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -32,7 +32,8 @@
     "Alpha.61 makes outpost grading rollback-safe: each loaded grade cell snapshots every changed BlockState, checks every setBlock result, restores successful partial mutations in reverse order on failure, and advances the persisted outpost step only after the complete grade cell succeeds. No new save field, resource, worker, key or companion dependency is added.",
     "Alpha.62 extends the existing military reverse-supply transporter with a third-priority exact external weapon cargo after food/metal reserves: the same assigned road worker physically carries one recognized weapon to the outpost stockpile, the idle sentry equips that exact stack locally, and death returns the exact equipped weapon once. No new transport authority, worker, save field, hard weapon dependency, force-load or teleport is added.",
     "Alpha.63 hardens the same road transporter transaction boundary: stale in-flight external-weapon demand is rechecked at the outpost before insertion and the exact carried stack returns through the existing road path, while a tagged transporter death recovers its exact MAINHAND cargo once. No new route authority, save field, virtual cargo, force-load, teleport or hard companion dependency is added.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.63 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.64 makes existing food-funded resident arrivals atomic: ordinary workers, workshop artisans and outpost transporters must successfully enter the server world before real food and population commit, and an unexpected post-spawn food failure discards only that new worker. Assigned-worker spawn rechecks current loaded assignment and adds no reservation/save/logistics authority.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.64 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},

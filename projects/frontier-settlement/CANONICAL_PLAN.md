@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.63**.
+Current canonical implementation: **0.1.0-alpha.64**.
 
 ## 1. Product identity
 
@@ -368,6 +368,21 @@ Dangerous-outpost invariant:
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
 
+### Alpha.64 atomic worker-arrival transaction
+
+Alpha.64 applies the same physical commit discipline to the existing food-funded civilian arrival paths.
+
+- the 4-food arrival cost is unchanged and still comes only from loaded concrete shared storage;
+- ordinary building workers, workshop artisans and road-bound outpost transporters must be successfully added to the server world before food/population commit;
+- failed `addFreshEntity` means no food loss and no population increment;
+- successful spawn followed by an unexpected food-consume failure discards only that new worker and leaves population unchanged;
+- workshop/outpost assignment spawners recheck a current assignment immediately before spawn, closing stale missing-assignment observations without introducing a reservation ledger;
+- transport cargo is not recreated by replacement; Alpha.63's physical world recovery drop remains the only failure-boundary cargo recovery;
+- save format, job families and route state are unchanged;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and Alpha.27 remains the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
+This is pre-acceptance correctness hardening, not proof of repeated-death/reconnect runtime acceptance.
+
 ### Alpha.63 transporter transaction hardening
 
 Alpha.63 closes two deterministic acceptance-edge gaps inside the existing long-distance authority.
@@ -706,7 +721,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.63
+## 14. Current playable slice after Alpha.64
 
 Current implemented slice includes:
 
@@ -733,16 +748,17 @@ Current implemented slice includes:
 - Alpha.61 rollback-safe outpost grade-cell terrain mutation before persisted step advance;
 - Alpha.62 same-road-transporter remote military external-weapon delivery -> local sentry MAINHAND equip -> exact death recovery;
 - Alpha.63 in-flight military weapon demand revalidation + exact transport-worker carried-ItemStack death recovery;
+- Alpha.64 atomic food-funded ordinary/workshop/transporter arrival commit with assignment recheck and no failed-spawn charge;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.63
+## 15. Unfinished original-scope priorities after Alpha.64
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. Alpha.62–63 remote military weapon road-haul/local-equip, in-flight stale-demand return, transporter-cargo recovery, save-reload, route-unload and no-dup acceptance; static failure edges are hardened but runtime acceptance remains;
+2. Alpha.62–64 remote military weapon road-haul/local-equip, in-flight stale-demand return, transporter-cargo recovery and transporter replacement arrival commit; save-reload, route-unload, repeated death/replacement and no-dup acceptance remain;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

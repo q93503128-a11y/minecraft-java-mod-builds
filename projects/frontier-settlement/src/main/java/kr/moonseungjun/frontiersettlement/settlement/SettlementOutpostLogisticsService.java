@@ -118,14 +118,17 @@ public final class SettlementOutpostLogisticsService {
                 event.getEntity().getZ(), carried.copy()));
     }
 
-    public static Villager spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+    public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        if (outpost == null || !routeFullyLoaded(level, data, outpost)
+                || findAssignedWorker(level, data, outpost) != null) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = outpost.center().above();
+        if (!level.hasChunkAt(spawn)) return null;
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setPersistenceRequired();
         worker.setNoAi(false);
         assignWorker(worker, outpost);
-        level.addFreshEntity(worker);
+        if (!level.addFreshEntity(worker)) return null;
         return worker;
     }
 

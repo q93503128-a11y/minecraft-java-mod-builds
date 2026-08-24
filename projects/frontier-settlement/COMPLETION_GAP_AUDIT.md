@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.63`
+현재 구현 기준: `0.1.0-alpha.64`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -382,6 +382,20 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
+### Alpha.64 주민 유입/운송자 대체 원자성 감사
+
+- 기존 주민 유입 비용 food4와 housing/population 규칙은 유지;
+- 일반 생산 주민, 작업장 주민, 전초 전담 운송 주민 모두 실제 entity add 성공을 반환;
+- loaded shared storage의 실제 food4 존재 확인 -> entity add 성공 -> 실제 food4 consume -> population +1 순서;
+- entity add 실패면 food/population 변경 0;
+- add 성공 뒤 예상 밖 consume 실패면 방금 생성한 주민을 discard하고 population 변경 0;
+- workshop/outpost assigned spawn은 mutation 직전 현재 assignment를 다시 검사해 stale missing 관측으로 의도적인 중복 assignment를 만들지 않음;
+- 운송자 사망 화물은 Alpha.63 exact MAINHAND recovery가 담당하며 replacement가 cargo를 복사/재생성하지 않음;
+- save field/reservation ledger/virtual food/refund currency/new worker type 없음;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, `single authority for outpost transport`, **there is still only one authority for long-distance outpost transport** 유지.
+
+따라서 코드상 재현 가능한 failed-spawn 식량 손실·허위 population 증가 경계는 닫혔다. 실제 반복 사망/대체, route unload/reload, save/reconnect no-dup acceptance는 계속 남는다.
+
 ### Alpha.63 운송 트랜잭션 하드닝 감사
 
 - Alpha.62 weapon demand는 출발 시뿐 아니라 실제 전초 창고 삽입 직전 다시 검사;
@@ -456,7 +470,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. Alpha.62–63 remote weapon road-haul/local-equip/stale-demand return/transporter-cargo recovery의 route-unload/save-reload/reconnect/no-dup 실플레이 acceptance;
+2. Alpha.62–64 remote weapon road-haul/local-equip/stale-demand return/transporter-cargo recovery + transporter replacement의 route-unload/save-reload/reconnect/repeated-death no-dup 실플레이 acceptance;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

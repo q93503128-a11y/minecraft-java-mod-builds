@@ -95,17 +95,17 @@ public final class SettlementWorkerService {
 
         BuildingRecord missingWorkshop = SettlementWorkshopService.firstMissingLoadedAssignment(level, data);
         if (missingWorkshop != null) {
-            if (!consumeArrivalFood(level, data)) return;
-            SettlementWorkshopService.spawnAssignedWorker(level, missingWorkshop);
-            finishArrival(server, data);
+            if (!arrivalFoodAvailable(level, data)) return;
+            Villager arrival = SettlementWorkshopService.spawnAssignedWorker(level, data, missingWorkshop);
+            commitArrival(server, level, data, arrival);
             return;
         }
 
         OutpostRecord missing = SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data);
         if (missing != null) {
-            if (!consumeArrivalFood(level, data)) return;
-            SettlementOutpostLogisticsService.spawnAssignedWorker(level, missing);
-            finishArrival(server, data);
+            if (!arrivalFoodAvailable(level, data)) return;
+            Villager arrival = SettlementOutpostLogisticsService.spawnAssignedWorker(level, data, missing);
+            commitArrival(server, level, data, arrival);
         }
     }
 
@@ -115,14 +115,30 @@ public final class SettlementWorkerService {
         if (existingWorkers >= available.size()) return false;
         BuildingRecord target = available.get(existingWorkers);
         if (!level.hasChunkAt(target.workCenter())) return true;
-        if (!consumeArrivalFood(level, data)) return true;
-        spawnWorker(level, target.workCenter(), workerName);
-        finishArrival(server, data);
+        if (!arrivalFoodAvailable(level, data)) return true;
+        Villager arrival = spawnWorker(level, target.workCenter(), workerName);
+        commitArrival(server, level, data, arrival);
         return true;
+    }
+
+    private static boolean arrivalFoodAvailable(ServerLevel level, SettlementData data) {
+        if (!SettlementStorageService.storageAvailable(level, data)) return false;
+        return SettlementStorageService.scan(level, data).food() >= ARRIVAL_FOOD_COST;
     }
 
     private static boolean consumeArrivalFood(ServerLevel level, SettlementData data) {
         return SettlementStorageService.consume(level, data, 0L, 0L, ARRIVAL_FOOD_COST);
+    }
+
+    private static boolean commitArrival(MinecraftServer server, ServerLevel level,
+                                         SettlementData data, Villager arrival) {
+        if (arrival == null) return false;
+        if (!consumeArrivalFood(level, data)) {
+            arrival.discard();
+            return false;
+        }
+        finishArrival(server, data);
+        return true;
     }
 
     private static void finishArrival(MinecraftServer server, SettlementData data) {
@@ -131,15 +147,16 @@ public final class SettlementWorkerService {
         SettlementService.broadcast(server, data);
     }
 
-    private static void spawnWorker(ServerLevel level, BlockPos spawn, String name) {
-        if (!level.hasChunkAt(spawn)) return;
+    private static Villager spawnWorker(ServerLevel level, BlockPos spawn, String name) {
+        if (!level.hasChunkAt(spawn)) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal(name));
         worker.setCustomNameVisible(true);
         worker.setPersistenceRequired();
         worker.setNoAi(false);
-        level.addFreshEntity(worker);
+        if (!level.addFreshEntity(worker)) return null;
+        return worker;
     }
 
     private static void workLumber(ServerLevel level, SettlementData data,

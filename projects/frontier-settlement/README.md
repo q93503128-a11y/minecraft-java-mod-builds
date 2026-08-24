@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.63
+## Current version: 0.1.0-alpha.64
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -73,6 +73,22 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.64 — atomic food-funded worker arrivals
+
+Alpha.64 hardens resident replacement/recruitment before long two-player acceptance; it adds no new job or management UI.
+
+- ordinary production workers, workshop artisans and outpost-assigned transporters now expose real `addFreshEntity` success before arrival food/population can commit;
+- each path first requires loaded shared storage with at least the existing 4-food arrival cost, then creates the candidate entity, then consumes the same real food, and only then increments shared population;
+- failed entity insertion consumes no food and adds no population;
+- if physical food consumption unexpectedly fails after a successful entity insertion, that just-created worker is discarded and population remains unchanged;
+- workshop/outpost assigned-worker spawn also rechecks the current loaded assignment immediately before entity insertion, so a stale missing-worker observation cannot knowingly create a second assignment;
+- outpost transport replacement remains the same resident-attraction path and the same road-bound logistics authority; no instant cargo restoration or virtual replacement inventory exists;
+- Alpha.63 exact MAINHAND cargo recovery on transporter death remains unchanged;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, Alpha.27 remains the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport**;
+- no new save field, worker type, route controller, key, UI, currency, force-load or teleport.
+
+This closes deterministic spawn/food/population transaction gaps, but repeated death/replacement, unload/reload and two-client runtime acceptance remain real-play items.
 
 ## Alpha.63 — transport transaction hardening
 

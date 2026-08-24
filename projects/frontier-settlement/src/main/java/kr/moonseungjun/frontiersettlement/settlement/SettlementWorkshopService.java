@@ -91,9 +91,10 @@ public final class SettlementWorkshopService {
         return null;
     }
 
-    public static void spawnAssignedWorker(ServerLevel level, BuildingRecord workshop) {
+    public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         if (workshop == null || workshop.buildingType() != BuildingType.WORKSHOP
-                || !level.hasChunkAt(workshop.workCenter())) return;
+                || !level.hasChunkAt(workshop.workCenter())
+                || findAssignedWorker(level, data, workshop) != null) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = workshop.workCenter();
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
@@ -103,7 +104,8 @@ public final class SettlementWorkshopService {
         worker.setNoAi(false);
         worker.addTag(WORKSHOP_WORKER_TAG);
         worker.addTag(assignmentTag(workshop));
-        level.addFreshEntity(worker);
+        if (!level.addFreshEntity(worker)) return null;
+        return worker;
     }
 
     private static void runService(MinecraftServer server, ServerLevel level, SettlementData data,
