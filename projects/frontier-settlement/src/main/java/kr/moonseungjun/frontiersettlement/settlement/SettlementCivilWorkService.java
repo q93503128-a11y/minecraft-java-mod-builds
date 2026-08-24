@@ -14,21 +14,20 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 /**
- * Alpha.49/50 bounded selected-area civil works.
+ * Alpha.49-51 bounded selected-area civil works.
  *
- * Alpha.49 established project-local cut-to-fill earth relocation. Alpha.50 expands the bounded
- * work envelope and allows fill beyond on-site cut only when the shared builder physically hauls
- * real dirt/coarse-dirt ItemStacks from loaded settlement storage. Project-local earth remains
- * non-economic and imported fill never becomes a virtual balance.
+ * Alpha.49 established project-local cut-to-fill earth relocation. Alpha.50 added physical imported
+ * dirt/coarse-dirt hauling. Alpha.51 expands the bounded envelope and adds retaining-heavy terraces
+ * whose exact cobblestone is physically hauled by the same shared construction worker.
  */
 public final class SettlementCivilWorkService {
-    public static final int MAX_WIDTH = 13;
-    public static final int MAX_DEPTH = 13;
+    public static final int MAX_WIDTH = 17;
+    public static final int MAX_DEPTH = 17;
     public static final int MAX_AREA = MAX_WIDTH * MAX_DEPTH;
-    public static final int MAX_CUT_DEPTH = 5;
-    public static final int MAX_FILL_DEPTH = 5;
-    private static final int MAX_PLAYER_DISTANCE = 36;
-    private static final int MAX_SETTLEMENT_RADIUS = 96;
+    public static final int MAX_CUT_DEPTH = 7;
+    public static final int MAX_FILL_DEPTH = 7;
+    private static final int MAX_PLAYER_DISTANCE = 44;
+    private static final int MAX_SETTLEMENT_RADIUS = 112;
     private static final int WORK_INTERVAL_TICKS = 8;
     private static final int BLOCK_UPDATE = 2;
     private static final double WORK_REACHED_SQR = 4.0D;
@@ -36,7 +35,7 @@ public final class SettlementCivilWorkService {
     private SettlementCivilWorkService() {}
 
     public record Check(boolean valid, int minX, int maxX, int minZ, int maxZ, int gradeY,
-                        int cutBlocks, int fillBlocks, String message) {
+                        int cutBlocks, int fillBlocks, int retainingBlocks, String message) {
         public int width() { return maxX - minX + 1; }
         public int depth() { return maxZ - minZ + 1; }
         public int importedFillBlocks() {
@@ -71,19 +70,19 @@ public final class SettlementCivilWorkService {
         int width = maxX - minX + 1;
         int depth = maxZ - minZ + 1;
         if (width > MAX_WIDTH || depth > MAX_DEPTH || width * depth > MAX_AREA) {
-            return invalid("토목 1회 범위는 최대 13×13입니다.");
+            return invalid("토목 1회 범위는 최대 17×17입니다.");
         }
 
         if (horizontalDistanceSqr(player.blockPosition(), first) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE
                 || horizontalDistanceSqr(player.blockPosition(), second) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE) {
-            return invalid("토목 영역은 플레이어 36블록 안에서 지정해 주세요.");
+            return invalid("토목 영역은 플레이어 44블록 안에서 지정해 주세요.");
         }
         BlockPos center = new BlockPos((minX + maxX) / 2, first.getY(), (minZ + maxZ) / 2);
         if (horizontalDistanceSqr(settlement.centerPos(), center) > (long) MAX_SETTLEMENT_RADIUS * MAX_SETTLEMENT_RADIUS) {
-            return invalid("본진 토목 영역은 마을 중심 96블록 안에서 지정해 주세요.");
+            return invalid("본진 토목 영역은 마을 중심 112블록 안에서 지정해 주세요.");
         }
-        if (overlapsInfrastructure(settlement, minX, maxX, minZ, maxZ)) {
-            return invalid("기존 건물·도로·전초기지·공동 창고와 겹치는 영역은 토목할 수 없습니다.");
+        if (overlapsInfrastructure(settlement, minX - 1, maxX + 1, minZ - 1, maxZ + 1)) {
+            return invalid("선택영역 또는 옹벽 보호 1칸 범위가 기존 건물·도로·전초기지·공동 창고와 겹칩니다.");
         }
 
         ServerLevel level = server.overworld();
@@ -97,7 +96,7 @@ public final class SettlementCivilWorkService {
                 int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 int delta = surfaceY - gradeY;
                 if (delta > MAX_CUT_DEPTH || delta < -MAX_FILL_DEPTH) {
-                    return invalid("각 지점의 절토·성토 높이 차는 최대 5블록입니다.");
+                    return invalid("각 지점의 절토·성토 높이 차는 최대 7블록입니다.");
                 }
                 String safety = validateColumn(level, x, z, surfaceY, gradeY);
                 if (safety != null) return invalid(safety);
@@ -106,6 +105,11 @@ public final class SettlementCivilWorkService {
             }
         }
         if (cut == 0 && fill == 0) return invalid("이미 선택 높이로 평탄한 영역입니다.");
+
+        SettlementCivilRetainingService.Plan retainingPlan = SettlementCivilRetainingService.checkPlan(
+                level, minX, maxX, minZ, maxZ, gradeY);
+        if (!retainingPlan.valid()) return invalid(retainingPlan.message());
+        int retaining = retainingPlan.requiredBlocks();
 
         int importedFill = SettlementCivilFillSupplyService.importedFillRequired(cut, fill);
         if (importedFill > 0) {
@@ -116,9 +120,18 @@ public final class SettlementCivilWorkService {
                         + " · 흙/거친 흙 ItemStack을 실제로 넣어 주세요.");
             }
         }
-        return new Check(true, minX, maxX, minZ, maxZ, gradeY, cut, fill,
+        if (retaining > 0) {
+            int availableRetaining = SettlementCivilRetainingService.availableRetaining(level, settlement);
+            if (availableRetaining < 0) return invalid("공동 창고가 모두 로드된 상태에서 옹벽 조약돌을 검사해 주세요.");
+            if (availableRetaining < retaining) {
+                return invalid("옹벽 조약돌 부족 · 필요 " + retaining + " / 공동 창고 " + availableRetaining
+                        + " · COBBLESTONE ItemStack을 실제로 넣어 주세요.");
+            }
+        }
+        return new Check(true, minX, maxX, minZ, maxZ, gradeY, cut, fill, retaining,
                 "토목 가능 · " + width + "×" + depth + " · 절토 " + cut + " · 성토 " + fill
                         + (importedFill > 0 ? " · 실제 창고 흙 " + importedFill : " · 현장 토사만 사용")
+                        + (retaining > 0 ? " · 옹벽 조약돌 " + retaining : " · 옹벽 불필요")
                         + " · 가상 토사 생성 0");
     }
 
@@ -134,7 +147,7 @@ public final class SettlementCivilWorkService {
         if (!check.valid()) return new StartResult(false, check.message());
 
         data.begin(new CivilWorkState(true, check.minX(), check.maxX(), check.minZ(), check.maxZ(), check.gradeY(),
-                CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks()));
+                CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks(), check.retainingBlocks()));
         Villager builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement.centerPos());
         if (builder != null) {
             builder.setInvulnerable(true);
@@ -142,6 +155,7 @@ public final class SettlementCivilWorkService {
         }
         SettlementService.broadcast(server, settlement);
         return new StartResult(true, "선택영역 토목 착공 · 절토 " + check.cutBlocks() + " / 성토 " + check.fillBlocks()
+                + (check.retainingBlocks() > 0 ? " / 옹벽 조약돌 " + check.retainingBlocks() : "")
                 + (check.importedFillBlocks() > 0 ? " / 창고 흙 운반 " + check.importedFillBlocks() : "")
                 + " · 건설 주민이 현장 토사와 실제 창고 자재를 사용합니다.");
     }
@@ -171,7 +185,7 @@ public final class SettlementCivilWorkService {
             }
             BlockPos target = findCutTarget(level, project);
             if (target == null) {
-                data.replace(project.beginFill());
+                data.replace(project.initialRetainingBlocks() > 0 ? project.beginRetaining() : project.beginFill());
                 return false;
             }
             if (!safeNaturalTarget(level, target)) return false;
@@ -180,6 +194,36 @@ public final class SettlementCivilWorkService {
             if (!level.setBlock(target, Blocks.AIR.defaultBlockState(), BLOCK_UPDATE)) return false;
             builder.swing(InteractionHand.MAIN_HAND);
             data.replace(project.afterCut());
+            return false;
+        }
+
+        if (project.phase() == CivilWorkState.PHASE_RETAIN) {
+            if (!SettlementCivilRetainingService.isRetainingStack(builder.getMainHandItem())
+                    && !builder.getMainHandItem().isEmpty()) {
+                SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+                return false;
+            }
+            SettlementCivilRetainingService.Plan retainingPlan = SettlementCivilRetainingService.plan(level, project);
+            if (!retainingPlan.valid()) return false;
+            BlockPos retainingTarget = retainingPlan.nextMissing(level);
+            if (retainingTarget == null) {
+                if (!builder.getMainHandItem().isEmpty()) {
+                    SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+                    return false;
+                }
+                data.replace(project.beginFill());
+                return false;
+            }
+            if (!SettlementCivilRetainingService.ensureCarriedRetaining(level, settlement, builder, project)) return false;
+            BlockState retainingCurrent = level.getBlockState(retainingTarget);
+            if (level.getBlockEntity(retainingTarget) != null || !retainingCurrent.getFluidState().isEmpty()
+                    || (!retainingCurrent.isAir() && !retainingCurrent.canBeReplaced())) return false;
+            if (!moveBuilder(level, builder, retainingTarget)) return false;
+            if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
+            if (!level.setBlock(retainingTarget, Blocks.COBBLESTONE.defaultBlockState(), BLOCK_UPDATE)) return false;
+            SettlementCivilRetainingService.consumeOne(builder);
+            builder.swing(InteractionHand.MAIN_HAND);
+            data.replace(project.afterRetaining());
             return false;
         }
 
@@ -232,6 +276,7 @@ public final class SettlementCivilWorkService {
         CivilWorkState state = SettlementCivilWorkData.get(server).project();
         if (!state.active()) return "";
         if (state.phase() == CivilWorkState.PHASE_CUT) return "선택영역 절토";
+        if (state.phase() == CivilWorkState.PHASE_RETAIN) return "선택영역 테라스 옹벽 시공";
         if (state.phase() == CivilWorkState.PHASE_RETURN) return "선택영역 토목 · 잔여 자재 복귀";
         return state.earthBank() > 0 ? "선택영역 성토" : "선택영역 성토 · 창고 흙 운반";
     }
@@ -243,9 +288,10 @@ public final class SettlementCivilWorkService {
         CivilWorkState state = SettlementCivilWorkData.get(server).project();
         if (!state.active()) return;
         BlockPos pos = event.getPos();
-        if (pos.getX() < state.minX() || pos.getX() > state.maxX()
-                || pos.getZ() < state.minZ() || pos.getZ() > state.maxZ()) return;
-        if (pos.getY() < state.gradeY() - MAX_FILL_DEPTH || pos.getY() > state.gradeY() + MAX_CUT_DEPTH) return;
+        if (pos.getX() < state.minX() - 1 || pos.getX() > state.maxX() + 1
+                || pos.getZ() < state.minZ() - 1 || pos.getZ() > state.maxZ() + 1) return;
+        if (pos.getY() < state.gradeY() - SettlementCivilRetainingService.MAX_RETAINING_HEIGHT
+                || pos.getY() > state.gradeY() + MAX_CUT_DEPTH) return;
         event.setCanceled(true);
         event.setNotifyClient(true);
     }
@@ -289,12 +335,12 @@ public final class SettlementCivilWorkService {
     }
 
     private static boolean areaLoaded(ServerLevel level, CivilWorkState state) {
-        for (int x = state.minX(); x <= state.maxX(); x += 8) {
-            for (int z = state.minZ(); z <= state.maxZ(); z += 8) {
+        for (int x = state.minX() - 1; x <= state.maxX() + 1; x += 8) {
+            for (int z = state.minZ() - 1; z <= state.maxZ() + 1; z += 8) {
                 if (!level.hasChunkAt(new BlockPos(x, state.gradeY(), z))) return false;
             }
         }
-        return level.hasChunkAt(new BlockPos(state.maxX(), state.gradeY(), state.maxZ()));
+        return level.hasChunkAt(new BlockPos(state.maxX() + 1, state.gradeY(), state.maxZ() + 1));
     }
 
     private static String validateColumn(ServerLevel level, int x, int z, int surfaceY, int gradeY) {
@@ -357,7 +403,7 @@ public final class SettlementCivilWorkService {
         return dx * dx + dz * dz;
     }
 
-    private static boolean isNaturalGround(BlockState state) {
+    static boolean isNaturalGround(BlockState state) {
         return state.is(Blocks.GRASS_BLOCK)
                 || state.is(Blocks.DIRT)
                 || state.is(Blocks.COARSE_DIRT)
@@ -378,6 +424,6 @@ public final class SettlementCivilWorkService {
     }
 
     private static Check invalid(String message) {
-        return new Check(false, 0, 0, 0, 0, 0, 0, 0, message);
+        return new Check(false, 0, 0, 0, 0, 0, 0, 0, 0, message);
     }
 }
