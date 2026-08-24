@@ -14,7 +14,7 @@ def forbid(source, tokens, label):
     for token in tokens:
         if token in source: raise SystemExit(f'{label}: {token}')
 
-# Preserve Alpha.23-47 runtime/source invariants; current Alpha.48 docs are bound after API compile succeeds.
+# Preserve Alpha.23-47 runtime/source invariants. Alpha.48 owns the current canonical-doc checks below.
 alpha47_source = text(ALPHA47)
 alpha47_source = alpha47_source.replace("print('Frontier Settlement alpha.47 source audit: PASS')", 'pass')
 alpha47_source = alpha47_source.replace("print('Frontier Settlement alpha.47 canonical docs audit: PASS')", 'pass')
@@ -84,7 +84,7 @@ forbid(military, ('Items.IRON_SWORD', 'setItemSlot(', 'weaponsexpanded.', 'bette
                    'data.addPopulation(', 'data.setPopulation(', 'forceChunk', 'teleportTo('),
        'alpha.48 military outpost cannot mint weapons/population or alter loading authority')
 
-# Migration must never route through recruitment consumption.
+# Save migration must never route through recruitment consumption.
 for source, migration, label in ((barracks, 'migrateLegacySoldier', 'barracks'), (military, 'migrateLegacySentry', 'outpost')):
     start = source.find('private static FrontierSoldierEntity ' + migration)
     end = source.find('\n    }', start)
@@ -94,12 +94,79 @@ for source, migration, label in ((barracks, 'migrateLegacySoldier', 'barracks'),
 
 props = text(ROOT / 'gradle.properties')
 lock = text(ROOT / 'COMPANION_LOCK.json')
-must(props, ('mod_version=0.1.0-alpha.48', 'supplied humanoid military presentation without server-side weapon minting'),
+must(props, ('mod_version=0.1.0-alpha.48',
+             'bounded medium-terrain work using real retaining stone',
+             'exploration/conquest milestones',
+             'real-wood fishing-outpost piers',
+             'opt-in physical fish trade',
+             'domain relic reforging for compatible external weapons',
+             'supplied humanoid military presentation without server-side weapon minting'),
      'alpha.48 properties')
 must(lock, ('"frontier_settlement": "0.1.0-alpha.48"',
             'client-only humanoid/service-sword presentation',
             'visual sword is never a server ItemStack',
             'no Better Combat or Weapons Expanded Java class becomes a hard dependency',
+            'historical public WaypointsManager API is absent',
             '"status": "candidate_runtime_lock"'), 'alpha.48 companion lock')
 
+# Current canonical docs are part of Alpha.48 acceptance.
+readme = text(ROOT / 'README.md')
+canonical = text(ROOT / 'CANONICAL_PLAN.md')
+gap = text(ROOT / 'COMPLETION_GAP_AUDIT.md')
+
+must(readme, (
+    '## Current version: 0.1.0-alpha.48',
+    '## Alpha.48 — supplied humanoid military presentation',
+    'new `FrontierSoldierEntity` is a distinct Frontier entity type that **extends IronGolem**',
+    'visible service sword is a **client render-state-only ItemStack**',
+    'barracks still own exactly **3 supplied slots**',
+    '**8 real food + 2 real metal**',
+    '**6 real food + 2 real metal**',
+    'migrate **1:1** to `FrontierSoldierEntity`',
+    'charging no recruitment cost again',
+    'does **not** claim that soldiers physically consume/equip Weapons Expanded items yet',
+), 'alpha.48 README')
+forbid(readme, ('## Current version: 0.1.0-alpha.47',
+                'The current regular soldier combat body is an **Iron Golem proxy**.'),
+       'alpha.48 README stale state')
+
+must(canonical, (
+    'Alpha.40–48 deepen systems',
+    'Current families are exactly:',
+    'builder walks from actual settlement storage carrying real wood/stone stacks',
+    'Transport workers belong to a specific outpost',
+    'pause at unloaded route boundaries',
+    'single authority for outpost transport',
+    'tier-visible public works',
+    '### Alpha.48 supplied humanoid military presentation',
+    '`FrontierSoldierEntity` is a Frontier-owned entity type that **extends `IronGolem`**',
+    '**visual service sword is never a server ItemStack**',
+    'older loaded tagged Iron Golem soldiers/sentries migrate **1:1**',
+    'A physical external-weapon armory/loadout loop remains unfinished',
+    '## 14. Current playable slice after Alpha.48',
+    '1. **selected-area cut/fill and larger civil engineering**',
+    'Alpha.48 humanoid render/attack-animation + legacy migration acceptance',
+    'true Xaero settlement/outpost markers only if a stable supported API/seam appears',
+), 'alpha.48 canonical plan')
+forbid(canonical, ('## 14. Current playable slice after Alpha.47',
+                   'Current regular soldier/sentry bodies are Iron Golem proxies.'),
+       'alpha.48 canonical stale state')
+
+must(gap, (
+    '현재 구현 기준: `0.1.0-alpha.48`',
+    '| 사람형 군사 presentation | **완료/부분** |',
+    '| 실물 외부무기 군사 armory/loadout | **미구현/부분** |',
+    '### Alpha.48 supplied humanoid military 감사',
+    '**visual service sword is never a server ItemStack**',
+    'migration은 recruit consume 함수를 호출하지 않으므로 이중 과금 없음',
+    'actual external-weapon physical armory는 아직 완료가 아님',
+    '현재 functional family는 정확히 **15**다',
+    '1. **선택영역 절토/성토 + 대형 civil engineering**',
+    '## 11. Alpha.48 추가 실플레이 acceptance',
+), 'alpha.48 completion gap audit')
+forbid(gap, ('현재 구현 기준: `0.1.0-alpha.47`',
+             '| 사람형/무기 장비 병사 presentation | **미구현** |'),
+       'alpha.48 completion gap stale state')
+
 print('Frontier Settlement alpha.48 source audit: PASS')
+print('Frontier Settlement alpha.48 canonical docs audit: PASS')
