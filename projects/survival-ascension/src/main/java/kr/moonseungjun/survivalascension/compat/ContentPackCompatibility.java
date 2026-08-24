@@ -17,6 +17,6 @@ public final class ContentPackCompatibility {
     /** Hostile mobs remain the normal combat target; common-tagged bosses are included even when
      * their implementation does not use Minecraft's Enemy marker. */
     public static boolean isCombatTarget(LivingEntity entity) {
-        return entity instanceof Enemy || entity.getType().is(Tags.EntityTypes.BOSSES);
+        return entity instanceof Enemy || entity.getType().builtInRegistryHolder().is(Tags.EntityTypes.BOSSES);
     }
 }
