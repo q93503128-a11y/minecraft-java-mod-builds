@@ -481,6 +481,9 @@ public final class SettlementRoadService {
     private static boolean finishIfValid(MinecraftServer server, SettlementData data,
                                          RoadConstructionState road, List<Placement> plan, Villager builder) {
         ServerLevel level = server.overworld();
+        // Alpha.24-and-earlier roads already paid their full stone cost before construction state was saved.
+        // New physical roads must pay for every repair, but legacy prepaid saves must never be charged twice.
+        boolean legacyPrepaidRepair = road.legacyPrepaidPaving();
         for (Placement placement : plan) {
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
@@ -495,10 +498,10 @@ public final class SettlementRoadService {
                     return false;
                 }
             }
-            if (!ensurePavingMaterial(server, data, builder, 1L, 1L)) return false;
+            if (!legacyPrepaidRepair && !ensurePavingMaterial(server, data, builder, 1L, 1L)) return false;
             if (!moveBuilderToPlacement(level, builder, placement)) return false;
             if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
-            if (!consumeCarriedStone(builder, 1L)) {
+            if (!legacyPrepaidRepair && !consumeCarriedStone(builder, 1L)) {
                 level.setBlock(placement.pos(), current, DIRECT_BLOCK_UPDATE);
                 return false;
             }

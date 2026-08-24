@@ -88,7 +88,7 @@ Alpha.52 advances the first item left after Alpha.51 without inventing a new roa
 - pier-required long bridges unlock at the existing village stage; no new key, building family, currency or dashboard is added;
 - the same road builder walks to real settlement storage, extracts real stone ItemStacks, and physically builds deck/support placements;
 - paving now treats world placement and ItemStack consumption atomically: successful `setBlock` precedes carried-stone shrink and state advance, with rollback if consumption unexpectedly fails;
-- final road repair no longer places missing road/bridge blocks for free; each repair fetches and consumes a real stone ItemStack;
+- final repair for Alpha.25+ physical roads no longer places missing road/bridge blocks for free; each such repair fetches and consumes a real stone ItemStack, while historical prepaid road saves keep their already-paid repair semantics to avoid double charging;
 - no force-load, teleport logistics, second builder, second road authority or second outpost transport authority is introduced.
 
 Alpha.52 completes the **first bounded long-bridge/ravine-crossing slice**. Tunnels, more complex curved/deeper monumental crossings and final real-play acceptance remain unfinished.

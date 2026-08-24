@@ -46,6 +46,9 @@ must(data, ('beginRoadConstruction(List<BlockPos> centers, List<Integer> profile
             'RoadConstructionState.fromPath(centers, profile, bridgeSupports)'), 'alpha.52 road state authority')
 must(road, ('MAX_SHORT_BRIDGE_SPAN = 6', 'MAX_LONG_BRIDGE_SPAN = 24', 'MIN_RAVINE_DEPTH = 4',
             'MAX_LONG_BRIDGE_PIER_DEPTH = 12', 'LONG_BRIDGE_PIER_INTERVAL = 6',
+            'boolean legacyPrepaidRepair = road.legacyPrepaidPaving()',
+            '!legacyPrepaidRepair && !ensurePavingMaterial(server, data, builder, 1L, 1L)',
+            '!legacyPrepaidRepair && !consumeCarriedStone(builder, 1L)',
             'planBridgeSupports(', 'planPierColumn(', 'isNaturalSupportGround(',
             'chosen.supports()', 'road.bridgeSupportCount()', 'bridgeSupportPositions()',
             '교각이 필요한 장교량은 현재 직선 구간에서만',

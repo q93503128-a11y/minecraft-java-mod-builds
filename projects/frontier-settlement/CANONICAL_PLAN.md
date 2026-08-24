@@ -412,7 +412,7 @@ Alpha.52 remains inside `SettlementRoadService` and the existing road constructi
 - pier-required bridges are village-stage public works;
 - deck and pier stone remain real ItemStacks hauled by the same road builder from actual settlement storage;
 - placement is atomic with resource authority: successful world `setBlock` happens before carried-stone shrink/state advance, and a failed consume rolls the placed block back;
-- final validation/repair also requires physical stone instead of free repair placement;
+- final validation/repair for Alpha.25+ physical roads also requires physical stone instead of free repair placement; historical prepaid road saves remain cost-free at repair because their stone was already charged before persistence;
 - completed roads still become the same `RoadSegment`, so Alpha.27 remains the **single authority for outpost transport** and there is still only one authority for long-distance outpost transport;
 - no force-load, teleport, virtual stone, second builder or second route authority.
 

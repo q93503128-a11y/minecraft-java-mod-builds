@@ -24,7 +24,8 @@ must(readme, ('## Current version: 0.1.0-alpha.52',
               '## Alpha.52 — bounded long bridges and ravine crossings', '**24 centerline cells**',
               '**4 blocks**', '**12 blocks**', '`RoadConstructionState.bridge_supports`',
               'successful `setBlock` precedes carried-stone shrink and state advance',
-              'final road repair no longer places missing road/bridge blocks for free',
+              'final repair for Alpha.25+ physical roads no longer places missing road/bridge blocks for free',
+              'historical prepaid road saves keep their already-paid repair semantics to avoid double charging',
               'Tunnels, more complex curved/deeper monumental crossings',
               'single authority for outpost transport', 'Transport workers belong to a specific outpost',
               'pause at unloaded route boundaries'), 'alpha.52 README')
@@ -32,7 +33,8 @@ forbid(readme, ('## Current version: 0.1.0-alpha.51', 'Canonical Alpha.51 CI ord
 must(canonical, ('Current canonical implementation: **0.1.0-alpha.52**',
                  '### Alpha.52 bounded long-bridge / ravine crossing', 'at most24 centerline cells',
                  'optional `bridge_supports`', 'within12 blocks', 'successful world `setBlock` happens before carried-stone shrink/state advance',
-                 'final validation/repair also requires physical stone',
+                 'final validation/repair for Alpha.25+ physical roads also requires physical stone',
+                 'historical prepaid road saves remain cost-free at repair',
                  'single authority for outpost transport', 'there is still only one authority for long-distance outpost transport',
                  '## 14. Current playable slice after Alpha.52', '## 15. Unfinished original-scope priorities after Alpha.52',
                  '**tunnel / deeper monumental crossing civil-engineering pass**'), 'alpha.52 canonical')
@@ -41,7 +43,8 @@ must(gap, ('현재 구현 기준: `0.1.0-alpha.52`', '### Alpha.52 long-bridge /
            '| 터널/더 깊은 기념비급 토목 | **미구현/부분** |',
            'old saves default empty', '자연 지반을 최대12블록',
            'world setBlock 성공 → carried stone consume → road state advance',
-           'free repair 없음', '## 11. 완료 판정 금지선'), 'alpha.52 gap')
+           'free repair 없음', 'historical road save는 이중과금 방지',
+           '## 11. 완료 판정 금지선'), 'alpha.52 gap')
 forbid(gap, ('현재 구현 기준: `0.1.0-alpha.51`',
              '- ravine-scale / long bridge / tunnel larger civil engineering breadth;'), 'alpha.52 gap stale')
 

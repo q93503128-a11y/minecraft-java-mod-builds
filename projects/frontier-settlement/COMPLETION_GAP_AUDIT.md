@@ -154,7 +154,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - unloaded / block entity / non-water fluid / non-natural-player obstruction / too-deep support 거부;
 - same shared road builder + actual settlement stone ItemStacks만 사용;
 - world setBlock 성공 → carried stone consume → road state advance 순서, consume 실패 시 placed block rollback;
-- final validation missing block도 physical stone1개를 가져와 성공 배치 후 소비하며 free repair 없음;
+- Alpha.25+ physical road의 final validation missing block도 physical stone1개를 가져와 성공 배치 후 소비하며 free repair 없음. 단, 이미 선결제된 historical road save는 이중과금 방지를 위해 기존 prepaid semantics를 유지;
 - completed road는 기존 RoadSegment/Alpha.27 transport authority로 귀결, second logistics authority 없음;
 - force-load/teleport/virtual stone 없음.
 
