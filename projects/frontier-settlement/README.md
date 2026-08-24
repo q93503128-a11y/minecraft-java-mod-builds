@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.42
+## Current version: 0.1.0-alpha.43
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,7 +29,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.42 adds no new gameplay key, catch-up dashboard or manual job-priority UI.
+Alpha.43 adds no new gameplay key, management dashboard or manual status menu. It exposes more context through the existing HUD, compact side notices and optional Jade tooltips.
 
 ## Functional building families
 
@@ -51,7 +51,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization, Alpha.41 added dangerous-region military specialization, and Alpha.42 adds bounded unloaded-work catch-up without inventing a 16th building. Richer companion/UI integration, medium terrain works, exploration-progression bridges and presentation breadth remain unfinished.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization, Alpha.41 added dangerous-region military specialization, Alpha.42 added bounded unloaded-work catch-up, and Alpha.43 adds compact status/Jade presentation without inventing a 16th building. Medium terrain works, exploration-progression bridges, Xaero marker synchronization and broader presentation remain unfinished.
 
 ## Physical construction
 
@@ -80,7 +80,8 @@ Roads and outposts likewise use physical grading and real hauled resources.
 - unloaded route boundaries never force-load or teleport cargo;
 - Alpha.27 tagged road logistics remains the **single authority for outpost transport**;
 - Alpha.41 lets that same transporter carry real food/metal from town back to an active dangerous-region outpost;
-- Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority.
+- Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority;
+- Alpha.43 derives presentation-only building/outpost/project context from those existing authoritative states. The context payload cannot spend resources, place blocks or become a second settlement ledger.
 
 ## Alpha.31 — external content becomes a Frontier input
 
@@ -259,6 +260,23 @@ Alpha.42 reduces the penalty for exploring away from the settlement without repl
 
 This is a bounded catch-up layer, not full simulation of an unloaded Minecraft world. It deliberately favors physical authority and exploit resistance over pretending unloaded blocks/entities were continuously simulated.
 
+## Alpha.43 — compact context UX + optional Jade status
+
+Alpha.43 implements the first stronger status/readability pass directly from the existing authoritative settlement state rather than introducing a new management system.
+
+- the server derives a bounded presentation snapshot for the authoritative shared stockpile, completed functional buildings, completed outposts and the active project;
+- the snapshot contains labels, bounded world-space context and progress only. It cannot consume ItemStacks, place blocks, create workers or alter progression;
+- the existing compact resource HUD gains the current active building/road/outpost project label and progress percentage while work is active;
+- small right-side notices are limited to three simultaneous entries and expire after six seconds;
+- notices are reserved for meaningful transitions such as settlement tier growth, project start, completed functional building and new outpost, avoiding modal/central popup spam;
+- Jade 26.2.2 is compiled through the exact candidate-lock artifact as `compileOnly`; all Jade API references are quarantined under `compat/jade`, so Frontier core code does not gain a Jade runtime/boot dependency;
+- when Jade is installed, looking at blocks inside authoritative Frontier stockpile/building/outpost bounds can show at most the target title and one compact role/status line, with project progress when relevant;
+- when Xaero's Minimap is detected, the Frontier resource HUD shifts down from the default top-left region to reduce overlap with the minimap;
+- Alpha.43 does **not** claim Xaero waypoint/marker synchronization. Xaero has no stable documented public marker API for this target, so no brittle internal-class link or reflection seam is introduced in this alpha;
+- no new key, giant dashboard, per-worker management screen or new gameplay authority is added.
+
+Jade tooltip behavior and actual multi-mod screen overlap remain runtime/visual acceptance items. The companion lock therefore remains `candidate_runtime_lock`.
+
 ## External content stack
 
 `COMPANION_LOCK.json` is the exact candidate lock for the next fresh-world compatibility test. `COMPANION_MODS.md` explains the strategy and `EXTERNAL_CONTENT_REGISTER.md` records reuse/license boundaries.
@@ -271,10 +289,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–41 source audit plus Alpha.42 bounded unloaded-work extension;
-2. Java 25 clean Gradle build;
+1. the complete established Alpha.23–42 source audit plus Alpha.43 compact-context/Jade extension;
+2. Java 25 clean Gradle build, including compilation against the exact locked Jade 26.2.2 API artifact;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on catch-up pacing/exploit resistance, reload behavior, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.

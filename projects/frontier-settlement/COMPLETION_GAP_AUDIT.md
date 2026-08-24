@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.42`
+현재 구현 기준: `0.1.0-alpha.43`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: Frontier 자체 재구현보다 companion이 콘텐츠를 공급
 - `후보검증`: 버전/구성은 고정했으나 풀스택 실런타임 검증 필요
 
-이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했고 수변/위험지역 전초 및 bounded unloaded-work 1차가 들어갔더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
+이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했고 수변/위험지역 전초, bounded unloaded-work 1차, compact Jade/status 1차가 들어갔더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -21,7 +21,7 @@
 | 핵심 직접 조작 소수 유지 | 완료 | B / R / Enter / Backspace 중심 |
 | 플레이어별 개별 마을 금지 | 완료 | 단일 공동 정착지 |
 | 세금/행복도/가족/거대 연구 UI 금지 | 완료 | 해당 미시관리 없음 |
-| 외부 모드를 콘텐츠 생산 수단으로 사용 | 완료/부분 | 후보 스택 + 시장/작업장/고급 제작 연동. 풀런타임 미검증 |
+| 외부 모드를 콘텐츠 생산 수단으로 사용 | 완료/부분 | 후보 스택 + 시장/작업장/고급 제작 + Jade presentation seam. 풀런타임 미검증 |
 
 ## 2. 시작 / 자원 / 창고 / HUD
 
@@ -40,6 +40,7 @@
 | 고급 제작 재료도 실제 자원 사용 | 완료/부분 | 의뢰 배럴 유물1 + 전문 주민이 운반한 금속4. 외부 무기별 실전 호환 검증 필요 |
 | 수변 전초 생산도 실제 아이템 | 완료/부분 | Alpha.40 실제 대구/연어 → 전초 stockpile → 기존 도로 운송 |
 | 언로드 보정이 자원 권위를 침범하지 않음 | 완료/부분 | Alpha.42는 work-time debt만 저장. 실제 아이템/블록/컨테이너 동작 성공 뒤에만 credit 소모. 실플레이 악용·재로드 검증 남음 |
+| UI context가 새 자원 권위가 되지 않음 | 완료 | Alpha.43 context는 stockpile/building/outpost/project 표시 전용이며 자원 소비·블록 배치·진행 변경 API가 없음 |
 
 ## 3. 건설 / 지형 공사
 
@@ -57,6 +58,7 @@
 | 높은/큰 건물 물리 시공 | 완료/부분 | 감시탑·병영·건설소·고급 제작소도 scaffold/haul 사용. 실동선 검증 필요 |
 | 플레이어 건축물/컨테이너 보호 | 완료/부분 | 주요 공사경로 보호. 폭발/피스톤 전면 검증 남음 |
 | 자동 건설 물류 지원 | 완료/부분 | 건설소 4배럴 + 물리 보급 주민. 중형 토목/복수 프로젝트는 미완 |
+| 공사 상태 compact 표시 | 완료/부분 | Alpha.43 HUD에 active building/road/outpost project label/progress. 실제 체감/다중 상태 확장 검증 남음 |
 
 ## 4. 주민 / 생산 / 방어
 
@@ -110,7 +112,7 @@
 | 촌락 | 채석·광산·대장간·경비 | 완료/부분 |
 | 마을 | 도로·다리·시장·첫 전초·건설 물류 | 완료/부분 — 실동선/토목 검증 남음 |
 | 개척 도시 | 병영·고급 제작·여러 전초 | 완료/부분 — 병영 + Alpha.39 고급 제작소 + 여러 전초 구현. 실런타임 검증 남음 |
-| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — Alpha.40 수변, Alpha.41 군사, Alpha.42 bounded unloaded-work 1차 포함. 항구형 표현·고급 교역·companion runtime 미완 |
+| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — Alpha.40 수변, Alpha.41 군사, Alpha.42 bounded unloaded-work, Alpha.43 compact status/Jade 1차 포함. 항구형 표현·고급 교역·companion runtime/Xaero marker 미완 |
 
 ## 6. 건물/인프라 계열
 
@@ -172,6 +174,7 @@
 | 순간이동 금지 | 완료 | 도로 기반 이동 |
 | Terralith biome 기반 전문화 | 부분 | 일반 환경 스캔 기반. companion-aware mapping 보강 필요 |
 | 언로드 상태의 진행 | **완료/부분** | 최대1일 작업시간 debt만 누적 후 real loaded action으로 환전. full offscreen world simulation은 의도적으로 하지 않음 |
+| 전초 role 최소 정보 노출 | 완료/부분 | `/frontier status` + Alpha.43 Jade context payload/provider. 실제 Jade runtime/가독성 검증 남음 |
 
 ### Alpha.40 수변 전초 감사
 
@@ -225,11 +228,22 @@
 | Weapons Expanded | 완료/부분 | 외부 무기 인식 + repair + Alpha.39 forge seam. 실제 전체 무기 호환 테스트 필요 |
 | Lootr | 후보검증 | 던전 전리품 보조, 풀런타임 미검증 |
 | Sophisticated Backpacks | 후보검증 | 원거리 탐험 편의, 풀런타임 미검증 |
-| Jade | 미구현/후보검증 | 모드는 lock됐으나 Frontier 상태 provider 미구현 |
-| Xaero 지도 | 미구현/후보검증 | 모드는 lock됐으나 본진/전초 marker 연동 미구현 |
+| Jade | **완료/부분·후보검증** | Alpha.43 exact locked 26.2.2 API compileOnly provider 구현/Java25 컴파일 완료. 실제 full-stack tooltip/runtime 검증 필요 |
+| Xaero 지도 | 미구현/후보검증 | Alpha.43는 minimap 설치 시 HUD 충돌 회피만 구현. 본진/전초 marker 및 road map 연동은 아직 미구현 |
 | 탐험 전리품→마을 가치 | 완료/부분 | 시장 판매 / 작업장 repair / 고급 forge 구현. 보스/구조 발견 자체의 progression 연결은 약함 |
 
 `COMPANION_LOCK.json`은 `candidate_runtime_lock`이며 실제 full client/server launch 전에는 runtime-tested로 올리지 않는다.
+
+### Alpha.43 companion-status 감사
+
+- Jade target은 lock의 `26.2.2+neoforge` / `HLYMycSr`와 동일하다.
+- Gradle은 해당 artifact를 `compileOnly`로 참조하며 Frontier runtime implementation dependency로 승격하지 않는다.
+- `snownee.jade` import는 `compat/jade` 아래에만 존재하도록 source audit로 봉쇄한다.
+- 서버는 Jade 전용 별도 자원/state를 만들지 않고 기존 settlement state에서 bounded presentation context만 파생한다.
+- Jade provider는 synchronized client context와 crosshair block position을 대조해 title + compact detail/progress만 추가한다.
+- Jade가 없을 때 resource/worker/construction/logistics/progression 코드는 Jade API를 참조하지 않는다.
+- Xaero는 존재 여부만 확인해 resource HUD를 아래로 이동시킨다.
+- Xaero 내부 waypoint class/reflection/mixin에 연결하지 않았으며 marker 동기화를 구현했다고 주장하지 않는다.
 
 ## 10. UI / 정보 구조
 
@@ -239,23 +253,23 @@
 | 월드형 건물 placement | 완료 |
 | 회전/재료/가능 여부 preview | 완료 |
 | road/outpost placement | 완료/부분 |
-| 건물 상태/작업 진행 정보 | 부분 — HUD/가이드/status 존재, 별도 compact 상태 표현 보강 필요 |
-| 수변 전초 상태 노출 | 완료/부분 — `/frontier status` loaded 어업·수변교역 수 + 최근 전초 유효 역할. HUD/Jade 표현은 미완 |
-| 위험지역 군사 전초 상태 노출 | 완료/부분 — `/frontier status` active 수/로드 sentry/현지 supply + 최근 전초 유효 역할. HUD/Jade 표현은 미완 |
-| 언로드 보정 상태 노출 | 완료/부분 — `/frontier status` production/logistics deferred ticks와 대상 전초 수, `가상 자원·가상 화물 0` 노출. HUD/Jade 표현은 미완 |
-| 물리 자재 흐름 가시화 | 완료/부분 — 실제 운반 존재, 정보 표현은 더 개선 가능 |
-| compact side notification | 미구현/부분 |
-| Jade 기반 최소 상태 노출 | 미구현 |
-| Xaero 본진/전초/도로망 연동 | 미구현 |
+| 건물 상태/작업 진행 정보 | **완료/부분** — Alpha.43 active project label/% + Jade target context. 세부 재료/서비스별 상태 breadth와 실전 가독성 검증 남음 |
+| 수변 전초 상태 노출 | 완료/부분 — `/frontier status` + Alpha.43 Jade outpost effective role context. 실제 tooltip 런타임 검증 남음 |
+| 위험지역 군사 전초 상태 노출 | 완료/부분 — `/frontier status` + Alpha.43 Jade outpost effective role context. 세부 supply/sentry HUD는 아직 없음 |
+| 언로드 보정 상태 노출 | 완료/부분 — `/frontier status` production/logistics deferred ticks와 대상 전초 수, `가상 자원·가상 화물 0` 노출. 일반 HUD에 상시 노출하지 않음 |
+| 물리 자재 흐름 가시화 | 완료/부분 — 실제 운반 + stockpile Jade context. 더 세밀한 흐름 정보는 미완 |
+| compact side notification | **완료/부분** — Alpha.43 tier/project/building/outpost 중요 전환, 우측 max3/6초. broader warning/priority 알림은 미완 |
+| Jade 기반 최소 상태 노출 | **완료/부분** — provider/API compile 완료, stockpile/building/outpost/project context 구현. 실제 full-stack runtime/visual 미검증 |
+| Xaero 본진/전초/도로망 연동 | **미구현/후보검증** — HUD collision avoidance만 완료. waypoint/marker/road-map 동기화 없음 |
 
 새 기능마다 새 키나 새 대형 dashboard를 만드는 방식은 금지한다.
 
 ## 11. 현재 가장 큰 남은 갭
 
-우선순위는 실플레이 회귀가 생기면 즉시 그쪽이 우선이다. 그렇지 않으면:
+우선순위는 실플레이 회귀가 생기면 즉시 그쪽이 우선이다. 사용자가 완성 시 테스트하기로 했으므로 그 전까지 자동/코드 검증 가능한 개발을 계속한다.
 
-1. **full companion fresh-world client/server runtime + 멀티 검증**.
-2. **Jade/Xaero 실제 Frontier integration + compact 상태/notification UX**.
+1. **full companion fresh-world client/server runtime + 멀티 검증** — 최종 테스트 단계에서 실제 실행.
+2. **Xaero 본진/전초 marker 연동** — 공개 안정 API 부재를 감안해 core boot를 깨지 않는 안전한 seam만 허용. 도로망 표시는 가치/안정성이 확인될 때만.
 3. **중간급 지형 공사** — 옹벽/명시적 terrain work/절토·성토 보조.
 4. **외부 구조·보스 발견이 progression에 더 직접 연결되는 루프**.
 5. **수변 전초 presentation/교역 breadth** — 부두·선박·수상 상인 등은 기존 도로 물류 권위를 깨지 않을 때만.
@@ -263,16 +277,25 @@
 7. **사람형 병사/외부 무기 장비 프레젠테이션** — companion 전투 stack과 함께 가치 검증 후.
 8. **장시간 survival + 2인 multiplayer acceptance**.
 9. **Alpha.42 bounded unloaded-work 실플레이 검증** — pacing/save-reload/exploit/중복 여부를 확인하기 전에는 완전 종료로 처리하지 않음.
+10. **Alpha.43 UI/Jade/Xaero visual/runtime acceptance** — Jade tooltip 위치·중복, notice 가독성, minimap 겹침은 실제 게임에서 확인 필요.
 
-## 12. Alpha.42 실플레이 acceptance
+## 12. Alpha.43 실플레이 acceptance
 
-반드시 실제 게임에서 확인할 것:
+반드시 실제 게임 테스트 단계에서 확인할 것:
 
 - founding → 초기 5개 핵심 건물 진행;
 - save/reload 중 building grading/hauling;
 - 건설소 보급 주민 source 선택/운반/staging/builder preference;
 - road stair/short bridge 실제 걷기;
 - road → outpost → 생산 → transporter → cart station;
+- active building/road/outpost 공사에서 HUD project label/%가 갱신되고 공사 종료 후 사라지는지;
+- tier 성장 / 공사 시작 / 건물 완공 / 전초 추가 알림이 같은 사건에서 중복되지 않고 우측에 max3으로만 뜨며 약6초 뒤 사라지는지;
+- Jade 미설치 상태에서 Frontier 단독 부팅/플레이에 영향이 없는지;
+- Jade 설치 상태에서 공동 창고를 바라보면 `실물 권위` 기반 자원 요약이 보이고, 임의 플레이어 상자가 Frontier 창고로 오인되지 않는지;
+- 완공 건물의 여러 블록을 바라봤을 때 해당 기능 건물 title/detail이 compact하게 보이되 Jade 기본 정보와 과하게 충돌하지 않는지;
+- active building site와 전초에서 project progress / effective outpost role이 올바르게 보이는지;
+- Xaero 설치/미설치 양쪽에서 top-left HUD가 minimap 또는 화면 가장자리와 겹치지 않는지;
+- 현재 버전에서는 Xaero marker가 자동 생성되지 않는 것이 문서와 일치하는지;
 - 실제 강/해안 general 전초에서 `어업·수변교역`, visible rod/bank movement, fish stockpile deposit/road transport;
 - 실제 hostile pressure가 높은 loaded general 전초에서 `위험지역 군사거점`, one sentry, Creeper non-pursuit/no iron drop;
 - 군사 보급이 기존 transporter 하나로 town↔outpost 실제 이동하는지;
@@ -294,4 +317,4 @@
 - 2인 shared storage/construction/logistics 정합;
 - full companion lock fresh-world launch.
 
-자동 감사/빌드/JAR 검증은 소스 정합을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime·catch-up 체감을 대신하지 않는다.
+자동 감사/빌드/JAR 검증은 소스 정합과 API 컴파일을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime·Jade/Xaero 화면 조합·catch-up 체감을 대신하지 않는다.

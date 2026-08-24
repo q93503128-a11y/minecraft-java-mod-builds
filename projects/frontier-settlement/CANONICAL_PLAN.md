@@ -43,7 +43,8 @@ Intent is expressed physically wherever possible:
 - construction office, cart station, watchtower and barracks operate without separate management dashboards;
 - Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu;
 - Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no specialization or troop-management menu;
-- Alpha.42 unloaded catch-up is automatic bookkeeping of elapsed work time only and needs no player-facing management screen.
+- Alpha.42 unloaded catch-up is automatic bookkeeping of elapsed work time only and needs no player-facing management screen;
+- Alpha.43 status context is derived automatically from authoritative settlement state and surfaces through compact HUD/notifications/Jade rather than a new management screen.
 
 ## 3. Multiplayer authority
 
@@ -52,6 +53,7 @@ One world/server has one shared settlement and territory state.
 - settlement resources/buildings/population/roads/outposts/progression are shared;
 - server is authoritative;
 - clients render state and submit bounded requests;
+- presentation snapshots/notifications are not gameplay authority and cannot spend resources or mutate progression;
 - no independent per-player settlements in planned scope;
 - no internal player politics/tax distribution layer in initial scope.
 
@@ -72,7 +74,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–42 keep that number while deepening territory/simulation systems. The number alone is not completion because original trade, terrain-work, exploration integration and UI breadth remains unfinished.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–43 keep that number while deepening territory/simulation/status systems. The number alone is not completion because original trade, terrain-work, exploration integration and presentation breadth remains unfinished.
 
 Current families:
 
@@ -349,6 +351,7 @@ Rules:
 - Frontier should boot without companions unless a future hard dependency is explicitly justified;
 - do not redundantly rebuild strong world/dungeon/combat/weapon systems supplied by companions;
 - common/additive tags are preferred over hard-coded companion classes;
+- optional companion API code must be isolated so absence/version drift cannot become core settlement authority;
 - MIT/LGPL/clear public-license material may be reused only within license obligations and attribution;
 - ARR/ND/restricted content stays official dependency/reference-only;
 - public source visibility alone is not reuse permission;
@@ -480,6 +483,26 @@ This is the first dangerous-territory foothold, not a replacement for the town b
 - `/frontier status` reports deferred time for transparency, not as a spendable resource;
 - no force-load, teleport, real-world offline generation or second simulation economy.
 
+### Alpha.43 compact context / Jade presentation
+
+The first companion-facing status integration is deliberately presentation-only.
+
+- `SettlementContextService` derives bounded display context from the same server-authoritative stockpile/building/outpost/construction state; it is not another SavedData ledger or simulation authority;
+- context targets include the shared physical stockpile, completed functional buildings, completed outposts and the active building construction footprint;
+- active building/road/outpost project name and percentage are sent through the existing settlement snapshot and shown in the compact HUD while work is active;
+- client transition notices are intentionally narrow: settlement tier growth, project start, completed functional building and new outpost;
+- side notices render on the right, expire after6 seconds and keep at most3 entries; no modal popup and no new control;
+- Jade target version is exactly the candidate-lock `26.2.2+neoforge` / version ID `HLYMycSr`;
+- Gradle uses `compileOnly` against that exact artifact. Distributed Frontier therefore does not turn Jade into a declared runtime implementation dependency;
+- all `snownee.jade` references stay quarantined under `compat/jade`; core settlement/network/client logic has no Jade import;
+- the Jade provider is client-side presentation: crosshair position is matched against the synchronized authoritative context and shows at most a title plus one compact detail/progress line;
+- Jade absence must not affect the settlement data model, resources, jobs, construction, logistics or progression;
+- Xaero integration in Alpha.43 is **layout safety only**: if `xaerominimap` is present, the normal Frontier resource HUD moves below the expected top-left minimap region;
+- Alpha.43 deliberately does not link to Xaero internal waypoint classes or use reflection/mixins for markers because no stable documented public marker API has been established for the locked target;
+- actual Xaero settlement/outpost marker synchronization remains unfinished rather than being falsely claimed.
+
+This follows the original v0.2 rule: Jade supplies minimal contextual information; Xaero should eventually improve settlement/territory location awareness without becoming another management system.
+
 ## 12. UI and controls
 
 Reference hierarchy from original design remains:
@@ -500,7 +523,15 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.42 reports advanced commissions, loaded waterborne/military specialization and bounded deferred-work status through existing `/frontier status`; no new crafting/fishing/military/catch-up dashboard is added.
+Alpha.43 status hierarchy:
+
+- always-on: existing resource/tier/next-goal HUD;
+- while a project is active: one extra compact project/progress line;
+- important transitions: bounded right-side notice queue, max3 / 6 seconds;
+- when Jade is present: crosshair-local infrastructure title + one status/role line, not a management panel;
+- when Xaero is present: Frontier top-left HUD moves below the minimap area to avoid immediate overlap.
+
+Still missing/partial from original UI scope: richer material/progress detail for some building/service states and true Xaero settlement/outpost/road-map synchronization. Do not solve those by adding a giant Frontier dashboard.
 
 ## 13. Engineering rules
 
@@ -523,7 +554,14 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.42
+Optional companion integration rule:
+
+- missing companion must not turn Frontier core into a boot failure;
+- use documented/stable APIs where available;
+- isolate optional API references under compat boundaries;
+- if a companion exposes no stable API, prefer honest partial integration over brittle version-internal reflection that risks corrupting or boot-breaking the core mod.
+
+## 14. Current playable slice after Alpha.43
 
 The playable slice now includes:
 
@@ -539,6 +577,8 @@ The playable slice now includes:
 - Alpha.41 dangerous-region military overlay with one supplied remote sentry;
 - persisted road-bound transport including physical reverse food/metal military supply;
 - Alpha.42 bounded unloaded-work catch-up that never turns deferred numbers into resources/cargo;
+- Alpha.43 project-progress HUD line, bounded compact side notifications and optional Jade infrastructure context;
+- Xaero-aware HUD collision avoidance without claiming marker synchronization;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
 - physical market and normal staffed repair workshop;
@@ -553,27 +593,32 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 
 Unless real-play regression overrides them:
 
-1. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
-2. Jade provider / Xaero integration and compact building/progress/notification UX;
+1. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test when the build reaches the user’s chosen test point;
+2. safe Xaero settlement/outpost marker synchronization (and road representation only if it can be done without brittle internal dependency);
 3. medium-terrain construction support such as explicit retaining/terrain-work intent;
 4. external structure/boss discovery feeding progression more directly;
 5. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
 6. broader high-tier recipe/specialized crafting only where exploration materials justify it;
 7. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
 8. long survival/multiplayer acceptance and balance/pathfinding audit;
-9. Alpha.42 unloaded catch-up pacing/reload/exploit validation before declaring that original gap fully closed.
+9. Alpha.42 unloaded catch-up pacing/reload/exploit validation before declaring that original gap fully closed;
+10. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance before declaring the UI-companion gap fully closed.
 
 Do not add meaningless building families merely to raise the count above15.
 
 ## 16. Real-play acceptance focus
 
-Automated CI is not a substitute for Minecraft play. Test, in order:
+Automated CI is not a substitute for Minecraft play. Test, in order when the user reaches the planned test point:
 
 - founding -> house/lumber/farm/quarry/warehouse;
 - building grading/hauling and save/reload mid-project;
 - construction-office runner source selection, physical carrying, office staging and builder preference;
 - road stairs/short bridge navigation;
 - road -> outpost -> specialization production -> transport -> cart station;
+- verify resource HUD remains readable both with and without Xaero's Minimap installed and does not cover the minimap default region;
+- with Jade installed, look at shared stockpile, several completed building blocks, active construction and an outpost; confirm no more than compact title/detail/progress context appears and vanilla/Jade information stays readable;
+- verify Jade absent does not prevent Frontier from loading or alter settlement behavior;
+- verify project-start/build-complete/outpost/tier notices appear once, stay on the side, cap at3 and disappear without requiring dismissal;
 - place an otherwise-general outpost near a real river/coast, verify `어업·수변교역`, visible rod/bank movement, fish stockpile deposit and road transport;
 - verify small puddles/invalid shorelines do not produce fish;
 - leave a previously verified fishing/specialized outpost unloaded during server-running work time, return, and verify deferred work speeds only real physical actions rather than minting resources;
