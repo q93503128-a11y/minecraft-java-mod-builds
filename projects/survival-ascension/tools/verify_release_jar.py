@@ -64,7 +64,31 @@ with zipfile.ZipFile(jar) as zf:
         if token not in outpost_service:
             raise SystemExit(f"0.50 compiled outpost pre-admission token missing: {token!r}")
 
+    affix_name = "kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class"
+    combat_name = "kr/moonseungjun/survivalascension/combat/CombatProgression.class"
+    equipment_ui_name = "kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.class"
+    for name in [affix_name, combat_name, equipment_ui_name]:
+        if name not in zf.namelist():
+            raise SystemExit(f"0.51 armor ascension runtime class missing: {name}")
+    affix = zf.read(affix_name)
+    combat = zf.read(combat_name)
+    equipment_ui = zf.read(equipment_ui_name)
+    for token in [
+        b"HEAD_ARMOR", b"CHEST_ARMOR", b"LEG_ARMOR", b"FOOT_ARMOR",
+        b"armorDamageMultiplier", b"armorXpMultiplier", b"getArmorSlots",
+        b"IRON_HELMET", b"DIAMOND_CHESTPLATE", b"NETHERITE_LEGGINGS", b"NETHERITE_BOOTS",
+    ]:
+        if token not in affix:
+            raise SystemExit(f"0.51 compiled armor-affix token missing: {token!r}")
+    for token in [b"armorDamageMultiplier", b"armorXpMultiplier"]:
+        if token not in combat:
+            raise SystemExit(f"0.51 compiled worn-armor routing missing: {token!r}")
+    if b"ACTION_IMPRINT" not in equipment_ui or b"canImprint" not in equipment_ui:
+        raise SystemExit("0.51 compiled armor imprint UI routing missing")
+
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
 print("regional_logistics_scale_runtime=present")
 print("regional_logistics_scale_release_verify=PASS")
+print("armor_affix_runtime=present")
+print("armor_affix_release_verify=PASS")
