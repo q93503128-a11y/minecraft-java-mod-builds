@@ -3,6 +3,8 @@ package kr.moonseungjun.survivalascension.production;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
+import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -124,6 +126,13 @@ public final class FieldDepotData extends SavedData {
     public static FieldDepotData get(MinecraftServer server) { return server.getDataStorage().computeIfAbsent(TYPE); }
     public static FieldDepotData get(ServerPlayer player) { return get(((ServerLevel) player.level()).getServer()); }
 
+    public static int registrationLimit(ServerPlayer player) {
+        InfrastructureData infrastructure = InfrastructureData.get(player);
+        if (infrastructure.isComplete(InfrastructureProject.ASCENSION_NEXUS)) return MAX_DEPOTS_PER_PLAYER;
+        if (infrastructure.isComplete(InfrastructureProject.CIVIL_WORKS)) return CIVIL_DEPOTS_PER_PLAYER;
+        return BASE_DEPOTS_PER_PLAYER;
+    }
+
     private List<DepotEntry> state(ServerPlayer player) {
         return players.computeIfAbsent(player.getUUID().toString(), ignored -> new ArrayList<>());
     }
@@ -173,6 +182,10 @@ public final class FieldDepotData extends SavedData {
 
     public boolean isPositionClaimed(String dimension, BlockPos pos) {
         return isRegisteredAnchor(dimension, pos) || isLinkedByAny(dimension, pos);
+    }
+
+    public AddResult add(ServerPlayer player, String dimension, BlockPos pos) {
+        return add(player, dimension, pos, registrationLimit(player));
     }
 
     public AddResult add(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed) {
