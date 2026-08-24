@@ -78,7 +78,7 @@ def main() -> None:
             "combat kill XP is not restricted to real hostile/boss targets")
     require("victim instanceof Enemy ? 1.5D : 0.35D" not in combat,
             "passive-livestock combat XP fallback is still present")
-    require("state.is(BlockTags.LOGS)" in wood and "state.is(BlockTags.LEAVES)" in wood,
+    require("BlockTags.LOGS" in wood and "BlockTags.LEAVES" in wood,
             "woodcutting must continue to use generic Minecraft log/leaf tags")
     require("block instanceof CropBlock" in harvest,
             "harvesting must continue to accept modded CropBlock implementations")
