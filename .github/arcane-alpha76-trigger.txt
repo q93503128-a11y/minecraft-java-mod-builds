@@ -1,1 +1,2 @@
 trigger=alpha76-liveplay-ui-earthquake
+issue_kick=32680648015
