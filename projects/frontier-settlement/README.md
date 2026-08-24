@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.45
+## Current version: 0.1.0-alpha.46
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -19,7 +19,8 @@ The current implementation is a broad playable alpha, not the final 1.0 scope. D
 - actual Minecraft ItemStacks remain resource authority;
 - repeated hauling/production/job assignment is automated;
 - players keep exploring, fighting and choosing where the settlement expands;
-- Alpha.45 lets real exploration/conquest feed settlement growth without turning it into a spendable currency or replacing physical resources.
+- Alpha.45 lets real exploration/conquest feed settlement growth without turning it into a spendable currency or replacing physical resources;
+- Alpha.46 makes a qualifying fishing outpost visibly grow a real-wood waterfront landing and offers explicit physical fish trade without creating a second transport economy.
 
 ## Controls
 
@@ -30,7 +31,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.43–45 add no new gameplay key or management dashboard. Alpha.43 exposes compact HUD/notices/Jade context, Alpha.44 extends the existing placement/construction workflow to bounded medium terrain, and Alpha.45 records exploration/conquest automatically from play.
+Alpha.43–46 add no new gameplay key or management dashboard. Alpha.43 exposes compact HUD/notices/Jade context, Alpha.44 extends the existing placement/construction workflow to bounded medium terrain, Alpha.45 records exploration/conquest automatically from play, and Alpha.46 infers and builds waterfront works automatically from the existing fishing-outpost state.
 
 ## Functional building families
 
@@ -52,7 +53,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is inside that range, but this is not scope completion: Alpha.40 added coast/river fishing-trade specialization, Alpha.41 dangerous-region military specialization, Alpha.42 bounded unloaded-work catch-up, Alpha.43 compact status/Jade presentation, Alpha.44 bounded medium-terrain construction, and Alpha.45 exploration/conquest progression without inventing meaningless extra buildings. Large civil engineering, selected-area cut/fill, broader specialized crafting/trade, final soldier presentation and full companion runtime acceptance remain later work.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is inside that range, but this is not scope completion: Alpha.40 added coast/river fishing-trade specialization, Alpha.41 dangerous-region military specialization, Alpha.42 bounded unloaded-work catch-up, Alpha.43 compact status/Jade presentation, Alpha.44 bounded medium-terrain construction, Alpha.45 exploration/conquest progression, and Alpha.46 physical waterfront works/trade without inventing meaningless extra buildings. Large civil engineering, selected-area cut/fill, broader specialized crafting, final soldier presentation and full companion runtime acceptance remain later work.
 
 ## Physical construction
 
@@ -80,7 +81,7 @@ Roads and outposts likewise use physical grading and real hauled resources. Arbi
 
 ## Residents, production and road logistics
 
-- builder, logger, farmer, quarry worker, miner, fishing outpost worker, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, military-outpost sentry and transport roles are implemented;
+- builder, logger, farmer, quarry worker, miner, fishing outpost worker, waterfront trader, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, military-outpost sentry and transport roles are implemented;
 - loaded town production is paced and bounded;
 - outpost production remains specialization-specific and physically grounded;
 - transport workers are persistently assigned to one outpost;
@@ -88,6 +89,9 @@ Roads and outposts likewise use physical grading and real hauled resources. Arbi
 - unloaded route boundaries never force-load or teleport cargo;
 - Alpha.27 tagged road logistics remains the **single authority for outpost transport**;
 - Alpha.41 lets that same transporter carry real food/metal from town back to an active dangerous-region outpost;
+- Alpha.46 lets that same transporter reverse-supply real town wood for an incomplete waterfront when local outpost wood is short, with military food/metal supply always taking precedence;
+- Alpha.46 waterfront construction uses the existing fishing worker, which carries real wood from the physical outpost stockpile and consumes one item per placed pier block;
+- the completed waterfront trade barrel is deliberately separate from ordinary outpost stock: only fish deliberately placed there are sold, so ordinary stockpile fish are never auto-sold;
 - Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority;
 - Alpha.43 derives presentation-only building/outpost/project context from those existing authoritative states. The context payload cannot spend resources, place blocks or become a second settlement ledger;
 - Alpha.45 exploration progress is likewise non-spendable shared progression metadata and does not become a second resource ledger.
@@ -228,7 +232,7 @@ Alpha.40 makes water geography matter without adding a new management screen or 
 - fish are ordinary edible ItemStacks, so the existing Alpha.27 outpost transporter accepts them through the normal food cargo rule and follows the persisted road network to town/cart-station storage;
 - no new route authority, teleport cargo, global water scan, forced chunk loading, emerald generation or abstract trade points are introduced.
 
-The `수변교역` part currently means the fishing commodity participates in the established physical outpost→road→town economy. Dedicated harbor/boat/waterborne-merchant presentation remains later breadth.
+At Alpha.40, `수변교역` meant only that fishing cargo entered the established outpost→road→town economy. Alpha.46 later adds the first physical waterfront landing and explicit local fish-trade barrel without replacing that road authority.
 
 ## Alpha.41 — dangerous-region military outpost
 
@@ -319,9 +323,33 @@ Alpha.45 creates the first direct bridge from the locked external adventure stac
 - legacy settlement-tier routes remain valid exactly as before. Exploration provides alternative accelerator routes: frontier town can be reached at population7 + 2 outposts + mine + quarry + score2, while domain can be reached at population14 + 3 outposts + mine + two farms + score5;
 - the old non-exploration routes (frontier town population8/2 outposts, domain population16/4 outposts) remain accepted, so existing worlds do not lose progression because their exploration list starts empty;
 - `/frontier status` shows unique external structure types, unique conquest types and the bounded score;
+- same-type structure or conquest repeats never increase the shared milestone count;
 - no world-wide locate scan, chunk generation, chunk force-load, teleport, loot minting, companion structure mutation or second resource authority is introduced.
 
 This is progression glue, not a claim that Frontier owns the companion dungeon/boss content. Actual companion structure detection and external-boss breadth remain part of the final full-stack real-play acceptance.
+
+## Alpha.46 — physical waterfront pier and opt-in fish trade
+
+Alpha.46 closes the first missing visual/economic layer of the Alpha.40 fishing overlay without turning water into a second logistics network.
+
+- only an otherwise-general outpost that currently qualifies for the loaded Alpha.40 fishing shoreline can create waterfront works;
+- the broad fishing qualification remains radius12 + at least24 open surface-water columns + a safe dry bank;
+- a pier additionally requires a safe straight already-loaded open-water run beside that bank; invalid/blocked waterfront geometry simply does not receive a pier;
+- one persisted `WaterfrontState` records the outpost id, bank anchor, cardinal water direction and build step in separate auxiliary `SettlementWaterfrontData`; this SavedData is not a resource ledger;
+- the compact landing uses a bounded 12-placement plan: spruce-slab access/deck, three fence posts and one dedicated trade barrel, while the underlying water remains untouched;
+- the existing assigned fishing worker performs construction before starting new fishing work, physically taking real wood from the outpost stockpile in bounded batches and consuming one carried wood per placed waterfront block;
+- if the fishing worker was already carrying fish when waterfront construction activates, that physical cargo is returned to the outpost stockpile before construction pauses ordinary fishing, preventing a worker deadlock or item deletion;
+- if local waterfront wood is short, the **same Alpha.27 outpost transporter** may return to town, physically extract real wood from loaded settlement storage and carry it back along the persisted road;
+- active Alpha.41 military reverse food/metal supply has precedence over waterfront wood supply, and no second route/navigation controller is created;
+- completed waterfront blocks are protected from normal breaking so physically consumed construction wood cannot be reclaimed as a free-resource loop;
+- after completion, a persistent local `수변 상인 #ID` stands at the landing;
+- only cod/salmon deliberately inserted into the dedicated waterfront trade barrel is eligible for trade; ordinary outpost stockpile fish are never auto-sold;
+- one trade consumes **16 real cod/salmon** and inserts **1 real emerald** into that same dedicated barrel, stalling when output has no room;
+- the trade barrel receives compact Jade/context text `대구/연어 16 → 에메랄드 1 · 전용 투입` without adding a new menu or key;
+- `/frontier status` reports loaded fishing outposts, completed landings, the 16→1 recipe and that ordinary stockpile auto-sale is disabled;
+- no boat logistics, teleport inventory, chunk force-load, virtual trade points, remote emerald generation or duplicate transport authority is introduced.
+
+Moving boats/waterborne merchants may still be considered as presentation-only breadth later, but they must never replace the single authority for outpost transport.
 
 ## External content stack
 
@@ -329,7 +357,7 @@ This is progression glue, not a claim that Frontier owns the companion dungeon/b
 
 Current candidate stack includes Terralith + Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat + its libraries, Weapons Expanded, Lootr, Sophisticated Backpacks + Core, Jade and Xaero's Minimap.
 
-Alpha.45 can observe already-loaded external structure registry entries without depending on a companion's Java classes. Structure generation and loot remain entirely owned by those companion/worldgen mods.
+Alpha.45 can observe already-loaded external structure registry entries without depending on a companion's Java classes. Structure generation and loot remain entirely owned by those companion/worldgen mods. Alpha.46 waterfront works are Frontier-owned settlement presentation/economy glue and add no new companion dependency.
 
 The lock deliberately remains `candidate_runtime_lock` until the full client/server set is actually launched together. World-generation entries must be installed before creating that test world.
 
@@ -339,10 +367,10 @@ Xaero marker synchronization is still not claimed. Exact compile investigation a
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–44 source audit plus Alpha.45 exploration/conquest extension;
+1. the complete established Alpha.23–45 source audit plus Alpha.46 physical-waterfront/opt-in-trade extension;
 2. Java 25 clean Gradle build, including compilation against the exact locked Jade 26.2.2 API artifact;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, full companion structure detection, external-boss balance, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require final real Minecraft play acceptance.
+Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, waterfront pathing/site quality, pier reverse-supply pacing, 16→1 fish-trade balance, full companion structure detection, external-boss balance, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require final real Minecraft play acceptance.
