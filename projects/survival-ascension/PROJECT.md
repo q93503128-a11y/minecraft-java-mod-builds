@@ -1,14 +1,24 @@
 # Survival Ascension
 
-- Mod version: `0.46.0-alpha.1`
+- Mod version: `0.47.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1` and older data stay unchanged. Physical freight railheads remain world-block validated; external gear imprint stores only nested item CustomData on the item itself.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1` and older data stay unchanged. 0.47 adds only a Survival-owned optional EntityType tag and bounded kill-credit logic; physical freight railheads remain world-block validated and external gear imprint stores only nested item CustomData on the item itself.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.47 Major External Targets / 외부 강적 원정 연동
+- Locked The Birth of Steve to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`, file `tbos-neoforge-26.2-0.7.0.jar`, SHA-1 `4d55c51685bff4247fa533c925f7641ce4880db3`).
+- Binary audit identified `tbos:hour_cantor` and `tbos:phoenix_guardian` (The Last Curator) as the two TBS entities with the boss-event contract used for this integration. Minotaur is deliberately excluded.
+- Added Survival-owned EntityType tag `survivalascension:expedition_major_targets`; external IDs live only in JSON as `required:false`. Java keeps no TBS registry ID or implementation-class dependency.
+- Normal hostile kills retain the existing +1 regional action. A tagged major target adds exactly +3 `HOSTILES_KILLED` to the current regional directive and, when all existing validation still passes, the active same-region expedition operation.
+- The +3 bypasses `ExpeditionIncidentSystem`, preventing one boss from collapsing an incident objective.
+- Fractured Archive is a separate dimension `tbos:fractured_archive` whose internal biome is `minecraft:the_void`. It is not mapped to Deep/End/another of the nine regions, and active expedition operations still fail on dimension departure.
+- When `currentRegion == null`, a major target creates no fake expedition progress. Combat mastery still values it with the major-target formula: max-health ×2.5, cap600 before the existing equipment XP multiplier. Ordinary targets remain ×1.5, cap200.
+- No new SavedData, packet/protocol, custom block/item/entity, force-load or copied external source/assets.
 
 ## 0.46 Resonant Tool Preservation + Shovel Earthworks
 - Locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary audit found a concrete gap: Resonant Shovel correctly uses `minecraft:shovels`, but Survival Ascension 0.45 only accepted sword/pickaxe/axe/hoe.
