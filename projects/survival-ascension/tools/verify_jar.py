@@ -34,6 +34,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/SurvivalAscension.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionData.class",
         "kr/moonseungjun/survivalascension/world/WorldAscensionProgression.class",
+        "kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.class",
         "data/survivalascension/tags/worldgen/biome/expedition/woodland.json",
         "data/survivalascension/tags/worldgen/biome/expedition/arid.json",
@@ -44,6 +45,7 @@ with zipfile.ZipFile(jar) as zf:
         "data/survivalascension/tags/worldgen/biome/expedition/frozen.json",
         "data/survivalascension/tags/worldgen/biome/expedition/nether.json",
         "data/survivalascension/tags/worldgen/biome/expedition/end.json",
+        "data/survivalascension/tags/entity_type/expedition_major_targets.json",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionData.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class",
         "kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.class",
@@ -97,17 +99,38 @@ with zipfile.ZipFile(jar) as zf:
     ]:
         if name not in names:
             raise SystemExit(f"required JAR entry missing: {name}")
+
     deep_doc = json.loads(zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json").decode("utf-8"))
     deep_ids = {entry.get("id") for entry in deep_doc.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
     if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
         raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
 
+    major_doc = json.loads(zf.read("data/survivalascension/tags/entity_type/expedition_major_targets.json").decode("utf-8"))
+    if major_doc.get("replace") is not False:
+        raise SystemExit("major-target tag must merge rather than replace")
+    major_entries = [entry for entry in major_doc.get("values", []) if isinstance(entry, dict)]
+    major_ids = {entry.get("id") for entry in major_entries}
+    if major_ids != {"tbos:hour_cantor", "tbos:phoenix_guardian"}:
+        raise SystemExit("audited TBS major-target set drifted in packaged JAR")
+    if not major_entries or not all(entry.get("required") is False for entry in major_entries):
+        raise SystemExit("TBS major-target entries must remain optional in packaged JAR")
+
     affix_class = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
     mining_class = zf.read("kr/moonseungjun/survivalascension/mining/MiningProgression.class")
+    compat_class = zf.read("kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.class")
+    combat_class = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    expedition_class = zf.read("kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class")
     if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:
         raise SystemExit("compiled shovel affix bridge missing")
     if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
         raise SystemExit("compiled shovel Mining bridge missing")
+    if b"expedition_major_targets" not in compat_class or b"isMajorExpeditionTarget" not in compat_class:
+        raise SystemExit("compiled major-target compatibility bridge missing")
+    if b"isMajorExpeditionTarget" not in combat_class or b"grantMajorTargetBonus" not in combat_class:
+        raise SystemExit("compiled major-target combat reward bridge missing")
+    if b"grantMajorTargetBonus" not in expedition_class or b"HOSTILES_KILLED" not in expedition_class:
+        raise SystemExit("compiled major-target expedition bridge missing")
+
     for notice, line in [
         ("META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt", "Copyright (c) 2026 balovich-matje"),
         ("META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt", "Copyright (c) 2026 Kestalkayden"),
@@ -138,6 +161,7 @@ print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("external_equipment_imprint_runtime=present")
 print("bop_expedition_biome_bridge=present")
+print("major_external_target_runtime=present")
 print("standard_shovel_affix_bridge=present")
 print("shovel_mining_earthworks_runtime=present")
 print("physical_freight_runtime=present")
