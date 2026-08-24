@@ -20,13 +20,11 @@ Settlement scale progression:
 
 `pioneer camp -> hamlet -> village -> frontier town -> domain`
 
-The settlement becomes deeper while direct management stays simple. Minecraft exploration, gathering, combat and choosing where the settlement expands remain foreground play.
-
 Hard identity rules:
 
-- one shared settlement per world/server;
+- One world/server has one shared settlement.
 - server authoritative;
-- real Minecraft ItemStacks are resource authority; HUD/cache/context are not authority;
+- Resources remain physical Minecraft items; HUD/cache/context are not authority;
 - player-made buildings are never scanned into functional Frontier buildings;
 - repeated hauling/production/job assignment is automated;
 - loaded areas should visibly move/work;
@@ -50,24 +48,26 @@ Normal gameplay controls are fixed:
 
 - `B`: settlement palette;
 - `R`: rotate current building placement;
-- `Enter`: confirm the active building/road/outpost placement;
-- `Backspace`: reset/cancel the road start selection step.
+- `Enter`: confirm;
+- `Backspace`: reset/cancel.
 
 Avoid E/Q/F/number/Shift/Ctrl/Space/chat/camera conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Intent is expressed physically wherever possible:
+Physical intent rules:
 
 - market sale: eligible relic in market barrel;
 - normal workshop repair: eligible damaged external weapon in service barrel;
-- advanced forging: eligible external weapon + expedition relic in advanced commission barrel;
+- Alpha.39 first advanced forge: unenchanted eligible external weapon + expedition relic in advanced commission barrel;
+- Alpha.47 domain reforge: already-enchanted eligible external weapon + two relics in the same commission barrel;
 - construction office, cart station, watchtower and barracks operate without separate management dashboards;
-- Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu;
-- Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no troop-management menu;
+- Alpha.40 coast/river fishing is inferred from loaded world geography;
+- Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence;
 - Alpha.42 unloaded catch-up is bounded bookkeeping of elapsed work time only;
-- Alpha.43 status context surfaces through compact HUD/notifications/Jade instead of a new management screen;
+- Alpha.43 status context uses compact HUD/notifications/Jade;
 - Alpha.44 medium terrain work stays inside ordinary placement/construction;
 - Alpha.45 structure discovery/conquest milestones are observed automatically from normal exploration/combat;
-- Alpha.46 waterfront works are inferred from an already-qualifying fishing outpost and are built/operated without a new key or waterfront management panel.
+- Alpha.46 waterfront works are inferred from a qualifying fishing outpost and use the same road economy;
+- Alpha.47 adds no key, recipe dashboard, crafting currency or 16th building.
 
 Do not grow the project into tax rates, dozens of happiness stats, family schedules, per-worker priority tables, giant research menus or manual hauling routes.
 
@@ -78,8 +78,8 @@ One world/server has one shared settlement and territory state.
 - settlement resources/buildings/population/roads/outposts/progression are shared;
 - server is authoritative;
 - clients render state and submit bounded requests;
-- presentation snapshots/notifications/Jade context are not gameplay authority and cannot spend resources or mutate progression;
-- Alpha.45 exploration records are shared non-spendable progression metadata, not per-player currency;
+- presentation snapshots/notifications/Jade context are not gameplay authority;
+- Alpha.45 exploration records are shared non-spendable progression metadata;
 - no independent per-player settlements in planned scope;
 - no internal player politics/tax-distribution layer in initial scope.
 
@@ -100,7 +100,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use Frontier blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–46 keep that number while deepening territory, simulation, terrain, status, exploration and waterfront systems. Do not add meaningless 16th–20th buildings merely to inflate the count.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–47 keep that number while deepening territory, simulation, terrain, status, exploration, waterfront and high-tier crafting systems. Do not add meaningless 16th–20th buildings merely to inflate the count.
 
 Current families are exactly:
 
@@ -134,16 +134,13 @@ Terrain rules after Alpha.44:
 
 - footprint height span 0–2 uses the established small visible grading path;
 - span 3–4 is bounded medium terrain and placement feedback explicitly says `지형 공사 포함`;
-- span above 4 or unsafe block-entity/fluid/unsupported terrain is rejected rather than flattening a mountain;
+- span above 4 or unsafe block-entity/fluid/unsupported terrain is rejected;
 - medium cut is natural-ground only and bounded to at most 3 blocks relative to project grade;
 - support/fill remains bounded to 3-block support depth;
 - exposed outer-edge support depth >=2 gets visible cobblestone retaining/foundation treatment;
 - retaining cobblestone is never free: real settlement stone is physically hauled/staged/consumed before each retaining cell;
 - additional retaining stone is bounded to 96/project and included in approval/start resource checks;
 - no loose-drop terrain farming from project approval;
-- project grading must not create recoverable free economic materials;
-- roof-before-support and visually floating foundations are invalid;
-- enclosed completed buildings need deliberate windows/lighting;
 - arbitrary selected-area cut/fill, tunnels, large ravine civil works and monumental terraforming remain unfinished.
 
 Construction presentation invariant: **builder walks from actual settlement storage carrying real wood/stone stacks** and visibly stages/uses them at the site.
@@ -151,8 +148,6 @@ Construction presentation invariant: **builder walks from actual settlement stor
 Tall structures reuse persisted scaffold/building workflow; no instant-placement exception.
 
 ### Alpha.38 construction-office rule
-
-The construction office is a physical logistics accelerator, not an abstract build-speed buff and not a second builder authority.
 
 - unlock: village tier + one warehouse;
 - 13×9, wood112, stone64;
@@ -194,11 +189,9 @@ Alpha.37 barracks rules:
 - 3 persistent military slots per barracks;
 - each refill costs real food8 + metal2;
 - military capacity is separate from civilian population/housing;
-- soldier assignment uses barracks+slot tags, not UUID ordering;
 - unloaded barracks are not interpreted as dead soldiers;
 - forced creeper pursuit is excluded;
-- tagged Iron Golem combat proxies drop no iron/resources;
-- old free high-tier guard-post reinforcement backend stays removed.
+- tagged Iron Golem combat proxies drop no iron/resources.
 
 Alpha.41 remote military rules:
 
@@ -212,9 +205,9 @@ Alpha.41 remote military rules:
 - danger loss clears forced target and returns the sentry home rather than despawning it;
 - external hostiles using the normal `Monster` hierarchy are soft-compatible without hard companion code.
 
-Current regular soldier/sentry bodies are Iron Golem proxies. Humanoid soldier visuals, external weapon loadouts, formations and class variety remain later presentation/combat-depth work.
+Current regular soldier/sentry bodies are Iron Golem proxies. **Humanoid soldier visuals, external weapon loadouts, formations and class variety remain the highest-value presentation/combat-depth gap after Alpha.47.** This work must not create free equipment, inflate civilian population or hard-depend on a companion Java class.
 
-Construction-office and advanced-forging specialists are building-bound service NPCs and do not inflate civilian population/housing. Fishing workers, waterfront traders and military-outpost sentries follow the same service-unit convention. Future citizen-assignment cleanup must not double-count population or create free tier progression.
+Construction-office and advanced-forging specialists are building-bound service NPCs and do not inflate civilian population/housing. Fishing workers, waterfront traders and military-outpost sentries follow the same service-unit convention.
 
 No family/children simulation in planned scope.
 
@@ -230,7 +223,7 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 - service/commission/trade barrels are not generic shared storage unless their system explicitly says so;
 - Alpha.45 exploration score is not a resource and can never satisfy an ItemStack cost.
 
-Distant logistics remains spatial. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
+**Transport workers belong to a specific outpost**, follow persisted road-network waypoints, carry actual cargo and **pause at unloaded route boundaries** rather than teleporting or force-loading.
 
 Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. Do not reintroduce generic-name/UUID pairing or a second transport navigation/economy controller.
 
@@ -245,15 +238,12 @@ Alpha.27 tagged road logistics remains the **single authority for outpost transp
 - full station falls back to another valid storage target;
 - no teleport cargo or new route authority.
 
-A future wagon entity may be presentation/vehicle behavior only and must not become duplicate economy simulation.
-
 ### Alpha.40 fishing-trade cargo rule
 
 - only an otherwise-general outpost may gain the dynamic fishing overlay;
 - qualification uses already-loaded local world state: radius12, at least24 open surface-water columns and a safe dry bank;
 - fishing produces ordinary cod/salmon ItemStacks into the existing outpost stockpile;
 - because fish are food items, Alpha.27 logistics transports them without a new route controller;
-- at Alpha.40, `수변교역` meant catch participation in the physical outpost→road→town economy;
 - no forced chunks or abstract fish/trade currency.
 
 ### Alpha.41 military reverse-supply rule
@@ -261,15 +251,12 @@ A future wagon entity may be presentation/vehicle behavior only and must not bec
 - dangerous-region military role never gets a separate long-distance transporter;
 - the existing outpost-assigned worker remains the route/navigation authority;
 - while military role is active, that worker can return empty to town, physically extract food/metal and carry it back along the same road;
-- physical outpost stockpile is authority for sentry recruitment;
-- military supply trip state is cleared when danger stops qualifying;
 - no teleport cargo, abstract supply points, forced chunks or offline replenishment.
 
 ### Alpha.42 bounded unloaded-work rule
 
 `SettlementDeferredOutpostData` stores bounded elapsed work-time debt, never items or cargo.
 
-- sampling occurs only during normal server-running work time;
 - production/logistics debt each cap at24,000 ticks/outpost;
 - persisted lumber/quarry/mining/agriculture may bank production time while unloaded;
 - a general outpost may bank fishing time only from its last loaded verified fishing overlay;
@@ -285,16 +272,13 @@ Alpha.46 is a physical/local extension of Alpha.40, not a water logistics replac
 
 - only a qualifying loaded fishing shoreline may gain a waterfront landing;
 - persisted `WaterfrontState`/`SettlementWaterfrontData` stores only anchor/direction/build-step metadata and is not a resource ledger;
-- the fishing worker builds the bounded landing one block at a time using **real wood from the outpost stockpile**;
-- if the worker already carries fish, that cargo is physically returned to the stockpile before construction pauses ordinary fishing;
-- if local construction wood is short, the **same existing Alpha.27 transporter** may reverse-supply real wood from loaded town storage;
+- the fishing worker builds the bounded landing one block at a time using real wood from the outpost stockpile;
+- if local construction wood is short, the same existing Alpha.27 transporter may reverse-supply real wood from loaded town storage;
 - military food/metal reverse supply has precedence over waterfront wood reverse supply;
-- the landing uses spruce slabs, three fence posts and one dedicated trade barrel while leaving the water in place;
-- completed waterfront blocks are protected from normal breaking so consumed construction wood is not converted into a free-resource loop;
-- the local persistent `수변 상인 #ID` is presentation/operation for the dedicated barrel, not a second long-distance merchant/logistics authority;
-- only cod/salmon deliberately put in that dedicated barrel are sold;
+- completed waterfront blocks are protected from normal breaking;
+- only cod/salmon deliberately put in the dedicated trade barrel are sold;
 - ordinary outpost stockpile is never auto-sold;
-- trade recipe is **16 real cod/salmon -> 1 real emerald**, inserted into the same barrel and stalled if output has no room;
+- trade recipe is **16 real cod/salmon -> 1 real emerald**;
 - no boat logistics, teleport inventory, force-load, virtual trade points or remote abstract emerald balance.
 
 ## 8. Roads, outposts and territory
@@ -317,37 +301,28 @@ Alpha.35 bounded terrain adaptation:
 
 Alpha.44 retaining work currently applies to functional building sites, not arbitrary road cliff engineering. Large ravine bridges, tunnels and monumental civil engineering remain later breadth.
 
-No early teleport network; roads/logistics must retain meaning.
-
 Implemented outpost specializations/overlays:
 
 - lumber;
 - quarry;
 - mining;
 - agriculture;
-- Alpha.40 coast/river fishing-trade overlay for qualifying general outposts;
-- Alpha.41 dangerous-region military overlay for qualifying general outposts;
+- Alpha.40 coast/river fishing-trade overlay;
+- Alpha.41 dangerous-region military overlay;
 - Alpha.42 bounded unloaded-work catch-up over established specialization/route evidence;
-- Alpha.46 persisted physical waterfront landing + dedicated local fish trade for qualifying fishing outposts.
+- Alpha.46 persisted physical waterfront landing + dedicated local fish trade.
 
-Still required/partial by original scope:
+Still partial:
 
 - better biome-aware specialization with companion worldgen;
-- moving boats/waterborne merchant motion may be added only as presentation/value breadth and must not replace road logistics;
-- Alpha.42 catch-up still needs real-play pacing/reload/exploit acceptance.
+- moving boats/waterborne merchant motion only if presentation value justifies it and it never replaces road logistics;
+- long real-play pacing/reload/exploit acceptance.
 
 **tier-visible public works** may make established territory more readable, but only in loaded safe locations and without overwriting player work or generating farmable free blocks.
 
-## 9. Combat and exploration
+## 9. Combat, exploration and high-tier crafting
 
 This is not a constant wave-defense game.
-
-- guard posts handle routine local threats;
-- watchtowers extend loaded-area observation/response;
-- barracks provide supplied formal town garrison;
-- dangerous-region outposts provide one supplied remote foothold sentry only while loaded world evidence justifies the role;
-- occasional meaningful threats are allowed;
-- do not spam mandatory waves.
 
 Exploration content should include ruins, mines, camps, nests, structures, dungeons, caravans, rare resources, bosses and rare NPCs primarily through the external content stack where strong implementations already exist.
 
@@ -366,13 +341,64 @@ Frontier connects exploration outcomes back into settlement growth instead of re
 - shared SavedData bounds discovered structure types to64 and conquest types to32;
 - score is `min(8, unique structures + unique conquest types*3)`;
 - score is non-spendable metadata, never ItemStack/resource authority;
-- frontier-town alternate route: population7 +2 outposts + mine + quarry + score2;
 - legacy frontier-town route remains population8 +2 outposts + mine + quarry;
-- domain alternate route: population14 +3 outposts + mine +2 farms + score5;
+- alternate frontier-town route is population7 +2 outposts + mine + quarry + score2;
 - legacy domain route remains population16 +4 outposts + mine +2 farms;
+- alternate domain route is population14 +3 outposts + mine +2 farms + score5;
 - no loot generation, resource minting, companion mutation, teleport, chunk force-load or global radar.
 
-Future exploration work may deepen rare-resource/NPC/boss-specific rewards, but Frontier must remain progression glue and companions must remain adventure-content authority.
+### Alpha.39 first advanced forge
+
+Role split begins with:
+
+`market = relic -> trade value`
+
+`normal workshop = metal -> external weapon repair`
+
+`advanced workshop = external weapon + relic + metal -> high-tier forge`
+
+The Alpha.39 path remains intact:
+
+- frontier-town + workshop + market unlocks the advanced workshop;
+- player explicitly inserts one recognized **unenchanted** external damageable weapon + one expedition relic into the protected commission barrel;
+- assigned specialist physically fetches real metal from settlement storage;
+- cost is relic1 + metal4;
+- power30 compatible enchanting-table result is generated and validated before mutation;
+- failure consumes nothing;
+- success fully repairs the same weapon and applies the compatible result;
+- no shared-storage weapon/relic auto-scan and no hard Weapons Expanded class/item dependency.
+
+### Alpha.47 domain relic reforge
+
+Alpha.47 deepens the same building instead of inventing a new crafting family or currency.
+
+- unlock only at `DOMAIN`;
+- input is one **already-enchanted Frontier-recognized external weapon** deliberately placed in the same protected advanced-workshop commission barrel;
+- cost is **2 real expedition relics + 8 real metal**;
+- the same advanced specialist physically fetches metal from loaded settlement storage in bounded trips;
+- power40 candidates are limited to enchanting-table entries the weapon supports;
+- an addition must not already exist on the weapon and must be compatible with the entire existing enchantment set;
+- additions are applied only to a copy;
+- result must be a real improvement;
+- every existing enchantment must remain at the same or higher level;
+- **existing enchantments are never removed or downgraded**;
+- if there is no compatible new improvement, **no relic or metal is consumed**;
+- successful result is fully repaired, then metal8 + relic2 are consumed and the same weapon is replaced by the validated copy;
+- direct enchantment-map replacement is forbidden;
+- no hard companion Java class/item dependency;
+- no new key, screen, crafting point, virtual currency, chunk force-load, teleport inventory or generic storage commission scan.
+
+Current high-tier role split:
+
+`market = relic -> trade value`
+
+`normal workshop = metal -> repair`
+
+`first advanced forge = unenchanted external weapon + relic1 + metal4 -> compatible power30 forge`
+
+`domain reforge = already-enchanted external weapon + relic2 + metal8 -> compatible new enchantment additions only`
+
+Further specialized crafting is allowed only when a genuinely distinct exploration material/use-case appears; do not manufacture recipes merely for breadth count.
 
 ## 10. External content stack
 
@@ -395,6 +421,7 @@ Rules:
 - common/additive tags are preferred over hard-coded companion classes;
 - optional companion API code must stay isolated;
 - Alpha.45 soft registry observation must not generate or scan remote companion structures;
+- Alpha.47 weapon reforging operates on Frontier-recognized external weapons and does not add a hard Weapons Expanded class/item dependency;
 - reuse/license boundaries stay recorded in `EXTERNAL_CONTENT_REGISTER.md`;
 - the lock remains `candidate_runtime_lock` until all entries launch together in the target client/server environment.
 
@@ -409,9 +436,9 @@ Xaero:
 - Alpha.43 only shifts the Frontier HUD below the expected top-left minimap area;
 - exact locked Xaero's Minimap 26.4.2 compile investigation proved the historical public `WaypointsManager` API is absent;
 - do not fake completion by using version-internal waypoint sets, reflection or mixin injection;
-- settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
+- true Xaero settlement/outpost markers only if a stable supported API/seam appears.
 
-## 11. Implemented bridges by milestone
+## 11. Implemented milestone summary
 
 ### Alpha.31–39
 
@@ -425,15 +452,7 @@ Xaero:
 - Alpha.38: construction office with physical staging runner;
 - Alpha.39: advanced workshop commission, relic1 + metal4 + external weapon -> validated power30 compatible forge.
 
-Role split remains fixed:
-
-`market = relic -> trade value`
-
-`normal workshop = metal -> external weapon repair`
-
-`advanced workshop = external weapon + relic + metal -> high-tier forge`
-
-### Alpha.40–46
+### Alpha.40–47
 
 - Alpha.40: loaded shoreline fishing overlay, real cod/salmon to physical outpost stockpile and existing road economy;
 - Alpha.41: loaded dangerous-region military overlay, one supplied sentry and reverse food/metal on the same transporter;
@@ -441,7 +460,8 @@ Role split remains fixed:
 - Alpha.43: compact project/status UX + optional Jade context + Xaero HUD collision avoidance;
 - Alpha.44: bounded span3–4 medium terrain with real retaining stone;
 - Alpha.45: unique external structure/conquest milestones feeding alternate tier-growth routes;
-- Alpha.46: persisted real-wood waterfront landing, same-transporter wood reverse supply, dedicated opt-in 16 fish -> 1 emerald local trade and waterfront Jade/status context.
+- Alpha.46: persisted real-wood waterfront landing, same-transporter wood reverse supply, dedicated opt-in 16 fish -> 1 emerald local trade;
+- Alpha.47: domain-only second-pass relic reforge for already-enchanted recognized external weapons, preserving all old enchantments and consuming nothing on no-improvement.
 
 ## 12. UI and information hierarchy
 
@@ -462,7 +482,8 @@ Current hierarchy:
 - Jade present: crosshair-local infrastructure title + one detail/progress line;
 - Xaero present: Frontier HUD moves below minimap region;
 - exploration milestones: rare event messages + `/frontier status`, not a quest dashboard;
-- Alpha.46 waterfront trade: physical barrel + Jade/status text, not a separate trade screen.
+- waterfront trade: physical barrel + Jade/status text, not a separate trade screen;
+- Alpha.47 reforge: same physical commission barrel + compact status line, not a crafting screen.
 
 Still partial: richer material/progress detail for some service states and true Xaero map synchronization.
 
@@ -494,7 +515,7 @@ Optional companion rule:
 - isolate optional API references under compat boundaries;
 - if no stable API exists, prefer honest partial integration over brittle reflection/mixins that risk core boot failure.
 
-## 14. Current playable slice after Alpha.46
+## 14. Current playable slice after Alpha.47
 
 The playable slice now includes:
 
@@ -516,7 +537,9 @@ The playable slice now includes:
 - Alpha.45 unique external-structure/conquest milestones feeding alternate shared tier routes;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
-- physical market, staffed repair workshop and explicit rare-material advanced forging;
+- physical market and staffed repair workshop;
+- Alpha.39 first rare-material advanced forge;
+- Alpha.47 domain relic reforge preserving existing enchantments;
 - cart-station freight hub;
 - climbable watchtower response;
 - supplied barracks regular garrison.
@@ -527,18 +550,19 @@ This is **not** original v0.2 completion. `COMPLETION_GAP_AUDIT.md` remains auth
 
 Unless real-play regression overrides them:
 
-1. broader high-tier recipe/specialized crafting only where exploration materials justify it;
-2. humanoid/weaponized soldier presentation where it improves the Better Combat / Weapons Expanded stack;
-3. selected-area cut/fill and larger civil engineering with strict player-build/resource-exploit protection;
-4. deeper companion exploration rewards/rare NPC or boss-specific bridges only when soft, non-farmable and meaningful;
-5. better biome-aware outpost specialization with companion terrain where a stable data seam exists;
+1. **humanoid/weaponized soldier presentation** using a soft-compatible equipment path that preserves supplied military costs and does not create free weapons;
+2. selected-area cut/fill and larger civil engineering with strict player-build/resource-exploit protection;
+3. deeper companion exploration rewards/rare NPC or boss-specific bridges only when soft, non-farmable and meaningful;
+4. better biome-aware outpost specialization with companion terrain where a stable data seam exists;
+5. additional high-tier specialized crafting only when a genuinely distinct exploration material/use-case exists after Alpha.47;
 6. long survival + two-player multiplayer acceptance;
 7. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
 8. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance;
 9. Alpha.46 waterfront pathing/site quality/reverse-supply/trade-balance acceptance;
-10. full `COMPANION_LOCK.json` fresh-world client/server runtime at the final chosen test point;
-11. true Xaero settlement/outpost markers only if a stable supported API/seam appears;
-12. moving boat/waterborne merchant behavior only if it adds visible value while remaining presentation/local behavior, never a second logistics authority.
+10. Alpha.47 external-weapon reforge compatibility/no-loss/duplicate-consumption acceptance;
+11. full `COMPANION_LOCK.json` fresh-world client/server runtime at the final chosen test point;
+12. true Xaero settlement/outpost markers only if a stable supported API/seam appears;
+13. moving boat/waterborne merchant behavior only if it adds visible value while remaining presentation/local behavior, never a second logistics authority.
 
 ## 16. Real-play acceptance focus
 
@@ -559,18 +583,18 @@ Automated CI is not a substitute for Minecraft play. At the planned final/test-w
 - exploration score persistence/cap8/non-spendability and legacy tier routes;
 - Alpha.40 shoreline qualification, fishing movement/catch and invalid-puddle rejection;
 - Alpha.46 qualifying shoreline builds one landing from real wood, save/reload preserves build step, blocked/unsafe shoreline does not overwrite terrain;
-- fishing worker returns pre-existing fish cargo before construction and does not deadlock;
-- local wood shortage makes the same road transporter bring town wood physically, while active military food/metal supply remains higher priority;
-- completed waterfront blocks cannot be broken into a free construction-material loop;
-- only the dedicated trade barrel sells fish; normal outpost stock never auto-sells;
-- exactly 16 real cod/salmon become one real emerald only when barrel output has room;
-- waterfront trader does not duplicate across reload and Jade/status text matches state;
+- only the dedicated trade barrel sells fish and exactly16 real fish become one real emerald when output has room;
 - deferred production/logistics debt cap24,000, real-resource gating, max64 catch-up pickup and no server-off downtime catch-up;
 - dangerous-region military activation, one sentry, no iron drop, reverse supply and stand-down;
-- market vs workshop vs advanced-forge intent separation;
-- advanced-workshop compatibility/no-loss failure;
+- market vs workshop vs first advanced forge vs domain reforge intent separation;
+- Alpha.39 unenchanted forge no-loss failure;
+- Alpha.47 already-enchanted external weapon requires domain + relic2 + metal8;
+- Alpha.47 no compatible addition consumes nothing;
+- Alpha.47 successful reforge never removes or downgrades any pre-existing enchantment;
+- Alpha.47 repeated reforges cannot consume on a no-improvement state;
 - watchtower/barracks replacement costs;
-- two-player shared state/storage/construction/logistics/exploration/waterfront behavior;
+- future humanoid soldier presentation does not mint equipment or duplicate military slots;
+- two-player shared state/storage/construction/logistics/exploration/waterfront/reforge behavior;
 - full companion-stack fresh world.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
