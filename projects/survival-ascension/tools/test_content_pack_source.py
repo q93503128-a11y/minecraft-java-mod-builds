@@ -52,12 +52,20 @@ def main() -> None:
     require("overrides/mods/" in builder, "Survival Ascension JAR must be packed as an override")
     require("verify_required_dependencies" in builder, "required dependency validation missing")
     require("modrinth.index.json" in builder, "mrpack index creation missing")
+    require('TARGET_LOADER = "neoforge"' in builder, "target loader must be explicit")
+    require("choose_file(version: dict, loader: str)" in builder, "loader-aware file selection missing")
+    require("loader in str(entry.get(\"filename\", \"\")).lower()" in builder,
+            "multi-loader versions must select a loader-marked artifact")
+    require('if "fabric" in lowered and TARGET_LOADER not in lowered:' in builder,
+            "wrong-loader artifact rejection missing")
+    require("wrong-loader artifact" in builder, "built pack wrong-loader self-check missing")
     require("placeholder" not in plan.lower(), "modpack plan is still a placeholder")
     require("placeholder" not in matrix.lower(), "compatibility matrix is still a placeholder")
     require("여러 JAR을 직접 찾지 않는다" in matrix, "one-import player UX contract missing")
 
     print("content_pack_source_audit=PASS")
     print(f"locked_external_mods={len(mods)}")
+    print("loader_specific_artifact_selection=PASS")
     print("skill_xp_normalization=PASS")
 
 

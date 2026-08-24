@@ -22,6 +22,7 @@ DEFAULT_LOCK = ROOT / "modpack" / "content-lock.json"
 MODRINTH_API = "https://api.modrinth.com/v2/version/{}"
 USER_AGENT = "SurvivalAscension-ModpackBuilder/0.42.1 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
 ALLOWED_DOWNLOAD_HOSTS = ("https://cdn.modrinth.com/",)
+TARGET_LOADER = "neoforge"
 
 
 def fail(message: str) -> None:
@@ -47,10 +48,26 @@ def fetch_version(version_id: str) -> dict:
         fail(f"Modrinth metadata fetch failed for {version_id}: {exc}")
 
 
-def choose_file(version: dict) -> dict:
+def choose_file(version: dict, loader: str) -> dict:
     files = version.get("files") or []
     if not files:
         fail(f"version {version.get('id')} has no files")
+
+    # Some Modrinth version records publish Fabric and NeoForge artifacts together.
+    # Never trust the record-level loader list or a cross-loader `primary` flag to
+    # identify the correct binary. Prefer an explicitly loader-marked filename.
+    marked = [entry for entry in files if loader in str(entry.get("filename", "")).lower()]
+    if marked:
+        primary = [entry for entry in marked if entry.get("primary")]
+        return primary[0] if primary else marked[0]
+
+    loaders = {str(value).lower() for value in (version.get("loaders") or [])}
+    if len(loaders) > 1:
+        fail(
+            f"version {version.get('id')} serves multiple loaders {sorted(loaders)} "
+            f"but no {loader}-marked file could be selected safely"
+        )
+
     primary = [entry for entry in files if entry.get("primary")]
     return primary[0] if primary else files[0]
 
@@ -63,16 +80,19 @@ def validate_locked_mod(lock_entry: dict, version: dict, minecraft: str) -> dict
         fail(f"project id mismatch for {lock_entry['name']}")
     if minecraft not in (version.get("game_versions") or []):
         fail(f"{lock_entry['name']} does not declare Minecraft {minecraft}")
-    if "neoforge" not in (version.get("loaders") or []):
-        fail(f"{lock_entry['name']} does not declare NeoForge")
+    if TARGET_LOADER not in (version.get("loaders") or []):
+        fail(f"{lock_entry['name']} does not declare {TARGET_LOADER}")
 
-    file = choose_file(version)
+    file = choose_file(version, TARGET_LOADER)
     hashes = file.get("hashes") or {}
     sha1 = hashes.get("sha1")
     sha512 = hashes.get("sha512")
     url = file.get("url", "")
     filename = file.get("filename", "")
     size = file.get("size")
+    lowered = filename.lower()
+    if "fabric" in lowered and TARGET_LOADER not in lowered:
+        fail(f"{lock_entry['name']} selected the wrong loader file: {filename}")
     if not sha1 or not sha512:
         fail(f"{lock_entry['name']} is missing sha1/sha512 hashes")
     if not any(url.startswith(prefix) for prefix in ALLOWED_DOWNLOAD_HOSTS):
@@ -180,11 +200,16 @@ def build(lock_path: Path, survival_jar: Path, output: Path) -> None:
         parsed = json.loads(archive.read("modrinth.index.json").decode("utf-8"))
         if parsed.get("formatVersion") != 1 or parsed.get("dependencies", {}).get("minecraft") != lock["minecraft"]:
             fail("built pack index failed self-check")
+        for entry in parsed.get("files", []):
+            name = str(entry.get("path", "")).lower()
+            if "fabric" in name and TARGET_LOADER not in name:
+                fail(f"built pack self-check found a wrong-loader artifact: {entry.get('path')}")
 
     print(f"mrpack={output}")
     print(f"external_mods={len(files)}")
     print(f"minecraft={lock['minecraft']}")
     print(f"neoforge={lock['neoforge']}")
+    print(f"target_loader={TARGET_LOADER}")
     print(f"survival_jar_sha256={sha256(survival_jar)}")
     print(f"mrpack_sha256={sha256(output)}")
 
