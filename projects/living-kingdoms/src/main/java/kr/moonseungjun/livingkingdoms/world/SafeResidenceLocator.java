@@ -28,21 +28,24 @@ public final class SafeResidenceLocator {
     }
 
     /**
-     * Returns a verified authored apartment interior. Never creates a floor, clears a roof, accepts a
-     * rooftop, or falls back to an arbitrary walkable block. Null means the urban residence is not
-     * ready yet and placement must stay in the loading stage and retry later.
+     * Returns the verified authored apartment interior in the real tenement nearest the intended
+     * citizen-quarter anchor. While that exact building is still completing, only its footprint is
+     * transiently retained and this method returns null. It never creates a floor, clears a roof,
+     * accepts a rooftop, or switches to some unrelated walkable block.
      */
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
         BlockPos preferred = preferredResidence(level, homelandId, residenceId);
-        return ExternalUrbanFabricBuilder.entrances().stream()
-                .filter(entrance -> "tenement".equals(entrance.role()))
-                .sorted(Comparator.comparingLong(entrance -> distanceSquared(
-                        entrance.x(), entrance.z(), preferred.getX(), preferred.getZ())))
-                .filter(entrance -> ErdenUrbanResidenceResolver.isResidenceReady(level, entrance))
-                .map(entrance -> ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0))
-                .filter(target -> isWalkable(level, target))
-                .findFirst()
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = ExternalUrbanFabricBuilder.entrances().stream()
+                .filter(candidate -> "tenement".equals(candidate.role()))
+                .min(Comparator.comparingLong(candidate -> distanceSquared(
+                        candidate.x(), candidate.z(), preferred.getX(), preferred.getZ())))
                 .orElse(null);
+        if (entrance == null) return null;
+
+        ErdenPlayerResidenceChunkRetainer.retain(level, entrance);
+        if (!ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) return null;
+        BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
+        return isWalkable(level, target) ? target : null;
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
