@@ -61,8 +61,11 @@ final class ClientSmokeDiagnostics {
             if (loadingScreen == null || !loadingScreen.allRequiredControlsFit()) {
                 throw new IllegalStateException("Realm loading screen extends outside the current client viewport");
             }
+            if (!RealmLoadingScreen.stagingCompletionGuardPassForTest()) {
+                throw new IllegalStateException("Realm loading screen can close while the player is still staged");
+            }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true viewport={}x{} controls_fit=true staging_completion_guard=true",
+                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true viewport={}x{} controls_fit=true staging_completion_guard=true completion_requires_exit=true",
                     loadingScreen.width, loadingScreen.height
             );
         }
