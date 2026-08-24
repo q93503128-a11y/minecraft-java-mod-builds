@@ -230,7 +230,7 @@ Resources remain physical Minecraft items. HUD numbers are a cached view, not au
 - service/commission/trade barrels are not generic shared storage unless their system explicitly says so;
 - Alpha.45 exploration score is not a resource and can never satisfy an ItemStack cost.
 
-Distant logistics remains spatial. Transport workers belong to one outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
+Distant logistics remains spatial. Transport workers belong to a specific outpost, follow persisted road-network waypoints, carry actual cargo and pause at unloaded route boundaries rather than teleporting or force-loading.
 
 Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. Do not reintroduce generic-name/UUID pairing or a second transport navigation/economy controller.
 
