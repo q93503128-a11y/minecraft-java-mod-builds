@@ -16,8 +16,9 @@ def forbid(source, tokens, label):
         if token in source: raise SystemExit(f'{label}: {token}')
 
 # Re-bind the Alpha.23-48 cumulative chain to Alpha.50. Alpha.49's historical audit file is retained
-# unchanged, but its 9x9/fill<=cut limits are intentionally superseded. The assertions below carry
-# forward Alpha.49's networking/key/protection/single-authority contracts while checking Alpha.50 rules.
+# unchanged. The inherited chain is executed against current source/docs, but exact assertions that
+# describe Alpha.49's intentionally superseded civil interaction wording are adapted here rather
+# than deleting/weakening any historical audit file or putting stale wording back into current docs.
 if not ALPHA49.exists():
     raise SystemExit('historical Alpha.49 source audit must remain in the repository')
 alpha48_source = text(ALPHA48)
@@ -25,8 +26,22 @@ alpha48_source = alpha48_source.replace("print('Frontier Settlement alpha.48 sou
 alpha48_source = alpha48_source.replace("print('Frontier Settlement alpha.48 canonical docs audit: PASS')", 'pass')
 alpha48_source = alpha48_source.replace('0.1.0-alpha.48', '0.1.0-alpha.50')
 alpha48_source = alpha48_source.split('# Current canonical docs are part of Alpha.48 acceptance.')[0]
-namespace = {'__file__': str(ALPHA48), '__name__': '__main__'}
-exec(compile(alpha48_source, str(ALPHA48), 'exec'), namespace, namespace)
+
+_original_read_text = Path.read_text
+def _alpha50_audit_read_text(path, *args, **kwargs):
+    source = _original_read_text(path, *args, **kwargs)
+    if path.name.startswith('test_alpha') and path.name.endswith('_source.py'):
+        source = source.replace(
+            '`Backspace`: reset road start or Alpha.49 civil-work first corner',
+            '`Backspace`: reset road start or civil-work first corner')
+    return source
+
+Path.read_text = _alpha50_audit_read_text
+try:
+    namespace = {'__file__': str(ALPHA48), '__name__': '__main__'}
+    exec(compile(alpha48_source, str(ALPHA48), 'exec'), namespace, namespace)
+finally:
+    Path.read_text = _original_read_text
 
 state = text(JAVA / 'settlement/CivilWorkState.java')
 data = text(JAVA / 'settlement/SettlementCivilWorkData.java')
@@ -51,7 +66,7 @@ must(state, (
     'public record CivilWorkState(boolean active,',
     'PHASE_CUT = 0', 'PHASE_FILL = 1', 'PHASE_RETURN = 2',
     'int earthBank', 'int completedSteps', 'int initialCutBlocks', 'int initialFillBlocks',
-    'CivilWorkState.CODEC' if False else 'public static final Codec<CivilWorkState> CODEC',
+    'public static final Codec<CivilWorkState> CODEC',
     'earthBank + 1', 'Math.max(0, earthBank - 1)', 'beginReturn()',
 ), 'alpha.50 persisted civil-work state')
 must(data, ('"civil_work"', 'CivilWorkState.CODEC', 'never stores settlement items/currency'),
