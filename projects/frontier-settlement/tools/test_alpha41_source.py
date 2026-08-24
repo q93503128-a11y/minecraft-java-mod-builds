@@ -54,11 +54,13 @@ must(military, (
     'level.hasChunkAt(',
     'SettlementInventory.countFood(container)',
     'SettlementStorageService::isMetalStack',
-    'new IronGolem(EntityTypes.IRON_GOLEM, level)',
     'monster.isAlive() && !(monster instanceof Creeper)',
     'event.getDrops().clear()',
     'standDown(outpost, sentry)',
 ), 'alpha.41 loaded dangerous-region military outpost')
+if ('new IronGolem(EntityTypes.IRON_GOLEM, level)' not in military
+        and 'new FrontierSoldierEntity(FrontierContent.FRONTIER_SOLDIER.get(), level)' not in military):
+    raise SystemExit('alpha.41 sentry body must remain supplied Iron Golem combat authority or its Frontier subclass')
 forbid(military, (
     'forceChunk', 'setChunkForced', 'getChunk(', 'teleportTo(', 'destroyBlock(', 'dropResources(',
     'data.addPopulation(', 'data.setPopulation(', 'SettlementOutpostLogisticsService.tick(',
@@ -95,10 +97,6 @@ forbid(logistics, (
 
 fishing = text(JAVA / 'settlement/SettlementFishingOutpostService.java')
 must(fishing, (
-    'SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)',
-    'return "위험지역 군사거점"',
-    '위험지역 군사 역할이 우선',
-) if False else (
     'SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)',
     'return "위험지역 군사거점"',
 ), 'alpha.41 military-over-fishing precedence')
