@@ -587,8 +587,8 @@ Unless real-play regression overrides them:
 11. Alpha.52 long-bridge pier planning/save-reload/stone depletion/physical repair/pathing acceptance;
 12. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/player-protection acceptance;
 13. full companion lock fresh-world client/server runtime;
-13. true Xaero markers only if a stable supported API appears;
-14. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+14. true Xaero markers only if a stable supported API appears;
+15. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 

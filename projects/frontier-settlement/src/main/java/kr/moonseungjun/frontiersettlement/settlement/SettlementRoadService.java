@@ -733,26 +733,26 @@ public final class SettlementRoadService {
             int bestEnd = -1;
             int bestY = Integer.MIN_VALUE;
             int maxEnd = Math.min(flat.size() - 2, i + MAX_TUNNEL_SPAN - 1);
-            for (int end = i; end <= maxEnd; end++) {
-                if (profile.get(end) != RoadConstructionState.PROFILE_NORMAL || surfaces.get(end).water()) break;
-                SurfaceSample exit = surfaces.get(end + 1);
+            for (int tunnelEnd = i; tunnelEnd <= maxEnd; tunnelEnd++) {
+                if (profile.get(tunnelEnd) != RoadConstructionState.PROFILE_NORMAL || surfaces.get(tunnelEnd).water()) break;
+                SurfaceSample exit = surfaces.get(tunnelEnd + 1);
                 if (exit.water() || Math.abs(entry.y() - exit.y()) > MAX_STEP_HEIGHT) continue;
                 int grade = Math.max(entry.y(), exit.y());
                 boolean covered = true;
-                for (int j = i; j <= end; j++) {
+                for (int j = i; j <= tunnelEnd; j++) {
                     if (surfaces.get(j).y() < grade + MIN_TUNNEL_COVER) { covered = false; break; }
                 }
                 if (!covered) continue;
                 int dx = Integer.signum(flat.get(i).getX() - flat.get(i - 1).getX());
                 int dz = Integer.signum(flat.get(i).getZ() - flat.get(i - 1).getZ());
                 boolean straight = true;
-                for (int j = i; j <= end + 1; j++) {
+                for (int j = i; j <= tunnelEnd + 1; j++) {
                     int sdx = Integer.signum(flat.get(j).getX() - flat.get(j - 1).getX());
                     int sdz = Integer.signum(flat.get(j).getZ() - flat.get(j - 1).getZ());
                     if (sdx != dx || sdz != dz) { straight = false; break; }
                 }
                 if (!straight) continue;
-                bestEnd = end; bestY = grade; break;
+                bestEnd = tunnelEnd; bestY = grade; break;
             }
             if (bestEnd < 0) continue;
             for (int j = i; j <= bestEnd; j++) {
