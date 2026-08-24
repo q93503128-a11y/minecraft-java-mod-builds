@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.40
+## Current version: 0.1.0-alpha.41
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,7 +29,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.40 adds no new gameplay key, fishing dashboard or manual job-priority UI.
+Alpha.41 adds no new gameplay key, military dashboard, fishing dashboard or manual job-priority UI.
 
 ## Functional building families
 
@@ -51,7 +51,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 adds the first coast/river fishing-trade specialization, while dangerous-region military specialization, richer port/trade presentation, unloaded simulation and companion/UI integration remain unfinished.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization and Alpha.41 adds dangerous-region military specialization without inventing a 16th building. Richer port/trade presentation, unloaded simulation, companion/UI integration and medium terrain works remain unfinished.
 
 ## Physical construction
 
@@ -72,13 +72,14 @@ Roads and outposts likewise use physical grading and real hauled resources.
 
 ## Residents, production and road logistics
 
-- builder, logger, farmer, quarry worker, miner, fishing outpost worker, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior and transport roles are implemented;
+- builder, logger, farmer, quarry worker, miner, fishing outpost worker, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, military-outpost sentry and transport roles are implemented;
 - loaded town production is paced and bounded;
 - outpost production is specialization-specific and loaded-chunk only;
 - transport workers are persistently assigned to one outpost;
 - transport follows persisted road-center waypoints;
 - unloaded route boundaries pause transport instead of force-loading or teleporting;
-- Alpha.27 tagged road logistics remains the **single authority for outpost transport**.
+- Alpha.27 tagged road logistics remains the **single authority for outpost transport**;
+- Alpha.41 extends that same transporter to carry real food/metal from town back to an active dangerous-region outpost instead of creating another long-distance logistics AI.
 
 ## Alpha.31 — external content becomes a Frontier input
 
@@ -219,6 +220,27 @@ Alpha.40 makes water geography matter without adding a new management screen or 
 
 The `수변교역` part currently means the fishing commodity participates in the established physical outpost→road→town economy. Alpha.40 does **not** claim a dedicated harbor, boats, waterborne merchant NPCs or a separate fish-for-emerald market. Those remain possible later presentation/economic breadth.
 
+## Alpha.41 — dangerous-region military outpost
+
+Alpha.41 closes the next original terrain-specialization gap without copying the town barracks to every remote site.
+
+- no new `BuildingType`, key or management screen;
+- only an otherwise-`general` outpost can gain the loaded `위험지역 군사거점` role;
+- danger is not a manual toggle and is not decided by one mob-count number: qualification combines total loaded `Monster` pressure, close-range pressure, hostile-type diversity and sampled enclosed low-light terrain evidence;
+- the entire bounded military scan/patrol area must already be loaded; missing chunks pause judgment instead of force-loading or treating an unloaded sentry as dead;
+- external hostile mobs that use the normal `Monster` hierarchy participate automatically without hard companion references;
+- one persistently tagged **전초 수비대** is assigned per qualifying outpost, distinct from the barracks' formal 3-slot garrison;
+- the current combat body is an Iron Golem proxy and forced pursuit excludes Creepers;
+- a missing sentry may be replaced only from the outpost's own physical stockpile for **6 real food + 2 real metal**;
+- military stockpile target reserve is food12 + metal4;
+- tagged military-outpost combat proxies drop no iron/resources;
+- when danger evidence disappears the existing sentry is not deleted: target is cleared and it returns to the outpost to stand down; replacement stops until danger returns;
+- Alpha.27 road logistics stays the single long-distance authority. The already-assigned outpost transporter returns empty to town, physically extracts needed food/metal from loaded settlement storage, carries it in hand along persisted road waypoints and inserts it into the outpost stockpile;
+- while danger is active, military role takes precedence over the Alpha.40 fishing overlay; when danger clears, normal/fishing behavior can resume;
+- no free troop points, remote emeralds, teleport cargo, fast travel, duplicate transporter, force-load or offline combat simulation.
+
+This is the first dangerous-region territorial foothold. It does not claim humanoid soldiers, weapon classes, formations, siege systems, a global radar or companion full-stack runtime validation.
+
 ## External content stack
 
 `COMPANION_LOCK.json` is the exact candidate lock for the next fresh-world compatibility test. `COMPANION_MODS.md` explains the strategy and `EXTERNAL_CONTENT_REGISTER.md` records reuse/license boundaries.
@@ -231,10 +253,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–39 source audit plus Alpha.40 waterborne-outpost extension;
+1. the complete established Alpha.23–40 source audit plus Alpha.41 dangerous-region military-outpost extension;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on shoreline pathfinding, fishing cadence/balance, advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on dangerous-region combat/patrol/pathfinding, military reverse-supply pacing, shoreline pathfinding, fishing cadence/balance, advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.

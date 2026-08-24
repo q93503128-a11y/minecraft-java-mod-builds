@@ -41,7 +41,8 @@ Intent is expressed physically wherever possible:
 - normal workshop repair: eligible damaged external weapon in service barrel;
 - advanced forging: eligible external weapon + expedition relic in advanced commission barrel;
 - construction office, cart station, watchtower and barracks operate without separate management dashboards;
-- Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu.
+- Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu;
+- Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no specialization or troop-management menu.
 
 ## 3. Multiplayer authority
 
@@ -70,7 +71,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families** and Alpha.40 keeps that number while deepening territory specialization; the number alone is not completion because original territory, simulation, trade and UI breadth remains unfinished.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40 and Alpha.41 keep that number while deepening territory specialization. The number alone is not completion because original simulation, trade, terrain-work and UI breadth remains unfinished.
 
 Current families:
 
@@ -90,7 +91,7 @@ Current families:
 - market;
 - cart station.
 
-Town center currently exists through civic-core progression rather than a separate placement family. Later territory specializations remain unfinished.
+Town center currently exists through civic-core progression rather than a separate placement family. Later territory breadth remains unfinished.
 
 Construction UX:
 
@@ -147,13 +148,14 @@ Actual time saved depends on town layout and must be evaluated in real play rath
 
 Vanilla villager trading/professions are not settlement-progression authority.
 
-Implemented role families include builder, logger, farmer, quarry worker, miner, coast/river fishing worker, normal workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, market merchant presentation and road-bound transport.
+Implemented role families include builder, logger, farmer, quarry worker, miner, coast/river fishing worker, normal workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, dangerous-region outpost sentry, market merchant presentation and road-bound transport.
 
 Defense role separation:
 
 - guard post: close routine local defense;
 - watchtower: loaded-area longer-range threat observation/response with one tower-assigned response guard;
-- barracks: formal supplied multi-slot garrison.
+- barracks: formal supplied multi-slot town garrison;
+- dangerous-region military outpost: one supplied remote sentry that secures a loaded risky territorial foothold and stands down when risk evidence disappears.
 
 Alpha.37 barracks rules:
 
@@ -167,11 +169,23 @@ Alpha.37 barracks rules:
 - tagged Iron Golem combat proxies drop no iron/resources;
 - old free high-tier guard-post reinforcement backend stays removed.
 
-Current soldier body is an Iron Golem proxy. Humanoid soldier visuals, external weapon loadouts, formations and class variety remain later presentation/combat-depth work.
+Alpha.41 remote military rules are intentionally different from barracks:
+
+- only otherwise-general outposts may dynamically gain the military role;
+- bounded area must already be loaded before danger or missing-sentry state is trusted;
+- danger combines total Monster pressure, close pressure, hostile-type diversity and enclosed low-light samples rather than a single count or menu toggle;
+- one sentry maximum per qualifying outpost;
+- local replacement cost is food6 + metal2 from the physical outpost stockpile;
+- target local reserve is food12 + metal4;
+- tagged sentry drops no iron/resources;
+- danger loss clears forced target and returns the sentry home instead of despawning it;
+- external hostiles using the standard Monster hierarchy are soft-compatible without hard companion code.
+
+Current soldier/sentry bodies are Iron Golem proxies. Humanoid soldier visuals, external weapon loadouts, formations and class variety remain later presentation/combat-depth work.
 
 Normal production jobs should fill automatically from appropriate settlement conditions. Loaded areas show physical movement/work. Do not force-load chunks solely to keep animations running.
 
-Construction-office and Alpha.39 advanced-forging specialists are currently building-bound service NPCs and do not inflate civilian population/housing. The normal workshop artisan remains a civilian job. Alpha.40 fishing workers follow the existing outpost-production service-unit convention and likewise do not inflate civilian population. A future citizen-assignment cleanup may unify these distinctions, but must not accidentally double-count population or create free tier progression.
+Construction-office and Alpha.39 advanced-forging specialists are currently building-bound service NPCs and do not inflate civilian population/housing. The normal workshop artisan remains a civilian job. Alpha.40 fishing workers and Alpha.41 military-outpost sentries follow the existing outpost/service-unit convention and likewise do not inflate civilian population. A future citizen-assignment cleanup may unify these distinctions, but must not accidentally double-count population or create free tier progression.
 
 No family/children simulation in planned scope.
 
@@ -212,6 +226,17 @@ A future wagon entity may be presentation/vehicle behavior only and must not bec
 - `수변교역` currently means this catch participates in the existing physical outpost→road→town economy, not that emeralds or trade points are generated remotely;
 - no forced chunks or offline fishing simulation.
 
+### Alpha.41 military reverse-supply rule
+
+- dangerous-region military role never gets a separate long-distance transporter;
+- the existing outpost-assigned Alpha.27 worker remains the single route/navigation authority;
+- while military role is active, that worker can return empty to town, physically extract needed food/metal from fully loaded settlement storage and carry the stack back along the same persisted route;
+- supply trip and empty-return state are entity tags on that same worker, not a second economy simulation;
+- physical outpost stockpile is the authority for sentry recruitment;
+- target reserve is food12 + metal4; replacement consumes food6 + metal2;
+- when danger stops qualifying, military trip state is cleared and ordinary outpost→town cargo behavior resumes;
+- no teleport cargo, abstract supply points, forced chunks or offline replenishment.
+
 ## 8. Roads, outposts and territory
 
 Roads/outposts are the spatial-growth layer. Progression must not become endlessly enlarging one flat central base.
@@ -242,11 +267,11 @@ Implemented outpost specializations / overlays:
 - quarry;
 - mining;
 - agriculture;
-- Alpha.40 coast/river fishing-trade overlay for qualifying general outposts.
+- Alpha.40 coast/river fishing-trade overlay for qualifying general outposts;
+- Alpha.41 dangerous-region military overlay for qualifying general outposts.
 
 Still required by original scope:
 
-- dangerous-region military outpost;
 - better biome-aware specialization with companion worldgen;
 - richer coast/river presentation such as dedicated pier/harbor/waterborne merchant behavior if it adds value without duplicate economy authority;
 - coarse unloaded simulation that does not violate physical item authority.
@@ -259,7 +284,8 @@ This is not a constant wave-defense game.
 
 - guard posts handle routine local threats;
 - watchtowers extend loaded-area observation/response;
-- barracks provide supplied formal garrison;
+- barracks provide supplied formal town garrison;
+- dangerous-region outposts provide one supplied remote foothold sentry only while loaded world evidence justifies the role;
 - occasional meaningful threats are allowed;
 - do not spam mandatory waves.
 
@@ -400,6 +426,23 @@ This closes the first original high-tier-crafting placement family, not every fu
 
 The current waterborne trade identity comes from the catch entering the established physical logistics economy. Dedicated docks, boats, water merchants and direct fish-market contracts remain later optional breadth.
 
+### Alpha.41 dangerous-region military outpost
+
+- no new building family, key, troop screen or manual specialization selector;
+- qualifying otherwise-general outposts are recognized dynamically from bounded already-loaded danger evidence;
+- evidence is multi-factor: total Monster pressure + close pressure + hostile-type diversity and/or enclosed low-light samples, not one arbitrary mob count;
+- one persistent outpost-assigned sentry maximum;
+- one replacement requires local physical food6 + metal2, with target reserve food12 + metal4;
+- unloaded patrol/search areas are never interpreted as missing troops;
+- sentry forced pursuit excludes Creepers and its Iron Golem proxy drops are cleared;
+- when the danger condition is lost the sentry stands down and returns home rather than disappearing;
+- the same Alpha.27 transporter performs reverse food/metal supply along persisted roads, preserving single transport authority;
+- military role has precedence over Alpha.40 fishing while active, and fishing/general behavior may resume after danger clears;
+- normal `Monster` subclasses from external content participate without a hard mod/class dependency;
+- no teleport, fast travel, force-load, free troop points, free iron, virtual supply or offline combat simulation.
+
+This is the first dangerous-territory foothold, not a replacement for the town barracks or a complete soldier-presentation system.
+
 ## 12. UI and controls
 
 Reference hierarchy from original design remains:
@@ -420,7 +463,7 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.40 reports advanced commissions and loaded waterborne specialization through existing `/frontier status`; no new crafting/fishing dashboard is added.
+Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.41 reports advanced commissions, loaded waterborne specialization and loaded dangerous-region military status through existing `/frontier status`; no new crafting/fishing/military dashboard is added.
 
 ## 13. Engineering rules
 
@@ -443,7 +486,7 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.40
+## 14. Current playable slice after Alpha.41
 
 The playable slice now includes:
 
@@ -456,8 +499,9 @@ The playable slice now includes:
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
 - physical specialized outposts plus Alpha.40 loaded coast/river fishing-trade overlay;
-- persisted road-bound transport;
-- loaded-only remote production/logistics;
+- Alpha.41 loaded dangerous-region military overlay with one supplied remote sentry;
+- persisted road-bound transport including physical reverse food/metal military supply;
+- loaded-only remote production/logistics/combat response;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
 - physical market and normal staffed repair workshop;
@@ -472,16 +516,15 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 
 Unless real-play regression overrides them:
 
-1. dangerous-region military outpost specialization;
-2. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
-3. coarse unloaded production/logistics simulation that preserves physical-item authority;
-4. Jade provider / Xaero integration and compact building/progress/notification UX;
+1. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
+2. coarse unloaded production/logistics simulation that preserves physical-item authority;
+3. Jade provider / Xaero integration and compact building/progress/notification UX;
+4. medium-terrain construction support such as explicit retaining/terrain-work intent;
 5. external structure/boss discovery feeding progression more directly;
 6. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
 7. broader high-tier recipe/specialized crafting only where exploration materials justify it;
 8. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
-9. medium-terrain construction support such as explicit retaining/terrain-work intent;
-10. long survival/multiplayer acceptance and balance/pathfinding audit.
+9. long survival/multiplayer acceptance and balance/pathfinding audit.
 
 Do not add meaningless building families merely to raise the count above15.
 
@@ -496,6 +539,9 @@ Automated CI is not a substitute for Minecraft play. Test, in order:
 - road -> outpost -> specialization production -> transport -> cart station;
 - place an otherwise-general outpost near a real river/coast, verify `어업·수변교역`, visible rod/bank movement, fish stockpile deposit and road transport;
 - verify small puddles/unloaded shorelines do not create remote fishing production;
+- place an otherwise-general outpost in a genuinely hostile loaded area and verify multi-factor `위험지역 군사거점` activation, one sentry only, Creeper non-pursuit and no iron drop;
+- verify the existing transporter returns to town, physically carries food/metal down the persisted road, fills the outpost reserve, and a killed sentry cannot respawn without local food6+metal2;
+- clear the danger and verify the sentry stands down, military supply state clears and normal/fishing role can resume without duplication;
 - external dungeon/loot -> choose market sale vs normal repair vs advanced-forging commission;
 - advanced workshop external-weapon compatibility, relic/metal no-loss failure behavior and completed enchanted weapon retrieval;
 - guard post -> watchtower -> barracks response and replacement cost;
