@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.61**.
+Current canonical implementation: **0.1.0-alpha.62**.
 
 ## 1. Product identity
 
@@ -188,7 +188,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–61 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–62 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -367,6 +367,24 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 now covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation. The remaining remote-sentry extension must reuse the existing road-bound reverse-supply transporter and must not require manually opening every soldier.
+
+### Alpha.62 road-bound remote-sentry physical armament
+
+Alpha.62 implements that remaining remote slice through the existing Alpha.27/41 transport authority rather than adding a remote armory or second carrier system.
+
+- only a loaded active dangerous general outpost with an existing empty-MAINHAND sentry can have weapon demand;
+- an external weapon already in sentry MAINHAND or already staged in that exact outpost stockpile makes weapon demand zero;
+- the existing military reverse-supply choice is ordered food reserve -> metal reserve -> one external weapon, so **위험지역 군사 역할이 우선** includes survival provisioning before upgrade cargo;
+- `SettlementOutpostLogisticsService` reuses the same `MILITARY_RETURN_TRIP_TAG` / `MILITARY_SUPPLY_TRIP_TAG`, assigned transporter, persisted road and physical MAINHAND cargo; no weapon-specific long-distance state exists;
+- the transporter extracts exactly one recognized external weapon from concrete loaded shared settlement storage, walks the road, and inserts the same ItemStack into the outpost stockpile;
+- the sentry never reads town storage. When there is no current combat pressure it walks only the local final leg to its own stockpile and extracts exactly one real weapon into vanilla MAINHAND;
+- active combat preempts local armament movement;
+- sentry death clears service/body drops but re-adds the exact equipped external weapon once, matching the no-mint recovery rule used by town barracks;
+- role loss or route unload never converts the weapon to a number: existing physical worker MAINHAND and route-pause/return behavior retains authority;
+- **군사 전초도 같은 도로 운송자가 역방향 보급**, **Transport workers belong to a specific outpost**, and they **pause at unloaded route boundaries**;
+- Alpha.27 stays the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- no new save field/trip tag/worker/building/key/UI/currency, no force-load/teleport, and no hard Weapons Expanded or Better Combat Java dependency.
+
 
 ### Alpha.55 exploration knowledge -> existing outpost value
 
@@ -671,7 +689,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.61
+## 14. Current playable slice after Alpha.62
 
 Current implemented slice includes:
 
@@ -696,16 +714,17 @@ Current implemented slice includes:
 - Alpha.59 centralized service-level single-project authority for building/road/outpost/civil preview and start;
 - Alpha.60 rollback-safe ordinary building placement + Alpha.44 grade-cell physical material transactions;
 - Alpha.61 rollback-safe outpost grade-cell terrain mutation before persisted step advance;
+- Alpha.62 same-road-transporter remote military external-weapon delivery -> local sentry MAINHAND equip -> exact death recovery;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.61
+## 15. Unfinished original-scope priorities after Alpha.62
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. remote military external-weapon supply only if the actual weapon ItemStack can ride the existing road-bound reverse-supply transporter; town barracks physical armament is covered by Alpha.57;
+2. Alpha.62 remote military weapon road-haul/local-equip/death-recovery save-reload, route-unload and no-dup acceptance; implementation now reuses the existing road-bound reverse-supply transporter;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
@@ -740,7 +759,7 @@ At the final/test-worthy point verify at least:
 - road stairs/short bridge and outpost route movement, including Alpha.61 rollback-safe outpost grading;
 - cart station freight fallback;
 - fishing shoreline qualification and invalid-puddle rejection;
-- dangerous-region military activation/supply/stand-down;
+- dangerous-region military activation/supply/stand-down, including Alpha.62 food/metal-before-weapon priority, physical road weapon cargo, local equip and exact death recovery;
 - unloaded debt cap/reload/no-offline-mint;
 - Jade installed/absent boot and compact context;
 - Xaero installed/absent HUD readability with marker feature still honestly absent;

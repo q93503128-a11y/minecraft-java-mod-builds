@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.animal.golem.IronGolem;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
@@ -70,7 +71,13 @@ public final class SettlementMilitaryOutpostService {
 
             FrontierSoldierEntity sentry = findSentry(level, outpost);
             if (!evidence.dangerous()) {
-                if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) standDown(outpost, sentry);
+                if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) {
+                    // Combat has ended. Only now may a sentry walk to its local stockpile for a
+                    // weapon that the existing road transporter already delivered physically.
+                    if (!SettlementMilitaryArmoryService.tickOutpostArmament(level, outpost, sentry)) {
+                        standDown(outpost, sentry);
+                    }
+                }
                 continue;
             }
 
@@ -123,6 +130,21 @@ public final class SettlementMilitaryOutpostService {
         return Math.max(0, TARGET_METAL_RESERVE - (int) Math.min(Integer.MAX_VALUE, present));
     }
 
+    /**
+     * One real weapon is enough for the one remote sentry. A weapon already in MAINHAND or already
+     * staged in this outpost stockpile closes demand so the road transporter cannot over-supply it.
+     */
+    public static int weaponSupplyShortage(ServerLevel level, OutpostRecord outpost) {
+        if (!isActiveMilitaryOutpost(level, outpost)) return 0;
+        FrontierSoldierEntity sentry = findSentry(level, outpost);
+        if (sentry == null || !sentry.getMainHandItem().isEmpty()) return 0;
+        if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return 0;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (SettlementExternalContentService.isExternalWeapon(container.getItem(slot))) return 0;
+        }
+        return 1;
+    }
+
     public static DangerEvidence dangerEvidence(ServerLevel level, OutpostRecord outpost) {
         if (!militaryAreaLoaded(level, outpost)) return new DangerEvidence(false, 0, 0, 0, 0);
         BlockPos center = outpost.center();
@@ -144,9 +166,15 @@ public final class SettlementMilitaryOutpostService {
         return new DangerEvidence(true, threats.size(), close, threatClasses.size(), enclosedDark);
     }
 
-    /** Military sentries are combat/service units and never item/iron farms. */
+    /** Military sentries are never body/iron farms; one physically supplied weapon is recoverable. */
     public static void onLivingDrops(LivingDropsEvent event) {
-        if (event.getEntity().entityTags().contains(MILITARY_SENTRY_TAG)) event.getDrops().clear();
+        if (!event.getEntity().entityTags().contains(MILITARY_SENTRY_TAG)) return;
+        ItemStack weapon = event.getEntity().getMainHandItem();
+        event.getDrops().clear();
+        if (!SettlementExternalContentService.isExternalWeapon(weapon)) return;
+        event.getDrops().add(new ItemEntity(
+                event.getEntity().level(), event.getEntity().getX(), event.getEntity().getY(),
+                event.getEntity().getZ(), weapon.copy()));
     }
 
     private static FrontierSoldierEntity tryRecruit(ServerLevel level, OutpostRecord outpost) {

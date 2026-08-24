@@ -277,6 +277,11 @@ public final class SettlementOutpostLogisticsService {
         } else if (metalShortage > 0) {
             predicate = SettlementStorageService::isMetalStack;
             amount = Math.min(metalShortage, transportBatchSize(data));
+        } else if (SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) > 0) {
+            // Third priority only: the same assigned transporter carries one exact external weapon
+            // after the outpost's survival food/metal reserves are already satisfied.
+            predicate = SettlementExternalContentService::isExternalWeapon;
+            amount = 1;
         } else {
             worker.getNavigation().stop();
             return;

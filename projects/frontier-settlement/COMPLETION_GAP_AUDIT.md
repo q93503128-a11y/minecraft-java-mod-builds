@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.61`
+현재 구현 기준: `0.1.0-alpha.62`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -284,7 +284,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 | 병영 정식 주둔 병력 | 완료/부분 | 3 supplied slots + Alpha.48 humanoid body |
 | 위험지역 전초 수비대 | 완료/부분 | one supplied sentry + same humanoid body |
 | 사람형 군사 presentation | 완료/부분 | `FrontierSoldierEntity extends IronGolem` + humanoid renderer |
-| 실물 외부무기 군사 armory/loadout | **완료/부분** | Alpha.57 본진 병영은 real external-weapon MAINHAND loadout 완료/부분; 원격 위험지역 전초 실물 무기 역보급은 남음 |
+| 실물 외부무기 군사 armory/loadout | **완료/부분** | Alpha.57 본진 병영 + Alpha.62 원격 위험지역 전초 real external-weapon MAINHAND 물리 보급; 장시간/save-reload acceptance 남음 |
 | 자동 직업 배치 | 완료/부분 | 주요 역할 자동화 |
 | 언로드 저빈도 보정 | 완료/부분 | bounded time debt, no virtual item authority |
 
@@ -362,7 +362,25 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - **위험지역 군사 역할이 우선**, `single authority for outpost transport`, `there is still only one authority for long-distance outpost transport` 유지;
 - **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지.
 
-따라서 physical military armory/loadout은 **본진 병영 기준 완료/부분**으로 전진했다. 원격 수비대 무기 ItemStack 역보급은 별도 남은 범위다.
+따라서 Alpha.57 시점 physical military armory/loadout은 **본진 병영 기준 완료/부분**으로 전진했고, 그 당시 **원격 위험지역 전초 실물 무기 역보급은 남음** 상태였다.
+
+### Alpha.62 원격 군사 실물 무기 역보급 감사
+
+- active dangerous general outpost + existing unarmed sentry에서만 weapon demand1;
+- sentry MAINHAND 또는 outpost stockpile에 recognized external weapon이 이미 있으면 demand0으로 과잉 보급 방지;
+- 같은 military reverse-supply 선택에서 food shortage -> metal shortage -> external weapon1 순서;
+- 본진의 concrete loaded shared storage에서 exact weapon1 실제 extraction;
+- 기존 outpost-assigned transporter, 기존 `MILITARY_RETURN_TRIP_TAG` / `MILITARY_SUPPLY_TRIP_TAG`, 기존 persisted road를 그대로 사용;
+- transporter MAINHAND의 exact ItemStack이 도로를 따라 outpost stockpile로 실제 이동·삽입;
+- sentry는 town storage를 직접 읽지 않고 전투가 끝난 뒤 local stockpile까지 걸어가 exact1을 MAINHAND로 추출;
+- sentry death는 body/service drops를 clear한 뒤 실제 장착 external weapon exact copy1만 recovery drop;
+- **위험지역 군사 역할이 우선**, food/metal survival reserve가 weapon보다 우선;
+- **군사 전초도 같은 도로 운송자가 역방향 보급**;
+- `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지;
+- **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지;
+- 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
+
+따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
 ## 7. 도로 / 전초 / 영토
 
@@ -379,7 +397,7 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 | 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
 | 위험지역 군사 특화 | 완료/부분 | one supplied humanoid sentry |
 | 전초 물류 | 완료 | Alpha.27 one authority |
-| 군사 역보급 | 완료/부분 | **군사 전초도 같은 도로 운송자가 역방향 보급** |
+| 군사 역보급 | 완료/부분 | food/metal + Alpha.62 external weapon1을 **군사 전초도 같은 도로 운송자가 역방향 보급** |
 | 수변 역보급 | 완료/부분 | same transporter wood after military priority |
 | biome-aware companion specialization | **완료/부분** | Alpha.56 NeoForge common biome tags + local physical evidence, no hard worldgen dependency |
 
@@ -423,7 +441,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. remote military external-weapon supply는 기존 road-bound reverse-supply transporter가 실제 ItemStack을 운반할 수 있을 때만; town barracks armory는 Alpha.57 완료/부분;
+2. Alpha.62 remote weapon road-haul/local-equip/death-recovery의 route-unload/save-reload/no-dup 실플레이 acceptance;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

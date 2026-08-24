@@ -45,6 +45,37 @@ public final class SettlementMilitaryArmoryService {
         return true;
     }
 
+    /**
+     * Local final leg for an already road-delivered outpost weapon. The sentry never reads town
+     * storage directly: the existing assigned transporter must first place the exact ItemStack in
+     * this outpost's physical stockpile.
+     */
+    public static boolean tickOutpostArmament(ServerLevel level, OutpostRecord outpost,
+                                              FrontierSoldierEntity soldier) {
+        if (soldier == null || !soldier.isAlive()) return false;
+        ItemStack carried = soldier.getMainHandItem();
+        if (SettlementExternalContentService.isExternalWeapon(carried)) return false;
+        if (!carried.isEmpty()) return false;
+
+        BlockPos source = outpost.stockpile();
+        if (!level.hasChunkAt(source)) return false;
+        if (!(level.getBlockEntity(source) instanceof Container container) || !containsExternalWeapon(container)) {
+            return false;
+        }
+        double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
+        if (distance > STORAGE_INTERACTION_RANGE_SQR) {
+            soldier.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, ARMORY_WALK_SPEED);
+            return true;
+        }
+
+        ItemStack extracted = SettlementStorageService.extract(
+                level, source, SettlementExternalContentService::isExternalWeapon, 1);
+        if (extracted.isEmpty()) return false;
+        soldier.setItemSlot(EquipmentSlot.MAINHAND, extracted);
+        soldier.getNavigation().stop();
+        return true;
+    }
+
     private static BlockPos nearestWeaponSource(ServerLevel level, SettlementData data, FrontierSoldierEntity soldier) {
         BlockPos best = null;
         double bestDistance = MAX_ARMORY_ROUTE_SQR + 1.0D;
