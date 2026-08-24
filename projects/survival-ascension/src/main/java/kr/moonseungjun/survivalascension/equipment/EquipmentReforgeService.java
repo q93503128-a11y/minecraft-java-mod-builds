@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.equipment;
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -29,7 +30,8 @@ public final class EquipmentReforgeService {
             player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 affix가 없는 검/곡괭이/도끼/괭이 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
             return;
         }
-        int stage = WorldAscensionData.get(player.getServer()).stage();
+        // 26.2 ServerPlayer no longer exposes getServer(); semantic contract: WorldAscensionData.get(player.getServer()).stage()
+        int stage = WorldAscensionData.get(((ServerLevel) player.level()).getServer()).stage();
         int rarity = Math.max(1, Math.min(3, stage + 1));
         MaterialCost[] costs = imprintCosts(stage);
         if (!player.isCreative() && !hasAll(player, costs)) {
