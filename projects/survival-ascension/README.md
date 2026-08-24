@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.51.0-alpha.1 — Armor Ascension / 방어구 승천 성장
+Armor is now part of the same ascension equipment loop as weapons and tools. Standard helmet/chestplate/leggings/boots tags can be used with `M -> 장비 -> 승천 각인`, then use the existing reforge, Mythic awakening and salvage path without replacing the original item or clearing unrelated components. Elite affix drops can also roll iron/diamond/netherite armor pieces.
+
+Armor affixes only work while the piece is equipped: `수호` is general incoming-damage reduction, `불굴` strengthens defense below half health, `숙련` increases Combat mastery XP, `완강` helps against 8+ damage hits, and `보호` helps against damage with no attacking entity. The combined armor-affix damage reduction is capped at 35%, and armor mastery XP is capped at +32%, so four high-tier pieces cannot create an uncapped defensive multiplier.
+
+This reuses the existing affix CustomData, material sinks and equipment action payload. No new SavedData, protocol bump, custom armor, attribute-rewrite system, force-load or optional-mod Java dependency is introduced.
+
 ## 0.50.0-alpha.1 — Regional Logistics Scale / 지역 물류망 확장
 The physical logistics network can now grow with the world instead of remaining permanently capped at three anchors. Industrial Works supports 3 registered depots/outposts, completed Civil Works raises the live admission limit to 6, and completed Ascension Nexus raises it to 9 so all nine expedition fronts can remain established without repeated teardown and re-registration.
 

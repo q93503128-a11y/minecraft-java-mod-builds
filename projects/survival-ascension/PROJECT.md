@@ -1,14 +1,23 @@
 # Survival Ascension
 
-- Mod version: `0.50.0-alpha.1`
+- Mod version: `0.51.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1` and older data stay unchanged. 0.50 raises only the persisted safety capacity of the existing depot/outpost lists to nine and derives the live 3/6/9 admission limit from already-existing Industrial Works / Civil Works / Ascension Nexus progression. Existing 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, 0.47 optional EntityType-tag integration, physical freight railheads and item CustomData boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.51 adds the existing affix category `armor` to standard humanoid armor and reads effects only from currently equipped pieces; 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.51 Armor Ascension / 방어구 승천 성장
+- Standard humanoid armor tags (`HEAD_ARMOR`, `CHEST_ARMOR`, `LEG_ARMOR`, `FOOT_ARMOR`) now join the existing Ascension Imprint / reforge / Mythic-awakening path without optional-mod Java dependencies.
+- Elite affix loot can now roll helmet, chestplate, leggings or boots on the same iron -> diamond -> netherite rarity ladder as existing weapon/tool drops.
+- Armor reuses the existing five affix slots with worn-only roles: `수호` always reduces incoming damage, `불굴` adds reduction at <=50% health, `숙련` increases Combat mastery XP, `완강` adds reduction against hits of 8+ damage, and `보호` adds reduction when the damage source has no attacking entity.
+- All armor-affix damage reduction is summed across equipped pieces and hard-capped at 35%. Armor `숙련` is summed separately and hard-capped at +32% Combat XP. Holding armor in the hand gives neither effect.
+- Imprint keeps the source armor ItemStack and unrelated DataComponents; Survival Ascension still writes only its nested affix CustomData and display name.
+- Existing imprint/reforge/awakening/salvage material costs and physical-logistics-first consumption are unchanged.
+- No armor attribute rewriting, max-health inflation, new potion effect, SavedData, packet/protocol change, custom armor item, force-load or background simulation.
 
 ## 0.50 Regional Logistics Scale / 지역 물류망 확장
 - Physical depot/outpost admission is no longer permanently capped at three: Industrial Works = 3, Civil Works = 6, Ascension Nexus = 9.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.51.0-alpha.1
+- Added `Armor Ascension / 방어구 승천 성장`: standard head/chest/leg/foot armor tags now join the existing affix imprint, reforge, Mythic-awakening and salvage flow.
+- Elite affix loot can now roll iron/diamond/netherite armor across all four equipment slots.
+- Added worn-only armor affix roles: 수호 general reduction, 불굴 low-health reduction, 숙련 Combat XP, 완강 heavy-hit reduction, 보호 no-attacker/environmental reduction.
+- Hard-capped total armor-affix incoming-damage reduction at 35% and armor mastery XP at +32% across all equipped pieces.
+- Preserved original armor ItemStack identity and unrelated components; Survival Ascension still writes only its nested affix CustomData/display name.
+- Kept existing physical-logistics-first imprint/reforge/awakening costs, network protocol 8, and all 0.49/0.50 freight/regional-logistics contracts.
+- Added no new SavedData, custom armor item, attribute rewrite, potion-effect layer, force-load or optional-mod Java dependency.
+
 ## 0.50.0-alpha.1
 - Added `Regional Logistics Scale / 지역 물류망 확장`: live registered depot/outpost admission grows 3 -> 6 -> 9 with Industrial Works -> Civil Works -> Ascension Nexus.
 - Raised only the absolute persisted safety capacity of the existing `field_depots_v1` / `outpost_v1` lists to9; no new SavedData ID or migration is introduced.
