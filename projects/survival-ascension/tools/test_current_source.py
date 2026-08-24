@@ -75,11 +75,11 @@ for rel in required:
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.47.0-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.48.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.47.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.48.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
 # 0.44 external/content-pack equipment imprint.
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
@@ -197,6 +197,25 @@ need(production, ['ACTION_FREIGHT = "physical_freight"', "FreightService.transfe
 infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
 need(infra, ["ProductionService.ACTION_FREIGHT", "project == InfrastructureProject.CIVIL_WORKS"], "infrastructure routing")
 
+# 0.48 frontline local stock: only the exact departure outpost's physical barrels may pay operation/siege material costs.
+need(production, [
+    "startSiegeWithLocalSupply(player, false)", "startSiegeWithLocalSupply(player, true)", "startOperationWithLocalSupply(player)",
+    "prepareLocalOutpostSupply", "consumeLocalOutpostSupply", "exactOutpostContainers", "PreparedLocalSupply", "LocalRequirement", "LocalLoadout",
+    "data.linkedBarrels(player, depot)", "level.hasChunkAt(pos)", "level.mayInteract(player, pos)", "Blocks.BARREL", "blockEntity instanceof Container",
+    'new LocalRequirement("식량", 32', 'new LocalRequirement("철 주괴", 8', 'new LocalRequirement("연료", 8',
+    'new LocalRequirement("식량", 48', 'new LocalRequirement("철 주괴", 16', 'new LocalRequirement("통나무", 32',
+    'new LocalRequirement("식량", 96', 'new LocalRequirement("철 주괴", 32', 'new LocalRequirement("석재 벽돌", 128',
+    "OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)",
+    "ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)",
+    "플레이어 인벤토리나 다른 근처 거점으로 대체하지 않습니다"
+], "0.48 frontline local supply")
+local_supply_slice = production[production.find("private static PreparedLocalSupply prepareLocalOutpostSupply"):production.find("private static void bulkOffload")]
+forbid(local_supply_slice, ["FieldDepotService.consumeMatching", "FieldDepotService.consume(", "player.getInventory().getItem"], "0.48 local supply fallback")
+need(prod_ui, [
+    "전초재고(식량48/철16/통나무32)", "전초재고(식량96/철32/석재벽돌128)", "전초재고(식량32/철8/연료8)",
+    "화물 → 전초 현지재고 → 방어/원정"
+], "0.48 frontline supply UI")
+
 # Civil Works and causeway retained.
 project = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java")
 need(project, ['CIVIL_WORKS(', '"civil_works", "토목 공사소"', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 1536)'], "civil project")
@@ -282,6 +301,7 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
+print("- 0.48 frontline operations consume bounded physical stock from the exact departure outpost Barrel cluster after successful start; no player-inventory or adjacent-depot fallback")
 print("- 0.47 data-tagged major external targets receive bounded combat XP and +3 regional/operation kill credit without incident multiplication or hard optional-mod Java dependencies")
 print("- 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped")
 print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")
