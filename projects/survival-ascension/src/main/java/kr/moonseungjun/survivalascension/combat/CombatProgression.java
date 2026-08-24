@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.combat;
 
+import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
@@ -12,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -43,7 +43,7 @@ public final class CombatProgression {
         float scaledDamage = (float) (event.getAmount() * SkillTuning.combatDamageMultiplier(level) * AscensionAffixes.damageMultiplier(weapon));
         event.setAmount(scaledDamage);
 
-        if (event.getSource().getDirectEntity() != player || !(event.getEntity() instanceof Enemy)) return;
+        if (event.getSource().getDirectEntity() != player || !ContentPackCompatibility.isCombatTarget(event.getEntity())) return;
         if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) return;
 
         LivingEntity primary = event.getEntity();
@@ -59,7 +59,8 @@ public final class CombatProgression {
         List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(
                 LivingEntity.class,
                 primary.getBoundingBox().inflate(radius),
-                candidate -> candidate != primary && candidate != player && candidate.isAlive() && candidate instanceof Enemy && !player.isAlliedTo(candidate));
+                candidate -> candidate != primary && candidate != player && candidate.isAlive()
+                        && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate));
         nearby.sort(Comparator.comparingDouble(primary::distanceToSqr));
 
         float cleaveDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
@@ -91,7 +92,8 @@ public final class CombatProgression {
         List<LivingEntity> nearby = level.getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> candidate != primary && candidate != player && candidate.isAlive() && candidate instanceof Enemy && !player.isAlliedTo(candidate));
+                candidate -> candidate != primary && candidate != player && candidate.isAlive()
+                        && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate));
         nearby.sort(Comparator.comparingDouble(player::distanceToSqr));
 
         float shockDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
@@ -119,16 +121,15 @@ public final class CombatProgression {
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         LivingEntity victim = event.getEntity();
-        if (victim == player || victim instanceof Player) return;
-        if (victim instanceof Enemy) ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
+        if (victim == player || victim instanceof Player || !ContentPackCompatibility.isCombatTarget(victim)) return;
+        ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
         int xp = Math.max(1, (int) Math.ceil(xpForKill(victim) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
 
     private static int xpForKill(LivingEntity victim) {
         double health = Math.max(1.0D, victim.getMaxHealth());
-        double weight = victim instanceof Enemy ? 1.5D : 0.35D;
-        return Math.max(2, Math.min(200, (int) Math.ceil(health * weight)));
+        return Math.max(2, Math.min(200, (int) Math.ceil(health * 1.5D)));
     }
 
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {
