@@ -26,9 +26,7 @@ replace_once(road,
             if (surface.equals(pos) && current.is(placement.state().getBlock())) {''')
 
 replace_once(audit,
-'''            'for (TunnelCell cell : tunnelExcavationPlan(road))', 'cell.target().equals(pos)',
-            'event.setCanceled(true)'), 'alpha.53 physical tunnel authority')''',
-'''            'for (TunnelCell cell : tunnelExcavationPlan(road))', 'cell.target().equals(pos)',
-            'placement.tunnel() && surface.equals(pos)', 'event.setCanceled(true)'), 'alpha.53 physical tunnel authority')''')
+"'data.advanceRoadConstruction()','event.setCanceled(true)','road.tunneling() ? tunnelExcavationPlan(road).size()'",
+"'data.advanceRoadConstruction()','event.setCanceled(true)','placement.tunnel() && surface.equals(pos)','road.tunneling() ? tunnelExcavationPlan(road).size()'")
 
 print('Applied Alpha.53 active tunnel-floor protection fix.')
