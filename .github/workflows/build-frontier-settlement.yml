@@ -56,7 +56,7 @@ jobs:
           chmod +x gradlew
           java -version
           ./gradlew --version
-          python3 tools/test_alpha43_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-audit.log"
+          python3 tools/test_alpha44_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-audit.log"
           git diff --check
           git diff --exit-code
 
