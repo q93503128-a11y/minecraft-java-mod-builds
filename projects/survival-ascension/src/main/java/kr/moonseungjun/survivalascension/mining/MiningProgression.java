@@ -18,6 +18,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -148,9 +149,29 @@ public final class MiningProgression {
     }
 
     private static int xpForBlock(BlockState state, ServerLevel level, BlockPos pos) {
-        if (state.is(VALUABLE_ORES)) return 20;
+        if (state.is(Blocks.COAL_ORE)) return 6;
+        if (state.is(Blocks.DEEPSLATE_COAL_ORE)) return 7;
+        if (state.is(Blocks.COPPER_ORE)) return 7;
+        if (state.is(Blocks.DEEPSLATE_COPPER_ORE)) return 8;
+        if (state.is(Blocks.IRON_ORE)) return 9;
+        if (state.is(Blocks.DEEPSLATE_IRON_ORE)) return 10;
+        if (state.is(Blocks.NETHER_QUARTZ_ORE)) return 8;
+        if (state.is(Blocks.NETHER_GOLD_ORE)) return 8;
+        if (state.is(Blocks.GOLD_ORE)) return 12;
+        if (state.is(Blocks.DEEPSLATE_GOLD_ORE)) return 13;
+        if (state.is(Blocks.REDSTONE_ORE)) return 10;
+        if (state.is(Blocks.DEEPSLATE_REDSTONE_ORE)) return 11;
+        if (state.is(Blocks.LAPIS_ORE)) return 11;
+        if (state.is(Blocks.DEEPSLATE_LAPIS_ORE)) return 12;
+        if (state.is(Blocks.DIAMOND_ORE)) return 18;
+        if (state.is(Blocks.DEEPSLATE_DIAMOND_ORE)) return 20;
+        if (state.is(Blocks.EMERALD_ORE)) return 20;
+        if (state.is(Blocks.DEEPSLATE_EMERALD_ORE)) return 22;
+        if (state.is(Blocks.ANCIENT_DEBRIS)) return 24;
+        if (state.is(Blocks.OBSIDIAN)) return 16;
+        if (state.is(Blocks.CRYING_OBSIDIAN)) return 18;
         float hardness = Math.max(0.0F, state.getDestroySpeed(level, pos));
-        return Math.max(1, Math.min(6, (int) Math.ceil(hardness)));
+        return Math.max(1, Math.min(8, (int) Math.ceil(hardness)));
     }
 
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {

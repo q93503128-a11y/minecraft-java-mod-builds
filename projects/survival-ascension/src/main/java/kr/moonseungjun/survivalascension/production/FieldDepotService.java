@@ -39,11 +39,11 @@ public final class FieldDepotService {
         ServerLevel level = (ServerLevel) player.level();
         BlockPos barrel = findNearestBarrel(level, player.blockPosition());
         if (barrel == null) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f4블록 이내에 등록할 §6배럴§f이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f4블록 이내에 등록할 §6통§f이 없습니다."));
             return;
         }
         if (!level.mayInteract(player, barrel)) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴에는 상호작용할 권한이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통에는 상호작용할 권한이 없습니다."));
             return;
         }
 
@@ -52,15 +52,15 @@ public final class FieldDepotService {
         if (depots.owns(player, dimension, barrel)) {
             depots.remove(player, dimension, barrel);
             OutpostService.onDepotRemoved(player, dimension, barrel);
-            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f배럴 거점 연결을 해제했습니다. §7이 앵커의 창고 배럴 링크와 전초기지 승격도 함께 해제되며 재료는 반환되지 않습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류 해제] §f통 거점 연결을 해제했습니다. §7이 앵커의 창고 통 링크와 전초기지 승격도 함께 해제되며 재료는 반환되지 않습니다."));
             return;
         }
         if (depots.isLinkedByOwner(player, dimension, barrel)) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 자신의 창고 확장 배럴입니다. §7먼저 '창고 배럴 연결'에서 해제하세요."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통은 자신의 창고 확장 통입니다. §7먼저 '창고 통 연결'에서 해제하세요."));
             return;
         }
         if (depots.isLinkedByAny(dimension, barrel)) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 다른 물류 창고군에 이미 연결되어 있습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통은 다른 물류 창고군에 이미 연결되어 있습니다."));
             return;
         }
         if (depots.count(player) >= FieldDepotData.MAX_DEPOTS_PER_PLAYER) {
@@ -77,7 +77,7 @@ public final class FieldDepotService {
 
         FieldDepotData.AddResult result = depots.add(player, dimension, barrel);
         if (result == FieldDepotData.AddResult.CLAIMED_BY_OTHER) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 배럴은 다른 물류 거점/창고군에 이미 연결되어 있습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f이 통은 다른 물류 거점/창고군에 이미 연결되어 있습니다."));
             return;
         }
         if (result != FieldDepotData.AddResult.ADDED) {
@@ -89,14 +89,14 @@ public final class FieldDepotService {
             player.sendSystemMessage(Component.literal("§3[현장 물류] §f보급권 상태가 바뀌어 등록을 취소했습니다."));
             return;
         }
-        player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f배럴 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
-                + "§f을 거점 앵커로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 배럴 최대 "
+        player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f통 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
+                + "§f을 거점 앵커로 연결했습니다. §7같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 확장 가능"));
     }
 
     public static void toggleWarehouseNearest(ServerPlayer player) {
         if (player.isCreative() || player.isSpectator()) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f크리에이티브/관전자 상태에서는 창고 배럴을 연결할 수 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f크리에이티브/관전자 상태에서는 창고 통을 연결할 수 없습니다."));
             return;
         }
         if (!InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
@@ -106,49 +106,49 @@ public final class FieldDepotService {
         ServerLevel level = (ServerLevel) player.level();
         BlockPos target = findNearestBarrel(level, player.blockPosition());
         if (target == null) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f4블록 이내에 대상 §6배럴§f이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f4블록 이내에 대상 §6통§f이 없습니다."));
             return;
         }
         if (!level.mayInteract(player, target)) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴에는 상호작용할 권한이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 통에는 상호작용할 권한이 없습니다."));
             return;
         }
 
         String dimension = level.dimension().toString();
         FieldDepotData data = FieldDepotData.get(player);
         if (data.isRegisteredAnchor(dimension, target)) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f등록 거점 앵커 자체는 확장 배럴 대상이 아닙니다. §7연결할 배럴 쪽에 더 가까이 서서 다시 선택하세요."));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f등록 거점 앵커 자체는 확장 통 대상이 아닙니다. §7연결할 통 쪽에 더 가까이 서서 다시 선택하세요."));
             return;
         }
         if (data.isLinkedByOwner(player, dimension, target)) {
             data.removeLink(player, dimension, target);
-            player.sendSystemMessage(Component.literal("§3[창고 배럴 해제] §f배럴 §e" + coords(target) + "§f을 현재 창고군에서 해제했습니다. §7내용물은 실제 배럴 안에 그대로 남습니다."));
+            player.sendSystemMessage(Component.literal("§3[창고 통 해제] §f통 §e" + coords(target) + "§f을 현재 창고군에서 해제했습니다. §7내용물은 실제 통 안에 그대로 남습니다."));
             return;
         }
         if (data.isLinkedByAny(dimension, target)) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴은 다른 플레이어의 창고군에 이미 연결되어 있습니다."));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 통은 다른 플레이어의 창고군에 이미 연결되어 있습니다."));
             return;
         }
 
         FieldDepotData.DepotEntry depot = nearestOwnedDepotForTarget(player, level, target);
         if (depot == null) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 배럴에서 §e" + FieldDepotData.MAX_LINK_RADIUS
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 통에서 §e" + FieldDepotData.MAX_LINK_RADIUS
                     + "블록§f 안에 로딩·상호작용 가능한 자신의 등록 거점 앵커가 없습니다."));
             return;
         }
         FieldDepotData.LinkResult result = data.addLink(player, depot, target);
         if (result == FieldDepotData.LinkResult.LIMIT_REACHED) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 거점은 이미 확장 배럴 §e"
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f이 거점은 이미 확장 통 §e"
                     + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개§f를 사용 중입니다."));
             return;
         }
         if (result != FieldDepotData.LinkResult.ADDED) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f창고 배럴을 연결하지 못했습니다. §7(" + result.name() + ")"));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f창고 통을 연결하지 못했습니다. §7(" + result.name() + ")"));
             return;
         }
-        player.sendSystemMessage(Component.literal("§b[창고 배럴 연결] §f배럴 §e" + coords(target) + "§f → 거점 §e" + coords(depot.pos())
+        player.sendSystemMessage(Component.literal("§b[창고 통 연결] §f통 §e" + coords(target) + "§f → 거점 §e" + coords(depot.pos())
                 + " §7· " + data.linkedCount(player, depot) + "/" + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT
-                + " · 별도 보급권 없음 · 실제 배럴 용량 그대로 사용"));
+                + " · 별도 보급권 없음 · 실제 통 용량 그대로 사용"));
     }
 
     public static void sendStatus(ServerPlayer player) {
@@ -157,13 +157,14 @@ public final class FieldDepotService {
         int activeDepots = activeDepotCount(player);
         int activeBarrels = activeStorageBarrelCount(player);
         player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + FieldDepotData.MAX_DEPOTS_PER_PLAYER
-                + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 배럴 §b" + activeBarrels
+                + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels
                 + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
-        player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 배럴 최대 "
+        player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 연결 · 전체 링크 " + data.totalLinkedCount(player)));
-        player.sendSystemMessage(Component.literal("  §7- 현장 일괄 적재: 주 인벤토리 슬롯9~35의 대량 자원만 가까운 사용 가능 배럴부터 적재 · 핫바/장비 유지"));
+        player.sendSystemMessage(Component.literal("  §7- 재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터, 부족분만 플레이어 인벤토리에서 사용"));
+        player.sendSystemMessage(Component.literal("  §7- 현장 일괄 적재: 주 인벤토리 슬롯9~35의 대량 자원만 가까운 사용 가능 통부터 적재 · 핫바/장비 유지"));
         if (depots.isEmpty()) {
-            player.sendSystemMessage(Component.literal("  §7- 4블록 내 배럴에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
+            player.sendSystemMessage(Component.literal("  §7- 4블록 내 통에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
             return;
         }
         String currentDimension = player.level().dimension().toString();
@@ -209,6 +210,20 @@ public final class FieldDepotService {
     public static boolean consumeMatching(ServerPlayer player, Predicate<ItemStack> matcher, int amount) {
         if (matcher == null || amount <= 0 || countMatching(player, matcher) < amount) return false;
         int remaining = amount;
+        List<Container> containers = usableContainers(player);
+        for (Container container : containers) {
+            boolean changed = false;
+            for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (!matcher.test(stack)) continue;
+                int take = Math.min(remaining, stack.getCount());
+                stack.shrink(take);
+                remaining -= take;
+                changed = true;
+            }
+            if (changed) container.setChanged();
+            if (remaining <= 0) break;
+        }
         for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
             if (!matcher.test(stack)) continue;
@@ -217,17 +232,7 @@ public final class FieldDepotService {
             remaining -= take;
         }
         player.getInventory().setChanged();
-        for (Container container : usableContainers(player)) {
-            for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
-                ItemStack stack = container.getItem(slot);
-                if (!matcher.test(stack)) continue;
-                int take = Math.min(remaining, stack.getCount());
-                stack.shrink(take);
-                remaining -= take;
-            }
-            container.setChanged();
-            if (remaining <= 0) break;
-        }
+        player.containerMenu.broadcastChanges();
         return remaining == 0;
     }
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.42.1-alpha.1
+- Reworked the in-game guide into a scrollable gameplay reference: body scissor clipping, mouse-wheel scrolling and a visible scrollbar replace the old hard bottom cutoff.
+- Removed patch-note wording such as `0.42부터` from `GuideScreen`; release history remains in this file instead.
+- Added explicit World Ascension guidance: world start Stage0 `각성`, first Wither kill Stage1 `전설`, first Ender Dragon kill Stage2 `종말`, plus current consequences/unlocks.
+- Accelerated early mastery progression with a smooth discount that fades out by Lv60. Approximate cumulative XP: Lv10 1190->453, Lv30 17520->11610, Lv60 121890->107010, Lv90 394110->379230, Lv100 536150->521270.
+- Existing saved total XP is preserved; because level is derived from total XP, old characters may resolve slightly upward under the new thresholds.
+- Replaced flat `valuable_ores = 20 XP` mining valuation with material tiers while keeping the same tag for vein/extract eligibility.
+- Key mining values: Copper7/8, Iron9/10, Gold12/13, Diamond18/20, Emerald20/22, Ancient Debris24, Obsidian16, Crying Obsidian18. This removes the old copper20 > obsidian6 inversion.
+- Clarified player-facing `배럴` terminology as Minecraft's normal `통 (Barrel)` block in the guide, production radial and field-logistics messages.
+- Reversed shared logistics-backed material consumption order: nearest usable physical logistics `통` Containers first, then player inventory only for the shortfall.
+- The storage-first order automatically affects existing systems already using `FieldDepotService.consume*` such as Construction, Infrastructure and replant/material sinks; no virtual storage or new resolver is added.
+- Vanilla crafting-table grids remain vanilla and do not remotely pull storage. Apex/Ascension Trial entry also remains carried-only.
+- No new SavedData, packet/protocol, custom block/item/entity, force-load or third-party asset/dependency.
+
 ## 0.42.0-alpha.1
 - Added `Physical Freight Relay / 물리 화물 중계` so actual logistics stock can move between physical outposts instead of roads/rails remaining decorative infrastructure.
 - Added `FreightService` using vanilla Chest Minecarts, rails, real Barrel Containers and existing `FieldDepotData`/warehouse links; no new custom entity/block/item or dependency.
@@ -41,7 +55,7 @@
 - Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock.
 
 ## 0.34.0-alpha.1
-- Added shared inventory-first + nearest real-Barrel resolver for industrial batches, unfinished infrastructure and equipment spending. Apex/Trial entry stayed player-carried.
+- Added shared material resolver for industrial batches, unfinished infrastructure and equipment spending. 0.42.1 changes its consumption order to nearest usable physical logistics storage first, then player inventory. Apex/Trial entry stays player-carried.
 
 ## 0.33.0-alpha.1
 - Added one bounded sortie complication to each new operation: DEEP_FRONT, FORWARD_SHIFT or HOT_EXTRACTION.

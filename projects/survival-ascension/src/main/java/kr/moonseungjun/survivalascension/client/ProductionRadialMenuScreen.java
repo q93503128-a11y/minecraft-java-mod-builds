@@ -23,16 +23,16 @@ import org.joml.Matrix3x2f;
 
 public final class ProductionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
-            new Entry("시설 투자", "산업 가공소 투자 · 마지막 투입은 실제 배럴 준공 현장 필요", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
+            new Entry("시설 투자", "산업 가공소 투자 · 마지막 투입은 실제 통 준공 현장 필요", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
             new Entry("제련 배치", "철원석96 · 구리원석96 · 석탄64", new ItemStack(Items.BLAST_FURNACE), "metalworks", Action.PRODUCE),
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
             new Entry("정밀 부품 배치", "레드128 · 자수정64 · 금32 · 석영64", new ItemStack(Items.COMPARATOR), "precision", Action.PRODUCE),
-            new Entry("물류 거점 연결", "4블록 내 배럴 앵커 등록/해제 · 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
-            new Entry("창고 배럴 연결", "4블록 내 실제 배럴 ↔ 반경6 자신의 거점 · 거점당 최대8 · 보급권 없음", new ItemStack(Items.CHEST), "", Action.WAREHOUSE),
-            new Entry("현장 일괄 적재", "주 인벤토리 대량자원 → 가까운 사용 가능 실제 배럴 · 핫바/장비 유지", new ItemStack(Items.HOPPER), "", Action.OFFLOAD),
+            new Entry("물류 거점 연결", "4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
+            new Entry("창고 통 연결", "4블록 내 실제 통 ↔ 반경6 자신의 거점 · 거점당 최대8 · 보급권 없음", new ItemStack(Items.CHEST), "", Action.WAREHOUSE),
+            new Entry("현장 일괄 적재", "주 인벤토리 대량자원 → 가까운 사용 가능 실제 통 · 핫바/장비 유지", new ItemStack(Items.HOPPER), "", Action.OFFLOAD),
             new Entry("물리 화물 수레", "산업+토목 · 활성 전초+레일 위 상자 광산수레 · 창고↔다른 전초 실제 운송", new ItemStack(Items.CHEST_MINECART), "", Action.FREIGHT),
-            new Entry("전초기지 승격", "등록 배럴+침대+모닥불+작업대+화로 · 보급권2/철32/금8/석탄32", new ItemStack(Items.CAMPFIRE), "", Action.OUTPOST),
+            new Entry("전초기지 승격", "등록 통+침대+모닥불+작업대+화로 · 보급권2/철32/금8/석탄32", new ItemStack(Items.CAMPFIRE), "", Action.OUTPOST),
             new Entry("전초 방어전", "활성 전초4블록 · 보급권1 · 3공세 · 앵커6블록 돌파압력 방어", new ItemStack(Items.SHIELD), "", Action.SIEGE),
             new Entry("요새 방어전", "반경6~12 실제 벽 사분면12열씩 · 보급권2 · 4공세 · 별도 방어력 보너스 없음", new ItemStack(Items.STONE_BRICK_WALL), "", Action.BASTION),
             new Entry("원정 작전", "완수 지역 전초에서 보급권1 · 전진선 돌파→현지 작업→같은 전초 귀환", new ItemStack(Items.SPYGLASS), "", Action.OPERATION),
