@@ -212,6 +212,10 @@ public final class SettlementMilitaryOutpostService {
         }
         Monster threat = nearestCombatThreat(level, outpost.center());
         if (threat != null) { sentry.setTarget(threat); return; }
+        // The dangerous overlay may remain active because of darkness/creeper pressure even when
+        // there is no immediate combat target. In that idle window, equip only from the local
+        // stockpile; an actual combat target always wins before this branch.
+        if (SettlementMilitaryArmoryService.tickOutpostArmament(level, outpost, sentry)) return;
         standDown(outpost, sentry);
     }
 

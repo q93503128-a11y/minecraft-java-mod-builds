@@ -21,4 +21,6 @@ enum_block=building.split('public enum BuildingType {',1)[1].split(';',1)[0]; ac
 if actual!=expected: raise SystemExit(f'alpha.62 expected exact 15 functional building families, got: {actual}')
 must(props,('mod_version=0.1.0-alpha.62','road-bound physical remote-sentry external-weapon reverse supply'),'alpha.62 props')
 must(lock,('"frontier_settlement": "0.1.0-alpha.62"','Alpha.62 extends the existing military reverse-supply transporter','third-priority exact external weapon cargo after food/metal reserves','No new transport authority, worker, save field, hard weapon dependency, force-load or teleport','"status": "candidate_runtime_lock"'),'alpha.62 lock')
+patrol=military.find('private static void patrol('); target=military.find('Monster threat = nearestCombatThreat',patrol); arm_idle=military.find('if (SettlementMilitaryArmoryService.tickOutpostArmament(level, outpost, sentry)) return;',target); stand=military.find('standDown(outpost, sentry);',arm_idle)
+if min(patrol,target,arm_idle,stand)<0 or not (patrol < target < arm_idle < stand): raise SystemExit('alpha.62 immediate combat must precede local sentry armament and stand-down')
 print('Frontier Settlement alpha.23-62 cumulative source audit: PASS')
