@@ -46,8 +46,9 @@ jobs:
             python3 "$PROJECT_DIR/tools/apply_alpha52.py"
             python3 - <<'PY'
           from pathlib import Path
-          path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementData.java')
-          text = path.read_text(encoding='utf-8')
+
+          data_path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementData.java')
+          text = data_path.read_text(encoding='utf-8')
           old = '''    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
                   beginRoadConstruction(centers, profile, List.of());
               }'''
@@ -59,7 +60,35 @@ jobs:
               }'''
           if old not in text:
               raise SystemExit('alpha.52 profiled-road compatibility patch anchor missing')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          data_path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          audit_path = Path('projects/frontier-settlement/tools/test_alpha52_source.py')
+          audit = audit_path.read_text(encoding='utf-8')
+          old_audit = '''if not ALPHA51.exists(): raise SystemExit('historical Alpha.51 source audit must remain present')
+          alpha51 = text(ALPHA51).replace("print('Frontier Settlement alpha.23-51 cumulative source audit: PASS')", 'pass')
+          alpha51 = alpha51.replace('0.1.0-alpha.51', '0.1.0-alpha.52')
+          namespace = {'__file__': str(ALPHA51), '__name__': '__main__'}
+          exec(compile(alpha51, str(ALPHA51), 'exec'), namespace, namespace)'''
+          new_audit = '''if not ALPHA51.exists(): raise SystemExit('historical Alpha.51 source audit must remain present')
+          alpha51 = text(ALPHA51).replace("print('Frontier Settlement alpha.23-51 cumulative source audit: PASS')", 'pass')
+          alpha51 = alpha51.replace('0.1.0-alpha.51', '0.1.0-alpha.52')
+          _original_read_text = Path.read_text
+          def _alpha52_audit_read_text(path, *args, **kwargs):
+              source = _original_read_text(path, *args, **kwargs)
+              if path.name == 'test_current_source.py':
+                  source = source.replace("'MAX_BRIDGE_SPAN = 6'", "'MAX_SHORT_BRIDGE_SPAN = 6'")
+                  source = source.replace("'data.beginRoadConstruction(chosen.centers(), chosen.profile())'",
+                                          "'data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports())'")
+              return source
+          Path.read_text = _alpha52_audit_read_text
+          try:
+              namespace = {'__file__': str(ALPHA51), '__name__': '__main__'}
+              exec(compile(alpha51, str(ALPHA51), 'exec'), namespace, namespace)
+          finally:
+              Path.read_text = _original_read_text'''
+          if old_audit not in audit:
+              raise SystemExit('alpha.52 cumulative audit rebind anchor missing')
+          audit_path.write_text(audit.replace(old_audit, new_audit, 1), encoding='utf-8')
           PY
             python3 "$PROJECT_DIR/tools/test_alpha52_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha52_docs.py"
