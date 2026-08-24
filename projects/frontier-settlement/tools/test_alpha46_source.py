@@ -67,7 +67,7 @@ must(waterfront, (
     'WATER_TRADER_TAG',
     'countFish(container) < TRADE_FISH_COST',
     'SettlementInventory.insert(container, new ItemStack(Items.EMERALD, 1))',
-    'general stock is never auto-sold',
+    'Ordinary outpost stock is never auto-sold',
     'onBreakBlock(BreakBlockEvent event)',
 ), 'alpha.46 real-wood pier and opt-in physical fish trade')
 forbid(waterfront, (
