@@ -75,11 +75,13 @@ with zipfile.ZipFile(jar) as zf:
     equipment_ui = zf.read(equipment_ui_name)
     for token in [
         b"HEAD_ARMOR", b"CHEST_ARMOR", b"LEG_ARMOR", b"FOOT_ARMOR",
-        b"armorDamageMultiplier", b"armorXpMultiplier", b"getArmorSlots",
+        b"armorDamageMultiplier", b"armorXpMultiplier", b"ARMOR_SLOTS", b"getItemBySlot",
         b"IRON_HELMET", b"DIAMOND_CHESTPLATE", b"NETHERITE_LEGGINGS", b"NETHERITE_BOOTS",
     ]:
         if token not in affix:
             raise SystemExit(f"0.51 compiled armor-affix token missing: {token!r}")
+    if b"getArmorSlots" in affix:
+        raise SystemExit("0.51 compiled armor-affix still contains obsolete getArmorSlots API")
     for token in [b"armorDamageMultiplier", b"armorXpMultiplier"]:
         if token not in combat:
             raise SystemExit(f"0.51 compiled worn-armor routing missing: {token!r}")
