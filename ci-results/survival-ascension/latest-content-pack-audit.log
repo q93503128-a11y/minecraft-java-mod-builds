@@ -1,2 +1,18 @@
-baseline content-pack assertion: 0.48 PROJECT contract missing
-RELEASE CONTENT-PACK AUDIT FAIL: baseline regression contract failed
+content_pack_source_audit=PASS
+locked_external_mods=6
+loader_specific_artifact_selection=PASS
+skill_xp_normalization=PASS
+content_pack_progression_bridge=PASS
+frontline_local_supply_bridge=PASS
+frontline_local_supply_docs=PASS
+external_equipment_imprint=PASS
+amethyst_resonance_shovel_bridge=PASS
+external_component_preservation_contract=PASS
+bop_expedition_bridge=PASS
+generic_enemy_boss_bridge=PASS
+major_external_target_bridge=PASS
+passive_combat_xp_farm=REMOVED
+frontline_freight_manifest=PASS
+regional_logistics_scale=PASS
+armor_affix_content_bridge=PASS
+RELEASE CONTENT-PACK AUDIT PASS
