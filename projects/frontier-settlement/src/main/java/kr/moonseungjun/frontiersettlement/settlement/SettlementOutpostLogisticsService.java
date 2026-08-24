@@ -26,8 +26,8 @@ import java.util.function.Predicate;
  * remote chunks just to keep logistics simulation running. A completed cart station only changes
  * the town-side freight destination/capacity; it never becomes a second route-navigation authority.
  * Alpha.41 also lets this same transporter carry real food/metal back to an active military outpost;
- * Alpha.46 lets that same worker reverse-supply real wood for an incomplete waterfront pier when no
- * military supply job is active. There is still only one authority for long-distance outpost transport.
+ * there is still only one authority for long-distance outpost transport. Alpha.46 lets that same
+ * worker reverse-supply real wood for an incomplete waterfront pier when no military supply job is active.
  *
  * Alpha.42 may redeem bounded unloaded logistics-time by raising the next real pickup batch. The
  * deferred number is never cargo: source extraction, carried ItemStack, road travel and destination
