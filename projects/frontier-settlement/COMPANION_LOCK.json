@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.64"
+    "frontier_settlement": "0.1.0-alpha.65"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -33,7 +33,8 @@
     "Alpha.62 extends the existing military reverse-supply transporter with a third-priority exact external weapon cargo after food/metal reserves: the same assigned road worker physically carries one recognized weapon to the outpost stockpile, the idle sentry equips that exact stack locally, and death returns the exact equipped weapon once. No new transport authority, worker, save field, hard weapon dependency, force-load or teleport is added.",
     "Alpha.63 hardens the same road transporter transaction boundary: stale in-flight external-weapon demand is rechecked at the outpost before insertion and the exact carried stack returns through the existing road path, while a tagged transporter death recovers its exact MAINHAND cargo once. No new route authority, save field, virtual cargo, force-load, teleport or hard companion dependency is added.",
     "Alpha.64 makes existing food-funded resident arrivals atomic: ordinary workers, workshop artisans and outpost transporters must successfully enter the server world before real food and population commit, and an unexpected post-spawn food failure discards only that new worker. Assigned-worker spawn rechecks current loaded assignment and adds no reservation/save/logistics authority.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.64 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.65 gives local production/workshop civilians exact physical MAINHAND cargo recovery on death, with legacy-name compatibility and an explicit exclusion for road transporters so Alpha.63 remains their only recovery handler. No companion dependency, save ledger, virtual inventory or logistics authority is added.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.65 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},

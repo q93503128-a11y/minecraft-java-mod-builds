@@ -8,6 +8,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -17,12 +18,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.Tags;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public final class SettlementWorkerService {
+    public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";
     private static final String LUMBER_WORKER_NAME = "벌목 주민";
     private static final String FARM_WORKER_NAME = "농사 주민";
     private static final String QUARRY_WORKER_NAME = "채석 주민";
@@ -155,8 +158,38 @@ public final class SettlementWorkerService {
         worker.setCustomNameVisible(true);
         worker.setPersistenceRequired();
         worker.setNoAi(false);
+        worker.addTag(RESOURCE_WORKER_TAG);
         if (!level.addFreshEntity(worker)) return null;
         return worker;
+    }
+
+    /**
+     * Frontier-managed local civilians can carry the only physical copy of harvested/staged cargo.
+     * Remove vanilla equipment-drop randomness and expose that exact MAINHAND stack once.
+     * The road transporter keeps its separate Alpha.63 handler and is explicitly excluded here.
+     */
+    public static void onLivingDrops(LivingDropsEvent event) {
+        if (!(event.getEntity() instanceof Villager worker)) return;
+        if (worker.entityTags().contains(SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG)) return;
+        if (!isManagedCargoWorker(worker)) return;
+        ItemStack carried = worker.getMainHandItem();
+        event.getDrops().clear();
+        if (carried.isEmpty()) return;
+        event.getDrops().add(new ItemEntity(
+                worker.level(), worker.getX(), worker.getY(), worker.getZ(), carried.copy()));
+    }
+
+    private static boolean isManagedCargoWorker(Villager worker) {
+        if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
+                || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)) {
+            return true;
+        }
+        // Save-compatible fallback for pre-Alpha.65 ordinary workers that did not yet carry a role tag.
+        Component name = worker.getCustomName();
+        if (name == null) return false;
+        String value = name.getString();
+        return LUMBER_WORKER_NAME.equals(value) || FARM_WORKER_NAME.equals(value)
+                || QUARRY_WORKER_NAME.equals(value) || MINE_WORKER_NAME.equals(value);
     }
 
     private static void workLumber(ServerLevel level, SettlementData data,

@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.64
+## Current version: 0.1.0-alpha.65
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.63 key was added.
+No new Alpha.65 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–63 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–65 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,21 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.65 — exact local civilian cargo death recovery
+
+Alpha.65 closes the remaining deterministic death-loss gap for Frontier civilians that physically carry settlement resources. It adds no new job, inventory or recovery ledger.
+
+- lumber, farm, quarry and mine workers now receive a persistent Frontier resource-worker entity tag when newly recruited; pre-Alpha.65 saves remain recognized by their existing exact Frontier worker names;
+- workshop artisans are recognized through their existing workshop assignment tag;
+- when one of those managed civilians dies, vanilla equipment-drop randomness is cleared and its current MAINHAND ItemStack is emitted exactly once as a physical world drop;
+- an empty MAINHAND creates no item; death never refunds the worker's food recruitment cost or mints the resources it had already deposited;
+- the rule covers physically harvested logs/wheat/stone/ore and workshop metal that has actually left shared storage;
+- road-bound outpost transporters are explicitly excluded from this handler and retain the dedicated Alpha.63 exact-cargo recovery path, preventing double recovery;
+- active building/road public-works builders remain governed by their existing invulnerable active-project lifecycle rather than a second cargo-death system;
+- no new SavedData field, virtual cargo, refund currency, force-load, teleport, worker-management UI or logistics authority is introduced.
+
+This closes the statically reproducible local civilian MAINHAND loss boundary. Repeated death/replacement, save/reload, route unload and two-client runtime acceptance remain real-play work rather than being claimed complete.
 
 ## Alpha.64 — atomic food-funded worker arrivals
 
