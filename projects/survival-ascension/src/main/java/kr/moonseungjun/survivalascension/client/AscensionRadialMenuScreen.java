@@ -3,7 +3,6 @@ package kr.moonseungjun.survivalascension.client;
 /*
  * Radial interaction geometry and presentation are adapted from MineMenu.
  * MineMenu: Copyright (c) 2013 Dylan Miller, MIT License.
- * 26.2 GUI render-state submission follows the current public radial pattern used by JustDireThings.
  * See THIRD_PARTY_NOTICES.md and META-INF/third-party/MINEMENU_MIT.txt.
  */
 
@@ -34,10 +33,9 @@ public final class AscensionRadialMenuScreen extends Screen {
             new Entry("닫기", "게임으로 돌아가기", new ItemStack(Items.BARRIER), Action.CLOSE)
     };
     private static final int ITEM_COUNT = ENTRIES.length;
-    private static final double ANGLE_PER_ITEM = 360.0D / ITEM_COUNT;
     private static final float OUTER_RADIUS = 80.0F;
     private static final float INNER_RADIUS = 60.0F;
-    private static final int MENU_A = 153, SELECT_A = 153;
+    private static final double ICON_RADIUS = Math.sqrt(2.0D * 61.5D * 61.5D);
 
     public AscensionRadialMenuScreen() { super(Component.literal("Survival Ascension")); }
     @Override public boolean isPauseScreen() { return false; }
@@ -46,18 +44,21 @@ public final class AscensionRadialMenuScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) return;
-        int centerX = this.width / 2, centerY = this.height / 2, selected = selectedIndex();
-        Matrix3x2f capturedPose = new Matrix3x2f(graphics.pose());
+        if (Minecraft.getInstance().level == null) return;
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+        int selected = RadialMenuGeometry.selectedIndex(ITEM_COUNT);
+        Matrix3x2f pose = new Matrix3x2f(graphics.pose());
         ScreenRectangle scissor = graphics.peekScissorStack();
-        graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI, TextureSetup.noTexture(), capturedPose, centerX, centerY, selected, scissor));
+        graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI, TextureSetup.noTexture(), pose, centerX, centerY, selected, scissor));
+
         for (int i = 0; i < ITEM_COUNT; i++) {
-            double angle = Math.toRadians(ANGLE_PER_ITEM * i + 90.0D);
-            double radius = Math.sqrt(2.0D * 61.5D * 61.5D);
-            graphics.item(ENTRIES[i].icon(), (int) Math.round(centerX - radius * Math.cos(angle)) - 8,
-                    (int) Math.round(centerY + radius * Math.sin(angle)) - 8);
+            double angle = RadialMenuGeometry.iconRadians(i, ITEM_COUNT);
+            graphics.item(ENTRIES[i].icon(),
+                    (int) Math.round(centerX + ICON_RADIUS * Math.cos(angle)) - 8,
+                    (int) Math.round(centerY + ICON_RADIUS * Math.sin(angle)) - 8);
         }
+
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), centerX - this.font.width(entry.title()) / 2, centerY - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), centerX - this.font.width(entry.detail()) / 2, centerY + 8, 0xFFB8B8B8, false);
@@ -65,9 +66,10 @@ public final class AscensionRadialMenuScreen extends Screen {
         graphics.text(this.font, caption, centerX - this.font.width(caption) / 2, centerY - 102, 0xFFE0E0E0, true);
     }
 
-    @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() != 0) return false;
-        activate(ENTRIES[selectedIndex()].action());
+        activate(ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)].action());
         return true;
     }
 
@@ -83,21 +85,6 @@ public final class AscensionRadialMenuScreen extends Screen {
         }
     }
 
-    private static int selectedIndex() {
-        double angle = correctAngle(360.0D - (getMouseAngle() - ANGLE_PER_ITEM / 2.0D));
-        return Mth.clamp((int) Math.floor(angle / ANGLE_PER_ITEM), 0, ITEM_COUNT - 1);
-    }
-    private static double getMouseAngle() {
-        Minecraft minecraft = Minecraft.getInstance();
-        double ox = minecraft.getWindow().getScreenWidth() * 0.5D, oy = minecraft.getWindow().getScreenHeight() * 0.5D;
-        return correctAngle(-Math.toDegrees(Math.atan2(minecraft.mouseHandler.xpos() - ox, minecraft.mouseHandler.ypos() - oy)));
-    }
-    private static double correctAngle(double angle) {
-        while (angle < 0.0D) angle += 360.0D;
-        while (angle >= 360.0D) angle -= 360.0D;
-        return angle;
-    }
-
     private record Entry(String title, String detail, ItemStack icon, Action action) {}
     private enum Action { SKILLS, MINING, CONSTRUCTION, EQUIPMENT, INFRASTRUCTURE, GUIDE, CLOSE }
 
@@ -108,24 +95,27 @@ public final class AscensionRadialMenuScreen extends Screen {
                              int x, int y, int selected, ScreenRectangle scissorArea) {
             this(pipeline, textureSetup, pose, x, y, selected, scissorArea, boundsFor(x, y, pose, scissorArea));
         }
-        @Override public void buildVertices(VertexConsumer vertexConsumer) {
+
+        @Override
+        public void buildVertices(VertexConsumer vertexConsumer) {
             for (int i = 0; i < ITEM_COUNT; i++) {
-                double current = Math.toRadians(correctAngle(ANGLE_PER_ITEM * i + 90.0D + ANGLE_PER_ITEM / 2.0D));
-                double next = Math.toRadians(correctAngle(ANGLE_PER_ITEM * (i + 1) + 90.0D + ANGLE_PER_ITEM / 2.0D));
+                double start = RadialMenuGeometry.sectorStartRadians(i, ITEM_COUNT);
+                double end = RadialMenuGeometry.sectorEndRadians(i, ITEM_COUNT);
                 boolean hovered = i == selected;
                 float inner = ((INNER_RADIUS - (hovered ? 2.0F : 0.0F)) / 100.0F) * 130.0F;
                 float outer = ((OUTER_RADIUS + (hovered ? 2.0F : 0.0F)) / 100.0F) * 130.0F;
-                float p1ix = x + inner * Mth.cos((float) current), p1iy = y + inner * Mth.sin((float) current);
-                float p1ox = x + outer * Mth.cos((float) current), p1oy = y + outer * Mth.sin((float) current);
-                float p2ox = x + outer * Mth.cos((float) next), p2oy = y + outer * Mth.sin((float) next);
-                float p2ix = x + inner * Mth.cos((float) next), p2iy = y + inner * Mth.sin((float) next);
-                int r = hovered ? 255 : 0, a = hovered ? SELECT_A : MENU_A;
-                vertexConsumer.addVertexWith2DPose(pose, p1ox, p1oy).setColor(r, 0, 0, a);
-                vertexConsumer.addVertexWith2DPose(pose, p1ix, p1iy).setColor(r, 0, 0, a);
-                vertexConsumer.addVertexWith2DPose(pose, p2ix, p2iy).setColor(r, 0, 0, a);
-                vertexConsumer.addVertexWith2DPose(pose, p2ox, p2oy).setColor(r, 0, 0, a);
+                float p1ix = x + inner * Mth.cos((float) start), p1iy = y + inner * Mth.sin((float) start);
+                float p1ox = x + outer * Mth.cos((float) start), p1oy = y + outer * Mth.sin((float) start);
+                float p2ox = x + outer * Mth.cos((float) end), p2oy = y + outer * Mth.sin((float) end);
+                float p2ix = x + inner * Mth.cos((float) end), p2iy = y + inner * Mth.sin((float) end);
+                int red = hovered ? 255 : 0;
+                vertexConsumer.addVertexWith2DPose(pose, p1ox, p1oy).setColor(red, 0, 0, 153);
+                vertexConsumer.addVertexWith2DPose(pose, p1ix, p1iy).setColor(red, 0, 0, 153);
+                vertexConsumer.addVertexWith2DPose(pose, p2ix, p2iy).setColor(red, 0, 0, 153);
+                vertexConsumer.addVertexWith2DPose(pose, p2ox, p2oy).setColor(red, 0, 0, 153);
             }
         }
+
         private static ScreenRectangle boundsFor(int x, int y, Matrix3x2f pose, ScreenRectangle scissor) {
             ScreenRectangle wheel = new ScreenRectangle(x - 110, y - 110, 220, 220).transformMaxBounds(pose);
             return scissor != null ? scissor.intersection(wheel) : wheel;

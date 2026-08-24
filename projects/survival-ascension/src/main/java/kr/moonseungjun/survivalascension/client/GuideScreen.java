@@ -17,6 +17,10 @@ import java.util.Locale;
 public final class GuideScreen extends Screen {
     public enum Page { OVERVIEW, UNLOCKS, STATS, CONTROLS }
 
+    private static final int MAX_CONTENT_WIDTH = 760;
+    private static final int CONTENT_MARGIN = 18;
+    private static final int TEXT_LINE_HEIGHT = 10;
+
     private final Screen parent;
     private final Page page;
 
@@ -28,29 +32,71 @@ public final class GuideScreen extends Screen {
 
     @Override
     protected void init() {
-        int totalWidth = 4 * 76 + 3 * 4;
+        int buttonWidth = Math.min(76, Math.max(62, (this.width - 36) / 4 - 4));
+        int totalWidth = 4 * buttonWidth + 3 * 4;
         int x = (this.width - totalWidth) / 2;
         int y = 32;
-        addRenderableWidget(Button.builder(Component.literal("가이드"), b -> open(Page.OVERVIEW)).bounds(x, y, 76, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("해금표"), b -> open(Page.UNLOCKS)).bounds(x + 80, y, 76, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("통계"), b -> open(Page.STATS)).bounds(x + 160, y, 76, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("조작"), b -> open(Page.CONTROLS)).bounds(x + 240, y, 76, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("가이드"), b -> open(Page.OVERVIEW)).bounds(x, y, buttonWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("해금표"), b -> open(Page.UNLOCKS)).bounds(x + buttonWidth + 4, y, buttonWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("통계"), b -> open(Page.STATS)).bounds(x + (buttonWidth + 4) * 2, y, buttonWidth, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("조작"), b -> open(Page.CONTROLS)).bounds(x + (buttonWidth + 4) * 3, y, buttonWidth, 20).build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).bounds(this.width / 2 - 60, this.height - 30, 120, 20).build());
     }
 
-    private void open(Page target) { if (target != this.page) this.minecraft.gui.setScreen(new GuideScreen(this.parent, target)); }
+    private void open(Page target) {
+        if (target != this.page) this.minecraft.gui.setScreen(new GuideScreen(this.parent, target));
+    }
+
     @Override public void onClose() { this.minecraft.gui.setScreen(this.parent); }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, 14, 0xFFFFFFFF, true);
-        int left = Math.max(18, this.width / 2 - 190);
+
+        int contentWidth = Math.min(MAX_CONTENT_WIDTH, Math.max(120, this.width - CONTENT_MARGIN * 2));
+        int left = (this.width - contentWidth) / 2;
+        int bottom = this.height - 44;
         int y = 64;
+
         for (Line line : lines()) {
-            graphics.text(this.font, line.text(), left + line.indent(), y, line.color(), false);
-            y += line.gapAfter();
+            int lineLeft = left + line.indent();
+            int availableWidth = Math.max(80, contentWidth - line.indent());
+            List<String> wrapped = wrapToWidth(line.text(), availableWidth);
+            for (String segment : wrapped) {
+                if (y > bottom) return;
+                graphics.text(this.font, segment, lineLeft, y, line.color(), false);
+                y += TEXT_LINE_HEIGHT;
+            }
+            y += Math.max(3, line.gapAfter() - TEXT_LINE_HEIGHT);
         }
+    }
+
+    private List<String> wrapToWidth(String text, int maxWidth) {
+        if (text.isEmpty() || this.font.width(text) <= maxWidth) return List.of(text);
+        List<String> out = new ArrayList<>();
+        int start = 0;
+        while (start < text.length()) {
+            while (start < text.length() && text.charAt(start) == ' ') start++;
+            if (start >= text.length()) break;
+            int end = start;
+            int lastSpace = -1;
+            while (end < text.length()) {
+                if (text.charAt(end) == ' ') lastSpace = end;
+                String candidate = text.substring(start, end + 1);
+                if (this.font.width(candidate) > maxWidth) break;
+                end++;
+            }
+            if (end >= text.length()) {
+                out.add(text.substring(start).trim());
+                break;
+            }
+            int split = lastSpace >= start ? lastSpace : Math.max(start + 1, end);
+            String segment = text.substring(start, split).trim();
+            if (!segment.isEmpty()) out.add(segment);
+            start = split;
+        }
+        return out.isEmpty() ? List.of(text) : out;
     }
 
     private List<Line> lines() {
