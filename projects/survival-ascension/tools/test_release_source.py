@@ -120,8 +120,16 @@ need(combat, [
     "onEntityJoin(EntityJoinLevelEvent event)", "AscensionAffixes.isRangedProjectile(projectile)",
     "snapshotRangedProjectile(projectile, weapon, player.isShiftKeyDown())", "tryRangedBurst",
     "AscensionAffixes.isPrecisionRangedProjectile(direct)", "fieldMastery ? 6.0D", "fieldMastery ? 10",
-    "Math.min(0.65D", "projectileXpMultiplier(direct)"
+    "Math.min(0.65D", "projectileXpMultiplier(direct)",
+    'RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used"',
+    "getBooleanOr(RANGED_BURST_USED_KEY, false)", "putBoolean(RANGED_BURST_USED_KEY, true)"
 ], "0.52 ranged combat runtime")
+ordered(combat, [
+    "getBooleanOr(RANGED_BURST_USED_KEY, false)",
+    "if (nearby.isEmpty()) return;",
+    "putBoolean(RANGED_BURST_USED_KEY, true)",
+    "candidate.hurtServer(level, event.getSource(), burstDamage)"
+], "0.52 one physical burst per projectile")
 need(main_mod, ["CombatProgression::onEntityJoin", "ranged projectile snapshots/impact bursts"], "0.52 ranged event wiring")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.52 ranged world-loading policy")
 
@@ -193,4 +201,5 @@ print("- 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-fi
 print("- 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops")
 print("- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%")
 print("- 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded")
+print("- 0.52 each physical projectile can produce at most one area burst, including piercing shots")
 print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.52")
