@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.issue.title == '[SA046 APPLY RETRY INTERNAL]'
+    if: github.event.issue.title == '[SA046 APPLY RETRY2 INTERNAL]'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -25,7 +25,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Reset to latest main and extract applicator
+      - name: Reset to latest main and apply verified patch
         shell: bash
         run: |
           set -euo pipefail
@@ -34,17 +34,28 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           source = Path('.github/workflows/temporary-sa046-apply.yml').read_text(encoding='utf-8')
-          start = source.index("          python3 <<'PY'\n") + len("          python3 <<'PY'\n")
+          marker = "          python3 <<'PY'\n"
+          start = source.index(marker) + len(marker)
           end = source.index("\n          PY\n", start)
           block = source[start:end]
-          lines = []
-          for line in block.splitlines():
-              lines.append(line[10:] if line.startswith('          ') else line)
+          lines = [line[10:] if line.startswith('          ') else line for line in block.splitlines()]
           Path('/tmp/sa046_apply.py').write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
           python3 -m py_compile /tmp/sa046_apply.py
           python3 /tmp/sa046_apply.py
-          rm -f .github/workflows/temporary-sa046-runner.yml
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/THIRD_PARTY_NOTICES.md')
+          text = p.read_text(encoding='utf-8')
+          for value in (
+              'Content-pack project: Amethyst Resonance by Ghozix  \n',
+              'Locked Modrinth project/version: `8RyryQ7j` / `no0B3Ssy`  \n',
+              'Locked 26.2 NeoForge JAR SHA-1: `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`  \n',
+          ):
+              text = text.replace(value, value[:-3] + '\n', 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+          rm -f .github/workflows/temporary-sa046-runner.yml .github/workflows/temporary-sa046-diagnostic.yml
 
       - name: Source audit and Java 25 clean build
         working-directory: projects/survival-ascension
