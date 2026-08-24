@@ -50,7 +50,8 @@ public final class SettlementService {
         if (tick % 20 == 0) {
             boolean changed = refreshResources(server, data);
             boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
-            if (changed || activeProject || explorationChanged) broadcast(server, data);
+            if (changed || activeProject) broadcast(server, data);
+            else if (explorationChanged) broadcast(server, data);
         }
     }
 
