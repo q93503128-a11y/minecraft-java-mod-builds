@@ -1,0 +1,92 @@
+name: Trigger Survival Ascension 0.45 Apply
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: survival-ascension-v045-apply
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event.issue.title == '[SA045 APPLY INTERNAL]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Reset to latest main and extract applicator
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          python3 <<'PY'
+          from pathlib import Path
+          src = Path('.github/workflows/apply-survival-ascension-v045.yml').read_text(encoding='utf-8')
+          body = src.split("python3 <<'PY'\n", 1)[1].split("\n          PY", 1)[0]
+          out = []
+          for line in body.splitlines():
+              clean = line[10:] if line.startswith('          ') else line
+              if "entries = ''.join" in clean:
+                  clean = clean.replace(r"\\n' for r", r"\n' for r")
+              out.append(clean)
+          Path('/tmp/apply_sa045.py').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          PY
+          python3 -m py_compile /tmp/apply_sa045.py
+          python3 /tmp/apply_sa045.py
+          rm -f .github/workflows/trigger-survival-ascension-v045-issue.yml
+
+      - name: Audit and Java 25 clean build
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          python3 -m py_compile tools/test_current_source.py tools/test_content_pack_source.py tools/verify_jar.py tools/build_mrpack.py
+          python3 tools/test_current_source.py
+          python3 tools/test_content_pack_source.py
+          git diff --check
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          test -f build/libs/survivalascension-0.45.0-alpha.1.jar
+          python3 tools/verify_jar.py build/libs/survivalascension-0.45.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.45.0-alpha.1.jar --output build/Survival-Ascension-0.45.0-alpha.1-content-preview.mrpack
+          test -s build/Survival-Ascension-0.45.0-alpha.1-content-preview.mrpack
+
+      - name: Commit verified source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/apply-survival-ascension-v045.yml .github/workflows/trigger-survival-ascension-v045-issue.yml
+          git diff --cached --check
+          git commit -m "Survival Ascension 0.45 external world integration"
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Close internal trigger issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }} --comment "Internal Survival Ascension 0.45 apply trigger finished."
