@@ -38,14 +38,16 @@ jobs:
             set -euo pipefail
             if ! grep -q '^mod_version=0.1.0-alpha.56$' "$PROJECT_DIR/gradle.properties"; then exit 0; fi
             test -f "$PROJECT_DIR/tools/apply_alpha57.py"
+            test -f "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
             echo 'ALPHA57_BOOTSTRAP=1' >> "$GITHUB_ENV"
             python3 "$PROJECT_DIR/tools/apply_alpha57.py"
+            python3 "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
             python3 "$PROJECT_DIR/tools/test_alpha57_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha57_docs.py"
             git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            rm -f "$PROJECT_DIR/tools/apply_alpha57.py"
+            rm -f "$PROJECT_DIR/tools/apply_alpha57.py" "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
             git add -A "$PROJECT_DIR"
             git diff --cached --check
             git commit -m 'Implement Frontier alpha.57 physical barracks armament'
