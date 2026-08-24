@@ -58,8 +58,11 @@ public final class RealmEconomyManager {
         RealmEconomySavedData.Account account = data.account(player.getUUID());
         RealmEconomySavedData.MarketState market = data.updateMarket(currentDay(player));
         int wanted = wanted(player);
+        long realmTime = player.level().dimension().equals(StarterRealmManager.REALM_KEY)
+                ? player.level().getDayTime()
+                : 0L;
         PacketDistributor.sendToPlayer(player, new FantasyHudStatePayload(
-                account.silver(), account.renown(), wanted, professionName(account.profession()),
+                account.silver(), account.renown(), wanted, professionName(account.profession()), realmTime,
                 market.grain(), market.metal(), market.herb(), market.labor()
         ));
     }
