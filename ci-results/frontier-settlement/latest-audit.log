@@ -1,1 +1,1 @@
-network server guards missing: PROTOCOL = "7"
+alpha.43 project-progress synchronization missing: if (changed || activeProject) broadcast(server, data)
