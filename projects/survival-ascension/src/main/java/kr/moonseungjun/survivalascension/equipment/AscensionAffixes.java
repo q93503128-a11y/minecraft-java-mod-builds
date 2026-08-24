@@ -38,7 +38,7 @@ public final class AscensionAffixes {
     private static final String UTILITY = "utility";
     private static final String AWAKENED = "awakened";
     private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
-    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE);
+    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.ARMOR);
 
     private AscensionAffixes() {}
 
@@ -57,16 +57,16 @@ public final class AscensionAffixes {
     public static ItemStack createEliteDrop(RandomSource random, int rankId) {
         int rarity = Math.max(1, Math.min(3, rankId));
         Category category = GEAR_CATEGORIES.get(random.nextInt(GEAR_CATEGORIES.size()));
-        ItemStack stack = new ItemStack(baseItem(category, rarity));
+        ItemStack stack = new ItemStack(baseItem(category, rarity, random));
         rollAffixes(stack, random, rarity, category, false);
         return stack;
     }
 
     /**
-     * Content-pack bridge: any single-stack sword/pickaxe/axe/shovel/hoe that participates in the
-     * normal Minecraft item tags can receive Survival Ascension affixes without linking the
-     * optional mod's Java classes. Existing item components remain intact; only our nested
-     * CustomData key and display name are changed.
+     * Content-pack bridge: any single-stack sword/pickaxe/axe/shovel/hoe or humanoid armor item that
+     * participates in the normal Minecraft item tags can receive Survival Ascension affixes without
+     * linking the optional mod's Java classes. Existing item components remain intact; only our
+     * nested CustomData key and display name are changed.
      */
     public static boolean canImprint(ItemStack stack) {
         return !stack.isEmpty() && stack.getMaxStackSize() == 1 && rarity(stack) <= 0 && categoryForItem(stack) != Category.NONE;
@@ -79,6 +79,7 @@ public final class AscensionAffixes {
             case AXE -> "도끼";
             case SHOVEL -> "삽";
             case HOE -> "괭이";
+            case ARMOR -> "방어구";
             default -> "대상 아님";
         };
     }
@@ -162,7 +163,8 @@ public final class AscensionAffixes {
 
     public static double toolSpeedMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
-        if (rarity <= 0 || category(stack) == Category.WEAPON) return 1.0D;
+        Category category = category(stack);
+        if (rarity <= 0 || category == Category.WEAPON || category == Category.ARMOR || category == Category.NONE) return 1.0D;
         double result = 1.0D;
         if (has(stack, PRIMARY)) result *= switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
         if (has(stack, UTILITY)) result *= switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
@@ -177,8 +179,32 @@ public final class AscensionAffixes {
 
     public static double xpMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
-        if (rarity <= 0 || !has(stack, MASTERY)) return 1.0D;
+        if (rarity <= 0 || category(stack) == Category.ARMOR || !has(stack, MASTERY)) return 1.0D;
         return switch (rarity) { case 1 -> 1.10D; case 2 -> 1.25D; default -> 1.50D; };
+    }
+
+    public static double armorDamageMultiplier(ServerPlayer player, float incomingAmount, boolean environmental) {
+        double reduction = 0.0D;
+        boolean lowHealth = player.getHealth() <= player.getMaxHealth() * 0.50F;
+        for (ItemStack armor : player.getArmorSlots()) {
+            if (category(armor) != Category.ARMOR) continue;
+            int rarity = rarity(armor);
+            if (rarity <= 0) continue;
+            if (has(armor, PRIMARY)) reduction += switch (rarity) { case 1 -> 0.02D; case 2 -> 0.03D; default -> 0.04D; };
+            if (lowHealth && has(armor, SCALE)) reduction += switch (rarity) { case 1 -> 0.01D; case 2 -> 0.02D; default -> 0.03D; };
+            if (incomingAmount >= 8.0F && has(armor, SECONDARY)) reduction += switch (rarity) { case 1 -> 0.015D; case 2 -> 0.025D; default -> 0.035D; };
+            if (environmental && has(armor, UTILITY)) reduction += switch (rarity) { case 1 -> 0.02D; case 2 -> 0.03D; default -> 0.04D; };
+        }
+        return 1.0D - Math.min(0.35D, reduction);
+    }
+
+    public static double armorXpMultiplier(ServerPlayer player) {
+        double bonus = 0.0D;
+        for (ItemStack armor : player.getArmorSlots()) {
+            if (category(armor) != Category.ARMOR || !has(armor, MASTERY)) continue;
+            bonus += switch (rarity(armor)) { case 1 -> 0.03D; case 2 -> 0.05D; case 3 -> 0.08D; default -> 0.0D; };
+        }
+        return Math.min(1.32D, 1.0D + bonus);
     }
 
     public static int adjustMiningArea(ItemStack stack, int base) {
@@ -187,12 +213,12 @@ public final class AscensionAffixes {
     }
 
     public static int adjustShovelArea(ItemStack stack, int base) {
-    if (base <= 1 || category(stack) != Category.SHOVEL) return base;
-    int bonus = 0;
-    if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
-    if (has(stack, SECONDARY)) bonus += switch (rarity(stack)) { case 1, 2 -> 2; case 3 -> 4; default -> 0; };
-    return Math.min(13, base + bonus);
-}
+        if (base <= 1 || category(stack) != Category.SHOVEL) return base;
+        int bonus = 0;
+        if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
+        if (has(stack, SECONDARY)) bonus += switch (rarity(stack)) { case 1, 2 -> 2; case 3 -> 4; default -> 0; };
+        return Math.min(13, base + bonus);
+    }
 
     public static int adjustMiningVeinLimit(ItemStack stack, int base) {
         if (base <= 1 || category(stack) != Category.PICKAXE || !has(stack, SECONDARY)) return base;
@@ -281,6 +307,8 @@ public final class AscensionAffixes {
         if (stack.is(ItemTags.AXES)) return Category.AXE;
         if (stack.is(ItemTags.SHOVELS)) return Category.SHOVEL;
         if (stack.is(ItemTags.HOES)) return Category.HOE;
+        if (stack.is(ItemTags.HEAD_ARMOR) || stack.is(ItemTags.CHEST_ARMOR)
+                || stack.is(ItemTags.LEG_ARMOR) || stack.is(ItemTags.FOOT_ARMOR)) return Category.ARMOR;
         return Category.NONE;
     }
 
@@ -295,33 +323,39 @@ public final class AscensionAffixes {
         return switch (rarity) { case 1, 2 -> 2; case 3 -> 4; default -> 0; };
     }
 
-    private static Item baseItem(Category category, int rarity) {
+    private static Item baseItem(Category category, int rarity, RandomSource random) {
         return switch (category) {
             case WEAPON -> switch (rarity) { case 1 -> Items.IRON_SWORD; case 2 -> Items.DIAMOND_SWORD; default -> Items.NETHERITE_SWORD; };
             case PICKAXE -> switch (rarity) { case 1 -> Items.IRON_PICKAXE; case 2 -> Items.DIAMOND_PICKAXE; default -> Items.NETHERITE_PICKAXE; };
             case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };
             case SHOVEL -> switch (rarity) { case 1 -> Items.IRON_SHOVEL; case 2 -> Items.DIAMOND_SHOVEL; default -> Items.NETHERITE_SHOVEL; };
             case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };
+            case ARMOR -> switch (random.nextInt(4)) {
+                case 0 -> switch (rarity) { case 1 -> Items.IRON_HELMET; case 2 -> Items.DIAMOND_HELMET; default -> Items.NETHERITE_HELMET; };
+                case 1 -> switch (rarity) { case 1 -> Items.IRON_CHESTPLATE; case 2 -> Items.DIAMOND_CHESTPLATE; default -> Items.NETHERITE_CHESTPLATE; };
+                case 2 -> switch (rarity) { case 1 -> Items.IRON_LEGGINGS; case 2 -> Items.DIAMOND_LEGGINGS; default -> Items.NETHERITE_LEGGINGS; };
+                default -> switch (rarity) { case 1 -> Items.IRON_BOOTS; case 2 -> Items.DIAMOND_BOOTS; default -> Items.NETHERITE_BOOTS; };
+            };
             default -> Items.IRON_SWORD;
         };
     }
 
     private static String affixName(Category category, String key) {
         if (MASTERY.equals(key)) return "숙련";
-        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : "가속";
+        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.ARMOR ? "수호" : "가속";
         if (SCALE.equals(key)) return switch (category) {
-            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; default -> "증폭";
+            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case ARMOR -> "불굴"; default -> "증폭";
         };
         if (SECONDARY.equals(key)) return switch (category) {
-            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; default -> "특화";
+            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case ARMOR -> "완강"; default -> "특화";
         };
         return switch (category) {
-            case WEAPON -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; default -> "보조";
+            case WEAPON -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case ARMOR -> "보호"; default -> "보조";
         };
     }
 
     private enum Category {
-        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), NONE("none");
+        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), ARMOR("armor"), NONE("none");
         final String id;
         Category(String id) { this.id = id; }
     }
