@@ -1,0 +1,402 @@
+name: Survival Ascension 0.53 one-shot apply
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply:
+    if: github.event.issue.title == '[SA053 APPLY INTERNAL]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply 0.53 shield ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          ROOT = Path('projects/survival-ascension')
+
+          def path(rel): return ROOT / rel
+          def read(rel): return path(rel).read_text(encoding='utf-8')
+          def write(rel, text): path(rel).write_text(text, encoding='utf-8')
+          def rep(rel, old, new, count=1):
+              text = read(rel)
+              actual = text.count(old)
+              if actual < count:
+                  raise SystemExit(f'{rel}: expected at least {count} occurrence(s), found {actual}: {old[:100]!r}')
+              text = text.replace(old, new, count)
+              write(rel, text)
+          def insert_before(rel, marker, block):
+              text = read(rel)
+              if marker not in text:
+                  raise SystemExit(f'{rel}: marker missing: {marker[:100]!r}')
+              write(rel, text.replace(marker, block + marker, 1))
+          def insert_after(rel, marker, block):
+              text = read(rel)
+              if marker not in text:
+                  raise SystemExit(f'{rel}: marker missing: {marker[:100]!r}')
+              write(rel, text.replace(marker, marker + block, 1))
+
+          # Version / content-pack identity.
+          rep('gradle.properties', 'mod_version=0.52.0-alpha.1', 'mod_version=0.53.0-alpha.1')
+          lock_rel = 'modpack/content-lock.json'
+          lock = json.loads(read(lock_rel))
+          if lock.get('version') != '0.52.0-alpha.1-content-preview.1':
+              raise SystemExit(f'content lock drifted before 0.53: {lock.get("version")!r}')
+          lock['version'] = '0.53.0-alpha.1-content-preview.1'
+          write(lock_rel, json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+
+          # Main runtime identity and event wiring.
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java'
+          rep(rel, 'VERSION = "0.52.0-alpha.1"', 'VERSION = "0.53.0-alpha.1"')
+          rep(rel,
+              '// 0.52: bow/crossbow shots snapshot ranged affixes at launch and gain bounded Combat impact bursts.',
+              '// 0.53: successful standard-shield blocks gain bounded Combat guard waves; Shift keeps precision blocking.')
+          rep(rel,
+              'NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);\n        NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);',
+              'NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);\n        NeoForge.EVENT_BUS.addListener(CombatProgression::onShieldBlock);\n        NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);')
+          rep(rel,
+              'scaled mastery + ranged projectile snapshots/impact bursts + armor affix progression',
+              'scaled mastery + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression')
+
+          # Shield becomes a first-class affix category using only the NeoForge common tag.
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java'
+          rep(rel,
+              'List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.RANGED, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.ARMOR);',
+              'List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.RANGED, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.SHIELD, Category.ARMOR);')
+          rep(rel,
+              'Content-pack bridge: any single-stack sword/bow/crossbow/pickaxe/axe/shovel/hoe or humanoid armor item that',
+              'Content-pack bridge: any single-stack sword/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that')
+          rep(rel,
+              'case HOE -> "괭이";\n            case ARMOR -> "방어구";',
+              'case HOE -> "괭이";\n            case SHIELD -> "방패";\n            case ARMOR -> "방어구";')
+          rep(rel,
+              'if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.ARMOR || category == Category.NONE) return 1.0D;',
+              'if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;')
+          rep(rel,
+              'if (rarity <= 0 || category == Category.ARMOR || category == Category.RANGED || !has(stack, MASTERY)) return 1.0D;',
+              'if (rarity <= 0 || category == Category.ARMOR || category == Category.RANGED || category == Category.SHIELD || !has(stack, MASTERY)) return 1.0D;')
+
+          shield_helpers = '''    public static boolean isShield(ItemStack stack) {
+              return categoryForItem(stack) == Category.SHIELD;
+          }
+
+          public static double shieldWaveRadiusBonus(ItemStack stack) {
+              if (category(stack) != Category.SHIELD || !has(stack, SCALE)) return 0.0D;
+              return switch (rarity(stack)) { case 1 -> 0.5D; case 2 -> 1.0D; case 3 -> 1.5D; default -> 0.0D; };
+          }
+
+          public static int shieldWaveTargetBonus(ItemStack stack) {
+              if (category(stack) != Category.SHIELD || !has(stack, SECONDARY)) return 0;
+              return switch (rarity(stack)) { case 1 -> 1; case 2 -> 2; case 3 -> 4; default -> 0; };
+          }
+
+          public static double shieldWaveKnockbackBonus(ItemStack stack) {
+              if (category(stack) != Category.SHIELD || !has(stack, PRIMARY)) return 0.0D;
+              return switch (rarity(stack)) { case 1 -> 0.10D; case 2 -> 0.20D; case 3 -> 0.30D; default -> 0.0D; };
+          }
+
+          public static int shieldWaveCooldownReduction(ItemStack stack) {
+              if (category(stack) != Category.SHIELD || !has(stack, MASTERY)) return 0;
+              return switch (rarity(stack)) { case 1 -> 2; case 2 -> 3; case 3 -> 4; default -> 0; };
+          }
+
+          public static double shieldWaveLiftBonus(ItemStack stack) {
+              if (category(stack) != Category.SHIELD || !has(stack, UTILITY)) return 0.0D;
+              return switch (rarity(stack)) { case 1 -> 0.04D; case 2 -> 0.08D; case 3 -> 0.12D; default -> 0.0D; };
+          }
+
+          '''
+          insert_before(rel, '    public static double eliteDamageMultiplier(ItemStack stack) {', shield_helpers)
+          rep(rel,
+              'if (stack.is(ItemTags.HOES)) return Category.HOE;\n        if (stack.is(ItemTags.HEAD_ARMOR)',
+              'if (stack.is(ItemTags.HOES)) return Category.HOE;\n        if (stack.is(Tags.Items.TOOLS_SHIELD)) return Category.SHIELD;\n        if (stack.is(ItemTags.HEAD_ARMOR)')
+          rep(rel,
+              'case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };\n            case ARMOR ->',
+              'case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };\n            case SHIELD -> Items.SHIELD;\n            case ARMOR ->')
+          rep(rel,
+              'if (MASTERY.equals(key)) return "숙련";',
+              'if (MASTERY.equals(key)) return category == Category.SHIELD ? "대응" : "숙련";')
+          rep(rel,
+              'if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.ARMOR ? "수호" : "가속";',
+              'if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";')
+          rep(rel,
+              'case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case ARMOR -> "불굴";',
+              'case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case SHIELD -> "파동"; case ARMOR -> "불굴";')
+          rep(rel,
+              'case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case ARMOR -> "완강";',
+              'case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case SHIELD -> "진압"; case ARMOR -> "완강";')
+          rep(rel,
+              'case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case ARMOR -> "보호";',
+              'case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case SHIELD -> "반동"; case ARMOR -> "보호";')
+          rep(rel,
+              'WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), ARMOR("armor"), NONE("none");',
+              'WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), SHIELD("shield"), ARMOR("armor"), NONE("none");')
+
+          # Successful real shield blocks create a bounded physical displacement wave. No damage/XP/block-forcing.
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java'
+          rep(rel,
+              'import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;',
+              'import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;\nimport net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;')
+          rep(rel,
+              'private static final String RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used";',
+              'private static final String RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used";\n    private static final String SHIELD_WAVE_READY_KEY = "survivalascension_shield_wave_ready";')
+          shield_runtime = '''    public static void onShieldBlock(LivingShieldBlockEvent event) {
+              if (!(event.getEntity() instanceof ServerPlayer player) || !event.getBlocked() || event.getBlockedDamage() <= 0.0F) return;
+              ItemStack shield = player.getUseItem();
+              if (!AscensionAffixes.isShield(shield)) return;
+              int combatLevel = SkillProgressData.get(player).level(player, SkillType.COMBAT);
+              if (combatLevel < 30 || player.isShiftKeyDown()) return;
+              if (!(player.level() instanceof ServerLevel level)) return;
+
+              long now = level.getGameTime();
+              boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+              int baseCooldown = fieldMastery ? 10 : combatLevel >= 100 ? 12 : combatLevel >= 90 ? 14 : combatLevel >= 60 ? 16 : 20;
+              int cooldown = Math.max(6, baseCooldown - AscensionAffixes.shieldWaveCooldownReduction(shield));
+              if (now < player.getPersistentData().getLongOr(SHIELD_WAVE_READY_KEY, 0L)) return;
+
+              double radius = fieldMastery ? 6.5D : combatLevel >= 100 ? 5.5D : combatLevel >= 90 ? 4.5D : combatLevel >= 60 ? 3.5D : 2.5D;
+              int targetLimit = fieldMastery ? 10 : combatLevel >= 100 ? 8 : combatLevel >= 90 ? 6 : combatLevel >= 60 ? 4 : 2;
+              double knockback = fieldMastery ? 1.00D : combatLevel >= 100 ? 0.90D : combatLevel >= 90 ? 0.75D : combatLevel >= 60 ? 0.60D : 0.45D;
+              double lift = fieldMastery ? 0.16D : combatLevel >= 100 ? 0.14D : combatLevel >= 90 ? 0.12D : combatLevel >= 60 ? 0.10D : 0.08D;
+              radius = Math.min(8.0D, radius + AscensionAffixes.shieldWaveRadiusBonus(shield));
+              targetLimit = Math.min(14, targetLimit + AscensionAffixes.shieldWaveTargetBonus(shield));
+              knockback = Math.min(1.30D, knockback + AscensionAffixes.shieldWaveKnockbackBonus(shield));
+              lift = Math.min(0.28D, lift + AscensionAffixes.shieldWaveLiftBonus(shield));
+              final double areaRadius = radius;
+
+              List<LivingEntity> nearby = level.getEntitiesOfClass(
+                      LivingEntity.class,
+                      player.getBoundingBox().inflate(areaRadius),
+                      candidate -> candidate != player && candidate.isAlive()
+                              && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate)
+                              && player.distanceToSqr(candidate) <= areaRadius * areaRadius);
+              nearby.sort(Comparator.comparingDouble(player::distanceToSqr));
+              if (nearby.isEmpty()) return;
+
+              player.getPersistentData().putLong(SHIELD_WAVE_READY_KEY, now + cooldown);
+              int pushed = 0;
+              for (LivingEntity candidate : nearby) {
+                  if (pushed >= targetLimit) break;
+                  Vec3 push = candidate.position().subtract(player.position()).multiply(1.0D, 0.0D, 1.0D);
+                  if (push.lengthSqr() <= 1.0E-5D) continue;
+                  push = push.normalize();
+                  candidate.setDeltaMovement(candidate.getDeltaMovement().add(push.x * knockback, lift, push.z * knockback));
+                  candidate.hurtMarked = true;
+                  pushed++;
+              }
+          }
+
+          '''
+          insert_before(rel, '    private static void tryRangedBurst(', shield_runtime)
+
+          # Imprint UX includes shields.
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java'
+          rep(rel, '검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비', '검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비')
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java'
+          rep(rel, '검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요', '검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요')
+
+          # In-game guide: current-state language only.
+          rel = 'src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java'
+          rep(rel,
+              '표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이 또는 머리/가슴/다리/발 방어구 태그',
+              '표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방패 또는 머리/가슴/다리/발 방어구 태그')
+          rep(rel,
+              'affix가 없는 표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비',
+              'affix가 없는 표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비')
+          rep(rel,
+              '주 손의 affix 없는 검/곡괭이/도끼/삽/괭이 태그 장비',
+              '주 손의 affix 없는 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비')
+          shield_guide = '                h("방패 방어 파동"), p("표준 방패로 실제 차단에 성공하면 전투 Lv30부터 주변 적을 피해 없이 밀어내는 방어 파동이 발생합니다. Lv30=2.5블록/2체, Lv60=3.5/4, Lv90=4.5/6, Lv100=5.5/8, 현장 숙련=6.5블록/10체입니다. Shift 차단은 파동 없는 정밀 방어이며, 방패 affix 압력·파동·대응·진압·반동은 밀침·반경·재사용·대상·수직 반동만 제한적으로 확장합니다."),\n'
+          insert_after(rel,
+              '                h("원거리 전투 파급"), p("표준 활/쇠뇌의 발사체는 발사 순간 장비 affix와 Shift 정밀 상태를 기록합니다. 전투 Lv30=2.5블록/2체, Lv60=3.5/4, Lv90=4.25/6, Lv100=5/8, 현장 숙련=6블록/10체의 기본 충돌 파급이 열립니다. Shift 발사는 파급 없는 단일 정밀 타격이며 산개·연쇄·충격 affix가 반경·대상·파급 피해를 제한적으로 확장합니다."),\n',
+              shield_guide)
+          shield_control = '                h("방패 정밀/파동"), p("표준 방패로 실제 차단에 성공하면 전투 Lv30부터 주변 적을 밀어냅니다. Shift를 누른 채 막으면 광역 파동을 끄고 바닐라 차단만 유지합니다. 방패 파동 자체는 피해나 전투 숙련 XP를 주지 않습니다."),\n'
+          insert_after(rel,
+              '                h("승천 각인"), p("주 손의 affix 없는 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비를 M → 장비 → 승천 각인으로 편입합니다. 각인 재료도 가까운 사용 가능 물류 통을 먼저 쓰고 부족분만 인벤토리에서 사용합니다."),\n',
+              shield_control)
+
+          # Release docs.
+          readme_section = '''## 0.53.0-alpha.1 — Shield Ascension / 방패 승천
+          Standard NeoForge `c:tools/shield` items now join Ascension Imprint, reforge, Mythic awakening, salvage and elite affix drops without optional-mod implementation dependencies. The original shield ItemStack and unrelated components remain intact.
+
+          Shield growth is active physical defense rather than another passive damage-reduction layer. When a real shield block succeeds, Combat Lv30/60/90/100 emits a zero-damage guard wave that pushes up to 2/4/6/8 nearby hostile targets within 2.5/3.5/4.5/5.5 blocks. Lv100 + Field Mastery reaches 6.5 blocks / 10 targets. Shift while blocking disables the wave and keeps the successful vanilla block as precision defense.
+
+          Shield affixes are `압력` knockback, `파동` radius, `대응` cooldown reduction, `진압` target count and `반동` vertical lift. Final runtime caps are radius8.0, targets14, horizontal push1.30, vertical lift0.28 and cooldown minimum6 ticks. The wave deals no damage and grants no Combat mastery XP; it never forces a failed shield check to succeed or increases the amount blocked. Cooldown is stored only in existing player persistent NBT, with no new SavedData, packet/protocol, custom shield/entity, force-load or background simulation.
+
+          '''
+          rel='README.md'
+          insert_before(rel, '## 0.52.0-alpha.1 — Ranged Combat Ascension / 원거리 전투 승천\n', readme_section)
+
+          rel='PROJECT.md'
+          rep(rel, '- Mod version: `0.52.0-alpha.1`', '- Mod version: `0.53.0-alpha.1`')
+          rep(rel,
+              '0.52 adds the existing affix category `ranged` to standard bow/crossbow tags',
+              '0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags')
+          project_section = '''## 0.53 Shield Ascension / 방패 승천
+          - NeoForge common `c:tools/shield` enters the existing imprint/reforge/Mythic-awakening/salvage loop and elite affix loot without optional-mod Java imports.
+          - A guard wave is eligible only when `LivingShieldBlockEvent` reports an actual successful block with positive blocked damage. Survival Ascension does not call `setBlocked(true)` or raise the blocked-damage amount.
+          - Combat mastery physical scale: Lv30 2.5 blocks/2 targets/0.45 push, Lv60 3.5/4/0.60, Lv90 4.5/6/0.75, Lv100 5.5/8/0.90, Lv100 Field Mastery 6.5/10/1.00.
+          - Shift while blocking is precision mode and suppresses the area wave without changing the underlying successful shield block.
+          - Shield affixes: `압력` horizontal push, `파동` radius, `대응` cooldown reduction, `진압` target count, `반동` vertical lift. Hard caps: radius8.0, targets14, horizontal push1.30, vertical lift0.28, minimum cooldown6 ticks.
+          - Guard waves only apply displacement to real hostile/boss targets through the existing combat-target compatibility predicate. They deal no damage and award no Combat mastery XP.
+          - Shield cooldown uses the player's existing persistent NBT only. No new SavedData ID, protocol bump, custom shield/entity, force-load, block-admission override or passive simulation.
+
+          '''
+          insert_before(rel, '## 0.52 Ranged Combat Ascension / 원거리 전투 승천\n', project_section)
+
+          rel='CHANGELOG.md'
+          changelog_section = '''## 0.53.0-alpha.1
+          - Added `Shield Ascension / 방패 승천`: NeoForge common `c:tools/shield` items now join imprint/reforge/Mythic awakening/salvage and elite affix drops.
+          - Added successful-block guard waves from Combat Lv30 upward: 2.5/2, 3.5/4, 4.5/6, 5.5/8, and Field Mastery 6.5/10 base radius/targets.
+          - Shift blocking suppresses the guard wave for precision defense while leaving vanilla successful blocking unchanged.
+          - Added shield affix roles `압력`/`파동`/`대응`/`진압`/`반동` for horizontal push/radius/cooldown/targets/vertical lift with hard caps 1.30/8.0/min6t/14/0.28.
+          - Guard waves deal zero damage and award zero Combat mastery XP; they never force a failed block to succeed or increase blocked damage.
+          - Preserved original shield ItemStack/components and network protocol8; added no new SavedData, packet, custom shield/entity, force-load or optional-mod implementation dependency.
+          - Bumped the one-import content-preview lock to `0.53.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
+          '''
+          insert_after(rel, '# Changelog\n\n', changelog_section)
+
+          rel='MODPACK_COMPAT_MATRIX.md'
+          shield_matrix = '- 방패 장비: NeoForge 공용 `c:tools/shield` 태그를 쓰는 장비는 승천 각인에 합류한다. 실제 차단 성공 시에만 전투 숙련 기반 방어 파동을 만들며 외부 방패 구현 클래스를 직접 참조하지 않는다. 파동은 피해/숙련 XP 없이 주변 실제 적을 밀어내기만 한다.\n'
+          insert_after(rel,
+              '- 원거리 장비: NeoForge 공용 `c:tools/bow` / `c:tools/crossbow` 태그를 쓰는 장비는 승천 각인에 합류한다. 발사체는 발사 순간 Survival affix/Shift 정밀 상태만 자체 persistent NBT에 스냅샷하며, 외부 활/쇠뇌 구현 클래스를 직접 참조하지 않는다.\n',
+              shield_matrix)
+          rep(rel,
+              '표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + BOP 원정 바이옴 브리지',
+              '표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + 표준 방패 성공차단 방어 파동 + BOP 원정 바이옴 브리지')
+
+          # Release source audit 0.53 additions while preserving 0.49-0.52 regression checks.
+          rel='tools/test_release_source.py'
+          rep(rel, 'REQUIRED_VERSION = "0.52.0-alpha.1"', 'REQUIRED_VERSION = "0.53.0-alpha.1"')
+          rep(rel, '"VERSION = \\"0.52.0-alpha.1\\"", "ranged projectile snapshots/impact bursts"', '"VERSION = \\"0.53.0-alpha.1\\"", "ranged projectile snapshots/impact bursts"')
+          rep(rel, '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비"', '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"')
+          rep(rel, '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"', '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"')
+          shield_audit = '''# 0.53 shield ascension: successful real block -> bounded zero-damage physical guard wave.
+          need(affix, [
+              "Tags.Items.TOOLS_SHIELD", "Category.SHIELD", 'SHIELD("shield")', "Items.SHIELD",
+              "isShield(ItemStack stack)", "shieldWaveRadiusBonus", "shieldWaveTargetBonus",
+              "shieldWaveKnockbackBonus", "shieldWaveCooldownReduction", "shieldWaveLiftBonus",
+              'case SHIELD -> "방패"', 'case SHIELD -> "파동"', 'case SHIELD -> "진압"', 'case SHIELD -> "반동"',
+              'category == Category.SHIELD ? "대응"', 'category == Category.SHIELD ? "압력"'
+          ], "0.53 shield affix progression")
+          need(combat, [
+              "onShieldBlock(LivingShieldBlockEvent event)", "event.getBlocked()", "event.getBlockedDamage()",
+              "player.getUseItem()", "AscensionAffixes.isShield(shield)", "player.isShiftKeyDown()",
+              'SHIELD_WAVE_READY_KEY = "survivalascension_shield_wave_ready"',
+              "fieldMastery ? 6.5D", "fieldMastery ? 10", "Math.min(8.0D", "Math.min(14",
+              "Math.min(1.30D", "Math.min(0.28D", "Math.max(6, baseCooldown",
+              "ContentPackCompatibility.isCombatTarget(candidate)", "candidate.setDeltaMovement", "candidate.hurtMarked = true"
+          ], "0.53 shield guard-wave runtime")
+          shield_start = combat.find("public static void onShieldBlock")
+          shield_end = combat.find("private static void tryRangedBurst", shield_start)
+          if shield_start < 0 or shield_end < 0:
+              errors.append("0.53 shield runtime body missing")
+          else:
+              shield_body = combat[shield_start:shield_end]
+              forbid(shield_body, ["hurtServer(", "SkillProgressionService.award", "event.setBlocked(", "event.setBlockedDamage("], "0.53 shield no-damage/no-block-force policy")
+          need(main_mod, ["VERSION = \\"0.53.0-alpha.1\\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
+          need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
+          need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
+          forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.53 shield world-loading policy")
+
+          '''
+          insert_before(rel, '# User-facing docs are part of the release contract, not an uncommitted CI-side patch.\n', shield_audit)
+          docs_audit = '''need(project_doc, ["## 0.53 Shield Ascension / 방패 승천", "radius8.0", "minimum cooldown6 ticks"], "0.53 PROJECT docs")
+          need(readme, ["## 0.53.0-alpha.1 — Shield Ascension / 방패 승천", "6.5 blocks / 10 targets", "cooldown minimum6 ticks"], "0.53 README docs")
+          need(changelog, ["## 0.53.0-alpha.1", "Shield Ascension / 방패 승천", "zero damage", "min6t"], "0.53 CHANGELOG docs")
+          need(guide, ['h("방패 방어 파동")', "현장 숙련=6.5블록/10체", "파동 없는 정밀 방어", 'h("방패 정밀/파동")'], "0.53 in-game guide")
+          '''
+          insert_before(rel, '\nif errors:\n', docs_audit)
+          rep(rel,
+              'baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비")',
+              'baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")')
+          insert_after(rel,
+              'print("- 0.52 each physical projectile can produce at most one area burst, including piercing shots")\n',
+              'print("- 0.53 successful standard-shield blocks create bounded zero-damage guard waves; Shift keeps precision blocking")\n')
+          rep(rel,
+              'print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.52")',
+              'print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.53")')
+
+          # Content-pack audit.
+          rel='tools/test_release_content_pack.py'
+          rep(rel, 'REQUIRED_LOCK_VERSION = "0.52.0-alpha.1-content-preview.1"', 'REQUIRED_LOCK_VERSION = "0.53.0-alpha.1-content-preview.1"')
+          rep(rel,
+              '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"',
+              '"검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"')
+          shield_cp = '''need(affix, ["Tags.Items.TOOLS_SHIELD", "Category.SHIELD", "isShield(ItemStack stack)", "shieldWaveRadiusBonus", "shieldWaveTargetBonus", "shieldWaveKnockbackBonus", "shieldWaveCooldownReduction", "shieldWaveLiftBonus"], "0.53 shield content-pack bridge")
+          need(equipment_ui, ["방어구/방패 표준 태그 장비 필요"], "0.53 shield player flow")
+          need(combat, ["onShieldBlock(LivingShieldBlockEvent event)", "event.getBlocked()", "candidate.setDeltaMovement", "player.isShiftKeyDown()"], "0.53 shield runtime flow")
+          need(matrix, ["c:tools/shield", "성공차단 방어 파동"], "0.53 generic shield compatibility docs")
+          '''
+          insert_before(rel, '\nif errors:\n', shield_cp)
+          rep(rel,
+              "baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.52.0-alpha.1`')",
+              "baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.53.0-alpha.1`')")
+          insert_after(rel, 'print("ranged_affix_projectile_bridge=PASS")\n', 'print("shield_affix_guard_wave_bridge=PASS")\n')
+
+          # Packaged-JAR audit keeps old checks and adds shield runtime tokens.
+          rel='tools/verify_release_jar.py'
+          shield_jar = '''    main_name = "kr/moonseungjun/survivalascension/SurvivalAscension.class"
+              if main_name not in zf.namelist():
+                  raise SystemExit("0.53 main runtime class missing")
+              main_class = zf.read(main_name)
+              for token in [b"TOOLS_SHIELD", b"shieldWaveRadiusBonus", b"shieldWaveTargetBonus", b"shieldWaveKnockbackBonus", b"shieldWaveCooldownReduction", b"shieldWaveLiftBonus"]:
+                  if token not in affix:
+                      raise SystemExit(f"0.53 compiled shield-affix token missing: {token!r}")
+              for token in [b"onShieldBlock", b"survivalascension_shield_wave_ready", b"isShield", b"setDeltaMovement"]:
+                  if token not in combat:
+                      raise SystemExit(f"0.53 compiled shield-wave token missing: {token!r}")
+              if b"shield guard waves" not in main_class:
+                  raise SystemExit("0.53 runtime banner missing shield guard waves")
+
+          '''
+          insert_before(rel, '\nprint("frontline_freight_manifest_runtime=present")', shield_jar)
+          insert_after(rel, 'print("ranged_combat_release_verify=PASS")\n', 'print("shield_guard_wave_runtime=present")\nprint("shield_guard_wave_release_verify=PASS")\n')
+
+          PY
+
+          # Remove the one-shot workflow from the source commit itself.
+          rm -f .github/workflows/sa053-apply.yml
+
+          cd projects/survival-ascension
+          chmod +x gradlew
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
+          git diff --check
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          python3 tools/verify_release_jar.py build/libs/survivalascension-0.53.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.53.0-alpha.1.jar --output /tmp/Survival-Ascension-0.53.0-alpha.1-content-preview.mrpack
+          cd ../..
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/sa053-apply.yml
+          git commit -m 'Survival Ascension 0.53 shield ascension'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
