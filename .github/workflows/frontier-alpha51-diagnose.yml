@@ -1,4 +1,4 @@
-# trigger: exact 15-family and logistics-authority audits
+# trigger: final alpha.51 docs-audit pass
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
