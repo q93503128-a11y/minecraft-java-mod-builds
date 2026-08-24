@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.49.0-alpha.1"
+REQUIRED_VERSION = "0.50.0-alpha.1"
 errors: list[str] = []
 
 
@@ -67,6 +67,23 @@ need(guide, [
     "전선 묶음 표식도 수레 자체 NBT에만"
 ], "0.49 frontline freight guide")
 
+# 0.50 regional logistics scale. The persisted IDs remain v1, while admission grows with existing infrastructure.
+depot_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java")
+outpost_data = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostData.java")
+need(depot_data, [
+    "BASE_DEPOTS_PER_PLAYER = 3", "CIVIL_DEPOTS_PER_PLAYER = 6", "MAX_DEPOTS_PER_PLAYER = 9",
+    "registrationLimit(ServerPlayer player)", "InfrastructureProject.CIVIL_WORKS", "InfrastructureProject.ASCENSION_NEXUS",
+    "return add(player, dimension, pos, registrationLimit(player));", "int maxAllowed", "own.size() >= limit",
+    '"field_depots_v1"'
+], "0.50 regional depot scale")
+need(outpost_data, [
+    "MAX_OUTPOSTS_PER_PLAYER = FieldDepotData.MAX_DEPOTS_PER_PLAYER",
+    "return upgrade(player, dimension, pos, FieldDepotData.registrationLimit(player));",
+    "int maxAllowed", "state(player).size() >= limit", '"outpost_v1"'
+], "0.50 regional outpost scale")
+need(production_ui, ["한도3→토목6→중추9"], "0.50 regional logistics UI")
+forbid(depot_data + outpost_data, ["field_depots_v2", "outpost_v2"], "0.50 saved-data migration")
+
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
     for error in errors:
@@ -95,3 +112,4 @@ print("RELEASE SOURCE AUDIT PASS")
 print("- 0.49 Shift-select freight loads exactly one expedition + one outpost defense + one bastion local-supply manifest from the exact physical departure warehouse")
 print("- normal bulk freight remains unchanged; frontline manifest remains physical-cart NBT only and rolls back on slot-layout failure")
 print("- in-game guide documents the Shift manifest, exact 400-item composition, all-or-nothing source admission and physical-only boundary")
+print("- 0.50 depot/outpost persistence cap is nine, while registration and promotion are gated 3 -> 6 -> 9 by Industrial/Civil/Nexus progression without new SavedData IDs")
