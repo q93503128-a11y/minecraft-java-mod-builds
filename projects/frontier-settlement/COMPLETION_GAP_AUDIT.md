@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.47`
+현재 구현 기준: `0.1.0-alpha.48`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: Frontier 자체 재구현보다 companion이 콘텐츠를 공급
 - `후보검증`: 버전/구성은 고정했으나 풀스택 실런타임 검증 필요
 
-이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했고 수변/위험지역 전초, bounded unloaded-work 1차, compact Jade/status 1차, bounded medium terrain 1차, exploration/conquest progression 1차, Alpha.46 물리 수변 계류장/교역 1차, Alpha.47 영지 재련 1차가 들어갔더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.48까지 기능이 늘어났어도 selected-area 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime 등이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -18,164 +18,142 @@
 | --- | --- | --- |
 | 한 월드 하나의 공동 마을 | 완료 | SavedData 기반 공유 정착지 |
 | 서버 authoritative | 완료 | 자원/건설/도로/전초/진행 서버 권위 |
-| 실제 ItemStack이 자원 권위 | 완료 | HUD/context는 표시 계층일 뿐 권위가 아님 |
-| 핵심 직접 조작 소수 유지 | 완료 | B / R / Enter / Backspace 중심 |
+| 실제 ItemStack이 자원 권위 | 완료 | HUD/context는 표시 계층 |
+| 핵심 직접 조작 소수 유지 | 완료 | B / R / Enter / Backspace |
 | 플레이어별 개별 마을 금지 | 완료 | 단일 공동 정착지 |
-| 세금/행복도/가족/거대 연구 UI 금지 | 완료 | 해당 미시관리 없음 |
-| 탐험/전투가 정착 성장으로 되먹임 | **완료/부분** | Alpha.45 unique structure/conquest milestone이 tier accelerator로 연결. 희귀 NPC/보스별 특수 보상 breadth 남음 |
-| 외부 모드를 콘텐츠 생산 수단으로 사용 | 완료/부분/후보검증 | 후보 스택 + 시장/작업장/고급 제작 + Jade + registry bridge. 풀런타임 미검증 |
+| 세금/행복도/가족/거대 연구 UI 금지 | 완료 | 미시관리 없음 |
+| 탐험/전투 → 정착 성장 | 완료/부분 | Alpha.45 unique structure/conquest milestone + tier accelerator, rare NPC/구조별 보상 breadth 남음 |
+| companion 콘텐츠 활용 | 완료/부분/후보검증 | 후보 lock + soft bridges, full runtime 미검증 |
 
-Alpha.45 탐험 진척은 공유 진행 metadata이며 재화가 아니다. 같은 구조물/강적 종류 반복으로 무한 파밍할 수 없고 기존 성장 루트를 새 점수로 막지 않는다.
-
-## 2. 시작 / 자원 / 창고 / HUD
+## 2. 자원 / 물류 / 경제
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
-| 개척 표식 + 공동 창고 + 건설 주민 | 완료 | 구현 |
-| HUD 목재/석재/금속/식량/인구 | 완료 | compact HUD |
-| 외부 재료 범주/태그 수용 | 완료/부분 | additive Frontier + `c:` 태그. 풀 companion 실플레이 미검증 |
-| 대량 저장 | 완료/부분 | 창고 + 수레 정거장 + 건설소 자재 배럴. 장기 부하 검증 필요 |
-| 임의 플레이어 상자 과잉 스캔 금지 | 완료 | 정해진 settlement storage만 권위에 포함 |
-| 멀티 창고/HUD 장시간 정합 | 부분 | 실제 2인 장시간 검증 필요 |
-| 병영 충원도 실제 자원 사용 | 완료 | 식량8 + 금속2 물리 소비 |
-| 위험지역 전초 충원도 실제 자원 사용 | 완료/부분 | 현지 stockpile 식량6 + 금속2, 기존 도로 운송자가 역방향 보급 |
-| 건설소 자재도 실제 자원 사용 | 완료 | 동일 ledger의 목재/석재 staging |
-| 중간 지형 옹벽도 실제 자원 사용 | **완료/부분** | Alpha.44 real stone haul/stage/consume 후 cobblestone 배치 |
-| 첫 고급 제작 재료도 실제 자원 사용 | 완료/부분 | Alpha.39 유물1 + 전문 주민이 운반한 금속4 |
-| 영지 재련 재료도 실제 자원 사용 | **완료/부분** | Alpha.47 already-enchanted external weapon + real relic2 + physically hauled metal8. 실전 호환 검증 필요 |
-| 수변 전초 생산도 실제 아이템 | 완료/부분 | Alpha.40 실제 대구/연어 → 전초 stockpile → 기존 도로 운송 |
-| 수변 계류장 공사도 실제 자원 사용 | **완료/부분** | Alpha.46 fishing worker가 실제 목재를 들고 블록별 소비; 부족 시 같은 transporter 역보급 |
-| 수변 교역이 일반 stockpile을 자동판매하지 않음 | 완료 | dedicated trade barrel만 16 fish→1 emerald |
-| 언로드 보정이 자원 권위를 침범하지 않음 | 완료/부분 | Alpha.42 work-time debt만 저장 |
-| UI context가 새 자원 권위가 되지 않음 | 완료 | Alpha.43 표시 전용 context |
-| 탐험 score가 새 자원 권위가 되지 않음 | 완료 | Alpha.45 non-spendable progression metadata |
+| 공동 실제 창고 | 완료 | 물리 ItemStack 권위 |
+| 창고/HUD 장부 정합 | 완료/부분 | 자동 갱신, 장시간 2인 acceptance 남음 |
+| 외부 재료 태그 수용 | 완료/부분 | additive Frontier + `c:` 태그, full pack 미검증 |
+| 병영 충원 실제 자원 | 완료 | food8 + metal2 |
+| 군사 전초 충원 실제 자원 | 완료/부분 | local food6 + metal2 + reverse supply |
+| 건설/옹벽 실제 자원 | 완료 | real wood/stone haul/stage/consume |
+| 수변 계류장 실제 자원 | 완료/부분 | real outpost wood + same transporter reverse supply |
+| 수변 교역 실제 아이템 | 완료 | dedicated barrel 16 fish→1 emerald, ordinary stockpile auto-sale 없음 |
+| Alpha.39 first forge 실제 자원 | 완료/부분 | relic1 + physically hauled metal4 |
+| Alpha.47 domain reforge 실제 자원 | 완료/부분 | relic2 + physically hauled metal8 |
+| Alpha.42 언로드 보정이 가상 자원화되지 않음 | 완료/부분 | work-time debt only, 실플레이 pacing/악용 검증 남음 |
+| Alpha.48 군사 시각 무기가 실제 자원으로 위장되지 않음 | **완료/부분** | visual service sword is client render state only; server ItemStack/loot/storage 없음. 실런타임 확인 남음 |
+
+`single authority for outpost transport` 계약은 유지한다. 수변/군사/향후 wagon·boat 표현이 두 번째 장거리 물류 권위가 되어서는 안 된다.
 
 ## 3. 건설 / 지형 공사
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
-| 3D 완성 미리보기/회전/검사 | 완료 | ghost placement |
-| 작은 높이 차 자동 정리 | 완료 | 물리 worker grading |
-| 기초 처리 | 완료 | 단계 건설 |
-| 중간 높이 차 `지형 공사 포함` 명시 | **완료/부분** | Alpha.44 footprint span3–4 허용/명시, >4 거부 |
-| 옹벽/건물용 지형 적응 | **완료/부분** | real-stone exposed-edge retaining/foundation |
-| 큰/위험 지형 거부 | 완료 | span>4 + block entity/fluid/unsafe/support 검사 |
-| 선택 영역 절토/성토 후반 보조 | **미구현** | 임의 선택영역 토목 도구 없음 |
-| 대형 협곡/터널/기념비급 토목 | 미구현 | small road bridge + bounded building terrain까지만 |
-| 부지→운반→기초→골조→벽→지붕→마감 | 완료 | persisted physical phases |
-| 승인 순간 전체 비용 삭제 금지 | 완료 | 실제 배치 진척과 자재 소비 연결 |
-| 높은/큰 건물 물리 시공 | 완료/부분 | 감시탑·병영·건설소·고급 제작소 scaffold/haul |
-| 플레이어 건축물/컨테이너 보호 | 완료/부분 | 주요 공사경로 보호. 폭발/피스톤 전면 검증 남음 |
-| 자동 건설 물류 지원 | 완료/부분 | 건설소 4배럴 + 물리 보급 주민 + retaining stone |
-| 공사 상태 compact 표시 | 완료/부분 | Alpha.43 HUD active project label/progress |
+| 3D preview/회전/배치 검사 | 완료 | ghost placement |
+| 작은 높이 차 자동 grading | 완료 | 물리 worker grading |
+| 중간 높이 차 `지형 공사 포함` | 완료/부분 | Alpha.44 span3–4 |
+| real-stone retaining/foundation | 완료/부분 | exposed deep edge support |
+| 큰/위험 지형 거부 | 완료 | span>4/fluid/block entity/unsafe support |
+| 선택 영역 절토/성토 | **미구현** | 다음 주요 기능 갭 |
+| 대형 협곡 다리/터널/기념비급 토목 | 미구현 | bounded small road/building terrain까지만 |
+| 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
+| 플레이어 건축/컨테이너 보호 | 완료/부분 | 주요 경로 보호, 더 넓은 토목 전면 검증 필요 |
+| 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
 
-### Alpha.44 bounded medium-terrain 감사
+### Alpha.44 감사 유지
 
-- `SettlementConstructionService` 하나가 계속 grading/terrain/build authority다.
-- small span 0–2, medium span 3–4, 그 이상 reject.
-- natural cut은 project grade 기준 최대3블록.
-- support depth 최대3블록.
-- exposed outer edge + support depth>=2에서 retaining stone 필요.
-- retaining extra stone 프로젝트당 최대96.
-- retaining cell 전에 builder가 real stone을 loaded settlement storage에서 운반하고 site barrel에 넣으며 실제 consume.
-- shallow fill은 coarse dirt이고 free economic material 생성 경로가 아니다.
-- `destroyBlock`, loose drops, force-load, teleport inventory가 없다.
-- 선택 영역 절토/성토 기능까지 완성했다고 주장하지 않는다.
+- span0–2 기존 grading;
+- span3–4 bounded medium work;
+- cut/support depth 최대3;
+- deep exposed edge에 real retaining stone;
+- extra stone max96/project;
+- builder가 storage→carry→site barrel→consume 순서로 실제 석재 사용;
+- no free cobble, `destroyBlock`, loose-drop excavation, force-load, teleport inventory;
+- selected-area cut/fill까지 완료했다고 주장하지 않는다.
 
 ## 4. 주민 / 생산 / 방어
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
-| 건설가 | 완료 | 전용 builder |
-| 건설 보급 역할 | 완료/부분 | 건설소별 physical supply runner |
-| 벌목꾼 | 완료 | 실제 나무 작업 |
-| 농부 | 완료 | 실제 작물 작업 |
-| 광부 | 완료 | 실제 유한 광석 작업 |
-| 채석공 | 완료 | 노출 석재 작업 |
-| 어업 주민 | 완료/부분 | Alpha.40 rod/shore 이동/실제 어획 + Alpha.46 계류장 공사 우선 처리 |
-| 수변 상인 | **완료/부분** | persistent local trader + dedicated barrel 16 fish→1 emerald |
-| 대장장이 | 부분 | 기능 breadth/연출 확장 여지 |
-| 작업장 전문 제작자 | 완료/부분 | 외부 무기 물리 정비 장인 |
-| 고급 제작 전문 역할 | 완료/부분 | Alpha.39 첫 forge + Alpha.47 영지 재련을 같은 specialist가 담당 |
-| 근거리 경비 | 완료/부분 | 경비초소 + 기본 경비 |
-| 감시/장거리 대응 | 완료/부분 | 감시탑별 response golem |
-| 정식 주둔 병력 | 완료/부분 | 병영별3슬롯, 식량/금속 충원. 사람형 병사/병과 미완 |
-| 위험지역 전초 수비대 | 완료/부분 | Alpha.41 loaded 위험 근거 → 전초당1 수비대 |
-| 운송업자 | 완료 | 전초별 영구 태그 + 도로 물류 + 군사/수변 역보급 |
-| 로드 지역 실제 이동·작업 | 완료 | 주요 생산/어업/운송/제작/건설/방어/수변 공사 |
-| 언로드 저빈도 논리 시뮬레이션 | **완료/부분** | Alpha.42 최대1일 work-time debt + 로드 후 실제 물리 catch-up |
-| 자동 직업 배치 | 완료/부분 | 주요 역할 자동화. 서비스 전문직/민간 job 통합 정리 여지 |
-| 사람형/무기 장비 병사 presentation | **미구현** | 현재 병영/전초 전투 바디는 Iron Golem proxy. Alpha.47 이후 최우선 기능 갭 |
+| 건설가/벌목/농부/광부/채석공 | 완료 | physical loaded work |
+| 어업 주민 | 완료/부분 | loaded shoreline fishing + pier construction |
+| 수변 상인 | 완료/부분 | local trader + dedicated barrel |
+| 작업장/고급 제작 전문 주민 | 완료/부분 | repair + first forge + domain reforge |
+| 근거리 경비 | 완료/부분 | guard post |
+| 감시/장거리 대응 | 완료/부분 | watchtower response body |
+| 병영 정식 주둔 병력 | **완료/부분** | 3 supplied slots, Alpha.48 humanoid visible body. 실전 animation/armory 남음 |
+| 위험지역 전초 수비대 | **완료/부분** | one supplied sentry, Alpha.48 same humanoid body. 실전 검증 남음 |
+| 사람형 군사 presentation | **완료/부분** | `FrontierSoldierEntity extends IronGolem` + humanoid client renderer + visual service sword |
+| 실물 외부무기 군사 armory/loadout | **미구현/부분** | Alpha.48 sword는 client-only visual. Weapons Expanded ItemStack을 실제 보급/장비하는 경제 루프는 아직 없음 |
+| 자동 직업 배치 | 완료/부분 | 주요 역할 자동화, 서비스 전문직 정리 여지 |
+| 언로드 저빈도 보정 | 완료/부분 | bounded time debt, no virtual item authority |
 
-병영은 민간 population/housing과 분리되며 공짜 고티어 증원 백엔드는 제거된 상태를 유지한다. 향후 사람형 병사화는 새 무료 전투력/무료 무기 생성 경로가 되면 안 된다.
+### Alpha.48 supplied humanoid military 감사
+
+- Frontier 전용 `frontier_soldier` 엔티티 타입을 사용.
+- `FrontierSoldierEntity`는 `IronGolem`을 상속해 검증된 서버 AI/공격/목표 시스템을 유지.
+- entity attributes도 `IronGolem.createAttributes()` 기반.
+- 인간형 크기/클라이언트 humanoid model로 presentation 변경.
+- **visual service sword is never a server ItemStack**.
+- renderer만 iron sword ItemStack을 render state에 넣고 서버 military service는 장비 slot에 검을 넣지 않음.
+- 따라서 죽여도 visual sword를 획득할 수 없고 settlement storage에도 존재하지 않음.
+- 병영은 여전히 정확히 3 slots/barracks.
+- 신규 병영 병사 비용은 food8 + metal2 유지.
+- 위험지역 전초는 여전히 max1 sentry, 비용 food6 + metal2 유지.
+- tagged military drops clear 유지.
+- old tagged Iron Golem soldier/sentry는 loaded 상태에서 1:1로 Frontier soldier로 migration.
+- migration은 name/tags/rotation/health를 보존하고 old entity를 discard.
+- migration은 recruit consume 함수를 호출하지 않으므로 이중 과금 없음.
+- migration은 새 슬롯/민간 population을 만들지 않음.
+- Better Combat/Weapons Expanded Java class hard dependency 없음.
+- actual external-weapon physical armory는 아직 완료가 아님.
 
 ## 5. 성장 단계 / 탐험 되먹임
 
-| 단계 | 원본 주요 해금 | 상태 |
+| 단계 | 상태 | 현재 |
 | --- | --- | --- |
-| 개척 캠프 | 창고·주택·벌목·소농장 | 완료 |
-| 촌락 | 채석·광산·대장간·경비 | 완료/부분 |
-| 마을 | 도로·다리·시장·첫 전초·건설 물류 | 완료/부분 |
-| 개척 도시 | 병영·고급 제작·여러 전초 | 완료/부분 — Alpha.45 탐험 가속 루트 포함 |
-| 영지 | 전문 거점·후반 방어·고급 교역 | **완료/부분** — Alpha.47 영지 재련까지 포함. 사람형 군사/대형 토목/최종 runtime 미완 |
+| 개척 캠프 | 완료 | starter storage/builder/basic production |
+| 촌락 | 완료/부분 | quarry/mine/blacksmith/guard |
+| 마을 | 완료/부분 | roads/market/outpost/construction logistics |
+| 개척 도시 | 완료/부분 | barracks/advanced workshop/multiple outposts |
+| 영지 | 완료/부분 | exploration accelerator + Alpha.47 reforge + specialized remote roles, breadth/final runtime 남음 |
 
-### Alpha.45 탐험/정복 progression 감사
+Alpha.45는 already-loaded external structure type 및 direct-player conquest type을 unique milestone로 기록한다. score는 capped8 non-spendable metadata이며 legacy tier route를 폐기하지 않는다.
 
-- 100틱마다 온라인 플레이어의 현재 이미 로드된 위치만 structure manager로 확인.
-- 원거리 locate/새 청크 생성 없음.
-- 동일 structure type은 generated instance가 몇 개든1회만 기록.
-- direct player kill만 conquest.
-- Ender Dragon/Wither 명시 대상.
-- 외부 Mob max health>=80 generic milestone, 동일 entity type1회.
-- discovered structure max64, conquest max32.
-- score=`min(8, structures + conquests*3)`.
-- score는 ItemStack/재화가 아님.
-- frontier town legacy pop8/outpost2/mine/quarry 유지 + alternate pop7/동일 인프라/score2.
-- domain legacy pop16/outpost4/mine/farm2 유지 + alternate pop14/outpost3/동일 생산 인프라/score5.
-
-## 6. 건물 / 경제 / 전문 기능
+## 6. 건물 / 전문 기능
 
 현재 functional family는 정확히 **15**다.
 
 | 계열 | 상태 | 비고 |
 | --- | --- | --- |
 | 주택 | 완료 | housing |
-| 벌목소 | 완료 | 자동 목재 생산 |
-| 농장 | 완료 | 자동 식량 생산 |
-| 채석장 | 완료 | 실제 노출 석재 |
-| 광산 | 완료 | 실제 유한 광석 |
+| 벌목소 | 완료 | wood |
+| 농장 | 완료 | food |
+| 채석장 | 완료 | exposed stone |
+| 광산 | 완료 | finite ore |
 | 창고 | 완료/부분 | physical storage |
-| 건설소 | 완료/부분 | 자재 staging/runner |
-| 대장간 | 부분 | 기능 breadth/연출 확장 여지 |
+| 건설소 | 완료/부분 | material staging/runner |
+| 대장간 | 부분 | breadth 여지 |
 | 작업장 | 완료/부분 | external weapon repair |
-| 고급 제작소 | **완료/부분** | Alpha.39 relic1+metal4 first forge + Alpha.47 domain relic2+metal8 reforge |
-| 경비초소 | 완료/부분 | 기본 defense |
+| 고급 제작소 | 완료/부분 | Alpha.39 first forge + Alpha.47 domain reforge |
+| 경비초소 | 완료/부분 | local defense |
 | 감시탑 | 완료/부분 | loaded response |
-| 병영 | 완료/부분 | supplied 3-slot garrison, 사람형 presentation 미완 |
-| 시장 | 부분 | physical relic sale, 구매/고급 교역 breadth 남음 |
-| 수레 정거장 | 완료/부분 | physical freight hub, moving wagon presentation 없음 |
+| 병영 | 완료/부분 | supplied 3-slot garrison + Alpha.48 humanoid body |
+| 시장 | 부분 | physical relic sale, broader purchase/trade breadth 여지 |
+| 수레 정거장 | 완료/부분 | freight hub, moving wagon optional |
 
 새 family는 원본 역할을 채울 때만 추가한다. 숫자 맞추기용16~20번째 건물을 만들지 않는다.
 
-### Alpha.47 domain reforge 감사
+### Alpha.47 domain reforge 감사 유지
 
-- Alpha.39 첫 forge 경로를 삭제/대체하지 않는다.
-- reforge는 `DOMAIN`에서만 열린다.
-- input은 이미 enchant가 있는 Frontier-recognized external weapon이어야 한다.
-- 같은 protected advanced-workshop commission barrel을 재사용한다.
-- same advanced specialist가 real metal8을 loaded settlement storage에서 물리 운반한다.
-- commission barrel에 real expedition relic2가 있어야 한다.
-- candidate는 enchanting-table tag + weapon support + 기존에 없는 enchant + 기존 set 전체와 compatible 조건을 모두 만족해야 한다.
-- copy에만 먼저 추가한다.
-- result가 existing과 같으면 실패한다.
-- existing enchantment level이 하나라도 내려가면 실패한다.
-- **existing enchantments are never removed or downgraded**.
-- improvement/preservation 검증이 끝난 뒤에만 metal8, relic2를 소비한다.
-- no-compatible/no-improvement 결과는 무기/금속/유물을 전혀 소비하지 않는다.
-- success는 같은 무기를 full repair하고 검증된 새 compatible additions만 유지한다.
-- direct enchantment-map replacement 없음.
-- hard Weapons Expanded class/item reference 없음.
-- force-load/teleport/virtual crafting currency/shared-storage commission auto-scan 없음.
+- DOMAIN only;
+- already-enchanted recognized external weapon + relic2 + metal8;
+- same protected commission barrel/specialist;
+- candidate must be new + item-supported + compatible with existing set;
+- copy first, improvement/preservation validation first;
+- existing enchantments are never removed or downgraded;
+- no-compatible/no-improvement면 weapon/relic/metal 소비 없음;
+- Alpha.39 first forge relic1+metal4/power30 path 유지;
+- no hard Weapons Expanded class/item reference.
 
 ## 7. 도로 / 전초 / 영토
 
@@ -183,189 +161,100 @@ Alpha.45 탐험 진척은 공유 진행 metadata이며 재화가 아니다. 같�
 | --- | --- | --- |
 | 물리 도로 시공 | 완료 | grading + hauling |
 | 1블록 단차 계단 | 완료 | cobblestone stairs |
-| 짧은 물길 다리 | 완료/부분 | max6 centerline stone-brick deck |
-| 대형 협곡 다리/터널 | 미구현 | later civil engineering |
+| 짧은 물길 다리 | 완료/부분 | max6 centerline bridge |
+| 대형 협곡/터널 | 미구현 | future civil engineering |
 | 전초기지 물리 시공 | 완료 | persisted |
 | 전초 특화 | 완료/부분 | lumber/quarry/mining/agriculture + dynamic fishing/military |
-| 수변 특화 | **완료/부분** | Alpha.40 실제 어획/도로 물류 + Alpha.46 persisted real-wood landing + local trader + dedicated trade barrel |
-| 위험지역 군사 특화 | 완료/부분 | Alpha.41 one supplied sentry, 실전 검증 남음 |
-| 전초 물류 | 완료 | Alpha.27 `single authority for outpost transport` |
-| 군사 역보급 | 완료/부분 | 동일 transporter가 food/metal town→outpost 운반 |
-| 수변 공사 역보급 | **완료/부분** | 동일 transporter가 military job 없을 때 real wood town→outpost 운반 |
-| 언로드 작업 보정 | 완료/부분 | Alpha.42 bounded debt, 실플레이 검증 남음 |
-| biome-aware companion 특화 | 부분/미구현 | richer companion-biome roles 미완 |
+| 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
+| 위험지역 군사 특화 | 완료/부분 | one supplied Alpha.48 humanoid sentry |
+| 전초 물류 | 완료 | Alpha.27 one authority |
+| 군사 역보급 | 완료/부분 | same transporter food/metal |
+| 수변 역보급 | 완료/부분 | same transporter wood after military priority |
+| biome-aware companion specialization | 부분/미구현 | stable data seam 필요 |
 
-`single authority for outpost transport` 계약은 유지한다. 수변/군사/향후 wagon·boat 표현도 별도 long-distance economy controller를 만들면 안 된다.
-
-### Alpha.46 waterfront 감사
-
-- qualifying general/fishing outpost + loaded safe waterfront geometry만 대상.
-- `WaterfrontState`/`SettlementWaterfrontData`는 anchor/direction/build step만 저장하며 resource ledger가 아니다.
-- bounded landing은 기존 water를 지우지 않고 spruce slab/fence/barrel로 구성.
-- fishing worker가 전초 stockpile에서 real wood를 꺼내 main hand로 들고 블록당1개씩 소비.
-- 공사 시작 전 이미 물고기를 들고 있으면 stockpile에 실제 반납.
-- local wood shortage는 같은 Alpha.27 transporter가 town storage에서 real wood를 같은 road로 역보급.
-- active military reverse supply가 항상 waterfront wood supply보다 우선.
-- 완공 waterfront block break 보호로 공사자원 회수 exploit 차단.
-- dedicated trade barrel만 판매 대상; ordinary outpost stockpile 자동판매 없음.
-- recipe: real cod/salmon16 → real emerald1, 같은 barrel에 output, 공간 없으면 stall.
-- persistent local waterfront trader + Jade/status context.
-- boat logistics/teleport/force-load/virtual trade points/second transporter 없음.
-
-## 8. 외부 콘텐츠 / 탐험
+## 8. 외부 콘텐츠 / 탐험 / companion
 
 | 요구사항 | 상태 | 현재 |
 | --- | --- | --- |
-| Terralith terrain breadth | 외부/후보검증 | lock 완료, fresh-world runtime 미검증 |
-| Dungeons and Taverns 구조/던전 | 외부/후보검증 | lock 완료. Alpha.45 generic detection 가능 |
-| Repurposed Structures | 외부/후보검증 | 동일 |
-| Better Combat | 외부/후보검증 | lock 완료, soldier/player full runtime 미검증 |
-| Weapons Expanded | 외부/부분/후보검증 | 외부 무기 repair/first forge/domain reforge, full breadth 미검증 |
-| Lootr | 외부/후보검증 | loot breadth provider, runtime 미검증 |
-| external structure 발견 → settlement growth | **완료/부분** | Alpha.45 unique loaded structure-type milestones → tier accelerator |
-| boss/강적 정복 → settlement growth | **완료/부분/후보검증** | dragon/wither + generic external max-health>=80 player kill milestone |
-| 탐험 희귀재료 → 시장/제작 | **완료/부분** | relic market + Alpha.39 first forge + Alpha.47 domain reforge. 새로운 distinct material/use-case가 생기기 전 recipe 수치 늘리기는 금지 |
+| Terralith terrain breadth | 외부/후보검증 | candidate lock |
+| Dungeons and Taverns | 외부/후보검증 | generic Alpha.45 observation 가능 |
+| Repurposed Structures | 외부/후보검증 | generic observation 가능 |
+| Better Combat | 외부/후보검증 | candidate; Alpha.48 core hard-link 없음 |
+| Weapons Expanded | 외부/부분/후보검증 | repair/forge/reforge recognition, soldier physical armory 미구현 |
+| Lootr | 외부/후보검증 | loot provider |
+| structure 발견→growth | 완료/부분 | unique type accelerator |
+| boss/강적→growth | 완료/부분/후보검증 | dragon/wither + generic qualifying external Mob type |
+| 희귀재료→시장/제작 | 완료/부분 | relic market + two advanced forge paths |
 
-Frontier는 companion adventure 콘텐츠를 소유하지 않는다. 구조/보스는 registry/entity observation만 하고 생성·전리품·AI는 원래 모드의 권위다.
+Frontier는 companion adventure 콘텐츠 생성/전리품/AI를 소유하지 않는다.
 
-## 9. Companion UI / Jade / Xaero
+## 9. UI / Jade / Xaero
 
-### Jade
+- compact resource/project HUD: 완료/부분;
+- side notices: 완료/부분;
+- Jade crosshair context: 완료/부분/후보검증;
+- Xaero HUD collision avoidance: 완료/부분;
+- true Xaero settlement/outpost marker sync: 미구현/후보검증;
+- Alpha.48 soldier renderer: 완료/부분, 실화면 품질/attack animation acceptance 필요.
 
-상태: **완료/부분/후보검증**
+Locked Xaero 26.4.2에는 historical public `WaypointsManager` API가 없으므로 brittle internal/mixin/reflection marker integration은 하지 않는다.
 
-- exact candidate artifact `26.2.2+neoforge`, version ID `HLYMycSr`에 compileOnly.
-- `snownee.jade` import는 `compat/jade` 아래 격리.
-- 서버는 Jade 전용 resource/state를 만들지 않는다.
-- provider는 synchronized presentation context + crosshair position으로 title/detail/progress만 표시.
-- Alpha.46 dedicated waterfront trade barrel도 compact context에 포함.
-- Jade 미설치가 core boot/resource/jobs/construction/logistics/progression에 영향을 주면 안 된다.
+## 10. 현재 가장 큰 남은 갭
 
-### Xaero
+실플레이 회귀가 생기면 즉시 회귀 수정이 우선이다. 그 외 현재 우선순위:
 
-상태: **미구현/후보검증 (marker), 완료/부분 (HUD collision avoidance)**
+1. **선택영역 절토/성토 + 대형 civil engineering** — player build/resource exploit 보호 필수.
+2. **실물 군사 armory / 외부 무기 loadout** — actual ItemStack 공급이 가능할 때만; free Weapons Expanded weapon minting 금지.
+3. **탐험 bridge 2차** — rare NPC/구조별/보스별 의미 있는 settlement reward, soft/non-farmable.
+4. **biome-aware companion 전초 특화** — stable data seam 필요.
+5. 추가 high-tier crafting — distinct exploration material/use-case가 생길 때만.
+6. Alpha.42 unloaded catch-up pacing/save-reload/exploit acceptance.
+7. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance.
+8. Alpha.46 waterfront site/path/trade acceptance.
+9. Alpha.47 reforge external-weapon breadth/no-loss acceptance.
+10. **Alpha.48 humanoid render/attack animation + legacy migration acceptance**.
+11. 장시간 survival + 2인 multiplayer acceptance.
+12. full companion fresh-world client/server runtime.
+13. stable supported API가 생길 때만 Xaero marker.
+14. moving wagon/boat은 presentation/local behavior로만.
 
-- Alpha.43은 `xaerominimap` 존재 시 Frontier top-left HUD를 아래로 이동.
-- locked Xaero's Minimap26.4.2 exact compile 조사에서 과거 public `WaypointsManager` class/API 부재 확인.
-- 최신 내부 waypoint set/mixin/reflection 강제 사용은 채택하지 않음.
-- 본진/전초/도로 marker synchronization은 아직 미구현.
-- stable supported seam이 생기기 전에는 완료로 표시하지 않는다.
+## 11. Alpha.48 추가 실플레이 acceptance
 
-## 10. UI / 정보 구조
+기존 Alpha.23–47 acceptance에 다음을 추가한다.
 
-| 요구사항 | 상태 |
-| --- | --- |
-| 상시 compact resource HUD | 완료 |
-| 월드형 건물 placement | 완료 |
-| 회전/재료/가능 여부 preview | 완료 |
-| road/outpost placement | 완료/부분 |
-| 건물 상태/작업 진행 정보 | 완료/부분 — Alpha.43 active project label/% + Jade target context |
-| 수변 전초 상태 노출 | 완료/부분 — status + Jade role + trade-barrel context |
-| 위험지역 군사 전초 상태 노출 | 완료/부분 |
-| 언로드 보정 상태 노출 | 완료/부분 |
-| 탐험/정복 진척 상태 노출 | 완료/부분 |
-| 고급 제작/영지 재련 상태 노출 | **완료/부분** — 같은 `/frontier status` line에서 first forge와 `영지 재련 잠김/준비` 표시 |
-| 물리 자재 흐름 가시화 | 완료/부분 |
-| compact side notification | 완료/부분 |
-| Jade 기반 최소 상태 노출 | 완료/부분/후보검증 |
-| Xaero 본진/전초/도로망 연동 | 미구현/후보검증 |
+- 신규 barracks soldier가 인간형으로 렌더링됨;
+- dangerous-region sentry도 같은 인간형 military body를 사용함;
+- 공격 중 팔/검 pose가 허용 가능한 수준으로 보임;
+- humanoid collision/pathing이 병영/전초 구조와 충돌하지 않음;
+- 서버 damage/health/target selection이 이전 supplied body와 의도대로 유지됨;
+- 병영 3 slot과 food8+metal2 충원비 유지;
+- remote max1 sentry와 local food6+metal2 충원비 유지;
+- visual sword가 entity inventory, settlement storage, death drop 어디에도 생성되지 않음;
+- visual sword가 server attack attribute를 바꾸지 않음;
+- old tagged barracks Iron Golem은 loaded 시 정확히 1 Frontier soldier로 migration;
+- old tagged remote sentry도 loaded 시 정확히 1개로 migration;
+- migration이 name/tags/health를 보존;
+- migration에 food/metal 재소비 없음;
+- reload 반복으로 duplicate military body가 생기지 않음;
+- civilian population/housing 수치 변동 없음;
+- Better Combat/Weapons Expanded 설치/미설치 모두 Frontier core boot가 깨지지 않음;
+- actual external companion weapon을 장착한 것처럼 문서/UI에서 허위 주장하지 않음.
 
-새 기능마다 새 키나 새 대형 dashboard를 만드는 방식은 금지한다.
+## 12. 기존 핵심 acceptance 유지
 
-## 11. 현재 가장 큰 남은 갭
-
-우선순위는 실플레이 회귀가 생기면 즉시 그쪽이 우선이다. 완성/test-worthy 지점 전까지 자동/코드 검증 가능한 개발을 계속한다.
-
-1. **사람형 병사/외부 무기 장비 프레젠테이션** — 현재 Iron Golem proxy를 정본 방향에 맞게 개선. 무료 무기 생성/새 병력 슬롯/companion hard dependency 금지.
-2. **선택영역 절토/성토 + 대형 civil engineering** — player build/자원 악용 보호 유지.
-3. **탐험 bridge 2차** — rare NPC/구조별·보스별 의미 있는 settlement reward, soft/non-farmable 조건.
-4. **biome-aware companion 전초 특화** — stable data seam이 있을 때만.
-5. **추가 고급 제작 breadth** — Alpha.47 이후 genuinely distinct exploration material/use-case가 생겼을 때만.
-6. **Alpha.42 bounded unloaded-work 실플레이 검증** — pacing/save-reload/exploit/중복.
-7. **Alpha.43 UI/Jade/Xaero visual/runtime acceptance**.
-8. **Alpha.46 waterfront 실플레이 검증** — site/pathfinding, real-wood reverse supply, military precedence, trader duplication, 16→1 balance.
-9. **Alpha.47 domain reforge 실플레이 검증** — 다양한 외부 무기의 compatible candidate, no-loss, repeated no-improvement, physical metal hauling.
-10. **장시간 survival + 2인 multiplayer acceptance**.
-11. **full companion fresh-world client/server runtime** — 최종 테스트 단계에서 실제 실행.
-12. **Xaero marker 연동** — 안정 공개/supported seam이 생길 때만.
-13. **moving boat/waterborne merchant 표현** — presentation/local behavior로만; 별도 물류 권위 금지.
-
-## 12. Alpha.44–47 추가 실플레이 acceptance
-
-기존 Alpha.23–43 acceptance에 아래를 추가한다.
-
-### Alpha.44
-
-- span0–2 기존 grading;
-- span3–4 `지형 공사 포함` 표시;
-- >4/fluid/block entity/unsafe support 거부;
-- bounded natural cut/fill;
-- deep outer edge cobblestone retaining/foundation;
-- builder real-stone haul/site-barrel consume;
-- max96 surcharge;
-- save/reload 중복/free support 없음;
-- player container/structure silent 삭제 없음.
-
-### Alpha.45
-
-- 서로 다른 actual external structure type만 discovery 증가;
-- 같은 type 다른 instance 반복은 증가 없음;
-- 원거리 locate/generate 없음;
-- direct player dragon/wither/external strong-enemy kill만 conquest;
-- same entity type 중복 없음;
-- structure/boss id와 score save/reload 보존;
-- score<=8, ItemStack/resource 소비 불가;
-- legacy no-exploration save old tier routes 유지;
-- alternate accelerator는 나머지 인프라/인구 조건 유지;
-- 2인 shared progress 한 번만 증가.
-
-### Alpha.46
-
-- qualifying shoreline만 persisted landing 생성;
-- blocked/unsafe shoreline는 player/world block을 덮어쓰지 않음;
-- landing build step save/reload 보존;
-- fishing worker가 actual outpost wood를 운반하고 placement당1개 소비;
-- local wood 부족 시 같은 road transporter가 town에서 wood를 실제 추출/운반;
-- military reverse supply 활성 시 military food/metal이 waterfront wood보다 우선;
-- completed landing block normal break로 자원 회수 불가;
-- dedicated trade barrel 외 ordinary outpost stock 자동판매 없음;
-- fish16→emerald1 정확, output full이면 consume 없이 stall;
-- waterfront trader save/reload duplicate 없음;
-- no boat logistics/teleport/force-load/virtual trade points/second transport authority.
-
-### Alpha.47
-
-- frontier-town 이하에서는 `영지 재련 잠김`;
-- DOMAIN에서 already-enchanted recognized external weapon + relic2가 ready commission으로 잡힘;
-- same advanced specialist가 shared storage에서 metal8을 실제 운반;
-- existing enchant와 incompatible 후보는 선택되지 않음;
-- 이미 있는 enchant를 신규 addition으로 중복 선택하지 않음;
-- compatible new addition이 없으면 weapon/relic/metal 모두 변하지 않음;
-- success 후 모든 old enchant level이 동일 이상인지 확인;
-- success에서 old enchant 제거/하향 없음;
-- metal8 + relic2만 정확히 소비;
-- success weapon full repair;
-- repeated reforge에서 no-improvement가 되면 추가 소비 없음;
-- Alpha.39 unenchanted forge는 기존 relic1+metal4/power30 계약 유지;
-- shared storage의 weapon/relic을 자동 의뢰로 훔치지 않음;
-- no hard Weapons Expanded class/item dependency;
-- no force-load/teleport/virtual reforge currency/new crafting screen.
-
-### 기존 핵심 acceptance 유지
-
-- founding → 초기 핵심 건물;
-- save/reload building grading/hauling;
-- construction-office runner staging/builder preference;
+- founding→early growth;
+- physical grading/hauling/reload;
+- construction-office staging;
 - road stair/short bridge;
-- road → outpost → production → transporter → cart station;
-- Jade 설치/미설치 boot/context;
-- Xaero 설치/미설치 HUD collision, marker 미생성이 문서와 일치;
-- fishing shoreline/invalid shoreline;
-- military danger/sentry/reverse supply;
-- deferred work debt cap24,000, real resource gating, no server-offline catch-up, max64 catch-up pickup;
-- market vs normal workshop vs first advanced forge vs domain reforge intent 분리;
-- watchtower/barracks replacement cost;
-- 2인 shared storage/construction/logistics/exploration/waterfront/reforge;
-- full companion lock fresh-world launch.
+- outpost production/transport/cart station;
+- fishing/waterfront trade and military reverse supply priority;
+- no virtual cargo/resource unloaded catch-up;
+- exploration milestone dedupe/legacy tier routes;
+- market vs repair vs first forge vs domain reforge intent separation;
+- Alpha.47 no-loss/no-improvement behavior;
+- Jade optional boot/context;
+- Xaero HUD offset but no false marker completion claim;
+- two-player shared state;
+- full companion candidate fresh-world launch at final test point.
 
-자동 감사/빌드/JAR 검증은 소스 정합과 API 컴파일을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime·Jade/Xaero 화면 조합·catch-up/terrain/exploration/waterfront/reforge 체감을 대신하지 않는다.
+자동 감사/Java25 build/JAR verify는 코드·API·정본 정합을 보장하지만 실제 Minecraft 동선·렌더 품질·밸런스·full companion runtime을 대신하지 않는다.
