@@ -4,6 +4,15 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.47.0-alpha.1 — Major External Targets / 외부 강적 원정 연동
+The Birth of Steve is now locked to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`). Survival Ascension does not import TBS classes or copy its ARR content; the integration point is the Survival-owned optional EntityType tag `survivalascension:expedition_major_targets`.
+
+The audited major-target set is `tbos:hour_cantor` and `tbos:phoenix_guardian` (The Last Curator), both declared `required:false`. A normal hostile kill still records the existing +1. A tagged major target adds bounded +3 `HOSTILES_KILLED` credit to the current regional directive and an already-active valid same-region expedition operation, but does not multiply incident counters.
+
+Fractured Archive is a real separate TBS dimension (`tbos:fractured_archive`) using `minecraft:the_void` internally. It is deliberately not disguised as one of the nine expedition regions, and the existing rule that an active operation fails when leaving its origin dimension remains unchanged. Major targets killed outside the nine regions therefore create no fake regional progress; they still receive the stronger Combat mastery valuation (2.5× max-health basis, capped at 600 XP before the existing equipment XP multiplier).
+
+The locked TBS file is `tbos-neoforge-26.2-0.7.0.jar`, SHA-1 `4d55c51685bff4247fa533c925f7641ce4880db3`. No new SavedData, packet/protocol, custom entity, force-load or hard optional-mod Java dependency is introduced.
+
 ## 0.46.0-alpha.1 — Resonant Tool Preservation + Shovel Earthworks / 공명 장비 보존·삽 토공
 The locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary was audited directly before changing integration. Its Resonant Sword/Pickaxe/Axe/Hoe are present in the corresponding vanilla item tags, while Resonant Shovel is in `minecraft:shovels`; 0.45 therefore had one real equipment gap because Survival Ascension did not yet accept shovels.
 
