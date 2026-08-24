@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -39,6 +40,7 @@ public final class AscensionAffixes {
     private static final String AWAKENED = "awakened";
     private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
     private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.ARMOR);
+    private static final List<EquipmentSlot> ARMOR_SLOTS = List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
 
     private AscensionAffixes() {}
 
@@ -186,7 +188,8 @@ public final class AscensionAffixes {
     public static double armorDamageMultiplier(ServerPlayer player, float incomingAmount, boolean environmental) {
         double reduction = 0.0D;
         boolean lowHealth = player.getHealth() <= player.getMaxHealth() * 0.50F;
-        for (ItemStack armor : player.getArmorSlots()) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
+            ItemStack armor = player.getItemBySlot(slot);
             if (category(armor) != Category.ARMOR) continue;
             int rarity = rarity(armor);
             if (rarity <= 0) continue;
@@ -200,7 +203,8 @@ public final class AscensionAffixes {
 
     public static double armorXpMultiplier(ServerPlayer player) {
         double bonus = 0.0D;
-        for (ItemStack armor : player.getArmorSlots()) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
+            ItemStack armor = player.getItemBySlot(slot);
             if (category(armor) != Category.ARMOR || !has(armor, MASTERY)) continue;
             bonus += switch (rarity(armor)) { case 1 -> 0.03D; case 2 -> 0.05D; case 3 -> 0.08D; default -> 0.0D; };
         }
