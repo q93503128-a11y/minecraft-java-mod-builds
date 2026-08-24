@@ -30,6 +30,65 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Bootstrap Alpha.54 one-bend tunnel slice
+        id: bootstrap54
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          (
+            set -euo pipefail
+            if ! grep -q '^mod_version=0.1.0-alpha.53$' "$PROJECT_DIR/gradle.properties"; then
+              exit 0
+            fi
+            test -f "$PROJECT_DIR/tools/apply_alpha54.py"
+            echo 'ALPHA54_BOOTSTRAP=1' >> "$GITHUB_ENV"
+            python3 "$PROJECT_DIR/tools/apply_alpha54.py"
+            python3 "$PROJECT_DIR/tools/test_alpha54_source.py"
+            python3 "$PROJECT_DIR/tools/test_alpha54_docs.py"
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            rm -f "$PROJECT_DIR/tools/apply_alpha54.py"
+            git add -A "$PROJECT_DIR"
+            git diff --cached --check
+            git commit -m 'Implement Frontier alpha.54 bounded one-bend tunnels'
+            pushed=0
+            for attempt in 1 2 3 4 5 6; do
+              if git pull --rebase origin main && git push origin HEAD:main; then
+                pushed=1
+                break
+              fi
+              git rebase --abort >/dev/null 2>&1 || true
+              sleep $((attempt * 2))
+            done
+            test "$pushed" -eq 1
+          ) 2>&1 | tee /tmp/frontier-alpha54-bootstrap.log
+
+      - name: Record Alpha.54 bootstrap failure
+        if: steps.bootstrap54.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard "$GITHUB_SHA"
+          mkdir -p ci-results/frontier-alpha54-bootstrap
+          cp /tmp/frontier-alpha54-bootstrap.log ci-results/frontier-alpha54-bootstrap/latest.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/frontier-alpha54-bootstrap/latest.log
+          git commit -m "Record Frontier alpha.54 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
+            git rebase --abort >/dev/null 2>&1 || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Stop bootstrap source run after product push
+        if: env.ALPHA54_BOOTSTRAP == '1' && steps.bootstrap54.outcome == 'success'
+        shell: bash
+        run: exit 1
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -101,7 +160,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always()
+        if: always() && env.ALPHA54_BOOTSTRAP != '1'
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -114,7 +173,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always()
+        if: always() && env.ALPHA54_BOOTSTRAP != '1'
         shell: bash
         run: |
           set -euo pipefail
