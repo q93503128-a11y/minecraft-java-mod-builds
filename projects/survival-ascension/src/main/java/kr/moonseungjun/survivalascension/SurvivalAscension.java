@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.50.0-alpha.1";
-    // 0.50: regional logistics scale expands physical depot/outpost capacity 3 -> 6 -> 9 with infrastructure progression.
+    public static final String VERSION = "0.51.0-alpha.1";
+    // 0.51: humanoid armor joins the existing affix/imprint/elite-drop progression with bounded worn effects.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -90,6 +90,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
