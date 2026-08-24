@@ -34,6 +34,14 @@ public final class CombatProgression {
     private CombatProgression() {}
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        if (event.getAmount() <= 0.0F) return;
+
+        if (event.getEntity() instanceof ServerPlayer defender) {
+            boolean environmental = event.getSource().getEntity() == null;
+            double armorMultiplier = AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental);
+            if (armorMultiplier < 1.0D) event.setAmount((float) (event.getAmount() * armorMultiplier));
+        }
+
         if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         if (event.getEntity() == player || event.getAmount() <= 0.0F) return;
         UUID uuid = player.getUUID();
@@ -128,7 +136,9 @@ public final class CombatProgression {
         ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
         if (majorTarget) ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS);
 
-        int xp = Math.max(1, (int) Math.ceil(xpForKill(victim, majorTarget) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
+        int xp = Math.max(1, (int) Math.ceil(xpForKill(victim, majorTarget)
+                * AscensionAffixes.xpMultiplier(player.getMainHandItem())
+                * AscensionAffixes.armorXpMultiplier(player)));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
 
