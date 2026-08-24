@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.65
+## Current version: 0.1.0-alpha.66
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–65 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–66 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,21 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.66 — loaded-evidence-safe civilian lifecycle authority
+
+Alpha.66 closes the next repeated-death/save-reload boundary without adding a resident-management screen or a new population ledger.
+
+- population reconciliation no longer trusts a partial loaded-entity view: ordinary production-worker evidence must include every loaded chunk in the bounded work-site to concrete-storage envelope, while workshop/advanced-workshop assignments and outpost routes must also be fully visible;
+- if that evidence is incomplete, an unloaded resident is **not** treated as dead, population is not repaired downward, and ordinary production replacement is paused instead of creating a possible duplicate;
+- ordinary production workers still have no per-worker assignment UI; recruitment resumes automatically when the bounded local evidence becomes loaded again;
+- the advanced-forging specialist is now a normal civilian for arrival economics: a missing advanced artisan uses the existing housing gate and the same atomic real-food4 path (`entity add -> food consume -> population +1`) as other civilian specialists;
+- pre-Alpha.66 advanced artisans that already physically exist are preserved and are simply counted when complete evidence is visible; no historical food is retroactively charged;
+- advanced artisans already carry real metal in MAINHAND, so Alpha.65 local civilian death recovery now includes `ADVANCED_WORKER_TAG`: the exact currently carried stack is recoverable once, empty hand emits zero;
+- workshop and advanced-workshop assignment checks use the same loaded work-to-storage corridor evidence before declaring a worker missing, reducing unload/reload duplicate-spawn risk;
+- no new SavedData field, family system, manual priority table, resident UI, recovery balance, force-load or teleport.
+
+This is deterministic pre-acceptance hardening. Repeated kill/reload/reconnect with two real clients is still a real-play acceptance item.
 
 ## Alpha.65 — exact local civilian cargo death recovery
 

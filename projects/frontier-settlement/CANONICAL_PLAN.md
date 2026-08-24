@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.65**.
+Current canonical implementation: **0.1.0-alpha.66**.
 
 ## 1. Product identity
 
@@ -367,6 +367,21 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.66 loaded-evidence-safe civilian lifecycle authority
+
+Alpha.66 makes population/replacement decisions depend on complete physical visibility rather than interpreting unloaded entities as deaths.
+
+- ordinary lumber/farm/quarry/mine replacement and population reconciliation require a bounded loaded chunk envelope from each work site to every concrete settlement-storage endpoint; the check uses `hasChunkAt` only and never loads a chunk;
+- workshop and advanced-workshop assignment evidence uses the same loaded work-to-storage rule, while outpost transport keeps its persisted-road `allRoutesLoaded` authority;
+- incomplete evidence freezes reconciliation/replacement instead of decrementing population or deliberately spawning a second worker for a merely unloaded resident;
+- advanced-forging specialists move under the existing civilian housing/food authority: a genuinely missing loaded assignment is added successfully first, then real food4 is consumed, then shared population increments;
+- old advanced artisans remain valid physical residents with their existing entity/assignment tags and are counted when evidence is complete; Alpha.66 never retroactively charges their original spawn;
+- the old `SettlementService` free advanced-artisan spawn is removed, so there is one civilian arrival transaction path rather than a special zero-food bypass;
+- Alpha.65 local death recovery now recognizes `ADVANCED_WORKER_TAG`, preserving the exact real metal stack in MAINHAND once on death and minting nothing for an empty hand;
+- no new SavedData, virtual resident reservation, family simulation, direct-management UI, force-load, teleport or second logistics authority.
+
+This closes deterministic unloaded-resident false-death/duplicate-replacement and advanced-artisan lifecycle gaps. Long two-player repeated-death/save-reload runtime acceptance remains unfinished.
 
 ### Alpha.65 local civilian physical-cargo death boundary
 
@@ -735,7 +750,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.65
+## 14. Current playable slice after Alpha.66
 
 Current implemented slice includes:
 
@@ -768,12 +783,12 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.65
+## 15. Unfinished original-scope priorities after Alpha.66
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. Alpha.62–65 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; save-reload, route-unload, repeated death/replacement and no-dup/no-loss acceptance remain;
+2. Alpha.62–66 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; save-reload, route-unload, repeated death/replacement and no-dup/no-loss acceptance remain;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

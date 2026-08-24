@@ -32,10 +32,6 @@ public final class SettlementService {
         SettlementConstructionOfficeService.tick(server, data);
         SettlementBarracksService.tick(server, data);
         SettlementMilitaryOutpostService.tick(server, data);
-        if (tick % 600 == 0) {
-            BuildingRecord missingAdvanced = SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(server.overworld(), data);
-            if (missingAdvanced != null) SettlementAdvancedWorkshopService.spawnAssignedWorker(server.overworld(), missingAdvanced);
-        }
         SettlementAdvancedWorkshopService.tick(server, data);
         if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
         else {

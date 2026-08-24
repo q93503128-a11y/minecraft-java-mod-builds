@@ -79,27 +79,44 @@ public final class SettlementWorkerService {
         List<Villager> farm = workersByName(level, data.centerPos(), FARM_WORKER_NAME);
         List<Villager> quarry = workersByName(level, data.centerPos(), QUARRY_WORKER_NAME);
         List<Villager> mine = workersByName(level, data.centerPos(), MINE_WORKER_NAME);
+        boolean localEvidenceLoaded = localProductionEvidenceLoaded(level, data);
 
-        // Remote entities are legitimately unloaded. Reconcile population only while both road-bound
-        // transport assignments and local workshop assignment evidence are completely visible.
-        if (SettlementOutpostLogisticsService.allRoutesLoaded(level, data)
-                && SettlementWorkshopService.allAssignmentsLoaded(level, data)) {
+        // Population is repaired downward/upward only when every civilian evidence corridor is visible.
+        // An unloaded resident is not a dead resident, and must never free a housing slot or trigger a duplicate.
+        if (localEvidenceLoaded
+                && SettlementOutpostLogisticsService.allRoutesLoaded(level, data)
+                && SettlementWorkshopService.allAssignmentsLoaded(level, data)
+                && SettlementAdvancedWorkshopService.allAssignmentsLoaded(level, data)) {
             int transport = SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data);
             int workshop = SettlementWorkshopService.loadedAssignedWorkerCount(level, data);
-            int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size() + transport + workshop;
+            int advanced = SettlementAdvancedWorkshopService.loadedAssignedWorkerCount(level, data);
+            int actualPopulation = 1 + lumber.size() + farm.size() + quarry.size() + mine.size()
+                    + transport + workshop + advanced;
             if (data.population() != actualPopulation) data.setPopulation(actualPopulation);
         }
         if (data.population() >= data.housingCapacity()) return;
 
-        if (tryFillJob(server, level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber.size())) return;
-        if (tryFillJob(server, level, data, BuildingType.FARM, FARM_WORKER_NAME, farm.size())) return;
-        if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry.size())) return;
-        if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine.size())) return;
+        // Ordinary production workers have no per-worker manual assignment UI. Do not infer a vacancy
+        // from a partial entity view; only recruit when their work<->storage envelope is fully loaded.
+        if (localEvidenceLoaded) {
+            if (tryFillJob(server, level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber.size())) return;
+            if (tryFillJob(server, level, data, BuildingType.FARM, FARM_WORKER_NAME, farm.size())) return;
+            if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry.size())) return;
+            if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine.size())) return;
+        }
 
         BuildingRecord missingWorkshop = SettlementWorkshopService.firstMissingLoadedAssignment(level, data);
         if (missingWorkshop != null) {
             if (!arrivalFoodAvailable(level, data)) return;
             Villager arrival = SettlementWorkshopService.spawnAssignedWorker(level, data, missingWorkshop);
+            commitArrival(server, level, data, arrival);
+            return;
+        }
+
+        BuildingRecord missingAdvanced = SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(level, data);
+        if (missingAdvanced != null) {
+            if (!arrivalFoodAvailable(level, data)) return;
+            Villager arrival = SettlementAdvancedWorkshopService.spawnAssignedWorker(level, data, missingAdvanced);
             commitArrival(server, level, data, arrival);
             return;
         }
@@ -110,6 +127,49 @@ public final class SettlementWorkerService {
             Villager arrival = SettlementOutpostLogisticsService.spawnAssignedWorker(level, data, missing);
             commitArrival(server, level, data, arrival);
         }
+    }
+
+    private static boolean localProductionEvidenceLoaded(ServerLevel level, SettlementData data) {
+        if (!SettlementStorageService.storageAvailable(level, data)) return false;
+        for (BuildingRecord building : data.buildings()) {
+            BuildingType type = building.buildingType();
+            if (type != BuildingType.LUMBER_CAMP && type != BuildingType.FARM
+                    && type != BuildingType.QUARRY && type != BuildingType.MINE) continue;
+            if (!workerRouteEvidenceLoaded(level, data, building.workCenter(), 24)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Loaded-only visibility proof for a local civilian assignment. It checks every chunk in the
+     * bounded rectangle between the work site and every concrete settlement storage endpoint plus a
+     * small work/path margin. It only calls hasChunkAt: this is never a force-load mechanism.
+     */
+    static boolean workerRouteEvidenceLoaded(ServerLevel level, SettlementData data,
+                                             BlockPos workCenter, int margin) {
+        if (!SettlementStorageService.storageAvailable(level, data)) return false;
+        int minX = workCenter.getX() - margin;
+        int maxX = workCenter.getX() + margin;
+        int minZ = workCenter.getZ() - margin;
+        int maxZ = workCenter.getZ() + margin;
+        for (BlockPos storage : SettlementStorageService.storagePositions(data)) {
+            minX = Math.min(minX, storage.getX() - margin);
+            maxX = Math.max(maxX, storage.getX() + margin);
+            minZ = Math.min(minZ, storage.getZ() - margin);
+            maxZ = Math.max(maxZ, storage.getZ() + margin);
+        }
+        int minChunkX = Math.floorDiv(minX, 16);
+        int maxChunkX = Math.floorDiv(maxX, 16);
+        int minChunkZ = Math.floorDiv(minZ, 16);
+        int maxChunkZ = Math.floorDiv(maxZ, 16);
+        int probeY = data.centerPos().getY();
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                BlockPos probe = new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8);
+                if (!level.hasChunkAt(probe)) return false;
+            }
+        }
+        return true;
     }
 
     private static boolean tryFillJob(MinecraftServer server, ServerLevel level, SettlementData data,
@@ -181,7 +241,8 @@ public final class SettlementWorkerService {
 
     private static boolean isManagedCargoWorker(Villager worker) {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
-                || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)) {
+                || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)
+                || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)) {
             return true;
         }
         // Save-compatible fallback for pre-Alpha.65 ordinary workers that did not yet carry a role tag.

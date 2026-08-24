@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.65`
+현재 구현 기준: `0.1.0-alpha.66`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -382,6 +382,19 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
+### Alpha.66 민간 주민 lifecycle / 언로드 증거 감사
+
+- 생산 주민 population 재계산과 신규 대체는 작업지↔실제 공동 저장소 사이 bounded chunk envelope가 전부 loaded일 때만 수행;
+- `hasChunkAt` 확인만 사용하며 chunk generation/force-load 없음;
+- evidence가 불완전하면 unloaded 주민을 사망자로 간주하지 않고 population 감소/일반 생산 주민 대체를 보류;
+- 일반 작업장과 고급 제작소 assignment도 work↔storage loaded evidence가 완전할 때만 missing 판정;
+- 고급 제작 주민의 과거 무료 직생성 경로 제거, 앞으로 missing replacement는 기존 housing + real food4 + `addFreshEntity 성공 -> food consume -> population +1` 경로 사용;
+- pre-Alpha.66에 이미 존재하는 고급 제작 주민은 삭제/재생성/소급 food 청구 없이 그대로 유지하고 complete evidence 시 population에 포함;
+- 고급 제작 주민의 실제 MAINHAND metal도 Alpha.65 local civilian exact recovery 대상에 포함, empty hand는 drop0;
+- 새 SavedData/reservation ledger/가상 주민/가상 화물/수동 주민 UI/force-load/teleport 없음.
+
+따라서 정적으로 재현 가능한 `unload -> population 허위 감소 -> 중복 대체`와 고급 제작 주민의 zero-food replacement/cargo-loss 경계를 닫았다. 실제 2인 반복 사망/재접속/save-reload acceptance는 계속 남는다.
+
 ### Alpha.65 로컬 주민 실물 화물 사망 경계 감사
 
 - 신규 벌목/농사/채석/광산 주민은 persistent resource-worker entity tag 보유;
@@ -484,7 +497,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. Alpha.62–65 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance;
+2. Alpha.62–66 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

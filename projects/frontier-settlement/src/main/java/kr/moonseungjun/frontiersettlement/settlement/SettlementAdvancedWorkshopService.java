@@ -98,8 +98,9 @@ public final class SettlementAdvancedWorkshopService {
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
-            if (!level.hasChunkAt(workshop.workCenter())
-                    || !level.hasChunkAt(AdvancedWorkshopLayout.commissionCrate(workshop))) return false;
+            if (!SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
+                    || !level.hasChunkAt(AdvancedWorkshopLayout.commissionCrate(workshop))
+                    || !level.hasChunkAt(AdvancedWorkshopLayout.artisanHome(workshop))) return false;
         }
         return true;
     }
@@ -123,9 +124,11 @@ public final class SettlementAdvancedWorkshopService {
         return null;
     }
 
-    public static void spawnAssignedWorker(ServerLevel level, BuildingRecord workshop) {
+    public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         if (workshop == null || workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP
-                || !level.hasChunkAt(workshop.workCenter())) return;
+                || !SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
+                || !level.hasChunkAt(AdvancedWorkshopLayout.artisanHome(workshop))
+                || findAssignedWorker(level, data, workshop) != null) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = AdvancedWorkshopLayout.artisanHome(workshop);
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
@@ -135,7 +138,8 @@ public final class SettlementAdvancedWorkshopService {
         worker.setNoAi(false);
         worker.addTag(ADVANCED_WORKER_TAG);
         worker.addTag(assignmentTag(workshop));
-        level.addFreshEntity(worker);
+        if (!level.addFreshEntity(worker)) return null;
+        return worker;
     }
 
     public static int readyCommissionCount(ServerLevel level, SettlementData data) {

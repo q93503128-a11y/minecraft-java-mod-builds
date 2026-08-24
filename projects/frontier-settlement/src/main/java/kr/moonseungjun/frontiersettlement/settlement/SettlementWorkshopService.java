@@ -65,7 +65,8 @@ public final class SettlementWorkshopService {
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
-            if (!level.hasChunkAt(workshop.workCenter()) || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))) {
+            if (!SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
+                    || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))) {
                 return false;
             }
         }

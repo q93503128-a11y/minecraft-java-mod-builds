@@ -108,11 +108,14 @@ forbid(advanced, ('SettlementStorageService.storagePositions(data)',),
 service = text(JAVA / 'settlement/SettlementService.java')
 if service.count('SettlementAdvancedWorkshopService.tick(server, data)') != 1:
     raise SystemExit('alpha.39 advanced workshop service must have exactly one server tick call')
-must(service, ('SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(server.overworld(), data)',
-               'SettlementAdvancedWorkshopService.spawnAssignedWorker(server.overworld(), missingAdvanced)',
-               'type == BuildingType.ADVANCED_WORKSHOP',
+must(service, ('type == BuildingType.ADVANCED_WORKSHOP',
                'SettlementAdvancedWorkshopService.lockedReason(data)'),
      'alpha.39 advanced workshop runtime/unlock integration')
+# Alpha.66 supersedes the historical free-spawn wiring with the shared civilian arrival authority.
+worker_service = text(JAVA / 'settlement/SettlementWorkerService.java')
+must(worker_service, ('SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(level, data)',
+                      'SettlementAdvancedWorkshopService.spawnAssignedWorker(level, data, missingAdvanced)'),
+     'alpha.39/66 advanced workshop civilian-arrival integration')
 
 entry = text(JAVA / 'FrontierSettlement.java')
 must(entry, ('SettlementAdvancedWorkshopService',
