@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    {"id":"biomesoplenty:crag","required":false},
+    {"id":"biomesoplenty:highland","required":false},
+    {"id":"biomesoplenty:hot_springs","required":false},
+    {"id":"biomesoplenty:jade_cliffs","required":false},
+    {"id":"biomesoplenty:moor","required":false},
+    {"id":"biomesoplenty:rocky_shrubland","required":false},
+    {"id":"biomesoplenty:volcano","required":false}
+  ]
+}

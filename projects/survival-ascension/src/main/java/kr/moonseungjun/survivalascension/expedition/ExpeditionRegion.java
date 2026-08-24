@@ -1,10 +1,16 @@
 package kr.moonseungjun.survivalascension.expedition;
 
+import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+
+import java.util.Locale;
 
 public enum ExpeditionRegion {
     WOODLAND("삼림권", 0, SkillType.WOODCUTTING, 300, "자연 나무 일괄 벌목", 96),
@@ -23,6 +29,7 @@ public enum ExpeditionRegion {
     private final int skillXp;
     private final String objectiveName;
     private final int objectiveTarget;
+    private final TagKey<Biome> integrationTag;
 
     ExpeditionRegion(String koreanName, int requiredWorldStage, SkillType rewardSkill, int skillXp,
                      String objectiveName, int objectiveTarget) {
@@ -32,6 +39,10 @@ public enum ExpeditionRegion {
         this.skillXp = skillXp;
         this.objectiveName = objectiveName;
         this.objectiveTarget = objectiveTarget;
+        this.integrationTag = TagKey.create(
+                Registries.BIOME,
+                Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition/" + name().toLowerCase(Locale.ROOT))
+        );
     }
 
     public String koreanName() { return koreanName; }
@@ -43,6 +54,7 @@ public enum ExpeditionRegion {
     public int bit() { return 1 << ordinal(); }
 
     public boolean matches(Holder<Biome> biome) {
+        if (biome.is(integrationTag)) return true;
         return switch (this) {
             case WOODLAND -> isAny(biome,
                     Biomes.FOREST, Biomes.FLOWER_FOREST, Biomes.BIRCH_FOREST, Biomes.OLD_GROWTH_BIRCH_FOREST,
