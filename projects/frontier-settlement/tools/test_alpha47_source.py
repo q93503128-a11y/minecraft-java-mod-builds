@@ -23,9 +23,12 @@ def forbid(source, tokens, label):
 
 
 # Preserve every Alpha.23-46 source/runtime invariant while Alpha.47 docs are synchronized only after
-# the new 26.2 enchantment path has compiled successfully. Adapt just version expectations, then stop
-# before Alpha.46's canonical-document section.
+# the new 26.2 enchantment path has compiled successfully. Adapt the inherited final-version handoff,
+# then stop before Alpha.46's canonical-document section.
 alpha46_source = text(ALPHA46)
+alpha46_source = alpha46_source.replace(
+    "alpha45_source = alpha45_source.replace('0.1.0-alpha.45', '0.1.0-alpha.46')",
+    "alpha45_source = alpha45_source.replace('0.1.0-alpha.45', '0.1.0-alpha.47')")
 alpha46_source = alpha46_source.replace("print('Frontier Settlement alpha.46 source audit: PASS')", 'pass')
 alpha46_source = alpha46_source.replace("print('Frontier Settlement alpha.46 canonical docs audit: PASS')", 'pass')
 alpha46_source = alpha46_source.replace("'mod_version=0.1.0-alpha.46'", "'mod_version=0.1.0-alpha.47'")
@@ -64,7 +67,6 @@ forbid(advanced, (
     'ModList', 'weaponsexpanded.',
 ), 'alpha.47 reforge safety/soft compatibility')
 
-# Existing enchantments must be preserved before any Alpha.47 commission resource mutation.
 select_index = advanced.find('List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment')
 add_index = advanced.find('reforged.enchant(addition.enchantment(), addition.level())')
 result_index = advanced.find('var result = EnchantmentHelper.getEnchantmentsForCrafting(reforged)')
@@ -77,7 +79,6 @@ if min(select_index, add_index, result_index, preserve_index, metal_index, relic
 if not (select_index < add_index < result_index < preserve_index < metal_index < relic_index < replace_index):
     raise SystemExit('alpha.47 reforge must validate improvement/preservation before consuming metal/relic')
 
-# Alpha.39's first forge remains a separate unchanged path rather than being replaced by the reforge.
 must(advanced, (
     'private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot)',
     'ItemStack enchanted = EnchantmentHelper.enchantItem',
