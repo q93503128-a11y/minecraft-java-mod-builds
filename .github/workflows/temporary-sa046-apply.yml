@@ -1,0 +1,380 @@
+name: Temporary SA046 Apply
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply:
+    if: github.event.issue.title == '[SA046 APPLY INTERNAL]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Reset to latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Apply 0.46 Amethyst Resonance shovel integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import json
+
+          P = Path('projects/survival-ascension')
+
+          def read(rel):
+              return (P / rel).read_text(encoding='utf-8')
+          def write(rel, text):
+              (P / rel).write_text(text, encoding='utf-8')
+          def repl(rel, old, new):
+              text = read(rel)
+              if old not in text:
+                  raise SystemExit(f'anchor missing in {rel}: {old[:140]!r}')
+              write(rel, text.replace(old, new, 1))
+          def before(rel, marker, addition):
+              text = read(rel)
+              if marker not in text:
+                  raise SystemExit(f'marker missing in {rel}: {marker[:140]!r}')
+              write(rel, text.replace(marker, addition + marker, 1))
+          def after(rel, marker, addition):
+              text = read(rel)
+              if marker not in text:
+                  raise SystemExit(f'marker missing in {rel}: {marker[:140]!r}')
+              write(rel, text.replace(marker, marker + addition, 1))
+
+          # Version identity.
+          repl('gradle.properties', 'mod_version=0.45.0-alpha.1', 'mod_version=0.46.0-alpha.1')
+          repl('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java',
+               'public static final String VERSION = "0.45.0-alpha.1";',
+               'public static final String VERSION = "0.46.0-alpha.1";')
+          repl('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java',
+               '// 0.45: optional expedition Biome Tags extend external worldgen while generic Enemy/BOSSES and standard item tags remain the compatibility seam.',
+               '// 0.46: standard shovel-tagged external tools join Mining mastery as bounded surface earthworks while external item identity/components stay untouched.')
+          repl('src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java',
+               'scaled mastery + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense',
+               'scaled mastery + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense')
+
+          # Ascension affix category: shovel gets real effects instead of a dead cosmetic imprint.
+          affix = 'src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java'
+          after(affix,
+                '    private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);\n',
+                '    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE);\n')
+          repl(affix,
+               '        Category category = Category.values()[random.nextInt(4)];',
+               '        Category category = GEAR_CATEGORIES.get(random.nextInt(GEAR_CATEGORIES.size()));')
+          repl(affix,
+               '     * 0.44 content-pack bridge: any single-stack sword/pickaxe/axe/hoe that participates in the',
+               '     * Content-pack bridge: any single-stack sword/pickaxe/axe/shovel/hoe that participates in the')
+          repl(affix,
+               '            case AXE -> "도끼";\n            case HOE -> "괭이";',
+               '            case AXE -> "도끼";\n            case SHOVEL -> "삽";\n            case HOE -> "괭이";')
+          marker = '''    public static int adjustMiningVeinLimit(ItemStack stack, int base) {
+'''
+          addition = '''    public static int adjustShovelArea(ItemStack stack, int base) {
+              if (base <= 1 || category(stack) != Category.SHOVEL) return base;
+              int bonus = 0;
+              if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
+              if (has(stack, SECONDARY)) bonus += switch (rarity(stack)) { case 1, 2 -> 2; case 3 -> 4; default -> 0; };
+              return Math.min(13, base + bonus);
+          }
+
+'''.replace('          ', '    ')
+          before(affix, marker, addition)
+          repl(affix,
+               '        if (stack.is(ItemTags.AXES)) return Category.AXE;\n        if (stack.is(ItemTags.HOES)) return Category.HOE;',
+               '        if (stack.is(ItemTags.AXES)) return Category.AXE;\n        if (stack.is(ItemTags.SHOVELS)) return Category.SHOVEL;\n        if (stack.is(ItemTags.HOES)) return Category.HOE;')
+          repl(affix,
+               '            case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };\n            case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };',
+               '            case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };\n            case SHOVEL -> switch (rarity) { case 1 -> Items.IRON_SHOVEL; case 2 -> Items.DIAMOND_SHOVEL; default -> Items.NETHERITE_SHOVEL; };\n            case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };')
+          repl(affix,
+               '            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case HOE -> "광역"; default -> "증폭";',
+               '            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; default -> "증폭";')
+          repl(affix,
+               '            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case HOE -> "풍작"; default -> "특화";',
+               '            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; default -> "특화";')
+          repl(affix,
+               '            case WEAPON -> "충격"; case PICKAXE, AXE, HOE -> "정교"; default -> "보조";',
+               '            case WEAPON -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; default -> "보조";')
+          repl(affix,
+               '        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), HOE("hoe"), NONE("none");',
+               '        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), NONE("none");')
+
+          # Shovels use Mining mastery for terrain-scale digging, but never inherit ore vein/extract/bore semantics.
+          mining = 'src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java'
+          repl(mining,
+               '''        if (tool.is(ItemTags.AXES) && state.is(BlockTags.LOGS)) {
+''',
+               '''        if (tool.is(ItemTags.SHOVELS) && state.is(BlockTags.MINEABLE_WITH_SHOVEL)) {
+            int level = player instanceof ServerPlayer sp ? SkillProgressData.get(sp).level(sp, SkillType.MINING) : SkillClientBridge.level(SkillType.MINING);
+            event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.miningSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
+            return;
+        }
+        if (tool.is(ItemTags.AXES) && state.is(BlockTags.LOGS)) {
+''')
+          repl(mining,
+               '''        ItemStack tool = player.getMainHandItem();
+        if (!isValidPickaxeBreak(player, level, center, centerState, tool)) return;
+''',
+               '''        ItemStack tool = player.getMainHandItem();
+        if (isValidShovelBreak(player, level, center, centerState, tool)) {
+            handleShovelBreak(player, level, center, centerState, tool);
+            return;
+        }
+        if (!isValidPickaxeBreak(player, level, center, centerState, tool)) return;
+''')
+          shovel_helpers = '''    private static void handleShovelBreak(ServerPlayer player, ServerLevel level, BlockPos center, BlockState centerState, ItemStack tool) {
+              ExpeditionProgression.recordSkillAction(player, SkillType.MINING, 1);
+              if (!player.isCreative() && !player.isSpectator()) {
+                  int xp = Math.max(1, (int) Math.ceil(xpForShovelBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
+                  announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
+              }
+              if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
+              int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
+              int areaSize = AscensionAffixes.adjustShovelArea(tool, SkillTuning.miningAreaSize(miningLevel));
+              if (areaSize <= 1) return;
+              AREA_BREAK_GUARD.add(player.getUUID());
+              try {
+                  breakShovelArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+              } finally {
+                  AREA_BREAK_GUARD.remove(player.getUUID());
+              }
+          }
+
+          static boolean isValidShovelBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
+              if (state.isAir() || tool.isEmpty() || !tool.is(ItemTags.SHOVELS) || !state.is(BlockTags.MINEABLE_WITH_SHOVEL)) return false;
+              if (state.getDestroySpeed(level, pos) < 0.0F) return false;
+              return state.canHarvestBlock(level, pos, player);
+          }
+
+          private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPos pos) {
+              float hardness = Math.max(0.1F, state.getDestroySpeed(level, pos));
+              return Math.max(1, Math.min(4, (int) Math.ceil(hardness * 2.0F)));
+          }
+
+'''.replace('          ', '    ')
+          before(mining, '    static boolean isValidPickaxeBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {\n', shovel_helpers)
+          shovel_area = '''    private static void breakShovelArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {
+              int radius = size / 2;
+              Vec3 look = player.getLookAngle();
+              double ax = Math.abs(look.x), ay = Math.abs(look.y), az = Math.abs(look.z);
+              for (int a = -radius; a <= radius; a++) for (int b = -radius; b <= radius; b++) {
+                  if (a == 0 && b == 0) continue;
+                  if (!player.getMainHandItem().is(ItemTags.SHOVELS)) return;
+                  BlockPos target = ay >= ax && ay >= az ? center.offset(a, 0, b) : (ax >= az ? center.offset(0, a, b) : center.offset(a, b, 0));
+                  if (!level.hasChunkAt(target)) continue;
+                  BlockState targetState = level.getBlockState(target);
+                  if (!isValidShovelBreak(player, level, target, targetState, player.getMainHandItem())) continue;
+                  if (level.getBlockEntity(target) != null) continue;
+                  float targetHardness = targetState.getDestroySpeed(level, target);
+                  if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
+                  player.gameMode.destroyBlock(target);
+              }
+          }
+
+'''.replace('          ', '    ')
+          before(mining, '    private static void breakArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {\n', shovel_area)
+
+          # Player-facing wording.
+          reforge = 'src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java'
+          repl(reforge,
+               '주 손에 아직 affix가 없는 검/곡괭이/도끼/괭이 태그 장비를 들어야 합니다.',
+               '주 손에 아직 affix가 없는 검/곡괭이/도끼/삽/괭이 태그 장비를 들어야 합니다.')
+          ui = 'src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java'
+          repl(ui, '검/곡괭이/도끼/괭이 표준 태그 장비 필요', '검/곡괭이/도끼/삽/괭이 표준 태그 장비 필요')
+          guide = 'src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java'
+          repl(guide, '표준 검/곡괭이/도끼/괭이 아이템 태그', '표준 검/곡괭이/도끼/삽/괭이 아이템 태그')
+          repl(guide, '표준 검/곡괭이/도끼/괭이 태그 장비', '표준 검/곡괭이/도끼/삽/괭이 태그 장비')
+          repl(guide, 'affix 없는 검/곡괭이/도끼/괭이 태그 장비', 'affix 없는 검/곡괭이/도끼/삽/괭이 태그 장비')
+          guide_line = '                h("삽 토공"), p("표준 삽 태그 장비는 채굴 숙련의 속도·숙련 보정을 받고, 흙·모래·자갈처럼 삽으로 캐는 블록은 숙련 면적에 맞춰 평면 토공합니다. 웅크리면 단일 블록이며 광맥/추출/터널 규칙은 삽에 적용하지 않습니다."),\n'
+          after(guide,
+                '                h("외부 장비와 승천 각인"), p("콘텐츠 팩이나 다른 모드의 장비가 표준 검/곡괭이/도끼/삽/괭이 아이템 태그를 사용하면 장비 메뉴의 승천 각인으로 Survival Ascension affix 체계에 편입할 수 있습니다. 각성 단계는 정예, 전설 단계는 승천, 종말 단계는 신화 등급으로 각인합니다."),\n',
+                guide_line)
+
+          # Content-pack lock version should match the actual integrated core version.
+          lock_rel = 'modpack/content-lock.json'
+          lock = json.loads(read(lock_rel))
+          lock['version'] = '0.46.0-alpha.1-content-preview.1'
+          write(lock_rel, json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+
+          # Canonical docs.
+          readme = '''## 0.46.0-alpha.1 — Resonant Tool Preservation + Shovel Earthworks / 공명 장비 보존·삽 토공
+The locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary was audited directly before changing integration. Its Resonant Sword/Pickaxe/Axe/Hoe are present in the corresponding vanilla item tags, while Resonant Shovel is in `minecraft:shovels`; 0.45 therefore had one real equipment gap because Survival Ascension did not yet accept shovels.
+
+0.46 adds standard `ItemTags.SHOVELS` to Ascension Imprint and gives the shovel category real gameplay instead of dead affixes. Shovel-valid terrain (`BlockTags.MINEABLE_WITH_SHOVEL`) now uses Mining mastery speed/XP and bounded planar earthworks at the current Mining area scale. Shift stays precision. Shovels never inherit ore vein, Extract or Bore semantics.
+
+The binary audit also verified why existing Resonant perks survive imprint/reforge/awakening: Survival Ascension keeps the same ItemStack/item identity and only writes its own nested CustomData + display-name layer. Amethyst Resonance's Resonant Pickaxe perks are tied to its actual item class, and Resonance Infusion copies the original armor stack then adds its own persistent `amethyst_resonance:resonant` DataComponent. Survival Ascension still does not imprint armor, and it never clears unrelated components.
+
+The locked Amethyst Resonance file remains external ARR content: Modrinth project `8RyryQ7j`, version `no0B3Ssy`, SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`. No source, class, texture, model, recipe or asset is copied into Survival Ascension.
+
+'''
+          before('README.md', '## 0.45.0-alpha.1', readme)
+          repl('PROJECT.md', '- Mod version: `0.45.0-alpha.1`', '- Mod version: `0.46.0-alpha.1`')
+          project = '''## 0.46 Resonant Tool Preservation + Shovel Earthworks
+- Locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary audit found a concrete gap: Resonant Shovel correctly uses `minecraft:shovels`, but Survival Ascension 0.45 only accepted sword/pickaxe/axe/hoe.
+- `ItemTags.SHOVELS` is now a first-class affix category. Scale/secondary shovel affixes expand bounded odd-sized surface earthworks rather than becoming dead rolls.
+- Shovel-valid terrain uses Mining mastery speed and XP. It does not use valuable-ore vein traversal, Extract targeting or Bore tunneling.
+- External item identity is preserved across imprint/reroll/awakening. Survival Ascension mutates only its nested CustomData and Custom Name; unrelated DataComponents remain on the stack.
+- Binary evidence: Resonant Pickaxe class identity drives silent-mining/crystal behavior; Resonance Infusion uses `copyWithCount(1)` then adds its own persistent Resonant DataComponent.
+- External ARR binary stays in the content pack only. No Amethyst Resonance implementation classes are linked or copied into the core mod.
+
+'''
+          before('PROJECT.md', '## 0.45 External World Integration', project)
+          change = '''## 0.46.0-alpha.1
+- Audited the exact locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary (`8RyryQ7j` / `no0B3Ssy`, SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`).
+- Confirmed its sword/pickaxe/axe/shovel/hoe use vanilla item tags and identified the actual 0.45 omission: standard shovels were not imprintable.
+- Added `ItemTags.SHOVELS` and a real Shovel affix category, including vanilla-backed elite shovel generation without fragile `Category.values()[random.nextInt(4)]` indexing.
+- Added shovel Mining mastery: shovel-mineable terrain receives Mining speed/XP and bounded planar earthworks; Shift stays precision and ore Vein/Extract/Bore remain pickaxe-only.
+- Added functional Shovel Scale/Secondary affixes (`토공`/`개착`) with a hard area cap of13 so shovel rolls are not dead options.
+- Verified Resonant Pickaxe item-class perks and Resonance Infusion DataComponent survive because imprint/reroll/awakening keep the original ItemStack identity/components and only update Survival Ascension nested CustomData + name.
+- Updated equipment UI, guide, modpack lock version, compatibility docs, source audits and JAR verifier.
+- No Amethyst Resonance code/assets are copied; no optional-mod Java dependency, packet, SavedData or force-load is added.
+
+'''
+          after('CHANGELOG.md', '# Changelog\n\n', change)
+          matrix_line = '- Amethyst Resonance: locked 26.2 NeoForge 1.0.0 binary audit confirmed vanilla sword/pickaxe/axe/shovel/hoe tags. 0.46 adds the previously missing shovel imprint; Resonant Pickaxe class perks and the separate persistent Resonant armor DataComponent are preserved because Survival Ascension does not replace the item or clear unrelated components. Locked SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`.\n'
+          after('MODPACK_COMPAT_MATRIX.md',
+                '- 원정 바이옴: 9개 `survivalascension:expedition/<region>` Biome Tag를 바닐라 fallback보다 먼저 판정한다. BOP ID는 `required:false` 데이터 항목이며 `glowing_grotto`와 `spider_nest`는 심층권에 포함한다.\n',
+                matrix_line)
+          plan = '''## 현재 0.46 장비 통합 상태
+- 표준 sword/pickaxe/axe/shovel/hoe 태그 장비가 승천 각인 대상이다.
+- 삽은 채굴 숙련의 속도·XP와 평면 토공 규모를 사용하되 광맥/추출/터널은 사용하지 않는다.
+- 잠긴 Amethyst Resonance 바이너리에서 Resonant 5도구의 표준 태그와 고유 기능 보존 경계를 직접 확인했다.
+- 외부 장비는 원본 ItemStack과 DataComponent를 유지하고 Survival Ascension 전용 nested CustomData만 추가한다.
+
+'''
+          before('MODPACK_PLAN_DRAFT.md', '## 현재 0.45 통합 상태', plan)
+          notices = '''## Amethyst Resonance — locked binary compatibility audit only
+Content-pack project: Amethyst Resonance by Ghozix  
+Locked Modrinth project/version: `8RyryQ7j` / `no0B3Ssy`  
+Locked 26.2 NeoForge JAR SHA-1: `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`  
+License: All Rights Reserved
+
+Survival Ascension 0.46 inspected the locked binary only to establish interoperability boundaries: vanilla item-tag participation, preservation of item identity, and presence of an independent persistent Resonant DataComponent. No Amethyst Resonance source, bytecode, recipes, JSON data, textures, models, sounds, translations or other assets are copied or bundled in the Survival Ascension JAR. The original JAR remains an external Modrinth content-pack dependency.
+
+'''
+          after('THIRD_PARTY_NOTICES.md', '# Third-party notices\n\n', notices)
+
+          # Source audit: shovel must be a real progression path and optional mod names stay out of core implementation.
+          test = 'tools/test_current_source.py'
+          repl(test, 'mod_version=0.45.0-alpha.1', 'mod_version=0.46.0-alpha.1')
+          repl(test, 'VERSION = "0.45.0-alpha.1"', 'VERSION = "0.46.0-alpha.1"')
+          repl(test,
+               '"ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES",',
+               '"ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.SHOVELS", "ItemTags.HOES",')
+          after(test,
+                'forbid(affix, ["biomesoplenty", "tbos", "amethyst_resonance"], "0.44 hard optional-mod equipment dependency")\n',
+                '''need(affix, ["GEAR_CATEGORIES", "Category.SHOVEL", "public static int adjustShovelArea", "Math.min(13, base + bonus)", "Items.NETHERITE_SHOVEL"], "0.46 shovel affix category")
+''')
+          after(test,
+                'forbid(mining, ["if (state.is(VALUABLE_ORES)) return 20;"], "flat valuable-ore XP")\n',
+                '''need(mining, ["ItemTags.SHOVELS", "BlockTags.MINEABLE_WITH_SHOVEL", "handleShovelBreak", "isValidShovelBreak", "breakShovelArea", "AscensionAffixes.adjustShovelArea", "SkillType.MINING"], "0.46 shovel Mining integration")
+forbid(mining, ["adjustMiningVeinLimit(tool, SkillTuning.miningVeinLimit(miningLevel)); // shovel"], "shovel vein coupling")
+''')
+          repl(test, '"표준 검/곡괭이/도끼/괭이 태그 장비",', '"표준 검/곡괭이/도끼/삽/괭이 태그 장비",')
+          repl(test,
+               'print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")',
+               'print("- 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped")\nprint("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")')
+
+          cp = 'tools/test_content_pack_source.py'
+          after(cp,
+                '    harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")\n',
+                '    mining = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")\n')
+          after(cp,
+                '    require(lock.get("neoforge") == "26.2.0.38-beta", "modpack lock NeoForge version drifted")\n',
+                '    require(lock.get("version") == "0.46.0-alpha.1-content-preview.1", "modpack preview version drifted")\n')
+          repl(cp,
+               'for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES"):',
+               'for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.SHOVELS", "ItemTags.HOES"):')
+          after(cp,
+                '    require(\'new Entry("승천 각인"\' in equipment_ui and "EquipmentReforgeService.ACTION_IMPRINT" in equipment_ui,\n            "equipment radial imprint action missing")\n',
+                '''    require("Category.SHOVEL" in affix and "adjustShovelArea" in affix and "Items.NETHERITE_SHOVEL" in affix,
+            "shovel affix category is incomplete")
+    require("ItemTags.SHOVELS" in mining and "BlockTags.MINEABLE_WITH_SHOVEL" in mining and "breakShovelArea" in mining,
+            "standard shovel Mining bridge missing")
+    require("a3ac49a6202b7918d2ed22030df0b6e2906cdec8" in matrix,
+            "locked Amethyst Resonance binary audit hash missing from compatibility matrix")
+''')
+          repl(cp,
+               '    print("external_equipment_imprint=PASS")\n',
+               '    print("external_equipment_imprint=PASS")\n    print("amethyst_resonance_shovel_bridge=PASS")\n    print("external_component_preservation_contract=PASS")\n')
+
+          # Packaged bytecode verifier: the new category and Mining hook must survive compilation.
+          ver = 'tools/verify_jar.py'
+          bytecheck = '''    affix_class = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    mining_class = zf.read("kr/moonseungjun/survivalascension/mining/MiningProgression.class")
+    if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:
+        raise SystemExit("compiled shovel affix bridge missing")
+    if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
+        raise SystemExit("compiled shovel Mining bridge missing")
+'''
+          before(ver, '    for notice, line in [\n', bytecheck)
+          repl(ver,
+               'print("bop_expedition_biome_bridge=present")\n',
+               'print("bop_expedition_biome_bridge=present")\nprint("standard_shovel_affix_bridge=present")\nprint("shovel_mining_earthworks_runtime=present")\n')
+
+          # Applicators/audit harness are temporary and must not survive canonical source.
+          for rel in ('.github/workflows/temporary-sa046-apply.yml', '.github/workflows/temporary-sa046-amethyst-audit.yml'):
+              p = Path(rel)
+              if p.exists(): p.unlink()
+          PY
+
+      - name: Source audit and Java 25 clean build
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          python3 -m py_compile tools/test_current_source.py tools/test_content_pack_source.py tools/verify_jar.py tools/build_mrpack.py
+          python3 tools/test_current_source.py
+          python3 tools/test_content_pack_source.py
+          git diff --check
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          test -f build/libs/survivalascension-0.46.0-alpha.1.jar
+          python3 tools/verify_jar.py build/libs/survivalascension-0.46.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.46.0-alpha.1.jar --output build/Survival-Ascension-0.46.0-alpha.1-content-preview.mrpack
+          test -s build/Survival-Ascension-0.46.0-alpha.1-content-preview.mrpack
+
+      - name: Commit verified source to latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/temporary-sa046-apply.yml .github/workflows/temporary-sa046-amethyst-audit.yml
+          git diff --cached --check
+          git commit -m 'Survival Ascension 0.46 resonant shovel integration'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then break; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+            if test "$attempt" -eq 6; then exit 1; fi
+          done
+
+      - name: Close internal trigger
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh issue close "${{ github.event.issue.number }}" --reason completed || true
