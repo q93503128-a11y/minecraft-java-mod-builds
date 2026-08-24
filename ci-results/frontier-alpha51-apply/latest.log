@@ -1,0 +1,10 @@
+trigger_sha=adae19d4a211d8cb3d802de73d5e22e4dde98559
+patch_outcome=failure
+audit_outcome=skipped
+--- patch ---
+Traceback (most recent call last):
+  File "<stdin>", line 10, in <module>
+  File ".github/workflows/frontier-alpha51-apply.yml::<embedded>", line 1
+    from pathlib import Path
+IndentationError: unexpected indent
+--- audit ---
