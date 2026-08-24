@@ -86,6 +86,17 @@ public final class SettlementContextService {
                     outpost.centerX() + 5, outpost.centerY() + 10, outpost.centerZ() + 5,
                     center.getX(), center.getY() + 1, center.getZ(),
                     "전초기지 #" + outpost.id(), "역할 · " + role + " · 도로 " + (outpost.roadIndex() + 1), -1));
+
+            BlockPos waterfrontCrate = SettlementWaterfrontService.tradeCrate(server, outpost);
+            if (waterfrontCrate != null) {
+                targets.add(new SettlementContextTarget(
+                        "waterfront:" + outpost.id(), "waterfront",
+                        waterfrontCrate.getX(), waterfrontCrate.getY(), waterfrontCrate.getZ(),
+                        waterfrontCrate.getX(), waterfrontCrate.getY(), waterfrontCrate.getZ(),
+                        waterfrontCrate.getX(), waterfrontCrate.getY(), waterfrontCrate.getZ(),
+                        "수변 교역통 #" + outpost.id(),
+                        "대구/연어 " + SettlementWaterfrontService.TRADE_FISH_COST + " → 에메랄드 1 · 전용 투입", -1));
+            }
         }
 
         return new SettlementContextPayload(data.buildings().size(), data.outposts().size(),
