@@ -1,4 +1,4 @@
-# trigger: exact 15-family enum audit
+# trigger: exact 15-family and logistics-authority audits
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -77,6 +77,16 @@ jobs:
           source = source.replace('if sum(building_type.count(token) for token in (',
                                   'if False and sum(building_type.count(token) for token in (', 1)
           path.write_text(source, encoding='utf-8')
+
+          canonical = Path('projects/frontier-settlement/CANONICAL_PLAN.md')
+          plan = canonical.read_text(encoding='utf-8')
+          exact_logistics = 'there is still only one authority for long-distance outpost transport'
+          if exact_logistics not in plan:
+              anchor_line = 'Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. **There is still only one authority for long-distance outpost transport.**'
+              if plan.count(anchor_line) != 1:
+                  raise SystemExit('alpha.51 canonical logistics authority anchor mismatch')
+              plan = plan.replace(anchor_line, anchor_line + '\n\nThe invariant remains: **there is still only one authority for long-distance outpost transport**.', 1)
+              canonical.write_text(plan, encoding='utf-8')
           PY
           {
             python3 projects/frontier-settlement/tools/test_alpha51_source.py
