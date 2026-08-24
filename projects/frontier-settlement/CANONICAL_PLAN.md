@@ -42,7 +42,8 @@ Intent is expressed physically wherever possible:
 - advanced forging: eligible external weapon + expedition relic in advanced commission barrel;
 - construction office, cart station, watchtower and barracks operate without separate management dashboards;
 - Alpha.40 coast/river fishing is inferred from loaded world geography and needs no specialization menu;
-- Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no specialization or troop-management menu.
+- Alpha.41 dangerous-region military role is inferred from loaded threat/environment evidence and needs no specialization or troop-management menu;
+- Alpha.42 unloaded catch-up is automatic bookkeeping of elapsed work time only and needs no player-facing management screen.
 
 ## 3. Multiplayer authority
 
@@ -71,7 +72,7 @@ The saved starter stockpile position is authoritative and must not be casually d
 
 Functional settlement buildings use official blueprints. Player/vanilla buildings remain welcome visually but are not scanned or registered as functional settlement buildings.
 
-Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40 and Alpha.41 keep that number while deepening territory specialization. The number alone is not completion because original simulation, trade, terrain-work and UI breadth remains unfinished.
+Original target remains roughly **15–20 meaningful building families**. Alpha.39 reached **15 functional families**; Alpha.40–42 keep that number while deepening territory/simulation systems. The number alone is not completion because original trade, terrain-work, exploration integration and UI breadth remains unfinished.
 
 Current families:
 
@@ -224,7 +225,7 @@ A future wagon entity may be presentation/vehicle behavior only and must not bec
 - fishing produces ordinary cod/salmon ItemStacks into the existing outpost stockpile;
 - because fish are food items, existing Alpha.27 logistics transports them without a new route controller;
 - `수변교역` currently means this catch participates in the existing physical outpost→road→town economy, not that emeralds or trade points are generated remotely;
-- no forced chunks or offline fishing simulation.
+- no forced chunks or abstract fish/trade currency.
 
 ### Alpha.41 military reverse-supply rule
 
@@ -236,6 +237,29 @@ A future wagon entity may be presentation/vehicle behavior only and must not bec
 - target reserve is food12 + metal4; replacement consumes food6 + metal2;
 - when danger stops qualifying, military trip state is cleared and ordinary outpost→town cargo behavior resumes;
 - no teleport cargo, abstract supply points, forced chunks or offline replenishment.
+
+### Alpha.42 bounded unloaded-work rule
+
+Physical ItemStack/block/container state remains authority even when players explore far away.
+
+- `SettlementDeferredOutpostData` is a separate auxiliary SavedData and is **not** the settlement resource ledger;
+- it stores only bounded `productionTicks`, `logisticsTicks`, last verified general-outpost overlay and whether a real assigned transporter has previously been observed;
+- sampling is every200 server ticks and occurs only in the normal daytime/work branch;
+- production and logistics debt are each capped at24,000 ticks per outpost;
+- persisted lumber/quarry/mining/agriculture specializations may bank production time while their local outpost/stockpile is unloaded;
+- a general outpost may bank fishing time only when its last loaded verified overlay was fishing; general/military observations do not bank production;
+- deferred production never creates an ItemStack. It only lets a later loaded physical work action become due immediately while credit remains;
+- credit is consumed only after actual physical output succeeds: real tree/stone/ore/crop/water conditions still gate the harvest/catch;
+- if the real resource is exhausted or invalid, no item is produced and no production credit is consumed;
+- logistics debt may accumulate only after the real assigned transporter has been observed and its persisted route is later not fully loaded;
+- logistics debt is never cargo. Each1,200 ticks of credit can only raise the next **real physical pickup** to at most2× its normal16/32 batch, with an absolute64-item cap;
+- logistics credit is consumed only when actual container extraction exceeds the normal batch;
+- the same existing worker still carries that actual ItemStack along persisted road waypoints and physically inserts it at town/cart-station storage;
+- no real-world elapsed-time catch-up while the server is stopped;
+- no force-load, teleport inventory, virtual stockpile, virtual wagon, virtual resource/cargo or second transport controller;
+- `/frontier status` may expose deferred work ticks as diagnostic/status information, but those numbers are never spendable resources.
+
+This is intentionally a bounded catch-up model rather than pretending unloaded Minecraft blocks/entities were simulated continuously.
 
 ## 8. Roads, outposts and territory
 
@@ -268,13 +292,14 @@ Implemented outpost specializations / overlays:
 - mining;
 - agriculture;
 - Alpha.40 coast/river fishing-trade overlay for qualifying general outposts;
-- Alpha.41 dangerous-region military overlay for qualifying general outposts.
+- Alpha.41 dangerous-region military overlay for qualifying general outposts;
+- Alpha.42 bounded unloaded-work catch-up over already-established specialization/route evidence.
 
-Still required by original scope:
+Still required/partial by original scope:
 
 - better biome-aware specialization with companion worldgen;
 - richer coast/river presentation such as dedicated pier/harbor/waterborne merchant behavior if it adds value without duplicate economy authority;
-- coarse unloaded simulation that does not violate physical item authority.
+- Alpha.42 is the first safe coarse unloaded-work layer, but real-play pacing/reload/exploit acceptance is still required before treating unloaded simulation as fully closed.
 
 tier-visible public works may make established territory more readable, but only in loaded safe locations and without overwriting player work or generating farmable free blocks.
 
@@ -421,8 +446,7 @@ This closes the first original high-tier-crafting placement family, not every fu
 - catch is carried back to the existing physical outpost stockpile;
 - existing food-cargo rule and the single road-transport authority move fish to town/cart-station storage;
 - status reports loaded fishing-trade outpost count and effective recent-outpost role;
-- no remote emerald generation, abstract trade points, teleport cargo, global water scan or force-load;
-- unloading or losing a qualifying shoreline pauses the overlay rather than simulating catches.
+- no remote emerald generation, abstract trade points, teleport cargo, global water scan or force-load.
 
 The current waterborne trade identity comes from the catch entering the established physical logistics economy. Dedicated docks, boats, water merchants and direct fish-market contracts remain later optional breadth.
 
@@ -442,6 +466,19 @@ The current waterborne trade identity comes from the catch entering the establis
 - no teleport, fast travel, force-load, free troop points, free iron, virtual supply or offline combat simulation.
 
 This is the first dangerous-territory foothold, not a replacement for the town barracks or a complete soldier-presentation system.
+
+### Alpha.42 bounded unloaded-work catch-up
+
+- no new building, key, worker type or route authority;
+- separate persisted debt tracks elapsed server-running work time only;
+- debt is bounded to one Minecraft day per production/logistics channel;
+- no virtual item/cargo balance exists;
+- loaded production redeems time only through the existing real harvesting methods and only after successful ItemStack creation;
+- loaded logistics redeems time only by allowing the existing transporter to extract a larger real batch from the existing physical container;
+- maximum catch-up pickup is64 items and still follows the same persisted road;
+- last verified fishing overlay can remain eligible for catch-up while unloaded, but military/general state does not fabricate fishing production;
+- `/frontier status` reports deferred time for transparency, not as a spendable resource;
+- no force-load, teleport, real-world offline generation or second simulation economy.
 
 ## 12. UI and controls
 
@@ -463,7 +500,7 @@ Normal gameplay controls remain:
 
 Avoid essential vanilla conflicts. Do not proliferate N/J/K or one new key per feature.
 
-Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.41 reports advanced commissions, loaded waterborne specialization and loaded dangerous-region military status through existing `/frontier status`; no new crafting/fishing/military dashboard is added.
+Still missing from original UI scope: stronger building status panel, clearer physical material/progress view and compact side notifications. Alpha.42 reports advanced commissions, loaded waterborne/military specialization and bounded deferred-work status through existing `/frontier status`; no new crafting/fishing/military/catch-up dashboard is added.
 
 ## 13. Engineering rules
 
@@ -486,7 +523,7 @@ Shared repository rule:
 - CI result bot may advance main;
 - final accepted result must point at the intended Frontier source/docs SHA.
 
-## 14. Current playable slice after Alpha.41
+## 14. Current playable slice after Alpha.42
 
 The playable slice now includes:
 
@@ -498,10 +535,10 @@ The playable slice now includes:
 - physical construction material staging and supply runner;
 - paced loaded town production;
 - physical roads with one-block stair adaptation and bounded short-water bridges;
-- physical specialized outposts plus Alpha.40 loaded coast/river fishing-trade overlay;
-- Alpha.41 loaded dangerous-region military overlay with one supplied remote sentry;
+- physical specialized outposts plus Alpha.40 coast/river fishing-trade overlay;
+- Alpha.41 dangerous-region military overlay with one supplied remote sentry;
 - persisted road-bound transport including physical reverse food/metal military supply;
-- loaded-only remote production/logistics/combat response;
+- Alpha.42 bounded unloaded-work catch-up that never turns deferred numbers into resources/cargo;
 - tier growth and safe public works;
 - external material/relic/weapon recognition;
 - physical market and normal staffed repair workshop;
@@ -517,14 +554,14 @@ This is **not** equivalent to original v0.2 completion. `COMPLETION_GAP_AUDIT.md
 Unless real-play regression overrides them:
 
 1. full `COMPANION_LOCK.json` fresh-world client/server runtime and multiplayer test;
-2. coarse unloaded production/logistics simulation that preserves physical-item authority;
-3. Jade provider / Xaero integration and compact building/progress/notification UX;
-4. medium-terrain construction support such as explicit retaining/terrain-work intent;
-5. external structure/boss discovery feeding progression more directly;
-6. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
-7. broader high-tier recipe/specialized crafting only where exploration materials justify it;
-8. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
-9. long survival/multiplayer acceptance and balance/pathfinding audit.
+2. Jade provider / Xaero integration and compact building/progress/notification UX;
+3. medium-terrain construction support such as explicit retaining/terrain-work intent;
+4. external structure/boss discovery feeding progression more directly;
+5. richer coast/river presentation/trade only if it remains physical and does not duplicate road logistics;
+6. broader high-tier recipe/specialized crafting only where exploration materials justify it;
+7. humanoid/weaponized soldier presentation if it improves the Better Combat / Weapons Expanded stack;
+8. long survival/multiplayer acceptance and balance/pathfinding audit;
+9. Alpha.42 unloaded catch-up pacing/reload/exploit validation before declaring that original gap fully closed.
 
 Do not add meaningless building families merely to raise the count above15.
 
@@ -538,7 +575,13 @@ Automated CI is not a substitute for Minecraft play. Test, in order:
 - road stairs/short bridge navigation;
 - road -> outpost -> specialization production -> transport -> cart station;
 - place an otherwise-general outpost near a real river/coast, verify `어업·수변교역`, visible rod/bank movement, fish stockpile deposit and road transport;
-- verify small puddles/unloaded shorelines do not create remote fishing production;
+- verify small puddles/invalid shorelines do not produce fish;
+- leave a previously verified fishing/specialized outpost unloaded during server-running work time, return, and verify deferred work speeds only real physical actions rather than minting resources;
+- exhaust nearby logs/stone/ore or remove mature crops/water, then verify deferred production remains pending and cannot create substitute items;
+- verify production debt never exceeds24,000 ticks and survives save/reload without duplication;
+- create logistics backlog with an observed assigned transporter, reload the route, and verify the next actual pickup may be larger but never exceeds64 and still physically travels the road;
+- verify no logistics credit is consumed when the outpost container cannot provide more than the normal batch;
+- stop/restart the server and verify real-world downtime does not create debt;
 - place an otherwise-general outpost in a genuinely hostile loaded area and verify multi-factor `위험지역 군사거점` activation, one sentry only, Creeper non-pursuit and no iron drop;
 - verify the existing transporter returns to town, physically carries food/metal down the persisted road, fills the outpost reserve, and a killed sentry cannot respawn without local food6+metal2;
 - clear the danger and verify the sentry stands down, military supply state clears and normal/fishing role can resume without duplication;

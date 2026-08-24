@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.41
+## Current version: 0.1.0-alpha.42
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -29,7 +29,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.41 adds no new gameplay key, military dashboard, fishing dashboard or manual job-priority UI.
+Alpha.42 adds no new gameplay key, catch-up dashboard or manual job-priority UI.
 
 ## Functional building families
 
@@ -51,7 +51,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization and Alpha.41 adds dangerous-region military specialization without inventing a 16th building. Richer port/trade presentation, unloaded simulation, companion/UI integration and medium terrain works remain unfinished.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is now inside that range, but this is not scope completion: Alpha.40 added the first coast/river fishing-trade specialization, Alpha.41 added dangerous-region military specialization, and Alpha.42 adds bounded unloaded-work catch-up without inventing a 16th building. Richer companion/UI integration, medium terrain works, exploration-progression bridges and presentation breadth remain unfinished.
 
 ## Physical construction
 
@@ -74,12 +74,13 @@ Roads and outposts likewise use physical grading and real hauled resources.
 
 - builder, logger, farmer, quarry worker, miner, fishing outpost worker, workshop artisan, construction supply runner, advanced forging specialist, guards/service behavior, military-outpost sentry and transport roles are implemented;
 - loaded town production is paced and bounded;
-- outpost production is specialization-specific and loaded-chunk only;
+- outpost production remains specialization-specific and physically grounded;
 - transport workers are persistently assigned to one outpost;
 - transport follows persisted road-center waypoints;
-- unloaded route boundaries pause transport instead of force-loading or teleporting;
+- unloaded route boundaries never force-load or teleport cargo;
 - Alpha.27 tagged road logistics remains the **single authority for outpost transport**;
-- Alpha.41 extends that same transporter to carry real food/metal from town back to an active dangerous-region outpost instead of creating another long-distance logistics AI.
+- Alpha.41 lets that same transporter carry real food/metal from town back to an active dangerous-region outpost;
+- Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority.
 
 ## Alpha.31 — external content becomes a Frontier input
 
@@ -214,32 +215,49 @@ Alpha.40 makes water geography matter without adding a new management screen or 
 - the worker physically walks from the outpost to the detected bank and fishes only while the water position remains valid and loaded;
 - work cadence is 140 ticks, producing 1–3 real cod/salmon ItemStacks per successful catch;
 - caught fish are carried in the worker's main hand back to the **existing physical outpost stockpile**;
-- fish are ordinary edible ItemStacks, so the existing Alpha.27 outpost transporter already accepts them through the normal food cargo rule and follows the persisted road network to town/cart-station storage;
-- no new route authority, teleport cargo, global water scan, forced chunk loading, emerald generation or abstract trade points are introduced;
-- if the shoreline is not loaded or no longer qualifies, production pauses instead of simulating catches remotely.
+- fish are ordinary edible ItemStacks, so the existing Alpha.27 outpost transporter accepts them through the normal food cargo rule and follows the persisted road network to town/cart-station storage;
+- no new route authority, teleport cargo, global water scan, forced chunk loading, emerald generation or abstract trade points are introduced.
 
-The `수변교역` part currently means the fishing commodity participates in the established physical outpost→road→town economy. Alpha.40 does **not** claim a dedicated harbor, boats, waterborne merchant NPCs or a separate fish-for-emerald market. Those remain possible later presentation/economic breadth.
+The `수변교역` part currently means the fishing commodity participates in the established physical outpost→road→town economy. Dedicated harbor/boat/waterborne-merchant presentation remains later breadth.
 
 ## Alpha.41 — dangerous-region military outpost
 
-Alpha.41 closes the next original terrain-specialization gap without copying the town barracks to every remote site.
+Alpha.41 closes the dangerous-territory specialization without copying the town barracks to every remote site.
 
 - no new `BuildingType`, key or management screen;
 - only an otherwise-`general` outpost can gain the loaded `위험지역 군사거점` role;
-- danger is not a manual toggle and is not decided by one mob-count number: qualification combines total loaded `Monster` pressure, close-range pressure, hostile-type diversity and sampled enclosed low-light terrain evidence;
-- the entire bounded military scan/patrol area must already be loaded; missing chunks pause judgment instead of force-loading or treating an unloaded sentry as dead;
-- external hostile mobs that use the normal `Monster` hierarchy participate automatically without hard companion references;
-- one persistently tagged **전초 수비대** is assigned per qualifying outpost, distinct from the barracks' formal 3-slot garrison;
-- the current combat body is an Iron Golem proxy and forced pursuit excludes Creepers;
-- a missing sentry may be replaced only from the outpost's own physical stockpile for **6 real food + 2 real metal**;
-- military stockpile target reserve is food12 + metal4;
-- tagged military-outpost combat proxies drop no iron/resources;
-- when danger evidence disappears the existing sentry is not deleted: target is cleared and it returns to the outpost to stand down; replacement stops until danger returns;
-- Alpha.27 road logistics stays the single long-distance authority. The already-assigned outpost transporter returns empty to town, physically extracts needed food/metal from loaded settlement storage, carries it in hand along persisted road waypoints and inserts it into the outpost stockpile;
-- while danger is active, military role takes precedence over the Alpha.40 fishing overlay; when danger clears, normal/fishing behavior can resume;
-- no free troop points, remote emeralds, teleport cargo, fast travel, duplicate transporter, force-load or offline combat simulation.
+- danger combines total loaded `Monster` pressure, close-range pressure, hostile-type diversity and sampled enclosed low-light terrain evidence;
+- the bounded military scan/patrol area must already be loaded;
+- external hostile mobs using the normal `Monster` hierarchy participate without hard companion references;
+- one persistently tagged **전초 수비대** is assigned per qualifying outpost, distinct from the barracks' 3-slot garrison;
+- missing sentry replacement costs the outpost's physical stockpile **6 real food + 2 real metal**;
+- local target reserve is food12 + metal4;
+- tagged combat proxies drop no iron/resources;
+- danger loss causes stand-down/return, not deletion;
+- Alpha.27 road logistics stays the single long-distance authority and carries military food/metal physically back to the outpost;
+- military role takes precedence over fishing while active;
+- no free troop points, teleport cargo, fast travel, duplicate transporter, force-load or offline combat simulation.
 
-This is the first dangerous-region territorial foothold. It does not claim humanoid soldiers, weapon classes, formations, siege systems, a global radar or companion full-stack runtime validation.
+## Alpha.42 — bounded unloaded-work catch-up
+
+Alpha.42 reduces the penalty for exploring away from the settlement without replacing physical Minecraft state with an abstract economy.
+
+- separate auxiliary SavedData records **elapsed work-time debt**, not resources or cargo;
+- sampling occurs only during the same daytime/work branch used by loaded workers;
+- per outpost production debt and logistics debt are each capped at **24,000 ticks** (one Minecraft day);
+- specialized lumber/quarry/mining/agriculture outposts may bank production time while their local outpost/stockpile area is unloaded;
+- a `general` outpost may bank fishing work only if its last loaded verified overlay was `fishing`; military/general observations do not create production credit;
+- reloading does not instantly mint items: a production credit only makes the next real loaded work action eligible sooner;
+- lumber still requires and removes a real nearby tree, quarry still removes real exposed stone, mining still consumes real finite ore, agriculture still requires mature real crops, and fishing still requires currently valid loaded surface water;
+- production debt is consumed **only after** a real harvest/catch actually produced a physical ItemStack. Resource exhaustion leaves the debt untouched rather than fabricating output;
+- logistics debt is recorded only after the assigned physical transporter has been observed at least once and its persisted road becomes unloaded;
+- logistics debt is never cargo. One 1,200-tick credit may raise the next actual outpost pickup from the normal batch to at most **2×**, capped at **64** items;
+- the logistics credit is consumed only if the worker actually extracts more than the normal batch from a physical outpost container;
+- that same worker must still carry the real ItemStack along the existing road and insert it into town/cart-station storage;
+- no real-world/server-offline catch-up, force-load, teleport inventory, virtual stockpile, virtual wagon, virtual wood/stone/ore/fish/food or duplicate logistics controller;
+- `/frontier status` exposes only deferred work ticks/outpost counts and explicitly reports `가상 자원·가상 화물 0`.
+
+This is a bounded catch-up layer, not full simulation of an unloaded Minecraft world. It deliberately favors physical authority and exploit resistance over pretending unloaded blocks/entities were continuously simulated.
 
 ## External content stack
 
@@ -253,10 +271,10 @@ The lock deliberately remains `candidate_runtime_lock` until the full client/ser
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–40 source audit plus Alpha.41 dangerous-region military-outpost extension;
+1. the complete established Alpha.23–41 source audit plus Alpha.42 bounded unloaded-work extension;
 2. Java 25 clean Gradle build;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on dangerous-region combat/patrol/pathfinding, military reverse-supply pacing, shoreline pathfinding, fishing cadence/balance, advanced-forging balance, external-weapon enchant compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.
+Automated validation proves source/build/JAR consistency, not hands-on catch-up pacing/exploit resistance, reload behavior, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require real Minecraft play.

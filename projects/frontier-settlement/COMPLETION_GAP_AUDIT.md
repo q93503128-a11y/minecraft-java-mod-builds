@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.41`
+현재 구현 기준: `0.1.0-alpha.42`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: Frontier 자체 재구현보다 companion이 콘텐츠를 공급
 - `후보검증`: 버전/구성은 고정했으나 풀스택 실런타임 검증 필요
 
-이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했고 수변 전초와 위험지역 군사 전초 1차가 들어갔더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
+이 문서는 현재 코드에 맞춰 원본 범위를 줄이는 문서가 아니다. 기능 건물 수가 15개에 도달했고 수변/위험지역 전초 및 bounded unloaded-work 1차가 들어갔더라도 핵심 `부분/미구현`이 남아 있는 동안 제품을 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -38,7 +38,8 @@
 | 위험지역 전초 충원도 실제 자원 사용 | 완료/부분 | 현지 stockpile 식량6 + 금속2. 기존 도로 운송자가 본진에서 역방향 보급. 실플레이 동선 검증 필요 |
 | 건설소 자재도 실제 자원 사용 | 완료 | 동일 ledger의 목재/석재 staging |
 | 고급 제작 재료도 실제 자원 사용 | 완료/부분 | 의뢰 배럴 유물1 + 전문 주민이 운반한 금속4. 외부 무기별 실전 호환 검증 필요 |
-| 수변 전초 생산도 실제 아이템 | 완료/부분 | Alpha.40 실제 대구/연어 → 전초 stockpile → 기존 도로 운송. 오프라인 생산 없음 |
+| 수변 전초 생산도 실제 아이템 | 완료/부분 | Alpha.40 실제 대구/연어 → 전초 stockpile → 기존 도로 운송 |
+| 언로드 보정이 자원 권위를 침범하지 않음 | 완료/부분 | Alpha.42는 work-time debt만 저장. 실제 아이템/블록/컨테이너 동작 성공 뒤에만 credit 소모. 실플레이 악용·재로드 검증 남음 |
 
 ## 3. 건설 / 지형 공사
 
@@ -67,7 +68,7 @@
 | 농부 | 완료 | 실제 작물 작업 |
 | 광부 | 완료 | 실제 유한 광석 작업 |
 | 채석공 | 완료 | 노출 석재 작업 |
-| 어업 주민 | 완료/부분 | Alpha.40 qualifying general outpost별 visible rod/shore 이동/실제 어획. 부두·선박·offline 생산 미완 |
+| 어업 주민 | 완료/부분 | Alpha.40 qualifying general outpost별 visible rod/shore 이동/실제 어획. 부두·선박 presentation 미완 |
 | 대장장이 | 부분 | 수리 기능은 있으나 주민/제작 연출 약함 |
 | 작업장 전문 제작자 | 완료/부분 | 외부 무기 물리 정비 장인 |
 | 고급 제작 전문 역할 | 완료/부분 | Alpha.39 건물 귀속 visible specialist. 민간 population/job 통합은 후속 정리 |
@@ -78,10 +79,28 @@
 | 운송업자 | 완료 | 전초별 영구 태그 + 도로 물류 + Alpha.41 동일 운송자의 군사 전초 역방향 보급 |
 | 상인 | 부분 | 시장 방문 상인/물리 판매. 구매·고급 교역 미완 |
 | 로드 지역 실제 이동·작업 | 완료 | 주요 생산/어업/운송/제작/건설/방어 |
-| 언로드 저빈도 논리 시뮬레이션 | 미구현 | 현재 안전 정지, coarse 생산/물류 없음 |
+| 언로드 저빈도 논리 시뮬레이션 | **완료/부분** | Alpha.42 최대1일 bounded work-time debt + 로드 후 실제 물리 작업 catch-up. 가상 자원/화물 없음. 실제 장시간/재로드/악용 검증 전에는 완전 종료로 보지 않음 |
 | 자동 직업 배치 | 완료/부분 | 주요 역할 자동화. 서비스 전문직과 민간 job 통합 정리 여지 |
 
 병영은 민간 population/housing과 분리되며 공짜 고티어 증원 백엔드는 제거된 상태를 유지한다. 현재 병사/전초 수비대 Iron Golem proxy는 최종 프레젠테이션이 아니다. Alpha.40 어업 주민과 Alpha.41 전초 수비대는 기존 outpost/service-unit 관례를 따라 민간 인구를 부풀리지 않는다.
+
+### Alpha.42 언로드 작업 보정 감사
+
+- 별도 `SettlementDeferredOutpostData` SavedData는 정착지 자원 ledger가 아니다.
+- 저장하는 것은 `productionTicks`, `logisticsTicks`, 마지막으로 로드 상태에서 검증된 general overlay, 실제 transporter 관측 여부뿐이다.
+- server가 실행 중이고 정상 작업 시간일 때만 200틱 단위로 기록한다.
+- 생산/물류 debt는 전초별 각각 최대24,000틱이다.
+- lumber/quarry/mining/agriculture는 local outpost/stockpile이 unloaded일 때만 production debt를 쌓는다.
+- general 전초는 마지막 loaded verified overlay가 fishing일 때만 production debt를 쌓는다. military/general 상태는 생산 debt의 근거가 아니다.
+- debt 자체는 `ItemStack`, 가상 wood/stone/ore/food/fish가 아니다.
+- 로드 후 실제 나무/노출석/광석/성숙 작물/유효 수면이 있어 실제 harvest/catch가 성공한 경우에만 해당 production credit을 소모한다.
+- 실제 자원이 없으면 credit은 남고 아이템은 생성되지 않는다.
+- 실제 transporter가 한 번 이상 관측된 전초만 route unloaded 동안 logistics debt를 쌓는다.
+- logistics debt는 화물이 아니다. 1,200틱 credit이 있을 때 다음 실제 outpost-container pickup cap을 기존 batch의 최대2배, 절대64까지 높일 수 있을 뿐이다.
+- 실제 pickup이 normal batch보다 많았을 때만 logistics credit을 소모한다.
+- 그 화물도 기존 worker main hand → persisted road → 실제 town/cart station container 순서로 이동한다.
+- 서버가 꺼진 현실 시간은 catch-up에 포함하지 않는다.
+- force-load, teleport inventory, virtual stockpile/cargo/wagon, duplicate transport authority가 없다.
 
 ## 5. 성장 단계
 
@@ -91,7 +110,7 @@
 | 촌락 | 채석·광산·대장간·경비 | 완료/부분 |
 | 마을 | 도로·다리·시장·첫 전초·건설 물류 | 완료/부분 — 실동선/토목 검증 남음 |
 | 개척 도시 | 병영·고급 제작·여러 전초 | 완료/부분 — 병영 + Alpha.39 고급 제작소 + 여러 전초 구현. 실런타임 검증 남음 |
-| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — Alpha.40 수변 어업·교역 + Alpha.41 위험지역 군사 거점 1차 포함. 항구형 표현·고급 교역·coarse unloaded breadth 미완 |
+| 영지 | 전문 거점·후반 방어·고급 교역 | 부분 — Alpha.40 수변, Alpha.41 군사, Alpha.42 bounded unloaded-work 1차 포함. 항구형 표현·고급 교역·companion runtime 미완 |
 
 ## 6. 건물/인프라 계열
 
@@ -146,28 +165,29 @@
 | 숲 벌목 거점 | 완료 | lumber specialization |
 | 평야 농업 거점 | 완료 | agriculture specialization |
 | 채석 거점 | 완료 | quarry specialization |
-| 해안/강 어업·교역 | **완료/부분** | Alpha.40 general 전초가 loaded radius12에서 open surface water 24+와 안전한 둑을 만족하면 어업·수변교역 overlay. 실제 대구/연어 → stockpile → 기존 도로 물류. 부두/선박/수상상인 미완 |
-| 위험 지역 군사 거점 | **완료/부분** | Alpha.41 general 전초가 loaded 다중 threat/environment evidence를 만족하면 군사 overlay. 전초당1 수비대 + 현지 food6/metal2 충원 + 기존 도로 운송자 역방향 보급. 사람형 병사/실전 밸런스 미완 |
+| 해안/강 어업·교역 | **완료/부분** | Alpha.40 loaded shoreline 기반 어업·수변교역 overlay + Alpha.42 마지막 verified fishing overlay 기반 bounded catch-up. 부두/선박/수상상인 미완 |
+| 위험 지역 군사 거점 | **완료/부분** | Alpha.41 loaded 다중 threat/environment evidence 기반 군사 overlay. 전초당1 수비대 + 현지 food6/metal2 + 기존 운송자 역방향 보급. 사람형 병사/실전 밸런스 미완 |
 | 연결 전 독립 재고 | 완료 | outpost stockpile |
-| 연결 후 실제 운송 | 완료/부분 | 도로 운송 + 본진 화물 정거장 + 같은 운송자의 군사 역방향 보급. wagon 표현 없음 |
+| 연결 후 실제 운송 | 완료/부분 | 도로 운송 + 본진 화물 정거장 + 군사 역방향 보급 + Alpha.42 physical catch-up batch. wagon 표현 없음 |
 | 순간이동 금지 | 완료 | 도로 기반 이동 |
 | Terralith biome 기반 전문화 | 부분 | 일반 환경 스캔 기반. companion-aware mapping 보강 필요 |
+| 언로드 상태의 진행 | **완료/부분** | 최대1일 작업시간 debt만 누적 후 real loaded action으로 환전. full offscreen world simulation은 의도적으로 하지 않음 |
 
 ### Alpha.40 수변 전초 감사
 
 - 기존 specialization이 `general`인 전초만 현재 수변 overlay 후보가 된다.
 - 전초 중심 반경12의 이미 로드된 지역에서 open surface-water column 24개 이상 + 안전한 마른 둑이 필요하다.
-- 작은 웅덩이나 언로드 해안은 생산 근거가 되지 않는다.
+- 작은 웅덩이나 검증되지 않은 환경은 생산 근거가 되지 않는다.
 - 전초별 영구 tag를 가진 `전초 어업 주민 #id`가 낚싯대를 offhand에 들고 실제 둑까지 이동한다.
 - 140틱 작업 cadence에서 물이 계속 유효할 때 1~3개의 실제 COD/SALMON ItemStack을 만든다.
 - 어획물은 주민 main hand에 들린 뒤 기존 outpost stockpile에 물리 입고된다.
 - 물고기는 food ItemStack이므로 기존 Alpha.27 `single authority for outpost transport`가 그대로 본진/수레 정거장까지 운반한다.
-- 수변 시스템은 자체 도로 AI, emerald 생성, virtual trade point, teleport cargo, force-load/offline catch를 만들지 않는다.
+- 수변 시스템은 자체 도로 AI, emerald 생성, virtual trade point, teleport cargo, force-load를 만들지 않는다.
 - 현재 `수변교역`은 어획물이 기존 물리 경제에 들어간다는 뜻이다. 항구 건물/선박/수상 상인/직접 fish-for-emerald 계약은 아직 아니다.
 
 ### Alpha.41 위험지역 군사 전초 감사
 
-- 기존 specialization이 `general`인 전초만 현재 military overlay 후보가 된다.
+- 기존 specialization이 `general`인 전초만 military overlay 후보가 된다.
 - 전초 주변 bounded area의 관련 청크가 이미 로드되어 있어야 위험 판정을 신뢰한다. 언로드는 사망/안전으로 오인하지 않는다.
 - 위험 판정은 단일 몹 수가 아니라 `Monster` 총압박, 16블록 근접압박, hostile class 다양성, 가려진 저조도 표본을 조합한다.
 - 외부 hostile이 표준 `Monster` 계층을 쓰면 hard dependency 없이 위협 근거에 포함된다.
@@ -222,6 +242,7 @@
 | 건물 상태/작업 진행 정보 | 부분 — HUD/가이드/status 존재, 별도 compact 상태 표현 보강 필요 |
 | 수변 전초 상태 노출 | 완료/부분 — `/frontier status` loaded 어업·수변교역 수 + 최근 전초 유효 역할. HUD/Jade 표현은 미완 |
 | 위험지역 군사 전초 상태 노출 | 완료/부분 — `/frontier status` active 수/로드 sentry/현지 supply + 최근 전초 유효 역할. HUD/Jade 표현은 미완 |
+| 언로드 보정 상태 노출 | 완료/부분 — `/frontier status` production/logistics deferred ticks와 대상 전초 수, `가상 자원·가상 화물 0` 노출. HUD/Jade 표현은 미완 |
 | 물리 자재 흐름 가시화 | 완료/부분 — 실제 운반 존재, 정보 표현은 더 개선 가능 |
 | compact side notification | 미구현/부분 |
 | Jade 기반 최소 상태 노출 | 미구현 |
@@ -234,16 +255,16 @@
 우선순위는 실플레이 회귀가 생기면 즉시 그쪽이 우선이다. 그렇지 않으면:
 
 1. **full companion fresh-world client/server runtime + 멀티 검증**.
-2. **언로드 저빈도 production/logistics simulation** — 물리 item authority를 깨지 않는 coarse 모델 필요.
-3. **Jade/Xaero 실제 Frontier integration + compact 상태/notification UX**.
-4. **중간급 지형 공사** — 옹벽/명시적 terrain work/절토·성토 보조.
-5. **외부 구조·보스 발견이 progression에 더 직접 연결되는 루프**.
-6. **수변 전초 presentation/교역 breadth** — 부두·선박·수상 상인 등은 기존 도로 물류 권위를 깨지 않을 때만.
-7. **고급 제작 breadth** — 실제 탐험 희귀재료가 충분히 생길 때만 recipe 추가.
-8. **사람형 병사/외부 무기 장비 프레젠테이션** — companion 전투 stack과 함께 가치 검증 후.
-9. **장시간 survival + 2인 multiplayer acceptance**.
+2. **Jade/Xaero 실제 Frontier integration + compact 상태/notification UX**.
+3. **중간급 지형 공사** — 옹벽/명시적 terrain work/절토·성토 보조.
+4. **외부 구조·보스 발견이 progression에 더 직접 연결되는 루프**.
+5. **수변 전초 presentation/교역 breadth** — 부두·선박·수상 상인 등은 기존 도로 물류 권위를 깨지 않을 때만.
+6. **고급 제작 breadth** — 실제 탐험 희귀재료가 충분히 생길 때만 recipe 추가.
+7. **사람형 병사/외부 무기 장비 프레젠테이션** — companion 전투 stack과 함께 가치 검증 후.
+8. **장시간 survival + 2인 multiplayer acceptance**.
+9. **Alpha.42 bounded unloaded-work 실플레이 검증** — pacing/save-reload/exploit/중복 여부를 확인하기 전에는 완전 종료로 처리하지 않음.
 
-## 12. Alpha.41 실플레이 acceptance
+## 12. Alpha.42 실플레이 acceptance
 
 반드시 실제 게임에서 확인할 것:
 
@@ -252,23 +273,25 @@
 - 건설소 보급 주민 source 선택/운반/staging/builder preference;
 - road stair/short bridge 실제 걷기;
 - road → outpost → 생산 → transporter → cart station;
-- 기존 다른 특화가 잡히지 않은 전초를 실제 강/해안 근처에 세워 `어업·수변교역` 판정이 뜨는지;
-- 어업 주민이 낚싯대를 보이고 마른 둑까지 걸어간 뒤 실제 fish ItemStack을 stockpile에 넣는지;
-- stockpile의 fish가 별도 물류 AI 없이 기존 transporter를 통해 본진/수레 정거장으로 이동하는지;
-- 작은 웅덩이, 언로드 해안, 물이 사라진 위치에서 원격 어획이 일어나지 않는지;
-- 로드/언로드 반복으로 같은 전초 어업 주민이 중복 생성되지 않는지;
-- 실제 hostile pressure가 높은 loaded general 전초에서 `위험지역 군사거점`이 뜨고 단순 1마리/불완전 로딩에는 활성화되지 않는지;
-- external hostile Monster도 위협 판정/수비대 target 후보로 자연스럽게 들어가는지;
-- 전초 수비대가 1명만 유지되고 Creeper를 강제 추적하지 않으며 사망 시 철/자원 drop이 생기지 않는지;
-- 본진 창고에서 기존 운송 주민이 식량/금속을 실제 손에 들고 도로를 따라 전초 stockpile까지 역방향 보급하는지;
-- 수비대 사망 후 현지 food6 + metal2가 없으면 무료 재충원되지 않고, 보급 후에만 재충원되는지;
-- 위험을 정리하면 수비대가 전초로 stand-down하고 군사 보급 trip 상태가 정리되며 normal/fishing 역할이 다시 가능한지;
-- 위험지역 전초/운송 경로를 언로드했다가 돌아왔을 때 수비대나 운송 주민이 복제되지 않는지;
-- dungeon/loot에서 얻은 relic을 **시장 판매 vs 고급 제작 재료**로 실제 선택 가능한지;
-- normal workshop repair와 advanced workshop forge가 서로 의뢰 배럴을 침범하지 않는지;
-- 외부 무기별 power30 enchant 호환, 호환 불가 시 재료 무손실;
+- 실제 강/해안 general 전초에서 `어업·수변교역`, visible rod/bank movement, fish stockpile deposit/road transport;
+- 실제 hostile pressure가 높은 loaded general 전초에서 `위험지역 군사거점`, one sentry, Creeper non-pursuit/no iron drop;
+- 군사 보급이 기존 transporter 하나로 town↔outpost 실제 이동하는지;
+- 이전에 실제 로드되어 정상 생산한 lumber/quarry/mining/agriculture/fishing 전초를 서버가 켜진 채 언로드한 뒤 돌아왔을 때 deferred production ticks가 생기는지;
+- 돌아온 직후 catch-up이 **실제** 나무/돌/광석/성숙작물/유효수면을 요구하며 그것이 없으면 아이템을 만들지 않는지;
+- 성공한 physical harvest/catch에서만 production credit이 감소하는지;
+- production/logistics debt가 각각24,000틱을 넘지 않는지;
+- save/reload 후 debt가 중복되거나 사라지지 않는지;
+- 서버 자체를 종료한 현실 시간만큼 debt가 생기지 않는지;
+- 실제 transporter가 한 번도 확인되지 않은 전초에 가짜 logistics debt가 생기지 않는지;
+- route를 언로드한 뒤 복귀하면 기존 transporter의 다음 실제 pickup이 backlog에 따라 커질 수 있지만64를 넘지 않는지;
+- outpost container에 normal batch 이하만 있으면 logistics credit이 소모되지 않는지;
+- 큰 pickup도 main hand에 실제 ItemStack으로 들고 persisted road를 걸어 town/cart station까지 가는지;
+- 로드/언로드 반복으로 production worker/fishing worker/transporter/sentry가 복제되지 않는지;
+- dungeon/loot relic의 시장 판매 vs 고급 제작 선택;
+- normal workshop repair와 advanced workshop forge 분리;
+- 외부 무기별 power30 enchant 호환/실패 무손실;
 - watchtower/barracks 전투와 병력 교체 비용;
 - 2인 shared storage/construction/logistics 정합;
 - full companion lock fresh-world launch.
 
-자동 감사/빌드/JAR 검증은 소스 정합을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime 품질을 대신하지 않는다.
+자동 감사/빌드/JAR 검증은 소스 정합을 보장하지만 실제 Minecraft 동선·밸런스·비주얼·companion runtime·catch-up 체감을 대신하지 않는다.
