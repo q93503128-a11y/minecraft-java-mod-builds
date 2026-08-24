@@ -38,6 +38,9 @@ jobs:
           set -o pipefail
           (
             set -euo pipefail
+            if test -f projects/frontier-settlement/tools/test_alpha51_source.py && test -f projects/frontier-settlement/tools/test_alpha51_docs.py; then
+              exit 0
+            fi
             if ! test -f .github/workflows/frontier-alpha51-apply.yml; then
               exit 0
             fi
@@ -105,37 +108,17 @@ jobs:
                                   anchor_line + '\n\nThe invariant remains: **there is still only one authority for long-distance outpost transport**.',
                                   1)
               canonical.write_text(plan, encoding='utf-8')
-
-          for temp in (Path('.github/workflows/frontier-alpha51-diagnose.yml'),
-                       Path('.github/workflows/frontier-alpha51-finalize.yml')):
-              if temp.exists(): temp.unlink()
-          failure_dir = Path('ci-results/frontier-alpha51-apply')
-          if failure_dir.exists(): shutil.rmtree(failure_dir)
-          bootstrap_dir = Path('ci-results/frontier-alpha51-bootstrap')
-          if bootstrap_dir.exists(): shutil.rmtree(bootstrap_dir)
-
-          build = Path('.github/workflows/build-frontier-settlement.yml')
-          build_text = build.read_text(encoding='utf-8')
-          bootstrap_marker = '      - name: Bootstrap Alpha.51 retaining terrace\n'
-          setup_marker = '      - uses: actions/setup-java@v5\n'
-          bstart = build_text.index(bootstrap_marker)
-          bend = build_text.index(setup_marker, bstart)
-          build_text = build_text[:bstart] + build_text[bend:]
-          build_text = build_text.replace(
-              "      - name: Upload diagnostic logs\n        if: always() && env.ALPHA51_BOOTSTRAP != '1'\n",
-              "      - name: Upload diagnostic logs\n        if: always()\n")
-          build_text = build_text.replace(
-              "      - name: Record canonical CI result\n        if: always() && env.ALPHA51_BOOTSTRAP != '1'\n",
-              "      - name: Record canonical CI result\n        if: always()\n")
-          build.write_text(build_text, encoding='utf-8')
           PY
 
+            # The embedded applicator intentionally rewrites/deletes workflow helpers; Actions cannot push
+            # workflow-file changes with its token, so keep those out of the product commit.
+            git checkout -- .github/workflows
             python3 projects/frontier-settlement/tools/test_alpha51_source.py
             python3 projects/frontier-settlement/tools/test_alpha51_docs.py
             git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -A projects/frontier-settlement .github/workflows ci-results
+            git add -A projects/frontier-settlement
             git diff --cached --check
             git commit -m 'Finalize Frontier alpha.51 retaining-heavy terraces'
             pushed=0
@@ -286,7 +269,7 @@ jobs:
             if test -f "$GITHUB_WORKSPACE/$file"; then cp "$GITHUB_WORKSPACE/$file" "/tmp/frontier-settlement-result/latest-${file#frontier-settlement-}"; fi
           done
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '41898282+users.noreply.github.com'
           recorded=0
           for attempt in 1 2 3 4 5 6; do
             git fetch origin main
