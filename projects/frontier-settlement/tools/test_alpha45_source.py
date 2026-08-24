@@ -97,6 +97,11 @@ must(tier, (
     'if (legacyFrontierTown || explorationFrontierTown) return FRONTIER_TOWN',
 ), 'alpha.45 exploration accelerates but never invalidates legacy tier routes')
 
+commands = text(JAVA / 'command/SettlementCommands.java')
+must(commands, (
+    '"개척 진척 | 외부 구조물 "+data.discoveredExternalStructures().size()+"종 | 정복 강적 "+data.defeatedExternalBosses().size()+"종 | 진척 "+data.explorationScore()+" / 8 | 동일 종류 반복은 중복 없음"',
+), 'alpha.45 compact exploration status')
+
 props = text(ROOT / 'gradle.properties')
 lock = text(ROOT / 'COMPANION_LOCK.json')
 must(props, (
