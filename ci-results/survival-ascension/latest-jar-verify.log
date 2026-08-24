@@ -1,0 +1,18 @@
+JAR VERIFY PASS
+version=0.42.1-alpha.1
+physical_freight_runtime=present
+civil_works_runtime=present
+protected_causeway_construction_runtime=present
+physical_commissioning_runtime=present
+physical_warehouse_runtime=present
+outpost_fortification_runtime=present
+outpost_siege_runtime=present
+physical_siege_breacher_runtime=present
+expedition_operation_runtime=present
+apex_runtime=present
+production_runtime=present
+field_depot_runtime=present
+outpost_runtime=present
+field_recovery_runtime=present
+size=488948
+sha256=617e3eb254c3cd1a0af392146dc082302a0d66ea1e65e9694a17d97b5bfc3b7b
