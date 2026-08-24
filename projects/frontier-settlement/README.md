@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.46
+## Current version: 0.1.0-alpha.47
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure and territory progression. It deliberately uses a locked external-content stack for biome, dungeon, structure, combat, weapon, loot and exploration breadth instead of rebuilding all of that from scratch.
 
@@ -20,7 +20,8 @@ The current implementation is a broad playable alpha, not the final 1.0 scope. D
 - repeated hauling/production/job assignment is automated;
 - players keep exploring, fighting and choosing where the settlement expands;
 - Alpha.45 lets real exploration/conquest feed settlement growth without turning it into a spendable currency or replacing physical resources;
-- Alpha.46 makes a qualifying fishing outpost visibly grow a real-wood waterfront landing and offers explicit physical fish trade without creating a second transport economy.
+- Alpha.46 makes a qualifying fishing outpost visibly grow a real-wood waterfront landing and offers explicit physical fish trade without creating a second transport economy;
+- Alpha.47 gives domain-tier exploration relics a second high-tier use by reforging already-enchanted compatible external weapons without replacing the old forge, adding a new currency or creating another crafting building.
 
 ## Controls
 
@@ -31,7 +32,7 @@ Normal play remains compact:
 - `Enter` — confirm active building/road/outpost placement;
 - `Backspace` — reset/cancel the current road-start step.
 
-Alpha.43–46 add no new gameplay key or management dashboard. Alpha.43 exposes compact HUD/notices/Jade context, Alpha.44 extends the existing placement/construction workflow to bounded medium terrain, Alpha.45 records exploration/conquest automatically from play, and Alpha.46 infers and builds waterfront works automatically from the existing fishing-outpost state.
+Alpha.43–47 add no new gameplay key or management dashboard. Alpha.43 exposes compact HUD/notices/Jade context, Alpha.44 extends the existing placement/construction workflow to bounded medium terrain, Alpha.45 records exploration/conquest automatically from play, Alpha.46 infers and builds waterfront works automatically from the existing fishing-outpost state, and Alpha.47 reuses the existing advanced-workshop commission barrel and specialist.
 
 ## Functional building families
 
@@ -53,7 +54,7 @@ Current functional families: **15**.
 - market;
 - cart station.
 
-The original v0.2 target remains roughly 15–20 meaningful families. The headline count is inside that range, but this is not scope completion: Alpha.40 added coast/river fishing-trade specialization, Alpha.41 dangerous-region military specialization, Alpha.42 bounded unloaded-work catch-up, Alpha.43 compact status/Jade presentation, Alpha.44 bounded medium-terrain construction, Alpha.45 exploration/conquest progression, and Alpha.46 physical waterfront works/trade without inventing meaningless extra buildings. Large civil engineering, selected-area cut/fill, broader specialized crafting, final soldier presentation and full companion runtime acceptance remain later work.
+The original v0.2 target remains roughly 15–20 meaningful families. The headline count is inside that range, but this is not scope completion: Alpha.40 added coast/river fishing-trade specialization, Alpha.41 dangerous-region military specialization, Alpha.42 bounded unloaded-work catch-up, Alpha.43 compact status/Jade presentation, Alpha.44 bounded medium-terrain construction, Alpha.45 exploration/conquest progression, Alpha.46 physical waterfront works/trade, and Alpha.47 deeper high-tier forging without inventing meaningless extra buildings. Large civil engineering, final soldier presentation, deeper exploration bridges, biome-aware specialization and full companion runtime acceptance remain later work.
 
 ## Physical construction
 
@@ -94,7 +95,8 @@ Roads and outposts likewise use physical grading and real hauled resources. Arbi
 - the completed waterfront trade barrel is deliberately separate from ordinary outpost stock: only fish deliberately placed there are sold, so ordinary stockpile fish are never auto-sold;
 - Alpha.42 records bounded **work-time debt only** while eligible outposts/routes are unloaded, then redeems it through later loaded physical work. No virtual wood, stone, ore, fish, food or cargo becomes resource authority;
 - Alpha.43 derives presentation-only building/outpost/project context from those existing authoritative states. The context payload cannot spend resources, place blocks or become a second settlement ledger;
-- Alpha.45 exploration progress is likewise non-spendable shared progression metadata and does not become a second resource ledger.
+- Alpha.45 exploration progress is likewise non-spendable shared progression metadata and does not become a second resource ledger;
+- Alpha.47 reuses the same advanced-forging specialist and the same protected commission barrel; its relic/metal costs stay physical and no reforge point, research currency or second crafting ledger is created.
 
 ## Alpha.31 — external content becomes a Frontier input
 
@@ -216,7 +218,7 @@ Alpha.39 adds the first real high-tier crafting loop instead of turning rare exp
 - no force-load, teleport inventory transfer or abstract crafting points;
 - `/frontier status` reports ready commissions and the 1 relic / 4 metal recipe.
 
-Role separation is intentional: **market = relic→trade value, workshop = metal→repair, advanced workshop = external weapon + relic + metal→high-tier forge**. The current advanced specialist is a building-bound visible service NPC rather than a civilian population slot; broader citizen-job reconciliation remains later cleanup. Alpha.39 is the first high-tier forge path, not a claim that every future specialized recipe/crafting family is complete.
+Role separation is intentional: **market = relic→trade value, workshop = metal→repair, advanced workshop = external weapon + relic + metal→high-tier forge**. The current advanced specialist is a building-bound visible service NPC rather than a civilian population slot; broader citizen-job reconciliation remains later cleanup. Alpha.39 is the first high-tier forge path. Alpha.47 later adds a domain-only second pass for already-enchanted external weapons without changing this original path.
 
 ## Alpha.40 — coast/river fishing-trade outpost
 
@@ -351,13 +353,36 @@ Alpha.46 closes the first missing visual/economic layer of the Alpha.40 fishing 
 
 Moving boats/waterborne merchants may still be considered as presentation-only breadth later, but they must never replace the single authority for outpost transport.
 
+## Alpha.47 — domain relic reforging
+
+Alpha.47 deepens the original advanced-workshop role at the domain tier instead of adding a 16th building or an abstract upgrade currency.
+
+- no new building family, key, screen, recipe dashboard or spendable reforge point is added;
+- the existing protected advanced-workshop commission barrel and the same advanced forging specialist are reused;
+- Alpha.39's original unenchanted-weapon forge remains unchanged: unenchanted recognized external weapon + **1 real expedition relic + 4 real metal**, power30, validated before resource mutation;
+- domain reforging unlocks only when the shared settlement reaches `DOMAIN`;
+- the reforge input must be an **already-enchanted Frontier-recognized external weapon** deliberately placed in the same commission barrel;
+- a reforge requires **2 real expedition relics** in the commission barrel and **8 real metal** physically fetched from loaded settlement storage by the same specialist;
+- metal hauling remains physical and bounded; the worker may make multiple trips instead of teleporting the eight-item cost;
+- the reforge selection uses power40 enchanting-table candidates but accepts only enchantments the weapon supports, that are not already on the weapon, and that are compatible with every existing enchantment;
+- additions are applied to a copy, then the result is checked before any reforge resource is consumed;
+- every existing enchantment must remain at the same or higher level; existing enchantments are never removed or downgraded;
+- if there is no new compatible improvement, the weapon remains unchanged and **no relic or metal is consumed**;
+- on success the same weapon is fully repaired, gains the validated compatible additions, then consumes metal8 + relic2;
+- direct enchantment-map replacement is not used, so the reforge cannot silently rewrite the old enchantment set;
+- external-weapon eligibility still uses Frontier's soft recognition seam; there is no hard Weapons Expanded class/item dependency;
+- no chunk force-load, teleport inventory, virtual crafting currency or shared-storage auto-scan for commission weapons/relics;
+- `/frontier status` reports `영지 재련 잠김` below domain and, after unlock, ready reforge commissions plus the **유물2 + 금속8 / 재련력40** contract.
+
+The high-tier role split is now: **market = relic→trade value; normal workshop = metal→repair; first advanced forge = unenchanted external weapon + relic1 + metal4; domain reforge = already-enchanted external weapon + relic2 + metal8 → only compatible new enchantment additions**.
+
 ## External content stack
 
 `COMPANION_LOCK.json` is the exact candidate lock for the next fresh-world compatibility test. `COMPANION_MODS.md` explains the strategy and `EXTERNAL_CONTENT_REGISTER.md` records reuse/license boundaries.
 
 Current candidate stack includes Terralith + Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat + its libraries, Weapons Expanded, Lootr, Sophisticated Backpacks + Core, Jade and Xaero's Minimap.
 
-Alpha.45 can observe already-loaded external structure registry entries without depending on a companion's Java classes. Structure generation and loot remain entirely owned by those companion/worldgen mods. Alpha.46 waterfront works are Frontier-owned settlement presentation/economy glue and add no new companion dependency.
+Alpha.45 can observe already-loaded external structure registry entries without depending on a companion's Java classes. Structure generation and loot remain entirely owned by those companion/worldgen mods. Alpha.46 waterfront works are Frontier-owned settlement presentation/economy glue and add no new companion dependency. Alpha.47 uses normal Minecraft enchantment compatibility on Frontier-recognized external weapons and likewise adds no hard companion class/item dependency.
 
 The lock deliberately remains `candidate_runtime_lock` until the full client/server set is actually launched together. World-generation entries must be installed before creating that test world.
 
@@ -367,10 +392,10 @@ Xaero marker synchronization is still not claimed. Exact compile investigation a
 
 Canonical CI performs:
 
-1. the complete established Alpha.23–45 source audit plus Alpha.46 physical-waterfront/opt-in-trade extension;
+1. the complete established Alpha.23–46 source/runtime audit plus Alpha.47 domain-relic-reforge extension and current canonical document audit;
 2. Java 25 clean Gradle build, including compilation against the exact locked Jade 26.2.2 API artifact;
 3. runtime JAR verification;
 4. artifact upload;
 5. result recording to `ci-results/frontier-settlement/`.
 
-Automated validation proves source/build/JAR consistency, not hands-on Jade tooltip rendering, waterfront pathing/site quality, pier reverse-supply pacing, 16→1 fish-trade balance, full companion structure detection, external-boss balance, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, advanced-forging compatibility breadth, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require final real Minecraft play acceptance.
+Automated validation proves source/build/JAR consistency, not hands-on domain-reforge external-weapon breadth, Jade tooltip rendering, waterfront pathing/site quality, pier reverse-supply pacing, 16→1 fish-trade balance, full companion structure detection, external-boss balance, Xaero/HUD visual overlap, catch-up pacing/exploit resistance, dangerous-region combat/pathfinding, shoreline pathfinding, construction-supply pathfinding, garrison combat or full companion-stack runtime compatibility. Those still require final real Minecraft play acceptance.
