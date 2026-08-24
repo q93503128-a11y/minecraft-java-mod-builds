@@ -46,13 +46,26 @@ public final class RealmLoadingScreen extends Screen {
 
     @Override
     public void tick() {
-        // A completion packet is not enough. The player must actually have left the hidden staging
-        // platform; otherwise keep this blocking screen until the server retries real residence placement.
-        if (complete && stillAtStaging()) {
+        boolean staging = stillAtStaging();
+        if (complete && staging) {
             completeTicks = 0;
             return;
         }
-        if (complete && ++completeTicks >= 12) Minecraft.getInstance().gui.setScreen(null);
+        if (complete) completeTicks++;
+        if (completionMayClose(complete, staging, completeTicks)) {
+            Minecraft.getInstance().gui.setScreen(null);
+        }
+    }
+
+    static boolean completionMayClose(boolean complete, boolean atStaging, int completedTicks) {
+        return complete && !atStaging && completedTicks >= 12;
+    }
+
+    static boolean stagingCompletionGuardPassForTest() {
+        return !completionMayClose(true, true, 100)
+                && !completionMayClose(false, false, 100)
+                && !completionMayClose(true, false, 11)
+                && completionMayClose(true, false, 12);
     }
 
     @Override
