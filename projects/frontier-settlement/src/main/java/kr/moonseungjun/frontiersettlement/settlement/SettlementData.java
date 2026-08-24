@@ -13,6 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SettlementData extends SavedData {
+    private static final int MAX_DISCOVERED_STRUCTURE_TYPES = 64;
+    private static final int MAX_DEFEATED_BOSS_TYPES = 32;
+    private static final int MAX_EXPLORATION_SCORE = 8;
+
     public static final SavedDataType<SettlementData> TYPE = new SavedDataType<>(
             Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "settlement"),
             SettlementData::new,
@@ -30,7 +34,9 @@ public final class SettlementData extends SavedData {
                     Codec.INT.optionalFieldOf("house_count", 0).forGetter(data -> data.houseCount),
                     Codec.INT.optionalFieldOf("lumber_camp_count", 0).forGetter(data -> data.lumberCampCount),
                     SettlementInfrastructureState.CODEC.optionalFieldOf("infrastructure", SettlementInfrastructureState.EMPTY).forGetter(data -> data.infrastructure),
-                    ConstructionState.CODEC.optionalFieldOf("construction", ConstructionState.EMPTY).forGetter(data -> data.construction)
+                    ConstructionState.CODEC.optionalFieldOf("construction", ConstructionState.EMPTY).forGetter(data -> data.construction),
+                    Codec.STRING.listOf().optionalFieldOf("discovered_external_structures", List.of()).forGetter(data -> data.discoveredExternalStructures),
+                    Codec.STRING.listOf().optionalFieldOf("defeated_external_bosses", List.of()).forGetter(data -> data.defeatedExternalBosses)
             ).apply(instance, SettlementData::new))
     );
 
@@ -48,10 +54,12 @@ public final class SettlementData extends SavedData {
     private int lumberCampCount;
     private SettlementInfrastructureState infrastructure;
     private ConstructionState construction;
+    private List<String> discoveredExternalStructures;
+    private List<String> defeatedExternalBosses;
 
     public SettlementData() {
         this(false, 0, 0, 0, 0, 0, 0, SettlementResources.ZERO,
-                0, 0, 0, 0, SettlementInfrastructureState.EMPTY, ConstructionState.EMPTY);
+                0, 0, 0, 0, SettlementInfrastructureState.EMPTY, ConstructionState.EMPTY, List.of(), List.of());
     }
 
     public SettlementData(boolean founded, int centerX, int centerY, int centerZ,
@@ -59,7 +67,9 @@ public final class SettlementData extends SavedData {
                           SettlementResources resources, int population,
                           int housingCapacity, int houseCount, int lumberCampCount,
                           SettlementInfrastructureState infrastructure,
-                          ConstructionState construction) {
+                          ConstructionState construction,
+                          List<String> discoveredExternalStructures,
+                          List<String> defeatedExternalBosses) {
         this.founded = founded;
         this.centerX = centerX;
         this.centerY = centerY;
@@ -74,6 +84,19 @@ public final class SettlementData extends SavedData {
         this.lumberCampCount = lumberCampCount;
         this.infrastructure = infrastructure;
         this.construction = construction;
+        this.discoveredExternalStructures = boundedCopy(discoveredExternalStructures, MAX_DISCOVERED_STRUCTURE_TYPES);
+        this.defeatedExternalBosses = boundedCopy(defeatedExternalBosses, MAX_DEFEATED_BOSS_TYPES);
+    }
+
+    private static List<String> boundedCopy(List<String> source, int max) {
+        if (source == null || source.isEmpty()) return List.of();
+        List<String> result = new ArrayList<>(Math.min(source.size(), max));
+        for (String value : source) {
+            if (value == null || value.isBlank() || result.contains(value)) continue;
+            result.add(value);
+            if (result.size() >= max) break;
+        }
+        return List.copyOf(result);
     }
 
     public static SettlementData get(MinecraftServer server) { return server.getDataStorage().computeIfAbsent(TYPE); }
@@ -91,6 +114,9 @@ public final class SettlementData extends SavedData {
     public List<OutpostRecord> outposts() { return infrastructure.outposts(); }
     public OutpostConstructionState outpostConstruction() { return infrastructure.outpostConstruction(); }
     public ConstructionState construction() { return construction; }
+    public List<String> discoveredExternalStructures() { return discoveredExternalStructures; }
+    public List<String> defeatedExternalBosses() { return defeatedExternalBosses; }
+    public int explorationScore() { return Math.min(MAX_EXPLORATION_SCORE, discoveredExternalStructures.size() + defeatedExternalBosses.size() * 3); }
 
     public int buildingCount(BuildingType type) {
         int count = 0;
@@ -98,12 +124,33 @@ public final class SettlementData extends SavedData {
         return count;
     }
 
+    public boolean recordExternalStructure(String id) {
+        if (id == null || id.isBlank() || discoveredExternalStructures.contains(id)
+                || discoveredExternalStructures.size() >= MAX_DISCOVERED_STRUCTURE_TYPES) return false;
+        List<String> next = new ArrayList<>(discoveredExternalStructures);
+        next.add(id);
+        discoveredExternalStructures = List.copyOf(next);
+        setDirty();
+        return true;
+    }
+
+    public boolean recordExternalBoss(String id) {
+        if (id == null || id.isBlank() || defeatedExternalBosses.contains(id)
+                || defeatedExternalBosses.size() >= MAX_DEFEATED_BOSS_TYPES) return false;
+        List<String> next = new ArrayList<>(defeatedExternalBosses);
+        next.add(id);
+        defeatedExternalBosses = List.copyOf(next);
+        setDirty();
+        return true;
+    }
+
     public void found(BlockPos center, BlockPos stockpile) {
         founded = true;
         centerX = center.getX(); centerY = center.getY(); centerZ = center.getZ();
         stockX = stockpile.getX(); stockY = stockpile.getY(); stockZ = stockpile.getZ();
         resources = SettlementResources.ZERO; population = 1; housingCapacity = 0; houseCount = 0; lumberCampCount = 0;
-        infrastructure = SettlementInfrastructureState.EMPTY; construction = ConstructionState.EMPTY; setDirty();
+        infrastructure = SettlementInfrastructureState.EMPTY; construction = ConstructionState.EMPTY;
+        discoveredExternalStructures = List.of(); defeatedExternalBosses = List.of(); setDirty();
     }
 
     public boolean updateResources(SettlementResources next) { if (next.equals(resources)) return false; resources = next; setDirty(); return true; }
