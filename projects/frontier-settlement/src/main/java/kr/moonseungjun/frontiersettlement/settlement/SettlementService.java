@@ -51,9 +51,9 @@ public final class SettlementService {
         SettlementBenefitService.tick(server, data);
         if (tick % 20 == 0) {
             boolean changed = refreshResources(server, data);
-            boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()
-                    || SettlementCivilWorkData.get(server).project().active();
-            if (changed || activeProject) broadcast(server, data);
+            boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
+            boolean civilProject = SettlementCivilWorkData.get(server).project().active();
+            if (changed || activeProject || civilProject) broadcast(server, data);
             else if (explorationChanged) broadcast(server, data);
         }
     }
