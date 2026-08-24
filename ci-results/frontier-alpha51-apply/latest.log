@@ -1,6 +1,6 @@
-trigger_sha=58069086a138a8d83409b05d56558baecf636885
+trigger_sha=07c49f748a772c66da0d216258ccf567a46470de
 patch_outcome=success
 audit_outcome=failure
 --- patch ---
 --- audit ---
-alpha.51 compact retaining context missing: "창고 조약돌 "
+alpha.51 must preserve exactly 15 functional building families
