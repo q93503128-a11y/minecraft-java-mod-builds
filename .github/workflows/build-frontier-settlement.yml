@@ -29,27 +29,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bootstrap Alpha.55 exploration knowledge
-        id: bootstrap55
+      - name: Finalize Alpha.55 outpost material authority
+        id: finalize55
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           (
             set -euo pipefail
-            if ! grep -q '^mod_version=0.1.0-alpha.54$' "$PROJECT_DIR/gradle.properties"; then exit 0; fi
-            test -f "$PROJECT_DIR/tools/apply_alpha55.py"
-            echo 'ALPHA55_BOOTSTRAP=1' >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/apply_alpha55.py"
+            if ! test -f "$PROJECT_DIR/tools/fix_alpha55_outpost_atomicity.py"; then exit 0; fi
+            if ! grep -q '^mod_version=0.1.0-alpha.55$' "$PROJECT_DIR/gradle.properties"; then exit 0; fi
+            echo 'ALPHA55_FINALIZER=1' >> "$GITHUB_ENV"
+            python3 "$PROJECT_DIR/tools/fix_alpha55_outpost_atomicity.py"
             python3 "$PROJECT_DIR/tools/test_alpha55_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha55_docs.py"
             git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            rm -f "$PROJECT_DIR/tools/apply_alpha55.py"
+            rm -f "$PROJECT_DIR/tools/fix_alpha55_outpost_atomicity.py"
             git add -A "$PROJECT_DIR"
             git diff --cached --check
-            git commit -m 'Implement Frontier alpha.55 exploration knowledge bridge'
+            git commit -m 'Finalize Frontier alpha.55 outpost material authority'
             pushed=0
             for attempt in 1 2 3 4 5 6; do
               if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
@@ -57,20 +57,20 @@ jobs:
               sleep $((attempt * 2))
             done
             test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha55-bootstrap.log
+          ) 2>&1 | tee /tmp/frontier-alpha55-finalizer.log
 
-      - name: Record Alpha.55 bootstrap failure
-        if: steps.bootstrap55.outcome == 'failure'
+      - name: Record Alpha.55 finalizer failure
+        if: steps.finalize55.outcome == 'failure'
         shell: bash
         run: |
           set -euo pipefail
           git reset --hard "$GITHUB_SHA"
           mkdir -p ci-results/frontier-alpha55-bootstrap
-          cp /tmp/frontier-alpha55-bootstrap.log ci-results/frontier-alpha55-bootstrap/latest.log
+          cp /tmp/frontier-alpha55-finalizer.log ci-results/frontier-alpha55-bootstrap/latest.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/frontier-alpha55-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.55 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          git commit -m "Record Frontier alpha.55 finalizer failure for ${GITHUB_SHA::7} [skip ci]"
           for attempt in 1 2 3 4 5 6; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
             git rebase --abort >/dev/null 2>&1 || true
@@ -78,8 +78,8 @@ jobs:
           done
           exit 1
 
-      - name: Stop source run after product push
-        if: env.ALPHA55_BOOTSTRAP == '1' && steps.bootstrap55.outcome == 'success'
+      - name: Stop source run after finalizer product push
+        if: env.ALPHA55_FINALIZER == '1' && steps.finalize55.outcome == 'success'
         shell: bash
         run: exit 1
 
@@ -90,6 +90,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
+
       - name: Resolve version
         shell: bash
         run: |
@@ -98,14 +99,21 @@ jobs:
           test -n "$version"
           echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
-      - name: Alpha.54 cumulative source audit
+
+      - name: Alpha.55 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
-        run: python3 tools/test_alpha54_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
-      - name: Alpha.54 canonical docs audit
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha55_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+
+      - name: Alpha.55 canonical docs audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
-        run: python3 tools/test_alpha54_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha55_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+
       - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -116,6 +124,7 @@ jobs:
           ./gradlew --version
           git diff --check
           git diff --exit-code
+
       - name: Java 25 clean build
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -123,6 +132,7 @@ jobs:
           set -euo pipefail
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-gradle.log"
+
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -134,14 +144,16 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/deliverables"
           cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables/"
           cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
+
       - uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-deliverables
           path: deliverables/
           if-no-files-found: error
           retention-days: 30
+
       - name: Upload diagnostic logs
-        if: always() && env.ALPHA55_BOOTSTRAP != '1'
+        if: always() && env.ALPHA55_FINALIZER != '1'
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -152,15 +164,18 @@ jobs:
             frontier-settlement-jar-verify.log
           if-no-files-found: warn
           retention-days: 14
+
       - name: Record canonical CI result
-        if: always() && env.ALPHA55_BOOTSTRAP != '1'
+        if: always() && env.ALPHA55_FINALIZER != '1'
         shell: bash
         run: |
           set -euo pipefail
           rm -rf /tmp/frontier-settlement-result
           mkdir -p /tmp/frontier-settlement-result
           jar_sha256=unknown
-          if test -n "${EXPECTED_JAR:-}" && test -f "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256"; then jar_sha256="$(awk '{print $1}' "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256")"; fi
+          if test -n "${EXPECTED_JAR:-}" && test -f "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256"; then
+            jar_sha256="$(awk '{print $1}' "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256")"
+          fi
           cat > /tmp/frontier-settlement-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
