@@ -1,0 +1,44 @@
+name: Temporary SA047 TBS Audit
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    if: github.event.issue.title == '[SA047 TBS AUDIT INTERNAL]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Audit locked TBS 0.7 binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/sa047_tbs_audit.py | tee "$RUNNER_TEMP/sa047-tbs-summary.txt"
+
+      - name: Comment findings
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          {
+            echo 'TBS 0.7 interoperability audit finished.'
+            echo
+            echo '```text'
+            if test -f "$RUNNER_TEMP/sa047-tbs-summary.txt"; then cat "$RUNNER_TEMP/sa047-tbs-summary.txt"; else echo 'audit failed before summary'; fi
+            echo '```'
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$RUNNER_TEMP/comment.md"
+          gh issue comment "${{ github.event.issue.number }}" --body-file "$RUNNER_TEMP/comment.md"
