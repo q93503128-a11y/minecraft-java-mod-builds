@@ -18,9 +18,7 @@ public final class SafeResidenceLocator {
     /** Desired citizen-quarter anchor used only to choose the nearest real tenement. */
     public static BlockPos preferredResidence(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
-        if (!"erden_city_room".equals(residenceId)) {
-            throw new IllegalArgumentException("Inactive residence: " + residenceId);
-        }
+        requireResidence(residenceId);
         int x = site.centerX() + 320;
         int z = site.centerZ() + 180;
         int surfaceY = authoredSurfaceY(x, z);
@@ -34,18 +32,25 @@ public final class SafeResidenceLocator {
      * accepts a rooftop, or switches to some unrelated walkable block.
      */
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
-        BlockPos preferred = preferredResidence(level, homelandId, residenceId);
-        ExternalUrbanFabricBuilder.UrbanEntrance entrance = ExternalUrbanFabricBuilder.entrances().stream()
-                .filter(candidate -> "tenement".equals(candidate.role()))
-                .min(Comparator.comparingLong(candidate -> distanceSquared(
-                        candidate.x(), candidate.z(), preferred.getX(), preferred.getZ())))
-                .orElse(null);
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = starterEntrance(level, homelandId, residenceId);
         if (entrance == null) return null;
 
         ErdenPlayerResidenceChunkRetainer.retain(level, entrance);
         if (!ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) return null;
         BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
         return isWalkable(level, target) ? target : null;
+    }
+
+    /**
+     * Returns the already-proven authored upper-room target even if its chunk is currently unloaded.
+     * This is for institutional recovery after the home has been completed once; it never invents a
+     * coordinate. The transient lease is refreshed so teleport can load the real building again.
+     */
+    public static BlockPos authoredRecoveryTarget(ServerLevel level, String homelandId, String residenceId) {
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = starterEntrance(level, homelandId, residenceId);
+        if (entrance == null || !ErdenUrbanAuthoredUpperRouteManager.isCompleted(level, entrance)) return null;
+        ErdenPlayerResidenceChunkRetainer.retain(level, entrance);
+        return ErdenUrbanAuthoredUpperRouteManager.verifiedUpperTarget(level, entrance);
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
@@ -76,12 +81,28 @@ public final class SafeResidenceLocator {
                 && level.getBlockState(feet.above()).isAir();
     }
 
+    private static ExternalUrbanFabricBuilder.UrbanEntrance starterEntrance(
+            ServerLevel level, String homelandId, String residenceId) {
+        BlockPos preferred = preferredResidence(level, homelandId, residenceId);
+        return ExternalUrbanFabricBuilder.entrances().stream()
+                .filter(candidate -> "tenement".equals(candidate.role()))
+                .min(Comparator.comparingLong(candidate -> distanceSquared(
+                        candidate.x(), candidate.z(), preferred.getX(), preferred.getZ())))
+                .orElse(null);
+    }
+
     private static RealmSiteLayoutSavedData.RealmSite requiredSite(ServerLevel level, String homelandId) {
         RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) {
             throw new IllegalStateException("Authored site is not ready: " + homelandId);
         }
         return site;
+    }
+
+    private static void requireResidence(String residenceId) {
+        if (!"erden_city_room".equals(residenceId)) {
+            throw new IllegalArgumentException("Inactive residence: " + residenceId);
+        }
     }
 
     private static BlockPos findOrCreateWalkable(ServerLevel level, BlockPos preferred, Block floor,
