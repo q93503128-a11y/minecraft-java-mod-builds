@@ -1,2 +1,15 @@
-SOURCE AUDIT FAIL
-- 0.43 logistics/freight UI missing: 레일6+·동력레일·호퍼·제어
+SOURCE AUDIT PASS
+- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
+- 0.48 frontline operations consume bounded physical stock from the exact departure outpost Barrel cluster after successful start; no player-inventory or adjacent-depot fallback
+- 0.47 data-tagged major external targets receive bounded combat XP and +3 regional/operation kill credit without incident multiplication or hard optional-mod Java dependencies
+- 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped
+- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest
+- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies
+- imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials
+- external item components stay on the same stack; Survival Ascension writes only nested affix CustomData/display name with a retained base name
+- 0.43 physical freight still requires a loaded real railhead at both exact active-outpost endpoints
+- freight remains physical-only: no reward, auto-drive, virtual route, SavedData, teleport or force-load
+- guide scrolls and documents current World Ascension and equipment integration instead of embedding patch-history wording
+- early mastery requirements remain discounted through Lv59 and mining XP remains material-tiered
+- logistics-backed costs consume nearest usable physical Barrel/통 storage before carried inventory; vanilla crafting and Apex/Trial carried admissions remain separate
+- Civil Works causeways and physical defense contracts remain

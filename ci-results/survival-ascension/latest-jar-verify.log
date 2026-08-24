@@ -1,0 +1,25 @@
+JAR VERIFY PASS
+version=0.48.0-alpha.1
+frontline_local_supply_runtime=present
+external_equipment_imprint_runtime=present
+bop_expedition_biome_bridge=present
+major_external_target_runtime=present
+standard_shovel_affix_bridge=present
+shovel_mining_earthworks_runtime=present
+physical_freight_runtime=present
+physical_freight_railhead_runtime=present
+civil_works_runtime=present
+protected_causeway_construction_runtime=present
+physical_commissioning_runtime=present
+physical_warehouse_runtime=present
+outpost_fortification_runtime=present
+outpost_siege_runtime=present
+physical_siege_breacher_runtime=present
+expedition_operation_runtime=present
+apex_runtime=present
+production_runtime=present
+field_depot_runtime=present
+outpost_runtime=present
+field_recovery_runtime=present
+size=517802
+sha256=ebedfeab2ab8fac733e195116285d9f345934248f55c1af847a180485a2036d7
