@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    name: Java 25 - Frontier Settlement
+    name: Bootstrap Frontier Alpha.65
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -29,6 +29,62 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Apply Alpha.65 civilian cargo recovery
+        id: bootstrap65
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          (
+            set -euo pipefail
+            if ! grep -q '^mod_version=0.1.0-alpha.64$' "$PROJECT_DIR/gradle.properties"; then exit 0; fi
+            test -f "$PROJECT_DIR/tools/apply_alpha65.py"
+            echo 'ALPHA65_BOOTSTRAP=1' >> "$GITHUB_ENV"
+            python3 "$PROJECT_DIR/tools/apply_alpha65.py"
+            python3 "$PROJECT_DIR/tools/test_alpha65_source.py"
+            python3 "$PROJECT_DIR/tools/test_alpha65_docs.py"
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            rm -f "$PROJECT_DIR/tools/apply_alpha65.py"
+            git add -A "$PROJECT_DIR"
+            git diff --cached --check
+            git commit -m 'Implement Frontier alpha.65 civilian cargo recovery'
+            pushed=0
+            for attempt in 1 2 3 4 5 6; do
+              if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
+              git rebase --abort >/dev/null 2>&1 || true
+              sleep $((attempt * 2))
+            done
+            test "$pushed" -eq 1
+          ) 2>&1 | tee /tmp/frontier-alpha65-bootstrap.log
+
+      - name: Record Alpha.65 bootstrap failure
+        if: steps.bootstrap65.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard "$GITHUB_SHA"
+          mkdir -p ci-results/frontier-alpha65-bootstrap
+          cp /tmp/frontier-alpha65-bootstrap.log ci-results/frontier-alpha65-bootstrap/latest.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/frontier-alpha65-bootstrap/latest.log
+          git commit -m "Record Frontier alpha.65 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          pushed=0
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
+            git rebase --abort >/dev/null 2>&1 || true
+            sleep $((attempt * 2))
+          done
+          test "$pushed" -eq 1
+          exit 1
+
+      - name: Stop staging run after product push
+        if: env.ALPHA65_BOOTSTRAP == '1' && steps.bootstrap65.outcome == 'success'
+        shell: bash
+        run: exit 1
 
       - uses: actions/setup-java@v5
         with:
@@ -48,19 +104,19 @@ jobs:
           echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
 
-      - name: Alpha.64 cumulative source audit
+      - name: Alpha.65 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha64_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+          python3 tools/test_alpha65_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
 
-      - name: Alpha.64 canonical docs audit
+      - name: Alpha.65 canonical docs audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha64_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+          python3 tools/test_alpha65_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
 
       - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
@@ -101,7 +157,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always()
+        if: always() && env.ALPHA65_BOOTSTRAP != '1'
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -114,7 +170,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always()
+        if: always() && env.ALPHA65_BOOTSTRAP != '1'
         shell: bash
         run: |
           set -euo pipefail
