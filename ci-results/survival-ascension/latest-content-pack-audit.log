@@ -1,8 +1,6 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_content_pack_source.py", line 101, in <module>
-    main()
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_content_pack_source.py", line 81, in main
-    require("state.is(BlockTags.LOGS)" in wood and "state.is(BlockTags.LEAVES)" in wood,
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/survival-ascension/tools/test_content_pack_source.py", line 16, in require
-    raise AssertionError(message)
-AssertionError: woodcutting must continue to use generic Minecraft log/leaf tags
+content_pack_source_audit=PASS
+locked_external_mods=6
+loader_specific_artifact_selection=PASS
+skill_xp_normalization=PASS
+content_pack_progression_bridge=PASS
+passive_combat_xp_farm=REMOVED
