@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Physical outpost-to-settlement logistics.
@@ -24,10 +25,14 @@ import java.util.Set;
  * persisted road network instead of being paired by UUID order, and the service never force-loads
  * remote chunks just to keep logistics simulation running. A completed cart station only changes
  * the town-side freight destination/capacity; it never becomes a second route-navigation authority.
+ * Alpha.41 also lets this same transporter carry real food/metal back to an active military outpost;
+ * there is still only one authority for long-distance outpost transport.
  */
 public final class SettlementOutpostLogisticsService {
     public static final String TRANSPORT_WORKER_TAG = "frontier_settlement_transport_worker";
     public static final String TRANSPORT_OUTPOST_TAG_PREFIX = "frontier_settlement_transport_outpost_";
+    public static final String MILITARY_SUPPLY_TRIP_TAG = "frontier_settlement_military_supply_trip";
+    public static final String MILITARY_RETURN_TRIP_TAG = "frontier_settlement_military_return_trip";
     private static final String LEGACY_TRANSPORT_WORKER_NAME = "운송 주민";
     private static final int BASE_TRANSPORT_STACK = 16;
     private static final int CART_STATION_TRANSPORT_STACK = 32;
@@ -174,7 +179,30 @@ public final class SettlementOutpostLogisticsService {
 
     private static void workTransport(ServerLevel level, SettlementData data,
                                       OutpostRecord outpost, Villager worker, List<BlockPos> route) {
+        boolean military = SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost);
+        if (!military) {
+            worker.removeTag(MILITARY_SUPPLY_TRIP_TAG);
+            worker.removeTag(MILITARY_RETURN_TRIP_TAG);
+        }
+
         ItemStack carried = worker.getMainHandItem();
+        if (military) {
+            if (!carried.isEmpty() && worker.entityTags().contains(MILITARY_SUPPLY_TRIP_TAG)) {
+                if (!moveAlongRoute(level, worker, route, true)) return;
+                deliverMilitarySupply(level, outpost, worker, carried);
+                return;
+            }
+            if (carried.isEmpty() && worker.entityTags().contains(MILITARY_RETURN_TRIP_TAG)) {
+                if (!moveAlongRoute(level, worker, route, false)) return;
+                loadMilitarySupply(level, data, outpost, worker);
+                return;
+            }
+            if (carried.isEmpty()) {
+                worker.addTag(MILITARY_RETURN_TRIP_TAG);
+                return;
+            }
+        }
+
         if (carried.isEmpty()) {
             if (!moveAlongRoute(level, worker, route, true)) return;
             BlockPos stock = outpost.stockpile();
@@ -198,6 +226,71 @@ public final class SettlementOutpostLogisticsService {
         // return it safely rather than deleting it, even if it is not normal specialized cargo.
         if (!moveAlongRoute(level, worker, route, false)) return;
         deliverToTownStorage(level, data, worker, carried);
+    }
+
+    /**
+     * The existing road transporter is the only military supply hauler. It extracts a real stack
+     * from fully-loaded town storage, carries it down the persisted route, and never teleports cargo.
+     */
+    private static void loadMilitarySupply(ServerLevel level, SettlementData data,
+                                           OutpostRecord outpost, Villager worker) {
+        if (!SettlementStorageService.storageAvailable(level, data)) {
+            worker.getNavigation().stop();
+            return;
+        }
+        int foodShortage = SettlementMilitaryOutpostService.foodSupplyShortage(level, outpost);
+        int metalShortage = SettlementMilitaryOutpostService.metalSupplyShortage(level, outpost);
+        Predicate<ItemStack> predicate;
+        int amount;
+        if (foodShortage > 0) {
+            predicate = SettlementInventory::isFood;
+            amount = Math.min(foodShortage, transportBatchSize(data));
+        } else if (metalShortage > 0) {
+            predicate = SettlementStorageService::isMetalStack;
+            amount = Math.min(metalShortage, transportBatchSize(data));
+        } else {
+            worker.getNavigation().stop();
+            return;
+        }
+
+        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, predicate);
+        if (source == null) {
+            worker.getNavigation().stop();
+            return;
+        }
+        if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            move(worker, source, 0.84D);
+            return;
+        }
+        ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);
+        if (extracted.isEmpty()) return;
+        worker.setItemSlot(EquipmentSlot.MAINHAND, extracted);
+        worker.removeTag(MILITARY_RETURN_TRIP_TAG);
+        worker.addTag(MILITARY_SUPPLY_TRIP_TAG);
+        SettlementService.refreshResources(level.getServer(), data);
+        SettlementService.broadcast(level.getServer(), data);
+    }
+
+    private static void deliverMilitarySupply(ServerLevel level, OutpostRecord outpost,
+                                               Villager worker, ItemStack carried) {
+        BlockPos stock = outpost.stockpile();
+        if (!level.hasChunkAt(stock)) {
+            worker.getNavigation().stop();
+            return;
+        }
+        if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
+                > STORAGE_INTERACTION_RANGE_SQR) {
+            move(worker, stock, 0.84D);
+            return;
+        }
+        if (!(level.getBlockEntity(stock) instanceof Container container)) return;
+        ItemStack remaining = SettlementInventory.insert(container, carried);
+        worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        if (remaining.isEmpty()) {
+            worker.removeTag(MILITARY_SUPPLY_TRIP_TAG);
+            worker.addTag(MILITARY_RETURN_TRIP_TAG);
+        }
     }
 
     private static ItemStack takeFirstTransportStack(Container container, OutpostRecord outpost, int maxCount) {

@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-23",
+  "generated_at": "2026-08-24",
   "status": "candidate_runtime_lock",
   "target": {
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.40"
+    "frontier_settlement": "0.1.0-alpha.41"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",

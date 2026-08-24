@@ -25,7 +25,8 @@ import java.util.List;
  * nearby open-water shoreline gains one assigned fishing worker. The worker visibly walks to a dry
  * bank, uses a fishing rod, carries real fish ItemStacks back to the outpost stockpile, and leaves
  * long-distance movement to the existing road transporter. No emeralds, virtual trade points or
- * force-loaded water simulation are created here.
+ * force-loaded water simulation are created here. Alpha.41 gives an actively dangerous general
+ * outpost military precedence, so the same remote site cannot silently fish while under attack.
  */
 public final class SettlementFishingOutpostService {
     public static final String FISHING_WORKER_TAG = "frontier_settlement_fishing_outpost_worker";
@@ -52,8 +53,13 @@ public final class SettlementFishingOutpostService {
             if (!"general".equals(outpost.specialization())) continue;
             if (!level.hasChunkAt(outpost.center()) || !level.hasChunkAt(outpost.stockpile())) continue;
 
-            FishingSpot spot = findFishingSpot(level, outpost);
             Villager worker = findAssignedWorker(level, outpost);
+            if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) {
+                if (worker != null && worker.getMainHandItem().isEmpty()) moveOrStop(worker, outpost.center().above(), 0.65D);
+                continue;
+            }
+
+            FishingSpot spot = findFishingSpot(level, outpost);
             if (spot == null) {
                 if (worker != null && worker.getMainHandItem().isEmpty()) moveOrStop(worker, outpost.center().above(), 0.65D);
                 continue;
@@ -68,6 +74,7 @@ public final class SettlementFishingOutpostService {
         for (OutpostRecord outpost : data.outposts()) {
             if ("general".equals(outpost.specialization())
                     && level.hasChunkAt(outpost.center())
+                    && !SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)
                     && findFishingSpot(level, outpost) != null) count++;
         }
         return count;
@@ -75,7 +82,8 @@ public final class SettlementFishingOutpostService {
 
     public static String specializationDisplayName(ServerLevel level, OutpostRecord outpost) {
         if (!"general".equals(outpost.specialization())) return outpost.specializationDisplayName();
-        if (!level.hasChunkAt(outpost.center())) return "일반(수변 판정 대기)";
+        if (!level.hasChunkAt(outpost.center())) return "일반(환경 판정 대기)";
+        if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) return "위험지역 군사거점";
         return findFishingSpot(level, outpost) != null ? "어업·수변교역" : "일반";
     }
 
