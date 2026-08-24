@@ -214,9 +214,9 @@ public final class FantasyWorldRules {
         if (realm == null || profile == null) return false;
 
         event.setCanceled(true);
-        BlockPos recovery = RealmSitePlanner.residencePosition(
-                realm, profile.homelandId(), profile.residenceId()
-        );
+        BlockPos recovery = LivingRealmWorldManager.homePosition(realm, profile);
+        boolean recoveryReady = SafeResidenceLocator.isAuthoritativePlayerResidence(
+                realm, profile.homelandId(), profile.residenceId(), recovery);
         long balance = RealmEconomyManager.account(player).silver();
         long charged = Math.min(balance, RECOVERY_FEE_SILVER);
         if (charged > 0L) RealmEconomyManager.spend(player, charged);
@@ -225,23 +225,31 @@ public final class FantasyWorldRules {
         player.setHealth(Math.max(1.0F, player.getMaxHealth() * 0.30F));
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
-        player.teleportTo(
-                realm,
-                recovery.getX() + 0.5D,
-                recovery.getY() + 0.2D,
-                recovery.getZ() + 0.5D,
-                Set.<Relative>of(),
-                player.getYRot(),
-                player.getXRot(),
-                true
-        );
+        if (recoveryReady) {
+            player.teleportTo(
+                    realm,
+                    recovery.getX() + 0.5D,
+                    recovery.getY() + 0.2D,
+                    recovery.getZ() + 0.5D,
+                    Set.<Relative>of(),
+                    player.getYRot(),
+                    player.getXRot(),
+                    true
+            );
+        } else {
+            SelectionStagingManager.ensure(player);
+            LivingRealmWorldManager.requestPlacement(player, profile);
+        }
         player.setDeltaMovement(0.0D, 0.0D, 0.0D);
         player.fallDistance = 0.0F;
         player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 45, 1, false, false, true));
         player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20 * 20, 0, false, false, true));
         player.sendSystemMessage(Component.literal(
-                "전투불능 상태에서 구조되어 거주지로 후송되었습니다. 치료·구조비 은화 " + charged
-                        + "을 지불했고 소지품은 보존됩니다."
+                recoveryReady
+                        ? "전투불능 상태에서 구조되어 실제 거주지로 후송되었습니다. 치료·구조비 은화 "
+                        + charged + "을 지불했고 소지품은 보존됩니다."
+                        : "전투불능 상태에서 구조되었습니다. 치료·구조비 은화 " + charged
+                        + "을 지불했고 실제 거주지 입주 확인이 끝나는 즉시 후송됩니다."
         ));
         return true;
     }
