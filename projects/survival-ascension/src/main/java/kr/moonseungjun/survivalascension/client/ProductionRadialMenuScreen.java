@@ -31,7 +31,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("물류 거점 연결", "4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
             new Entry("창고 통 연결", "4블록 내 실제 통 ↔ 반경6 자신의 거점 · 거점당 최대8 · 보급권 없음", new ItemStack(Items.CHEST), "", Action.WAREHOUSE),
             new Entry("현장 일괄 적재", "주 인벤토리 대량자원 → 가까운 사용 가능 실제 통 · 핫바/장비 유지", new ItemStack(Items.HOPPER), "", Action.OFFLOAD),
-            new Entry("물리 화물 수레", "산업+토목 · 양쪽 전초 하역장(레일6+·동력레일·호퍼·제어) · 실제 상자 광산수레", new ItemStack(Items.CHEST_MINECART), "", Action.FREIGHT),
+            new Entry("물리 화물 수레", "일반=대량화물 · Shift=전선묶음(원정/방어/요새 각1회) · 실제 수레/하역장", new ItemStack(Items.CHEST_MINECART), "", Action.FREIGHT),
             new Entry("전초기지 승격", "등록 통+침대+모닥불+작업대+화로 · 보급권2/철32/금8/석탄32", new ItemStack(Items.CAMPFIRE), "", Action.OUTPOST),
             new Entry("전초 방어전", "보급권1 + 전초재고(식량48/철16/통나무32) · 3공세", new ItemStack(Items.SHIELD), "", Action.SIEGE),
             new Entry("요새 방어전", "보급권2 + 전초재고(식량96/철32/석재벽돌128) · 벽+4공세", new ItemStack(Items.STONE_BRICK_WALL), "", Action.BASTION),
@@ -55,7 +55,7 @@ public final class ProductionRadialMenuScreen extends Screen {
         graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI,TextureSetup.noTexture(),pose,cx,cy,selected,scissor));
         for(int i=0;i<ITEM_COUNT;i++){double a=RadialMenuGeometry.iconRadians(i,ITEM_COUNT);graphics.item(ENTRIES[i].icon(),(int)Math.round(cx+ICON_RADIUS*Math.cos(a))-8,(int)Math.round(cy+ICON_RADIUS*Math.sin(a))-8);}
         Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,entry.detail(),cx-this.font.width(entry.detail())/2,cy+8,0xFFB8B8B8,false);
-        String caption="채집 → 통/창고 → 도로·레일 → 화물 → 전초 현지재고 → 방어/원정";graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
+        String caption="채집 → 통/창고 → 도로·레일 → 일반/전선 화물 → 전초 현지재고 → 방어/원정";graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){if(event.button()!=0)return false;Entry entry=ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)];if(entry.action()==Action.BACK){this.minecraft.gui.setScreen(new InfrastructureRadialMenuScreen());return true;}String action=switch(entry.action()){case FUND->InfrastructureService.ACTION_FUND;case STATUS->ProductionService.ACTION_STATUS;case DISPATCH->ProductionService.ACTION_DISPATCH;case DEPOT->ProductionService.ACTION_DEPOT_TOGGLE;case WAREHOUSE->ProductionService.ACTION_WAREHOUSE_TOGGLE;case OFFLOAD->ProductionService.ACTION_BULK_OFFLOAD;case FREIGHT->ProductionService.ACTION_FREIGHT;case OUTPOST->ProductionService.ACTION_OUTPOST_UPGRADE;case SIEGE->ProductionService.ACTION_OUTPOST_SIEGE;case BASTION->ProductionService.ACTION_BASTION_SIEGE;case OPERATION->ProductionService.ACTION_FIELD_OPERATION;case RECOVERY->ProductionService.ACTION_FIELD_RECOVERY;case PRODUCE->ProductionService.ACTION_PREFIX+entry.programId();case BACK->"";};ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureProject.INDUSTRIAL_WORKS.id(),action));this.minecraft.gui.setScreen(null);return true;}
