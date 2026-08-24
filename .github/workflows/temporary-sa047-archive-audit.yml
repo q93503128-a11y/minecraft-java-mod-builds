@@ -1,0 +1,38 @@
+name: Temporary SA047 Archive Audit
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    if: github.event.issue.title == '[SA047 ARCHIVE AUDIT INTERNAL]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Inspect Fractured Archive interoperability keys
+        shell: bash
+        run: python3 .github/sa047_archive_audit.py | tee "$RUNNER_TEMP/sa047-archive.txt"
+      - name: Comment findings
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          {
+            echo 'Fractured Archive interoperability audit.'
+            echo
+            echo '```text'
+            if test -f "$RUNNER_TEMP/sa047-archive.txt"; then sed -n '1,1000p' "$RUNNER_TEMP/sa047-archive.txt"; else echo 'audit failed'; fi
+            echo '```'
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$RUNNER_TEMP/comment.md"
+          gh issue comment "${{ github.event.issue.number }}" --body-file "$RUNNER_TEMP/comment.md"
