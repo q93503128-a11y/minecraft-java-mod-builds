@@ -1,5 +1,6 @@
 JAR VERIFY PASS
-version=0.47.0-alpha.1
+version=0.48.0-alpha.1
+frontline_local_supply_runtime=present
 external_equipment_imprint_runtime=present
 bop_expedition_biome_bridge=present
 major_external_target_runtime=present
@@ -20,5 +21,5 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=503139
-sha256=898844bcb102f1ee6f8ed5f0df3bc5e33cd8109bc4868f57ea0b368bb29b738d
+size=511699
+sha256=d1d161ee8a5386a0e75bec577b2ec4ec9a2f47af623748e2ebb754fa6ff65557

@@ -1,5 +1,6 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
+- 0.48 frontline operations consume bounded physical stock from the exact departure outpost Barrel cluster after successful start; no player-inventory or adjacent-depot fallback
 - 0.47 data-tagged major external targets receive bounded combat XP and +3 regional/operation kill credit without incident multiplication or hard optional-mod Java dependencies
 - 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped
 - 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest
