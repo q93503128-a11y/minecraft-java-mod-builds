@@ -116,4 +116,31 @@ must(lock, (
     '"status": "candidate_runtime_lock"',
 ), 'alpha.45 companion lock truthfulness')
 
+readme = text(ROOT / 'README.md')
+plan = text(ROOT / 'CANONICAL_PLAN.md')
+gap = text(ROOT / 'COMPLETION_GAP_AUDIT.md')
+must(readme, (
+    '## Current version: 0.1.0-alpha.45',
+    '## Alpha.44 — bounded medium terrain works',
+    '## Alpha.45 — exploration/conquest feeds settlement progression',
+    'same-type',
+    'historical public `WaypointsManager` API is absent',
+), 'alpha.45 README synchronization')
+must(plan, (
+    'Alpha.44 medium terrain work stays inside the ordinary placement/construction flow',
+    '### Alpha.45 exploration/conquest progression rule',
+    'legacy frontier-town route remains population8 +2 outposts + mine + quarry',
+    'legacy domain route remains population16 +4 outposts + mine +2 farms',
+    'builder walks from actual settlement storage carrying real wood/stone stacks',
+    'tier-visible public works',
+    'single authority for outpost transport',
+), 'alpha.45 canonical-plan synchronization')
+must(gap, (
+    '현재 구현 기준: `0.1.0-alpha.45`',
+    'Alpha.44 bounded medium-terrain 감사',
+    'Alpha.45 탐험/정복 progression 감사',
+    '선택 영역 절토/성토 후반 보조 | **미구현**',
+    'Xaero 본진/전초/도로망 연동 | 미구현/후보검증',
+), 'alpha.45 gap-audit synchronization')
+
 print('Frontier Settlement alpha.45 source audit: PASS')
