@@ -43,6 +43,15 @@ jobs:
             fi
             echo 'ALPHA53_BOOTSTRAP=1' >> "$GITHUB_ENV"
             python3 "$PROJECT_DIR/tools/apply_alpha53.py"
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/gradle.properties')
+          s = p.read_text(encoding='utf-8')
+          old = 'bounded long-bridge/ravine crossings plus physical save-compatible straight tunnel excavation.'
+          new = 'bounded long-bridge/ravine crossings with persisted physical stone piers, plus physical save-compatible straight tunnel excavation.'
+          if old in s:
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
             python3 "$PROJECT_DIR/tools/test_alpha53_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha53_docs.py"
             git diff --check
