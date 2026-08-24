@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement'
@@ -80,18 +81,23 @@ forbid(build, ('chocolateminecraft.com', 'xaero.minimap:', "includeGroup 'xaero.
        'alpha.44 Xaero compile probe must not remain in the runtime build')
 
 props = text(ROOT / 'gradle.properties')
-lock = text(ROOT / 'COMPANION_LOCK.json')
+lock_text = text(ROOT / 'COMPANION_LOCK.json')
 must(props, (
     'jade_version_id=HLYMycSr',
     'mod_version=0.1.0-alpha.44',
     'bounded medium-terrain work using real retaining stone',
 ), 'alpha.44 build properties')
 forbid(props, ('xaero_minimap_version=',), 'alpha.44 removed Xaero compile probe property')
-must(lock, (
-    '"frontier_settlement": "0.1.0-alpha.44"',
-    '"id":"xaeros_minimap"',
-    '"version":"26.4.2"',
-    '"status": "candidate_runtime_lock"',
-), 'alpha.44 companion candidate remains locked, not runtime-tested')
+try:
+    lock = json.loads(lock_text)
+except json.JSONDecodeError as exc:
+    raise SystemExit(f'alpha.44 companion lock is not valid JSON: {exc}')
+if lock.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('alpha.44 companion candidate lock status changed')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.44':
+    raise SystemExit('alpha.44 Frontier target version missing from companion lock')
+xaero = next((entry for entry in lock.get('entries', []) if entry.get('id') == 'xaeros_minimap'), None)
+if xaero is None or xaero.get('version') != '26.4.2':
+    raise SystemExit('alpha.44 Xaero 26.4.2 candidate entry missing from companion lock')
 
 print('Frontier Settlement alpha.44 source audit: PASS')
