@@ -1,14 +1,28 @@
 # Survival Ascension
 
-- Mod version: `0.47.0-alpha.1`
+- Mod version: `0.48.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1` and older data stay unchanged. 0.47 adds only a Survival-owned optional EntityType tag and bounded kill-credit logic; physical freight railheads remain world-block validated and external gear imprint stores only nested item CustomData on the item itself.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1` and older data stay unchanged. 0.48 adds no persistent schema: frontline readiness is derived live from the exact departure outpost's physical Barrel cluster. Existing 0.47 optional EntityType-tag integration, physical freight railheads and item CustomData boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.48 Frontline Local Supply / 전선 현지 보급
+- Physical freight now has a direct gameplay sink: frontline operations require real stock at the exact active departure outpost.
+- Existing global field-supply charges remain unchanged and continue to represent completed four-line industrial production cycles. 0.48 does not replace them with a second virtual currency.
+- Expedition operation launch requires supply1 plus local food32 + iron8 + fuel8.
+- Normal outpost defense requires supply1 plus local food48 + iron16 + logs32.
+- Bastion defense requires supply2 plus local food96 + iron32 + stone bricks128, in addition to the existing physical fortification validation.
+- Food is pooled Wheat/Carrot/Potato/Beetroot. Fuel is Coal/Charcoal. Logs use `ItemTags.LOGS`. All are already freight-eligible bulk materials.
+- Local material resolution is deliberately different from ordinary logistics-backed crafting: it resolves only the departure outpost's registered Barrel anchor and its persisted linked Barrels. It never reads a nearby different depot and never falls back to player inventory.
+- Every local Barrel must be in an already-loaded chunk, remain a real Barrel Container and pass `level.mayInteract(player, pos)`.
+- Readiness checks are non-mutating. The physical loadout is consumed only after the pre-existing encounter/operation system reports an actual successful start, so rejected starts do not burn local materials.
+- Production Status exposes nearby active-outpost local counts for food/iron/fuel/logs/stone bricks. The production radial shows all three frontline loadouts.
+- Players may hand-load a remote outpost, but the intended large-scale loop is production/harvest -> storage -> physical Chest Minecart freight -> destination outpost warehouse -> defense/expedition.
+- No new SavedData, packet/protocol, virtual route/cargo balance, custom block/item/entity, teleport or force-load.
 
 ## 0.47 Major External Targets / 외부 강적 원정 연동
 - Locked The Birth of Steve to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`, file `tbos-neoforge-26.2-0.7.0.jar`, SHA-1 `4d55c51685bff4247fa533c925f7641ce4880db3`).
@@ -141,7 +155,7 @@ The base quadratic XP curve remains the late-game reference, with an opening dis
 Mining XP remains material-tiered rather than flat valuable-ore XP. Key values: Copper7/8, Iron9/10, Gold12/13, Diamond18/20, Emerald20/22, Ancient Debris24, Obsidian16 / Crying Obsidian18.
 
 ### Physical logistics spend order
-`FieldDepotService.consumeMatching` resolves usable physical logistics Containers first and consumes them nearest-first before touching carried inventory. Vanilla crafting grids and Apex/Ascension Trial admissions remain separate carried-only rules.
+`FieldDepotService.consumeMatching` resolves usable physical logistics Containers first and consumes them nearest-first before touching carried inventory. Vanilla crafting grids and Apex/Ascension Trial admissions remain separate carried-only rules. Frontline operation/defense local loadouts are the deliberate exact-outpost-only exception introduced in 0.48.
 
 ## 0.42 Physical Freight Relay / 물리 화물 중계
 A real Chest Minecart physically moves the existing bulk whitelist between the exact warehouse clusters of two different active owned outposts in the same dimension. Actual source stacks shrink only by accepted cart capacity; actual cart stacks shrink only by accepted destination capacity. Manifest data remains only on the cart. No automatic driving, teleport, route SavedData, force-load or generated freight reward.
@@ -170,7 +184,7 @@ Civil Works, Industrial Works, Apex Tracking Post and Ascension Nexus use the sa
 High-volume offload scans main inventory9..35. Stationary logistics-backed material sinks use nearest usable real `통` storage first, then player inventory. Apex/Trial admission stays player-carried.
 
 ## 0.33 / 0.32 expeditions retained
-Active regional outpost -> supply1 -> cross range -> two real validated objectives -> exact-origin return. One bounded complication per new sortie. No force-load.
+Active regional outpost -> supply1 -> exact local stock -> cross range -> two real validated objectives -> exact-origin return. One bounded complication per new sortie. No force-load.
 
 ## 0.31 Field Recovery retained
 One prepaid ordinary-death return within96; authored encounter deaths remain excluded. No ordinary fast travel.
