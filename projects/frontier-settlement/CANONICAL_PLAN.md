@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.52**.
+Current canonical implementation: **0.1.0-alpha.53**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–52 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–53 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -418,6 +418,25 @@ Alpha.52 remains inside `SettlementRoadService` and the existing road constructi
 
 This is the first long-bridge/ravine slice only. **Tunnels and more complex/deeper monumental crossings remain unfinished.**
 
+### Alpha.53 bounded straight road tunnels
+
+Alpha.53 stays inside the same road endpoint/preview/approval authority. It does not add a tunnel UI, new key or a second civil-work controller.
+
+- a loaded straight ridge/cliff may become a tunnel run of at most24 centerline cells when entry/exit shoulders differ by at most1 and every covered center remains at least4 blocks above final tunnel floor;
+- tunnel profile value `PROFILE_TUNNEL=2` is saved in the existing optional profile list; legacy profile values and bridge support saves remain compatible;
+- phase encoding preserves old meanings: prepaid<1M, grading1M..<1.5M, tunnel excavation1.5M..<2M, physical paving2M+;
+- exact excavation geometry is deterministic from persisted centers/profile: width3, clear height3 above floor;
+- server validation rejects unloaded cells, block entities, all fluids, ores, caves/air pockets and non-natural/player blocks in affected tunnel volume;
+- the shared road builder advances from the previous opened floor and removes one validated natural cell at a time with no item drop; successful world mutation precedes state advance;
+- excavated stone is never credited to storage, earthBank, HUD or any virtual resource;
+- active excavation volume is project-protected; unsafe mid-project edits pause;
+- final road surface still uses the established physical ItemStack hauling/placement/consume path, with one bounded stone surcharge per tunnel center;
+- tunnel automatic public works require frontier-town + construction office;
+- completed tunnel road remains an ordinary RoadSegment, so Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- no force-load, teleport, `destroyBlock`, `dropResources`, second builder/economy/logistics authority or hard companion dependency.
+
+Curved tunnels, >24-cell bores, underground stations and unrestricted mountain deletion remain unfinished/outside this slice.
+
 ## 10. Exploration, crafting and settlement feedback
 
 Frontier does not own the full adventure-content layer. External structures/dungeons/mobs/bosses/loot remain companion authority.
@@ -480,7 +499,7 @@ Xaero:
 - do not fake completion through internal waypoint sets/reflection/mixins;
 - true settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
 
-Alpha.52 road/civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
+Alpha.53 road/civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
 
 ## 12. UI and information hierarchy
 
@@ -527,7 +546,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.52
+## 14. Current playable slice after Alpha.53
 
 Current implemented slice includes:
 
@@ -538,7 +557,7 @@ Current implemented slice includes:
 - physical construction/hauling and bounded Alpha.44 building terrain;
 - construction-office staging;
 - loaded production and resident work;
-- physical roads/stairs/short bridges plus Alpha.52 bounded 24-cell long-water/dry-ravine bridges with persisted physical stone piers;
+- physical roads/stairs/short bridges, Alpha.52 bounded long bridges, and Alpha.53 bounded straight physical road tunnels;
 - specialized outposts, fishing, dangerous military overlay;
 - same-authority physical road logistics and reverse supply;
 - bounded unloaded work debt without virtual resources/cargo;
@@ -551,11 +570,11 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.52
+## 15. Unfinished original-scope priorities after Alpha.53
 
 Unless real-play regression overrides them:
 
-1. **tunnel / deeper monumental crossing civil-engineering pass** — extend beyond Alpha.52 bounded long bridges without becoming WorldEdit, force-loading or minting resources;
+1. **deeper monumental crossing civil-engineering pass** — curved/longer special crossings only if they stay bounded, physical and non-WorldEdit;
 2. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
 3. better companion-biome-aware outpost specialization where a stable data seam exists;
 4. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
@@ -566,7 +585,8 @@ Unless real-play regression overrides them:
 9. Alpha.48 humanoid render/attack-animation + legacy migration acceptance;
 10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion-resupply/return-cargo/terrain-safety acceptance;
 11. Alpha.52 long-bridge pier planning/save-reload/stone depletion/physical repair/pathing acceptance;
-12. full companion lock fresh-world client/server runtime;
+12. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/player-protection acceptance;
+13. full companion lock fresh-world client/server runtime;
 13. true Xaero markers only if a stable supported API appears;
 14. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 

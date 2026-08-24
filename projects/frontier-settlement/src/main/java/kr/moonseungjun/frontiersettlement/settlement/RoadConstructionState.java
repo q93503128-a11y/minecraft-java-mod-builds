@@ -15,13 +15,15 @@ public record RoadConstructionState(int startX, int startY, int startZ,
                                     List<Integer> bridgeSupports) {
     /**
      * Phase markers live inside the existing persisted step field so older saves decode unchanged.
-     * Small steps are Alpha.24-or-earlier prepaid paving, 1M+ is grading, and 2M+ is Alpha.25 physical paving.
-     * Alpha.35 adds an optional per-center profile. Alpha.52 adds optional exact long-bridge support cells.
+     * Alpha.24-or-earlier prepaid paving stays below 1M, grading is 1M..<1.5M,
+     * Alpha.53 tunnel excavation is 1.5M..<2M, and physical paving remains 2M+.
      */
     public static final int GRADE_STEP_OFFSET = 1_000_000;
+    public static final int TUNNEL_STEP_OFFSET = 1_500_000;
     public static final int PAVE_STEP_OFFSET = 2_000_000;
     public static final int PROFILE_NORMAL = 0;
     public static final int PROFILE_BRIDGE = 1;
+    public static final int PROFILE_TUNNEL = 2;
     public static final RoadConstructionState EMPTY = new RoadConstructionState(0, 0, 0, 0, 0, 0, 0,
             List.of(), List.of(), List.of());
 
@@ -74,7 +76,8 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         List<Integer> normalizedProfile = new ArrayList<>(centers.size());
         for (int i = 0; i < centers.size(); i++) {
             int value = profile != null && i < profile.size() ? profile.get(i) : PROFILE_NORMAL;
-            normalizedProfile.add(value == PROFILE_BRIDGE ? PROFILE_BRIDGE : PROFILE_NORMAL);
+            normalizedProfile.add(value == PROFILE_BRIDGE ? PROFILE_BRIDGE
+                    : value == PROFILE_TUNNEL ? PROFILE_TUNNEL : PROFILE_NORMAL);
         }
         List<Integer> encodedSupports = encodePositions(bridgeSupports == null ? List.of() : bridgeSupports);
         return new RoadConstructionState(first.getX(), first.getY(), first.getZ(),
@@ -86,9 +89,7 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         if (positions == null || positions.isEmpty()) return List.of();
         List<Integer> encoded = new ArrayList<>(positions.size() * 3);
         for (BlockPos pos : positions) {
-            encoded.add(pos.getX());
-            encoded.add(pos.getY());
-            encoded.add(pos.getZ());
+            encoded.add(pos.getX()); encoded.add(pos.getY()); encoded.add(pos.getZ());
         }
         return encoded;
     }
@@ -106,83 +107,60 @@ public record RoadConstructionState(int startX, int startY, int startZ,
         if (hasPath()) return centers().size() >= 2;
         return length > 0 && Math.abs(directionX) + Math.abs(directionZ) == 1;
     }
+    public boolean hasPath() { return path != null && path.size() >= 6 && path.size() % 3 == 0; }
+    public boolean grading() { return hasPath() && step >= GRADE_STEP_OFFSET && step < TUNNEL_STEP_OFFSET; }
+    public boolean tunneling() { return hasPath() && step >= TUNNEL_STEP_OFFSET && step < PAVE_STEP_OFFSET; }
+    public boolean physicalPaving() { return hasPath() && step >= PAVE_STEP_OFFSET; }
+    public boolean legacyPrepaidPaving() { return active() && step >= 0 && step < GRADE_STEP_OFFSET; }
+    public int gradeStep() { return grading() ? step - GRADE_STEP_OFFSET : -1; }
+    public int tunnelStep() { return tunneling() ? step - TUNNEL_STEP_OFFSET : -1; }
 
-    public boolean hasPath() {
-        return path != null && path.size() >= 6 && path.size() % 3 == 0;
-    }
-
-    public boolean grading() {
-        return hasPath() && step >= GRADE_STEP_OFFSET && step < PAVE_STEP_OFFSET;
-    }
-
-    public boolean physicalPaving() {
-        return hasPath() && step >= PAVE_STEP_OFFSET;
-    }
-
-    public boolean legacyPrepaidPaving() {
-        return active() && step >= 0 && step < GRADE_STEP_OFFSET;
-    }
-
-    public int gradeStep() {
-        return grading() ? step - GRADE_STEP_OFFSET : -1;
-    }
-
-    /**
-     * Runtime callers historically use step() as the paving cursor. New physical paving exposes the
-     * logical cursor; legacy prepaid roads intentionally report completion so SettlementRoadService
-     * enters its cost-free final validation/repair path instead of charging their stone a second time.
-     */
     public int step() {
         if (physicalPaving()) return step - PAVE_STEP_OFFSET;
+        if (tunneling()) return step - TUNNEL_STEP_OFFSET;
         if (legacyPrepaidPaving()) return Integer.MAX_VALUE;
         return step;
     }
-
-    private int encodedStep() {
-        return step;
-    }
+    private int encodedStep() { return step; }
 
     public BlockPos start() {
         List<BlockPos> centers = centers();
         return centers.isEmpty() ? new BlockPos(startX, startY, startZ) : centers.get(0);
     }
-
     public List<BlockPos> centers() {
         if (hasPath()) return decodePositions(path);
         if (length <= 0 || Math.abs(directionX) + Math.abs(directionZ) != 1) return List.of();
         List<BlockPos> legacy = new ArrayList<>(length);
-        for (int i = 0; i < length; i++) {
-            legacy.add(new BlockPos(startX + directionX * i, startY, startZ + directionZ * i));
-        }
+        for (int i = 0; i < length; i++) legacy.add(new BlockPos(startX + directionX * i, startY, startZ + directionZ * i));
         return List.copyOf(legacy);
     }
-
-    public List<BlockPos> bridgeSupportPositions() {
-        return decodePositions(bridgeSupports);
-    }
-
+    public List<BlockPos> bridgeSupportPositions() { return decodePositions(bridgeSupports); }
     public boolean bridgeAt(int centerIndex) {
         return centerIndex >= 0 && profile != null && centerIndex < profile.size()
                 && profile.get(centerIndex) == PROFILE_BRIDGE;
     }
-
+    public boolean tunnelAt(int centerIndex) {
+        return centerIndex >= 0 && profile != null && centerIndex < profile.size()
+                && profile.get(centerIndex) == PROFILE_TUNNEL;
+    }
     public int bridgeCenterCount() {
-        int count = 0;
-        for (int i = 0; i < centers().size(); i++) if (bridgeAt(i)) count++;
-        return count;
+        int count = 0; for (int i = 0; i < centers().size(); i++) if (bridgeAt(i)) count++; return count;
     }
-
-    public int bridgeSupportCount() {
-        return bridgeSupportPositions().size();
+    public int tunnelCenterCount() {
+        int count = 0; for (int i = 0; i < centers().size(); i++) if (tunnelAt(i)) count++; return count;
     }
+    public boolean hasTunnel() { return tunnelCenterCount() > 0; }
+    public int bridgeSupportCount() { return bridgeSupportPositions().size(); }
 
     public RoadConstructionState advance() {
         return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length,
                 step + 1, path, profile, bridgeSupports);
     }
-
     public RoadConstructionState withStep(int nextStep) {
-        int encoded = grading() && nextStep == 0 ? PAVE_STEP_OFFSET : Math.max(0, nextStep);
+        int encoded;
+        if (grading() && nextStep == 0) encoded = hasTunnel() ? TUNNEL_STEP_OFFSET : PAVE_STEP_OFFSET;
+        else if (tunneling() && nextStep == 0) encoded = PAVE_STEP_OFFSET;
+        else encoded = Math.max(0, nextStep);
         return new RoadConstructionState(startX, startY, startZ, directionX, directionZ, length,
                 encoded, path, profile, bridgeSupports);
     }

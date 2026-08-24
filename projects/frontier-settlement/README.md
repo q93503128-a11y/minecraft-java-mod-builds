@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.52
+## Current version: 0.1.0-alpha.53
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.52 key was added.
+No new Alpha.53 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -73,6 +73,23 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.53 — bounded straight road tunnels
+
+Alpha.53 fills the next civil-engineering gap without adding a tunnel dashboard, new key or second construction authority.
+
+- the existing road endpoint flow can automatically choose a **straight tunnel up to 24 centerline cells** when a loaded cliff/ridge rises at least **4 blocks** above nearly level entry/exit shoulders;
+- tunnel road profile is persisted in the existing road state as `PROFILE_TUNNEL=2`; old saves decode exactly as before;
+- grading transitions through a persisted `TUNNEL_STEP_OFFSET=1_500_000` phase before the established 2M+ physical paving phase;
+- the tunnel clear section is 3 blocks wide and **3 blocks high above the road floor**;
+- all affected floor/headspace cells must already be loaded and consist only of conservative natural non-ore blocks; block entities, fluids, ores, caves/air pockets and player/non-natural blocks reject the automatic tunnel;
+- the same shared road builder works from the previous open tunnel floor and removes one validated natural block at a time with `setBlock(AIR)` and **no drops**; there is no virtual excavated-stone credit or farmable quarry path;
+- active tunnel cells are break-protected while the road project owns them, and external unsafe changes pause work instead of being buried;
+- after excavation, the same physical paving phase consumes real settlement stone; tunnel centers add a bounded stone surcharge rather than a virtual tunnel currency;
+- tunnel works require the existing **frontier-town + construction office** stage;
+- no force-load, teleport, `destroyBlock`, `dropResources`, second builder, second road authority or companion hard dependency is introduced.
+
+This is the first bounded road-tunnel slice. Curved tunnels, very long bores, underground stations and unrestricted mountain deletion remain outside the current pass.
 
 ## Alpha.52 — bounded long bridges and ravine crossings
 
@@ -207,10 +224,10 @@ Frontier must still boot without optional companions. Alpha.52 reads already-loa
 
 ## Validation
 
-Canonical Alpha.52 CI order:
+Canonical Alpha.53 CI order:
 
-1. cumulative Alpha.23–52 source/runtime audit, preserving historical Alpha.23–50 files while superseding only the intended civil limits/retaining expansion;
-2. Alpha.52 canonical README/plan/gap docs audit;
+1. cumulative Alpha.23–53 source/runtime audit, preserving historical Alpha.23–50 files while superseding only the intended civil limits/retaining expansion;
+2. Alpha.53 canonical README/plan/gap docs audit;
 3. `git diff --check` + clean-worktree check;
 4. Java 25 `clean build` against Minecraft 26.2 / NeoForge 26.2.0.38-beta;
 5. runtime JAR verification and SHA-256;
