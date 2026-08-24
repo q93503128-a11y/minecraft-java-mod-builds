@@ -14,7 +14,7 @@ public final class ClientNetworkHandlers {
     private static RealmLoadingScreen activeLoadingScreen;
     private static RealmBuildProgressPayload latestBuildProgress;
     private static FantasyHudStatePayload latestHudState = new FantasyHudStatePayload(
-            0L, 0, 0, "미등록", 100, 100, 100, 100
+            0L, 0L, 0, 0, "미등록", 100, 100, 100, 100
     );
 
     private ClientNetworkHandlers() {
