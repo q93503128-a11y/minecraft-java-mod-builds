@@ -6,6 +6,7 @@ import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
 import kr.moonseungjun.livingkingdoms.network.RealmBuildProgressPayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -14,8 +15,12 @@ public final class ClientNetworkHandlers {
     private static RealmLoadingScreen activeLoadingScreen;
     private static RealmBuildProgressPayload latestBuildProgress;
     private static FantasyHudStatePayload latestHudState = new FantasyHudStatePayload(
-            0L, 0, 0, "미등록", 100, 100, 100, 100
+            0L, 0, 0, "미등록", 100, 100, 100, 100, 0L
     );
+    private static ClientLevel clockLevel;
+    private static long latestServerRealmTime;
+    private static long stableRealmTime;
+    private static boolean clockReady;
 
     private ClientNetworkHandlers() {
     }
@@ -30,6 +35,31 @@ public final class ClientNetworkHandlers {
 
     public static FantasyHudStatePayload hudState() {
         return latestHudState;
+    }
+
+    /**
+     * Returns a monotonic client presentation of the server kingdom clock. It may wait briefly for
+     * a lagging server, but it never rewinds because a delayed level-time packet arrived.
+     */
+    public static long realmTime() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (clockReady && minecraft.level == clockLevel) return stableRealmTime;
+        return minecraft.level == null ? 0L : Math.max(0L, minecraft.level.getGameTime());
+    }
+
+    /** Extrapolates at most one second beyond the latest authoritative server sample. */
+    public static void tickRealmClock() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level != clockLevel) {
+            clockLevel = minecraft.level;
+            latestServerRealmTime = 0L;
+            stableRealmTime = 0L;
+            clockReady = false;
+            return;
+        }
+        if (!clockReady) return;
+        long ceiling = latestServerRealmTime + 20L;
+        if (stableRealmTime < ceiling) stableRealmTime++;
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
@@ -69,7 +99,21 @@ public final class ClientNetworkHandlers {
     }
 
     private static void handleHudState(FantasyHudStatePayload payload, IPayloadContext context) {
-        Minecraft.getInstance().execute(() -> latestHudState = payload);
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            latestHudState = payload;
+            if (minecraft.level != clockLevel) {
+                clockLevel = minecraft.level;
+                clockReady = false;
+            }
+            latestServerRealmTime = payload.realmGameTime();
+            if (!clockReady) {
+                stableRealmTime = latestServerRealmTime;
+                clockReady = true;
+            } else {
+                stableRealmTime = Math.max(stableRealmTime, latestServerRealmTime);
+            }
+        });
     }
 
     private static void handleOpenCodex(OpenCodexPayload payload, IPayloadContext context) {
