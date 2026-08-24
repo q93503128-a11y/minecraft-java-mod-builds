@@ -28,7 +28,7 @@ public final class ProductionRadialMenuScreen extends Screen {
             new Entry("구조재 배치", "통나무192 · 조약돌384 · 철32", new ItemStack(Items.IRON_AXE), "timberworks", Action.PRODUCE),
             new Entry("식량 배치", "밀128 · 당근64 · 감자64 · 비트32", new ItemStack(Items.HAY_BLOCK), "provisions", Action.PRODUCE),
             new Entry("정밀 부품 배치", "레드128 · 자수정64 · 금32 · 석영64", new ItemStack(Items.COMPARATOR), "precision", Action.PRODUCE),
-            new Entry("물류 거점 연결", "4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 최대3", new ItemStack(Items.BARREL), "", Action.DEPOT),
+            new Entry("물류 거점 연결", "4블록 내 기본 통 앵커 등록/해제 · 보급권1 · 한도3→토목6→중추9", new ItemStack(Items.BARREL), "", Action.DEPOT),
             new Entry("창고 통 연결", "4블록 내 실제 통 ↔ 반경6 자신의 거점 · 거점당 최대8 · 보급권 없음", new ItemStack(Items.CHEST), "", Action.WAREHOUSE),
             new Entry("현장 일괄 적재", "주 인벤토리 대량자원 → 가까운 사용 가능 실제 통 · 핫바/장비 유지", new ItemStack(Items.HOPPER), "", Action.OFFLOAD),
             new Entry("물리 화물 수레", "일반=대량 · Shift=전선묶음(원정/방어/요새 각1) · 레일6+·동력레일·호퍼·제어", new ItemStack(Items.CHEST_MINECART), "", Action.FREIGHT),
