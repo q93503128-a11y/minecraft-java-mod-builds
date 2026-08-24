@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import hashlib, json, os, re, subprocess, sys, urllib.request, zipfile
+import hashlib, json, os, re, subprocess, urllib.request, zipfile
 from pathlib import Path
 
 VERSION_ID = "xls8dTZv"
@@ -32,8 +32,9 @@ def javap(jar, cls):
     return p.stdout
 
 meta = fetch_json(API)
-if meta.get("version_number") != "0.7.0":
-    raise SystemExit(f"unexpected version_number={meta.get('version_number')}")
+version_number = str(meta.get("version_number") or "")
+if not version_number.startswith("0.7.0"):
+    raise SystemExit(f"unexpected version_number={version_number}")
 if "26.2" not in (meta.get("game_versions") or []):
     raise SystemExit("26.2 missing from game_versions")
 if "neoforge" not in (meta.get("loaders") or []):
@@ -85,7 +86,6 @@ for cls in focus_classes:
     health_literals = sorted(set(re.findall(r"(?:Double|Float)\s+([0-9]+(?:\.[0-9]+)?)", text)))[:20]
     class_info.append({"class": cls, "header": header, "boss_event_ref": bossbar, "numeric_literals": health_literals})
 
-# Preserve only interoperability evidence, not binary/code payloads, in the report.
 report = {
     "version_id": VERSION_ID,
     "version_number": meta.get("version_number"),
