@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.48"
+    "frontier_settlement": "0.1.0-alpha.49"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -17,7 +17,8 @@
     "Alpha.46 waterfront piers/trade are Frontier-owned physical settlement presentation/economy glue and do not add a companion dependency or a second outpost transport authority.",
     "Alpha.47 domain relic reforging operates only on Frontier-recognized external weapons through normal enchantment compatibility APIs and does not add a hard Weapons Expanded class/item dependency.",
     "Alpha.48 registers a Frontier soldier entity that inherits the proven Iron Golem combat body while using client-only humanoid/service-sword presentation; the visual sword is never a server ItemStack and no Better Combat or Weapons Expanded Java class becomes a hard dependency.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.48 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.49 adds bounded selected-area balanced earthworks using only already-loaded vanilla/companion terrain block state inspection; it never force-loads terrain, locates companion content, or adds a hard worldgen dependency.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.49 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},
