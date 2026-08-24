@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.58`
+현재 구현 기준: `0.1.0-alpha.59`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -18,6 +18,7 @@
 | --- | --- | --- |
 | 한 월드 하나의 공동 마을 | 완료 | SavedData 기반 공유 정착지 |
 | 2인 snapshot/session 정합 pre-hardening | **완료/부분** | Alpha.58 MAIN-thread request + login rebroadcast + client logout reset; 장시간 실제 2인 acceptance는 남음 |
+| shared 공사 단일 authority | **완료/부분** | Alpha.59 building/road/outpost/civil preview+start가 하나의 service-level gate 재사용; 실제 2-client 동시 confirm acceptance는 남음 |
 | 서버 authoritative | 완료 | 자원/건설/도로/전초/진행/토목 서버 권위 |
 | 실제 ItemStack이 자원 권위 | 완료 | HUD/context/explorationScore/earthBank는 자원 권위 아님 |
 | 핵심 직접 조작 소수 유지 | 완료 | B / R / Enter / Backspace |
@@ -37,6 +38,18 @@
 - 다른 server/world 진입 때 이전 tier/context와 비교한 가짜 성장/완공 알림 방지;
 - 새 payload schema/key/building/currency/per-player authority/async world mutation 없음;
 - **실제 장시간 2인 acceptance는 아직 미완료**이며 Alpha.58을 그 완료로 기록하지 않음.
+
+### Alpha.59 shared project authority 감사
+
+- 새 `SettlementProjectAuthority`는 기존 building/road/outpost/civil active state만 읽고 새 save state를 만들지 않음;
+- building `checkPlacement` + `startAt`가 central gate 재사용;
+- road `checkRoute`가 central gate 재사용하고 `startAt`은 checkRoute 재검증을 통과해야 함;
+- outpost `checkPlacement` + `startAt`가 central gate 재사용;
+- civil `check` + `start`가 central gate 재사용;
+- stale preview, command outer guard 누락, future direct service caller가 있어도 service mutation 직전 shared authority 재검사;
+- Alpha.58 MAIN-thread serialization과 결합해 동시 요청은 순차 처리되고 뒤 요청은 이미 active가 된 state를 봄;
+- 새 project queue/reservation ledger/worker/key/UI/currency/companion dependency 없음;
+- 실제 2-client 동시 confirm 및 save/reconnect 장시간 acceptance는 여전히 별도 실플레이 항목.
 
 ## 2. 자원 / 물류 / 경제
 
@@ -379,7 +392,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. long survival + two-player multiplayer acceptance; Alpha.58은 pre-hardening만 완료했고 실제 runtime acceptance는 남음;
+1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
 2. remote military external-weapon supply는 기존 road-bound reverse-supply transporter가 실제 ItemStack을 운반할 수 있을 때만; town barracks armory는 Alpha.57 완료/부분;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
@@ -392,10 +405,11 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 12. Alpha.54 one-bend/corner clearance/portal excavation/physical stone22/save-reload acceptance;
 13. Alpha.56 common-biome-tag borderline specialization + companion installed/absent acceptance;
 14. Alpha.57 shared-storage weapon walk/extract/persistence/render/death-recovery/no-dup acceptance;
-15. Alpha.58 simultaneous player confirm/login-refresh/logout-reset/reconnect acceptance;
-16. full companion lock fresh-world client/server runtime;
-17. true Xaero marker는 stable supported API가 생길 때만;
-18. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+15. Alpha.58 login-refresh/logout-reset/reconnect acceptance;
+16. Alpha.59 simultaneous building/road/outpost/civil confirm exclusivity acceptance;
+17. full companion lock fresh-world client/server runtime;
+18. true Xaero marker는 stable supported API가 생길 때만;
+19. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 

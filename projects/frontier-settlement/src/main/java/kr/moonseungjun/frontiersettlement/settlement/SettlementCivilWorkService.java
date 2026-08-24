@@ -61,6 +61,9 @@ public final class SettlementCivilWorkService {
         if (player.level() != server.overworld()) return invalid("선택영역 토목은 오버월드에서만 가능합니다.");
         String locked = lockedReason(settlement);
         if (locked != null) return invalid(locked);
+        if (SettlementProjectAuthority.anyActive(server, settlement)) {
+            return invalid("현재 공동 공사가 끝난 뒤 선택영역 토목을 계획해 주세요.");
+        }
         if (first == null || second == null) return invalid("두 모서리를 선택해 주세요.");
 
         int minX = Math.min(first.getX(), second.getX());
@@ -139,10 +142,9 @@ public final class SettlementCivilWorkService {
         MinecraftServer server = player.level().getServer();
         SettlementData settlement = SettlementData.get(server);
         SettlementCivilWorkData data = SettlementCivilWorkData.get(server);
-        if (settlement.construction().active() || settlement.roadConstruction().active() || settlement.outpostConstruction().active()) {
-            return new StartResult(false, "현재 건물·도로·전초 공사가 끝난 뒤 토목을 시작해 주세요.");
+        if (SettlementProjectAuthority.anyActive(server, settlement)) {
+            return new StartResult(false, "현재 공동 공사가 끝난 뒤 토목을 시작해 주세요.");
         }
-        if (data.project().active()) return new StartResult(false, "이미 선택영역 토목이 진행 중입니다.");
         Check check = check(player, first, second);
         if (!check.valid()) return new StartResult(false, check.message());
 

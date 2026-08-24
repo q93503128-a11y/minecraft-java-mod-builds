@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.58**.
+Current canonical implementation: **0.1.0-alpha.59**.
 
 ## 1. Product identity
 
@@ -82,10 +82,24 @@ One world/server has one shared settlement and one shared infrastructure/project
 - founded-world login refreshes common physical storage once and republishes the same authoritative snapshot to all connected players;
 - client logout clears cached settlement/context/placement/notice state so another world/server cannot inherit UI state;
 - only one building/road/outpost/civil construction project may occupy the shared construction authority at once;
+- Alpha.59 makes that invariant service-local rather than UI-local: every building/road/outpost/civil preview/start path calls the same `SettlementProjectAuthority.anyActive` gate before mutation;
 - Alpha.45 exploration metadata is shared, non-spendable and deduplicated;
 - civil `earthBank` is project-local relocation accounting only and cannot be spent outside the active civil project;
 - imported civil fill is never a number ledger: only real DIRT/COARSE_DIRT ItemStacks in actual storage/worker hand have authority;
 - no per-player settlement or internal politics/tax layer in planned scope.
+
+### Alpha.59 centralized single-project authority hardening
+
+Alpha.59 is a multiplayer correctness pass, not a new construction feature.
+
+- `SettlementProjectAuthority` reads building, road, outpost and civil active state from the two existing SavedData authorities;
+- it creates no fifth project state, queue, reservation ledger or new save field;
+- building preview/start, road preview/start, outpost preview/start and civil preview/start all reuse the same gate;
+- outer network/command checks remain convenience feedback only and are not trusted as the final invariant;
+- with Alpha.58 `HandlerThread.MAIN`, simultaneous confirmations are serialized and the later request rechecks this shared gate after the earlier request mutates state;
+- stale client previews therefore cannot authorize a second concurrent shared project;
+- one shared construction worker, physical ItemStack hauling, B/R/Enter/Backspace controls and all existing save formats remain unchanged;
+- actual long-survival/two-client/reconnect runtime acceptance remains unfinished.
 
 ## 4. Founding and growth
 
@@ -149,7 +163,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–58 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–59 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -632,7 +646,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.58
+## 14. Current playable slice after Alpha.59
 
 Current implemented slice includes:
 
@@ -654,15 +668,16 @@ Current implemented slice includes:
 - supplied humanoid military presentation with unchanged physical recruitment economics;
 - Alpha.57 loaded town-garrison physical external-weapon armament from shared storage, with exact weapon recovery;
 - Alpha.58 shared-login snapshot rebroadcast + explicit MAIN-thread request serialization + client session reset pre-hardening;
+- Alpha.59 centralized service-level single-project authority for building/road/outpost/civil preview and start;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.58
+## 15. Unfinished original-scope priorities after Alpha.59
 
 Unless real-play regression overrides them:
 
-1. long survival + two-player multiplayer acceptance; Alpha.58 only closes pre-acceptance deterministic state holes and does not satisfy this runtime item;
+1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
 2. remote military external-weapon supply only if the actual weapon ItemStack can ride the existing road-bound reverse-supply transporter; town barracks physical armament is covered by Alpha.57;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
@@ -676,10 +691,11 @@ Unless real-play regression overrides them:
 13. Alpha.54 one-bend detection/corner clearance/portal excavation/22-stone physical portal/save-reload acceptance;
 14. Alpha.56 common-biome-tag borderline specialization / companion-installed-and-absent acceptance;
 15. Alpha.57 weapon storage→soldier walk/extract/save-reload/render/death-recovery/no-dup acceptance;
-16. Alpha.58 two-client shared-login refresh, simultaneous confirmation, logout/server-switch reset and reconnect acceptance;
-17. full companion lock fresh-world client/server runtime;
-18. true Xaero markers only if a stable supported API appears;
-19. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+16. Alpha.58 two-client shared-login refresh, logout/server-switch reset and reconnect acceptance;
+17. Alpha.59 simultaneous building/road/outpost/civil confirmation exclusivity acceptance;
+18. full companion lock fresh-world client/server runtime;
+19. true Xaero markers only if a stable supported API appears;
+20. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 
@@ -716,7 +732,7 @@ At the final/test-worthy point verify at least:
 - early/pre-filled completion returns carried dirt physically before project clear;
 - save/reload preserves phase/progress/earthBank/carry without duplication or loss;
 - unloaded selected area/storage pauses instead of force-loading;
-- no building/road/outpost project starts concurrently;
+- no building/road/outpost/civil project starts concurrently, including simultaneous confirmations from two clients or direct command/service entry paths;
 - retaining plan reserves one loaded outer ring, rejects non-natural/player obstruction, and rejects required wall height >7;
 - exact cobblestone is checked at approval, physically hauled max16, consumed only after successful wall placement, and shortage pauses;
 - save/reload preserves PHASE_RETAIN + initial retaining count without duplicating cobblestone;

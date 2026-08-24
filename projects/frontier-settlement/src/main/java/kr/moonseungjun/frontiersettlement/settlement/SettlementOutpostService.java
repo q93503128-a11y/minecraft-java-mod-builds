@@ -58,8 +58,8 @@ public final class SettlementOutpostService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return PlacementCheck.invalid("먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return PlacementCheck.invalid("전초기지는 오버월드에만 건설할 수 있습니다.");
-        if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
-            return PlacementCheck.invalid("현재 공사가 끝난 뒤 전초기지를 배치해 주세요.");
+        if (SettlementProjectAuthority.anyActive(server, data)) {
+            return PlacementCheck.invalid("현재 공동 공사가 끝난 뒤 전초기지를 배치해 주세요.");
         }
 
         int roadIndex = nearestUnclaimedRoad(data, selected);
@@ -100,8 +100,8 @@ public final class SettlementOutpostService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return new StartResult(false, "전초기지는 오버월드에만 건설할 수 있습니다.");
-        if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
-            return new StartResult(false, "현재 공사가 끝난 뒤 전초기지를 시작해 주세요.");
+        if (SettlementProjectAuthority.anyActive(server, data)) {
+            return new StartResult(false, "현재 공동 공사가 끝난 뒤 전초기지를 시작해 주세요.");
         }
         if (roadIndex < 0 || roadIndex >= data.roads().size() || isRoadClaimed(data, roadIndex)) {
             return new StartResult(false, "선택한 도로는 전초기지에 연결할 수 없습니다.");

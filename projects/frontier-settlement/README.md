@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.58
+## Current version: 0.1.0-alpha.59
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.58 key was added.
+No new Alpha.59 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–58 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–59 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,20 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.59 — centralized single-project authority hardening
+
+Alpha.59 fixes a service-layer exclusivity gap found while auditing the required two-player acceptance path. It does **not** claim that long two-player runtime testing is complete.
+
+- new `SettlementProjectAuthority.anyActive(server, data)` is the single server-side gate for building, road, outpost and selected-area civil projects;
+- the gate reads all four shared project states, including `SettlementCivilWorkData`, so civil work cannot be accidentally omitted from another service's internal guard;
+- building `checkPlacement` and `startAt`, road `checkRoute`, outpost `checkPlacement` and `startAt`, and civil `check` and `start` all reuse the same authority;
+- therefore a stale client preview, `/frontier` command path, or future direct service caller cannot create a second project merely because an outer UI/network pre-check was bypassed;
+- NeoForge MAIN-thread serialization from Alpha.58 remains in place, so simultaneous confirms are processed sequentially and the later request sees the first request's newly active shared project;
+- the change adds no project save format, no project queue, no second builder, no resource reservation ledger, no key/UI and no new companion dependency;
+- existing physical ItemStack hauling and one shared construction worker remain unchanged.
+
+This is another **pre-acceptance hardening** slice. The actual two-client long-survival, reconnect/save-reload and simultaneous-confirm play session is still required.
 
 ## Alpha.58 — multiplayer snapshot/session pre-acceptance hardening
 

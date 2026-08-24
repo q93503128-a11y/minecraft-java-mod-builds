@@ -92,8 +92,8 @@ public final class SettlementRoadService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return invalid("먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return invalid("도로는 현재 오버월드 공동 마을에서만 건설할 수 있습니다.");
-        if (data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()) {
-            return invalid("현재 공사가 끝난 뒤 새 도로를 계획해 주세요.");
+        if (SettlementProjectAuthority.anyActive(server, data)) {
+            return invalid("현재 공동 공사가 끝난 뒤 새 도로를 계획해 주세요.");
         }
         if (data.houseCount() < 1 || data.lumberCampCount() < 1) {
             return invalid("첫 도로는 주택 1채와 벌목소 1곳을 완성한 뒤 열립니다.");

@@ -97,6 +97,9 @@ public final class SettlementConstructionService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return invalidPlacement("공동 마을이 없습니다.");
         if (player.level() != server.overworld()) return invalidPlacement("오버월드에서만 배치할 수 있습니다.");
+        if (SettlementProjectAuthority.anyActive(server, data)) {
+            return invalidPlacement("현재 공동 공사가 끝난 뒤 새 건물을 배치해 주세요.");
+        }
         String locked = lockedReason(data, type);
         if (locked != null) return invalidPlacement(locked);
 
@@ -146,13 +149,8 @@ public final class SettlementConstructionService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return new StartResult(false, "건설은 현재 오버월드 공동 마을에서만 시작할 수 있습니다.");
-        if (data.construction().active()) {
-            BuildingType active = BuildingType.fromId(data.construction().type());
-            String name = active == null ? data.construction().type() : active.displayName();
-            return new StartResult(false, "이미 " + name + " 건설이 진행 중입니다.");
-        }
-        if (data.roadConstruction().active() || data.outpostConstruction().active()) {
-            return new StartResult(false, "현재 인프라 공사가 끝난 뒤 건물을 시작해 주세요.");
+        if (SettlementProjectAuthority.anyActive(server, data)) {
+            return new StartResult(false, "현재 공동 공사가 끝난 뒤 건물을 시작해 주세요.");
         }
 
         PlacementCheck check = checkPlacement(player, type, selectedCenter, rotationId);
