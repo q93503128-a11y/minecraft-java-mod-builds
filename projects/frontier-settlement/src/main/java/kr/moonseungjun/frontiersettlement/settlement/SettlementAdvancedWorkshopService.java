@@ -276,7 +276,7 @@ public final class SettlementAdvancedWorkshopService {
                         .filter(holder -> EnchantmentHelper.isEnchantmentCompatible(existing.keySet(), holder)));
         if (additions.isEmpty()) return false;
         for (EnchantmentInstance addition : additions) {
-            reforged.enchant(addition.enchantment, addition.level);
+            reforged.enchant(addition.enchantment(), addition.level());
         }
         var result = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
         if (result.equals(existing)) return false;
