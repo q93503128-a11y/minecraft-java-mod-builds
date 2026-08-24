@@ -1,0 +1,7 @@
+mrpack=/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/deliverables/Survival-Ascension-0.50.0-alpha.1-content-preview.mrpack
+external_mods=6
+minecraft=26.2
+neoforge=26.2.0.38-beta
+target_loader=neoforge
+survival_jar_sha256=47a08167e9323de60e82ba0443b100ddfb396fdb851bd74eec80d4fe2b2a74c6
+mrpack_sha256=065fb4852a789b39a98b39c59fe7bcbf85407aa352fdcd9e3cf525de3c7730e7
