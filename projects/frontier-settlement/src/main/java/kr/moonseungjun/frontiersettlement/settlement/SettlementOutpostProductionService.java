@@ -29,6 +29,9 @@ import java.util.List;
  * - mining consumes finite underground ore while the worker performs readable work at the minehead;
  * - agriculture is renewable through vanilla crop growth, but its plot is established only once;
  * - unloaded outposts and resource chunks are never force-loaded for simulation.
+ *
+ * Alpha.42 may let a reloaded worker redeem bounded deferred work-time, but only after the same
+ * physical harvest succeeds. Deferred state is never wood/stone/ore/food authority.
  */
 public final class SettlementOutpostProductionService {
     public static final String PRODUCTION_WORKER_TAG = "frontier_settlement_outpost_production_worker";
@@ -163,6 +166,7 @@ public final class SettlementOutpostProductionService {
         if (!harvested.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+            SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, LUMBER_WORK_PERIOD_TICKS);
         }
     }
 
@@ -181,6 +185,7 @@ public final class SettlementOutpostProductionService {
         if (!harvested.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+            SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
         }
     }
 
@@ -197,6 +202,7 @@ public final class SettlementOutpostProductionService {
         if (!mined.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, mined);
+            SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, MINING_WORK_PERIOD_TICKS);
         }
     }
 
@@ -228,6 +234,7 @@ public final class SettlementOutpostProductionService {
         if (harvested > 0) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.WHEAT, harvested));
+            SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, AGRICULTURE_WORK_PERIOD_TICKS);
         }
     }
 
@@ -247,6 +254,7 @@ public final class SettlementOutpostProductionService {
     }
 
     private static boolean workDue(ServerLevel level, OutpostRecord outpost, int periodTicks) {
+        if (SettlementDeferredOutpostService.hasProductionCredit(level.getServer(), outpost, periodTicks)) return true;
         long periodSlots = Math.max(1L, periodTicks / 10L);
         long currentSlot = level.getGameTime() / 10L;
         return Math.floorMod(currentSlot + outpost.id() * 3L, periodSlots) == 0L;

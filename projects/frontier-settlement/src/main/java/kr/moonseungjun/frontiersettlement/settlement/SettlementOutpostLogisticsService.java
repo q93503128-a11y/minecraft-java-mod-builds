@@ -27,6 +27,10 @@ import java.util.function.Predicate;
  * the town-side freight destination/capacity; it never becomes a second route-navigation authority.
  * Alpha.41 also lets this same transporter carry real food/metal back to an active military outpost;
  * there is still only one authority for long-distance outpost transport.
+ *
+ * Alpha.42 may redeem bounded unloaded logistics-time by raising the next real pickup batch. The
+ * deferred number is never cargo: source extraction, carried ItemStack, road travel and destination
+ * insertion all remain physical and owned by this same transporter.
  */
 public final class SettlementOutpostLogisticsService {
     public static final String TRANSPORT_WORKER_TAG = "frontier_settlement_transport_worker";
@@ -62,6 +66,7 @@ public final class SettlementOutpostLogisticsService {
             if (route.isEmpty()) continue;
             Villager worker = findAssignedWorker(level, data, outpost, route);
             if (worker == null) continue;
+            SettlementDeferredOutpostService.observeTransportReady(level.getServer(), outpost);
             if (worker.isNoAi()) worker.setNoAi(false);
             workTransport(level, data, outpost, worker, route);
         }
@@ -216,9 +221,16 @@ public final class SettlementOutpostLogisticsService {
                 return;
             }
             if (!(level.getBlockEntity(stock) instanceof Container container)) return;
-            ItemStack picked = takeFirstTransportStack(container, outpost, transportBatchSize(data));
-            if (!picked.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, picked);
-            else move(worker, outpost.center().above(), 0.6D);
+            int normalBatch = transportBatchSize(data);
+            int adjustedBatch = SettlementDeferredOutpostService.adjustedTransportBatch(
+                    level.getServer(), outpost, normalBatch);
+            ItemStack picked = takeFirstTransportStack(container, outpost, adjustedBatch);
+            if (!picked.isEmpty()) {
+                worker.setItemSlot(EquipmentSlot.MAINHAND, picked);
+                if (picked.getCount() > normalBatch) {
+                    SettlementDeferredOutpostService.consumeLogisticsCredit(level.getServer(), outpost);
+                }
+            } else move(worker, outpost.center().above(), 0.6D);
             return;
         }
 
@@ -486,7 +498,7 @@ public final class SettlementOutpostLogisticsService {
         return dx * dx + dz * dz;
     }
 
-    private static boolean routeFullyLoaded(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+    public static boolean routeFullyLoaded(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
         if (route.isEmpty()) return false;
         if (!level.hasChunkAt(data.stockpilePos()) || !level.hasChunkAt(outpost.stockpile())) return false;

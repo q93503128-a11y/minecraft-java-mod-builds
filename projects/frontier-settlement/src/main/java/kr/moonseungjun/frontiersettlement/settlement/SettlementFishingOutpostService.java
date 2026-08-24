@@ -19,14 +19,15 @@ import net.minecraft.world.phys.AABB;
 import java.util.List;
 
 /**
- * Loaded-only coast/river specialization overlay for otherwise-general outposts.
+ * Coast/river specialization overlay for otherwise-general outposts.
  *
  * The specialization is environmental rather than a menu toggle: a general outpost with a broad
  * nearby open-water shoreline gains one assigned fishing worker. The worker visibly walks to a dry
  * bank, uses a fishing rod, carries real fish ItemStacks back to the outpost stockpile, and leaves
  * long-distance movement to the existing road transporter. No emeralds, virtual trade points or
  * force-loaded water simulation are created here. Alpha.41 gives an actively dangerous general
- * outpost military precedence, so the same remote site cannot silently fish while under attack.
+ * outpost military precedence. Alpha.42 only remembers the last loaded overlay and elapsed unloaded
+ * work time; catches are still created one physical loaded fishing action at a time.
  */
 public final class SettlementFishingOutpostService {
     public static final String FISHING_WORKER_TAG = "frontier_settlement_fishing_outpost_worker";
@@ -55,15 +56,21 @@ public final class SettlementFishingOutpostService {
 
             Villager worker = findAssignedWorker(level, outpost);
             if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) {
+                SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
+                        SettlementDeferredOutpostService.OVERLAY_MILITARY);
                 if (worker != null && worker.getMainHandItem().isEmpty()) moveOrStop(worker, outpost.center().above(), 0.65D);
                 continue;
             }
 
             FishingSpot spot = findFishingSpot(level, outpost);
             if (spot == null) {
+                SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
+                        SettlementDeferredOutpostService.OVERLAY_GENERAL);
                 if (worker != null && worker.getMainHandItem().isEmpty()) moveOrStop(worker, outpost.center().above(), 0.65D);
                 continue;
             }
+            SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
+                    SettlementDeferredOutpostService.OVERLAY_FISHING);
             if (worker == null) worker = spawnAssignedWorker(level, outpost);
             if (worker != null) work(level, outpost, spot, worker);
         }
@@ -136,6 +143,7 @@ public final class SettlementFishingOutpostService {
                 : new ItemStack(Items.COD, amount);
         worker.swing(InteractionHand.OFF_HAND);
         worker.setItemSlot(EquipmentSlot.MAINHAND, caught);
+        SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, WORK_PERIOD_TICKS);
     }
 
     private static void deliver(ServerLevel level, OutpostRecord outpost, Villager worker, ItemStack carried) {
@@ -153,6 +161,7 @@ public final class SettlementFishingOutpostService {
     }
 
     private static boolean workDue(ServerLevel level, OutpostRecord outpost) {
+        if (SettlementDeferredOutpostService.hasProductionCredit(level.getServer(), outpost, WORK_PERIOD_TICKS)) return true;
         long slots = Math.max(1L, WORK_PERIOD_TICKS / 20L);
         long current = level.getGameTime() / 20L;
         return Math.floorMod(current + outpost.id() * 5L, slots) == 0L;
