@@ -21,6 +21,7 @@ def main() -> None:
     progression = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressionService.java")
     compat = read("src/main/java/kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.java")
     combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
+    expedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
     wood = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
     harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
     mining = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")
@@ -30,6 +31,7 @@ def main() -> None:
     ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")
     expedition_region = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionRegion.java")
     deep_expedition = json.loads(read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json"))
+    major_targets = json.loads(read("src/main/resources/data/survivalascension/tags/entity_type/expedition_major_targets.json"))
     plan = read("MODPACK_PLAN_DRAFT.md")
     matrix = read("MODPACK_COMPAT_MATRIX.md")
     builder = read("tools/build_mrpack.py")
@@ -50,7 +52,7 @@ def main() -> None:
 
     require(lock.get("minecraft") == "26.2", "modpack lock Minecraft version drifted")
     require(lock.get("neoforge") == "26.2.0.38-beta", "modpack lock NeoForge version drifted")
-    require(lock.get("version") == "0.46.0-alpha.1-content-preview.1", "modpack preview version drifted")
+    require(lock.get("version") == "0.47.0-alpha.1-content-preview.1", "modpack preview version drifted")
     mods = lock.get("mods") or []
     require(len(mods) >= 6, "first-wave content pack unexpectedly small")
     project_ids = [entry.get("project_id") for entry in mods]
@@ -59,6 +61,8 @@ def main() -> None:
     require(len(version_ids) == len(set(version_ids)), "duplicate Modrinth version id in lock")
     for required in ("HXF82T3G", "s3dmwKy5", "gKOBlOap", "8RyryQ7j", "lhGA9TYQ", "9s6osm5g"):
         require(required in project_ids, f"required first-wave project not locked: {required}")
+    tbos = next((entry for entry in mods if entry.get("project_id") == "gKOBlOap"), None)
+    require(tbos is not None and tbos.get("version_id") == "xls8dTZv", "The Birth of Steve 0.7.0 lock drifted")
 
     require("https://cdn.modrinth.com/" in builder, "builder must restrict third-party downloads to Modrinth CDN")
     require("overrides/mods/" in builder, "Survival Ascension JAR must be packed as an override")
@@ -77,18 +81,41 @@ def main() -> None:
     require("Tags.EntityTypes.BOSSES" in compat, "NeoForge common boss tag compatibility missing")
     require("entity instanceof Enemy" in compat and "builtInRegistryHolder().is(Tags.EntityTypes.BOSSES)" in compat,
             "combat target bridge must combine Enemy and holder-based common boss tags")
+    require("EXPEDITION_MAJOR_TARGETS" in compat and '"expedition_major_targets"' in compat,
+            "Survival-owned major-target EntityType tag seam missing")
+    require("isMajorExpeditionTarget(LivingEntity entity)" in compat,
+            "major-target compatibility predicate missing")
     require("ContentPackCompatibility.isCombatTarget(event.getEntity())" in combat,
             "primary combat target does not use the content-pack bridge")
     require("ContentPackCompatibility.isCombatTarget(candidate)" in combat,
             "cleave/shockwave candidates do not use the content-pack bridge")
     require("!ContentPackCompatibility.isCombatTarget(victim)" in combat,
             "combat kill XP is not restricted to real hostile/boss targets")
+    require("ContentPackCompatibility.isMajorExpeditionTarget(victim)" in combat
+            and "MAJOR_TARGET_EXPEDITION_BONUS = 3" in combat
+            and "ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS)" in combat,
+            "major-target bounded expedition credit missing")
+    require("majorTarget ? 600 : 200" in combat and "majorTarget ? 2.5D : 1.5D" in combat,
+            "major-target combat XP cap/scale missing")
+    require("grantMajorTargetBonus(ServerPlayer player, int bonusAmount)" in expedition_progression
+            and "ExpeditionAction.HOSTILES_KILLED, bonusAmount" in expedition_progression
+            and "ExpeditionOperationSystem.recordAction(player, ExpeditionAction.HOSTILES_KILLED, bonusAmount)" in expedition_progression,
+            "major-target regional/operation bridge missing")
+    require("ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.HOSTILES_KILLED, bonusAmount)" not in expedition_progression,
+            "major-target bonus must not multiply incident counters")
     require("victim instanceof Enemy ? 1.5D : 0.35D" not in combat,
             "passive-livestock combat XP fallback is still present")
     require("BlockTags.LOGS" in wood and "BlockTags.LEAVES" in wood,
             "woodcutting must continue to use generic Minecraft log/leaf tags")
     require("block instanceof CropBlock" in harvest,
             "harvesting must continue to accept modded CropBlock implementations")
+
+    major_entries = [entry for entry in major_targets.get("values", []) if isinstance(entry, dict)]
+    require(major_targets.get("replace") is False, "major-target tag must merge rather than replace")
+    require({entry.get("id") for entry in major_entries} == {"tbos:hour_cantor", "tbos:phoenix_guardian"},
+            "audited TBS major-target set drifted")
+    require(all(entry.get("required") is False for entry in major_entries),
+            "TBS major-target entries must remain optional")
 
     # 0.45 optional external-world bridge.
     require("if (biome.is(integrationTag)) return true;" in expedition_region,
@@ -118,6 +145,8 @@ def main() -> None:
   "standard shovel Mining bridge missing")
     require("a3ac49a6202b7918d2ed22030df0b6e2906cdec8" in matrix,
   "locked Amethyst Resonance binary audit hash missing from compatibility matrix")
+    require("4d55c51685bff4247fa533c925f7641ce4880db3" in matrix,
+  "locked The Birth of Steve 0.7 binary audit hash missing from compatibility matrix")
 
     for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
         require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")
@@ -138,6 +167,7 @@ def main() -> None:
     print("external_component_preservation_contract=PASS")
     print("bop_expedition_bridge=PASS")
     print("generic_enemy_boss_bridge=PASS")
+    print("major_external_target_bridge=PASS")
     print("passive_combat_xp_farm=REMOVED")
 
 

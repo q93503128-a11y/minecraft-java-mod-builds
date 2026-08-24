@@ -29,6 +29,7 @@ public final class CombatProgression {
     private static final Set<UUID> CLEAVE_GUARD = new HashSet<>();
     private static final Set<UUID> SHOCKWAVE_GUARD = new HashSet<>();
     private static final String SHOCKWAVE_READY_KEY = "survivalascension_combat_shockwave_ready";
+    private static final int MAJOR_TARGET_EXPEDITION_BONUS = 3;
 
     private CombatProgression() {}
 
@@ -122,14 +123,20 @@ public final class CombatProgression {
         if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         LivingEntity victim = event.getEntity();
         if (victim == player || victim instanceof Player || !ContentPackCompatibility.isCombatTarget(victim)) return;
+
+        boolean majorTarget = ContentPackCompatibility.isMajorExpeditionTarget(victim);
         ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
-        int xp = Math.max(1, (int) Math.ceil(xpForKill(victim) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
+        if (majorTarget) ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS);
+
+        int xp = Math.max(1, (int) Math.ceil(xpForKill(victim, majorTarget) * AscensionAffixes.xpMultiplier(player.getMainHandItem())));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.COMBAT, xp));
     }
 
-    private static int xpForKill(LivingEntity victim) {
+    private static int xpForKill(LivingEntity victim, boolean majorTarget) {
         double health = Math.max(1.0D, victim.getMaxHealth());
-        return Math.max(2, Math.min(200, (int) Math.ceil(health * 1.5D)));
+        int cap = majorTarget ? 600 : 200;
+        double healthScale = majorTarget ? 2.5D : 1.5D;
+        return Math.max(2, Math.min(cap, (int) Math.ceil(health * healthScale)));
     }
 
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {

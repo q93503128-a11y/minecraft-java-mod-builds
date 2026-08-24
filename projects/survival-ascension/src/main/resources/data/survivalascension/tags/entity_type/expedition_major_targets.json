@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "tbos:hour_cantor", "required": false },
+    { "id": "tbos:phoenix_guardian", "required": false }
+  ]
+}

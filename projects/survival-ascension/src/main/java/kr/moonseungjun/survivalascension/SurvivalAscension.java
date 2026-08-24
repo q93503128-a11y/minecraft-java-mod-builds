@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.46.0-alpha.1";
-    // 0.46: standard shovel-tagged external tools join Mining mastery as bounded surface earthworks while external item identity/components stay untouched.
+    public static final String VERSION = "0.47.0-alpha.1";
+    // 0.47: data-tagged major external targets earn bounded combat/expedition credit without hard optional-mod Java dependencies.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -90,6 +90,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: scaled mastery + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: scaled mastery + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }

@@ -68,17 +68,18 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java",
     "src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java",
     "src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java",
+    "src/main/resources/data/survivalascension/tags/entity_type/expedition_major_targets.json",
 ]
 for rel in required:
     if not (ROOT / rel).exists():
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.46.0-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.47.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.46.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.47.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
 # 0.44 external/content-pack equipment imprint.
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
@@ -261,6 +262,18 @@ if len(bop_ids) != len(set(bop_ids)):
 deep_tag = read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json")
 need(deep_tag, ['"biomesoplenty:glowing_grotto"', '"biomesoplenty:spider_nest"'], "0.45 BOP deep bridge")
 
+# 0.47 data-driven major external targets.
+compat = read("src/main/java/kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.java")
+combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
+expedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
+major_tag = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_major_targets.json")
+need(compat, ["EXPEDITION_MAJOR_TARGETS", '"expedition_major_targets"', "isMajorExpeditionTarget(LivingEntity entity)"], "0.47 major-target compatibility")
+forbid(compat, ["tbos:", "biomesoplenty:", "amethyst_resonance:"], "0.47 hard optional-mod Java dependency")
+need(combat, ["MAJOR_TARGET_EXPEDITION_BONUS = 3", "ContentPackCompatibility.isMajorExpeditionTarget(victim)", "ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS)", "majorTarget ? 600 : 200", "majorTarget ? 2.5D : 1.5D"], "0.47 major-target combat reward")
+need(expedition_progression, ["grantMajorTargetBonus(ServerPlayer player, int bonusAmount)", "ExpeditionAction.HOSTILES_KILLED, bonusAmount", "ExpeditionOperationSystem.recordAction(player, ExpeditionAction.HOSTILES_KILLED, bonusAmount)"], "0.47 major-target expedition bridge")
+forbid(expedition_progression, ["ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.HOSTILES_KILLED, bonusAmount)"], "0.47 major-target incident multiplication")
+need(major_tag, ['"replace": false', '"tbos:hour_cantor"', '"tbos:phoenix_guardian"', '"required": false'], "0.47 major-target tag")
+
 if errors:
     print("SOURCE AUDIT FAIL")
     for error in errors:
@@ -269,6 +282,7 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
+print("- 0.47 data-tagged major external targets receive bounded combat XP and +3 regional/operation kill credit without incident multiplication or hard optional-mod Java dependencies")
 print("- 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped")
 print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")
 print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies")

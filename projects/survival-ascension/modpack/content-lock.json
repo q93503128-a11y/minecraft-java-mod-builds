@@ -1,7 +1,7 @@
 {
   "format": 1,
   "name": "Survival Ascension",
-  "version": "0.46.0-alpha.1-content-preview.1",
+  "version": "0.47.0-alpha.1-content-preview.1",
   "minecraft": "26.2",
   "neoforge": "26.2.0.38-beta",
   "mods": [
@@ -20,7 +20,7 @@
     {
       "name": "The Birth of Steve",
       "project_id": "gKOBlOap",
-      "version_id": "12SBAmcX",
+      "version_id": "xls8dTZv",
       "required": true
     },
     {

@@ -74,6 +74,21 @@ public final class ExpeditionProgression {
         ExpeditionOperationSystem.recordAction(player, action, amount);
     }
 
+    /**
+     * Extra credit for data-tagged major targets. This intentionally bypasses incident counters so
+     * one boss cannot collapse a bounded field incident, while regional directives and an already
+     * active same-region operation may still recognize the greater target weight. Outside the nine
+     * expedition regions (for example an external instanced dimension), no fake regional progress is made.
+     */
+    public static void grantMajorTargetBonus(ServerPlayer player, int bonusAmount) {
+        if (bonusAmount <= 0 || player.isCreative() || player.isSpectator() || !(player.level() instanceof ServerLevel)) return;
+        ExpeditionRegion region = currentRegion(player);
+        if (region == null) return;
+        ensureDiscovered(player, region);
+        addObjectiveProgress(player, region, ExpeditionAction.HOSTILES_KILLED, bonusAmount);
+        ExpeditionOperationSystem.recordAction(player, ExpeditionAction.HOSTILES_KILLED, bonusAmount);
+    }
+
     public static void grantIncidentBonus(ServerPlayer player, ExpeditionRegion region, ExpeditionAction action, int amount) {
         if (amount <= 0 || player.isCreative() || player.isSpectator()) return;
         if (currentRegion(player) != region) return;
