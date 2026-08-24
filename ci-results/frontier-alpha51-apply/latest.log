@@ -1,6 +1,7 @@
-trigger_sha=07c49f748a772c66da0d216258ccf567a46470de
+trigger_sha=3e82069b5a861eb38c03cf5116fc9ec751c7decd
 patch_outcome=success
 audit_outcome=failure
 --- patch ---
 --- audit ---
-alpha.51 must preserve exactly 15 functional building families
+Frontier Settlement alpha.23-51 cumulative source audit: PASS
+alpha.51 canonical plan missing: there is still only one authority for long-distance outpost transport
