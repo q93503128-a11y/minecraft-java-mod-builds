@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.50**.
+Current canonical implementation: **0.1.0-alpha.51**.
 
 ## 1. Product identity
 
@@ -67,7 +67,7 @@ Physical intent remains preferred over menus:
 - advanced forge/reforge: weapon + relic deliberately placed in commission barrel, real metal fetched by specialist;
 - waterfront trade: fish deliberately placed in the dedicated trade barrel;
 - coast/river and dangerous-region roles are inferred from loaded world conditions;
-- Alpha.50 civil work is `B palette -> first corner -> second corner -> server approval`, not a terraforming dashboard.
+- Alpha.51 civil work is `B palette -> first corner -> second corner -> server approval`, not a terraforming dashboard.
 
 Do not add tax rates, dozens of happiness stats, family schedules, per-worker priority tables, manual hauling routes or giant research screens.
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–50 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–51 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -180,7 +180,7 @@ Construction presentation invariant: **builder walks from actual settlement stor
 
 `SettlementConstructionService` remains the ordinary building terrain/build authority.
 
-## 6. Selected-area civil works — Alpha.49 history and Alpha.50 current
+## 6. Selected-area civil works — Alpha.49/50 history and Alpha.51 current
 
 ### Alpha.49 historical first pass
 
@@ -199,7 +199,7 @@ Alpha.49 first implemented the original v0.2 late-game `선택 영역 평탄화/
 
 That 9×9 balanced-earth rule is historical, not the current Alpha.50 capacity.
 
-### Alpha.50 current physical imported-fill expansion
+### Alpha.50 physical imported-fill foundation
 
 Unlock/interaction remains:
 
@@ -260,7 +260,28 @@ Worker/authority invariant:
 - compact status/context only presents phase, on-site earth, remaining imported fill and actual storage availability;
 - `가상 토사 0`.
 
-Alpha.50 claim is still narrow. **Retaining-heavy larger terraces, ravine-scale civil work, long bridges, tunnels and monumental engineering remain unfinished.** Mountain deletion/unrestricted WorldEdit is outside product scope.
+Alpha.50 established physical imported fill but did not yet implement retaining-heavy terraces.
+
+### Alpha.51 current retaining-heavy terrace expansion
+
+Alpha.51 keeps the same DOMAIN construction-palette interaction and one shared construction authority while expanding the bounded envelope to **17×17 / ±7**. Selected corners remain player-local (44 blocks) and the project center remains settlement-local (112 blocks).
+
+Retaining rule:
+
+- validation reserves the selected rectangle plus a one-block outer protection ring;
+- the ring must already be loaded and may not contain Frontier infrastructure, block entities, fluids, player structures or other non-natural obstruction;
+- after cut and before fill, only fill-facing edges whose final grade stands at least3 blocks above natural exterior ground receive retaining wall cells;
+- retaining height is capped at7; deeper ravine edges are rejected rather than silently bridged;
+- required retaining count is persisted in the civil state and contributes to project progress;
+- exact `COBBLESTONE` ItemStacks are the material authority for the wall;
+- approval checks actual loaded settlement storage for the full initial retaining requirement;
+- the existing shared construction worker walks to an exact storage container, extracts max16 cobblestone into MAINHAND, walks to the exact wall cell, successfully places cobblestone, then shrinks the carried stack by1;
+- failed placement or mid-project cobblestone depletion pauses without item/step loss;
+- carried leftovers use the same physical return-to-concrete-storage path before material mode changes or project authority clears;
+- phase order is `cut -> retaining -> fill -> return`, with Alpha.50 phase numeric meanings preserved for save compatibility and `PHASE_RETAIN=3` added;
+- no generic stone ledger may mint cobblestone, and no second builder/economy, force-load, teleport, `destroyBlock` or `dropResources` path exists.
+
+Alpha.51 completes the first retaining-heavy large-terrace slice. **Ravine-scale crossings, long bridges, tunnels and monumental engineering remain unfinished.** Mountain deletion/unrestricted WorldEdit is outside product scope.
 
 ## 7. Citizens, production and military
 
@@ -319,6 +340,8 @@ Resources remain physical Minecraft items.
 **Transport workers belong to a specific outpost**, follow persisted road-network waypoints, carry actual cargo and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 
 Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. **There is still only one authority for long-distance outpost transport.**
+
+The invariant remains: **there is still only one authority for long-distance outpost transport**.
 
 Cart station:
 - road-adjacent physical freight hub;
@@ -436,7 +459,7 @@ Xaero:
 - do not fake completion through internal waypoint sets/reflection/mixins;
 - true settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
 
-Alpha.50 civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
+Alpha.51 civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
 
 ## 12. UI and information hierarchy
 
@@ -457,7 +480,7 @@ Current hierarchy:
 - rare exploration messages + `/frontier status`, not a quest dashboard;
 - physical barrels encode market/workshop/waterfront intent;
 - civil grade-plane outline is world-space placement feedback, not a new screen;
-- Alpha.50 civil detail adds only `현장 토사 / 외부 흙 필요 / 실제 창고 흙` presentation.
+- Alpha.51 civil detail adds only `현장 토사 / 외부 흙 필요 / 실제 창고 흙 / 옹벽 잔여 / 창고 조약돌` presentation.
 
 Do not invent giant generic dashboards when a physical/world-space interaction can carry the same intent.
 
@@ -483,7 +506,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.50
+## 14. Current playable slice after Alpha.51
 
 Current implemented slice includes:
 
@@ -503,15 +526,15 @@ Current implemented slice includes:
 - unique external structure/conquest progression bridge;
 - market, repair, first advanced forge and DOMAIN reforge;
 - supplied humanoid military presentation with unchanged physical recruitment economics;
-- **Alpha.50 DOMAIN 13×13 / ±5 selected-area cut/fill with project-local earth first and real imported DIRT/COARSE_DIRT physically hauled by the shared builder**.
+- **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.50
+## 15. Unfinished original-scope priorities after Alpha.51
 
 Unless real-play regression overrides them:
 
-1. **retaining-heavy / larger civil-engineering second pass** — larger terraces, ravine-scale bounded works and bridge/tunnel breadth without becoming WorldEdit or minting resources;
+1. **ravine-scale / long bridge / tunnel civil-engineering pass** — extend beyond Alpha.51 retaining terraces without becoming WorldEdit, force-loading or minting resources;
 2. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
 3. better companion-biome-aware outpost specialization where a stable data seam exists;
 4. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
@@ -520,7 +543,7 @@ Unless real-play regression overrides them:
 7. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance;
 8. Alpha.46 waterfront pathing/site/reverse-supply/trade-balance acceptance;
 9. Alpha.48 humanoid render/attack-animation + legacy migration acceptance;
-10. Alpha.50 civil-work pathing/save-reload/depletion-resupply/return-cargo/terrain-safety acceptance;
+10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion-resupply/return-cargo/terrain-safety acceptance;
 11. full companion lock fresh-world client/server runtime;
 12. true Xaero markers only if a stable supported API appears;
 13. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
@@ -547,8 +570,8 @@ At the final/test-worthy point verify at least:
 - waterfront real wood build, fish cargo return, same-transporter wood supply, military supply precedence, break protection and16→1 dedicated trade;
 - advanced forge and DOMAIN reforge no-loss compatibility;
 - Alpha.48 humanoid render, attacks, drops and1:1 legacy migration;
-- Alpha.50 B-palette unlock requires DOMAIN + construction office at server authority;
-- first-corner grade, second-corner area, max13×13 and ±5 bounds;
+- Alpha.51 B-palette unlock requires DOMAIN + construction office at server authority;
+- first-corner grade, second-corner area, max17×17 and ±7 bounds;
 - fluids/block entities/ores/player structures/existing infrastructure rejection;
 - real cut creates no drops and only successful setBlock credits earthBank;
 - local earth fills first;
@@ -561,7 +584,10 @@ At the final/test-worthy point verify at least:
 - save/reload preserves phase/progress/earthBank/carry without duplication or loss;
 - unloaded selected area/storage pauses instead of force-loading;
 - no building/road/outpost project starts concurrently;
-- completed project leaves no spendable/transferable virtual earth;
+- retaining plan reserves one loaded outer ring, rejects non-natural/player obstruction, and rejects required wall height >7;
+- exact cobblestone is checked at approval, physically hauled max16, consumed only after successful wall placement, and shortage pauses;
+- save/reload preserves PHASE_RETAIN + initial retaining count without duplicating cobblestone;
+- completed project leaves no spendable/transferable virtual earth or virtual stone;
 - full companion-stack fresh world.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.

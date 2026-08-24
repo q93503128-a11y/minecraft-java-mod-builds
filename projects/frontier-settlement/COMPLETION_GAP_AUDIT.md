@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.50`
+현재 구현 기준: `0.1.0-alpha.51`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.50까지 기능이 늘어났어도 retaining-heavy 대형 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.51에서 retaining-heavy 대형 테라스 1차가 추가되어도 ravine-scale/장교량/터널 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -42,6 +42,7 @@
 | Alpha.42 언로드 보정이 가상 자원화되지 않음 | 완료/부분 | work-time debt only |
 | 토목 현장 earthBank가 가상 경제 자원이 되지 않음 | 완료/부분 | project-local relocation only, ItemStack/cargo/currency 변환 없음 |
 | Alpha.50 외부 성토 자재 | **완료/부분** | actual DIRT/COARSE_DIRT storage→worker MAINHAND→world placement |
+| Alpha.51 옹벽 자재 | **완료/부분** | exact COBBLESTONE storage→worker MAINHAND→retaining wall placement |
 
 `single authority for outpost transport` 계약은 유지한다. **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**이며, **there is still only one authority for long-distance outpost transport**. 군사/수변 reverse supply도 이를 재사용한다.
 
@@ -54,9 +55,9 @@
 | 중간 높이 차 `지형 공사 포함` | 완료/부분 | Alpha.44 span3–4 |
 | real-stone retaining/foundation | 완료/부분 | exposed deep edge support |
 | 큰/위험 지형 거부 | 완료 | span>4/fluid/block entity/unsafe support |
-| 선택 영역 절토/성토 | **완료/부분** | Alpha.50 DOMAIN 13×13 / ±5 current pass |
+| 선택 영역 절토/성토 | **완료/부분** | Alpha.51 DOMAIN 17×17 / ±7 current pass |
 | 외부 토사 반입/대형 성토 | **완료/부분** | Alpha.50 real dirt/coarse-dirt imported fill first expansion; 더 큰 성토는 남음 |
-| 대형 옹벽/테라스 | **미구현/부분** | 건물용 bounded retaining만 존재 |
+| 대형 옹벽/테라스 | **완료/부분** | Alpha.51 1-block outer ring, exposed edge 3–7 high, exact cobblestone physical retaining first pass |
 | 대형 협곡 다리/터널/기념비급 토목 | **미구현** | 작은 road bridge + 13×13 토목까지만 |
 | 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
 | 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
@@ -117,7 +118,28 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - compact context/status는 현장 토사 / 외부 흙 필요 / 실제 창고 흙 상태만 추가;
 - **가상 토사 0**.
 
-따라서 원본의 선택영역 절토/성토 + 첫 imported-fill 요구는 Alpha.50에서 더 전진했다. **retaining-heavy terrace, ravine-scale work, long bridge, tunnel, monumental engineering은 여전히 미구현**이며 unrestricted WorldEdit나 mountain deletion은 범위 밖이다.
+따라서 원본의 선택영역 절토/성토 + 첫 imported-fill 요구는 Alpha.50에서 더 전진했다.
+
+### Alpha.51 retaining-heavy terrace 감사
+
+- 기존 B/Enter/Backspace와 DOMAIN + construction office 조건 재사용;
+- current envelope **17×17 / ±7**, player44 / settlement112;
+- selected rectangle + one-block outer retaining protection ring loaded 필요;
+- retaining ring도 Frontier infrastructure/block entity/fluid/non-natural/player obstruction 거부;
+- fill-facing edge가 final grade보다 natural exterior ground 기준 3블록 이상 노출될 때만 retaining 계획;
+- retaining height 최대7, 더 깊은 ravine edge는 거부;
+- initial retaining block count를 SavedData state에 optional field로 보존하며 old Alpha.50 saves는 default0으로 decode;
+- Alpha.50 `PHASE_FILL=1`, `PHASE_RETURN=2` 의미를 보존하고 `PHASE_RETAIN=3`만 추가;
+- phase order cut→retaining→fill→return;
+- approval 시 loaded shared storage의 exact COBBLESTONE 실제 수량 확인;
+- 같은 건설 주민이 exact storage까지 이동→max16 COBBLESTONE MAINHAND 추출→wall cell 이동→successful setBlock→1 item shrink→step advance;
+- placement 실패/중간 조약돌 고갈은 item/step 손실 없이 pause;
+- generic stone ledger, free cobble conversion, virtual stone, second builder/economy 없음;
+- force-load/teleport/destroyBlock/dropResources 없음;
+- active break protection은 retaining ring까지 확장;
+- compact status/context만 옹벽 잔여/창고 조약돌을 추가.
+
+따라서 **retaining-heavy large terrace는 Alpha.51에서 완료/부분으로 전진**했다. ravine-scale work, long bridge, tunnel, monumental engineering은 여전히 미구현이며 unrestricted WorldEdit나 mountain deletion은 범위 밖이다.
 
 ## 4. 주민 / 생산 / 방어
 
@@ -157,7 +179,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 | 촌락 | 완료/부분 | quarry/mine/blacksmith/guard |
 | 마을 | 완료/부분 | roads/market/outpost/construction logistics |
 | 개척 도시 | 완료/부분 | barracks/advanced workshop/multiple outposts |
-| 영지 | 완료/부분 | exploration accelerator + reforge + Alpha.50 civil works, breadth/runtime 남음 |
+| 영지 | 완료/부분 | exploration accelerator + reforge + Alpha.51 retaining civil works, breadth/runtime 남음 |
 
 Alpha.45는 already-loaded external structure type 및 direct-player conquest type을 unique milestone로 기록한다. score는 capped8 non-spendable metadata이며 legacy tier route를 폐기하지 않는다.
 
@@ -234,7 +256,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. **retaining-heavy / larger civil-engineering second pass** — large terrace, ravine-scale bounded work, long bridge/tunnel breadth를 실물 자원·player protection 안에서 구현;
+1. **ravine-scale / long bridge / tunnel civil-engineering pass** — Alpha.51 terrace보다 큰 crossing breadth를 실물 자원·player protection 안에서 구현;
 2. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
 3. stable seam이 있을 때 companion-biome-aware outpost specialization;
 4. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
@@ -243,18 +265,18 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 7. Alpha.43 Jade/Xaero/HUD acceptance;
 8. Alpha.46 waterfront pathing/trade acceptance;
 9. Alpha.48 humanoid render/attack/migration acceptance;
-10. Alpha.50 civil-work pathing/save-reload/depletion/resupply/cargo-return/terrain-safety acceptance;
+10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion/resupply/cargo-return/terrain-safety acceptance;
 11. full companion lock fresh-world client/server runtime;
 12. true Xaero marker는 stable supported API가 생길 때만;
 13. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
-## 10. Alpha.50 추가 실플레이 acceptance
+## 10. Alpha.51 추가 실플레이 acceptance
 
 최종/test-worthy 시점에 최소 확인:
 
 - DOMAIN + construction office 조건이 client 표시뿐 아니라 server에서 강제됨;
 - first-corner grade와 opposite-corner area가 실제 ghost/server approval과 일치;
-- max13×13, cut/fill ±5 경계값 정확성;
+- max17×17, cut/fill ±7 경계값 정확성;
 - fluids/block entities/ores/non-natural/player structures/existing infrastructure 거부;
 - real cut에서 drop 없음 + successful setBlock 이후에만 earthBank credit;
 - local earthBank fill 우선;
@@ -270,13 +292,18 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - shared builder가 실제 storage/site/return target까지 이동;
 - building/road/outpost와 동시 project 시작 불가;
 - project 완료 뒤 spendable/transferable virtual earth가 남지 않음;
+- retaining ring 높이3 시작/높이7 허용/높이8 거부가 정확함;
+- approval의 exact COBBLESTONE 수량과 실제 storage 수량이 일치하고 generic stone만으로는 통과하지 않음;
+- builder가 cobblestone을 max16 physical batch로 운반하고 successful wall setBlock 뒤에만 shrink/advance;
+- mid-project cobblestone depletion은 pause, later resupply resume;
+- PHASE_RETAIN/save-reload에서 retaining count/item 중복·손실 없음;
 - 두 플레이어가 같은 civil project/progress/context를 봄.
 
 ## 11. 완료 판정 금지선
 
 다음이 남아 있는 동안 `원본 v0.2 완성`이라고 부르지 않는다.
 
-- retaining-heavy / larger civil engineering breadth;
+- ravine-scale / long bridge / tunnel larger civil engineering breadth;
 - meaningful companion/exploration breadth gaps;
 - physical military armory 여부;
 - long multiplayer acceptance;

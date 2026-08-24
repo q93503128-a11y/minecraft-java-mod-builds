@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.50
+## Current version: 0.1.0-alpha.51
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,14 +28,14 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.50 key was added.
+No new Alpha.51 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
 - `Enter` — confirm the current building/road/outpost/civil-work selection step;
 - `Backspace` — reset the road start or civil-work first corner.
 
-Alpha.50 keeps the existing B palette entry `토목 평탄화`: `Enter first corner -> Enter opposite corner/approve`. The first corner's Y is the target grade plane.
+Alpha.51 keeps the existing B palette entry `토목 평탄화`: `Enter first corner -> Enter opposite corner/approve`. The first corner's Y is the target grade plane.
 
 ## Functional building families
 
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–50 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–51 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,26 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.51 — 17×17 retaining-heavy terraces
+
+Alpha.51 is the next bounded civil-engineering pass. It expands the same late-game tool instead of adding a new key, building family, currency or dashboard.
+
+- unlock remains `DOMAIN` + completed construction office and the existing `B / Enter / Backspace` flow;
+- maximum selected footprint is **17×17**, with at most **7 blocks of cut** or **7 blocks of fill** per column;
+- selected corners must stay within 44 blocks of the player and project center within 112 blocks of settlement center;
+- the selected area plus its one-block retaining protection ring must already be loaded and clear of Frontier infrastructure, containers, fluids and non-natural/player blocks;
+- Alpha.50 project-local earth-first fill and physical imported `DIRT` / `COARSE_DIRT` hauling remain unchanged;
+- after cutting and before filling, a fill-facing outer edge that would stand at least **3 blocks** above natural exterior ground receives a one-block-wide retaining wall;
+- retaining height is capped at **7 blocks**. Deeper ravines remain rejected rather than silently bridged or filled;
+- the exact retaining material is real `COBBLESTONE`: approval checks actual loaded shared storage, the shared construction worker walks to the exact container, extracts at most 16 cobblestone into MAINHAND, walks to the wall cell, and only after successful `setBlock` shrinks one ItemStack;
+- a mid-project cobblestone shortage pauses work until real supply returns; no generic stone number becomes free cobblestone;
+- civil state persists the retaining phase and initial retaining block count for save/reload correctness;
+- cut -> retaining wall -> fill -> carried-material return all reuse the one shared construction worker and one construction authority;
+- the active selected area plus retaining ring is break-protected while work is active;
+- no force-load, teleport inventory, `destroyBlock`, `dropResources`, virtual stone, second builder or second economy is introduced.
+
+Alpha.51 completes the first **retaining-heavy large-terrace** slice. Ravine-scale crossings, long bridges, tunnels and monumental civil engineering remain unfinished; unrestricted WorldEdit and mountain deletion remain outside scope.
 
 ## Alpha.50 — 13×13 civil work with physical imported fill
 
@@ -102,7 +122,7 @@ Alpha.50 is the first expansion of Alpha.49's bounded selected-area earthwork. I
 - no `destroyBlock`, `dropResources`, teleport inventory, chunk force-load or virtual soil generation path is used;
 - compact project context/status exposes only current phase, on-site earth, remaining imported fill and actual storage supply state. **가상 토사 0**.
 
-Alpha.50 therefore completes the **first physical imported-fill expansion**. It still does **not** claim retaining-heavy large terraces, ravine-scale works, long bridges, tunnels or monumental civil engineering. Mountain deletion and unrestricted WorldEdit-style terraforming remain outside scope.
+Alpha.50 completed the **first physical imported-fill expansion** but did not yet claim retaining-heavy large terraces. Alpha.51 supersedes the current capacity with bounded physical cobblestone retaining terraces; ravine-scale works, long bridges, tunnels and monumental civil engineering remain unfinished.
 
 ## Alpha.49 — historical balanced-earth first pass
 
@@ -164,17 +184,17 @@ Alpha.46 deepens Alpha.40 fishing:
 
 `COMPANION_LOCK.json` remains `candidate_runtime_lock`. The current candidate stack includes Terralith/Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat and libraries, Weapons Expanded, Lootr, Sophisticated Backpacks/Core, Jade and Xaero's Minimap.
 
-Frontier must still boot without optional companions. Alpha.50 reads already-loaded ordinary terrain and physical storage only; it adds no Terralith/worldgen Java dependency.
+Frontier must still boot without optional companions. Alpha.51 reads already-loaded ordinary terrain and physical storage only; it adds no Terralith/worldgen Java dependency.
 
 ## Validation
 
-Canonical Alpha.50 CI order:
+Canonical Alpha.51 CI order:
 
-1. cumulative Alpha.23–50 source/runtime audit, preserving historical Alpha.23–49 files while superseding only the intended civil limits;
-2. Alpha.50 canonical README/plan/gap docs audit;
+1. cumulative Alpha.23–51 source/runtime audit, preserving historical Alpha.23–50 files while superseding only the intended civil limits/retaining expansion;
+2. Alpha.51 canonical README/plan/gap docs audit;
 3. `git diff --check` + clean-worktree check;
 4. Java 25 `clean build` against Minecraft 26.2 / NeoForge 26.2.0.38-beta;
 5. runtime JAR verification and SHA-256;
 6. exact source/docs SHA + CI result commit/run recording.
 
-Automated validation does not replace final real Minecraft acceptance. Important final play checks include Alpha.50 imported-fill depletion/resupply/save-reload/cargo-return behavior, civil pathing/exploit resistance, Alpha.48 humanoid render/attack presentation, external weapon breadth, waterfront pathing/trade balance, dangerous-outpost combat, deferred-work pacing, Jade/Xaero visual coexistence, two-player shared-state behavior and full candidate companion-stack fresh-world launch.
+Automated validation does not replace final real Minecraft acceptance. Important final play checks include Alpha.51 retaining-plan boundary/cobblestone depletion/save-reload behavior, Alpha.50 imported-fill depletion/resupply/cargo-return behavior, civil pathing/exploit resistance, Alpha.48 humanoid render/attack presentation, external weapon breadth, waterfront pathing/trade balance, dangerous-outpost combat, deferred-work pacing, Jade/Xaero visual coexistence, two-player shared-state behavior and full candidate companion-stack fresh-world launch.

@@ -227,6 +227,36 @@ public final class SettlementCivilWorkService {
             return false;
         }
 
+        if (project.phase() == CivilWorkState.PHASE_RETAIN) {
+            if (!SettlementCivilRetainingService.isRetainingStack(builder.getMainHandItem())
+                    && !builder.getMainHandItem().isEmpty()) {
+                SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+                return false;
+            }
+            SettlementCivilRetainingService.Plan retainingPlan = SettlementCivilRetainingService.plan(level, project);
+            if (!retainingPlan.valid()) return false;
+            BlockPos retainingTarget = retainingPlan.nextMissing(level);
+            if (retainingTarget == null) {
+                if (!builder.getMainHandItem().isEmpty()) {
+                    SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+                    return false;
+                }
+                data.replace(project.beginFill());
+                return false;
+            }
+            if (!SettlementCivilRetainingService.ensureCarriedRetaining(level, settlement, builder, project)) return false;
+            BlockState retainingCurrent = level.getBlockState(retainingTarget);
+            if (level.getBlockEntity(retainingTarget) != null || !retainingCurrent.getFluidState().isEmpty()
+                    || (!retainingCurrent.isAir() && !retainingCurrent.canBeReplaced())) return false;
+            if (!moveBuilder(level, builder, retainingTarget)) return false;
+            if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
+            if (!level.setBlock(retainingTarget, Blocks.COBBLESTONE.defaultBlockState(), BLOCK_UPDATE)) return false;
+            SettlementCivilRetainingService.consumeOne(builder);
+            builder.swing(InteractionHand.MAIN_HAND);
+            data.replace(project.afterRetaining());
+            return false;
+        }
+
         BlockPos target = findFillTarget(level, project);
         if (target == null) {
             if (!builder.getMainHandItem().isEmpty()) {
