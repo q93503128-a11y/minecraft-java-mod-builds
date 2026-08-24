@@ -30,66 +30,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bootstrap Alpha.52 long-bridge slice
-        id: bootstrap52
+      - name: Finalize Alpha.52 legacy road compatibility
+        id: postfix52
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           (
             set -euo pipefail
-            if ! grep -q '^mod_version=0.1.0-alpha.51$' "$PROJECT_DIR/gradle.properties"; then
+            if ! test -f "$PROJECT_DIR/tools/fix_alpha52_postaudit.py"; then
               exit 0
             fi
-            test -f "$PROJECT_DIR/tools/apply_alpha52.py"
-            echo 'ALPHA52_BOOTSTRAP=1' >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/apply_alpha52.py"
-            python3 - <<'PY'
-          from pathlib import Path
-
-          data_path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementData.java')
-          text = data_path.read_text(encoding='utf-8')
-          old = '''    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
-                  beginRoadConstruction(centers, profile, List.of());
-              }'''
-          new = '''    public void beginRoadConstruction(List<BlockPos> centers, List<Integer> profile) {
-                  RoadConstructionState next = RoadConstructionState.fromPath(centers, profile);
-                  if (!next.active()) return;
-                  infrastructure = new SettlementInfrastructureState(buildings(), roads(), next, outposts(), outpostConstruction());
-                  setDirty();
-              }'''
-          if old not in text:
-              raise SystemExit('alpha.52 profiled-road compatibility patch anchor missing')
-          data_path.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          audit_path = Path('projects/frontier-settlement/tools/test_alpha52_source.py')
-          audit = audit_path.read_text(encoding='utf-8')
-          old_audit = '''if not ALPHA51.exists(): raise SystemExit('historical Alpha.51 source audit must remain present')
-          alpha51 = text(ALPHA51).replace("print('Frontier Settlement alpha.23-51 cumulative source audit: PASS')", 'pass')
-          alpha51 = alpha51.replace('0.1.0-alpha.51', '0.1.0-alpha.52')
-          namespace = {'__file__': str(ALPHA51), '__name__': '__main__'}
-          exec(compile(alpha51, str(ALPHA51), 'exec'), namespace, namespace)'''
-          new_audit = '''if not ALPHA51.exists(): raise SystemExit('historical Alpha.51 source audit must remain present')
-          alpha51 = text(ALPHA51).replace("print('Frontier Settlement alpha.23-51 cumulative source audit: PASS')", 'pass')
-          alpha51 = alpha51.replace('0.1.0-alpha.51', '0.1.0-alpha.52')
-          _original_read_text = Path.read_text
-          def _alpha52_audit_read_text(path, *args, **kwargs):
-              source = _original_read_text(path, *args, **kwargs)
-              if path.name == 'test_current_source.py':
-                  source = source.replace("'MAX_BRIDGE_SPAN = 6'", "'MAX_SHORT_BRIDGE_SPAN = 6'")
-                  source = source.replace("'data.beginRoadConstruction(chosen.centers(), chosen.profile())'",
-                                          "'data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports())'")
-              return source
-          Path.read_text = _alpha52_audit_read_text
-          try:
-              namespace = {'__file__': str(ALPHA51), '__name__': '__main__'}
-              exec(compile(alpha51, str(ALPHA51), 'exec'), namespace, namespace)
-          finally:
-              Path.read_text = _original_read_text'''
-          if old_audit not in audit:
-              raise SystemExit('alpha.52 cumulative audit rebind anchor missing')
-          audit_path.write_text(audit.replace(old_audit, new_audit, 1), encoding='utf-8')
-          PY
+            echo 'ALPHA52_POSTFIX=1' >> "$GITHUB_ENV"
+            python3 "$PROJECT_DIR/tools/fix_alpha52_postaudit.py"
+            rm -f "$PROJECT_DIR/tools/fix_alpha52_postaudit.py" "$PROJECT_DIR/tools/apply_alpha52.py"
             python3 "$PROJECT_DIR/tools/test_alpha52_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha52_docs.py"
             git diff --check
@@ -97,7 +51,7 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -A "$PROJECT_DIR"
             git diff --cached --check
-            git commit -m 'Implement Frontier alpha.52 bounded long bridges'
+            git commit -m 'Finalize Frontier alpha.52 bounded long bridges'
             pushed=0
             for attempt in 1 2 3 4 5 6; do
               if git pull --rebase origin main && git push origin HEAD:main; then
@@ -108,20 +62,20 @@ jobs:
               sleep $((attempt * 2))
             done
             test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha52-bootstrap.log
+          ) 2>&1 | tee /tmp/frontier-alpha52-postfix.log
 
-      - name: Record Alpha.52 bootstrap failure
-        if: steps.bootstrap52.outcome == 'failure'
+      - name: Record Alpha.52 postfix failure
+        if: steps.postfix52.outcome == 'failure'
         shell: bash
         run: |
           set -euo pipefail
           git reset --hard "$GITHUB_SHA"
           mkdir -p ci-results/frontier-alpha52-bootstrap
-          cp /tmp/frontier-alpha52-bootstrap.log ci-results/frontier-alpha52-bootstrap/latest.log
+          cp /tmp/frontier-alpha52-postfix.log ci-results/frontier-alpha52-bootstrap/latest.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci-results/frontier-alpha52-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.52 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          git commit -m "Record Frontier alpha.52 postfix failure for ${GITHUB_SHA::7} [skip ci]"
           for attempt in 1 2 3 4 5 6; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
             git rebase --abort >/dev/null 2>&1 || true
@@ -129,8 +83,8 @@ jobs:
           done
           exit 1
 
-      - name: Stop bootstrap source run after product push
-        if: env.ALPHA52_BOOTSTRAP == '1' && steps.bootstrap52.outcome == 'success'
+      - name: Stop source run after postfix product push
+        if: env.ALPHA52_POSTFIX == '1' && steps.postfix52.outcome == 'success'
         shell: bash
         run: exit 1
 
@@ -205,7 +159,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always() && env.ALPHA52_BOOTSTRAP != '1'
+        if: always() && env.ALPHA52_POSTFIX != '1'
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -218,7 +172,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always() && env.ALPHA52_BOOTSTRAP != '1'
+        if: always() && env.ALPHA52_POSTFIX != '1'
         shell: bash
         run: |
           set -euo pipefail
