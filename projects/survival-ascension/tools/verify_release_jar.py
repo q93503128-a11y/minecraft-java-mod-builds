@@ -95,7 +95,11 @@ with zipfile.ZipFile(jar) as zf:
     for token in [b"TOOLS_BOW", b"TOOLS_CROSSBOW", b"snapshotRangedProjectile", b"survivalascension_ranged_projectile", b"projectileDamageMultiplier", b"projectileXpMultiplier"]:
         if token not in affix:
             raise SystemExit(f"0.52 compiled ranged-affix token missing: {token!r}")
-    for token in [b"onEntityJoin", b"tryRangedBurst", b"isPrecisionRangedProjectile", b"projectileBurstRadiusBonus", b"projectileBurstTargetBonus"]:
+    for token in [
+        b"onEntityJoin", b"tryRangedBurst", b"isPrecisionRangedProjectile",
+        b"projectileBurstRadiusBonus", b"projectileBurstTargetBonus",
+        b"survivalascension_ranged_burst_used", b"getBooleanOr", b"putBoolean",
+    ]:
         if token not in combat:
             raise SystemExit(f"0.52 compiled ranged-combat token missing: {token!r}")
 
@@ -106,4 +110,5 @@ print("regional_logistics_scale_release_verify=PASS")
 print("armor_affix_runtime=present")
 print("armor_affix_release_verify=PASS")
 print("ranged_combat_runtime=present")
+print("ranged_combat_one_burst_per_projectile=present")
 print("ranged_combat_release_verify=PASS")
