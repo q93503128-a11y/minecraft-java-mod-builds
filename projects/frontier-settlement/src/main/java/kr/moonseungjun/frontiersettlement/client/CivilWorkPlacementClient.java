@@ -100,7 +100,7 @@ public final class CivilWorkPlacementClient {
             minX = Math.min(first.getX(), target.getX()); maxX = Math.max(first.getX(), target.getX());
             minZ = Math.min(first.getZ(), target.getZ()); maxZ = Math.max(first.getZ(), target.getZ()); y = first.getY();
         }
-        if (maxX - minX + 1 > 13 || maxZ - minZ + 1 > 13) return List.of();
+        if (maxX - minX + 1 > 17 || maxZ - minZ + 1 > 17) return List.of();
         List<BlockPos> out = new ArrayList<>((maxX - minX + 1) * (maxZ - minZ + 1));
         for (int x = minX; x <= maxX; x++) for (int z = minZ; z <= maxZ; z++) out.add(new BlockPos(x, y, z));
         return List.copyOf(out);
