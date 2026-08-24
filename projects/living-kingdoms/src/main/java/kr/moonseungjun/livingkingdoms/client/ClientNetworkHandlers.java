@@ -38,13 +38,13 @@ public final class ClientNetworkHandlers {
     }
 
     /**
-     * Returns a monotonic client presentation of the server kingdom clock. It may wait briefly for
-     * a lagging server, but it never rewinds because a delayed level-time packet arrived.
+     * Returns a monotonic presentation of server kingdom time. Client-level time is never used, so
+     * delayed dimension corrections cannot make the HUD rewind before or after the first sample.
      */
     public static long realmTime() {
         Minecraft minecraft = Minecraft.getInstance();
         if (clockReady && minecraft.level == clockLevel) return stableRealmTime;
-        return minecraft.level == null ? 0L : Math.max(0L, minecraft.level.getGameTime());
+        return Math.max(0L, latestHudState.realmGameTime());
     }
 
     /** Extrapolates at most one second beyond the latest authoritative server sample. */
