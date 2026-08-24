@@ -33,6 +33,7 @@
 - 전투: Minecraft `Enemy`와 NeoForge 공용 보스 태그를 함께 실제 전투 대상으로 취급한다. 외부 보스가 `Enemy` 구현을 쓰지 않아도 공용 보스 태그를 제공하면 파급/충격파/전투 숙련에 합류한다.
 - 전투 XP는 실제 적/보스 처치에만 지급한다. 가축·중립 비전투 생물을 반복 처치해 전투 숙련을 올리던 기존 우회는 제거한다.
 - 원정 바이옴: 9개 `survivalascension:expedition/<region>` Biome Tag를 바닐라 fallback보다 먼저 판정한다. BOP ID는 `required:false` 데이터 항목이며 `glowing_grotto`와 `spider_nest`는 심층권에 포함한다.
+- Amethyst Resonance: locked 26.2 NeoForge 1.0.0 binary audit confirmed vanilla sword/pickaxe/axe/shovel/hoe tags. 0.46 adds the previously missing shovel imprint; Resonant Pickaxe class perks and the separate persistent Resonant armor DataComponent are preserved because Survival Ascension does not replace the item or clear unrelated components. Locked SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`.
 - 외부 모드가 하나 빠져도 이 계층 자체는 로드된다. `biomesoplenty`, `tbos`, `amethyst_resonance` 구현 클래스에 대한 하드 의존은 두지 않는다.
 
 현재는 **태그/타입 기반 1차 통합 + 외부 장비 승천 각인 + BOP 원정 바이옴 브리지**까지 연결되어 있다. The Birth of Steve 핵심 적은 기존 `Enemy` 계약으로 이미 전투 숙련에 들어오므로 전용 하드코딩을 추가하지 않는다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하는 일은 실제 게임 검증 뒤에만 한다.

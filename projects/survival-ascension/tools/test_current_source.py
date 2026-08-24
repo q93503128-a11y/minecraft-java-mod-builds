@@ -74,22 +74,23 @@ for rel in required:
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.45.0-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.46.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.45.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.46.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
 # 0.44 external/content-pack equipment imprint.
 affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
 need(affix, [
-    'BASE_NAME = "base_name"', "ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES",
+    'BASE_NAME = "base_name"', "ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.SHOVELS", "ItemTags.HOES",
     "public static boolean canImprint(ItemStack stack)", "stack.getMaxStackSize() == 1", "categoryForItem(stack) != Category.NONE",
     "public static boolean imprint(ItemStack stack, RandomSource random, int requestedRarity)",
     "root.putString(BASE_NAME, baseName)", "stack.getHoverName().getString()",
     "stack.update(DataComponents.CUSTOM_DATA", "tag.put(ROOT, root)"
 ], "0.44 external gear imprint")
 forbid(affix, ["biomesoplenty", "tbos", "amethyst_resonance"], "0.44 hard optional-mod equipment dependency")
+need(affix, ["GEAR_CATEGORIES", "Category.SHOVEL", "public static int adjustShovelArea", "Math.min(13, base + bonus)", "Items.NETHERITE_SHOVEL"], "0.46 shovel affix category")
 
 reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
 need(reforge, [
@@ -112,7 +113,7 @@ need(guide, [
     "mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)",
     "graphics.enableScissor", "graphics.disableScissor", "maxScroll", "scrollOffset",
     'h("월드 승천")', "위더를 처음 격파하면 전설 단계(1)", "엔더 드래곤을 처음 격파하면 종말 단계(2)",
-    'h("외부 장비와 승천 각인")', 'h("외부 바이옴 원정")', 'h("승천 각인")', "표준 검/곡괭이/도끼/괭이 태그 장비",
+    'h("외부 장비와 승천 각인")', 'h("외부 바이옴 원정")', 'h("승천 각인")', "표준 검/곡괭이/도끼/삽/괭이 태그 장비",
     "물류 통과 창고군", "일반 바닐라 작업대 조합은 조합칸/인벤토리 규칙을 그대로 따릅니다.",
     'h("화물 하역장")', "레일6개 이상", "동력레일1개 이상", "호퍼1개 이상"
 ], "0.44 scrollable current-state guide")
@@ -141,6 +142,8 @@ need(mining, [
     "return Math.max(1, Math.min(8, (int) Math.ceil(hardness)));"
 ], "mining XP tiers")
 forbid(mining, ["if (state.is(VALUABLE_ORES)) return 20;"], "flat valuable-ore XP")
+need(mining, ["ItemTags.SHOVELS", "BlockTags.MINEABLE_WITH_SHOVEL", "handleShovelBreak", "isValidShovelBreak", "breakShovelArea", "AscensionAffixes.adjustShovelArea", "SkillType.MINING"], "0.46 shovel Mining integration")
+forbid(mining, ["adjustMiningVeinLimit(tool, SkillTuning.miningVeinLimit(miningLevel)); // shovel"], "shovel vein coupling")
 
 field = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java")
 need(field, [
@@ -266,6 +269,7 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
+print("- 0.46 standard shovels join Mining mastery as bounded planar earthworks; Scale/Secondary shovel affixes are functional and capped")
 print("- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest")
 print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies")
 print("- imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials")

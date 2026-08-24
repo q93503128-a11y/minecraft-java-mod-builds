@@ -69,6 +69,11 @@ public final class MiningProgression {
             event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.miningSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
             return;
         }
+        if (tool.is(ItemTags.SHOVELS) && state.is(BlockTags.MINEABLE_WITH_SHOVEL)) {
+  int level = player instanceof ServerPlayer sp ? SkillProgressData.get(sp).level(sp, SkillType.MINING) : SkillClientBridge.level(SkillType.MINING);
+  event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.miningSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
+  return;
+        }
         if (tool.is(ItemTags.AXES) && state.is(BlockTags.LOGS)) {
             int level = player instanceof ServerPlayer sp ? SkillProgressData.get(sp).level(sp, SkillType.WOODCUTTING) : SkillClientBridge.level(SkillType.WOODCUTTING);
             event.setNewSpeed((float) (event.getOriginalSpeed() * SkillTuning.woodcuttingSpeedMultiplier(level) * AscensionAffixes.toolSpeedMultiplier(tool)));
@@ -80,6 +85,10 @@ public final class MiningProgression {
         BlockState centerState = event.getState();
         BlockPos center = event.getPos();
         ItemStack tool = player.getMainHandItem();
+        if (isValidShovelBreak(player, level, center, centerState, tool)) {
+  handleShovelBreak(player, level, center, centerState, tool);
+  return;
+        }
         if (!isValidPickaxeBreak(player, level, center, centerState, tool)) return;
         ExpeditionProgression.recordSkillAction(player, SkillType.MINING, 1);
         if (!player.isCreative() && !player.isSpectator()) {
@@ -141,6 +150,35 @@ public final class MiningProgression {
         if (selected == MiningMode.BORE && !InfrastructureData.get(player).isComplete(InfrastructureProject.QUARRY_NETWORK)) return MiningMode.AUTO;
         return selected;
     }
+
+    private static void handleShovelBreak(ServerPlayer player, ServerLevel level, BlockPos center, BlockState centerState, ItemStack tool) {
+    ExpeditionProgression.recordSkillAction(player, SkillType.MINING, 1);
+    if (!player.isCreative() && !player.isSpectator()) {
+        int xp = Math.max(1, (int) Math.ceil(xpForShovelBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
+        announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
+    }
+    if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
+    int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
+    int areaSize = AscensionAffixes.adjustShovelArea(tool, SkillTuning.miningAreaSize(miningLevel));
+    if (areaSize <= 1) return;
+    AREA_BREAK_GUARD.add(player.getUUID());
+    try {
+        breakShovelArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+    } finally {
+        AREA_BREAK_GUARD.remove(player.getUUID());
+    }
+}
+
+static boolean isValidShovelBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
+    if (state.isAir() || tool.isEmpty() || !tool.is(ItemTags.SHOVELS) || !state.is(BlockTags.MINEABLE_WITH_SHOVEL)) return false;
+    if (state.getDestroySpeed(level, pos) < 0.0F) return false;
+    return state.canHarvestBlock(level, pos, player);
+}
+
+private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPos pos) {
+    float hardness = Math.max(0.1F, state.getDestroySpeed(level, pos));
+    return Math.max(1, Math.min(4, (int) Math.ceil(hardness * 2.0F)));
+}
 
     static boolean isValidPickaxeBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
         if (state.isAir() || tool.isEmpty() || !tool.is(ItemTags.PICKAXES) || !state.is(BlockTags.MINEABLE_WITH_PICKAXE)) return false;
@@ -239,6 +277,24 @@ public final class MiningProgression {
         long dz = (long) b.getZ() - a.getZ();
         return dx * dx + dy * dy + dz * dz;
     }
+
+    private static void breakShovelArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {
+    int radius = size / 2;
+    Vec3 look = player.getLookAngle();
+    double ax = Math.abs(look.x), ay = Math.abs(look.y), az = Math.abs(look.z);
+    for (int a = -radius; a <= radius; a++) for (int b = -radius; b <= radius; b++) {
+        if (a == 0 && b == 0) continue;
+        if (!player.getMainHandItem().is(ItemTags.SHOVELS)) return;
+        BlockPos target = ay >= ax && ay >= az ? center.offset(a, 0, b) : (ax >= az ? center.offset(0, a, b) : center.offset(a, b, 0));
+        if (!level.hasChunkAt(target)) continue;
+        BlockState targetState = level.getBlockState(target);
+        if (!isValidShovelBreak(player, level, target, targetState, player.getMainHandItem())) continue;
+        if (level.getBlockEntity(target) != null) continue;
+        float targetHardness = targetState.getDestroySpeed(level, target);
+        if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
+        player.gameMode.destroyBlock(target);
+    }
+}
 
     private static void breakArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {
         int radius = size / 2;

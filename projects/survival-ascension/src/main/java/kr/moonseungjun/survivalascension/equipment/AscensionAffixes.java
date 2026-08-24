@@ -38,6 +38,7 @@ public final class AscensionAffixes {
     private static final String UTILITY = "utility";
     private static final String AWAKENED = "awakened";
     private static final List<String> AFFIX_POOL = List.of(PRIMARY, SCALE, MASTERY, SECONDARY, UTILITY);
+    private static final List<Category> GEAR_CATEGORIES = List.of(Category.WEAPON, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE);
 
     private AscensionAffixes() {}
 
@@ -55,14 +56,14 @@ public final class AscensionAffixes {
 
     public static ItemStack createEliteDrop(RandomSource random, int rankId) {
         int rarity = Math.max(1, Math.min(3, rankId));
-        Category category = Category.values()[random.nextInt(4)];
+        Category category = GEAR_CATEGORIES.get(random.nextInt(GEAR_CATEGORIES.size()));
         ItemStack stack = new ItemStack(baseItem(category, rarity));
         rollAffixes(stack, random, rarity, category, false);
         return stack;
     }
 
     /**
-     * 0.44 content-pack bridge: any single-stack sword/pickaxe/axe/hoe that participates in the
+     * Content-pack bridge: any single-stack sword/pickaxe/axe/shovel/hoe that participates in the
      * normal Minecraft item tags can receive Survival Ascension affixes without linking the
      * optional mod's Java classes. Existing item components remain intact; only our nested
      * CustomData key and display name are changed.
@@ -76,6 +77,7 @@ public final class AscensionAffixes {
             case WEAPON -> "무기";
             case PICKAXE -> "곡괭이";
             case AXE -> "도끼";
+            case SHOVEL -> "삽";
             case HOE -> "괭이";
             default -> "대상 아님";
         };
@@ -184,6 +186,14 @@ public final class AscensionAffixes {
         return base + scaleAreaBonus(rarity(stack));
     }
 
+    public static int adjustShovelArea(ItemStack stack, int base) {
+    if (base <= 1 || category(stack) != Category.SHOVEL) return base;
+    int bonus = 0;
+    if (has(stack, SCALE)) bonus += scaleAreaBonus(rarity(stack));
+    if (has(stack, SECONDARY)) bonus += switch (rarity(stack)) { case 1, 2 -> 2; case 3 -> 4; default -> 0; };
+    return Math.min(13, base + bonus);
+}
+
     public static int adjustMiningVeinLimit(ItemStack stack, int base) {
         if (base <= 1 || category(stack) != Category.PICKAXE || !has(stack, SECONDARY)) return base;
         return base + switch (rarity(stack)) { case 1 -> 12; case 2 -> 32; case 3 -> 64; default -> 0; };
@@ -269,6 +279,7 @@ public final class AscensionAffixes {
         if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;
         if (stack.is(ItemTags.PICKAXES)) return Category.PICKAXE;
         if (stack.is(ItemTags.AXES)) return Category.AXE;
+        if (stack.is(ItemTags.SHOVELS)) return Category.SHOVEL;
         if (stack.is(ItemTags.HOES)) return Category.HOE;
         return Category.NONE;
     }
@@ -289,6 +300,7 @@ public final class AscensionAffixes {
             case WEAPON -> switch (rarity) { case 1 -> Items.IRON_SWORD; case 2 -> Items.DIAMOND_SWORD; default -> Items.NETHERITE_SWORD; };
             case PICKAXE -> switch (rarity) { case 1 -> Items.IRON_PICKAXE; case 2 -> Items.DIAMOND_PICKAXE; default -> Items.NETHERITE_PICKAXE; };
             case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };
+            case SHOVEL -> switch (rarity) { case 1 -> Items.IRON_SHOVEL; case 2 -> Items.DIAMOND_SHOVEL; default -> Items.NETHERITE_SHOVEL; };
             case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };
             default -> Items.IRON_SWORD;
         };
@@ -298,18 +310,18 @@ public final class AscensionAffixes {
         if (MASTERY.equals(key)) return "숙련";
         if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : "가속";
         if (SCALE.equals(key)) return switch (category) {
-            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case HOE -> "광역"; default -> "증폭";
+            case WEAPON -> "파급"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; default -> "증폭";
         };
         if (SECONDARY.equals(key)) return switch (category) {
-            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case HOE -> "풍작"; default -> "특화";
+            case WEAPON -> "사냥"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; default -> "특화";
         };
         return switch (category) {
-            case WEAPON -> "충격"; case PICKAXE, AXE, HOE -> "정교"; default -> "보조";
+            case WEAPON -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; default -> "보조";
         };
     }
 
     private enum Category {
-        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), HOE("hoe"), NONE("none");
+        WEAPON("weapon"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), NONE("none");
         final String id;
         Category(String id) { this.id = id; }
     }

@@ -1,5 +1,13 @@
 # Third-party notices
 
+## Amethyst Resonance — locked binary compatibility audit only
+Content-pack project: Amethyst Resonance by Ghozix
+Locked Modrinth project/version: `8RyryQ7j` / `no0B3Ssy`
+Locked 26.2 NeoForge JAR SHA-1: `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`
+License: All Rights Reserved
+
+Survival Ascension 0.46 inspected the locked binary only to establish interoperability boundaries: vanilla item-tag participation, preservation of item identity, and presence of an independent persistent Resonant DataComponent. No Amethyst Resonance source, bytecode, recipes, JSON data, textures, models, sounds, translations or other assets are copied or bundled in the Survival Ascension JAR. The original JAR remains an external Modrinth content-pack dependency.
+
 ## Biomes O' Plenty — content-pack original / registry reference only
 Distribution/content license: All Rights Reserved.
 

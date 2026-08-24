@@ -102,6 +102,12 @@ with zipfile.ZipFile(jar) as zf:
     if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
         raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
 
+    affix_class = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    mining_class = zf.read("kr/moonseungjun/survivalascension/mining/MiningProgression.class")
+    if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:
+        raise SystemExit("compiled shovel affix bridge missing")
+    if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
+        raise SystemExit("compiled shovel Mining bridge missing")
     for notice, line in [
         ("META-INF/third-party/SKILL_PROFICIENCIES_MIT.txt", "Copyright (c) 2026 balovich-matje"),
         ("META-INF/third-party/VEINMINER_PLUS_PLUS_MIT.txt", "Copyright (c) 2026 Kestalkayden"),
@@ -132,6 +138,8 @@ print("JAR VERIFY PASS")
 print(f"version={expected_version}")
 print("external_equipment_imprint_runtime=present")
 print("bop_expedition_biome_bridge=present")
+print("standard_shovel_affix_bridge=present")
+print("shovel_mining_earthworks_runtime=present")
 print("physical_freight_runtime=present")
 print("physical_freight_railhead_runtime=present")
 print("civil_works_runtime=present")

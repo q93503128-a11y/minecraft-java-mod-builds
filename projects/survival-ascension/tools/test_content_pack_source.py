@@ -23,6 +23,7 @@ def main() -> None:
     combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
     wood = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
     harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
+    mining = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")
     affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
     reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
     equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
@@ -49,6 +50,7 @@ def main() -> None:
 
     require(lock.get("minecraft") == "26.2", "modpack lock Minecraft version drifted")
     require(lock.get("neoforge") == "26.2.0.38-beta", "modpack lock NeoForge version drifted")
+    require(lock.get("version") == "0.46.0-alpha.1-content-preview.1", "modpack preview version drifted")
     mods = lock.get("mods") or []
     require(len(mods) >= 6, "first-wave content pack unexpectedly small")
     project_ids = [entry.get("project_id") for entry in mods]
@@ -98,7 +100,7 @@ def main() -> None:
             "BOP deep expedition bridge incomplete")
 
     # 0.44 external gear bridge: standard item tags and existing affix system only.
-    for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES"):
+    for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.SHOVELS", "ItemTags.HOES"):
         require(tag in affix, f"external equipment standard tag missing: {tag}")
     require("canImprint(ItemStack stack)" in affix and "imprint(ItemStack stack, RandomSource random, int requestedRarity)" in affix,
             "external equipment imprint API missing")
@@ -110,6 +112,12 @@ def main() -> None:
             "imprint must consume through physical logistics resolver")
     require('new Entry("승천 각인"' in equipment_ui and "EquipmentReforgeService.ACTION_IMPRINT" in equipment_ui,
             "equipment radial imprint action missing")
+    require("Category.SHOVEL" in affix and "adjustShovelArea" in affix and "Items.NETHERITE_SHOVEL" in affix,
+  "shovel affix category is incomplete")
+    require("ItemTags.SHOVELS" in mining and "BlockTags.MINEABLE_WITH_SHOVEL" in mining and "breakShovelArea" in mining,
+  "standard shovel Mining bridge missing")
+    require("a3ac49a6202b7918d2ed22030df0b6e2906cdec8" in matrix,
+  "locked Amethyst Resonance binary audit hash missing from compatibility matrix")
 
     for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
         require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")
@@ -126,6 +134,8 @@ def main() -> None:
     print("skill_xp_normalization=PASS")
     print("content_pack_progression_bridge=PASS")
     print("external_equipment_imprint=PASS")
+    print("amethyst_resonance_shovel_bridge=PASS")
+    print("external_component_preservation_contract=PASS")
     print("bop_expedition_bridge=PASS")
     print("generic_enemy_boss_bridge=PASS")
     print("passive_combat_xp_farm=REMOVED")

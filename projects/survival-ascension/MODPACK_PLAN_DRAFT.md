@@ -26,6 +26,12 @@ Survival Ascension은 모드팩의 코어 통합 모드다. 외부 콘텐츠 모
 
 이 조합의 목적은 한 번에 모든 유명 모드를 넣는 것이 아니라, 첫 실플레이에서 바로 느껴지는 `바이옴 증가 + 던전/보스 + 기능성 장비`를 확보하면서 충돌 원인을 추적할 수 있는 크기를 유지하는 것이다.
 
+## 현재 0.46 장비 통합 상태
+- 표준 sword/pickaxe/axe/shovel/hoe 태그 장비가 승천 각인 대상이다.
+- 삽은 채굴 숙련의 속도·XP와 평면 토공 규모를 사용하되 광맥/추출/터널은 사용하지 않는다.
+- 잠긴 Amethyst Resonance 바이너리에서 Resonant 5도구의 표준 태그와 고유 기능 보존 경계를 직접 확인했다.
+- 외부 장비는 원본 ItemStack과 DataComponent를 유지하고 Survival Ascension 전용 nested CustomData만 추가한다.
+
 ## 현재 0.45 통합 상태
 - BOP 바이옴은 9지역 원정 태그를 통해 기존 발견/작업/복귀 규칙에 들어간다. Deep은 `glowing_grotto` + `spider_nest`다.
 - TBS 핵심 적은 `Enemy`, 비-Enemy 외부 보스는 NeoForge 공용 `BOSSES` 계약을 사용한다.

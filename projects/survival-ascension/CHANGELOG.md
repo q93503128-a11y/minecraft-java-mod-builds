@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.46.0-alpha.1
+- Audited the exact locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary (`8RyryQ7j` / `no0B3Ssy`, SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`).
+- Confirmed its sword/pickaxe/axe/shovel/hoe use vanilla item tags and identified the actual 0.45 omission: standard shovels were not imprintable.
+- Added `ItemTags.SHOVELS` and a real Shovel affix category, including vanilla-backed elite shovel generation without fragile `Category.values()[random.nextInt(4)]` indexing.
+- Added shovel Mining mastery: shovel-mineable terrain receives Mining speed/XP and bounded planar earthworks; Shift stays precision and ore Vein/Extract/Bore remain pickaxe-only.
+- Added functional Shovel Scale/Secondary affixes (`토공`/`개착`) with a hard area cap of13 so shovel rolls are not dead options.
+- Verified Resonant Pickaxe item-class perks and Resonance Infusion DataComponent survive because imprint/reroll/awakening keep the original ItemStack identity/components and only update Survival Ascension nested CustomData + name.
+- Updated equipment UI, guide, modpack lock version, compatibility docs, source audits and JAR verifier.
+- No Amethyst Resonance code/assets are copied; no optional-mod Java dependency, packet, SavedData or force-load is added.
+
 ## 0.45.0-alpha.1
 - BOP 원정 브리지를 정식 현재 버전에 포함하고 `spider_nest`를 Deep 원정에 추가했다.
 - 9개 원정 태그의 BOP 항목이 모두 optional(`required:false`)인지, BOP ID가 지역 간 중복되지 않는지 source audit에 고정했다.

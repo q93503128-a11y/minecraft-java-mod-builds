@@ -1,6 +1,6 @@
 # Survival Ascension
 
-- Mod version: `0.45.0-alpha.1`
+- Mod version: `0.46.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
@@ -9,6 +9,14 @@
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.46 Resonant Tool Preservation + Shovel Earthworks
+- Locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary audit found a concrete gap: Resonant Shovel correctly uses `minecraft:shovels`, but Survival Ascension 0.45 only accepted sword/pickaxe/axe/hoe.
+- `ItemTags.SHOVELS` is now a first-class affix category. Scale/secondary shovel affixes expand bounded odd-sized surface earthworks rather than becoming dead rolls.
+- Shovel-valid terrain uses Mining mastery speed and XP. It does not use valuable-ore vein traversal, Extract targeting or Bore tunneling.
+- External item identity is preserved across imprint/reroll/awakening. Survival Ascension mutates only its nested CustomData and Custom Name; unrelated DataComponents remain on the stack.
+- Binary evidence: Resonant Pickaxe class identity drives silent-mining/crystal behavior; Resonance Infusion uses `copyWithCount(1)` then adds its own persistent Resonant DataComponent.
+- External ARR binary stays in the content pack only. No Amethyst Resonance implementation classes are linked or copied into the core mod.
 
 ## 0.45 External World Integration / 외부 월드 원정 통합
 - 기존 9지역 원정이 정본이며 외부 바이옴용 별도 퀘스트/진행 시스템을 만들지 않는다.

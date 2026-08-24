@@ -4,6 +4,15 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.46.0-alpha.1 — Resonant Tool Preservation + Shovel Earthworks / 공명 장비 보존·삽 토공
+The locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary was audited directly before changing integration. Its Resonant Sword/Pickaxe/Axe/Hoe are present in the corresponding vanilla item tags, while Resonant Shovel is in `minecraft:shovels`; 0.45 therefore had one real equipment gap because Survival Ascension did not yet accept shovels.
+
+0.46 adds standard `ItemTags.SHOVELS` to Ascension Imprint and gives the shovel category real gameplay instead of dead affixes. Shovel-valid terrain (`BlockTags.MINEABLE_WITH_SHOVEL`) now uses Mining mastery speed/XP and bounded planar earthworks at the current Mining area scale. Shift stays precision. Shovels never inherit ore vein, Extract or Bore semantics.
+
+The binary audit also verified why existing Resonant perks survive imprint/reforge/awakening: Survival Ascension keeps the same ItemStack/item identity and only writes its own nested CustomData + display-name layer. Amethyst Resonance's Resonant Pickaxe perks are tied to its actual item class, and Resonance Infusion copies the original armor stack then adds its own persistent `amethyst_resonance:resonant` DataComponent. Survival Ascension still does not imprint armor, and it never clears unrelated components.
+
+The locked Amethyst Resonance file remains external ARR content: Modrinth project `8RyryQ7j`, version `no0B3Ssy`, SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`. No source, class, texture, model, recipe or asset is copied into Survival Ascension.
+
 ## 0.45.0-alpha.1 — External World Integration / 외부 월드 원정 통합
 Biomes O' Plenty 바이옴을 별도 원정 체계로 만들지 않고 기존 9지역 원정에 데이터 태그로 편입한다. `ExpeditionRegion`은 `survivalascension:expedition/<region>`을 바닐라 fallback보다 먼저 판정하며 BOP registry ID는 `required:false`라서 BOP가 없어도 코어가 로드된다.
 
