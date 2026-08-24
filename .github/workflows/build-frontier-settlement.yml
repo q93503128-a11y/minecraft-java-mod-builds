@@ -37,12 +37,13 @@ jobs:
           if ! test -f .github/workflows/frontier-alpha51-apply.yml; then
             exit 0
           fi
-          if ! grep -q '^mod_version=0.1.0-alpha.50$' projects/frontier-settlement/gradle.properties; then
+          if ! grep -q '^mod_version=0.1.0-alpha.51$' projects/frontier-settlement/gradle.properties; then
             exit 0
           fi
           echo 'ALPHA51_BOOTSTRAP=1' >> "$GITHUB_ENV"
           python3 - <<'PY'
           from pathlib import Path
+          import shutil
 
           apply_path = Path('.github/workflows/frontier-alpha51-apply.yml')
           workflow = apply_path.read_text(encoding='utf-8')
@@ -58,6 +59,12 @@ jobs:
               if line.count("'''") % 2 == 1:
                   in_triple = not in_triple
           code = '\n'.join(normalized)
+
+          strict = '''def replace_once(path, old, new):\n    text = read(path)\n    count = text.count(old)\n    if count != 1:\n        raise SystemExit(f'{path}: expected exactly one occurrence, found {count}: {old[:120]!r}')\n    write(path, text.replace(old, new, 1))'''
+          tolerant = '''def replace_once(path, old, new):\n    text = read(path)\n    count = text.count(old)\n    if count == 1:\n        write(path, text.replace(old, new, 1))\n        return\n    if count == 0 and new in text:\n        return\n    raise SystemExit(f'{path}: expected old once or new already present, found old={count}: {old[:120]!r}')'''
+          if strict not in code:
+              raise SystemExit('Alpha.51 applicator replace_once definition changed unexpectedly')
+          code = code.replace(strict, tolerant, 1)
           code = code.replace('현장 earthBank 우선 · 부족분 실제 흙 운반 · 가상 토사 0',
                               '현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0')
           code = code.replace("'\"창고 조약돌 \"'", "'창고 조약돌 '")
@@ -67,7 +74,8 @@ jobs:
           source_audit = Path('projects/frontier-settlement/tools/test_alpha51_source.py')
           source = source_audit.read_text(encoding='utf-8')
           anchor = "building_type = text(JAVA / 'settlement/BuildingType.java')\n"
-          exact = """enum_block = building_type.split('public enum BuildingType {', 1)[1].split(';', 1)[0]
+          if 'actual_families = [' not in source:
+              exact = """enum_block = building_type.split('public enum BuildingType {', 1)[1].split(';', 1)[0]
           actual_families = [line.strip().split('(', 1)[0] for line in enum_block.splitlines() if '(' in line]
           expected_families = ['HOUSE', 'LUMBER_CAMP', 'FARM', 'QUARRY', 'MINE', 'WAREHOUSE',
                                'CONSTRUCTION_OFFICE', 'BLACKSMITH', 'WORKSHOP', 'ADVANCED_WORKSHOP',
@@ -75,9 +83,9 @@ jobs:
           if actual_families != expected_families:
               raise SystemExit(f'alpha.51 expected exact 15 functional building families, got: {actual_families}')
           """
-          if source.count(anchor) != 1:
-              raise SystemExit('alpha.51 audit building_type anchor mismatch')
-          source = source.replace(anchor, anchor + exact, 1)
+              if source.count(anchor) != 1:
+                  raise SystemExit('alpha.51 audit building_type anchor mismatch')
+              source = source.replace(anchor, anchor + exact, 1)
           source = source.replace('if sum(building_type.count(token) for token in (',
                                   'if False and sum(building_type.count(token) for token in (', 1)
           source_audit.write_text(source, encoding='utf-8')
@@ -94,13 +102,11 @@ jobs:
                                   1)
               canonical.write_text(plan, encoding='utf-8')
 
-          diag = Path('.github/workflows/frontier-alpha51-diagnose.yml')
-          if diag.exists():
-              diag.unlink()
+          for temp in (Path('.github/workflows/frontier-alpha51-diagnose.yml'),
+                       Path('.github/workflows/frontier-alpha51-finalize.yml')):
+              if temp.exists(): temp.unlink()
           failure_dir = Path('ci-results/frontier-alpha51-apply')
-          if failure_dir.exists():
-              import shutil
-              shutil.rmtree(failure_dir)
+          if failure_dir.exists(): shutil.rmtree(failure_dir)
 
           build = Path('.github/workflows/build-frontier-settlement.yml')
           build_text = build.read_text(encoding='utf-8')
@@ -110,9 +116,11 @@ jobs:
           bend = build_text.index(setup_marker, bstart)
           build_text = build_text[:bstart] + build_text[bend:]
           build_text = build_text.replace(
+              "      - name: Upload diagnostic logs\n        if: always() && env.ALPHA51_BOOTSTRAP != '1'\n",
+              "      - name: Upload diagnostic logs\n        if: always()\n")
+          build_text = build_text.replace(
               "      - name: Record canonical CI result\n        if: always() && env.ALPHA51_BOOTSTRAP != '1'\n",
-              "      - name: Record canonical CI result\n        if: always()\n",
-              1)
+              "      - name: Record canonical CI result\n        if: always()\n")
           build.write_text(build_text, encoding='utf-8')
           PY
 
@@ -121,9 +129,9 @@ jobs:
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/frontier-settlement .github/workflows/build-frontier-settlement.yml .github/workflows/frontier-alpha51-apply.yml .github/workflows/frontier-alpha51-diagnose.yml ci-results/frontier-alpha51-apply
+          git add -A projects/frontier-settlement .github/workflows ci-results/frontier-alpha51-apply
           git diff --cached --check
-          git commit -m 'Implement Frontier alpha.51 retaining-heavy terraces'
+          git commit -m 'Finalize Frontier alpha.51 retaining-heavy terraces'
           pushed=0
           for attempt in 1 2 3 4 5 6; do
             if git pull --rebase origin main && git push origin HEAD:main; then
@@ -154,19 +162,19 @@ jobs:
           echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
 
-      - name: Alpha.50 cumulative source audit
+      - name: Alpha.51 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha50_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+          python3 tools/test_alpha51_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
 
-      - name: Alpha.50 canonical docs audit
+      - name: Alpha.51 canonical docs audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_alpha50_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+          python3 tools/test_alpha51_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
 
       - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
@@ -207,7 +215,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always()
+        if: always() && env.ALPHA51_BOOTSTRAP != '1'
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
