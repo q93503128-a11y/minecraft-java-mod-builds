@@ -40,7 +40,34 @@ jobs:
           compile(code, '/tmp/sa054_apply.py', 'exec')
           PY
           python3 /tmp/sa054_apply.py
-          rm -f .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .sa054-run
+
+          # The 0.54 applicator's added verifier block is source-correct but was inserted
+          # at the old ZipFile scope boundary. Rebuild only that new tail in a fresh scope.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/tools/verify_release_jar.py')
+          text = p.read_text(encoding='utf-8')
+          start = text.index('    for token in [b"TOOLS_MACE"')
+          end = text.index('\nprint("frontline_freight_manifest_runtime=present")', start)
+          block = '''with zipfile.ZipFile(jar) as zf:
+    affix054 = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    combat054 = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    main054 = zf.read("kr/moonseungjun/survivalascension/SurvivalAscension.class")
+    for token in [b"TOOLS_MACE", b"maceImpactRadiusBonus", b"maceImpactTargetBonus", b"maceImpactKnockbackBonus", b"maceImpactLiftBonus"]:
+        if token not in affix054:
+            raise SystemExit(f"0.54 compiled mace-affix token missing: {token!r}")
+    for token in [b"IS_MACE_SMASH", b"tryMaceImpact", b"KNOCKBACK_RESISTANCE", b"setDeltaMovement"]:
+        if token not in combat054:
+            raise SystemExit(f"0.54 compiled mace-impact token missing: {token!r}")
+    if b"mace outer impact rings" not in main054:
+        raise SystemExit("0.54 runtime banner missing mace outer impact rings")
+
+'''
+          p.write_text(text[:start] + block + text[end:], encoding='utf-8')
+          compile(p.read_text(encoding='utf-8'), str(p), 'exec')
+          PY
+
+          rm -f .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .github/workflows/sa054-push2.yml .sa054-run .sa054-run2
 
           cd projects/survival-ascension
           chmod +x gradlew
@@ -59,7 +86,7 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/survival-ascension .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .sa054-run
+          git add -A projects/survival-ascension .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .github/workflows/sa054-push2.yml .sa054-run .sa054-run2
           git commit -m 'Survival Ascension 0.54 mace impact ascension'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
