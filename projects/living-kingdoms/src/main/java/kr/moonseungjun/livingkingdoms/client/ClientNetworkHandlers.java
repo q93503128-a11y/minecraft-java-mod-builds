@@ -4,6 +4,7 @@ import kr.moonseungjun.livingkingdoms.network.FantasyHudStatePayload;
 import kr.moonseungjun.livingkingdoms.network.OpenCodexPayload;
 import kr.moonseungjun.livingkingdoms.network.OpenOriginScreenPayload;
 import kr.moonseungjun.livingkingdoms.network.OriginSubmissionResultPayload;
+import kr.moonseungjun.livingkingdoms.network.PlacementConfirmedPayload;
 import kr.moonseungjun.livingkingdoms.network.RealmBuildProgressPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -22,6 +23,8 @@ public final class ClientNetworkHandlers {
     private static long realmTimeAnchor;
     private static long realmTimeAnchorNanos;
     private static long lastDisplayedRealmTime;
+    private static boolean placementConfirmed;
+    private static PlacementConfirmedPayload latestPlacement;
 
     private ClientNetworkHandlers() {
     }
@@ -31,11 +34,20 @@ public final class ClientNetworkHandlers {
         event.register(OriginSubmissionResultPayload.TYPE, ClientNetworkHandlers::handleSubmissionResult);
         event.register(RealmBuildProgressPayload.TYPE, ClientNetworkHandlers::handleBuildProgress);
         event.register(FantasyHudStatePayload.TYPE, ClientNetworkHandlers::handleHudState);
+        event.register(PlacementConfirmedPayload.TYPE, ClientNetworkHandlers::handlePlacementConfirmed);
         event.register(OpenCodexPayload.TYPE, ClientNetworkHandlers::handleOpenCodex);
     }
 
     public static FantasyHudStatePayload hudState() {
         return latestHudState;
+    }
+
+    public static boolean placementConfirmed() {
+        return placementConfirmed;
+    }
+
+    public static PlacementConfirmedPayload latestPlacement() {
+        return latestPlacement;
     }
 
     /**
@@ -72,10 +84,12 @@ public final class ClientNetworkHandlers {
         lastDisplayedRealmTime = Math.max(lastDisplayedRealmTime, realmTimeAnchor);
     }
 
-    private static void resetRealmClock() {
+    private static void resetSessionState() {
         realmTimeAnchor = 0L;
         realmTimeAnchorNanos = 0L;
         lastDisplayedRealmTime = 0L;
+        placementConfirmed = false;
+        latestPlacement = null;
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
@@ -85,7 +99,7 @@ public final class ClientNetworkHandlers {
                 activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
                 activeLoadingScreen = null;
                 latestBuildProgress = null;
-                resetRealmClock();
+                resetSessionState();
             }
             minecraft.gui.setScreen(activeOriginScreen);
         });
@@ -99,6 +113,8 @@ public final class ClientNetworkHandlers {
                 return;
             }
             activeOriginScreen = null;
+            placementConfirmed = false;
+            latestPlacement = null;
             activeLoadingScreen = new RealmLoadingScreen(payload.message());
             if (latestBuildProgress != null) activeLoadingScreen.update(latestBuildProgress);
             minecraft.gui.setScreen(activeLoadingScreen);
@@ -119,6 +135,13 @@ public final class ClientNetworkHandlers {
         Minecraft.getInstance().execute(() -> {
             latestHudState = payload;
             acceptRealmTime(payload.realmTime());
+        });
+    }
+
+    private static void handlePlacementConfirmed(PlacementConfirmedPayload payload, IPayloadContext context) {
+        Minecraft.getInstance().execute(() -> {
+            latestPlacement = payload;
+            placementConfirmed = true;
         });
     }
 
