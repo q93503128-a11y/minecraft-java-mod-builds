@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.48.0-alpha.1
+- Added `Frontline Local Supply / 전선 현지 보급` so the physical freight network now feeds expedition and defense readiness rather than only relocating stock.
+- Expedition operation launch keeps supply-charge1 and additionally requires food32 + iron8 + fuel8 in the exact departure outpost warehouse cluster.
+- Normal outpost defense keeps supply-charge1 and additionally requires food48 + iron16 + logs32 in the exact departure outpost warehouse cluster.
+- Bastion defense keeps supply-charge2, physical-fortification validation and additionally requires food96 + iron32 + stone bricks128 in the exact departure outpost warehouse cluster.
+- Local food pools Wheat/Carrot/Potato/Beetroot, fuel pools Coal/Charcoal and logs use `ItemTags.LOGS`; every material is already freight-eligible.
+- The local resolver reads only the exact outpost's registered Barrel anchor + persisted linked Barrels, and every Barrel must be loaded, interactable and still a real Container. It never falls back to player inventory or a different nearby depot.
+- Frontline material checks are non-mutating and physical stock is consumed only after the existing encounter/operation system reports an actual successful start, preventing rejected launches from burning local stock.
+- Added nearby active-outpost food/iron/fuel/log/stone-brick counts to Production Status and exposed all three loadouts in the production radial and in-game guide.
+- Bumped the one-import content-pack preview to `0.48.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+- Extended canonical source/content-pack audits and packaged-JAR verification for the local-supply runtime while retaining all previous 0.43-0.47 compatibility checks.
+- Added no SavedData schema, packet/protocol, custom block/item/entity, virtual freight currency, teleport or force-load.
+
 ## 0.47.0-alpha.1
 - Updated the locked The Birth of Steve pack entry to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`, file `tbos-neoforge-26.2-0.7.0.jar`, SHA-1 `4d55c51685bff4247fa533c925f7641ce4880db3`).
 - Added Survival-owned optional EntityType tag `survivalascension:expedition_major_targets`; audited TBS entries are `tbos:hour_cantor` and `tbos:phoenix_guardian`, both `required:false`. Minotaur is excluded because the audited 0.7 binary did not expose the same boss-event contract.
