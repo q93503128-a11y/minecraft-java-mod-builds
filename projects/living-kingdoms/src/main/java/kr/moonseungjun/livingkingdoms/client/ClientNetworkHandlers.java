@@ -58,8 +58,28 @@ public final class ClientNetworkHandlers {
             return;
         }
         if (!clockReady) return;
-        long ceiling = latestServerRealmTime + 20L;
-        if (stableRealmTime < ceiling) stableRealmTime++;
+        stableRealmTime = advancePresentedTime(stableRealmTime, latestServerRealmTime);
+    }
+
+    static long mergeServerTime(long presented, long serverSample) {
+        return Math.max(Math.max(0L, presented), Math.max(0L, serverSample));
+    }
+
+    static long advancePresentedTime(long presented, long latestServerSample) {
+        long safePresented = Math.max(0L, presented);
+        long ceiling = Math.max(0L, latestServerSample) + 20L;
+        return safePresented < ceiling ? safePresented + 1L : safePresented;
+    }
+
+    static boolean kingdomClockRegressionPassForTest() {
+        long presented = 10_000L;
+        presented = mergeServerTime(presented, 8_800L);
+        if (presented != 10_000L) return false;
+        presented = mergeServerTime(presented, 10_100L);
+        if (presented != 10_100L) return false;
+        for (int i = 0; i < 80; i++) presented = advancePresentedTime(presented, 10_100L);
+        return presented == 10_120L
+                && mergeServerTime(presented, 9_000L) == 10_120L;
     }
 
     private static void handleOpenOriginScreen(OpenOriginScreenPayload payload, IPayloadContext context) {
@@ -111,7 +131,7 @@ public final class ClientNetworkHandlers {
                 stableRealmTime = latestServerRealmTime;
                 clockReady = true;
             } else {
-                stableRealmTime = Math.max(stableRealmTime, latestServerRealmTime);
+                stableRealmTime = mergeServerTime(stableRealmTime, latestServerRealmTime);
             }
         });
     }
