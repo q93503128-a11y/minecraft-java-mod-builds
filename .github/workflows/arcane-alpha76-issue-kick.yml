@@ -1,0 +1,37 @@
+name: Arcane alpha76 issue kick
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  kick:
+    if: github.event.issue.title == 'arcane-alpha76-liveplay-kick'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Re-touch trigger and self-delete
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/arcane-alpha76-issue-kick.yml
+          printf 'trigger=alpha76-liveplay-ui-earthquake\nissue_kick=%s\n' "$GITHUB_RUN_ID" > .github/arcane-alpha76-trigger.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .github/workflows/arcane-alpha76-issue-kick.yml .github/arcane-alpha76-trigger.txt
+          git commit -m 'Kick Arcane alpha.76 live-play patch'
+          pushed=0
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then pushed=1; break; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          test "$pushed" -eq 1
