@@ -205,6 +205,8 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - survey는 기존 loaded 12-block 전초 특화 증거에 작은 bounded bias만 추가, 자원 생성/광석 생성 없음;
 - conquest는 신규 전초 physical total만 level당 wood4/stone2 절감, max wood8/stone4;
 - base72/48, 최저64/44이며 placement 승인과 actual builder ItemStack consume가 같은 effective cost를 사용;
+- physical outpost는 successful setBlock → carried material consume → state advance, consume 실패 rollback;
+- Alpha.26+ missing priced blueprint final repair는 실제 wood/stone 1개를 fetch/place/consume하고 historical prepaid save는 이중과금하지 않음;
 - free loot/refund/population/virtual currency 없음;
 - loaded-only exploration observation/companion soft dependency 유지;
 - `builder walks from actual settlement storage carrying real wood/stone stacks` 유지;

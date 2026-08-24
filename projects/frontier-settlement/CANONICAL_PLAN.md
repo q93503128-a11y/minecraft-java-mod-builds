@@ -335,6 +335,8 @@ Alpha.55 extends Alpha.45 without creating a second progression or reward author
 - survey level only biases the existing loaded local specialization evidence: ore +0/0/1/1, logs +2/level, field ground +8/level, exposed stone +2/level; it never spawns or credits resources;
 - conquest level reduces only the physical material total for newly built outposts: wood `72 - 4*level`, stone `48 - 2*level`, minimum64/44;
 - those effective totals are used by placement approval and by the existing builder's actual ItemStack extraction/consumption math, so the discount cannot become a virtual refund or free construction;
+- outpost physical placement is atomic: successful world `setBlock` precedes carried wood/stone consumption and state advance, with rollback on unexpected consume failure;
+- Alpha.26+ physical outpost final repair fetches and consumes a real wood/stone item for missing priced blueprint cells; historical prepaid saves remain repair-cost exempt to avoid double charging;
 - benefits are deterministic from Alpha.45 persisted unique-ID lists; old saves need no migration field and repeated IDs remain non-farmable;
 - exploration observation remains loaded-only and never locates/generates external content;
 - no free loot, population, abstract survey currency, new UI tree, second economy or second transport authority;

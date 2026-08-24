@@ -82,6 +82,7 @@ Alpha.55 makes the already-persisted Alpha.45 discovery/conquest milestones matt
 - survey knowledge does not create ores/logs/food. It only adds a small bounded evidence bias to the existing loaded 12-block outpost-specialization survey, making mining/lumber/agriculture/quarry roles slightly easier to recognize after real exploration;
 - unique conquest target IDs yield a capped **conquest level 0–2**; repeated kills of the same boss type add nothing;
 - each conquest level reduces a **new** outpost's physical construction total by only 4 wood + 2 stone, capped at 8 wood + 4 stone; the builder still walks from real loaded settlement storage and consumes actual ItemStacks through the existing outpost construction authority;
+- Alpha.55 also closes a physical-authority hole in that existing outpost builder: world placement must succeed before carried wood/stone is consumed and the step advances, with rollback on an unexpected consume failure; final repair of missing priced blocks uses real material for Alpha.26+ physical projects, while historical prepaid saves keep their already-paid repair semantics;
 - base outpost costs remain 72 wood + 48 stone and the minimum Alpha.55 explored cost is 64 wood + 44 stone;
 - the benefit is computed directly from existing unique milestone lists, so old saves gain the correct value automatically and there is no new saved currency/claim flag;
 - no structure locator, force-load, companion class reference, generated reward chest, free item, population grant, second economy or second logistics authority is added;

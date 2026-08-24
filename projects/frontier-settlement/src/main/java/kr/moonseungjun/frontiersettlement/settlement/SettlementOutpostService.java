@@ -239,7 +239,7 @@ public final class SettlementOutpostService {
             return false;
         }
 
-        level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+        if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceOutpostConstruction();
         return false;
@@ -286,9 +286,12 @@ public final class SettlementOutpostService {
         if (predicate != null && !ensureBuildMaterial(server, data, builder, predicate, requiredNow, remainingCost)) {
             return false;
         }
-        if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) return false;
 
-        level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+        if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+        if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) {
+            level.setBlock(placement.pos(), current, DIRECT_BLOCK_UPDATE);
+            return false;
+        }
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceOutpostConstruction();
         if (data.outpostConstruction().buildStep() >= plan.size()) {
@@ -409,6 +412,7 @@ public final class SettlementOutpostService {
                                          List<OutpostBlueprints.Placement> plan,
                                          Villager builder) {
         ServerLevel level = server.overworld();
+        boolean legacyPrepaidRepair = state.legacyPrepaidBuilding();
         for (OutpostBlueprints.Placement placement : plan) {
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
@@ -416,9 +420,17 @@ public final class SettlementOutpostService {
                 builder.getNavigation().stop();
                 return false;
             }
+            Predicate<ItemStack> repairPredicate = isWoodPlacement(placement.state()) ? SettlementInventory::isWood
+                    : isStonePlacement(placement.state()) ? SettlementInventory::isStone : null;
+            if (!legacyPrepaidRepair && repairPredicate != null
+                    && !ensureBuildMaterial(server, data, builder, repairPredicate, 1L, 1L)) return false;
             if (!moveBuilderToCurrentSurface(level, builder, placement.pos())) return false;
             if (level.getGameTime() % WORK_INTERVAL_TICKS != 0L) return false;
-            level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+            if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+            if (!legacyPrepaidRepair && repairPredicate != null && !consumeCarried(builder, repairPredicate, 1L)) {
+                level.setBlock(placement.pos(), current, DIRECT_BLOCK_UPDATE);
+                return false;
+            }
             builder.swing(InteractionHand.MAIN_HAND);
             return false;
         }
