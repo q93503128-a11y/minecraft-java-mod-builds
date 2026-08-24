@@ -48,68 +48,43 @@ public final class BuildingPlacementClient {
 
     public static void tick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.level == null) {
-            cancelAllModes();
-            return;
-        }
-
-        while (PALETTE.consumeClick()) {
-            cancelAllModes();
-            minecraft.gui.setScreen(new BuildingPaletteScreen());
-        }
+        if (minecraft.player == null || minecraft.level == null) { cancelAllModes(); return; }
+        while (PALETTE.consumeClick()) { cancelAllModes(); minecraft.gui.setScreen(new BuildingPaletteScreen()); }
         if (minecraft.gui.screen() != null) return;
 
         while (RESET.consumeClick()) {
             if (RoadPlacementClient.active()) RoadPlacementClient.resetStart();
+            else if (CivilWorkPlacementClient.active()) CivilWorkPlacementClient.resetStart();
         }
-
         while (ROTATE.consumeClick()) {
             if (!active) continue;
-            rotation = rotation.next();
-            preview = null;
-            refreshTicks = 0;
+            rotation = rotation.next(); preview = null; refreshTicks = 0;
         }
-
         while (CONFIRM.consumeClick()) {
             if (active) {
                 if (preview != null && preview.valid() && previewMatchesSelection()) send(true);
-            } else if (RoadPlacementClient.active()) {
-                RoadPlacementClient.confirm();
-            } else if (OutpostPlacementClient.active()) {
-                OutpostPlacementClient.confirm();
-            }
+            } else if (RoadPlacementClient.active()) RoadPlacementClient.confirm();
+            else if (OutpostPlacementClient.active()) OutpostPlacementClient.confirm();
+            else if (CivilWorkPlacementClient.active()) CivilWorkPlacementClient.confirm();
         }
 
         if (!active) return;
         BlockPos nextTarget = resolveTarget(minecraft);
-        if (!nextTarget.equals(target)) {
-            target = nextTarget;
-            refreshTicks = 0;
-        }
-
-        if (refreshTicks-- <= 0) {
-            send(false);
-            refreshTicks = 5;
-        }
+        if (!nextTarget.equals(target)) { target = nextTarget; refreshTicks = 0; }
+        if (refreshTicks-- <= 0) { send(false); refreshTicks = 5; }
     }
 
     public static void beginPlacement(BuildingType type) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || type == null) return;
-        selectedType = type;
-        active = true;
-        preview = null;
-        refreshTicks = 0;
+        selectedType = type; active = true; preview = null; refreshTicks = 0;
         rotation = BuildingRotation.facingPlayerFrom(minecraft.player.getDirection());
         target = resolveTarget(minecraft);
-        RoadPlacementClient.cancel();
-        OutpostPlacementClient.cancel();
+        RoadPlacementClient.cancel(); OutpostPlacementClient.cancel(); CivilWorkPlacementClient.cancel();
     }
 
     public static void cancelAllModes() {
-        cancel();
-        RoadPlacementClient.cancel();
-        OutpostPlacementClient.cancel();
+        cancel(); RoadPlacementClient.cancel(); OutpostPlacementClient.cancel(); CivilWorkPlacementClient.cancel();
     }
 
     private static BlockPos resolveTarget(Minecraft minecraft) {
@@ -134,8 +109,7 @@ public final class BuildingPlacementClient {
     }
 
     private static boolean previewMatchesSelection() {
-        return preview != null
-                && selectedType().id().equals(preview.buildingType())
+        return preview != null && selectedType().id().equals(preview.buildingType())
                 && rotation.id() == Math.floorMod(preview.rotation(), 4);
     }
 
@@ -148,8 +122,7 @@ public final class BuildingPlacementClient {
         PlacementPreviewPayload p = preview();
         if (p != null && p.valid()) return p.origin();
         BuildingType type = selectedType();
-        int width = rotation.rotatedWidth(type);
-        int depth = rotation.rotatedDepth(type);
+        int width = rotation.rotatedWidth(type), depth = rotation.rotatedDepth(type);
         return new BlockPos(target.getX() - width / 2, target.getY(), target.getZ() - depth / 2);
     }
 
@@ -162,9 +135,5 @@ public final class BuildingPlacementClient {
                 + " | 회전 " + (rotation.id() * 90) + "° | " + state;
     }
 
-    public static void cancel() {
-        active = false;
-        preview = null;
-        refreshTicks = 0;
-    }
+    public static void cancel() { active = false; preview = null; refreshTicks = 0; }
 }
