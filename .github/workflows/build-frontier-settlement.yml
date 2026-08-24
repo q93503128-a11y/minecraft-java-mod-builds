@@ -30,89 +30,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply Alpha.66 civilian lifecycle authority
-        id: bootstrap66
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -uo pipefail
-          {
-            set -e
-            if ! test -f "$PROJECT_DIR/tools/apply_alpha66.py"; then
-              echo "ALPHA66_BOOTSTRAP=0" >> "$GITHUB_ENV"
-              exit 0
-            fi
-            echo "ALPHA66_BOOTSTRAP=1" >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/apply_alpha66.py"
-            rm -f "$PROJECT_DIR/tools/apply_alpha66.py" "$PROJECT_DIR/.alpha66-retry"
-            (cd "$PROJECT_DIR" && python3 tools/test_alpha66_source.py)
-            (cd "$PROJECT_DIR" && python3 tools/test_alpha66_docs.py)
-            git diff --check
-            git status --short "$PROJECT_DIR"
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -A "$PROJECT_DIR"
-            test -n "$(git diff --cached --name-only)"
-            git commit -m "Implement Frontier alpha.66 civilian lifecycle authority"
-            pushed=0
-            for attempt in 1 2 3 4 5 6; do
-              if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
-              sleep $((attempt * 2))
-            done
-            test "$pushed" -eq 1
-          } 2>&1 | tee "$GITHUB_WORKSPACE/frontier-alpha66-bootstrap.log"
-          exit ${PIPESTATUS[0]}
-
-      - name: Stop bootstrap source run
-        if: env.ALPHA66_BOOTSTRAP == '1' && steps.bootstrap66.outcome == 'success'
-        shell: bash
-        run: |
-          echo "Alpha.66 product commit pushed; canonical validation will be triggered separately."
-          exit 1
-
-      - name: Bootstrap failure diagnostic
-        if: env.ALPHA66_BOOTSTRAP == '1' && steps.bootstrap66.outcome == 'failure'
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/frontier-alpha66-bootstrap-result
-          mkdir -p /tmp/frontier-alpha66-bootstrap-result
-          if test -f "$GITHUB_WORKSPACE/frontier-alpha66-bootstrap.log"; then
-            cp "$GITHUB_WORKSPACE/frontier-alpha66-bootstrap.log" /tmp/frontier-alpha66-bootstrap-result/latest.log
-          else
-            printf 'Alpha.66 bootstrap failed before diagnostic output was created.\n' > /tmp/frontier-alpha66-bootstrap-result/latest.log
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          recorded=0
-          for attempt in 1 2 3 4 5 6; do
-            git fetch origin main
-            git reset --hard origin/main
-            rm -rf ci-results/frontier-alpha66-bootstrap
-            mkdir -p ci-results/frontier-alpha66-bootstrap
-            cp /tmp/frontier-alpha66-bootstrap-result/latest.log ci-results/frontier-alpha66-bootstrap/latest.log
-            git add ci-results/frontier-alpha66-bootstrap/latest.log
-            if git diff --cached --quiet; then recorded=1; break; fi
-            git commit -m 'Record Frontier alpha.66 bootstrap failure [skip ci]'
-            if git push origin HEAD:main; then recorded=1; break; fi
-            sleep $((attempt * 2))
-          done
-          test "$recorded" -eq 1
-          exit 1
-
       - uses: actions/setup-java@v5
-        if: env.ALPHA66_BOOTSTRAP != '1'
         with:
           distribution: temurin
           java-version: '25'
 
       - uses: gradle/actions/setup-gradle@v4
-        if: env.ALPHA66_BOOTSTRAP != '1'
         with:
           cache-read-only: false
 
       - name: Resolve version
-        if: env.ALPHA66_BOOTSTRAP != '1'
         shell: bash
         run: |
           set -euo pipefail
@@ -122,7 +49,6 @@ jobs:
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
 
       - name: Alpha.66 cumulative source audit
-        if: env.ALPHA66_BOOTSTRAP != '1'
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -130,7 +56,6 @@ jobs:
           python3 tools/test_alpha66_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
 
       - name: Alpha.66 canonical docs audit
-        if: env.ALPHA66_BOOTSTRAP != '1'
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -138,7 +63,6 @@ jobs:
           python3 tools/test_alpha66_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
 
       - name: Verify toolchain and committed tree
-        if: env.ALPHA66_BOOTSTRAP != '1'
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -150,7 +74,6 @@ jobs:
           git diff --exit-code
 
       - name: Java 25 clean build
-        if: env.ALPHA66_BOOTSTRAP != '1'
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -159,7 +82,6 @@ jobs:
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-gradle.log"
 
       - name: Verify runtime JAR
-        if: env.ALPHA66_BOOTSTRAP != '1'
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -172,7 +94,6 @@ jobs:
           cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
 
       - uses: actions/upload-artifact@v4
-        if: env.ALPHA66_BOOTSTRAP != '1'
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-deliverables
           path: deliverables/
@@ -180,7 +101,7 @@ jobs:
           retention-days: 30
 
       - name: Upload diagnostic logs
-        if: always() && env.ALPHA66_BOOTSTRAP != '1'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
@@ -193,7 +114,7 @@ jobs:
           retention-days: 14
 
       - name: Record canonical CI result
-        if: always() && env.ALPHA66_BOOTSTRAP != '1'
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
