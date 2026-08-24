@@ -35,11 +35,16 @@ with zipfile.ZipFile(jar) as zf:
 
     depot_data_name = "kr/moonseungjun/survivalascension/production/FieldDepotData.class"
     outpost_data_name = "kr/moonseungjun/survivalascension/production/OutpostData.class"
-    for name in [depot_data_name, outpost_data_name]:
+    field_service_name = "kr/moonseungjun/survivalascension/production/FieldDepotService.class"
+    outpost_service_name = "kr/moonseungjun/survivalascension/production/OutpostService.class"
+    for name in [depot_data_name, outpost_data_name, field_service_name, outpost_service_name]:
         if name not in zf.namelist():
             raise SystemExit(f"0.50 regional logistics runtime class missing: {name}")
+
     depot_data = zf.read(depot_data_name)
     outpost_data = zf.read(outpost_data_name)
+    field_service = zf.read(field_service_name)
+    outpost_service = zf.read(outpost_service_name)
     for token in [
         b"BASE_DEPOTS_PER_PLAYER",
         b"CIVIL_DEPOTS_PER_PLAYER",
@@ -52,6 +57,12 @@ with zipfile.ZipFile(jar) as zf:
             raise SystemExit(f"0.50 compiled regional depot token missing: {token!r}")
     if b"registrationLimit" not in outpost_data:
         raise SystemExit("0.50 compiled outpost dynamic-limit routing missing")
+    for token in [b"registrationLimit", b"LIMIT_REACHED", b"add"]:
+        if token not in field_service:
+            raise SystemExit(f"0.50 compiled field-depot admission token missing: {token!r}")
+    for token in [b"registrationLimit", b"consumeSupplyCharges", b"upgrade"]:
+        if token not in outpost_service:
+            raise SystemExit(f"0.50 compiled outpost pre-admission token missing: {token!r}")
 
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
