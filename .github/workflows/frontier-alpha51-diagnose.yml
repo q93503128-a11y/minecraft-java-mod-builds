@@ -1,3 +1,4 @@
+# trigger: execute after workflow registration
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
