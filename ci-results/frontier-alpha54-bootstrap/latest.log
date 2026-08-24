@@ -1,2 +1,0 @@
-Applied Frontier Settlement 0.1.0-alpha.54 bounded one-bend tunnel and physical portal pass.
-alpha.35 physical road stairs/bridge invariant missing: if (!placement.bridge())
