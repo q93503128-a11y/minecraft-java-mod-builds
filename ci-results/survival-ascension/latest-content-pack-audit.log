@@ -1,2 +1,2 @@
-RELEASE CONTENT-PACK AUDIT FAIL
-- content-pack version drifted: expected 0.50.0-alpha.1-content-preview.1, got '0.51.0-alpha.1-content-preview.1'
+baseline content-pack assertion: 0.48 PROJECT contract missing
+RELEASE CONTENT-PACK AUDIT FAIL: baseline regression contract failed
