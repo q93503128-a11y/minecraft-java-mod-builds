@@ -40,6 +40,14 @@ final class ClientSmokeDiagnostics {
                     diagnosticScreen.width, diagnosticScreen.height
             );
         }
+        if (ticks == 79) {
+            if (!ClientNetworkHandlers.kingdomClockRegressionPassForTest()) {
+                throw new IllegalStateException("Kingdom HUD clock can rewind or overrun its authoritative server sample");
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_CLIENT_CLOCK_DIAGNOSTIC_PASS server_authoritative=true delayed_sample_rewind=false monotonic=true extrapolation_cap_ticks=20 client_level_time_direct=false"
+            );
+        }
 
         if (ticks == 188) {
             loadingScreen = new RealmLoadingScreen("에르덴 왕도와 생활권을 준비하고 있습니다.");
@@ -54,7 +62,7 @@ final class ClientSmokeDiagnostics {
                 throw new IllegalStateException("Realm loading screen extends outside the current client viewport");
             }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true viewport={}x{} controls_fit=true staging_completion_guard=true",
                     loadingScreen.width, loadingScreen.height
             );
         }
