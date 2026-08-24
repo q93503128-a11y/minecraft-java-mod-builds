@@ -30,4 +30,5 @@ regional_logistics_scale_release_verify=PASS
 armor_affix_runtime=present
 armor_affix_release_verify=PASS
 ranged_combat_runtime=present
+ranged_combat_one_burst_per_projectile=present
 ranged_combat_release_verify=PASS
