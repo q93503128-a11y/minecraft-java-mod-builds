@@ -112,6 +112,18 @@ public final class FantasyWorldRules {
     public static void tick(ServerPlayer player) {
         if (!insideRealm(player)) return;
 
+        // The staging platform is never gameplay space. Keep retrying until the authored residence
+        // target itself is streamed, materialized and walkable; the loading screen remains blocking.
+        if (SelectionStagingManager.isStaging(player)) {
+            if (player.level().getGameTime() % 10L == 0L) {
+                OriginProfileManager.profile(player.getUUID())
+                        .ifPresent(profile -> LivingRealmWorldManager.requestPlacement(player, profile));
+            }
+            player.getFoodData().setFoodLevel(20);
+            player.getFoodData().setSaturation(20.0F);
+            return;
+        }
+
         // Hunger is not a combat timer here. Meals, inns and feasts are social/economic content.
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
