@@ -1,10 +1,11 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
+import kr.moonseungjun.frontiersettlement.content.FrontierSoldierEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
@@ -61,7 +62,7 @@ public final class SettlementBarracksService {
         for (BuildingRecord barracks : barracks(data)) {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
-                IronGolem soldier = findSoldier(level, barracks, slot);
+                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
                 if (soldier != null) patrol(level, barracks, slot, soldier);
             }
         }
@@ -76,7 +77,7 @@ public final class SettlementBarracksService {
         for (BuildingRecord barracks : barracks(data)) {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
-                IronGolem soldier = findSoldier(level, barracks, slot);
+                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
                 if (soldier != null) counted.add(soldier.getUUID());
             }
         }
@@ -105,7 +106,7 @@ public final class SettlementBarracksService {
         if (resources.food() < RECRUIT_FOOD_COST || resources.metal() < RECRUIT_METAL_COST) return false;
         BlockPos home = soldierHome(assignment.barracks(), assignment.slot());
         if (!level.hasChunkAt(home)) return false;
-        IronGolem soldier = createSoldier(level, assignment.barracks(), assignment.slot(), home);
+        FrontierSoldierEntity soldier = createSoldier(level, assignment.barracks(), assignment.slot(), home);
         if (!level.addFreshEntity(soldier)) return false;
         if (!SettlementStorageService.consumeMetalAndFood(level, data, RECRUIT_METAL_COST, RECRUIT_FOOD_COST)) {
             soldier.discard();
@@ -114,12 +115,12 @@ public final class SettlementBarracksService {
         return true;
     }
 
-    /** Barracks soldiers are a combat proxy, not an iron farm. */
+    /** Supplied soldiers are combat/service units and never an item/iron farm. */
     public static void onLivingDrops(LivingDropsEvent event) {
         if (event.getEntity().entityTags().contains(SOLDIER_TAG)) event.getDrops().clear();
     }
 
-    private static void patrol(ServerLevel level, BuildingRecord barracks, int slot, IronGolem soldier) {
+    private static void patrol(ServerLevel level, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier) {
         BlockPos home = soldierHome(barracks, slot);
         double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
@@ -141,8 +142,8 @@ public final class SettlementBarracksService {
                 .min(Comparator.comparingDouble(monster -> monster.distanceToSqr(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D))).orElse(null);
     }
 
-    private static IronGolem createSoldier(ServerLevel level, BuildingRecord barracks, int slot, BlockPos home) {
-        IronGolem soldier = new IronGolem(EntityTypes.IRON_GOLEM, level);
+    private static FrontierSoldierEntity createSoldier(ServerLevel level, BuildingRecord barracks, int slot, BlockPos home) {
+        FrontierSoldierEntity soldier = new FrontierSoldierEntity(FrontierContent.FRONTIER_SOLDIER.get(), level);
         soldier.setPos(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         soldier.setCustomName(Component.literal("주둔 병사 #" + (slot + 1)));
         soldier.setCustomNameVisible(true);
@@ -154,14 +155,38 @@ public final class SettlementBarracksService {
         return soldier;
     }
 
-    private static IronGolem findSoldier(ServerLevel level, BuildingRecord barracks, int slot) {
+    private static FrontierSoldierEntity findSoldier(ServerLevel level, BuildingRecord barracks, int slot) {
         BlockPos center = barracks.workCenter();
         String assignment = barracksAssignment(barracks);
         String slotTag = SOLDIER_SLOT_PREFIX + slot;
         AABB search = new AABB(center).inflate(SOLDIER_SEARCH_RADIUS, 16.0D, SOLDIER_SEARCH_RADIUS);
-        List<IronGolem> soldiers = level.getEntitiesOfClass(IronGolem.class, search,
+        List<FrontierSoldierEntity> soldiers = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
                 soldier -> soldier.entityTags().contains(SOLDIER_TAG) && soldier.entityTags().contains(assignment) && soldier.entityTags().contains(slotTag));
-        return soldiers.isEmpty() ? null : soldiers.getFirst();
+        if (!soldiers.isEmpty()) return soldiers.getFirst();
+
+        // Save-compatible loaded migration. It changes only entity type/presentation and never recruits or spends again.
+        List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
+                soldier -> !(soldier instanceof FrontierSoldierEntity)
+                        && soldier.entityTags().contains(SOLDIER_TAG)
+                        && soldier.entityTags().contains(assignment)
+                        && soldier.entityTags().contains(slotTag));
+        return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());
+    }
+
+    private static FrontierSoldierEntity migrateLegacySoldier(ServerLevel level, IronGolem legacy) {
+        FrontierSoldierEntity replacement = new FrontierSoldierEntity(FrontierContent.FRONTIER_SOLDIER.get(), level);
+        replacement.setPos(legacy.getX(), legacy.getY(), legacy.getZ());
+        replacement.setYRot(legacy.getYRot());
+        replacement.setXRot(legacy.getXRot());
+        replacement.setCustomName(legacy.getCustomName());
+        replacement.setCustomNameVisible(legacy.isCustomNameVisible());
+        replacement.setPersistenceRequired();
+        replacement.setPlayerCreated(true);
+        for (String tag : legacy.entityTags()) replacement.addTag(tag);
+        replacement.setHealth(Math.min(replacement.getMaxHealth(), legacy.getHealth()));
+        if (!level.addFreshEntity(replacement)) return null;
+        legacy.discard();
+        return replacement;
     }
 
     /** Remove loaded pre-Alpha37 free reinforcement golems so old saves do not bypass barracks economics. */
