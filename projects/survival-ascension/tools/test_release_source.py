@@ -106,6 +106,34 @@ need(equipment_ui, ["검/곡괭이/도끼/삽/괭이/방어구 표준 태그 장
 need(main_mod, ["VERSION = \"0.51.0-alpha.1\"", "armor affix progression"], "0.51 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
 
+# User-facing docs are part of the release contract, not an uncommitted CI-side patch.
+project_doc = read("PROJECT.md")
+readme = read("README.md")
+changelog = read("CHANGELOG.md")
+guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
+need(project_doc, [
+    "Mod version: `0.51.0-alpha.1`",
+    "## 0.51 Armor Ascension / 방어구 승천 성장",
+    "hard-capped at 35%",
+    "hard-capped at +32% Combat XP"
+], "0.51 PROJECT docs")
+need(readme, [
+    "## 0.51.0-alpha.1 — Armor Ascension / 방어구 승천 성장",
+    "capped at 35%",
+    "capped at +32%"
+], "0.51 README docs")
+need(changelog, [
+    "## 0.51.0-alpha.1",
+    "Armor Ascension / 방어구 승천 성장",
+    "35%",
+    "+32%"
+], "0.51 CHANGELOG docs")
+need(guide, [
+    'h("방어구 affix")',
+    "최대35%",
+    "최대32%"
+], "0.51 in-game guide")
+
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
     for error in errors:
@@ -136,3 +164,4 @@ print("- 0.49 frontline freight manifest and physical-only transport remain inta
 print("- 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-first before resource mutation")
 print("- 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops")
 print("- 0.51 worn armor effects are bounded: total affix damage reduction cap35%, mastery XP cap32%")
+print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.51")
