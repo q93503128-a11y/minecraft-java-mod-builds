@@ -75,6 +75,7 @@ public final class LivingRealmWorldManager {
     }
 
     public static BlockPos homePosition(ServerLevel realm, OriginProfile profile) {
+        if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return null;
         return SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
     }
 }
