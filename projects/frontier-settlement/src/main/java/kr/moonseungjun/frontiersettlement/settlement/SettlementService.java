@@ -40,9 +40,9 @@ public final class SettlementService {
             SettlementWorkerService.tick(server, data);
             SettlementOutpostProductionService.tick(server, data);
             SettlementFishingOutpostService.tick(server, data);
-            SettlementDeferredOutpostService.tick(server, data);
             SettlementMarketService.tick(server, data);
             SettlementWorkshopService.tick(server, data);
+            SettlementDeferredOutpostService.tick(server, data);
         }
         SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);

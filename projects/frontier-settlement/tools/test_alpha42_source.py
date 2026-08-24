@@ -129,7 +129,8 @@ service = text(JAVA / 'settlement/SettlementService.java')
 if service.count('SettlementDeferredOutpostService.tick(server, data)') != 1:
     raise SystemExit('alpha.42 deferred outpost service must have exactly one server tick call')
 must(service, (
-    'SettlementOutpostProductionService.tick(server, data);\n            SettlementFishingOutpostService.tick(server, data);\n            SettlementDeferredOutpostService.tick(server, data);',
+    'SettlementOutpostProductionService.tick(server, data);\n            SettlementFishingOutpostService.tick(server, data);\n            SettlementMarketService.tick(server, data);',
+    'SettlementWorkshopService.tick(server, data);\n            SettlementDeferredOutpostService.tick(server, data);',
 ), 'alpha.42 work-hour deferred accounting order')
 
 commands = text(JAVA / 'command/SettlementCommands.java')
