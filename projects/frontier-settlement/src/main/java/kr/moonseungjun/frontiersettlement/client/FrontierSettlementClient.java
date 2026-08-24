@@ -1,11 +1,13 @@
 package kr.moonseungjun.frontiersettlement.client;
 
 import kr.moonseungjun.frontiersettlement.FrontierSettlement;
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -22,6 +24,7 @@ public final class FrontierSettlementClient {
         SettlementNetwork.setOutpostPreviewSink(OutpostPlacementClient::acceptPreview);
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
+        modBus.addListener(EntityRenderersEvent.RegisterRenderers.class, FrontierSettlementClient::onRegisterEntityRenderers);
         NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(RoadPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(OutpostPlacementClient::tick);
@@ -35,5 +38,9 @@ public final class FrontierSettlementClient {
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(RESOURCE_LAYER, SettlementHudOverlay::render);
+    }
+
+    private static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(FrontierContent.FRONTIER_SOLDIER.get(), FrontierSoldierRenderer::new);
     }
 }
