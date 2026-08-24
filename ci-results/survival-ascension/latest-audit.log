@@ -1,6 +1,7 @@
 SOURCE AUDIT PASS
 - Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8
-- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies
+- 0.45 optional expedition Biome Tags bridge external worldgen before vanilla fallback; BOP entries stay required=false and Deep includes glowing_grotto + spider_nest
+- 0.44 standard-tagged external swords/pickaxes/axes/hoes remain imprinted into the existing affix system without hard optional-mod dependencies
 - imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials
 - external item components stay on the same stack; Survival Ascension writes only nested affix CustomData/display name with a retained base name
 - 0.43 physical freight still requires a loaded real railhead at both exact active-outpost endpoints
