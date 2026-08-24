@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.49**.
+Current canonical implementation: **0.1.0-alpha.50**.
 
 ## 1. Product identity
 
@@ -34,7 +34,9 @@ Hard identity rules:
 - loaded areas visibly move/work;
 - do not force-load chunks merely to continue simulation;
 - do not silently destroy player containers, fluids, valuable blocks or unrelated builds;
-- companion mods supply terrain/dungeon/combat/weapon/loot breadth while Frontier remains settlement/citizen/construction/logistics/territory/progression glue.
+- do not use `destroyBlock` / `dropResources` as free-drop construction or civil-work shortcuts;
+- companion mods supply terrain/dungeon/combat/weapon/loot breadth while Frontier remains settlement/citizen/construction/logistics/territory/progression glue;
+- optional companion absence must never become a Frontier boot failure unless a future dependency is explicitly reclassified.
 
 ## 2. Interaction budget and controls
 
@@ -47,14 +49,14 @@ Primary interactions:
 3. choose an outpost location;
 4. choose road endpoints/necessary route intent;
 5. explore/fight and decide which rare physical loot to commit to trade/crafting/progression;
-6. late-game civil work may reuse the construction palette, but must not become a separate management game.
+6. late-game civil work reuses the construction palette and must not become a separate management game.
 
 Fixed controls:
 
 - `B`: settlement/infrastructure palette;
 - `R`: rotate ordinary building placement;
 - `Enter`: confirm the current building/road/outpost/civil-work step;
-- `Backspace`: reset road start or Alpha.49 civil-work first corner.
+- `Backspace`: reset road start or civil-work first corner.
 
 Avoid E/Q/F/number/Shift/Ctrl/Space/chat/camera conflicts. Do not proliferate N/J/K or one new key per feature.
 
@@ -65,7 +67,7 @@ Physical intent remains preferred over menus:
 - advanced forge/reforge: weapon + relic deliberately placed in commission barrel, real metal fetched by specialist;
 - waterfront trade: fish deliberately placed in the dedicated trade barrel;
 - coast/river and dangerous-region roles are inferred from loaded world conditions;
-- Alpha.49 civil work is `B palette -> first corner -> second corner -> server approval`, not a terraforming dashboard.
+- Alpha.50 civil work is `B palette -> first corner -> second corner -> server approval`, not a terraforming dashboard.
 
 Do not add tax rates, dozens of happiness stats, family schedules, per-worker priority tables, manual hauling routes or giant research screens.
 
@@ -78,7 +80,8 @@ One world/server has one shared settlement and one shared infrastructure/project
 - the server revalidates building/road/outpost/civil-work requests before mutation;
 - only one building/road/outpost/civil construction project may occupy the shared construction authority at once;
 - Alpha.45 exploration metadata is shared, non-spendable and deduplicated;
-- Alpha.49 `earthBank` is project-local relocation accounting only and cannot be spent outside the active civil project;
+- civil `earthBank` is project-local relocation accounting only and cannot be spent outside the active civil project;
+- imported civil fill is never a number ledger: only real DIRT/COARSE_DIRT ItemStacks in actual storage/worker hand have authority;
 - no per-player settlement or internal politics/tax layer in planned scope.
 
 ## 4. Founding and growth
@@ -91,15 +94,9 @@ Founding establishes:
 - settlement center/territory state;
 - starter manual resource loop.
 
-Growth tiers remain:
+Growth tiers remain pioneer camp -> hamlet -> village -> frontier town -> domain.
 
-- pioneer camp;
-- hamlet;
-- village;
-- frontier town;
-- domain.
-
-Alpha.45 adds alternate exploration-accelerated tier routes but does not invalidate legacy routes.
+Alpha.45 alternate exploration-accelerated routes remain additive and do not invalidate legacy routes.
 
 Legacy frontier-town route:
 - population >=8;
@@ -149,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–49 deepen systems rather than adding fake 16th–20th families.
+The original target was roughly 15–20 meaningful families. Alpha.40–50 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -183,55 +180,87 @@ Construction presentation invariant: **builder walks from actual settlement stor
 
 `SettlementConstructionService` remains the ordinary building terrain/build authority.
 
-## 6. Alpha.49 selected-area civil works
+## 6. Selected-area civil works — Alpha.49 history and Alpha.50 current
 
-Alpha.49 implements the original v0.2 late-game `선택 영역 평탄화/절토/성토` as a bounded first pass without turning Frontier into WorldEdit.
+### Alpha.49 historical first pass
 
-Unlock and interaction:
+Alpha.49 first implemented the original v0.2 late-game `선택 영역 평탄화/절토/성토` in a deliberately bounded form:
 
-- shared settlement must be `DOMAIN`;
-- at least one construction office must be completed;
+- `DOMAIN` + construction office;
+- B palette, first-corner grade Y, opposite-corner bounds, Backspace reset;
+- **9×9 / cut-fill ±4**;
+- selected corners within28 blocks and project center within80 blocks;
+- full area loaded;
+- infrastructure/block-entity/fluid/ore/player-structure/non-natural protection;
+- shared construction worker only;
+- project-local `earthBank` credited only after real no-drop cut and debited by real fill;
+- `fill > cut` rejected;
+- no force-load/teleport/free resource path.
+
+That 9×9 balanced-earth rule is historical, not the current Alpha.50 capacity.
+
+### Alpha.50 current physical imported-fill expansion
+
+Unlock/interaction remains:
+
+- shared settlement `DOMAIN`;
+- at least one completed construction office;
 - no new functional BuildingType;
 - no new key/dashboard;
 - choose `토목 평탄화` from existing B palette;
 - first corner fixes final grade Y;
-- second corner defines X/Z bounds and requests authoritative validation;
+- second corner defines X/Z bounds and requests server validation;
 - `Backspace` resets first corner.
 
 Bounds:
 
-- maximum 9×9 footprint;
-- max cut4 blocks/column;
-- max fill4 blocks/column;
-- selected corners within28 blocks of player;
-- project center within80 blocks of settlement center;
+- maximum **13×13** footprint;
+- max cut **5** blocks/column;
+- max fill **5** blocks/column;
+- selected corners within36 blocks of player;
+- project center within96 blocks of settlement center;
 - entire selected area already loaded.
 
 Protection:
 
 - reject overlap with authoritative stockpile, completed functional buildings, roads or outposts;
 - reject block entities and fluids;
-- reject ores, structures/player blocks and other non-natural terrain in the affected column;
-- do not globally scan, force-load or generate chunks;
-- active civil-work volume is protected from ordinary player block breaking.
+- reject ores, structures/player blocks and other non-natural terrain in affected columns;
+- revalidate the current target column while work proceeds so later unsafe external changes pause instead of being buried/removed;
+- active civil-work volume is protected from ordinary player block breaking;
+- do not globally scan, force-load or generate chunks.
 
-Balanced-earth invariant:
+Earth/resource invariant:
 
-- server computes initial cut and fill counts before approval;
-- **fill volume must be <= cut volume** in Alpha.49;
-- each successful real cut changes one natural world block to air with no item drops, then credits one project-local earth unit;
-- each real coarse-dirt fill requires earthBank>0 and consumes one project-local earth unit;
-- `earthBank` persists for save/reload correctness but is not a resource ledger, ItemStack, cargo, currency or transferable balance;
-- leftover project-local earth disappears when the civil project completes; it never becomes free dirt/stone loot.
+- each successful real cut changes one natural world block to air with no item drops, then and only then credits one project-local earth unit;
+- fill uses `earthBank` first;
+- initial imported requirement is `max(0, fillBlocks - cutBlocks)`;
+- approval of a project needing imported fill requires all shared settlement storage chunks loaded and enough actual DIRT/COARSE_DIRT ItemStacks;
+- project-local `earthBank` persists for save/reload correctness but is not a resource ledger, ItemStack, cargo, currency or transferable balance;
+- no virtual dirt/stone count is created.
+
+Physical imported-fill sequence:
+
+`actual shared storage -> shared construction worker walks to exact container -> extracts max16 real dirt/coarse-dirt into MAINHAND -> walks to site -> successful setBlock -> shrink carried ItemStack by1`
+
+Rules:
+
+- if real dirt is removed from storage after approval, construction pauses until physical supply returns;
+- remaining imported demand is recalculated from current physical selected-area height and remaining `earthBank`, so pre-filled/external changes do not create a stale last haul;
+- a failed `setBlock` never consumes carried dirt or advances project state;
+- if completion is reached with a carried stack, project enters a persisted return phase; the worker walks to a concrete loaded settlement container and inserts there before the construction authority is released;
+- if return storage is unloaded/full, the worker keeps the real stack and the project waits; there is no deletion or broad storage teleport;
+- save/reload therefore cannot convert carried fill into a virtual balance or strand dirt as a blocker for the next construction project.
 
 Worker/authority invariant:
 
-- Alpha.49 reuses `SettlementConstructionService.ensureBuilder` and the existing shared `건설 주민`;
-- no second builder entity or independent construction economy;
-- building/road/outpost normal UI/network/command starts reject while civil work is active;
-- compact project context exposes phase/progress/cut/fill/earthBank only as presentation.
+- Alpha.50 reuses `SettlementConstructionService.ensureBuilder` and the existing shared `건설 주민`;
+- no second builder entity or independent civil economy;
+- building/road/outpost UI/network/command starts reject while civil work is active;
+- compact status/context only presents phase, on-site earth, remaining imported fill and actual storage availability;
+- `가상 토사 0`.
 
-Alpha.49 completion claim is intentionally narrow: bounded 9×9 balanced flatten/cut/fill is **implemented/partial**. Still unfinished are imported physical fill, retaining-heavy terraces, larger area projects, ravine-scale bridges, tunnels and monumental civil engineering. Mountain-scale deletion remains prohibited.
+Alpha.50 claim is still narrow. **Retaining-heavy larger terraces, ravine-scale civil work, long bridges, tunnels and monumental engineering remain unfinished.** Mountain deletion/unrestricted WorldEdit is outside product scope.
 
 ## 7. Citizens, production and military
 
@@ -239,7 +268,7 @@ Implemented/service roles include builder, logger, farmer, quarry worker, miner,
 
 Loaded areas should show actual movement/work. Family/children simulation is outside planned scope.
 
-### Defense separation
+Defense separation:
 
 - guard post: routine close defense;
 - watchtower: loaded longer-range observation/response;
@@ -262,16 +291,16 @@ Dangerous-outpost invariant:
 - max one sentry/outpost;
 - replacement local stockpile food6 + metal2;
 - target reserve food12 + metal4;
-- military role overrides fishing;
+- **위험지역 군사 역할이 우선**;
 - danger loss causes stand-down/return rather than deletion.
 
 ### Alpha.48 humanoid military presentation
 
-- `FrontierSoldierEntity` extends `IronGolem` and inherits the proven server AI/combat attributes;
+- `FrontierSoldierEntity` extends `IronGolem` and inherits proven server AI/combat attributes;
 - client renders a humanoid player-shaped soldier;
 - **visual service sword is never a server ItemStack**;
 - old loaded tagged Iron Golem barracks soldiers/sentries migrate **1:1**, preserving assignment/name/tags/health without recruitment consume;
-- existing food/metal costs, military slots and drop protection remain unchanged;
+- food/metal costs, military slots and drop protection remain unchanged;
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 A physical external-weapon armory/loadout loop remains unfinished. If added, it must use actual ItemStacks and automation and must not require manually opening every soldier.
@@ -285,38 +314,35 @@ Resources remain physical Minecraft items.
 - avoid every-tick arbitrary player chest scanning;
 - common/additive tags let compatible external materials participate;
 - service/commission/trade barrels are not generic storage unless explicitly specified;
-- Alpha.45 exploration score and Alpha.49 earthBank are not spendable resources.
+- Alpha.45 exploration score and civil `earthBank` are not spendable resources.
 
 **Transport workers belong to a specific outpost**, follow persisted road-network waypoints, carry actual cargo and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 
-Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier.
+Alpha.27 tagged road logistics remains the **single authority for outpost transport** at every tier. **There is still only one authority for long-distance outpost transport.**
 
-### Cart station
-
+Cart station:
 - road-adjacent physical freight hub;
 - four freight barrels;
 - same outpost transporter owns route;
 - batch16→32;
 - no second route/economy authority.
 
-### Fishing/waterfront
-
+Fishing/waterfront:
 - loaded shoreline fishing produces real cod/salmon into outpost stockpile;
 - existing road logistics moves it;
 - Alpha.46 physical landing is built from real local wood;
 - local wood shortage may be reverse-supplied by same transporter;
-- dedicated trade barrel consumes 16 real cod/salmon and outputs1 real emerald;
+- dedicated trade barrel consumes16 real cod/salmon and outputs1 real emerald;
 - ordinary outpost stock never auto-sells;
 - no boat logistics/virtual trade balance.
 
-### Military reverse supply
-
-- same transporter can physically return to town and bring food/metal to active military outpost;
+Military reverse supply:
+- **군사 전초도 같은 도로 운송자가 역방향 보급**한다;
+- same transporter returns to town and carries food/metal to an active military outpost;
 - military food/metal has precedence over waterfront wood reverse supply;
 - no abstract supply points or duplicate transporter.
 
-### Alpha.42 unloaded catch-up
-
+Alpha.42 unloaded catch-up:
 - stores bounded elapsed work-time debt only;
 - production/logistics each cap24,000 ticks/outpost;
 - no resources/cargo generated while unloaded;
@@ -352,8 +378,7 @@ Still partial: deeper companion-biome specialization and larger road/civil engin
 
 Frontier does not own the full adventure-content layer. External structures/dungeons/mobs/bosses/loot remain companion authority.
 
-### Alpha.45 exploration/conquest progression
-
+Alpha.45 exploration/conquest progression:
 - every100 server ticks inspect only online players' current already-loaded positions;
 - use dynamic structure registry/StructureManager;
 - external namespaces except minecraft/frontier_settlement/neoforge;
@@ -366,7 +391,7 @@ Frontier does not own the full adventure-content layer. External structures/dung
 - score is non-spendable metadata;
 - no locate/global scan/chunk generation/loot minting.
 
-### Market/workshop/advanced crafting role split
+Market/workshop/advanced crafting role split:
 
 `market = expedition relic -> physical trade value`
 
@@ -401,19 +426,17 @@ Rules:
 - lock remains `candidate_runtime_lock` until full fresh-world client/server launch succeeds.
 
 Jade:
-
 - exact candidate 26.2.2/HLYMycSr compileOnly;
 - API references quarantined under compat/jade;
 - absence must not affect core simulation.
 
 Xaero:
-
 - Frontier only shifts its HUD below expected minimap area;
-- locked Xaero 26.4.2 lacks the historical public `WaypointsManager` API;
+- locked Xaero26.4.2 lacks the historical public `WaypointsManager` API;
 - do not fake completion through internal waypoint sets/reflection/mixins;
 - true settlement/outpost/road marker synchronization remains deferred until a stable supported seam exists.
 
-Alpha.49 civil work reads only already-loaded ordinary block state/heightmap information and adds no Terralith/worldgen hard dependency.
+Alpha.50 civil work reads already-loaded block state/heightmap and loaded physical storage only. It adds no Terralith/worldgen hard dependency.
 
 ## 12. UI and information hierarchy
 
@@ -431,9 +454,10 @@ Current hierarchy:
 - right-side notices max3/6 seconds;
 - Jade crosshair-local infrastructure details when installed;
 - Xaero-aware HUD offset;
-- rare exploration messages + one `/frontier status` line, not quest dashboard;
+- rare exploration messages + `/frontier status`, not a quest dashboard;
 - physical barrels encode market/workshop/waterfront intent;
-- Alpha.49 grade-plane outline is world-space placement feedback, not a new screen.
+- civil grade-plane outline is world-space placement feedback, not a new screen;
+- Alpha.50 civil detail adds only `현장 토사 / 외부 흙 필요 / 실제 창고 흙` presentation.
 
 Do not invent giant generic dashboards when a physical/world-space interaction can carry the same intent.
 
@@ -448,7 +472,7 @@ Target:
 
 Development sequence:
 
-`read current GitHub main -> inspect ORIGINAL_DESIGN + CANONICAL_PLAN + gap audit + source + CI -> implement -> manual code/gameplay audit -> Java25 clean build -> JAR verify -> direct main update -> canonical exact-SHA CI`
+`read current GitHub main -> inspect ORIGINAL_DESIGN + CANONICAL_PLAN + gap audit + source + CI -> implement -> manual code/gameplay audit -> cumulative source audit -> canonical docs audit -> Java25 clean build -> JAR verify -> direct main update -> canonical exact-SHA CI`
 
 Shared repo:
 
@@ -457,9 +481,9 @@ Shared repo:
 - do not revert unrelated concurrent-project commits;
 - Frontier path changes only except its workflow/result files;
 - CI result bot may advance main;
-- final accepted result must identify the exact intended Frontier source/docs SHA.
+- final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.49
+## 14. Current playable slice after Alpha.50
 
 Current implemented slice includes:
 
@@ -479,15 +503,15 @@ Current implemented slice includes:
 - unique external structure/conquest progression bridge;
 - market, repair, first advanced forge and DOMAIN reforge;
 - supplied humanoid military presentation with unchanged physical recruitment economics;
-- **Alpha.49 DOMAIN 9×9 balanced selected-area cut/fill** using the shared construction worker and project-local non-economic earth accounting.
+- **Alpha.50 DOMAIN 13×13 / ±5 selected-area cut/fill with project-local earth first and real imported DIRT/COARSE_DIRT physically hauled by the shared builder**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.49
+## 15. Unfinished original-scope priorities after Alpha.50
 
 Unless real-play regression overrides them:
 
-1. **larger civil-engineering second pass** — physical imported fill/retaining-heavy terraces and carefully bounded larger works without player-build/resource exploits;
+1. **retaining-heavy / larger civil-engineering second pass** — larger terraces, ravine-scale bounded works and bridge/tunnel breadth without becoming WorldEdit or minting resources;
 2. deeper exploration bridges — rare NPC/structure/boss-specific settlement value only where soft, non-farmable and meaningful;
 3. better companion-biome-aware outpost specialization where a stable data seam exists;
 4. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
@@ -496,7 +520,7 @@ Unless real-play regression overrides them:
 7. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance;
 8. Alpha.46 waterfront pathing/site/reverse-supply/trade-balance acceptance;
 9. Alpha.48 humanoid render/attack-animation + legacy migration acceptance;
-10. Alpha.49 civil-work pathing/save-reload/terrain-safety/earth-balance acceptance;
+10. Alpha.50 civil-work pathing/save-reload/depletion-resupply/return-cargo/terrain-safety acceptance;
 11. full companion lock fresh-world client/server runtime;
 12. true Xaero markers only if a stable supported API appears;
 13. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
@@ -520,18 +544,22 @@ At the final/test-worthy point verify at least:
 - Jade installed/absent boot and compact context;
 - Xaero installed/absent HUD readability with marker feature still honestly absent;
 - external structure/conquest unique-type dedupe and legacy tier routes;
-- waterfront real wood build, fish cargo return, same-transporter wood supply, military supply precedence, break protection and 16→1 dedicated trade;
+- waterfront real wood build, fish cargo return, same-transporter wood supply, military supply precedence, break protection and16→1 dedicated trade;
 - advanced forge and DOMAIN reforge no-loss compatibility;
-- Alpha.48 humanoid render, attacks, drops and 1:1 legacy migration;
-- Alpha.49 B-palette unlock requires DOMAIN + construction office at server authority;
-- Alpha.49 first-corner grade, second-corner area, max9×9, ±4 bounds;
-- Alpha.49 rejects fluids/block entities/ores/player structures/existing infrastructure;
-- Alpha.49 fill>cut rejected;
-- real cut creates no drops and only then credits earthBank;
-- real fill requires/debits earthBank;
-- save/reload preserves phase/progress/earthBank without duplication;
-- unloaded area pauses instead of force-loading;
-- shared builder visibly walks to civil cells;
+- Alpha.48 humanoid render, attacks, drops and1:1 legacy migration;
+- Alpha.50 B-palette unlock requires DOMAIN + construction office at server authority;
+- first-corner grade, second-corner area, max13×13 and ±5 bounds;
+- fluids/block entities/ores/player structures/existing infrastructure rejection;
+- real cut creates no drops and only successful setBlock credits earthBank;
+- local earth fills first;
+- fill>cut succeeds only when the loaded common storage actually contains enough DIRT/COARSE_DIRT;
+- builder visibly walks storage→site carrying real dirt/coarse dirt;
+- mid-project dirt depletion pauses and later physical resupply resumes;
+- failed placement does not consume carried dirt;
+- final haul is limited to current remaining imported demand;
+- early/pre-filled completion returns carried dirt physically before project clear;
+- save/reload preserves phase/progress/earthBank/carry without duplication or loss;
+- unloaded selected area/storage pauses instead of force-loading;
 - no building/road/outpost project starts concurrently;
 - completed project leaves no spendable/transferable virtual earth;
 - full companion-stack fresh world.

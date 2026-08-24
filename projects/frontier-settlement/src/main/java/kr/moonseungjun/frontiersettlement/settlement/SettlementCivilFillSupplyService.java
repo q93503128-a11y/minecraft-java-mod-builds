@@ -10,6 +10,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Alpha.50 physical imported-fill support for civil works.
@@ -43,6 +44,25 @@ public final class SettlementCivilFillSupplyService {
     }
 
     /**
+     * Recomputes the still-missing imported volume from the current physical site instead of trusting
+     * the initial plan. This keeps the final haul exact if an admin/mod changes already-planned cells.
+     * Returns -1 while any selected-area chunk is unloaded.
+     */
+    public static int remainingImportedFill(ServerLevel level, CivilWorkState project) {
+        if (project == null || !project.active()) return 0;
+        int fillRemaining = 0;
+        for (int x = project.minX(); x <= project.maxX(); x++) {
+            for (int z = project.minZ(); z <= project.maxZ(); z++) {
+                BlockPos column = new BlockPos(x, project.gradeY(), z);
+                if (!level.hasChunkAt(column)) return -1;
+                int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                if (surfaceY < project.gradeY()) fillRemaining += project.gradeY() - surfaceY;
+            }
+        }
+        return Math.max(0, fillRemaining - project.earthBank());
+    }
+
+    /**
      * Ensures the builder physically carries imported fill. Returns true only when an eligible
      * carried stack is already in hand and can be consumed at the work cell.
      */
@@ -52,6 +72,8 @@ public final class SettlementCivilFillSupplyService {
         if (isFillStack(carried)) return true;
         if (!carried.isEmpty()) return false;
 
+        int remaining = remainingImportedFill(level, project);
+        if (remaining <= 0) return false;
         BlockPos source = SettlementStorageService.findExtractionTarget(level, data,
                 SettlementCivilFillSupplyService::isFillStack);
         if (source == null) return false;
@@ -61,13 +83,32 @@ public final class SettlementCivilFillSupplyService {
             return false;
         }
 
-        int remaining = remainingImportedFill(project);
-        if (remaining <= 0) return false;
         ItemStack picked = SettlementStorageService.extract(level, source,
                 SettlementCivilFillSupplyService::isFillStack, Math.min(HAUL_BATCH, remaining));
         if (picked.isEmpty()) return false;
         builder.setItemSlot(EquipmentSlot.MAINHAND, picked);
         return true;
+    }
+
+    /**
+     * Physically returns any carried construction/civil cargo to one concrete loaded storage block.
+     * The worker must reach that exact container before insertion, so cleanup cannot become an
+     * inventory teleport. If storage is unloaded/full the project simply remains paused with the
+     * real ItemStack still in the worker's hand.
+     */
+    public static boolean returnCarriedToStorage(ServerLevel level, SettlementData data, Villager builder) {
+        ItemStack carried = builder.getMainHandItem();
+        if (carried.isEmpty()) return true;
+        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) return false;
+        if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                > STORAGE_REACHED_SQR) {
+            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D, 0.86D);
+            return false;
+        }
+        ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
+        builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        return remaining.isEmpty();
     }
 
     public static BlockState carriedFillState(Villager builder) {
@@ -86,11 +127,5 @@ public final class SettlementCivilFillSupplyService {
 
     public static boolean isFillStack(ItemStack stack) {
         return stack.is(Items.DIRT) || stack.is(Items.COARSE_DIRT);
-    }
-
-    private static int remainingImportedFill(CivilWorkState project) {
-        int fillsCompleted = Math.max(0, project.completedSteps() - project.initialCutBlocks());
-        int fillsRemaining = Math.max(0, project.initialFillBlocks() - fillsCompleted);
-        return project.earthBank() > 0 ? Math.max(0, fillsRemaining - project.earthBank()) : fillsRemaining;
     }
 }

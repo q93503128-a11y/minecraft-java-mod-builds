@@ -15,6 +15,7 @@ public record CivilWorkState(boolean active,
                              int initialFillBlocks) {
     public static final int PHASE_CUT = 0;
     public static final int PHASE_FILL = 1;
+    public static final int PHASE_RETURN = 2;
     public static final CivilWorkState EMPTY = new CivilWorkState(false, 0, 0, 0, 0, 0, PHASE_CUT, 0, 0, 0, 0);
 
     public static final Codec<CivilWorkState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -38,7 +39,7 @@ public record CivilWorkState(boolean active,
         } else {
             if (minX > maxX) { int swap = minX; minX = maxX; maxX = swap; }
             if (minZ > maxZ) { int swap = minZ; minZ = maxZ; maxZ = swap; }
-            phase = phase == PHASE_FILL ? PHASE_FILL : PHASE_CUT;
+            phase = phase == PHASE_FILL || phase == PHASE_RETURN ? phase : PHASE_CUT;
             earthBank = Math.max(0, earthBank);
             completedSteps = Math.max(0, completedSteps);
             initialCutBlocks = Math.max(0, initialCutBlocks);
@@ -50,7 +51,10 @@ public record CivilWorkState(boolean active,
     public int depth() { return active ? maxZ - minZ + 1 : 0; }
     public int area() { return width() * depth(); }
     public int totalSteps() { return initialCutBlocks + initialFillBlocks; }
-    public int progressPercent() { return totalSteps() <= 0 ? 0 : Math.min(100, completedSteps * 100 / totalSteps()); }
+    public int progressPercent() {
+        if (phase == PHASE_RETURN) return 100;
+        return totalSteps() <= 0 ? 0 : Math.min(100, completedSteps * 100 / totalSteps());
+    }
     public BlockPos center() { return new BlockPos((minX + maxX) / 2, gradeY, (minZ + maxZ) / 2); }
 
     public CivilWorkState afterCut() {
@@ -66,5 +70,10 @@ public record CivilWorkState(boolean active,
     public CivilWorkState afterFill() {
         return new CivilWorkState(true, minX, maxX, minZ, maxZ, gradeY, PHASE_FILL,
                 Math.max(0, earthBank - 1), completedSteps + 1, initialCutBlocks, initialFillBlocks);
+    }
+
+    public CivilWorkState beginReturn() {
+        return new CivilWorkState(true, minX, maxX, minZ, maxZ, gradeY, PHASE_RETURN,
+                earthBank, completedSteps, initialCutBlocks, initialFillBlocks);
     }
 }

@@ -52,16 +52,22 @@ public final class SettlementContextService {
         } else {
             CivilWorkState civil = SettlementCivilWorkData.get(server).project();
             if (civil.active()) {
-                projectLabel = civil.phase() == CivilWorkState.PHASE_CUT ? "선택영역 절토" : "선택영역 성토";
+                projectLabel = SettlementCivilWorkService.phaseLabel(server);
                 projectProgress = civil.progressPercent();
+                int importedRemaining = SettlementCivilFillSupplyService.remainingImportedFill(level, civil);
+                int availableFill = SettlementCivilFillSupplyService.availableFill(level, data);
+                String imported = importedRemaining < 0
+                        ? "외부 흙 확인 대기"
+                        : "외부 흙 필요 " + importedRemaining;
+                String storage = availableFill < 0 ? "창고 흙 미로드" : "창고 흙 " + availableFill;
                 targets.add(new SettlementContextTarget(
                         "civil_work", "civil_work",
                         civil.minX(), civil.gradeY() - SettlementCivilWorkService.MAX_FILL_DEPTH, civil.minZ(),
                         civil.maxX(), civil.gradeY() + SettlementCivilWorkService.MAX_CUT_DEPTH, civil.maxZ(),
                         civil.center().getX(), civil.gradeY(), civil.center().getZ(),
                         "선택영역 토목",
-                        "절토 " + civil.initialCutBlocks() + " · 성토 " + civil.initialFillBlocks()
-                                + " · 현장 토사 " + civil.earthBank(), projectProgress));
+                        "현장 토사 " + civil.earthBank() + " · " + imported + " · " + storage + " · 가상 토사 0",
+                        projectProgress));
             }
         }
 

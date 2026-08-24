@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.49`
+현재 구현 기준: `0.1.0-alpha.50`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.49까지 기능이 늘어났어도 더 큰 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.50까지 기능이 늘어났어도 retaining-heavy 대형 토목, 실물 군사 armory, 일부 탐험/전초 breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -40,9 +40,10 @@
 | Alpha.39 first forge 실제 자원 | 완료/부분 | relic1 + physically hauled metal4 |
 | Alpha.47 domain reforge 실제 자원 | 완료/부분 | relic2 + physically hauled metal8 |
 | Alpha.42 언로드 보정이 가상 자원화되지 않음 | 완료/부분 | work-time debt only |
-| Alpha.49 토목 토사가 가상 경제 자원이 되지 않음 | 완료/부분 | project-local earthBank only, ItemStack/cargo/currency 변환 없음 |
+| 토목 현장 earthBank가 가상 경제 자원이 되지 않음 | 완료/부분 | project-local relocation only, ItemStack/cargo/currency 변환 없음 |
+| Alpha.50 외부 성토 자재 | **완료/부분** | actual DIRT/COARSE_DIRT storage→worker MAINHAND→world placement |
 
-`single authority for outpost transport` 계약은 유지한다. 수변/군사/향후 wagon·boat 표현이 두 번째 장거리 물류 권위가 되어서는 안 된다.
+`single authority for outpost transport` 계약은 유지한다. **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**이며, **there is still only one authority for long-distance outpost transport**. 군사/수변 reverse supply도 이를 재사용한다.
 
 ## 3. 건설 / 지형 공사
 
@@ -53,12 +54,12 @@
 | 중간 높이 차 `지형 공사 포함` | 완료/부분 | Alpha.44 span3–4 |
 | real-stone retaining/foundation | 완료/부분 | exposed deep edge support |
 | 큰/위험 지형 거부 | 완료 | span>4/fluid/block entity/unsafe support |
-| 선택 영역 절토/성토 | **완료/부분** | Alpha.49 DOMAIN 9×9 balanced-earth first pass |
-| 외부 토사 반입/대형 성토 | **미구현** | 현재 fill은 같은 프로젝트의 real cut volume 안에서만 허용 |
+| 선택 영역 절토/성토 | **완료/부분** | Alpha.50 DOMAIN 13×13 / ±5 current pass |
+| 외부 토사 반입/대형 성토 | **완료/부분** | Alpha.50 real dirt/coarse-dirt imported fill first expansion; 더 큰 성토는 남음 |
 | 대형 옹벽/테라스 | **미구현/부분** | 건물용 bounded retaining만 존재 |
-| 대형 협곡 다리/터널/기념비급 토목 | **미구현** | 작은 road bridge + 9×9 토목까지만 |
+| 대형 협곡 다리/터널/기념비급 토목 | **미구현** | 작은 road bridge + 13×13 토목까지만 |
 | 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
-| 플레이어 건축/컨테이너 보호 | 완료/부분 | Alpha.49도 block entity/fluid/ore/non-natural/infrastructure 거부 |
+| 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
 | 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
 
 ### Alpha.44 감사 유지
@@ -71,29 +72,52 @@
 - builder가 storage→carry→site barrel→consume 순서로 실제 석재 사용;
 - no free cobble, `destroyBlock`, loose-drop excavation, force-load, teleport inventory.
 
-### Alpha.49 selected-area civil-work 감사
+### Alpha.49 historical selected-area 감사
 
-- unlock은 `DOMAIN` + 건설소 1곳 이상;
-- 기존 B 팔레트 `토목 평탄화`, 새 key/dashboard 없음;
-- 첫 모서리 Y가 grade plane, 두 번째 모서리가 X/Z 영역;
-- 최대 **9×9**, column cut/fill 각각 최대 **4**;
-- 두 모서리 player 28블록 이내, project center 마을 중심 80블록 이내;
-- 선택 영역 전체가 이미 loaded 상태여야 함;
+Alpha.49는 최초 selected-area civil pass의 역사적 기준이다.
+
+- `DOMAIN` + 건설소 1곳 이상;
+- 기존 B 팔레트/Enter/Backspace, 새 key/dashboard 없음;
+- 첫 모서리 Y grade plane + 두 번째 모서리 X/Z;
+- **9×9 / ±4**;
+- player28 / settlement80;
+- full loaded + infrastructure/block entity/fluid/ore/non-natural protection;
+- real cut 성공 뒤 earthBank +1, no item drop;
+- fill 전 earthBank 필요, fill 뒤 earthBank -1;
+- **fill > cut 거부**;
+- shared builder only;
+- no force-load/global scan/teleport/destroyBlock/dropResources.
+
+Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이와 imported fill만 의도적으로 확장한다.
+
+### Alpha.50 physical imported-fill 감사
+
+- unlock은 계속 `DOMAIN` + construction office;
+- B/Enter/Backspace 재사용, 새 키/재화/BuildingType/dashboard 없음;
+- 최대 **13×13**, column cut/fill 각각 최대 **5**;
+- selected corners player36블록 이내, project center settlement96블록 이내;
+- 전체 selected area loaded 필요;
 - stockpile/functional building/road/outpost overlap 거부;
-- block entity/fluid/ore/non-natural terrain 거부;
-- server가 initial cut/fill을 착공 전에 전수 계산;
-- **fill > cut이면 착공 거부**;
-- real cut 성공 뒤에만 earthBank +1;
-- cut block은 item drop으로 바뀌지 않음;
-- fill 전 earthBank>0 확인, real coarse-dirt fill 뒤 earthBank -1;
-- earthBank는 save/reload용 project-local relocation accounting이고 ItemStack/settlement resource/cargo/currency가 아님;
-- leftover earthBank는 project 완료 시 사라지며 free dirt/stone이 되지 않음;
-- 기존 `건설 주민`을 재사용하고 두 번째 builder authority 없음;
-- building/road/outpost UI/network/command start는 active civil project와 동시 실행 불가;
-- active civil-work volume break protection 적용;
-- force-load/global scan/teleport/destroyBlock/dropResources 없음.
+- block entity/fluid/ore/non-natural/player structure 거부 및 작업 중 target column 재검사;
+- initial imported fill = `max(0, fillBlocks - cutBlocks)`;
+- imported project 승인 시 shared settlement storage가 모두 loaded이고 실제 DIRT/COARSE_DIRT가 필요량 이상 있어야 함;
+- 현장 real cut 성공 뒤에만 earthBank +1;
+- 현장 earthBank를 먼저 실제 coarse dirt fill에 사용;
+- earthBank가 부족한 fill만 기존 shared `건설 주민`이 actual storage까지 걸어가 최대16개 실제 DIRT/COARSE_DIRT를 MAINHAND로 추출;
+- worker가 site까지 이동하고 `setBlock` 성공 뒤에만 carried ItemStack 1개 shrink + project step advance;
+- `setBlock` 실패 시 item/step 손실 없음;
+- project 중 storage dirt가 부족해지면 공짜 대체 없이 pause, 재공급 후 resume;
+- current world height + earthBank에서 남은 imported volume을 재계산해 외부 pre-fill/변경 뒤 stale final haul 방지;
+- 조기/정상 완료 시 MAINHAND 잔여 cargo가 있으면 persisted return phase로 전환하고 concrete loaded storage까지 실제 이동→`insertAt` 후에만 project clear;
+- storage unload/full이면 real carried stack을 그대로 보존하고 pause;
+- save/reload에서 phase/progress/earthBank/physical carried item이 가상 토사로 변환되지 않음;
+- active volume break protection 유지;
+- building/road/outpost UI/network/command start는 active civil과 동시 실행 불가;
+- force-load/teleport/destroyBlock/dropResources/virtual soil 없음;
+- compact context/status는 현장 토사 / 외부 흙 필요 / 실제 창고 흙 상태만 추가;
+- **가상 토사 0**.
 
-따라서 원본의 선택영역 절토/성토 요구는 Alpha.49에서 **구현됨/부분**으로 이동했다. unrestricted WorldEdit나 산 삭제를 구현한 것이 아니다.
+따라서 원본의 선택영역 절토/성토 + 첫 imported-fill 요구는 Alpha.50에서 더 전진했다. **retaining-heavy terrace, ravine-scale work, long bridge, tunnel, monumental engineering은 여전히 미구현**이며 unrestricted WorldEdit나 mountain deletion은 범위 밖이다.
 
 ## 4. 주민 / 생산 / 방어
 
@@ -117,10 +141,10 @@
 - Frontier 전용 `frontier_soldier` entity type;
 - server combat body/attributes는 Iron Golem 상속;
 - **visual service sword is never a server ItemStack**;
-- 병영 3 slots/barracks, 신규 병사 food8 + metal2;
+- 병영3 slots/barracks, 신규 병사 food8 + metal2;
 - 위험지역 전초 max1 sentry, food6 + metal2;
 - tagged military drops clear;
-- old tagged Iron Golem soldier/sentry는 loaded 상태에서 1:1 migration;
+- old tagged Iron Golem soldier/sentry는 loaded 상태에서1:1 migration;
 - migration은 recruit consume 함수를 호출하지 않으므로 이중 과금 없음;
 - Better Combat/Weapons Expanded Java hard dependency 없음;
 - actual external-weapon physical armory는 아직 완료가 아님.
@@ -133,7 +157,7 @@
 | 촌락 | 완료/부분 | quarry/mine/blacksmith/guard |
 | 마을 | 완료/부분 | roads/market/outpost/construction logistics |
 | 개척 도시 | 완료/부분 | barracks/advanced workshop/multiple outposts |
-| 영지 | 완료/부분 | exploration accelerator + reforge + Alpha.49 civil works, breadth/runtime 남음 |
+| 영지 | 완료/부분 | exploration accelerator + reforge + Alpha.50 civil works, breadth/runtime 남음 |
 
 Alpha.45는 already-loaded external structure type 및 direct-player conquest type을 unique milestone로 기록한다. score는 capped8 non-spendable metadata이며 legacy tier route를 폐기하지 않는다.
 
@@ -157,7 +181,7 @@ Alpha.45는 already-loaded external structure type 및 direct-player conquest ty
 14. market
 15. cart station
 
-Alpha.49 civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이 아니다.
+Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이 아니다.
 
 ### Alpha.47 domain reforge 감사 유지
 
@@ -182,11 +206,11 @@ Alpha.49 civil work는 infrastructure 보조 기능이며 16번째 가짜 Buildi
 | 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
 | 위험지역 군사 특화 | 완료/부분 | one supplied humanoid sentry |
 | 전초 물류 | 완료 | Alpha.27 one authority |
-| 군사 역보급 | 완료/부분 | same transporter food/metal |
+| 군사 역보급 | 완료/부분 | **군사 전초도 같은 도로 운송자가 역방향 보급** |
 | 수변 역보급 | 완료/부분 | same transporter wood after military priority |
 | biome-aware companion specialization | 부분/미구현 | stable data seam 필요 |
 
-**tier-visible public works**는 안전하고 loaded/non-farmable일 때만 허용한다.
+**tier-visible public works**는 안전하고 loaded/non-farmable일 때만 허용한다. **위험지역 군사 역할이 우선**이다.
 
 ## 8. 외부 콘텐츠 / companion
 
@@ -202,15 +226,15 @@ Alpha.49 civil work는 infrastructure 보조 기능이며 16번째 가짜 Buildi
 - Jade: 완료/부분/후보검증
 - Xaero's Minimap: 후보검증, HUD offset만 구현
 
-Alpha.49는 이미 loaded 된 ordinary/companion terrain block state만 읽는다. Terralith/worldgen class hard dependency, chunk generation, force-load는 없다.
+Alpha.50는 already-loaded ordinary/companion terrain block state와 loaded physical settlement storage만 읽는다. Terralith/worldgen class hard dependency, chunk generation, force-load는 없다.
 
-Xaero 26.4.2의 historical public `WaypointsManager` API는 없으므로 true settlement/outpost marker sync를 완료했다고 주장하지 않는다.
+Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true settlement/outpost marker sync를 완료했다고 주장하지 않는다.
 
 ## 9. 현재 남은 우선순위
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. **larger civil-engineering second pass** — physical imported fill, retaining-heavy terrace, 제한된 더 큰 공사;
+1. **retaining-heavy / larger civil-engineering second pass** — large terrace, ravine-scale bounded work, long bridge/tunnel breadth를 실물 자원·player protection 안에서 구현;
 2. deeper exploration bridges — rare NPC/structure/boss별 정착 가치;
 3. stable seam이 있을 때 companion-biome-aware outpost specialization;
 4. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
@@ -219,37 +243,43 @@ Xaero 26.4.2의 historical public `WaypointsManager` API는 없으므로 true se
 7. Alpha.43 Jade/Xaero/HUD acceptance;
 8. Alpha.46 waterfront pathing/trade acceptance;
 9. Alpha.48 humanoid render/attack/migration acceptance;
-10. Alpha.49 civil-work pathing/save-reload/terrain-safety/earth-balance acceptance;
+10. Alpha.50 civil-work pathing/save-reload/depletion/resupply/cargo-return/terrain-safety acceptance;
 11. full companion lock fresh-world client/server runtime;
 12. true Xaero marker는 stable supported API가 생길 때만;
 13. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
-## 10. Alpha.49 추가 실플레이 acceptance
+## 10. Alpha.50 추가 실플레이 acceptance
 
 최종/test-worthy 시점에 최소 확인:
 
 - DOMAIN + construction office 조건이 client 표시뿐 아니라 server에서 강제됨;
-- first-corner grade와 opposite-corner area가 실제 고스트/서버 승인과 일치;
-- max9×9, cut/fill ±4가 경계값에서 정확히 거부/허용됨;
+- first-corner grade와 opposite-corner area가 실제 ghost/server approval과 일치;
+- max13×13, cut/fill ±5 경계값 정확성;
 - fluids/block entities/ores/non-natural/player structures/existing infrastructure 거부;
-- fill>cut 거부;
-- real cut에서 drop 없음 + 이후에만 earthBank credit;
-- fill은 earthBank 없이는 진행되지 않고 성공 뒤 debit;
-- save/reload 중 phase/step/earthBank 중복 없음;
-- unloaded selected area는 멈추고 force-load하지 않음;
-- shared builder가 실제 cell까지 이동;
+- real cut에서 drop 없음 + successful setBlock 이후에만 earthBank credit;
+- local earthBank fill 우선;
+- fill>cut project는 loaded common storage의 real dirt/coarse dirt가 충분하면 승인되고 부족하면 거부;
+- builder가 exact storage container까지 걸어가 max16 real dirt/coarse를 MAINHAND에 들고 site로 이동;
+- mid-project storage dirt depletion은 pause, later physical resupply 후 resume;
+- failed fill placement는 carried dirt를 consume하지 않음;
+- current site에서 imported remaining이 다시 계산되어 final haul over-pick 없음;
+- early/pre-filled finish에서 잔여 carried dirt가 concrete storage로 물리 복귀한 뒤 project clear;
+- return 중 storage unload/full이면 ItemStack 보존 + pause;
+- save/reload 중 cut/fill/return phase, progress, earthBank, carried item 중복/손실 없음;
+- unloaded selected area/storage는 force-load 없이 pause;
+- shared builder가 실제 storage/site/return target까지 이동;
 - building/road/outpost와 동시 project 시작 불가;
-- project 완료 뒤 spendable/transferable earth가 남지 않음;
-- 두 플레이어가 같은 토목 project/progress를 봄.
+- project 완료 뒤 spendable/transferable virtual earth가 남지 않음;
+- 두 플레이어가 같은 civil project/progress/context를 봄.
 
 ## 11. 완료 판정 금지선
 
 다음이 남아 있는 동안 `원본 v0.2 완성`이라고 부르지 않는다.
 
-- larger civil engineering breadth;
+- retaining-heavy / larger civil engineering breadth;
 - meaningful companion/exploration breadth gaps;
 - physical military armory 여부;
 - long multiplayer acceptance;
 - full candidate companion-stack fresh-world client/server acceptance.
 
-자동 감사/Java25 build/JAR verify는 필수지만 실제 Minecraft acceptance를 대체하지 않는다.
+자동 cumulative source audit / canonical docs audit / Java25 clean build / JAR verify는 필수지만 실제 Minecraft acceptance를 대체하지 않는다.

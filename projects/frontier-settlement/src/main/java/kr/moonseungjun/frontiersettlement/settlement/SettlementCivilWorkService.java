@@ -157,8 +157,18 @@ public final class SettlementCivilWorkService {
         builder.setInvulnerable(true);
         builder.setCustomName(Component.literal("건설 주민 · 토목"));
 
+        if (project.phase() == CivilWorkState.PHASE_RETURN) {
+            if (!SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder)) return false;
+            finish(server, settlement, data, builder);
+            return true;
+        }
+
         if (!areaLoaded(level, project)) return false;
         if (project.phase() == CivilWorkState.PHASE_CUT) {
+            if (!builder.getMainHandItem().isEmpty()) {
+                SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+                return false;
+            }
             BlockPos target = findCutTarget(level, project);
             if (target == null) {
                 data.replace(project.beginFill());
@@ -167,7 +177,7 @@ public final class SettlementCivilWorkService {
             if (!safeNaturalTarget(level, target)) return false;
             if (!moveBuilder(level, builder, target)) return false;
             if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
-            level.setBlock(target, Blocks.AIR.defaultBlockState(), BLOCK_UPDATE);
+            if (!level.setBlock(target, Blocks.AIR.defaultBlockState(), BLOCK_UPDATE)) return false;
             builder.swing(InteractionHand.MAIN_HAND);
             data.replace(project.afterCut());
             return false;
@@ -175,22 +185,40 @@ public final class SettlementCivilWorkService {
 
         BlockPos target = findFillTarget(level, project);
         if (target == null) {
+            if (!builder.getMainHandItem().isEmpty()) {
+                data.replace(project.beginReturn());
+                return false;
+            }
             finish(server, settlement, data, builder);
             return true;
         }
+
+        int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ()) - 1;
+        if (validateColumn(level, target.getX(), target.getZ(), surfaceY, project.gradeY()) != null) return false;
+
         boolean importedFill = project.earthBank() <= 0;
+        if (!importedFill && !builder.getMainHandItem().isEmpty()) {
+            SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+            return false;
+        }
+        if (importedFill && !SettlementCivilFillSupplyService.isFillStack(builder.getMainHandItem())
+                && !builder.getMainHandItem().isEmpty()) {
+            SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
+            return false;
+        }
         if (importedFill && !SettlementCivilFillSupplyService.ensureCarriedFill(level, settlement, builder, project)) return false;
+
         BlockState current = level.getBlockState(target);
         if (level.getBlockEntity(target) != null || !current.getFluidState().isEmpty()
                 || (!current.isAir() && !current.canBeReplaced())) return false;
         if (!moveBuilder(level, builder, target)) return false;
         if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
-        if (importedFill) {
-            level.setBlock(target, SettlementCivilFillSupplyService.carriedFillState(builder), BLOCK_UPDATE);
-            SettlementCivilFillSupplyService.consumeOne(builder);
-        } else {
-            level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), BLOCK_UPDATE);
-        }
+
+        BlockState fillState = importedFill
+                ? SettlementCivilFillSupplyService.carriedFillState(builder)
+                : Blocks.COARSE_DIRT.defaultBlockState();
+        if (!level.setBlock(target, fillState, BLOCK_UPDATE)) return false;
+        if (importedFill) SettlementCivilFillSupplyService.consumeOne(builder);
         builder.swing(InteractionHand.MAIN_HAND);
         data.replace(project.afterFill());
         return false;
@@ -204,6 +232,7 @@ public final class SettlementCivilWorkService {
         CivilWorkState state = SettlementCivilWorkData.get(server).project();
         if (!state.active()) return "";
         if (state.phase() == CivilWorkState.PHASE_CUT) return "선택영역 절토";
+        if (state.phase() == CivilWorkState.PHASE_RETURN) return "선택영역 토목 · 잔여 자재 복귀";
         return state.earthBank() > 0 ? "선택영역 성토" : "선택영역 성토 · 창고 흙 운반";
     }
 
@@ -223,6 +252,7 @@ public final class SettlementCivilWorkService {
 
     private static void finish(MinecraftServer server, SettlementData settlement,
                                SettlementCivilWorkData data, Villager builder) {
+        if (!builder.getMainHandItem().isEmpty()) return;
         data.clear();
         builder.getNavigation().stop();
         builder.setInvulnerable(false);

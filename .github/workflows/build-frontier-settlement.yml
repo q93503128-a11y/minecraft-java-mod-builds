@@ -48,7 +48,21 @@ jobs:
           echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
           echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
 
-      - name: Verify toolchain and committed source
+      - name: Alpha.50 cumulative source audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha50_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+
+      - name: Alpha.50 canonical docs audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha50_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+
+      - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -56,17 +70,16 @@ jobs:
           chmod +x gradlew
           java -version
           ./gradlew --version
-          python3 tools/test_alpha50_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-audit.log"
           git diff --check
           git diff --exit-code
 
-      - name: Clean build
+      - name: Java 25 clean build
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
           set -o pipefail
-          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-gradle.log"
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-gradle.log"
 
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
@@ -75,6 +88,7 @@ jobs:
           set -euo pipefail
           test -f "build/libs/$EXPECTED_JAR"
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR" | tee "$GITHUB_WORKSPACE/frontier-settlement-jar-verify.log"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
           mkdir -p "$GITHUB_WORKSPACE/deliverables"
           cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables/"
           cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
@@ -92,7 +106,8 @@ jobs:
         with:
           name: frontier-settlement-${{ env.MOD_VERSION }}-logs
           path: |
-            frontier-settlement-audit.log
+            frontier-settlement-source-audit.log
+            frontier-settlement-docs-audit.log
             frontier-settlement-gradle.log
             frontier-settlement-jar-verify.log
           if-no-files-found: warn
@@ -105,18 +120,25 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/frontier-settlement-result
           mkdir -p /tmp/frontier-settlement-result
+          jar_sha256=unknown
+          if test -n "${EXPECTED_JAR:-}" && test -f "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256"; then
+            jar_sha256="$(awk '{print $1}' "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256")"
+          fi
           cat > /tmp/frontier-settlement-result/status.txt <<STATUS
           status=${{ job.status }}
           source_sha=$GITHUB_SHA
+          docs_sha=$GITHUB_SHA
+          source_docs_sha=$GITHUB_SHA
           run_id=$GITHUB_RUN_ID
           run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
           version=${MOD_VERSION:-unknown}
+          jar_sha256=$jar_sha256
           minecraft=26.2
           neoforge=26.2.0.38-beta
           java=25
           gradle=9.2.1
           STATUS
-          for file in frontier-settlement-audit.log frontier-settlement-gradle.log frontier-settlement-jar-verify.log; do
+          for file in frontier-settlement-source-audit.log frontier-settlement-docs-audit.log frontier-settlement-gradle.log frontier-settlement-jar-verify.log; do
             if test -f "$GITHUB_WORKSPACE/$file"; then cp "$GITHUB_WORKSPACE/$file" "/tmp/frontier-settlement-result/latest-${file#frontier-settlement-}"; fi
           done
           git config user.name 'github-actions[bot]'

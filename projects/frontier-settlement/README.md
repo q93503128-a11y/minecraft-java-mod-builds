@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.49
+## Current version: 0.1.0-alpha.50
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,14 +28,14 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.49 key was added.
+No new Alpha.50 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
 - `Enter` — confirm the current building/road/outpost/civil-work selection step;
-- `Backspace` — reset the road start or Alpha.49 civil-work first corner.
+- `Backspace` — reset the road start or civil-work first corner.
 
-Alpha.49 uses the existing B palette entry `토목 평탄화`: `Enter first corner -> Enter opposite corner/approve`. The first corner's Y is the target grade plane.
+Alpha.50 keeps the existing B palette entry `토목 평탄화`: `Enter first corner -> Enter opposite corner/approve`. The first corner's Y is the target grade plane.
 
 ## Functional building families
 
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–49 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–50 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -69,36 +69,44 @@ The construction presentation invariant remains: **builder walks from actual set
 
 - Alpha.38 construction office physically stages wood/stone with one loaded supply runner; `SettlementConstructionService` remains the building/grading authority.
 - Alpha.44 ordinary building footprints support bounded medium terrain: span0–2 normal grading, span3–4 `지형 공사 포함`, >4 rejected. Deep exposed foundations use real hauled/staged retaining stone, not free cobblestone.
-- Alpha.27 road logistics remains the **single authority for outpost transport**. Transport workers belong to a specific outpost and pause at unloaded route boundaries instead of teleporting or force-loading.
+- Alpha.27 road logistics remains the **single authority for outpost transport**. **Transport workers belong to a specific outpost** and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone.
-- Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; military supply takes precedence.
+- Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
 
-## Alpha.49 — bounded selected-area balanced earthworks
+## Alpha.50 — 13×13 civil work with physical imported fill
 
-Alpha.49 implements the original v0.2 late-game selected-area flatten/cut/fill concept as a deliberately bounded first pass.
+Alpha.50 is the first expansion of Alpha.49's bounded selected-area earthwork. It is still settlement-scale civil work, not unrestricted WorldEdit.
 
-- unlock: shared settlement at `DOMAIN` + at least one completed construction office;
-- opened from the existing `B` construction palette; no new management screen or key;
-- first selected corner fixes the target grade Y, second corner defines the X/Z rectangle;
-- maximum footprint **9×9**;
-- every selected column may require at most **4 blocks of cut** or **4 blocks of fill**;
-- both selected corners must remain within 28 blocks of the player and the project center within 80 blocks of the settlement center;
-- the complete area must already be loaded;
-- the area may not overlap the authoritative stockpile, completed buildings, roads or outposts;
+- unlock remains `DOMAIN` + at least one completed construction office;
+- existing `B / Enter / Backspace` interaction is reused, with no new management screen, key, currency or BuildingType;
+- first selected corner fixes target grade Y; second corner defines X/Z bounds;
+- maximum footprint **13×13**;
+- every selected column may require at most **5 blocks of cut** or **5 blocks of fill**;
+- both selected corners must remain within 36 blocks of the player and the project center within 96 blocks of settlement center;
+- complete selected area must already be loaded;
+- authoritative stockpile, completed buildings, roads and outposts may not overlap the project;
 - block entities, fluids, ores, structures/player blocks and other non-natural terrain cause rejection;
-- the server computes the full cut/fill volume before approval;
-- first-pass balanced-earth rule: **initial fill volume may not exceed initial cut volume**;
-- real natural blocks removed by the shared construction worker produce **no item drops**. Each successful cut adds one project-local earth unit;
-- each coarse-dirt fill consumes one project-local earth unit;
-- the project-local earth bank is persisted only for save/reload correctness. It is not an ItemStack, settlement resource, currency, cargo or reusable balance and disappears with project completion;
-- the existing shared `건설 주민` physically walks to work cells; Alpha.49 does not spawn a second builder authority;
-- building, road and outpost starts are blocked while the civil-work project is active;
-- active project cells around grade Y are break-protected from ordinary player mining;
-- compact HUD/context reports `선택영역 절토` / `선택영역 성토`, percentage, initial cut/fill and current project-local earth;
-- no `destroyBlock`, loose-drop excavation, teleport inventory, chunk force-load or virtual soil generation path is used.
+- each successful real cut removes one natural world block without item drops, then adds one project-local `earthBank` unit;
+- fill consumes on-site `earthBank` first;
+- when fill exceeds on-site cut, the missing volume is `max(0, fill - cut)` and approval requires enough real `DIRT` / `COARSE_DIRT` in loaded shared settlement storage;
+- the existing shared construction worker walks to the concrete storage container, extracts a bounded batch of at most 16 real dirt/coarse-dirt ItemStacks into MAINHAND, walks back to the selected work cell, places the physical block, and only after successful placement shrinks one carried item;
+- if players remove required dirt from storage after approval, work pauses until real supply exists again; no free substitute is minted;
+- remaining imported demand is re-evaluated from the current physical site, so an externally changed/pre-filled cell cannot create an unnecessary final haul;
+- if a project finishes while the worker still carries material, the worker physically returns the remaining ItemStack to a concrete loaded settlement container before the shared construction authority is released;
+- save/reload preserves project phase, progress and project-local earth; carried ItemStacks remain physical entity inventory rather than a virtual balance;
+- project-local `earthBank` is not an ItemStack, settlement resource, currency, cargo or reusable balance and disappears with project completion;
+- the same `SettlementConstructionService.ensureBuilder` authority is reused; there is no second builder or civil economy;
+- building, road and outpost starts are blocked while civil work is active;
+- active project volume remains break-protected;
+- no `destroyBlock`, `dropResources`, teleport inventory, chunk force-load or virtual soil generation path is used;
+- compact project context/status exposes only current phase, on-site earth, remaining imported fill and actual storage supply state. **가상 토사 0**.
 
-Alpha.49 therefore moves `선택영역 절토/성토` from unimplemented to **completed/partial**. It does **not** claim imported-fill projects, retaining-heavy terraces, large ravine works, long bridges, tunnels, monumental terraforming or mountain-scale deletion.
+Alpha.50 therefore completes the **first physical imported-fill expansion**. It still does **not** claim retaining-heavy large terraces, ravine-scale works, long bridges, tunnels or monumental civil engineering. Mountain deletion and unrestricted WorldEdit-style terraforming remain outside scope.
+
+## Alpha.49 — historical balanced-earth first pass
+
+Alpha.49 is retained as historical implementation context, not the current limit. It established `DOMAIN + construction office`, B/Enter/Backspace selection, first-corner grade Y, loaded-area/protection checks, the shared builder, and project-local non-economic earth accounting with a **9×9 / ±4** envelope. Its first-pass rule rejected `fill > cut`. Alpha.50 intentionally supersedes only those civil capacity/import rules while preserving the authority and safety contracts.
 
 ## Alpha.48 — supplied humanoid military presentation
 
@@ -156,16 +164,17 @@ Alpha.46 deepens Alpha.40 fishing:
 
 `COMPANION_LOCK.json` remains `candidate_runtime_lock`. The current candidate stack includes Terralith/Lithostitched, Dungeons and Taverns, Repurposed Structures, Better Combat and libraries, Weapons Expanded, Lootr, Sophisticated Backpacks/Core, Jade and Xaero's Minimap.
 
-Frontier must still boot without optional companions. Alpha.49 only reads already-loaded terrain/block state and does not add a Terralith/worldgen Java dependency.
+Frontier must still boot without optional companions. Alpha.50 reads already-loaded ordinary terrain and physical storage only; it adds no Terralith/worldgen Java dependency.
 
 ## Validation
 
-Canonical CI runs:
+Canonical Alpha.50 CI order:
 
-1. cumulative Alpha.23–49 source/runtime audit;
-2. canonical README/plan/gap audit after docs are bound;
-3. Java 25 clean Gradle build against Minecraft26.2 / NeoForge26.2.0.38-beta;
-4. runtime JAR verification;
-5. canonical source SHA/result recording.
+1. cumulative Alpha.23–50 source/runtime audit, preserving historical Alpha.23–49 files while superseding only the intended civil limits;
+2. Alpha.50 canonical README/plan/gap docs audit;
+3. `git diff --check` + clean-worktree check;
+4. Java 25 `clean build` against Minecraft 26.2 / NeoForge 26.2.0.38-beta;
+5. runtime JAR verification and SHA-256;
+6. exact source/docs SHA + CI result commit/run recording.
 
-Automated validation does not replace final real Minecraft acceptance. Important final play checks include civil-work pathing/save-reload/exploit resistance, Alpha.48 humanoid render/attack presentation, external weapon breadth, waterfront pathing/trade balance, dangerous-outpost combat, deferred-work pacing, Jade/Xaero visual coexistence, two-player shared-state behavior and full candidate companion-stack fresh-world launch.
+Automated validation does not replace final real Minecraft acceptance. Important final play checks include Alpha.50 imported-fill depletion/resupply/save-reload/cargo-return behavior, civil pathing/exploit resistance, Alpha.48 humanoid render/attack presentation, external weapon breadth, waterfront pathing/trade balance, dangerous-outpost combat, deferred-work pacing, Jade/Xaero visual coexistence, two-player shared-state behavior and full candidate companion-stack fresh-world launch.
