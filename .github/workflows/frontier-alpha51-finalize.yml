@@ -1,3 +1,4 @@
+# trigger: canonical alpha.51 finalization
 name: Finalize Frontier Settlement Alpha 51
 
 on:
@@ -86,7 +87,6 @@ jobs:
                                   1)
               canonical.write_text(plan, encoding='utf-8')
 
-          # Remove the earlier bootstrap wrapper from the canonical workflow after the applicator has rebound it to Alpha.51.
           build = Path('.github/workflows/build-frontier-settlement.yml')
           build_text = build.read_text(encoding='utf-8')
           bootstrap_marker = '      - name: Bootstrap Alpha.51 retaining terrace\n'
