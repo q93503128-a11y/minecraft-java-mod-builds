@@ -1,7 +1,7 @@
-status=success
-source_sha=74e4f5ea59bcd911543fddd4239451bbd959e9cc
-run_id=32686440008
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32686440008
+status=failure
+source_sha=d1a1a6bbd4c0710a8f6c5d3ef0c94f7656eee3ef
+run_id=32686716166
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32686716166
 version=0.1.0-alpha.46
 minecraft=26.2
 neoforge=26.2.0.38-beta
