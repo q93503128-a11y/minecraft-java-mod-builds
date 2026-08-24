@@ -42,14 +42,16 @@ jobs:
               exit 0
             fi
             test -f "$PROJECT_DIR/tools/apply_alpha54.py"
+            test -f "$PROJECT_DIR/tools/fix_alpha54_compat.py"
             echo 'ALPHA54_BOOTSTRAP=1' >> "$GITHUB_ENV"
             python3 "$PROJECT_DIR/tools/apply_alpha54.py"
+            python3 "$PROJECT_DIR/tools/fix_alpha54_compat.py"
             python3 "$PROJECT_DIR/tools/test_alpha54_source.py"
             python3 "$PROJECT_DIR/tools/test_alpha54_docs.py"
             git diff --check
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            rm -f "$PROJECT_DIR/tools/apply_alpha54.py"
+            rm -f "$PROJECT_DIR/tools/apply_alpha54.py" "$PROJECT_DIR/tools/fix_alpha54_compat.py"
             git add -A "$PROJECT_DIR"
             git diff --cached --check
             git commit -m 'Implement Frontier alpha.54 bounded one-bend tunnels'
