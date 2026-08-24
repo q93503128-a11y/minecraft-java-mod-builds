@@ -9,6 +9,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationServic
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOfficeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCoreService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementExplorationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementMarketService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementMilitaryOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
@@ -31,6 +32,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SettlementService::onServerTick);
         NeoForge.EVENT_BUS.addListener(SettlementService::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(SettlementExplorationService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(SettlementConstructionService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementRoadService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementOutpostService::onBreakBlock);
