@@ -121,7 +121,8 @@ must(settlement_service, (
     'SettlementCivilWorkService.tick(server, data)',
     'boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();',
     'boolean civilProject = SettlementCivilWorkData.get(server).project().active();',
-    'if (changed || activeProject || civilProject) broadcast(server, data);',
+    'if (changed || activeProject) broadcast(server, data);',
+    'else if (civilProject) broadcast(server, data);',
 ), 'alpha.49 server tick + legacy active-project invariant')
 if settlement_service.count('SettlementCivilWorkService.tick(server, data)') != 1:
     raise SystemExit('alpha.49 civil work must have exactly one server authority tick')
