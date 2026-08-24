@@ -1,0 +1,117 @@
+name: Survival Ascension 0.53 audit-fix runner
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply:
+    if: github.event.issue.title == '[SA053 APPLY3 INTERNAL]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply 0.53, fix release-audit drift, validate and push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/sa053-apply.yml').read_text(encoding='utf-8')
+          start_marker = "          python3 - <<'PY'\n"
+          end_marker = "\n          PY\n"
+          start = source.index(start_marker) + len(start_marker)
+          end = source.index(end_marker, start)
+          lines = source[start:end].splitlines()
+          extracted = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          Path('/tmp/sa053_apply.py').write_text(extracted, encoding='utf-8')
+          PY
+          python3 /tmp/sa053_apply.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+          # Correct generated JAR-audit indentation.
+          p = Path('projects/survival-ascension/tools/verify_release_jar.py')
+          text = p.read_text(encoding='utf-8')
+          start = text.index('    main_name = "kr/moonseungjun/survivalascension/SurvivalAscension.class"')
+          end = text.index('\nprint("frontline_freight_manifest_runtime=present")', start)
+          block = '''    main_name = "kr/moonseungjun/survivalascension/SurvivalAscension.class"
+          if main_name not in zf.namelist():
+              raise SystemExit("0.53 main runtime class missing")
+          main_class = zf.read(main_name)
+          for token in [b"TOOLS_SHIELD", b"shieldWaveRadiusBonus", b"shieldWaveTargetBonus", b"shieldWaveKnockbackBonus", b"shieldWaveCooldownReduction", b"shieldWaveLiftBonus"]:
+              if token not in affix:
+                  raise SystemExit(f"0.53 compiled shield-affix token missing: {token!r}")
+          for token in [b"onShieldBlock", b"survivalascension_shield_wave_ready", b"isShield", b"setDeltaMovement"]:
+              if token not in combat:
+                  raise SystemExit(f"0.53 compiled shield-wave token missing: {token!r}")
+          if b"shield guard waves" not in main_class:
+              raise SystemExit("0.53 runtime banner missing shield guard waves")
+          '''
+          p.write_text(text[:start] + block + text[end:], encoding='utf-8')
+
+          # The 0.51 historical section must verify the current PROJECT version, not freeze it at 0.52.
+          p = Path('projects/survival-ascension/tools/test_release_source.py')
+          text = p.read_text(encoding='utf-8')
+          old = '    "Mod version: `0.52.0-alpha.1`",\n    "## 0.51 Armor Ascension / 방어구 승천 성장",'
+          new = '    "Mod version: `0.53.0-alpha.1`",\n    "## 0.51 Armor Ascension / 방어구 승천 성장",'
+          if old not in text:
+              raise SystemExit('0.51 PROJECT current-version audit marker not found')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/sa053-apply.yml .github/workflows/sa053-runner2.yml .github/workflows/sa053-runner3.yml
+          cd projects/survival-ascension
+          chmod +x gradlew
+          set +e
+          {
+            python3 tools/test_release_source.py &&
+            python3 tools/test_release_content_pack.py &&
+            python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py &&
+            git diff --check &&
+            ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain &&
+            python3 tools/verify_release_jar.py build/libs/survivalascension-0.53.0-alpha.1.jar &&
+            python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.53.0-alpha.1.jar --output /tmp/Survival-Ascension-0.53.0-alpha.1-content-preview.mrpack
+          } 2>&1 | tee /tmp/sa053-validation.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          cd ../..
+          if [ "$rc" -ne 0 ]; then
+            tail -n 100 /tmp/sa053-validation.log > /tmp/sa053-tail.log
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/sa053-tail.log || true
+            exit "$rc"
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/sa053-apply.yml .github/workflows/sa053-runner2.yml .github/workflows/sa053-runner3.yml
+          git commit -m 'Survival Ascension 0.53 shield ascension'
+          source_sha=$(git rev-parse HEAD)
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then
+              gh issue comment "$ISSUE_NUMBER" --body "0.53 source/content-pack audits, Java 25 clean build, release-JAR verify and mrpack build PASS. Source commit pushed: $source_sha" || true
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+            source_sha=$(git rev-parse HEAD)
+            sleep $((attempt * 2))
+          done
+          gh issue comment "$ISSUE_NUMBER" --body "Validation passed but push failed after retries." || true
+          exit 1
