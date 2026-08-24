@@ -73,7 +73,7 @@ public final class LivingRealmWorldManager {
                     entrance.x(), entrance.z()
             ));
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_PLAYER_RESIDENCE_PLACEMENT player={} target={},{},{} building={},{} role=tenement verified_authored=true roof_fallback=false staging=false synthetic_floor=false revision={}",
+                    "LK_ERDEN_PLAYER_RESIDENCE_PLACEMENT player={} target={},{},{} building={},{} role=tenement verified_authored=true authored_room=true terrain_scan=false roof_fallback=false staging=false revision={}",
                     player.getUUID(), feet.getX(), feet.getY(), feet.getZ(),
                     entrance.x(), entrance.z(), ResidenceAssignment.CURRENT_REVISION
             );
