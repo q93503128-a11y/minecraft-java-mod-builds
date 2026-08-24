@@ -49,6 +49,20 @@ public final class SettlementContextService {
             int worked = outpost.physicalBuilding() ? Math.max(0, outpost.buildStep())
                     : outpost.legacyPrepaidBuilding() ? Math.max(0, outpost.legacyStep()) : 0;
             projectProgress = percent(worked, total);
+        } else {
+            CivilWorkState civil = SettlementCivilWorkData.get(server).project();
+            if (civil.active()) {
+                projectLabel = civil.phase() == CivilWorkState.PHASE_CUT ? "선택영역 절토" : "선택영역 성토";
+                projectProgress = civil.progressPercent();
+                targets.add(new SettlementContextTarget(
+                        "civil_work", "civil_work",
+                        civil.minX(), civil.gradeY() - SettlementCivilWorkService.MAX_FILL_DEPTH, civil.minZ(),
+                        civil.maxX(), civil.gradeY() + SettlementCivilWorkService.MAX_CUT_DEPTH, civil.maxZ(),
+                        civil.center().getX(), civil.gradeY(), civil.center().getZ(),
+                        "선택영역 토목",
+                        "절토 " + civil.initialCutBlocks() + " · 성토 " + civil.initialFillBlocks()
+                                + " · 현장 토사 " + civil.earthBank(), projectProgress));
+            }
         }
 
         BlockPos stock = data.stockpilePos();
