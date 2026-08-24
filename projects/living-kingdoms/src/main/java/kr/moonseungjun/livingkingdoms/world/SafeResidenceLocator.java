@@ -41,23 +41,22 @@ public final class SafeResidenceLocator {
         ExternalUrbanFabricBuilder.UrbanEntrance entrance = playerResidenceEntrance(preferred);
         if (entrance == null) return null;
 
-        int centerChunkX = entrance.x() >> 4;
-        int centerChunkZ = entrance.z() >> 4;
-        boolean built = true;
-        for (int dx = -RESIDENCE_CHUNK_RADIUS; dx <= RESIDENCE_CHUNK_RADIUS; dx++) {
-            for (int dz = -RESIDENCE_CHUNK_RADIUS; dz <= RESIDENCE_CHUNK_RADIUS; dz++) {
-                int chunkX = centerChunkX + dx;
-                int chunkZ = centerChunkZ + dz;
-                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
-                level.getChunkSource().addTicketAndLoadWithRadius(
-                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
-                built &= ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ);
-            }
-        }
-        if (!built) return null;
+        requestResidenceArea(level, entrance);
+        if (!ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) return null;
 
         BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
-        return isWalkable(level, target) ? target : null;
+        return isAuthoritativePlayerResidence(level, homelandId, residenceId, target) ? target : null;
+    }
+
+    /** Read-only proof that a target is the exact authored upper-room target of the player tenement. */
+    public static boolean isAuthoritativePlayerResidence(
+            ServerLevel level, String homelandId, String residenceId, BlockPos target) {
+        if (target == null || !isWalkable(level, target)) return false;
+        BlockPos preferred = preferredResidence(level, homelandId, residenceId);
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = playerResidenceEntrance(preferred);
+        if (entrance == null || !ErdenUrbanResidenceResolver.isResidenceReady(level, entrance)) return false;
+        BlockPos expected = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
+        return target.equals(expected);
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
@@ -87,6 +86,21 @@ public final class SafeResidenceLocator {
                 && level.getBlockState(feet).isAir()
                 && level.getBlockState(feet.above()).isAir()
                 && level.getBlockState(feet.above(2)).isAir();
+    }
+
+    private static void requestResidenceArea(
+            ServerLevel level, ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+        int centerChunkX = entrance.x() >> 4;
+        int centerChunkZ = entrance.z() >> 4;
+        for (int dx = -RESIDENCE_CHUNK_RADIUS; dx <= RESIDENCE_CHUNK_RADIUS; dx++) {
+            for (int dz = -RESIDENCE_CHUNK_RADIUS; dz <= RESIDENCE_CHUNK_RADIUS; dz++) {
+                int chunkX = centerChunkX + dx;
+                int chunkZ = centerChunkZ + dz;
+                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                level.getChunkSource().addTicketAndLoadWithRadius(
+                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+            }
+        }
     }
 
     private static ExternalUrbanFabricBuilder.UrbanEntrance playerResidenceEntrance(BlockPos preferred) {
