@@ -30,6 +30,87 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Finalize Alpha.53 compile fix
+        id: fix53
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          (
+            set -euo pipefail
+            road="$PROJECT_DIR/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementRoadService.java"
+            if ! grep -q 'for (int end = i; end <= maxEnd; end++)' "$road"; then
+              exit 0
+            fi
+            echo 'ALPHA53_FIX=1' >> "$GITHUB_ENV"
+            python3 - <<'PY'
+          from pathlib import Path
+          root = Path('projects/frontier-settlement')
+          road = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementRoadService.java'
+          s = road.read_text(encoding='utf-8')
+          replacements = [
+              ('for (int end = i; end <= maxEnd; end++) {', 'for (int tunnelEnd = i; tunnelEnd <= maxEnd; tunnelEnd++) {'),
+              ('profile.get(end) != RoadConstructionState.PROFILE_NORMAL || surfaces.get(end).water()', 'profile.get(tunnelEnd) != RoadConstructionState.PROFILE_NORMAL || surfaces.get(tunnelEnd).water()'),
+              ('SurfaceSample exit = surfaces.get(end + 1);', 'SurfaceSample exit = surfaces.get(tunnelEnd + 1);'),
+              ('for (int j = i; j <= end; j++) {', 'for (int j = i; j <= tunnelEnd; j++) {'),
+              ('for (int j = i; j <= end + 1; j++) {', 'for (int j = i; j <= tunnelEnd + 1; j++) {'),
+              ('bestEnd = end; bestY = grade; break;', 'bestEnd = tunnelEnd; bestY = grade; break;'),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'alpha.53 compile-fix anchor missing: {old}')
+              s = s.replace(old, new, 1)
+          road.write_text(s, encoding='utf-8')
+
+          canonical = root / 'CANONICAL_PLAN.md'
+          d = canonical.read_text(encoding='utf-8')
+          old = '13. full companion lock fresh-world client/server runtime;\n13. true Xaero markers only if a stable supported API appears;\n14. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.'
+          new = '13. full companion lock fresh-world client/server runtime;\n14. true Xaero markers only if a stable supported API appears;\n15. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.'
+          if old not in d:
+              raise SystemExit('alpha.53 canonical numbering anchor missing')
+          canonical.write_text(d.replace(old, new, 1), encoding='utf-8')
+          PY
+            python3 "$PROJECT_DIR/tools/test_alpha53_source.py"
+            python3 "$PROJECT_DIR/tools/test_alpha53_docs.py"
+            git diff --check
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -A "$PROJECT_DIR"
+            git diff --cached --check
+            git commit -m 'Fix Frontier alpha.53 tunnel compile guard'
+            pushed=0
+            for attempt in 1 2 3 4 5 6; do
+              if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
+              git rebase --abort >/dev/null 2>&1 || true
+              sleep $((attempt * 2))
+            done
+            test "$pushed" -eq 1
+          ) 2>&1 | tee /tmp/frontier-alpha53-compile-fix.log
+
+      - name: Record Alpha.53 compile-fix failure
+        if: steps.fix53.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard "$GITHUB_SHA"
+          mkdir -p ci-results/frontier-alpha53-bootstrap
+          cp /tmp/frontier-alpha53-compile-fix.log ci-results/frontier-alpha53-bootstrap/latest.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci-results/frontier-alpha53-bootstrap/latest.log
+          git commit -m "Record Frontier alpha.53 compile-fix failure for ${GITHUB_SHA::7} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
+            git rebase --abort >/dev/null 2>&1 || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Stop source run after Alpha.53 compile-fix push
+        if: env.ALPHA53_FIX == '1' && steps.fix53.outcome == 'success'
+        shell: bash
+        run: exit 1
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
