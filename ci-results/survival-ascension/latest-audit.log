@@ -18,3 +18,4 @@ RELEASE SOURCE AUDIT PASS
 - 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-first before resource mutation
 - 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops
 - 0.51 worn armor effects are bounded: total affix damage reduction cap35%, mastery XP cap32%
+- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.51
