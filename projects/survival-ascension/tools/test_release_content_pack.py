@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_LOCK_VERSION = "0.48.0-alpha.1-content-preview.1"
-REQUIRED_LOCK_VERSION = "0.49.0-alpha.1-content-preview.1"
+REQUIRED_LOCK_VERSION = "0.50.0-alpha.1-content-preview.1"
 errors: list[str] = []
 
 
@@ -38,12 +38,18 @@ if lock.get("version") != REQUIRED_LOCK_VERSION:
 
 freight = read("src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java")
 ui = read("src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java")
+depot_data = read("src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotData.java")
 need(freight, [
     "FRONTLINE_FOOD = 176", "FRONTLINE_IRON = 56", "FRONTLINE_FUEL = 8",
     "FRONTLINE_LOGS = 32", "FRONTLINE_STONE_BRICKS = 128",
     "player.isShiftKeyDown()", "moveFrontlineBundleInto", "FRONTLINE_KEY"
 ], "0.49 frontline freight content-pack bridge")
 need(ui, ["Shift=전선묶음", "레일6+·동력레일·호퍼·제어"], "0.49 frontline freight player flow")
+need(depot_data, [
+    "BASE_DEPOTS_PER_PLAYER = 3", "CIVIL_DEPOTS_PER_PLAYER = 6", "MAX_DEPOTS_PER_PLAYER = 9",
+    "InfrastructureProject.CIVIL_WORKS", "InfrastructureProject.ASCENSION_NEXUS", "registrationLimit(ServerPlayer player)"
+], "0.50 regional logistics content-pack flow")
+need(ui, ["한도3→토목6→중추9"], "0.50 regional logistics player flow")
 
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
@@ -73,4 +79,5 @@ if exit_code != 0:
     sys.exit(exit_code)
 
 print("frontline_freight_manifest=PASS")
+print("regional_logistics_scale=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")
