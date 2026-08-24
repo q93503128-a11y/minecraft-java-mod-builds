@@ -50,7 +50,8 @@ public final class SettlementCommands {
     }
 
     private static int build(CommandContext<CommandSourceStack> context, BuildingType type) throws CommandSyntaxException {
-        ServerPlayer player=context.getSource().getPlayerOrException(); SettlementData data=SettlementData.get(player.level().getServer());
+        ServerPlayer player=context.getSource().getPlayerOrException(); MinecraftServer server=player.level().getServer(); SettlementData data=SettlementData.get(server);
+        if(SettlementCivilWorkData.get(server).project().active()){player.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 건물을 시작해 주세요."));return 0;}
         if(data.outpostConstruction().active()){player.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 건물을 시작해 주세요."));return 0;}
         String locked;
         if(type==BuildingType.WORKSHOP) locked=SettlementWorkshopService.lockedReason(data);
@@ -65,8 +66,8 @@ public final class SettlementCommands {
         SettlementConstructionService.StartResult result=SettlementConstructionService.start(player,type); player.sendSystemMessage(Component.literal(result.message())); return result.started()?1:0;
     }
 
-    private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); SettlementData d=SettlementData.get(p.level().getServer()); if(d.outpostConstruction().active()){p.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 도로를 시작해 주세요."));return 0;} var r=SettlementRoadService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
-    private static int outpost(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); var r=SettlementOutpostService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
+    private static int road(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); SettlementData d=SettlementData.get(s); if(SettlementCivilWorkData.get(s).project().active()){p.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 도로를 시작해 주세요."));return 0;} if(d.outpostConstruction().active()){p.sendSystemMessage(Component.literal("전초기지 공사가 끝난 뒤 도로를 시작해 주세요."));return 0;} var r=SettlementRoadService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
+    private static int outpost(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); if(SettlementCivilWorkData.get(s).project().active()){p.sendSystemMessage(Component.literal("선택영역 토목이 끝난 뒤 전초기지를 시작해 주세요."));return 0;} var r=SettlementOutpostService.start(p); p.sendSystemMessage(Component.literal(r.message())); return r.started()?1:0; }
 
     private static int status(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player=context.getSource().getPlayerOrException(); MinecraftServer server=player.level().getServer(); SettlementData data=SettlementData.get(server);
@@ -76,6 +77,9 @@ public final class SettlementCommands {
         player.sendSystemMessage(Component.literal("마을 자원 | 목재 "+r.wood()+" | 석재 "+r.stone()+" | 금속 "+r.metal()+" | 식량 "+r.food()+" | 인구 "+data.population()+" | 주거 "+data.housingCapacity()));
         player.sendSystemMessage(Component.literal("인프라 | 주택 "+data.houseCount()+" | 벌목소 "+data.lumberCampCount()+" | 농장 "+data.buildingCount(BuildingType.FARM)+" | 채석장 "+data.buildingCount(BuildingType.QUARRY)+" | 광산 "+data.buildingCount(BuildingType.MINE)+" | 창고 "+data.buildingCount(BuildingType.WAREHOUSE)+" | 건설소 "+data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)+" | 대장간 "+data.buildingCount(BuildingType.BLACKSMITH)+" | 작업장 "+data.buildingCount(BuildingType.WORKSHOP)+" | 고급 제작소 "+data.buildingCount(BuildingType.ADVANCED_WORKSHOP)+" | 경비초소 "+data.buildingCount(BuildingType.GUARD_POST)+" | 감시탑 "+data.buildingCount(BuildingType.WATCHTOWER)+" | 병영 "+data.buildingCount(BuildingType.BARRACKS)+" | 시장 "+data.buildingCount(BuildingType.MARKET)+" | 수레 정거장 "+data.buildingCount(BuildingType.CART_STATION)+" | 도로 "+data.roads().size()+" | 전초기지 "+data.outposts().size()));
         if(data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)>0){SettlementConstructionOfficeService.SupplySnapshot supply=SettlementConstructionOfficeService.snapshot(server.overworld(),data);player.sendSystemMessage(Component.literal("건설 보급 | 집결 목재 "+supply.wood()+" | 석재 "+supply.stone()+" | 보급 주민 "+supply.runners()));}
+        CivilWorkState civil=SettlementCivilWorkData.get(server).project();
+        if(civil.active()) player.sendSystemMessage(Component.literal("토목 | "+SettlementCivilWorkService.phaseLabel(server)+" "+civil.progressPercent()+"% | "+civil.width()+"×"+civil.depth()+" | 절토 "+civil.initialCutBlocks()+" | 성토 "+civil.initialFillBlocks()+" | 현장 토사 "+civil.earthBank()+" | 가상 자원 0"));
+        else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | B 팔레트에서 9×9 선택영역 평탄화 가능 · 절토량 안에서만 성토":"토목 | "+civilLock)); }
         if(data.buildingCount(BuildingType.ADVANCED_WORKSHOP)>0){
             String reforge=SettlementAdvancedWorkshopService.reforgeUnlocked(data)
                     ? " | 영지 재련 준비 "+SettlementAdvancedWorkshopService.readyReforgeCommissionCount(server.overworld(),data)+" | 재련 유물 "+SettlementAdvancedWorkshopService.REFORGE_RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.REFORGE_METAL_COST+" | 재련력 "+SettlementAdvancedWorkshopService.REFORGE_POWER
