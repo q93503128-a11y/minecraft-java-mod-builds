@@ -299,7 +299,7 @@ with zipfile.ZipFile(jar) as archive:
 
 digest = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_name(jar.name + '.sha256').write_text(f'{digest}  {jar.name}\n', encoding='utf-8')
-print('Arcane Circle alpha.75 JAR verification: PASS')
+print('Arcane Circle alpha.76 JAR verification: PASS')
 print('alpha76_single_responsive_grimoire_shell=PASS')
 print('alpha76_all_nine_circle_selector_accessible=PASS')
 print('alpha76_academy_spellbook_shop_restored=PASS')
