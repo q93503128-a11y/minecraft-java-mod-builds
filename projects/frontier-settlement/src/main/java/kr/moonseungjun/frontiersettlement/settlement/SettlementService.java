@@ -26,6 +26,7 @@ public final class SettlementService {
             if (data.construction().active()) SettlementConstructionService.tick(server, data);
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
+            if (SettlementCivilWorkData.get(server).project().active()) SettlementCivilWorkService.tick(server, data);
         }
         SettlementCoreService.tick(server, data);
         SettlementConstructionOfficeService.tick(server, data);
@@ -50,7 +51,8 @@ public final class SettlementService {
         SettlementBenefitService.tick(server, data);
         if (tick % 20 == 0) {
             boolean changed = refreshResources(server, data);
-            boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
+            boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active()
+                    || SettlementCivilWorkData.get(server).project().active();
             if (changed || activeProject) broadcast(server, data);
             else if (explorationChanged) broadcast(server, data);
         }
