@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.62**.
+Current canonical implementation: **0.1.0-alpha.63**.
 
 ## 1. Product identity
 
@@ -366,7 +366,24 @@ Dangerous-outpost invariant:
 - food/metal costs, military slots and drop protection remain unchanged;
 - no hard Better Combat/Weapons Expanded Java dependency.
 
-At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 now covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation. The remaining remote-sentry extension must reuse the existing road-bound reverse-supply transporter and must not require manually opening every soldier.
+At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.63 transporter transaction hardening
+
+Alpha.63 closes two deterministic acceptance-edge gaps inside the existing long-distance authority.
+
+- a military external weapon carried under `MILITARY_SUPPLY_TRIP_TAG` is revalidated at the destination immediately before insertion;
+- if `weaponSupplyShortage(...)` is already zero, the exact carried weapon remains in transporter MAINHAND and only the supply trip tag is removed; the next existing normal freight step returns it to concrete town storage;
+- therefore a player/manual stock change or sentry armament during a long trip cannot create an unintended second remote reserve weapon;
+- tagged transport-worker death clears ambiguous vanilla equipment drops and emits exactly one copy of the currently carried MAINHAND ItemStack for physical recovery;
+- empty-handed transporter death emits no cargo and cannot mint items;
+- the death handler is registered once on the common NeoForge event bus and does not alter ordinary villagers;
+- entity persistence continues to own transporter assignment tags and MAINHAND cargo; no new save field, virtual cargo, refund balance or recovery ledger exists;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, **군사 전초도 같은 도로 운송자가 역방향 보급**, and **위험지역 군사 역할이 우선** remain unchanged;
+- Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- no new worker/trip family/route controller/building/key/UI/currency, no force-load/teleport, and no hard companion dependency.
+
+This is static transaction hardening, not a substitute for route-unload/save-reload/two-player real-play acceptance.
 
 ### Alpha.62 road-bound remote-sentry physical armament
 
@@ -689,7 +706,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.62
+## 14. Current playable slice after Alpha.63
 
 Current implemented slice includes:
 
@@ -715,16 +732,17 @@ Current implemented slice includes:
 - Alpha.60 rollback-safe ordinary building placement + Alpha.44 grade-cell physical material transactions;
 - Alpha.61 rollback-safe outpost grade-cell terrain mutation before persisted step advance;
 - Alpha.62 same-road-transporter remote military external-weapon delivery -> local sentry MAINHAND equip -> exact death recovery;
+- Alpha.63 in-flight military weapon demand revalidation + exact transport-worker carried-ItemStack death recovery;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.62
+## 15. Unfinished original-scope priorities after Alpha.63
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. Alpha.62 remote military weapon road-haul/local-equip/death-recovery save-reload, route-unload and no-dup acceptance; implementation now reuses the existing road-bound reverse-supply transporter;
+2. Alpha.62–63 remote military weapon road-haul/local-equip, in-flight stale-demand return, transporter-cargo recovery, save-reload, route-unload and no-dup acceptance; static failure edges are hardened but runtime acceptance remains;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.62`
+현재 구현 기준: `0.1.0-alpha.63`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -10,7 +10,7 @@
 - `외부`: companion이 콘텐츠 폭을 담당
 - `후보검증`: 버전/구성은 고정했으나 풀스택 런타임 검증 필요
 
-이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.57에서 본진 병영 실물 외부무기 armament까지 들어가도 원격 군사 무기 보급, rare-NPC breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
+이 문서는 현재 구현에 맞춰 원본 v0.2 범위를 축소하지 않는다. Alpha.57 본진 병영과 Alpha.62 원격 군사 실물 외부무기 armament가 구현됐어도, 해당 물류의 장시간 acceptance, rare-NPC breadth, 장시간 multiplayer 및 full companion runtime이 남아 있는 동안 완성이라고 부르지 않는다.
 
 ## 1. 핵심 정체성 / 멀티 / 조작
 
@@ -60,7 +60,7 @@
 | 외부 재료 태그 수용 | 완료/부분 | additive Frontier + `c:` 태그, full pack 미검증 |
 | 병영 충원 실제 자원 | 완료 | food8 + metal2 |
 | 군사 전초 충원 실제 자원 | 완료/부분 | local food6 + metal2 + reverse supply |
-| 본진 병영 실물 외부무기 armory/loadout | **완료/부분** | Alpha.57 shared storage→soldier physical walk→exact MAINHAND ItemStack; remote sentry weapon supply는 미구현/부분 |
+| 실물 외부무기 군사 armory/loadout | **완료/부분** | Alpha.57 본진 병영 + Alpha.62 원격 전초 exact MAINHAND 물리 보급; Alpha.63 stale-demand/운송자 화물 회수 하드닝, 장시간 acceptance 남음 |
 | 건설/옹벽 실제 자원 | 완료 | real wood/stone haul/stage/consume |
 | 수변 계류장 실제 자원 | 완료/부분 | real outpost wood + same transporter reverse supply |
 | 수변 교역 실제 아이템 | 완료 | dedicated barrel 16 fish→1 emerald, ordinary stockpile 자동판매 없음 |
@@ -299,7 +299,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - old tagged Iron Golem soldier/sentry는 loaded 상태에서1:1 migration;
 - migration은 recruit consume 함수를 호출하지 않으므로 이중 과금 없음;
 - Better Combat/Weapons Expanded Java hard dependency 없음;
-- Alpha.48 시점에는 actual external-weapon physical armory가 미완료였고, Alpha.57에서 loaded 본진 병영은 real MAINHAND ItemStack 무장으로 구현됨; 원격 위험지역 전초 무기 역보급은 기존 road transporter authority를 재사용할 수 있을 때만 남은 범위.
+- Alpha.48 시점에는 actual external-weapon physical armory가 미완료였고, Alpha.57에서 loaded 본진 병영, Alpha.62에서 기존 road transporter authority를 재사용한 원격 위험지역 전초 real MAINHAND 무장이 구현됨.
 
 ## 5. 성장 단계 / 탐험 되먹임
 
@@ -382,6 +382,21 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
+### Alpha.63 운송 트랜잭션 하드닝 감사
+
+- Alpha.62 weapon demand는 출발 시뿐 아니라 실제 전초 창고 삽입 직전 다시 검사;
+- 이동 중 sentry가 무장되거나 outpost stockpile에 다른 recognized weapon이 생겨 demand0이면 carried weapon을 두 번째 재고로 삽입하지 않음;
+- exact carried weapon은 transporter MAINHAND에 그대로 남고 `MILITARY_SUPPLY_TRIP_TAG`만 해제되어 기존 일반 반환 경로로 본진 concrete storage에 돌아감;
+- stale cargo 삭제/teleport/virtual refund/새 return ledger 없음;
+- tagged transporter 사망 시 vanilla equipment drop ambiguity를 clear하고 현재 MAINHAND ItemStack exact copy1만 world recovery drop으로 복원;
+- empty MAINHAND 사망은 cargo0이라 아이템 생성 없음;
+- normal outpost cargo와 military/waterfront reverse-supply cargo 모두 같은 death-recovery 경계를 사용;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, **군사 전초도 같은 도로 운송자가 역방향 보급** 유지;
+- `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지;
+- 새 save field/trip family/worker/building/key/UI/currency/force-load/teleport/hard companion dependency 없음.
+
+따라서 정적으로 재현 가능한 in-flight 과잉 weapon 보급과 운송자 사망 silent cargo loss 경계는 닫혔다. 실제 route unload/save-reload/reconnect/반복 사망 no-dup acceptance는 계속 남는다.
+
 ## 7. 도로 / 전초 / 영토
 
 | 요구사항 | 상태 | 현재 |
@@ -441,7 +456,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. Alpha.62 remote weapon road-haul/local-equip/death-recovery의 route-unload/save-reload/no-dup 실플레이 acceptance;
+2. Alpha.62–63 remote weapon road-haul/local-equip/stale-demand return/transporter-cargo recovery의 route-unload/save-reload/reconnect/no-dup 실플레이 acceptance;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

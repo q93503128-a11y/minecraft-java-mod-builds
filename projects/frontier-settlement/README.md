@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.62
+## Current version: 0.1.0-alpha.63
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.62 key was added.
+No new Alpha.63 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–62 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–63 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,22 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.63 — transport transaction hardening
+
+Alpha.63 hardens the existing Alpha.27/41/62 physical outpost transporter for long-session failure edges without adding another logistics system.
+
+- military weapon demand is rechecked at the **actual outpost delivery point**, not trusted from the town departure decision;
+- if the sentry became armed or another recognized weapon reached the outpost while one was in flight, the transporter keeps that exact weapon in MAINHAND, clears only the military-supply trip state, and returns it through the existing road/town-deposit path;
+- the stale weapon is never inserted as a second reserve copy, deleted, converted to a number or teleported;
+- a tagged outpost transporter death clears vanilla equipment/drop-chance ambiguity and re-adds its exact carried MAINHAND ItemStack once as a recoverable world drop;
+- this death rule applies equally to normal outpost cargo and food/metal/wood/weapon reverse-supply cargo, preventing silent physical cargo loss;
+- worker tags, MAINHAND equipment and the persisted road remain the authority across normal entity save/reload; no new SavedData field or weapon-specific trip tag is introduced;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and **군사 전초도 같은 도로 운송자가 역방향 보급** remains true;
+- Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- no new worker, route controller, building, key, UI, currency, force-load, teleport or hard companion dependency is added.
+
+This closes two statically reproducible no-loss/no-dup edges. Long save/reload, route-unload and two-player runtime acceptance is still not claimed.
 
 ## Alpha.62 — road-bound remote sentry physical armament
 

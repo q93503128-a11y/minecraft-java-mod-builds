@@ -6,10 +6,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -100,6 +102,20 @@ public final class SettlementOutpostLogisticsService {
             if (findAssignedWorker(level, data, outpost) == null) return outpost;
         }
         return null;
+    }
+
+    /**
+     * A dedicated transporter may be carrying the settlement's only physical copy of a cargo stack.
+     * Clear vanilla equipment/drop-chance ambiguity and recover that exact MAINHAND stack once.
+     */
+    public static void onLivingDrops(LivingDropsEvent event) {
+        if (!event.getEntity().entityTags().contains(TRANSPORT_WORKER_TAG)) return;
+        ItemStack carried = event.getEntity().getMainHandItem();
+        event.getDrops().clear();
+        if (carried.isEmpty()) return;
+        event.getDrops().add(new ItemEntity(
+                event.getEntity().level(), event.getEntity().getX(), event.getEntity().getY(),
+                event.getEntity().getZ(), carried.copy()));
     }
 
     public static Villager spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
@@ -319,6 +335,15 @@ public final class SettlementOutpostLogisticsService {
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
+        // Demand can become stale while the real weapon is physically in flight. If another weapon
+        // appeared or the sentry became armed, keep this exact stack in MAINHAND, drop only the
+        // military-supply state, and let the existing normal return path carry it back to town.
+        if (SettlementExternalContentService.isExternalWeapon(carried)
+                && SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) <= 0) {
+            worker.removeTag(MILITARY_SUPPLY_TRIP_TAG);
+            worker.getNavigation().stop();
+            return;
+        }
         ItemStack remaining = SettlementInventory.insert(container, carried);
         worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
         if (remaining.isEmpty()) {
