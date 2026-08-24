@@ -20,19 +20,27 @@ public enum SettlementTier {
     public static SettlementTier current(SettlementData data) {
         if (!data.founded()) return CAMP;
 
-        if (data.population() >= 16
+        boolean legacyDomain = data.population() >= 16
                 && data.outposts().size() >= 4
                 && data.buildingCount(BuildingType.MINE) >= 1
-                && data.buildingCount(BuildingType.FARM) >= 2) {
-            return DOMAIN;
-        }
+                && data.buildingCount(BuildingType.FARM) >= 2;
+        boolean explorationDomain = data.population() >= 14
+                && data.outposts().size() >= 3
+                && data.buildingCount(BuildingType.MINE) >= 1
+                && data.buildingCount(BuildingType.FARM) >= 2
+                && data.explorationScore() >= 5;
+        if (legacyDomain || explorationDomain) return DOMAIN;
 
-        if (data.population() >= 8
+        boolean legacyFrontierTown = data.population() >= 8
                 && data.outposts().size() >= 2
                 && data.buildingCount(BuildingType.MINE) >= 1
-                && data.buildingCount(BuildingType.QUARRY) >= 1) {
-            return FRONTIER_TOWN;
-        }
+                && data.buildingCount(BuildingType.QUARRY) >= 1;
+        boolean explorationFrontierTown = data.population() >= 7
+                && data.outposts().size() >= 2
+                && data.buildingCount(BuildingType.MINE) >= 1
+                && data.buildingCount(BuildingType.QUARRY) >= 1
+                && data.explorationScore() >= 2;
+        if (legacyFrontierTown || explorationFrontierTown) return FRONTIER_TOWN;
 
         if (data.population() >= 4
                 && data.outposts().size() >= 1
