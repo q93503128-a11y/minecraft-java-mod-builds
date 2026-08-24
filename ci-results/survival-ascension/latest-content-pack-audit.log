@@ -1,3 +1,4 @@
 content_pack_source_audit=PASS
 locked_external_mods=6
+loader_specific_artifact_selection=PASS
 skill_xp_normalization=PASS
