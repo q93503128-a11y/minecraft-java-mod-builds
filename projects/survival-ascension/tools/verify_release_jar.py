@@ -33,5 +33,27 @@ with zipfile.ZipFile(jar) as zf:
     if b"CHEST_MINECART" not in ui or b"physical_freight" not in ui:
         raise SystemExit("0.49 compiled freight UI routing missing")
 
+    depot_data_name = "kr/moonseungjun/survivalascension/production/FieldDepotData.class"
+    outpost_data_name = "kr/moonseungjun/survivalascension/production/OutpostData.class"
+    for name in [depot_data_name, outpost_data_name]:
+        if name not in zf.namelist():
+            raise SystemExit(f"0.50 regional logistics runtime class missing: {name}")
+    depot_data = zf.read(depot_data_name)
+    outpost_data = zf.read(outpost_data_name)
+    for token in [
+        b"BASE_DEPOTS_PER_PLAYER",
+        b"CIVIL_DEPOTS_PER_PLAYER",
+        b"MAX_DEPOTS_PER_PLAYER",
+        b"registrationLimit",
+        b"CIVIL_WORKS",
+        b"ASCENSION_NEXUS",
+    ]:
+        if token not in depot_data:
+            raise SystemExit(f"0.50 compiled regional depot token missing: {token!r}")
+    if b"registrationLimit" not in outpost_data:
+        raise SystemExit("0.50 compiled outpost dynamic-limit routing missing")
+
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
+print("regional_logistics_scale_runtime=present")
+print("regional_logistics_scale_release_verify=PASS")
