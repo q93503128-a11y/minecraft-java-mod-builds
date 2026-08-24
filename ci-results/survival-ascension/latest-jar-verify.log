@@ -1,5 +1,5 @@
 JAR VERIFY PASS
-version=0.46.0-alpha.1
+version=0.47.0-alpha.1
 external_equipment_imprint_runtime=present
 bop_expedition_biome_bridge=present
 standard_shovel_affix_bridge=present
@@ -19,5 +19,5 @@ production_runtime=present
 field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
-size=501933
-sha256=6a205c5c4d899e6a4ad925d82f7250a9620fe7948a38ce0dadd1672b0bd2b11f
+size=503139
+sha256=898844bcb102f1ee6f8ed5f0df3bc5e33cd8109bc4868f57ea0b368bb29b738d
