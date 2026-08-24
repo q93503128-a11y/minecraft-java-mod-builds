@@ -87,7 +87,13 @@ public final class OutpostData extends SavedData {
     }
 
     public boolean upgrade(ServerPlayer player, String dimension, BlockPos pos) {
-        if (isOutpost(player, dimension, pos) || state(player).size() >= MAX_OUTPOSTS_PER_PLAYER) return false;
+        return upgrade(player, dimension, pos, FieldDepotData.registrationLimit(player));
+    }
+
+    public boolean upgrade(ServerPlayer player, String dimension, BlockPos pos, int maxAllowed) {
+        if (isOutpost(player, dimension, pos)) return false;
+        int limit = Math.max(0, Math.min(MAX_OUTPOSTS_PER_PLAYER, maxAllowed));
+        if (state(player).size() >= limit) return false;
         state(player).add(new OutpostEntry(dimension, pos.getX(), pos.getY(), pos.getZ()));
         setDirty();
         return true;
