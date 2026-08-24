@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.50.0-alpha.1
+- Added `Regional Logistics Scale / 지역 물류망 확장`: live registered depot/outpost admission grows 3 -> 6 -> 9 with Industrial Works -> Civil Works -> Ascension Nexus.
+- Raised only the absolute persisted safety capacity of the existing `field_depots_v1` / `outpost_v1` lists to9; no new SavedData ID or migration is introduced.
+- Added `FieldDepotData.registrationLimit` and data-layer bounded `add`/`upgrade` overloads so progression admission cannot be bypassed by another caller.
+- Updated field-depot registration/status and outpost promotion/status to show and enforce the current infrastructure limit rather than displaying a permanent max9.
+- Fixed a manual-audit bug found during 0.50 closure: outpost promotion now checks the 3/6/9 limit before structure/material/supply-charge mutation, so a reached stage limit cannot consume iron/gold/coal or field-supply charges.
+- Kept each depot as a real loaded/interactable Barrel and each outpost as the same physical Bed/Campfire/Crafting/Furnace structure; expansion does not create remote activation or maintenance simulation.
+- Kept network protocol8, physical Chest Minecart freight, exact-outpost frontline stock, no automatic routing, no virtual storage, no teleport and no force-load.
+- Updated README / PROJECT / in-game guide / source audit / packaged-JAR verifier for the staged regional capacity contract.
+
+## 0.49.0-alpha.1
+- Added `Frontline Freight Manifest / 전선 보급 화물` as a Shift-select mode on the existing physical Chest Minecart freight action; normal selection retains ordinary bulk freight.
+- Frontline manifest composition is exactly food176 + iron56 + fuel8 + logs32 + stone bricks128 = 400 items, matching one expedition + one normal outpost defense + one Bastion defense local loadout.
+- Manifest admission is all-or-nothing from the exact departure outpost Barrel + linked warehouse cluster, so unrelated slot-order bulk material cannot crowd the reserve out.
+- If cart slot layout prevents the complete prepared manifest, already moved stock is rolled back to the same physical source cluster and the load is rejected.
+- The frontline marker is stored only on that actual Chest Minecart persistent NBT. Destination unloading still uses real capacity and may leave remainder in the same cart.
+- Added no route SavedData, virtual cargo balance, generated supplies, auto-driving, cross-dimension freight, teleport or force-load.
+- Bumped the content-preview lock to `0.49.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+- Extended release source/content-pack/JAR verification while retaining all earlier physical freight, frontline supply and optional-mod compatibility checks.
+
 ## 0.48.0-alpha.1
 - Added `Frontline Local Supply / 전선 현지 보급` so the physical freight network now feeds expedition and defense readiness rather than only relocating stock.
 - Expedition operation launch keeps supply-charge1 and additionally requires food32 + iron8 + fuel8 in the exact departure outpost warehouse cluster.
