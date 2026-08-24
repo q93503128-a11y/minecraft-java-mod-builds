@@ -19,4 +19,5 @@ RELEASE SOURCE AUDIT PASS
 - 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops
 - 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%
 - 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded
+- 0.52 each physical projectile can produce at most one area burst, including piercing shots
 - README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.52
