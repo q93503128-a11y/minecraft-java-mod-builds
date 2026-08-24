@@ -4,6 +4,20 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.48.0-alpha.1 — Frontline Local Supply / 전선 현지 보급
+Physical freight now feeds a concrete frontline sink instead of only rearranging bulk stock. Starting an expedition operation, normal outpost defense or Bastion defense still requires the existing global field-supply charge, but it also requires real material stock inside the exact departure outpost's registered Barrel + linked warehouse Barrels.
+
+Local material costs:
+- Expedition operation: food32 + iron8 + fuel8;
+- normal outpost defense: food48 + iron16 + logs32;
+- Bastion defense: food96 + iron32 + stone bricks128.
+
+Food is the combined stock of wheat/carrot/potato/beetroot and fuel is coal/charcoal. These resources are already in the physical-freight bulk whitelist. The local-stock resolver never falls back to player inventory or a nearby different depot: players may hand-load the departure outpost or move supplies there with the real Chest Minecart freight loop.
+
+The material precheck is non-mutating. Local stock is consumed only after the existing encounter/operation system reports that it actually started, so rejected starts do not burn the physical loadout. Existing supply-charge costs, expedition region/directive checks, fortification requirements, cooldowns, physical outpost rules and encounter behavior remain authoritative.
+
+`M -> Infrastructure -> Industrial Works -> Production Status` now reports the nearby active outpost's food/iron/fuel/log/stone-brick stock, and the radial menu exposes the three local loadouts. No new SavedData, packet/protocol, custom item/block/entity, virtual cargo balance, teleport or force-load is introduced.
+
 ## 0.47.0-alpha.1 — Major External Targets / 외부 강적 원정 연동
 The Birth of Steve is now locked to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`). Survival Ascension does not import TBS classes or copy its ARR content; the integration point is the Survival-owned optional EntityType tag `survivalascension:expedition_major_targets`.
 
@@ -111,11 +125,11 @@ Each registered `통` remains an anchor and may explicitly link up to8 additiona
 Major late projects require a bounded real-world commissioning site before a finalizable funding call can cross completion. Existing completed projects remain compatible.
 
 ## Retained field loop
-- Integrated Logistics Backbone: stationary logistics-backed sinks consume nearest usable real logistics `통` first, then player inventory. Apex/Trial entry stays player-carried.
+- Integrated Logistics Backbone: stationary logistics-backed sinks consume nearest usable real logistics `통` first, then player inventory. Frontline operation/siege loadouts are the deliberate exception: exact departure-outpost storage only. Apex/Trial entry stays player-carried.
 - High-volume Field Offload: main inventory slots9..35 -> nearest real `통` capacity; hotbar/equipment remain carried.
 - Physical Outposts: owned depot + Bed/Campfire/Crafting/Furnace; logistics64 and NATURAL-hostile safety24 while active.
 - Field Recovery: prepaid one-use ordinary-death return within96; authored encounter deaths stay excluded.
-- Expedition Operations: physical out-and-back regional sorties with one bounded complication per sortie.
+- Expedition Operations: physical out-and-back regional sorties with one bounded complication per sortie and exact-outpost local stock at launch.
 
 ## Combat / endgame boundaries
 Apex entry remains player-carried Echo8 + Amethyst32 + Gold32. Ascension Trial entry remains player-carried Echo32 + Amethyst64 + Dragon Breath8. Physical logistics never become remote encounter payment.
