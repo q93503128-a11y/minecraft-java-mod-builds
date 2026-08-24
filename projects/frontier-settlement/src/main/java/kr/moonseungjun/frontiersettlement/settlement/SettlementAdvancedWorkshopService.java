@@ -16,6 +16,7 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
@@ -28,10 +29,12 @@ import java.util.function.Predicate;
 /**
  * Late-game physical forging bridge for companion weapons.
  *
- * Player intent is explicit: an unenchanted recognized external weapon and one expedition relic must
- * be placed in this building's commission barrel. The assigned artisan physically fetches four real
- * metal items from ordinary settlement storage. Only after a valid enchant result can be produced are
- * the relic and four metal consumed; the same weapon remains in the barrel, fully repaired and forged.
+ * Alpha.39's original commission remains intact: an unenchanted recognized external weapon and one
+ * expedition relic are placed in the commission barrel, then the assigned artisan physically fetches
+ * four real metal before a validated power-30 enchant result can consume anything. Alpha.47 adds a
+ * domain-only second pass for an already-enchanted external weapon: two relics and eight real metal can
+ * add only new table-compatible enchantments. Existing enchantments are never removed or downgraded,
+ * and a no-improvement result consumes nothing.
  */
 public final class SettlementAdvancedWorkshopService {
     public static final String ADVANCED_WORKER_TAG = "frontier_settlement_advanced_workshop_worker";
@@ -39,9 +42,13 @@ public final class SettlementAdvancedWorkshopService {
     public static final int RELIC_COST = 1;
     public static final int METAL_COST = 4;
     public static final int ENCHANTMENT_POWER = 30;
+    public static final int REFORGE_RELIC_COST = 2;
+    public static final int REFORGE_METAL_COST = 8;
+    public static final int REFORGE_POWER = 40;
 
     private static final String WORKER_NAME = "고급 제작 주민";
     private static final int SERVICE_PERIOD_TICKS = 160;
+    private static final int METAL_HAUL_BATCH = 4;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
     private static final double ASSIGNMENT_SEARCH_RADIUS = 192.0D;
 
@@ -58,6 +65,10 @@ public final class SettlementAdvancedWorkshopService {
             return "고급 제작소는 시장 1곳을 먼저 완성하면 열립니다.";
         }
         return null;
+    }
+
+    public static boolean reforgeUnlocked(SettlementData data) {
+        return SettlementTier.current(data).ordinal() >= SettlementTier.DOMAIN.ordinal();
     }
 
     public static void tick(MinecraftServer server, SettlementData data) {
@@ -138,12 +149,31 @@ public final class SettlementAdvancedWorkshopService {
         return ready;
     }
 
+    public static int readyReforgeCommissionCount(ServerLevel level, SettlementData data) {
+        if (!reforgeUnlocked(data)) return 0;
+        int ready = 0;
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
+            BlockPos cratePos = AdvancedWorkshopLayout.commissionCrate(workshop);
+            if (!(level.getBlockEntity(cratePos) instanceof Container crate)) continue;
+            if (findReforgeWeapon(crate) >= 0 && countRelics(crate) >= REFORGE_RELIC_COST) ready++;
+        }
+        return ready;
+    }
+
     private static void runService(MinecraftServer server, ServerLevel level, SettlementData data,
                                    BuildingRecord workshop, BlockPos cratePos, Container crate, Villager worker) {
         int weaponSlot = findCommissionWeapon(crate);
+        boolean reforge = false;
+        if (weaponSlot < 0 && reforgeUnlocked(data)) {
+            weaponSlot = findReforgeWeapon(crate);
+            reforge = weaponSlot >= 0;
+        }
         int relicSlot = findRelicSlot(crate);
+        int relicRequired = reforge ? REFORGE_RELIC_COST : RELIC_COST;
+        int metalRequired = reforge ? REFORGE_METAL_COST : METAL_COST;
         ItemStack carried = worker.getMainHandItem();
-        if (weaponSlot < 0 || relicSlot < 0) {
+        if (weaponSlot < 0 || relicSlot < 0 || countRelics(crate) < relicRequired) {
             if (!carried.isEmpty()) returnCarriedItem(level, data, worker, carried);
             else moveOrStop(worker, AdvancedWorkshopLayout.artisanHome(workshop), 0.68D);
             return;
@@ -168,9 +198,12 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         int metal = countMatching(crate, SettlementStorageService::isMetalStack);
-        if (metal >= METAL_COST) {
+        if (metal >= metalRequired) {
             if (!workDue(server, workshop)) return;
-            if (forgeOne(level, crate, weaponSlot, relicSlot)) {
+            boolean completed = reforge
+                    ? reforgeOne(level, crate, weaponSlot)
+                    : forgeOne(level, crate, weaponSlot, relicSlot);
+            if (completed) {
                 worker.swing(InteractionHand.MAIN_HAND);
                 SettlementService.refreshResources(server, data);
                 SettlementService.broadcast(server, data);
@@ -187,13 +220,14 @@ public final class SettlementAdvancedWorkshopService {
             return;
         }
         ItemStack metalStack = SettlementStorageService.extract(level, source, SettlementStorageService::isMetalStack,
-                Math.min(METAL_COST - metal, 4));
+                Math.min(metalRequired - metal, METAL_HAUL_BATCH));
         if (metalStack.isEmpty()) return;
         worker.setItemSlot(EquipmentSlot.MAINHAND, metalStack);
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
     }
 
+    /** Alpha.39 original forge path. Keep its validation-before-consumption order intact. */
     private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot) {
         ItemStack weapon = crate.getItem(weaponSlot);
         ItemStack relic = crate.getItem(relicSlot);
@@ -218,9 +252,56 @@ public final class SettlementAdvancedWorkshopService {
         return true;
     }
 
+    /**
+     * Alpha.47 domain reforge. Candidate selection excludes every enchantment already present and
+     * rejects anything incompatible with the existing set. The original enchantment component is
+     * therefore never rewritten or downgraded; successful additions are applied to a copy only after
+     * a non-empty compatible selection exists. Real relic/metal mutation happens last.
+     */
+    private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot) {
+        ItemStack weapon = crate.getItem(weaponSlot);
+        if (!isReforgeableWeapon(weapon)) return false;
+        if (countRelics(crate) < REFORGE_RELIC_COST) return false;
+        if (countMatching(crate, SettlementStorageService::isMetalStack) < REFORGE_METAL_COST) return false;
+
+        ItemStack reforged = weapon.copy();
+        var existing = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
+        var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment(level.getRandom(), reforged, REFORGE_POWER,
+                enchantments.listElements()
+                        .<Holder<Enchantment>>map(holder -> holder)
+                        .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))
+                        .filter(reforged::supportsEnchantment)
+                        .filter(holder -> existing.getLevel(holder) == 0)
+                        .filter(holder -> EnchantmentHelper.isEnchantmentCompatible(existing.keySet(), holder)));
+        if (additions.isEmpty()) return false;
+        for (EnchantmentInstance addition : additions) {
+            reforged.enchant(addition.enchantment, addition.level);
+        }
+        var result = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
+        if (result.equals(existing)) return false;
+        for (Holder<Enchantment> holder : existing.keySet()) {
+            if (result.getLevel(holder) < existing.getLevel(holder)) return false;
+        }
+
+        reforged.setDamageValue(0);
+        if (!consumeMatching(crate, SettlementStorageService::isMetalStack, REFORGE_METAL_COST)) return false;
+        if (!consumeMatching(crate, stack -> stack.is(ExternalContentTags.EXPEDITION_RELICS), REFORGE_RELIC_COST)) return false;
+        crate.setItem(weaponSlot, reforged);
+        crate.setChanged();
+        return true;
+    }
+
     private static int findCommissionWeapon(Container crate) {
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
             if (isForgeableWeapon(crate.getItem(slot))) return slot;
+        }
+        return -1;
+    }
+
+    private static int findReforgeWeapon(Container crate) {
+        for (int slot = 0; slot < crate.getContainerSize(); slot++) {
+            if (isReforgeableWeapon(crate.getItem(slot))) return slot;
         }
         return -1;
     }
@@ -230,12 +311,21 @@ public final class SettlementAdvancedWorkshopService {
                 && EnchantmentHelper.getEnchantmentsForCrafting(stack).isEmpty();
     }
 
+    private static boolean isReforgeableWeapon(ItemStack stack) {
+        return SettlementExternalContentService.isExternalWeapon(stack)
+                && !EnchantmentHelper.getEnchantmentsForCrafting(stack).isEmpty();
+    }
+
     private static int findRelicSlot(Container crate) {
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
             ItemStack stack = crate.getItem(slot);
             if (!stack.isEmpty() && stack.is(ExternalContentTags.EXPEDITION_RELICS)) return slot;
         }
         return -1;
+    }
+
+    private static int countRelics(Container crate) {
+        return countMatching(crate, stack -> stack.is(ExternalContentTags.EXPEDITION_RELICS));
     }
 
     private static int countMatching(Container container, Predicate<ItemStack> predicate) {
@@ -270,7 +360,7 @@ public final class SettlementAdvancedWorkshopService {
     private static void returnCarriedItem(ServerLevel level, SettlementData data, Villager worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) { worker.getNavigation().stop(); return; }
-        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D)
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
             worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.8D);
             return;
