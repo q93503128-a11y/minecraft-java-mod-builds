@@ -17,69 +17,143 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/frontier-settlement
+  CI_RESULT_DIR: ci-results/frontier-settlement
 
 jobs:
   build:
-    name: Bootstrap Frontier Alpha.57
+    name: Java 25 - Frontier Settlement
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Apply Alpha.57 physical garrison armament
-        id: bootstrap57
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          (
-            set -euo pipefail
-            if ! grep -q '^mod_version=0.1.0-alpha.56$' "$PROJECT_DIR/gradle.properties"; then exit 0; fi
-            test -f "$PROJECT_DIR/tools/apply_alpha57.py"
-            test -f "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
-            echo 'ALPHA57_BOOTSTRAP=1' >> "$GITHUB_ENV"
-            python3 "$PROJECT_DIR/tools/apply_alpha57.py"
-            python3 "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
-            python3 "$PROJECT_DIR/tools/test_alpha57_source.py"
-            python3 "$PROJECT_DIR/tools/test_alpha57_docs.py"
-            git diff --check
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            rm -f "$PROJECT_DIR/tools/apply_alpha57.py" "$PROJECT_DIR/tools/fix_alpha57_docs_audit_quote.py"
-            git add -A "$PROJECT_DIR"
-            git diff --cached --check
-            git commit -m 'Implement Frontier alpha.57 physical barracks armament'
-            pushed=0
-            for attempt in 1 2 3 4 5 6; do
-              if git pull --rebase origin main && git push origin HEAD:main; then pushed=1; break; fi
-              git rebase --abort >/dev/null 2>&1 || true
-              sleep $((attempt * 2))
-            done
-            test "$pushed" -eq 1
-          ) 2>&1 | tee /tmp/frontier-alpha57-bootstrap.log
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
 
-      - name: Record Alpha.57 bootstrap failure
-        if: steps.bootstrap57.outcome == 'failure'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Resolve version
         shell: bash
         run: |
           set -euo pipefail
-          git reset --hard "$GITHUB_SHA"
-          mkdir -p ci-results/frontier-alpha57-bootstrap
-          cp /tmp/frontier-alpha57-bootstrap.log ci-results/frontier-alpha57-bootstrap/latest.log
+          version="$(sed -n 's/^mod_version=//p' "$PROJECT_DIR/gradle.properties")"
+          test -n "$version"
+          echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
+
+      - name: Alpha.57 cumulative source audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha57_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
+
+      - name: Alpha.57 canonical docs audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha57_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
+
+      - name: Verify toolchain and committed tree
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          java -version
+          ./gradlew --version
+          git diff --check
+          git diff --exit-code
+
+      - name: Java 25 clean build
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-gradle.log"
+
+      - name: Verify runtime JAR
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "build/libs/$EXPECTED_JAR"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR" | tee "$GITHUB_WORKSPACE/frontier-settlement-jar-verify.log"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
+          mkdir -p "$GITHUB_WORKSPACE/deliverables"
+          cp "build/libs/$EXPECTED_JAR" "$GITHUB_WORKSPACE/deliverables/"
+          cp "build/libs/$EXPECTED_JAR.sha256" "$GITHUB_WORKSPACE/deliverables/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-${{ env.MOD_VERSION }}-deliverables
+          path: deliverables/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-${{ env.MOD_VERSION }}-logs
+          path: |
+            frontier-settlement-source-audit.log
+            frontier-settlement-docs-audit.log
+            frontier-settlement-gradle.log
+            frontier-settlement-jar-verify.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Record canonical CI result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/frontier-settlement-result
+          mkdir -p /tmp/frontier-settlement-result
+          jar_sha256=unknown
+          if test -n "${EXPECTED_JAR:-}" && test -f "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256"; then
+            jar_sha256="$(awk '{print $1}' "$PROJECT_DIR/build/libs/$EXPECTED_JAR.sha256")"
+          fi
+          cat > /tmp/frontier-settlement-result/status.txt <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          docs_sha=$GITHUB_SHA
+          source_docs_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          version=${MOD_VERSION:-unknown}
+          jar_sha256=$jar_sha256
+          minecraft=26.2
+          neoforge=26.2.0.38-beta
+          java=25
+          gradle=9.2.1
+          STATUS
+          for file in frontier-settlement-source-audit.log frontier-settlement-docs-audit.log frontier-settlement-gradle.log frontier-settlement-jar-verify.log; do
+            if test -f "$GITHUB_WORKSPACE/$file"; then cp "$GITHUB_WORKSPACE/$file" "/tmp/frontier-settlement-result/latest-${file#frontier-settlement-}"; fi
+          done
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci-results/frontier-alpha57-bootstrap/latest.log
-          git commit -m "Record Frontier alpha.57 bootstrap failure for ${GITHUB_SHA::7} [skip ci]"
+          recorded=0
           for attempt in 1 2 3 4 5 6; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 1; fi
-            git rebase --abort >/dev/null 2>&1 || true
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf "$CI_RESULT_DIR"
+            mkdir -p "$CI_RESULT_DIR"
+            cp -a /tmp/frontier-settlement-result/. "$CI_RESULT_DIR/"
+            git add -A "$CI_RESULT_DIR"
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Frontier Settlement ${MOD_VERSION:-unknown} CI result for ${GITHUB_SHA::7} [skip ci]"
+            if git push origin HEAD:main; then recorded=1; break; fi
             sleep $((attempt * 2))
           done
-          exit 1
-
-      - name: Stop source run after product push
-        if: env.ALPHA57_BOOTSTRAP == '1' && steps.bootstrap57.outcome == 'success'
-        shell: bash
-        run: exit 1
+          test "$recorded" -eq 1
