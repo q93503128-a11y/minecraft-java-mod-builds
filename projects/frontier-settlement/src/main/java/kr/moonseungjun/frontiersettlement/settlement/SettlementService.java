@@ -21,6 +21,7 @@ public final class SettlementService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return;
         int tick = server.getTickCount();
+        boolean explorationChanged = SettlementExplorationService.tick(server, data);
         if (tick % 5 == 0) {
             if (data.construction().active()) SettlementConstructionService.tick(server, data);
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
@@ -49,7 +50,7 @@ public final class SettlementService {
         if (tick % 20 == 0) {
             boolean changed = refreshResources(server, data);
             boolean activeProject = data.construction().active() || data.roadConstruction().active() || data.outpostConstruction().active();
-            if (changed || activeProject) broadcast(server, data);
+            if (changed || activeProject || explorationChanged) broadcast(server, data);
         }
     }
 
