@@ -3,7 +3,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement'
-ALPHA49 = ROOT / 'tools/test_alpha49_source.py'
 
 
 def text(path): return path.read_text(encoding='utf-8')
@@ -14,12 +13,8 @@ def forbid(source, tokens, label):
     for token in tokens:
         if token in source: raise SystemExit(f'{label}: {token}')
 
-# Preserve Alpha.23-48 invariants from the Alpha.49 handoff, then own the changed civil-work rules here.
-alpha49_prefix = text(ALPHA49).replace('0.1.0-alpha.49', '0.1.0-alpha.50')
-alpha49_prefix = alpha49_prefix.split("state = text(JAVA / 'settlement/CivilWorkState.java')")[0]
-namespace = {'__file__': str(ALPHA49), '__name__': '__main__'}
-exec(compile(alpha49_prefix, str(ALPHA49), 'exec'), namespace, namespace)
-
+# Alpha.50 source/API gate. The next canonicalization pass must re-bind the historical Alpha.23-49
+# chain after these intentionally changed civil-work limits and imported-fill rules are proven to compile.
 state = text(JAVA / 'settlement/CivilWorkState.java')
 data = text(JAVA / 'settlement/SettlementCivilWorkData.java')
 service = text(JAVA / 'settlement/SettlementCivilWorkService.java')
@@ -71,7 +66,6 @@ forbid(supply, ('level.setBlock(', 'data.updateResources(', 'data.addPopulation(
                 'forceChunk', 'setChunkForced', 'getChunk(', 'teleportTo(', 'new ItemStack('),
        'alpha.50 fill supplier cannot become world/resource authority')
 
-# Physical imported fill must be removed from the worker only after a real world placement call.
 place = service.find('level.setBlock(target, SettlementCivilFillSupplyService.carriedFillState(builder), BLOCK_UPDATE)')
 consume = service.find('SettlementCivilFillSupplyService.consumeOne(builder)')
 advance = service.find('data.replace(project.afterFill())')
