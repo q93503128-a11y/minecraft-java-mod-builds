@@ -102,6 +102,18 @@ with zipfile.ZipFile(jar) as zf:
     ]:
         if token not in combat:
             raise SystemExit(f"0.52 compiled ranged-combat token missing: {token!r}")
+    main_name = "kr/moonseungjun/survivalascension/SurvivalAscension.class"
+    if main_name not in zf.namelist():
+        raise SystemExit("0.53 main runtime class missing")
+    main_class = zf.read(main_name)
+    for token in [b"TOOLS_SHIELD", b"shieldWaveRadiusBonus", b"shieldWaveTargetBonus", b"shieldWaveKnockbackBonus", b"shieldWaveCooldownReduction", b"shieldWaveLiftBonus"]:
+        if token not in affix:
+            raise SystemExit(f"0.53 compiled shield-affix token missing: {token!r}")
+    for token in [b"onShieldBlock", b"survivalascension_shield_wave_ready", b"isShield", b"setDeltaMovement"]:
+        if token not in combat:
+            raise SystemExit(f"0.53 compiled shield-wave token missing: {token!r}")
+    if b"shield guard waves" not in main_class:
+        raise SystemExit("0.53 runtime banner missing shield guard waves")
 
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
@@ -112,3 +124,5 @@ print("armor_affix_release_verify=PASS")
 print("ranged_combat_runtime=present")
 print("ranged_combat_one_burst_per_projectile=present")
 print("ranged_combat_release_verify=PASS")
+print("shield_guard_wave_runtime=present")
+print("shield_guard_wave_release_verify=PASS")

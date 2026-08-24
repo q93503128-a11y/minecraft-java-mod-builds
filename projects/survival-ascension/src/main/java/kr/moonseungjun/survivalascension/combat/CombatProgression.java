@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ public final class CombatProgression {
     private static final Set<UUID> SHOCKWAVE_GUARD = new HashSet<>();
     private static final String SHOCKWAVE_READY_KEY = "survivalascension_combat_shockwave_ready";
     private static final String RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used";
+    private static final String SHIELD_WAVE_READY_KEY = "survivalascension_shield_wave_ready";
     private static final int MAJOR_TARGET_EXPEDITION_BONUS = 3;
 
     private CombatProgression() {}
@@ -108,6 +110,52 @@ public final class CombatProgression {
             CLEAVE_GUARD.remove(uuid);
         }
     }
+
+    public static void onShieldBlock(LivingShieldBlockEvent event) {
+    if (!(event.getEntity() instanceof ServerPlayer player) || !event.getBlocked() || event.getBlockedDamage() <= 0.0F) return;
+    ItemStack shield = player.getUseItem();
+    if (!AscensionAffixes.isShield(shield)) return;
+    int combatLevel = SkillProgressData.get(player).level(player, SkillType.COMBAT);
+    if (combatLevel < 30 || player.isShiftKeyDown()) return;
+    if (!(player.level() instanceof ServerLevel level)) return;
+
+    long now = level.getGameTime();
+    boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+    int baseCooldown = fieldMastery ? 10 : combatLevel >= 100 ? 12 : combatLevel >= 90 ? 14 : combatLevel >= 60 ? 16 : 20;
+    int cooldown = Math.max(6, baseCooldown - AscensionAffixes.shieldWaveCooldownReduction(shield));
+    if (now < player.getPersistentData().getLongOr(SHIELD_WAVE_READY_KEY, 0L)) return;
+
+    double radius = fieldMastery ? 6.5D : combatLevel >= 100 ? 5.5D : combatLevel >= 90 ? 4.5D : combatLevel >= 60 ? 3.5D : 2.5D;
+    int targetLimit = fieldMastery ? 10 : combatLevel >= 100 ? 8 : combatLevel >= 90 ? 6 : combatLevel >= 60 ? 4 : 2;
+    double knockback = fieldMastery ? 1.00D : combatLevel >= 100 ? 0.90D : combatLevel >= 90 ? 0.75D : combatLevel >= 60 ? 0.60D : 0.45D;
+    double lift = fieldMastery ? 0.16D : combatLevel >= 100 ? 0.14D : combatLevel >= 90 ? 0.12D : combatLevel >= 60 ? 0.10D : 0.08D;
+    radius = Math.min(8.0D, radius + AscensionAffixes.shieldWaveRadiusBonus(shield));
+    targetLimit = Math.min(14, targetLimit + AscensionAffixes.shieldWaveTargetBonus(shield));
+    knockback = Math.min(1.30D, knockback + AscensionAffixes.shieldWaveKnockbackBonus(shield));
+    lift = Math.min(0.28D, lift + AscensionAffixes.shieldWaveLiftBonus(shield));
+    final double areaRadius = radius;
+
+    List<LivingEntity> nearby = level.getEntitiesOfClass(
+            LivingEntity.class,
+            player.getBoundingBox().inflate(areaRadius),
+            candidate -> candidate != player && candidate.isAlive()
+                    && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate)
+                    && player.distanceToSqr(candidate) <= areaRadius * areaRadius);
+    nearby.sort(Comparator.comparingDouble(player::distanceToSqr));
+    if (nearby.isEmpty()) return;
+
+    player.getPersistentData().putLong(SHIELD_WAVE_READY_KEY, now + cooldown);
+    int pushed = 0;
+    for (LivingEntity candidate : nearby) {
+        if (pushed >= targetLimit) break;
+        Vec3 push = candidate.position().subtract(player.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (push.lengthSqr() <= 1.0E-5D) continue;
+        push = push.normalize();
+        candidate.setDeltaMovement(candidate.getDeltaMovement().add(push.x * knockback, lift, push.z * knockback));
+        candidate.hurtMarked = true;
+        pushed++;
+    }
+}
 
     private static void tryRangedBurst(ServerPlayer player, ServerLevel level, LivingEntity primary,
                                        LivingIncomingDamageEvent event, Entity direct, float scaledDamage, int combatLevel) {

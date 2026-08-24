@@ -1,14 +1,23 @@
 # Survival Ascension
 
-- Mod version: `0.52.0-alpha.1`
+- Mod version: `0.53.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.53 Shield Ascension / 방패 승천
+- NeoForge common `c:tools/shield` enters the existing imprint/reforge/Mythic-awakening/salvage loop and elite affix loot without optional-mod Java imports.
+- A guard wave is eligible only when `LivingShieldBlockEvent` reports an actual successful block with positive blocked damage. Survival Ascension does not call `setBlocked(true)` or raise the blocked-damage amount.
+- Combat mastery physical scale: Lv30 2.5 blocks/2 targets/0.45 push, Lv60 3.5/4/0.60, Lv90 4.5/6/0.75, Lv100 5.5/8/0.90, Lv100 Field Mastery 6.5/10/1.00.
+- Shift while blocking is precision mode and suppresses the area wave without changing the underlying successful shield block.
+- Shield affixes: `압력` horizontal push, `파동` radius, `대응` cooldown reduction, `진압` target count, `반동` vertical lift. Hard caps: radius8.0, targets14, horizontal push1.30, vertical lift0.28, minimum cooldown6 ticks.
+- Guard waves only apply displacement to real hostile/boss targets through the existing combat-target compatibility predicate. They deal no damage and award no Combat mastery XP.
+- Shield cooldown uses the player's existing persistent NBT only. No new SavedData ID, protocol bump, custom shield/entity, force-load, block-admission override or passive simulation.
 
 ## 0.52 Ranged Combat Ascension / 원거리 전투 승천
 - NeoForge common bow/crossbow tags (`c:tools/bow`, `c:tools/crossbow`) now join Ascension Imprint, reforge, Mythic awakening, salvage and elite affix drops without optional-mod Java dependencies.

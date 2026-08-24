@@ -70,7 +70,7 @@ public final class EquipmentRadialMenuScreen extends Screen {
         if(action==Action.BACK)return "통합 메뉴로 돌아가기";
         if(action==Action.IMPRINT){
             if(rarity>0)return "이미 Survival Ascension affix 장비입니다";
-            if(!imprintable)return "검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요";
+            if(!imprintable)return "검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요";
             return EquipmentReforgeService.imprintRangeText();
         }
         if(rarity<=0)return "정예 / 승천 / 신화 장비 필요";

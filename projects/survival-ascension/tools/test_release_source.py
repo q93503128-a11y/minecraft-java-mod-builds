@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.52.0-alpha.1"
+REQUIRED_VERSION = "0.53.0-alpha.1"
 errors: list[str] = []
 
 
@@ -103,9 +103,9 @@ need(combat, [
     "AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental)",
     "AscensionAffixes.armorXpMultiplier(player)"
 ], "0.51 worn armor runtime")
-need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비"], "0.52 ranged/armor imprint server flow")
-need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
-need(main_mod, ["VERSION = \"0.52.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
+need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.52 ranged/armor imprint server flow")
+need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
+need(main_mod, ["VERSION = \"0.53.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
 
 # 0.52 ranged combat ascension: launch-time snapshots and bounded physical impact scale.
@@ -133,13 +133,41 @@ ordered(combat, [
 need(main_mod, ["CombatProgression::onEntityJoin", "ranged projectile snapshots/impact bursts"], "0.52 ranged event wiring")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.52 ranged world-loading policy")
 
+# 0.53 shield ascension: successful real block -> bounded zero-damage physical guard wave.
+need(affix, [
+    "Tags.Items.TOOLS_SHIELD", "Category.SHIELD", 'SHIELD("shield")', "Items.SHIELD",
+    "isShield(ItemStack stack)", "shieldWaveRadiusBonus", "shieldWaveTargetBonus",
+    "shieldWaveKnockbackBonus", "shieldWaveCooldownReduction", "shieldWaveLiftBonus",
+    'case SHIELD -> "방패"', 'case SHIELD -> "파동"', 'case SHIELD -> "진압"', 'case SHIELD -> "반동"',
+    'category == Category.SHIELD ? "대응"', 'category == Category.SHIELD ? "압력"'
+], "0.53 shield affix progression")
+need(combat, [
+    "onShieldBlock(LivingShieldBlockEvent event)", "event.getBlocked()", "event.getBlockedDamage()",
+    "player.getUseItem()", "AscensionAffixes.isShield(shield)", "player.isShiftKeyDown()",
+    'SHIELD_WAVE_READY_KEY = "survivalascension_shield_wave_ready"',
+    "fieldMastery ? 6.5D", "fieldMastery ? 10", "Math.min(8.0D", "Math.min(14",
+    "Math.min(1.30D", "Math.min(0.28D", "Math.max(6, baseCooldown",
+    "ContentPackCompatibility.isCombatTarget(candidate)", "candidate.setDeltaMovement", "candidate.hurtMarked = true"
+], "0.53 shield guard-wave runtime")
+shield_start = combat.find("public static void onShieldBlock")
+shield_end = combat.find("private static void tryRangedBurst", shield_start)
+if shield_start < 0 or shield_end < 0:
+    errors.append("0.53 shield runtime body missing")
+else:
+    shield_body = combat[shield_start:shield_end]
+    forbid(shield_body, ["hurtServer(", "SkillProgressionService.award", "event.setBlocked(", "event.setBlockedDamage("], "0.53 shield no-damage/no-block-force policy")
+need(main_mod, ["VERSION = \"0.53.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
+need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
+need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
+forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.53 shield world-loading policy")
+
 # User-facing docs are part of the release contract, not an uncommitted CI-side patch.
 project_doc = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(project_doc, [
-    "Mod version: `0.52.0-alpha.1`",
+    "Mod version: `0.53.0-alpha.1`",
     "## 0.51 Armor Ascension / 방어구 승천 성장",
     "hard-capped at 35%",
     "hard-capped at +32% Combat XP"
@@ -168,6 +196,10 @@ need(readme, [
 ], "0.52 README docs")
 need(changelog, ["## 0.52.0-alpha.1", "Ranged Combat Ascension / 원거리 전투 승천", "6/10", "65%"], "0.52 CHANGELOG docs")
 need(guide, ['h("원거리 전투 파급")', "현장 숙련=6블록/10체", "Shift 발사는 파급 없는 단일 정밀 타격"], "0.52 in-game guide")
+need(project_doc, ["## 0.53 Shield Ascension / 방패 승천", "radius8.0", "minimum cooldown6 ticks"], "0.53 PROJECT docs")
+need(readme, ["## 0.53.0-alpha.1 — Shield Ascension / 방패 승천", "6.5 blocks / 10 targets", "cooldown minimum6 ticks"], "0.53 README docs")
+need(changelog, ["## 0.53.0-alpha.1", "Shield Ascension / 방패 승천", "zero damage", "min6t"], "0.53 CHANGELOG docs")
+need(guide, ['h("방패 방어 파동")', "현장 숙련=6.5블록/10체", "파동 없는 정밀 방어", 'h("방패 정밀/파동")'], "0.53 in-game guide")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -180,7 +212,7 @@ baseline_path = ROOT / "tools/test_current_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)
 baseline = baseline.replace("MAX_DEPOTS_PER_PLAYER = 3", "MAX_DEPOTS_PER_PLAYER = 9")
-baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구 태그 장비")
+baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -202,4 +234,5 @@ print("- 0.51 standard humanoid armor tags join imprint/reforge/awakening and el
 print("- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%")
 print("- 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded")
 print("- 0.52 each physical projectile can produce at most one area burst, including piercing shots")
-print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.52")
+print("- 0.53 successful standard-shield blocks create bounded zero-damage guard waves; Shift keeps precision blocking")
+print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.53")

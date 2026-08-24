@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.53.0-alpha.1
+- Added `Shield Ascension / 방패 승천`: NeoForge common `c:tools/shield` items now join imprint/reforge/Mythic awakening/salvage and elite affix drops.
+- Added successful-block guard waves from Combat Lv30 upward: 2.5/2, 3.5/4, 4.5/6, 5.5/8, and Field Mastery 6.5/10 base radius/targets.
+- Shift blocking suppresses the guard wave for precision defense while leaving vanilla successful blocking unchanged.
+- Added shield affix roles `압력`/`파동`/`대응`/`진압`/`반동` for horizontal push/radius/cooldown/targets/vertical lift with hard caps 1.30/8.0/min6t/14/0.28.
+- Guard waves deal zero damage and award zero Combat mastery XP; they never force a failed block to succeed or increase blocked damage.
+- Preserved original shield ItemStack/components and network protocol8; added no new SavedData, packet, custom shield/entity, force-load or optional-mod implementation dependency.
+- Bumped the one-import content-preview lock to `0.53.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
 ## 0.52.0-alpha.1
 - Added `Ranged Combat Ascension / 원거리 전투 승천`: standard NeoForge bow/crossbow tags now join imprint/reforge/Mythic awakening/salvage and elite affix drops.
 - Added launch-time projectile snapshots for ranged affix damage, Combat XP, burst radius/targets/fraction and Shift precision, preventing post-shot weapon-swap changes.

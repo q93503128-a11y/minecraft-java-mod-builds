@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.53.0-alpha.1 — Shield Ascension / 방패 승천
+Standard NeoForge `c:tools/shield` items now join Ascension Imprint, reforge, Mythic awakening, salvage and elite affix drops without optional-mod implementation dependencies. The original shield ItemStack and unrelated components remain intact.
+
+Shield growth is active physical defense rather than another passive damage-reduction layer. When a real shield block succeeds, Combat Lv30/60/90/100 emits a zero-damage guard wave that pushes up to 2/4/6/8 nearby hostile targets within 2.5/3.5/4.5/5.5 blocks. Lv100 + Field Mastery reaches 6.5 blocks / 10 targets. Shift while blocking disables the wave and keeps the successful vanilla block as precision defense.
+
+Shield affixes are `압력` knockback, `파동` radius, `대응` cooldown reduction, `진압` target count and `반동` vertical lift. Final runtime caps are radius8.0, targets14, horizontal push1.30, vertical lift0.28 and cooldown minimum6 ticks. The wave deals no damage and grants no Combat mastery XP; it never forces a failed shield check to succeed or increases the amount blocked. Cooldown is stored only in existing player persistent NBT, with no new SavedData, packet/protocol, custom shield/entity, force-load or background simulation.
+
 ## 0.52.0-alpha.1 — Ranged Combat Ascension / 원거리 전투 승천
 Combat progression now gives bows and crossbows the same physical-scale growth principle as melee combat instead of leaving ranged play as only a numeric damage multiplier. NeoForge common `c:tools/bow` / `c:tools/crossbow` items can enter Ascension Imprint and elite affix drops can roll vanilla Bow/Crossbow bases.
 
