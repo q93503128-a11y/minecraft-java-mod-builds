@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.55
+## Current version: 0.1.0-alpha.56
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.55 key was added.
+No new Alpha.56 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–55 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–56 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,24 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.56 — soft biome-aware outpost specialization
+
+Alpha.56 uses the stable soft seam that was left open after Alpha.55: common NeoForge biome tags at the **already-loaded outpost center**. It never calls Terralith or another worldgen mod directly.
+
+- the existing 12-block physical ore/log/field/exposed-stone survey remains the primary specialization authority;
+- `IS_FOREST` / `IS_DENSE_VEGETATION` adds only **+8 log evidence**;
+- `IS_PLAINS` / `IS_SAVANNA` adds only **+24 field evidence**;
+- `IS_MOUNTAIN` / `IS_HILL` adds **+8 exposed-stone +1 ore evidence**;
+- `IS_BADLANDS` / `IS_SANDY` adds only **+6 exposed-stone evidence** when the stronger mountain rule does not apply;
+- these bonuses are deliberately below the existing specialization thresholds (ore4, logs24, field120, stone24), so a biome tag alone does not magically create a mine/farm/quarry/lumber outpost;
+- datapacks/worldgen companions that correctly participate in common biome tags can influence the same survey automatically; missing Terralith or any other companion still boots and behaves normally;
+- no biome id string allowlist, reflection, class reference, chunk generation, locator, force-load, virtual resource, new specialization family or new saved field is added;
+- placement preview exposes only a compact environment label (`삼림/개활지/산악/건조 암지/중립`) beside the existing specialization candidate; no new dashboard/key;
+- Alpha.55 survey/conquest knowledge stacks only as bounded evidence/cost context; actual outpost materials and construction remain physical ItemStacks;
+- `Transport workers belong to a specific outpost`, `pause at unloaded route boundaries`, and Alpha.27 remains the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
+This closes the generic companion-biome-aware specialization gap through a common tag seam. Rare-NPC-specific value remains optional only if a similarly stable soft data seam appears.
 
 ## Alpha.55 — non-farmable exploration knowledge feeds existing outposts
 

@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.55**.
+Current canonical implementation: **0.1.0-alpha.56**.
 
 ## 1. Product identity
 
@@ -146,7 +146,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–55 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–56 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -343,6 +343,22 @@ Alpha.55 extends Alpha.45 without creating a second progression or reward author
 - **builder walks from actual settlement storage carrying real wood/stone stacks** remains true;
 - **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and Alpha.27 is the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
 
+### Alpha.56 common-biome-tag outpost specialization
+
+Alpha.56 uses only `net.neoforged.neoforge.common.Tags.Biomes` against the already-loaded center biome. There is no Terralith/worldgen Java dependency or biome-ID allowlist.
+
+- physical local evidence remains primary: mining threshold4 ore, lumber24 logs, agriculture120 field-ground, quarry24 exposed stone;
+- forest/dense vegetation adds8 log evidence;
+- plains/savanna adds24 field evidence;
+- mountain/hill adds8 exposed-stone +1 ore evidence;
+- badlands/sandy adds6 exposed-stone evidence if not already mountain/hill;
+- all biome biases stay below their thresholds, so tags only resolve plausible borderline sites and never create resources or guarantee specialization by themselves;
+- the common tag seam lets compatible datapacks/worldgen participate without Frontier importing their class, registry ID or assets;
+- unloaded center means zero biome bias; no chunk generation or force-load;
+- no new specialization family/save state/economy/worker/logistics authority;
+- Alpha.55 knowledge and Alpha.56 biome context are both computed helpers, not spendable resources;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, Alpha.27 remains the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport**.
+
 ## 8. Resources and logistics
 
 Resources remain physical Minecraft items.
@@ -352,7 +368,7 @@ Resources remain physical Minecraft items.
 - avoid every-tick arbitrary player chest scanning;
 - common/additive tags let compatible external materials participate;
 - service/commission/trade barrels are not generic storage unless explicitly specified;
-- Alpha.45 exploration score, Alpha.55 survey/conquest knowledge and civil `earthBank` are not spendable resources.
+- Alpha.45 exploration score, Alpha.55 survey/conquest knowledge, Alpha.56 biome context and civil `earthBank` are not spendable resources.
 
 **Transport workers belong to a specific outpost**, follow persisted road-network waypoints, carry actual cargo and **pause at unloaded route boundaries** instead of teleporting or force-loading.
 
@@ -583,7 +599,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.55
+## 14. Current playable slice after Alpha.56
 
 Current implemented slice includes:
 
@@ -607,15 +623,14 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.55
+## 15. Unfinished original-scope priorities after Alpha.56
 
 Unless real-play regression overrides them:
 
-1. better companion-biome-aware / rare-NPC outpost specialization only where a stable soft data seam exists; Alpha.55 already supplies the generic non-farmable exploration-value bridge;
-2. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
-3. long survival + two-player multiplayer acceptance;
-4. long survival + two-player multiplayer acceptance;
-5. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
+1. physical military armory/loadout only if it can stay automated and ItemStack-authoritative without per-soldier micromanagement;
+2. long survival + two-player multiplayer acceptance;
+3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
+4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
 7. Alpha.43 Jade/Xaero/HUD visual/runtime acceptance;
 8. Alpha.46 waterfront pathing/site/reverse-supply/trade-balance acceptance;
@@ -624,9 +639,10 @@ Unless real-play regression overrides them:
 11. Alpha.52 long-bridge pier planning/save-reload/stone depletion/physical repair/pathing acceptance;
 12. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/player-protection acceptance;
 13. Alpha.54 one-bend detection/corner clearance/portal excavation/22-stone physical portal/save-reload acceptance;
-14. full companion lock fresh-world client/server runtime;
-15. true Xaero markers only if a stable supported API appears;
-16. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+14. Alpha.56 common-biome-tag borderline specialization / companion-installed-and-absent acceptance;
+15. full companion lock fresh-world client/server runtime;
+16. true Xaero markers only if a stable supported API appears;
+17. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 

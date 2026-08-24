@@ -81,6 +81,7 @@ public final class SettlementOutpostService {
         }
 
         BlockPos center = outpostCenter(gate, road.directionX(), road.directionZ());
+        SettlementOutpostBiomeService.Bias biomeBias = SettlementOutpostBiomeService.bias(level, center);
         String specialization = detectSpecialization(level, center, data);
         long woodCost = SettlementExplorationBenefitService.outpostWoodCost(data);
         long stoneCost = SettlementExplorationBenefitService.outpostStoneCost(data);
@@ -91,7 +92,7 @@ public final class SettlementOutpostService {
         }
 
         return new PlacementCheck(true, roadIndex, gate, road.directionX(), road.directionZ(), specialization,
-                "배치 가능 · " + specializationDisplayName(specialization) + " 후보");
+                "배치 가능 · " + specializationDisplayName(specialization) + " 후보 · 환경 " + biomeBias.label());
     }
 
     public static StartResult startAt(ServerPlayer player, int roadIndex) {
@@ -618,6 +619,11 @@ public final class SettlementOutpostService {
             fieldGround += SettlementExplorationBenefitService.fieldEvidenceBonus(data);
             exposedStone += SettlementExplorationBenefitService.stoneEvidenceBonus(data);
         }
+        SettlementOutpostBiomeService.Bias biomeBias = SettlementOutpostBiomeService.bias(level, center);
+        ores += biomeBias.ore();
+        logs += biomeBias.logs();
+        fieldGround += biomeBias.field();
+        exposedStone += biomeBias.stone();
         if (ores >= 4) return "mining";
         if (logs >= 24) return "lumber";
         if (fieldGround >= 120) return "agriculture";

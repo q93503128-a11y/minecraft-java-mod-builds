@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.55`
+현재 구현 기준: `0.1.0-alpha.56`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -297,7 +297,7 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 | 1블록 단차 계단 | 완료 | cobblestone stairs |
 | 짧은 물길 다리 | 완료/부분 | max6 centerline bridge |
 | 대형 협곡/장교량 | 완료/부분 | Alpha.52 max24 + physical persisted piers |
-| 터널/더 깊은 대형 횡단 | 미구현/부분 | larger civil engineering next priority |
+| 터널/더 깊은 대형 횡단 | 완료/부분 | Alpha.53 straight + Alpha.54 one-bend/physical portals; 더 거대한 토목은 선택적 |
 | 전초기지 물리 시공 | 완료 | persisted |
 | 전초 특화 | 완료/부분 | lumber/quarry/mining/agriculture + dynamic fishing/military |
 | 수변 특화 | 완료/부분 | fishing + real-wood landing + dedicated trade |
@@ -305,9 +305,24 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 | 전초 물류 | 완료 | Alpha.27 one authority |
 | 군사 역보급 | 완료/부분 | **군사 전초도 같은 도로 운송자가 역방향 보급** |
 | 수변 역보급 | 완료/부분 | same transporter wood after military priority |
-| biome-aware companion specialization | 부분/미구현 | stable data seam 필요 |
+| biome-aware companion specialization | **완료/부분** | Alpha.56 NeoForge common biome tags + local physical evidence, no hard worldgen dependency |
 
 **tier-visible public works**는 안전하고 loaded/non-farmable일 때만 허용한다. **위험지역 군사 역할이 우선**이다.
+
+### Alpha.56 common-biome-tag 전초 특화 감사
+
+- already-loaded outpost center의 NeoForge common biome tags만 읽음;
+- forest/dense vegetation +log8, plains/savanna +field24, mountain/hill +stone8/+ore1, badlands/sandy +stone6;
+- 기존 threshold ore4/log24/field120/stone24보다 단독 bias가 작아 biome만으로 특화 확정 불가;
+- 기존 12-block physical local survey + Alpha.55 bounded survey knowledge가 계속 주권;
+- unloaded center는 biome bias0, chunk generation/force-load 없음;
+- Terralith class/id string, reflection, hard dependency 없음;
+- biome이 자원/광석/식량을 생성하지 않음;
+- 새 specialization family/save field/currency/worker/logistics authority 없음;
+- `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지;
+- **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 유지.
+
+따라서 generic companion-biome-aware specialization은 **완료/부분**으로 전진했다. rare-NPC 연결은 안정적 soft seam이 실제 확인될 때만 남긴다.
 
 ## 8. 외부 콘텐츠 / companion
 
@@ -331,11 +346,10 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
-1. stable seam이 있을 때 companion-biome/rare-NPC-aware outpost specialization; generic exploration value는 Alpha.55에서 1차 연결됨;
-2. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
-3. long survival + two-player multiplayer acceptance;
-4. long survival + two-player multiplayer acceptance;
-5. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
+1. per-soldier micromanagement 없이 가능한 physical military armory/loadout;
+2. long survival + two-player multiplayer acceptance;
+3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
+4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
 7. Alpha.43 Jade/Xaero/HUD acceptance;
 8. Alpha.46 waterfront pathing/trade acceptance;
@@ -343,9 +357,10 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 10. Alpha.51 civil-work pathing/save-reload/retaining-cobble depletion/resupply/cargo-return/terrain-safety acceptance;
 11. Alpha.53 tunnel detection/excavation/save-reload/pathing/no-drop/protection acceptance;
 12. Alpha.54 one-bend/corner clearance/portal excavation/physical stone22/save-reload acceptance;
-13. full companion lock fresh-world client/server runtime;
-14. true Xaero marker는 stable supported API가 생길 때만;
-15. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+13. Alpha.56 common-biome-tag borderline specialization + companion installed/absent acceptance;
+14. full companion lock fresh-world client/server runtime;
+15. true Xaero marker는 stable supported API가 생길 때만;
+16. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 
