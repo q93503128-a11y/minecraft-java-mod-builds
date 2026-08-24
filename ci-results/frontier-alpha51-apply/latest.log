@@ -1,4 +1,4 @@
-trigger_sha=37b0b83d41723fdc50404c28b97659271a621b66
+trigger_sha=58069086a138a8d83409b05d56558baecf636885
 patch_outcome=success
 audit_outcome=failure
 --- patch ---
