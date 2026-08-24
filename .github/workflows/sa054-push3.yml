@@ -1,0 +1,53 @@
+name: Survival Ascension 0.54 simple runner
+
+on:
+  push:
+    paths:
+      - '.sa054-run5'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply 0.54 source
+        run: python3 .github/sa054_runner.py
+      - name: Remove temporary runner files
+        run: rm -f .github/sa054_runner.py .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .github/workflows/sa054-push2.yml .github/workflows/sa054-push3.yml .sa054-run .sa054-run2 .sa054-run5
+      - name: Source and content audits
+        working-directory: projects/survival-ascension
+        run: |
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
+          git diff --check
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+      - name: Verify JAR and mrpack
+        working-directory: projects/survival-ascension
+        run: |
+          python3 tools/verify_release_jar.py build/libs/survivalascension-0.54.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.54.0-alpha.1.jar --output /tmp/Survival-Ascension-0.54.0-alpha.1-content-preview.mrpack
+          sha256sum build/libs/survivalascension-0.54.0-alpha.1.jar
+          sha256sum /tmp/Survival-Ascension-0.54.0-alpha.1-content-preview.mrpack
+      - name: Commit verified source
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A projects/survival-ascension .github/sa054_runner.py .github/workflows/sa054-apply.yml .github/workflows/sa054-push.yml .github/workflows/sa054-push2.yml .github/workflows/sa054-push3.yml .sa054-run .sa054-run2 .sa054-run5
+          git commit -m 'Survival Ascension 0.54 mace impact ascension'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
