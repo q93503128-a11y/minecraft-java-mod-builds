@@ -3,16 +3,22 @@ package kr.moonseungjun.livingkingdoms.world;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+
+import java.util.Comparator;
 
 /** Resolves and verifies the active Erden residence and civic custody cells. */
 public final class SafeResidenceLocator {
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int RESIDENCE_CHUNK_RADIUS = 1;
 
     private SafeResidenceLocator() {
     }
 
+    /** Intended citizen-quarter anchor used only to select the nearest authored tenement. */
     public static BlockPos preferredResidence(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
         if (!"erden_city_room".equals(residenceId)) {
@@ -24,10 +30,34 @@ public final class SafeResidenceLocator {
         return new BlockPos(x, surfaceY + 1, z);
     }
 
+    /**
+     * Returns only a verified target inside the deterministic authored tenement selected for the
+     * player. Roofs, walls, roads and synthetic emergency floors are never accepted as residences.
+     * While the target building is still streaming, transient chunk tickets keep its 3x3 area warm
+     * and this method returns null so the blocking entry screen remains active.
+     */
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
         BlockPos preferred = preferredResidence(level, homelandId, residenceId);
-        if (!level.hasChunkAt(preferred)) return preferred;
-        return findOrCreateWalkable(level, preferred, Blocks.SPRUCE_PLANKS, 12, 12);
+        ExternalUrbanFabricBuilder.UrbanEntrance entrance = playerResidenceEntrance(preferred);
+        if (entrance == null) return null;
+
+        int centerChunkX = entrance.x() >> 4;
+        int centerChunkZ = entrance.z() >> 4;
+        boolean built = true;
+        for (int dx = -RESIDENCE_CHUNK_RADIUS; dx <= RESIDENCE_CHUNK_RADIUS; dx++) {
+            for (int dz = -RESIDENCE_CHUNK_RADIUS; dz <= RESIDENCE_CHUNK_RADIUS; dz++) {
+                int chunkX = centerChunkX + dx;
+                int chunkZ = centerChunkZ + dz;
+                ErdenCapitalStreamingBuilder.requestChunk(level, chunkX, chunkZ);
+                level.getChunkSource().addTicketAndLoadWithRadius(
+                        TicketType.PORTAL, new ChunkPos(chunkX, chunkZ), 0);
+                built &= ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ);
+            }
+        }
+        if (!built) return null;
+
+        BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, entrance, 0);
+        return isWalkable(level, target) ? target : null;
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
@@ -52,11 +82,25 @@ public final class SafeResidenceLocator {
     }
 
     public static boolean isWalkable(ServerLevel level, BlockPos feet) {
-        if (!level.hasChunkAt(feet)) return false;
+        if (feet == null || !level.hasChunkAt(feet)) return false;
         return level.getBlockState(feet.below()).isSolid()
                 && level.getBlockState(feet).isAir()
                 && level.getBlockState(feet.above()).isAir()
                 && level.getBlockState(feet.above(2)).isAir();
+    }
+
+    private static ExternalUrbanFabricBuilder.UrbanEntrance playerResidenceEntrance(BlockPos preferred) {
+        return ExternalUrbanFabricBuilder.entrances().stream()
+                .filter(entrance -> "tenement".equals(entrance.role()))
+                .min(Comparator.comparingLong(entrance -> distanceSquared(
+                        entrance.x(), entrance.z(), preferred.getX(), preferred.getZ())))
+                .orElse(null);
+    }
+
+    private static long distanceSquared(int x, int z, int targetX, int targetZ) {
+        long dx = (long) x - targetX;
+        long dz = (long) z - targetZ;
+        return dx * dx + dz * dz;
     }
 
     private static RealmSiteLayoutSavedData.RealmSite requiredSite(ServerLevel level, String homelandId) {
@@ -101,7 +145,7 @@ public final class SafeResidenceLocator {
             level.setBlock(feet.above(dy), Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
         }
         if (!isWalkable(level, feet)) {
-            throw new IllegalStateException("Unable to create safe residence spawn at " + feet);
+            throw new IllegalStateException("Unable to create safe civic target at " + feet);
         }
         return feet;
     }
