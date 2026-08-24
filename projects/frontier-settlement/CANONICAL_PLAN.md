@@ -366,7 +366,7 @@ Dangerous-outpost invariant:
 - food/metal costs, military slots and drop protection remain unchanged;
 - no hard Better Combat/Weapons Expanded Java dependency.
 
-A physical external-weapon armory/loadout loop remains unfinished. If added, it must use actual ItemStacks and automation and must not require manually opening every soldier.
+At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 now covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation. The remaining remote-sentry extension must reuse the existing road-bound reverse-supply transporter and must not require manually opening every soldier.
 
 ### Alpha.55 exploration knowledge -> existing outpost value
 

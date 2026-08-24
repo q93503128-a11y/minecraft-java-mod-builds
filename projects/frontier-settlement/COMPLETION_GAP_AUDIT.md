@@ -284,7 +284,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 | 병영 정식 주둔 병력 | 완료/부분 | 3 supplied slots + Alpha.48 humanoid body |
 | 위험지역 전초 수비대 | 완료/부분 | one supplied sentry + same humanoid body |
 | 사람형 군사 presentation | 완료/부분 | `FrontierSoldierEntity extends IronGolem` + humanoid renderer |
-| 실물 외부무기 군사 armory/loadout | **미구현/부분** | visual sword는 client-only, 실제 Weapons Expanded 보급 루프 없음 |
+| 실물 외부무기 군사 armory/loadout | **완료/부분** | Alpha.57 본진 병영은 real external-weapon MAINHAND loadout 완료/부분; 원격 위험지역 전초 실물 무기 역보급은 남음 |
 | 자동 직업 배치 | 완료/부분 | 주요 역할 자동화 |
 | 언로드 저빈도 보정 | 완료/부분 | bounded time debt, no virtual item authority |
 
@@ -299,7 +299,7 @@ Alpha.50은 이 권위/보호/earthBank 계약을 유지하면서 크기·깊이
 - old tagged Iron Golem soldier/sentry는 loaded 상태에서1:1 migration;
 - migration은 recruit consume 함수를 호출하지 않으므로 이중 과금 없음;
 - Better Combat/Weapons Expanded Java hard dependency 없음;
-- actual external-weapon physical armory는 아직 완료가 아님.
+- Alpha.48 시점에는 actual external-weapon physical armory가 미완료였고, Alpha.57에서 loaded 본진 병영은 real MAINHAND ItemStack 무장으로 구현됨; 원격 위험지역 전초 무기 역보급은 기존 road transporter authority를 재사용할 수 있을 때만 남은 범위.
 
 ## 5. 성장 단계 / 탐험 되먹임
 
