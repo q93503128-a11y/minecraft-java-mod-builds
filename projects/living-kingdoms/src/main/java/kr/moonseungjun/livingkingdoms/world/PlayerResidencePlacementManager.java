@@ -19,7 +19,7 @@ import java.util.UUID;
 
 /**
  * Final entry barrier between the temporary staging platform and an actual authored Erden room.
- * The player never receives a 100% completion packet until the physical tenement target is verified.
+ * The client only accepts the residence_complete packet as final while this barrier is active.
  */
 public final class PlayerResidencePlacementManager {
     private static final int MAX_WAIT_TICKS = 6_000;
@@ -36,7 +36,7 @@ public final class PlayerResidencePlacementManager {
     public static synchronized void queue(ServerPlayer player, OriginProfile profile) {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return;
-        PENDING.put(player.getUUID(), new Pending(profile));
+        PENDING.putIfAbsent(player.getUUID(), new Pending(profile));
         ensureTicket(realm, profile);
         PacketDistributor.sendToPlayer(player, new RealmBuildProgressPayload(
                 profile.homelandId(), "residence", 99,
@@ -70,11 +70,11 @@ public final class PlayerResidencePlacementManager {
                 }
 
                 ensureTicket(realm, pending.profile);
-                if (LivingRealmWorldManager.finishPlacement(player, pending.profile)) {
+                if (LivingRealmWorldManager.tryFinishPlacement(player, pending.profile)) {
                     StarterNpcManager.ensureForPlayer(player, pending.profile);
                     RealmEconomyManager.sync(player);
                     PacketDistributor.sendToPlayer(player, new RealmBuildProgressPayload(
-                            pending.profile.homelandId(), "complete", 100,
+                            pending.profile.homelandId(), "residence_complete", 100,
                             "실제 시민구 임대방 확인이 끝났습니다. 입국합니다.", true, false
                     ));
                     iterator.remove();
