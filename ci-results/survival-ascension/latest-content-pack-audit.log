@@ -4,6 +4,7 @@ loader_specific_artifact_selection=PASS
 skill_xp_normalization=PASS
 content_pack_progression_bridge=PASS
 frontline_local_supply_bridge=PASS
+frontline_local_supply_docs=PASS
 external_equipment_imprint=PASS
 amethyst_resonance_shovel_bridge=PASS
 external_component_preservation_contract=PASS
