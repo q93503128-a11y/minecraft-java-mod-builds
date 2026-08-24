@@ -16,3 +16,4 @@ SOURCE AUDIT PASS
 RELEASE SOURCE AUDIT PASS
 - 0.49 Shift-select freight loads exactly one expedition + one outpost defense + one bastion local-supply manifest from the exact physical departure warehouse
 - normal bulk freight remains unchanged; frontline manifest remains physical-cart NBT only and rolls back on slot-layout failure
+- in-game guide documents the Shift manifest, exact 400-item composition, all-or-nothing source admission and physical-only boundary
