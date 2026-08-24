@@ -1,1 +1,0 @@
-SA054 internal trigger prepared; remove after validation if present.
