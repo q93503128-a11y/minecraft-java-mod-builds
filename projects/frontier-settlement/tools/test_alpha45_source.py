@@ -123,7 +123,7 @@ must(readme, (
     '## Current version: 0.1.0-alpha.45',
     '## Alpha.44 — bounded medium terrain works',
     '## Alpha.45 — exploration/conquest feeds settlement progression',
-    'same-type',
+    'repeatedly entering copies of the same structure does not farm progression',
     'historical public `WaypointsManager` API is absent',
 ), 'alpha.45 README synchronization')
 must(plan, (
