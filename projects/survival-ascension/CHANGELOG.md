@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.47.0-alpha.1
+- Updated the locked The Birth of Steve pack entry to audited 26.2 NeoForge `0.7.0+mc26.2+neoforge` (`gKOBlOap` / `xls8dTZv`, file `tbos-neoforge-26.2-0.7.0.jar`, SHA-1 `4d55c51685bff4247fa533c925f7641ce4880db3`).
+- Added Survival-owned optional EntityType tag `survivalascension:expedition_major_targets`; audited TBS entries are `tbos:hour_cantor` and `tbos:phoenix_guardian`, both `required:false`. Minotaur is excluded because the audited 0.7 binary did not expose the same boss-event contract.
+- Tagged major targets keep the normal hostile-kill +1 and add bounded +3 `HOSTILES_KILLED` credit to a valid current regional directive and active same-region expedition operation.
+- Major-target bonus does not enter `ExpeditionIncidentSystem`, preventing a single boss from multiplying incident progress.
+- Fractured Archive remains its real separate `tbos:fractured_archive` dimension (`minecraft:the_void` biome internally). It is not mapped into the nine expedition regions, and existing operation dimension-leave failure behavior is retained.
+- Major targets outside the nine expedition regions create no fake regional progress. Combat mastery uses max-health ×2.5 with a cap of600 XP; normal targets remain ×1.5 with cap200 before the existing equipment XP multiplier.
+- Kept optional-mod implementation classes and registry IDs out of Java; external IDs live only in optional data JSON. Added no SavedData, packet/protocol, custom content, force-load or copied TBS source/assets.
+- Updated the content-pack lock, compatibility matrix, source audits and packaged-JAR verifier coverage for the new integration.
+
 ## 0.46.0-alpha.1
 - Audited the exact locked Amethyst Resonance 26.2 NeoForge 1.0.0 binary (`8RyryQ7j` / `no0B3Ssy`, SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`).
 - Confirmed its sword/pickaxe/axe/shovel/hoe use vanilla item tags and identified the actual 0.45 omission: standard shovels were not imprintable.
@@ -92,7 +102,7 @@
 - Added bounded real-world commissioning before finalizable late-project funding.
 
 ## 0.35.0-alpha.1
-- Added explicit High-volume Field Offload from main inventory slots9..35 into nearest usable real Barrel stock.
+- Added explicit High-volume Field Offload from main inventory9..35 into nearest usable real Barrel stock.
 
 ## 0.34.0-alpha.1
 - Added shared material resolver for industrial batches, unfinished infrastructure and equipment spending. 0.42.1 changes its consumption order to nearest usable physical logistics storage first, then player inventory. Apex/Trial entry stays player-carried.
