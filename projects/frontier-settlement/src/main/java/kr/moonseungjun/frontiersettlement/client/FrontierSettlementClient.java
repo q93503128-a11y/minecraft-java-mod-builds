@@ -7,6 +7,7 @@ import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -38,6 +39,13 @@ public final class FrontierSettlementClient {
         NeoForge.EVENT_BUS.addListener(OutpostGhostRenderer::submit);
         NeoForge.EVENT_BUS.addListener(CivilWorkGhostRenderer::extract);
         NeoForge.EVENT_BUS.addListener(CivilWorkGhostRenderer::submit);
+        NeoForge.EVENT_BUS.addListener(FrontierSettlementClient::onLoggingOut);
+    }
+
+    private static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        ClientSettlementState.reset();
+        BuildingPlacementClient.cancelAllModes();
+        SettlementNoticeQueue.clear();
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {

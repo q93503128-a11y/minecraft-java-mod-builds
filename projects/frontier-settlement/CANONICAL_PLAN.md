@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.57**.
+Current canonical implementation: **0.1.0-alpha.58**.
 
 ## 1. Product identity
 
@@ -77,7 +77,10 @@ One world/server has one shared settlement and one shared infrastructure/project
 
 - resources/buildings/population/roads/outposts/progression/civil work are shared;
 - clients submit bounded requests and render synchronized state;
+- Alpha.58 explicitly keeps all play payload handlers on NeoForge `HandlerThread.MAIN`, so simultaneous player requests are serialized before mutation;
 - the server revalidates building/road/outpost/civil-work requests before mutation;
+- founded-world login refreshes common physical storage once and republishes the same authoritative snapshot to all connected players;
+- client logout clears cached settlement/context/placement/notice state so another world/server cannot inherit UI state;
 - only one building/road/outpost/civil construction project may occupy the shared construction authority at once;
 - Alpha.45 exploration metadata is shared, non-spendable and deduplicated;
 - civil `earthBank` is project-local relocation accounting only and cannot be spent outside the active civil project;
@@ -146,7 +149,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–57 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–58 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -342,6 +345,19 @@ Alpha.55 extends Alpha.45 without creating a second progression or reward author
 - no free loot, population, abstract survey currency, new UI tree, second economy or second transport authority;
 - **builder walks from actual settlement storage carrying real wood/stone stacks** remains true;
 - **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, and Alpha.27 is the **single authority for outpost transport**; **there is still only one authority for long-distance outpost transport**.
+
+### Alpha.58 multiplayer pre-acceptance hardening
+
+Alpha.58 is a bounded correctness pass before real two-player acceptance, not a claim that multiplayer acceptance is finished.
+
+- `SettlementData` and civil SavedData remain world/server shared, never keyed per player;
+- `PayloadRegistrar` explicitly executes play handlers on `HandlerThread.MAIN`; building/road/outpost/civil confirms therefore serialize through one game-thread authority and every start path still revalidates current state;
+- founded-world login runs one physical storage refresh then broadcasts one current snapshot to **all** connected players, avoiding a join-triggered ledger update that only the joiner sees;
+- client `LoggingOut` resets settlement snapshot/context initialization, cancels all construction placement modes and clears transient settlement notices;
+- reconnect/server-switch cannot generate notices by comparing unrelated old/new settlement contexts;
+- no new protocol payload, per-player resource cache authority, settlement duplication or async world mutation is introduced.
+
+Remaining acceptance is intentionally real-play: two clients, one shared settlement, simultaneous requests, long hauling/construction, disconnect/reconnect and save/reload under the full candidate companion stack.
 
 ### Alpha.57 automated physical barracks armory
 
@@ -616,7 +632,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.57
+## 14. Current playable slice after Alpha.58
 
 Current implemented slice includes:
 
@@ -637,15 +653,16 @@ Current implemented slice includes:
 - market, repair, first advanced forge and DOMAIN reforge;
 - supplied humanoid military presentation with unchanged physical recruitment economics;
 - Alpha.57 loaded town-garrison physical external-weapon armament from shared storage, with exact weapon recovery;
+- Alpha.58 shared-login snapshot rebroadcast + explicit MAIN-thread request serialization + client session reset pre-hardening;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.57
+## 15. Unfinished original-scope priorities after Alpha.58
 
 Unless real-play regression overrides them:
 
-1. long survival + two-player multiplayer acceptance;
+1. long survival + two-player multiplayer acceptance; Alpha.58 only closes pre-acceptance deterministic state holes and does not satisfy this runtime item;
 2. remote military external-weapon supply only if the actual weapon ItemStack can ride the existing road-bound reverse-supply transporter; town barracks physical armament is covered by Alpha.57;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
@@ -659,9 +676,10 @@ Unless real-play regression overrides them:
 13. Alpha.54 one-bend detection/corner clearance/portal excavation/22-stone physical portal/save-reload acceptance;
 14. Alpha.56 common-biome-tag borderline specialization / companion-installed-and-absent acceptance;
 15. Alpha.57 weapon storage→soldier walk/extract/save-reload/render/death-recovery/no-dup acceptance;
-16. full companion lock fresh-world client/server runtime;
-17. true Xaero markers only if a stable supported API appears;
-18. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+16. Alpha.58 two-client shared-login refresh, simultaneous confirmation, logout/server-switch reset and reconnect acceptance;
+17. full companion lock fresh-world client/server runtime;
+18. true Xaero markers only if a stable supported API appears;
+19. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 

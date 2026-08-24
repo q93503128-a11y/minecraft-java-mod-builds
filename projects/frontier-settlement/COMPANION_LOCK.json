@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.57"
+    "frontier_settlement": "0.1.0-alpha.58"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -26,7 +26,8 @@
     "Alpha.55 derives a capped survey level from unique external structure discoveries and a capped conquest level from unique boss types: survey knowledge only biases the existing local outpost-specialization evidence, while conquest reduces new outpost physical material totals by at most 8 wood and 4 stone; repeated IDs remain non-farmable and no new currency, loot minting, save authority or logistics controller is created.",
     "Alpha.56 reads only NeoForge common biome tags from the already-loaded outpost center and adds bounded evidence bias to the existing physical specialization survey: forest/dense vegetation helps lumber, plains/savanna helps agriculture, mountain/hill helps quarry/mining, and badlands/sandy terrain slightly helps quarry; no Terralith class/id hard dependency or biome-generated resource minting is introduced.",
     "Alpha.57 upgrades only loaded town barracks soldiers: an idle soldier with an empty MAINHAND walks to the nearest loaded shared-storage container, extracts exactly one real Frontier-recognized external weapon ItemStack, equips it through vanilla Mob equipment persistence/sync, and returns that exact weapon as the sole recoverable military drop on death; remote military-outpost weapon supply remains deferred to the existing road transporter authority.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.57 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
+    "Alpha.58 is multiplayer pre-acceptance hardening rather than new gameplay: serverbound placement handlers explicitly stay on NeoForge MAIN handling, a founded-world login republishes one refreshed authoritative settlement snapshot to all connected players, and client logout clears cached settlement/context/placement/notice state before another world/server can reuse it. Long two-player runtime acceptance is still not claimed.",
+    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.58 keeps only HUD collision avoidance rather than internal/mixin waypoint injection."
   ],
   "entries": [
     {"id":"terralith","name":"Terralith","side":"server_worldgen","source":"modrinth","project_id":"8oi3bsk5","version_id":"lqrGyTjO","version":"2.6.4","loader":"neoforge","required":true,"dependencies":["lithostitched"]},

@@ -63,8 +63,14 @@ public final class SettlementService {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MinecraftServer server = player.level().getServer();
         SettlementData data = SettlementData.get(server);
-        if (data.founded()) refreshResources(server, data);
-        sync(player, data);
+        if (data.founded()) {
+            // A joining player may make town storage loaded again. Refresh once, then publish the
+            // same authoritative snapshot to every connected player so existing HUDs cannot stay stale.
+            refreshResources(server, data);
+            broadcast(server, data);
+        } else {
+            sync(player, data);
+        }
     }
 
     public static boolean found(ServerPlayer founder) { return foundInternal(founder, founder.blockPosition(), false).founded(); }

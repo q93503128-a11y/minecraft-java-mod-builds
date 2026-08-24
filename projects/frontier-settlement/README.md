@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.57
+## Current version: 0.1.0-alpha.58
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.57 key was added.
+No new Alpha.58 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–57 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–58 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,21 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.58 — multiplayer snapshot/session pre-acceptance hardening
+
+Alpha.58 does **not** claim that the required long two-player survival acceptance has been completed. It closes deterministic multiplayer-state holes found before that real-play pass.
+
+- the settlement is still one server-owned `SettlementData`; no per-player settlement copy/save authority is introduced;
+- NeoForge 26.2 payload registration is now explicitly `.executesOn(HandlerThread.MAIN)`, making building/road/outpost/civil requests visibly serialized on the server main thread before each service revalidates current shared state;
+- if a player logs into an already-founded world, their presence may make common storage loaded again. The server refreshes the physical storage ledger once and **broadcasts the same authoritative snapshot to every connected player**, not only the joiner;
+- this closes a stale-HUD edge where an existing player could otherwise keep the pre-login resource snapshot after the joiner caused a ledger refresh;
+- `ClientPlayerNetworkEvent.LoggingOut` now clears the client settlement snapshot/context initialization flags, all placement modes/previews, and queued settlement notices;
+- moving from one server/world to another therefore cannot compare the previous world's tier/context against the new world and emit fake growth/completion notices;
+- no payload schema change, new key, building, currency, player-specific progression or async mutation authority is added;
+- existing server confirmation still wins if two players preview the same opportunity: the later MAIN-thread request rechecks the now-current shared project state instead of trusting its old client preview.
+
+This is **pre-acceptance hardening** only. Long survival + two-player gameplay, reconnect/save-reload, simultaneous placement attempts and full companion-stack runtime remain explicit real-play acceptance work.
 
 ## Alpha.57 — automated physical barracks armament
 

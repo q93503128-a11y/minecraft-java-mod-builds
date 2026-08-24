@@ -18,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.HandlerThread;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.function.Consumer;
@@ -32,7 +33,7 @@ public final class SettlementNetwork {
 
     private SettlementNetwork() {}
     public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar=event.registrar(PROTOCOL);
+        PayloadRegistrar registrar=event.registrar(PROTOCOL).executesOn(HandlerThread.MAIN);
         registrar.playToClient(SettlementSnapshotPayload.TYPE,SettlementSnapshotPayload.CODEC,(p,c)->snapshotSink.accept(p));
         registrar.playToClient(PlacementPreviewPayload.TYPE,PlacementPreviewPayload.CODEC,(p,c)->placementPreviewSink.accept(p));
         registrar.playToClient(RoadPreviewPayload.TYPE,RoadPreviewPayload.CODEC,(p,c)->roadPreviewSink.accept(p));

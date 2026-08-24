@@ -8,8 +8,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class ClientSettlementState {
-    private static volatile SettlementSnapshotPayload snapshot =
+    private static final SettlementSnapshotPayload EMPTY_SNAPSHOT =
             new SettlementSnapshotPayload(false, 0L, 0L, 0L, 0L, 0, "개척 캠프", 0, "", SettlementContextPayload.EMPTY);
+    private static volatile SettlementSnapshotPayload snapshot = EMPTY_SNAPSHOT;
     private static volatile SettlementContextPayload context = SettlementContextPayload.EMPTY;
     private static boolean snapshotInitialized;
     private static boolean contextInitialized;
@@ -43,6 +44,13 @@ public final class ClientSettlementState {
             }
         }
         contextInitialized = true;
+    }
+
+    public static synchronized void reset() {
+        snapshot = EMPTY_SNAPSHOT;
+        context = SettlementContextPayload.EMPTY;
+        snapshotInitialized = false;
+        contextInitialized = false;
     }
 
     public static SettlementSnapshotPayload snapshot() { return snapshot; }

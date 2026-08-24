@@ -23,6 +23,10 @@ public final class SettlementNoticeQueue {
         while (NOTICES.size() > MAX_VISIBLE) NOTICES.removeFirst();
     }
 
+    public static synchronized void clear() {
+        NOTICES.clear();
+    }
+
     public static synchronized void render(GuiGraphicsExtractor graphics, Minecraft minecraft) {
         long now = System.currentTimeMillis();
         NOTICES.removeIf(notice -> notice.expiresAt() <= now);
