@@ -57,6 +57,12 @@ public final class OutpostService {
             sendStatus(player);
             return;
         }
+        int outpostLimit = FieldDepotData.registrationLimit(player);
+        if (outposts.count(player) >= outpostLimit) {
+            player.sendSystemMessage(Component.literal("§2[전초기지] §f현재 인프라의 전초 한도는 §e" + outpostLimit
+                    + "개§f입니다. §7산업 3 · 토목 6 · 승천 중추 9"));
+            return;
+        }
 
         StructureCheck check = inspectStructure(player, level, anchor);
         if (!check.complete()) {
@@ -89,20 +95,23 @@ public final class OutpostService {
             player.sendSystemMessage(Component.literal("§c[전초기지] §f보급권 상태가 바뀌어 승격을 중단했습니다."));
             return;
         }
-        if (!outposts.upgrade(player, dimension, anchor)) {
-            player.sendSystemMessage(Component.literal("§c[전초기지] §f승격 상태를 저장하지 못했습니다."));
+        if (!outposts.upgrade(player, dimension, anchor, outpostLimit)) {
+            player.sendSystemMessage(Component.literal("§c[전초기지] §f승격 상태가 바뀌어 저장하지 못했습니다."));
             return;
         }
 
         player.sendSystemMessage(Component.literal("§a[전초기지 완성] §f" + anchor.getX() + ", " + anchor.getY() + ", " + anchor.getZ()
-                + " §7· 소유자가 64블록 안에 있을 때 물류64 / 자연 적대몹 억제24가 활성화됩니다."));
+                + " §7· 현재 " + outposts.count(player) + "/" + outpostLimit
+                + " · 소유자가 64블록 안에 있을 때 물류64 / 자연 적대몹 억제24가 활성화됩니다."));
     }
 
     public static void sendStatus(ServerPlayer player) {
         OutpostData data = OutpostData.get(player);
         int active = activeCount(player);
-        player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 §e" + data.count(player) + "/" + OutpostData.MAX_OUTPOSTS_PER_PLAYER
+        int outpostLimit = FieldDepotData.registrationLimit(player);
+        player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 §e" + data.count(player) + "/" + outpostLimit
                 + " §7· 현재 활성 §a" + active + " §7· 물류 " + EXTENDED_SUPPLY_RADIUS + " / 안전권 " + SAFE_RADIUS));
+        player.sendSystemMessage(Component.literal("  §7- 지역 한도: 산업 3 · 토목 6 · 승천 중추 9"));
         for (OutpostData.OutpostEntry outpost : data.outposts(player)) {
             String state = isActive(player, outpost.dimension(), outpost.pos()) ? "§a활성" : "§8비활성";
             player.sendSystemMessage(Component.literal("  §7- §f" + outpost.pos().getX() + ", " + outpost.pos().getY() + ", " + outpost.pos().getZ()
