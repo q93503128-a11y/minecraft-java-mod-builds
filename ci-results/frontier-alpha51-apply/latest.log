@@ -1,6 +1,6 @@
-trigger_sha=6f47868e6d45411ba9bd7b7d9da357690ac216af
+trigger_sha=37b0b83d41723fdc50404c28b97659271a621b66
 patch_outcome=success
 audit_outcome=failure
 --- patch ---
 --- audit ---
-alpha.50 command-path concurrency and status missing: 공동 창고 실제 흙/거친 흙 물리 운반
+alpha.51 compact retaining context missing: "창고 조약돌 "
