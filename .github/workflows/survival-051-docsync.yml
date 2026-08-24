@@ -1,16 +1,15 @@
 name: Survival Ascension 0.51 Doc Sync
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/survival-051-docsync.yml'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   sync:
+    if: github.event.issue.title == '[internal] survival 051 doc sync'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
