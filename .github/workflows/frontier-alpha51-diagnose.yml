@@ -1,4 +1,4 @@
-# trigger: preserve inherited physical-dirt status wording
+# trigger: preserve physical contracts and context audit literals
 name: Diagnose and Apply Frontier Alpha 51
 
 on:
@@ -46,6 +46,7 @@ jobs:
           code = '\n'.join(normalized)
           code = code.replace('현장 earthBank 우선 · 부족분 실제 흙 운반 · 가상 토사 0',
                               '현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0')
+          code = code.replace(' + " · 창고 조약돌 " +', ' + " · " + "창고 조약돌 " +')
           namespace = {'__name__': '__main__', '__file__': '.github/workflows/frontier-alpha51-apply.yml'}
           exec(compile(code, '.github/workflows/frontier-alpha51-apply.yml::<embedded>', 'exec'), namespace, namespace)
           PY
