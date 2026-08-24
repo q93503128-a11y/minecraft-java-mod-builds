@@ -12,6 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -29,6 +30,7 @@ public final class AscensionAffixes {
     private static final String ROOT = "survivalascension_affix";
     private static final String RARITY = "rarity";
     private static final String CATEGORY = "category";
+    private static final String BASE_NAME = "base_name";
     private static final String PRIMARY = "primary";
     private static final String SCALE = "scale";
     private static final String MASTERY = "mastery";
@@ -57,6 +59,34 @@ public final class AscensionAffixes {
         ItemStack stack = new ItemStack(baseItem(category, rarity));
         rollAffixes(stack, random, rarity, category, false);
         return stack;
+    }
+
+    /**
+     * 0.44 content-pack bridge: any single-stack sword/pickaxe/axe/hoe that participates in the
+     * normal Minecraft item tags can receive Survival Ascension affixes without linking the
+     * optional mod's Java classes. Existing item components remain intact; only our nested
+     * CustomData key and display name are changed.
+     */
+    public static boolean canImprint(ItemStack stack) {
+        return !stack.isEmpty() && stack.getMaxStackSize() == 1 && rarity(stack) <= 0 && categoryForItem(stack) != Category.NONE;
+    }
+
+    public static String imprintCategoryName(ItemStack stack) {
+        return switch (categoryForItem(stack)) {
+            case WEAPON -> "무기";
+            case PICKAXE -> "곡괭이";
+            case AXE -> "도끼";
+            case HOE -> "괭이";
+            default -> "대상 아님";
+        };
+    }
+
+    public static boolean imprint(ItemStack stack, RandomSource random, int requestedRarity) {
+        if (!canImprint(stack)) return false;
+        Category category = categoryForItem(stack);
+        int rarity = Math.max(1, Math.min(3, requestedRarity));
+        rollAffixes(stack, random, rarity, category, false);
+        return true;
     }
 
     public static boolean reroll(ItemStack stack, RandomSource random) {
@@ -96,26 +126,36 @@ public final class AscensionAffixes {
     }
 
     private static void writeAffixes(ItemStack stack, int rarity, Category category, List<String> chosen, boolean awakened) {
+        String baseName = baseName(stack);
         stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, data -> data.update(tag -> {
             CompoundTag root = new CompoundTag();
             root.putInt(RARITY, rarity);
             root.putString(CATEGORY, category.id);
+            root.putString(BASE_NAME, baseName);
             root.putBoolean(AWAKENED, awakened);
             for (String key : AFFIX_POOL) root.putBoolean(key, chosen.contains(key));
             tag.put(ROOT, root);
         }));
-        updateDisplayName(stack, rarity, category, chosen, awakened);
+        updateDisplayName(stack, rarity, category, chosen, awakened, baseName);
     }
 
-    private static void updateDisplayName(ItemStack stack, int rarity, Category category, List<String> chosen, boolean awakened) {
-        String vanillaName = new ItemStack(stack.getItem()).getHoverName().getString();
+    private static void updateDisplayName(ItemStack stack, int rarity, Category category, List<String> chosen, boolean awakened, String baseName) {
         String affixes = chosen.stream().map(key -> affixName(category, key)).reduce((a, b) -> a + "·" + b).orElse("");
         String prefix = awakened ? "§5[각성 신화] " : switch (rarity) {
             case 1 -> "§b[정예] ";
             case 2 -> "§d[승천] ";
             default -> "§6[신화] ";
         };
-        stack.set(DataComponents.CUSTOM_NAME, Component.literal(prefix + affixes + " §f" + vanillaName));
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(prefix + affixes + " §f" + baseName));
+    }
+
+    private static String baseName(ItemStack stack) {
+        CompoundTag root = affixTag(stack);
+        if (root != null) {
+            String stored = root.getStringOr(BASE_NAME, "");
+            if (!stored.isBlank()) return stored;
+        }
+        return stack.getHoverName().getString();
     }
 
     public static double toolSpeedMultiplier(ItemStack stack) {
@@ -222,6 +262,14 @@ public final class AscensionAffixes {
         if (root == null) return Category.NONE;
         String id = root.getStringOr(CATEGORY, "");
         for (Category category : Category.values()) if (category.id.equals(id)) return category;
+        return Category.NONE;
+    }
+
+    private static Category categoryForItem(ItemStack stack) {
+        if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;
+        if (stack.is(ItemTags.PICKAXES)) return Category.PICKAXE;
+        if (stack.is(ItemTags.AXES)) return Category.AXE;
+        if (stack.is(ItemTags.HOES)) return Category.HOE;
         return Category.NONE;
     }
 

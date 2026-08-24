@@ -23,6 +23,9 @@ def main() -> None:
     combat = read("src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java")
     wood = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
     harvest = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
+    affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
+    reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
+    equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
     ores = read("src/main/resources/data/survivalascension/tags/block/valuable_ores.json")
     plan = read("MODPACK_PLAN_DRAFT.md")
     matrix = read("MODPACK_COMPAT_MATRIX.md")
@@ -82,8 +85,25 @@ def main() -> None:
             "woodcutting must continue to use generic Minecraft log/leaf tags")
     require("block instanceof CropBlock" in harvest,
             "harvesting must continue to accept modded CropBlock implementations")
+
+    # 0.44 external gear bridge: standard item tags and existing affix system only.
+    for tag in ("ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES"):
+        require(tag in affix, f"external equipment standard tag missing: {tag}")
+    require("canImprint(ItemStack stack)" in affix and "imprint(ItemStack stack, RandomSource random, int requestedRarity)" in affix,
+            "external equipment imprint API missing")
+    require('BASE_NAME = "base_name"' in affix and "root.putString(BASE_NAME, baseName)" in affix,
+            "external equipment base-name preservation missing")
+    require("ACTION_IMPRINT = 3" in reforge and "WorldAscensionData.get(player.getServer()).stage()" in reforge,
+            "world-stage imprint routing missing")
+    require("FieldDepotService.countMaterial" in reforge and "FieldDepotService.consume" in reforge,
+            "imprint must consume through physical logistics resolver")
+    require('new Entry("승천 각인"' in equipment_ui and "EquipmentReforgeService.ACTION_IMPRINT" in equipment_ui,
+            "equipment radial imprint action missing")
+
     for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
         require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")
+        require(forbidden not in affix.lower(), f"hard optional-mod dependency leaked into equipment imprint: {forbidden}")
+        require(forbidden not in reforge.lower(), f"hard optional-mod dependency leaked into equipment service: {forbidden}")
 
     require("placeholder" not in plan.lower(), "modpack plan is still a placeholder")
     require("placeholder" not in matrix.lower(), "compatibility matrix is still a placeholder")
@@ -94,6 +114,7 @@ def main() -> None:
     print("loader_specific_artifact_selection=PASS")
     print("skill_xp_normalization=PASS")
     print("content_pack_progression_bridge=PASS")
+    print("external_equipment_imprint=PASS")
     print("passive_combat_xp_farm=REMOVED")
 
 

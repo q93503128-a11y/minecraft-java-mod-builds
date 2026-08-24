@@ -35,6 +35,9 @@ required = [
     "src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java",
     "src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java",
     "src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java",
+    "src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java",
+    "src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java",
+    "src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java",
     "src/main/java/kr/moonseungjun/survivalascension/production/FreightRailheadService.java",
@@ -70,11 +73,36 @@ for rel in required:
         errors.append(f"missing: {rel}")
 
 props = read("gradle.properties")
-need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.43.0-alpha.1"], "toolchain")
+need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.44.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
 need(network, ['PROTOCOL = "8"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
-need(main, ['VERSION = "0.43.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+need(main, ['VERSION = "0.44.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
+
+# 0.44 external/content-pack equipment imprint.
+affix = read("src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java")
+need(affix, [
+    'BASE_NAME = "base_name"', "ItemTags.SWORDS", "ItemTags.PICKAXES", "ItemTags.AXES", "ItemTags.HOES",
+    "public static boolean canImprint(ItemStack stack)", "stack.getMaxStackSize() == 1", "categoryForItem(stack) != Category.NONE",
+    "public static boolean imprint(ItemStack stack, RandomSource random, int requestedRarity)",
+    "root.putString(BASE_NAME, baseName)", "stack.getHoverName().getString()",
+    "stack.update(DataComponents.CUSTOM_DATA", "tag.put(ROOT, root)"
+], "0.44 external gear imprint")
+forbid(affix, ["biomesoplenty", "tbos", "amethyst_resonance"], "0.44 hard optional-mod equipment dependency")
+
+reforge = read("src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java")
+need(reforge, [
+    "ACTION_IMPRINT = 3", "WorldAscensionData.get(player.getServer()).stage()", "stage + 1",
+    "AscensionAffixes.canImprint(held)", "AscensionAffixes.imprint(held, player.level().getRandom(), rarity)",
+    "new MaterialCost(Items.AMETHYST_SHARD, 24", "new MaterialCost(Items.AMETHYST_SHARD, 48", "new MaterialCost(Items.AMETHYST_SHARD, 96",
+    "FieldDepotService.countMaterial", "FieldDepotService.consume"
+], "0.44 imprint routing/costs")
+
+equipment_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
+need(equipment_ui, [
+    'new Entry("승천 각인"', "Action.IMPRINT", "AscensionAffixes.canImprint(held)",
+    "EquipmentReforgeService.ACTION_IMPRINT", "new EquipmentActionPayload(EquipmentReforgeService.ACTION_IMPRINT)"
+], "0.44 equipment radial")
 
 # Current guide/pacing/mining/logistics-priority contracts.
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
@@ -83,10 +111,11 @@ need(guide, [
     "mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)",
     "graphics.enableScissor", "graphics.disableScissor", "maxScroll", "scrollOffset",
     'h("월드 승천")', "위더를 처음 격파하면 전설 단계(1)", "엔더 드래곤을 처음 격파하면 종말 단계(2)",
+    'h("외부 장비와 승천 각인")', 'h("승천 각인")', "표준 검/곡괭이/도끼/괭이 태그 장비",
     "물류 통과 창고군", "일반 바닐라 작업대 조합은 조합칸/인벤토리 규칙을 그대로 따릅니다.",
     'h("화물 하역장")', "레일6개 이상", "동력레일1개 이상", "호퍼1개 이상"
-], "0.43 scrollable current-state guide")
-forbid(guide, ["0.43부터", "0.42부터", "0.41부터", "0.40부터"], "guide patch-note policy")
+], "0.44 scrollable current-state guide")
+forbid(guide, ["0.44부터", "0.43부터", "0.42부터", "0.41부터", "0.40부터"], "guide patch-note policy")
 
 tuning = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillTuning.java")
 need(tuning, [
@@ -137,42 +166,16 @@ need(freight, [
     'ORIGIN_X_KEY = "survivalascension_freight_origin_x"',
     'ORIGIN_Y_KEY = "survivalascension_freight_origin_y"',
     'ORIGIN_Z_KEY = "survivalascension_freight_origin_z"',
-    "INTERACTION_RADIUS = 4",
-    "InfrastructureProject.INDUSTRIAL_WORKS",
-    "InfrastructureProject.CIVIL_WORKS",
-    "MinecartChest",
-    "OutpostService.nearestActiveOutpost(player, INTERACTION_RADIUS)",
-    "BlockTags.RAILS",
-    "FreightRailheadService.validate(player, outpost, cart)",
-    "FreightRailheadService.sendStatus(player, outpost, cart)",
-    "FieldDepotService.isBulkMaterial",
-    "FieldDepotData.get(player).linkedBarrels(player, depot)",
-    "level.hasChunkAt(pos)",
-    "level.mayInteract(player, pos)",
-    "Blocks.BARREL",
-    "blockEntity instanceof Container",
-    "ItemStack.isSameItemSameComponents(source, existing)",
-    "target.canPlaceItem(slot, source)",
-    "target.getMaxStackSize(source)",
-    "source.copyWithCount(move)",
-    "destination.pos().equals(origin)",
-    "clearManifest(cart)",
+    "INTERACTION_RADIUS = 4", "InfrastructureProject.INDUSTRIAL_WORKS", "InfrastructureProject.CIVIL_WORKS",
+    "MinecartChest", "OutpostService.nearestActiveOutpost(player, INTERACTION_RADIUS)", "BlockTags.RAILS",
+    "FreightRailheadService.validate(player, outpost, cart)", "FreightRailheadService.sendStatus(player, outpost, cart)",
+    "FieldDepotService.isBulkMaterial", "FieldDepotData.get(player).linkedBarrels(player, depot)",
+    "level.hasChunkAt(pos)", "level.mayInteract(player, pos)", "Blocks.BARREL", "blockEntity instanceof Container",
+    "ItemStack.isSameItemSameComponents(source, existing)", "target.canPlaceItem(slot, source)",
+    "target.getMaxStackSize(source)", "source.copyWithCount(move)", "destination.pos().equals(origin)", "clearManifest(cart)"
 ], "0.43 freight")
-forbid(freight, [
-    "SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity",
-    "teleportTo", "randomTeleport", "consumeSupplyCharge", "giveOrDrop", "award(",
-], "freight physical-only policy")
-ordered(freight, [
-    "if (!isOnLoadedRail(level, cart))", "FreightRailheadService.validate(player, outpost, cart)",
-    "String taggedOwner = cart.getPersistentData().getStringOr(OWNER_KEY"
-], "0.43 railhead before freight mutation")
-ordered(freight, [
-    "if (!isEmpty(cart))", "List<Container> source = storageForDepot", "int moved = moveBulkInto(source, cart)",
-    "data.putString(OWNER_KEY", "data.putString(ORIGIN_DIMENSION_KEY"
-], "freight load order")
-ordered(freight, [
-    "destination.pos().equals(origin)", "List<Container> targets = storageForDepot", "int moved = moveBulkOut(cart, targets)", "if (remaining <= 0) clearManifest(cart)"
-], "freight unload order")
+forbid(freight, ["SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity", "teleportTo", "randomTeleport", "consumeSupplyCharge", "giveOrDrop", "award("], "freight physical-only policy")
+ordered(freight, ["if (!isOnLoadedRail(level, cart))", "FreightRailheadService.validate(player, outpost, cart)", "String taggedOwner = cart.getPersistentData().getStringOr(OWNER_KEY"], "railhead before freight mutation")
 
 railhead = read("src/main/java/kr/moonseungjun/survivalascension/production/FreightRailheadService.java")
 need(railhead, [
@@ -182,46 +185,32 @@ need(railhead, [
     "POWERED_NEAR_CART_SQ = 9", "HOPPER_NEAR_CART_SQ = 9", "CONTROL_NEAR_CART_SQ = 16",
     "poweredNearCart", "hopperNearCart", "controlNearCart", "inspection.complete()"
 ], "0.43 physical railhead")
-forbid(railhead, [
-    "SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity",
-    "teleportTo", "randomTeleport", "consumeSupplyCharge", "award(",
-], "0.43 railhead no-automation/no-force-load policy")
+forbid(railhead, ["SavedData", "setChunkForced", "addRegionTicket", "getChunk(", "addFreshEntity", "teleportTo", "randomTeleport", "consumeSupplyCharge", "award("], "railhead no-automation/no-force-load policy")
 
 production = read("src/main/java/kr/moonseungjun/survivalascension/production/ProductionService.java")
 need(production, ['ACTION_FREIGHT = "physical_freight"', "FreightService.transferNearest(player)", "FreightService.sendStatus(player)", "레일6+·동력레일·호퍼·제어"], "production routing")
 infra = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
 need(infra, ["ProductionService.ACTION_FREIGHT", "project == InfrastructureProject.CIVIL_WORKS"], "infrastructure routing")
 
-# 0.41 Civil Works and causeway retained.
+# Civil Works and causeway retained.
 project = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureProject.java")
-need(project, [
-    'CIVIL_WORKS(', '"civil_works", "토목 공사소"',
-    'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)',
-    'new Requirement(Items.COBBLESTONE, "조약돌", 1536)',
-    'new Requirement(Items.GRAVEL, "자갈", 1536)',
-], "0.41 civil project")
+need(project, ['CIVIL_WORKS(', '"civil_works", "토목 공사소"', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 1536)'], "civil project")
 mode = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionMode.java")
-need(mode, ['CAUSEWAY("causeway", "도로/교량", 60)'], "0.41 construction mode")
+need(mode, ['CAUSEWAY("causeway", "도로/교량", 60)'], "construction mode")
 construction = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
-need(construction, [
-    "GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "MAX_PENDING_BLOCKS_PER_PLAYER = 512", "CAUSEWAY_WIDTH = 3",
-    "ConstructionMode.CAUSEWAY", "InfrastructureProject.CIVIL_WORKS",
-    "fieldMastery ? 65 : SkillTuning.constructionLineLength(level)",
-    "if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;", "level.mayInteract(player, target)",
-    "EventHooks.onBlockPlace", "FieldDepotService.consumeOne(player, item)", "int localBudget = Math.min(8, budget)"
-], "0.41 causeway runtime")
+need(construction, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "MAX_PENDING_BLOCKS_PER_PLAYER = 512", "CAUSEWAY_WIDTH = 3", "ConstructionMode.CAUSEWAY", "InfrastructureProject.CIVIL_WORKS", "fieldMastery ? 65 : SkillTuning.constructionLineLength(level)", "if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;", "level.mayInteract(player, target)", "EventHooks.onBlockPlace", "FieldDepotService.consumeOne(player, item)", "int localBudget = Math.min(8, budget)"], "causeway runtime")
 forbid(construction, ["setChunkForced", "addRegionTicket", "getChunk("], "construction loading policy")
 site = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureSiteService.java")
-need(site, ["CIVIL_SITE = new SiteProfile(true", "Blocks.SCAFFOLDING", "case CIVIL_WORKS -> CIVIL_SITE", "level.hasChunkAt(pos)", "level.mayInteract(player, pos)"], "0.41 commissioning")
+need(site, ["CIVIL_SITE = new SiteProfile(true", "Blocks.SCAFFOLDING", "case CIVIL_WORKS -> CIVIL_SITE", "level.hasChunkAt(pos)", "level.mayInteract(player, pos)"], "commissioning")
 
-# 0.40/0.39/0.38 combat-infrastructure boundaries retained.
+# Combat-infrastructure boundaries retained.
 breach = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostSiegeBreachService.java")
-need(breach, ["BASTION_ONLY_WAVE = 4", "RAVAGER_BREAK_COOLDOWN = 30", "VINDICATOR_BREAK_COOLDOWN = 60", "EventHooks.canEntityGrief(level, mob)", "EventHooks.onEntityDestroyBlock", "level.destroyBlock(target.pos(), true, mob)"], "0.40 breach")
+need(breach, ["BASTION_ONLY_WAVE = 4", "RAVAGER_BREAK_COOLDOWN = 30", "VINDICATOR_BREAK_COOLDOWN = 60", "EventHooks.canEntityGrief(level, mob)", "EventHooks.onEntityDestroyBlock", "level.destroyBlock(target.pos(), true, mob)"], "breach")
 forbid(breach, ["setChunkForced", "addRegionTicket", "getChunk(", "Attributes.MAX_HEALTH", "Attributes.ATTACK_DAMAGE"], "breach policy")
 fort = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostFortificationService.java")
-need(fort, ["INNER_RADIUS = 6", "OUTER_RADIUS = 12", "MIN_COLUMNS_PER_QUADRANT = 12", "BlockTags.WALLS", "Blocks.IRON_BARS", "Blocks.NETHER_BRICK_FENCE"], "0.39 fortification")
+need(fort, ["INNER_RADIUS = 6", "OUTER_RADIUS = 12", "MIN_COLUMNS_PER_QUADRANT = 12", "BlockTags.WALLS", "Blocks.IRON_BARS", "Blocks.NETHER_BRICK_FENCE"], "fortification")
 siege = read("src/main/java/kr/moonseungjun/survivalascension/production/OutpostSiegeSystem.java")
-need(siege, ["DEFENSE_RADIUS = 64", "BREACH_RADIUS = 6", "BREACH_LIMIT = 200", "SUPPLY_CHARGE_COST = 1", "BASTION_SUPPLY_CHARGE_COST = 2", "TOTAL_WAVES = 3", "BASTION_TOTAL_WAVES = 4", "SIEGE_TIMEOUT_TICKS = 4800", "BASTION_TIMEOUT_TICKS = 6000"], "0.39/0.38 siege")
+need(siege, ["DEFENSE_RADIUS = 64", "BREACH_RADIUS = 6", "BREACH_LIMIT = 200", "SUPPLY_CHARGE_COST = 1", "BASTION_SUPPLY_CHARGE_COST = 2", "TOTAL_WAVES = 3", "BASTION_TOTAL_WAVES = 4", "SIEGE_TIMEOUT_TICKS = 4800", "BASTION_TIMEOUT_TICKS = 6000"], "siege")
 forbid(siege, ["setChunkForced", "addRegionTicket", "getChunk(", "Attributes.MAX_HEALTH", "Attributes.ATTACK_DAMAGE"], "siege policy")
 
 # Physical logistics contracts retained.
@@ -258,11 +247,12 @@ if errors:
 
 print("SOURCE AUDIT PASS")
 print("- Minecraft26.2 / NeoForge26.2.0.38-beta / Java25 / protocol8")
-print("- 0.43 physical freight requires a loaded real railhead at both exact active-outpost endpoints")
-print("- railhead minimums: radius6, rails6+, powered rail1+, hopper1+, lever/redstone control1+, with powered/hopper/control near the actual cart rail")
-print("- freight still moves only existing bulk stacks in the same physical Chest Minecart; no reward, auto-drive, virtual route, SavedData, teleport or force-load")
-print("- guide scrolls and documents current World Ascension instead of embedding patch-history wording")
-print("- early mastery requirements remain discounted through Lv59 and converge to the retained late quadratic curve at Lv60")
-print("- mining XP remains material-tiered; copper7/8 no longer outranks obsidian16/crying18")
+print("- 0.44 standard-tagged external swords/pickaxes/axes/hoes can be imprinted into the existing affix system without hard optional-mod dependencies")
+print("- imprint rarity follows World Ascension stage0/1/2 -> Elite/Ascended/Mythic and spends real logistics-backed materials")
+print("- external item components stay on the same stack; Survival Ascension writes only nested affix CustomData/display name with a retained base name")
+print("- 0.43 physical freight still requires a loaded real railhead at both exact active-outpost endpoints")
+print("- freight remains physical-only: no reward, auto-drive, virtual route, SavedData, teleport or force-load")
+print("- guide scrolls and documents current World Ascension and equipment integration instead of embedding patch-history wording")
+print("- early mastery requirements remain discounted through Lv59 and mining XP remains material-tiered")
 print("- logistics-backed costs consume nearest usable physical Barrel/통 storage before carried inventory; vanilla crafting and Apex/Trial carried admissions remain separate")
-print("- 0.41 Civil Works causeways and 0.40/0.39/0.38 defense contracts remain")
+print("- Civil Works causeways and physical defense contracts remain")

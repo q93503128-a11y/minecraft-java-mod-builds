@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.equipment;
 
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
+import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -11,6 +12,7 @@ public final class EquipmentReforgeService {
     public static final int ACTION_REFORGE = 0;
     public static final int ACTION_SALVAGE = 1;
     public static final int ACTION_AWAKEN = 2;
+    public static final int ACTION_IMPRINT = 3;
 
     private EquipmentReforgeService() {}
 
@@ -18,6 +20,35 @@ public final class EquipmentReforgeService {
         if (action == ACTION_REFORGE) reforge(player);
         else if (action == ACTION_SALVAGE) salvage(player);
         else if (action == ACTION_AWAKEN) awaken(player);
+        else if (action == ACTION_IMPRINT) imprint(player);
+    }
+
+    private static void imprint(ServerPlayer player) {
+        ItemStack held = player.getMainHandItem();
+        if (!AscensionAffixes.canImprint(held)) {
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 affix가 없는 검/곡괭이/도끼/괭이 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
+            return;
+        }
+        int stage = WorldAscensionData.get(player.getServer()).stage();
+        int rarity = Math.max(1, Math.min(3, stage + 1));
+        MaterialCost[] costs = imprintCosts(stage);
+        if (!player.isCreative() && !hasAll(player, costs)) {
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f재료 부족 · " + join(costs)
+                    + " §7· 가까운 물류 통 우선 + 부족분 인벤토리"));
+            return;
+        }
+        if (!player.isCreative() && !consumeAll(player, costs)) {
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f물류 재고 상태가 바뀌어 각인을 중단했습니다."));
+            return;
+        }
+        if (!AscensionAffixes.imprint(held, player.level().getRandom(), rarity)) {
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f검증 이후 장비 상태가 바뀌어 각인을 중단했습니다."));
+            return;
+        }
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
+        player.sendSystemMessage(Component.literal("§b[승천 각인 완료] §f" + AscensionAffixes.imprintCategoryName(held)
+                + " 장비가 §e" + AscensionAffixes.rarityName(held) + "§f 등급으로 편입되었습니다. §7" + AscensionAffixes.affixSummary(held)));
     }
 
     private static void reforge(ServerPlayer player) {
@@ -29,7 +60,7 @@ public final class EquipmentReforgeService {
         }
         MaterialCost[] costs = reforgeCosts(rarity, AscensionAffixes.isAwakened(held));
         if (!player.isCreative() && !hasAll(player, costs)) {
-            player.sendSystemMessage(Component.literal("§c[재련] §f재료 부족 · " + join(costs) + " §7· 인벤토리+사용 가능한 물류 배럴 합산"));
+            player.sendSystemMessage(Component.literal("§c[재련] §f재료 부족 · " + join(costs) + " §7· 가까운 물류 통 우선 + 부족분 인벤토리"));
             return;
         }
         if (!player.isCreative() && !consumeAll(player, costs)) {
@@ -58,7 +89,7 @@ public final class EquipmentReforgeService {
         }
         MaterialCost[] costs = awakeningCosts();
         if (!player.isCreative() && !hasAll(player, costs)) {
-            player.sendSystemMessage(Component.literal("§c[신화 각성] §f재료 부족 · " + join(costs) + " §7· 인벤토리+사용 가능한 물류 배럴 합산"));
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §f재료 부족 · " + join(costs) + " §7· 가까운 물류 통 우선 + 부족분 인벤토리"));
             return;
         }
         if (!player.isCreative() && !consumeAll(player, costs)) {
@@ -107,6 +138,30 @@ public final class EquipmentReforgeService {
 
     public static String salvageText(int rarity) {
         return join(salvageRewards(rarity));
+    }
+
+    public static String imprintRangeText() {
+        return "각성: 정예 · 전설: 승천 · 종말: 신화";
+    }
+
+    private static MaterialCost[] imprintCosts(int stage) {
+        return switch (Math.max(0, Math.min(2, stage))) {
+            case 0 -> new MaterialCost[] {
+                    new MaterialCost(Items.AMETHYST_SHARD, 24, "자수정 조각"),
+                    new MaterialCost(Items.IRON_INGOT, 12, "철 주괴")
+            };
+            case 1 -> new MaterialCost[] {
+                    new MaterialCost(Items.AMETHYST_SHARD, 48, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 4, "다이아몬드"),
+                    new MaterialCost(Items.GOLD_INGOT, 16, "금 주괴")
+            };
+            default -> new MaterialCost[] {
+                    new MaterialCost(Items.AMETHYST_SHARD, 96, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 8, "다이아몬드"),
+                    new MaterialCost(Items.NETHERITE_SCRAP, 2, "네더라이트 파편"),
+                    new MaterialCost(Items.ECHO_SHARD, 8, "메아리 조각")
+            };
+        };
     }
 
     private static MaterialCost[] reforgeCosts(int rarity, boolean awakened) {

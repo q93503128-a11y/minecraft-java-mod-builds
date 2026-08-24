@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.44.0-alpha.1
+- Added `Ascension Imprint / 승천 각인` so standard-tagged external swords, pickaxes, axes and hoes can enter Survival Ascension's existing affix/mastery progression instead of remaining disconnected content-pack gear.
+- Imprint eligibility is dependency-free and uses Minecraft item tags (`ItemTags.SWORDS/PICKAXES/AXES/HOES`) rather than optional-mod implementation classes or registry hardcoding.
+- Current World Ascension stage determines imprint rarity: Stage0 -> Elite I, Stage1 -> Ascended II, Stage2 -> Mythic III.
+- Imprint costs are physical-logistics-backed and use the existing storage-first material resolver; no virtual currency or remote inventory system is added.
+- Added `승천 각인` to the existing equipment radial and reused the existing integer equipment action payload, so protocol remains8.
+- Imprinted external gear keeps all existing item components; Survival Ascension writes only its nested `survivalascension_affix` CustomData and display name. A stored base-name field prevents affix rerolls from stacking prefixes.
+- Existing reforge, salvage, Mythic awakening, mastery-XP, mining area/vein, woodcutting chain, harvest area and weapon cleave/damage hooks automatically apply after imprint because they already read Survival Ascension affix data.
+- Elite-generated affix gear remains vanilla-backed; imprint is the bridge for content-pack equipment rather than replacing external loot generation.
+- Added no hard dependency on Biomes O' Plenty, The Birth of Steve, Amethyst Resonance or any future content mod; correctly tagged gear can join automatically.
+
 ## 0.43.0-alpha.1
 - Added `Physical Freight Railheads / 물리 화물 하역장` so 0.42 freight can no longer load or unload from an arbitrary single rail beside an outpost.
 - Every freight endpoint now validates the exact active owned outpost anchor and an already-loaded radius6 physical railhead before any cargo mutation.
