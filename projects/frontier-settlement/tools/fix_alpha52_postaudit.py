@@ -65,4 +65,15 @@ replace_once(gap,
 '- final validation missing block도 physical stone1개를 가져와 성공 배치 후 소비하며 free repair 없음;',
 '- Alpha.25+ physical road의 final validation missing block도 physical stone1개를 가져와 성공 배치 후 소비하며 free repair 없음. 단, 이미 선결제된 historical road save는 이중과금 방지를 위해 기존 prepaid semantics를 유지;')
 
+docs_audit = ROOT / 'tools/test_alpha52_docs.py'
+replace_once(docs_audit,
+"              'final road repair no longer places missing road/bridge blocks for free',",
+"              'final repair for Alpha.25+ physical roads no longer places missing road/bridge blocks for free',\n              'historical prepaid road saves keep their already-paid repair semantics to avoid double charging',")
+replace_once(docs_audit,
+"                 'final validation/repair also requires physical stone',",
+"                 'final validation/repair for Alpha.25+ physical roads also requires physical stone',\n                 'historical prepaid road saves remain cost-free at repair',")
+replace_once(docs_audit,
+"           'free repair 없음', '## 11. 완료 판정 금지선'), 'alpha.52 gap')",
+"           'free repair 없음', 'historical road save는 이중과금 방지',\n           '## 11. 완료 판정 금지선'), 'alpha.52 gap')")
+
 print('Applied Alpha.52 legacy-prepaid repair compatibility fix.')
