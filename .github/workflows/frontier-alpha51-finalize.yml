@@ -1,4 +1,4 @@
-# trigger: canonical alpha.51 finalization
+# trigger: canonical alpha.51 finalization pass 2
 name: Finalize Frontier Settlement Alpha 51
 
 on:
