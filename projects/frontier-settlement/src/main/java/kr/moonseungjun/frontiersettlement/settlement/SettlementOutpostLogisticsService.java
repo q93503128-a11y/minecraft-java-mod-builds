@@ -56,9 +56,13 @@ public final class SettlementOutpostLogisticsService {
     public static void migrateLegacyWorkers(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
             if (!routeFullyLoaded(level, data, outpost)) continue;
-            if (findAssignedWorker(level, data, outpost) != null) continue;
             Villager legacy = findLegacyWorker(level, data, outpost);
-            if (legacy != null) assignWorker(legacy, outpost);
+            if (legacy == null) continue;
+            // Migration also changes assignment authority. Do not tag a visible legacy worker while a
+            // legitimate assigned transporter could merely be hidden in an unloaded search-bound chunk.
+            if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
+            if (findAssignedWorker(level, data, outpost) != null) continue;
+            assignWorker(legacy, outpost);
         }
     }
 
@@ -83,22 +87,27 @@ public final class SettlementOutpostLogisticsService {
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
         int count = 0;
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeFullyLoaded(level, data, outpost)) continue;
+            if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) != null) count++;
         }
         return count;
     }
 
+    /**
+     * Population reconciliation treats this as an absence-evidence gate, not merely a movement gate.
+     * The name is retained because this is the existing single authority consumed by the civilian
+     * lifecycle service, but Alpha.67 deliberately requires the complete transporter lookup envelope.
+     */
     public static boolean allRoutesLoaded(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeFullyLoaded(level, data, outpost)) return false;
+            if (!assignmentEvidenceLoaded(level, data, outpost)) return false;
         }
         return true;
     }
 
     public static OutpostRecord firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
-            if (!routeFullyLoaded(level, data, outpost)) continue;
+            if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
             if (findAssignedWorker(level, data, outpost) == null) return outpost;
         }
         return null;
@@ -119,7 +128,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-        if (outpost == null || !routeFullyLoaded(level, data, outpost)
+        if (outpost == null || !assignmentEvidenceLoaded(level, data, outpost)
                 || findAssignedWorker(level, data, outpost) != null) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = outpost.center().above();
@@ -197,6 +206,36 @@ public final class SettlementOutpostLogisticsService {
         }
         return new AABB(minX - ROUTE_SEARCH_MARGIN, minY - 48.0D, minZ - ROUTE_SEARCH_MARGIN,
                 maxX + ROUTE_SEARCH_MARGIN + 1.0D, maxY + 49.0D, maxZ + ROUTE_SEARCH_MARGIN + 1.0D);
+    }
+
+    /**
+     * Strong loaded-only proof used exclusively when code is about to infer that an assignment is
+     * absent, reconcile population from that absence, migrate authority, or create a replacement.
+     *
+     * The proof covers the exact X/Z AABB used by findAssignedWorker/findLegacyWorker, including the
+     * 32-block route search margin. A transporter in any chunk that the authoritative lookup could
+     * legitimately return therefore cannot become an "unloaded == dead" false negative. This calls
+     * hasChunkAt only and never force-loads a chunk. Normal transport movement intentionally keeps
+     * using routeFullyLoaded so Alpha.42 pacing and pause-at-unloaded-route-boundaries semantics stay
+     * unchanged.
+     */
+    private static boolean assignmentEvidenceLoaded(ServerLevel level, SettlementData data,
+                                                    OutpostRecord outpost) {
+        List<BlockPos> route = routeFromTown(data, outpost);
+        if (route.isEmpty() || !routeFullyLoaded(level, data, outpost)) return false;
+        AABB bounds = routeBounds(data, outpost, route);
+        int minChunkX = Math.floorDiv((int) Math.floor(bounds.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(bounds.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxZ)), 16);
+        int probeY = data.centerPos().getY();
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                BlockPos probe = new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8);
+                if (!level.hasChunkAt(probe)) return false;
+            }
+        }
+        return true;
     }
 
     private static void workTransport(ServerLevel level, SettlementData data,
