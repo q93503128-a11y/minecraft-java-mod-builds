@@ -39,8 +39,8 @@ public final class SettlementService {
         if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
         else {
             SettlementWorkerService.tick(server, data);
-            SettlementOutpostProductionService.tick(server, data);
             SettlementWaterfrontService.tick(server, data);
+            SettlementOutpostProductionService.tick(server, data);
             SettlementFishingOutpostService.tick(server, data);
             SettlementMarketService.tick(server, data);
             SettlementWorkshopService.tick(server, data);
