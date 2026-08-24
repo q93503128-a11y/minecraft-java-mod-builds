@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.54.0-alpha.1 — Mace Impact Ascension / 메이스 충격권 승천
+Standard NeoForge `c:tools/mace` equipment can now enter Ascension Imprint, reforge, Mythic awakening and salvage without a Java dependency on the source mod. Maces are deliberately NOT added to the generated elite base-loot pool, so Survival Ascension does not bypass Trial Chamber or external-mod acquisition.
+
+A real `minecraft:mace_smash` hit replaces the generic Survival melee cleave/shockwave branch with Mace-specific physical scaling. Vanilla owns its normal 3.5-block smash knockback unchanged. Survival Ascension only extends an outer hostile-only ring beyond 3.5 blocks: Combat Lv30 4.5/3, Lv60 5.5/6, Lv90 6.5/10, Lv100 7.5/14, and Lv100 + Field Mastery 9.0 blocks/20 targets. The outer ring deals zero damage and grants zero Combat mastery XP; it respects target knockback resistance and never expands into allies/passive mobs. Shift suppresses only the Ascension outer ring, leaving the vanilla mace smash intact.
+
+Mace affixes are `충각` horizontal push, `진동` radius, `숙련` Combat XP on real kills, `분쇄` outer-ring target count and `격퇴` vertical lift. Runtime caps are radius10.5, targets26, horizontal push1.30 and lift0.28. No new SavedData, packet/protocol, custom mace/entity, force-load or background simulation is introduced.
+
 ## 0.53.0-alpha.1 — Shield Ascension / 방패 승천
 Standard NeoForge `c:tools/shield` items now join Ascension Imprint, reforge, Mythic awakening, salvage and elite affix drops without optional-mod implementation dependencies. The original shield ItemStack and unrelated components remain intact.
 

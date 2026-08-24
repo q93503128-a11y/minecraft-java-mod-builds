@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_LOCK_VERSION = "0.48.0-alpha.1-content-preview.1"
-REQUIRED_LOCK_VERSION = "0.53.0-alpha.1-content-preview.1"
+REQUIRED_LOCK_VERSION = "0.54.0-alpha.1-content-preview.1"
 errors: list[str] = []
 
 
@@ -61,7 +61,7 @@ need(affix, [
 need(equipment_ui, ["방어구/방패 표준 태그 장비 필요"], "0.51 armor player flow")
 need(combat, ["armorDamageMultiplier", "armorXpMultiplier"], "0.51 armor runtime flow")
 need(affix, ["Tags.Items.TOOLS_BOW", "Tags.Items.TOOLS_CROSSBOW", "Category.RANGED", "snapshotRangedProjectile", "projectileDamageMultiplier", "projectileXpMultiplier"], "0.52 ranged content-pack bridge")
-need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged imprint player flow")
+need(equipment_ui, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged imprint player flow")
 need(combat, ["onEntityJoin(EntityJoinLevelEvent event)", "tryRangedBurst", "isPrecisionRangedProjectile", "fieldMastery ? 6.0D", "fieldMastery ? 10"], "0.52 ranged runtime flow")
 matrix = read("MODPACK_COMPAT_MATRIX.md")
 need(matrix, ["c:tools/bow", "c:tools/crossbow", "발사체 스냅샷"], "0.52 generic ranged compatibility docs")
@@ -69,6 +69,10 @@ need(affix, ["Tags.Items.TOOLS_SHIELD", "Category.SHIELD", "isShield(ItemStack s
 need(equipment_ui, ["방어구/방패 표준 태그 장비 필요"], "0.53 shield player flow")
 need(combat, ["onShieldBlock(LivingShieldBlockEvent event)", "event.getBlocked()", "candidate.setDeltaMovement", "player.isShiftKeyDown()"], "0.53 shield runtime flow")
 need(matrix, ["c:tools/shield", "성공차단 방어 파동"], "0.53 generic shield compatibility docs")
+need(affix, ["Tags.Items.TOOLS_MACE", "Category.MACE", "isMace(ItemStack stack)", "maceImpactRadiusBonus", "maceImpactTargetBonus", "maceImpactKnockbackBonus", "maceImpactLiftBonus"], "0.54 mace content-pack bridge")
+need(equipment_ui, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.54 mace player flow")
+need(combat, ["DamageTypeTags.IS_MACE_SMASH", "tryMaceImpact", "VANILLA_MACE_KNOCKBACK_RADIUS_SQR", "Attributes.KNOCKBACK_RESISTANCE"], "0.54 mace runtime flow")
+need(matrix, ["c:tools/mace", "외곽 충격권", "엘리트 기본드롭에서는 메이스를 생성하지 않는다"], "0.54 generic mace compatibility docs")
 
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
@@ -79,7 +83,7 @@ if errors:
 baseline_path = ROOT / "tools/test_content_pack_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)
-baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.53.0-alpha.1`')
+baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.54.0-alpha.1`')
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -103,4 +107,5 @@ print("regional_logistics_scale=PASS")
 print("armor_affix_content_bridge=PASS")
 print("ranged_affix_projectile_bridge=PASS")
 print("shield_affix_guard_wave_bridge=PASS")
+print("mace_affix_outer_impact_bridge=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")

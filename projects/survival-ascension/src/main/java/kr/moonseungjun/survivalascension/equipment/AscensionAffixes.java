@@ -75,7 +75,7 @@ public final class AscensionAffixes {
     }
 
     /**
-     * Content-pack bridge: any single-stack sword/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that
+     * Content-pack bridge: any single-stack sword/mace/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that
      * participates in standard Minecraft/NeoForge item tags can receive Survival Ascension affixes without
      * linking the optional mod's Java classes. Existing item components remain intact; only our nested
      * CustomData key and display name are changed.
@@ -96,6 +96,7 @@ public final class AscensionAffixes {
             case AXE -> "도끼";
             case SHOVEL -> "삽";
             case HOE -> "괭이";
+            case MACE -> "메이스";
             case SHIELD -> "방패";
             case ARMOR -> "방어구";
             default -> "대상 아님";
@@ -182,7 +183,7 @@ public final class AscensionAffixes {
     public static double toolSpeedMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
         Category category = category(stack);
-        if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;
+        if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.MACE || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;
         double result = 1.0D;
         if (has(stack, PRIMARY)) result *= switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
         if (has(stack, UTILITY)) result *= switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
@@ -330,6 +331,30 @@ public final class AscensionAffixes {
         return Math.min(0.85D, base + switch (rarity(stack)) { case 1 -> 0.05D; case 2 -> 0.10D; case 3 -> 0.15D; default -> 0.0D; });
     }
 
+    public static boolean isMace(ItemStack stack) {
+        return categoryForItem(stack) == Category.MACE;
+    }
+
+    public static double maceImpactRadiusBonus(ItemStack stack) {
+        if (category(stack) != Category.MACE || !has(stack, SCALE)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.5D; case 2 -> 1.0D; case 3 -> 1.5D; default -> 0.0D; };
+    }
+
+    public static int maceImpactTargetBonus(ItemStack stack) {
+        if (category(stack) != Category.MACE || !has(stack, SECONDARY)) return 0;
+        return switch (rarity(stack)) { case 1 -> 2; case 2 -> 4; case 3 -> 6; default -> 0; };
+    }
+
+    public static double maceImpactKnockbackBonus(ItemStack stack) {
+        if (category(stack) != Category.MACE || !has(stack, PRIMARY)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.10D; case 2 -> 0.20D; case 3 -> 0.30D; default -> 0.0D; };
+    }
+
+    public static double maceImpactLiftBonus(ItemStack stack) {
+        if (category(stack) != Category.MACE || !has(stack, UTILITY)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.04D; case 2 -> 0.08D; case 3 -> 0.12D; default -> 0.0D; };
+    }
+
     public static boolean isShield(ItemStack stack) {
     return categoryForItem(stack) == Category.SHIELD;
 }
@@ -416,6 +441,7 @@ public static double shieldWaveLiftBonus(ItemStack stack) {
         if (stack.is(ItemTags.AXES)) return Category.AXE;
         if (stack.is(ItemTags.SHOVELS)) return Category.SHOVEL;
         if (stack.is(ItemTags.HOES)) return Category.HOE;
+        if (stack.is(Tags.Items.TOOLS_MACE)) return Category.MACE;
         if (stack.is(Tags.Items.TOOLS_SHIELD)) return Category.SHIELD;
         if (stack.is(ItemTags.HEAD_ARMOR) || stack.is(ItemTags.CHEST_ARMOR)
                 || stack.is(ItemTags.LEG_ARMOR) || stack.is(ItemTags.FOOT_ARMOR)) return Category.ARMOR;
@@ -441,6 +467,7 @@ public static double shieldWaveLiftBonus(ItemStack stack) {
             case AXE -> switch (rarity) { case 1 -> Items.IRON_AXE; case 2 -> Items.DIAMOND_AXE; default -> Items.NETHERITE_AXE; };
             case SHOVEL -> switch (rarity) { case 1 -> Items.IRON_SHOVEL; case 2 -> Items.DIAMOND_SHOVEL; default -> Items.NETHERITE_SHOVEL; };
             case HOE -> switch (rarity) { case 1 -> Items.IRON_HOE; case 2 -> Items.DIAMOND_HOE; default -> Items.NETHERITE_HOE; };
+            case MACE -> Items.MACE;
             case SHIELD -> Items.SHIELD;
             case ARMOR -> switch (random.nextInt(4)) {
                 case 0 -> switch (rarity) { case 1 -> Items.IRON_HELMET; case 2 -> Items.DIAMOND_HELMET; default -> Items.NETHERITE_HELMET; };
@@ -454,20 +481,20 @@ public static double shieldWaveLiftBonus(ItemStack stack) {
 
     private static String affixName(Category category, String key) {
         if (MASTERY.equals(key)) return category == Category.SHIELD ? "대응" : "숙련";
-        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";
+        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.MACE ? "충각" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";
         if (SCALE.equals(key)) return switch (category) {
-            case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case SHIELD -> "파동"; case ARMOR -> "불굴"; default -> "증폭";
+            case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case MACE -> "진동"; case SHIELD -> "파동"; case ARMOR -> "불굴"; default -> "증폭";
         };
         if (SECONDARY.equals(key)) return switch (category) {
-            case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case SHIELD -> "진압"; case ARMOR -> "완강"; default -> "특화";
+            case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case MACE -> "분쇄"; case SHIELD -> "진압"; case ARMOR -> "완강"; default -> "특화";
         };
         return switch (category) {
-            case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case SHIELD -> "반동"; case ARMOR -> "보호"; default -> "보조";
+            case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case MACE -> "격퇴"; case SHIELD -> "반동"; case ARMOR -> "보호"; default -> "보조";
         };
     }
 
     private enum Category {
-        WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), SHIELD("shield"), ARMOR("armor"), NONE("none");
+        WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), MACE("mace"), SHIELD("shield"), ARMOR("armor"), NONE("none");
         final String id;
         Category(String id) { this.id = id; }
     }

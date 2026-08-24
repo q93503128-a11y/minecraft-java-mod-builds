@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.54.0-alpha.1
+- Added `Mace Impact Ascension / 메이스 충격권 승천` using NeoForge common `c:tools/mace` for imprint/reforge/Mythic-awakening/salvage compatibility.
+- Deliberately kept Mace out of generated elite base loot so normal Trial Chamber/external acquisition is not bypassed.
+- Real `DamageTypeTags.IS_MACE_SMASH` hits now replace generic Survival cleave/shockwave handling with a hostile-only outer impact ring beyond vanilla's unchanged 3.5-block Mace knockback.
+- Outer-ring mastery scale: Lv30 4.5/3, Lv60 5.5/6, Lv90 6.5/10, Lv100 7.5/14, Field Mastery 9.0/20 radius/targets.
+- Outer impact deals zero damage/zero Combat XP, respects knockback resistance and excludes allies/passive mobs. Shift disables only the Ascension outer ring.
+- Added Mace affixes `충각`/`진동`/`숙련`/`분쇄`/`격퇴`; capped radius10.5, targets26, horizontal push1.30 and lift0.28.
+- Kept network protocol8 and added no SavedData, packet, custom mace/entity, force-load or background simulation.
+- Bumped content-preview lock to `0.54.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
 ## 0.53.0-alpha.1
 - Added `Shield Ascension / 방패 승천`: NeoForge common `c:tools/shield` items now join imprint/reforge/Mythic awakening/salvage and elite affix drops.
 - Added successful-block guard waves from Combat Lv30 upward: 2.5/2, 3.5/4, 4.5/6, 5.5/8, and Field Mastery 6.5/10 base radius/targets.

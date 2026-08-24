@@ -114,6 +114,19 @@ with zipfile.ZipFile(jar) as zf:
             raise SystemExit(f"0.53 compiled shield-wave token missing: {token!r}")
     if b"shield guard waves" not in main_class:
         raise SystemExit("0.53 runtime banner missing shield guard waves")
+with zipfile.ZipFile(jar) as zf:
+    affix054 = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    combat054 = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    main054 = zf.read("kr/moonseungjun/survivalascension/SurvivalAscension.class")
+    for token in [b"TOOLS_MACE", b"maceImpactRadiusBonus", b"maceImpactTargetBonus", b"maceImpactKnockbackBonus", b"maceImpactLiftBonus"]:
+        if token not in affix054:
+            raise SystemExit(f"0.54 compiled mace-affix token missing: {token!r}")
+    for token in [b"IS_MACE_SMASH", b"tryMaceImpact", b"KNOCKBACK_RESISTANCE", b"setDeltaMovement"]:
+        if token not in combat054:
+            raise SystemExit(f"0.54 compiled mace-impact token missing: {token!r}")
+    if b"mace outer impact rings" not in main054:
+        raise SystemExit("0.54 runtime banner missing mace outer impact rings")
+
 
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
@@ -126,3 +139,5 @@ print("ranged_combat_one_burst_per_projectile=present")
 print("ranged_combat_release_verify=PASS")
 print("shield_guard_wave_runtime=present")
 print("shield_guard_wave_release_verify=PASS")
+print("mace_outer_impact_runtime=present")
+print("mace_outer_impact_release_verify=PASS")

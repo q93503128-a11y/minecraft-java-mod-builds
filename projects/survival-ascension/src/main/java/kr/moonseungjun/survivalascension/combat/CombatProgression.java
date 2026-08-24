@@ -12,8 +12,10 @@ import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
@@ -35,6 +37,7 @@ public final class CombatProgression {
     private static final String SHOCKWAVE_READY_KEY = "survivalascension_combat_shockwave_ready";
     private static final String RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used";
     private static final String SHIELD_WAVE_READY_KEY = "survivalascension_shield_wave_ready";
+    private static final double VANILLA_MACE_KNOCKBACK_RADIUS_SQR = 12.25D;
     private static final int MAJOR_TARGET_EXPEDITION_BONUS = 3;
 
     private CombatProgression() {}
@@ -81,6 +84,11 @@ public final class CombatProgression {
             return;
         }
         if (direct != player) return;
+
+        if (event.getSource().is(DamageTypeTags.IS_MACE_SMASH) && AscensionAffixes.isMace(weapon)) {
+            tryMaceImpact(player, serverLevel, primary, weapon, level);
+            return;
+        }
 
         if (tryShockwave(player, serverLevel, primary, event, scaledDamage, level)) return;
 
@@ -156,6 +164,44 @@ public final class CombatProgression {
         pushed++;
     }
 }
+
+    private static void tryMaceImpact(ServerPlayer player, ServerLevel level, LivingEntity primary,
+                            ItemStack mace, int combatLevel) {
+        if (combatLevel < 30 || player.isShiftKeyDown()) return;
+        boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        double radius = fieldMastery ? 9.0D : combatLevel >= 100 ? 7.5D : combatLevel >= 90 ? 6.5D : combatLevel >= 60 ? 5.5D : 4.5D;
+        int targetLimit = fieldMastery ? 20 : combatLevel >= 100 ? 14 : combatLevel >= 90 ? 10 : combatLevel >= 60 ? 6 : 3;
+        double knockback = fieldMastery ? 1.00D : combatLevel >= 100 ? 0.85D : combatLevel >= 90 ? 0.70D : combatLevel >= 60 ? 0.55D : 0.45D;
+        double lift = fieldMastery ? 0.16D : combatLevel >= 100 ? 0.14D : combatLevel >= 90 ? 0.12D : combatLevel >= 60 ? 0.10D : 0.08D;
+        radius = Math.min(10.5D, radius + AscensionAffixes.maceImpactRadiusBonus(mace));
+        targetLimit = Math.min(26, targetLimit + AscensionAffixes.maceImpactTargetBonus(mace));
+        knockback = Math.min(1.30D, knockback + AscensionAffixes.maceImpactKnockbackBonus(mace));
+        lift = Math.min(0.28D, lift + AscensionAffixes.maceImpactLiftBonus(mace));
+        final double outerRadius = radius;
+
+        List<LivingEntity> nearby = level.getEntitiesOfClass(
+      LivingEntity.class,
+      primary.getBoundingBox().inflate(outerRadius),
+      candidate -> candidate != primary && candidate != player && candidate.isAlive()
+              && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate)
+              && primary.distanceToSqr(candidate) > VANILLA_MACE_KNOCKBACK_RADIUS_SQR
+              && primary.distanceToSqr(candidate) <= outerRadius * outerRadius);
+        nearby.sort(Comparator.comparingDouble(primary::distanceToSqr));
+
+        int pushed = 0;
+        for (LivingEntity candidate : nearby) {
+  if (pushed >= targetLimit) break;
+  Vec3 push = candidate.position().subtract(primary.position()).multiply(1.0D, 0.0D, 1.0D);
+  if (push.lengthSqr() <= 1.0E-5D) continue;
+  double resistance = Math.max(0.0D, Math.min(1.0D, candidate.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
+  double strength = knockback * (1.0D - resistance);
+  if (strength <= 0.0D) continue;
+  push = push.normalize();
+  candidate.setDeltaMovement(candidate.getDeltaMovement().add(push.x * strength, lift * (1.0D - resistance), push.z * strength));
+  candidate.hurtMarked = true;
+  pushed++;
+        }
+    }
 
     private static void tryRangedBurst(ServerPlayer player, ServerLevel level, LivingEntity primary,
                                        LivingIncomingDamageEvent event, Entity direct, float scaledDamage, int combatLevel) {

@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.53.0-alpha.1"
+REQUIRED_VERSION = "0.54.0-alpha.1"
 errors: list[str] = []
 
 
@@ -103,9 +103,9 @@ need(combat, [
     "AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental)",
     "AscensionAffixes.armorXpMultiplier(player)"
 ], "0.51 worn armor runtime")
-need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.52 ranged/armor imprint server flow")
-need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
-need(main_mod, ["VERSION = \"0.53.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
+need(reforge, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.52 ranged/armor imprint server flow")
+need(equipment_ui, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
+need(main_mod, ["VERSION = \"0.54.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
 
 # 0.52 ranged combat ascension: launch-time snapshots and bounded physical impact scale.
@@ -156,10 +156,40 @@ if shield_start < 0 or shield_end < 0:
 else:
     shield_body = combat[shield_start:shield_end]
     forbid(shield_body, ["hurtServer(", "SkillProgressionService.award", "event.setBlocked(", "event.setBlockedDamage("], "0.53 shield no-damage/no-block-force policy")
-need(main_mod, ["VERSION = \"0.53.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
-need(reforge, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
-need(equipment_ui, ["검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
+need(main_mod, ["VERSION = \"0.54.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
+need(reforge, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
+need(equipment_ui, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.53 shield world-loading policy")
+
+# 0.54 mace impact ascension: actual mace-smash only; vanilla inner radius preserved, zero-damage outer ring.
+need(affix, [
+    "Tags.Items.TOOLS_MACE", "Category.MACE", 'MACE("mace")', "Items.MACE", "isMace(ItemStack stack)",
+    "maceImpactRadiusBonus", "maceImpactTargetBonus", "maceImpactKnockbackBonus", "maceImpactLiftBonus",
+    'case MACE -> "메이스"', 'category == Category.MACE ? "충각"', 'case MACE -> "진동"', 'case MACE -> "분쇄"', 'case MACE -> "격퇴"'
+], "0.54 mace affix progression")
+need(affix, ["GEAR_CATEGORIES = List.of(Category.WEAPON, Category.RANGED, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.SHIELD, Category.ARMOR)"], "0.54 mace acquisition preservation")
+need(combat, [
+    "DamageTypeTags.IS_MACE_SMASH", "AscensionAffixes.isMace(weapon)", "tryMaceImpact(player, serverLevel, primary, weapon, level)",
+    "VANILLA_MACE_KNOCKBACK_RADIUS_SQR = 12.25D", "fieldMastery ? 9.0D", "fieldMastery ? 20",
+    "Math.min(10.5D", "Math.min(26", "Math.min(1.30D", "Math.min(0.28D",
+    "primary.distanceToSqr(candidate) > VANILLA_MACE_KNOCKBACK_RADIUS_SQR", "Attributes.KNOCKBACK_RESISTANCE",
+    "ContentPackCompatibility.isCombatTarget(candidate)", "candidate.setDeltaMovement", "candidate.hurtMarked = true"
+], "0.54 mace outer-impact runtime")
+ordered(combat, [
+    "event.getSource().is(DamageTypeTags.IS_MACE_SMASH) && AscensionAffixes.isMace(weapon)",
+    "tryMaceImpact(player, serverLevel, primary, weapon, level)", "return;", "if (tryShockwave"
+], "0.54 mace smash replaces generic cleave/shockwave")
+mace_start = combat.find("private static void tryMaceImpact")
+mace_end = combat.find("private static void tryRangedBurst", mace_start)
+if mace_start < 0 or mace_end < 0:
+    errors.append("0.54 mace runtime body missing")
+else:
+    mace_body = combat[mace_start:mace_end]
+    forbid(mace_body, ["hurtServer(", "SkillProgressionService.award"], "0.54 mace zero-damage/zero-XP outer ring")
+need(main_mod, ["VERSION = \"0.54.0-alpha.1\"", "mace outer impact rings"], "0.54 runtime banner")
+need(reforge, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.54 mace imprint server flow")
+need(equipment_ui, ["검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.54 mace imprint UI")
+forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.54 mace world-loading policy")
 
 # User-facing docs are part of the release contract, not an uncommitted CI-side patch.
 project_doc = read("PROJECT.md")
@@ -167,7 +197,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(project_doc, [
-    "Mod version: `0.53.0-alpha.1`",
+    "Mod version: `0.54.0-alpha.1`",
     "## 0.51 Armor Ascension / 방어구 승천 성장",
     "hard-capped at 35%",
     "hard-capped at +32% Combat XP"
@@ -200,6 +230,10 @@ need(project_doc, ["## 0.53 Shield Ascension / 방패 승천", "radius8.0", "min
 need(readme, ["## 0.53.0-alpha.1 — Shield Ascension / 방패 승천", "6.5 blocks / 10 targets", "cooldown minimum6 ticks"], "0.53 README docs")
 need(changelog, ["## 0.53.0-alpha.1", "Shield Ascension / 방패 승천", "zero damage", "min6t"], "0.53 CHANGELOG docs")
 need(guide, ['h("방패 방어 파동")', "현장 숙련=6.5블록/10체", "파동 없는 정밀 방어", 'h("방패 정밀/파동")'], "0.53 in-game guide")
+need(project_doc, ["## 0.54 Mace Impact Ascension / 메이스 충격권 승천", "9.0/20", "radius10.5"], "0.54 PROJECT docs")
+need(readme, ["## 0.54.0-alpha.1 — Mace Impact Ascension / 메이스 충격권 승천", "9.0 blocks/20 targets", "zero damage"], "0.54 README docs")
+need(changelog, ["## 0.54.0-alpha.1", "Mace Impact Ascension / 메이스 충격권 승천", "IS_MACE_SMASH", "9.0/20"], "0.54 CHANGELOG docs")
+need(guide, ['h("메이스 충격권")', "현장 숙련=9블록/20체", "바닐라 메이스 스매시는 그대로", 'h("메이스 스매시")'], "0.54 in-game guide")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -212,7 +246,7 @@ baseline_path = ROOT / "tools/test_current_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)
 baseline = baseline.replace("MAX_DEPOTS_PER_PLAYER = 3", "MAX_DEPOTS_PER_PLAYER = 9")
-baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")
+baseline = baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -235,4 +269,5 @@ print("- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damag
 print("- 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded")
 print("- 0.52 each physical projectile can produce at most one area burst, including piercing shots")
 print("- 0.53 successful standard-shield blocks create bounded zero-damage guard waves; Shift keeps precision blocking")
-print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.53")
+print("- 0.54 real mace-smash hits use bounded hostile-only outer impact rings while vanilla 3.5-block knockback remains authoritative")
+print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.54")

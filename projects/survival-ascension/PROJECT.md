@@ -1,14 +1,24 @@
 # Survival Ascension
 
-- Mod version: `0.53.0-alpha.1`
+- Mod version: `0.54.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.54 adds standard mace-tag imprint plus real-smash outer impact rings; 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.54 Mace Impact Ascension / 메이스 충격권 승천
+- `c:tools/mace` is a standard-tag imprint category. Existing/external maces keep their original ItemStack/components and may use reforge/Mythic awakening/salvage.
+- Mace is intentionally absent from `GEAR_CATEGORIES`, so elite random base loot cannot generate a Mace and bypass its normal acquisition path.
+- Runtime specialization is gated by the actual `DamageTypeTags.IS_MACE_SMASH` damage type, not guessed fall distance.
+- The vanilla Mace's 3.5-block knockback remains untouched. Survival only adds a hostile-only outer ring beyond 3.5 blocks: Lv30 4.5/3, Lv60 5.5/6, Lv90 6.5/10, Lv100 7.5/14, Field Mastery 9.0/20 radius/targets.
+- The outer ring deals no damage and awards no Combat XP. It respects knockback resistance, excludes the primary target/player/allies, and replaces generic Survival cleave/shockwave handling for that smash hit.
+- Shift suppresses only the Ascension outer ring; vanilla direct smash and vanilla 3.5-block knockback remain authoritative.
+- Mace affixes: `충각` push, `진동` radius, `숙련` kill XP, `분쇄` target count, `격퇴` vertical lift. Caps: radius10.5, targets26, horizontal push1.30, lift0.28.
+- No new SavedData ID, packet/protocol, custom item/entity, force-load or passive simulation.
 
 ## 0.53 Shield Ascension / 방패 승천
 - NeoForge common `c:tools/shield` enters the existing imprint/reforge/Mythic-awakening/salvage loop and elite affix loot without optional-mod Java imports.
