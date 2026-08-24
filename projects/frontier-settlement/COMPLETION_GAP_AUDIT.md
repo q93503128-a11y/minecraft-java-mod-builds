@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.59`
+현재 구현 기준: `0.1.0-alpha.60`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -90,8 +90,25 @@
 | 단일굴곡 터널/석재 포털 | **완료/부분** | Alpha.54 max24 유지, 90도 1회, 양 leg 최소3, 5×4 portal 2개/실물 stone22 |
 | 더 거대한 기념비급 토목 | **선택/부분** | real-play에서 실제 필요성이 확인될 때만; WorldEdit식 확대는 범위 밖 |
 | 물리 단계 건설 | 완료 | grading→haul→foundation/frame/walls/roof/finish |
+| 일반 건물 world/item 거래 원자성 | **완료/부분** | Alpha.60 placement/grade rollback transaction; 실제 실패주입·save/reload acceptance 남음 |
 | 플레이어 건축/컨테이너 보호 | 완료/부분 | civil도 block entity/fluid/ore/non-natural/infrastructure 거부 |
 | 건설소 자동 물류 지원 | 완료/부분 | physical staging runner |
+
+### Alpha.60 일반 건설 transaction 감사
+
+- blueprint step delta는 site crate의 real wood/stone에서만 지불;
+- empty target은 material availability 확인 -> successful world `setBlock` -> crate consume -> step advance 순서;
+- failed `setBlock`은 item/step 손실 0;
+- placement 뒤 consume의 예상 밖 실패는 새 block을 이전 state로 rollback하고 step 유지;
+- 이미 올바른 blueprint block이 있는 경우 정상 step 비용은 계속 내므로 player pre-fill 무료건설 exploit 없음;
+- Alpha.44 grade cell은 clear/floor/support 변경 전 원본 BlockState를 snapshot;
+- grade 중 하나라도 `setBlock` 실패하면 앞서 성공한 변경을 역순 rollback;
+- retaining stone은 전체 grade cell 성공 뒤에만 consume;
+- retaining consume이 예상 밖 실패하면 complete grade mutation rollback + step 유지;
+- historical/current final validation repair는 이미 step 비용이 납부된 block 복구이므로 이중과금하지 않음;
+- destroyBlock/dropResources/free refund/virtual resource/new worker/save authority 없음.
+
+따라서 ordinary construction도 later road/outpost/civil과 동일한 **world 성공 이후 physical material/state commit** 원칙으로 정렬됐다. 실제 실패주입 및 장시간 save/reload 검증은 남는다.
 
 ### Alpha.44 감사 유지
 
@@ -407,9 +424,10 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 14. Alpha.57 shared-storage weapon walk/extract/persistence/render/death-recovery/no-dup acceptance;
 15. Alpha.58 login-refresh/logout-reset/reconnect acceptance;
 16. Alpha.59 simultaneous building/road/outpost/civil confirm exclusivity acceptance;
-17. full companion lock fresh-world client/server runtime;
-18. true Xaero marker는 stable supported API가 생길 때만;
-19. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
+17. Alpha.60 building placement failure/rollback + grade retaining consume rollback/pre-fill-cost acceptance;
+18. full companion lock fresh-world client/server runtime;
+19. true Xaero marker는 stable supported API가 생길 때만;
+20. moving boat/waterborne merchant는 두 번째 logistics authority가 되지 않는 경우에만 선택적 presentation.
 
 ## 10. Alpha.51/52 추가 실플레이 acceptance
 

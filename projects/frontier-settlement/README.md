@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.59
+## Current version: 0.1.0-alpha.60
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.59 key was added.
+No new Alpha.60 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–59 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–60 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,22 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.60 — rollback-safe ordinary construction transactions
+
+Alpha.60 closes a physical-authority gap found during long-play audit. Roads, outposts and civil work already commit resources after successful world mutation; ordinary buildings now follow the same rule.
+
+- a build step first verifies that the physical site crate contains its exact wood/stone delta;
+- when the blueprint target is empty, `setBlock` must succeed **before** the crate ItemStacks are consumed and the construction step advances;
+- an unexpected consume failure after successful placement rolls that newly placed block back to its previous state and leaves the step unchanged;
+- if the correct building block is already present, the step still consumes its normal material delta before advancing, so player pre-fill cannot bypass construction cost;
+- Alpha.44 grade cells now record the original block states they change; every clear/foundation/support placement checks `setBlock` success;
+- a failed grade mutation restores all successful partial changes and consumes no retaining stone;
+- retaining/foundation stone is consumed only after the full grade-cell mutation succeeds; an unexpected consume failure rolls the complete grade cell back and does not advance the project;
+- already-paid `finishIfValid` replacement remains a repair of a step whose material was previously committed, so Alpha.60 does not double-charge historical/current prepaid repair;
+- no `destroyBlock`, loose drops, virtual refund, new worker, save field, key, UI or currency is introduced.
+
+This improves deterministic long-play/save safety but still does **not** replace the required real two-player runtime acceptance.
 
 ## Alpha.59 — centralized single-project authority hardening
 

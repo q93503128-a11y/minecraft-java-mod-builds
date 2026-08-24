@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.59**.
+Current canonical implementation: **0.1.0-alpha.60**.
 
 ## 1. Product identity
 
@@ -88,6 +88,21 @@ One world/server has one shared settlement and one shared infrastructure/project
 - imported civil fill is never a number ledger: only real DIRT/COARSE_DIRT ItemStacks in actual storage/worker hand have authority;
 - no per-player settlement or internal politics/tax layer in planned scope.
 
+### Alpha.60 ordinary construction transaction hardening
+
+Alpha.60 aligns the oldest ordinary-building path with the physical transaction guarantees already used by later road/outpost/civil systems.
+
+- site-crate wood/stone availability is checked before world mutation;
+- for a missing blueprint block: successful `setBlock` -> physical crate consume -> construction state advance;
+- failed `setBlock` means zero material loss and zero step advance;
+- unexpected consume failure after a new placement restores the prior block state before pausing;
+- already-present correct blueprint blocks still pay the normal step delta, preventing player pre-fill from becoming a free-build exploit;
+- Alpha.44 grading captures reversible snapshots for every cleared/filled block in one grade cell;
+- any failed grade placement rolls the cell back before material/state commit;
+- retaining stone commits only after the complete grade-cell world mutation succeeds, and unexpected consume failure rolls the cell back;
+- final validation repair remains non-double-charged because those blueprint step costs were already committed before repair;
+- no drop-producing excavation, resource refund minting, new save state, builder, queue or UI is added.
+
 ### Alpha.59 centralized single-project authority hardening
 
 Alpha.59 is a multiplayer correctness pass, not a new construction feature.
@@ -163,7 +178,7 @@ Current functional families are exactly **15**:
 14. market;
 15. cart station.
 
-The original target was roughly 15–20 meaningful families. Alpha.40–59 deepen systems rather than adding fake families.
+The original target was roughly 15–20 meaningful families. Alpha.40–60 deepen systems rather than adding fake families.
 
 Ordinary construction:
 
@@ -646,7 +661,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.59
+## 14. Current playable slice after Alpha.60
 
 Current implemented slice includes:
 
@@ -669,11 +684,12 @@ Current implemented slice includes:
 - Alpha.57 loaded town-garrison physical external-weapon armament from shared storage, with exact weapon recovery;
 - Alpha.58 shared-login snapshot rebroadcast + explicit MAIN-thread request serialization + client session reset pre-hardening;
 - Alpha.59 centralized service-level single-project authority for building/road/outpost/civil preview and start;
+- Alpha.60 rollback-safe ordinary building placement + Alpha.44 grade-cell physical material transactions;
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.59
+## 15. Unfinished original-scope priorities after Alpha.60
 
 Unless real-play regression overrides them:
 
@@ -693,9 +709,10 @@ Unless real-play regression overrides them:
 15. Alpha.57 weapon storage→soldier walk/extract/save-reload/render/death-recovery/no-dup acceptance;
 16. Alpha.58 two-client shared-login refresh, logout/server-switch reset and reconnect acceptance;
 17. Alpha.59 simultaneous building/road/outpost/civil confirmation exclusivity acceptance;
-18. full companion lock fresh-world client/server runtime;
-19. true Xaero markers only if a stable supported API appears;
-20. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
+18. Alpha.60 building setBlock failure/rollback + terrain retaining rollback/pre-fill-cost acceptance;
+19. full companion lock fresh-world client/server runtime;
+20. true Xaero markers only if a stable supported API appears;
+21. moving boat/waterborne merchant only if presentation value justifies it and it never becomes a second logistics authority.
 
 Large mountain deletion, unrestricted WorldEdit-style terraforming, family simulation, giant research trees, tax/economic micromanagement and manual per-soldier management remain outside the intended product.
 
@@ -705,7 +722,7 @@ At the final/test-worthy point verify at least:
 
 - two players see one shared stockpile/build/project/progression state;
 - founding and early vertical slice;
-- ordinary small and Alpha.44 span3–4 construction terrain;
+- ordinary small and Alpha.44 span3–4 construction terrain, including Alpha.60 no-loss failed placement and rollback-safe retaining transactions;
 - unsafe/>4 building terrain rejection and no free retaining materials;
 - construction office runner and builder physical hauling;
 - road stairs/short bridge and outpost route movement;

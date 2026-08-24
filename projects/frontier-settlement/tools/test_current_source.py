@@ -185,7 +185,7 @@ must(construction, ('HAUL_BATCH_SIZE = 16', 'SettlementStorageService.findExtrac
                     'SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)', 'builder.setInvulnerable(true)',
                     'builder.swing(InteractionHand.MAIN_HAND)', 'construction.ownsScaffold(towerIndex)',
                     'data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET)', 'construction.grading()',
-                    'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCell(', 'ConstructionState.BUILD_STEP_OFFSET',
+                    'tickGrading(', 'createGradePlan(', 'canGradeCell(', 'applyGradeCellTransactional(', 'ConstructionState.BUILD_STEP_OFFSET',
                     'Blocks.COARSE_DIRT.defaultBlockState()', 'GRADE_INTERVAL_TICKS = 8', 'MAX_GRADE_FILL_DEPTH = 3',
                     'MAX_SCAFFOLD_STEP = 7', 'HIGH_WORK_RANGE_SQR = 49.0D',
                     'construction.buildStep()', '건물 부지 정리', 'level.hasChunkAt(supply)'),

@@ -48,7 +48,7 @@ must(construction, (
     'stageTerrainStone(server, data, builder, crate, supply, cell.retainingStone())',
     'SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone)',
     'SettlementStorageService.extract(level, source, SettlementInventory::isStone, amount)',
-    'SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)',
+    'cell.retainingStone()',
     'Blocks.COBBLESTONE.defaultBlockState()',
     'Blocks.COARSE_DIRT.defaultBlockState()',
     'int minFoundationY = construction.originY() - 1 - MAX_GRADE_FILL_DEPTH',
@@ -59,11 +59,15 @@ forbid(construction, (
     'SettlementStorageService.consume(level, data, type.woodCost(), type.stoneCost()',
 ), 'alpha.44 terrain work must stay physical/bounded')
 
-# Cobblestone retaining/foundation blocks must never be free: every retaining cell stages and consumes real stone first.
-consume_pos = construction.find('SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)')
-apply_pos = construction.find('applyGradeCell(level, construction, type, cell)')
-if consume_pos < 0 or apply_pos < 0 or consume_pos > apply_pos:
-    raise SystemExit('alpha.44 retaining stone is not consumed before physical grade placement')
+# Alpha.60 intentionally supersedes Alpha.44's historical consume-before-placement ordering.
+# The historical invariant that retaining/foundation stone is real remains, while the current
+# transaction is stronger: reversible world mutation succeeds before retaining ItemStack commit.
+if 'stageTerrainStone(server, data, builder, crate, supply, cell.retainingStone())' not in construction:
+    raise SystemExit('alpha.44 retaining stone is no longer physically staged')
+if 'SettlementInventory.consume(terrainCrate, 0L, cell.retainingStone(), 0L)' not in construction:
+    raise SystemExit('alpha.44 retaining stone physical consume disappeared')
+if 'applyGradeCellTransactional(level, construction, type, cell)' not in construction:
+    raise SystemExit('alpha.60 transactional grade placement missing while superseding Alpha.44 ordering')
 
 # The failed historical Xaero custom-waypoint probe is intentionally removed. Keep only Alpha.43 layout collision avoidance.
 xaero_compat = JAVA / 'compat/xaero/FrontierXaeroWaypoints.java'

@@ -57,6 +57,7 @@ public final class SettlementConstructionService {
         }
     }
     private record GradeCell(BlockPos floor, boolean foundation, int retainingStone) {}
+    private record BlockSnapshot(BlockPos pos, BlockState state) {}
     private record ScaffoldPiece(BlockPos pos, BlockState state) {}
     private record ScaffoldTower(BlockPos anchor, List<ScaffoldPiece> pieces, List<BlockPos> steps) {}
 
@@ -232,12 +233,20 @@ public final class SettlementConstructionService {
                 - costAtStep(type.woodCost(), buildStep, plan.size());
         long stoneDelta = costAtStep(type.stoneCost(), buildStep + 1, plan.size())
                 - costAtStep(type.stoneCost(), buildStep, plan.size());
-        if (!SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)) return false;
-
-        if (current.isAir()) {
-            level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE);
-            builder.swing(InteractionHand.MAIN_HAND);
+        if (SettlementInventory.countWood(crate) < woodDelta || SettlementInventory.countStone(crate) < stoneDelta) {
+            return false;
         }
+
+        boolean placedNow = false;
+        if (current.isAir()) {
+            if (!level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+            placedNow = true;
+        }
+        if (!SettlementInventory.consume(crate, woodDelta, stoneDelta, 0L)) {
+            if (placedNow) level.setBlock(target, current, NORMAL_BLOCK_UPDATE);
+            return false;
+        }
+        if (placedNow) builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
         if (data.construction().buildStep() >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
         return false;
@@ -274,14 +283,23 @@ public final class SettlementConstructionService {
             return false;
         }
 
+        Container terrainCrate = null;
         if (cell.retainingStone() > 0) {
             BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
-            Container crate = ensureSupplyCrate(level, supply);
-            if (crate == null || !SettlementInventory.consume(crate, 0L, cell.retainingStone(), 0L)) return false;
+            terrainCrate = ensureSupplyCrate(level, supply);
+            if (terrainCrate == null || SettlementInventory.countStone(terrainCrate) < cell.retainingStone()) return false;
+        }
+
+        List<BlockSnapshot> gradeMutation = applyGradeCellTransactional(level, construction, type, cell);
+        if (gradeMutation == null) return false;
+        if (cell.retainingStone() > 0 && !SettlementInventory.consume(terrainCrate, 0L, cell.retainingStone(), 0L)) {
+            rollbackGradeMutation(level, gradeMutation);
+            return false;
+        }
+        if (cell.retainingStone() > 0) {
             SettlementService.refreshResources(server, data);
             SettlementService.broadcast(server, data);
         }
-        applyGradeCell(level, construction, type, cell);
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
         if (data.construction().gradeStep() >= plan.size()) {
@@ -346,25 +364,58 @@ public final class SettlementConstructionService {
         return new BlockPos(floor.getX(), y, floor.getZ());
     }
 
-    private static void applyGradeCell(ServerLevel level, ConstructionState construction,
-                                       BuildingType type, GradeCell cell) {
+    /**
+     * Applies one grade cell as a reversible world transaction. The caller commits retaining stone
+     * only after this returns a non-null snapshot list. A null result means every successful partial
+     * mutation was rolled back and neither material nor construction step may advance.
+     */
+    private static List<BlockSnapshot> applyGradeCellTransactional(ServerLevel level, ConstructionState construction,
+                                                                    BuildingType type, GradeCell cell) {
+        List<BlockSnapshot> changed = new ArrayList<>();
         BlockPos column = cell.floor().above();
         for (int y = type.clearHeight(); y >= 0; y--) {
             BlockPos pos = column.above(y);
             BlockState state = level.getBlockState(pos);
-            if (!state.isAir()) level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (state.isAir()) continue;
+            if (!setGradeBlock(level, pos, Blocks.AIR.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return null;
+            }
         }
-        if (!cell.foundation()) return;
+        if (!cell.foundation()) return List.copyOf(changed);
 
         BlockState fill = cell.retainingStone() > 0
                 ? Blocks.COBBLESTONE.defaultBlockState()
                 : Blocks.COARSE_DIRT.defaultBlockState();
-        level.setBlock(cell.floor(), fill, DIRECT_BLOCK_UPDATE);
+        if (!setGradeBlock(level, cell.floor(), fill, changed)) {
+            rollbackGradeMutation(level, changed);
+            return null;
+        }
         for (int depth = 1; depth <= MAX_GRADE_FILL_DEPTH; depth++) {
             BlockPos support = cell.floor().below(depth);
             BlockState state = level.getBlockState(support);
             if (!state.isAir() && !state.canBeReplaced()) break;
-            level.setBlock(support, fill, DIRECT_BLOCK_UPDATE);
+            if (!setGradeBlock(level, support, fill, changed)) {
+                rollbackGradeMutation(level, changed);
+                return null;
+            }
+        }
+        return List.copyOf(changed);
+    }
+
+    private static boolean setGradeBlock(ServerLevel level, BlockPos pos, BlockState next,
+                                         List<BlockSnapshot> changed) {
+        BlockState current = level.getBlockState(pos);
+        if (current.equals(next)) return true;
+        if (!level.setBlock(pos, next, DIRECT_BLOCK_UPDATE)) return false;
+        changed.add(new BlockSnapshot(pos, current));
+        return true;
+    }
+
+    private static void rollbackGradeMutation(ServerLevel level, List<BlockSnapshot> changed) {
+        for (int i = changed.size() - 1; i >= 0; i--) {
+            BlockSnapshot snapshot = changed.get(i);
+            level.setBlock(snapshot.pos(), snapshot.state(), DIRECT_BLOCK_UPDATE);
         }
     }
 
