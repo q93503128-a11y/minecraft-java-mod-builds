@@ -68,8 +68,8 @@ def main() -> None:
     # Content-pack progression bridge: common conventions, never direct optional-mod implementation imports.
     require('"#c:ores"' in ores, "NeoForge common ore tag is not bridged into vein/extract eligibility")
     require("Tags.EntityTypes.BOSSES" in compat, "NeoForge common boss tag compatibility missing")
-    require("entity instanceof Enemy || entity.getType().is(Tags.EntityTypes.BOSSES)" in compat,
-            "combat target bridge must combine Enemy and common boss tags")
+    require("entity instanceof Enemy" in compat and "builtInRegistryHolder().is(Tags.EntityTypes.BOSSES)" in compat,
+            "combat target bridge must combine Enemy and holder-based common boss tags")
     require("ContentPackCompatibility.isCombatTarget(event.getEntity())" in combat,
             "primary combat target does not use the content-pack bridge")
     require("ContentPackCompatibility.isCombatTarget(candidate)" in combat,
