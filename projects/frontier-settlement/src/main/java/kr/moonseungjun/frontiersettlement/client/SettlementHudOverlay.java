@@ -39,6 +39,11 @@ public final class SettlementHudOverlay {
             drawModePanel(graphics, minecraft, x, modeY, RoadPlacementClient.statusLine(), controls);
         } else if (OutpostPlacementClient.active()) {
             drawModePanel(graphics, minecraft, x, modeY, OutpostPlacementClient.statusLine(), "B 팔레트   도로 끝 조준   Enter 건설");
+        } else if (CivilWorkPlacementClient.active()) {
+            String controls = CivilWorkPlacementClient.first() == null
+                    ? "B 팔레트   Enter 첫 모서리"
+                    : "B 팔레트   Backspace 첫 모서리 재선택   Enter 착공";
+            drawModePanel(graphics, minecraft, x, modeY, CivilWorkPlacementClient.statusLine(), controls);
         }
 
         SettlementNoticeQueue.render(graphics, minecraft);
