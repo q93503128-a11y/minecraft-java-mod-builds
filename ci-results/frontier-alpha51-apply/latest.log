@@ -1,7 +1,0 @@
-trigger_sha=3e82069b5a861eb38c03cf5116fc9ec751c7decd
-patch_outcome=success
-audit_outcome=failure
---- patch ---
---- audit ---
-Frontier Settlement alpha.23-51 cumulative source audit: PASS
-alpha.51 canonical plan missing: there is still only one authority for long-distance outpost transport
