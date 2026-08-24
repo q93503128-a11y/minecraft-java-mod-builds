@@ -1,3 +1,4 @@
+# Build/runtime outputs and generated audit caches stay out of canonical source validation.
 .gradle/
 build/
 run/
