@@ -32,6 +32,7 @@ public final class CombatProgression {
     private static final Set<UUID> CLEAVE_GUARD = new HashSet<>();
     private static final Set<UUID> SHOCKWAVE_GUARD = new HashSet<>();
     private static final String SHOCKWAVE_READY_KEY = "survivalascension_combat_shockwave_ready";
+    private static final String RANGED_BURST_USED_KEY = "survivalascension_ranged_burst_used";
     private static final int MAJOR_TARGET_EXPEDITION_BONUS = 3;
 
     private CombatProgression() {}
@@ -110,7 +111,8 @@ public final class CombatProgression {
 
     private static void tryRangedBurst(ServerPlayer player, ServerLevel level, LivingEntity primary,
                                        LivingIncomingDamageEvent event, Entity direct, float scaledDamage, int combatLevel) {
-        if (combatLevel < 30 || AscensionAffixes.isPrecisionRangedProjectile(direct)) return;
+        if (combatLevel < 30 || AscensionAffixes.isPrecisionRangedProjectile(direct)
+                || direct.getPersistentData().getBooleanOr(RANGED_BURST_USED_KEY, false)) return;
         boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
         double radius = fieldMastery ? 6.0D : combatLevel >= 100 ? 5.0D : combatLevel >= 90 ? 4.25D : combatLevel >= 60 ? 3.5D : 2.5D;
         int targetLimit = fieldMastery ? 10 : combatLevel >= 100 ? 8 : combatLevel >= 90 ? 6 : combatLevel >= 60 ? 4 : 2;
@@ -127,6 +129,9 @@ public final class CombatProgression {
         nearby.sort(Comparator.comparingDouble(primary::distanceToSqr));
         if (nearby.isEmpty()) return;
 
+        // A physical projectile creates at most one real burst. Piercing may still damage later targets directly,
+        // but cannot multiply the same shot into several overlapping area bursts.
+        direct.getPersistentData().putBoolean(RANGED_BURST_USED_KEY, true);
         float burstDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
         UUID uuid = player.getUUID();
         CLEAVE_GUARD.add(uuid);
