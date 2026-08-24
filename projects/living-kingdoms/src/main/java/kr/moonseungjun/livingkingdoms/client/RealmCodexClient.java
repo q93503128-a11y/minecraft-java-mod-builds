@@ -43,13 +43,7 @@ public final class RealmCodexClient {
      */
     public static void onMouseButtonPressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!(event.getScreen() instanceof InventoryScreen screen) || event.getButton() != 0) return;
-        Panel p = panel(screen.width, screen.height);
-        double mx = event.getMouseX();
-        double my = event.getMouseY();
-        String page = null;
-        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) page = "overview";
-        else if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) page = "map";
-        else if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) page = "skills";
+        String page = notebookPageAt(screen.width, screen.height, event.getMouseX(), event.getMouseY());
         if (page == null) return;
         request(page);
         event.setCanceled(true);
@@ -73,6 +67,22 @@ public final class RealmCodexClient {
         customButton(g, p.x() + 7, p.y() + 24, 96, 19, "인물·소속", inside(mx, my, p.x() + 7, p.y() + 24, 96, 19));
         customButton(g, p.x() + 7, p.y() + 46, 46, 19, "지도 M", inside(mx, my, p.x() + 7, p.y() + 46, 46, 19));
         customButton(g, p.x() + 57, p.y() + 46, 46, 19, "기술", inside(mx, my, p.x() + 57, p.y() + 46, 46, 19));
+    }
+
+    static String notebookPageAt(int screenWidth, int screenHeight, double mouseX, double mouseY) {
+        Panel p = panel(screenWidth, screenHeight);
+        if (inside(mouseX, mouseY, p.x() + 7, p.y() + 24, 96, 19)) return "overview";
+        if (inside(mouseX, mouseY, p.x() + 7, p.y() + 46, 46, 19)) return "map";
+        if (inside(mouseX, mouseY, p.x() + 57, p.y() + 46, 46, 19)) return "skills";
+        return null;
+    }
+
+    static boolean notebookHitboxesPassForTest(int screenWidth, int screenHeight) {
+        Panel p = panel(screenWidth, screenHeight);
+        return "overview".equals(notebookPageAt(screenWidth, screenHeight, p.x() + 55.0D, p.y() + 33.0D))
+                && "map".equals(notebookPageAt(screenWidth, screenHeight, p.x() + 30.0D, p.y() + 55.0D))
+                && "skills".equals(notebookPageAt(screenWidth, screenHeight, p.x() + 80.0D, p.y() + 55.0D))
+                && notebookPageAt(screenWidth, screenHeight, p.x() + p.w() + 10.0D, p.y() + 35.0D) == null;
     }
 
     private static void customButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, boolean hover) {
