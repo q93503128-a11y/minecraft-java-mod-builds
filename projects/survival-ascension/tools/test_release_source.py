@@ -93,9 +93,11 @@ need(affix, [
     "ItemTags.HEAD_ARMOR", "ItemTags.CHEST_ARMOR", "ItemTags.LEG_ARMOR", "ItemTags.FOOT_ARMOR",
     "armorDamageMultiplier(ServerPlayer player, float incomingAmount, boolean environmental)",
     "armorXpMultiplier(ServerPlayer player)", "Math.min(0.35D, reduction)", "Math.min(1.32D, 1.0D + bonus)",
-    "player.getArmorSlots()", "Items.IRON_HELMET", "Items.DIAMOND_CHESTPLATE", "Items.NETHERITE_LEGGINGS", "Items.NETHERITE_BOOTS",
+    "List<EquipmentSlot> ARMOR_SLOTS", "EquipmentSlot.HEAD", "EquipmentSlot.CHEST", "EquipmentSlot.LEGS", "EquipmentSlot.FEET",
+    "player.getItemBySlot(slot)", "Items.IRON_HELMET", "Items.DIAMOND_CHESTPLATE", "Items.NETHERITE_LEGGINGS", "Items.NETHERITE_BOOTS",
     "case ARMOR -> \"방어구\"", "case ARMOR -> \"불굴\"", "case ARMOR -> \"완강\"", "case ARMOR -> \"보호\""
 ], "0.51 armor affix progression")
+forbid(affix, ["player.getArmorSlots()"], "0.51 obsolete armor-slot API")
 need(combat, [
     "event.getEntity() instanceof ServerPlayer defender",
     "AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental)",
@@ -163,5 +165,5 @@ print("RELEASE SOURCE AUDIT PASS")
 print("- 0.49 frontline freight manifest and physical-only transport remain intact")
 print("- 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-first before resource mutation")
 print("- 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops")
-print("- 0.51 worn armor effects are bounded: total affix damage reduction cap35%, mastery XP cap32%")
+print("- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%")
 print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.51")
