@@ -23,10 +23,14 @@ def forbid(source, tokens, label):
 
 
 # Preserve every Alpha.23-37 invariant instead of replacing the established audit. Only the two
-# canonical version expectations and the old PASS print are adapted in-memory for Alpha.38.
+# canonical version expectations, current fixed-control wording and the old PASS print are adapted
+# in-memory for later cumulative audits. The key bindings and semantics themselves stay unchanged.
 legacy_source = text(LEGACY)
 legacy_source = legacy_source.replace("'mod_version=0.1.0-alpha.37'", "'mod_version=0.1.0-alpha.38'")
 legacy_source = legacy_source.replace("!= '0.1.0-alpha.37'", "!= '0.1.0-alpha.38'")
+legacy_source = legacy_source.replace("'`B`: settlement palette'", "'`B`: settlement/infrastructure palette;'")
+legacy_source = legacy_source.replace("'`R`: rotate current building placement'", "'`R`: rotate ordinary building placement;'")
+legacy_source = legacy_source.replace("'`Backspace`: reset/cancel'", "'`Backspace`: reset road start or Alpha.49 civil-work first corner'")
 legacy_source = legacy_source.replace("print('Frontier Settlement alpha.37 source audit: PASS')", "pass")
 namespace = {'__file__': str(LEGACY), '__name__': '__main__'}
 exec(compile(legacy_source, str(LEGACY), 'exec'), namespace, namespace)
