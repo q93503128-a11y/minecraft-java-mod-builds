@@ -17,7 +17,12 @@ canonical = text('CANONICAL_PLAN.md')
 gap = text('COMPLETION_GAP_AUDIT.md')
 original = text('ORIGINAL_DESIGN_v0.2.md')
 
-must(original, ('Frontier Settlement',), 'original design must remain present')
+must(original, (
+    '# 개척마을 프로젝트 정본 기획서 v0.2 — 저장소 복원본',
+    'Minecraft 서바이벌을 하며 자원을 공동 마을에 모으고',
+    '서버가 상태를 authoritative하게 보관한다.',
+    '이 문서의 범위를 현재 구현에 맞춰 축소하거나 누락해서는 안 된다.',
+), 'original design must remain present')
 
 must(readme, (
     '## Current version: 0.1.0-alpha.50',
