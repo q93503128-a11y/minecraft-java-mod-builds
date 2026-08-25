@@ -147,10 +147,6 @@ public final class ContentPackCompatibility {
     public static void onServerStarted(ServerStartedEvent event) {
         refreshRegistryCensus();
         for (String line : censusLines()) SurvivalAscension.LOGGER.info("[content-census] {}", line);
-        for (int tier = 0; tier <= 2; tier++) {
-            SurvivalAscension.LOGGER.info("[content-census] expedition_reinforcement_tier_{}={}", tier,
-                    String.join(",", incidentReinforcementIds(tier)));
-        }
     }
 
     /** Human-readable runtime census for /ascension content and CI server-log auditing. */
