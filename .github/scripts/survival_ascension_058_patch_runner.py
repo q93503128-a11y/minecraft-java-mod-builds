@@ -9,5 +9,13 @@ count = source.count(old)
 if count != 1:
     raise RuntimeError(f"replace_once helper definition drifted: {count}")
 patched = source.replace(old, new, 1)
+
+protocol_contract = '''replace_once("tools/test_current_source.py", 'need(network, [\\'PROTOCOL = "8"\\'], "protocol")', 'need(network, [\\'PROTOCOL = "9"\\'], "protocol")')'''
+contract_extension = protocol_contract + '''\nreplace_once("tools/test_current_source.py", "fieldMastery ? 65 : SkillTuning.constructionLineLength(level)", "selectedLength(player, level)")'''
+count = patched.count(protocol_contract)
+if count != 1:
+    raise RuntimeError(f"protocol regression-contract anchor drifted: {count}")
+patched = patched.replace(protocol_contract, contract_extension, 1)
+
 namespace = {"__file__": str(path), "__name__": "__main__"}
 exec(compile(patched, str(path), "exec"), namespace)
