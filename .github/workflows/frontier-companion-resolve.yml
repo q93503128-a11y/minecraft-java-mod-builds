@@ -37,12 +37,6 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Companion manifest/static audit
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          set -euo pipefail
-          python3 tools/test_companion_testpack.py
-
       - name: Resolve client stack
         run: |
           set -euo pipefail
@@ -78,8 +72,10 @@ jobs:
               raise SystemExit(f'client resolved set mismatch: expected={sorted(expected_client)} got={sorted(client_ids)}')
           if server_ids != expected_server:
               raise SystemExit(f'server resolved set mismatch: expected={sorted(expected_server)} got={sorted(server_ids)}')
-          if len(client['files']) != 13:
-              raise SystemExit(f'expected 13 required client companions, got {len(client["files"])}')
+          if len(client['files']) != 16:
+              raise SystemExit(f'expected 16 required client companions, got {len(client["files"])}')
+          if len(server['files']) != 15:
+              raise SystemExit(f'expected 15 required server companions, got {len(server["files"])}')
 
           locked_versions = {e['id']: e['version'] for e in required}
           server_by_id = {f['id']: f for f in server['files']}
@@ -110,6 +106,12 @@ jobs:
           (pack / 'resolved-lock.server.json').write_text(json.dumps(server, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
           git diff --check
+
+      - name: Full companion audit against staged hashes
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          python3 tools/test_companion_testpack.py
 
       - name: Upload resolved manifests
         uses: actions/upload-artifact@v4
