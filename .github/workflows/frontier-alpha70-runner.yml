@@ -20,6 +20,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/frontier_alpha70_patch.py')
+          s=p.read_text(encoding='utf-8')
+          old="notes='\\n'.join(lock.get('notes',[]));"
+          new="notes=chr(10).join(lock.get('notes',[]));"
+          if old not in s:
+              raise SystemExit('alpha70 docs escaping anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
           python3 .github/scripts/frontier_alpha70_patch.py
           git diff --check
           git status --short
