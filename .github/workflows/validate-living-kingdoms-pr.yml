@@ -131,6 +131,7 @@ jobs:
           for attempt in $(seq 1 240); do
             if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
               && grep -Fq 'LK_CLIENT_INVENTORY_CODEX_INTERACTION_PASS click_targets=3' "$log" \
+              && grep -Fq 'LK_CLIENT_REALM_CLOCK_DIAGNOSTIC_PASS server_payload=true client_level_time=false' "$log" \
               && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
               && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; break; fi
             if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Could not initialize GLFW|Failed to create window' "$log"; then outcome=fatal; break; fi
@@ -143,6 +144,7 @@ jobs:
           wait "$launcher" 2>/dev/null || true
           if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
             && grep -Fq 'LK_CLIENT_INVENTORY_CODEX_INTERACTION_PASS click_targets=3' "$log" \
+            && grep -Fq 'LK_CLIENT_REALM_CLOCK_DIAGNOSTIC_PASS server_payload=true client_level_time=false' "$log" \
             && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
             && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; fi
           cat "$log"
