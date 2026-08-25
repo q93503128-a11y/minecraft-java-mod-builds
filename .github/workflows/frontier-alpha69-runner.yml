@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - '.github/workflows/frontier-alpha69-runner.yml'
       - 'projects/frontier-settlement/tools/alpha69.trigger'
 
 permissions:
@@ -16,16 +17,252 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Run embedded Alpha.69 patch
+      - name: Apply Alpha.69 containment patch
         shell: bash
         run: |
           set -euo pipefail
-          awk '
-            /python3 - <<.PY./ {capture=1; next}
-            capture && /^          PY$/ {capture=0; exit}
-            capture {sub(/^          /, ""); print}
-          ' .github/workflows/frontier-alpha69-one-shot.yml > /tmp/frontier-alpha69.py
-          python3 /tmp/frontier-alpha69.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re, subprocess
+
+          ROOT = Path('projects/frontier-settlement')
+          JAVA = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+          def read(path): return path.read_text(encoding='utf-8')
+          def write(path, text): path.write_text(text, encoding='utf-8')
+          def sub_once(path, pattern, replacement, flags=0):
+              s = read(path)
+              n, count = re.subn(pattern, replacement, s, count=1, flags=flags)
+              if count != 1:
+                  raise SystemExit(f'{path}: regex expected one match, got {count}: {pattern[:90]}')
+              write(path, n)
+          def replace_once(path, old, new):
+              s = read(path)
+              if s.count(old) != 1:
+                  raise SystemExit(f'{path}: text expected one match, got {s.count(old)}: {old[:90]!r}')
+              write(path, s.replace(old, new, 1))
+          def insert_before(path, marker, block):
+              s=read(path)
+              if block.strip() in s: return
+              if marker not in s: raise SystemExit(f'{path}: marker missing: {marker}')
+              write(path, s.replace(marker, block+'\n\n'+marker, 1))
+
+          # Normal workshop: preserve every physical duplicate in population accounting, but one canonical UUID-sorted worker performs service.
+          p=JAVA/'SettlementWorkshopService.java'
+          s=read(p)
+          if 'import java.util.Comparator;' not in s:
+              s=s.replace('import java.util.HashSet;\n','import java.util.Comparator;\nimport java.util.HashSet;\n',1)
+              write(p,s)
+          sub_once(p, r'    public static int loadedAssignedWorkerCount\(ServerLevel level, SettlementData data\) \{.*?^    \}\n\n    public static BuildingRecord firstMissingLoadedAssignment', '''    public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
+        Set<java.util.UUID> ids = new HashSet<>();
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
+            for (Villager worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());
+        }
+        return ids.size();
+    }
+
+    public static BuildingRecord firstMissingLoadedAssignment''', re.S|re.M)
+          replace_once(p,'            if (findAssignedWorker(level, data, workshop) == null) return workshop;\n','            if (findAssignedWorkers(level, data, workshop).isEmpty()) return workshop;\n')
+          replace_once(p,'                || findAssignedWorker(level, data, workshop) != null) return null;\n','                || !findAssignedWorkers(level, data, workshop).isEmpty()) return null;\n')
+          sub_once(p, r'    private static Villager findAssignedWorker\(ServerLevel level, SettlementData data, BuildingRecord workshop\) \{.*?^    \}\n\n    private static String assignmentTag', '''    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        List<Villager> assigned = findAssignedWorkers(level, data, workshop);
+        return assigned.isEmpty() ? null : assigned.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        String assignment = assignmentTag(workshop);
+        AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
+        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
+                villager -> villager.entityTags().contains(WORKSHOP_WORKER_TAG)
+                        && villager.entityTags().contains(assignment));
+        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return assigned;
+    }
+
+    private static String assignmentTag''', re.S|re.M)
+
+          # Advanced workshop: identical multiplicity rule.
+          p=JAVA/'SettlementAdvancedWorkshopService.java'
+          s=read(p)
+          if 'import java.util.Comparator;' not in s:
+              s=s.replace('import java.util.HashSet;\n','import java.util.Comparator;\nimport java.util.HashSet;\n',1)
+              write(p,s)
+          sub_once(p, r'    public static int loadedAssignedWorkerCount\(ServerLevel level, SettlementData data\) \{.*?^    \}\n\n    public static BuildingRecord firstMissingLoadedAssignment', '''    public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
+        Set<java.util.UUID> ids = new HashSet<>();
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
+            for (Villager worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());
+        }
+        return ids.size();
+    }
+
+    public static BuildingRecord firstMissingLoadedAssignment''', re.S|re.M)
+          replace_once(p,'            if (findAssignedWorker(level, data, workshop) == null) return workshop;\n','            if (findAssignedWorkers(level, data, workshop).isEmpty()) return workshop;\n')
+          replace_once(p,'                || findAssignedWorker(level, data, workshop) != null) return null;\n','                || !findAssignedWorkers(level, data, workshop).isEmpty()) return null;\n')
+          sub_once(p, r'    private static Villager findAssignedWorker\(ServerLevel level, SettlementData data, BuildingRecord workshop\) \{.*?^    \}\n\n    private static String assignmentTag', '''    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        List<Villager> assigned = findAssignedWorkers(level, data, workshop);
+        return assigned.isEmpty() ? null : assigned.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        String assignment = assignmentTag(workshop);
+        AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
+        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
+                villager -> villager.entityTags().contains(ADVANCED_WORKER_TAG)
+                        && villager.entityTags().contains(assignment));
+        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return assigned;
+    }
+
+    private static String assignmentTag''', re.S|re.M)
+
+          # Outpost transport: count all duplicates, only zero means missing, UUID-first remains the sole active road worker.
+          p=JAVA/'SettlementOutpostLogisticsService.java'
+          sub_once(p, r'    public static int loadedAssignedWorkerCount\(ServerLevel level, SettlementData data\) \{.*?^    \}\n\n    /\*\*', '''    public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
+        Set<java.util.UUID> ids = new HashSet<>();
+        for (OutpostRecord outpost : data.outposts()) {
+            if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
+            for (Villager worker : findAssignedWorkers(level, data, outpost)) ids.add(worker.getUUID());
+        }
+        return ids.size();
+    }
+
+    /**''', re.S|re.M)
+          replace_once(p,'            if (findAssignedWorker(level, data, outpost) == null) return outpost;\n','            if (findAssignedWorkers(level, data, outpost).isEmpty()) return outpost;\n')
+          replace_once(p,'                || findAssignedWorker(level, data, outpost) != null) return null;\n','                || !findAssignedWorkers(level, data, outpost).isEmpty()) return null;\n')
+          sub_once(p, r'    private static Villager findAssignedWorker\(ServerLevel level, SettlementData data, OutpostRecord outpost\) \{.*?^    \}\n\n    private static Villager findLegacyWorker', '''    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        List<Villager> found = findAssignedWorkers(level, data, outpost);
+        return found.isEmpty() ? null : found.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        List<BlockPos> route = routeFromTown(data, outpost);
+        return findAssignedWorkers(level, data, outpost, route);
+    }
+
+    private static Villager findAssignedWorker(ServerLevel level, SettlementData data,
+                                               OutpostRecord outpost, List<BlockPos> route) {
+        List<Villager> found = findAssignedWorkers(level, data, outpost, route);
+        return found.isEmpty() ? null : found.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data,
+                                                      OutpostRecord outpost, List<BlockPos> route) {
+        if (route.isEmpty()) return List.of();
+        String assignment = outpostTag(outpost);
+        List<Villager> found = level.getEntitiesOfClass(Villager.class, routeBounds(data, outpost, route),
+                villager -> villager.entityTags().contains(TRANSPORT_WORKER_TAG)
+                        && villager.entityTags().contains(assignment));
+        found.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return found;
+    }
+
+    private static Villager findLegacyWorker''', re.S|re.M)
+
+          # Version/description.
+          p=ROOT/'gradle.properties'; s=read(p)
+          s=s.replace('mod_version=0.1.0-alpha.68','mod_version=0.1.0-alpha.69',1)
+          anchor='plus rest-anchor-aware civilian lifecycle evidence that uses the same work/storage/housing bounds for lookup and absence authority.'
+          if anchor not in s: raise SystemExit('gradle description anchor missing')
+          s=s.replace(anchor,anchor[:-1]+', plus multiplicity-safe assigned-worker accounting that counts every loaded physical duplicate while only zero workers can trigger replacement and UUID order selects the sole active worker.',1)
+          write(p,s)
+
+          # Lock remains candidate-only.
+          p=ROOT/'COMPANION_LOCK.json'; lock=json.loads(read(p)); lock['target']['frontier_settlement']='0.1.0-alpha.69'
+          note=('Alpha.69 contains historical duplicate assigned residents without destructive cleanup: fully loaded workshop, advanced-workshop and outpost assignment queries count every unique physical worker toward shared population, zero alone can authorize a food-funded replacement, and UUID order deterministically selects the sole active worker. No resident is deleted, no cargo is refunded or minted, and no new save ledger, force-load, teleport, worker family or logistics authority is added.')
+          if note not in lock['notes']: lock['notes'].append(note)
+          write(p,json.dumps(lock,ensure_ascii=False,indent=2)+'\n')
+
+          # Cumulative source audit.
+          write(ROOT/'tools/test_alpha69_source.py', r'''#!/usr/bin/env python3
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]; JAVA=ROOT/'src/main/java/kr/moonseungjun/frontiersettlement'; A68=ROOT/'tools/test_alpha68_source.py'
+def text(p): return p.read_text(encoding='utf-8')
+def must(s,tokens,label):
+    for t in tokens:
+        if t not in s: raise SystemExit(f'{label} missing: {t}')
+def forbid(s,tokens,label):
+    for t in tokens:
+        if t in s: raise SystemExit(f'{label}: {t}')
+a=text(A68).replace("print('Frontier Settlement alpha.23-68 cumulative source audit: PASS')",'pass').replace('0.1.0-alpha.68','0.1.0-alpha.69'); ns={'__file__':str(A68),'__name__':'__main__'}; exec(compile(a,str(A68),'exec'),ns,ns)
+workshop=text(JAVA/'settlement/SettlementWorkshopService.java'); advanced=text(JAVA/'settlement/SettlementAdvancedWorkshopService.java'); outpost=text(JAVA/'settlement/SettlementOutpostLogisticsService.java'); props=text(ROOT/'gradle.properties')
+for label,s,role in (('workshop',workshop,'WORKSHOP_WORKER_TAG'),('advanced',advanced,'ADVANCED_WORKER_TAG')):
+    must(s,('private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop)','assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()))','for (Villager worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());','if (findAssignedWorkers(level, data, workshop).isEmpty()) return workshop;','|| !findAssignedWorkers(level, data, workshop).isEmpty()) return null;',role),f'alpha.69 {label} multiplicity containment')
+must(outpost,('private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, OutpostRecord outpost)','for (Villager worker : findAssignedWorkers(level, data, outpost)) ids.add(worker.getUUID());','if (findAssignedWorkers(level, data, outpost).isEmpty()) return outpost;','|| !findAssignedWorkers(level, data, outpost).isEmpty()) return null;','found.sort(Comparator.comparing(villager -> villager.getUUID().toString()))'),'alpha.69 outpost multiplicity containment')
+for label,s in (('workshop',workshop),('advanced',advanced),('outpost',outpost)):
+    forbid(s,('DUPLICATE_WORKER_LEDGER','setChunkForced','forceChunk','teleportTo('),f'alpha.69 {label} no destructive/virtual authority')
+must(props,('mod_version=0.1.0-alpha.69','multiplicity-safe assigned-worker accounting'),'alpha.69 props')
+print('Frontier Settlement alpha.23-69 cumulative source audit: PASS')
+''')
+
+          # Canonical docs: append the new containment section without shrinking old history.
+          p=ROOT/'CANONICAL_PLAN.md'; s=read(p).replace('Current canonical implementation: **0.1.0-alpha.68**','Current canonical implementation: **0.1.0-alpha.69**',1).replace('Alpha.62–68','Alpha.62–69'); write(p,s)
+          insert_before(p,'### Alpha.68 rest-anchor-aware civilian lifecycle evidence','''### Alpha.69 historical duplicate-assignment containment
+
+Alpha.69 hardens saves that may already contain more than one physical resident with the same specialist/outpost assignment tag. Alpha.67/68 prevent the known new false-missing paths, but they did not make a historical duplicate disappear and the previous population counters only observed one worker per assignment.
+
+- workshop, advanced-workshop and outpost assignment queries now expose the complete loaded matching-worker set;
+- shared population reconciliation counts every unique physical assigned resident when the existing full loaded-evidence gates are satisfied, so a historical duplicate cannot hide outside housing capacity and create another apparent vacancy;
+- replacement remains authorized only by **zero** matching workers; two-or-more matching workers are never treated as missing and never consume another food4;
+- actual specialist/transport work still uses exactly one worker, chosen deterministically by UUID order, preventing unstable entity-query order from swapping the active authority between ticks;
+- ordinary production residents already used pooled UUID-deduplicated worker lists and counted excess physical residents, so that path is intentionally unchanged;
+- Alpha.63/65 exact MAINHAND death recovery remains unchanged; Alpha.69 does not delete, discard, retag or refund an existing duplicate resident and therefore cannot silently destroy hidden villager inventory/cargo;
+- no duplicate-resident ledger, UUID reservation authority, virtual population/cargo, force-load, teleport, new worker family, key, UI or second logistics authority is added.
+
+This is non-destructive containment of historical multiplicity, not proof that old duplicate saves have been physically cleaned up. Repeated death/replacement/night-rest/save-reload/reconnect acceptance remains unfinished.''')
+
+          p=ROOT/'COMPLETION_GAP_AUDIT.md'; s=read(p).replace('현재 구현 기준: `0.1.0-alpha.68`','현재 구현 기준: `0.1.0-alpha.69`',1).replace('Alpha.62–68','Alpha.62–69'); write(p,s)
+          insert_before(p,'### Alpha.68 야간 휴식 anchor / 민간 assignment evidence 감사','''### Alpha.69 기존 중복 assignment containment 감사
+
+- Alpha.67/68 이전 save에 이미 동일 workshop/advanced-workshop/outpost assignment 주민이 2명 이상 존재할 가능성은 별도 문제로 남아 있었음;
+- 기존 `loadedAssignedWorkerCount`는 assignment당 대표 1명만 세어 실제 물리 주민 수보다 population을 낮게 만들 수 있었음;
+- Alpha.69는 full loaded evidence에서 같은 assignment의 모든 unique UUID 주민을 population에 포함하므로 숨은 중복이 추가 housing vacancy를 만들지 않음;
+- `firstMissingLoadedAssignment`와 spawn 재검사는 오직 matching worker가 0명일 때만 replacement를 허용하며, 2명 이상은 절대 missing으로 취급하지 않음;
+- 실제 작업/운송 authority는 UUID 정렬의 첫 주민 하나만 사용하여 entity query 순서에 따른 authority 흔들림을 제거;
+- 기존 중복 주민을 강제 `discard`/삭제/무료 환불하지 않아 MAINHAND 외 숨은 villager inventory까지 손실시키는 공격적 migration을 피함;
+- 따라서 기존 중복을 더 증폭시키는 정적 경로는 닫지만, 오래된 duplicate entity 자체의 물리 정리 여부는 실제 save acceptance 후 별도 판단;
+- 실제 2인 repeated death/replacement/night-rest/save-reload/reconnect no-loss/no-dup acceptance는 계속 남는다.''')
+
+          p=ROOT/'README.md'; s=read(p).replace('## Current version: 0.1.0-alpha.68','## Current version: 0.1.0-alpha.69',1).replace('No new Alpha.68 key was added.','No new Alpha.69 key was added.',1).replace('Alpha.40–68 deepen','Alpha.40–69 deepen',1); write(p,s)
+          insert_before(p,'## Alpha.68 — rest-anchor-aware civilian lifecycle evidence','''## Alpha.69 — historical duplicate-assignment containment
+
+Alpha.69 protects older saves that may already contain multiple physical residents carrying the same workshop, advanced-workshop or outpost assignment.
+
+- fully loaded assignment queries count every unique matching resident toward shared population rather than only the canonical worker;
+- only a truly empty assignment can trigger food-funded replacement, so an existing duplicate cannot create another replacement chain through population undercount;
+- one deterministic UUID-sorted resident performs the actual specialist/transport work while extra historical duplicates remain non-authoritative;
+- no existing resident is deleted or silently stripped of cargo/inventory, and no recruitment food is refunded or minted;
+- ordinary production workers already used pooled UUID-deduplicated counting and remain unchanged;
+- all Alpha.67/68 loaded-evidence, HOUSE-rest and route-boundary rules remain intact;
+- no new key, resident-management UI, save ledger, force-load, teleport or logistics authority was added.
+
+This contains historical duplication safely; it does not claim that old duplicate entities have been destructively cleaned or that repeated multiplayer save/reload acceptance is complete.''')
+
+          write(ROOT/'tools/test_alpha69_docs.py', r'''#!/usr/bin/env python3
+import json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]; A68=ROOT/'tools/test_alpha68_docs.py'
+def text(name): return (ROOT/name).read_text(encoding='utf-8')
+def must(s,tokens,label):
+    for token in tokens:
+        if token not in s: raise SystemExit(f'{label} missing: {token}')
+a=text('tools/test_alpha68_docs.py').replace("print('Frontier Settlement alpha.68 canonical docs audit: PASS')",'pass').replace('0.1.0-alpha.68','0.1.0-alpha.69').replace('No new Alpha.68 key was added.','No new Alpha.69 key was added.'); ns={'__file__':str(A68),'__name__':'__main__'}; exec(compile(a,str(A68),'exec'),ns,ns)
+canonical=text('CANONICAL_PLAN.md'); gap=text('COMPLETION_GAP_AUDIT.md'); readme=text('README.md'); lock=json.loads(text('COMPANION_LOCK.json'))
+must(canonical,('Current canonical implementation: **0.1.0-alpha.69**','### Alpha.69 historical duplicate-assignment containment','replacement remains authorized only by **zero** matching workers','chosen deterministically by UUID order','does not delete, discard, retag or refund an existing duplicate resident'),'alpha.69 canonical')
+must(gap,('현재 구현 기준: `0.1.0-alpha.69`','### Alpha.69 기존 중복 assignment containment 감사','모든 unique UUID 주민을 population에 포함','2명 이상은 절대 missing으로 취급하지 않음','실제 2인 repeated death/replacement/night-rest/save-reload/reconnect no-loss/no-dup acceptance는 계속 남는다'),'alpha.69 gap')
+must(readme,('## Current version: 0.1.0-alpha.69','No new Alpha.69 key was added.','## Alpha.69 — historical duplicate-assignment containment','only a truly empty assignment can trigger food-funded replacement'),'alpha.69 README')
+if lock.get('status')!='candidate_runtime_lock': raise SystemExit('alpha.69 companion lock overclaimed runtime status')
+if lock.get('target',{}).get('frontier_settlement')!='0.1.0-alpha.69': raise SystemExit('alpha.69 companion lock target mismatch')
+notes='\n'.join(lock.get('notes',[])); must(notes,('Alpha.69 contains historical duplicate assigned residents without destructive cleanup','zero alone can authorize a food-funded replacement','No resident is deleted'),'alpha.69 companion note')
+for forbidden in ('v0.2 complete','실플레이 검증 완료','full companion runtime: PASS'):
+    if forbidden in readme: raise SystemExit(f'alpha.69 README overclaim: {forbidden}')
+print('Frontier Settlement alpha.69 canonical docs audit: PASS')
+''')
+
+          subprocess.run(['python3',str(ROOT/'tools/test_alpha69_source.py')],check=True)
+          subprocess.run(['python3',str(ROOT/'tools/test_alpha69_docs.py')],check=True)
+          PY
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
