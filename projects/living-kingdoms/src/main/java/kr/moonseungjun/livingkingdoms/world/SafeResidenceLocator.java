@@ -34,7 +34,7 @@ public final class SafeResidenceLocator {
         return target;
     }
 
-    /** Returns a verified room inside the authored starter tenement, or null while its chunk/interior is still streaming. */
+    /** Returns the exact authored ground-floor home cell, or null while its real interior is still streaming. */
     public static BlockPos residenceIfReady(ServerLevel level, String homelandId, String residenceId) {
         RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
         requireResidence(residenceId);
@@ -48,8 +48,11 @@ public final class SafeResidenceLocator {
         if (!ErdenCapitalStreamingBuilder.isChunkBuilt(level, chunkX, chunkZ)
                 || !level.hasChunkAt(authoredTarget)) return null;
 
-        BlockPos target = ErdenUrbanResidenceResolver.resolveHomeTarget(level, tenement, 0);
-        return target != null && isWalkable(level, target) ? target : null;
+        long key = entranceKey(tenement);
+        ErdenUrbanInteriorSavedData interiors = level.getDataStorage()
+                .computeIfAbsent(ErdenUrbanInteriorSavedData.TYPE);
+        if (!interiors.isComplete(key, ErdenUrbanInteriorBuilder.INTERIOR_REVISION)) return null;
+        return isWalkable(level, authoredTarget) ? authoredTarget : null;
     }
 
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
@@ -158,6 +161,10 @@ public final class SafeResidenceLocator {
             throw new IllegalStateException("Unable to create safe custody cell at " + feet);
         }
         return feet;
+    }
+
+    private static long entranceKey(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+        return ((long) entrance.x() << 32) ^ (entrance.z() & 0xffffffffL);
     }
 
     private static long distanceSquared(int x1, int z1, int x2, int z2) {
