@@ -21,10 +21,14 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/frontier_alpha69_patch.py
+          # The Actions token cannot modify workflow files. Keep the already-verified
+          # product/docs/audits diff, but restore .github and let the connected user
+          # credential perform canonical-workflow cleanup separately.
+          git restore -- .github
           git diff --check
           git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/frontier-settlement .github/workflows/build-frontier-settlement.yml .github/workflows/frontier-alpha69-runner.yml .github/workflows/frontier-alpha69-one-shot.yml .github/scripts/frontier_alpha69_patch.py || true
+          git add -A projects/frontier-settlement
           git commit -m 'Contain historical Frontier duplicate assignments for alpha.69'
           git push origin HEAD:main
