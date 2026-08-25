@@ -32,8 +32,10 @@ final class CodexSmokeDiagnostics {
         }
         if (ticks == 194) {
             verify("growth_tree");
+            verifyInventoryHitRoutes();
+            verifyMonotonicClock();
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true inventory_click_routes=3 pre_inventory_mouse=true kingdom_clock_monotonic=true backward_clock_correction=false",
                     active.width, active.height
             );
         }
@@ -57,6 +59,22 @@ final class CodexSmokeDiagnostics {
         }
     }
 
+    private static void verifyInventoryHitRoutes() {
+        if (active == null || !RealmCodexClient.inventoryRoutesResolveForTest(active.width, active.height)) {
+            throw new IllegalStateException("Inventory codex panel lost one or more direct mouse hit routes");
+        }
+    }
+
+    private static void verifyMonotonicClock() {
+        long displayed = 4_200L;
+        if (MonotonicRealmClockClient.monotonic(displayed, 4_140L) != displayed) {
+            throw new IllegalStateException("Realm clock accepted a backward correction sample");
+        }
+        if (MonotonicRealmClockClient.monotonic(displayed, 4_260L) != 4_260L) {
+            throw new IllegalStateException("Realm clock rejected a forward correction sample");
+        }
+    }
+
     private static void verify(String page) {
         if (active == null || !active.allRequiredControlsFit()) {
             throw new IllegalStateException(
@@ -66,16 +84,16 @@ final class CodexSmokeDiagnostics {
     }
 
     private static String sampleSnapshot() {
-        return "player\tCI Wanderer\n"
+        return "player\tCI Citizen\n"
                 + "species_id\thuman\n"
                 + "species\t인간\n"
                 + "homeland\t에르덴 왕국\n"
                 + "affiliation\t에르덴 왕국 · 로엔 변경백령\n"
                 + "citizenship\t에르덴 왕국 시민\n"
-                + "background\t방랑자\n"
-                + "residence\t왕국 북로의 방랑자 야영지\n"
-                + "trait_title\t다재다능\n"
-                + "trait_description\t다른 종족보다 초기 기술 점수를 1점 더 받습니다.\n"
+                + "background\t평범한 주민\n"
+                + "residence\t왕도 시민구의 임대방\n"
+                + "trait_title\t에르덴 시민\n"
+                + "trait_description\t왕국의 법과 경제 안에서 자신의 삶을 만들어 갑니다.\n"
                 + "health\t17.0 / 20.0\n"
                 + "armor\t7\n"
                 + "food\t18 / 20\n"
