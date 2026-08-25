@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 projects/frontier-settlement/tools/stage_variants_temp.py
-          python3 projects/frontier-settlement/tools/test_companion_testpack.py || true
+          git checkout -- .github/workflows/frontier-companion-resolve.yml .github/workflows/frontier-companion-server-preflight.yml
           git diff --check
 
       - name: Commit promotion and remove temporary files
@@ -38,9 +38,7 @@ jobs:
             projects/frontier-settlement/COMPANION_LOCK.json \
             projects/frontier-settlement/companion-testpack/runtime-status.json \
             projects/frontier-settlement/companion-testpack/README.md \
-            projects/frontier-settlement/tools/test_companion_testpack.py \
-            .github/workflows/frontier-companion-resolve.yml \
-            .github/workflows/frontier-companion-server-preflight.yml
+            projects/frontier-settlement/tools/test_companion_testpack.py
           git commit -m 'Promote Variants and Ventures into Frontier candidate stack'
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
