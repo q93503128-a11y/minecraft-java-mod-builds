@@ -1,0 +1,30 @@
+name: Frontier Alpha70 Runner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha70-runner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply Alpha.70 lifecycle patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/frontier_alpha70_patch.py
+          git diff --check
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/frontier-settlement
+          git commit -m 'Harden Frontier outpost production lifecycle for alpha.70'
+          git push origin HEAD:main
