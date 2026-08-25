@@ -90,6 +90,11 @@ public final class CombatProgression {
             return;
         }
 
+        if (AscensionAffixes.isSpear(weapon)) {
+            trySpearDrive(player, serverLevel, primary, weapon, level);
+            return;
+        }
+
         if (tryShockwave(player, serverLevel, primary, event, scaledDamage, level)) return;
 
         double radius = SkillTuning.combatCleaveRadius(level);
@@ -164,6 +169,60 @@ public final class CombatProgression {
         pushed++;
     }
 }
+
+    private static void trySpearDrive(ServerPlayer player, ServerLevel level, LivingEntity primary,
+                                      ItemStack spear, int combatLevel) {
+        if (combatLevel < 30 || player.isShiftKeyDown()) return;
+        Vec3 direction = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+        if (direction.lengthSqr() <= 1.0E-5D) return;
+        direction = direction.normalize();
+        Entity carrier = player.getVehicle() != null ? player.getVehicle() : player;
+        Vec3 motion = carrier.getDeltaMovement().multiply(1.0D, 0.0D, 1.0D);
+        double forwardSpeed = motion.x * direction.x + motion.z * direction.z;
+        if (forwardSpeed < 0.08D) return;
+
+        boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        double reach = fieldMastery ? 7.5D : combatLevel >= 100 ? 6.5D : combatLevel >= 90 ? 5.5D : combatLevel >= 60 ? 4.5D : 3.5D;
+        int targetLimit = fieldMastery ? 5 : combatLevel >= 100 ? 4 : combatLevel >= 90 ? 3 : combatLevel >= 60 ? 2 : 1;
+        double basePush = fieldMastery ? 0.55D : combatLevel >= 100 ? 0.48D : combatLevel >= 90 ? 0.40D : combatLevel >= 60 ? 0.32D : 0.25D;
+        reach = Math.min(9.0D, reach + AscensionAffixes.spearLineReachBonus(spear));
+        targetLimit = Math.min(8, targetLimit + AscensionAffixes.spearLineTargetBonus(spear));
+        double pushStrength = Math.min(1.10D, basePush + Math.min(0.35D, forwardSpeed * 0.85D)
+                + AscensionAffixes.spearLineKnockbackBonus(spear));
+        final Vec3 lineDirection = direction;
+        final double lineReach = reach;
+        final double halfWidthSqr = 1.35D * 1.35D;
+
+        List<LivingEntity> nearby = level.getEntitiesOfClass(
+                LivingEntity.class,
+                primary.getBoundingBox().inflate(lineReach, 1.5D, lineReach),
+                candidate -> {
+                    if (candidate == primary || candidate == player || !candidate.isAlive()
+                            || !ContentPackCompatibility.isCombatTarget(candidate) || player.isAlliedTo(candidate)) return false;
+                    Vec3 delta = candidate.position().subtract(primary.position());
+                    double forward = delta.x * lineDirection.x + delta.z * lineDirection.z;
+                    if (forward <= 0.0D || forward > lineReach) return false;
+                    double lateralX = delta.x - lineDirection.x * forward;
+                    double lateralZ = delta.z - lineDirection.z * forward;
+                    return lateralX * lateralX + lateralZ * lateralZ <= halfWidthSqr;
+                });
+        nearby.sort(Comparator.comparingDouble(candidate -> {
+            Vec3 delta = candidate.position().subtract(primary.position());
+            return delta.x * lineDirection.x + delta.z * lineDirection.z;
+        }));
+
+        int pushed = 0;
+        for (LivingEntity candidate : nearby) {
+            if (pushed >= targetLimit) break;
+            double resistance = Math.max(0.0D, Math.min(1.0D, candidate.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
+            double strength = pushStrength * (1.0D - resistance);
+            if (strength <= 0.0D) continue;
+            candidate.setDeltaMovement(candidate.getDeltaMovement().add(
+                    lineDirection.x * strength, 0.06D * (1.0D - resistance), lineDirection.z * strength));
+            candidate.hurtMarked = true;
+            pushed++;
+        }
+    }
 
     private static void tryMaceImpact(ServerPlayer player, ServerLevel level, LivingEntity primary,
                             ItemStack mace, int combatLevel) {

@@ -104,9 +104,12 @@ with zipfile.ZipFile(jar) as zf:
             raise SystemExit(f"required JAR entry missing: {name}")
 
     deep_doc = json.loads(zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json").decode("utf-8"))
-    deep_ids = {entry.get("id") for entry in deep_doc.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
+    deep_values = deep_doc.get("values", [])
+    deep_ids = {entry.get("id") for entry in deep_values if isinstance(entry, dict) and entry.get("required") is False}
     if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
         raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
+    if "minecraft:sulfur_caves" not in deep_values:
+        raise SystemExit("Minecraft 26.2 Sulfur Caves Deep expedition bridge missing from packaged JAR")
 
     major_doc = json.loads(zf.read("data/survivalascension/tags/entity_type/expedition_major_targets.json").decode("utf-8"))
     if major_doc.get("replace") is not False:
@@ -130,6 +133,10 @@ with zipfile.ZipFile(jar) as zf:
             raise SystemExit(f"compiled frontline local-supply bridge missing: {token.decode()}")
     if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:
         raise SystemExit("compiled shovel affix bridge missing")
+    if b"SPEARS" not in affix_class or b"spearLineReachBonus" not in affix_class:
+        raise SystemExit("compiled spear affix bridge missing")
+    if b"trySpearDrive" not in combat_class:
+        raise SystemExit("compiled spear drive-line bridge missing")
     if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
         raise SystemExit("compiled shovel Mining bridge missing")
     if b"expedition_major_targets" not in compat_class or b"isMajorExpeditionTarget" not in compat_class:

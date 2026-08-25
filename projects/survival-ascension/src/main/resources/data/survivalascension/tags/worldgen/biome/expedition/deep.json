@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "minecraft:sulfur_caves",
     {
       "id": "biomesoplenty:glowing_grotto",
       "required": false

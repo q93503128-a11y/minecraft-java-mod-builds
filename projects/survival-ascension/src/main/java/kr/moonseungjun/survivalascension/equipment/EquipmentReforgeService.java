@@ -27,7 +27,7 @@ public final class EquipmentReforgeService {
     private static void imprint(ServerPlayer player) {
         ItemStack held = player.getMainHandItem();
         if (!AscensionAffixes.canImprint(held)) {
-            player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 affix가 없는 검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 affix가 없는 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
             return;
         }
         // 26.2 ServerPlayer no longer exposes getServer(); semantic contract: WorldAscensionData.get(player.getServer()).stage()

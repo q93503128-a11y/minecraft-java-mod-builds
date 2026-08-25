@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.55.0-alpha.1 — Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
+Minecraft 26.2의 `minecraft:sulfur_caves`를 기존 심층권 원정 태그에 편입했다. Sulfur/Cinnabar 계열은 바닐라 pickaxe-mineable 지형으로 기존 채굴 숙련 속도·XP·면적 작업을 받지만 `valuable_ores`로 승격하지 않아 광맥/추출 대상으로 오인하지 않는다.
+
+Standard `minecraft:spears` equipment now joins Ascension Imprint/reforge/Mythic awakening/salvage while remaining absent from generated elite base loot. Vanilla Jab/Charge behavior remains authoritative. Combat Lv30+ adds only a zero-damage, zero-XP narrow drive line behind a direct spear target when the player or mount has real forward momentum; Shift suppresses this Ascension line for precision attacks. Base reach/targets are Lv30 3.5/1, Lv60 4.5/2, Lv90 5.5/3, Lv100 6.5/4, Field Mastery 7.5/5. Spear affixes are `관통` direct damage, `돌파` line reach, `숙련` kill XP, `대열` target count and `충압` push. The line is capped at reach9.0, targets8 and push1.10 and respects knockback resistance.
+
+No new SavedData, packet/protocol, custom spear/entity, force-load or background simulation is introduced. Network protocol remains `8`.
+
 ## 0.54.0-alpha.1 — Mace Impact Ascension / 메이스 충격권 승천
 Standard NeoForge `c:tools/mace` equipment can now enter Ascension Imprint, reforge, Mythic awakening and salvage without a Java dependency on the source mod. Maces are deliberately NOT added to the generated elite base-loot pool, so Survival Ascension does not bypass Trial Chamber or external-mod acquisition.
 

@@ -75,7 +75,7 @@ public final class AscensionAffixes {
     }
 
     /**
-     * Content-pack bridge: any single-stack sword/mace/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that
+     * Content-pack bridge: any single-stack sword/spear/mace/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that
      * participates in standard Minecraft/NeoForge item tags can receive Survival Ascension affixes without
      * linking the optional mod's Java classes. Existing item components remain intact; only our nested
      * CustomData key and display name are changed.
@@ -91,6 +91,7 @@ public final class AscensionAffixes {
     public static String imprintCategoryName(ItemStack stack) {
         return switch (categoryForItem(stack)) {
             case WEAPON -> "무기";
+            case SPEAR -> "스피어";
             case RANGED -> "원거리";
             case PICKAXE -> "곡괭이";
             case AXE -> "도끼";
@@ -183,7 +184,7 @@ public final class AscensionAffixes {
     public static double toolSpeedMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
         Category category = category(stack);
-        if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.MACE || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;
+        if (rarity <= 0 || category == Category.WEAPON || category == Category.SPEAR || category == Category.RANGED || category == Category.MACE || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;
         double result = 1.0D;
         if (has(stack, PRIMARY)) result *= switch (rarity) { case 1 -> 1.12D; case 2 -> 1.25D; default -> 1.40D; };
         if (has(stack, UTILITY)) result *= switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
@@ -192,8 +193,11 @@ public final class AscensionAffixes {
 
     public static double damageMultiplier(ItemStack stack) {
         int rarity = rarity(stack);
-        if (rarity <= 0 || category(stack) != Category.WEAPON || !has(stack, PRIMARY)) return 1.0D;
-        return switch (rarity) { case 1 -> 1.08D; case 2 -> 1.15D; default -> 1.25D; };
+        Category category = category(stack);
+        if (rarity <= 0 || !has(stack, PRIMARY)) return 1.0D;
+        if (category == Category.WEAPON) return switch (rarity) { case 1 -> 1.08D; case 2 -> 1.15D; default -> 1.25D; };
+        if (category == Category.SPEAR) return switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
+        return 1.0D;
     }
 
     public static double xpMultiplier(ItemStack stack) {
@@ -331,6 +335,25 @@ public final class AscensionAffixes {
         return Math.min(0.85D, base + switch (rarity(stack)) { case 1 -> 0.05D; case 2 -> 0.10D; case 3 -> 0.15D; default -> 0.0D; });
     }
 
+    public static boolean isSpear(ItemStack stack) {
+        return categoryForItem(stack) == Category.SPEAR;
+    }
+
+    public static double spearLineReachBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, SCALE)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.5D; case 2 -> 1.0D; case 3 -> 1.5D; default -> 0.0D; };
+    }
+
+    public static int spearLineTargetBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, SECONDARY)) return 0;
+        return switch (rarity(stack)) { case 1 -> 1; case 2 -> 2; case 3 -> 3; default -> 0; };
+    }
+
+    public static double spearLineKnockbackBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, UTILITY)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.08D; case 2 -> 0.16D; case 3 -> 0.24D; default -> 0.0D; };
+    }
+
     public static boolean isMace(ItemStack stack) {
         return categoryForItem(stack) == Category.MACE;
     }
@@ -435,6 +458,7 @@ public static double shieldWaveLiftBonus(ItemStack stack) {
     }
 
     private static Category categoryForItem(ItemStack stack) {
+        if (stack.is(ItemTags.SPEARS)) return Category.SPEAR;
         if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;
         if (stack.is(Tags.Items.TOOLS_BOW) || stack.is(Tags.Items.TOOLS_CROSSBOW)) return Category.RANGED;
         if (stack.is(ItemTags.PICKAXES)) return Category.PICKAXE;
@@ -481,20 +505,20 @@ public static double shieldWaveLiftBonus(ItemStack stack) {
 
     private static String affixName(Category category, String key) {
         if (MASTERY.equals(key)) return category == Category.SHIELD ? "대응" : "숙련";
-        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.MACE ? "충각" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";
+        if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.SPEAR ? "관통" : category == Category.RANGED ? "강궁" : category == Category.MACE ? "충각" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";
         if (SCALE.equals(key)) return switch (category) {
-            case WEAPON -> "파급"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case MACE -> "진동"; case SHIELD -> "파동"; case ARMOR -> "불굴"; default -> "증폭";
+            case WEAPON -> "파급"; case SPEAR -> "돌파"; case RANGED -> "산개"; case PICKAXE -> "굴착"; case AXE -> "연쇄"; case SHOVEL -> "토공"; case HOE -> "광역"; case MACE -> "진동"; case SHIELD -> "파동"; case ARMOR -> "불굴"; default -> "증폭";
         };
         if (SECONDARY.equals(key)) return switch (category) {
-            case WEAPON -> "사냥"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case MACE -> "분쇄"; case SHIELD -> "진압"; case ARMOR -> "완강"; default -> "특화";
+            case WEAPON -> "사냥"; case SPEAR -> "대열"; case RANGED -> "연쇄"; case PICKAXE -> "광맥"; case AXE -> "벌채"; case SHOVEL -> "개착"; case HOE -> "풍작"; case MACE -> "분쇄"; case SHIELD -> "진압"; case ARMOR -> "완강"; default -> "특화";
         };
         return switch (category) {
-            case WEAPON -> "충격"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case MACE -> "격퇴"; case SHIELD -> "반동"; case ARMOR -> "보호"; default -> "보조";
+            case WEAPON -> "충격"; case SPEAR -> "충압"; case RANGED -> "충격"; case PICKAXE, AXE, SHOVEL, HOE -> "정교"; case MACE -> "격퇴"; case SHIELD -> "반동"; case ARMOR -> "보호"; default -> "보조";
         };
     }
 
     private enum Category {
-        WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), MACE("mace"), SHIELD("shield"), ARMOR("armor"), NONE("none");
+        WEAPON("weapon"), SPEAR("spear"), RANGED("ranged"), PICKAXE("pickaxe"), AXE("axe"), SHOVEL("shovel"), HOE("hoe"), MACE("mace"), SHIELD("shield"), ARMOR("armor"), NONE("none");
         final String id;
         Category(String id) { this.id = id; }
     }

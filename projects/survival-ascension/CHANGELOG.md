@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.55.0-alpha.1
+- Added Minecraft 26.2 `minecraft:sulfur_caves` to the existing Deep expedition integration tag.
+- Kept Sulfur/Cinnabar as normal pickaxe-mineable terrain: Mining speed/XP/area applies, but they are not promoted into `valuable_ores` vein/extract semantics.
+- Added dedicated `ItemTags.SPEARS` Ascension Imprint/reforge/Mythic-awakening/salvage support while preserving normal spear acquisition by excluding Spear from generated elite base loot.
+- Preserved vanilla Jab/Charge authority; Combat Lv30+ adds only a real-forward-momentum narrow drive line behind the primary spear target.
+- Drive line is hostile-only, 0피해/0XP (zero-damage/zero-XP), Shift-suppressible and knockback-resistance-aware; base reach/targets scale 3.5/1 -> 4.5/2 -> 5.5/3 -> 6.5/4 -> Field Mastery 7.5/5.
+- Added Spear affixes `관통`/`돌파`/`숙련`/`대열`/`충압` with hard caps reach9.0, targets8 and push1.10.
+- Kept network protocol8 and added no SavedData, packet, custom spear/entity, force-load or background simulation.
+- Bumped content-preview lock to `0.55.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
 ## 0.54.0-alpha.1
 - Added `Mace Impact Ascension / 메이스 충격권 승천` using NeoForge common `c:tools/mace` for imprint/reforge/Mythic-awakening/salvage compatibility.
 - Deliberately kept Mace out of generated elite base loot so normal Trial Chamber/external acquisition is not bypassed.

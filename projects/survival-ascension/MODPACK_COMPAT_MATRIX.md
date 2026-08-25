@@ -44,7 +44,9 @@ TBS 0.7 바이너리 감사에서 추가 Modrinth 의존성은 없었고, 실제
 - Amethyst Resonance: locked 26.2 NeoForge 1.0.0 binary audit confirmed vanilla sword/pickaxe/axe/shovel/hoe tags. 0.46 adds the previously missing shovel imprint; Resonant Pickaxe class perks and the separate persistent Resonant armor DataComponent are preserved because Survival Ascension does not replace the item or clear unrelated components. Locked SHA-1 `a3ac49a6202b7918d2ed22030df0b6e2906cdec8`.
 - 외부 모드가 하나 빠져도 이 계층 자체는 로드된다. `biomesoplenty`, `tbos`, `amethyst_resonance` 구현 클래스에 대한 하드 의존은 두지 않는다.
 
-현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
+26.2 네이티브 경계도 같은 원칙으로 연결한다. `minecraft:sulfur_caves`는 심층권 원정에 들어가며 Sulfur/Cinnabar는 pickaxe-mineable 일반 지형으로 숙련을 받되 `valuable_ores` 광맥/추출로 승격하지 않는다. `minecraft:spears`는 전용 승천 각인 카테고리로 들어가고, 바닐라 Jab/Charge는 유지한 채 실제 전진 운동량이 있을 때만 0피해/0XP 돌파선 밀침을 추가한다.
+
+현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 스피어 운동량 돌파선 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP/26.2 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
 
 ## 2차 후보
 

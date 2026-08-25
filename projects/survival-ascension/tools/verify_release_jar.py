@@ -127,6 +127,18 @@ with zipfile.ZipFile(jar) as zf:
     if b"mace outer impact rings" not in main054:
         raise SystemExit("0.54 runtime banner missing mace outer impact rings")
 
+with zipfile.ZipFile(jar) as zf:
+    affix055 = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    combat055 = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    deep055 = zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json")
+    for token in [b"SPEARS", b"spearLineReachBonus", b"spearLineTargetBonus", b"spearLineKnockbackBonus"]:
+        if token not in affix055:
+            raise SystemExit(f"0.55 compiled spear-affix token missing: {token!r}")
+    for token in [b"trySpearDrive", b"getDeltaMovement", b"KNOCKBACK_RESISTANCE", b"setDeltaMovement"]:
+        if token not in combat055:
+            raise SystemExit(f"0.55 compiled spear-drive token missing: {token!r}")
+    if b"minecraft:sulfur_caves" not in deep055:
+        raise SystemExit("0.55 packaged Sulfur Caves Deep bridge missing")
 
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
@@ -141,3 +153,6 @@ print("shield_guard_wave_runtime=present")
 print("shield_guard_wave_release_verify=PASS")
 print("mace_outer_impact_runtime=present")
 print("mace_outer_impact_release_verify=PASS")
+print("sulfur_caves_deep_runtime=present")
+print("spear_drive_line_runtime=present")
+print("native_26_2_release_verify=PASS")

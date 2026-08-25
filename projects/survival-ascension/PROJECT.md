@@ -1,6 +1,6 @@
 # Survival Ascension
 
-- Mod version: `0.54.0-alpha.1`
+- Mod version: `0.55.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
@@ -9,6 +9,15 @@
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.55 Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
+- `minecraft:sulfur_caves` is part of the existing Deep expedition integration tag. Sulfur/Cinnabar remain ordinary pickaxe-mineable terrain rather than valuable-ore vein/extract targets.
+- `ItemTags.SPEARS` is a dedicated `SPEAR` imprint category and is intentionally absent from generated elite base loot.
+- Vanilla spear Jab/Charge mechanics remain untouched. Survival adds only a Combat Lv30+ momentum-gated narrow drive line behind a real direct spear target.
+- The drive line is zero-damage/zero-XP, hostile-only, Shift-suppressible, knockback-resistance-aware and capped at reach9.0 / targets8 / push1.10.
+- Base physical scale is Lv30 3.5/1, Lv60 4.5/2, Lv90 5.5/3, Lv100 6.5/4, Field Mastery 7.5/5 reach/targets.
+- Spear affixes: 관통 direct damage, 돌파 reach, 숙련 Combat XP, 대열 target count, 충압 push.
+- No new SavedData, packet/protocol, custom spear/entity, force-load or passive simulation.
 
 ## 0.54 Mace Impact Ascension / 메이스 충격권 승천
 - `c:tools/mace` is a standard-tag imprint category. Existing/external maces keep their original ItemStack/components and may use reforge/Mythic awakening/salvage.
