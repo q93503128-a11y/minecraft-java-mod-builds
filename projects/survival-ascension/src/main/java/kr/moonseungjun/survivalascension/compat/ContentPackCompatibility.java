@@ -40,6 +40,18 @@ public final class ContentPackCompatibility {
             Registries.ENTITY_TYPE,
             Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_major_targets")
     );
+    private static final TagKey<EntityType<?>> EXPEDITION_REINFORCEMENTS_TIER_0 = TagKey.create(
+            Registries.ENTITY_TYPE,
+            Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_reinforcements_tier_0")
+    );
+    private static final TagKey<EntityType<?>> EXPEDITION_REINFORCEMENTS_TIER_1 = TagKey.create(
+            Registries.ENTITY_TYPE,
+            Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_reinforcements_tier_1")
+    );
+    private static final TagKey<EntityType<?>> EXPEDITION_REINFORCEMENTS_TIER_2 = TagKey.create(
+            Registries.ENTITY_TYPE,
+            Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_reinforcements_tier_2")
+    );
     private static final Identifier TBS_ARCHIVISTS_JOURNAL = Identifier.fromNamespaceAndPath("tbos", "archivists_journal");
     private static final int TBS_JOURNAL_CHECK_DELAY_TICKS = 60;
     private static final Map<UUID, Long> TBS_JOURNAL_CHECK_READY = new HashMap<>();
@@ -135,6 +147,10 @@ public final class ContentPackCompatibility {
     public static void onServerStarted(ServerStartedEvent event) {
         refreshRegistryCensus();
         for (String line : censusLines()) SurvivalAscension.LOGGER.info("[content-census] {}", line);
+        for (int tier = 0; tier <= 2; tier++) {
+            SurvivalAscension.LOGGER.info("[content-census] expedition_reinforcement_tier_{}={}", tier,
+                    String.join(",", incidentReinforcementIds(tier)));
+        }
     }
 
     /** Human-readable runtime census for /ascension content and CI server-log auditing. */
@@ -153,6 +169,9 @@ public final class ContentPackCompatibility {
             lines.add("namespace=" + entry.namespace() + " affix_gear_ids=" + String.join(",", entry.affixGearIds()));
         }
         if (lines.isEmpty()) lines.add("no external combat/equipment registries detected");
+        for (int tier = 0; tier <= 2; tier++) {
+            lines.add("expedition_reinforcement_tier_" + tier + "=" + String.join(",", incidentReinforcementIds(tier)));
+        }
         return List.copyOf(lines);
     }
 
@@ -180,6 +199,37 @@ public final class ContentPackCompatibility {
             if (isStandardAffixGear(stack)) return stack;
         }
         return ItemStack.EMPTY;
+    }
+
+    /**
+     * Select one explicitly audited optional-content mob for a rare field ambush. IDs are owned by
+     * datapack tags, so removing the external mod leaves an empty pool instead of a linkage failure.
+     */
+    public static String randomIncidentReinforcementId(RandomSource random, int worldStage) {
+        List<String> pool = incidentReinforcementIds(worldStage);
+        return pool.isEmpty() ? null : pool.get(random.nextInt(pool.size()));
+    }
+
+    public static List<String> incidentReinforcementIds(int worldStage) {
+        TagKey<EntityType<?>> tag = reinforcementTag(worldStage);
+        List<String> ids = new ArrayList<>();
+        for (Identifier id : BuiltInRegistries.ENTITY_TYPE.keySet()) {
+            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(id);
+            if (type == null || type.getCategory() != MobCategory.MONSTER) continue;
+            if (!type.builtInRegistryHolder().is(tag)) continue;
+            if (!isConservativeIncidentCandidate(id, type)) continue;
+            ids.add(id.toString());
+        }
+        ids.sort(String::compareTo);
+        return List.copyOf(ids);
+    }
+
+    private static TagKey<EntityType<?>> reinforcementTag(int worldStage) {
+        return switch (Math.max(0, Math.min(2, worldStage))) {
+            case 0 -> EXPEDITION_REINFORCEMENTS_TIER_0;
+            case 1 -> EXPEDITION_REINFORCEMENTS_TIER_1;
+            default -> EXPEDITION_REINFORCEMENTS_TIER_2;
+        };
     }
 
     private static boolean isConservativeIncidentCandidate(Identifier id, EntityType<?> type) {
