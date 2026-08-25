@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 /**
@@ -31,7 +33,7 @@ import java.util.UUID;
  *
  * External implementation classes are never referenced here. Registry IDs, vanilla/NeoForge tags,
  * and Survival-owned data tags are the only contracts. This keeps the standalone JAR loadable while
- * allowing the locked pack to be audited and used when those mods are actually present.
+ * allowing any compatible locked content to be audited and used without a Java dependency on it.
  */
 public final class ContentPackCompatibility {
     private static final TagKey<EntityType<?>> EXPEDITION_MAJOR_TARGETS = TagKey.create(
@@ -40,7 +42,6 @@ public final class ContentPackCompatibility {
     );
     private static final Identifier TBS_ARCHIVISTS_JOURNAL = Identifier.fromNamespaceAndPath("tbos", "archivists_journal");
     private static final int TBS_JOURNAL_CHECK_DELAY_TICKS = 60;
-    private static final List<String> PACK_NAMESPACES = List.of("tbos", "amethyst_resonance");
     private static final Map<UUID, Long> TBS_JOURNAL_CHECK_READY = new HashMap<>();
     private static volatile Map<String, NamespaceCensus> CENSUS = Map.of();
     private static volatile Map<String, List<Identifier>> AFFIX_GEAR_IDS = Map.of();
@@ -61,14 +62,14 @@ public final class ContentPackCompatibility {
     }
 
     /**
-     * Scan the actually loaded registries after datapacks/tags are ready. The resulting numbers are
-     * authoritative for the exact locked runtime used by the server, rather than estimates from mod pages.
+     * Scan the actually loaded registries after datapacks/tags are ready. Namespaces are discovered
+     * from the registries themselves rather than being hard-coded optional-mod dependencies.
      */
     public static synchronized void refreshRegistryCensus() {
         Map<String, NamespaceCensus> census = new LinkedHashMap<>();
         Map<String, List<Identifier>> gearByNamespace = new LinkedHashMap<>();
 
-        for (String namespace : PACK_NAMESPACES) {
+        for (String namespace : discoveredExternalNamespaces()) {
             List<String> entityIds = new ArrayList<>();
             List<String> monsterIds = new ArrayList<>();
             List<String> incidentCandidateIds = new ArrayList<>();
@@ -101,6 +102,9 @@ public final class ContentPackCompatibility {
             itemIds.sort(String::compareTo);
             gearIds.sort(String::compareTo);
             gearRegistryIds.sort((a, b) -> a.toString().compareTo(b.toString()));
+
+            // Keep the report focused on gameplay content rather than pure API/library namespaces.
+            if (monsterIds.isEmpty() && gearIds.isEmpty()) continue;
             gearByNamespace.put(namespace, List.copyOf(gearRegistryIds));
             census.put(namespace, new NamespaceCensus(
                     namespace,
@@ -119,6 +123,15 @@ public final class ContentPackCompatibility {
         AFFIX_GEAR_IDS = Map.copyOf(gearByNamespace);
     }
 
+    private static Set<String> discoveredExternalNamespaces() {
+        Set<String> namespaces = new TreeSet<>();
+        for (Identifier id : BuiltInRegistries.ENTITY_TYPE.keySet()) namespaces.add(id.getNamespace());
+        for (Identifier id : BuiltInRegistries.ITEM.keySet()) namespaces.add(id.getNamespace());
+        namespaces.remove("minecraft");
+        namespaces.remove(SurvivalAscension.MOD_ID);
+        return namespaces;
+    }
+
     public static void onServerStarted(ServerStartedEvent event) {
         refreshRegistryCensus();
         for (String line : censusLines()) SurvivalAscension.LOGGER.info("[content-census] {}", line);
@@ -128,9 +141,7 @@ public final class ContentPackCompatibility {
     public static List<String> censusLines() {
         if (CENSUS.isEmpty()) refreshRegistryCensus();
         List<String> lines = new ArrayList<>();
-        for (String namespace : PACK_NAMESPACES) {
-            NamespaceCensus entry = CENSUS.get(namespace);
-            if (entry == null) continue;
+        for (NamespaceCensus entry : CENSUS.values().stream().sorted((a, b) -> a.namespace().compareTo(b.namespace())).toList()) {
             lines.add("namespace=" + entry.namespace()
                     + " loaded=" + entry.loaded()
                     + " entities=" + entry.entityTypes()
@@ -141,19 +152,23 @@ public final class ContentPackCompatibility {
             lines.add("namespace=" + entry.namespace() + " incident_candidate_ids=" + String.join(",", entry.incidentCandidateIds()));
             lines.add("namespace=" + entry.namespace() + " affix_gear_ids=" + String.join(",", entry.affixGearIds()));
         }
+        if (lines.isEmpty()) lines.add("no external combat/equipment registries detected");
         return List.copyOf(lines);
     }
 
     /**
-     * Returns a real content-pack equipment base for high-rank elite bonus drops. Rank 2 prefers the
-     * controlled Amethyst Resonance tier; rank 3 may draw from every compatible locked namespace.
+     * Returns a real content-pack equipment base for high-rank elite bonus drops. Rank 2 avoids the
+     * story-heavy TBS namespace; rank 3 may draw from every compatible external equipment namespace.
      */
     public static ItemStack randomAffixGear(RandomSource random, int eliteRank) {
         if (AFFIX_GEAR_IDS.isEmpty()) refreshRegistryCensus();
         List<Identifier> pool = new ArrayList<>();
-        if (eliteRank <= 2) pool.addAll(AFFIX_GEAR_IDS.getOrDefault("amethyst_resonance", List.of()));
-        if (eliteRank >= 3 || pool.isEmpty()) {
-            for (String namespace : PACK_NAMESPACES) pool.addAll(AFFIX_GEAR_IDS.getOrDefault(namespace, List.of()));
+        for (Map.Entry<String, List<Identifier>> entry : AFFIX_GEAR_IDS.entrySet()) {
+            if (eliteRank <= 2 && "tbos".equals(entry.getKey())) continue;
+            pool.addAll(entry.getValue());
+        }
+        if (pool.isEmpty() && eliteRank >= 3) {
+            for (List<Identifier> ids : AFFIX_GEAR_IDS.values()) pool.addAll(ids);
         }
         if (pool.isEmpty()) return ItemStack.EMPTY;
         int start = random.nextInt(pool.size());
