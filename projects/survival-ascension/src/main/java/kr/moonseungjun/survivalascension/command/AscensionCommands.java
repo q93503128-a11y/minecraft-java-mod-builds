@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import kr.moonseungjun.survivalascension.apex.ApexHuntData;
+import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
@@ -29,6 +30,7 @@ public final class AscensionCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("ascension")
                 .then(Commands.literal("stats").executes(context -> showStats(context.getSource().getPlayerOrException())))
+                .then(Commands.literal("content").executes(context -> showContent(context.getSource().getPlayerOrException())))
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING))
@@ -44,6 +46,17 @@ public final class AscensionCommands {
                         .then(Commands.argument("level", IntegerArgumentType.integer(0, SkillTuning.MAX_LEVEL))
                                 .executes(context -> setLevel(context.getSource().getPlayerOrException(), skill,
                                         IntegerArgumentType.getInteger(context, "level")))));
+    }
+
+    private static int showContent(ServerPlayer player) {
+        ContentPackCompatibility.refreshRegistryCensus();
+        player.sendSystemMessage(Component.literal("§b[Survival Ascension] §f현재 서버에 실제 로드된 콘텐츠 레지스트리"));
+        for (String line : ContentPackCompatibility.censusLines()) {
+            if (line.contains("_ids=")) player.sendSystemMessage(Component.literal("§8" + line));
+            else player.sendSystemMessage(Component.literal("§f" + line));
+        }
+        player.sendSystemMessage(Component.literal("§7conservative_incident_candidates는 보스/주요목표/스크립트성 ID를 제외한 1차 안전 후보이며 자동 스폰 허용 목록은 아닙니다."));
+        return 1;
     }
 
     private static int showStats(ServerPlayer player) {
