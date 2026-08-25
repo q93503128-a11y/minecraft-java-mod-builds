@@ -1,0 +1,2 @@
+baseline content-pack assertion: hard optional-mod dependency leaked into compatibility seam: tbos
+RELEASE CONTENT-PACK AUDIT FAIL: baseline regression contract failed
