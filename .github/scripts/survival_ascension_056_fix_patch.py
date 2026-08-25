@@ -3,6 +3,7 @@ from pathlib import Path
 fix_path = Path(__file__)
 patch_path = fix_path.with_name("survival_ascension_056_patch.py")
 text = patch_path.read_text(encoding="utf-8")
+
 old = "from textwrap import dedent\n"
 new = '''from textwrap import dedent as _textwrap_dedent
 
@@ -14,7 +15,30 @@ def dedent(text: str) -> str:
 if text.count(old) != 1:
     raise SystemExit(f"expected one dedent import, got {text.count(old)}")
 text = text.replace(old, new, 1)
+
+old_player = '''        ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer ? sourcePlayer : null;
+        if (player == null && rangedShot && event.getEntity().level() instanceof ServerLevel hitLevel) {
+            player = AscensionAffixes.rangedProjectileOwner(direct, hitLevel);
+        }
+        if (player == null || event.getEntity() == player || event.getAmount() <= 0.0F) return;
+'''
+new_player = '''        ServerPlayer directSourcePlayer = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer ? sourcePlayer : null;
+        ServerPlayer player = directSourcePlayer != null ? directSourcePlayer
+                : rangedShot && event.getEntity().level() instanceof ServerLevel hitLevel
+                ? AscensionAffixes.rangedProjectileOwner(direct, hitLevel) : null;
+        if (player == null || event.getEntity() == player || event.getAmount() <= 0.0F) return;
+'''
+if text.count(old_player) != 1:
+    raise SystemExit(f"expected one mutable incoming-damage player block, got {text.count(old_player)}")
+text = text.replace(old_player, new_player, 1)
+
+old_audit = '"player = AscensionAffixes.rangedProjectileOwner(direct, hitLevel)",'
+new_audit = '"AscensionAffixes.rangedProjectileOwner(direct, hitLevel)",'
+if text.count(old_audit) != 1:
+    raise SystemExit(f"expected one incoming-damage audit token, got {text.count(old_audit)}")
+text = text.replace(old_audit, new_audit, 1)
+
 compile(text, str(patch_path), "exec")
 patch_path.write_text(text, encoding="utf-8")
 fix_path.unlink()
-print("0.56 staging Java anchor indentation repaired; fixer self-removed")
+print("0.56 staging anchors/effectively-final attribution repaired; fixer self-removed")
