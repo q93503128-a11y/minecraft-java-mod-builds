@@ -37,6 +37,13 @@ if screen.count(old_shift) != 1:
     raise RuntimeError(f"Construction radial Shift anchor drifted: {screen.count(old_shift)}")
 screen_path.write_text(screen.replace(old_shift, new_shift, 1), encoding="utf-8")
 
+# Keep the release audit aligned with the actual 26.2 input API rather than the removed Screen helper.
+release_audit_path = project / "tools/test_release_source.py"
+release_audit = release_audit_path.read_text(encoding="utf-8")
+if release_audit.count('"hasShiftDown()"') != 1:
+    raise RuntimeError(f"release Shift audit anchor drifted: {release_audit.count(chr(34) + 'hasShiftDown()' + chr(34))}")
+release_audit_path.write_text(release_audit.replace('"hasShiftDown()"', '"player.isShiftKeyDown()"', 1), encoding="utf-8")
+
 # The original 0.58 patch had to disambiguate identical AMBUSH branches. Normalize the generated
 # file and place the perimeter tick only in tickActive, where 'now' is defined and the deadline
 # has already been checked.
