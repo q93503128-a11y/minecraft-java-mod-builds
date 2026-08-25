@@ -22,7 +22,8 @@ must(outpost,(
     'if (outpost == null || !assignmentEvidenceLoaded(level, data, outpost)',
 ),'alpha.67 transporter assignment evidence')
 # The exact entity lookup envelope must remain the evidence envelope source; otherwise absence can drift again.
-if outpost.count('routeBounds(data, outpost, route)') < 4:
+# Expected shared calls: assigned lookup + legacy lookup + assignment-evidence proof.
+if outpost.count('routeBounds(data, outpost, route)') < 3:
     raise SystemExit('alpha.67 routeBounds no longer shared by lookup/evidence')
 # Population reconciliation consumes allRoutesLoaded; that method must now be assignment-evidence strong.
 all_routes=outpost[outpost.index('public static boolean allRoutesLoaded'):outpost.index('public static OutpostRecord firstMissingLoadedAssignment')]
