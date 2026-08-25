@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "profile": "client",
+  "target": {
+    "minecraft": "26.2",
+    "loader": "neoforge",
+    "neoforge": "26.2.0.38-beta",
+    "frontier_settlement": "0.1.0-alpha.73"
+  },
+  "lock_status": "candidate_runtime_lock",
+  "files": [
+    {
+      "id": "terralith",
+      "name": "Terralith",
+      "side": "server_worldgen",
+      "source": "modrinth",
+      "version": "2.6.4",
+      "filename": "Terralith_26.2_v2.6.4_Neoforge.jar",
+      "url": "https://cdn.modrinth.com/data/8oi3bsk5/versions/lqrGyTjO/Terralith_26.2_v2.6.4_Neoforge.jar",
+      "sha256": "a9339c82a77a15cac5ba8d7b53b34332b73242f5579e6a33ce31b528f0c18666",
+      "sha512": "b66ade8d34cb61af8174eac4af9905d741a456fdd4c32f1674d106a47094ae560cd9652cf4904ebff591c931134dc3d307fbfa0904503d202e1048289b6f8d3b",
+      "sha1": "23231002eac964fec4939dcde30c976d906d7c9f"
+    },
+    {
+      "id": "lithostitched",
+      "name": "Lithostitched",
+      "side": "server_worldgen_library",
+      "source": "modrinth",
+      "version": "1.7.13-neoforge-26.2",
+      "filename": "lithostitched-1.7.13-neoforge-26.2.jar",
+      "url": "https://cdn.modrinth.com/data/XaDC71GB/versions/6MLzMiOP/lithostitched-1.7.13-neoforge-26.2.jar",
+      "sha256": "9bc7ac09e96d97ba47957043aae303c76f5ec68ab726e2a75de1423528bf36d4",
+      "sha512": "1d5ed9f50fc4eccda348c90602444c8bc81bf53a14dfeac0ff305ac973e7dcaf0fcb843f33b10c7ee7828115004f7890efed54ff57449490002f726ba3c4ed11",
+      "sha1": "51bce99e7fab0c66d99d672aa2847ff8773d9de5"
+    },
+    {
+      "id": "dungeons_and_taverns",
+      "name": "Dungeons and Taverns",
+      "side": "server_worldgen",
+      "source": "curseforge",
+      "version": "5.3.0",
+      "filename": "dungeons-and-taverns-5.3.0 [NeoForge].jar",
+      "url": "https://edge.forgecdn.net/files/8262/693/dungeons-and-taverns-5.3.0%20%5BNeoForge%5D.jar",
+      "sha256": "2ca47414352ef2fbbbdb61af678e2a0bc3facb6093262f4caac43e35e8022d9b",
+      "sha512": "c4b6e6e5be6fa77f9d12d584a10fd541377a75ec926aba12e55d360518425aadf8832e1e9eb5a774a7388bd340879ab79ddd115b9e5263e6f44d23c021f9a111",
+      "sha1": "64e6b6e2b3fdb948d49cdc7aea23c1b693fd5156"
+    },
+    {
+      "id": "repurposed_structures",
+      "name": "Repurposed Structures",
+      "side": "server_worldgen",
+      "source": "modrinth",
+      "version": "7.7.5+26.2-neoforge",
+      "filename": "repurposed_structures-7.7.5+26.2-neoforge.jar",
+      "url": "https://cdn.modrinth.com/data/QDNS5oAT/versions/wfwxYEm3/repurposed_structures-7.7.5%2B26.2-neoforge.jar",
+      "sha256": "5a0e27d1c6e943927a96f2629aa3be1103801658de28800482a86cc4b6cf360a",
+      "sha512": "b6f57986097beee3a17982d4a802437aa181a775480486a0c5f3663a725dec1759c8a860df240a16efb2c935ed242f80437c58ca568c2bc0c799211b91fc785a",
+      "sha1": "4afce789a0ce6c6541d6b73984e29fbf82358dd5"
+    },
+    {
+      "id": "better_combat",
+      "name": "Better Combat",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "3.2.2+26.2-neoforge",
+      "filename": "bettercombat-neoforge-3.2.2+26.2.jar",
+      "url": "https://cdn.modrinth.com/data/5sy6g3kz/versions/5mMhM6lS/bettercombat-neoforge-3.2.2%2B26.2.jar",
+      "sha256": "a8870c12e50c33735421e1c88df7b3a74e60fae9a8b9be477c11591e9fec3315",
+      "sha512": "6770d417dbf459126e8d9bb76b8ecf706f1823a25cdba04e32794813af72c694d4692213b460c2a69f3203e851befa9ae49d75de93234d3672a13d1cc4c920c5",
+      "sha1": "ebe34e007a8308a0bf13332e8e75492012db965a"
+    },
+    {
+      "id": "cloth_config",
+      "name": "Cloth Config API",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "version": "26.2.155+neoforge",
+      "filename": "cloth-config-26.2.155.jar",
+      "url": "https://cdn.modrinth.com/data/9s6osm5g/versions/zErG1kOw/cloth-config-26.2.155.jar",
+      "sha256": "650cdc79fcb3332dd08d75634443b93b012dba49b748359a4a97f0975bc55c31",
+      "sha512": "3f7ea8108d8c0463764e419f3fe7d4d7f586b6fb7d2578de85f709b70d59587060a07c0fe02d5b79ed37e74850dd088caace40f8baefb4402df8139d076dc662",
+      "sha1": "6ea13f34b0fcdcc9299b766efa199dcc7cb73878"
+    },
+    {
+      "id": "player_animation_library",
+      "name": "Player Animation Library",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "version": "1.2.5+26.2",
+      "filename": "PlayerAnimationLibMerged-1.2.5+mc.26.2.jar",
+      "url": "https://cdn.modrinth.com/data/ha1mEyJS/versions/OQqtEQC6/PlayerAnimationLibMerged-1.2.5%2Bmc.26.2.jar",
+      "sha256": "67f08c8d383d8982c53d6c99e0e0dd6bec5e2f47bd4ed210ab034583787960bf",
+      "sha512": "a4d175231846cac75381a71a9c4d7a3912251f7b46933ec036f173b48b3bcc9c56134f11cb1b909ce92936e8722eef3991815227b6b7d803b4ea3043a13632a8",
+      "sha1": "6eed178a0e48a32d055253f9953843e78c843d52"
+    },
+    {
+      "id": "weapons_expanded",
+      "name": "Weapons Expanded",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "1.9.3",
+      "filename": "weaponsexpanded_26.2_1.9.3_neoforge.jar",
+      "url": "https://cdn.modrinth.com/data/8pBLL0kb/versions/hrnymhP0/weaponsexpanded_26.2_1.9.3_neoforge.jar",
+      "sha256": "9b4532ef221b93c9d2eafa7c730266918c82fb8a61f60ce9fdcf107d36828cf8",
+      "sha512": "679b87feb53937d1e945b53ece342cea56c8c70813ab56b5955f18e5444ad330129fa96594f24ded04ef0d84cfec4777d61662a8ce05df08b0b5952152bf556e",
+      "sha1": "d0cbd2855c59a3e13e02fad78ba61111ea3fe07c"
+    },
+    {
+      "id": "lootr",
+      "name": "Lootr",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "1.24.39.121",
+      "filename": "lootr-neoforge-26.2-1.24.39.121.jar",
+      "url": "https://cdn.modrinth.com/data/EltpO5cN/versions/mWjELssH/lootr-neoforge-26.2-1.24.39.121.jar",
+      "sha256": "ddaf5c15913a88796c6530c19fee12d1d3a60e8233661185463d3c7e2caebce6",
+      "sha512": "54a8124a2b7cc50902e2c90d1f65c3ba4a644ce06b68043a946da09126a6ff6b6a260143c780a4568484d4eaba9251d837841e589c30d4e4e3f7f38b0967a7de",
+      "sha1": "d797de96918530a73bcc9dbdcd9df8c975678e53"
+    },
+    {
+      "id": "sophisticated_backpacks",
+      "name": "Sophisticated Backpacks",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "26.2-3.25.88.2065",
+      "filename": "sophisticatedbackpacks-26.2-3.25.88.2065.jar",
+      "url": "https://cdn.modrinth.com/data/TyCTlI4b/versions/kdqsadAt/sophisticatedbackpacks-26.2-3.25.88.2065.jar",
+      "sha256": "0e20209a2ba409f6649b20563d28cca0e5515714706f74d284321c667e5fba7e",
+      "sha512": "3b699d72838dee22d903fda3516c70c3f019435cd17ff9069b21564c9f10fbed08cc60d08dec3b4c7157c0a95ce0ffb5a00efb79908463342ca923688972679d",
+      "sha1": "c1fb72cd4e0754fb0a57decdff12fcf43782c698"
+    },
+    {
+      "id": "sophisticated_core",
+      "name": "Sophisticated Core",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "version": "26.2-1.4.92.2207",
+      "filename": "sophisticatedcore-26.2-1.4.92.2207.jar",
+      "url": "https://cdn.modrinth.com/data/nmoqTijg/versions/lXohixCg/sophisticatedcore-26.2-1.4.92.2207.jar",
+      "sha256": "c333fef7edc7977b6fb4027815fc20e88b756540b7fa1921c0fb31f122e66d1c",
+      "sha512": "91a3058d3a27b58c60684523f40f6dbd53d0d03c694d7f9f3490c49621b96672d9fa3ede9498e0fd4da3a17af48c7b3a1d76f878d7fd93db5bff74792c62df57",
+      "sha1": "f3c424d6ee23874e8b7627d1ef166e879d2fda84"
+    },
+    {
+      "id": "jade",
+      "name": "Jade",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "26.2.2+neoforge",
+      "filename": "Jade-mc26.2-NeoForge-26.2.2.jar",
+      "url": "https://cdn.modrinth.com/data/nvQzSEkH/versions/HLYMycSr/Jade-mc26.2-NeoForge-26.2.2.jar",
+      "sha256": "e4ece7e1959abef2f4dea11f09d0de2098620283bef992369dd66ccd32d39337",
+      "sha512": "81410fa081759e53360646e59261ed6d5136be83e17903f2e33efab99dbe6203b0b21206bad8c61f85fb26a4518f80ba92162d18f945b05edaf5ea962885c2a6",
+      "sha1": "1030debb4c9bb4c5812caaacb932d1a9ea29cc85"
+    },
+    {
+      "id": "xaeros_minimap",
+      "name": "Xaero's Minimap",
+      "side": "client_preferred",
+      "source": "modrinth",
+      "version": "26.4.2",
+      "filename": "xaerominimap-neoforge-26.2-26.4.2.jar",
+      "url": "https://cdn.modrinth.com/data/1bokaNcj/versions/IqOn6XCo/xaerominimap-neoforge-26.2-26.4.2.jar",
+      "sha256": "a152682af3b576e78cc80913060f6cebaf86158a7690580671e45c0e96e8cce7",
+      "sha512": "62c9515cac9019e1ce85c6e21f316d8395d745dfef23e22a0236c14fe1a3afb8c169d4d5778d5e4b6b03a0aeb03d46797e6dc69d63afcf4a3ce59f1aa28f605a",
+      "sha1": "fb81715a33cb53b80e9de01fc5333578f7f63b49"
+    }
+  ],
+  "resolution": {
+    "verified": true,
+    "source_sha": "e210d98371d2fcfb93d2a103c6b0072095f6a074",
+    "note": "Official third-party binaries were downloaded and hash-verified by CI; binaries are not redistributed in this repository."
+  }
+}
