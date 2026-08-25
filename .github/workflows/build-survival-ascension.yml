@@ -35,14 +35,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 .github/scripts/survival_ascension_055_fix_patch.py
           python3 .github/scripts/survival_ascension_055_patch.py
           rm -f projects/survival-ascension/.alpha55-trigger
           rm -f .github/workflows/survival-ascension-055-one-shot.yml
           rm -f .github/scripts/survival_ascension_055_patch.py
+          rm -f .github/scripts/survival_ascension_055_fix_patch.py
           git show "$GITHUB_SHA^:.github/workflows/build-survival-ascension.yml" > .github/workflows/build-survival-ascension.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/survival-ascension .github/workflows/build-survival-ascension.yml .github/workflows/survival-ascension-055-one-shot.yml .github/scripts/survival_ascension_055_patch.py
+          git add -A projects/survival-ascension .github/workflows/build-survival-ascension.yml .github/workflows/survival-ascension-055-one-shot.yml .github/scripts/survival_ascension_055_patch.py .github/scripts/survival_ascension_055_fix_patch.py
           git commit -m 'Release Survival Ascension 0.55 native spear and sulfur integration'
           published=0
           for attempt in 1 2 3 4 5 6; do
