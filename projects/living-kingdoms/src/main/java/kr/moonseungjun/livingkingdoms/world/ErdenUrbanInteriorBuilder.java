@@ -70,6 +70,10 @@ public final class ErdenUrbanInteriorBuilder {
                     "Completed Erden functional urban interiors plots={} fixture_families={} source_authored_ground=233 synthetic_room_carving=0 source_blocks_cut=0 clear_authored_routes=true revision={}",
                     complete, SUPPORTED_ROLES.size(), INTERIOR_REVISION);
         }
+
+        // Final player entry is retried only after this tick has had a chance to materialize the
+        // real authored tenement interior. A loading screen may never close on a synthetic fallback.
+        LivingRealmWorldManager.onServerTick(event);
     }
 
     public static int fixtureFamilyCount() {
