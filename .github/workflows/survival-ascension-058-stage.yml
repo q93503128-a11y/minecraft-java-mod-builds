@@ -1,5 +1,5 @@
 name: Stage Survival Ascension 0.58
-# retry after Java 26.2 input/perimeter compatibility fixes
+# retry after Java 26.2 Shift-input audit alignment
 
 on:
   push:
