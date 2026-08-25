@@ -36,10 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           echo patch > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
-          python3 -m py_compile .github/scripts/survival_ascension_058_patch_hotfix.py
-          python3 .github/scripts/survival_ascension_058_patch_hotfix.py
-          python3 -m py_compile .github/scripts/survival_ascension_058_patch.py
-          python3 .github/scripts/survival_ascension_058_patch.py
+          python3 -m py_compile .github/scripts/survival_ascension_058_patch.py .github/scripts/survival_ascension_058_patch_runner.py
+          python3 .github/scripts/survival_ascension_058_patch_runner.py
           git diff --check
 
       - name: Source and content-pack audits
