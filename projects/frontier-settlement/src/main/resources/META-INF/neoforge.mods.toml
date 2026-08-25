@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+
+[[mods]]
+modId="frontier_settlement"
+version="${file.jarVersion}"
+displayName="Frontier Settlement"
+authors="MoonStudio"
+description='''Shared survival settlement growth with physical construction, logistics, citizens, outposts, territory and exploration feedback.'''
+
+[features.frontier_settlement]
+javaVersion="[25,)"
+
+[[dependencies.frontier_settlement]]
+modId="neoforge"
+type="required"
+versionRange="[26.2.0.38-beta,26.3.0)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.frontier_settlement]]
+modId="minecraft"
+type="required"
+versionRange="[26.2,26.3)"
+ordering="NONE"
+side="BOTH"
