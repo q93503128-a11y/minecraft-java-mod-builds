@@ -7,7 +7,7 @@ on:
       - '.github/workflows/frontier-full-audit-snapshot.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   snapshot:
@@ -34,3 +34,16 @@ jobs:
             frontier-java-inventory.txt
           if-no-files-found: error
           retention-days: 1
+      - name: Record snapshot run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git reset --hard origin/main
+          mkdir -p ci-results/frontier-full-audit-snapshot
+          printf 'run_id=%s\nsource_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > ci-results/frontier-full-audit-snapshot/run_id.txt
+          git add ci-results/frontier-full-audit-snapshot/run_id.txt
+          git commit -m "Record Frontier full-audit snapshot run $GITHUB_RUN_ID [skip ci]"
+          git push origin HEAD:main
