@@ -1,0 +1,129 @@
+name: Resolve Frontier Companion Stack
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/frontier-settlement/COMPANION_LOCK.json'
+      - 'projects/frontier-settlement/companion-testpack/install.py'
+      - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
+      - '.github/workflows/frontier-companion-resolve.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-companion-resolve-main
+  cancel-in-progress: true
+
+env:
+  PROJECT_DIR: projects/frontier-settlement
+  PACK_DIR: projects/frontier-settlement/companion-testpack
+
+jobs:
+  resolve:
+    name: Resolve locked client/server companion binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Resolve client stack
+        run: |
+          set -euo pipefail
+          python3 "$PACK_DIR/install.py" --profile client --output /tmp/frontier-companion-client --resolve-only
+
+      - name: Resolve server stack
+        run: |
+          set -euo pipefail
+          python3 "$PACK_DIR/install.py" --profile server --output /tmp/frontier-companion-server --resolve-only
+
+      - name: Validate and stage resolved hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          project = Path('projects/frontier-settlement')
+          pack = project / 'companion-testpack'
+          lock = json.loads((project / 'COMPANION_LOCK.json').read_text(encoding='utf-8'))
+          client = json.loads(Path('/tmp/frontier-companion-client/resolved-lock.json').read_text(encoding='utf-8'))
+          server = json.loads(Path('/tmp/frontier-companion-server/resolved-lock.json').read_text(encoding='utf-8'))
+
+          required = [e for e in lock['entries'] if e.get('required')]
+          expected_client = {e['id'] for e in required}
+          expected_server = {e['id'] for e in required if e.get('side') != 'client_preferred'}
+          client_ids = {f['id'] for f in client['files']}
+          server_ids = {f['id'] for f in server['files']}
+          if client_ids != expected_client:
+              raise SystemExit(f'client resolved set mismatch: expected={sorted(expected_client)} got={sorted(client_ids)}')
+          if server_ids != expected_server:
+              raise SystemExit(f'server resolved set mismatch: expected={sorted(expected_server)} got={sorted(server_ids)}')
+          if len(client['files']) != 13:
+              raise SystemExit(f'expected 13 required client companions, got {len(client["files"])}')
+
+          server_by_id = {f['id']: f for f in server['files']}
+          for f in client['files']:
+              if f['id'] in server_by_id:
+                  other = server_by_id[f['id']]
+                  for key in ('version', 'filename', 'sha256', 'sha512', 'sha1'):
+                      if f[key] != other[key]:
+                          raise SystemExit(f'{f["id"]}: client/server {key} mismatch')
+              for key in ('sha256', 'sha512', 'sha1'):
+                  value = f.get(key, '')
+                  if not value or any(c not in '0123456789abcdef' for c in value.lower()):
+                      raise SystemExit(f'{f["id"]}: invalid {key}')
+
+          client['resolution'] = {
+              'verified': True,
+              'source_sha': '${{ github.sha }}',
+              'note': 'Official third-party binaries were downloaded and hash-verified by CI; binaries are not redistributed in this repository.'
+          }
+          server['resolution'] = {
+              'verified': True,
+              'source_sha': '${{ github.sha }}',
+              'note': 'Official third-party binaries were downloaded and hash-verified by CI; client-preferred entries are omitted from the server profile.'
+          }
+          (pack / 'resolved-lock.client.json').write_text(json.dumps(client, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          (pack / 'resolved-lock.server.json').write_text(json.dumps(server, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Upload resolved manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-companion-resolved-locks
+          path: |
+            projects/frontier-settlement/companion-testpack/resolved-lock.client.json
+            projects/frontier-settlement/companion-testpack/resolved-lock.server.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record verified resolved manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PACK_DIR/resolved-lock.client.json" "$PACK_DIR/resolved-lock.server.json"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record Frontier companion resolved binary hashes for ${GITHUB_SHA::7} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
