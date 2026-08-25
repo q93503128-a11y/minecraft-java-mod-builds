@@ -1,0 +1,302 @@
+name: Frontier Companion Fresh-World Server Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/frontier-settlement/src/main/**'
+      - 'projects/frontier-settlement/gradle.properties'
+      - 'projects/frontier-settlement/COMPANION_LOCK.json'
+      - 'projects/frontier-settlement/companion-testpack/install.py'
+      - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
+      - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'
+      - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
+      - 'projects/frontier-settlement/tools/verify_jar.py'
+      - '.github/workflows/frontier-companion-fresh-world-smoke.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-companion-fresh-world-server-main
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: projects/frontier-settlement
+  NEOFORGE_VERSION: 26.2.0.38-beta
+
+jobs:
+  fresh-world:
+    name: Generate and cleanly stop a fresh expanded-stack world
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Verify expanded companion manifests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          python3 tools/test_companion_testpack.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          pack = Path('companion-testpack')
+          client = json.loads((pack / 'resolved-lock.client.json').read_text(encoding='utf-8'))
+          server = json.loads((pack / 'resolved-lock.server.json').read_text(encoding='utf-8'))
+          if len(client.get('files', [])) != 16 or not client.get('resolution', {}).get('verified'):
+              raise SystemExit('expanded client lock is not verified at 16 entries')
+          if len(server.get('files', [])) != 15 or not server.get('resolution', {}).get('verified'):
+              raise SystemExit('expanded server lock is not verified at 15 entries')
+          if client['resolution'].get('source_sha') != server['resolution'].get('source_sha'):
+              raise SystemExit('client/server resolution source SHA mismatch')
+          print('Expanded companion resolution gate: PASS')
+          PY
+
+      - name: Build and verify Frontier Alpha.73
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          python3 tools/test_alpha73_source.py
+          python3 tools/test_alpha73_docs.py
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.73.jar
+          unzip -p build/libs/frontier_settlement-0.1.0-alpha.73.jar META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
+          grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
+          grep -F 'version="0.1.0-alpha.73"' "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
+
+      - name: Assemble exact expanded server payload
+        run: |
+          set -euo pipefail
+          python3 "$PROJECT_DIR/companion-testpack/install.py" \
+            --profile server \
+            --output /tmp/frontier-companion-fresh-world-payload \
+            --frontier-jar "$PROJECT_DIR/build/libs/frontier_settlement-0.1.0-alpha.73.jar"
+          count="$(find /tmp/frontier-companion-fresh-world-payload/mods -maxdepth 1 -type f -name '*.jar' | wc -l)"
+          test "$count" -eq 16
+          find /tmp/frontier-companion-fresh-world-payload/mods -maxdepth 1 -type f -name '*.jar' -printf '%f\n' | sort | tee "$GITHUB_WORKSPACE/frontier-fresh-world-mods.txt"
+
+      - name: Install exact NeoForge dedicated server
+        run: |
+          set -euo pipefail
+          installer="neoforge-${NEOFORGE_VERSION}-installer.jar"
+          base="https://maven.neoforged.net/releases/net/neoforged/neoforge/${NEOFORGE_VERSION}"
+          curl -fsSLo "$installer" "$base/$installer"
+          curl -fsSLo "$installer.sha256" "$base/$installer.sha256"
+          expected="$(tr -d '\r\n ' < "$installer.sha256")"
+          actual="$(sha256sum "$installer" | awk '{print $1}')"
+          test "$actual" = "$expected"
+          rm -rf /tmp/frontier-neoforge-fresh-world
+          mkdir -p /tmp/frontier-neoforge-fresh-world
+          cp "$installer" /tmp/frontier-neoforge-fresh-world/
+          cd /tmp/frontier-neoforge-fresh-world
+          java -jar "$installer" --installServer
+          test -f run.sh
+          chmod +x run.sh
+          mkdir -p mods
+          cp /tmp/frontier-companion-fresh-world-payload/mods/*.jar mods/
+          test "$(find mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 16
+          printf 'eula=true\n' > eula.txt
+          cat > server.properties <<'EOF'
+          level-name=world
+          online-mode=false
+          enable-command-block=false
+          allow-flight=false
+          view-distance=6
+          simulation-distance=5
+          max-players=2
+          motd=Frontier companion CI fresh-world smoke
+          EOF
+
+      - name: Generate fresh world and stop cleanly
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/frontier-neoforge-fresh-world
+          export FRESH_WORLD_LOG="$GITHUB_WORKSPACE/frontier-companion-fresh-world.log"
+          python3 - <<'PY'
+          import os
+          import queue
+          import subprocess
+          import threading
+          import time
+          from pathlib import Path
+
+          work = Path('/tmp/frontier-neoforge-fresh-world')
+          log_path = Path(os.environ['FRESH_WORLD_LOG'])
+          proc = subprocess.Popen(
+              ['./run.sh', 'nogui'],
+              cwd=work,
+              stdin=subprocess.PIPE,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+              text=True,
+              bufsize=1,
+          )
+          q = queue.Queue()
+          lines = []
+
+          def reader():
+              assert proc.stdout is not None
+              for line in proc.stdout:
+                  q.put(line)
+              q.put(None)
+
+          threading.Thread(target=reader, daemon=True).start()
+          deadline = time.monotonic() + 420
+          ready = False
+          stream_ended = False
+          while time.monotonic() < deadline:
+              try:
+                  item = q.get(timeout=1)
+              except queue.Empty:
+                  if proc.poll() is not None:
+                      break
+                  continue
+              if item is None:
+                  stream_ended = True
+                  break
+              lines.append(item)
+              print(item, end='')
+              if 'Done (' in item and 'For help, type "help"' in item:
+                  ready = True
+                  assert proc.stdin is not None
+                  proc.stdin.write('stop\n')
+                  proc.stdin.flush()
+                  break
+
+          if not ready:
+              if proc.poll() is None:
+                  proc.terminate()
+                  try:
+                      proc.wait(timeout=15)
+                  except subprocess.TimeoutExpired:
+                      proc.kill()
+              while True:
+                  try:
+                      item = q.get_nowait()
+                  except queue.Empty:
+                      break
+                  if item:
+                      lines.append(item)
+              log_path.write_text(''.join(lines), encoding='utf-8')
+              raise SystemExit('fresh server never reached the Done readiness marker')
+
+          try:
+              proc.wait(timeout=120)
+          except subprocess.TimeoutExpired:
+              proc.kill()
+              proc.wait(timeout=15)
+              raise SystemExit('server did not stop cleanly after stop command')
+
+          while True:
+              try:
+                  item = q.get_nowait()
+              except queue.Empty:
+                  break
+              if item:
+                  lines.append(item)
+                  print(item, end='')
+
+          text = ''.join(lines)
+          log_path.write_text(text, encoding='utf-8')
+          if proc.returncode != 0:
+              raise SystemExit(f'server exited non-zero after clean stop request: {proc.returncode}')
+          if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in text:
+              raise SystemExit('Frontier Alpha.73 was not discovered in fresh-world server log')
+          forbidden = (
+              'ModLoadingException',
+              'NoClassDefFoundError',
+              'Mixin apply failed',
+              'FatalStartupException',
+              'Encountered an unexpected exception',
+              'Failed to start the minecraft server',
+              'Crash report saved to',
+              'Exception in thread "main"',
+              'is not a valid mod file',
+              'Loading errors encountered',
+          )
+          hits = [token for token in forbidden if token.lower() in text.lower()]
+          if hits:
+              raise SystemExit('fresh-world fatal/mod-loading markers: ' + ', '.join(hits))
+
+          level_dat = work / 'world' / 'level.dat'
+          region_dir = work / 'world' / 'region'
+          if not level_dat.is_file() or level_dat.stat().st_size == 0:
+              raise SystemExit('fresh world level.dat was not generated')
+          regions = list(region_dir.glob('*.mca')) if region_dir.is_dir() else []
+          if not regions or not any(p.stat().st_size > 0 for p in regions):
+              raise SystemExit('fresh world did not persist a non-empty region file')
+          print(f'Frontier expanded fresh-world dedicated-server smoke: PASS ({len(regions)} region files)')
+          PY
+
+      - name: Record successful fresh-world smoke
+        shell: bash
+        env:
+          FRESH_WORLD_RUN_ID: ${{ github.run_id }}
+          FRESH_WORLD_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          status_path = Path('projects/frontier-settlement/companion-testpack/runtime-status.json')
+          status = json.loads(status_path.read_text(encoding='utf-8'))
+          expanded = status.setdefault('expanded_candidate', {})
+          if not expanded.get('binary_resolution_verified') or not expanded.get('dedicated_server_preflight_verified'):
+              raise SystemExit('expanded binary/pre-EULA gates are not verified')
+          expanded['ci_eula_accepted'] = True
+          expanded['fresh_world_server_smoke_verified'] = True
+          expanded['fresh_world_run_id'] = int(os.environ['FRESH_WORLD_RUN_ID'])
+          expanded['fresh_world_source_sha'] = os.environ['FRESH_WORLD_SOURCE_SHA']
+          expanded['fresh_world_conclusion'] = 'success'
+          expanded['fresh_world_server_payload_jars_including_frontier'] = 16
+          status['status'] = 'expanded_fresh_world_server_smoke_pass'
+          # scope.* remains the broader/manual acceptance ledger; this CI smoke must not
+          # overclaim client launch, player EULA acceptance, spawn-density or real-play coverage.
+          status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PROJECT_DIR/companion-testpack/runtime-status.json"
+          git commit -m "Record Frontier expanded fresh-world smoke ${GITHUB_RUN_ID} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Upload fresh-world evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-companion-fresh-world-evidence
+          path: |
+            frontier-companion-fresh-world.log
+            frontier-fresh-world-metadata.txt
+            frontier-fresh-world-mods.txt
+          if-no-files-found: warn
+          retention-days: 14
