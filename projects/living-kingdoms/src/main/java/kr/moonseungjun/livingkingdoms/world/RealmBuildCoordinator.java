@@ -74,7 +74,20 @@ public final class RealmBuildCoordinator {
 
     public static void prepareHomeland(ServerLevel realm, String homelandId, Consumer<Throwable> completion) {
         if (RealmSitePlanner.isBuilt(realm, homelandId)) {
-            completion.accept(null);
+            if (requiresResidenceCiAudit(homelandId)) {
+                BuildJob job = JOBS.computeIfAbsent(homelandId, ignored -> new BuildJob(realm));
+                synchronized (job) {
+                    job.started = true;
+                    job.site = RealmSitePlanner.site(realm, homelandId);
+                    job.awaitingResidence = true;
+                    job.auditResidenceWithoutPlayer = true;
+                    job.completions.add(completion);
+                    setStatus(job, "residence", 99, "CI가 실제 왕도 임대방을 검증하고 있습니다.");
+                }
+                SafeResidenceLocator.prepareResidence(realm, "erden_kingdom", "erden_city_room");
+            } else {
+                completion.accept(null);
+            }
             return;
         }
         BuildJob job = JOBS.computeIfAbsent(homelandId, ignored -> new BuildJob(realm));
@@ -240,7 +253,7 @@ public final class RealmBuildCoordinator {
                 if (job.task != null) job.task.stop();
             }
             updateProgress(homelandId, job, "building", 50,
-                    "건설 계획을 구역별로 적용하고 있습니다.", true);
+                    "도로와 건물을 구역별로 적용하고 있습니다.", true);
             long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
             LivingKingdoms.LOGGER.info(
                     "Prepared incremental homeland plan {} operations={} estimated_writes={} suppressed_terrain_writes={} planning_ms={}",
@@ -305,24 +318,31 @@ public final class RealmBuildCoordinator {
             if (site == null) throw new IllegalStateException("Authored homeland site disappeared before completion");
             ConstructionDebrisCleaner.cleanConstructionCompletion(job.realm, homelandId, site);
             RealmSitePlanner.markBuilt(job.realm, homelandId);
-            notifyCompletions(job, null);
 
+            boolean ciResidenceAudit = requiresResidenceCiAudit(homelandId);
             synchronized (job) {
                 job.settlingTicks = -1;
-                if (job.waitingPlayers.isEmpty()) {
+                if (job.waitingPlayers.isEmpty() && !ciResidenceAudit) {
                     job.finished = true;
                     setStatus(job, "complete", 100, "왕국 준비가 끝났습니다.");
                 } else {
                     job.awaitingResidence = true;
+                    job.auditResidenceWithoutPlayer = ciResidenceAudit;
                     setStatus(job, "residence", 99,
-                            "왕도 시민구의 실제 임대방과 내부 동선을 준비하고 있습니다.");
+                            ciResidenceAudit
+                                    ? "CI가 실제 왕도 임대방과 내부 동선을 검증하고 있습니다."
+                                    : "왕도 시민구의 실제 임대방과 내부 동선을 준비하고 있습니다.");
                 }
             }
             if (job.finished) {
+                notifyCompletions(job, null);
                 JOBS.remove(homelandId, job);
                 return;
             }
 
+            if (ciResidenceAudit) {
+                SafeResidenceLocator.prepareResidence(job.realm, "erden_kingdom", "erden_city_room");
+            }
             for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
                 ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
                 if (player == null) continue;
@@ -334,14 +354,31 @@ public final class RealmBuildCoordinator {
             }
             broadcast(homelandId, job, false, false, true);
             LivingKingdoms.LOGGER.info(
-                    "LK_ERDEN_RESIDENCE_GATE homeland={} site_built=true awaiting_players={} synthetic_fallback=false premature_complete=false",
-                    homelandId, job.waitingPlayers.size());
+                    "LK_ERDEN_RESIDENCE_GATE homeland={} site_built=true awaiting_players={} ci_residence_audit={} synthetic_fallback=false premature_complete=false",
+                    homelandId, job.waitingPlayers.size(), ciResidenceAudit);
         } catch (Throwable throwable) {
             failBuild(homelandId, job, throwable);
         }
     }
 
     private static void continueResidencePlacement(String homelandId, BuildJob job) {
+        if (job.auditResidenceWithoutPlayer) {
+            SafeResidenceLocator.prepareResidence(job.realm, "erden_kingdom", "erden_city_room");
+            var feet = SafeResidenceLocator.tryResidence(job.realm, "erden_kingdom", "erden_city_room");
+            if (feet == null) return;
+            var entrance = SafeResidenceLocator.residenceEntrance(
+                    job.realm, "erden_kingdom", "erden_city_room");
+            if (!"tenement".equals(entrance.role())) {
+                throw new IllegalStateException("Player residence resolved outside a tenement: " + entrance.role());
+            }
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role={} entrance={},{} feet={} authored_tenement=true upper_route=true synthetic_fallback=false staging_complete_gate=true",
+                    entrance.role(), entrance.x(), entrance.z(), feet);
+            synchronized (job) {
+                job.auditResidenceWithoutPlayer = false;
+            }
+        }
+
         for (UUID playerId : Set.copyOf(job.waitingPlayers)) {
             ServerPlayer player = job.realm.getServer().getPlayerList().getPlayer(playerId);
             if (player == null) {
@@ -370,12 +407,18 @@ public final class RealmBuildCoordinator {
         }
 
         synchronized (job) {
-            if (!job.waitingPlayers.isEmpty()) return;
+            if (job.auditResidenceWithoutPlayer || !job.waitingPlayers.isEmpty()) return;
             job.awaitingResidence = false;
             job.finished = true;
             setStatus(job, "complete", 100, "왕국 준비와 실제 거주지 입주가 끝났습니다.");
         }
+        notifyCompletions(job, null);
         JOBS.remove(homelandId, job);
+    }
+
+    private static boolean requiresResidenceCiAudit(String homelandId) {
+        return "erden_kingdom".equals(homelandId)
+                && "1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"));
     }
 
     private static void failBuild(String homelandId, BuildJob job, Throwable failure) {
@@ -477,6 +520,7 @@ public final class RealmBuildCoordinator {
         private boolean started;
         private boolean preparingPlan;
         private boolean awaitingResidence;
+        private boolean auditResidenceWithoutPlayer;
         private boolean finished;
         private GenerationTask task;
         private RealmSiteLayoutSavedData.RealmSite site;
