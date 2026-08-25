@@ -37,6 +37,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A projects/frontier-settlement
           git commit -m 'Harden Frontier military and supply lifecycle for alpha.71'
+          git restore .github/scripts/frontier_alpha71_patch.py
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
