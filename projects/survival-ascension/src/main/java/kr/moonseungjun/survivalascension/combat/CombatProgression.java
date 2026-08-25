@@ -49,25 +49,28 @@ public final class CombatProgression {
         ItemStack weapon = player.getMainHandItem();
         if (!AscensionAffixes.isRangedWeapon(weapon)) weapon = player.getOffhandItem();
         if (!AscensionAffixes.isRangedWeapon(weapon)) return;
-        AscensionAffixes.snapshotRangedProjectile(projectile, weapon, player.isShiftKeyDown());
+        AscensionAffixes.snapshotRangedProjectile(projectile, player, weapon, player.isShiftKeyDown());
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getAmount() <= 0.0F) return;
 
         if (event.getEntity() instanceof ServerPlayer defender) {
-            boolean environmental = event.getSource().getEntity() == null;
+            boolean environmental = event.getSource().getEntity() == null && event.getSource().getDirectEntity() == null;
             double armorMultiplier = AscensionAffixes.armorDamageMultiplier(defender, event.getAmount(), environmental);
             if (armorMultiplier < 1.0D) event.setAmount((float) (event.getAmount() * armorMultiplier));
         }
 
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
-        if (event.getEntity() == player || event.getAmount() <= 0.0F) return;
+        Entity direct = event.getSource().getDirectEntity();
+        boolean rangedShot = AscensionAffixes.isRangedProjectile(direct);
+        ServerPlayer directSourcePlayer = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer ? sourcePlayer : null;
+        ServerPlayer player = directSourcePlayer != null ? directSourcePlayer
+                : rangedShot && event.getEntity().level() instanceof ServerLevel hitLevel
+                ? AscensionAffixes.rangedProjectileOwner(direct, hitLevel) : null;
+        if (player == null || event.getEntity() == player || event.getAmount() <= 0.0F) return;
         UUID uuid = player.getUUID();
         if (CLEAVE_GUARD.contains(uuid) || SHOCKWAVE_GUARD.contains(uuid)) return;
 
-        Entity direct = event.getSource().getDirectEntity();
-        boolean rangedShot = AscensionAffixes.isRangedProjectile(direct);
         ItemStack weapon = player.getMainHandItem();
         double equipmentDamage = direct == player ? AscensionAffixes.damageMultiplier(weapon)
                 : rangedShot ? AscensionAffixes.projectileDamageMultiplier(direct) : 1.0D;
@@ -342,15 +345,19 @@ public final class CombatProgression {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (event.isCanceled()) return;
         LivingEntity victim = event.getEntity();
-        if (victim == player || victim instanceof Player || !ContentPackCompatibility.isCombatTarget(victim)) return;
+        Entity direct = event.getSource().getDirectEntity();
+        ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer ? sourcePlayer : null;
+        if (player == null && victim.level() instanceof ServerLevel deathLevel) {
+            player = AscensionAffixes.rangedProjectileOwner(direct, deathLevel);
+        }
+        if (player == null || victim == player || victim instanceof Player || !ContentPackCompatibility.isCombatTarget(victim)) return;
 
         boolean majorTarget = ContentPackCompatibility.isMajorExpeditionTarget(victim);
         ExpeditionProgression.recordSkillAction(player, SkillType.COMBAT, 1);
         if (majorTarget) ExpeditionProgression.grantMajorTargetBonus(player, MAJOR_TARGET_EXPEDITION_BONUS);
 
-        Entity direct = event.getSource().getDirectEntity();
         double equipmentXp = AscensionAffixes.isRangedProjectile(direct)
                 ? AscensionAffixes.projectileXpMultiplier(direct)
                 : AscensionAffixes.xpMultiplier(player.getMainHandItem());

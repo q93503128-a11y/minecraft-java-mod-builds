@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.56.0-alpha.1
+- Added firing-player UUID to the existing Survival ranged projectile launch snapshot.
+- Added bounded online-owner fallback when a Survival-snapshotted projectile's `DamageSource` no longer exposes its ServerPlayer shooter.
+- Routed fallback attribution through Combat damage/burst, Combat kill XP + major-target credit, Ascension elite-affix drops, Elite reactions/rank rewards, endgame-mutation reactions/rewards, and Warband leader rewards.
+- Fixed armor `보호` environmental classification so a direct projectile with a missing attacking-entity reference is not treated as environmental damage.
+- Kept live `DamageSource` ServerPlayer authority first; fallback is only for Survival-marked ranged projectiles and never queues offline rewards.
+- Added no SavedData, packet/protocol, custom projectile/entity, force-load or background simulation. Network protocol remains8.
+- Bumped content-preview lock to `0.56.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
 ## 0.55.0-alpha.1
 - Added Minecraft 26.2 `minecraft:sulfur_caves` to the existing Deep expedition integration tag.
 - Kept Sulfur/Cinnabar as normal pickaxe-mineable terrain: Mining speed/XP/area applies, but they are not promoted into `valuable_ores` vein/extract semantics.

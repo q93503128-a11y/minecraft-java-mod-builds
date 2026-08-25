@@ -29,6 +29,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public final class AscensionAffixes {
     private static final String ROOT = "survivalascension_affix";
@@ -42,6 +43,7 @@ public final class AscensionAffixes {
     private static final String UTILITY = "utility";
     private static final String AWAKENED = "awakened";
     private static final String RANGED_PROJECTILE = "survivalascension_ranged_projectile";
+    private static final String RANGED_OWNER = "survivalascension_ranged_owner";
     private static final String RANGED_PRECISION = "survivalascension_ranged_precision";
     private static final String RANGED_DAMAGE_PERMILLE = "survivalascension_ranged_damage_permille";
     private static final String RANGED_XP_PERMILLE = "survivalascension_ranged_xp_permille";
@@ -56,8 +58,10 @@ public final class AscensionAffixes {
 
     public static void onEliteDeath(LivingDeathEvent event) {
         if (event.isCanceled() || !(event.getEntity() instanceof Mob mob)) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer)) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
+        ServerPlayer killer = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                ? sourcePlayer : rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+        if (killer == null) return;
         int rankId = EliteMobSystem.rankId(mob);
         if (rankId <= 0) return;
         double chance = switch (rankId) { case 1 -> 0.25D; case 2 -> 0.65D; default -> 1.0D; };
@@ -207,10 +211,11 @@ public final class AscensionAffixes {
         return switch (rarity) { case 1 -> 1.10D; case 2 -> 1.25D; default -> 1.50D; };
     }
 
-    public static void snapshotRangedProjectile(Projectile projectile, ItemStack weapon, boolean precision) {
+    public static void snapshotRangedProjectile(Projectile projectile, ServerPlayer player, ItemStack weapon, boolean precision) {
         if (!isRangedWeapon(weapon)) return;
         CompoundTag data = projectile.getPersistentData();
         data.putBoolean(RANGED_PROJECTILE, true);
+        data.putString(RANGED_OWNER, player.getUUID().toString());
         data.putBoolean(RANGED_PRECISION, precision);
         int rarity = rarity(weapon);
         int damage = 1000;
@@ -234,6 +239,17 @@ public final class AscensionAffixes {
 
     public static boolean isRangedProjectile(Entity direct) {
         return direct != null && direct.getPersistentData().getBooleanOr(RANGED_PROJECTILE, false);
+    }
+
+    public static ServerPlayer rangedProjectileOwner(Entity direct, ServerLevel level) {
+        if (!isRangedProjectile(direct)) return null;
+        String raw = direct.getPersistentData().getStringOr(RANGED_OWNER, "");
+        if (raw.isBlank()) return null;
+        try {
+            return level.getServer().getPlayerList().getPlayer(UUID.fromString(raw));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     public static boolean isPrecisionRangedProjectile(Entity direct) {

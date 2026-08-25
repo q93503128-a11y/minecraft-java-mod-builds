@@ -140,6 +140,19 @@ with zipfile.ZipFile(jar) as zf:
     if b"minecraft:sulfur_caves" not in deep055:
         raise SystemExit("0.55 packaged Sulfur Caves Deep bridge missing")
 
+with zipfile.ZipFile(jar) as zf:
+    affix056 = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    combat056 = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    elite056 = zf.read("kr/moonseungjun/survivalascension/elite/EliteMobSystem.class")
+    mutation056 = zf.read("kr/moonseungjun/survivalascension/elite/EndgameMutationSystem.class")
+    warband056 = zf.read("kr/moonseungjun/survivalascension/elite/WarbandDirector.class")
+    for token in [b"survivalascension_ranged_owner", b"rangedProjectileOwner", b"UUID", b"getPlayer"]:
+        if token not in affix056:
+            raise SystemExit(f"0.56 compiled ranged-owner token missing: {token!r}")
+    for blob, label in [(combat056, "combat"), (elite056, "elite"), (mutation056, "mutation"), (warband056, "warband")]:
+        if b"rangedProjectileOwner" not in blob:
+            raise SystemExit(f"0.56 compiled ranged-owner consumer missing: {label}")
+
 print("frontline_freight_manifest_runtime=present")
 print("frontline_freight_release_verify=PASS")
 print("regional_logistics_scale_runtime=present")
@@ -156,3 +169,5 @@ print("mace_outer_impact_release_verify=PASS")
 print("sulfur_caves_deep_runtime=present")
 print("spear_drive_line_runtime=present")
 print("native_26_2_release_verify=PASS")
+print("ranged_projectile_owner_attribution_runtime=present")
+print("ranged_projectile_owner_attribution_release_verify=PASS")

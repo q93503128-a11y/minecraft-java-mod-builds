@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.56.0-alpha.1 — Ranged Projectile Attribution Hardening / 원거리 발사자 귀속 안정화
+Survival-recognized player-fired bow/crossbow projectiles now snapshot the firing player's UUID beside the existing affix/Shift launch state. The live `DamageSource` player remains authoritative when present; only when that source-player reference is missing does Survival resolve the still-online shooter from the same physical projectile.
+
+That fallback now covers Combat damage scaling/impact burst, Combat kill XP and major-target expedition credit, Ascension elite-affix drops, Elite rank rewards/reactions, endgame-mutation rewards/reactions, and Warband leader rewards. An orphaned projectile is also no longer classified as environmental damage merely because its attacking-entity reference disappeared: environmental armor logic now requires both attacking entity and direct entity to be absent.
+
+The fallback is deliberately bounded. It trusts only Survival-snapshotted ranged projectiles, resolves only a currently online player, queues no offline reward, and adds no new SavedData, packet/protocol, entity, force-load or background simulation. Network protocol remains `8` and the six locked external content-mod versions are unchanged.
+
 ## 0.55.0-alpha.1 — Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
 Minecraft 26.2의 `minecraft:sulfur_caves`를 기존 심층권 원정 태그에 편입했다. Sulfur/Cinnabar 계열은 바닐라 pickaxe-mineable 지형으로 기존 채굴 숙련 속도·XP·면적 작업을 받지만 `valuable_ores`로 승격하지 않아 광맥/추출 대상으로 오인하지 않는다.
 

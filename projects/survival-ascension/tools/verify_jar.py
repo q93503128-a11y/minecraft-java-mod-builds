@@ -137,6 +137,10 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit("compiled spear affix bridge missing")
     if b"trySpearDrive" not in combat_class:
         raise SystemExit("compiled spear drive-line bridge missing")
+    if b"survivalascension_ranged_owner" not in affix_class or b"rangedProjectileOwner" not in affix_class:
+        raise SystemExit("compiled ranged projectile owner attribution bridge missing")
+    if b"rangedProjectileOwner" not in combat_class:
+        raise SystemExit("compiled combat ranged owner fallback missing")
     if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
         raise SystemExit("compiled shovel Mining bridge missing")
     if b"expedition_major_targets" not in compat_class or b"isMajorExpeditionTarget" not in compat_class:
@@ -195,5 +199,6 @@ print("production_runtime=present")
 print("field_depot_runtime=present")
 print("outpost_runtime=present")
 print("field_recovery_runtime=present")
+print("ranged_projectile_owner_attribution_runtime=present")
 print(f"size={jar.stat().st_size}")
 print(f"sha256={sha}")

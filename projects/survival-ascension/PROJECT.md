@@ -1,6 +1,6 @@
 # Survival Ascension
 
-- Mod version: `0.55.0-alpha.1`
+- Mod version: `0.56.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
@@ -9,6 +9,13 @@
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.56 Ranged Projectile Attribution Hardening / 원거리 발사자 귀속 안정화
+- A Survival-snapshotted ranged projectile stores the firing ServerPlayer UUID beside its existing affix/precision launch state.
+- `DamageSource#getEntity()` remains authoritative when it is a ServerPlayer. Fallback lookup happens only for a Survival-marked ranged projectile and only resolves a currently online player through the server PlayerList.
+- The recovered owner is used consistently for Combat scaling/burst, Combat kill XP + major-target credit, Ascension elite-affix drops, Elite reaction/rank rewards, endgame-mutation reaction/rewards, and Warband leader rewards.
+- Environmental armor classification now requires both attacking entity and direct entity to be absent, so an orphaned physical projectile is not treated as environmental damage.
+- Offline shooters are not queued for later rewards. No new SavedData, packet/protocol, custom projectile/entity, force-load or background simulation is introduced.
 
 ## 0.55 Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
 - `minecraft:sulfur_caves` is part of the existing Deep expedition integration tag. Sulfur/Cinnabar remain ordinary pickaxe-mineable terrain rather than valuable-ore vein/extract targets.

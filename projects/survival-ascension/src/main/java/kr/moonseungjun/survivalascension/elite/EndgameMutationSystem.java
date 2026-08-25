@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.elite;
 
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 /*
  * Endgame mutation vocabulary is adapted from Hostiles Are Too Easy (CC0 1.0):
  * Withered skeletons and Phase / Plague zombies. Survival Ascension uses its own
@@ -69,18 +70,22 @@ public final class EndgameMutationSystem {
 
         if (event.getEntity() instanceof Zombie zombie
                 && mutation(zombie) == Mutation.PHASE
-                && event.getSource().getEntity() instanceof ServerPlayer player
                 && zombie.isAlive()) {
-            reactPhase(level, zombie, player);
+            ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                    ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+            if (player != null) reactPhase(level, zombie, player);
         }
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || !(event.getEntity() instanceof Mob mob)) return;
+        if (event.isCanceled() || !(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
         Mutation mutation = mutation(mob);
-        if (mutation == Mutation.NONE || !(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (mutation == Mutation.NONE) return;
+        ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+        if (player == null) return;
         player.giveExperiencePoints(10);
-        if (mob.level() instanceof ServerLevel level && level.getRandom().nextFloat() < 0.35F) {
+        if (level.getRandom().nextFloat() < 0.35F) {
             level.addFreshEntity(new ItemEntity(level, mob.getX(), mob.getY() + 0.5D, mob.getZ(), new ItemStack(Items.ECHO_SHARD)));
         }
     }

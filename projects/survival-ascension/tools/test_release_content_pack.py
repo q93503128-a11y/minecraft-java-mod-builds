@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_LOCK_VERSION = "0.48.0-alpha.1-content-preview.1"
-REQUIRED_LOCK_VERSION = "0.55.0-alpha.1-content-preview.1"
+REQUIRED_LOCK_VERSION = "0.56.0-alpha.1-content-preview.1"
 errors: list[str] = []
 
 
@@ -80,6 +80,10 @@ deep55 = read("src/main/resources/data/survivalascension/tags/worldgen/biome/exp
 need(deep55, ["minecraft:sulfur_caves"], "0.55 Sulfur Caves expedition bridge")
 need(matrix, ["minecraft:sulfur_caves", "minecraft:spears", "0피해/0XP"], "0.55 native compatibility docs")
 
+need(affix, ["survivalascension_ranged_owner", "rangedProjectileOwner", "getPlayer(UUID.fromString(raw))"], "0.56 ranged-owner content bridge")
+need(combat, ["rangedProjectileOwner(direct, hitLevel)", "rangedProjectileOwner(direct, deathLevel)"], "0.56 ranged-owner runtime bridge")
+need(matrix, ["발사자 UUID", "현재 온라인인 발사자를 복구"], "0.56 generic ranged attribution docs")
+
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
     for error in errors:
@@ -89,7 +93,7 @@ if errors:
 baseline_path = ROOT / "tools/test_content_pack_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)
-baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.55.0-alpha.1`')
+baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.56.0-alpha.1`')
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -116,4 +120,5 @@ print("shield_affix_guard_wave_bridge=PASS")
 print("mace_affix_outer_impact_bridge=PASS")
 print("sulfur_caves_deep_bridge=PASS")
 print("spear_affix_drive_bridge=PASS")
+print("ranged_projectile_owner_attribution=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")

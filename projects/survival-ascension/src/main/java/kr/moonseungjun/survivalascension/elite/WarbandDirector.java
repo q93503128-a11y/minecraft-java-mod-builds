@@ -8,6 +8,7 @@ package kr.moonseungjun.survivalascension.elite;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
@@ -103,7 +104,9 @@ public final class WarbandDirector {
             member.setTarget(null);
         }
 
-        if (event.getSource().getEntity() instanceof ServerPlayer player) {
+        ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+        if (player != null) {
             int combat = SkillProgressData.get(player).level(player, SkillType.COMBAT);
             int shards = Math.max(1, Math.min(4, 1 + combat / 30));
             level.addFreshEntity(new ItemEntity(level, leader.getX(), leader.getY() + 0.5D, leader.getZ(), new ItemStack(Items.ECHO_SHARD, shards)));

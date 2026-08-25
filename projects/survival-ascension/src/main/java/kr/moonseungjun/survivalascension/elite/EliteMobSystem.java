@@ -7,6 +7,7 @@ package kr.moonseungjun.survivalascension.elite;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
@@ -107,17 +108,21 @@ public final class EliteMobSystem {
         }
 
         if (event.getEntity() instanceof Mob defender
-                && event.getSource().getEntity() instanceof ServerPlayer player
+                && defender.level() instanceof ServerLevel level
                 && isElite(defender)
                 && defender.isAlive()
                 && event.getHealthDamage() > 0.0F) {
-            reactToPlayerHit(defender, player);
+            ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                    ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+            if (player != null) reactToPlayerHit(defender, player);
         }
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || !isElite(event.getEntity())) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (event.isCanceled() || !isElite(event.getEntity()) || !(event.getEntity().level() instanceof ServerLevel level)) return;
+        ServerPlayer player = event.getSource().getEntity() instanceof ServerPlayer sourcePlayer
+                ? sourcePlayer : AscensionAffixes.rangedProjectileOwner(event.getSource().getDirectEntity(), level);
+        if (player == null) return;
         Rank rank = rank(event.getEntity());
         int vanillaXp = switch (rank) {
             case ELITE_I -> 8;
@@ -126,7 +131,7 @@ public final class EliteMobSystem {
             default -> 0;
         };
         if (vanillaXp > 0) player.giveExperiencePoints(vanillaXp);
-        if (event.getEntity() instanceof Mob mob && mob.level() instanceof ServerLevel level) {
+        if (event.getEntity() instanceof Mob mob) {
             dropRankReward(level, mob, rank);
         }
         if (rank == Rank.MYTHIC_III) {
