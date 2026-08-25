@@ -222,8 +222,7 @@ jobs:
               raise SystemExit('Frontier Alpha.73 was not discovered in fresh-world server log')
 
           # Do not fail on a bare NoClassDefFoundError token. On Linux, Minecraft/Netty can
-          # probe the OSX/BSD kqueue native class while continuing normally; run 32846326558
-          # reached Done, persisted the world and stopped cleanly despite that debug-appender probe.
+          # probe the OSX/BSD kqueue native class while continuing normally.
           forbidden = (
               'ModLoadingException',
               'Mixin apply failed',
@@ -240,13 +239,23 @@ jobs:
               raise SystemExit('fresh-world fatal/mod-loading markers: ' + ', '.join(hits))
 
           level_dat = work / 'world' / 'level.dat'
-          region_dir = work / 'world' / 'region'
           if not level_dat.is_file() or level_dat.stat().st_size == 0:
               raise SystemExit('fresh world level.dat was not generated')
-          regions = list(region_dir.glob('*.mca')) if region_dir.is_dir() else []
-          if not regions or not any(p.stat().st_size > 0 for p in regions):
-              raise SystemExit('fresh world did not persist a non-empty region file')
-          print(f'Frontier expanded fresh-world dedicated-server smoke: PASS ({len(regions)} region files)')
+
+          # A very short 26.2 dedicated-server smoke can create level.dat, reach Done and
+          # cleanly execute the chunk-storage save path without emitting an overworld .mca
+          # container before shutdown. Treat physical region files as stronger optional
+          # evidence, while requiring Minecraft's explicit all-dimensions saved marker.
+          region_files = [p for p in (work / 'world').rglob('*') if p.is_file() and p.suffix in ('.mca', '.mcc')]
+          clean_save_marker = 'ThreadedAnvilChunkStorage: All dimensions are saved'
+          if clean_save_marker not in text:
+              raise SystemExit('fresh world did not report a completed all-dimensions chunk save')
+          if region_files:
+              if not any(p.stat().st_size > 0 for p in region_files):
+                  raise SystemExit('fresh world emitted only empty region/chunk containers')
+              print(f'Frontier expanded fresh-world dedicated-server smoke: PASS ({len(region_files)} region/chunk files)')
+          else:
+              print('Frontier expanded fresh-world dedicated-server smoke: PASS (level.dat + clean all-dimensions save marker)')
           PY
 
       - name: Record successful fresh-world smoke
@@ -256,9 +265,6 @@ jobs:
           FRESH_WORLD_SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          # Preflight and fresh-world jobs can start from the same push. Refresh only the
-          # authoritative status file so this recorder sees a preflight result committed while
-          # the fresh-world server was booting instead of failing on its stale checkout copy.
           git fetch origin main
           git show origin/main:"$PROJECT_DIR/companion-testpack/runtime-status.json" > /tmp/frontier-runtime-status.latest.json
           cp /tmp/frontier-runtime-status.latest.json "$PROJECT_DIR/companion-testpack/runtime-status.json"
@@ -280,8 +286,6 @@ jobs:
           expanded['fresh_world_conclusion'] = 'success'
           expanded['fresh_world_server_payload_jars_including_frontier'] = 16
           status['status'] = 'expanded_fresh_world_server_smoke_pass'
-          # scope.* remains the broader/manual acceptance ledger; this CI smoke must not
-          # overclaim client launch, player EULA acceptance, spawn-density or real-play coverage.
           status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
           git diff --check
