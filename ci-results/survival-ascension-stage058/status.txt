@@ -1,5 +1,0 @@
-status=success
-source_sha=8568f2fa94d5645fda33c471288849b96eab9513
-run_id=32844710034
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32844710034
-phase=published
