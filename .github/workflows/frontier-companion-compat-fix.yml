@@ -1,0 +1,60 @@
+name: Frontier Companion Compatibility Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-companion-compat-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin Sophisticated baseline to early 26.2 ports
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('projects/frontier-settlement/COMPANION_LOCK.json')
+          data=json.loads(p.read_text(encoding='utf-8'))
+          changed=set()
+          for e in data['entries']:
+              if e['id']=='sophisticated_backpacks':
+                  e['version_id']='jFsSdSUK'
+                  e['version']='26.2-3.25.74.1922'
+                  changed.add(e['id'])
+              elif e['id']=='sophisticated_core':
+                  e['version_id']='BRe27VZd'
+                  e['version']='26.2-1.4.72.2073'
+                  changed.add(e['id'])
+          if changed != {'sophisticated_backpacks','sophisticated_core'}:
+              raise SystemExit(f'missing Sophisticated entries: {changed}')
+          note='Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion.'
+          if note not in data['notes']:
+              data['notes'].append(note)
+          p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit compatibility lock and remove one-shot workflow
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/frontier-companion-compat-fix.yml
+          git add projects/frontier-settlement/COMPANION_LOCK.json
+          git diff --cached --check
+          git commit -m 'Pin Frontier companion Sophisticated stack for NeoForge 26.2.0.38-beta'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
