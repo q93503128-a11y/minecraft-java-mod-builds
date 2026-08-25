@@ -44,7 +44,7 @@ public final class SettlementExplorationService {
                 if (!level.structureManager().getStructureWithPieceAt(player.blockPosition(), structure).isValid()) continue;
                 if (!data.recordExternalStructure(id.toString())) continue;
                 changed = true;
-                player.sendSystemMessage(Component.literal("개척 발견 · 외부 구조물 " + id + " | 탐험 진척 " + data.explorationScore()));
+                player.sendSystemMessage(Component.literal("개척 발견 · 외부 구조물 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)));
             }
         }
         return changed;
@@ -62,7 +62,9 @@ public final class SettlementExplorationService {
         if (id == null || !isConquestTarget(victim, id)) return;
         if (!data.recordExternalBoss(id.toString())) return;
 
-        player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | 탐험 진척 " + data.explorationScore()));
+        player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)
+                + " · 신규 전초 " + SettlementExplorationBenefitService.outpostWoodCost(data) + "목재/"
+                + SettlementExplorationBenefitService.outpostStoneCost(data) + "석재"));
         SettlementService.broadcast(server, data);
     }
 

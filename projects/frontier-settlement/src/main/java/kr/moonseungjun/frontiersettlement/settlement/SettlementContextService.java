@@ -99,7 +99,7 @@ public final class SettlementContextService {
                     building.originX() + width - 1, building.originY() + type.clearHeight() + 2,
                     building.originZ() + depth - 1,
                     marker.getX(), marker.getY(), marker.getZ(),
-                    type.displayName(), buildingDetail(type), -1));
+                    type.displayName(), buildingDetail(type, data), -1));
         }
 
         for (OutpostRecord outpost : data.outposts()) {
@@ -133,7 +133,7 @@ public final class SettlementContextService {
         return Math.max(0, Math.min(99, worked * 100 / total));
     }
 
-    private static String buildingDetail(BuildingType type) {
+    private static String buildingDetail(BuildingType type, SettlementData data) {
         return switch (type) {
             case HOUSE -> "완공 · 주거 +" + type.housingGain();
             case LUMBER_CAMP -> "완공 · 자동 벌목";
@@ -143,12 +143,13 @@ public final class SettlementContextService {
             case WAREHOUSE -> "완공 · 실물 저장";
             case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
             case BLACKSMITH -> "완공 · 장비 지원";
-            case WORKSHOP -> "완공 · 금속 → 무기 수리";
-            case ADVANCED_WORKSHOP -> "완공 · 무기 + 유물 + 금속 → 고급 제작";
+            case WORKSHOP -> "완공 · 금속 1 → 외부무기 내구 +" + SettlementExplorationBenefitService.repairPerMetal(data);
+            case ADVANCED_WORKSHOP -> "완공 · 고급 제작 위력 " + SettlementExplorationBenefitService.forgePower(data)
+                    + " · 영지 재련 " + SettlementExplorationBenefitService.reforgePower(data);
             case GUARD_POST -> "완공 · 근거리 경비";
             case WATCHTOWER -> "완공 · 로드 위협 대응";
             case BARRACKS -> "완공 · 정식 주둔 3슬롯";
-            case MARKET -> "완공 · 유물 → 실물 교역";
+            case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);
             case CART_STATION -> "완공 · 도로 화물 허브";
         };
     }

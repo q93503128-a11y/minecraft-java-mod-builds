@@ -33,7 +33,7 @@ public final class SettlementWorkshopService {
 
     private static final String WORKER_NAME = "작업장 주민";
     private static final int SERVICE_PERIOD_TICKS = 100;
-    private static final int REPAIR_PER_METAL = 64;
+    public static final int BASE_REPAIR_PER_METAL = 64;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
 
     private SettlementWorkshopService() {}
@@ -138,7 +138,7 @@ public final class SettlementWorkshopService {
                 returnCarriedItem(level, data, worker, carried);
                 return;
             }
-            weapon.setDamageValue(Math.max(0, weapon.getDamageValue() - REPAIR_PER_METAL));
+            weapon.setDamageValue(Math.max(0, weapon.getDamageValue() - SettlementExplorationBenefitService.repairPerMetal(data)));
             carried.shrink(1);
             if (carried.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
             crate.setChanged();

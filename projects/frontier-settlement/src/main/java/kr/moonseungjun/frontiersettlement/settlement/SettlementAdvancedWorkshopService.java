@@ -204,8 +204,8 @@ public final class SettlementAdvancedWorkshopService {
         if (metal >= metalRequired) {
             if (!workDue(server, workshop)) return;
             boolean completed = reforge
-                    ? reforgeOne(level, crate, weaponSlot)
-                    : forgeOne(level, crate, weaponSlot, relicSlot);
+                    ? reforgeOne(level, crate, weaponSlot, data)
+                    : forgeOne(level, crate, weaponSlot, relicSlot, data);
             if (completed) {
                 worker.swing(InteractionHand.MAIN_HAND);
                 SettlementService.refreshResources(server, data);
@@ -231,7 +231,7 @@ public final class SettlementAdvancedWorkshopService {
     }
 
     /** Alpha.39 original forge path. Keep its validation-before-consumption order intact. */
-    private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot) {
+    private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot, SettlementData data) {
         ItemStack weapon = crate.getItem(weaponSlot);
         ItemStack relic = crate.getItem(relicSlot);
         if (!isForgeableWeapon(weapon) || relic.isEmpty() || !relic.is(ExternalContentTags.EXPEDITION_RELICS)) return false;
@@ -239,7 +239,7 @@ public final class SettlementAdvancedWorkshopService {
 
         ItemStack forged = weapon.copy();
         var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        ItemStack enchanted = EnchantmentHelper.enchantItem(level.getRandom(), forged, ENCHANTMENT_POWER,
+        ItemStack enchanted = EnchantmentHelper.enchantItem(level.getRandom(), forged, SettlementExplorationBenefitService.forgePower(data),
                 enchantments.listElements()
                         .<Holder<Enchantment>>map(holder -> holder)
                         .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))
@@ -261,7 +261,7 @@ public final class SettlementAdvancedWorkshopService {
      * therefore never rewritten or downgraded; successful additions are applied to a copy only after
      * a non-empty compatible selection exists. Real relic/metal mutation happens last.
      */
-    private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot) {
+    private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot, SettlementData data) {
         ItemStack weapon = crate.getItem(weaponSlot);
         if (!isReforgeableWeapon(weapon)) return false;
         if (countRelics(crate) < REFORGE_RELIC_COST) return false;
@@ -270,7 +270,7 @@ public final class SettlementAdvancedWorkshopService {
         ItemStack reforged = weapon.copy();
         var existing = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
         var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment(level.getRandom(), reforged, REFORGE_POWER,
+        List<EnchantmentInstance> additions = EnchantmentHelper.selectEnchantment(level.getRandom(), reforged, SettlementExplorationBenefitService.reforgePower(data),
                 enchantments.listElements()
                         .<Holder<Enchantment>>map(holder -> holder)
                         .filter(holder -> holder.is(EnchantmentTags.IN_ENCHANTING_TABLE))

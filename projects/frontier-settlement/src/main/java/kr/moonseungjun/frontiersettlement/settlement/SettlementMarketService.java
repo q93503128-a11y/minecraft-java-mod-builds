@@ -50,7 +50,7 @@ public final class SettlementMarketService {
                 continue;
             }
             if (!workDue(server, market)) continue;
-            tradeOne(container, trader);
+            tradeOne(container, trader, data);
         }
     }
 
@@ -59,11 +59,11 @@ public final class SettlementMarketService {
         return Math.floorMod(server.getTickCount() + salt, TRADE_PERIOD_TICKS) < 10;
     }
 
-    private static void tradeOne(Container container, Villager trader) {
+    private static void tradeOne(Container container, Villager trader, SettlementData data) {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack goods = container.getItem(slot);
             if (goods.isEmpty() || !goods.is(ExternalContentTags.EXPEDITION_RELICS)) continue;
-            int payout = tradeValue(goods);
+            int payout = SettlementExplorationBenefitService.marketPayout(data, tradeValue(goods));
             if (payout <= 0 || !hasEmeraldRoom(container, slot, goods.getCount() == 1, payout)) return;
 
             ItemStack sold = goods.copyWithCount(1);

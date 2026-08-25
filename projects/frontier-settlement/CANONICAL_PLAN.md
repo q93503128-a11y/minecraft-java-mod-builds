@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.72**.
+Current canonical implementation: **0.1.0-alpha.73**.
 
 ## 1. Product identity
 
@@ -367,6 +367,18 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.73 expedition feedback gameplay pass
+
+Alpha.73 returns priority from pure hardening to the original v0.2 gameplay loop: **explore/fight -> settlement becomes more useful -> better prepared exploration**. It adds no new menu, key, currency, building family or resource authority.
+
+- first-time external structure survey still caps at level3 and first-time conquest still caps at level2; repeated IDs remain non-farmable;
+- survey/conquest metadata now improves the existing dedicated market-barrel relic payout by a bounded flat premium (`+1` emerald per survey level, `+2` per conquest level); only a real relic ItemStack deliberately placed in the market is consumed and payout remains a real emerald ItemStack;
+- the normal workshop still consumes exactly one real metal item per repair operation, but settlement expedition knowledge raises repaired durability from base64 up to128 at survey3/conquest2;
+- advanced forge/re-forge physical costs remain relic1+metal4 and relic2+metal8, while validated enchantment selection power scales from30/40 to at most40/50; no-cost/no-improvement behavior is unchanged;
+- unique discovery/conquest notices show the currently active compact survey/conquest support benefits, and building context for market/workshop/advanced workshop exposes the same numbers without adding a dashboard;
+- existing conquest outpost-cost reduction and survey specialization evidence remain active, so exploration knowledge now affects territory expansion, trade, maintenance and expedition equipment preparation rather than only a small hidden score;
+- companion content remains optional/soft-linked and full fresh-world runtime acceptance is still user-playtest work, not claimed by this content pass.
 
 ### Alpha.72 full-project authority / transaction hardening
 

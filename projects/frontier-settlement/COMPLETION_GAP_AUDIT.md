@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.72`
+현재 구현 기준: `0.1.0-alpha.73`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -381,6 +381,16 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
+
+### Alpha.73 탐험-정착 되먹임 게임성 패스
+
+- unique 외부 구조물 조사3 / 강적 정복2 상한과 중복 방지는 유지한다.
+- 조사/정복은 기존 전초 비용/특화 보너스에 더해 시장 유물 판매, 외부무기 수리, 고급 제작/재련 성능을 자동 강화한다.
+- 시장은 전용 barrel에 플레이어가 넣은 실제 expedition relic만 소비하고 실제 emerald를 지급하며 최대 추가 보너스는 +7이다.
+- 작업장은 여전히 실제 금속1을 소비하지만 수리량은 base64에서 최대128까지 상승한다.
+- 고급 제작 물리 비용 relic1+metal4 / 재련 relic2+metal8은 바뀌지 않고 enchant selection power만 최대40/50까지 상승한다.
+- 새 연구 UI/탐험 화폐/save field/building/key/물류 권위는 없다. 탐험 성과가 반복 생존 노동과 다음 원정 준비를 직접 줄이는 원본 게임 루프 강화다.
+- 밸런스 체감은 사용자 실플레이에서 조정하되, 개발측 구현 갭으로는 기존 hidden exploration score 의존도가 줄었다.
 
 ### Alpha.72 전체 소스 authority / transaction 감사
 

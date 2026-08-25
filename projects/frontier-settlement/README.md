@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.72
+## Current version: 0.1.0-alpha.73
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -73,6 +73,12 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.73 — expedition feedback gameplay pass
+
+Exploration now feeds back into the settlement more visibly without adding management. Unique companion/vanilla milestone surveys and conquests keep their capped non-farmable metadata, but that knowledge now automatically raises dedicated-market relic payouts, metal-per-repair efficiency, and advanced external-weapon forge/re-forge power. Existing outpost construction discounts and specialization evidence remain.
+
+All transactions remain physical: market relics become real emerald ItemStacks, workshop service still consumes one real metal item, forge costs remain relic1+metal4 and DOMAIN reforge remains relic2+metal8. Max knowledge changes market payout by +7, repair efficiency from64 to128 durability per metal, forge power30→40 and reforge power40→50. Discovery/conquest notices and compact building context expose the active benefit values; there is no research screen, exploration currency, new key or new building.
 
 ## Alpha.72 — full-project authority / transaction hardening
 
