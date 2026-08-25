@@ -62,6 +62,7 @@ jobs:
           python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.73.jar
           unzip -p build/libs/frontier_settlement-0.1.0-alpha.73.jar META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
           grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
+          grep -F 'version="0.1.0-alpha.73"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
 
       - name: Assemble locked server mod payload
         run: |
@@ -104,14 +105,40 @@ jobs:
           cat "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"
 
           # This job intentionally does not accept Minecraft's EULA on behalf of the repository owner.
-          # A clean first launch must reach the normal EULA gate instead of crashing during launcher/mod loading.
-          grep -Eqi 'agree to the EULA|eula.txt|EULA' "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"
-          if grep -Eqi 'ModLoadingException|Failed to load|NoClassDefFoundError|ClassNotFoundException|Mixin apply failed|Encountered an unexpected exception|Exception in thread "main"|is not a valid mod file|Loading errors encountered|requires neoforge|requires sophisticatedcore' "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"; then
-            echo 'Unexpected mod-loading/runtime failure before the EULA gate.' >&2
-            exit 1
-          fi
+          # Validate only the prefix before the normal EULA gate. Optional integration WARNs, such as
+          # Sophisticated Core probing for an absent Create class, are allowed when they do not abort loading.
+          python3 - <<'PY'
+          from pathlib import Path
+          log = Path('frontier-companion-server-preflight.log').read_text(encoding='utf-8', errors='replace')
+          markers = ('You need to agree to the EULA', 'agree to the EULA', 'eula.txt')
+          positions = [log.lower().find(m.lower()) for m in markers]
+          positions = [p for p in positions if p >= 0]
+          if not positions:
+              raise SystemExit('server did not reach the expected EULA gate')
+          eula_at = min(positions)
+          prefix = log[:eula_at]
+          if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in prefix:
+              raise SystemExit('Frontier was not discovered with the canonical Alpha.73 version')
+          forbidden = (
+              'ModLoadingException',
+              'NoClassDefFoundError',
+              'Mixin apply failed',
+              'Encountered an unexpected exception',
+              'Exception in thread "main"',
+              'is not a valid mod file',
+              'Loading errors encountered',
+              'requires neoforge',
+              'requires sophisticatedcore',
+              '[main/ERROR]',
+              'FatalStartupException',
+          )
+          hits = [token for token in forbidden if token.lower() in prefix.lower()]
+          if hits:
+              raise SystemExit('pre-EULA mod-loading failure markers: ' + ', '.join(hits))
+          print('Frontier companion dedicated-server pre-EULA mod-loading smoke: PASS')
+          PY
           if test "$code" -eq 124; then
-            echo 'Server did not reach the expected first-run EULA exit before timeout.' >&2
+            echo 'Server did not exit at the expected first-run EULA gate before timeout.' >&2
             exit 1
           fi
 
