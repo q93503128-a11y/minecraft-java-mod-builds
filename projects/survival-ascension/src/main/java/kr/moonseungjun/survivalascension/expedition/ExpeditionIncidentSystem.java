@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.expedition;
 
+import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -207,7 +208,12 @@ public final class ExpeditionIncidentSystem {
                 return;
             }
             active.mobIds.addAll(spawned);
-            active.initialMobCount = spawned.size();
+            Mob reinforcement = spawnRareReinforcement(player, active);
+            if (reinforcement != null) {
+                active.mobIds.add(reinforcement.getUUID());
+                active.reinforcementCount = 1;
+            }
+            active.initialMobCount = active.mobIds.size();
         }
 
         ACTIVE.put(player.getUUID(), active);
@@ -219,6 +225,7 @@ public final class ExpeditionIncidentSystem {
         if (incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
                     + " §7· 표시된 반경 48블록 안에서 빛나는 습격대 " + active.initialMobCount + "체를 정리하세요."
+                    + (active.reinforcementCount > 0 ? " §d· 이변 개체 1체 포함" : "")
                     + (rare ? " §d· 강화 보상" : "")));
         } else {
             player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
@@ -296,6 +303,23 @@ public final class ExpeditionIncidentSystem {
             spawned.add(mob.getUUID());
         }
         return spawned;
+    }
+
+    private static Mob spawnRareReinforcement(ServerPlayer player, ActiveIncident active) {
+        if (!active.rare || active.incident.kind() != ExpeditionIncident.Kind.AMBUSH
+                || active.incident.region() == ExpeditionRegion.OCEAN) {
+            return null;
+        }
+        String typeId = ContentPackCompatibility.randomIncidentReinforcementId(
+                active.level.getRandom(), active.incident.region().requiredWorldStage());
+        if (typeId == null) return null;
+        int baseCount = Math.max(1, active.spawnTarget());
+        Mob mob = spawnOne(active.level, active.center, false, typeId, baseCount, baseCount + 1);
+        if (mob == null) return null;
+        mob.setPersistenceRequired();
+        mob.setGlowingTag(true);
+        mob.setTarget(player);
+        return mob;
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, boolean water, String typeId, int index, int count) {
@@ -535,6 +559,7 @@ public final class ExpeditionIncidentSystem {
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
         int initialMobCount;
+        int reinforcementCount;
         int actionProgress;
         int outsideTicks;
 
