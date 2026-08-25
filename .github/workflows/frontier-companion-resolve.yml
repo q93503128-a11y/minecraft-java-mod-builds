@@ -8,6 +8,7 @@ on:
       - 'projects/frontier-settlement/COMPANION_LOCK.json'
       - 'projects/frontier-settlement/companion-testpack/install.py'
       - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
+      - 'projects/frontier-settlement/tools/test_companion_testpack.py'
       - '.github/workflows/frontier-companion-resolve.yml'
 
 permissions:
@@ -35,6 +36,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
+      - name: Companion manifest/static audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          python3 tools/test_companion_testpack.py
 
       - name: Resolve client stack
         run: |
