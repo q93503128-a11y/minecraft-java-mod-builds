@@ -64,6 +64,7 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' "$log" \
+              && grep -Fq 'LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role=tenement' "$log" \
               && grep -Fq 'LK_ERDEN_FANTASY_ECOLOGY_PASS revision=1 registered_species=3' "$log" \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' "$log" \
               && grep -Fq 'LK_ERDEN_CITADEL_INTERIOR_PASS zones=6' "$log"; then
@@ -78,6 +79,12 @@ jobs:
           done
           cat "$log"
           test "$passed" -eq 1
+          grep -F 'LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role=tenement' "$log" \
+            | grep -F 'actual_tenement=true' \
+            | grep -F 'authored_home_target=true' \
+            | grep -F 'synthetic_floor=false' \
+            | grep -F 'arbitrary_roof_scan=false' \
+            | grep -F 'staging_platform=false'
           grep -F 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' "$log" \
             | grep -F 'playable_species=1' \
             | grep -F 'playable_homelands=1' \
@@ -120,6 +127,8 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/foundation/PlayableOriginCatalog.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/profile/StarterLoadoutManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/StarterNpcManager.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/SafeResidenceLocator.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/SelectionStagingManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenFantasyEcologyManager.class' "$entries"
           unzip -p "${jars[0]}" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
 
