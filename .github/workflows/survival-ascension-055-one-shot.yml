@@ -1,0 +1,402 @@
+name: Survival Ascension 0.55 One Shot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/survival-ascension/.alpha55-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply 0.55 native 26.2 integration patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/survival-ascension
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          ROOT = Path('.')
+          def read(p): return (ROOT / p).read_text(encoding='utf-8')
+          def write(p, s): (ROOT / p).write_text(s, encoding='utf-8')
+          def rep(p, old, new, count=1):
+              s = read(p)
+              if old not in s:
+                  raise SystemExit(f'patch anchor missing in {p}: {old[:120]!r}')
+              s2 = s.replace(old, new, count)
+              write(p, s2)
+          def rep_all(p, old, new):
+              s = read(p)
+              if old not in s:
+                  raise SystemExit(f'patch anchor missing in {p}: {old[:120]!r}')
+              write(p, s.replace(old, new))
+
+          rep('gradle.properties', 'mod_version=0.54.0-alpha.1', 'mod_version=0.55.0-alpha.1')
+
+          lock_path = ROOT / 'modpack/content-lock.json'
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          if lock.get('version') != '0.54.0-alpha.1-content-preview.1':
+              raise SystemExit(f'unexpected lock version {lock.get("version")!r}')
+          lock['version'] = '0.55.0-alpha.1-content-preview.1'
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          deep_path = ROOT / 'src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json'
+          deep = json.loads(deep_path.read_text(encoding='utf-8'))
+          values = deep.setdefault('values', [])
+          if 'minecraft:sulfur_caves' not in values:
+              values.insert(0, 'minecraft:sulfur_caves')
+          deep_path.write_text(json.dumps(deep, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          affix = 'src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java'
+          rep(affix,
+              'Content-pack bridge: any single-stack sword/mace/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that',
+              'Content-pack bridge: any single-stack sword/spear/mace/bow/crossbow/pickaxe/axe/shovel/hoe/shield or humanoid armor item that')
+          rep(affix, '            case WEAPON -> "무기";\n            case RANGED -> "원거리";',
+                     '            case WEAPON -> "무기";\n            case SPEAR -> "스피어";\n            case RANGED -> "원거리";')
+          rep(affix,
+              'if (rarity <= 0 || category == Category.WEAPON || category == Category.RANGED || category == Category.MACE || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;',
+              'if (rarity <= 0 || category == Category.WEAPON || category == Category.SPEAR || category == Category.RANGED || category == Category.MACE || category == Category.SHIELD || category == Category.ARMOR || category == Category.NONE) return 1.0D;')
+          rep(affix,
+              '''    public static double damageMultiplier(ItemStack stack) {
+        int rarity = rarity(stack);
+        if (rarity <= 0 || category(stack) != Category.WEAPON || !has(stack, PRIMARY)) return 1.0D;
+        return switch (rarity) { case 1 -> 1.08D; case 2 -> 1.15D; default -> 1.25D; };
+    }
+''',
+              '''    public static double damageMultiplier(ItemStack stack) {
+        int rarity = rarity(stack);
+        Category category = category(stack);
+        if (rarity <= 0 || !has(stack, PRIMARY)) return 1.0D;
+        if (category == Category.WEAPON) return switch (rarity) { case 1 -> 1.08D; case 2 -> 1.15D; default -> 1.25D; };
+        if (category == Category.SPEAR) return switch (rarity) { case 1 -> 1.06D; case 2 -> 1.12D; default -> 1.20D; };
+        return 1.0D;
+    }
+''')
+          rep(affix,
+              '''    public static boolean isMace(ItemStack stack) {
+        return categoryForItem(stack) == Category.MACE;
+    }
+''',
+              '''    public static boolean isSpear(ItemStack stack) {
+        return categoryForItem(stack) == Category.SPEAR;
+    }
+
+    public static double spearLineReachBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, SCALE)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.5D; case 2 -> 1.0D; case 3 -> 1.5D; default -> 0.0D; };
+    }
+
+    public static int spearLineTargetBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, SECONDARY)) return 0;
+        return switch (rarity(stack)) { case 1 -> 1; case 2 -> 2; case 3 -> 3; default -> 0; };
+    }
+
+    public static double spearLineKnockbackBonus(ItemStack stack) {
+        if (category(stack) != Category.SPEAR || !has(stack, UTILITY)) return 0.0D;
+        return switch (rarity(stack)) { case 1 -> 0.08D; case 2 -> 0.16D; case 3 -> 0.24D; default -> 0.0D; };
+    }
+
+    public static boolean isMace(ItemStack stack) {
+        return categoryForItem(stack) == Category.MACE;
+    }
+''')
+          rep(affix,
+              '        if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;',
+              '        if (stack.is(ItemTags.SPEARS)) return Category.SPEAR;\n        if (stack.is(ItemTags.SWORDS)) return Category.WEAPON;')
+          rep(affix,
+              'if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.RANGED ? "강궁" : category == Category.MACE ? "충각" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";',
+              'if (PRIMARY.equals(key)) return category == Category.WEAPON ? "파괴" : category == Category.SPEAR ? "관통" : category == Category.RANGED ? "강궁" : category == Category.MACE ? "충각" : category == Category.SHIELD ? "압력" : category == Category.ARMOR ? "수호" : "가속";')
+          rep(affix,
+              '            case WEAPON -> "파급"; case RANGED -> "산개";',
+              '            case WEAPON -> "파급"; case SPEAR -> "돌파"; case RANGED -> "산개";')
+          rep(affix,
+              '            case WEAPON -> "사냥"; case RANGED -> "연쇄";',
+              '            case WEAPON -> "사냥"; case SPEAR -> "대열"; case RANGED -> "연쇄";')
+          rep(affix,
+              '            case WEAPON -> "충격"; case RANGED -> "충격";',
+              '            case WEAPON -> "충격"; case SPEAR -> "충압"; case RANGED -> "충격";')
+          rep(affix,
+              'WEAPON("weapon"), RANGED("ranged"), PICKAXE("pickaxe")',
+              'WEAPON("weapon"), SPEAR("spear"), RANGED("ranged"), PICKAXE("pickaxe")')
+
+          combat = 'src/main/java/kr/moonseungjun/survivalascension/combat/CombatProgression.java'
+          rep(combat,
+              '''        if (event.getSource().is(DamageTypeTags.IS_MACE_SMASH) && AscensionAffixes.isMace(weapon)) {
+            tryMaceImpact(player, serverLevel, primary, weapon, level);
+            return;
+        }
+
+        if (tryShockwave(player, serverLevel, primary, event, scaledDamage, level)) return;
+''',
+              '''        if (event.getSource().is(DamageTypeTags.IS_MACE_SMASH) && AscensionAffixes.isMace(weapon)) {
+            tryMaceImpact(player, serverLevel, primary, weapon, level);
+            return;
+        }
+
+        if (AscensionAffixes.isSpear(weapon)) {
+            trySpearDrive(player, serverLevel, primary, weapon, level);
+            return;
+        }
+
+        if (tryShockwave(player, serverLevel, primary, event, scaledDamage, level)) return;
+''')
+          rep(combat,
+              '    private static void tryMaceImpact(ServerPlayer player, ServerLevel level, LivingEntity primary,',
+              '''    private static void trySpearDrive(ServerPlayer player, ServerLevel level, LivingEntity primary,
+                                      ItemStack spear, int combatLevel) {
+        if (combatLevel < 30 || player.isShiftKeyDown()) return;
+
+        Vec3 direction = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+        if (direction.lengthSqr() <= 1.0E-5D) return;
+        direction = direction.normalize();
+        Entity carrier = player.getVehicle() != null ? player.getVehicle() : player;
+        Vec3 motion = carrier.getDeltaMovement().multiply(1.0D, 0.0D, 1.0D);
+        double forwardSpeed = motion.x * direction.x + motion.z * direction.z;
+        if (forwardSpeed < 0.08D) return;
+
+        boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        double reach = fieldMastery ? 7.5D : combatLevel >= 100 ? 6.5D : combatLevel >= 90 ? 5.5D : combatLevel >= 60 ? 4.5D : 3.5D;
+        int targetLimit = fieldMastery ? 5 : combatLevel >= 100 ? 4 : combatLevel >= 90 ? 3 : combatLevel >= 60 ? 2 : 1;
+        double basePush = fieldMastery ? 0.55D : combatLevel >= 100 ? 0.48D : combatLevel >= 90 ? 0.40D : combatLevel >= 60 ? 0.32D : 0.25D;
+        reach = Math.min(9.0D, reach + AscensionAffixes.spearLineReachBonus(spear));
+        targetLimit = Math.min(8, targetLimit + AscensionAffixes.spearLineTargetBonus(spear));
+        double pushStrength = Math.min(1.10D, basePush + Math.min(0.35D, forwardSpeed * 0.85D)
+                + AscensionAffixes.spearLineKnockbackBonus(spear));
+        final Vec3 lineDirection = direction;
+        final double lineReach = reach;
+        final double halfWidthSqr = 1.35D * 1.35D;
+
+        List<LivingEntity> nearby = level.getEntitiesOfClass(
+                LivingEntity.class,
+                primary.getBoundingBox().inflate(lineReach, 1.5D, lineReach),
+                candidate -> {
+                    if (candidate == primary || candidate == player || !candidate.isAlive()
+                            || !ContentPackCompatibility.isCombatTarget(candidate) || player.isAlliedTo(candidate)) return false;
+                    Vec3 delta = candidate.position().subtract(primary.position());
+                    double forward = delta.x * lineDirection.x + delta.z * lineDirection.z;
+                    if (forward <= 0.0D || forward > lineReach) return false;
+                    double lateralX = delta.x - lineDirection.x * forward;
+                    double lateralZ = delta.z - lineDirection.z * forward;
+                    return lateralX * lateralX + lateralZ * lateralZ <= halfWidthSqr;
+                });
+        nearby.sort(Comparator.comparingDouble(candidate -> {
+            Vec3 delta = candidate.position().subtract(primary.position());
+            return delta.x * lineDirection.x + delta.z * lineDirection.z;
+        }));
+
+        int pushed = 0;
+        for (LivingEntity candidate : nearby) {
+            if (pushed >= targetLimit) break;
+            double resistance = Math.max(0.0D, Math.min(1.0D, candidate.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
+            double strength = pushStrength * (1.0D - resistance);
+            if (strength <= 0.0D) continue;
+            candidate.setDeltaMovement(candidate.getDeltaMovement().add(
+                    lineDirection.x * strength, 0.06D * (1.0D - resistance), lineDirection.z * strength));
+            candidate.hurtMarked = true;
+            pushed++;
+        }
+    }
+
+    private static void tryMaceImpact(ServerPlayer player, ServerLevel level, LivingEntity primary,''')
+
+          ui = 'src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java'
+          rep_all(ui,
+                  '검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요',
+                  '검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요')
+          reforge = 'src/main/java/kr/moonseungjun/survivalascension/equipment/EquipmentReforgeService.java'
+          rep_all(reforge,
+                  '검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비',
+                  '검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비')
+
+          main = 'src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java'
+          rep(main, 'public static final String VERSION = "0.54.0-alpha.1";', 'public static final String VERSION = "0.55.0-alpha.1";')
+          rep(main, '// 0.54: real mace-smash hits replace generic cleave with bounded hostile-only outer impact rings.',
+                    '// 0.55: native 26.2 Sulfur Caves and spear identity join the progression loop without replacing vanilla mechanics.')
+          rep(main,
+              'loaded: scaled mastery + mace outer impact rings + shield guard waves',
+              'loaded: scaled mastery + spear momentum drive lines + mace outer impact rings + shield guard waves')
+
+          guide = 'src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java'
+          rep(guide,
+              '                h("삽 토공"),',
+              '                h("스피어 돌파선"), p("표준 minecraft:spears 장비는 승천 각인에 합류합니다. 전투 Lv30부터 실제 전진 속도가 있는 스피어 직접 타격은 주 대상 뒤의 좁은 돌파선에 있는 적을 피해·숙련 XP 없이 밀어냅니다. Shift 공격은 추가 돌파선 없는 정밀 타격이며 바닐라 Jab/Charge 피해·사거리·속도 계산은 그대로 유지됩니다."),\n                h("삽 토공"),')
+
+          readme = 'README.md'
+          rep(readme, '## 0.54.0-alpha.1 — Mace Impact Ascension / 메이스 충격권 승천', '''## 0.55.0-alpha.1 — Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
+Minecraft 26.2의 `minecraft:sulfur_caves`를 기존 심층권 원정 태그에 편입했다. Sulfur/Cinnabar 계열은 바닐라 pickaxe-mineable 지형으로 기존 채굴 숙련 속도·XP·면적 작업을 받지만 `valuable_ores`로 승격하지 않아 광맥/추출 대상으로 오인하지 않는다.
+
+Standard `minecraft:spears` equipment now joins Ascension Imprint/reforge/Mythic awakening/salvage while remaining absent from generated elite base loot. Vanilla Jab/Charge behavior remains authoritative. Combat Lv30+ adds only a zero-damage, zero-XP narrow drive line behind a direct spear target when the player or mount has real forward momentum; Shift suppresses this Ascension line for precision attacks. Base reach/targets are Lv30 3.5/1, Lv60 4.5/2, Lv90 5.5/3, Lv100 6.5/4, Field Mastery 7.5/5. Spear affixes are `관통` direct damage, `돌파` line reach, `숙련` kill XP, `대열` target count and `충압` push. The line is capped at reach9.0, targets8 and push1.10 and respects knockback resistance.
+
+No new SavedData, packet/protocol, custom spear/entity, force-load or background simulation is introduced. Network protocol remains `8`.
+
+## 0.54.0-alpha.1 — Mace Impact Ascension / 메이스 충격권 승천''')
+
+          project = 'PROJECT.md'
+          rep(project, '- Mod version: `0.54.0-alpha.1`', '- Mod version: `0.55.0-alpha.1`')
+          rep(project, '## 0.54 Mace Impact Ascension / 메이스 충격권 승천', '''## 0.55 Native 26.2 Spear + Sulfur Integration / 26.2 스피어·유황동굴 통합
+- `minecraft:sulfur_caves` is part of the existing Deep expedition integration tag. Sulfur/Cinnabar remain ordinary pickaxe-mineable terrain rather than valuable-ore vein/extract targets.
+- `ItemTags.SPEARS` is a dedicated `SPEAR` imprint category and is intentionally absent from generated elite base loot.
+- Vanilla spear Jab/Charge mechanics remain untouched. Survival adds only a Combat Lv30+ momentum-gated narrow drive line behind a real direct spear target.
+- The drive line is zero-damage/zero-XP, hostile-only, Shift-suppressible, knockback-resistance-aware and capped at reach9.0 / targets8 / push1.10.
+- Base physical scale is Lv30 3.5/1, Lv60 4.5/2, Lv90 5.5/3, Lv100 6.5/4, Field Mastery 7.5/5 reach/targets.
+- Spear affixes: 관통 direct damage, 돌파 reach, 숙련 Combat XP, 대열 target count, 충압 push.
+- No new SavedData, packet/protocol, custom spear/entity, force-load or passive simulation.
+
+## 0.54 Mace Impact Ascension / 메이스 충격권 승천''')
+
+          changelog = 'CHANGELOG.md'
+          rep(changelog, '## 0.54.0-alpha.1', '''## 0.55.0-alpha.1
+- Added Minecraft 26.2 `minecraft:sulfur_caves` to the existing Deep expedition integration tag.
+- Kept Sulfur/Cinnabar as normal pickaxe-mineable terrain: Mining speed/XP/area applies, but they are not promoted into `valuable_ores` vein/extract semantics.
+- Added dedicated `ItemTags.SPEARS` Ascension Imprint/reforge/Mythic-awakening/salvage support while preserving normal spear acquisition by excluding Spear from generated elite base loot.
+- Preserved vanilla Jab/Charge authority; Combat Lv30+ adds only a real-forward-momentum narrow drive line behind the primary spear target.
+- Drive line is hostile-only, zero-damage/zero-XP, Shift-suppressible and knockback-resistance-aware; base reach/targets scale 3.5/1 -> 4.5/2 -> 5.5/3 -> 6.5/4 -> Field Mastery 7.5/5.
+- Added Spear affixes `관통`/`돌파`/`숙련`/`대열`/`충압` with hard caps reach9.0, targets8 and push1.10.
+- Kept network protocol8 and added no SavedData, packet, custom spear/entity, force-load or background simulation.
+- Bumped content-preview lock to `0.55.0-alpha.1-content-preview.1` without changing the six audited external mod versions.
+
+## 0.54.0-alpha.1''')
+
+          matrix = 'MODPACK_COMPAT_MATRIX.md'
+          rep(matrix,
+              '현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다.',
+              '26.2 네이티브 경계도 같은 원칙으로 연결한다. `minecraft:sulfur_caves`는 심층권 원정에 들어가며 Sulfur/Cinnabar는 pickaxe-mineable 일반 지형으로 숙련을 받되 `valuable_ores` 광맥/추출로 승격하지 않는다. `minecraft:spears`는 전용 승천 각인 카테고리로 들어가고, 바닐라 Jab/Charge는 유지한 채 실제 전진 운동량이 있을 때만 0피해/0XP 돌파선 밀침을 추가한다.\n\n현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 스피어 운동량 돌파선 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP/26.2 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다.')
+
+          plan = 'MODPACK_PLAN_DRAFT.md'
+          rep(plan, '## 현재 0.46 장비 통합 상태', '''## 현재 0.55 네이티브 26.2 통합 상태
+- `minecraft:sulfur_caves`는 기존 심층권 원정에 들어가며 Sulfur/Cinnabar는 광맥/추출 대상이 아닌 일반 pickaxe-mineable 채굴 지형으로 둔다.
+- `minecraft:spears`는 전용 승천 각인 카테고리로 편입하지만 엘리트 기본드롭으로 생성하지 않는다.
+- 스피어의 바닐라 Jab/Charge는 그대로 두고, 실제 전진 운동량이 있는 직접 타격에만 0피해/0XP 좁은 돌파선 밀침을 추가한다.
+
+## 현재 0.46 장비 통합 상태''')
+
+          src_test = 'tools/test_release_source.py'
+          rep(src_test, 'REQUIRED_VERSION = "0.54.0-alpha.1"', 'REQUIRED_VERSION = "0.55.0-alpha.1"')
+          rep_all(src_test, 'VERSION = \\"0.54.0-alpha.1\\"', 'VERSION = \\"0.55.0-alpha.1\\"')
+          rep_all(src_test, '검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비', '검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비')
+          rep_all(src_test, '검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요', '검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요')
+          rep(src_test, 'Mod version: `0.54.0-alpha.1`', 'Mod version: `0.55.0-alpha.1`')
+          rep(src_test,
+              '# User-facing docs are part of the release contract, not an uncommitted CI-side patch.',
+              '''# 0.55 native 26.2 spear + Sulfur Caves integration.
+          deep = read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json")
+          need(deep, ['"minecraft:sulfur_caves"'], "0.55 Sulfur Caves Deep expedition bridge")
+          need(affix, ["ItemTags.SPEARS", "Category.SPEAR", 'SPEAR("spear")', "isSpear(ItemStack stack)",
+                       "spearLineReachBonus", "spearLineTargetBonus", "spearLineKnockbackBonus",
+                       'case SPEAR -> "스피어"', 'category == Category.SPEAR ? "관통"', 'case SPEAR -> "돌파"',
+                       'case SPEAR -> "대열"', 'case SPEAR -> "충압"'], "0.55 spear affix progression")
+          need(affix, ["GEAR_CATEGORIES = List.of(Category.WEAPON, Category.RANGED, Category.PICKAXE, Category.AXE, Category.SHOVEL, Category.HOE, Category.SHIELD, Category.ARMOR)"], "0.55 spear acquisition preservation")
+          need(combat, ["AscensionAffixes.isSpear(weapon)", "trySpearDrive(player, serverLevel, primary, weapon, level)",
+                        "forwardSpeed < 0.08D", "fieldMastery ? 7.5D", "Math.min(9.0D", "Math.min(8",
+                        "Math.min(1.10D", "Attributes.KNOCKBACK_RESISTANCE", "candidate.setDeltaMovement"], "0.55 spear drive-line runtime")
+          spear_start = combat.find("private static void trySpearDrive")
+          spear_end = combat.find("private static void tryMaceImpact", spear_start)
+          if spear_start < 0 or spear_end < 0:
+              errors.append("0.55 spear runtime body missing")
+          else:
+              forbid(combat[spear_start:spear_end], ["hurtServer(", "SkillProgressionService.award"], "0.55 spear zero-damage/zero-XP line")
+          ordered(combat, ["AscensionAffixes.isSpear(weapon)", "trySpearDrive(player, serverLevel, primary, weapon, level)", "return;", "if (tryShockwave"], "0.55 spear replaces generic cleave/shockwave")
+
+          # User-facing docs are part of the release contract, not an uncommitted CI-side patch.''')
+          rep(src_test,
+              'need(guide, [\'h("메이스 충격권")\', "현장 숙련=9블록/20체", "바닐라 메이스 스매시는 그대로", \'h("메이스 스매시")\'], "0.54 in-game guide")',
+              'need(guide, [\'h("메이스 충격권")\', "현장 숙련=9블록/20체", "바닐라 메이스 스매시는 그대로", \'h("메이스 스매시")\'], "0.54 in-game guide")\nneed(project_doc, ["## 0.55 Native 26.2 Spear + Sulfur Integration", "reach9.0 / targets8 / push1.10"], "0.55 PROJECT docs")\nneed(readme, ["## 0.55.0-alpha.1 — Native 26.2 Spear + Sulfur Integration", "minecraft:sulfur_caves", "Field Mastery 7.5/5"], "0.55 README docs")\nneed(changelog, ["## 0.55.0-alpha.1", "ItemTags.SPEARS", "0피해/0XP", "0.55.0-alpha.1-content-preview.1"], "0.55 CHANGELOG docs")\nneed(guide, [\'h("스피어 돌파선")\', "minecraft:spears", "피해·숙련 XP 없이", "바닐라 Jab/Charge"], "0.55 in-game guide")')
+          rep(src_test,
+              'baseline.replace("표준 검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비", "표준 검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")',
+              'baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")') if 'baseline.replace("표준 검/메이스' in read(src_test) else None
+          rep(src_test, 'print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.54")',
+                        'print("- 0.55 Sulfur Caves and dedicated spear momentum drive-line integration are bounded and regression-checked")\nprint("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.55")')
+
+          pack_test = 'tools/test_release_content_pack.py'
+          rep(pack_test, 'REQUIRED_LOCK_VERSION = "0.54.0-alpha.1-content-preview.1"', 'REQUIRED_LOCK_VERSION = "0.55.0-alpha.1-content-preview.1"')
+          rep(pack_test, "baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.54.0-alpha.1`')",
+                         "baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.55.0-alpha.1`')")
+          rep_all(pack_test, '검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요',
+                            '검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요')
+          rep(pack_test,
+              'need(matrix, ["c:tools/mace", "외곽 충격권", "엘리트 기본드롭에서는 메이스를 생성하지 않는다"], "0.54 generic mace compatibility docs")',
+              'need(matrix, ["c:tools/mace", "외곽 충격권", "엘리트 기본드롭에서는 메이스를 생성하지 않는다"], "0.54 generic mace compatibility docs")\nneed(affix, ["ItemTags.SPEARS", "Category.SPEAR", "isSpear(ItemStack stack)", "spearLineReachBonus", "spearLineTargetBonus", "spearLineKnockbackBonus"], "0.55 spear content-pack bridge")\nneed(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.55 spear player flow")\nneed(combat, ["trySpearDrive", "forwardSpeed < 0.08D", "fieldMastery ? 7.5D", "Attributes.KNOCKBACK_RESISTANCE"], "0.55 spear runtime flow")\ndeep55 = read("src/main/resources/data/survivalascension/tags/worldgen/biome/expedition/deep.json")\nneed(deep55, ["minecraft:sulfur_caves"], "0.55 Sulfur Caves expedition bridge")\nneed(matrix, ["minecraft:sulfur_caves", "minecraft:spears", "0피해/0XP"], "0.55 native compatibility docs")')
+          rep(pack_test, 'print("mace_affix_outer_impact_bridge=PASS")',
+                         'print("mace_affix_outer_impact_bridge=PASS")\nprint("sulfur_caves_deep_bridge=PASS")\nprint("spear_affix_drive_bridge=PASS")')
+
+          verify = 'tools/verify_release_jar.py'
+          rep(verify,
+              '\n\nprint("frontline_freight_manifest_runtime=present")',
+              '''
+with zipfile.ZipFile(jar) as zf:
+    affix055 = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
+    combat055 = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
+    deep055 = zf.read("data/survivalascension/tags/worldgen/biome/expedition/deep.json")
+    for token in [b"SPEARS", b"spearLineReachBonus", b"spearLineTargetBonus", b"spearLineKnockbackBonus"]:
+        if token not in affix055:
+            raise SystemExit(f"0.55 compiled spear-affix token missing: {token!r}")
+    for token in [b"trySpearDrive", b"getDeltaMovement", b"KNOCKBACK_RESISTANCE", b"setDeltaMovement"]:
+        if token not in combat055:
+            raise SystemExit(f"0.55 compiled spear-drive token missing: {token!r}")
+    if b"minecraft:sulfur_caves" not in deep055:
+        raise SystemExit("0.55 packaged Sulfur Caves Deep bridge missing")
+
+print("frontline_freight_manifest_runtime=present")''')
+          rep(verify, 'print("mace_outer_impact_release_verify=PASS")',
+                      'print("mace_outer_impact_release_verify=PASS")\nprint("sulfur_caves_deep_runtime=present")\nprint("spear_drive_line_runtime=present")\nprint("native_26_2_release_verify=PASS")')
+
+          jar_verify = 'tools/verify_jar.py'
+          rep(jar_verify,
+              '''    deep_ids = {entry.get("id") for entry in deep_doc.get("values", []) if isinstance(entry, dict) and entry.get("required") is False}
+    if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
+        raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
+''',
+              '''    deep_values = deep_doc.get("values", [])
+    deep_ids = {entry.get("id") for entry in deep_values if isinstance(entry, dict) and entry.get("required") is False}
+    if "biomesoplenty:glowing_grotto" not in deep_ids or "biomesoplenty:spider_nest" not in deep_ids:
+        raise SystemExit("BOP Deep expedition bridge missing from packaged JAR")
+    if "minecraft:sulfur_caves" not in deep_values:
+        raise SystemExit("Minecraft 26.2 Sulfur Caves Deep expedition bridge missing from packaged JAR")
+''')
+          rep(jar_verify,
+              '    if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:\n        raise SystemExit("compiled shovel affix bridge missing")',
+              '    if b"SHOVELS" not in affix_class or b"adjustShovelArea" not in affix_class:\n        raise SystemExit("compiled shovel affix bridge missing")\n    if b"SPEARS" not in affix_class or b"spearLineReachBonus" not in affix_class:\n        raise SystemExit("compiled spear affix bridge missing")\n    if b"trySpearDrive" not in combat_class:\n        raise SystemExit("compiled spear drive-line bridge missing")')
+
+          # Keep release source baseline translation current.
+          s = read(src_test)
+          s = s.replace('baseline.replace("표준 검/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비", "표준 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")',
+                        'baseline.replace("표준 검/곡괭이/도끼/삽/괭이 태그 장비", "표준 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비")')
+          write(src_test, s)
+          PY
+
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          test -f build/libs/survivalascension-0.55.0-alpha.1.jar
+          python3 tools/verify_release_jar.py build/libs/survivalascension-0.55.0-alpha.1.jar
+          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.55.0-alpha.1.jar --output /tmp/Survival-Ascension-0.55.0-alpha.1-content-preview.mrpack
+          git diff --check
+
+          cd ../..
+          rm -f projects/survival-ascension/.alpha55-trigger
+          rm -f .github/workflows/survival-ascension-055-one-shot.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/survival-ascension .github/workflows/survival-ascension-055-one-shot.yml
+          git commit -m 'Release Survival Ascension 0.55 native spear and sulfur integration'
+          for attempt in 1 2 3 4 5 6; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt * 2))
+          done
+          exit 1
