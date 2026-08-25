@@ -24,10 +24,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo 'dac526ac4f7fbea82af1e41e4841784662b9ce7eff7feb0a71230eaaf3b39e3f  .github/frontier-alpha72-patch.part00' | sha256sum -c -
+          echo '029320df241b5c5adfdd7b345c8abe2fbee8f77b5546e3774613963f151b2640  .github/frontier-alpha72-patch.part01' | sha256sum -c -
+          echo '84371ed0d30c64204887de822af0cd640b0baa5314c645234daecedc824ebcc9  .github/frontier-alpha72-patch.part02' | sha256sum -c -
+          echo 'ddaefbbefc8c6732c9d6923b6019fad2aef4c01ce2a54f1cf60e8cd87a0e7651  .github/frontier-alpha72-patch.part03a' | sha256sum -c -
+          echo 'ac46b1e22985b7b05d9b85c8c490a98fa49bc931ed93195d90f4fae004e1178d  .github/frontier-alpha72-patch.part03b0' | sha256sum -c -
+          echo 'e031b248aa57a4b98ef43e2f61a618319ec76b1757866d60889c30c268d72cbe  .github/frontier-alpha72-patch.part03b1' | sha256sum -c -
+          echo '9cc0027cd33d9eb3ca73055cea5e18a975201774ddf44ee98b21b31fc23a6815  .github/frontier-alpha72-patch.part03b2' | sha256sum -c -
+          echo '1ed75854b9e3cca4e315bcd15f92faf1da31a1a3178f9ceb29fa3aafcf8bca44  .github/frontier-alpha72-patch.part03b3' | sha256sum -c -
           cat .github/frontier-alpha72-patch.part00 \
               .github/frontier-alpha72-patch.part01 \
               .github/frontier-alpha72-patch.part02 \
-              .github/frontier-alpha72-patch.part03 > /tmp/alpha72.patch.xz.b64
+              .github/frontier-alpha72-patch.part03a \
+              .github/frontier-alpha72-patch.part03b0 \
+              .github/frontier-alpha72-patch.part03b1 \
+              .github/frontier-alpha72-patch.part03b2 \
+              .github/frontier-alpha72-patch.part03b3 > /tmp/alpha72.patch.xz.b64
+          echo 'b2bd573a5d8f4d356cf9d7ce6a17d2cb8949624915265155fe5301acabd65737  /tmp/alpha72.patch.xz.b64' | sha256sum -c -
           base64 -d /tmp/alpha72.patch.xz.b64 | xz -d > /tmp/alpha72.patch
           git apply --check /tmp/alpha72.patch
           git apply /tmp/alpha72.patch
