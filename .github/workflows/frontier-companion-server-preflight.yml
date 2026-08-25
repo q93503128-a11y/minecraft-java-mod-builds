@@ -11,6 +11,7 @@ on:
       - 'projects/frontier-settlement/companion-testpack/install.py'
       - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
+      - 'projects/frontier-settlement/tools/verify_jar.py'
       - '.github/workflows/frontier-companion-server-preflight.yml'
 
 permissions:
@@ -59,6 +60,8 @@ jobs:
           python3 tools/test_alpha73_docs.py
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
           python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.73.jar
+          unzip -p build/libs/frontier_settlement-0.1.0-alpha.73.jar META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
+          grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
 
       - name: Assemble locked server mod payload
         run: |
@@ -103,7 +106,7 @@ jobs:
           # This job intentionally does not accept Minecraft's EULA on behalf of the repository owner.
           # A clean first launch must reach the normal EULA gate instead of crashing during launcher/mod loading.
           grep -Eqi 'agree to the EULA|eula.txt|EULA' "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"
-          if grep -Eqi 'ModLoadingException|Failed to load|NoClassDefFoundError|ClassNotFoundException|Mixin apply failed|Encountered an unexpected exception|Exception in thread "main"' "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"; then
+          if grep -Eqi 'ModLoadingException|Failed to load|NoClassDefFoundError|ClassNotFoundException|Mixin apply failed|Encountered an unexpected exception|Exception in thread "main"|is not a valid mod file|Loading errors encountered|requires neoforge|requires sophisticatedcore' "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"; then
             echo 'Unexpected mod-loading/runtime failure before the EULA gate.' >&2
             exit 1
           fi
@@ -112,11 +115,13 @@ jobs:
             exit 1
           fi
 
-      - name: Upload preflight log
+      - name: Upload preflight evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontier-companion-server-preflight-log
-          path: frontier-companion-server-preflight.log
+          path: |
+            frontier-companion-server-preflight.log
+            frontier-neoforge-metadata.txt
           if-no-files-found: warn
           retention-days: 14
