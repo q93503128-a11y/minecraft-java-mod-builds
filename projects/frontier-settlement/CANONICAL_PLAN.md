@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.68**.
+Current canonical implementation: **0.1.0-alpha.69**.
 
 ## 1. Product identity
 
@@ -367,6 +367,20 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.69 historical duplicate-assignment containment
+
+Alpha.69 hardens saves that may already contain more than one physical resident with the same specialist/outpost assignment tag. Alpha.67/68 prevent the known new false-missing paths, but they did not erase historical duplicates and the previous specialist population counters observed only one worker per assignment.
+
+- workshop, advanced-workshop and outpost assignment queries expose the complete loaded matching-worker set;
+- shared population reconciliation counts every unique physical assigned resident under the existing full loaded-evidence gates;
+- replacement remains authorized only by **zero** matching workers, so two-or-more residents never consume another food4;
+- actual specialist/transport work still uses exactly one worker, chosen deterministically by UUID order;
+- ordinary production residents remain pooled and unchanged;
+- existing exact MAINHAND death recovery remains unchanged; Alpha.69 does not delete, discard, retag or refund a duplicate resident or its cargo;
+- no duplicate ledger, UUID reservation authority, virtual population/cargo, force-load, teleport, new worker family, key, UI or second logistics authority is added.
+
+This is non-destructive containment, not historical-save cleanup. Long two-player repeated-death/night-rest/save-reload/reconnect runtime acceptance remains unfinished.
 
 ### Alpha.68 rest-anchor-aware civilian lifecycle evidence
 

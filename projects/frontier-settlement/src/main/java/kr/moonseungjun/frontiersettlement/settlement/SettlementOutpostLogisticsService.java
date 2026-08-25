@@ -85,12 +85,12 @@ public final class SettlementOutpostLogisticsService {
     }
 
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
-        int count = 0;
+        Set<java.util.UUID> ids = new HashSet<>();
         for (OutpostRecord outpost : data.outposts()) {
             if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
-            if (findAssignedWorker(level, data, outpost) != null) count++;
+            for (Villager worker : findAssignedWorkers(level, data, outpost)) ids.add(worker.getUUID());
         }
-        return count;
+        return ids.size();
     }
 
     /**
@@ -108,7 +108,7 @@ public final class SettlementOutpostLogisticsService {
     public static OutpostRecord firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
             if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
-            if (findAssignedWorker(level, data, outpost) == null) return outpost;
+            if (findAssignedWorkers(level, data, outpost).isEmpty()) return outpost;
         }
         return null;
     }
@@ -129,7 +129,7 @@ public final class SettlementOutpostLogisticsService {
 
     public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         if (outpost == null || !assignmentEvidenceLoaded(level, data, outpost)
-                || findAssignedWorker(level, data, outpost) != null) return null;
+                || !findAssignedWorkers(level, data, outpost).isEmpty()) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = outpost.center().above();
         if (!level.hasChunkAt(spawn)) return null;
@@ -159,20 +159,30 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        List<Villager> found = findAssignedWorkers(level, data, outpost);
+        return found.isEmpty() ? null : found.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
-        return findAssignedWorker(level, data, outpost, route);
+        return findAssignedWorkers(level, data, outpost, route);
     }
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data,
                                                OutpostRecord outpost, List<BlockPos> route) {
-        if (route.isEmpty()) return null;
+        List<Villager> found = findAssignedWorkers(level, data, outpost, route);
+        return found.isEmpty() ? null : found.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data,
+                                                      OutpostRecord outpost, List<BlockPos> route) {
+        if (route.isEmpty()) return List.of();
         String assignment = outpostTag(outpost);
         List<Villager> found = level.getEntitiesOfClass(Villager.class, routeBounds(data, outpost, route),
                 villager -> villager.entityTags().contains(TRANSPORT_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
-        if (found.isEmpty()) return null;
         found.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
-        return found.getFirst();
+        return found;
     }
 
     private static Villager findLegacyWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {

@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.68"
+    "frontier_settlement": "0.1.0-alpha.69"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -37,7 +37,8 @@
     "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.65 keeps only HUD collision avoidance rather than internal/mixin waypoint injection.",
     "Alpha.66 unifies the civilian lifecycle boundary: population reconciliation and ordinary-worker replacement require fully loaded work-to-storage evidence, advanced-forging artisans join the existing atomic food4/housing/population arrival path, and their physical MAINHAND cargo uses the same local exact-death-recovery rule; old loaded artisans are preserved without retroactive food charging.",
     "Alpha.67 makes outpost transporter absence decisions fail closed against unloaded entity-search chunks: population reconciliation, missing-assignment replacement and legacy reassignment require the complete persisted-route transporter lookup envelope to be loaded, while normal physical route travel still pauses only at unloaded route boundaries. This adds no force-load, teleport, second transporter authority, virtual cargo or companion dependency.",
-    "Alpha.68 closes the normal-rest false-missing lifecycle edge: local production/workshop lookup evidence now includes the same work, concrete storage and HOUSE rest envelope used by worker search, while town-side outpost transporter routeBounds also include HOUSE rest footprints. Normal work/road movement remains physical and unloaded boundaries still pause; no force-load, teleport, UUID reservation ledger, virtual resident/cargo authority or companion dependency is added."
+    "Alpha.68 closes the normal-rest false-missing lifecycle edge: local production/workshop lookup evidence now includes the same work, concrete storage and HOUSE rest envelope used by worker search, while town-side outpost transporter routeBounds also include HOUSE rest footprints. Normal work/road movement remains physical and unloaded boundaries still pause; no force-load, teleport, UUID reservation ledger, virtual resident/cargo authority or companion dependency is added.",
+    "Alpha.69 contains historical duplicate assigned residents without destructive cleanup: fully loaded workshop, advanced-workshop and outpost assignment queries count every unique physical worker toward shared population, zero alone can authorize a food-funded replacement, and UUID order deterministically selects the sole active worker. No resident is deleted, no cargo is refunded or minted, and no new save ledger, force-load, teleport, worker family or logistics authority is added."
   ],
   "entries": [
     {

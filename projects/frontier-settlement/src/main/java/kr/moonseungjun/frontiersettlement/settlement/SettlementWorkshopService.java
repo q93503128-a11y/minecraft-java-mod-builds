@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,8 +77,7 @@ public final class SettlementWorkshopService {
         Set<java.util.UUID> ids = new HashSet<>();
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
-            Villager worker = findAssignedWorker(level, data, workshop);
-            if (worker != null) ids.add(worker.getUUID());
+            for (Villager worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());
         }
         return ids.size();
     }
@@ -86,7 +86,7 @@ public final class SettlementWorkshopService {
         if (!allAssignmentsLoaded(level, data)) return null;
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
-            if (findAssignedWorker(level, data, workshop) == null) return workshop;
+            if (findAssignedWorkers(level, data, workshop).isEmpty()) return workshop;
         }
         return null;
     }
@@ -95,7 +95,7 @@ public final class SettlementWorkshopService {
         if (workshop == null || workshop.buildingType() != BuildingType.WORKSHOP
                 || !SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
                 || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))
-                || findAssignedWorker(level, data, workshop) != null) return null;
+                || !findAssignedWorkers(level, data, workshop).isEmpty()) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = workshop.workCenter();
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
@@ -205,12 +205,18 @@ public final class SettlementWorkshopService {
     }
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        List<Villager> assigned = findAssignedWorkers(level, data, workshop);
+        return assigned.isEmpty() ? null : assigned.getFirst();
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         String assignment = assignmentTag(workshop);
         AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
         List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(WORKSHOP_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
-        return assigned.isEmpty() ? null : assigned.getFirst();
+        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return assigned;
     }
 
     private static String assignmentTag(BuildingRecord workshop) {

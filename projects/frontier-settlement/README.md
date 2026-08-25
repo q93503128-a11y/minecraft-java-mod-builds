@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.68
+## Current version: 0.1.0-alpha.69
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.68 key was added.
+No new Alpha.69 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -73,6 +73,10 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.69 — historical duplicate-assignment containment
+
+Old saves can already contain two physical residents with one specialist/outpost assignment. Alpha.69 counts every loaded matching resident toward real population, authorizes replacement only when the matching set is empty, and chooses one UUID-sorted worker as the active specialist/transport authority. It never deletes a duplicate resident or mints/refunds cargo or food.
 
 ## Alpha.68 — rest-anchor-aware civilian lifecycle evidence
 

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.68`
+현재 구현 기준: `0.1.0-alpha.69`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -381,6 +381,15 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
+
+### Alpha.69 기존 중복 assignment containment 감사
+
+- Alpha.67/68 이전 save에 동일 workshop / advanced workshop / outpost assignment 주민이 2명 이상 이미 존재할 수 있는 historical edge를 별도 containment했다.
+- 완전 loaded evidence에서 동일 assignment의 실제 주민 전부를 UUID 중복 제거 후 population에 계상한다.
+- matching resident가 정확히 0명일 때만 food4 replacement가 허용된다.
+- 실제 작업/장거리 운송 권위는 UUID 정렬상 첫 주민 한 명만 사용한다.
+- 기존 중복 주민 자체를 삭제/retag/refund하지 않으므로 숨은 실물 cargo를 파괴하거나 가상 환급하지 않는다.
+- 실제 2인 반복 death/replacement/night-rest/save-reload/reconnect acceptance와 오래된 save의 물리적 중복 cleanup은 계속 미완료다.
 
 ### Alpha.68 야간 휴식 anchor / 민간 assignment evidence 감사
 
