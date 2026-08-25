@@ -1,7 +1,7 @@
 from pathlib import Path
 root=Path('projects/frontier-settlement')
 tools=root/'tools'
-source='''#!/usr/bin/env python3
+source=r'''#!/usr/bin/env python3
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; JAVA=ROOT/'src/main/java/kr/moonseungjun/frontiersettlement'; A72=ROOT/'tools/test_alpha72_source.py'
 _real=Path.read_text
@@ -12,28 +12,13 @@ def legacy_view(self,*args,**kwargs):
     elif self.name=='COMPANION_LOCK.json':
         s=s.replace('"frontier_settlement": "0.1.0-alpha.73"','"frontier_settlement": "0.1.0-alpha.72"')
     elif self.name=='SettlementMarketService.java':
-        s=s.replace('tradeOne(container, trader, data);','tradeOne(container, trader);')
-        s=s.replace('private static void tradeOne(Container container, Villager trader, SettlementData data) {','private static void tradeOne(Container container, Villager trader) {')
         s=s.replace('SettlementExplorationBenefitService.marketPayout(data, tradeValue(goods))','tradeValue(goods)')
     elif self.name=='SettlementWorkshopService.java':
         s=s.replace('public static final int BASE_REPAIR_PER_METAL = 64;','private static final int REPAIR_PER_METAL = 64;')
         s=s.replace('SettlementExplorationBenefitService.repairPerMetal(data)','REPAIR_PER_METAL')
     elif self.name=='SettlementAdvancedWorkshopService.java':
-        s=s.replace('reforgeOne(level, crate, weaponSlot, data)','reforgeOne(level, crate, weaponSlot)')
-        s=s.replace('forgeOne(level, crate, weaponSlot, relicSlot, data)','forgeOne(level, crate, weaponSlot, relicSlot)')
-        s=s.replace('private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot, SettlementData data) {','private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot) {')
         s=s.replace('SettlementExplorationBenefitService.forgePower(data)','ENCHANTMENT_POWER')
-        s=s.replace('private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot, SettlementData data) {','private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot) {')
         s=s.replace('SettlementExplorationBenefitService.reforgePower(data)','REFORGE_POWER')
-    elif self.name=='SettlementExplorationService.java':
-        s=s.replace('player.sendSystemMessage(Component.literal("개척 발견 · 외부 구조물 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)));','player.sendSystemMessage(Component.literal("개척 발견 · 외부 구조물 " + id + " | 탐험 진척 " + data.explorationScore()));')
-        s=s.replace('player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)\n                + " · 신규 전초 " + SettlementExplorationBenefitService.outpostWoodCost(data) + "목재/"\n                + SettlementExplorationBenefitService.outpostStoneCost(data) + "석재"));','player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | 탐험 진척 " + data.explorationScore()));')
-    elif self.name=='SettlementContextService.java':
-        s=s.replace('buildingDetail(type, data)','buildingDetail(type)')
-        s=s.replace('private static String buildingDetail(BuildingType type, SettlementData data) {','private static String buildingDetail(BuildingType type) {')
-        s=s.replace('case WORKSHOP -> "완공 · 금속 1 → 외부무기 내구 +" + SettlementExplorationBenefitService.repairPerMetal(data);','case WORKSHOP -> "완공 · 금속 → 무기 수리";')
-        s=s.replace('case ADVANCED_WORKSHOP -> "완공 · 고급 제작 위력 " + SettlementExplorationBenefitService.forgePower(data)\n                    + " · 영지 재련 " + SettlementExplorationBenefitService.reforgePower(data);','case ADVANCED_WORKSHOP -> "완공 · 무기 + 유물 + 금속 → 고급 제작";')
-        s=s.replace('case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);','case MARKET -> "완공 · 유물 → 실물 교역";')
     return s
 Path.read_text=legacy_view
 try:
