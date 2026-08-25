@@ -21,6 +21,7 @@ public final class ExpeditionData extends SavedData {
     public static final int MILESTONE_LEGENDARY = 1 << 1;
     public static final int MILESTONE_MASTER = 1 << 2;
     private static final int ALL_REGIONS_MASK = (1 << ExpeditionRegion.values().length) - 1;
+    private static final String TBS_JOURNAL_GUARD_KEY = "_compat.tbos_archivists_journal_checked";
     private static final Codec<Map<String, Integer>> INT_MAP_CODEC = Codec.unboundedMap(Codec.STRING, Codec.INT);
 
     private record PlayerEntry(String uuid, int discoveredMask, int completedMask,
@@ -210,6 +211,18 @@ public final class ExpeditionData extends SavedData {
 
     public boolean incidentResolved(ServerPlayer player, ExpeditionRegion region) {
         return (state(player).incidentRewardMask & region.bit()) != 0;
+    }
+
+    public boolean tbsJournalGuardChecked(ServerPlayer player) {
+        return state(player).progress.getOrDefault(TBS_JOURNAL_GUARD_KEY, 0) > 0;
+    }
+
+    public boolean markTbsJournalGuardChecked(ServerPlayer player) {
+        State state = state(player);
+        if (state.progress.getOrDefault(TBS_JOURNAL_GUARD_KEY, 0) > 0) return false;
+        state.progress.put(TBS_JOURNAL_GUARD_KEY, 1);
+        setDirty();
+        return true;
     }
 
     public boolean claimIncidentReward(ServerPlayer player, ExpeditionRegion region) {

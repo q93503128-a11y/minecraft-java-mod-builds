@@ -2,6 +2,8 @@ package kr.moonseungjun.survivalascension.expedition;
 
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -36,6 +38,11 @@ public final class ExpeditionIncidentSystem {
     private static final int TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600;
     private static final int OUTSIDE_GRACE_TICKS = 200;
     private static final double EVENT_RADIUS = 48.0D;
+    private static final double RARE_CHANCE = 0.15D;
+    private static final int RARE_EXTRA_TIME_TICKS = 300;
+    private static final int OVERLAP_RETRY_TICKS = 600;
+    private static final double INCIDENT_CENTER_CLEARANCE = EVENT_RADIUS * 2.0D + 16.0D;
+    private static final int BOUNDARY_POINTS = 16;
     private static final Map<UUID, ActiveIncident> ACTIVE = new HashMap<>();
 
     private ExpeditionIncidentSystem() {}
@@ -67,7 +74,8 @@ public final class ExpeditionIncidentSystem {
         if (!data.isDiscovered(player, region) || data.incidentResolved(player, region)) return;
         if (level.getRandom().nextDouble() >= START_CHANCE) return;
 
-        start(player, level, region, ExpeditionIncident.random(region, level.getRandom()));
+        start(player, level, region, ExpeditionIncident.random(region, level.getRandom()),
+                level.getRandom().nextDouble() < RARE_CHANCE);
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -84,19 +92,25 @@ public final class ExpeditionIncidentSystem {
         if (active == null || active.incident.kind() != ExpeditionIncident.Kind.ACTION_RUSH) return;
         if (active.incident.action() != action || player.level() != active.level) return;
         if (ExpeditionProgression.currentRegion(player) != active.incident.region()) return;
-        active.actionProgress = Math.min(active.incident.actionTarget(), active.actionProgress + amount);
+        active.actionProgress = Math.min(active.actionTarget(), active.actionProgress + amount);
         updateBossBar(active);
-        if (active.actionProgress >= active.incident.actionTarget()) complete(player, active);
+        if (active.actionProgress >= active.actionTarget()) complete(player, active);
     }
 
-    private static void start(ServerPlayer player, ServerLevel level, ExpeditionRegion region, ExpeditionIncident incident) {
+    private static void start(ServerPlayer player, ServerLevel level, ExpeditionRegion region, ExpeditionIncident incident, boolean rare) {
         long now = level.getGameTime();
+        BlockPos center = player.blockPosition();
+        if (overlapsActiveIncident(level, center)) {
+            player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
+            return;
+        }
         player.getPersistentData().putLong(READY_TICK_KEY, now + START_COOLDOWN_TICKS);
-        ActiveIncident active = new ActiveIncident(player.getUUID(), level, player.blockPosition(), incident, now + incident.durationTicks());
+        ActiveIncident active = new ActiveIncident(player.getUUID(), level, center, incident,
+                now + incident.durationTicks() + (rare ? RARE_EXTRA_TIME_TICKS : 0), rare);
 
         if (incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             Set<UUID> spawned = spawnAmbush(player, active);
-            int minimum = Math.max(3, incident.spawnCount() * 2 / 3);
+            int minimum = Math.max(3, active.spawnTarget() * 2 / 3);
             if (spawned.size() < minimum) {
                 for (UUID id : spawned) {
                     Entity entity = level.getEntity(id);
@@ -113,12 +127,15 @@ public final class ExpeditionIncidentSystem {
         active.bossBar.addPlayer(player);
         active.bossBar.setVisible(true);
         updateBossBar(active);
+        String prefix = rare ? "§d[희귀 현장 사건] " : (incident.kind() == ExpeditionIncident.Kind.AMBUSH ? "§c[현장 사건] " : "§6[현장 사건] ");
         if (incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
-            player.sendSystemMessage(Component.literal("§c[현장 사건] §f" + region.koreanName() + " · §e" + incident.koreanName()
-                    + " §7· 반경 48블록 안에서 습격대 " + active.initialMobCount + "체를 정리하세요."));
+            player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
+                    + " §7· 표시된 반경 48블록 안에서 습격대 " + active.initialMobCount + "체를 정리하세요."
+                    + (rare ? " §d· 강화 보상" : "")));
         } else {
-            player.sendSystemMessage(Component.literal("§6[현장 사건] §f" + region.koreanName() + " · §e" + incident.koreanName()
-                    + " §7· 제한시간 안에 " + incident.action().koreanName() + " §e" + incident.actionTarget() + "§7을 수행하세요."));
+            player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
+                    + " §7· 표시된 반경 48블록 안에서 제한시간 내 " + incident.action().koreanName() + " §e" + active.actionTarget() + "§7을 수행하세요."
+                    + (rare ? " §d· 강화 보상" : "")));
         }
     }
 
@@ -140,6 +157,8 @@ public final class ExpeditionIncidentSystem {
             fail(player, active, "제한시간이 끝났습니다.");
             return;
         }
+
+        if (now % 20L == 0L) renderBoundary(active);
 
         if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             Set<UUID> alive = new HashSet<>();
@@ -165,10 +184,11 @@ public final class ExpeditionIncidentSystem {
     private static Set<UUID> spawnAmbush(ServerPlayer player, ActiveIncident active) {
         Set<UUID> spawned = new HashSet<>();
         List<String> types = active.incident.mobTypeIds();
-        for (int i = 0; i < active.incident.spawnCount(); i++) {
+        int spawnTarget = active.spawnTarget();
+        for (int i = 0; i < spawnTarget; i++) {
             String typeId = types.get(i % types.size());
             Mob mob = spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN,
-                    typeId, i, active.incident.spawnCount());
+                    typeId, i, spawnTarget);
             if (mob == null) continue;
             mob.setTarget(player);
             spawned.add(mob.getUUID());
@@ -226,26 +246,26 @@ public final class ExpeditionIncidentSystem {
         if (!firstResolution) return;
 
         int stage = active.incident.region().requiredWorldStage();
-        int skillXp = 100 + stage * 50;
+        int skillXp = (100 + stage * 50) * (active.rare ? 2 : 1);
         SkillProgressionService.award(player, active.incident.region().rewardSkill(), skillXp);
         if (stage == 0) {
-            giveOrDrop(player, new ItemStack(Items.EMERALD, 4));
-            giveOrDrop(player, new ItemStack(Items.AMETHYST_SHARD, 8));
+            giveOrDrop(player, new ItemStack(Items.EMERALD, active.rare ? 10 : 4));
+            giveOrDrop(player, new ItemStack(Items.AMETHYST_SHARD, active.rare ? 20 : 8));
         } else if (stage == 1) {
-            giveOrDrop(player, new ItemStack(Items.DIAMOND, 2));
-            giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 4));
+            giveOrDrop(player, new ItemStack(Items.DIAMOND, active.rare ? 5 : 2));
+            giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, active.rare ? 10 : 4));
         } else {
-            giveOrDrop(player, new ItemStack(Items.DIAMOND, 4));
-            giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 8));
+            giveOrDrop(player, new ItemStack(Items.DIAMOND, active.rare ? 8 : 4));
+            giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, active.rare ? 16 : 8));
         }
 
-        player.sendSystemMessage(Component.literal("§a[현장 사건 해결] §f" + active.incident.region().koreanName() + " · §e"
-                + active.incident.koreanName() + " §7· " + active.incident.region().rewardSkill().koreanName()
-                + " 숙련 XP +" + skillXp));
+        player.sendSystemMessage(Component.literal((active.rare ? "§d[희귀 현장 사건 해결] " : "§a[현장 사건 해결] ")
+                + "§f" + active.incident.region().koreanName() + " · §e" + active.incident.koreanName() + " §7· "
+                + active.incident.region().rewardSkill().koreanName() + " 숙련 XP +" + skillXp));
 
         ExpeditionDirective.Task bonusTask = data.firstIncompleteTask(player, active.incident.region());
         if (bonusTask != null) {
-            int bonus = Math.max(1, bonusTask.target() / 5);
+            int bonus = Math.max(1, bonusTask.target() / (active.rare ? 3 : 5));
             player.sendSystemMessage(Component.literal("§6[현장 사건 보너스] §f현재 지령의 §e" + bonusTask.action().koreanName()
                     + " §f진행도에 최대 §e" + bonus + "§f를 추가합니다."));
             ExpeditionProgression.grantIncidentBonus(player, active.incident.region(), bonusTask.action(), bonus);
@@ -264,17 +284,43 @@ public final class ExpeditionIncidentSystem {
         long remain = Math.max(0L, active.deadline - active.level.getGameTime());
         long seconds = (remain + 19L) / 20L;
         if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
-            active.bossBar.setName(Component.literal("§c현장 사건 §7[" + active.incident.koreanName() + "] §f적 "
-                    + active.mobIds.size() + " · " + seconds + "초"));
+            active.bossBar.setName(Component.literal((active.rare ? "§d희귀 현장 사건 " : "§c현장 사건 ")
+                    + "§7[" + active.incident.koreanName() + "] §f적 " + active.mobIds.size() + " · " + seconds + "초"));
             float progress = active.initialMobCount <= 0 ? 0.0F : (float) active.mobIds.size() / active.initialMobCount;
             active.bossBar.setProgress(Math.max(0.0F, Math.min(1.0F, progress)));
         } else {
-            active.bossBar.setName(Component.literal("§6현장 사건 §7[" + active.incident.koreanName() + "] §f"
-                    + active.actionProgress + "/" + active.incident.actionTarget() + " · " + seconds + "초"));
-            float progress = active.incident.actionTarget() <= 0 ? 0.0F
-                    : (float) active.actionProgress / active.incident.actionTarget();
+            active.bossBar.setName(Component.literal((active.rare ? "§d희귀 현장 사건 " : "§6현장 사건 ")
+                    + "§7[" + active.incident.koreanName() + "] §f" + active.actionProgress + "/" + active.actionTarget()
+                    + " · " + seconds + "초"));
+            float progress = active.actionTarget() <= 0 ? 0.0F
+                    : (float) active.actionProgress / active.actionTarget();
             active.bossBar.setProgress(Math.max(0.0F, Math.min(1.0F, progress)));
         }
+    }
+
+    private static boolean overlapsActiveIncident(ServerLevel level, BlockPos center) {
+        double clearanceSqr = INCIDENT_CENTER_CLEARANCE * INCIDENT_CENTER_CLEARANCE;
+        for (ActiveIncident active : ACTIVE.values()) {
+            if (active.level != level) continue;
+            double dx = center.getX() - active.center.getX();
+            double dy = center.getY() - active.center.getY();
+            double dz = center.getZ() - active.center.getZ();
+            if (dx * dx + dy * dy + dz * dz < clearanceSqr) return true;
+        }
+        return false;
+    }
+
+    private static void renderBoundary(ActiveIncident active) {
+        ParticleOptions particle = active.rare ? ParticleTypes.TOTEM_OF_UNDYING : ParticleTypes.END_ROD;
+        double y = active.center.getY() + 1.1D;
+        for (int i = 0; i < BOUNDARY_POINTS; i++) {
+            double angle = Math.PI * 2.0D * i / BOUNDARY_POINTS;
+            double x = active.center.getX() + 0.5D + Math.cos(angle) * EVENT_RADIUS;
+            double z = active.center.getZ() + 0.5D + Math.sin(angle) * EVENT_RADIUS;
+            active.level.sendParticles(particle, x, y, z, 1, 0.0D, 0.12D, 0.0D, 0.0D);
+        }
+        active.level.sendParticles(particle, active.center.getX() + 0.5D, y, active.center.getZ() + 0.5D,
+                active.rare ? 4 : 2, 0.35D, 0.15D, 0.35D, 0.0D);
     }
 
     private static void removeStaleServerIncidents(MinecraftServer server) {
@@ -318,20 +364,32 @@ public final class ExpeditionIncidentSystem {
         final BlockPos center;
         final ExpeditionIncident incident;
         final long deadline;
+        final boolean rare;
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
         int initialMobCount;
         int actionProgress;
         int outsideTicks;
 
-        ActiveIncident(UUID owner, ServerLevel level, BlockPos center, ExpeditionIncident incident, long deadline) {
+        ActiveIncident(UUID owner, ServerLevel level, BlockPos center, ExpeditionIncident incident, long deadline, boolean rare) {
             this.owner = owner;
             this.level = level;
             this.center = center.immutable();
             this.incident = incident;
             this.deadline = deadline;
-            this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal("현장 사건"),
-                    BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS);
+            this.rare = rare;
+            this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal(rare ? "희귀 현장 사건" : "현장 사건"),
+                    rare ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS);
+        }
+
+        int actionTarget() {
+            int base = incident.actionTarget();
+            return rare && base > 0 ? Math.max(base + 1, (base * 3 + 1) / 2) : base;
+        }
+
+        int spawnTarget() {
+            int base = incident.spawnCount();
+            return rare && base > 0 ? Math.max(base + 2, (base * 3 + 1) / 2) : base;
         }
     }
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.58.0-alpha.1
+- Added a 15% rare tier to bounded expedition field incidents: ~1.5x physical target scale, +15s, 2x mastery XP and stronger vanilla-material rewards.
+- Added a once-per-second 48-block incident perimeter and same-level 112-block active-incident center clearance for multiplayer isolation.
+- Added persistent, server-authoritative 5/9/17/33/49/65 LINE/CAUSEWAY length selection; Shift+click cycles in the construction radial while placement Shift stays precision-single.
+- Added a one-time delayed `tbos:archivists_journal` compatibility cleanup using registry identity only; no TBS implementation dependency.
+- Network protocol 9. External content dependencies remain locked to the same files.
+- Content pack release: `0.58.0-alpha.1-content-preview.1`.
+
 ## 0.57.0-alpha.1
 - Added loaded-chunk admission checks to Mining connected-vein discovery, planar area breaking and extract target re-read.
 - Added loaded-chunk admission checks to Woodcutting connected-log/leaf discovery and queued fell-job execution.

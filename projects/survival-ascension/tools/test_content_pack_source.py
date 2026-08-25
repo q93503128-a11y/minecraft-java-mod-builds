@@ -201,8 +201,10 @@ def main() -> None:
     require("4d55c51685bff4247fa533c925f7641ce4880db3" in matrix,
             "locked The Birth of Steve 0.7 binary audit hash missing from compatibility matrix")
 
-    for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
+    for forbidden in ("biomesoplenty", "amethyst_resonance"):
         require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")
+    require("com.nightbeam" not in compat.lower(), "TBS implementation class dependency leaked into compatibility seam")
+    for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):
         require(forbidden not in affix.lower(), f"hard optional-mod dependency leaked into equipment imprint: {forbidden}")
         require(forbidden not in reforge.lower(), f"hard optional-mod dependency leaked into equipment service: {forbidden}")
 

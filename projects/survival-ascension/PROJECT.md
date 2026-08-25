@@ -1,11 +1,20 @@
 # Survival Ascension
 
-- Mod version: `0.57.0-alpha.1`
+- Mod version: `0.58.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
-- Network protocol: `8`
-- Existing-world compatibility: no new SavedData ID or migration. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.54 adds standard mace-tag imprint plus real-smash outer impact rings; 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+- Network protocol: `9`
+- Existing-world compatibility: no new SavedData ID. 0.58 extends the existing skill profile codec with optional `construction_length=0` (legacy 0 = max unlocked), and reuses the existing expedition progress integer map for one one-time TBS onboarding guard. All older saves decode with defaults. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.54 adds standard mace-tag imprint plus real-smash outer impact rings; 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+
+## 0.58 Field Incident & Construction Control / 현장 사건·건축 제어
+- 15% of eligible field incidents become rare incidents with about 1.5x physical objective/enemy scale, +15s time, doubled mastery XP and upgraded vanilla-material rewards.
+- Active incidents render a bounded 48-block particle perimeter once per second. No block scan, force-load, custom entity or background simulation is added.
+- New incident centers are refused inside a 112-block clearance from another active incident in the same ServerLevel, preventing players' incident arenas from overlapping. Progress and spawned-mob UUID sets remain owner-scoped.
+- LINE/CAUSEWAY length is selectable from unlocked 5/9/17/33/49/65 steps. Legacy selection 0 resolves to the current maximum; 65 requires Lv100 + Field Mastery. The client sends only a cycle request and the server recomputes the legal maximum.
+- Construction menu Shift+click on LINE/CAUSEWAY cycles length; Shift during actual placement remains the single-block precision override.
+- A delayed, one-time compatibility guard removes at most one `tbos:archivists_journal` from inventory when TBS is present, then persists completion in existing expedition data. No TBS implementation class is linked.
+- Network protocol: `9`. Content-pack dependency versions remain unchanged.
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.

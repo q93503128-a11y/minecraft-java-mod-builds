@@ -1,8 +1,15 @@
 # Survival Ascension
 
-Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
+Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `9`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
+
+## 0.58.0-alpha.1 — Field Incident & Construction Control / 현장 사건·건축 제어
+희귀 현장 사건이 추가됐다. 일반 사건 발생 시 15% 확률로 희귀 등급이 되며 실제 적/행동 목표가 약 1.5배 커지고 제한시간이 15초 늘어난 대신 숙련 XP가 2배, 바닐라 물자 보상이 강화된다. 사건 중심에는 48블록 경계가 초당 한 번 입자로 표시되며, 다른 플레이어의 활성 사건 중심과 112블록 이내에서는 새 사건을 열지 않아 멀티플레이 사건 영역이 겹치지 않는다.
+
+건축 선/도로 길이는 해금된 5/9/17/33/49/65 단계 중 선택할 수 있다. 건축 메뉴에서 선 또는 도로/교량에 Shift+클릭하면 길이가 순환하며, 실제 블록 배치 중 Shift는 기존대로 강제 단일 배치다. 클라이언트는 원하는 숫자를 보내지 않고 순환 요청만 보내며 서버가 레벨·현장 숙련을 다시 검사한다. 기존 세이브의 선택값 0은 자동으로 현재 최대 길이로 해석된다.
+
+TBS가 설치된 경우 초기 접속 직후 `tbos:archivists_journal`이 남아 있는 오래된/중복 온보딩 상태를 한 번만 검사해 최대 1개만 정리한다. 검사는 기존 원정 SavedData 안에 완료 플래그를 남기며 TBS 구현 클래스를 import하지 않는다. Network protocol `9`; 외부 콘텐츠팩 버전은 그대로다.
 
 ## 0.57.0-alpha.1 — Pre-Test Stabilization / 실플레이 직전 안정화
 This release deliberately adds no new progression layer. It closes deterministic issues before the first broad gameplay pass.

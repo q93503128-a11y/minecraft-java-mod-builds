@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "8";
+    private static final String PROTOCOL = "9";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private SkillNetwork() {}
@@ -29,6 +29,10 @@ public final class SkillNetwork {
         registrar.playToServer(ConstructionModePayload.TYPE, ConstructionModePayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
+                }));
+        registrar.playToServer(ConstructionLengthPayload.TYPE, ConstructionLengthPayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) ConstructionProgression.cycleLength(player);
                 }));
         registrar.playToServer(MiningModePayload.TYPE, MiningModePayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {

@@ -77,7 +77,7 @@ for rel in required:
 props = read("gradle.properties")
 need(props, ["minecraft_version=26.2", "neo_version=26.2.0.38-beta", "mod_version=0.48.0-alpha.1"], "toolchain")
 network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
-need(network, ['PROTOCOL = "8"'], "protocol")
+need(network, ['PROTOCOL = "9"'], "protocol")
 main = read("src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java")
 need(main, ['VERSION = "0.48.0-alpha.1"', "ConstructionProgression::onBlockPlaced", "OutpostSiegeBreachService::onServerTick", "OutpostSiegeSystem::onServerTick"], "main")
 
@@ -222,7 +222,7 @@ need(project, ['CIVIL_WORKS(', '"civil_works", "토목 공사소"', 'new Require
 mode = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionMode.java")
 need(mode, ['CAUSEWAY("causeway", "도로/교량", 60)'], "construction mode")
 construction = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
-need(construction, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "MAX_PENDING_BLOCKS_PER_PLAYER = 512", "CAUSEWAY_WIDTH = 3", "ConstructionMode.CAUSEWAY", "InfrastructureProject.CIVIL_WORKS", "fieldMastery ? 65 : SkillTuning.constructionLineLength(level)", "if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;", "level.mayInteract(player, target)", "EventHooks.onBlockPlace", "FieldDepotService.consumeOne(player, item)", "int localBudget = Math.min(8, budget)"], "causeway runtime")
+need(construction, ["GLOBAL_BLOCK_BUDGET_PER_TICK = 64", "MAX_PENDING_BLOCKS_PER_PLAYER = 512", "CAUSEWAY_WIDTH = 3", "ConstructionMode.CAUSEWAY", "InfrastructureProject.CIVIL_WORKS", "selectedLength(player, level)", "if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;", "level.mayInteract(player, target)", "EventHooks.onBlockPlace", "FieldDepotService.consumeOne(player, item)", "int localBudget = Math.min(8, budget)"], "causeway runtime")
 forbid(construction, ["setChunkForced", "addRegionTicket", "getChunk("], "construction loading policy")
 site = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureSiteService.java")
 need(site, ["CIVIL_SITE = new SiteProfile(true", "Blocks.SCAFFOLDING", "case CIVIL_WORKS -> CIVIL_SITE", "level.hasChunkAt(pos)", "level.mayInteract(player, pos)"], "commissioning")

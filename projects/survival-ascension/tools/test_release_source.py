@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.57.0-alpha.1"
+REQUIRED_VERSION = "0.58.0-alpha.1"
 errors: list[str] = []
 
 
@@ -105,7 +105,7 @@ need(combat, [
 ], "0.51 worn armor runtime")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.52 ranged/armor imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
-need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
+need(main_mod, ["VERSION = \"0.58.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
 
 # 0.52 ranged combat ascension: launch-time snapshots and bounded physical impact scale.
@@ -156,7 +156,7 @@ if shield_start < 0 or shield_end < 0:
 else:
     shield_body = combat[shield_start:shield_end]
     forbid(shield_body, ["hurtServer(", "SkillProgressionService.award", "event.setBlocked(", "event.setBlockedDamage("], "0.53 shield no-damage/no-block-force policy")
-need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
+need(main_mod, ["VERSION = \"0.58.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.53 shield world-loading policy")
@@ -186,7 +186,7 @@ if mace_start < 0 or mace_end < 0:
 else:
     mace_body = combat[mace_start:mace_end]
     forbid(mace_body, ["hurtServer(", "SkillProgressionService.award"], "0.54 mace zero-damage/zero-XP outer ring")
-need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "mace outer impact rings"], "0.54 runtime banner")
+need(main_mod, ["VERSION = \"0.58.0-alpha.1\"", "mace outer impact rings"], "0.54 runtime banner")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.54 mace imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.54 mace imprint UI")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.54 mace world-loading policy")
@@ -252,7 +252,7 @@ readme = read("README.md")
 changelog = read("CHANGELOG.md")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(project_doc, [
-    "Mod version: `0.57.0-alpha.1`",
+    "Mod version: `0.58.0-alpha.1`",
     "## 0.51 Armor Ascension / 방어구 승천 성장",
     "hard-capped at 35%",
     "hard-capped at +32% Combat XP"
@@ -300,6 +300,29 @@ need(guide, ['h("원거리 전투 파급")', "발사자 귀속", "발사자가 �
 need(project_doc, ["## 0.57 Pre-Test Stabilization", "loaded-only boundary", "first valid Woodcutting break", "first valid Construction placement"], "0.57 PROJECT docs")
 need(readme, ["## 0.57.0-alpha.1 — Pre-Test Stabilization", "hasChunkAt", "first valid log break", "TESTING.md"], "0.57 README docs")
 need(changelog, ["## 0.57.0-alpha.1", "loaded-chunk", "Woodland expedition accounting", "Arid construction expedition accounting", "0.57.0-alpha.1-content-preview.1"], "0.57 CHANGELOG docs")
+
+# 0.58 bounded field incidents, construction-length selection and optional-content onboarding guard.
+skill_data58 = read("src/main/java/kr/moonseungjun/survivalascension/progress/SkillProgressData.java")
+construction58 = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
+construction_ui58 = read("src/main/java/kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.java")
+network58 = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
+length_payload58 = read("src/main/java/kr/moonseungjun/survivalascension/network/ConstructionLengthPayload.java")
+incident58 = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java")
+expedition_data58 = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionData.java")
+compat58 = read("src/main/java/kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.java")
+need(skill_data58, ["construction_length", "constructionLengthSelection", "setConstructionLengthSelection"], "0.58 persisted construction length")
+need(construction58, ["CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65}", "cycleLength(ServerPlayer player)", "selectedLength(ServerPlayer player, int level)", "maxUnlockedLength", "setConstructionLengthSelection"], "0.58 server-authoritative construction length")
+need(construction_ui58, ["ConstructionLengthPayload", "player.isShiftKeyDown()", "Shift+클릭(선/도로)=길이 변경"], "0.58 construction length UI")
+need(network58, ['PROTOCOL = "9"', "ConstructionLengthPayload.TYPE", "ConstructionProgression.cycleLength(player)"], "0.58 network protocol")
+need(length_payload58, ['"construction_length"', "StreamCodec.unit(new ConstructionLengthPayload())"], "0.58 no-data construction cycle payload")
+need(incident58, ["RARE_CHANCE = 0.15D", "INCIDENT_CENTER_CLEARANCE", "overlapsActiveIncident", "renderBoundary", "ParticleTypes.END_ROD", "ParticleTypes.TOTEM_OF_UNDYING", "active.actionTarget()", "active.spawnTarget()", "BossBarColor.PURPLE"], "0.58 rare/multiplayer incident runtime")
+need(expedition_data58, ["_compat.tbos_archivists_journal_checked", "tbsJournalGuardChecked", "markTbsJournalGuardChecked"], "0.58 TBS guard persistence")
+need(compat58, ['Identifier.fromNamespaceAndPath("tbos", "archivists_journal")', 'ModList.get().isLoaded("tbos")', "removeOneInitialTbsJournal", "stack.shrink(1)"], "0.58 TBS journal one-shot guard")
+forbid(compat58, ["com.nightbeam", "setChunkForced", "addRegionTicket", "getChunk("], "0.58 optional-content/force-load policy")
+forbid(incident58 + construction58, ["setChunkForced", "addRegionTicket", "getChunk("], "0.58 field/construction force-load policy")
+need(project_doc, ["## 0.58 Field Incident & Construction Control", "Network protocol: `9`"], "0.58 PROJECT docs")
+need(readme, ["## 0.58.0-alpha.1", "희귀 현장 사건", "Shift+클릭", "protocol `9`"], "0.58 README docs")
+need(changelog, ["## 0.58.0-alpha.1", "0.58.0-alpha.1-content-preview.1"], "0.58 CHANGELOG docs")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")

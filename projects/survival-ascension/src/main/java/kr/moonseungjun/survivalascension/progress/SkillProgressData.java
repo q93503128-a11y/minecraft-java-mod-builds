@@ -24,12 +24,14 @@ import java.util.Map;
 public final class SkillProgressData extends SavedData {
     private static final Codec<Map<String, Long>> SKILL_XP_CODEC = Codec.unboundedMap(Codec.STRING, Codec.LONG);
 
-    private record PlayerEntry(String uuid, Map<String, Long> skills, long legacyMiningXp, boolean introduced) {
+    private record PlayerEntry(String uuid, Map<String, Long> skills, long legacyMiningXp, boolean introduced,
+                               int constructionLength) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
                 SKILL_XP_CODEC.optionalFieldOf("skills", Map.of()).forGetter(PlayerEntry::skills),
                 Codec.LONG.optionalFieldOf("mining_xp", 0L).forGetter(PlayerEntry::legacyMiningXp),
-                Codec.BOOL.optionalFieldOf("introduced", false).forGetter(PlayerEntry::introduced)
+                Codec.BOOL.optionalFieldOf("introduced", false).forGetter(PlayerEntry::introduced),
+                Codec.INT.optionalFieldOf("construction_length", 0).forGetter(PlayerEntry::constructionLength)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -44,13 +46,15 @@ public final class SkillProgressData extends SavedData {
     private static final class PlayerState {
         private final Map<String, Long> xp = new HashMap<>();
         private boolean introduced;
+        private int constructionLength;
 
-        private PlayerState(Map<String, Long> xp, long legacyMiningXp, boolean introduced) {
+        private PlayerState(Map<String, Long> xp, long legacyMiningXp, boolean introduced, int constructionLength) {
             xp.forEach((id, value) -> this.xp.put(id, Math.max(0L, value)));
             if (!this.xp.containsKey(SkillType.MINING.id()) && legacyMiningXp > 0L) {
                 this.xp.put(SkillType.MINING.id(), legacyMiningXp);
             }
             this.introduced = introduced;
+            this.constructionLength = Math.max(0, constructionLength);
         }
     }
 
@@ -64,13 +68,14 @@ public final class SkillProgressData extends SavedData {
 
     private SkillProgressData(List<PlayerEntry> entries) {
         for (PlayerEntry entry : entries) {
-            players.put(entry.uuid(), new PlayerState(entry.skills(), entry.legacyMiningXp(), entry.introduced()));
+            players.put(entry.uuid(), new PlayerState(entry.skills(), entry.legacyMiningXp(), entry.introduced(), entry.constructionLength()));
         }
     }
 
     private List<PlayerEntry> entries() {
         List<PlayerEntry> result = new ArrayList<>(players.size());
-        players.forEach((uuid, state) -> result.add(new PlayerEntry(uuid, Map.copyOf(state.xp), 0L, state.introduced)));
+        players.forEach((uuid, state) -> result.add(new PlayerEntry(
+                uuid, Map.copyOf(state.xp), 0L, state.introduced, state.constructionLength)));
         return result;
     }
 
@@ -80,7 +85,7 @@ public final class SkillProgressData extends SavedData {
     public boolean ensureProfile(ServerPlayer player) {
         String key = player.getUUID().toString();
         if (players.containsKey(key)) return false;
-        players.put(key, new PlayerState(Map.of(), 0L, false));
+        players.put(key, new PlayerState(Map.of(), 0L, false, 0));
         setDirty();
         return true;
     }
@@ -93,6 +98,15 @@ public final class SkillProgressData extends SavedData {
     public long xp(ServerPlayer player, SkillType skill) { return state(player).xp.getOrDefault(skill.id(), 0L); }
     public int level(ServerPlayer player, SkillType skill) { return SkillTuning.levelFromXp(xp(player, skill)); }
     public Map<String, Long> snapshot(ServerPlayer player) { return Map.copyOf(state(player).xp); }
+    public int constructionLengthSelection(ServerPlayer player) { return state(player).constructionLength; }
+
+    public void setConstructionLengthSelection(ServerPlayer player, int length) {
+        PlayerState state = state(player);
+        int clamped = Math.max(0, length);
+        if (state.constructionLength == clamped) return;
+        state.constructionLength = clamped;
+        setDirty();
+    }
 
     public boolean markIntroduced(ServerPlayer player) {
         PlayerState state = state(player);

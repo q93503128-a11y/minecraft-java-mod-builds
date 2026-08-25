@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.client;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import kr.moonseungjun.survivalascension.construction.ConstructionMode;
+import kr.moonseungjun.survivalascension.network.ConstructionLengthPayload;
 import kr.moonseungjun.survivalascension.network.ConstructionModePayload;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.client.Minecraft;
@@ -55,7 +56,7 @@ public final class ConstructionRadialMenuScreen extends Screen {
         String detail=unlocked?entry.detail():"건축 Lv."+entry.mode().requiredLevel()+" 필요";
         graphics.text(this.font,title,cx-this.font.width(title)/2,cy-5,unlocked?0xFFFFFFFF:0xFFFF7777,true);
         graphics.text(this.font,detail,cx-this.font.width(detail)/2,cy+8,0xFFB8B8B8,false);
-        String caption="건축 Lv."+level+" · Shift = 강제 단일 · 도로/교량은 진행 방향 시공";
+        String caption="건축 Lv."+level+" · Shift+클릭(선/도로)=길이 변경 · 실제 배치 중 Shift=강제 단일";
         graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
@@ -64,6 +65,10 @@ public final class ConstructionRadialMenuScreen extends Screen {
         Entry entry=ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)];
         if(entry.back()){this.minecraft.gui.setScreen(new AscensionRadialMenuScreen());return true;}
         if(ClientSkillState.level(SkillType.CONSTRUCTION)<entry.mode().requiredLevel())return true;
+        if(this.minecraft.player!=null&&this.minecraft.player.isShiftKeyDown()&&(entry.mode()==ConstructionMode.LINE||entry.mode()==ConstructionMode.CAUSEWAY)){
+            ClientPacketDistributor.sendToServer(new ConstructionLengthPayload());
+            return true;
+        }
         ClientPacketDistributor.sendToServer(new ConstructionModePayload(entry.mode().id()));
         this.minecraft.gui.setScreen(null);
         return true;

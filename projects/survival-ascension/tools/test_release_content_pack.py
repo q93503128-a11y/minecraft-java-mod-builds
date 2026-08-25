@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_LOCK_VERSION = "0.48.0-alpha.1-content-preview.1"
-REQUIRED_LOCK_VERSION = "0.57.0-alpha.1-content-preview.1"
+REQUIRED_LOCK_VERSION = "0.58.0-alpha.1-content-preview.1"
 errors: list[str] = []
 
 
@@ -93,7 +93,7 @@ if errors:
 baseline_path = ROOT / "tools/test_content_pack_source.py"
 baseline = baseline_path.read_text(encoding="utf-8")
 baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)
-baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.57.0-alpha.1`')
+baseline = baseline.replace('Mod version: `0.48.0-alpha.1`', 'Mod version: `0.58.0-alpha.1`')
 namespace = {"__file__": str(baseline_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0

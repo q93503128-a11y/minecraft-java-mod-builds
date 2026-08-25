@@ -43,3 +43,12 @@ Back up any long-lived world first. Test with the 0.57 JAR and matching 0.57 con
 
 ## Stop-and-report signals
 Capture screenshot/log + reproduction steps for any crash, save corruption, item duplication/loss, unloaded-chunk hitch/forced generation, repeated reward, objective increase larger than real actions, bulk work crossing Shift precision, invisible/remote storage consumption, stale encounter state after failure, or external-mod classloading error.
+
+## 0.58 focused checks
+- Two players: trigger eligible incidents near each other; the second incident must not start within 112 blocks of the first center, and neither player's kills/actions may complete the other's incident.
+- Incident perimeter: verify the 48-block ring appears about once per second without chunk generation or hitching; rare incidents use the distinct rare presentation.
+- Rare incident: verify target scale is larger, reward is stronger, and completion still consumes only that region's one incident reward.
+- Construction LINE/CAUSEWAY: Shift+click cycles only through currently unlocked 5/9/17/33/49/65 lengths; relog preserves the choice; a spoofed client cannot request a locked numeric length because the packet has no length field.
+- Actual placement Shift still creates only the origin block even after selecting a bulk length.
+- Existing 0.57 save with no construction selection starts at its maximum currently unlocked length.
+- With TBS installed, first guarded login removes at most one initial `tbos:archivists_journal`; later legitimately obtained journals must survive relog because the guard is already marked complete.

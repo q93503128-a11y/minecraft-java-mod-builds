@@ -44,6 +44,7 @@ public final class ConstructionProgression {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 512;
     private static final int CAUSEWAY_WIDTH = 3;
+    private static final int[] CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65};
     private static final Map<UUID, ConstructionMode> MODES = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BuildJob> JOBS = new ArrayDeque<>();
@@ -69,11 +70,56 @@ public final class ConstructionProgression {
             }
         } else {
             player.sendSystemMessage(Component.literal("§6[건축] §f배치 모드: §e" + resolved.koreanName()));
-            if (resolved == ConstructionMode.CAUSEWAY) {
-                int length = ExpeditionProgression.hasFieldMastery(player) && level >= 100 ? 65 : SkillTuning.constructionLineLength(level);
-                player.sendSystemMessage(Component.literal("§7바라보는 수평 방향으로 §e3폭 × " + length + "칸§7의 실제 도로/교량 바닥을 시공합니다. Shift는 단일 배치."));
+            if (resolved == ConstructionMode.LINE || resolved == ConstructionMode.CAUSEWAY) {
+                int length = selectedLength(player, level);
+                String shape = resolved == ConstructionMode.CAUSEWAY ? "3폭 × " + length + "칸" : length + "칸";
+                player.sendSystemMessage(Component.literal("§7현재 길이 §e" + shape + "§7 · 건축 메뉴에서 Shift+클릭으로 변경. 실제 배치 중 Shift는 단일 배치."));
             }
         }
+    }
+
+    public static void cycleLength(ServerPlayer player) {
+        int level = SkillProgressData.get(player).level(player, SkillType.CONSTRUCTION);
+        int max = maxUnlockedLength(player, level);
+        if (max < 5) {
+            player.sendSystemMessage(Component.literal("§6[건축] §f길이 선택은 건축 Lv.10부터 사용할 수 있습니다."));
+            return;
+        }
+        int current = selectedLength(player, level);
+        int next = CONSTRUCTION_LENGTHS[0];
+        for (int i = 0; i < CONSTRUCTION_LENGTHS.length; i++) {
+            int candidate = CONSTRUCTION_LENGTHS[i];
+            if (candidate > max) break;
+            if (candidate == current) {
+                int following = i + 1 < CONSTRUCTION_LENGTHS.length ? CONSTRUCTION_LENGTHS[i + 1] : CONSTRUCTION_LENGTHS[0];
+                next = following <= max ? following : CONSTRUCTION_LENGTHS[0];
+                SkillProgressData.get(player).setConstructionLengthSelection(player, next);
+                player.sendSystemMessage(Component.literal("§6[건축 길이] §f선/도로 배치 길이: §e" + next + "칸 §7(서버 해금 상한 " + max + ")"));
+                return;
+            }
+            next = candidate;
+        }
+        SkillProgressData.get(player).setConstructionLengthSelection(player, next);
+        player.sendSystemMessage(Component.literal("§6[건축 길이] §f선/도로 배치 길이: §e" + next + "칸 §7(서버 해금 상한 " + max + ")"));
+    }
+
+    private static int selectedLength(ServerPlayer player, int level) {
+        int max = maxUnlockedLength(player, level);
+        if (max < 5) return 1;
+        int stored = SkillProgressData.get(player).constructionLengthSelection(player);
+        if (stored <= 0) return max;
+        int resolved = CONSTRUCTION_LENGTHS[0];
+        for (int length : CONSTRUCTION_LENGTHS) {
+            if (length > max || length > stored) break;
+            resolved = length;
+        }
+        return Math.min(resolved, max);
+    }
+
+    private static int maxUnlockedLength(ServerPlayer player, int level) {
+        return level >= 100 && ExpeditionProgression.hasFieldMastery(player)
+                ? 65
+                : SkillTuning.constructionLineLength(level);
     }
 
     public static void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
@@ -183,7 +229,7 @@ public final class ConstructionProgression {
         boolean fieldMastery = level >= 100 && ExpeditionProgression.hasFieldMastery(player);
 
         if (mode == ConstructionMode.LINE) {
-            int size = fieldMastery ? 65 : SkillTuning.constructionLineLength(level);
+            int size = selectedLength(player, level);
             int half = size / 2;
             for (int offset = -half; offset <= half; offset++) {
                 BlockPos pos = lookingMostlyX ? center.offset(0, 0, offset) : center.offset(offset, 0, 0);
@@ -193,7 +239,7 @@ public final class ConstructionProgression {
         }
 
         if (mode == ConstructionMode.CAUSEWAY) {
-            int length = fieldMastery ? 65 : SkillTuning.constructionLineLength(level);
+            int length = selectedLength(player, level);
             int forwardX = lookingMostlyX ? (xLook >= 0.0D ? 1 : -1) : 0;
             int forwardZ = lookingMostlyX ? 0 : (zLook >= 0.0D ? 1 : -1);
             int sideX = lookingMostlyX ? 0 : 1;
