@@ -78,7 +78,7 @@ need(apex, [
 forbid(bridge, ["tbos:", "com.nightbeam", "setChunkForced", "addRegionTicket", "getChunk("],
        "0.59 optional-content/force-load policy")
 need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "0.59 PROJECT docs")
-need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수를 늘리지"], "0.59 README docs")
+need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "0.59 README docs")
 need(changelog, ["## 0.59.0-alpha.1", "apex_escorts_tier_0", "0.59.0-alpha.1-content-preview.1"], "0.59 CHANGELOG docs")
 need(testing, ["## 0.59 focused checks", "이변 호위", "Ocean"], "0.59 manual test matrix")
 
