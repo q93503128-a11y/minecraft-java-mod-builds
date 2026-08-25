@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.67
+## Current version: 0.1.0-alpha.68
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.67 key was added.
+No new Alpha.68 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–67 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–68 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,23 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.68 — rest-anchor-aware civilian lifecycle evidence
+
+Alpha.68 fixes a deterministic unload/replacement edge created by the interaction between the existing night routine and Alpha.66/67 absence evidence.
+
+- ordinary production residents and the normal workshop artisan really walk to completed houses at night; town-side outpost transporters can also use those house rest slots;
+- the old work↔storage evidence did not include houses, so a legitimate sleeping resident could be hidden by an unloaded house chunk and look dead/missing to replacement logic;
+- local civilian lifecycle bounds now include the real work target, every concrete shared-storage endpoint and every completed HOUSE footprint with the existing bounded margin;
+- loaded evidence and workshop/advanced assignment lookup use that same bound instead of unrelated broad fixed-radius queries;
+- ordinary production-worker lookup remains automatic and pooled by role, but searches the UUID-deduplicated union of the same per-building lifecycle bounds used for absence proof;
+- normal workshop spawning rechecks complete lifecycle evidence immediately before entity insertion;
+- outpost transporter `routeBounds` also includes completed HOUSE footprints before the existing 32-block margin, so a transporter sleeping near town remains visible to the same Alpha.67 assignment authority;
+- physical work/hauling and road movement are unchanged, and unloaded road boundaries still pause instead of force-loading;
+- **Transport workers belong to a specific outpost**, **군사 전초도 같은 도로 운송자가 역방향 보급**, **위험지역 군사 역할이 우선**, the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport** remain intact;
+- no resident-management screen, UUID reservation ledger, virtual cargo/population resource, force-load, teleport, new key or hard companion dependency was added.
+
+This is deterministic pre-acceptance hardening, not a claim that two-player night/rest/death/save-reload acceptance is complete.
 
 ## Alpha.67 — fail-closed outpost transporter assignment evidence
 

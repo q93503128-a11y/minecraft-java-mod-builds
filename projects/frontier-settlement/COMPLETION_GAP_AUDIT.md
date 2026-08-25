@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.67`
+현재 구현 기준: `0.1.0-alpha.68`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -382,6 +382,21 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
+### Alpha.68 야간 휴식 anchor / 민간 assignment evidence 감사
+
+- 실제 `SettlementResidentRoutineService`는 벌목/농사/채석/광산/일반 작업장 주민을 야간에 completed HOUSE slot으로 이동시키며, 본진 반경 안의 전초 운송 주민도 HOUSE에서 휴식할 수 있음;
+- Alpha.66의 work↔storage evidence에는 HOUSE가 없고 workshop/advanced lookup은 별도 192블록 AABB였으므로, 정상 휴식 주민의 house chunk만 unloaded인 상태에서 false missing→food4 중복 replacement가 가능했음;
+- Alpha.68 `workerRouteBounds`는 work center + 모든 concrete shared storage + 모든 completed HOUSE footprint를 기존 margin과 함께 하나의 lifecycle envelope로 정의;
+- `workerRouteEvidenceLoaded`와 workshop/advanced assigned-worker query가 같은 envelope를 사용하므로 lookup 범위와 loaded absence proof가 다시 분리되지 않음;
+- 일반 생산 주민은 개별 수동 assignment를 추가하지 않고 기존 type/name pool을 유지하며, 각 해당 building lifecycle envelope의 union에서 UUID dedupe 검색; replacement/population reconciliation은 같은 envelope들이 전부 loaded일 때만 수행;
+- 일반 workshop `spawnAssignedWorker`도 mutation 직전 same lifecycle evidence + service crate loaded를 재검사해 public/direct caller가 partial evidence를 우회하지 못함;
+- transporter `routeBounds`에 completed HOUSE footprint를 포함하고 기존 32-block margin을 적용해 town-rest 중인 운송 주민도 Alpha.67 assignment evidence/lookup 안에 유지;
+- 실제 work/haul/road 이동, route waypoint `hasChunkAt`, Alpha.42 debt, Alpha.63 cargo recovery, food4 atomic arrival 순서는 변경 없음;
+- 새 SavedData/UUID reservation ledger/수동 주민 관리/가상 resident/cargo/force-load/teleport 없음;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, `single authority for outpost transport`, **there is still only one authority for long-distance outpost transport** 유지.
+
+따라서 정적으로 연결되는 `정상 야간 집 이동 -> house unload -> false missing -> duplicate resident/transporter` 경계를 닫았다. **실제 2인 야간 반복 death/replacement/save-reload/reconnect acceptance는 계속 남는다.**
+
 ### Alpha.67 전초 운송 주민 assignment evidence 감사
 
 - 기존 전초 운송 주민의 outpost-specific tag, persisted road, MAINHAND cargo와 Alpha.27 단일 물류 권위는 그대로 유지;
@@ -513,7 +528,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. Alpha.62–67 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance; Alpha.67 transporter lookup-envelope evidence도 실제 반복 unload에서 검증 필요;
+2. Alpha.62–68 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/night-rest/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance; Alpha.67 transporter lookup-envelope와 Alpha.68 HOUSE rest-anchor evidence도 실제 반복 unload에서 검증 필요;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

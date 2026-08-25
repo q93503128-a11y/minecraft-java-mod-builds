@@ -204,6 +204,16 @@ public final class SettlementOutpostLogisticsService {
             maxY = Math.max(maxY, pos.getY());
             maxZ = Math.max(maxZ, pos.getZ());
         }
+        // Town-side transporters may intentionally sleep in completed houses. Those rest anchors
+        // therefore belong to the same lookup/evidence authority as the persisted route, otherwise
+        // a sleeping unloaded transporter could be mistaken for a dead/missing assignment.
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() != BuildingType.HOUSE) continue;
+            minX = Math.min(minX, building.originX());
+            minZ = Math.min(minZ, building.originZ());
+            maxX = Math.max(maxX, building.originX() + building.rotatedWidth() - 1);
+            maxZ = Math.max(maxZ, building.originZ() + building.rotatedDepth() - 1);
+        }
         return new AABB(minX - ROUTE_SEARCH_MARGIN, minY - 48.0D, minZ - ROUTE_SEARCH_MARGIN,
                 maxX + ROUTE_SEARCH_MARGIN + 1.0D, maxY + 49.0D, maxZ + ROUTE_SEARCH_MARGIN + 1.0D);
     }

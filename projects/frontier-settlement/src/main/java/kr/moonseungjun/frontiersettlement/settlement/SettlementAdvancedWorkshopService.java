@@ -50,7 +50,6 @@ public final class SettlementAdvancedWorkshopService {
     private static final int SERVICE_PERIOD_TICKS = 160;
     private static final int METAL_HAUL_BATCH = 4;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
-    private static final double ASSIGNMENT_SEARCH_RADIUS = 192.0D;
 
     private SettlementAdvancedWorkshopService() {}
 
@@ -377,10 +376,7 @@ public final class SettlementAdvancedWorkshopService {
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         String assignment = assignmentTag(workshop);
-        BlockPos center = data.centerPos();
-        AABB area = new AABB(center.getX() - ASSIGNMENT_SEARCH_RADIUS, center.getY() - 96.0D,
-                center.getZ() - ASSIGNMENT_SEARCH_RADIUS, center.getX() + ASSIGNMENT_SEARCH_RADIUS + 1.0D,
-                center.getY() + 97.0D, center.getZ() + ASSIGNMENT_SEARCH_RADIUS + 1.0D);
+        AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
         List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(ADVANCED_WORKER_TAG)
                         && villager.entityTags().contains(assignment));

@@ -22,7 +22,9 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class SettlementWorkerService {
     public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";
@@ -75,10 +77,10 @@ public final class SettlementWorkerService {
     }
 
     private static void tryAttractWorker(MinecraftServer server, ServerLevel level, SettlementData data) {
-        List<Villager> lumber = workersByName(level, data.centerPos(), LUMBER_WORKER_NAME);
-        List<Villager> farm = workersByName(level, data.centerPos(), FARM_WORKER_NAME);
-        List<Villager> quarry = workersByName(level, data.centerPos(), QUARRY_WORKER_NAME);
-        List<Villager> mine = workersByName(level, data.centerPos(), MINE_WORKER_NAME);
+        List<Villager> lumber = workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
+        List<Villager> farm = workersByName(level, data, BuildingType.FARM, FARM_WORKER_NAME);
+        List<Villager> quarry = workersByName(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
+        List<Villager> mine = workersByName(level, data, BuildingType.MINE, MINE_WORKER_NAME);
         boolean localEvidenceLoaded = localProductionEvidenceLoaded(level, data);
 
         // Population is repaired downward/upward only when every civilian evidence corridor is visible.
@@ -141,13 +143,20 @@ public final class SettlementWorkerService {
     }
 
     /**
-     * Loaded-only visibility proof for a local civilian assignment. It checks every chunk in the
-     * bounded rectangle between the work site and every concrete settlement storage endpoint plus a
-     * small work/path margin. It only calls hasChunkAt: this is never a force-load mechanism.
+     * Loaded-only visibility proof for one local civilian lifecycle envelope.
+     *
+     * Alpha.68 deliberately includes every real place the town routine can send the worker:
+     * work target, concrete settlement storage, and every completed HOUSE rest footprint. The exact
+     * same AABB is also used by assignment/entity lookup, so a worker sleeping in an unloaded house
+     * cannot become an "unloaded == dead" false negative. Only hasChunkAt is used; no chunk is loaded.
      */
     static boolean workerRouteEvidenceLoaded(ServerLevel level, SettlementData data,
                                              BlockPos workCenter, int margin) {
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
+        return workerBoundsFullyLoaded(level, data, workerRouteBounds(data, workCenter, margin));
+    }
+
+    static AABB workerRouteBounds(SettlementData data, BlockPos workCenter, int margin) {
         int minX = workCenter.getX() - margin;
         int maxX = workCenter.getX() + margin;
         int minZ = workCenter.getZ() - margin;
@@ -158,9 +167,26 @@ public final class SettlementWorkerService {
             minZ = Math.min(minZ, storage.getZ() - margin);
             maxZ = Math.max(maxZ, storage.getZ() + margin);
         }
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() != BuildingType.HOUSE) continue;
+            minX = Math.min(minX, building.originX() - margin);
+            maxX = Math.max(maxX, building.originX() + building.rotatedWidth() - 1 + margin);
+            minZ = Math.min(minZ, building.originZ() - margin);
+            maxZ = Math.max(maxZ, building.originZ() + building.rotatedDepth() - 1 + margin);
+        }
+        double minY = data.centerPos().getY() - 96.0D;
+        double maxY = data.centerPos().getY() + 97.0D;
+        return new AABB(minX, minY, minZ, maxX + 1.0D, maxY, maxZ + 1.0D);
+    }
+
+    private static boolean workerBoundsFullyLoaded(ServerLevel level, SettlementData data, AABB bounds) {
+        int minX = (int) Math.floor(bounds.minX);
         int minChunkX = Math.floorDiv(minX, 16);
+        int maxX = (int) Math.floor(Math.nextDown(bounds.maxX));
         int maxChunkX = Math.floorDiv(maxX, 16);
+        int minZ = (int) Math.floor(bounds.minZ);
         int minChunkZ = Math.floorDiv(minZ, 16);
+        int maxZ = (int) Math.floor(Math.nextDown(bounds.maxZ));
         int maxChunkZ = Math.floorDiv(maxZ, 16);
         int probeY = data.centerPos().getY();
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
@@ -511,12 +537,18 @@ public final class SettlementWorkerService {
         return result;
     }
 
-    private static List<Villager> workersByName(ServerLevel level, BlockPos center, String name) {
-        AABB search = new AABB(
-                center.getX() - 256.0D, center.getY() - 96.0D, center.getZ() - 256.0D,
-                center.getX() + 257.0D, center.getY() + 97.0D, center.getZ() + 257.0D);
-        List<Villager> workers = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.getCustomName() != null && name.equals(villager.getCustomName().getString()));
+    private static List<Villager> workersByName(ServerLevel level, SettlementData data,
+                                                BuildingType type, String name) {
+        List<Villager> workers = new ArrayList<>();
+        Set<java.util.UUID> ids = new HashSet<>();
+        for (BuildingRecord building : buildings(data, type)) {
+            AABB search = workerRouteBounds(data, building.workCenter(), 24);
+            for (Villager villager : level.getEntitiesOfClass(Villager.class, search,
+                    candidate -> candidate.getCustomName() != null
+                            && name.equals(candidate.getCustomName().getString()))) {
+                if (ids.add(villager.getUUID())) workers.add(villager);
+            }
+        }
         workers.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         return workers;
     }

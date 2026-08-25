@@ -34,7 +34,6 @@ public final class SettlementWorkshopService {
     private static final int SERVICE_PERIOD_TICKS = 100;
     private static final int REPAIR_PER_METAL = 64;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
-    private static final double ASSIGNMENT_SEARCH_RADIUS = 192.0D;
 
     private SettlementWorkshopService() {}
 
@@ -94,7 +93,8 @@ public final class SettlementWorkshopService {
 
     public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         if (workshop == null || workshop.buildingType() != BuildingType.WORKSHOP
-                || !level.hasChunkAt(workshop.workCenter())
+                || !SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
+                || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))
                 || findAssignedWorker(level, data, workshop) != null) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = workshop.workCenter();
@@ -206,11 +206,7 @@ public final class SettlementWorkshopService {
 
     private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         String assignment = assignmentTag(workshop);
-        BlockPos center = data.centerPos();
-        AABB area = new AABB(
-                center.getX() - ASSIGNMENT_SEARCH_RADIUS, center.getY() - 96.0D, center.getZ() - ASSIGNMENT_SEARCH_RADIUS,
-                center.getX() + ASSIGNMENT_SEARCH_RADIUS + 1.0D, center.getY() + 97.0D,
-                center.getZ() + ASSIGNMENT_SEARCH_RADIUS + 1.0D);
+        AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
         List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(WORKSHOP_WORKER_TAG)
                         && villager.entityTags().contains(assignment));

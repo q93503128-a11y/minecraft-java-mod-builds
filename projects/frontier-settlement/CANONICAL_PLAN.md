@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.67**.
+Current canonical implementation: **0.1.0-alpha.68**.
 
 ## 1. Product identity
 
@@ -367,6 +367,23 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.68 rest-anchor-aware civilian lifecycle evidence
+
+Alpha.68 closes a deterministic hole left between Alpha.66/67 lifecycle evidence and the already-existing resident night routine.
+
+- `SettlementResidentRoutineService` intentionally sends lumber/farm/quarry/mine residents and normal workshop artisans to completed HOUSE rest slots at night; a town-side outpost transporter within the existing town-rest radius may also sleep at a HOUSE;
+- before Alpha.68, local worker absence evidence covered work↔storage but not those real HOUSE destinations, while workshop/advanced lookup used an unrelated fixed 192-block AABB; therefore a legitimate resident sleeping in an unloaded house could disappear from the loaded entity query and be misread as dead/missing;
+- `SettlementWorkerService.workerRouteBounds` is now the shared local-civilian lifecycle envelope: work center + every concrete settlement storage endpoint + every completed HOUSE footprint, all with the existing bounded work/path margin;
+- `workerRouteEvidenceLoaded` checks every chunk intersecting that exact envelope with `hasChunkAt` only, and workshop/advanced-workshop assignment lookup now queries the same envelope rather than a separate 192-block radius;
+- ordinary production workers remain pooled/automatic rather than manually assigned: their name lookup is the UUID-deduplicated union of the exact per-building lifecycle envelopes that must also be loaded before population reconciliation/replacement;
+- normal workshop spawn now independently rechecks the same complete lifecycle evidence and service-crate chunk before entity insertion, preserving Alpha.64 `entity add -> real food4 -> population +1` commit ordering;
+- `SettlementOutpostLogisticsService.routeBounds` now also includes completed HOUSE footprints before its existing 32-block search margin, so a transporter intentionally resting in town remains inside the same lookup/evidence authority as its persisted road;
+- normal work navigation, transporter road waypoints, Alpha.42 debt pacing, Alpha.63 exact MAINHAND cargo death recovery and Alpha.67 fail-closed assignment replacement are unchanged;
+- **Transport workers belong to a specific outpost**, **pause at unloaded route boundaries**, Alpha.27 remains the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport**;
+- no new SavedData, UUID reservation ledger, manual resident schedule/job UI, worker family, virtual resident/cargo balance, force-load, teleport or companion dependency is added.
+
+This closes the deterministic `normal night rest -> house unload -> false missing -> food-funded duplicate replacement` path in static authority. **Long two-player repeated-death/night-rest/save-reload/reconnect runtime acceptance remains unfinished.**
 
 ### Alpha.67 fail-closed outpost transporter assignment evidence
 
@@ -766,7 +783,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.67
+## 14. Current playable slice after Alpha.68
 
 Current implemented slice includes:
 
@@ -796,18 +813,20 @@ Current implemented slice includes:
 - Alpha.64 atomic food-funded ordinary/workshop/transporter arrival commit with assignment recheck and no failed-spawn charge;
 - Alpha.65 exact local production/workshop civilian MAINHAND death recovery with legacy-name compatibility and transporter double-recovery exclusion;
 - Alpha.66 loaded-evidence-safe local civilian population/replacement authority + food-funded advanced-artisan lifecycle;
+- Alpha.68 rest-anchor-aware local civilian/transporter lifecycle evidence matching actual work/storage/HOUSE routine destinations;
+
 - Alpha.67 fail-closed outpost transporter assignment evidence matching the exact transporter lookup envelope, without changing normal route-bound physical movement;
 
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.67
+## 15. Unfinished original-scope priorities after Alpha.68
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. Alpha.62–67 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; Alpha.67 additionally fails closed when transporter lookup-envelope chunks are unloaded; save-reload, route-unload, repeated death/replacement and no-dup/no-loss acceptance remain;
+2. Alpha.62–68 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; Alpha.67 fails closed on transporter lookup-envelope unload and Alpha.68 includes real HOUSE night-rest anchors in civilian/transporter absence evidence; save-reload, route-unload, night-rest, repeated death/replacement and no-dup/no-loss acceptance remain;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

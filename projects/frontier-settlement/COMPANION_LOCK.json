@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.67"
+    "frontier_settlement": "0.1.0-alpha.68"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -36,7 +36,8 @@
     "Alpha.65 gives local production/workshop civilians exact physical MAINHAND cargo recovery on death, with legacy-name compatibility and an explicit exclusion for road transporters so Alpha.63 remains their only recovery handler. No companion dependency, save ledger, virtual inventory or logistics authority is added.",
     "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.65 keeps only HUD collision avoidance rather than internal/mixin waypoint injection.",
     "Alpha.66 unifies the civilian lifecycle boundary: population reconciliation and ordinary-worker replacement require fully loaded work-to-storage evidence, advanced-forging artisans join the existing atomic food4/housing/population arrival path, and their physical MAINHAND cargo uses the same local exact-death-recovery rule; old loaded artisans are preserved without retroactive food charging.",
-    "Alpha.67 makes outpost transporter absence decisions fail closed against unloaded entity-search chunks: population reconciliation, missing-assignment replacement and legacy reassignment require the complete persisted-route transporter lookup envelope to be loaded, while normal physical route travel still pauses only at unloaded route boundaries. This adds no force-load, teleport, second transporter authority, virtual cargo or companion dependency."
+    "Alpha.67 makes outpost transporter absence decisions fail closed against unloaded entity-search chunks: population reconciliation, missing-assignment replacement and legacy reassignment require the complete persisted-route transporter lookup envelope to be loaded, while normal physical route travel still pauses only at unloaded route boundaries. This adds no force-load, teleport, second transporter authority, virtual cargo or companion dependency.",
+    "Alpha.68 closes the normal-rest false-missing lifecycle edge: local production/workshop lookup evidence now includes the same work, concrete storage and HOUSE rest envelope used by worker search, while town-side outpost transporter routeBounds also include HOUSE rest footprints. Normal work/road movement remains physical and unloaded boundaries still pause; no force-load, teleport, UUID reservation ledger, virtual resident/cargo authority or companion dependency is added."
   ],
   "entries": [
     {
@@ -49,7 +50,9 @@
       "version": "2.6.4",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["lithostitched"]
+      "dependencies": [
+        "lithostitched"
+      ]
     },
     {
       "id": "lithostitched",
@@ -98,7 +101,10 @@
       "version": "3.2.2+26.2-neoforge",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["cloth_config", "player_animation_library"]
+      "dependencies": [
+        "cloth_config",
+        "player_animation_library"
+      ]
     },
     {
       "id": "cloth_config",
@@ -158,7 +164,9 @@
       "version": "26.2-3.25.88.2065",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["sophisticated_core"]
+      "dependencies": [
+        "sophisticated_core"
+      ]
     },
     {
       "id": "sophisticated_core",
