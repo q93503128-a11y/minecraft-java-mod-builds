@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.66
+## Current version: 0.1.0-alpha.67
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.65 key was added.
+No new Alpha.67 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -57,7 +57,7 @@ The functional family count remains exactly **15**:
 14. market;
 15. cart station.
 
-Alpha.40–66 deepen existing systems rather than inventing meaningless 16th–20th buildings.
+Alpha.40–67 deepen existing systems rather than inventing meaningless 16th–20th buildings.
 
 ## Physical construction and logistics
 
@@ -73,6 +73,21 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.67 — fail-closed outpost transporter assignment evidence
+
+Alpha.67 closes a deterministic route-unload duplicate-replacement edge while keeping the existing physical road logistics design intact.
+
+- transporter entity lookup already covered the persisted road/stockpile bounds plus a 32-block margin, but the old replacement gate proved only the road-center chunks loaded;
+- a legitimate tagged transporter could therefore sit in an unloaded adjacent lookup chunk while all road-center chunks remained loaded, making the partial entity query return `missing` and allowing food-funded replacement;
+- Alpha.67 makes population reconciliation, missing-assignment inference, legacy reassignment and replacement spawn fail closed until every chunk intersecting the exact transporter lookup `routeBounds` is loaded;
+- the proof uses `hasChunkAt` only and never force-loads or generates chunks;
+- normal physical travel is intentionally unchanged: **Transport workers belong to a specific outpost**, follow the persisted road, carry actual MAINHAND ItemStacks and **pause at unloaded route boundaries**;
+- Alpha.42 deferred pacing and Alpha.63 exact transporter-cargo death recovery remain unchanged;
+- **군사 전초도 같은 도로 운송자가 역방향 보급**, **위험지역 군사 역할이 우선**, the **single authority for outpost transport**, and **there is still only one authority for long-distance outpost transport** all remain intact;
+- no second transporter, UUID/save ledger, virtual cargo, UI/key, force-load, teleport or hard companion dependency was added.
+
+This is deterministic pre-acceptance hardening. Real two-player route unload/reload, repeated death/replacement, save/reload and reconnect acceptance is still not claimed.
 
 ## Alpha.66 — loaded-evidence-safe civilian lifecycle authority
 

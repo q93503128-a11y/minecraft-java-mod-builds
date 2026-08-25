@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.66**.
+Current canonical implementation: **0.1.0-alpha.67**.
 
 ## 1. Product identity
 
@@ -367,6 +367,22 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.67 fail-closed outpost transporter assignment evidence
+
+Alpha.67 closes the same unloaded-entity false-absence class for road-bound outpost transporters that Alpha.66 closed for local civilians, without changing the physical transport authority itself.
+
+- `findAssignedWorker` and legacy-worker discovery search the persisted road/stockpile `routeBounds` with the existing 32-block route-search margin;
+- population reconciliation, loaded transporter counting, missing-assignment inference, legacy reassignment and replacement spawn now require the **exact transporter lookup envelope** to be loaded before absence is authoritative;
+- the assignment proof checks every X/Z chunk intersecting that same `routeBounds` AABB using `hasChunkAt` only; it never generates or force-loads a chunk;
+- if any lookup-envelope chunk is unloaded, Frontier freezes absence/replacement instead of treating a hidden tagged transporter as dead and consuming food4 for a duplicate assignment;
+- normal transporter work deliberately continues to use the existing persisted-road `routeFullyLoaded`/waypoint `hasChunkAt` checks, so **Transport workers belong to a specific outpost** and **pause at unloaded route boundaries** exactly as before;
+- Alpha.42 deferred logistics pacing is not widened into a force-loaded simulation and Alpha.63 exact MAINHAND cargo death recovery remains the sole transporter death-cargo authority;
+- the dangerous-outpost sentry keeps its separate loaded-area proof whose 32-block evidence margin already matches its 32-block sentry lookup radius;
+- Alpha.27 remains the **single authority for outpost transport** and **there is still only one authority for long-distance outpost transport**;
+- no new SavedData field, transporter UUID ledger, reservation, route controller, worker family, key, UI, currency, virtual cargo, force-load, teleport or companion dependency is added.
+
+This closes the deterministic `route centers loaded -> transporter in an unloaded lookup-margin chunk -> false missing -> duplicate replacement` path. **Long two-player repeated-death/save-reload runtime acceptance remains unfinished.**
 
 ### Alpha.66 loaded-evidence-safe civilian lifecycle authority
 
@@ -750,7 +766,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.66
+## 14. Current playable slice after Alpha.67
 
 Current implemented slice includes:
 
@@ -779,16 +795,19 @@ Current implemented slice includes:
 - Alpha.63 in-flight military weapon demand revalidation + exact transport-worker carried-ItemStack death recovery;
 - Alpha.64 atomic food-funded ordinary/workshop/transporter arrival commit with assignment recheck and no failed-spawn charge;
 - Alpha.65 exact local production/workshop civilian MAINHAND death recovery with legacy-name compatibility and transporter double-recovery exclusion;
+- Alpha.66 loaded-evidence-safe local civilian population/replacement authority + food-funded advanced-artisan lifecycle;
+- Alpha.67 fail-closed outpost transporter assignment evidence matching the exact transporter lookup envelope, without changing normal route-bound physical movement;
+
 - **Alpha.51 DOMAIN 17×17 / ±7 selected-area cut/fill with Alpha.50 earth/imported-dirt authority plus bounded 3–7 block exposed-edge retaining walls made from exact physically hauled COBBLESTONE**.
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.66
+## 15. Unfinished original-scope priorities after Alpha.67
 
 Unless real-play regression overrides them:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59 close deterministic state/exclusivity holes but do not satisfy this runtime item;
-2. Alpha.62–66 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; save-reload, route-unload, repeated death/replacement and no-dup/no-loss acceptance remain;
+2. Alpha.62–67 physical military/transporter/local-civilian cargo recovery and replacement boundaries are statically hardened; Alpha.67 additionally fails closed when transporter lookup-envelope chunks are unloaded; save-reload, route-unload, repeated death/replacement and no-dup/no-loss acceptance remain;
 3. rare-NPC-specific settlement value only if a stable soft data seam appears; generic biome-aware specialization is covered by Alpha.56;
 4. optional deeper monumental crossings only if real play shows Alpha.52–54 breadth is insufficient; never expand by default into WorldEdit-scale civil works;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;

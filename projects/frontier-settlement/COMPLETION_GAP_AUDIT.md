@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.66`
+현재 구현 기준: `0.1.0-alpha.67`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -382,6 +382,22 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
 
+### Alpha.67 전초 운송 주민 assignment evidence 감사
+
+- 기존 전초 운송 주민의 outpost-specific tag, persisted road, MAINHAND cargo와 Alpha.27 단일 물류 권위는 그대로 유지;
+- `findAssignedWorker`/legacy lookup은 기존 32블록 margin을 포함한 `routeBounds` AABB를 사용;
+- Alpha.66 이전에는 `routeFullyLoaded`가 road center chunk만 확인한 뒤 missing/replacement를 허용해, transporter가 인접 lookup-margin chunk에 있으나 그 chunk만 unloaded인 경우 false missing이 가능했음;
+- Alpha.67은 population reconciliation용 count, `allRoutesLoaded`, missing-assignment 판정, legacy reassignment, replacement spawn에 같은 `routeBounds` 전체 chunk evidence를 요구;
+- evidence는 `hasChunkAt`만 호출하고 force-load/generation/teleport 없음;
+- evidence가 불완전하면 population을 허위로 내리거나 food4를 써서 두 번째 transporter를 만들지 않고 fail closed;
+- normal transport tick/movement는 기존 `routeFullyLoaded` 및 waypoint `hasChunkAt` 경계를 유지하므로 **Transport workers belong to a specific outpost** / **pause at unloaded route boundaries** 계약과 Alpha.42 pacing을 바꾸지 않음;
+- Alpha.63 exact MAINHAND death recovery, Alpha.62 군사 external-weapon reverse supply, military food→metal→weapon 우선순위는 변경 없음;
+- 군사 sentry는 기존 search radius32 / loaded margin32가 일치해 같은 mismatch가 없음을 별도 회귀검사;
+- 새 SavedData/UUID ledger/reservation/worker/route authority/virtual cargo/UI/key/force-load/teleport 없음;
+- `single authority for outpost transport` / `there is still only one authority for long-distance outpost transport` 유지.
+
+따라서 정적으로 재현 가능한 transporter unload false-missing→duplicate replacement 경계는 닫혔다. **실제 route unload/reload/save-reload/reconnect 반복 acceptance는 계속 남는다.**
+
 ### Alpha.66 민간 주민 lifecycle / 언로드 증거 감사
 
 - 생산 주민 population 재계산과 신규 대체는 작업지↔실제 공동 저장소 사이 bounded chunk envelope가 전부 loaded일 때만 수행;
@@ -497,7 +513,7 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 실플레이 회귀가 우선순위를 바꾸지 않는 한:
 
 1. long survival + two-player multiplayer acceptance; Alpha.58–59는 snapshot/session + shared-project exclusivity pre-hardening만 완료했고 실제 runtime acceptance는 남음;
-2. Alpha.62–66 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance;
+2. Alpha.62–67 remote weapon/transporter/local-civilian physical cargo recovery + replacement의 route-unload/save-reload/reconnect/repeated-death no-loss/no-dup 실플레이 acceptance; Alpha.67 transporter lookup-envelope evidence도 실제 반복 unload에서 검증 필요;
 3. rare-NPC-specific settlement value는 stable soft seam이 실제 확인될 때만; generic biome-aware specialization은 Alpha.56에서 1차 완료/부분;
 4. optional deeper monumental crossing은 Alpha.52–54 실플레이에서 실제 부족이 확인될 때만;
 6. Alpha.42 catch-up pacing/save-reload/exploit acceptance;
