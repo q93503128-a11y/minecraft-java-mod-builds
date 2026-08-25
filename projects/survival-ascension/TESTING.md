@@ -1,4 +1,4 @@
-# Survival Ascension 0.59 — Gameplay Test Matrix
+# Survival Ascension 0.59 — First Gameplay Test Matrix
 
 Back up any long-lived world first. Test with the 0.59 JAR and matching 0.59 content-preview pack.
 
