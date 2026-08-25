@@ -37,18 +37,24 @@ public final class ExpeditionIncidentSystem {
     private static final int START_COOLDOWN_TICKS = 3600;
     private static final int TRIAL_EXCLUSION_AFTER_READY_TICKS = 3600;
     private static final int OUTSIDE_GRACE_TICKS = 200;
+    private static final int PRE_ALERT_TICKS = 200;
+    private static final int PRE_ALERT_ACTIONBAR_INTERVAL = 20;
     private static final double EVENT_RADIUS = 48.0D;
     private static final double RARE_CHANCE = 0.15D;
     private static final int RARE_EXTRA_TIME_TICKS = 300;
     private static final int OVERLAP_RETRY_TICKS = 600;
     private static final double INCIDENT_CENTER_CLEARANCE = EVENT_RADIUS * 2.0D + 16.0D;
-    private static final int BOUNDARY_POINTS = 16;
+    private static final int BOUNDARY_POINTS = 32;
+    private static final int BOUNDARY_SCAN_UP = 12;
+    private static final int BOUNDARY_SCAN_DOWN = 16;
+    private static final Map<UUID, PendingIncident> PENDING = new HashMap<>();
     private static final Map<UUID, ActiveIncident> ACTIVE = new HashMap<>();
 
     private ExpeditionIncidentSystem() {}
 
     public static boolean isActive(ServerPlayer player) {
-        return ACTIVE.containsKey(player.getUUID());
+        UUID id = player.getUUID();
+        return PENDING.containsKey(id) || ACTIVE.containsKey(id);
     }
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -59,6 +65,11 @@ public final class ExpeditionIncidentSystem {
         ActiveIncident active = ACTIVE.get(player.getUUID());
         if (active != null) {
             tickActive(player, active);
+            return;
+        }
+        PendingIncident pending = PENDING.get(player.getUUID());
+        if (pending != null) {
+            tickPending(player, pending);
             return;
         }
 
@@ -74,15 +85,18 @@ public final class ExpeditionIncidentSystem {
         if (!data.isDiscovered(player, region) || data.incidentResolved(player, region)) return;
         if (level.getRandom().nextDouble() >= START_CHANCE) return;
 
-        start(player, level, region, ExpeditionIncident.random(region, level.getRandom()),
+        queueStart(player, level, region, ExpeditionIncident.random(region, level.getRandom()),
                 level.getRandom().nextDouble() < RARE_CHANCE);
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        ActiveIncident active = ACTIVE.remove(event.getEntity().getUUID());
+        UUID owner = event.getEntity().getUUID();
+        PendingIncident pending = PENDING.remove(owner);
+        if (pending != null) closeBossBar(pending.bossBar);
+        ActiveIncident active = ACTIVE.remove(owner);
         if (active != null) {
             cleanupMobs(active);
-            closeBossBar(active);
+            closeBossBar(active.bossBar);
         }
     }
 
@@ -97,11 +111,83 @@ public final class ExpeditionIncidentSystem {
         if (active.actionProgress >= active.actionTarget()) complete(player, active);
     }
 
-    private static void start(ServerPlayer player, ServerLevel level, ExpeditionRegion region, ExpeditionIncident incident, boolean rare) {
+    private static void queueStart(ServerPlayer player, ServerLevel level, ExpeditionRegion region,
+                                   ExpeditionIncident incident, boolean rare) {
         long now = level.getGameTime();
-        BlockPos center = player.blockPosition();
-        if (overlapsActiveIncident(level, center)) {
+        BlockPos center = player.blockPosition().immutable();
+        if (overlapsReservedIncident(level, center, player.getUUID())) {
             player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
+            return;
+        }
+
+        PendingIncident pending = new PendingIncident(player.getUUID(), level, center, region, incident,
+                now + PRE_ALERT_TICKS, rare);
+        PENDING.put(player.getUUID(), pending);
+        pending.bossBar.addPlayer(player);
+        pending.bossBar.setVisible(true);
+        updatePendingBossBar(pending);
+        renderBoundary(level, center, rare, true);
+        int seconds = PRE_ALERT_TICKS / 20;
+        player.sendSystemMessage(Component.literal((rare ? "§d[희귀 현장 사건 예고] " : "§e[현장 사건 예고] ")
+                + "§f" + region.koreanName() + " · §e" + incident.koreanName() + "§f이 §e" + seconds
+                + "초 후§f 열립니다. §7표시된 반경 48블록 안에서 준비하세요. 제한시간은 개방 뒤부터 시작합니다."));
+        player.sendSystemMessage(Component.literal("§e[현장 사건 예고] §f" + seconds + "초 후 개방 · 반경 48블록 유지"), true);
+    }
+
+    private static void tickPending(ServerPlayer player, PendingIncident pending) {
+        if (PENDING.get(player.getUUID()) != pending) return;
+        long now = pending.level.getGameTime();
+        boolean invalid = !player.isAlive() || player.isCreative() || player.isSpectator()
+                || player.level() != pending.level
+                || ExpeditionProgression.currentRegion(player) != pending.region
+                || distanceToCenterSqr(player, pending.center) > EVENT_RADIUS * EVENT_RADIUS;
+        if (invalid) {
+            cancelPending(player, pending, "예고 지점 또는 현재 원정권을 벗어나 개방이 취소되었습니다.");
+            return;
+        }
+
+        if (now >= pending.openTick) {
+            if (PENDING.remove(player.getUUID()) != pending) return;
+            closeBossBar(pending.bossBar);
+            start(player, pending.level, pending.region, pending.incident, pending.rare, pending.center);
+            return;
+        }
+
+        if (now % 20L == 0L) {
+            renderBoundary(pending.level, pending.center, pending.rare, true);
+            updatePendingBossBar(pending);
+        }
+        if (now % PRE_ALERT_ACTIONBAR_INTERVAL == 0L) {
+            long seconds = Math.max(1L, (pending.openTick - now + 19L) / 20L);
+            player.sendSystemMessage(Component.literal((pending.rare ? "§d[희귀 사건 예고] " : "§e[사건 예고] ")
+                    + "§f" + pending.incident.koreanName() + " §7· §e" + seconds + "초 후 개방"), true);
+            if (seconds == 3L) {
+                player.sendSystemMessage(Component.literal("§c[현장 사건 임박] §f" + pending.incident.koreanName()
+                        + " §7· 3초 후 제한시간이 시작됩니다."));
+            }
+        }
+    }
+
+    private static void cancelPending(ServerPlayer player, PendingIncident pending, String reason) {
+        if (PENDING.remove(player.getUUID()) != pending) return;
+        closeBossBar(pending.bossBar);
+        long now = pending.level.getGameTime();
+        player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
+        player.sendSystemMessage(Component.literal("§7[현장 사건 예고 취소] §f" + reason + " §7잠시 뒤 다시 감지될 수 있습니다."));
+    }
+
+    private static void start(ServerPlayer player, ServerLevel level, ExpeditionRegion region,
+                              ExpeditionIncident incident, boolean rare, BlockPos center) {
+        long now = level.getGameTime();
+        if (!player.isAlive() || player.isCreative() || player.isSpectator() || player.level() != level
+                || ExpeditionProgression.currentRegion(player) != region
+                || distanceToCenterSqr(player, center) > EVENT_RADIUS * EVENT_RADIUS) {
+            player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
+            return;
+        }
+        if (overlapsReservedIncident(level, center, player.getUUID())) {
+            player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
+            player.sendSystemMessage(Component.literal("§7[현장 사건 보류] §f근처 사건 구역과 겹쳐 이번 개방을 건너뜁니다."));
             return;
         }
         player.getPersistentData().putLong(READY_TICK_KEY, now + START_COOLDOWN_TICKS);
@@ -117,6 +203,7 @@ public final class ExpeditionIncidentSystem {
                     if (entity != null) entity.discard();
                 }
                 player.getPersistentData().putLong(READY_TICK_KEY, now + 1200);
+                player.sendSystemMessage(Component.literal("§7[현장 사건 보류] §f습격대를 안전하게 배치할 공간이 부족해 개방을 미뤘습니다."));
                 return;
             }
             active.mobIds.addAll(spawned);
@@ -127,10 +214,11 @@ public final class ExpeditionIncidentSystem {
         active.bossBar.addPlayer(player);
         active.bossBar.setVisible(true);
         updateBossBar(active);
+        renderBoundary(active.level, active.center, active.rare, false);
         String prefix = rare ? "§d[희귀 현장 사건] " : (incident.kind() == ExpeditionIncident.Kind.AMBUSH ? "§c[현장 사건] " : "§6[현장 사건] ");
         if (incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
-                    + " §7· 표시된 반경 48블록 안에서 습격대 " + active.initialMobCount + "체를 정리하세요."
+                    + " §7· 표시된 반경 48블록 안에서 빛나는 습격대 " + active.initialMobCount + "체를 정리하세요."
                     + (rare ? " §d· 강화 보상" : "")));
         } else {
             player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
@@ -158,7 +246,18 @@ public final class ExpeditionIncidentSystem {
             return;
         }
 
-        if (now % 20L == 0L) renderBoundary(active);
+        if (now % 20L == 0L) {
+            renderBoundary(active.level, active.center, active.rare, false);
+            long seconds = Math.max(1L, (active.deadline - now + 19L) / 20L);
+            if (active.outsideTicks > 0) {
+                long grace = Math.max(1L, (OUTSIDE_GRACE_TICKS - active.outsideTicks + 19L) / 20L);
+                player.sendSystemMessage(Component.literal("§c[사건 경계 이탈] §f48블록 안으로 복귀하세요. §7· 실패까지 약 §c"
+                        + grace + "초"), true);
+            } else if (seconds <= 10L || seconds == 30L) {
+                player.sendSystemMessage(Component.literal((seconds <= 10L ? "§c" : "§e") + "[현장 사건] §f"
+                        + active.incident.koreanName() + " §7· 남은 시간 §e" + seconds + "초"), true);
+            }
+        }
 
         if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             Set<UUID> alive = new HashSet<>();
@@ -166,6 +265,7 @@ public final class ExpeditionIncidentSystem {
                 Entity entity = active.level.getEntity(id);
                 if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
                 alive.add(id);
+                mob.setGlowingTag(true);
                 if (mob.getTarget() == null) mob.setTarget(player);
                 if (distanceToCenterSqr(mob, active.center) > EVENT_RADIUS * EVENT_RADIUS) {
                     mob.getNavigation().moveTo(active.center.getX() + 0.5D, active.center.getY(), active.center.getZ() + 0.5D, 1.25D);
@@ -190,6 +290,8 @@ public final class ExpeditionIncidentSystem {
             Mob mob = spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN,
                     typeId, i, spawnTarget);
             if (mob == null) continue;
+            mob.setPersistenceRequired();
+            mob.setGlowingTag(true);
             mob.setTarget(player);
             spawned.add(mob.getUUID());
         }
@@ -242,7 +344,7 @@ public final class ExpeditionIncidentSystem {
         if (ACTIVE.remove(player.getUUID()) != active) return;
         ExpeditionData data = ExpeditionData.get(player);
         boolean firstResolution = data.claimIncidentReward(player, active.incident.region());
-        closeBossBar(active);
+        closeBossBar(active.bossBar);
         if (!firstResolution) return;
 
         int stage = active.incident.region().requiredWorldStage();
@@ -275,9 +377,17 @@ public final class ExpeditionIncidentSystem {
     private static void fail(ServerPlayer player, ActiveIncident active, String reason) {
         if (ACTIVE.remove(player.getUUID()) != active) return;
         cleanupMobs(active);
-        closeBossBar(active);
+        closeBossBar(active.bossBar);
         player.sendSystemMessage(Component.literal("§c[현장 사건 실패] §f" + active.incident.koreanName() + " · " + reason
                 + " §7· 원정 지령 진행도는 잃지 않으며 이후 다시 발생할 수 있습니다."));
+    }
+
+    private static void updatePendingBossBar(PendingIncident pending) {
+        long remain = Math.max(0L, pending.openTick - pending.level.getGameTime());
+        long seconds = Math.max(1L, (remain + 19L) / 20L);
+        pending.bossBar.setName(Component.literal((pending.rare ? "§d희귀 현장 사건 예고 " : "§e현장 사건 예고 ")
+                + "§7[" + pending.incident.koreanName() + "] §f" + seconds + "초 후 개방"));
+        pending.bossBar.setProgress(Math.max(0.0F, Math.min(1.0F, remain / (float) PRE_ALERT_TICKS)));
     }
 
     private static void updateBossBar(ActiveIncident active) {
@@ -298,40 +408,74 @@ public final class ExpeditionIncidentSystem {
         }
     }
 
-    private static boolean overlapsActiveIncident(ServerLevel level, BlockPos center) {
+    private static boolean overlapsReservedIncident(ServerLevel level, BlockPos center, UUID ignoredOwner) {
         double clearanceSqr = INCIDENT_CENTER_CLEARANCE * INCIDENT_CENTER_CLEARANCE;
         for (ActiveIncident active : ACTIVE.values()) {
-            if (active.level != level) continue;
+            if (active.owner.equals(ignoredOwner) || active.level != level) continue;
             double dx = center.getX() - active.center.getX();
-            double dy = center.getY() - active.center.getY();
             double dz = center.getZ() - active.center.getZ();
-            if (dx * dx + dy * dy + dz * dz < clearanceSqr) return true;
+            if (dx * dx + dz * dz < clearanceSqr) return true;
+        }
+        for (PendingIncident pending : PENDING.values()) {
+            if (pending.owner.equals(ignoredOwner) || pending.level != level) continue;
+            double dx = center.getX() - pending.center.getX();
+            double dz = center.getZ() - pending.center.getZ();
+            if (dx * dx + dz * dz < clearanceSqr) return true;
         }
         return false;
     }
 
-    private static void renderBoundary(ActiveIncident active) {
-        ParticleOptions particle = active.rare ? ParticleTypes.TOTEM_OF_UNDYING : ParticleTypes.END_ROD;
-        double y = active.center.getY() + 1.1D;
+    private static void renderBoundary(ServerLevel level, BlockPos center, boolean rare, boolean preview) {
+        ParticleOptions particle = rare ? ParticleTypes.TOTEM_OF_UNDYING : ParticleTypes.END_ROD;
         for (int i = 0; i < BOUNDARY_POINTS; i++) {
             double angle = Math.PI * 2.0D * i / BOUNDARY_POINTS;
-            double x = active.center.getX() + 0.5D + Math.cos(angle) * EVENT_RADIUS;
-            double z = active.center.getZ() + 0.5D + Math.sin(angle) * EVENT_RADIUS;
-            active.level.sendParticles(particle, x, y, z, 1, 0.0D, 0.12D, 0.0D, 0.0D);
+            double x = center.getX() + 0.5D + Math.cos(angle) * EVENT_RADIUS;
+            double z = center.getZ() + 0.5D + Math.sin(angle) * EVENT_RADIUS;
+            double y = visibleBoundaryY(level, center, x, z);
+            if (Double.isNaN(y)) continue;
+            level.sendParticles(particle, x, y, z, preview ? 1 : 2, 0.0D, 0.10D, 0.0D, 0.0D);
+            level.sendParticles(particle, x, y + 1.7D, z, 1, 0.0D, 0.10D, 0.0D, 0.0D);
         }
-        active.level.sendParticles(particle, active.center.getX() + 0.5D, y, active.center.getZ() + 0.5D,
-                active.rare ? 4 : 2, 0.35D, 0.15D, 0.35D, 0.0D);
+        double centerY = center.getY() + 1.1D;
+        level.sendParticles(particle, center.getX() + 0.5D, centerY, center.getZ() + 0.5D,
+                rare ? 5 : 3, 0.35D, 0.15D, 0.35D, 0.0D);
+        level.sendParticles(particle, center.getX() + 0.5D, centerY + 2.0D, center.getZ() + 0.5D,
+                preview ? 2 : 4, 0.25D, 0.20D, 0.25D, 0.0D);
+    }
+
+    private static double visibleBoundaryY(ServerLevel level, BlockPos center, double x, double z) {
+        int blockX = (int) Math.floor(x);
+        int blockZ = (int) Math.floor(z);
+        BlockPos column = new BlockPos(blockX, center.getY(), blockZ);
+        if (!level.hasChunkAt(column)) return Double.NaN;
+        for (int dy = BOUNDARY_SCAN_UP; dy >= -BOUNDARY_SCAN_DOWN; dy--) {
+            BlockPos pos = column.offset(0, dy, 0);
+            if (!level.getBlockState(pos).isAir() || !level.getFluidState(pos).isEmpty()) continue;
+            BlockPos below = pos.below();
+            if (level.getBlockState(below).isAir() && level.getFluidState(below).isEmpty()) continue;
+            return pos.getY() + 0.15D;
+        }
+        return center.getY() + 1.1D;
     }
 
     private static void removeStaleServerIncidents(MinecraftServer server) {
-        if (ACTIVE.isEmpty()) return;
-        List<UUID> stale = new ArrayList<>();
+        if (ACTIVE.isEmpty() && PENDING.isEmpty()) return;
+        List<UUID> staleActive = new ArrayList<>();
         for (Map.Entry<UUID, ActiveIncident> entry : ACTIVE.entrySet()) {
             if (entry.getValue().level.getServer() == server) continue;
-            closeBossBar(entry.getValue());
-            stale.add(entry.getKey());
+            cleanupMobs(entry.getValue());
+            closeBossBar(entry.getValue().bossBar);
+            staleActive.add(entry.getKey());
         }
-        for (UUID uuid : stale) ACTIVE.remove(uuid);
+        for (UUID uuid : staleActive) ACTIVE.remove(uuid);
+
+        List<UUID> stalePending = new ArrayList<>();
+        for (Map.Entry<UUID, PendingIncident> entry : PENDING.entrySet()) {
+            if (entry.getValue().level.getServer() == server) continue;
+            closeBossBar(entry.getValue().bossBar);
+            stalePending.add(entry.getKey());
+        }
+        for (UUID uuid : stalePending) PENDING.remove(uuid);
     }
 
     private static void cleanupMobs(ActiveIncident active) {
@@ -342,9 +486,9 @@ public final class ExpeditionIncidentSystem {
         active.mobIds.clear();
     }
 
-    private static void closeBossBar(ActiveIncident active) {
-        active.bossBar.setVisible(false);
-        for (ServerPlayer viewer : List.copyOf(active.bossBar.getPlayers())) active.bossBar.removePlayer(viewer);
+    private static void closeBossBar(ServerBossEvent bossBar) {
+        bossBar.setVisible(false);
+        for (ServerPlayer viewer : List.copyOf(bossBar.getPlayers())) bossBar.removePlayer(viewer);
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
@@ -353,9 +497,32 @@ public final class ExpeditionIncidentSystem {
 
     private static double distanceToCenterSqr(Entity entity, BlockPos center) {
         double dx = entity.getX() - (center.getX() + 0.5D);
-        double dy = entity.getY() - (center.getY() + 0.5D);
         double dz = entity.getZ() - (center.getZ() + 0.5D);
-        return dx * dx + dy * dy + dz * dz;
+        return dx * dx + dz * dz;
+    }
+
+    private static final class PendingIncident {
+        final UUID owner;
+        final ServerLevel level;
+        final BlockPos center;
+        final ExpeditionRegion region;
+        final ExpeditionIncident incident;
+        final long openTick;
+        final boolean rare;
+        final ServerBossEvent bossBar;
+
+        PendingIncident(UUID owner, ServerLevel level, BlockPos center, ExpeditionRegion region,
+                        ExpeditionIncident incident, long openTick, boolean rare) {
+            this.owner = owner;
+            this.level = level;
+            this.center = center.immutable();
+            this.region = region;
+            this.incident = incident;
+            this.openTick = openTick;
+            this.rare = rare;
+            this.bossBar = new ServerBossEvent(UUID.randomUUID(), Component.literal(rare ? "희귀 현장 사건 예고" : "현장 사건 예고"),
+                    rare ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS);
+        }
     }
 
     private static final class ActiveIncident {
