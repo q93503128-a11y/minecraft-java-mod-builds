@@ -17,5 +17,12 @@ if count != 1:
     raise RuntimeError(f"protocol regression-contract anchor drifted: {count}")
 patched = patched.replace(protocol_contract, contract_extension, 1)
 
+release_audit_anchor = '''# Release source audit: version bump + explicit 0.58 contracts.'''
+content_contract_patch = '''replace_once("tools/test_content_pack_source.py",\n\'\'\'    for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):\n        require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")\n        require(forbidden not in affix.lower(), f"hard optional-mod dependency leaked into equipment imprint: {forbidden}")\n        require(forbidden not in reforge.lower(), f"hard optional-mod dependency leaked into equipment service: {forbidden}")\n\'\'\',\n\'\'\'    for forbidden in ("biomesoplenty", "amethyst_resonance"):\n        require(forbidden not in compat.lower(), f"hard optional-mod dependency leaked into compatibility seam: {forbidden}")\n    require("com.nightbeam" not in compat.lower(), "TBS implementation class dependency leaked into compatibility seam")\n    for forbidden in ("biomesoplenty", "tbos", "amethyst_resonance"):\n        require(forbidden not in affix.lower(), f"hard optional-mod dependency leaked into equipment imprint: {forbidden}")\n        require(forbidden not in reforge.lower(), f"hard optional-mod dependency leaked into equipment service: {forbidden}")\n\'\'\')\n\n'''
+count = patched.count(release_audit_anchor)
+if count != 1:
+    raise RuntimeError(f"release audit insertion anchor drifted: {count}")
+patched = patched.replace(release_audit_anchor, content_contract_patch + release_audit_anchor, 1)
+
 namespace = {"__file__": str(path), "__name__": "__main__"}
 exec(compile(patched, str(path), "exec"), namespace)
