@@ -42,7 +42,8 @@
     "Alpha.70 hardens specialized outpost production without changing outpost-local labor economics: assignment absence/migration/spawn waits for the complete existing lookup envelope, UUID order selects one active worker if historical duplicates exist, failed entity insertion creates no phantom worker, and outpost production MAINHAND cargo joins exact physical death recovery. Town and outpost lumber/farm/quarry/mine output is now minted only after the corresponding world setBlock succeeds. No population ledger, food refund, force-load, teleport, virtual resource, second logistics authority or companion dependency is added.",
     "Alpha.71 is lifecycle-only hardening: town barracks now use a storage-route-aware loaded-evidence envelope before declaring a slot missing or charging food8+metal2, UUID order selects the one active soldier while historical duplicates are preserved with extra AI disabled, and armory source choice is anchored to that barracks route. Construction-office supply runners likewise use their real office/storage route envelope, never destructively discard duplicate physical residents/cargo, limit future return deposits to the local source radius, and join exact MAINHAND cargo death recovery. No new content, worker ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
     "Alpha.72 is full-project error hardening only: the shared builder uses loaded-evidence/UUID authority and physically returns home after every project, building/road/outpost/civil cleanup keeps carried/crate ItemStacks physical, road grading and waterfront placement commit only after successful world mutation, founding is rollback-safe and always leaves a physical pioneer marker, fishing/market/waterfront/civic-defense replacement is loaded-evidence-safe, renewable civic Iron Golems drop no iron, and military-outpost historical duplicates are non-destructively UUID-contained. No new content, UUID save ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
-    "Alpha.73 is a gameplay feedback pass: capped first-time survey/conquest metadata now raises existing physical market relic payouts, one-metal weapon repair efficiency and advanced forge/reforge selection power while preserving exact ItemStack costs, no new currency/menu/save authority, optional companion boot, and the existing outpost-cost/specialization benefits."
+    "Alpha.73 is a gameplay feedback pass: capped first-time survey/conquest metadata now raises existing physical market relic payouts, one-metal weapon repair efficiency and advanced forge/reforge selection power while preserving exact ItemStack costs, no new currency/menu/save authority, optional companion boot, and the existing outpost-cost/specialization benefits.",
+    "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion."
   ],
   "entries": [
     {
@@ -165,8 +166,8 @@
       "side": "client_server",
       "source": "modrinth",
       "project_id": "TyCTlI4b",
-      "version_id": "kdqsadAt",
-      "version": "26.2-3.25.88.2065",
+      "version_id": "jFsSdSUK",
+      "version": "26.2-3.25.74.1922",
       "loader": "neoforge",
       "required": true,
       "dependencies": [
@@ -179,8 +180,8 @@
       "side": "client_server_library",
       "source": "modrinth",
       "project_id": "nmoqTijg",
-      "version_id": "lXohixCg",
-      "version": "26.2-1.4.92.2207",
+      "version_id": "BRe27VZd",
+      "version": "26.2-1.4.72.2073",
       "loader": "neoforge",
       "required": true,
       "dependencies": []
