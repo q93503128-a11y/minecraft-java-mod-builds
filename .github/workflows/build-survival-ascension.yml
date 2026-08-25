@@ -70,6 +70,30 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-gradle.log"
 
+      - name: Dedicated server boot smoke
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          rm -f "$GITHUB_WORKSPACE/survival-ascension-server.log"
+          set +e
+          timeout --signal=INT --kill-after=20s 120s ./gradlew --no-daemon --no-configuration-cache runServer --console=plain \
+            > "$GITHUB_WORKSPACE/survival-ascension-server.log" 2>&1
+          code=$?
+          set -e
+          cat "$GITHUB_WORKSPACE/survival-ascension-server.log"
+          if ! grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
+            echo "Dedicated server never reached the ready state (exit=$code)." >&2
+            exit 1
+          fi
+          if grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred)' "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
+            echo "Dedicated server log contains a fatal classloading/server-start signature." >&2
+            exit 1
+          fi
+          echo "Dedicated server reached ready state; timeout/INT exit=$code is expected for the bounded smoke run."
+
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
@@ -113,6 +137,7 @@ jobs:
           - clean build: PASS
           - source audit: PASS
           - content-pack source audit: PASS
+          - dedicated server boot smoke: PASS (reached Minecraft ready state under bounded runServer smoke)
           - JAR verification: PASS
           - JAR SHA-256: $sha
           - Modrinth content-pack metadata/dependency/package validation: PASS
@@ -120,7 +145,6 @@ jobs:
           - external content mods: referenced from their original Modrinth CDN; not embedded in the Survival Ascension JAR
           - datagen: NOT RUN (not implemented in alpha.1)
           - GameTest: NOT RUN (not implemented in alpha.1)
-          - dedicated server smoke test: NOT RUN
           - graphical client / external-mod worldgen smoke test: NOT RUN
           REPORT
 
@@ -140,6 +164,7 @@ jobs:
             survival-ascension-audit.log
             survival-ascension-content-pack-audit.log
             survival-ascension-gradle.log
+            survival-ascension-server.log
             survival-ascension-jar-verify.log
             survival-ascension-modpack.log
           if-no-files-found: warn
@@ -162,6 +187,7 @@ jobs:
           neoforge=26.2.0.38-beta
           java=25
           gradle=9.2.1
+          dedicated_server_smoke=enabled
           STATUS
           if test -f "$GITHUB_WORKSPACE/survival-ascension-audit.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-audit.log" /tmp/survival-ascension-result/latest-audit.log
@@ -171,6 +197,9 @@ jobs:
           fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-gradle.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-gradle.log" /tmp/survival-ascension-result/latest-gradle.log
+          fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-server.log" /tmp/survival-ascension-result/latest-server.log
           fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-jar-verify.log" /tmp/survival-ascension-result/latest-jar-verify.log
