@@ -20,12 +20,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gzip -dc projects/frontier-settlement/tools/alpha69_patch.py.gz > /tmp/alpha69.py
-          python3 /tmp/alpha69.py
+          python3 .github/scripts/frontier_alpha69_patch.py
           git diff --check
           git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/frontier-settlement
+          git add -A projects/frontier-settlement .github/workflows/build-frontier-settlement.yml .github/workflows/frontier-alpha69-runner.yml .github/workflows/frontier-alpha69-one-shot.yml .github/scripts/frontier_alpha69_patch.py || true
           git commit -m 'Contain historical Frontier duplicate assignments for alpha.69'
           git push origin HEAD:main
