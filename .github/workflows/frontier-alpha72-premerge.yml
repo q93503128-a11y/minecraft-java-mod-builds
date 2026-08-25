@@ -7,7 +7,7 @@ on:
       - '.github/workflows/frontier-alpha72-premerge.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -65,3 +65,33 @@ jobs:
           path: /tmp/deliverables/
           if-no-files-found: error
           retention-days: 7
+      - name: Record premerge result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/frontier-alpha72-premerge-result
+          mkdir -p /tmp/frontier-alpha72-premerge-result
+          cat > /tmp/frontier-alpha72-premerge-result/status.txt <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          version=0.1.0-alpha.72
+          java=25
+          STATUS
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          recorded=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf ci-results/frontier-alpha72-premerge
+            mkdir -p ci-results/frontier-alpha72-premerge
+            cp -a /tmp/frontier-alpha72-premerge-result/. ci-results/frontier-alpha72-premerge/
+            git add -A ci-results/frontier-alpha72-premerge
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Frontier Alpha72 premerge result for ${GITHUB_SHA::7} [skip ci]"
+            if git push origin HEAD:main; then recorded=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
