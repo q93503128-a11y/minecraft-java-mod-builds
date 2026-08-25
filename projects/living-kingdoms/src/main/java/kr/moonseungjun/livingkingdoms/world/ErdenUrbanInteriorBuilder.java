@@ -31,6 +31,7 @@ public final class ErdenUrbanInteriorBuilder {
     private static boolean completionLogged;
     private static boolean ciChunksRequested;
     private static boolean ciSamplePassed;
+    private static boolean ciStarterResidencePassed;
 
     private ErdenUrbanInteriorBuilder() {}
 
@@ -56,6 +57,7 @@ public final class ErdenUrbanInteriorBuilder {
                 data.markComplete(key, INTERIOR_REVISION);
                 builtThisTick++;
                 verifyCiSampleIfNeeded(level, entrance);
+                verifyStarterResidenceIfNeeded(level, entrance);
             } catch (Throwable throwable) {
                 LivingKingdoms.LOGGER.error(
                         "Unable to activate authored Erden urban interior role={} entrance={},{}",
@@ -99,6 +101,7 @@ public final class ErdenUrbanInteriorBuilder {
         completionLogged = false;
         ciChunksRequested = false;
         ciSamplePassed = false;
+        ciStarterResidencePassed = false;
     }
 
     private static void logDiagnosticsOnce(List<ExternalUrbanFabricBuilder.UrbanEntrance> entrances) {
@@ -119,6 +122,7 @@ public final class ErdenUrbanInteriorBuilder {
     private static void requestCiSampleChunks(ServerLevel level) {
         if (ciChunksRequested || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
         requestPlanChunksForCi(level, ExternalUrbanFabricBuilder.diagnosticEntrance());
+        requestPlanChunksForCi(level, SafeResidenceLocator.starterTenement(level, "erden_kingdom"));
         ciChunksRequested = true;
     }
 
@@ -180,6 +184,29 @@ public final class ErdenUrbanInteriorBuilder {
         LivingKingdoms.LOGGER.info(
                 "LK_URBAN_INTERIOR_DIAGNOSTIC_PASS role={} ground_cells={} fixtures={} beds={} authored_ground=true synthetic_room=false source_blocks_cut=0 resident_targets=3 work_target=true",
                 plan.role(), plan.groundCells(), plan.fixtures().size(), plan.beds().size());
+    }
+
+    private static void verifyStarterResidenceIfNeeded(
+            ServerLevel level,
+            ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
+        if (ciStarterResidencePassed
+                || !"1".equals(System.getenv("LIVING_KINGDOMS_CI_REALM_TEST"))) return;
+        ExternalUrbanFabricBuilder.UrbanEntrance starter =
+                SafeResidenceLocator.starterTenement(level, "erden_kingdom");
+        if (entrance.x() != starter.x() || entrance.z() != starter.z()) return;
+        if (!"tenement".equals(entrance.role())) {
+            throw new IllegalStateException("Starter residence is not a tenement role=" + entrance.role());
+        }
+        BlockPos target = SafeResidenceLocator.residenceIfReady(
+                level, "erden_kingdom", "erden_city_room");
+        if (target == null) {
+            throw new IllegalStateException("Starter tenement materialized but player residence is not ready");
+        }
+        ErdenUrbanResidenceResolver.verifyTargetOrThrow(level, target, "starter-player-residence-ci");
+        ciStarterResidencePassed = true;
+        LivingKingdoms.LOGGER.info(
+                "LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role=tenement entrance={},{} target={} actual_tenement=true authored_home_target=true synthetic_floor=false arbitrary_roof_scan=false staging_platform=false",
+                entrance.x(), entrance.z(), target);
     }
 
     private static long entranceKey(ExternalUrbanFabricBuilder.UrbanEntrance entrance) {
