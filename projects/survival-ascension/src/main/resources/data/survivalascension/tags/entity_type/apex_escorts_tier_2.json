@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "tbos:blank_chronist", "required": false },
+    { "id": "tbos:gnomon_knight", "required": false }
+  ]
+}

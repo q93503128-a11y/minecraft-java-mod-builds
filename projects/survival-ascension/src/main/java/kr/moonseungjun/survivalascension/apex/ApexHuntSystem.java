@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.apex;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
@@ -150,7 +151,8 @@ public final class ApexHuntSystem {
         hunt.bossBar.addPlayer(player);
         hunt.bossBar.setVisible(true);
         player.sendSystemMessage(Component.literal("§4[정점 사냥] §f" + region.koreanName() + " · §e" + archetype.koreanName()
-                + "§f 출현. §7보스의 행동 전조와 호위 조합을 읽고 90초 안에 격파하세요."));
+                + "§f 출현." + (hunt.packEscortCount > 0 ? " §b· 이변 호위 1체 포함" : "")
+                + " §7보스의 행동 전조와 호위 조합을 읽고 90초 안에 격파하세요."));
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -202,12 +204,26 @@ public final class ApexHuntSystem {
         applyBossStats(boss, archetype);
         boss.setTarget(owner);
 
+        String packEscortId = archetype.aquatic() ? null : ApexContentPackBridge.randomEscortId(
+                level.getRandom(), archetype.region().requiredWorldStage());
+        int packSlot = packEscortId == null ? -1 : level.getRandom().nextInt(Math.max(1, archetype.escortCount()));
         int added = 0;
         for (int i = 0; i < archetype.escortCount(); i++) {
-            String typeId = archetype.escortTypeIds().get(i % archetype.escortTypeIds().size());
+            String vanillaTypeId = archetype.escortTypeIds().get(i % archetype.escortTypeIds().size());
+            boolean packEscort = i == packSlot;
+            String typeId = packEscort ? packEscortId : vanillaTypeId;
             Mob escort = spawnOne(level, center, archetype.aquatic(), false, typeId, i + 1, archetype.escortCount() + 1);
+            if (escort == null && packEscort) {
+                packEscort = false;
+                escort = spawnOne(level, center, archetype.aquatic(), false, vanillaTypeId,
+                        i + 1, archetype.escortCount() + 1);
+            }
             if (escort == null) continue;
             markMob(escort, hunt);
+            if (packEscort) {
+                escort.setGlowingTag(true);
+                hunt.packEscortCount++;
+            }
             escort.setTarget(owner);
             hunt.mobIds.add(escort.getUUID());
             added++;
@@ -609,6 +625,7 @@ public final class ApexHuntSystem {
         final Set<UUID> mobIds = new HashSet<>();
         UUID bossId;
         int initialEscortCount;
+        int packEscortCount;
         int ownerAbsentTicks;
         long patternReadyTick;
         long chargeExecuteTick;

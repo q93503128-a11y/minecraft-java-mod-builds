@@ -38,6 +38,8 @@ TBS 0.7 바이너리 감사에서 추가 Modrinth 의존성은 없었고, 실제
 - 메이스 장비: NeoForge 공용 `c:tools/mace` 태그를 쓰는 장비는 승천 각인에 합류한다. 실제 `mace_smash` 때만 바닐라 3.5블록 바깥의 적·보스에 추가 외곽 충격권을 만들며 외부 메이스 구현 클래스를 직접 참조하지 않는다. 엘리트 기본드롭에서는 메이스를 생성하지 않는다.
 - 강적: `survivalascension:expedition_major_targets` EntityType Tag를 사용한다. 현재 TBS의 Hour Cantor와 The Last Curator가 `required:false` 데이터 항목으로 들어가며 Java에는 `tbos` 레지스트리 ID나 구현 클래스를 넣지 않는다.
 - 강적 처치 가중치: 일반 적의 기존 처치 크레딧 +1은 그대로 유지하고 강적이면 +3을 추가한다. 추가분은 현재 9지역의 현장 지령과 이미 진행 중인 같은 지역 원정 작전에만 적용한다. 사건 카운터에는 추가 +3을 넣지 않아 보스 한 마리가 사건을 통째로 끝내지 못한다.
+- 희귀 현장 사건: `survivalascension:expedition_reinforcements_tier_0/1/2` optional EntityType 태그에서 이미 감사한 Armillary Scout / Blank Chronist / Gnomon Knight만 선택해 비해양 희귀 습격에 최대 1체 추가한다. Minotaur는 혼합전 아군 오폭 위험 때문에 제외한다.
+- **0.59 정점 호위**: 별도 `survivalascension:apex_escorts_tier_0/1/2` optional EntityType 태그를 사용한다. 비해양 정점 사냥의 기존 초기 호위 한 자리를 Armillary Scout / Blank Chronist / Gnomon Knight 중 단계에 맞는 개체로 교체할 수 있다. 총 호위 시도 수는 늘지 않고, 외부 개체 배치 실패 시 같은 자리의 원래 바닐라 호위로 즉시 fallback한다. 성공한 이변 호위는 glowing + 시작 메시지로 표시한다. Ocean은 외부 수중 개체를 별도 감사하기 전까지 바닐라 조합만 사용한다. Hour Cantor / Phoenix Guardian / Minotaur는 이 태그에서 금지한다.
 - 외부 차원 경계: Fractured Archive처럼 `currentRegion == null`인 별도 차원에서는 9지역 진행을 만들지 않는다. 원정 작전의 기존 '다른 차원 이탈 시 실패' 규칙도 완화하지 않는다. 대신 강적은 전투 숙련 XP 계산에서 더 높은 체력 계수와 최대 600 XP 상한을 사용한다.
 - 전투 XP는 실제 적/보스/강적 처치에만 지급한다. 가축·중립 비전투 생물을 반복 처치해 전투 숙련을 올리던 기존 우회는 제거한다.
 - 원정 바이옴: 9개 `survivalascension:expedition/<region>` Biome Tag를 바닐라 fallback보다 먼저 판정한다. BOP ID는 `required:false` 데이터 항목이며 `glowing_grotto`와 `spider_nest`는 심층권에 포함한다.
@@ -46,7 +48,7 @@ TBS 0.7 바이너리 감사에서 추가 Modrinth 의존성은 없었고, 실제
 
 26.2 네이티브 경계도 같은 원칙으로 연결한다. `minecraft:sulfur_caves`는 심층권 원정에 들어가며 Sulfur/Cinnabar는 pickaxe-mineable 일반 지형으로 숙련을 받되 `valuable_ores` 광맥/추출로 승격하지 않는다. `minecraft:spears`는 전용 승천 각인 카테고리로 들어가고, 바닐라 Jab/Charge는 유지한 채 실제 전진 운동량이 있을 때만 0피해/0XP 돌파선 밀침을 추가한다.
 
-현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 스피어 운동량 돌파선 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷·온라인 발사자 귀속 복구 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP/26.2 원정 바이옴 브리지 + 데이터 기반 외부 강적 가중치**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
+현재는 **태그/타입 기반 통합 + 외부 장비 승천 각인 + 표준 스피어 운동량 돌파선 + 표준 활/쇠뇌 원거리 affix/발사체 스냅샷·온라인 발사자 귀속 복구 + 표준 방패 성공차단 방어 파동 + 표준 메이스 실제스매시 외곽 충격권 + BOP/26.2 원정 바이옴 브리지 + 데이터 기반 외부 강적/희귀사건/정점호위 연동**까지 연결되어 있다. 외부 차원이나 특정 외부 보스를 월드 승천 필수 진행으로 승격하지는 않는다.
 
 ## 2차 후보
 

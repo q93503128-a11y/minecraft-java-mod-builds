@@ -1,11 +1,21 @@
 # Survival Ascension
 
-- Mod version: `0.58.0-alpha.1`
+- Mod version: `0.59.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `9`
-- Existing-world compatibility: no new SavedData ID. 0.58 extends the existing skill profile codec with optional `construction_length=0` (legacy 0 = max unlocked), and reuses the existing expedition progress integer map for one one-time TBS onboarding guard. All older saves decode with defaults. Existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data stay unchanged. 0.54 adds standard mace-tag imprint plus real-smash outer impact rings; 0.53 adds standard shield-tag imprint plus successful-block guard waves with bounded player-persistent cooldown only; 0.52 adds the existing affix category `ranged` to standard bow/crossbow tags and stores bounded launch-time affix/precision snapshots only on the physical projectile; 0.51 armor, 0.50 regional 3/6/9 admission, 0.49 cart-local frontline manifest NBT, 0.48 exact-outpost local supply, optional integrations, physical freight railheads and item-data boundaries remain unchanged.
+- Existing-world compatibility: no new SavedData ID or codec field in 0.59. The new Apex escort bridge is runtime/tag-only and replaces at most one initial non-ocean escort slot; all 0.58 skill/expedition compatibility data, existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data remain unchanged. Network protocol stays 9. The content-preview lock advances only its Survival release identity to `0.59.0-alpha.1-content-preview.1`; the seven external project/version IDs are unchanged.
+
+## 0.59 Apex Content Escort Integration / 정점 사냥 콘텐츠 호위 연동
+- Non-ocean Apex hunts may resolve one curated optional monster from a Survival-owned `apex_escorts_tier_0/1/2` EntityType tag according to the region's world-stage tier.
+- The external candidate **replaces one existing initial escort slot**. `escortCount()` is not increased, so content variety does not become hidden encounter-size inflation.
+- If the optional spawn fails, the same slot immediately falls back to its original vanilla escort. Existing minimum-spawn admission, owner binding, bossbar, recall, timeout, failure and cleanup remain authoritative.
+- A successfully substituted content escort glows and the start message explicitly says `이변 호위 1체 포함`, so the extra content is never a low-visibility surprise.
+- Ocean Apex hunts deliberately keep their existing aquatic vanilla roster until an external aquatic candidate is separately audited.
+- The allowlists currently reuse only previously vetted Armillary Scout, Blank Chronist and Gnomon Knight. Minotaur remains excluded from mixed encounters; Hour Cantor and Phoenix Guardian remain boss/major-target content and cannot enter escort tags.
+- Java contains no TBS registry IDs or implementation classes. All external IDs live in optional `required:false` data tags, so absence of the content pack produces the original vanilla Apex composition rather than a linkage failure.
+- No new SavedData, packet, custom item/entity, force-load or passive simulation. Network protocol remains `9`.
 
 ## 0.58 Field Incident & Construction Control / 현장 사건·건축 제어
 - 15% of eligible field incidents become rare incidents with about 1.5x physical objective/enemy scale, +15s time, doubled mastery XP and upgraded vanilla-material rewards.
@@ -32,7 +42,7 @@ Progression enlarges physical player actions rather than mainly inflating percen
 ## 0.56 Ranged Projectile Attribution Hardening / 원거리 발사자 귀속 안정화
 - A Survival-snapshotted ranged projectile stores the firing ServerPlayer UUID beside its existing affix/precision launch state.
 - `DamageSource#getEntity()` remains authoritative when it is a ServerPlayer. Fallback lookup happens only for a Survival-marked ranged projectile and only resolves a currently online player through the server PlayerList.
-- The recovered owner is used consistently for Combat scaling/burst, Combat kill XP + major-target credit, Ascension elite-affix drops, Elite reaction/rank rewards, endgame-mutation reaction/rewards, and Warband leader rewards.
+- The recovered owner is used consistently for Combat scaling/burst, Combat kill XP + major-target credit, Ascension elite-affix drops, Elite reaction/rank rewards, endgame-mutation rewards/reactions, and Warband leader rewards.
 - Environmental armor classification now requires both attacking entity and direct entity to be absent, so an orphaned physical projectile is not treated as environmental damage.
 - Offline shooters are not queued for later rewards. No new SavedData, packet/protocol, custom projectile/entity, force-load or background simulation is introduced.
 
@@ -52,7 +62,7 @@ Progression enlarges physical player actions rather than mainly inflating percen
 - The vanilla Mace's 3.5-block knockback remains untouched. Survival only adds a hostile-only outer ring beyond 3.5 blocks: Lv30 4.5/3, Lv60 5.5/6, Lv90 6.5/10, Lv100 7.5/14, Field Mastery 9.0/20 radius/targets.
 - The outer ring deals no damage and awards no Combat XP. It respects knockback resistance, excludes the primary target/player/allies, and replaces generic Survival cleave/shockwave handling for that smash hit.
 - Shift suppresses only the Ascension outer ring; vanilla direct smash and vanilla 3.5-block knockback remain authoritative.
-- Mace affixes: `충각` push, `진동` radius, `숙련` kill XP, `분쇄` target count, `격퇴` vertical lift. Caps: radius10.5, targets26, horizontal push1.30, lift0.28.
+- Mace affixes: `충각` push, `진동` radius, `숙련` Combat XP, `분쇄` target count, `격퇴` vertical lift. Caps: radius10.5, targets26, horizontal push1.30, lift0.28.
 - No new SavedData ID, packet/protocol, custom item/entity, force-load or passive simulation.
 
 ## 0.53 Shield Ascension / 방패 승천

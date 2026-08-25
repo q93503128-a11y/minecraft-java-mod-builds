@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.59.0-alpha.1
+- Added Survival-owned optional EntityType tags `apex_escorts_tier_0`, `apex_escorts_tier_1` and `apex_escorts_tier_2` for curated content-pack participation in Apex hunts.
+- Non-ocean Apex hunts may replace exactly one initial vanilla escort slot with one tagged external monster; total initial escort attempts are unchanged.
+- Optional escort spawn failure falls back to the original vanilla escort in the same slot, preserving existing hunt admission and cleanup behavior.
+- Successful content escorts glow and the Apex start message reports `이변 호위 1체 포함` so the variant is visible rather than hidden.
+- Reused only the previously audited Armillary Scout / Blank Chronist / Gnomon Knight set. Minotaur and the Hour Cantor / Phoenix Guardian boss pair remain excluded from mixed escort allowlists.
+- Added runtime `apex_escort_tier_0/1/2` census logging and retained dependency-free Java integration; no `tbos:*` registry ID or TBS implementation class exists in the bridge.
+- Added no SavedData, packet/protocol, custom item/entity, force-load or passive simulation. Network protocol remains9.
+- Content pack release: `0.59.0-alpha.1-content-preview.1`; all seven locked external project/version IDs remain unchanged.
+
 ## 0.58.0-alpha.1
 - Added a 15% rare tier to bounded expedition field incidents: ~1.5x physical target scale, +15s, 2x mastery XP and stronger vanilla-material rewards.
 - Added a once-per-second 48-block incident perimeter and same-level 112-block active-incident center clearance for multiplayer isolation.

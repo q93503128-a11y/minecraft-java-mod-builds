@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `9`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.59.0-alpha.1 — Apex Content Escort Integration / 정점 사냥 콘텐츠 호위 연동
+정점 사냥이 잠겨 있던 외부 적 콘텐츠를 실제 전투 조합으로 사용하기 시작한다. 콘텐츠 팩이 로드된 비해양 정점 사냥에서는 별도 `apex_escorts_tier_0/1/2` EntityType 태그에서 검증된 몬스터를 골라 **기존 초기 호위 한 자리를 교체**한다. 호위 수 자체를 늘리지 않으므로 단순 물량 인플레이션이 아니며, 외부 호위는 빛나는 효과와 시작 메시지의 `이변 호위 1체 포함`으로 즉시 식별된다.
+
+현재 허용 목록은 이미 희귀 현장 사건에서 검증한 Armillary Scout / Blank Chronist / Gnomon Knight만 재사용한다. Minotaur와 보스급 Hour Cantor / Phoenix Guardian은 혼합 호위에서 제외한다. 외부 호위 배치가 실패하면 그 한 자리는 원래 바닐라 호위로 되돌아가며, Ocean 정점 사냥은 수중 적 안전성 때문에 기존 바닐라 조합을 유지한다.
+
+Java에는 TBS 구현 클래스나 `tbos:*` ID를 넣지 않고 Survival 소유 optional 태그만 읽는다. 콘텐츠 팩이 없으면 풀이 비어 기존 정점 사냥으로 그대로 동작한다. 새 SavedData·packet·custom entity·force-load는 없고 Network protocol은 `9` 그대로다. 콘텐츠 팩 릴리스는 `0.59.0-alpha.1-content-preview.1`이며 외부 모드 파일 버전은 0.58과 동일하다.
+
 ## 0.58.0-alpha.1 — Field Incident & Construction Control / 현장 사건·건축 제어
 희귀 현장 사건이 추가됐다. 일반 사건 발생 시 15% 확률로 희귀 등급이 되며 실제 적/행동 목표가 약 1.5배 커지고 제한시간이 15초 늘어난 대신 숙련 XP가 2배, 바닐라 물자 보상이 강화된다. 사건 중심에는 48블록 경계가 초당 한 번 입자로 표시되며, 다른 플레이어의 활성 사건 중심과 112블록 이내에서는 새 사건을 열지 않아 멀티플레이 사건 영역이 겹치지 않는다.
 
@@ -74,7 +81,7 @@ Persistence stays on the existing `field_depots_v1` and `outpost_v1` SavedData I
 ## 0.49.0-alpha.1 — Frontline Freight Manifest / 전선 보급 화물
 Physical freight gained an explicit frontline-loading mode without replacing ordinary bulk freight. At a valid departure railhead, normal selection keeps the existing general bulk load; Shift-selection on an empty Chest Minecart attempts one bounded frontline reserve manifest containing exactly expedition1 + normal-defense1 + Bastion-defense1 local loadout.
 
-The manifest is food176 + iron56 + fuel8 + logs32 + stone bricks128, total 400 items. It is admitted all-or-nothing from the exact departure outpost Barrel cluster so slot-order junk cannot crowd out frontline materials. If the cart layout cannot accept the complete prepared manifest, moved stock is rolled back to the same physical source cluster. The frontline marker exists only on that physical cart NBT; there is no virtual cargo account, generated stock, auto-driving, teleport or force-load.
+The manifest is food176 + iron56 + fuel8 + logs32 + stone bricks128, total 400 items. It is admitted all-or-nothing from the exact departure outpost Barrel cluster so slot-order junk cannot crowd out frontline materials. If the cart layout cannot accept the complete prepared bundle, moved stock is rolled back to the same physical source cluster. The frontline marker exists only on that physical cart NBT; there is no virtual cargo account, generated stock, auto-driving, teleport or force-load.
 
 ## 0.48.0-alpha.1 — Frontline Local Supply / 전선 현지 보급
 Physical freight now feeds a concrete frontline sink instead of only rearranging bulk stock. Starting an expedition operation, normal outpost defense or Bastion defense still requires the existing global field-supply charge, but it also requires real material stock inside the exact departure outpost's registered Barrel + linked warehouse Barrels.

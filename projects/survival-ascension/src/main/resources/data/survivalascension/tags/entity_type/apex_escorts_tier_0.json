@@ -1,0 +1,6 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "tbos:armillary_scout", "required": false }
+  ]
+}

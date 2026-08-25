@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.combat.CombatProgression;
 import kr.moonseungjun.survivalascension.command.AscensionCommands;
+import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.compat.ContentPackLootBridge;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
@@ -35,8 +36,8 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.58.0-alpha.1";
-    // 0.58: field incidents gain rare physical scale/perimeters and multiplayer admission; construction length becomes selectable.
+    public static final String VERSION = "0.59.0-alpha.1";
+    // 0.59: curated optional content can replace one initial non-ocean Apex escort without increasing hunt size.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -68,6 +69,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onServerStarted);
+        NeoForge.EVENT_BUS.addListener(ApexContentPackBridge::onServerStarted);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerTick);
@@ -99,6 +101,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }

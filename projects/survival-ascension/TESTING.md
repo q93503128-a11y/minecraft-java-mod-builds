@@ -1,9 +1,9 @@
-# Survival Ascension 0.57 — First Gameplay Test Matrix
+# Survival Ascension 0.59 — Gameplay Test Matrix
 
-Back up any long-lived world first. Test with the 0.57 JAR and matching 0.57 content-preview pack.
+Back up any long-lived world first. Test with the 0.59 JAR and matching 0.59 content-preview pack.
 
 ## 1. Boot / save compatibility
-- Start one fresh world and one existing 0.56 world.
+- Start one fresh world and one existing 0.58 world.
 - PASS: no load crash, registry/data error, migration prompt or repeated login exception.
 - Run `/ascension stats`; all six skills plus expedition/operation/apex/logistics/outpost/recovery summaries must render.
 
@@ -52,3 +52,12 @@ Capture screenshot/log + reproduction steps for any crash, save corruption, item
 - Actual placement Shift still creates only the origin block even after selecting a bulk length.
 - Existing 0.57 save with no construction selection starts at its maximum currently unlocked length.
 - With TBS installed, first guarded login removes at most one initial `tbos:archivists_journal`; later legitimately obtained journals must survive relog because the guard is already marked complete.
+
+## 0.59 focused checks
+- Start a non-Ocean Apex hunt with the locked content pack present. Exactly one initial vanilla escort slot may become a glowing `이변 호위`; the total initial escort attempt count must stay equal to the archetype's existing count.
+- Stage-tier census at dedicated-server ready state must show `apex_escort_tier_0/1/2`; the resolved IDs must come only from the curated optional tags.
+- If an optional escort cannot find a valid spawn position, the same slot must fall back to the original vanilla escort rather than shrinking the hunt below its normal attempt count or failing solely because the content mob was unavailable.
+- Start an Ocean Apex hunt: it must keep the existing aquatic vanilla roster and report no `이변 호위` until an external aquatic mob has been separately audited.
+- Remove the optional content mod and boot standalone Survival Ascension: no classloading/linkage failure, empty Apex escort pools, and normal vanilla Apex composition.
+- Confirm Minotaur, Hour Cantor and Phoenix Guardian never appear through the Apex escort tags.
+- During logout/death/timeout, a substituted content escort must be removed by the same owner-scoped Apex cleanup as vanilla escorts; no glowing orphan mob may remain.
