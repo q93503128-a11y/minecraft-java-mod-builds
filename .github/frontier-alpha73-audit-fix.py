@@ -17,6 +17,8 @@ def legacy_view(self,*args,**kwargs):
         s=s.replace('public static final int BASE_REPAIR_PER_METAL = 64;','private static final int REPAIR_PER_METAL = 64;')
         s=s.replace('SettlementExplorationBenefitService.repairPerMetal(data)','REPAIR_PER_METAL')
     elif self.name=='SettlementAdvancedWorkshopService.java':
+        s=s.replace('? reforgeOne(level, crate, weaponSlot, data)', '? reforgeOne(level, crate, weaponSlot)')
+        s=s.replace(': forgeOne(level, crate, weaponSlot, relicSlot, data)', ': forgeOne(level, crate, weaponSlot, relicSlot)')
         s=s.replace('private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot, SettlementData data) {','private static boolean forgeOne(ServerLevel level, Container crate, int weaponSlot, int relicSlot) {')
         s=s.replace('private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot, SettlementData data) {','private static boolean reforgeOne(ServerLevel level, Container crate, int weaponSlot) {')
         s=s.replace('SettlementExplorationBenefitService.forgePower(data)','ENCHANTMENT_POWER')
