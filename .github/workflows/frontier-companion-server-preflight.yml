@@ -10,6 +10,7 @@ on:
       - 'projects/frontier-settlement/COMPANION_LOCK.json'
       - 'projects/frontier-settlement/companion-testpack/install.py'
       - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
+      - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
       - 'projects/frontier-settlement/tools/verify_jar.py'
       - '.github/workflows/frontier-companion-server-preflight.yml'
@@ -71,7 +72,7 @@ jobs:
             --profile server \
             --output /tmp/frontier-companion-payload \
             --frontier-jar "$PROJECT_DIR/build/libs/frontier_settlement-0.1.0-alpha.73.jar"
-          test "$(find /tmp/frontier-companion-payload/mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 13
+          test "$(find /tmp/frontier-companion-payload/mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 16
 
       - name: Install exact NeoForge dedicated server
         run: |
@@ -91,7 +92,7 @@ jobs:
           chmod +x run.sh
           mkdir -p mods
           cp /tmp/frontier-companion-payload/mods/*.jar mods/
-          test "$(find mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 13
+          test "$(find mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 16
 
       - name: Run pre-EULA mod-loading smoke
         shell: bash
