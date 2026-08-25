@@ -153,11 +153,47 @@
       "sha256": "e4ece7e1959abef2f4dea11f09d0de2098620283bef992369dd66ccd32d39337",
       "sha512": "81410fa081759e53360646e59261ed6d5136be83e17903f2e33efab99dbe6203b0b21206bad8c61f85fb26a4518f80ba92162d18f945b05edaf5ea962885c2a6",
       "sha1": "1030debb4c9bb4c5812caaacb932d1a9ea29cc85"
+    },
+    {
+      "id": "variants_and_ventures",
+      "name": "Variants & Ventures",
+      "side": "client_server",
+      "source": "modrinth",
+      "version": "1.0.26+mc26.2",
+      "filename": "variantsandventures-neoforge-1.0.26+mc26.2.jar",
+      "url": "https://cdn.modrinth.com/data/lNDRiXkY/versions/e7ZWTYfe/variantsandventures-neoforge-1.0.26%2Bmc26.2.jar",
+      "sha256": "f94439e46459c042d62230e26af305b0a17d7bf5a71020b66b005f2da4fef168",
+      "sha512": "33ca20787ab186d7045533064c658c47f4c84a4b3cfa16c1ba7d01a1c1e566f3a237de34637ef8fa646fb9e4e9b34b6c9f41b88fe89277dbea21c59890a6595a",
+      "sha1": "d9d1b4ee1d285d4112c4d190da16349575c66920"
+    },
+    {
+      "id": "resourceful_lib",
+      "name": "Resourceful Lib",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "version": "5.0.0",
+      "filename": "ResourcefulLib-5.0.0.jar",
+      "url": "https://cdn.modrinth.com/data/G1hIVOrD/versions/hu7wvfqr/ResourcefulLib-5.0.0.jar",
+      "sha256": "468f786e4c6c4f14527d033a2163acc16bc8202ace7f1d0bd2caa45d3540135f",
+      "sha512": "893be059db85c61cf577152fd20e9f1f6a5e9ef63df316a0ad6690875508af677f6960493b855b3a85a246a3b821c0917c8e7eef750049bcb4df670f648bbe3a",
+      "sha1": "2aab28a21ff6fbb0a5da66655090304a7f8bda6a"
+    },
+    {
+      "id": "yacl",
+      "name": "YetAnotherConfigLib (YACL)",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "version": "3.9.5+26.2-neoforge",
+      "filename": "yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar",
+      "url": "https://cdn.modrinth.com/data/1eAoo2KR/versions/I01Wcg6G/yet_another_config_lib_v3-3.9.5%2B26.2-neoforge.jar",
+      "sha256": "21060cf8c659c616f0aa55a1894f901cb0137a41eb19de139481304e7a14efd1",
+      "sha512": "0640c10e7056e4abde74b5266bd2543522d5c6e84aa4837865a61f523fd22f8c2623c6204dbd65d516bc5ed60d7d4a94fc14f68c31bb80d5ab075a9261d51ac3",
+      "sha1": "18be42e6f83efee73c198dc6189ba1aa55598d5b"
     }
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "9dbe1384e097614ec1338e43b173571d9b5e2915",
+    "source_sha": "50f3c9ed4645d5ef0d1a52d66ecfb1952dc5cbb7",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; client-preferred entries are omitted from the server profile."
   }
 }
