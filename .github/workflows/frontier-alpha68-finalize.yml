@@ -1,0 +1,54 @@
+name: Finalize Frontier Alpha68
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha68-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Alpha.68 lifecycle patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/frontier-alpha68-patch.py
+          cd projects/frontier-settlement
+          python3 tools/test_alpha68_source.py
+          python3 tools/test_alpha68_docs.py
+          cd ../..
+          rm .github/frontier-alpha68-patch.py
+          rm .github/workflows/frontier-alpha68-finalize.yml
+          git diff --check
+
+      - name: Commit Frontier Alpha.68 only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement \
+                  .github/workflows/build-frontier-settlement.yml \
+                  .github/frontier-alpha68-patch.py \
+                  .github/workflows/frontier-alpha68-finalize.yml
+          git diff --cached --check
+          git commit -m 'Harden Frontier civilian rest lifecycle for alpha.68'
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
