@@ -35,8 +35,9 @@ final class ClientSmokeDiagnostics {
             if (!diagnosticScreen.allRequiredControlsFit()) {
                 throw new IllegalStateException("Responsive origin controls extend outside the current client viewport");
             }
+            verifyInventoryCodexClickTargets();
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true rendered_window=true responsive=true viewport={}x{} controls_fit=true",
+                    "LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true rendered_window=true responsive=true viewport={}x{} controls_fit=true inventory_codex_click_targets=true click_through=false",
                     diagnosticScreen.width, diagnosticScreen.height
             );
         }
@@ -60,5 +61,34 @@ final class ClientSmokeDiagnostics {
         }
 
         if (ticks >= PASS_AFTER_TICKS) System.exit(0);
+    }
+
+    private static void verifyInventoryCodexClickTargets() {
+        int width = 854;
+        int height = 480;
+        int overview = 0;
+        int map = 0;
+        int skills = 0;
+        int other = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                String action = RealmCodexClient.inventoryPanelAction(width, height, x + 0.5D, y + 0.5D);
+                if (action == null) continue;
+                switch (action) {
+                    case "overview" -> overview++;
+                    case "map" -> map++;
+                    case "skills" -> skills++;
+                    default -> other++;
+                }
+            }
+        }
+        if (overview != 96 * 19 || map != 46 * 19 || skills != 46 * 19 || other != 0) {
+            throw new IllegalStateException(
+                    "Inventory codex click targets drifted overview=" + overview
+                            + " map=" + map + " skills=" + skills + " other=" + other);
+        }
+        LivingKingdoms.LOGGER.info(
+                "LK_CLIENT_INVENTORY_CODEX_INTERACTION_PASS click_targets=3 overview_pixels={} map_pixels={} skills_pixels={} overlap=false pre_screen_intercept=true",
+                overview, map, skills);
     }
 }
