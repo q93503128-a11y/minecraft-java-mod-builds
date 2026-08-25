@@ -39,43 +39,6 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Apply and fully verify staged 0.55 patch once
-        if: ${{ hashFiles('projects/survival-ascension/.alpha55-trigger') != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 .github/scripts/survival_ascension_055_fix_patch.py
-          python3 .github/scripts/survival_ascension_055_patch.py
-          cd "$PROJECT_DIR"
-          chmod +x gradlew
-          java -version
-          ./gradlew --version
-          python3 tools/test_release_source.py
-          python3 tools/test_release_content_pack.py
-          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
-          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
-          test -f build/libs/survivalascension-0.55.0-alpha.1.jar
-          python3 tools/verify_release_jar.py build/libs/survivalascension-0.55.0-alpha.1.jar
-          python3 tools/build_mrpack.py --survival-jar build/libs/survivalascension-0.55.0-alpha.1.jar --output /tmp/Survival-Ascension-0.55.0-alpha.1-content-preview.mrpack
-          test -s /tmp/Survival-Ascension-0.55.0-alpha.1-content-preview.mrpack
-          git diff --check
-          cd "$GITHUB_WORKSPACE"
-          rm -f projects/survival-ascension/.alpha55-trigger
-          rm -f .github/scripts/survival_ascension_055_patch.py
-          rm -f .github/scripts/survival_ascension_055_fix_patch.py
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/survival-ascension .github/scripts/survival_ascension_055_patch.py .github/scripts/survival_ascension_055_fix_patch.py
-          git diff --cached --check
-          git commit -m 'Release Survival Ascension 0.55 native spear and sulfur integration'
-          published=0
-          for attempt in 1 2 3 4 5 6; do
-            git pull --rebase origin main
-            if git push origin HEAD:main; then published=1; break; fi
-            sleep $((attempt * 2))
-          done
-          test "$published" -eq 1
-
       - name: Resolve version
         shell: bash
         run: |
