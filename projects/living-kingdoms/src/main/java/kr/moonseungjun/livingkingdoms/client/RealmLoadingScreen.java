@@ -112,7 +112,9 @@ public final class RealmLoadingScreen extends Screen {
             case "chunks" -> "지역 준비 · 선택한 부지의 청크를 생성 중";
             case "planning" -> "건축 배치 · 도로와 시설 배치를 조립 중";
             case "building" -> "왕국 건설 · 구역별 작업을 적용 중";
-            case "complete" -> "완료 · 선택한 거주지로 이동 중";
+            case "settling" -> "마감 정리 · 마지막 블록 갱신과 잔해를 정리 중";
+            case "residence" -> "입주 준비 · 실제 시민 주택 내부와 상층 동선을 검증 중";
+            case "complete" -> "완료 · 검증된 임대방으로 이동 중";
             case "failed" -> "실패 · 왕국 생성 작업을 중단함";
             default -> "시작 준비 · 출신과 소속을 확인 중";
         };
