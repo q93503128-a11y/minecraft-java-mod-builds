@@ -20,9 +20,12 @@ must(workers,(
     'return workerBoundsFullyLoaded(level, data, workerRouteBounds(data, workCenter, margin))',
     'Math.floor(Math.nextDown(bounds.maxX))',
     'workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME)',
+    'List<Villager> workers = workersByName(level, data, type, workerName)',
     'Set<java.util.UUID> ids = new HashSet<>()',
     'AABB search = workerRouteBounds(data, building.workCenter(), 24)',
 ),'alpha.68 local civilian lookup/evidence envelope')
+if 'workersByName(level, data.centerPos(), workerName)' in workers:
+    raise SystemExit('alpha.68 runBuildingWorkers still uses removed fixed-center lookup signature')
 for fixed in ('center.getX() - 256.0D','center.getX() + 257.0D'):
     if fixed in workers: raise SystemExit(f'alpha.68 old ordinary fixed-radius authority remains: {fixed}')
 must(workshop,(

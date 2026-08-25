@@ -67,7 +67,7 @@ public final class SettlementWorkerService {
     private static void runBuildingWorkers(ServerLevel level, SettlementData data, BuildingType type,
                                            String workerName, BuildingWork work) {
         List<BuildingRecord> buildings = buildings(data, type);
-        List<Villager> workers = workersByName(level, data.centerPos(), workerName);
+        List<Villager> workers = workersByName(level, data, type, workerName);
         int count = Math.min(buildings.size(), workers.size());
         for (int i = 0; i < count; i++) {
             BuildingRecord building = buildings.get(i);
