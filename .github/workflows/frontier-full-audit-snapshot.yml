@@ -1,0 +1,36 @@
+name: Frontier Full Audit Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-full-audit-snapshot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inventory Frontier source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/frontier-settlement
+          find . -type f -print | sort > "$GITHUB_WORKSPACE/frontier-file-inventory.txt"
+          find src/main/java -type f -name '*.java' -print | sort > "$GITHUB_WORKSPACE/frontier-java-inventory.txt"
+          echo "files=$(wc -l < "$GITHUB_WORKSPACE/frontier-file-inventory.txt")"
+          echo "java=$(wc -l < "$GITHUB_WORKSPACE/frontier-java-inventory.txt")"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-full-audit-source
+          path: |
+            projects/frontier-settlement/
+            frontier-file-inventory.txt
+            frontier-java-inventory.txt
+          if-no-files-found: error
+          retention-days: 1
