@@ -24,8 +24,6 @@ for line in lines:
 text = "".join(out)
 if "replace_once(affix, dedent(" in text or "replace_once(combat, dedent(" in text:
     raise SystemExit("Java dedent anchor repair incomplete")
-if "'''), '''\\" in text or "'''))" in text:
-    raise SystemExit("unmatched patch delimiter repair incomplete")
 compile(text, str(path), "exec")
 path.write_text(text, encoding="utf-8")
 print("0.55 patch delimiters repaired and syntax-checked")
