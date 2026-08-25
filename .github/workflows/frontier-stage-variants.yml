@@ -1,0 +1,317 @@
+name: Stage Frontier Variants and Ventures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-stage-variants.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Promote Variants and Ventures candidate stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          pack = root / 'companion-testpack'
+
+          lock_path = root / 'COMPANION_LOCK.json'
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          entries = lock['entries']
+          if any(e['id'] in {'variants_and_ventures', 'resourceful_lib', 'yacl'} for e in entries):
+              raise SystemExit('promotion entries already exist unexpectedly')
+
+          promoted = [
+              {
+                  'id': 'variants_and_ventures',
+                  'name': 'Variants & Ventures',
+                  'side': 'client_server',
+                  'source': 'modrinth',
+                  'project_id': 'lNDRiXkY',
+                  'version_id': 'e7ZWTYfe',
+                  'version': '1.0.26+mc26.2',
+                  'loader': 'neoforge',
+                  'required': True,
+                  'license': 'CC-BY-NC-ND-4.0',
+                  'integration_role': 'dependency',
+                  'dependencies': ['resourceful_lib', 'yacl'],
+                  'note': 'Official binary dependency only; Frontier does not copy or modify its code/assets.'
+              },
+              {
+                  'id': 'resourceful_lib',
+                  'name': 'Resourceful Lib',
+                  'side': 'client_server_library',
+                  'source': 'modrinth',
+                  'project_id': 'G1hIVOrD',
+                  'version_id': 'hu7wvfqr',
+                  'version': '5.0.0',
+                  'loader': 'neoforge',
+                  'required': True,
+                  'license': 'MIT',
+                  'integration_role': 'dependency_library',
+                  'dependencies': [],
+                  'note': 'Required by Variants & Ventures; pinned to the first 26.2 NeoForge release for 26.2.0.38-beta compatibility testing.'
+              },
+              {
+                  'id': 'yacl',
+                  'name': 'YetAnotherConfigLib (YACL)',
+                  'side': 'client_server_library',
+                  'source': 'modrinth',
+                  'project_id': '1eAoo2KR',
+                  'version_id': 'I01Wcg6G',
+                  'version': '3.9.5+26.2-neoforge',
+                  'loader': 'neoforge',
+                  'required': True,
+                  'license': 'LGPL-3.0-or-later',
+                  'integration_role': 'dependency_library',
+                  'dependencies': [],
+                  'note': 'Required by Variants & Ventures; official 26.2 NeoForge build.'
+              }
+          ]
+          xaero_index = next(i for i, e in enumerate(entries) if e['id'] == 'xaeros_minimap')
+          entries[xaero_index:xaero_index] = promoted
+          lock['deferred'] = [d for d in lock.get('deferred', []) if d.get('id') != 'variants_and_ventures']
+          lock['notes'][1] = 'The 13-client/12-server baseline passed exact NeoForge 26.2.0.38-beta dedicated-server loading through the normal EULA gate; full client and fresh-world gameplay acceptance remain pending.'
+          lock['notes'].append('Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; this promotion still requires fresh binary resolution and a repeated dedicated-server preflight before any runtime claim.')
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          status = {
+              'schema': 1,
+              'status': 'baseline_dedicated_server_pre_eula_pass',
+              'frontier': {
+                  'version': '0.1.0-alpha.73',
+                  'jar_sha256': 'd300d11a8b6fe595f98c574ef9c4f71a86db6bebaaf74522a97b0bffcc7ef43c'
+              },
+              'minecraft': '26.2',
+              'neoforge': '26.2.0.38-beta',
+              'baseline': {
+                  'required_client_entries': 13,
+                  'required_server_entries': 12,
+                  'server_payload_jars_including_frontier': 13,
+                  'preflight_run_id': 32822428896,
+                  'conclusion': 'success'
+              },
+              'scope': {
+                  'validated': 'Exact locked baseline server binaries plus Frontier were discovered/loaded through the normal first-run EULA gate.',
+                  'eula_accepted': False,
+                  'fresh_world_generated': False,
+                  'client_launched': False,
+                  'spawn_density_validated': False
+              },
+              'expanded_candidate': {
+                  'variants_and_ventures_promoted': True,
+                  'required_client_entries_expected': 16,
+                  'required_server_entries_expected': 15,
+                  'server_payload_jars_including_frontier_expected': 16,
+                  'binary_resolution_verified': False,
+                  'dedicated_server_preflight_verified': False
+              }
+          }
+          (pack / 'runtime-status.json').write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          test_path = root / 'tools/test_companion_testpack.py'
+          test_path.write_text('''#!/usr/bin/env python3
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PACK = ROOT / 'companion-testpack'
+LOCK = json.loads((ROOT / 'COMPANION_LOCK.json').read_text(encoding='utf-8'))
+SOURCES = json.loads((PACK / 'runtime-sources.json').read_text(encoding='utf-8'))
+INSTALLER = (PACK / 'install.py').read_text(encoding='utf-8')
+README = (PACK / 'README.md').read_text(encoding='utf-8')
+MANIFEST_ONLY = '--manifest-only' in sys.argv
+CLIENT = None if MANIFEST_ONLY else json.loads((PACK / 'resolved-lock.client.json').read_text(encoding='utf-8'))
+SERVER = None if MANIFEST_ONLY else json.loads((PACK / 'resolved-lock.server.json').read_text(encoding='utf-8'))
+
+if LOCK.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('companion lock must remain candidate_runtime_lock before real runtime acceptance')
+if LOCK.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.73':
+    raise SystemExit('companion target must match Alpha.73')
+
+required = [e for e in LOCK.get('entries', []) if e.get('required')]
+expected_client = {
+    'terralith', 'lithostitched', 'dungeons_and_taverns', 'repurposed_structures',
+    'better_combat', 'cloth_config', 'player_animation_library', 'weapons_expanded',
+    'lootr', 'sophisticated_backpacks', 'sophisticated_core', 'jade',
+    'variants_and_ventures', 'resourceful_lib', 'yacl', 'xaeros_minimap'
+}
+expected_server = expected_client - {'xaeros_minimap'}
+if {e['id'] for e in required} != expected_client or len(required) != 16:
+    raise SystemExit('required companion set drifted')
+
+by_id = {e['id']: e for e in required}
+expected_versions = {
+    'variants_and_ventures': ('lNDRiXkY', 'e7ZWTYfe', '1.0.26+mc26.2'),
+    'resourceful_lib': ('G1hIVOrD', 'hu7wvfqr', '5.0.0'),
+    'yacl': ('1eAoo2KR', 'I01Wcg6G', '3.9.5+26.2-neoforge'),
+}
+for mod_id, (project_id, version_id, version) in expected_versions.items():
+    e = by_id[mod_id]
+    if (e.get('project_id'), e.get('version_id'), e.get('version')) != (project_id, version_id, version):
+        raise SystemExit(f'{mod_id}: candidate version identity drifted')
+if set(by_id['variants_and_ventures'].get('dependencies', [])) != {'resourceful_lib', 'yacl'}:
+    raise SystemExit('Variants & Ventures dependency lock drifted')
+if any(d.get('id') == 'variants_and_ventures' for d in LOCK.get('deferred', [])):
+    raise SystemExit('Variants & Ventures cannot be both required and deferred')
+
+if not MANIFEST_ONLY:
+    for resolved, profile, expected in ((CLIENT, 'client', expected_client), (SERVER, 'server', expected_server)):
+        if resolved.get('profile') != profile or not resolved.get('resolution', {}).get('verified'):
+            raise SystemExit(f'{profile} resolved lock is not verified')
+        files = resolved.get('files', [])
+        if {f['id'] for f in files} != expected:
+            raise SystemExit(f'{profile} resolved set drifted')
+        for f in files:
+            for algorithm, length in (('sha1', 40), ('sha256', 64), ('sha512', 128)):
+                value = f.get(algorithm, '').lower()
+                if len(value) != length or any(c not in '0123456789abcdef' for c in value):
+                    raise SystemExit(f"{profile}/{f['id']}: invalid {algorithm}")
+
+    server_by_id = {f['id']: f for f in SERVER['files']}
+    for f in CLIENT['files']:
+        other = server_by_id.get(f['id'])
+        if other:
+            for key in ('source', 'version', 'filename', 'sha1', 'sha256', 'sha512'):
+                if f.get(key) != other.get(key):
+                    raise SystemExit(f"{f['id']}: client/server {key} mismatch")
+
+    if any(f['id'] == 'xaeros_minimap' for f in SERVER['files']):
+        raise SystemExit('Xaero client-preferred binary must not be in server lock')
+
+    client_dt = next(f for f in CLIENT['files'] if f['id'] == 'dungeons_and_taverns')
+    dt = SOURCES['sources']['dungeons_and_taverns']
+    if client_dt['sha256'] != dt['sha256']:
+        raise SystemExit('Dungeons and Taverns runtime source/hash lock mismatch')
+
+    for mod_id in ('variants_and_ventures', 'resourceful_lib', 'yacl'):
+        cf = next(f for f in CLIENT['files'] if f['id'] == mod_id)
+        sf = next(f for f in SERVER['files'] if f['id'] == mod_id)
+        if cf['sha256'] != sf['sha256']:
+            raise SystemExit(f'{mod_id}: client/server resolved binary mismatch')
+
+dt = SOURCES['sources']['dungeons_and_taverns']
+if dt.get('file_id') != 8262693:
+    raise SystemExit('Dungeons and Taverns file id drifted')
+if dt.get('sha256') != '2ca47414352ef2fbbbdb61af678e2a0bc3facb6093262f4caac43e35e8022d9b':
+    raise SystemExit('Dungeons and Taverns canonical SHA-256 drifted')
+
+for token in (
+    'PINNED_RESOLVED_PATH', 'apply_committed_pin',
+    'same locked version must match committed resolved-lock.client.json hashes when present',
+    'if not data.startswith(b"PK")', '--resolve-only', 'candidate_runtime_lock',
+):
+    if token not in INSTALLER:
+        raise SystemExit(f'installer missing pin/runtime invariant: {token}')
+if 'base64.b64decode' in INSTALLER or 'bytes.fromhex' in INSTALLER:
+    raise SystemExit('installer must not embed third-party binary payloads')
+if list(PACK.rglob('*.jar')):
+    raise SystemExit('third-party JARs must not be committed under companion-testpack')
+
+if 'Third-party JARs are fetched directly from their official distribution URLs' not in README:
+    raise SystemExit('companion README must state official direct fetching')
+if 'Variants & Ventures 1.0.26' not in README or 'Resourceful Lib 5.0.0' not in README or 'YACL 3.9.5' not in README:
+    raise SystemExit('promoted Variants & Ventures dependency stack must remain documented')
+if "Alex's Mobs Continued" not in README:
+    raise SystemExit('deferred Alex content must remain documented')
+
+print('Frontier Settlement companion testpack manifest audit: PASS' if MANIFEST_ONLY else 'Frontier Settlement companion testpack static audit: PASS')
+''', encoding='utf-8')
+
+          readme_path = pack / 'README.md'
+          readme = readme_path.read_text(encoding='utf-8')
+          readme = readme.replace('`COMPANION_LOCK.json` remains `candidate_runtime_lock`. Exact binary resolution and hash pinning are now verified, but that is **not** the same thing as full client/server gameplay acceptance.', '`COMPANION_LOCK.json` remains `candidate_runtime_lock`. The original 13-client/12-server baseline passed exact NeoForge 26.2.0.38-beta dedicated-server discovery/loading through the normal EULA gate (run `32822428896`), but full client and fresh-world gameplay acceptance are still pending. Variants & Ventures is now being promoted into the required candidate stack and must pass a fresh 16-client/15-server resolution plus the same server preflight before that expanded stack is considered load-compatible.')
+          readme = readme.replace('- `resolved-lock.client.json` — exactly 13 required companion files.\n- `resolved-lock.server.json` — exactly 12 required files; the client-preferred Xaero\'s Minimap binary is omitted.\n- Resolver run `32820788577` proved that a fresh download still matches the committed SHA-1, SHA-256 and SHA-512 pins.', '- `resolved-lock.client.json` — canonical target is exactly 16 required companion files after the Variants & Ventures promotion.\n- `resolved-lock.server.json` — canonical target is exactly 15 required files; the client-preferred Xaero\'s Minimap binary is omitted.\n- The resolver downloads every official binary and records SHA-1, SHA-256 and SHA-512; same-version hash drift fails closed.')
+          old_deferred = '''## Deferred content
+
+These remain outside the baseline pack until the required stack is stable in real play:
+
+- Variants & Ventures 1.0.26+mc26.2 — add after baseline spawn-density/compatibility smoke.
+- Alex's Mobs Continued — large content gain, but needs a separate stability and spawn-balance pass.
+'''
+          new_deferred = '''## Promoted mob-variant candidate
+
+Variants & Ventures 1.0.26+mc26.2 is now a required candidate dependency rather than deferred content. Its exact supporting libraries are also pinned:
+
+- Resourceful Lib 5.0.0 (NeoForge 26.2)
+- YACL 3.9.5+26.2-neoforge
+
+All three are fetched from their official Modrinth distributions and are not redistributed by Frontier. The CC-BY-NC-ND Variants & Ventures binary is dependency-only: no code/assets are copied or modified in Frontier. Fresh-world mob/spawn-density acceptance remains separate from binary/server-loading compatibility.
+
+## Deferred content
+
+- Alex's Mobs Continued — large content gain, but needs a separate stability and spawn-balance pass.
+'''
+          if old_deferred not in readme:
+              raise SystemExit('README deferred block not found')
+          readme = readme.replace(old_deferred, new_deferred)
+          readme_path.write_text(readme, encoding='utf-8')
+
+          resolver_path = Path('.github/workflows/frontier-companion-resolve.yml')
+          resolver = resolver_path.read_text(encoding='utf-8')
+          resolver = resolver.replace('python3 tools/test_companion_testpack.py\n', 'python3 tools/test_companion_testpack.py --manifest-only\n', 1)
+          resolver = resolver.replace("if len(client['files']) != 13:\n              raise SystemExit(f'expected 13 required client companions, got {len(client[\"files\"])}')", "if len(client['files']) != 16:\n              raise SystemExit(f'expected 16 required client companions, got {len(client[\"files\"])}')")
+          marker = '      - name: Upload resolved manifests\n'
+          full_audit = '''      - name: Full companion audit against staged hashes
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          python3 tools/test_companion_testpack.py
+
+'''
+          if marker not in resolver:
+              raise SystemExit('resolver upload marker not found')
+          resolver = resolver.replace(marker, full_audit + marker, 1)
+          resolver_path.write_text(resolver, encoding='utf-8')
+
+          preflight_path = Path('.github/workflows/frontier-companion-server-preflight.yml')
+          preflight = preflight_path.read_text(encoding='utf-8')
+          preflight = preflight.replace("-eq 13", "-eq 16")
+          if "resolved-lock.client.json" not in preflight:
+              preflight = preflight.replace("      - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'\n", "      - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'\n      - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'\n")
+          preflight_path.write_text(preflight, encoding='utf-8')
+          PY
+
+          python3 projects/frontier-settlement/tools/test_companion_testpack.py --manifest-only
+          git diff --check
+
+      - name: Commit staged promotion and remove staging workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/frontier-stage-variants.yml
+          git add \
+            projects/frontier-settlement/COMPANION_LOCK.json \
+            projects/frontier-settlement/companion-testpack/runtime-status.json \
+            projects/frontier-settlement/companion-testpack/README.md \
+            projects/frontier-settlement/tools/test_companion_testpack.py \
+            .github/workflows/frontier-companion-resolve.yml \
+            .github/workflows/frontier-companion-server-preflight.yml
+          git commit -m 'Promote Variants and Ventures into Frontier candidate stack'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
