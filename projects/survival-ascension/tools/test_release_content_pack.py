@@ -84,6 +84,25 @@ need(affix, ["survivalascension_ranged_owner", "rangedProjectileOwner", "getPlay
 need(combat, ["rangedProjectileOwner(direct, hitLevel)", "rangedProjectileOwner(direct, deathLevel)"], "0.56 ranged-owner runtime bridge")
 need(matrix, ["발사자 UUID", "현재 온라인인 발사자를 복구"], "0.56 generic ranged attribution docs")
 
+compat = read("src/main/java/kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.java")
+incidents = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java")
+tier0 = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_reinforcements_tier_0.json")
+tier1 = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_reinforcements_tier_1.json")
+tier2 = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_reinforcements_tier_2.json")
+need(compat, [
+    "EXPEDITION_REINFORCEMENTS_TIER_0", "EXPEDITION_REINFORCEMENTS_TIER_1", "EXPEDITION_REINFORCEMENTS_TIER_2",
+    "randomIncidentReinforcementId", "incidentReinforcementIds", "type.builtInRegistryHolder().is(tag)"
+], "0.58 optional rare-incident reinforcement bridge")
+need(incidents, [
+    "spawnRareReinforcement", "ContentPackCompatibility.randomIncidentReinforcementId",
+    "active.reinforcementCount = 1", "ExpeditionRegion.OCEAN", "이변 개체 1체 포함"
+], "0.58 rare-incident reinforcement runtime")
+need(tier0, ["tbos:armillary_scout", '"required": false'], "0.58 stage-0 reinforcement allowlist")
+need(tier1, ["tbos:armillary_scout", "tbos:blank_chronist", '"required": false'], "0.58 stage-1 reinforcement allowlist")
+need(tier2, ["tbos:blank_chronist", "tbos:gnomon_knight", '"required": false'], "0.58 stage-2 reinforcement allowlist")
+if "tbos:minotaur" in tier0 + tier1 + tier2:
+    errors.append("0.58 reinforcement safety: tbos:minotaur must stay out of mixed ambush allowlists")
+
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
     for error in errors:
@@ -122,4 +141,5 @@ print("sulfur_caves_deep_bridge=PASS")
 print("spear_affix_drive_bridge=PASS")
 print("ranged_projectile_owner_attribution=PASS")
 print("pretest_loaded_chunk_action_accounting=PASS")
+print("rare_incident_optional_reinforcement_bridge=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")
