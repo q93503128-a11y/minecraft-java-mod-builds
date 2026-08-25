@@ -1,0 +1,34 @@
+name: Frontier Alpha69 Runner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/frontier-settlement/tools/alpha69.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run embedded Alpha.69 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          awk '
+            /python3 - <<.PY./ {capture=1; next}
+            capture && /^          PY$/ {capture=0; exit}
+            capture {sub(/^          /, ""); print}
+          ' .github/workflows/frontier-alpha69-one-shot.yml > /tmp/frontier-alpha69.py
+          python3 /tmp/frontier-alpha69.py
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git commit -m 'Contain historical Frontier duplicate assignments for alpha.69'
+          git push origin HEAD:main
