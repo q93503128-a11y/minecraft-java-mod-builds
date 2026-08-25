@@ -23,6 +23,30 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/frontier-alpha68-patch.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.java')
+          s = p.read_text(encoding='utf-8')
+          old = '''    private static boolean workerBoundsFullyLoaded(ServerLevel level, SettlementData data, AABB bounds) {
+              int minChunkX = Math.floorDiv((int) Math.floor(bounds.minX), 16);
+              int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxX)), 16);
+              int minChunkZ = Math.floorDiv((int) Math.floor(bounds.minZ), 16);
+              int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxZ)), 16);
+          '''
+          new = '''    private static boolean workerBoundsFullyLoaded(ServerLevel level, SettlementData data, AABB bounds) {
+              int minX = (int) Math.floor(bounds.minX);
+              int maxX = (int) Math.floor(Math.nextDown(bounds.maxX));
+              int minZ = (int) Math.floor(bounds.minZ);
+              int maxZ = (int) Math.floor(Math.nextDown(bounds.maxZ));
+              int minChunkX = Math.floorDiv(minX, 16);
+              int maxChunkX = Math.floorDiv(maxX, 16);
+              int minChunkZ = Math.floorDiv(minZ, 16);
+              int maxChunkZ = Math.floorDiv(maxZ, 16);
+          '''
+          if old not in s:
+              raise SystemExit('Alpha.68 workerBoundsFullyLoaded compatibility anchor missing')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
           cd projects/frontier-settlement
           python3 tools/test_alpha68_source.py
           python3 tools/test_alpha68_docs.py
