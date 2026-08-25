@@ -24,6 +24,14 @@ USER_AGENT = "SurvivalAscension-ModpackBuilder/0.42.1 (+https://github.com/q9350
 ALLOWED_DOWNLOAD_HOSTS = ("https://cdn.modrinth.com/",)
 TARGET_LOADER = "neoforge"
 
+# Some published Modrinth version records do not expose every runtime dependency
+# required by the mod's own loader metadata. Keep known mandatory project-level
+# dependencies here so a content pack cannot be built with a proven incomplete
+# runtime set even when the upstream version API omits the relationship.
+KNOWN_REQUIRED_PROJECT_DEPENDENCIES: dict[str, set[str]] = {
+    "HXF82T3G": {"kkmrDlKT"},  # Biomes O' Plenty -> TerraBlender
+}
+
 
 def fail(message: str) -> None:
     raise RuntimeError(message)
@@ -110,6 +118,19 @@ def validate_locked_mod(lock_entry: dict, version: dict, minecraft: str) -> dict
     }
 
 
+def verify_known_required_dependencies(lock: dict) -> None:
+    locked_project_ids = {entry["project_id"] for entry in lock["mods"]}
+    for parent_project, required_projects in KNOWN_REQUIRED_PROJECT_DEPENDENCIES.items():
+        if parent_project not in locked_project_ids:
+            continue
+        for dependency_project in required_projects:
+            if dependency_project not in locked_project_ids:
+                fail(
+                    "known required runtime dependency is not locked: "
+                    f"parent_project={parent_project} dependency_project={dependency_project}"
+                )
+
+
 def verify_required_dependencies(locked_versions: dict[str, dict], lock: dict) -> None:
     locked_version_ids = {entry["version_id"] for entry in lock["mods"]}
     locked_project_ids = {entry["project_id"] for entry in lock["mods"]}
@@ -145,6 +166,7 @@ def build(lock_path: Path, survival_jar: Path, output: Path) -> None:
             fail(f"lock missing key: {key}")
     if not survival_jar.is_file() or survival_jar.suffix.lower() != ".jar":
         fail(f"Survival Ascension JAR not found: {survival_jar}")
+    verify_known_required_dependencies(lock)
 
     files = []
     versions: dict[str, dict] = {}
