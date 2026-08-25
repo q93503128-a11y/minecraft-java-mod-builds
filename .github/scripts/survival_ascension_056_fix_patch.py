@@ -38,7 +38,13 @@ if text.count(old_audit) != 1:
     raise SystemExit(f"expected one incoming-damage audit token, got {text.count(old_audit)}")
 text = text.replace(old_audit, new_audit, 1)
 
+cleanup = "Path(__file__).unlink()\nprint(\"Survival Ascension 0.56 ranged attribution patch applied; staging hook removed\")"
+cleanup_new = "(ROOT / '.alpha56-trigger').unlink(missing_ok=True)\nPath(__file__).unlink()\nprint(\"Survival Ascension 0.56 ranged attribution patch applied; staging hook/trigger removed\")"
+if text.count(cleanup) != 1:
+    raise SystemExit(f"expected one patch cleanup block, got {text.count(cleanup)}")
+text = text.replace(cleanup, cleanup_new, 1)
+
 compile(text, str(patch_path), "exec")
 patch_path.write_text(text, encoding="utf-8")
 fix_path.unlink()
-print("0.56 staging anchors/effectively-final attribution repaired; fixer self-removed")
+print("0.56 staging anchors/effectively-final attribution/trigger cleanup repaired; fixer self-removed")
