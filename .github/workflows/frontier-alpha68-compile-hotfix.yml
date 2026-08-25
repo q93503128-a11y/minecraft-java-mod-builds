@@ -1,0 +1,75 @@
+name: Frontier Alpha68 Compile Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha68-compile-hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix worker-loop lookup and strengthen audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('projects/frontier-settlement')
+          worker = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.java'
+          s = worker.read_text(encoding='utf-8')
+          old = 'List<Villager> workers = workersByName(level, data.centerPos(), workerName);'
+          new = 'List<Villager> workers = workersByName(level, data, type, workerName);'
+          if s.count(old) != 1:
+              raise SystemExit(f'worker-loop old lookup count={s.count(old)}')
+          s = s.replace(old, new, 1)
+          worker.write_text(s, encoding='utf-8')
+
+          audit = root / 'tools/test_alpha68_source.py'
+          a = audit.read_text(encoding='utf-8')
+          anchor = "    'workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME)',\n"
+          insert = anchor + "    'List<Villager> workers = workersByName(level, data, type, workerName)',\n"
+          if anchor not in a:
+              raise SystemExit('alpha68 audit insertion anchor missing')
+          a = a.replace(anchor, insert, 1)
+          guard = "for fixed in ('center.getX() - 256.0D','center.getX() + 257.0D'):\n"
+          replacement = "if 'workersByName(level, data.centerPos(), workerName)' in workers:\n    raise SystemExit('alpha.68 runBuildingWorkers still uses removed fixed-center lookup signature')\n" + guard
+          if guard not in a:
+              raise SystemExit('alpha68 audit guard anchor missing')
+          a = a.replace(guard, replacement, 1)
+          audit.write_text(a, encoding='utf-8')
+          PY
+          cd projects/frontier-settlement
+          python3 tools/test_alpha68_source.py
+          python3 tools/test_alpha68_docs.py
+          cd ../..
+          git diff --check
+
+      - name: Commit product hotfix only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.java \
+                  projects/frontier-settlement/tools/test_alpha68_source.py
+          git diff --cached --check
+          git commit -m 'Fix Frontier alpha.68 worker-loop lifecycle lookup'
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
