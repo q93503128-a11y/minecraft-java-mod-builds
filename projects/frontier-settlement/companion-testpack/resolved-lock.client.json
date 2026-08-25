@@ -8,6 +8,7 @@
     "frontier_settlement": "0.1.0-alpha.73"
   },
   "lock_status": "candidate_runtime_lock",
+  "pin_policy": "same locked version must match committed resolved-lock.client.json hashes when present",
   "files": [
     {
       "id": "terralith",
@@ -168,7 +169,7 @@
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "5c173046d4ad93ce89b18fe89e768539fc6fa678",
+    "source_sha": "8c7214c2e9bc60448658f7257f12df330bf8a20a",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; binaries are not redistributed in this repository."
   }
 }
