@@ -12,7 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "COMPANION_LOCK.json"
 RUNTIME_SOURCES_PATH = Path(__file__).resolve().with_name("runtime-sources.json")
-USER_AGENT = "FrontierSettlementCompanionResolver/1.0 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
+PINNED_RESOLVED_PATH = Path(__file__).resolve().with_name("resolved-lock.client.json")
+USER_AGENT = "FrontierSettlementCompanionResolver/1.1 (+https://github.com/q93503128-a11y/minecraft-java-mod-builds)"
 
 
 def load_json(path: Path):
@@ -100,6 +101,36 @@ def write_binary(path: Path, data: bytes):
     path.write_bytes(data)
 
 
+def pinned_files() -> dict[str, dict]:
+    if not PINNED_RESOLVED_PATH.is_file():
+        return {}
+    resolved = load_json(PINNED_RESOLVED_PATH)
+    if resolved.get("profile") != "client" or not resolved.get("resolution", {}).get("verified"):
+        raise RuntimeError("committed resolved-lock.client.json is not a verified client lock")
+    return {entry["id"]: entry for entry in resolved.get("files", [])}
+
+
+def apply_committed_pin(entry: dict, file_meta: dict, expected: dict, pins: dict[str, dict]) -> dict:
+    pin = pins.get(entry["id"])
+    if not pin:
+        return expected
+    if pin.get("version") != entry.get("version"):
+        return expected
+    if pin.get("source") != file_meta.get("source"):
+        raise RuntimeError(f"{entry['id']}: committed pin source changed for same version")
+    if pin.get("filename") != file_meta.get("filename"):
+        raise RuntimeError(f"{entry['id']}: committed pin filename changed for same version")
+    merged = dict(expected)
+    for algorithm in ("sha1", "sha256", "sha512"):
+        value = pin.get(algorithm)
+        if not value:
+            raise RuntimeError(f"{entry['id']}: committed pin missing {algorithm}")
+        if merged.get(algorithm) and merged[algorithm].lower() != value.lower():
+            raise RuntimeError(f"{entry['id']}: upstream {algorithm} disagrees with committed pin")
+        merged[algorithm] = value
+    return merged
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the locked Frontier Settlement companion test pack without redistributing third-party JARs in Git.")
     parser.add_argument("--profile", choices=("client", "server"), default="client")
@@ -110,6 +141,7 @@ def main() -> int:
 
     lock = load_json(LOCK_PATH)
     runtime_sources = load_json(RUNTIME_SOURCES_PATH)
+    pins = pinned_files()
     if lock.get("status") != "candidate_runtime_lock":
         raise RuntimeError("COMPANION_LOCK.json must remain candidate_runtime_lock until user runtime acceptance")
     target = lock["target"]
@@ -127,6 +159,7 @@ def main() -> int:
         "profile": args.profile,
         "target": target,
         "lock_status": lock["status"],
+        "pin_policy": "same locked version must match committed resolved-lock.client.json hashes when present",
         "files": [],
     }
 
@@ -143,7 +176,7 @@ def main() -> int:
         data = request_bytes(file_meta["url"])
         if not data.startswith(b"PK"):
             raise RuntimeError(f"{entry['id']}: resolved download is not a JAR/ZIP payload ({file_meta['url']})")
-        expected = file_meta.get("hashes", {})
+        expected = apply_committed_pin(entry, file_meta, file_meta.get("hashes", {}), pins)
         sha512 = verify_hash(data, expected.get("sha512"), "sha512", entry["id"])
         sha1 = verify_hash(data, expected.get("sha1"), "sha1", entry["id"])
         sha256 = verify_hash(data, expected.get("sha256"), "sha256", entry["id"])
