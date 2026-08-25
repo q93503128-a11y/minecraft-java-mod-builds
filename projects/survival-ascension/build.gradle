@@ -10,6 +10,30 @@ group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    // Exact content-lock versions are runtime-only: no external implementation class is linked by SA.
+    // Keeping them on the dev/server runtime means canonical CI audits the real locked pack registries.
+    runtimeOnly 'maven.modrinth:HXF82T3G:kYz8T08F'
+    runtimeOnly 'maven.modrinth:kkmrDlKT:jNsOmsnb'
+    runtimeOnly 'maven.modrinth:s3dmwKy5:POAebwFo'
+    runtimeOnly 'maven.modrinth:gKOBlOap:xls8dTZv'
+    runtimeOnly 'maven.modrinth:8RyryQ7j:no0B3Ssy'
+    runtimeOnly 'maven.modrinth:lhGA9TYQ:LKQeKupY'
+    runtimeOnly 'maven.modrinth:9s6osm5g:zErG1kOw'
+}
+
 neoForge {
     version = project.neo_version
     runs {
