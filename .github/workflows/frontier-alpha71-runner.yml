@@ -20,6 +20,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/frontier_alpha71_patch.py')
+          s=p.read_text(encoding='utf-8')
+          old="if (!soldierAssignmentEvidenceLoaded(level, data, assignment.barracks())) return false"
+          new="assignment == null || !soldierAssignmentEvidenceLoaded(level, data, assignment.barracks())"
+          if old not in s:
+              raise SystemExit('alpha71 audit-token anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
           python3 .github/scripts/frontier_alpha71_patch.py
           git diff --check
           git status --short
