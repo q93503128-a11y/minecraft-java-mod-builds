@@ -44,6 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 .github/scripts/survival_ascension_056_fix_patch.py
           python3 .github/scripts/survival_ascension_056_patch.py
           cd "$PROJECT_DIR"
           chmod +x gradlew
@@ -61,7 +62,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A projects/survival-ascension .github/workflows/build-survival-ascension.yml .github/scripts/survival_ascension_056_patch.py
+          git add -A projects/survival-ascension .github/workflows/build-survival-ascension.yml .github/scripts/survival_ascension_056_patch.py .github/scripts/survival_ascension_056_fix_patch.py
           git diff --cached --check
           git commit -m 'Release Survival Ascension 0.56 ranged projectile attribution'
           published=0
