@@ -4,4 +4,4 @@ minecraft=26.2
 neoforge=26.2.0.38-beta
 target_loader=neoforge
 survival_jar_sha256=defccb45774a3151efc3cb7bffe9888f23200cda423997c55424419c2ac351d2
-mrpack_sha256=5ec3908489b6a7a755e4dc4e66d8d4e55336fb980d7af81fc8f5b203f82672c0
+mrpack_sha256=e62a9abbbacb81f40f130e9c24e97f1e7ce2494240d8db346ddb1cfa27c069a7
