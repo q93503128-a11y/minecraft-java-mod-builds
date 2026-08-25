@@ -4,10 +4,13 @@ import sys
 import zipfile
 from pathlib import Path
 
-if len(sys.argv) != 2: raise SystemExit('usage: verify_jar.py <jar>')
+if len(sys.argv) != 2:
+    raise SystemExit('usage: verify_jar.py <jar>')
 jar = Path(sys.argv[1]).resolve()
-if not jar.is_file(): raise SystemExit(f'JAR not found: {jar}')
+if not jar.is_file():
+    raise SystemExit(f'JAR not found: {jar}')
 required = {
+    'META-INF/neoforge.mods.toml',
     'kr/moonseungjun/frontiersettlement/FrontierSettlement.class',
     'kr/moonseungjun/frontiersettlement/content/FrontierContent.class',
     'kr/moonseungjun/frontiersettlement/content/PioneerMarkerItem.class',
@@ -50,14 +53,30 @@ required = {
     'kr/moonseungjun/frontiersettlement/client/OutpostPlacementClient.class',
     'kr/moonseungjun/frontiersettlement/client/OutpostGhostRenderer.class',
     'kr/moonseungjun/frontiersettlement/client/SettlementHudOverlay.class',
-    'assets/frontier_settlement/items/pioneer_marker.json', 'assets/frontier_settlement/lang/ko_kr.json',
+    'assets/frontier_settlement/items/pioneer_marker.json',
+    'assets/frontier_settlement/lang/ko_kr.json',
     'data/frontier_settlement/recipe/pioneer_marker.json',
 }
 with zipfile.ZipFile(jar) as zf:
     names = set(zf.namelist())
     missing = sorted(required - names)
-    if missing: raise SystemExit('JAR missing runtime entries: ' + ', '.join(missing))
-    if any(name.endswith('.java') for name in names): raise SystemExit('runtime JAR unexpectedly contains Java source')
+    if missing:
+        raise SystemExit('JAR missing runtime entries: ' + ', '.join(missing))
+    if any(name.endswith('.java') for name in names):
+        raise SystemExit('runtime JAR unexpectedly contains Java source')
+    metadata = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+    for token in (
+        'modLoader="javafml"',
+        'modId="frontier_settlement"',
+        'version="${file.jarVersion}"',
+        'javaVersion="[25,)"',
+        'modId="neoforge"',
+        'versionRange="[26.2.0.38-beta,26.3.0)"',
+        'modId="minecraft"',
+        'versionRange="[26.2,26.3)"',
+    ):
+        if token not in metadata:
+            raise SystemExit(f'NeoForge metadata missing invariant: {token}')
 sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_suffix(jar.suffix + '.sha256').write_text(f'{sha}  {jar.name}\n', encoding='utf-8')
 print(f'Frontier Settlement JAR verify: PASS\nSHA-256: {sha}')
