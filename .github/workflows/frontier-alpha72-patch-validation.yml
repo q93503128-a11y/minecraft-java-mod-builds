@@ -45,14 +45,6 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          workflow = Path('.github/workflows/build-frontier-settlement.yml')
-          text = workflow.read_text()
-          text = text.replace('Alpha.71 cumulative source audit', 'Alpha.72 cumulative source audit')
-          text = text.replace('tools/test_alpha71_source.py', 'tools/test_alpha72_source.py')
-          text = text.replace('Alpha.71 canonical docs audit', 'Alpha.72 canonical docs audit')
-          text = text.replace('tools/test_alpha71_docs.py', 'tools/test_alpha72_docs.py')
-          workflow.write_text(text)
-
           road = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementRoadService.java')
           text = road.read_text()
           text = text.replace('findRoadBuilder(level, data.centerPos(), road, plan)', 'findRoadBuilder(level, data, data.centerPos(), road, plan)', 1)
@@ -105,18 +97,16 @@ jobs:
           path: premerge-deliverables/
           retention-days: 7
 
-      - name: Promote validated Alpha72 to current main and clean temporary audit files
+      - name: Promote validated Alpha72 product files to current main
         shell: bash
         run: |
           set -euo pipefail
-          git diff --binary -- projects/frontier-settlement .github/workflows/build-frontier-settlement.yml > /tmp/frontier-alpha72-product.patch
+          git diff --binary -- projects/frontier-settlement > /tmp/frontier-alpha72-product.patch
           test -s /tmp/frontier-alpha72-product.patch
           git fetch origin main
           git reset --hard origin/main
           git apply --index /tmp/frontier-alpha72-product.patch
-          git rm -f .github/workflows/frontier-alpha72-patch-validation.yml
           git rm -f .ci-temp/frontier-alpha72/chunk00 .ci-temp/frontier-alpha72/chunk01 .ci-temp/frontier-alpha72/chunk02 .ci-temp/frontier-alpha72/chunk03 .ci-temp/frontier-alpha72/chunk04
-          if test -f .github/workflows/frontier-full-audit-snapshot.yml; then git rm -f .github/workflows/frontier-full-audit-snapshot.yml; fi
           if test -f ci-results/frontier-full-audit-snapshot/run_id.txt; then git rm -f ci-results/frontier-full-audit-snapshot/run_id.txt; fi
           git diff --cached --check
           git config user.name 'github-actions[bot]'
