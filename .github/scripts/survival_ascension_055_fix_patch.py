@@ -16,6 +16,7 @@ for line in lines:
 
     if java_zone or jar_verify_zone:
         line = line.replace("dedent('''\\", "'''\\")
+        line = line.replace("'''), '''\\", "''', '''\\")
         if line.strip() == "'''))":
             prefix = line[: len(line) - len(line.lstrip())]
             newline = "\n" if line.endswith("\n") else ""
@@ -26,5 +27,7 @@ for line in lines:
 text = "".join(out)
 if "replace_once(affix, dedent(" in text or "replace_once(combat, dedent(" in text:
     raise SystemExit("Java dedent anchor repair incomplete")
+if "'''), '''\\" in text:
+    raise SystemExit("inter-string unmatched parenthesis repair incomplete")
 path.write_text(text, encoding="utf-8")
 print("0.55 patch indentation anchors repaired")
