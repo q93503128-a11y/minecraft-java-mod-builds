@@ -21,19 +21,20 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Apply promotion patch
+      - name: Apply product-only promotion patch
         run: |
           set -euo pipefail
-          python3 projects/frontier-settlement/tools/stage_variants_temp.py
-          git checkout -- .github/workflows/frontier-companion-resolve.yml .github/workflows/frontier-companion-server-preflight.yml
+          python3 projects/frontier-settlement/tools/stage_variants_product_temp.py
           git diff --check
 
-      - name: Commit promotion and remove temporary files
+      - name: Commit promotion and remove temporary patchers
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/frontier-stage-variants.yml projects/frontier-settlement/tools/stage_variants_temp.py
+          git rm \
+            projects/frontier-settlement/tools/stage_variants_temp.py \
+            projects/frontier-settlement/tools/stage_variants_product_temp.py
           git add \
             projects/frontier-settlement/COMPANION_LOCK.json \
             projects/frontier-settlement/companion-testpack/runtime-status.json \
