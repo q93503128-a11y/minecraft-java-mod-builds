@@ -5,6 +5,7 @@ import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.combat.CombatProgression;
 import kr.moonseungjun.survivalascension.command.AscensionCommands;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
+import kr.moonseungjun.survivalascension.compat.ContentPackLootBridge;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
@@ -66,6 +67,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onServerStarted);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerTick);
@@ -95,7 +97,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
+        NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
