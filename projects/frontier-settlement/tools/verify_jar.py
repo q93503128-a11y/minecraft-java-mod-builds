@@ -65,10 +65,13 @@ with zipfile.ZipFile(jar) as zf:
     if any(name.endswith('.java') for name in names):
         raise SystemExit('runtime JAR unexpectedly contains Java source')
     metadata = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
+    if '${' in metadata:
+        raise SystemExit('NeoForge metadata contains unresolved Gradle placeholders')
     for token in (
         'modLoader="javafml"',
         'modId="frontier_settlement"',
-        'version="${file.jarVersion}"',
+        'version="0.1.0-alpha.73"',
+        'displayName="Frontier Settlement"',
         'javaVersion="[25,)"',
         'modId="neoforge"',
         'versionRange="[26.2.0.38-beta,26.3.0)"',
