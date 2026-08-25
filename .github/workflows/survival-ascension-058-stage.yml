@@ -35,6 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo patch > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
           python3 -m py_compile .github/scripts/survival_ascension_058_patch.py
           python3 .github/scripts/survival_ascension_058_patch.py
           git diff --check
@@ -44,22 +45,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/test_release_source.py
-          python3 tools/test_release_content_pack.py
+          echo audits > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
+          python3 tools/test_release_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-058-stage-audit.log"
+          python3 tools/test_release_content_pack.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-058-stage-content-pack.log"
 
       - name: Java 25 clean build
         working-directory: projects/survival-ascension
         shell: bash
         run: |
           set -euo pipefail
+          set -o pipefail
+          echo build > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
           chmod +x gradlew
-          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-058-stage-gradle.log"
 
       - name: Dedicated server ready-state smoke
         working-directory: projects/survival-ascension
         shell: bash
         run: |
           set -euo pipefail
+          echo server-smoke > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
           mkdir -p run
           printf 'eula=true\n' > run/eula.txt
           log="$GITHUB_WORKSPACE/survival-ascension-058-stage-server.log"
@@ -86,6 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo publish > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A projects/survival-ascension
@@ -94,3 +100,42 @@ jobs:
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
+          echo published > "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt"
+
+      - name: Record 0.58 staging result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          result=/tmp/survival-ascension-058-stage-result
+          rm -rf "$result"
+          mkdir -p "$result"
+          phase="$(cat "$GITHUB_WORKSPACE/survival-ascension-058-stage-phase.txt" 2>/dev/null || echo setup)"
+          cat > "$result/status.txt" <<STATUS
+          status=${{ job.status }}
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          phase=$phase
+          STATUS
+          for name in audit content-pack gradle server; do
+            source="$GITHUB_WORKSPACE/survival-ascension-058-stage-$name.log"
+            test ! -f "$source" || cp "$source" "$result/$name.log"
+          done
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          recorded=0
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf ci-results/survival-ascension-stage058
+            mkdir -p ci-results/survival-ascension-stage058
+            cp -a "$result/." ci-results/survival-ascension-stage058/
+            git add -A ci-results/survival-ascension-stage058
+            if git diff --cached --quiet; then recorded=1; break; fi
+            git commit -m "Record Survival Ascension 0.58 staging result for ${GITHUB_SHA::7} [skip ci]"
+            if git push origin HEAD:main; then recorded=1; break; fi
+            sleep $((attempt * 2))
+          done
+          test "$recorded" -eq 1
