@@ -1,0 +1,3 @@
+SOURCE AUDIT FAIL
+- causeway runtime missing: fieldMastery ? 65 : SkillTuning.constructionLineLength(level)
+RELEASE SOURCE AUDIT FAIL: baseline regression contract failed
