@@ -115,7 +115,7 @@ public final class ExpeditionIncidentSystem {
                                    ExpeditionIncident incident, boolean rare) {
         long now = level.getGameTime();
         BlockPos center = player.blockPosition().immutable();
-        if (overlapsReservedIncident(level, center, player.getUUID())) {
+        if (overlapsActiveIncident(level, center, player.getUUID())) {
             player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
             return;
         }
@@ -185,7 +185,7 @@ public final class ExpeditionIncidentSystem {
             player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
             return;
         }
-        if (overlapsReservedIncident(level, center, player.getUUID())) {
+        if (overlapsActiveIncident(level, center, player.getUUID())) {
             player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
             player.sendSystemMessage(Component.literal("§7[현장 사건 보류] §f근처 사건 구역과 겹쳐 이번 개방을 건너뜁니다."));
             return;
@@ -408,7 +408,7 @@ public final class ExpeditionIncidentSystem {
         }
     }
 
-    private static boolean overlapsReservedIncident(ServerLevel level, BlockPos center, UUID ignoredOwner) {
+    private static boolean overlapsActiveIncident(ServerLevel level, BlockPos center, UUID ignoredOwner) {
         double clearanceSqr = INCIDENT_CENTER_CLEARANCE * INCIDENT_CENTER_CLEARANCE;
         for (ActiveIncident active : ACTIVE.values()) {
             if (active.owner.equals(ignoredOwner) || active.level != level) continue;
