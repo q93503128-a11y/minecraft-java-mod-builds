@@ -16,7 +16,11 @@ on:
       - '.github/workflows/frontier-companion-server-preflight.yml'
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: frontier-companion-server-preflight-main
+  cancel-in-progress: false
 
 env:
   PROJECT_DIR: projects/frontier-settlement
@@ -135,6 +139,59 @@ jobs:
             echo 'Server did not exit at the expected first-run EULA gate before timeout.' >&2
             exit 1
           fi
+
+      - name: Record successful expanded preflight
+        shell: bash
+        env:
+          PREFLIGHT_RUN_ID: ${{ github.run_id }}
+          PREFLIGHT_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          pack = Path('projects/frontier-settlement/companion-testpack')
+          status_path = pack / 'runtime-status.json'
+          client = json.loads((pack / 'resolved-lock.client.json').read_text(encoding='utf-8'))
+          server = json.loads((pack / 'resolved-lock.server.json').read_text(encoding='utf-8'))
+          status = json.loads(status_path.read_text(encoding='utf-8'))
+
+          if not client.get('resolution', {}).get('verified') or len(client.get('files', [])) != 16:
+              raise SystemExit('expanded client binary resolution is not verified at 16 entries')
+          if not server.get('resolution', {}).get('verified') or len(server.get('files', [])) != 15:
+              raise SystemExit('expanded server binary resolution is not verified at 15 entries')
+          if client['resolution'].get('source_sha') != server['resolution'].get('source_sha'):
+              raise SystemExit('client/server resolution source SHA mismatch')
+
+          expanded = status.setdefault('expanded_candidate', {})
+          expanded['variants_and_ventures_promoted'] = True
+          expanded['required_client_entries_expected'] = 16
+          expanded['required_server_entries_expected'] = 15
+          expanded['server_payload_jars_including_frontier_expected'] = 16
+          expanded['binary_resolution_verified'] = True
+          expanded['binary_resolution_source_sha'] = client['resolution']['source_sha']
+          expanded['dedicated_server_preflight_verified'] = True
+          expanded['preflight_run_id'] = int(os.environ['PREFLIGHT_RUN_ID'])
+          expanded['preflight_source_sha'] = os.environ['PREFLIGHT_SOURCE_SHA']
+          expanded['server_payload_jars_including_frontier'] = 16
+          expanded['conclusion'] = 'success'
+          status['status'] = 'expanded_dedicated_server_pre_eula_pass'
+          status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PROJECT_DIR/companion-testpack/runtime-status.json"
+          git commit -m "Record Frontier expanded companion preflight ${GITHUB_RUN_ID} [skip ci]"
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
 
       - name: Upload preflight evidence
         if: always()
