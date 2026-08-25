@@ -69,7 +69,7 @@ public final class SettlementService {
         }
     }
 
-    public static boolean found(ServerPlayer founder) { return foundInternal(founder, founder.blockPosition(), false).founded(); }
+    public static boolean found(ServerPlayer founder) { return foundInternal(founder, founder.blockPosition(), true).founded(); }
     public static FoundResult foundAt(ServerPlayer founder, BlockPos markerPos) { return foundInternal(founder, markerPos, true); }
 
     private static FoundResult foundInternal(ServerPlayer founder, BlockPos center, boolean placeMarker) {
@@ -82,16 +82,38 @@ public final class SettlementService {
         if (placeMarker && !isSafeMarkerPosition(level, center)) return new FoundResult(false, "표식을 세울 2블록 높이의 빈 공간과 단단한 지면이 필요합니다.");
         BlockPos stockpile = findStockpilePosition(level, center);
         if (stockpile == null) return new FoundResult(false, "표식 주변에 공동 창고를 둘 안전한 자리가 없습니다.");
-        if (placeMarker) { level.setBlock(center, Blocks.OAK_FENCE.defaultBlockState(), 3); level.setBlock(center.above(), Blocks.TORCH.defaultBlockState(), 3); }
-        level.setBlock(stockpile, Blocks.BARREL.defaultBlockState(), 3);
+        BlockState oldCenter = level.getBlockState(center);
+        BlockState oldAbove = level.getBlockState(center.above());
+        BlockState oldStockpile = level.getBlockState(stockpile);
+        boolean centerChanged = false;
+        boolean aboveChanged = false;
+        if (placeMarker) {
+            if (!level.setBlock(center, Blocks.OAK_FENCE.defaultBlockState(), 3)) {
+                return new FoundResult(false, "개척 표식을 월드에 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
+            }
+            centerChanged = true;
+            if (!level.setBlock(center.above(), Blocks.TORCH.defaultBlockState(), 3)) {
+                level.setBlock(center, oldCenter, 3);
+                return new FoundResult(false, "개척 표식 횃불을 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
+            }
+            aboveChanged = true;
+        }
+        if (!level.setBlock(stockpile, Blocks.BARREL.defaultBlockState(), 3)
+                || !(level.getBlockEntity(stockpile) instanceof net.minecraft.world.Container)) {
+            if (aboveChanged) level.setBlock(center.above(), oldAbove, 3);
+            if (centerChanged) level.setBlock(center, oldCenter, 3);
+            if (!level.getBlockState(stockpile).equals(oldStockpile)) level.setBlock(stockpile, oldStockpile, 3);
+            return new FoundResult(false, "공동 창고를 월드에 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
+        }
         data.found(center, stockpile);
-        SettlementConstructionService.ensureBuilder(level, center);
+        SettlementConstructionService.ensureBuilder(level, data);
         refreshResources(server, data);
         broadcast(server, data);
         return new FoundResult(true, "공동 개척지가 시작되었습니다. 자원을 창고에 넣고 건설 위치를 정해 마을을 키우세요.");
     }
 
     private static boolean isSafeMarkerPosition(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above()) || !level.hasChunkAt(pos.below())) return false;
         BlockState current = level.getBlockState(pos), above = level.getBlockState(pos.above()), below = level.getBlockState(pos.below());
         if (level.getBlockEntity(pos) != null || level.getBlockEntity(pos.above()) != null) return false;
         if (!current.getFluidState().isEmpty() || !above.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
@@ -108,6 +130,7 @@ public final class SettlementService {
     }
 
     private static boolean isSafeStockpilePosition(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.below())) return false;
         BlockState current=level.getBlockState(pos), below=level.getBlockState(pos.below());
         if(level.getBlockEntity(pos)!=null || !current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
         if (!current.isAir() && !current.canBeReplaced()) return false;

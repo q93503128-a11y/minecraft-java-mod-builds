@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -111,6 +112,8 @@ public final class SettlementFishingOutpostService {
     }
 
     private static Villager spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+        AABB area = assignmentArea(outpost);
+        if (!assignmentEvidenceLoaded(level, area) || !findAssignedWorkers(level, outpost).isEmpty()) return null;
         if (!level.hasChunkAt(outpost.center())) return null;
         Villager worker = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = outpost.center().above();
@@ -122,17 +125,48 @@ public final class SettlementFishingOutpostService {
         worker.addTag(FISHING_WORKER_TAG);
         worker.addTag(assignmentTag(outpost));
         worker.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.FISHING_ROD));
-        level.addFreshEntity(worker);
-        return worker;
+        return level.addFreshEntity(worker) ? worker : null;
     }
 
     private static Villager findAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+        List<Villager> workers = findAssignedWorkers(level, outpost);
+        if (workers.isEmpty()) return null;
+        Villager active = workers.getFirst();
+        active.setNoAi(false);
+        for (int i = 1; i < workers.size(); i++) {
+            Villager duplicate = workers.get(i);
+            duplicate.getNavigation().stop();
+            duplicate.setNoAi(true);
+            duplicate.setInvulnerable(true);
+        }
+        return active;
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
         String assignment = assignmentTag(outpost);
-        AABB area = new AABB(outpost.center()).inflate(SEARCH_RADIUS, 24.0D, SEARCH_RADIUS);
-        List<Villager> workers = level.getEntitiesOfClass(Villager.class, area,
+        List<Villager> workers = level.getEntitiesOfClass(Villager.class, assignmentArea(outpost),
                 villager -> villager.entityTags().contains(FISHING_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
-        return workers.isEmpty() ? null : workers.getFirst();
+        workers.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return workers;
+    }
+
+    private static AABB assignmentArea(OutpostRecord outpost) {
+        return new AABB(outpost.center()).inflate(SEARCH_RADIUS, 24.0D, SEARCH_RADIUS);
+    }
+
+    private static boolean assignmentEvidenceLoaded(ServerLevel level, AABB area) {
+        int minChunkX = Math.floorDiv((int) Math.floor(area.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(area.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxZ)), 16);
+        int probeY = (int) Math.floor((area.minY + area.maxY) * 0.5D);
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8))) return false;
+            }
+        }
+        return true;
     }
 
     private static String assignmentTag(OutpostRecord outpost) {

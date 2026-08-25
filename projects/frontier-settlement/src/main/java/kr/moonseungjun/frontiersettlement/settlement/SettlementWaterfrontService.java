@@ -18,6 +18,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -75,7 +76,7 @@ public final class SettlementWaterfrontService {
             }
 
             BlockPos crate = tradeCrate(state);
-            if (!(level.getBlockEntity(crate) instanceof Container container)) continue;
+            if (!level.hasChunkAt(crate) || !(level.getBlockEntity(crate) instanceof Container container)) continue;
             Villager trader = ensureTrader(level, outpost, state);
             if (trader == null) continue;
             BlockPos station = traderStation(state);
@@ -171,6 +172,7 @@ public final class SettlementWaterfrontService {
         int step = state.buildStep();
         if (step >= plan.size()) return;
         Placement placement = plan.get(step);
+        if (!level.hasChunkAt(placement.pos())) { worker.getNavigation().stop(); return; }
         BlockState current = level.getBlockState(placement.pos());
         if (current.is(placement.state().getBlock())) {
             data.replace(state.withBuildStep(step + 1));
@@ -196,9 +198,9 @@ public final class SettlementWaterfrontService {
             return;
         }
 
+        if (!level.setBlock(placement.pos(), placement.state(), 3)) return;
         carried.shrink(1);
         if (carried.isEmpty()) worker.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-        level.setBlock(placement.pos(), placement.state(), 3);
         worker.swing(InteractionHand.MAIN_HAND);
         WaterfrontState next = state.withBuildStep(step + 1);
         data.replace(next);
@@ -277,7 +279,19 @@ public final class SettlementWaterfrontService {
         List<Villager> traders = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(WATER_TRADER_TAG)
                         && villager.entityTags().contains(assignment));
-        if (!traders.isEmpty()) return traders.getFirst();
+        traders.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        if (!traders.isEmpty()) {
+            Villager active = traders.getFirst();
+            active.setNoAi(false);
+            for (int i = 1; i < traders.size(); i++) {
+                Villager duplicate = traders.get(i);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+                duplicate.setInvulnerable(true);
+            }
+            return active;
+        }
+        if (!entityAreaLoaded(level, area) || !level.hasChunkAt(station)) return null;
 
         Villager trader = new Villager(EntityTypes.VILLAGER, level);
         trader.setPos(station.getX() + 0.5D, station.getY(), station.getZ() + 0.5D);
@@ -288,8 +302,21 @@ public final class SettlementWaterfrontService {
         trader.setInvulnerable(true);
         trader.addTag(WATER_TRADER_TAG);
         trader.addTag(assignment);
-        level.addFreshEntity(trader);
-        return trader;
+        return level.addFreshEntity(trader) ? trader : null;
+    }
+
+    private static boolean entityAreaLoaded(ServerLevel level, AABB area) {
+        int minChunkX = Math.floorDiv((int) Math.floor(area.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(area.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxZ)), 16);
+        int probeY = (int) Math.floor((area.minY + area.maxY) * 0.5D);
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8))) return false;
+            }
+        }
+        return true;
     }
 
     private static boolean tradeDue(MinecraftServer server, OutpostRecord outpost) {

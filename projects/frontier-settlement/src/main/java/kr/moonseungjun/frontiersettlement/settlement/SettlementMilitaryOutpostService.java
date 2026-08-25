@@ -240,14 +240,37 @@ public final class SettlementMilitaryOutpostService {
         AABB search = new AABB(outpost.center()).inflate(SENTRY_SEARCH_RADIUS, 16.0D, SENTRY_SEARCH_RADIUS);
         List<FrontierSoldierEntity> sentries = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
                 sentry -> sentry.entityTags().contains(MILITARY_SENTRY_TAG) && sentry.entityTags().contains(assignment));
-        if (!sentries.isEmpty()) return sentries.getFirst();
+        sentries.sort(Comparator.comparing(sentry -> sentry.getUUID().toString()));
+        if (!sentries.isEmpty()) {
+            FrontierSoldierEntity active = sentries.getFirst();
+            active.setNoAi(false);
+            for (int i = 1; i < sentries.size(); i++) {
+                FrontierSoldierEntity duplicate = sentries.get(i);
+                duplicate.setTarget(null);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+            }
+            return active;
+        }
 
         // Alpha.41 save migration: presentation/body replacement is 1:1 and never charges recruitment again.
+        // Historical duplicate bodies are contained rather than deleted because a body may own a
+        // physically supplied MAINHAND weapon.
         List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
                 sentry -> !(sentry instanceof FrontierSoldierEntity)
                         && sentry.entityTags().contains(MILITARY_SENTRY_TAG)
                         && sentry.entityTags().contains(assignment));
-        return legacy.isEmpty() ? null : migrateLegacySentry(level, legacy.getFirst());
+        legacy.sort(Comparator.comparing(sentry -> sentry.getUUID().toString()));
+        if (legacy.isEmpty()) return null;
+        FrontierSoldierEntity migrated = migrateLegacySentry(level, legacy.getFirst());
+        if (migrated == null) return null;
+        for (int i = 1; i < legacy.size(); i++) {
+            IronGolem duplicate = legacy.get(i);
+            duplicate.setTarget(null);
+            duplicate.getNavigation().stop();
+            duplicate.setNoAi(true);
+        }
+        return migrated;
     }
 
     private static FrontierSoldierEntity migrateLegacySentry(ServerLevel level, IronGolem legacy) {

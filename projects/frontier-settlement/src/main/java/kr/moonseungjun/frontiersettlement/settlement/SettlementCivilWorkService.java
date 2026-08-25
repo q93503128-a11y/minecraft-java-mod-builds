@@ -70,18 +70,23 @@ public final class SettlementCivilWorkService {
         int maxX = Math.max(first.getX(), second.getX());
         int minZ = Math.min(first.getZ(), second.getZ());
         int maxZ = Math.max(first.getZ(), second.getZ());
-        int width = maxX - minX + 1;
-        int depth = maxZ - minZ + 1;
-        if (width > MAX_WIDTH || depth > MAX_DEPTH || width * depth > MAX_AREA) {
+        long widthLong = (long) maxX - minX + 1L;
+        long depthLong = (long) maxZ - minZ + 1L;
+        if (widthLong <= 0L || depthLong <= 0L
+                || widthLong > MAX_WIDTH || depthLong > MAX_DEPTH || widthLong * depthLong > MAX_AREA) {
             return invalid("토목 1회 범위는 최대 17×17입니다.");
         }
+        int width = (int) widthLong;
+        int depth = (int) depthLong;
 
-        if (horizontalDistanceSqr(player.blockPosition(), first) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE
-                || horizontalDistanceSqr(player.blockPosition(), second) > (long) MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE) {
+        if (!withinHorizontalDistance(player.blockPosition(), first, MAX_PLAYER_DISTANCE)
+                || !withinHorizontalDistance(player.blockPosition(), second, MAX_PLAYER_DISTANCE)) {
             return invalid("토목 영역은 플레이어 44블록 안에서 지정해 주세요.");
         }
-        BlockPos center = new BlockPos((minX + maxX) / 2, first.getY(), (minZ + maxZ) / 2);
-        if (horizontalDistanceSqr(settlement.centerPos(), center) > (long) MAX_SETTLEMENT_RADIUS * MAX_SETTLEMENT_RADIUS) {
+        int centerX = (int) ((long) minX + ((long) maxX - minX) / 2L);
+        int centerZ = (int) ((long) minZ + ((long) maxZ - minZ) / 2L);
+        BlockPos center = new BlockPos(centerX, first.getY(), centerZ);
+        if (!withinHorizontalDistance(settlement.centerPos(), center, MAX_SETTLEMENT_RADIUS)) {
             return invalid("본진 토목 영역은 마을 중심 112블록 안에서 지정해 주세요.");
         }
         if (overlapsInfrastructure(settlement, minX - 1, maxX + 1, minZ - 1, maxZ + 1)) {
@@ -97,14 +102,14 @@ public final class SettlementCivilWorkService {
                 BlockPos column = new BlockPos(x, gradeY, z);
                 if (!level.hasChunkAt(column)) return invalid("영역 전체가 로드된 상태에서 토목을 시작해 주세요.");
                 int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
-                int delta = surfaceY - gradeY;
+                long delta = (long) surfaceY - gradeY;
                 if (delta > MAX_CUT_DEPTH || delta < -MAX_FILL_DEPTH) {
                     return invalid("각 지점의 절토·성토 높이 차는 최대 7블록입니다.");
                 }
                 String safety = validateColumn(level, x, z, surfaceY, gradeY);
                 if (safety != null) return invalid(safety);
-                if (delta > 0) cut += delta;
-                else if (delta < 0) fill += -delta;
+                if (delta > 0) cut += (int) delta;
+                else if (delta < 0) fill += (int) -delta;
             }
         }
         if (cut == 0 && fill == 0) return invalid("이미 선택 높이로 평탄한 영역입니다.");
@@ -150,7 +155,7 @@ public final class SettlementCivilWorkService {
 
         data.begin(new CivilWorkState(true, check.minX(), check.maxX(), check.minZ(), check.maxZ(), check.gradeY(),
                 CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks(), check.retainingBlocks()));
-        Villager builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement.centerPos());
+        Villager builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement);
         if (builder != null) {
             builder.setInvulnerable(true);
             builder.setCustomName(Component.literal("건설 주민 · 토목"));
@@ -167,7 +172,7 @@ public final class SettlementCivilWorkService {
         CivilWorkState project = data.project();
         if (!project.active()) return false;
         ServerLevel level = server.overworld();
-        Villager builder = SettlementConstructionService.ensureBuilder(level, settlement.centerPos());
+        Villager builder = SettlementConstructionService.ensureBuilder(level, settlement);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -175,8 +180,7 @@ public final class SettlementCivilWorkService {
 
         if (project.phase() == CivilWorkState.PHASE_RETURN) {
             if (!SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder)) return false;
-            finish(server, settlement, data, builder);
-            return true;
+            return finish(server, settlement, data, builder);
         }
 
         if (!areaLoaded(level, project)) return false;
@@ -229,44 +233,13 @@ public final class SettlementCivilWorkService {
             return false;
         }
 
-        if (project.phase() == CivilWorkState.PHASE_RETAIN) {
-            if (!SettlementCivilRetainingService.isRetainingStack(builder.getMainHandItem())
-                    && !builder.getMainHandItem().isEmpty()) {
-                SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
-                return false;
-            }
-            SettlementCivilRetainingService.Plan retainingPlan = SettlementCivilRetainingService.plan(level, project);
-            if (!retainingPlan.valid()) return false;
-            BlockPos retainingTarget = retainingPlan.nextMissing(level);
-            if (retainingTarget == null) {
-                if (!builder.getMainHandItem().isEmpty()) {
-                    SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder);
-                    return false;
-                }
-                data.replace(project.beginFill());
-                return false;
-            }
-            if (!SettlementCivilRetainingService.ensureCarriedRetaining(level, settlement, builder, project)) return false;
-            BlockState retainingCurrent = level.getBlockState(retainingTarget);
-            if (level.getBlockEntity(retainingTarget) != null || !retainingCurrent.getFluidState().isEmpty()
-                    || (!retainingCurrent.isAir() && !retainingCurrent.canBeReplaced())) return false;
-            if (!moveBuilder(level, builder, retainingTarget)) return false;
-            if (server.getTickCount() % WORK_INTERVAL_TICKS != 0) return false;
-            if (!level.setBlock(retainingTarget, Blocks.COBBLESTONE.defaultBlockState(), BLOCK_UPDATE)) return false;
-            SettlementCivilRetainingService.consumeOne(builder);
-            builder.swing(InteractionHand.MAIN_HAND);
-            data.replace(project.afterRetaining());
-            return false;
-        }
-
         BlockPos target = findFillTarget(level, project);
         if (target == null) {
             if (!builder.getMainHandItem().isEmpty()) {
                 data.replace(project.beginReturn());
                 return false;
             }
-            finish(server, settlement, data, builder);
-            return true;
+            return finish(server, settlement, data, builder);
         }
 
         int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ()) - 1;
@@ -328,14 +301,16 @@ public final class SettlementCivilWorkService {
         event.setNotifyClient(true);
     }
 
-    private static void finish(MinecraftServer server, SettlementData settlement,
-                               SettlementCivilWorkData data, Villager builder) {
-        if (!builder.getMainHandItem().isEmpty()) return;
+    private static boolean finish(MinecraftServer server, SettlementData settlement,
+                                  SettlementCivilWorkData data, Villager builder) {
+        if (!builder.getMainHandItem().isEmpty()) return false;
+        if (!SettlementConstructionService.returnBuilderHome(server.overworld(), settlement, builder)) return false;
         data.clear();
         builder.getNavigation().stop();
         builder.setInvulnerable(false);
         builder.setCustomName(Component.literal("건설 주민"));
         SettlementService.broadcast(server, settlement);
+        return true;
     }
 
     private static BlockPos findCutTarget(ServerLevel level, CivilWorkState state) {
@@ -359,6 +334,7 @@ public final class SettlementCivilWorkService {
     }
 
     private static boolean moveBuilder(ServerLevel level, Villager builder, BlockPos target) {
+        if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());
         if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) <= WORK_REACHED_SQR) return true;
@@ -429,10 +405,11 @@ public final class SettlementCivilWorkService {
         return pos.getX() >= minX && pos.getX() <= maxX && pos.getZ() >= minZ && pos.getZ() <= maxZ;
     }
 
-    private static long horizontalDistanceSqr(BlockPos a, BlockPos b) {
-        long dx = (long) a.getX() - b.getX();
-        long dz = (long) a.getZ() - b.getZ();
-        return dx * dx + dz * dz;
+    private static boolean withinHorizontalDistance(BlockPos a, BlockPos b, int maxDistance) {
+        long dx = Math.abs((long) a.getX() - b.getX());
+        long dz = Math.abs((long) a.getZ() - b.getZ());
+        if (dx > maxDistance || dz > maxDistance) return false;
+        return dx * dx + dz * dz <= (long) maxDistance * maxDistance;
     }
 
     static boolean isNaturalGround(BlockState state) {

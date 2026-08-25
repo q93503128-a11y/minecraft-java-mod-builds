@@ -132,7 +132,7 @@ public final class SettlementOutpostService {
 
         data.beginOutpostConstruction(roadIndex, gate, road.directionX(), road.directionZ());
         data.replaceOutpostConstructionStep(OutpostConstructionState.GRADE_STEP_OFFSET);
-        SettlementConstructionService.ensureBuilder(level, data.centerPos());
+        SettlementConstructionService.ensureBuilder(level, data);
         SettlementService.broadcast(server, data);
         return new StartResult(true, "전초기지 착공. 건설 주민이 부지를 정리한 뒤 실제 목재·석재를 운반하며 시공합니다."
                 + " (탐험 정복 반영 비용: 목재 " + woodCost + " · 석재 " + stoneCost + ")");
@@ -149,7 +149,7 @@ public final class SettlementOutpostService {
         }
 
         ServerLevel level = server.overworld();
-        Villager builder = findOutpostBuilder(level, data.centerPos(), state, plan);
+        Villager builder = findOutpostBuilder(level, data, data.centerPos(), state, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -162,7 +162,7 @@ public final class SettlementOutpostService {
         return tickPhysicalBuilding(server, data, state, plan, builder);
     }
 
-    private static Villager findOutpostBuilder(ServerLevel level, BlockPos settlementCenter,
+    private static Villager findOutpostBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
                                                OutpostConstructionState state,
                                                List<OutpostBlueprints.Placement> plan) {
         BlockPos hint;
@@ -185,8 +185,9 @@ public final class SettlementOutpostService {
         AABB corridor = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
         List<Villager> tagged = level.getEntitiesOfClass(Villager.class, corridor,
                 villager -> villager.entityTags().contains(SettlementConstructionService.BUILDER_TAG));
+        tagged.sort(java.util.Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!tagged.isEmpty()) return tagged.getFirst();
-        return SettlementConstructionService.ensureBuilder(level, settlementCenter);
+        return SettlementConstructionService.ensureBuilder(level, data);
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data,
@@ -345,6 +346,10 @@ public final class SettlementOutpostService {
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+            builder.getNavigation().stop();
+            return false;
+        }
         if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
             builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.9D);
@@ -352,7 +357,7 @@ public final class SettlementOutpostService {
         }
 
         int before = carried.getCount();
-        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
+        ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
         builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
         if (remaining.getCount() < before) {
             SettlementService.refreshResources(server, data);
@@ -416,6 +421,7 @@ public final class SettlementOutpostService {
         ServerLevel level = server.overworld();
         boolean legacyPrepaidRepair = state.legacyPrepaidBuilding();
         for (OutpostBlueprints.Placement placement : plan) {
+            if (!level.hasChunkAt(placement.pos())) return false;
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
             if (!canReplaceForBlueprint(level, placement.pos(), current)) {
@@ -440,6 +446,7 @@ public final class SettlementOutpostService {
         BlockPos stockpile = OutpostBlueprints.stockpile(state);
         if (!(level.getBlockEntity(stockpile) instanceof Container)) return false;
         if (!returnCarriedToStorage(server, data, builder)) return false;
+        if (!SettlementConstructionService.returnBuilderHome(level, data, builder)) return false;
 
         BlockPos center = OutpostBlueprints.center(state);
         String specialization = detectSpecialization(level, center, data);
@@ -521,6 +528,7 @@ public final class SettlementOutpostService {
     }
 
     private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
+        if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());
         double distance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
@@ -609,7 +617,7 @@ public final class SettlementOutpostService {
     }
 
     private static boolean canReplaceForBlueprint(ServerLevel level, BlockPos pos, BlockState current) {
-        if (level.getBlockEntity(pos) != null || !current.getFluidState().isEmpty()) return false;
+        if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null || !current.getFluidState().isEmpty()) return false;
         if (current.isAir() || current.canBeReplaced()) return true;
         return pos.getY() == level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos.getX(), pos.getZ()) - 1
                 && isNaturalGround(current);
@@ -637,6 +645,7 @@ public final class SettlementOutpostService {
                 if (dx * dx + dz * dz > 144) continue;
                 for (int dy = -12; dy <= 8; dy++) {
                     BlockPos pos = center.offset(dx, dy, dz);
+                    if (!level.hasChunkAt(pos)) continue;
                     BlockState state = level.getBlockState(pos);
                     if (state.is(Tags.Blocks.ORES)) ores++;
                     if (dy >= -2 && dy <= 7 && state.is(BlockTags.LOGS)) logs++;
@@ -709,6 +718,7 @@ public final class SettlementOutpostService {
             for (int side = -4; side <= 4; side++) {
                 int x = gate.getX() + directionX * forward - directionZ * side;
                 int z = gate.getZ() + directionZ * forward + directionX * side;
+                if (!level.hasChunkAt(new BlockPos(x, roadY, z))) return false;
                 int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 if (Math.abs(surfaceY - roadY) > 1) return false;
                 BlockPos surface = new BlockPos(x, surfaceY, z);

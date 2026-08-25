@@ -71,6 +71,7 @@ public final class SettlementRoadService {
                              boolean tunnel, boolean portal) {}
     private record FootprintSpec(boolean centerline, boolean bridge, boolean tunnel, Direction stairFacing) {}
     private record SurfaceSample(int y, BlockState state, boolean water) {}
+    private record BlockSnapshot(BlockPos pos, BlockState state) {}
     private record TunnelCell(BlockPos target, BlockPos work) {}
     private record SupportPlan(boolean valid, List<BlockPos> positions, String message) {
         static SupportPlan invalid(String message) { return new SupportPlan(false, List.of(), message); }
@@ -101,7 +102,9 @@ public final class SettlementRoadService {
 
         BlockPos startXZ = new BlockPos(selectedStart.getX(), 0, selectedStart.getZ());
         BlockPos endXZ = new BlockPos(selectedEnd.getX(), 0, selectedEnd.getZ());
-        int manhattan = Math.abs(endXZ.getX() - startXZ.getX()) + Math.abs(endXZ.getZ() - startXZ.getZ()) + 1;
+        long dx = Math.abs((long) endXZ.getX() - startXZ.getX());
+        long dz = Math.abs((long) endXZ.getZ() - startXZ.getZ());
+        long manhattan = dx + dz + 1L;
         if (manhattan < MIN_ROUTE_LENGTH) return invalid("도로 끝점을 시작점에서 최소 3블록 이상 떨어뜨려 주세요.");
         if (manhattan > MAX_ROUTE_LENGTH) return invalid("한 번에 계획할 수 있는 도로는 최대 " + MAX_ROUTE_LENGTH + "블록입니다.");
         if (!nearEitherEndpoint(player.blockPosition(), startXZ, endXZ)) {
@@ -167,7 +170,7 @@ public final class SettlementRoadService {
         }
 
         data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports());
-        SettlementConstructionService.ensureBuilder(level, data.centerPos());
+        SettlementConstructionService.ensureBuilder(level, data);
         SettlementService.broadcast(server, data);
         String bridge = chosen.supports().isEmpty() ? ""
                 : " 장교량/협곡 교각 " + chosen.supports().size() + "블록 포함.";
@@ -192,7 +195,7 @@ public final class SettlementRoadService {
         }
 
         ServerLevel level = server.overworld();
-        Villager builder = findRoadBuilder(level, data.centerPos(), road, plan);
+        Villager builder = findRoadBuilder(level, data, data.centerPos(), road, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -203,7 +206,7 @@ public final class SettlementRoadService {
         return tickPaving(server, data, road, plan, builder);
     }
 
-    private static Villager findRoadBuilder(ServerLevel level, BlockPos settlementCenter,
+    private static Villager findRoadBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
                                             RoadConstructionState road, List<Placement> plan) {
         BlockPos hint;
         if (road.tunneling()) {
@@ -224,8 +227,9 @@ public final class SettlementRoadService {
         AABB corridor = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
         List<Villager> tagged = level.getEntitiesOfClass(Villager.class, corridor,
                 villager -> villager.entityTags().contains(SettlementConstructionService.BUILDER_TAG));
+        tagged.sort(java.util.Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!tagged.isEmpty()) return tagged.getFirst();
-        return SettlementConstructionService.ensureBuilder(level, settlementCenter);
+        return SettlementConstructionService.ensureBuilder(level, data);
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data, RoadConstructionState road,
@@ -245,7 +249,7 @@ public final class SettlementRoadService {
         }
         // Bridge/tunnel structural cells are validated here; physical tunnel excavation has its own persisted phase.
         if (!placement.bridge() && !placement.tunnel() && !moveBuilderToPlacement(level, builder, placement)) return false;
-        applyGradePlacement(level, placement);
+        if (!applyGradePlacement(level, placement)) return false;
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceRoadConstruction();
         RoadConstructionState next = data.roadConstruction();
@@ -395,7 +399,7 @@ public final class SettlementRoadService {
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target)) {
+        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
             builder.getNavigation().stop();
             return false;
         }
@@ -405,7 +409,7 @@ public final class SettlementRoadService {
             return false;
         }
         int before = carried.getCount();
-        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
+        ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
         builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
         if (remaining.getCount() < before) {
             SettlementService.refreshResources(server, data);
@@ -473,7 +477,7 @@ public final class SettlementRoadService {
     private static BlockPos bridgeApproach(ServerLevel level, BlockPos target) {
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos neighbor = target.relative(direction);
-            if (isRoadPavingBlock(level.getBlockState(neighbor))) return neighbor;
+            if (level.hasChunkAt(neighbor) && isRoadPavingBlock(level.getBlockState(neighbor))) return neighbor;
         }
         return null;
     }
@@ -481,6 +485,7 @@ public final class SettlementRoadService {
     private static BlockPos findBridgeDeckAbove(ServerLevel level, BlockPos support) {
         for (int dy = 1; dy <= MAX_LONG_BRIDGE_PIER_DEPTH; dy++) {
             BlockPos candidate = support.above(dy);
+            if (!level.hasChunkAt(candidate)) return null;
             if (level.getBlockState(candidate).is(Blocks.STONE_BRICKS)) return candidate;
         }
         return null;
@@ -492,6 +497,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
+        if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());
         double distance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
@@ -502,6 +508,7 @@ public final class SettlementRoadService {
 
     private static boolean canGradePlacement(ServerLevel level, Placement placement) {
         BlockPos target = placement.pos();
+        if (!level.hasChunkAt(target)) return false;
         BlockState current = level.getBlockState(target);
         if (level.getBlockEntity(target) != null) return false;
         if (placement.portal()) return tunnelPortalCellSafe(level, target);
@@ -516,6 +523,7 @@ public final class SettlementRoadService {
 
         for (int y = target.getY() + 1; y <= target.getY() + 2; y++) {
             BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
+            if (!level.hasChunkAt(pos)) return false;
             BlockState state = level.getBlockState(pos);
             if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
             if (!isClearableForRoad(state)) return false;
@@ -523,34 +531,65 @@ public final class SettlementRoadService {
         return placement.bridge() || hasOrCanMakeSupport(level, target.below());
     }
 
-    private static void applyGradePlacement(ServerLevel level, Placement placement) {
-        if (placement.support() || placement.tunnel() || placement.portal()) return;
+    private static boolean applyGradePlacement(ServerLevel level, Placement placement) {
+        if (placement.support() || placement.tunnel() || placement.portal()) return true;
+        List<BlockSnapshot> changed = new ArrayList<>();
         BlockPos target = placement.pos();
         for (int y = target.getY() + 2; y >= target.getY() + 1; y--) {
             BlockPos pos = new BlockPos(target.getX(), y, target.getZ());
+            if (!level.hasChunkAt(pos)) { rollbackGradeMutation(level, changed); return false; }
             BlockState state = level.getBlockState(pos);
-            if (!state.isAir() && isClearableForRoad(state)) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (!state.isAir() && isClearableForRoad(state)
+                    && !setGradeBlock(level, pos, Blocks.AIR.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return false;
             }
         }
         if (placement.bridge()) {
             BlockState targetState = level.getBlockState(target);
-            if (targetState.canBeReplaced() && targetState.getFluidState().isEmpty()) {
-                level.setBlock(target, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (targetState.canBeReplaced() && targetState.getFluidState().isEmpty()
+                    && !setGradeBlock(level, target, Blocks.AIR.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return false;
             }
-            return;
+            return true;
         }
 
         BlockPos cursor = target.below();
         for (int depth = 0; depth <= MAX_FILL_DEPTH; depth++) {
+            if (!level.hasChunkAt(cursor)) { rollbackGradeMutation(level, changed); return false; }
             BlockState state = level.getBlockState(cursor);
             if (!state.isAir() && !state.canBeReplaced()) break;
-            level.setBlock(cursor, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+            if (!setGradeBlock(level, cursor, Blocks.COARSE_DIRT.defaultBlockState(), changed)) {
+                rollbackGradeMutation(level, changed);
+                return false;
+            }
             cursor = cursor.below();
         }
         BlockState targetState = level.getBlockState(target);
-        if (targetState.isAir() || targetState.canBeReplaced()) {
-            level.setBlock(target, Blocks.COARSE_DIRT.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        if ((targetState.isAir() || targetState.canBeReplaced())
+                && !setGradeBlock(level, target, Blocks.COARSE_DIRT.defaultBlockState(), changed)) {
+            rollbackGradeMutation(level, changed);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean setGradeBlock(ServerLevel level, BlockPos pos, BlockState next,
+                                         List<BlockSnapshot> changed) {
+        BlockState current = level.getBlockState(pos);
+        if (current.equals(next)) return true;
+        if (!level.setBlock(pos, next, DIRECT_BLOCK_UPDATE)) return false;
+        changed.add(new BlockSnapshot(pos, current));
+        return true;
+    }
+
+    private static void rollbackGradeMutation(ServerLevel level, List<BlockSnapshot> changed) {
+        for (int i = changed.size() - 1; i >= 0; i--) {
+            BlockSnapshot snapshot = changed.get(i);
+            if (level.hasChunkAt(snapshot.pos())) {
+                level.setBlock(snapshot.pos(), snapshot.state(), DIRECT_BLOCK_UPDATE);
+            }
         }
     }
 
@@ -607,6 +646,7 @@ public final class SettlementRoadService {
         // New physical roads must pay for every repair, but legacy prepaid saves must never be charged twice.
         boolean legacyPrepaidRepair = road.legacyPrepaidPaving();
         for (Placement placement : plan) {
+            if (!level.hasChunkAt(placement.pos())) return false;
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
             if (!canReplaceForPlacement(current, placement)) {
@@ -634,6 +674,7 @@ public final class SettlementRoadService {
         }
 
         if (!returnCarriedToStorage(server, data, builder)) return false;
+        if (!SettlementConstructionService.returnBuilderHome(level, data, builder)) return false;
         data.completeRoad(RoadSegment.fromPath(road.centers()));
         builder.getNavigation().stop();
         builder.setInvulnerable(false);
@@ -704,7 +745,11 @@ public final class SettlementRoadService {
         }
 
         List<SurfaceSample> surfaces = new ArrayList<>(flat.size());
-        for (BlockPos flatPos : flat) surfaces.add(sampleSurface(level, flatPos.getX(), flatPos.getZ()));
+        for (BlockPos flatPos : flat) {
+            SurfaceSample sample = sampleSurface(level, flatPos.getX(), flatPos.getZ());
+            if (sample == null) return invalidCandidate("도로 예정 경로 전체가 로드된 상태에서 계획해 주세요.");
+            surfaces.add(sample);
+        }
         if (surfaces.getFirst().water() || surfaces.getLast().water()) {
             return invalidCandidate("도로 시작점과 끝점은 물 밖의 단단한 지면에 두어 주세요.");
         }
@@ -851,6 +896,7 @@ public final class SettlementRoadService {
                 }
 
                 SurfaceSample natural = sampleSurface(level, x, z);
+                if (natural == null) return invalidCandidate("도로 3칸 폭 전체가 로드된 상태에서 계획해 주세요.");
                 if (natural.water() || !natural.state().getFluidState().isEmpty()) {
                     return invalidCandidate("3칸 폭 전체가 짧은 수로가 아니어서 안전한 교량을 만들 수 없습니다.");
                 }
@@ -884,6 +930,7 @@ public final class SettlementRoadService {
     }
 
     private static SurfaceSample sampleSurface(ServerLevel level, int x, int z) {
+        if (!level.hasChunkAt(new BlockPos(x, 0, z))) return null;
         int worldY = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
         BlockState world = level.getBlockState(new BlockPos(x, worldY, z));
         if (world.getFluidState().is(FluidTags.WATER)) return new SurfaceSample(worldY, world, true);
@@ -902,6 +949,7 @@ public final class SettlementRoadService {
             if (!isClearableForRoad(state)) return false;
         }
         SurfaceSample natural = sampleSurface(level, target.getX(), target.getZ());
+        if (natural == null) return false;
         if (!natural.water() && natural.y() > target.getY()) return false;
         return natural.water() || target.getY() - natural.y() <= MAX_LONG_BRIDGE_PIER_DEPTH;
     }
@@ -1104,6 +1152,7 @@ public final class SettlementRoadService {
             boolean needsPiers = span > MAX_SHORT_BRIDGE_SPAN;
             for (int i = runStart; i <= runEnd && !needsPiers; i++) {
                 SurfaceSample natural = sampleSurface(level, centers.get(i).getX(), centers.get(i).getZ());
+                if (natural == null) return SupportPlan.invalid("장교량 지형이 모두 로드된 상태에서 계획해 주세요.");
                 if (!natural.water() && centers.get(i).getY() - natural.y() >= MIN_RAVINE_DEPTH) needsPiers = true;
             }
             if (needsPiers) {
@@ -1210,7 +1259,11 @@ public final class SettlementRoadService {
     private static long horizontalDistanceSqr(BlockPos a, BlockPos b) {
         long dx = (long) a.getX() - b.getX();
         long dz = (long) a.getZ() - b.getZ();
-        return dx * dx + dz * dz;
+        try {
+            return Math.addExact(Math.multiplyExact(dx, dx), Math.multiplyExact(dz, dz));
+        } catch (ArithmeticException overflow) {
+            return Long.MAX_VALUE;
+        }
     }
 
     private static boolean overlapsBuildingOrOutpost(SettlementData data, BlockPos pos) {

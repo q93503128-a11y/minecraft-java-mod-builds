@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.71
+## Current version: 0.1.0-alpha.72
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.71 key was added.
+No new Alpha.72 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -73,6 +73,16 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.72 — full-project authority / transaction hardening
+
+No content was added. A full 105-Java-file audit closed cross-service error paths rather than adding another feature slice.
+
+The one shared builder is now loaded-evidence/UUID-authoritative, preserves historical duplicates non-destructively, requires successful entity insertion, physically returns leftover crate/MAINHAND cargo to one concrete storage target, and walks back to the town anchor before any building/road/outpost/civil project completes. Road grading is rollback-safe and waterfront construction consumes wood only after successful world placement. Founding commits only after the physical marker + real stockpile exist, including the command path.
+
+Fishing workers, market/waterfront visitors and civic guards now fail closed before partial-load replacement. Builder/fishing MAINHAND cargo has exact death recovery, renewable guard/watch Iron Golems have no vanilla drops, and historical remote military duplicate bodies are UUID-contained without deleting supplied weapons. Extreme placement coordinates are rejected before unsafe arithmetic/world iteration.
+
+No new Alpha.72 key, UI, UUID save ledger, virtual cargo/resource authority, force-load, teleport, building family or second logistics authority was added. Long two-player unload/death/save-reconnect and fresh-world companion acceptance remain unfinished.
 
 ## Alpha.71 — route-evidence military / construction-supply lifecycle hardening
 

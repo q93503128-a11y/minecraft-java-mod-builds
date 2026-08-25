@@ -11,21 +11,26 @@ import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.minecraft.world.phys.AABB;
 
 import java.util.Comparator;
 import java.util.List;
 
 public final class SettlementBenefitService {
+    public static final String GUARD_POST_GUARD_TAG = "frontier_settlement_guard_post_guard";
     public static final String WATCH_GUARD_TAG = "frontier_settlement_watch_guard";
+    private static final String GUARD_POST_ASSIGNMENT_PREFIX = "frontier_settlement_guard_post_";
     private static final String WATCH_ASSIGNMENT_PREFIX = "frontier_settlement_watchtower_";
     private static final int REPAIR_INTERVAL_TICKS = 100;
     private static final int GUARD_CHECK_INTERVAL_TICKS = 200;
     private static final int WATCHTOWER_CHECK_INTERVAL_TICKS = 100;
     private static final double BLACKSMITH_RADIUS_SQR = 10.0D * 10.0D;
     private static final double WATCHTOWER_ALERT_RADIUS = 40.0D;
-    private static final double WATCH_GUARD_SEARCH_RADIUS = 48.0D;
-    private static final double WATCH_GUARD_HOME_RADIUS_SQR = 14.0D * 14.0D;
+    private static final double GUARD_POST_SEARCH_RADIUS = 64.0D;
+    private static final double GUARD_POST_HOME_RADIUS_SQR = 24.0D * 24.0D;
+    private static final double WATCH_GUARD_SEARCH_RADIUS = 64.0D;
+    private static final double WATCH_GUARD_HOME_RADIUS_SQR = 18.0D * 18.0D;
     private static final int REPAIR_PER_METAL = 16;
     private static final EquipmentSlot[] REPAIR_SLOTS = {
             EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND,
@@ -81,11 +86,35 @@ public final class SettlementBenefitService {
         for (BuildingRecord post : buildings(data, BuildingType.GUARD_POST)) {
             BlockPos center = post.workCenter();
             if (!level.hasChunkAt(center)) continue;
+            String assignment = guardPostAssignment(post);
             String identity = guardIdentity(post);
-            AABB search = new AABB(center).inflate(16.0D, 8.0D, 16.0D);
+            AABB search = new AABB(center).inflate(GUARD_POST_SEARCH_RADIUS, 24.0D, GUARD_POST_SEARCH_RADIUS);
             List<IronGolem> existing = level.getEntitiesOfClass(IronGolem.class, search,
-                    guard -> guard.getCustomName() != null && identity.equals(guard.getCustomName().getString()));
-            if (!existing.isEmpty()) continue;
+                    guard -> (guard.entityTags().contains(GUARD_POST_GUARD_TAG)
+                            && guard.entityTags().contains(assignment))
+                            || (guard.getCustomName() != null && identity.equals(guard.getCustomName().getString())));
+            existing.sort(Comparator.comparing(guard -> guard.getUUID().toString()));
+            if (!existing.isEmpty()) {
+                IronGolem active = existing.getFirst();
+                active.addTag(GUARD_POST_GUARD_TAG);
+                active.addTag(assignment);
+                active.setNoAi(false);
+                double homeDistance = active.distanceToSqr(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D);
+                if (homeDistance > GUARD_POST_HOME_RADIUS_SQR) {
+                    active.setTarget(null);
+                    active.getNavigation().moveTo(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D, 0.9D);
+                }
+                for (int i = 1; i < existing.size(); i++) {
+                    IronGolem duplicate = existing.get(i);
+                    duplicate.addTag(GUARD_POST_GUARD_TAG);
+                    duplicate.addTag(assignment);
+                    duplicate.setTarget(null);
+                    duplicate.getNavigation().stop();
+                    duplicate.setNoAi(true);
+                }
+                continue;
+            }
+            if (!entityAreaLoaded(level, search)) continue;
 
             IronGolem guard = new IronGolem(EntityTypes.IRON_GOLEM, level);
             guard.setPos(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D);
@@ -93,7 +122,9 @@ public final class SettlementBenefitService {
             guard.setCustomNameVisible(false);
             guard.setPersistenceRequired();
             guard.setPlayerCreated(true);
-            level.addFreshEntity(guard);
+            guard.addTag(GUARD_POST_GUARD_TAG);
+            guard.addTag(assignment);
+            if (!level.addFreshEntity(guard)) continue;
         }
     }
 
@@ -106,29 +137,43 @@ public final class SettlementBenefitService {
             if (guard == null) guard = spawnWatchGuard(level, tower, home);
             if (guard == null) continue;
 
+            double homeDistance = guard.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
+            if (homeDistance > WATCH_GUARD_HOME_RADIUS_SQR) {
+                guard.setTarget(null);
+                guard.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.9D);
+                continue;
+            }
+
             Monster threat = nearestWatchThreat(level, home);
             if (threat != null) {
                 guard.setTarget(threat);
                 continue;
             }
-
             if (guard.getTarget() != null) guard.setTarget(null);
-            if (guard.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D) > WATCH_GUARD_HOME_RADIUS_SQR) {
-                guard.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.9D);
-            }
         }
     }
 
     private static IronGolem findWatchGuard(ServerLevel level, BuildingRecord tower, BlockPos home) {
         String assignment = watchAssignment(tower);
-        AABB search = new AABB(home).inflate(WATCH_GUARD_SEARCH_RADIUS, 20.0D, WATCH_GUARD_SEARCH_RADIUS);
+        AABB search = watchGuardArea(home);
         List<IronGolem> guards = level.getEntitiesOfClass(IronGolem.class, search,
                 guard -> guard.entityTags().contains(WATCH_GUARD_TAG) && guard.entityTags().contains(assignment));
-        return guards.isEmpty() ? null : guards.getFirst();
+        guards.sort(Comparator.comparing(guard -> guard.getUUID().toString()));
+        if (guards.isEmpty()) return null;
+        IronGolem active = guards.getFirst();
+        active.setNoAi(false);
+        for (int i = 1; i < guards.size(); i++) {
+            IronGolem duplicate = guards.get(i);
+            duplicate.setTarget(null);
+            duplicate.getNavigation().stop();
+            duplicate.setNoAi(true);
+        }
+        return active;
     }
 
     private static IronGolem spawnWatchGuard(ServerLevel level, BuildingRecord tower, BlockPos home) {
-        if (!level.hasChunkAt(home)) return null;
+        AABB search = watchGuardArea(home);
+        if (!level.hasChunkAt(home) || !entityAreaLoaded(level, search)) return null;
         IronGolem guard = new IronGolem(EntityTypes.IRON_GOLEM, level);
         guard.setPos(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         guard.setCustomName(Component.literal("감시 경비대 [" + tower.originX() + "," + tower.originZ() + "]"));
@@ -138,6 +183,24 @@ public final class SettlementBenefitService {
         guard.addTag(WATCH_GUARD_TAG);
         guard.addTag(watchAssignment(tower));
         return level.addFreshEntity(guard) ? guard : null;
+    }
+
+    private static AABB watchGuardArea(BlockPos home) {
+        return new AABB(home).inflate(WATCH_GUARD_SEARCH_RADIUS, 20.0D, WATCH_GUARD_SEARCH_RADIUS);
+    }
+
+    private static boolean entityAreaLoaded(ServerLevel level, AABB area) {
+        int minChunkX = Math.floorDiv((int) Math.floor(area.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(area.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxZ)), 16);
+        int probeY = (int) Math.floor((area.minY + area.maxY) * 0.5D);
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8))) return false;
+            }
+        }
+        return true;
     }
 
     private static Monster nearestWatchThreat(ServerLevel level, BlockPos home) {
@@ -150,12 +213,24 @@ public final class SettlementBenefitService {
                 .orElse(null);
     }
 
+    private static String guardPostAssignment(BuildingRecord post) {
+        return GUARD_POST_ASSIGNMENT_PREFIX + post.originX() + "_" + post.originZ();
+    }
+
     private static String watchAssignment(BuildingRecord tower) {
         return WATCH_ASSIGNMENT_PREFIX + tower.originX() + "_" + tower.originZ();
     }
 
     private static String guardIdentity(BuildingRecord post) {
         return "개척 경비대 [" + post.originX() + "," + post.originZ() + "]";
+    }
+
+    /** Recreated civic guards are public-defense infrastructure, never a renewable iron-drop source. */
+    public static void onLivingDrops(LivingDropsEvent event) {
+        if (!(event.getEntity() instanceof IronGolem guard)) return;
+        if (!guard.entityTags().contains(GUARD_POST_GUARD_TAG)
+                && !guard.entityTags().contains(WATCH_GUARD_TAG)) return;
+        event.getDrops().clear();
     }
 
     private static List<BuildingRecord> buildings(SettlementData data, BuildingType type) {

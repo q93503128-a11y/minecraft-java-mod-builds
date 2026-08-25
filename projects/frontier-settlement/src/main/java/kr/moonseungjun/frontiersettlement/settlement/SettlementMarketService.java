@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -127,7 +128,19 @@ public final class SettlementMarketService {
         List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
                 villager -> villager.entityTags().contains(MARKET_TRADER_TAG)
                         && villager.entityTags().contains(assignment));
-        if (!assigned.isEmpty()) return assigned.getFirst();
+        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        if (!assigned.isEmpty()) {
+            Villager active = assigned.getFirst();
+            active.setNoAi(false);
+            for (int i = 1; i < assigned.size(); i++) {
+                Villager duplicate = assigned.get(i);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+                duplicate.setInvulnerable(true);
+            }
+            return active;
+        }
+        if (!entityAreaLoaded(level, area)) return null;
 
         Villager trader = new Villager(EntityTypes.VILLAGER, level);
         BlockPos spawn = market.workCenter().above();
@@ -138,8 +151,21 @@ public final class SettlementMarketService {
         trader.setNoAi(false);
         trader.addTag(MARKET_TRADER_TAG);
         trader.addTag(assignment);
-        level.addFreshEntity(trader);
-        return trader;
+        return level.addFreshEntity(trader) ? trader : null;
+    }
+
+    private static boolean entityAreaLoaded(ServerLevel level, AABB area) {
+        int minChunkX = Math.floorDiv((int) Math.floor(area.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(area.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(area.maxZ)), 16);
+        int probeY = (int) Math.floor((area.minY + area.maxY) * 0.5D);
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8))) return false;
+            }
+        }
+        return true;
     }
 
     private static String assignmentTag(BuildingRecord market) {

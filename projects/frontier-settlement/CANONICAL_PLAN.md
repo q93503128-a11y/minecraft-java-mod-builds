@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.71**.
+Current canonical implementation: **0.1.0-alpha.72**.
 
 ## 1. Product identity
 
@@ -367,6 +367,24 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.72 full-project authority / transaction hardening
+
+Alpha.72 adds no content. It is the first 105-Java-file full-audit pass after the lifecycle series and fixes deterministic authority/transaction defects that crossed service boundaries.
+
+- the one shared construction builder now uses a UUID-sorted loaded-evidence envelope instead of a fixed ±96 center search; hidden remote builders are never inferred dead from a partial view, historical duplicates are NoAI-contained rather than deleted, and `addFreshEntity` must succeed before a new builder exists;
+- building, road, outpost and civil projects do not finish with the builder stranded at the remote site: after all real MAINHAND/crate cargo is physically returned, the same builder walks back to the town anchor before project state clears;
+- construction-site crate extras no longer jump directly into arbitrary settlement storage; the builder lifts the real stack, walks to one concrete loaded container and inserts only there; the same exact-target rule is used by ordinary/road/outpost return paths;
+- road grading is now one reversible world transaction and persisted step advance happens only after every `setBlock` succeeds; waterfront pier construction likewise places the block successfully before shrinking the carried wood and advancing `buildStep`;
+- founding is rollback-safe: fence/torch/stockpile placement must all succeed, the stockpile must resolve to a real Container, and both the item path and `/frontier found` leave the same physical pioneer marker before `SettlementData.found`;
+- fishing workers, market visitors and waterfront traders require their whole assignment lookup envelope loaded before zero visible entities may authorize replacement; UUID order selects one active entity and historical duplicates are stopped without destructive cleanup;
+- builder and fishing-worker MAINHAND cargo join exact physical death recovery;
+- guard-post/watchtower Iron Golems gain assignment tags, UUID authority, bounded home return and loaded-evidence replacement; because they are renewable public-defense infrastructure, their vanilla drops are cleared so they cannot become an iron farm;
+- dangerous-outpost sentry historical duplicates are UUID-sorted and NoAI-contained without deleting a body that may own a physically supplied weapon;
+- placement request arithmetic is bounded before iteration/world access, and terrain-height reads used by the audited construction/road/outpost/civil paths fail closed at unloaded chunks;
+- no force-load, teleport, UUID save ledger, virtual cargo/resource balance, new content, key, UI, building family or second logistics authority is introduced.
+
+Long two-player death/unload/save-reload/reconnect and fresh-world companion-stack acceptance remain unfinished.
 
 ### Alpha.71 barracks / construction-office route-evidence lifecycle hardening
 
@@ -829,7 +847,7 @@ Shared repo:
 - CI result bot may advance main;
 - final accepted result must identify exact intended Frontier **source/docs SHA**, result commit, run ID and JAR SHA-256.
 
-## 14. Current playable slice after Alpha.68
+## 14. Current playable slice after Alpha.72
 
 Current implemented slice includes:
 
@@ -867,7 +885,7 @@ Current implemented slice includes:
 
 This is not original v0.2 completion.
 
-## 15. Unfinished original-scope priorities after Alpha.68
+## 15. Unfinished original-scope priorities after Alpha.72
 
 Unless real-play regression overrides them:
 

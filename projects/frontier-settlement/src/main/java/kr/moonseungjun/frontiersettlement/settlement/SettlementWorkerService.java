@@ -267,6 +267,8 @@ public final class SettlementWorkerService {
 
     private static boolean isManagedCargoWorker(Villager worker) {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
+                || worker.entityTags().contains(SettlementConstructionService.BUILDER_TAG)
+                || worker.entityTags().contains(SettlementFishingOutpostService.FISHING_WORKER_TAG)
                 || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)
                 || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)
                 || worker.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)
@@ -380,7 +382,7 @@ public final class SettlementWorkerService {
             move(worker, target, 0.85D);
             return;
         }
-        ItemStack remaining = SettlementStorageService.insert(level, data, carried);
+        ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
         worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
     }
 

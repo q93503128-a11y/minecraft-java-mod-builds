@@ -21,6 +21,7 @@ import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -45,6 +46,7 @@ public final class SettlementConstructionService {
     private static final int MAX_MAIN_SETTLEMENT_RADIUS = 72;
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
     private static final int MAX_SCAFFOLD_STEP = 7;
+    private static final int BUILDER_ROUTE_MARGIN = 32;
 
     private SettlementConstructionService() {}
 
@@ -104,15 +106,11 @@ public final class SettlementConstructionService {
         String locked = lockedReason(data, type);
         if (locked != null) return invalidPlacement(locked);
 
-        long pdx = (long) selectedCenter.getX() - player.blockPosition().getX();
-        long pdz = (long) selectedCenter.getZ() - player.blockPosition().getZ();
-        if (pdx * pdx + pdz * pdz > (long) MAX_PLAYER_PLACEMENT_DISTANCE * MAX_PLAYER_PLACEMENT_DISTANCE) {
+        if (!withinHorizontalDistance(player.blockPosition(), selectedCenter, MAX_PLAYER_PLACEMENT_DISTANCE)) {
             return invalidPlacement("건설 위치는 플레이어 24블록 안에서 지정해 주세요.");
         }
 
-        long dx = (long) selectedCenter.getX() - data.centerPos().getX();
-        long dz = (long) selectedCenter.getZ() - data.centerPos().getZ();
-        if (dx * dx + dz * dz > (long) MAX_MAIN_SETTLEMENT_RADIUS * MAX_MAIN_SETTLEMENT_RADIUS) {
+        if (!withinHorizontalDistance(data.centerPos(), selectedCenter, MAX_MAIN_SETTLEMENT_RADIUS)) {
             return invalidPlacement("본진 기능 건물은 마을 중심 72블록 안에 배치해 주세요. 먼 지역은 전초기지를 사용합니다.");
         }
 
@@ -135,6 +133,13 @@ public final class SettlementConstructionService {
             if (site.terrainStoneCost() > 0) message += " · 옹벽/기초 추가 석재 " + site.terrainStoneCost();
         }
         return new PlacementCheck(true, site.origin(), message, site.terrainWork(), site.terrainStoneCost());
+    }
+
+    private static boolean withinHorizontalDistance(BlockPos a, BlockPos b, int maxDistance) {
+        long dx = Math.abs((long) a.getX() - b.getX());
+        long dz = Math.abs((long) a.getZ() - b.getZ());
+        if (dx > maxDistance || dz > maxDistance) return false;
+        return dx * dx + dz * dz <= (long) maxDistance * maxDistance;
     }
 
     private static PlacementCheck invalidPlacement(String message) {
@@ -174,7 +179,7 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
         data.beginConstruction(type, check.origin(), rotation);
         data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
-        Villager builder = ensureBuilder(level, data.centerPos());
+        Villager builder = ensureBuilder(level, data);
         if (builder != null) builder.setInvulnerable(true);
         SettlementService.broadcast(server, data);
         String terrain = check.terrainWork()
@@ -191,13 +196,13 @@ public final class SettlementConstructionService {
         ServerLevel level = server.overworld();
         BuildingType type = BuildingType.fromId(construction.type());
         if (type == null) {
-            Villager strandedBuilder = findBuilder(level, data.centerPos());
+            Villager strandedBuilder = findBuilder(level, data);
             if (strandedBuilder != null) strandedBuilder.setInvulnerable(false);
             data.clearConstruction();
             return true;
         }
 
-        Villager builder = ensureBuilder(level, data.centerPos());
+        Villager builder = ensureBuilder(level, data);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -223,6 +228,7 @@ public final class SettlementConstructionService {
         if (!moveBuilderToWorkPosition(level, construction, type, placement, builder, supply)) return false;
 
         BlockPos target = placement.pos();
+        if (!level.hasChunkAt(target)) return false;
         BlockState current = level.getBlockState(target);
         if (!current.isAir() && !current.is(placement.state().getBlock())) {
             builder.getNavigation().stop();
@@ -471,6 +477,12 @@ public final class SettlementConstructionService {
 
         ItemStack carried = builder.getMainHandItem();
         if (!carried.isEmpty()) {
+            boolean usefulHere = (SettlementInventory.isWood(carried) && missingWood > 0L)
+                    || (SettlementInventory.isStone(carried) && missingStone > 0L);
+            if (!usefulHere) {
+                returnCarriedToTownStorage(server, data, builder);
+                return false;
+            }
             if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                     > SUPPLY_INTERACTION_RANGE_SQR) {
                 builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.9D);
@@ -478,15 +490,12 @@ public final class SettlementConstructionService {
             }
             int before = carried.getCount();
             ItemStack remaining = SettlementInventory.insert(crate, carried);
-            if (remaining.getCount() == before
-                    && relieveCratePressure(server.overworld(), data, crate, targetWood, targetStone)) {
-                remaining = SettlementInventory.insert(crate, carried);
-            }
             builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
             if (remaining.getCount() < before) {
                 SettlementService.refreshResources(server, data);
                 SettlementService.broadcast(server, data);
             }
+            if (remaining.getCount() == before) returnCarriedToTownStorage(server, data, builder);
             return false;
         }
 
@@ -511,33 +520,28 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    private static boolean relieveCratePressure(ServerLevel level, SettlementData data, Container crate,
-                                               long targetWood, long targetStone) {
-        long excessWood = Math.max(0L, SettlementInventory.countWood(crate) - targetWood);
-        long excessStone = Math.max(0L, SettlementInventory.countStone(crate) - targetStone);
-        boolean changed = false;
-        for (int slot = crate.getContainerSize() - 1; slot >= 0; slot--) {
-            ItemStack current = crate.getItem(slot);
-            if (current.isEmpty()) continue;
-            long returnLimit;
-            if (SettlementInventory.isWood(current)) returnLimit = excessWood;
-            else if (SettlementInventory.isStone(current)) returnLimit = excessStone;
-            else returnLimit = current.getCount();
-            if (returnLimit <= 0L) continue;
-
-            int offered = (int) Math.min(returnLimit, current.getCount());
-            ItemStack moving = current.copyWithCount(offered);
-            ItemStack remaining = SettlementStorageService.insert(level, data, moving);
-            int moved = offered - remaining.getCount();
-            if (moved <= 0) continue;
-            current.shrink(moved);
-            crate.setItem(slot, current);
-            if (SettlementInventory.isWood(moving)) excessWood -= moved;
-            else if (SettlementInventory.isStone(moving)) excessStone -= moved;
-            changed = true;
+    private static boolean returnCarriedToTownStorage(MinecraftServer server, SettlementData data, Villager builder) {
+        ItemStack carried = builder.getMainHandItem();
+        if (carried.isEmpty()) return true;
+        ServerLevel level = server.overworld();
+        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
+        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+            builder.getNavigation().stop();
+            return false;
         }
-        if (changed) crate.setChanged();
-        return changed;
+        if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                > SUPPLY_INTERACTION_RANGE_SQR) {
+            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.86D);
+            return false;
+        }
+        ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
+        builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
+        if (remaining.isEmpty()) {
+            SettlementService.refreshResources(server, data);
+            SettlementService.broadcast(server, data);
+            return true;
+        }
+        return false;
     }
 
     private static long costAtStep(long totalCost, int step, int totalSteps) {
@@ -576,6 +580,7 @@ public final class SettlementConstructionService {
                                          Container crate, BlockPos supply) {
         ServerLevel level = server.overworld();
         for (BuildingBlueprints.Placement placement : plan) {
+            if (!level.hasChunkAt(placement.pos())) return false;
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
             if (!current.isAir()) {
@@ -584,14 +589,20 @@ public final class SettlementConstructionService {
             }
             if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
             if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;
-            level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE);
+            if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
             builder.swing(InteractionHand.MAIN_HAND);
             return false;
         }
 
-        returnCrateExtras(level, data, crate);
-        if (crateIsEmpty(crate)) level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-        removeConstructionScaffolds(level, data.construction(), type, supply);
+        if (!returnCrateExtrasPhysically(server, data, builder, crate, supply)) return false;
+        if (!crateIsEmpty(crate)) return false;
+        // A single shared builder must finish every project back at its authoritative town anchor.
+        // This prevents the next project from inferring "missing" while the previous builder is
+        // legitimately unloaded at a remote work site. The walk is physical; no teleport/force-load.
+        if (!returnBuilderHome(level, data, builder)) return false;
+        if (level.getBlockState(supply).is(Blocks.BARREL)
+                && !level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return false;
+        if (!removeConstructionScaffolds(level, data.construction(), type, supply)) return false;
         data.completeConstruction(type);
         builder.getNavigation().stop();
         builder.setInvulnerable(false);
@@ -601,14 +612,24 @@ public final class SettlementConstructionService {
         return true;
     }
 
-    private static void returnCrateExtras(ServerLevel level, SettlementData data, Container crate) {
+    private static boolean returnCrateExtrasPhysically(MinecraftServer server, SettlementData data,
+                                                       Villager builder, Container crate, BlockPos supply) {
+        if (!builder.getMainHandItem().isEmpty()) return returnCarriedToTownStorage(server, data, builder);
+        int sourceSlot = -1;
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
-            ItemStack current = crate.getItem(slot);
-            if (current.isEmpty()) continue;
-            ItemStack remaining = SettlementStorageService.insert(level, data, current);
-            crate.setItem(slot, remaining);
+            if (!crate.getItem(slot).isEmpty()) { sourceSlot = slot; break; }
         }
+        if (sourceSlot < 0) return true;
+        if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
+                > SUPPLY_INTERACTION_RANGE_SQR) {
+            builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.86D);
+            return false;
+        }
+        ItemStack moving = crate.getItem(sourceSlot).copy();
+        crate.setItem(sourceSlot, ItemStack.EMPTY);
         crate.setChanged();
+        builder.setItemSlot(EquipmentSlot.MAINHAND, moving);
+        return false;
     }
 
     private static boolean crateIsEmpty(Container crate) {
@@ -623,7 +644,7 @@ public final class SettlementConstructionService {
         if (level.getBlockEntity(supply) instanceof Container crate) return crate;
         BlockState current = level.getBlockState(supply);
         if (!current.isAir() && !current.canBeReplaced()) return null;
-        level.setBlock(supply, Blocks.BARREL.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        if (!level.setBlock(supply, Blocks.BARREL.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return null;
         return level.getBlockEntity(supply) instanceof Container crate ? crate : null;
     }
 
@@ -769,20 +790,20 @@ public final class SettlementConstructionService {
         return true;
     }
 
-    private static void removeConstructionScaffolds(ServerLevel level, ConstructionState construction,
-                                                    BuildingType type, BlockPos supply) {
+    private static boolean removeConstructionScaffolds(ServerLevel level, ConstructionState construction,
+                                                       BuildingType type, BlockPos supply) {
         List<ScaffoldTower> towers = scaffoldTowers(construction.origin(), type, construction.buildingRotation(), supply);
         for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
             if (!construction.ownsScaffold(towerIndex)) continue;
             List<ScaffoldPiece> pieces = towers.get(towerIndex).pieces();
             for (int i = pieces.size() - 1; i >= 0; i--) {
                 ScaffoldPiece piece = pieces.get(i);
-                if (!level.hasChunkAt(piece.pos())) continue;
-                if (level.getBlockState(piece.pos()).is(piece.state().getBlock())) {
-                    level.setBlock(piece.pos(), Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
-                }
+                if (!level.hasChunkAt(piece.pos())) return false;
+                if (level.getBlockState(piece.pos()).is(piece.state().getBlock())
+                        && !level.setBlock(piece.pos(), Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return false;
             }
         }
+        return true;
     }
 
     private static boolean isProtectedScaffoldBlock(ServerLevel level, ConstructionState construction,
@@ -839,15 +860,24 @@ public final class SettlementConstructionService {
         }
     }
 
-    public static Villager ensureBuilder(ServerLevel level, BlockPos center) {
-        Villager existing = findBuilder(level, center);
-        if (existing != null) {
-            if (existing.isNoAi()) existing.setNoAi(false);
-            if (!existing.entityTags().contains(BUILDER_TAG)) existing.addTag(BUILDER_TAG);
-            return existing;
+    public static Villager ensureBuilder(ServerLevel level, SettlementData data) {
+        List<Villager> existing = findBuilders(level, data);
+        if (!existing.isEmpty()) {
+            Villager active = existing.getFirst();
+            if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
+            active.setNoAi(false);
+            for (int i = 1; i < existing.size(); i++) {
+                Villager duplicate = existing.get(i);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+                duplicate.setInvulnerable(true);
+            }
+            return active;
         }
+        if (!builderAssignmentEvidenceLoaded(level, data)) return null;
+        BlockPos spawn = data.centerPos().offset(1, 0, 1);
+        if (!level.hasChunkAt(spawn)) return null;
         Villager builder = new Villager(EntityTypes.VILLAGER, level);
-        BlockPos spawn = center.offset(1, 0, 1);
         builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         builder.setYRot(0.0F);
         builder.setXRot(0.0F);
@@ -856,20 +886,103 @@ public final class SettlementConstructionService {
         builder.setPersistenceRequired();
         builder.setNoAi(false);
         builder.addTag(BUILDER_TAG);
-        level.addFreshEntity(builder);
-        return builder;
+        return level.addFreshEntity(builder) ? builder : null;
     }
 
-    private static Villager findBuilder(ServerLevel level, BlockPos center) {
-        AABB search = new AABB(
-                center.getX() - 96.0D, center.getY() - 48.0D, center.getZ() - 96.0D,
-                center.getX() + 97.0D, center.getY() + 49.0D, center.getZ() + 97.0D);
-        List<Villager> tagged = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.entityTags().contains(BUILDER_TAG));
-        if (!tagged.isEmpty()) return tagged.getFirst();
-        List<Villager> legacy = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.getCustomName() != null && BUILDER_NAME.equals(villager.getCustomName().getString()));
-        return legacy.isEmpty() ? null : legacy.getFirst();
+    static boolean returnBuilderHome(ServerLevel level, SettlementData data, Villager builder) {
+        BlockPos home = data.centerPos().offset(1, 0, 1);
+        if (!level.hasChunkAt(home)) {
+            builder.getNavigation().stop();
+            return false;
+        }
+        double distance = builder.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
+        if (distance <= 4.0D) {
+            builder.getNavigation().stop();
+            return true;
+        }
+        builder.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.86D);
+        return false;
+    }
+
+    static Villager findBuilder(ServerLevel level, SettlementData data) {
+        List<Villager> builders = findBuilders(level, data);
+        return builders.isEmpty() ? null : builders.getFirst();
+    }
+
+    private static List<Villager> findBuilders(ServerLevel level, SettlementData data) {
+        AABB search = builderRouteBounds(level, data);
+        List<Villager> builders = level.getEntitiesOfClass(Villager.class, search, villager ->
+                villager.entityTags().contains(BUILDER_TAG)
+                        || (villager.getCustomName() != null && BUILDER_NAME.equals(villager.getCustomName().getString())));
+        builders.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return builders;
+    }
+
+    private static AABB builderRouteBounds(ServerLevel level, SettlementData data) {
+        BlockPos center = data.centerPos();
+        int minX = center.getX(), minY = center.getY(), minZ = center.getZ();
+        int maxX = center.getX() + 1, maxY = center.getY() + 1, maxZ = center.getZ() + 1;
+        for (BlockPos pos : SettlementStorageService.storagePositions(data)) {
+            minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY()); minZ = Math.min(minZ, pos.getZ());
+            maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 1); maxZ = Math.max(maxZ, pos.getZ() + 1);
+        }
+        for (BuildingRecord building : data.buildings()) {
+            minX = Math.min(minX, building.originX()); minY = Math.min(minY, building.originY()); minZ = Math.min(minZ, building.originZ());
+            maxX = Math.max(maxX, building.originX() + building.rotatedWidth());
+            maxY = Math.max(maxY, building.originY() + building.buildingType().clearHeight() + 1);
+            maxZ = Math.max(maxZ, building.originZ() + building.rotatedDepth());
+        }
+        for (RoadSegment road : data.roads()) for (BlockPos pos : road.centers()) {
+            minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY()); minZ = Math.min(minZ, pos.getZ());
+            maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 1); maxZ = Math.max(maxZ, pos.getZ() + 1);
+        }
+        for (OutpostRecord outpost : data.outposts()) {
+            BlockPos pos = outpost.center();
+            minX = Math.min(minX, pos.getX() - 6); minY = Math.min(minY, pos.getY() - 8); minZ = Math.min(minZ, pos.getZ() - 6);
+            maxX = Math.max(maxX, pos.getX() + 7); maxY = Math.max(maxY, pos.getY() + 17); maxZ = Math.max(maxZ, pos.getZ() + 7);
+        }
+        if (data.construction().active()) {
+            BlockPos pos = data.construction().origin();
+            minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY() - MAX_GRADE_FILL_DEPTH); minZ = Math.min(minZ, pos.getZ());
+            maxX = Math.max(maxX, pos.getX() + 16); maxY = Math.max(maxY, pos.getY() + 24); maxZ = Math.max(maxZ, pos.getZ() + 16);
+        }
+        if (data.roadConstruction().active()) {
+            for (BlockPos pos : data.roadConstruction().centers()) {
+                minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY() - 16); minZ = Math.min(minZ, pos.getZ());
+                maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 17); maxZ = Math.max(maxZ, pos.getZ() + 1);
+            }
+            for (BlockPos pos : data.roadConstruction().bridgeSupportPositions()) {
+                minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY()); minZ = Math.min(minZ, pos.getZ());
+                maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 1); maxZ = Math.max(maxZ, pos.getZ() + 1);
+            }
+        }
+        if (data.outpostConstruction().active()) {
+            BlockPos gate = data.outpostConstruction().gate();
+            minX = Math.min(minX, gate.getX() - 8); minY = Math.min(minY, gate.getY() - 8); minZ = Math.min(minZ, gate.getZ() - 8);
+            maxX = Math.max(maxX, gate.getX() + 17); maxY = Math.max(maxY, gate.getY() + 24); maxZ = Math.max(maxZ, gate.getZ() + 17);
+        }
+        CivilWorkState civil = SettlementCivilWorkData.get(level.getServer()).project();
+        if (civil.active()) {
+            minX = Math.min(minX, civil.minX() - 1); minY = Math.min(minY, civil.gradeY() - SettlementCivilRetainingService.MAX_RETAINING_HEIGHT); minZ = Math.min(minZ, civil.minZ() - 1);
+            maxX = Math.max(maxX, civil.maxX() + 2); maxY = Math.max(maxY, civil.gradeY() + SettlementCivilWorkService.MAX_CUT_DEPTH + 1); maxZ = Math.max(maxZ, civil.maxZ() + 2);
+        }
+        return new AABB(minX - BUILDER_ROUTE_MARGIN, minY - 48.0D, minZ - BUILDER_ROUTE_MARGIN,
+                maxX + BUILDER_ROUTE_MARGIN, maxY + 48.0D, maxZ + BUILDER_ROUTE_MARGIN);
+    }
+
+    private static boolean builderAssignmentEvidenceLoaded(ServerLevel level, SettlementData data) {
+        AABB bounds = builderRouteBounds(level, data);
+        int minChunkX = Math.floorDiv((int) Math.floor(bounds.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(bounds.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxZ)), 16);
+        int probeY = data.centerPos().getY();
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8))) return false;
+            }
+        }
+        return true;
     }
 
     private static Site assessSite(ServerLevel level, int originX, int originZ, BuildingType type, BuildingRotation rotation) {
@@ -882,6 +995,7 @@ public final class SettlementConstructionService {
             for (int z = 0; z < depth; z++) {
                 int worldX = originX + x;
                 int worldZ = originZ + z;
+                if (!level.hasChunkAt(new BlockPos(worldX, 0, worldZ))) return null;
                 int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ);
                 BlockPos surfaceBlock = new BlockPos(worldX, height - 1, worldZ);
                 if (!level.getFluidState(surfaceBlock).isEmpty()) return null;
@@ -900,7 +1014,7 @@ public final class SettlementConstructionService {
             for (int z = -1; z <= depth; z++) {
                 for (int y = -MAX_GRADE_FILL_DEPTH; y <= type.clearHeight(); y++) {
                     BlockPos pos = origin.offset(x, y, z);
-                    if (level.getBlockEntity(pos) != null) return null;
+                    if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null) return null;
                     BlockState state = level.getBlockState(pos);
                     if (!state.getFluidState().isEmpty()) return null;
                     if (y >= 0 && !isSafeAboveGround(state, y)) return null;
@@ -927,6 +1041,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean isSafeSupplyPosition(ServerLevel level, BlockPos supply) {
+        if (!level.hasChunkAt(supply) || !level.hasChunkAt(supply.above()) || !level.hasChunkAt(supply.below())) return false;
         BlockState current = level.getBlockState(supply);
         BlockState above = level.getBlockState(supply.above());
         BlockState below = level.getBlockState(supply.below());

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.71`
+현재 구현 기준: `0.1.0-alpha.72`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -381,6 +381,22 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
+
+### Alpha.72 전체 소스 authority / transaction 감사
+
+- 현재 Frontier Java 105개를 한 번에 전수검사해 `addFreshEntity` / `discard` / entity lookup / `setBlock` / `getHeight` / ItemStack insert-extract-shrink / SavedData commit 경계를 교차검사했다.
+- 공용 건설 주민은 고정 ±96 검색을 폐기하고 실제 settlement storage + 활성 건설/도로/전초/토목 경계를 포함한 UUID 정렬 lookup/evidence를 사용한다. 0명 추론은 전체 evidence가 loaded일 때만 가능하고, 기존 중복 주민은 삭제하지 않고 NoAI 격리한다.
+- 모든 공사 종료는 잔여 MAINHAND/crate 실물 자재를 concrete storage에 물리 반환한 뒤 같은 builder가 마을 anchor로 실제 복귀해야 확정된다.
+- 건설 crate와 일반/도로/전초 return path의 broad storage insert를 제거하고, 주민이 실제 도착한 exact container에만 `insertAt`한다.
+- 도로 grading은 partial mutation snapshot/rollback transaction으로 변경되어 world mutation 실패 시 persisted step이 전진하지 않는다.
+- 수변 부두는 `setBlock` 성공 뒤에만 carried wood를 1 감소하고 buildStep을 전진한다.
+- 개척 시작은 fence -> torch -> real BARREL Container 전체 성공 뒤에만 `SettlementData.found`를 commit하며 중간 실패는 이전 BlockState로 rollback한다. `/frontier found`도 같은 실제 표식 경로를 사용한다.
+- fishing/market/waterfront/civic guard replacement는 lookup AABB 전체 loaded evidence를 요구하고 UUID 첫 개체만 권위를 가진다.
+- builder/fishing MAINHAND는 civilian exact death recovery에 포함한다. 경비초소/감시탑의 재생성 Iron Golem은 vanilla drop을 clear해 무한 철 파밍을 막는다.
+- 원격 군사 수비대의 historical duplicate도 UUID 첫 수비대만 AI 활성, 나머지는 실물 무기 보존을 위해 삭제 없이 NoAI containment한다.
+- 극단적 패킷 좌표는 long/bounded distance 검증으로 반복문/거리 계산 전에 거부하고, audited terrain height query는 unloaded chunk를 읽지 않는다.
+- 신규 컨텐츠/UUID save ledger/virtual cargo/force-load/teleport/key/UI/building/second logistics authority 없음.
+- 실제 장시간 2인 death -> cargo -> unload/reload -> save/reconnect, fresh companion world acceptance는 계속 남는다.
 
 ### Alpha.71 병영/건설소 route-evidence lifecycle 감사
 
