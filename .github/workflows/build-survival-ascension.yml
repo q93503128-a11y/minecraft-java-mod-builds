@@ -77,22 +77,43 @@ jobs:
           set -euo pipefail
           mkdir -p run
           printf 'eula=true\n' > run/eula.txt
-          rm -f "$GITHUB_WORKSPACE/survival-ascension-server.log"
-          set +e
-          timeout --signal=INT --kill-after=20s 120s ./gradlew --no-daemon --no-configuration-cache runServer --console=plain \
-            > "$GITHUB_WORKSPACE/survival-ascension-server.log" 2>&1
-          code=$?
-          set -e
-          cat "$GITHUB_WORKSPACE/survival-ascension-server.log"
-          if ! grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
-            echo "Dedicated server never reached the ready state (exit=$code)." >&2
+          log="$GITHUB_WORKSPACE/survival-ascension-server.log"
+          rm -f "$log"
+
+          setsid ./gradlew --no-daemon --no-configuration-cache runServer --console=plain > "$log" 2>&1 &
+          server_pid=$!
+          ready=0
+          for _ in $(seq 1 120); do
+            if grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$log" 2>/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          if kill -0 "$server_pid" 2>/dev/null; then
+            kill -INT -- "-$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 15); do
+              kill -0 "$server_pid" 2>/dev/null || break
+              sleep 1
+            done
+            kill -KILL -- "-$server_pid" 2>/dev/null || true
+          fi
+          wait "$server_pid" 2>/dev/null || true
+          cat "$log"
+
+          if test "$ready" -ne 1; then
+            echo "Dedicated server never reached the ready state." >&2
             exit 1
           fi
-          if grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred)' "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
+          if grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred)' "$log"; then
             echo "Dedicated server log contains a fatal classloading/server-start signature." >&2
             exit 1
           fi
-          echo "Dedicated server reached ready state; timeout/INT exit=$code is expected for the bounded smoke run."
+          echo "Dedicated server reached ready state and was stopped after the bounded smoke check."
 
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
@@ -137,7 +158,7 @@ jobs:
           - clean build: PASS
           - source audit: PASS
           - content-pack source audit: PASS
-          - dedicated server boot smoke: PASS (reached Minecraft ready state under bounded runServer smoke)
+          - dedicated server boot smoke: PASS (reached Minecraft ready state, then bounded smoke shutdown)
           - JAR verification: PASS
           - JAR SHA-256: $sha
           - Modrinth content-pack metadata/dependency/package validation: PASS
