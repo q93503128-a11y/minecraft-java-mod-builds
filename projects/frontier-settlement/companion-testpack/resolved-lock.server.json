@@ -123,24 +123,24 @@
       "name": "Sophisticated Backpacks",
       "side": "client_server",
       "source": "modrinth",
-      "version": "26.2-3.25.88.2065",
-      "filename": "sophisticatedbackpacks-26.2-3.25.88.2065.jar",
-      "url": "https://cdn.modrinth.com/data/TyCTlI4b/versions/kdqsadAt/sophisticatedbackpacks-26.2-3.25.88.2065.jar",
-      "sha256": "0e20209a2ba409f6649b20563d28cca0e5515714706f74d284321c667e5fba7e",
-      "sha512": "3b699d72838dee22d903fda3516c70c3f019435cd17ff9069b21564c9f10fbed08cc60d08dec3b4c7157c0a95ce0ffb5a00efb79908463342ca923688972679d",
-      "sha1": "c1fb72cd4e0754fb0a57decdff12fcf43782c698"
+      "version": "26.2-3.25.74.1922",
+      "filename": "sophisticatedbackpacks-26.2-3.25.74.1922.jar",
+      "url": "https://cdn.modrinth.com/data/TyCTlI4b/versions/jFsSdSUK/sophisticatedbackpacks-26.2-3.25.74.1922.jar",
+      "sha256": "fb9511cd1bfed10e42c824c3d6d924da44377ea9599481eabef8b602797e840d",
+      "sha512": "6d47d2fc3d32e69a0f636033e34c1cdcdfb37a919e343e850dc556a67cd774c895b28a839fef122d5a36907ee197996e4b3d7bb0cd5e4102bc8ed21238757b7d",
+      "sha1": "54245f5e9ae282e6536efa5e0a9daa55e472fc09"
     },
     {
       "id": "sophisticated_core",
       "name": "Sophisticated Core",
       "side": "client_server_library",
       "source": "modrinth",
-      "version": "26.2-1.4.92.2207",
-      "filename": "sophisticatedcore-26.2-1.4.92.2207.jar",
-      "url": "https://cdn.modrinth.com/data/nmoqTijg/versions/lXohixCg/sophisticatedcore-26.2-1.4.92.2207.jar",
-      "sha256": "c333fef7edc7977b6fb4027815fc20e88b756540b7fa1921c0fb31f122e66d1c",
-      "sha512": "91a3058d3a27b58c60684523f40f6dbd53d0d03c694d7f9f3490c49621b96672d9fa3ede9498e0fd4da3a17af48c7b3a1d76f878d7fd93db5bff74792c62df57",
-      "sha1": "f3c424d6ee23874e8b7627d1ef166e879d2fda84"
+      "version": "26.2-1.4.72.2073",
+      "filename": "sophisticatedcore-26.2-1.4.72.2073.jar",
+      "url": "https://cdn.modrinth.com/data/nmoqTijg/versions/BRe27VZd/sophisticatedcore-26.2-1.4.72.2073.jar",
+      "sha256": "70a88a17f49c636112a56876a853c9e7923ba5c9b383f60432f0739a55d56863",
+      "sha512": "1e7bba2630887612d5c7255a1e3f6eb50f98de4907a2281a754c666dca995cb3f1c7cec578305e6b890412ba91c35b8b1f5e784d8d96132fba8344c3bb96ec1b",
+      "sha1": "b74b366847e317173839c39423a9e63c5e4e8c29"
     },
     {
       "id": "jade",
@@ -157,7 +157,7 @@
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "43ccf18d398d2daeee5a5d0daf92141e36d1a622",
+    "source_sha": "9dbe1384e097614ec1338e43b173571d9b5e2915",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; client-preferred entries are omitted from the server profile."
   }
 }
