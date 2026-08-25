@@ -23,7 +23,10 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Apply Alpha.73 gameplay/content pass
-        run: python3 .github/frontier-alpha73-apply.py
+        run: |
+          set -euo pipefail
+          python3 .github/frontier-alpha73-apply.py
+          python3 .github/frontier-alpha73-audit-fix.py
       - name: Alpha.73 audits
         working-directory: projects/frontier-settlement
         run: |
