@@ -17,17 +17,15 @@ for line in lines:
     if java_zone or jar_verify_zone:
         line = line.replace("dedent('''\\", "'''\\")
         line = line.replace("'''), '''\\", "''', '''\\")
-        if line.strip() == "'''))":
-            prefix = line[: len(line) - len(line.lstrip())]
-            newline = "\n" if line.endswith("\n") else ""
-            line = prefix + "''')" + newline
+        line = line.replace("'''))", "''')")
 
     out.append(line)
 
 text = "".join(out)
 if "replace_once(affix, dedent(" in text or "replace_once(combat, dedent(" in text:
     raise SystemExit("Java dedent anchor repair incomplete")
-if "'''), '''\\" in text:
-    raise SystemExit("inter-string unmatched parenthesis repair incomplete")
+if "'''), '''\\" in text or "'''))" in text:
+    raise SystemExit("unmatched patch delimiter repair incomplete")
+compile(text, str(path), "exec")
 path.write_text(text, encoding="utf-8")
-print("0.55 patch indentation anchors repaired")
+print("0.55 patch delimiters repaired and syntax-checked")
