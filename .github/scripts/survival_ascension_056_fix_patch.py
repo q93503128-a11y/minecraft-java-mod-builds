@@ -38,8 +38,25 @@ if text.count(old_audit) != 1:
     raise SystemExit(f"expected one incoming-damage audit token, got {text.count(old_audit)}")
 text = text.replace(old_audit, new_audit, 1)
 
+workflow_block = '''# Remove this one-shot staging block from the workflow before the verified project commit is published.
+workflow_text = WORKFLOW.read_text(encoding="utf-8")
+start_marker = "      - name: Apply and fully verify staged 0.56 patch once\\n"
+end_marker = "      - name: Resolve version\\n"
+start = workflow_text.find(start_marker)
+end = workflow_text.find(end_marker, start if start >= 0 else 0)
+if start < 0 or end < 0 or end <= start:
+    raise SystemExit("0.56 staging workflow block missing")
+WORKFLOW.write_text(workflow_text[:start] + workflow_text[end:], encoding="utf-8")
+'''
+workflow_noop = '''# The staging job token cannot update workflow files. Keep the workflow unchanged here;
+# the verified project commit is published first, then the canonical workflow is cleaned via the repository API.
+'''
+if text.count(workflow_block) != 1:
+    raise SystemExit(f"expected one workflow-cleanup block, got {text.count(workflow_block)}")
+text = text.replace(workflow_block, workflow_noop, 1)
+
 cleanup = "Path(__file__).unlink()\nprint(\"Survival Ascension 0.56 ranged attribution patch applied; staging hook removed\")"
-cleanup_new = "(ROOT / '.alpha56-trigger').unlink(missing_ok=True)\nPath(__file__).unlink()\nprint(\"Survival Ascension 0.56 ranged attribution patch applied; staging hook/trigger removed\")"
+cleanup_new = "(ROOT / '.alpha56-trigger').unlink(missing_ok=True)\nPath(__file__).unlink()\nprint(\"Survival Ascension 0.56 ranged attribution patch applied; scripts/trigger removed; workflow cleanup deferred\")"
 if text.count(cleanup) != 1:
     raise SystemExit(f"expected one patch cleanup block, got {text.count(cleanup)}")
 text = text.replace(cleanup, cleanup_new, 1)
@@ -47,4 +64,4 @@ text = text.replace(cleanup, cleanup_new, 1)
 compile(text, str(patch_path), "exec")
 patch_path.write_text(text, encoding="utf-8")
 fix_path.unlink()
-print("0.56 staging anchors/effectively-final attribution/trigger cleanup repaired; fixer self-removed")
+print("0.56 staging repaired; verified push will not mutate workflow; fixer self-removed")
