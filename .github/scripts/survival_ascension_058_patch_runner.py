@@ -26,3 +26,31 @@ patched = patched.replace(release_audit_anchor, content_contract_patch + release
 
 namespace = {"__file__": str(path), "__name__": "__main__"}
 exec(compile(patched, str(path), "exec"), namespace)
+
+# Minecraft 26.2 Screen no longer exposes hasShiftDown(); use the actual local player input state.
+project = path.parents[2] / "projects/survival-ascension"
+screen_path = project / "src/main/java/kr/moonseungjun/survivalascension/client/ConstructionRadialMenuScreen.java"
+screen = screen_path.read_text(encoding="utf-8")
+old_shift = "if(hasShiftDown()&&(entry.mode()==ConstructionMode.LINE||entry.mode()==ConstructionMode.CAUSEWAY)){"
+new_shift = "if(this.minecraft.player!=null&&this.minecraft.player.isShiftKeyDown()&&(entry.mode()==ConstructionMode.LINE||entry.mode()==ConstructionMode.CAUSEWAY)){"
+if screen.count(old_shift) != 1:
+    raise RuntimeError(f"Construction radial Shift anchor drifted: {screen.count(old_shift)}")
+screen_path.write_text(screen.replace(old_shift, new_shift, 1), encoding="utf-8")
+
+# The original 0.58 patch had to disambiguate identical AMBUSH branches. Normalize the generated
+# file and place the perimeter tick only in tickActive, where 'now' is defined and the deadline
+# has already been checked.
+incident_path = project / "src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.java"
+incident = incident_path.read_text(encoding="utf-8")
+marker = "        if (now % 20L == 0L) renderBoundary(active);\n\n"
+incident = incident.replace(marker, "")
+deadline_anchor = '''        if (now >= active.deadline) {\n            fail(player, active, "제한시간이 끝났습니다.");\n            return;\n        }\n\n        if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {\n'''
+deadline_replacement = '''        if (now >= active.deadline) {\n            fail(player, active, "제한시간이 끝났습니다.");\n            return;\n        }\n\n        if (now % 20L == 0L) renderBoundary(active);\n\n        if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {\n'''
+if incident.count(deadline_anchor) != 1:
+    raise RuntimeError(f"tickActive deadline anchor drifted: {incident.count(deadline_anchor)}")
+incident = incident.replace(deadline_anchor, deadline_replacement, 1)
+if incident.count("renderBoundary(active);") != 1:
+    raise RuntimeError(f"expected exactly one perimeter call, got {incident.count('renderBoundary(active);')}")
+incident_path.write_text(incident, encoding="utf-8")
+
+print("0.58 generated Java compatibility fixes applied")
