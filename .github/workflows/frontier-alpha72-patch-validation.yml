@@ -44,13 +44,28 @@ jobs:
           git apply /tmp/alpha72.patch
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('.github/workflows/build-frontier-settlement.yml')
-          text = p.read_text()
+
+          workflow = Path('.github/workflows/build-frontier-settlement.yml')
+          text = workflow.read_text()
           text = text.replace('Alpha.71 cumulative source audit', 'Alpha.72 cumulative source audit')
           text = text.replace('tools/test_alpha71_source.py', 'tools/test_alpha72_source.py')
           text = text.replace('Alpha.71 canonical docs audit', 'Alpha.72 canonical docs audit')
           text = text.replace('tools/test_alpha71_docs.py', 'tools/test_alpha72_docs.py')
-          p.write_text(text)
+          workflow.write_text(text)
+
+          road = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementRoadService.java')
+          text = road.read_text()
+          text = text.replace('findRoadBuilder(level, data.centerPos(), road, plan)', 'findRoadBuilder(level, data, data.centerPos(), road, plan)', 1)
+          text = text.replace('private static Villager findRoadBuilder(ServerLevel level, BlockPos settlementCenter,\n                                            RoadConstructionState road, List<Placement> plan)',
+                              'private static Villager findRoadBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,\n                                            RoadConstructionState road, List<Placement> plan)', 1)
+          road.write_text(text)
+
+          outpost = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostService.java')
+          text = outpost.read_text()
+          text = text.replace('findOutpostBuilder(level, data.centerPos(), state, plan)', 'findOutpostBuilder(level, data, data.centerPos(), state, plan)', 1)
+          text = text.replace('private static Villager findOutpostBuilder(ServerLevel level, BlockPos settlementCenter,\n                                               OutpostConstructionState state,\n                                               List<OutpostBlueprints.Placement> plan)',
+                              'private static Villager findOutpostBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,\n                                               OutpostConstructionState state,\n                                               List<OutpostBlueprints.Placement> plan)', 1)
+          outpost.write_text(text)
           PY
           git diff --check
 
