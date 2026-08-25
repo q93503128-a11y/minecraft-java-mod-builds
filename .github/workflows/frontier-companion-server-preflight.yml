@@ -104,12 +104,11 @@ jobs:
           set -e
           cat "$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"
 
-          # This job intentionally does not accept Minecraft's EULA on behalf of the repository owner.
-          # Validate only the prefix before the normal EULA gate. Optional integration WARNs, such as
-          # Sophisticated Core probing for an absent Create class, are allowed when they do not abort loading.
+          export PREFLIGHT_LOG="$GITHUB_WORKSPACE/frontier-companion-server-preflight.log"
           python3 - <<'PY'
+          import os
           from pathlib import Path
-          log = Path('frontier-companion-server-preflight.log').read_text(encoding='utf-8', errors='replace')
+          log = Path(os.environ['PREFLIGHT_LOG']).read_text(encoding='utf-8', errors='replace')
           markers = ('You need to agree to the EULA', 'agree to the EULA', 'eula.txt')
           positions = [log.lower().find(m.lower()) for m in markers]
           positions = [p for p in positions if p >= 0]
@@ -120,16 +119,10 @@ jobs:
           if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in prefix:
               raise SystemExit('Frontier was not discovered with the canonical Alpha.73 version')
           forbidden = (
-              'ModLoadingException',
-              'NoClassDefFoundError',
-              'Mixin apply failed',
-              'Encountered an unexpected exception',
-              'Exception in thread "main"',
-              'is not a valid mod file',
-              'Loading errors encountered',
-              'requires neoforge',
-              'requires sophisticatedcore',
-              '[main/ERROR]',
+              'ModLoadingException', 'NoClassDefFoundError', 'Mixin apply failed',
+              'Encountered an unexpected exception', 'Exception in thread "main"',
+              'is not a valid mod file', 'Loading errors encountered',
+              'requires neoforge', 'requires sophisticatedcore', '[main/ERROR]',
               'FatalStartupException',
           )
           hits = [token for token in forbidden if token.lower() in prefix.lower()]
