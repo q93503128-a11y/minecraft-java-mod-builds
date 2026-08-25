@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "status": "baseline_dedicated_server_pre_eula_pass",
+  "frontier": {
+    "version": "0.1.0-alpha.73",
+    "jar_sha256": "d300d11a8b6fe595f98c574ef9c4f71a86db6bebaaf74522a97b0bffcc7ef43c"
+  },
+  "minecraft": "26.2",
+  "neoforge": "26.2.0.38-beta",
+  "baseline": {
+    "required_client_entries": 13,
+    "required_server_entries": 12,
+    "server_payload_jars_including_frontier": 13,
+    "preflight_run_id": 32822428896,
+    "conclusion": "success"
+  },
+  "scope": {
+    "eula_accepted": false,
+    "fresh_world_generated": false,
+    "client_launched": false,
+    "spawn_density_validated": false
+  },
+  "expanded_candidate": {
+    "variants_and_ventures_promoted": true,
+    "required_client_entries_expected": 16,
+    "required_server_entries_expected": 15,
+    "server_payload_jars_including_frontier_expected": 16,
+    "binary_resolution_verified": false,
+    "dedicated_server_preflight_verified": false
+  }
+}

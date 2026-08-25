@@ -20,10 +20,11 @@ required = [e for e in LOCK.get('entries', []) if e.get('required')]
 expected_client = {
     'terralith', 'lithostitched', 'dungeons_and_taverns', 'repurposed_structures',
     'better_combat', 'cloth_config', 'player_animation_library', 'weapons_expanded',
-    'lootr', 'sophisticated_backpacks', 'sophisticated_core', 'jade', 'xaeros_minimap'
+    'lootr', 'sophisticated_backpacks', 'sophisticated_core', 'jade',
+    'variants_and_ventures', 'resourceful_lib', 'yacl', 'xaeros_minimap'
 }
 expected_server = expected_client - {'xaeros_minimap'}
-if {e['id'] for e in required} != expected_client or len(required) != 13:
+if {e['id'] for e in required} != expected_client or len(required) != 16:
     raise SystemExit('required companion set drifted')
 
 for resolved, profile, expected in ((CLIENT, 'client', expected_client), (SERVER, 'server', expected_server)):
@@ -49,6 +50,12 @@ for f in CLIENT['files']:
 if any(f['id'] == 'xaeros_minimap' for f in SERVER['files']):
     raise SystemExit('Xaero client-preferred binary must not be in server lock')
 
+for mod_id in ('variants_and_ventures', 'resourceful_lib', 'yacl'):
+    cf = next(f for f in CLIENT['files'] if f['id'] == mod_id)
+    sf = next(f for f in SERVER['files'] if f['id'] == mod_id)
+    if cf['sha256'] != sf['sha256']:
+        raise SystemExit(f'{mod_id}: client/server resolved binary mismatch')
+
 dt = SOURCES['sources']['dungeons_and_taverns']
 if dt.get('file_id') != 8262693:
     raise SystemExit('Dungeons and Taverns file id drifted')
@@ -73,6 +80,6 @@ if list(PACK.rglob('*.jar')):
 if 'Third-party JARs are fetched directly from their official distribution URLs' not in README:
     raise SystemExit('companion README must state official direct fetching')
 if 'Variants & Ventures' not in README or "Alex's Mobs Continued" not in README:
-    raise SystemExit('deferred content must remain documented')
+    raise SystemExit('promoted/deferred companion content must remain documented')
 
 print('Frontier Settlement companion testpack static audit: PASS')

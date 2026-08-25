@@ -10,7 +10,7 @@
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
-    "It is not marked runtime-tested until the full client/server pack is launched together.",
+    "The 13-client/12-server baseline passed exact NeoForge 26.2.0.38-beta dedicated-server loading through the normal EULA gate; full client and fresh-world gameplay acceptance remain pending.",
     "World-generation entries must be present before the test world is created.",
     "Dungeons and Taverns uses the official 26.2 NeoForge distribution; its Modrinth datapack ID is recorded only as provenance because the NeoForge JAR is distributed separately on CurseForge.",
     "Alpha.45 detects already-loaded external structure pieces by registry namespace without hard companion classes; structure generation remains owned by companion/worldgen mods.",
@@ -43,7 +43,8 @@
     "Alpha.71 is lifecycle-only hardening: town barracks now use a storage-route-aware loaded-evidence envelope before declaring a slot missing or charging food8+metal2, UUID order selects the one active soldier while historical duplicates are preserved with extra AI disabled, and armory source choice is anchored to that barracks route. Construction-office supply runners likewise use their real office/storage route envelope, never destructively discard duplicate physical residents/cargo, limit future return deposits to the local source radius, and join exact MAINHAND cargo death recovery. No new content, worker ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
     "Alpha.72 is full-project error hardening only: the shared builder uses loaded-evidence/UUID authority and physically returns home after every project, building/road/outpost/civil cleanup keeps carried/crate ItemStacks physical, road grading and waterfront placement commit only after successful world mutation, founding is rollback-safe and always leaves a physical pioneer marker, fishing/market/waterfront/civic-defense replacement is loaded-evidence-safe, renewable civic Iron Golems drop no iron, and military-outpost historical duplicates are non-destructively UUID-contained. No new content, UUID save ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
     "Alpha.73 is a gameplay feedback pass: capped first-time survey/conquest metadata now raises existing physical market relic payouts, one-metal weapon repair efficiency and advanced forge/reforge selection power while preserving exact ItemStack costs, no new currency/menu/save authority, optional companion boot, and the existing outpost-cost/specialization benefits.",
-    "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion."
+    "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion.",
+    "Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; fresh binary resolution and repeated dedicated-server preflight are required before any expanded-stack runtime claim."
   ],
   "entries": [
     {
@@ -199,6 +200,54 @@
       "dependencies": []
     },
     {
+      "id": "variants_and_ventures",
+      "name": "Variants & Ventures",
+      "side": "client_server",
+      "source": "modrinth",
+      "project_id": "lNDRiXkY",
+      "version_id": "e7ZWTYfe",
+      "version": "1.0.26+mc26.2",
+      "loader": "neoforge",
+      "required": true,
+      "license": "CC-BY-NC-ND-4.0",
+      "integration_role": "dependency",
+      "dependencies": [
+        "resourceful_lib",
+        "yacl"
+      ],
+      "note": "Official binary dependency only; Frontier does not copy or modify its code/assets."
+    },
+    {
+      "id": "resourceful_lib",
+      "name": "Resourceful Lib",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "project_id": "G1hIVOrD",
+      "version_id": "hu7wvfqr",
+      "version": "5.0.0",
+      "loader": "neoforge",
+      "required": true,
+      "license": "MIT",
+      "integration_role": "dependency_library",
+      "dependencies": [],
+      "note": "Required by Variants & Ventures; first official 26.2 NeoForge release selected for 26.2.0.38-beta compatibility testing."
+    },
+    {
+      "id": "yacl",
+      "name": "YetAnotherConfigLib (YACL)",
+      "side": "client_server_library",
+      "source": "modrinth",
+      "project_id": "1eAoo2KR",
+      "version_id": "I01Wcg6G",
+      "version": "3.9.5+26.2-neoforge",
+      "loader": "neoforge",
+      "required": true,
+      "license": "LGPL-3.0-or-later",
+      "integration_role": "dependency_library",
+      "dependencies": [],
+      "note": "Required by Variants & Ventures; official 26.2 NeoForge build."
+    },
+    {
       "id": "xaeros_minimap",
       "name": "Xaero's Minimap",
       "side": "client_preferred",
@@ -212,13 +261,6 @@
     }
   ],
   "deferred": [
-    {
-      "id": "variants_and_ventures",
-      "project_id": "lNDRiXkY",
-      "version_id": "e7ZWTYfe",
-      "version": "1.0.26+mc26.2",
-      "reason": "add after baseline stack passes spawn-density and compatibility smoke test"
-    },
     {
       "id": "alexs_mobs_continued",
       "reason": "large content gain but requires separate stability/spawn-balance pass before promotion"

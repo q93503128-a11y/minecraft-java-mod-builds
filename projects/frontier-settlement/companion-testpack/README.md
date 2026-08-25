@@ -9,15 +9,15 @@ This directory turns `COMPANION_LOCK.json` into an installable local test instan
 - Frontier Settlement 0.1.0-alpha.73
 - Java 25
 
-`COMPANION_LOCK.json` remains `candidate_runtime_lock`. Exact binary resolution and hash pinning are now verified, but that is **not** the same thing as full client/server gameplay acceptance.
+`COMPANION_LOCK.json` remains `candidate_runtime_lock`. The original 13-client/12-server baseline passed exact NeoForge 26.2.0.38-beta dedicated-server discovery/loading through the normal EULA gate (run `32822428896`), but full client and fresh-world gameplay acceptance are still pending. Variants & Ventures is now promoted into the required candidate stack and must pass fresh 16-client/15-server resolution plus the same server preflight.
 
 ## Canonical resolved binary locks
 
 The required baseline has been resolved from official distribution endpoints and committed as manifest-only cryptographic locks:
 
-- `resolved-lock.client.json` — exactly 13 required companion files.
-- `resolved-lock.server.json` — exactly 12 required files; the client-preferred Xaero's Minimap binary is omitted.
-- Resolver run `32820788577` proved that a fresh download still matches the committed SHA-1, SHA-256 and SHA-512 pins.
+- `resolved-lock.client.json` — expanded candidate target: exactly 16 required companion files.
+- `resolved-lock.server.json` — expanded candidate target: exactly 15 required files; the client-preferred Xaero's Minimap binary is omitted.
+- The resolver downloads every official binary and records SHA-1, SHA-256 and SHA-512; same-version hash drift fails closed.
 
 For the same locked version, the installer now fails closed if the resolved source, filename, SHA-1, SHA-256 or SHA-512 differs from the committed client lock. A version upgrade therefore requires an explicit lock update rather than silently accepting a changed third-party binary.
 
@@ -64,11 +64,17 @@ Third-party JARs are fetched directly from their official distribution URLs at i
 
 This is important for ARR/custom-license dependencies such as Dungeons and Taverns, Better Combat, Sophisticated Backpacks and Xaero's Minimap. Frontier stores source/version IDs, official source metadata and cryptographic hashes, not redistributed binaries.
 
+## Promoted mob-variant candidate
+
+Variants & Ventures 1.0.26+mc26.2 is now required in the candidate pack together with:
+
+- Resourceful Lib 5.0.0 (NeoForge 26.2)
+- YACL 3.9.5+26.2-neoforge
+
+All three are fetched from official Modrinth distributions and are not redistributed by Frontier. Variants & Ventures is dependency-only under its CC-BY-NC-ND license: no code/assets are copied or modified in Frontier. Fresh-world spawn-density acceptance remains separate from binary/server-loading compatibility.
+
 ## Deferred content
 
-These remain outside the baseline pack until the required stack is stable in real play:
-
-- Variants & Ventures 1.0.26+mc26.2 — add after baseline spawn-density/compatibility smoke.
 - Alex's Mobs Continued — large content gain, but needs a separate stability and spawn-balance pass.
 
 The intended gameplay stack is still: terrain/structures/dungeons/combat/weapons/loot breadth from companions, while Frontier owns the shared settlement, citizens, construction, logistics, territory growth and the exploration-to-settlement feedback loop.
