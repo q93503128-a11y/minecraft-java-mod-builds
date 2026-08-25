@@ -46,6 +46,8 @@ jobs:
       - name: Resolve client stack
         run: |
           set -euo pipefail
+          # A changed explicit lock version intentionally bypasses the previous same-version hash pin;
+          # the newly resolved binary is recorded below only after client/server cross-validation.
           python3 "$PACK_DIR/install.py" --profile client --output /tmp/frontier-companion-client --resolve-only
 
       - name: Resolve server stack
@@ -79,8 +81,11 @@ jobs:
           if len(client['files']) != 13:
               raise SystemExit(f'expected 13 required client companions, got {len(client["files"])}')
 
+          locked_versions = {e['id']: e['version'] for e in required}
           server_by_id = {f['id']: f for f in server['files']}
           for f in client['files']:
+              if f['version'] != locked_versions[f['id']]:
+                  raise SystemExit(f'{f["id"]}: resolved version {f["version"]} != lock {locked_versions[f["id"]]}')
               if f['id'] in server_by_id:
                   other = server_by_id[f['id']]
                   for key in ('version', 'filename', 'sha256', 'sha512', 'sha1'):
