@@ -205,7 +205,7 @@
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "50f3c9ed4645d5ef0d1a52d66ecfb1952dc5cbb7",
+    "source_sha": "40971dcaf1016c5719da7484f911820f2ecb8ee0",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; binaries are not redistributed in this repository."
   }
 }
