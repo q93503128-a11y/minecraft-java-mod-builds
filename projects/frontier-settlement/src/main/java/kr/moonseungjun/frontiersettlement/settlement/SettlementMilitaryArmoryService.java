@@ -22,14 +22,14 @@ public final class SettlementMilitaryArmoryService {
     /**
      * @return true while this soldier is actively handling an armament trip this tick.
      */
-    public static boolean tickArmament(ServerLevel level, SettlementData data, FrontierSoldierEntity soldier) {
+    public static boolean tickArmament(ServerLevel level, SettlementData data, BlockPos routeAnchor, FrontierSoldierEntity soldier) {
         if (soldier == null || !soldier.isAlive()) return false;
         ItemStack carried = soldier.getMainHandItem();
         if (SettlementExternalContentService.isExternalWeapon(carried)) return false;
         if (!carried.isEmpty()) return false;
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
 
-        BlockPos source = nearestWeaponSource(level, data, soldier);
+        BlockPos source = nearestWeaponSource(level, data, routeAnchor, soldier);
         if (source == null) return false;
         double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
         if (distance > STORAGE_INTERACTION_RANGE_SQR) {
@@ -76,11 +76,11 @@ public final class SettlementMilitaryArmoryService {
         return true;
     }
 
-    private static BlockPos nearestWeaponSource(ServerLevel level, SettlementData data, FrontierSoldierEntity soldier) {
+    private static BlockPos nearestWeaponSource(ServerLevel level, SettlementData data, BlockPos routeAnchor, FrontierSoldierEntity soldier) {
         BlockPos best = null;
         double bestDistance = MAX_ARMORY_ROUTE_SQR + 1.0D;
         for (BlockPos pos : SettlementStorageService.storagePositions(data)) {
-            if (!level.hasChunkAt(pos)) continue;
+            if (pos.distSqr(routeAnchor) > MAX_ARMORY_ROUTE_SQR || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container) || !containsExternalWeapon(container)) continue;
             double distance = soldier.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
             if (distance <= MAX_ARMORY_ROUTE_SQR && distance < bestDistance) {

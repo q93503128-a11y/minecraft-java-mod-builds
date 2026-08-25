@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.70**.
+Current canonical implementation: **0.1.0-alpha.71**.
 
 ## 1. Product identity
 
@@ -367,6 +367,22 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.71 barracks / construction-office route-evidence lifecycle hardening
+
+Alpha.71 adds no content. It closes two remaining loaded-entity false-missing paths around physical military weapons and construction supplies.
+
+- town-barracks replacement no longer treats `patrolAreaLoaded` as proof that the much wider armory/assignment route is visible;
+- each barracks derives one bounded lookup/evidence AABB from its patrol anchor plus concrete shared-storage endpoints within the historical soldier reach, then checks every intersecting chunk with `hasChunkAt` before zero workers may authorize food8 + metal2 recruitment or legacy migration;
+- armory source selection is anchored to the assigned barracks rather than the soldier's moving position, preventing route-envelope drift;
+- historical duplicate soldiers are UUID-sorted; only the first keeps AI/work authority, extras are stopped with NoAI instead of deleted, and can become authority if earlier UUID residents disappear;
+- construction-office supply runners now derive lookup/evidence from the office material bays plus concrete ordinary-storage endpoints that pre-Alpha.71 runners could have visited;
+- a hidden runner can no longer be replaced from a partial local view, and visible duplicates are UUID-sorted/NoAI-contained rather than `discard()`ed;
+- future carried-cargo return is bounded to the same local source radius, so a runner cannot begin an unbounded new return route;
+- supply runners join the existing exact MAINHAND death recovery so real carried wood/stone is not silently lost even if an extraordinary death bypasses their normal invulnerability;
+- no force-load, teleport, UUID/save ledger, virtual cargo, refund balance, new content, key, UI, building family or second logistics authority is introduced.
+
+Long two-player death/unload/save-reload/reconnect acceptance remains unfinished.
 
 ### Alpha.70 specialized-outpost production lifecycle / physical mutation transaction hardening
 

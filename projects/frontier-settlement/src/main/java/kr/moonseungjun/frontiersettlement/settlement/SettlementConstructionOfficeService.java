@@ -33,6 +33,7 @@ public final class SettlementConstructionOfficeService {
     private static final int SOURCE_RADIUS = 24;
     private static final double INTERACTION_RANGE_SQR = 9.0D;
     private static final double RUNNER_SEARCH_RADIUS = 36.0D;
+    private static final int RUNNER_ROUTE_MARGIN = 16;
 
     private SettlementConstructionOfficeService() {}
 
@@ -57,7 +58,7 @@ public final class SettlementConstructionOfficeService {
         for (BuildingRecord office : offices(data)) {
             BlockPos home = office.localToWorld(6, 1, 5);
             if (!localServiceAreaLoaded(level, office)) continue;
-            Villager runner = ensureSingleRunner(level, office, home);
+            Villager runner = ensureSingleRunner(level, data, office, home);
             if (runner == null) continue;
             runner.setInvulnerable(true);
 
@@ -83,7 +84,7 @@ public final class SettlementConstructionOfficeService {
                 stone += SettlementInventory.countStone(container);
             }
             if (localServiceAreaLoaded(level, office)
-                    && findRunner(level, office, office.localToWorld(6, 1, 5)) != null) runners++;
+                    && findRunner(level, data, office, office.localToWorld(6, 1, 5)) != null) runners++;
         }
         return new SupplySnapshot(wood, stone, runners);
     }
@@ -131,7 +132,7 @@ public final class SettlementConstructionOfficeService {
     private static boolean deliverCarried(ServerLevel level, SettlementData data, BuildingRecord office, Villager runner) {
         ItemStack carried = runner.getMainHandItem();
         BlockPos target = nearestOfficeRoom(level, office, carried, runner.blockPosition());
-        if (target == null) target = nearestOrdinaryDeposit(level, data, carried, runner.blockPosition());
+        if (target == null) target = nearestOrdinaryDeposit(level, data, office, carried, runner.blockPosition());
         if (target == null) {
             runner.getNavigation().stop();
             return true;
@@ -173,8 +174,11 @@ public final class SettlementConstructionOfficeService {
         return best;
     }
 
-    private static BlockPos nearestOrdinaryDeposit(ServerLevel level, SettlementData data, ItemStack carried, BlockPos from) {
+    private static BlockPos nearestOrdinaryDeposit(ServerLevel level, SettlementData data, BuildingRecord officeRecord, ItemStack carried, BlockPos from) {
+        BlockPos office = officeRecord.workCenter();
+        double maxDistance = (double) SOURCE_RADIUS * SOURCE_RADIUS;
         return SettlementStorageService.ordinaryStoragePositions(data).stream()
+                .filter(pos -> office == null || pos.distSqr(office) <= maxDistance)
                 .filter(pos -> corridorLoaded(level, from, pos))
                 .filter(pos -> SettlementStorageService.hasRoomAt(level, pos, carried))
                 .min(Comparator.comparingDouble(pos -> pos.distSqr(from)))
@@ -193,14 +197,21 @@ public final class SettlementConstructionOfficeService {
         return total;
     }
 
-    private static Villager ensureSingleRunner(ServerLevel level, BuildingRecord office, BlockPos home) {
-        List<Villager> existing = findRunners(level, office, home);
+    private static Villager ensureSingleRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
+        List<Villager> existing = findRunners(level, data, office, home);
         if (!existing.isEmpty()) {
             Villager keep = existing.getFirst();
-            for (int i = 1; i < existing.size(); i++) existing.get(i).discard();
+            keep.setNoAi(false);
+            keep.setInvulnerable(true);
+            for (int i = 1; i < existing.size(); i++) {
+                Villager duplicate = existing.get(i);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+                duplicate.setInvulnerable(true);
+            }
             return keep;
         }
-        if (!localServiceAreaLoaded(level, office)) return null;
+        if (!runnerAssignmentEvidenceLoaded(level, data, office)) return null;
         Villager runner = new Villager(EntityTypes.VILLAGER, level);
         runner.setPos(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         runner.setCustomName(Component.literal(RUNNER_NAME));
@@ -212,17 +223,51 @@ public final class SettlementConstructionOfficeService {
         return level.addFreshEntity(runner) ? runner : null;
     }
 
-    private static Villager findRunner(ServerLevel level, BuildingRecord office, BlockPos home) {
-        List<Villager> runners = findRunners(level, office, home);
+    private static Villager findRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
+        List<Villager> runners = findRunners(level, data, office, home);
         return runners.isEmpty() ? null : runners.getFirst();
     }
 
-    private static List<Villager> findRunners(ServerLevel level, BuildingRecord office, BlockPos home) {
+    private static List<Villager> findRunners(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
         String assignment = assignmentTag(office);
-        AABB search = new AABB(home).inflate(RUNNER_SEARCH_RADIUS, 12.0D, RUNNER_SEARCH_RADIUS);
-        return level.getEntitiesOfClass(Villager.class, search,
+        List<Villager> runners = level.getEntitiesOfClass(Villager.class, runnerRouteBounds(data, office),
                 villager -> villager.entityTags().contains(SUPPLY_RUNNER_TAG)
                         && villager.entityTags().contains(assignment));
+        runners.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return runners;
+    }
+
+    private static AABB runnerRouteBounds(SettlementData data, BuildingRecord office) {
+        BlockPos center=office.workCenter();
+        int minX=center.getX(), minY=center.getY(), minZ=center.getZ();
+        int maxX=center.getX()+1, maxY=center.getY()+1, maxZ=center.getZ()+1;
+        for (BlockPos pos : ConstructionOfficeLayout.materialPositions(office)) {
+            minX=Math.min(minX,pos.getX()); minY=Math.min(minY,pos.getY()); minZ=Math.min(minZ,pos.getZ());
+            maxX=Math.max(maxX,pos.getX()+1); maxY=Math.max(maxY,pos.getY()+1); maxZ=Math.max(maxZ,pos.getZ()+1);
+        }
+        // Pre-Alpha.71 runners could return carried cargo to any ordinary storage endpoint. Keep
+        // those concrete endpoints in the absence-proof envelope so old in-flight runners are not replaced.
+        for (BlockPos pos : SettlementStorageService.ordinaryStoragePositions(data)) {
+            minX=Math.min(minX,pos.getX()); minY=Math.min(minY,pos.getY()); minZ=Math.min(minZ,pos.getZ());
+            maxX=Math.max(maxX,pos.getX()+1); maxY=Math.max(maxY,pos.getY()+1); maxZ=Math.max(maxZ,pos.getZ()+1);
+        }
+        return new AABB(minX-RUNNER_ROUTE_MARGIN,minY-12,minZ-RUNNER_ROUTE_MARGIN,
+                maxX+RUNNER_ROUTE_MARGIN,maxY+12,maxZ+RUNNER_ROUTE_MARGIN);
+    }
+
+    private static boolean runnerAssignmentEvidenceLoaded(ServerLevel level, SettlementData data, BuildingRecord office) {
+        AABB bounds=runnerRouteBounds(data,office);
+        int minChunkX=Math.floorDiv((int)Math.floor(bounds.minX),16);
+        int maxChunkX=Math.floorDiv((int)Math.floor(Math.nextDown(bounds.maxX)),16);
+        int minChunkZ=Math.floorDiv((int)Math.floor(bounds.minZ),16);
+        int maxChunkZ=Math.floorDiv((int)Math.floor(Math.nextDown(bounds.maxZ)),16);
+        int probeY=office.workCenter().getY();
+        for (int chunkX=minChunkX; chunkX<=maxChunkX; chunkX++) {
+            for (int chunkZ=minChunkZ; chunkZ<=maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX*16+8,probeY,chunkZ*16+8))) return false;
+            }
+        }
+        return true;
     }
 
     private static boolean localServiceAreaLoaded(ServerLevel level, BuildingRecord office) {

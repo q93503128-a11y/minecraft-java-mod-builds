@@ -35,6 +35,7 @@ public final class SettlementBarracksService {
     private static final int PATROL_RADIUS = 24;
     private static final double THREAT_RADIUS = 28.0D;
     private static final double SOLDIER_SEARCH_RADIUS = 176.0D;
+    private static final int SOLDIER_ROUTE_MARGIN = 32;
     private static final double HOME_RADIUS_SQR = 12.0D * 12.0D;
     private static final double PATROL_LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;
 
@@ -64,7 +65,7 @@ public final class SettlementBarracksService {
         for (BuildingRecord barracks : barracks(data)) {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
-                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
+                FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
                 if (soldier != null) patrol(level, data, barracks, slot, soldier);
             }
         }
@@ -79,7 +80,7 @@ public final class SettlementBarracksService {
         for (BuildingRecord barracks : barracks(data)) {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
-                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
+                FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
                 if (soldier != null) counted.add(soldier.getUUID());
             }
         }
@@ -91,7 +92,7 @@ public final class SettlementBarracksService {
         for (BuildingRecord barracks : barracks(data)) {
             if (!patrolAreaLoaded(level, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
-                FrontierSoldierEntity soldier = findSoldier(level, barracks, slot);
+                FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
                 if (soldier != null && SettlementExternalContentService.isExternalWeapon(soldier.getMainHandItem())) count++;
             }
         }
@@ -99,22 +100,22 @@ public final class SettlementBarracksService {
     }
 
     public static boolean militaryStateLoaded(ServerLevel level, SettlementData data) {
-        for (BuildingRecord barracks : barracks(data)) if (!patrolAreaLoaded(level, barracks)) return false;
+        for (BuildingRecord barracks : barracks(data)) if (!soldierAssignmentEvidenceLoaded(level, data, barracks)) return false;
         return true;
     }
 
     public static Assignment firstMissingLoadedAssignment(ServerLevel level, SettlementData data) {
         for (BuildingRecord barracks : barracks(data)) {
-            if (!patrolAreaLoaded(level, barracks)) continue;
-            for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) if (findSoldier(level, barracks, slot) == null) return new Assignment(barracks, slot);
+            if (!soldierAssignmentEvidenceLoaded(level, data, barracks)) continue;
+            for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) if (findSoldier(level, data, barracks, slot) == null) return new Assignment(barracks, slot);
         }
         return null;
     }
 
     /** Recruit one missing slot. Real shared food/metal are checked atomically; no abstract troop points. */
     public static boolean tryRecruit(ServerLevel level, SettlementData data, Assignment assignment) {
-        if (assignment == null || !patrolAreaLoaded(level, assignment.barracks())) return false;
-        if (findSoldier(level, assignment.barracks(), assignment.slot()) != null) return false;
+        if (assignment == null || !soldierAssignmentEvidenceLoaded(level, data, assignment.barracks())) return false;
+        if (findSoldier(level, data, assignment.barracks(), assignment.slot()) != null) return false;
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
         SettlementResources resources = SettlementStorageService.scan(level, data);
         if (resources.food() < RECRUIT_FOOD_COST || resources.metal() < RECRUIT_METAL_COST) return false;
@@ -147,7 +148,7 @@ public final class SettlementBarracksService {
         if (soldier.getTarget() != null) soldier.setTarget(null);
 
         // Defense always wins. Only an idle, loaded garrison walks to real shared storage for one real weapon.
-        if (SettlementMilitaryArmoryService.tickArmament(level, data, soldier)) return;
+        if (SettlementMilitaryArmoryService.tickArmament(level, data, barracks.workCenter(), soldier)) return;
 
         double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
@@ -178,22 +179,63 @@ public final class SettlementBarracksService {
         return soldier;
     }
 
-    private static FrontierSoldierEntity findSoldier(ServerLevel level, BuildingRecord barracks, int slot) {
-        BlockPos center = barracks.workCenter();
+    private static FrontierSoldierEntity findSoldier(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot) {
         String assignment = barracksAssignment(barracks);
         String slotTag = SOLDIER_SLOT_PREFIX + slot;
-        AABB search = new AABB(center).inflate(SOLDIER_SEARCH_RADIUS, 16.0D, SOLDIER_SEARCH_RADIUS);
+        AABB search = soldierRouteBounds(data, barracks);
         List<FrontierSoldierEntity> soldiers = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
                 soldier -> soldier.entityTags().contains(SOLDIER_TAG) && soldier.entityTags().contains(assignment) && soldier.entityTags().contains(slotTag));
-        if (!soldiers.isEmpty()) return soldiers.getFirst();
+        soldiers.sort(Comparator.comparing(soldier -> soldier.getUUID().toString()));
+        if (!soldiers.isEmpty()) {
+            FrontierSoldierEntity active = soldiers.getFirst();
+            active.setNoAi(false);
+            for (int i = 1; i < soldiers.size(); i++) {
+                FrontierSoldierEntity duplicate = soldiers.get(i);
+                if (duplicate.getTarget() != null) duplicate.setTarget(null);
+                duplicate.getNavigation().stop();
+                duplicate.setNoAi(true);
+            }
+            return active;
+        }
 
-        // Save-compatible loaded migration. It changes only entity type/presentation and never recruits or spends again.
+        // Missing/migration is authority: a partial route view never converts or recruits.
+        if (!soldierAssignmentEvidenceLoaded(level, data, barracks)) return null;
         List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
                 soldier -> !(soldier instanceof FrontierSoldierEntity)
                         && soldier.entityTags().contains(SOLDIER_TAG)
                         && soldier.entityTags().contains(assignment)
                         && soldier.entityTags().contains(slotTag));
+        legacy.sort(Comparator.comparing(soldier -> soldier.getUUID().toString()));
         return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());
+    }
+
+    private static AABB soldierRouteBounds(SettlementData data, BuildingRecord barracks) {
+        BlockPos center = barracks.workCenter();
+        int minX=center.getX(), minY=center.getY(), minZ=center.getZ();
+        int maxX=center.getX()+1, maxY=center.getY()+1, maxZ=center.getZ()+1;
+        double legacyReachSqr = SOLDIER_SEARCH_RADIUS * SOLDIER_SEARCH_RADIUS;
+        for (BlockPos pos : SettlementStorageService.storagePositions(data)) {
+            if (pos.distSqr(center) > legacyReachSqr) continue;
+            minX=Math.min(minX,pos.getX()); minY=Math.min(minY,pos.getY()); minZ=Math.min(minZ,pos.getZ());
+            maxX=Math.max(maxX,pos.getX()+1); maxY=Math.max(maxY,pos.getY()+1); maxZ=Math.max(maxZ,pos.getZ()+1);
+        }
+        return new AABB(minX-SOLDIER_ROUTE_MARGIN, minY-16, minZ-SOLDIER_ROUTE_MARGIN,
+                maxX+SOLDIER_ROUTE_MARGIN, maxY+16, maxZ+SOLDIER_ROUTE_MARGIN);
+    }
+
+    private static boolean soldierAssignmentEvidenceLoaded(ServerLevel level, SettlementData data, BuildingRecord barracks) {
+        AABB bounds = soldierRouteBounds(data, barracks);
+        int minChunkX=Math.floorDiv((int)Math.floor(bounds.minX),16);
+        int maxChunkX=Math.floorDiv((int)Math.floor(Math.nextDown(bounds.maxX)),16);
+        int minChunkZ=Math.floorDiv((int)Math.floor(bounds.minZ),16);
+        int maxChunkZ=Math.floorDiv((int)Math.floor(Math.nextDown(bounds.maxZ)),16);
+        int probeY=barracks.workCenter().getY();
+        for (int chunkX=minChunkX; chunkX<=maxChunkX; chunkX++) {
+            for (int chunkZ=minChunkZ; chunkZ<=maxChunkZ; chunkZ++) {
+                if (!level.hasChunkAt(new BlockPos(chunkX*16+8,probeY,chunkZ*16+8))) return false;
+            }
+        }
+        return true;
     }
 
     private static FrontierSoldierEntity migrateLegacySoldier(ServerLevel level, IronGolem legacy) {

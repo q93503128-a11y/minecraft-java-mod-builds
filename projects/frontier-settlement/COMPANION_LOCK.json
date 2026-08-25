@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.70"
+    "frontier_settlement": "0.1.0-alpha.71"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -39,7 +39,8 @@
     "Alpha.67 makes outpost transporter absence decisions fail closed against unloaded entity-search chunks: population reconciliation, missing-assignment replacement and legacy reassignment require the complete persisted-route transporter lookup envelope to be loaded, while normal physical route travel still pauses only at unloaded route boundaries. This adds no force-load, teleport, second transporter authority, virtual cargo or companion dependency.",
     "Alpha.68 closes the normal-rest false-missing lifecycle edge: local production/workshop lookup evidence now includes the same work, concrete storage and HOUSE rest envelope used by worker search, while town-side outpost transporter routeBounds also include HOUSE rest footprints. Normal work/road movement remains physical and unloaded boundaries still pause; no force-load, teleport, UUID reservation ledger, virtual resident/cargo authority or companion dependency is added.",
     "Alpha.69 contains historical duplicate assigned residents without destructive cleanup: fully loaded workshop, advanced-workshop and outpost assignment queries count every unique physical worker toward shared population, zero alone can authorize a food-funded replacement, and UUID order deterministically selects the sole active worker. No resident is deleted, no cargo is refunded or minted, and no new save ledger, force-load, teleport, worker family or logistics authority is added.",
-    "Alpha.70 hardens specialized outpost production without changing outpost-local labor economics: assignment absence/migration/spawn waits for the complete existing lookup envelope, UUID order selects one active worker if historical duplicates exist, failed entity insertion creates no phantom worker, and outpost production MAINHAND cargo joins exact physical death recovery. Town and outpost lumber/farm/quarry/mine output is now minted only after the corresponding world setBlock succeeds. No population ledger, food refund, force-load, teleport, virtual resource, second logistics authority or companion dependency is added."
+    "Alpha.70 hardens specialized outpost production without changing outpost-local labor economics: assignment absence/migration/spawn waits for the complete existing lookup envelope, UUID order selects one active worker if historical duplicates exist, failed entity insertion creates no phantom worker, and outpost production MAINHAND cargo joins exact physical death recovery. Town and outpost lumber/farm/quarry/mine output is now minted only after the corresponding world setBlock succeeds. No population ledger, food refund, force-load, teleport, virtual resource, second logistics authority or companion dependency is added.",
+    "Alpha.71 is lifecycle-only hardening: town barracks now use a storage-route-aware loaded-evidence envelope before declaring a slot missing or charging food8+metal2, UUID order selects the one active soldier while historical duplicates are preserved with extra AI disabled, and armory source choice is anchored to that barracks route. Construction-office supply runners likewise use their real office/storage route envelope, never destructively discard duplicate physical residents/cargo, limit future return deposits to the local source radius, and join exact MAINHAND cargo death recovery. No new content, worker ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added."
   ],
   "entries": [
     {

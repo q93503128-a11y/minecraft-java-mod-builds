@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.70
+## Current version: 0.1.0-alpha.71
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,7 +28,7 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.70 key was added.
+No new Alpha.71 key was added.
 
 - `B` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
@@ -73,6 +73,14 @@ The construction presentation invariant remains: **builder walks from actual set
 - Alpha.34 cart station raises physical freight capacity without creating another logistics controller.
 - Alpha.35 adds one-block road stairs and bounded short-water bridges using real stone. Alpha.52 extends that same road authority to bounded 24-cell long-water/dry-ravine bridge runs with persisted physical stone piers.
 - Alpha.46 waterfront wood reverse supply and Alpha.41 military food/metal reverse supply reuse that same transporter; **군사 전초도 같은 도로 운송자가 역방향 보급**하고 **위험지역 군사 역할이 우선**이다.
+
+## Alpha.71 — route-evidence military / construction-supply lifecycle hardening
+
+No content was added. Town barracks now prove the concrete patrol-to-storage assignment envelope loaded before a missing slot can spend food8 + metal2, while armory source selection stays anchored to the assigned barracks. Historical same-slot soldier duplicates are UUID-ordered and extra copies are NoAI-contained rather than deleted.
+
+Construction-office supply runners now use an office/storage route evidence envelope before spawning, preserve historical duplicates instead of discarding their physical cargo, keep future return deposits within the existing local source radius, and use exact MAINHAND death recovery for carried wood/stone.
+
+No new Alpha.71 key, UI, worker ledger, virtual cargo, force-load, teleport, building family or logistics authority was added. Long multiplayer unload/death/save-reconnect acceptance remains unfinished.
 
 ## Alpha.70 — specialized-outpost production lifecycle / mutation transaction hardening
 

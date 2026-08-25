@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.70`
+현재 구현 기준: `0.1.0-alpha.71`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -381,6 +381,18 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
+
+### Alpha.71 병영/건설소 route-evidence lifecycle 감사
+
+- 병영 병사 lookup과 replacement evidence가 실제 shared-storage 무기 왕복 route envelope를 공유한다.
+- route envelope 일부가 unloaded면 해당 슬롯을 dead/missing으로 확정하지 않고 food8 + metal2 재충원을 보류한다.
+- 무기 source 선택은 병영 anchor 기준 160블록 이내로 고정되어 이동 중 검색 범위가 연쇄적으로 밀려나지 않는다.
+- 동일 슬롯 historical duplicate 병사는 삭제하지 않고 UUID 첫 병사만 AI 활성, 나머지는 NoAI 정지 상태로 보존한다.
+- 건설소 보급 주민도 office material bay + old-save ordinary-storage route 전체를 absence evidence로 사용한다.
+- 기존 `duplicate.discard()` 제거: 실물 MAINHAND wood/stone을 든 중복 주민을 파괴하지 않는다.
+- 새 return trip은 SOURCE_RADIUS 24 안의 ordinary storage로 제한하고, 비정상 사망 시 supply runner MAINHAND도 exact physical drop 대상이다.
+- 신규 컨텐츠/ledger/virtual cargo/force-load/teleport/key/UI/building/logistics authority 없음.
+- 실제 장시간 2인 반복 death -> unload/reload -> save/reconnect acceptance는 계속 남는다.
 
 ### Alpha.70 전초 현지 생산자 lifecycle / 생산 world transaction 감사
 

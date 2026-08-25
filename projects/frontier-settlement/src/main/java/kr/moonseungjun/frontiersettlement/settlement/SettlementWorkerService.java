@@ -269,7 +269,8 @@ public final class SettlementWorkerService {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
                 || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)
                 || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)
-                || worker.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)) {
+                || worker.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)
+                || worker.entityTags().contains(SettlementConstructionOfficeService.SUPPLY_RUNNER_TAG)) {
             return true;
         }
         // Save-compatible fallback for pre-Alpha.65 ordinary workers that did not yet carry a role tag.
