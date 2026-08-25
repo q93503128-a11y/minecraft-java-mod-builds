@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/frontier-alpha73-gameplay-apply.yml'
+      - '.github/frontier-alpha73-apply.py'
+      - '.github/frontier-alpha73-audit-fix.py'
 
 permissions:
   contents: write
@@ -22,7 +24,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - name: Apply Alpha.73 gameplay/content pass v3
+      - name: Apply Alpha.73 gameplay/content pass v4
         run: |
           set -euo pipefail
           python3 .github/frontier-alpha73-apply.py
