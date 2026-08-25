@@ -1,7 +1,7 @@
 {
   "format": 1,
   "name": "Survival Ascension",
-  "version": "0.57.0-alpha.1-content-preview.1",
+  "version": "0.57.0-alpha.1-content-preview.2",
   "minecraft": "26.2",
   "neoforge": "26.2.0.38-beta",
   "mods": [
@@ -9,6 +9,12 @@
       "name": "Biomes O' Plenty",
       "project_id": "HXF82T3G",
       "version_id": "kYz8T08F",
+      "required": true
+    },
+    {
+      "name": "TerraBlender",
+      "project_id": "kkmrDlKT",
+      "version_id": "jNsOmsnb",
       "required": true
     },
     {
