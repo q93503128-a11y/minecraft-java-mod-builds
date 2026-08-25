@@ -1,6 +1,6 @@
 # Survival Ascension
 
-- Mod version: `0.56.0-alpha.1`
+- Mod version: `0.57.0-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
@@ -9,6 +9,16 @@
 
 ## Core direction
 Progression enlarges physical player actions rather than mainly inflating percentages. Bigger actions create larger throughput; infrastructure, real storage, transport, bases, expeditions and behavior-driven enemies consume it again. Shift remains the precision/single-action safety override.
+
+## 0.57 Pre-Test Stabilization / 실플레이 직전 안정화
+- No new feature layer: this release removes deterministic noise before gameplay feedback begins.
+- Mining connected-vein, planar area and extract re-read paths require `ServerLevel.hasChunkAt` before target block-state access.
+- Woodcutting connected-log/leaf discovery and queued fell-job execution use the same loaded-only boundary.
+- The first valid Woodcutting break contributes one `LOGS_FELLED`; queued logs rely on their normal BreakBlockEvent and have no extra duplicate increment.
+- The first valid Construction placement contributes one `BLOCKS_BUILT`; successful bulk follow-ups keep their existing explicit accounting.
+- Shift precision remains a single physical action and still progresses the matching regional directive.
+- `TESTING.md` is the committed first-pass manual smoke matrix.
+- No SavedData migration, packet/protocol change, custom item/entity, force-load/background simulation or external-content version change.
 
 ## 0.56 Ranged Projectile Attribution Hardening / 원거리 발사자 귀속 안정화
 - A Survival-snapshotted ranged projectile stores the firing ServerPlayer UUID beside its existing affix/precision launch state.

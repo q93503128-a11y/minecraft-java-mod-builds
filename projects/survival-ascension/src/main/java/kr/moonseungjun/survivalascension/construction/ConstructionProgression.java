@@ -86,6 +86,7 @@ public final class ConstructionProgression {
         BlockState state = event.getPlacedBlock();
         if (!(state.getBlock().asItem() instanceof BlockItem) || state.hasBlockEntity()) return;
 
+        ExpeditionProgression.recordSkillAction(player, SkillType.CONSTRUCTION, 1);
         announceMilestones(player, SkillProgressionService.award(player, SkillType.CONSTRUCTION, 2L));
         if (player.isShiftKeyDown()) return;
 

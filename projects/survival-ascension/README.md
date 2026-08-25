@@ -4,6 +4,15 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `8`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.57.0-alpha.1 — Pre-Test Stabilization / 실플레이 직전 안정화
+This release deliberately adds no new progression layer. It closes deterministic issues before the first broad gameplay pass.
+
+Large Mining plane/vein/extract follow-up work now checks `hasChunkAt` before every newly discovered or re-read target. Woodcutting applies the same loaded-only boundary during connected-log/leaf discovery and when a queued fell job is drained after world state changes.
+
+Expedition accounting is now symmetric with Mining/Harvesting: the player's first valid log break and first valid construction placement count once. Queued logs continue through the normal BreakBlock event and no longer receive a second manual increment, while successful bulk construction follow-ups retain their explicit one-per-placement credit. Shift precision therefore counts the real single action without opening bulk follow-up work.
+
+A committed `TESTING.md` defines the first manual smoke order and pass/failure signals. No new SavedData, packet/protocol, item/entity, force-load, background simulation or external-mod version is introduced; network protocol remains `8`.
+
 ## 0.56.0-alpha.1 — Ranged Projectile Attribution Hardening / 원거리 발사자 귀속 안정화
 Survival-recognized player-fired bow/crossbow projectiles now snapshot the firing player's UUID beside the existing affix/Shift launch state. The live `DamageSource` player remains authoritative when present; only when that source-player reference is missing does Survival resolve the still-online shooter from the same physical projectile.
 

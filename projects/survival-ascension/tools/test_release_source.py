@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_VERSION = "0.48.0-alpha.1"
-REQUIRED_VERSION = "0.56.0-alpha.1"
+REQUIRED_VERSION = "0.57.0-alpha.1"
 errors: list[str] = []
 
 
@@ -105,7 +105,7 @@ need(combat, [
 ], "0.51 worn armor runtime")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.52 ranged/armor imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.52 ranged/armor imprint UI")
-need(main_mod, ["VERSION = \"0.56.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
+need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "ranged projectile snapshots/impact bursts"], "0.52 runtime banner")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.51 armor runtime world-loading policy")
 
 # 0.52 ranged combat ascension: launch-time snapshots and bounded physical impact scale.
@@ -156,7 +156,7 @@ if shield_start < 0 or shield_end < 0:
 else:
     shield_body = combat[shield_start:shield_end]
     forbid(shield_body, ["hurtServer(", "SkillProgressionService.award", "event.setBlocked(", "event.setBlockedDamage("], "0.53 shield no-damage/no-block-force policy")
-need(main_mod, ["VERSION = \"0.56.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
+need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "CombatProgression::onShieldBlock", "shield guard waves"], "0.53 shield event wiring")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.53 shield imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.53 shield imprint UI")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.53 shield world-loading policy")
@@ -186,7 +186,7 @@ if mace_start < 0 or mace_end < 0:
 else:
     mace_body = combat[mace_start:mace_end]
     forbid(mace_body, ["hurtServer(", "SkillProgressionService.award"], "0.54 mace zero-damage/zero-XP outer ring")
-need(main_mod, ["VERSION = \"0.56.0-alpha.1\"", "mace outer impact rings"], "0.54 runtime banner")
+need(main_mod, ["VERSION = \"0.57.0-alpha.1\"", "mace outer impact rings"], "0.54 runtime banner")
 need(reforge, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비"], "0.54 mace imprint server flow")
 need(equipment_ui, ["검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요"], "0.54 mace imprint UI")
 forbid(affix + combat, ["setChunkForced", "addRegionTicket", "getChunk("], "0.54 mace world-loading policy")
@@ -233,13 +233,26 @@ need(warband_src, ["AscensionAffixes.rangedProjectileOwner(event.getSource().get
 forbid(affix + combat + elite_src + mutation_src + warband_src,
        ["setChunkForced", "addRegionTicket", "getChunk("], "0.56 ranged attribution world-loading policy")
 
+# 0.57 pre-test stabilization: loaded-only large actions + exact origin accounting.
+mining57 = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")
+wood57 = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
+construction57 = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
+need(mining57, ["if (!level.hasChunkAt(next)) continue;", "if (!level.hasChunkAt(target)) continue;"], "0.57 mining loaded-only")
+need(wood57, ["if (!level.hasChunkAt(target)) continue;", "if (!level.hasChunkAt(next)) continue;", "BlockPos leafPos = pos.relative(direction);", "if (!level.hasChunkAt(leafPos)) continue;"], "0.57 wood loaded-only")
+if wood57.count("ExpeditionProgression.recordSkillAction(player, SkillType.WOODCUTTING, 1);") != 1:
+    errors.append("0.57 wood expedition increment must exist exactly once")
+if construction57.count("ExpeditionProgression.recordSkillAction(player, SkillType.CONSTRUCTION, 1);") < 2:
+    errors.append("0.57 construction must account origin plus bulk placements")
+need(read("TESTING.md"), ["First Gameplay Test Matrix", "chunk border", "exactly1", "Stop-and-report signals"], "0.57 testing matrix")
+forbid(mining57 + wood57 + construction57, ["setChunkForced", "addRegionTicket", "getChunk("], "0.57 no-force-load")
+
 # User-facing docs are part of the release contract, not an uncommitted CI-side patch.
 project_doc = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 need(project_doc, [
-    "Mod version: `0.56.0-alpha.1`",
+    "Mod version: `0.57.0-alpha.1`",
     "## 0.51 Armor Ascension / 방어구 승천 성장",
     "hard-capped at 35%",
     "hard-capped at +32% Combat XP"
@@ -284,6 +297,9 @@ need(project_doc, ["## 0.56 Ranged Projectile Attribution Hardening", "Offline s
 need(readme, ["## 0.56.0-alpha.1 — Ranged Projectile Attribution Hardening", "firing player's UUID", "currently online player"], "0.56 README docs")
 need(changelog, ["## 0.56.0-alpha.1", "ranged projectile launch snapshot", "never queues offline rewards", "0.56.0-alpha.1-content-preview.1"], "0.56 CHANGELOG docs")
 need(guide, ['h("원거리 전투 파급")', "발사자 귀속", "발사자가 온라인이면", "오프라인 보상 큐"], "0.56 in-game guide")
+need(project_doc, ["## 0.57 Pre-Test Stabilization", "loaded-only boundary", "first valid Woodcutting break", "first valid Construction placement"], "0.57 PROJECT docs")
+need(readme, ["## 0.57.0-alpha.1 — Pre-Test Stabilization", "hasChunkAt", "first valid log break", "TESTING.md"], "0.57 README docs")
+need(changelog, ["## 0.57.0-alpha.1", "loaded-chunk", "Woodland expedition accounting", "Arid construction expedition accounting", "0.57.0-alpha.1-content-preview.1"], "0.57 CHANGELOG docs")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -322,4 +338,5 @@ print("- 0.53 successful standard-shield blocks create bounded zero-damage guard
 print("- 0.54 real mace-smash hits use bounded hostile-only outer impact rings while vanilla 3.5-block knockback remains authoritative")
 print("- 0.55 Sulfur Caves and dedicated spear momentum drive-line integration are bounded and regression-checked")
 print("- 0.56 Survival-snapshotted ranged projectiles retain bounded online shooter attribution across combat/reward layers")
-print("- README / PROJECT / CHANGELOG / in-game guide are committed and synchronized to 0.56")
+print("- 0.57 Mining/Woodcutting enlarged work is loaded-only and Woodland/Arid origin actions are counted")
+print("- README / PROJECT / CHANGELOG / TESTING are committed and synchronized to 0.57")

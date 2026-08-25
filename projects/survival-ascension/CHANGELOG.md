@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.57.0-alpha.1
+- Added loaded-chunk admission checks to Mining connected-vein discovery, planar area breaking and extract target re-read.
+- Added loaded-chunk admission checks to Woodcutting connected-log/leaf discovery and queued fell-job execution.
+- Fixed Woodland expedition accounting so the player's first valid log break counts once; removed the old secondary manual increment so queued logs are not double-counted.
+- Fixed Arid construction expedition accounting so the player's first valid placement counts once while successful bulk follow-ups keep one credit each.
+- Shift precision actions now progress the matching regional directive without starting bulk follow-up work.
+- Added `TESTING.md` for the first manual gameplay smoke pass.
+- Bumped content-preview lock to `0.57.0-alpha.1-content-preview.1`; all six external mod versions and network protocol8 remain unchanged.
+- Added no SavedData, packet, custom item/entity, force-load or background simulation.
+
 ## 0.56.0-alpha.1
 - Added firing-player UUID to the existing Survival ranged projectile launch snapshot.
 - Added bounded online-owner fallback when a Survival-snapshotted projectile's `DamageSource` no longer exposes its ServerPlayer shooter.

@@ -235,6 +235,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
                 BlockPos next = current.offset(dx, dy, dz).immutable();
                 if (!visited.add(next)) continue;
                 if (Math.abs(next.getX() - origin.getX()) > 12 || Math.abs(next.getY() - origin.getY()) > 24 || Math.abs(next.getZ() - origin.getZ()) > 12) continue;
+                if (!level.hasChunkAt(next)) continue;
                 BlockState state = level.getBlockState(next);
                 if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
                 if (level.getBlockEntity(next) != null || !isValidPickaxeBreak(player, level, next, state, player.getMainHandItem())) continue;
@@ -265,6 +266,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
         int broken = 1;
         for (BlockPos target : candidates) {
             if (broken >= limit || !player.getMainHandItem().is(ItemTags.PICKAXES)) break;
+            if (!level.hasChunkAt(target)) continue;
             BlockState state = level.getBlockState(target);
             if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
             if (player.gameMode.destroyBlock(target)) broken++;
@@ -304,6 +306,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
             if (a == 0 && b == 0) continue;
             if (!player.getMainHandItem().is(ItemTags.PICKAXES)) return;
             BlockPos target = ay >= ax && ay >= az ? center.offset(a, 0, b) : (ax >= az ? center.offset(0, a, b) : center.offset(a, b, 0));
+            if (!level.hasChunkAt(target)) continue;
             BlockState targetState = level.getBlockState(target);
             if (!isValidPickaxeBreak(player, level, target, targetState, player.getMainHandItem())) continue;
             if (level.getBlockEntity(target) != null) continue;

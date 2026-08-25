@@ -46,6 +46,7 @@ public final class WoodcuttingProgression {
         BlockState centerState = event.getState();
         ItemStack tool = player.getMainHandItem();
         if (!isValidLogBreak(player, level, center, centerState, tool)) return;
+        ExpeditionProgression.recordSkillAction(player, SkillType.WOODCUTTING, 1);
         if (!player.isCreative() && !player.isSpectator()) {
             int xp = Math.max(1, (int) Math.ceil(xpForLog(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
             announceMilestones(player, SkillProgressionService.award(player, SkillType.WOODCUTTING, xp));
@@ -82,12 +83,11 @@ public final class WoodcuttingProgression {
             try {
                 while (localBudget-- > 0 && globalBudget-- > 0 && !job.targets.isEmpty()) {
                     BlockPos target = job.targets.removeFirst();
+                    if (!level.hasChunkAt(target)) continue;
                     BlockState state = level.getBlockState(target);
                     if (!state.is(BlockTags.LOGS) || level.getBlockEntity(target) != null) continue;
                     if (!isValidLogBreak(player, level, target, state, player.getMainHandItem())) continue;
-                    if (player.gameMode.destroyBlock(target)) {
-                        ExpeditionProgression.recordSkillAction(player, SkillType.WOODCUTTING, 1);
-                    }
+                    player.gameMode.destroyBlock(target);
                     if (!player.getMainHandItem().is(ItemTags.AXES)) break;
                 }
             } finally {
@@ -129,6 +129,7 @@ public final class WoodcuttingProgression {
                         int ry = Math.abs(next.getY() - origin.getY());
                         int rz = Math.abs(next.getZ() - origin.getZ());
                         if (rx > 12 || ry > 32 || rz > 12) continue;
+                        if (!level.hasChunkAt(next)) continue;
                         if (!level.getBlockState(next).is(BlockTags.LOGS)) continue;
                         gathered.add(next);
                         queue.add(next);
@@ -147,7 +148,9 @@ public final class WoodcuttingProgression {
 
     private static boolean hasAdjacentLeaf(ServerLevel level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
-            if (level.getBlockState(pos.relative(direction)).is(BlockTags.LEAVES)) return true;
+            BlockPos leafPos = pos.relative(direction);
+            if (!level.hasChunkAt(leafPos)) continue;
+            if (level.getBlockState(leafPos).is(BlockTags.LEAVES)) return true;
         }
         return false;
     }
