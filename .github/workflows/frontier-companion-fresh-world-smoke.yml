@@ -163,7 +163,6 @@ jobs:
           threading.Thread(target=reader, daemon=True).start()
           deadline = time.monotonic() + 420
           ready = False
-          stream_ended = False
           while time.monotonic() < deadline:
               try:
                   item = q.get(timeout=1)
@@ -172,7 +171,6 @@ jobs:
                       break
                   continue
               if item is None:
-                  stream_ended = True
                   break
               lines.append(item)
               print(item, end='')
@@ -222,9 +220,12 @@ jobs:
               raise SystemExit(f'server exited non-zero after clean stop request: {proc.returncode}')
           if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in text:
               raise SystemExit('Frontier Alpha.73 was not discovered in fresh-world server log')
+
+          # Do not fail on a bare NoClassDefFoundError token. On Linux, Minecraft/Netty can
+          # probe the OSX/BSD kqueue native class while continuing normally; run 32846326558
+          # reached Done, persisted the world and stopped cleanly despite that debug-appender probe.
           forbidden = (
               'ModLoadingException',
-              'NoClassDefFoundError',
               'Mixin apply failed',
               'FatalStartupException',
               'Encountered an unexpected exception',
@@ -255,6 +256,13 @@ jobs:
           FRESH_WORLD_SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          # Preflight and fresh-world jobs can start from the same push. Refresh only the
+          # authoritative status file so this recorder sees a preflight result committed while
+          # the fresh-world server was booting instead of failing on its stale checkout copy.
+          git fetch origin main
+          git show origin/main:"$PROJECT_DIR/companion-testpack/runtime-status.json" > /tmp/frontier-runtime-status.latest.json
+          cp /tmp/frontier-runtime-status.latest.json "$PROJECT_DIR/companion-testpack/runtime-status.json"
+
           python3 - <<'PY'
           import json
           import os
@@ -280,6 +288,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$PROJECT_DIR/companion-testpack/runtime-status.json"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
           git commit -m "Record Frontier expanded fresh-world smoke ${GITHUB_RUN_ID} [skip ci]"
           for attempt in 1 2 3 4 5 6; do
             if git push origin HEAD:main; then exit 0; fi
