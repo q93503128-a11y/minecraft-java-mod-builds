@@ -1,0 +1,32 @@
+name: Frontier Alpha71 Runner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha71-runner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply Alpha.71 lifecycle hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/frontier_alpha71_patch.py
+          git diff --check
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A projects/frontier-settlement
+          git commit -m 'Harden Frontier military and supply lifecycle for alpha.71'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
