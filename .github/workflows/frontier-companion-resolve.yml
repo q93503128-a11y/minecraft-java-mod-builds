@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: frontier-companion-resolve-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   PROJECT_DIR: projects/frontier-settlement
