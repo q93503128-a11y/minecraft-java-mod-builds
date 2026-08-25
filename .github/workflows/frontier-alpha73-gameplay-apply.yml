@@ -22,7 +22,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - name: Apply Alpha.73 gameplay/content pass
+      - name: Apply Alpha.73 gameplay/content pass v2
         run: |
           set -euo pipefail
           python3 .github/frontier-alpha73-apply.py
