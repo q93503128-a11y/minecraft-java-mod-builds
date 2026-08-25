@@ -57,6 +57,7 @@ jobs:
               exit 1
             fi
             if grep -Fq 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' ../../logs/pr-server.log \
+              && grep -Fq 'LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role=tenement' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SETTLEMENT_PASS revision=1 settlements=6 buildings=60' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_SOCIETY_PASS revision=1 settlements=6 households=48 residents=144 workers=96 dependents=48' ../../logs/pr-server.log \
               && grep -Fq 'LK_ERDEN_REGIONAL_ECONOMY_PASS revision=1 settlements=6 households=48 markets=6' ../../logs/pr-server.log \
@@ -76,6 +77,12 @@ jobs:
           done
           cat ../../logs/pr-server.log
           test "$passed" -eq 1
+          grep -F 'LK_ERDEN_PLAYER_RESIDENCE_DIAGNOSTIC_PASS role=tenement' ../../logs/pr-server.log \
+            | grep -F 'actual_tenement=true' \
+            | grep -F 'authored_home_target=true' \
+            | grep -F 'synthetic_floor=false' \
+            | grep -F 'arbitrary_roof_scan=false' \
+            | grep -F 'staging_platform=false'
           grep -F 'LK_ERDEN_GAMEPLAY_RULES_LOCK revision=1 erden_only=true' ../../logs/pr-server.log \
             | grep -F 'playable_species=1' \
             | grep -F 'playable_homelands=1' \
@@ -123,6 +130,7 @@ jobs:
           outcome=timeout
           for attempt in $(seq 1 240); do
             if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+              && grep -Fq 'LK_CLIENT_INVENTORY_CODEX_INTERACTION_PASS click_targets=3' "$log" \
               && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
               && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; break; fi
             if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Could not initialize GLFW|Failed to create window' "$log"; then outcome=fatal; break; fi
@@ -134,6 +142,7 @@ jobs:
           kill -KILL -- "-$pgid" 2>/dev/null || true
           wait "$launcher" 2>/dev/null || true
           if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
+            && grep -Fq 'LK_CLIENT_INVENTORY_CODEX_INTERACTION_PASS click_targets=3' "$log" \
             && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
             && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; fi
           cat "$log"
