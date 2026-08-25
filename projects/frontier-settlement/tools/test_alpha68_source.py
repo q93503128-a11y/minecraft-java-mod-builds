@@ -9,6 +9,7 @@ def forbid(s,tokens,label):
     for t in tokens:
         if t in s: raise SystemExit(f'{label}: {t}')
 # Preserve every Alpha.23-67 invariant while evaluating the current Alpha.68 version/lock.
+# Manual source review also found the stale runBuildingWorkers call-site; keep that compile-regression guard explicit here.
 a=text(A67).replace("print('Frontier Settlement alpha.23-67 cumulative source audit: PASS')",'pass').replace('0.1.0-alpha.67','0.1.0-alpha.68'); ns={'__file__':str(A67),'__name__':'__main__'}; exec(compile(a,str(A67),'exec'),ns,ns)
 workers=text(JAVA/'settlement/SettlementWorkerService.java'); workshop=text(JAVA/'settlement/SettlementWorkshopService.java'); advanced=text(JAVA/'settlement/SettlementAdvancedWorkshopService.java'); outpost=text(JAVA/'settlement/SettlementOutpostLogisticsService.java'); routine=text(JAVA/'settlement/SettlementResidentRoutineService.java'); props=text(ROOT/'gradle.properties')
 must(routine,('TOWN_WORKER_NAMES = Set.of(','"벌목 주민", "농사 주민", "채석 주민", "광산 주민", "작업장 주민"','moveToHouseSlot(residents.get(i), houses, i)','moveToHouseSlot(villager, houses, slot)'),'alpha.68 real house-rest call paths')
