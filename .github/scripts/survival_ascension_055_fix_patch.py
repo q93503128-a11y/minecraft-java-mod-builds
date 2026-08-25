@@ -1,0 +1,30 @@
+from pathlib import Path
+
+path = Path(__file__).with_name("survival_ascension_055_patch.py")
+lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+
+out = []
+java_zone = False
+jar_verify_zone = False
+for line in lines:
+    if line.startswith("# Dedicated spear affix category"):
+        java_zone = True
+    if line.startswith("# User-facing equipment flows"):
+        java_zone = False
+    if line.startswith('jar_verify = "tools/verify_jar.py"'):
+        jar_verify_zone = True
+
+    if java_zone or jar_verify_zone:
+        line = line.replace("dedent('''\\", "'''\\")
+        if line.strip() == "'''))":
+            prefix = line[: len(line) - len(line.lstrip())]
+            newline = "\n" if line.endswith("\n") else ""
+            line = prefix + "''')" + newline
+
+    out.append(line)
+
+text = "".join(out)
+if "replace_once(affix, dedent(" in text or "replace_once(combat, dedent(" in text:
+    raise SystemExit("Java dedent anchor repair incomplete")
+path.write_text(text, encoding="utf-8")
+print("0.55 patch indentation anchors repaired")
