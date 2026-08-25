@@ -1,0 +1,67 @@
+name: Frontier Alpha72 Premerge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha72-premerge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply Alpha72 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/frontier-alpha72-patch.part00 \
+              .github/frontier-alpha72-patch.part01 \
+              .github/frontier-alpha72-patch.part02 \
+              .github/frontier-alpha72-patch.part03 > /tmp/alpha72.patch.xz.b64
+          base64 -d /tmp/alpha72.patch.xz.b64 | xz -d > /tmp/alpha72.patch
+          git apply --check /tmp/alpha72.patch
+          git apply /tmp/alpha72.patch
+          git diff --check
+      - name: Alpha72 cumulative audits
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha72_source.py
+          python3 tools/test_alpha72_docs.py
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          java -version
+          ./gradlew --version
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+      - name: Verify JAR
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f build/libs/frontier_settlement-0.1.0-alpha.72.jar
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.72.jar
+          test -f build/libs/frontier_settlement-0.1.0-alpha.72.jar.sha256
+          mkdir -p /tmp/deliverables
+          cp build/libs/frontier_settlement-0.1.0-alpha.72.jar /tmp/deliverables/
+          cp build/libs/frontier_settlement-0.1.0-alpha.72.jar.sha256 /tmp/deliverables/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-alpha72-premerge-deliverables
+          path: /tmp/deliverables/
+          if-no-files-found: error
+          retention-days: 7
