@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.Tags;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -74,18 +75,17 @@ public final class SettlementOutpostProductionService {
 
     private static Villager ensureWorker(ServerLevel level, OutpostRecord outpost) {
         if (!outpostLoaded(level, outpost)) return null;
-        String assignmentTag = productionTag(outpost.id());
-        AABB search = new AABB(
-                outpost.centerX() - 48.0D, outpost.centerY() - 32.0D, outpost.centerZ() - 48.0D,
-                outpost.centerX() + 49.0D, outpost.centerY() + 33.0D, outpost.centerZ() + 49.0D);
-        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, search,
-                villager -> villager.entityTags().contains(PRODUCTION_WORKER_TAG)
-                        && villager.entityTags().contains(assignmentTag));
+        List<Villager> assigned = findAssignedWorkers(level, outpost);
         if (!assigned.isEmpty()) return assigned.getFirst();
 
+        // Missing is authority. Do not migrate or spawn from a partial entity view.
+        if (!assignmentEvidenceLoaded(level, outpost)) return null;
+
+        String assignmentTag = productionTag(outpost.id());
         String name = workerName(outpost);
-        List<Villager> legacy = level.getEntitiesOfClass(Villager.class, search,
+        List<Villager> legacy = level.getEntitiesOfClass(Villager.class, assignmentBounds(outpost),
                 villager -> villager.getCustomName() != null && name.equals(villager.getCustomName().getString()));
+        legacy.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!legacy.isEmpty()) {
             Villager worker = legacy.getFirst();
             worker.addTag(PRODUCTION_WORKER_TAG);
@@ -102,8 +102,40 @@ public final class SettlementOutpostProductionService {
         worker.setNoAi(false);
         worker.addTag(PRODUCTION_WORKER_TAG);
         worker.addTag(assignmentTag);
-        level.addFreshEntity(worker);
+        if (!level.addFreshEntity(worker)) return null;
         return worker;
+    }
+
+    private static List<Villager> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
+        String assignmentTag = productionTag(outpost.id());
+        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, assignmentBounds(outpost),
+                villager -> villager.entityTags().contains(PRODUCTION_WORKER_TAG)
+                        && villager.entityTags().contains(assignmentTag));
+        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        return assigned;
+    }
+
+    private static AABB assignmentBounds(OutpostRecord outpost) {
+        return new AABB(
+                outpost.centerX() - 48.0D, outpost.centerY() - 32.0D, outpost.centerZ() - 48.0D,
+                outpost.centerX() + 49.0D, outpost.centerY() + 33.0D, outpost.centerZ() + 49.0D);
+    }
+
+    private static boolean assignmentEvidenceLoaded(ServerLevel level, OutpostRecord outpost) {
+        if (!outpostLoaded(level, outpost)) return false;
+        AABB bounds = assignmentBounds(outpost);
+        int minChunkX = Math.floorDiv((int) Math.floor(bounds.minX), 16);
+        int maxChunkX = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxX)), 16);
+        int minChunkZ = Math.floorDiv((int) Math.floor(bounds.minZ), 16);
+        int maxChunkZ = Math.floorDiv((int) Math.floor(Math.nextDown(bounds.maxZ)), 16);
+        int probeY = outpost.centerY();
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                BlockPos probe = new BlockPos(chunkX * 16 + 8, probeY, chunkZ * 16 + 8);
+                if (!level.hasChunkAt(probe)) return false;
+            }
+        }
+        return true;
     }
 
     private static String productionTag(int outpostId) {
@@ -226,8 +258,7 @@ public final class SettlementOutpostProductionService {
                 BlockState state = level.getBlockState(crop);
                 if (!isMatureWheat(state)) continue;
                 if (worker.distanceToSqr(crop.getX() + 0.5D, crop.getY(), crop.getZ() + 0.5D) > 9.0D) continue;
-                level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3);
-                harvested++;
+                if (level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3)) harvested++;
                 if (harvested >= MAX_CROPS) break;
             }
         }
@@ -360,7 +391,7 @@ public final class SettlementOutpostProductionService {
                 if (count > 0) break;
                 continue;
             }
-            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+            if (!level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) break;
             count++;
         }
         return count == 0 ? ItemStack.EMPTY : new ItemStack(item, count);
@@ -398,8 +429,7 @@ public final class SettlementOutpostProductionService {
                 BlockState state = level.getBlockState(pos);
                 if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)
                         || !level.getBlockState(pos.above()).isAir()) continue;
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                count++;
+                if (level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) count++;
             }
         }
         return count == 0 ? ItemStack.EMPTY : new ItemStack(item, count);
@@ -444,7 +474,7 @@ public final class SettlementOutpostProductionService {
             Item item = state.getBlock().asItem();
             result = item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
         }
-        if (!result.isEmpty()) level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3);
+        if (result.isEmpty() || !level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3)) return ItemStack.EMPTY;
         return result;
     }
 

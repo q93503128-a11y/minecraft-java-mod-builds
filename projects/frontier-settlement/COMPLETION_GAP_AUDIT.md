@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.69`
+현재 구현 기준: `0.1.0-alpha.70`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -381,6 +381,18 @@ Civil work는 infrastructure 보조 기능이며 16번째 가짜 BuildingType이
 - 새 save field/trip tag/worker/building/key/UI/currency/force-load/teleport/hard weapon class dependency 없음.
 
 따라서 Alpha.62에서 원격 수비대 무기 ItemStack 역보급도 구현 **완료/부분**으로 전진했다. 실제 route unload, save/reload, sentry death/recruit 반복 no-dup acceptance는 남는다.
+
+### Alpha.70 전초 현지 생산자 lifecycle / 생산 world transaction 감사
+
+- specialized outpost 생산 주민 lookup의 기존 ±48 AABB와 실제 absence evidence 범위를 동일하게 맞췄다.
+- assignment가 보이지 않는다는 이유만으로 migration/replacement를 하지 않고, lookup AABB 전체 청크가 `hasChunkAt`으로 loaded일 때만 0명을 확정한다.
+- 과거 중복 주민이 있으면 삭제하지 않고 UUID 정렬상 첫 주민만 실제 생산 권위를 가진다.
+- 신규 현지 생산 주민은 `addFreshEntity` 성공 뒤에만 work path로 반환된다.
+- 벌목/농업/채석/광산 현지 생산자가 실제 MAINHAND 자원을 들고 죽으면 기존 civilian exact-drop 권위에서 한 번만 물리 드롭한다.
+- 본진과 전초의 나무/밀/석재/광석 생산은 해당 world `setBlock` 성공 뒤에만 수확 ItemStack을 만든다. 실패한 world mutation은 생산량 0이다.
+- 현지 생산 인력을 shared housing/population에 새로 편입하지 않았고, 새 food 비용/환급/가상 worker ledger도 만들지 않았다.
+- force-load/teleport/virtual cargo/second outpost logistics authority/new key/UI/building/companion hard dependency 없음.
+- 실제 2인 반복 death -> cargo recovery -> unload/reload -> save/reconnect acceptance는 계속 남는다.
 
 ### Alpha.69 기존 중복 assignment containment 감사
 

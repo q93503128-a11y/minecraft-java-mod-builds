@@ -268,7 +268,8 @@ public final class SettlementWorkerService {
     private static boolean isManagedCargoWorker(Villager worker) {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
                 || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)
-                || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)) {
+                || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)
+                || worker.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)) {
             return true;
         }
         // Save-compatible fallback for pre-Alpha.65 ordinary workers that did not yet carry a role tag.
@@ -276,7 +277,9 @@ public final class SettlementWorkerService {
         if (name == null) return false;
         String value = name.getString();
         return LUMBER_WORKER_NAME.equals(value) || FARM_WORKER_NAME.equals(value)
-                || QUARRY_WORKER_NAME.equals(value) || MINE_WORKER_NAME.equals(value);
+                || QUARRY_WORKER_NAME.equals(value) || MINE_WORKER_NAME.equals(value)
+                || value.startsWith("전초 벌목 주민 #") || value.startsWith("전초 채석 주민 #")
+                || value.startsWith("전초 광산 주민 #") || value.startsWith("전초 농업 주민 #");
     }
 
     private static void workLumber(ServerLevel level, SettlementData data,
@@ -314,8 +317,7 @@ public final class SettlementWorkerService {
                 BlockState state = level.getBlockState(crop);
                 if (!state.is(Blocks.WHEAT) || !state.hasProperty(BlockStateProperties.AGE_7)
                         || state.getValue(BlockStateProperties.AGE_7) < 7) continue;
-                level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3);
-                harvested++;
+                if (level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3)) harvested++;
             }
         }
         if (harvested > 0) {
@@ -434,7 +436,7 @@ public final class SettlementWorkerService {
                 if (count > 0) break;
                 continue;
             }
-            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+            if (!level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) break;
             count++;
         }
         return count == 0 ? ItemStack.EMPTY : new ItemStack(item, count);
@@ -473,8 +475,7 @@ public final class SettlementWorkerService {
                 BlockState state = level.getBlockState(pos);
                 if (state.getBlock().asItem() != item || !isQuarryStone(state) || isProtected(data, pos)
                         || !level.getBlockState(pos.above()).isAir()) continue;
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                count++;
+                if (level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) count++;
             }
         }
         return count == 0 ? ItemStack.EMPTY : new ItemStack(item, count);
@@ -519,7 +520,7 @@ public final class SettlementWorkerService {
             Item item = state.getBlock().asItem();
             result = item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
         }
-        if (!result.isEmpty()) level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3);
+        if (result.isEmpty() || !level.setBlock(pos, Blocks.STONE.defaultBlockState(), 3)) return ItemStack.EMPTY;
         return result;
     }
 

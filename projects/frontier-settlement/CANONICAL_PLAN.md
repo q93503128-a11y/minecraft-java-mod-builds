@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.69**.
+Current canonical implementation: **0.1.0-alpha.70**.
 
 ## 1. Product identity
 
@@ -367,6 +367,22 @@ Dangerous-outpost invariant:
 - no hard Better Combat/Weapons Expanded Java dependency.
 
 At Alpha.48 the physical external-weapon armory/loadout loop was unfinished. Alpha.57 covers loaded town-barracks soldiers with actual MAINHAND ItemStacks and automation, and Alpha.62 extends that same physical rule to remote sentries through the existing road-bound reverse-supply transporter.
+
+### Alpha.70 specialized-outpost production lifecycle / physical mutation transaction hardening
+
+Alpha.70 closes a lifecycle gap left outside Alpha.65–69: specialized outpost production residents already carried real harvested ItemStacks, but their assignment search could infer absence from a partial ±48 entity view and their cargo was not covered by exact civilian death recovery.
+
+- a visible assigned specialized-outpost production worker may keep working normally;
+- declaring that assignment absent, migrating a legacy named worker or spawning a replacement now fails closed until every chunk intersecting the exact existing ±48 assignment lookup AABB is loaded;
+- the proof uses `hasChunkAt` only and never force-loads or generates chunks;
+- matching tagged workers are UUID-sorted and exactly the first is the active work authority, containing historical duplicates without deleting them;
+- `addFreshEntity` must succeed before a newly created production worker can be returned to work logic;
+- specialized-outpost production residents join the existing exact MAINHAND physical cargo death-recovery handler, including exact-name fallback for pre-tag saves;
+- town and outpost lumber, farm, quarry and mine production now count/mint output only after the corresponding `setBlock` world mutation succeeds; failed mutation yields no free ItemStack;
+- the existing outpost-local production-worker economics remain unchanged in this hardening pass and are not folded into civilian housing/population;
+- no new save field, population/cargo ledger, refund balance, worker UI, force-load, teleport, virtual resource, key, building family, logistics controller or hard companion dependency is added.
+
+This is deterministic no-loss/no-dup hardening. Long two-player repeated death, route/rest unload, save/reload and reconnect acceptance remains unfinished.
 
 ### Alpha.69 historical duplicate-assignment containment
 
