@@ -4,10 +4,10 @@
     "dungeons_and_taverns": {
       "file_id": 8262693,
       "file_name": "dungeons-and-taverns-5.3.0 [NeoForge].jar",
-      "download_url": "https://www.curseforge.com/minecraft/mc-mods/dungeon-and-taverns/download/8262693/file",
+      "download_url": "https://edge.forgecdn.net/files/8262/693/dungeons-and-taverns-5.3.0%20%5BNeoForge%5D.jar",
       "source_page": "https://www.curseforge.com/minecraft/mc-mods/dungeon-and-taverns/files/8262693",
       "sha256": null,
-      "note": "Official CurseForge 26.2 NeoForge file. SHA-256 is intentionally null until the first canonical resolution records the exact downloaded binary hash."
+      "note": "Official CurseForge 26.2 NeoForge file. Direct ForgeCDN URL is derived from CurseForge file id 8262693; SHA-256 stays null until canonical resolution records the exact binary hash."
     }
   }
 }
