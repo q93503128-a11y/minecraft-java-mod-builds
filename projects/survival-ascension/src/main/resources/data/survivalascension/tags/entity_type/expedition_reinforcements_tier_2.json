@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     { "id": "tbos:blank_chronist", "required": false },
-    { "id": "tbos:gnomon_knight", "required": false }
+    { "id": "tbos:gnomon_knight", "required": false },
+    { "id": "tbos:parallax_wraith", "required": false },
+    { "id": "tbos:shard_drifter", "required": false },
+    { "id": "tbos:wake_cutter", "required": false },
+    { "id": "tbos:memory_leech", "required": false },
+    { "id": "tbos:prism_stalker", "required": false },
+    { "id": "tbos:null_portrait", "required": false },
+    { "id": "tbos:meridian_sentinel", "required": false },
+    { "id": "tbos:hour_hand_wraith", "required": false }
   ]
 }
