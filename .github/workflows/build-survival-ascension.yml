@@ -58,7 +58,7 @@ jobs:
           ./gradlew --version
           python3 tools/test_release_source.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-audit.log"
           python3 tools/test_release_content_pack.py 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-content-pack-audit.log"
-          python3 -m py_compile tools/build_mrpack.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
+          python3 -m py_compile tools/build_mrpack.py tools/stage_locked_content.py tools/test_current_source.py tools/test_content_pack_source.py tools/test_release_source.py tools/test_release_content_pack.py tools/verify_jar.py tools/verify_release_jar.py
           git diff --check
           git diff --exit-code
 
@@ -70,7 +70,18 @@ jobs:
           set -o pipefail
           ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-gradle.log"
 
-      - name: Dedicated server boot smoke
+      - name: Stage locked external content for dedicated smoke
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          rm -rf run/mods
+          python3 tools/stage_locked_content.py --output-dir run/mods \
+            2>&1 | tee "$GITHUB_WORKSPACE/survival-ascension-content-stage.log"
+          test "$(find run/mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 7
+
+      - name: Dedicated server boot smoke with locked content
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
@@ -83,7 +94,7 @@ jobs:
           setsid ./gradlew --no-daemon --no-configuration-cache runServer --console=plain > "$log" 2>&1 &
           server_pid=$!
           ready=0
-          for _ in $(seq 1 120); do
+          for _ in $(seq 1 180); do
             if grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$log" 2>/dev/null; then
               ready=1
               break
@@ -106,14 +117,26 @@ jobs:
           cat "$log"
 
           if test "$ready" -ne 1; then
-            echo "Dedicated server never reached the ready state." >&2
+            echo "Dedicated server with locked external content never reached the ready state." >&2
             exit 1
           fi
           if grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred)' "$log"; then
             echo "Dedicated server log contains a fatal classloading/server-start signature." >&2
             exit 1
           fi
-          echo "Dedicated server reached ready state and was stopped after the bounded smoke check."
+          if ! grep -Eq '\[content-census\].*expedition_reinforcement_tier_[0-2]=.*tbos:' "$log"; then
+            echo "TBS loaded-content expedition tags were not visible in the runtime census." >&2
+            exit 1
+          fi
+          if ! grep -Eq '\[content-census\].*resonance_operation_rewards=.*amethyst_resonance:' "$log"; then
+            echo "Amethyst Resonance reward tags were not visible in the runtime census." >&2
+            exit 1
+          fi
+          if ! grep -Eiq '(biomesoplenty|Biomes O.? Plenty)' "$log"; then
+            echo "Biomes O' Plenty was not visible in the integrated server log." >&2
+            exit 1
+          fi
+          echo "Dedicated server reached ready state with the exact seven locked external mods and required TBS/Amethyst/BOP integration signals."
 
       - name: Verify runtime JAR
         working-directory: ${{ env.PROJECT_DIR }}
@@ -158,7 +181,11 @@ jobs:
           - clean build: PASS
           - source audit: PASS
           - content-pack source audit: PASS
-          - dedicated server boot smoke: PASS (reached Minecraft ready state, then bounded smoke shutdown)
+          - locked external content staging: PASS (7 exact Modrinth versions, size + SHA-1 + SHA-512 verified)
+          - dedicated server boot smoke: PASS (SA + locked BOP/TerraBlender/GlitchCore/TBS/Amethyst/Architectury/Cloth set reached ready state)
+          - TBS expedition runtime-tag census: PASS
+          - Amethyst Resonance reward runtime-tag census: PASS
+          - Biomes O' Plenty integrated server-load signal: PASS
           - JAR verification: PASS
           - JAR SHA-256: $sha
           - Modrinth content-pack metadata/dependency/package validation: PASS
@@ -166,7 +193,7 @@ jobs:
           - external content mods: referenced from their original Modrinth CDN; not embedded in the Survival Ascension JAR
           - datagen: NOT RUN (not implemented in alpha.1)
           - GameTest: NOT RUN (not implemented in alpha.1)
-          - graphical client / external-mod worldgen smoke test: NOT RUN
+          - graphical client / real exploration-worldgen smoke: NOT RUN; reserved for manual Modrinth gameplay testing
           REPORT
 
       - uses: actions/upload-artifact@v4
@@ -185,6 +212,7 @@ jobs:
             survival-ascension-audit.log
             survival-ascension-content-pack-audit.log
             survival-ascension-gradle.log
+            survival-ascension-content-stage.log
             survival-ascension-server.log
             survival-ascension-jar-verify.log
             survival-ascension-modpack.log
@@ -209,6 +237,7 @@ jobs:
           java=25
           gradle=9.2.1
           dedicated_server_smoke=enabled
+          locked_content_server_smoke=enabled
           STATUS
           if test -f "$GITHUB_WORKSPACE/survival-ascension-audit.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-audit.log" /tmp/survival-ascension-result/latest-audit.log
@@ -218,6 +247,9 @@ jobs:
           fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-gradle.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-gradle.log" /tmp/survival-ascension-result/latest-gradle.log
+          fi
+          if test -f "$GITHUB_WORKSPACE/survival-ascension-content-stage.log"; then
+            cp "$GITHUB_WORKSPACE/survival-ascension-content-stage.log" /tmp/survival-ascension-result/latest-content-stage.log
           fi
           if test -f "$GITHUB_WORKSPACE/survival-ascension-server.log"; then
             cp "$GITHUB_WORKSPACE/survival-ascension-server.log" /tmp/survival-ascension-result/latest-server.log
