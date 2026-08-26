@@ -1,4 +1,4 @@
-# retry-physical-only
+# retry-clean-temp-script
 name: Apply Frontier Settlement Alpha.79 Pre-Playtest Hardening
 
 on:
@@ -40,5 +40,6 @@ jobs:
           cd ../..
           git add projects/frontier-settlement
           git commit -m 'Harden Frontier Settlement alpha.79 before playtest'
+          git restore .github/scripts/frontier-alpha79-apply.py
           git pull --rebase origin main
           git push origin HEAD:main
