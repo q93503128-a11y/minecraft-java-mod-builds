@@ -8,6 +8,7 @@ import hashlib
 from pathlib import Path
 import urllib.error
 import urllib.request
+import zipfile
 
 from build_mrpack import (
     DEFAULT_LOCK,
@@ -66,6 +67,27 @@ def download_verified(packed: dict, output_dir: Path) -> Path:
     return destination
 
 
+def audit_localization(name: str, path: Path) -> None:
+    """Temporary playtest audit: print exact English/Korean lang resources from each locked mod."""
+    with zipfile.ZipFile(path) as archive:
+        lang_files = sorted(
+            entry for entry in archive.namelist()
+            if "/lang/" in entry.lower() and entry.lower().endswith(".json")
+        )
+        print(f"LOCALIZATION_AUDIT_BEGIN={name}|{path.name}")
+        print("LANG_FILES=" + ",".join(lang_files))
+        for entry in lang_files:
+            lower = entry.lower()
+            if lower.endswith("/en_us.json") or lower.endswith("/ko_kr.json"):
+                print(f"LANG_CONTENT_BEGIN={entry}")
+                try:
+                    print(archive.read(entry).decode("utf-8"))
+                except UnicodeDecodeError:
+                    print("<non-utf8>")
+                print(f"LANG_CONTENT_END={entry}")
+        print(f"LOCALIZATION_AUDIT_END={name}|{path.name}")
+
+
 def stage(lock_path: Path, output_dir: Path) -> None:
     lock = read_json(lock_path)
     for key in ("minecraft", "neoforge", "mods"):
@@ -92,6 +114,7 @@ def stage(lock_path: Path, output_dir: Path) -> None:
         path = download_verified(packed, output_dir)
         staged.append(path.name)
         print(f"staged={name}|{path.name}|bytes={path.stat().st_size}")
+        audit_localization(name, path)
 
     if len(staged) != len(lock["mods"]):
         fail(f"staged mod count mismatch: {len(staged)} != {len(lock['mods'])}")
