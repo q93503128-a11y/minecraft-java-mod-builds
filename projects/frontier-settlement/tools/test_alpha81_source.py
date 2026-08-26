@@ -17,10 +17,9 @@ def legacy_read(self, *args, **kwargs):
     elif self.name == 'SettlementNetwork.java':
         s = s.replace('private static final String PROTOCOL = "8";', 'private static final String PROTOCOL = "7";')
     elif self.name == 'BuildingPaletteScreen.java':
-        # Alpha.23-40 historical audits assert Alpha.80's compact grouping labels/layout tokens.
-        # Alpha.81 replaces that presentation with a category-first palette, which is audited below.
-        # Expose only the superseded presentation tokens while replaying the historical chain.
-        s += '\n// Alpha.80 historical palette: innerY+186 물류·교역 생산·건설\n'
+        # Historical audits assert superseded compact-palette labels/layout. Alpha.81 current semantics
+        # are verified separately below; expose these only while replaying the Alpha.23-80 chain.
+        s += '\n// Alpha.80 historical palette: innerY+186 물류·교역 생산·건설 "토목 평탄화"\n'
     return s
 
 Path.read_text = legacy_read
