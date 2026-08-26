@@ -53,22 +53,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if test -f tools/test_alpha74_source.py; then
-            python3 tools/test_alpha74_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
-          else
-            python3 tools/test_alpha73_source.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
-          fi
+          audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_source.py' -printf '%f\n' | sort -V | tail -1)"
+          test -n "$audit"
+          echo "Running source audit: $audit"
+          python3 "tools/$audit" 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-source-audit.log"
 
       - name: Latest canonical docs audit
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           set -euo pipefail
-          if test -f tools/test_alpha74_docs.py; then
-            python3 tools/test_alpha74_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
-          else
-            python3 tools/test_alpha73_docs.py 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
-          fi
+          audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_docs.py' -printf '%f\n' | sort -V | tail -1)"
+          test -n "$audit"
+          echo "Running docs audit: $audit"
+          python3 "tools/$audit" 2>&1 | tee "$GITHUB_WORKSPACE/frontier-settlement-docs-audit.log"
 
       - name: Verify toolchain and committed tree
         working-directory: ${{ env.PROJECT_DIR }}
