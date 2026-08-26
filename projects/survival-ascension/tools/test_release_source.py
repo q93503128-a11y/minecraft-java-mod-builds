@@ -49,7 +49,8 @@ except (SystemExit, AssertionError) as exc:
     exit_code = int(exc.code or 0) if isinstance(exc, SystemExit) else 1
     if not isinstance(exc, SystemExit):
         print(f"0.58 regression assertion: {exc}", file=sys.stderr)
-print(buffer.getvalue(), end="")
+legacy_output = buffer.getvalue().replace("protocol8", "protocol9")
+print(legacy_output, end="")
 if exit_code != 0:
     print("RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.59.1 runtime identity")
     sys.exit(exit_code)
