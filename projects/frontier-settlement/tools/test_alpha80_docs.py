@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.80', 'mod_version=0.1.0-alpha.79')
         s = s.replace(', plus Alpha.80 client-boot hardening that defers the presentation-only service-sword ItemStack until real render-state extraction after registry component binding and audits client code against registry-backed static ItemStack initialization.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.80"', '"frontier_settlement": "0.1.0-alpha.79"')
     return s
 
 
@@ -36,6 +39,7 @@ def must(src, tokens, label):
 
 props = text('gradle.properties')
 hotfix = text('CLIENT_BOOT_HOTFIX_ALPHA80.md')
+lock = json.loads(text('COMPANION_LOCK.json'))
 
 must(props, (
     'mod_version=0.1.0-alpha.80',
@@ -49,5 +53,7 @@ must(hotfix, (
     'No companion version changed',
     'real Modrinth client launch',
 ), 'alpha.80 client boot hotfix note')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.80':
+    raise SystemExit('alpha.80 companion lock mismatch')
 
 print('Frontier Settlement alpha.80 canonical docs audit: PASS')
