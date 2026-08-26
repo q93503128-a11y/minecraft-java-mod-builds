@@ -21,6 +21,7 @@ import net.minecraft.world.item.Items;
  * assigned one. The renderer itself never creates or inserts economic equipment.
  */
 public final class FrontierSoldierRenderer extends HumanoidMobRenderer<FrontierSoldierEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
+    // Alpha.80 canonical trigger: keep registry-backed presentation stacks out of class initialization.
     // Do not construct registry-backed ItemStacks during class initialization. Minecraft 26.2 can load
     // entity renderer classes while item components are still being bound during the resource reload.
     private ItemStack visualServiceSword;
