@@ -52,6 +52,20 @@ jobs:
           p.write_text(s.replace(bad, good, 1), encoding='utf-8')
           print('Alpha.74 generated docs audit repaired')
           PY
+      - name: Repair Alpha.74 JAR verifier version
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/verify_jar.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'version="0.1.0-alpha.73"'
+          new = 'version="0.1.0-alpha.74"'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected one Alpha.73 verifier invariant, got {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          print('Alpha.74 JAR verifier version repaired')
+          PY
       - name: Alpha.74 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         run: python3 tools/test_alpha74_source.py
