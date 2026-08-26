@@ -12,6 +12,7 @@ on:
       - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
+      - 'projects/frontier-settlement/tools/test_companion_testpack.py'
       - 'projects/frontier-settlement/tools/verify_jar.py'
       - '.github/workflows/frontier-companion-fresh-world-smoke.yml'
 
@@ -24,7 +25,6 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/frontier-settlement
-  NEOFORGE_VERSION: 26.2.0.38-beta
 
 jobs:
   fresh-world:
@@ -50,6 +50,18 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Resolve Frontier runtime versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^mod_version=//p' "$PROJECT_DIR/gradle.properties")"
+          neoforge="$(sed -n 's/^neo_version=//p' "$PROJECT_DIR/gradle.properties")"
+          test -n "$version"
+          test -n "$neoforge"
+          echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
+          echo "NEOFORGE_VERSION=$neoforge" >> "$GITHUB_ENV"
+
       - name: Verify expanded companion manifests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -70,18 +82,22 @@ jobs:
           print('Expanded companion resolution gate: PASS')
           PY
 
-      - name: Build and verify Frontier Alpha.73
+      - name: Build and verify current Frontier
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -euo pipefail
           chmod +x gradlew
-          python3 tools/test_alpha73_source.py
-          python3 tools/test_alpha73_docs.py
+          source_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_source.py' -printf '%f\n' | sort -V | tail -1)"
+          docs_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_docs.py' -printf '%f\n' | sort -V | tail -1)"
+          test -n "$source_audit"
+          test -n "$docs_audit"
+          python3 "tools/$source_audit"
+          python3 "tools/$docs_audit"
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
-          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.73.jar
-          unzip -p build/libs/frontier_settlement-0.1.0-alpha.73.jar META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          unzip -p "build/libs/$EXPECTED_JAR" META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
           grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
-          grep -F 'version="0.1.0-alpha.73"' "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
+          grep -F "version=\"$MOD_VERSION\"" "$GITHUB_WORKSPACE/frontier-fresh-world-metadata.txt"
 
       - name: Assemble exact expanded server payload
         run: |
@@ -89,7 +105,7 @@ jobs:
           python3 "$PROJECT_DIR/companion-testpack/install.py" \
             --profile server \
             --output /tmp/frontier-companion-fresh-world-payload \
-            --frontier-jar "$PROJECT_DIR/build/libs/frontier_settlement-0.1.0-alpha.73.jar"
+            --frontier-jar "$PROJECT_DIR/build/libs/$EXPECTED_JAR"
           count="$(find /tmp/frontier-companion-fresh-world-payload/mods -maxdepth 1 -type f -name '*.jar' | wc -l)"
           test "$count" -eq 16
           find /tmp/frontier-companion-fresh-world-payload/mods -maxdepth 1 -type f -name '*.jar' -printf '%f\n' | sort | tee "$GITHUB_WORKSPACE/frontier-fresh-world-mods.txt"
@@ -218,8 +234,10 @@ jobs:
           log_path.write_text(text, encoding='utf-8')
           if proc.returncode != 0:
               raise SystemExit(f'server exited non-zero after clean stop request: {proc.returncode}')
-          if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in text:
-              raise SystemExit('Frontier Alpha.73 was not discovered in fresh-world server log')
+          version = os.environ['MOD_VERSION']
+          expected_frontier = f'Frontier Settlement {version} (frontier_settlement)'
+          if expected_frontier not in text:
+              raise SystemExit(f'Frontier {version} was not discovered in fresh-world server log')
 
           # Do not fail on a bare NoClassDefFoundError token. On Linux, Minecraft/Netty can
           # probe the OSX/BSD kqueue native class while continuing normally.
@@ -242,10 +260,6 @@ jobs:
           if not level_dat.is_file() or level_dat.stat().st_size == 0:
               raise SystemExit('fresh world level.dat was not generated')
 
-          # A very short 26.2 dedicated-server smoke can create level.dat, reach Done and
-          # cleanly execute the chunk-storage save path without emitting an overworld .mca
-          # container before shutdown. Treat physical region files as stronger optional
-          # evidence, while requiring Minecraft's explicit all-dimensions saved marker.
           region_files = [p for p in (work / 'world').rglob('*') if p.is_file() and p.suffix in ('.mca', '.mcc')]
           clean_save_marker = 'ThreadedAnvilChunkStorage: All dimensions are saved'
           if clean_save_marker not in text:
