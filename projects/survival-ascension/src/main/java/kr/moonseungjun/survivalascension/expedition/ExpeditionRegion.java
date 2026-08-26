@@ -59,7 +59,7 @@ public enum ExpeditionRegion {
     }
 
     public boolean matches(Holder<Biome> biome) {
-        if (matchesIntegrationTag(biome)) return true;
+        if (biome.is(integrationTag)) return true;
         return switch (this) {
             case WOODLAND -> isAny(biome,
                     Biomes.FOREST, Biomes.FLOWER_FOREST, Biomes.BIRCH_FOREST, Biomes.OLD_GROWTH_BIRCH_FOREST,
