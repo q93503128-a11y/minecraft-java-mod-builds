@@ -5,8 +5,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.common.Tags;
 
 /**
- * Soft biome-tag context for existing outpost specialization. No companion class or biome id is required.
- * The physical local survey remains primary; biome tags only provide bounded evidence bias.
+ * Soft biome-tag and expedition-knowledge context for existing outpost specialization.
+ * No companion class or biome id is required. Physical local evidence remains primary: the maximum
+ * metadata + biome bias is intentionally kept below the agriculture/quarry thresholds on its own.
  */
 public final class SettlementOutpostBiomeService {
     public static final int FOREST_LOG_BONUS = 8;
@@ -14,6 +15,8 @@ public final class SettlementOutpostBiomeService {
     public static final int MOUNTAIN_STONE_BONUS = 8;
     public static final int MOUNTAIN_ORE_BONUS = 1;
     public static final int DRY_STONE_BONUS = 6;
+    public static final int TRADE_FIELD_BONUS_PER_LEVEL = 8;
+    public static final int INDUSTRIAL_STONE_BONUS_PER_LEVEL = 3;
 
     public record Bias(int ore, int logs, int field, int stone, String label) {
         static final Bias NONE = new Bias(0, 0, 0, 0, "중립");
@@ -46,6 +49,16 @@ public final class SettlementOutpostBiomeService {
             stone += DRY_STONE_BONUS;
             label = "건조 암지";
         }
+
+        SettlementData data = SettlementData.get(level.getServer());
+        int tradeKnowledge = SettlementExplorationBenefitService.tradeKnowledge(data);
+        int industrialKnowledge = SettlementExplorationBenefitService.industrialKnowledge(data);
+        field += tradeKnowledge * TRADE_FIELD_BONUS_PER_LEVEL;
+        stone += industrialKnowledge * INDUSTRIAL_STONE_BONUS_PER_LEVEL;
+        if (tradeKnowledge > 0 || industrialKnowledge > 0) {
+            label += " · 개척지식 교역" + tradeKnowledge + "/산업" + industrialKnowledge;
+        }
+
         return new Bias(ore, logs, field, stone, label);
     }
 }
