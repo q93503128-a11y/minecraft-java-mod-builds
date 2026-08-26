@@ -12,6 +12,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.Tags;
@@ -51,6 +52,10 @@ public final class ContentPackCompatibility {
     private static final TagKey<EntityType<?>> EXPEDITION_REINFORCEMENTS_TIER_2 = TagKey.create(
             Registries.ENTITY_TYPE,
             Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_reinforcements_tier_2")
+    );
+    private static final TagKey<Item> EXPEDITION_RESONANCE_REWARDS = TagKey.create(
+            Registries.ITEM,
+            Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_resonance_rewards")
     );
     private static final Identifier TBS_ARCHIVISTS_JOURNAL = Identifier.fromNamespaceAndPath("tbos", "archivists_journal");
     private static final int TBS_JOURNAL_CHECK_DELAY_TICKS = 60;
@@ -168,6 +173,7 @@ public final class ContentPackCompatibility {
         for (int tier = 0; tier <= 2; tier++) {
             lines.add("expedition_reinforcement_tier_" + tier + "=" + String.join(",", incidentReinforcementIds(tier)));
         }
+        lines.add("resonance_operation_rewards=" + String.join(",", resonanceOperationRewardIds()));
         return List.copyOf(lines);
     }
 
@@ -198,7 +204,7 @@ public final class ContentPackCompatibility {
     }
 
     /**
-     * Select one explicitly audited optional-content mob for a rare field ambush. IDs are owned by
+     * Select one explicitly audited optional-content mob for a field ambush. IDs are owned by
      * datapack tags, so removing the external mod leaves an empty pool instead of a linkage failure.
      */
     public static String randomIncidentReinforcementId(RandomSource random, int worldStage) {
@@ -226,6 +232,39 @@ public final class ContentPackCompatibility {
             case 1 -> EXPEDITION_REINFORCEMENTS_TIER_1;
             default -> EXPEDITION_REINFORCEMENTS_TIER_2;
         };
+    }
+
+    /**
+     * Data-owned targeted reward pool for successful Deep-region operations. The original external
+     * stack is returned untouched; Survival imprint remains an explicit later player choice.
+     */
+    public static ItemStack randomResonanceOperationReward(RandomSource random) {
+        List<Identifier> pool = resonanceOperationRewardRegistryIds();
+        if (pool.isEmpty()) return ItemStack.EMPTY;
+        Identifier id = pool.get(random.nextInt(pool.size()));
+        Item item = BuiltInRegistries.ITEM.getValue(id);
+        return item == null ? ItemStack.EMPTY : new ItemStack(item);
+    }
+
+    public static boolean hasResonanceOperationRewards() {
+        return !resonanceOperationRewardRegistryIds().isEmpty();
+    }
+
+    public static List<String> resonanceOperationRewardIds() {
+        return resonanceOperationRewardRegistryIds().stream().map(Identifier::toString).toList();
+    }
+
+    private static List<Identifier> resonanceOperationRewardRegistryIds() {
+        List<Identifier> ids = new ArrayList<>();
+        for (Identifier id : BuiltInRegistries.ITEM.keySet()) {
+            Item item = BuiltInRegistries.ITEM.getValue(id);
+            if (item == null || !item.builtInRegistryHolder().is(EXPEDITION_RESONANCE_REWARDS)) continue;
+            ItemStack stack = new ItemStack(item);
+            if (!isStandardAffixGear(stack)) continue;
+            ids.add(id);
+        }
+        ids.sort((a, b) -> a.toString().compareTo(b.toString()));
+        return List.copyOf(ids);
     }
 
     private static boolean isConservativeIncidentCandidate(Identifier id, EntityType<?> type) {

@@ -53,8 +53,13 @@ public enum ExpeditionRegion {
     public int objectiveTarget() { return objectiveTarget; }
     public int bit() { return 1 << ordinal(); }
 
+    /** True only for terrain explicitly connected through Survival's data-driven integration tag. */
+    public boolean matchesIntegrationTag(Holder<Biome> biome) {
+        return biome.is(integrationTag);
+    }
+
     public boolean matches(Holder<Biome> biome) {
-        if (biome.is(integrationTag)) return true;
+        if (matchesIntegrationTag(biome)) return true;
         return switch (this) {
             case WOODLAND -> isAny(biome,
                     Biomes.FOREST, Biomes.FLOWER_FOREST, Biomes.BIRCH_FOREST, Biomes.OLD_GROWTH_BIRCH_FOREST,

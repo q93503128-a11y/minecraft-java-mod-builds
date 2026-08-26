@@ -42,6 +42,7 @@ public final class ExpeditionIncidentSystem {
     private static final int PRE_ALERT_ACTIONBAR_INTERVAL = 20;
     private static final double EVENT_RADIUS = 48.0D;
     private static final double RARE_CHANCE = 0.15D;
+    private static final double CONTENT_REPLACEMENT_CHANCE = 0.55D;
     private static final int RARE_EXTRA_TIME_TICKS = 300;
     private static final int OVERLAP_RETRY_TICKS = 600;
     private static final double INCIDENT_CENTER_CLEARANCE = EVENT_RADIUS * 2.0D + 16.0D;
@@ -86,7 +87,8 @@ public final class ExpeditionIncidentSystem {
         if (!data.isDiscovered(player, region) || data.incidentResolved(player, region)) return;
         if (level.getRandom().nextDouble() >= START_CHANCE) return;
 
-        queueStart(player, level, region, ExpeditionIncident.random(region, level.getRandom()),
+        boolean integrationTagged = region.matchesIntegrationTag(level.getBiome(player.blockPosition()));
+        queueStart(player, level, region, ExpeditionIncident.random(region, level.getRandom(), integrationTagged),
                 level.getRandom().nextDouble() < RARE_CHANCE);
     }
 
@@ -225,6 +227,7 @@ public final class ExpeditionIncidentSystem {
         if (incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
             player.sendSystemMessage(Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
                     + " §7· 표시된 반경 48블록 안에서 빛나는 습격대 " + active.initialMobCount + "체를 정리하세요."
+                    + (active.contentReplacementCount > 0 ? " §b· 콘텐츠 조우 1체 포함" : "")
                     + (active.reinforcementCount > 0 ? " §d· 이변 개체 1체 포함" : "")
                     + (rare ? " §d· 강화 보상" : "")));
         } else {
@@ -292,15 +295,33 @@ public final class ExpeditionIncidentSystem {
         Set<UUID> spawned = new HashSet<>();
         List<String> types = active.incident.mobTypeIds();
         int spawnTarget = active.spawnTarget();
+
+        String contentTypeId = null;
+        int contentSlot = -1;
+        if (active.incident.region() != ExpeditionRegion.OCEAN
+                && active.level.getRandom().nextDouble() < CONTENT_REPLACEMENT_CHANCE) {
+            contentTypeId = ContentPackCompatibility.randomIncidentReinforcementId(
+                    active.level.getRandom(), active.incident.region().requiredWorldStage());
+            if (contentTypeId != null) contentSlot = active.level.getRandom().nextInt(Math.max(1, spawnTarget));
+        }
+
         for (int i = 0; i < spawnTarget; i++) {
-            String typeId = types.get(i % types.size());
-            Mob mob = spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN,
-                    typeId, i, spawnTarget);
+            String vanillaTypeId = types.get(i % types.size());
+            boolean contentAttempt = i == contentSlot && contentTypeId != null;
+            Mob mob = contentAttempt
+                    ? spawnOne(active.level, active.center, false, contentTypeId, i, spawnTarget)
+                    : spawnOne(active.level, active.center, active.incident.region() == ExpeditionRegion.OCEAN,
+                            vanillaTypeId, i, spawnTarget);
+            boolean contentSpawned = contentAttempt && mob != null;
+            if (mob == null && contentAttempt) {
+                mob = spawnOne(active.level, active.center, false, vanillaTypeId, i, spawnTarget);
+            }
             if (mob == null) continue;
             mob.setPersistenceRequired();
             mob.setGlowingTag(true);
             mob.setTarget(player);
             spawned.add(mob.getUUID());
+            if (contentSpawned) active.contentReplacementCount = 1;
         }
         return spawned;
     }
@@ -559,6 +580,7 @@ public final class ExpeditionIncidentSystem {
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
         int initialMobCount;
+        int contentReplacementCount;
         int reinforcementCount;
         int actionProgress;
         int outsideTicks;

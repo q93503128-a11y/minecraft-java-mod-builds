@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.expedition;
 
 import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
+import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.production.OutpostData;
 import kr.moonseungjun.survivalascension.production.OutpostService;
@@ -78,6 +79,9 @@ public final class ExpeditionOperationSystem {
 
         player.sendSystemMessage(Component.literal("§6[원정 작전 출발] §f" + operation.koreanName() + " §7· 보급권1 소비"));
         player.sendSystemMessage(Component.literal("§c[작전 변수] §f" + complication.koreanName() + " §7· " + complication.description()));
+        if (region == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) {
+            player.sendSystemMessage(Component.literal("§d[공명 회수 계약] §f심층 작전 귀환 성공 시 외부 공명 장비 1개를 확보합니다. §7승천 각인은 귀환 뒤 직접 선택합니다."));
+        }
         player.sendSystemMessage(Component.literal("§7전초에서 최소 §e" + operation.rangeTarget() + "블록§7까지 전진한 뒤, 전초 반경 "
                 + WORK_RADIUS + "블록 밖의 §f" + region.koreanName() + "§7에서 수행: §f" + operation.taskSummary()));
         player.sendSystemMessage(Component.literal("§7목표를 끝낸 뒤 같은 전초기지 반경 §e" + RETURN_RADIUS + "블록§7로 돌아와야 보상을 받습니다. §f제한 "
@@ -227,6 +231,9 @@ public final class ExpeditionOperationSystem {
                 + " §7· 남은 " + seconds / 60 + "분 " + seconds % 60 + "초"));
         player.sendSystemMessage(Component.literal("§c작전 변수 §f" + active.complication().koreanName() + " §7· "
                 + active.complication().description()));
+        if (active.region() == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) {
+            player.sendSystemMessage(Component.literal("  §d공명 회수 계약 §7· 귀환 성공 시 외부 공명 장비 1개"));
+        }
         if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0) {
             player.sendSystemMessage(Component.literal("  §c재전개 대기 §7· 원점에서 §e" + active.complicationState() + "블록§7까지 추가 전진 필요"));
         } else if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() < 0) {
@@ -303,6 +310,15 @@ public final class ExpeditionOperationSystem {
             giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 4));
             giveOrDrop(player, new ItemStack(Items.DRAGON_BREATH, 2));
         }
+
+        if (operation.region() == ExpeditionRegion.DEEP && player.level() instanceof ServerLevel level) {
+            ItemStack resonanceReward = ContentPackCompatibility.randomResonanceOperationReward(level.getRandom());
+            if (!resonanceReward.isEmpty()) {
+                giveOrDrop(player, resonanceReward);
+                player.sendSystemMessage(Component.literal("§d[공명 회수] §f심층 작전에서 외부 공명 장비 1개를 확보했습니다. §7원본 기능은 유지되며 승천 각인은 장비 메뉴에서 직접 선택합니다."));
+            }
+        }
+
         player.sendSystemMessage(Component.literal("§a[원정 작전 귀환] §f" + operation.koreanName() + " 완료 · "
                 + operation.region().rewardSkill().koreanName() + " 숙련 XP +" + operation.skillXpReward()
                 + " · 경험치 +" + operation.experienceReward() + " §7· 최초 " + result.uniqueCompleted() + "/9 · 총 " + result.totalCompletions() + "회"));

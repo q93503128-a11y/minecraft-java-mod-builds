@@ -9,6 +9,7 @@ import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
 import kr.moonseungjun.survivalascension.progress.SkillType;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -302,25 +303,54 @@ public final class CombatProgression {
         }
     }
 
+    /**
+     * Combat Academy high-mastery technique. Sprinting direct melee converts the old radial burst
+     * into a server-authoritative forward fracture lane. Shift keeps the same hit as precision melee.
+     */
     private static boolean tryShockwave(ServerPlayer player, ServerLevel level, LivingEntity primary,
                                         LivingIncomingDamageEvent event, float scaledDamage, int combatLevel) {
-        if (combatLevel < 90 || !player.isSprinting()) return false;
+        if (combatLevel < 90 || !player.isSprinting() || player.isShiftKeyDown()) return false;
         if (!InfrastructureData.get(player).isComplete(InfrastructureProject.COMBAT_ACADEMY)) return false;
         long now = level.getGameTime();
         int cooldown = combatLevel >= 100 ? 50 : 60;
         if (now < player.getPersistentData().getLongOr(SHOCKWAVE_READY_KEY, 0L)) return false;
 
+        Vec3 direction = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D);
+        if (direction.lengthSqr() <= 1.0E-5D) return false;
+        direction = direction.normalize();
+
         boolean fieldMastery = combatLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
-        double radius = fieldMastery ? 7.5D : (combatLevel >= 100 ? 6.5D : 5.5D);
-        int targetLimit = fieldMastery ? 20 : (combatLevel >= 100 ? 16 : 12);
+        double reach = fieldMastery ? 10.0D : (combatLevel >= 100 ? 8.0D : 6.5D);
+        double halfWidth = fieldMastery ? 3.25D : (combatLevel >= 100 ? 2.75D : 2.25D);
+        int targetLimit = fieldMastery ? 18 : (combatLevel >= 100 ? 14 : 10);
         double fraction = combatLevel >= 100 ? 0.55D : 0.45D;
-        player.getPersistentData().putLong(SHOCKWAVE_READY_KEY, now + cooldown);
+        double pushStrength = fieldMastery ? 0.85D : (combatLevel >= 100 ? 0.75D : 0.65D);
+        final Vec3 laneDirection = direction;
+        final double laneReach = reach;
+        final double laneHalfWidthSqr = halfWidth * halfWidth;
+
         List<LivingEntity> nearby = level.getEntitiesOfClass(
                 LivingEntity.class,
-                player.getBoundingBox().inflate(radius),
-                candidate -> candidate != primary && candidate != player && candidate.isAlive()
-                        && ContentPackCompatibility.isCombatTarget(candidate) && !player.isAlliedTo(candidate));
-        nearby.sort(Comparator.comparingDouble(player::distanceToSqr));
+                player.getBoundingBox().inflate(laneReach, 2.5D, laneReach),
+                candidate -> {
+                    if (candidate == primary || candidate == player || !candidate.isAlive()
+                            || !ContentPackCompatibility.isCombatTarget(candidate) || player.isAlliedTo(candidate)) return false;
+                    Vec3 delta = candidate.position().subtract(player.position());
+                    double forward = delta.x * laneDirection.x + delta.z * laneDirection.z;
+                    if (forward <= 0.0D || forward > laneReach) return false;
+                    double lateralX = delta.x - laneDirection.x * forward;
+                    double lateralZ = delta.z - laneDirection.z * forward;
+                    return lateralX * lateralX + lateralZ * lateralZ <= laneHalfWidthSqr;
+                });
+        nearby.sort(Comparator.comparingDouble(candidate -> {
+            Vec3 delta = candidate.position().subtract(player.position());
+            return delta.x * laneDirection.x + delta.z * laneDirection.z;
+        }));
+
+        player.getPersistentData().putLong(SHOCKWAVE_READY_KEY, now + cooldown);
+        renderFractureLane(level, player, laneDirection, laneReach, halfWidth);
+        player.sendSystemMessage(Component.literal("§c[질주 파쇄선] §f전방 " + formatRange(laneReach)
+                + "블록 · 최대 " + targetLimit + "체 §7· Shift 근접은 정밀 타격"), true);
 
         float shockDamage = Math.max(1.0F, (float) (scaledDamage * fraction));
         UUID uuid = player.getUUID();
@@ -330,10 +360,11 @@ public final class CombatProgression {
             for (LivingEntity candidate : nearby) {
                 if (hit >= targetLimit) break;
                 if (!candidate.hurtServer(level, event.getSource(), shockDamage)) continue;
-                Vec3 push = candidate.position().subtract(player.position()).multiply(1.0D, 0.0D, 1.0D);
-                if (push.lengthSqr() > 1.0E-5D) {
-                    push = push.normalize();
-                    candidate.setDeltaMovement(candidate.getDeltaMovement().add(push.x * 0.70D, 0.18D, push.z * 0.70D));
+                double resistance = Math.max(0.0D, Math.min(1.0D, candidate.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
+                double strength = pushStrength * (1.0D - resistance);
+                if (strength > 0.0D) {
+                    candidate.setDeltaMovement(candidate.getDeltaMovement().add(
+                            laneDirection.x * strength, 0.14D * (1.0D - resistance), laneDirection.z * strength));
                     candidate.hurtMarked = true;
                 }
                 hit++;
@@ -342,6 +373,26 @@ public final class CombatProgression {
             SHOCKWAVE_GUARD.remove(uuid);
         }
         return true;
+    }
+
+    private static void renderFractureLane(ServerLevel level, ServerPlayer player, Vec3 direction,
+                                           double reach, double halfWidth) {
+        Vec3 side = new Vec3(-direction.z, 0.0D, direction.x);
+        int steps = Math.max(6, (int) Math.ceil(reach));
+        for (int step = 1; step <= steps; step++) {
+            double distance = reach * step / steps;
+            Vec3 center = player.position().add(direction.scale(distance));
+            double spread = halfWidth * Math.min(1.0D, distance / Math.max(1.0D, reach * 0.6D));
+            for (double lane : new double[]{-0.65D, 0.0D, 0.65D}) {
+                Vec3 point = center.add(side.scale(spread * lane));
+                level.sendParticles(ParticleTypes.SWEEP_ATTACK, point.x, player.getY() + 1.0D, point.z,
+                        1, 0.05D, 0.05D, 0.05D, 0.0D);
+            }
+        }
+    }
+
+    private static String formatRange(double value) {
+        return value == Math.rint(value) ? Integer.toString((int) value) : String.format(java.util.Locale.ROOT, "%.1f", value);
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
@@ -380,11 +431,11 @@ public final class CombatProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§c[전투 해금] §f전투 숙련 피해 성장이 본격적으로 시작됩니다."));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 I + 원거리 충돌 파급 I · Shift 발사는 단일 정밀 타격"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접/원거리 파급 II · 반경과 연쇄 대상이 크게 확장됩니다."));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 질주 충격파 + 원거리 충돌 파급 III"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§c[전투 해금] §f근접 파급 III · 전투 훈련장 질주 파쇄선 + 원거리 충돌 파급 III · Shift 근접은 파쇄선 억제"));
         if (oldLevel < 100 && newLevel >= 100) {
-            String shockwave = ExpeditionProgression.hasFieldMastery(player) ? "7.5블록/20체" : "6.5블록/16체";
+            String shockwave = ExpeditionProgression.hasFieldMastery(player) ? "10블록/18체" : "8블록/14체";
             String ranged = ExpeditionProgression.hasFieldMastery(player) ? "6블록/10체" : "5블록/8체";
-            player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f근접 파급 10체/5블록 · 훈련장 충격파 " + shockwave + " · 원거리 파급 " + ranged));
+            player.sendSystemMessage(Component.literal("§c[전투 숙련 VI] §f근접 파급 10체/5블록 · 훈련장 질주 파쇄선 " + shockwave + " · 원거리 파급 " + ranged));
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    {"id":"amethyst_resonance:resonant_axe","required":false},
+    {"id":"amethyst_resonance:resonant_boots","required":false},
+    {"id":"amethyst_resonance:resonant_chestplate","required":false},
+    {"id":"amethyst_resonance:resonant_helmet","required":false},
+    {"id":"amethyst_resonance:resonant_hoe","required":false},
+    {"id":"amethyst_resonance:resonant_leggings","required":false},
+    {"id":"amethyst_resonance:resonant_pickaxe","required":false},
+    {"id":"amethyst_resonance:resonant_shovel","required":false},
+    {"id":"amethyst_resonance:resonant_sword","required":false}
+  ]
+}
