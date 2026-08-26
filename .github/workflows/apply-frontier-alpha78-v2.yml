@@ -1,0 +1,90 @@
+name: Apply Frontier Settlement Alpha.78 v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-frontier-alpha78-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-settlement-alpha78-v2
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Alpha.78 project changes on latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+
+            python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          wf = Path('.github/workflows/apply-frontier-alpha78.yml').read_text(encoding='utf-8')
+          begin_marker = "          python3 <<'PY'\n"
+          end_marker = "\n          PY\n"
+          start = wf.index(begin_marker) + len(begin_marker)
+          end = wf.index(end_marker, start)
+          block = textwrap.dedent(wf[start:end])
+
+          old_indented = "              return s\n\n          Path.read_text = legacy_read"
+          new_indented = (
+              "              elif self.name == 'SettlementOutpostLogisticsService.java':\n"
+              "                  s = s.replace('int normalBatch = productiveTransportBatchSize(data);',\n"
+              "                                'int normalBatch = transportBatchSize(data);')\n"
+              "              return s\n\n"
+              "          Path.read_text = legacy_read"
+          )
+          old_dedented = "    return s\n\nPath.read_text = legacy_read"
+          new_dedented = (
+              "    elif self.name == 'SettlementOutpostLogisticsService.java':\n"
+              "        s = s.replace('int normalBatch = productiveTransportBatchSize(data);',\n"
+              "                      'int normalBatch = transportBatchSize(data);')\n"
+              "    return s\n\n"
+              "Path.read_text = legacy_read"
+          )
+          if old_indented in block:
+              block = block.replace(old_indented, new_indented, 1)
+          elif old_dedented in block:
+              block = block.replace(old_dedented, new_dedented, 1)
+          else:
+              raise SystemExit('could not patch Alpha.78 historical logistics view')
+
+          ns = {'__name__': '__main__'}
+          exec(compile(block, '<alpha78-project-apply>', 'exec'), ns, ns)
+          PY
+
+            python3 -m py_compile projects/frontier-settlement/tools/test_alpha78_source.py projects/frontier-settlement/tools/test_alpha78_docs.py
+            (cd projects/frontier-settlement && python3 tools/test_alpha78_source.py)
+            (cd projects/frontier-settlement && python3 tools/test_alpha78_docs.py)
+            git diff --check
+
+            git add -A projects/frontier-settlement
+            git commit -m 'Implement Frontier Settlement alpha.78 territory freight efficiency'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "main moved during Alpha.78 apply; retrying attempt $attempt" >&2
+            sleep $((attempt * 2))
+          done
+
+          echo 'Unable to apply Alpha.78 after latest-main retries' >&2
+          exit 1
