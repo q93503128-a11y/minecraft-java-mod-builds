@@ -14,6 +14,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.81', 'mod_version=0.1.0-alpha.80')
         s = s.replace(', plus Alpha.81 first-run UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and Korean companion language overlays.', '.')
+    elif self.name == 'SettlementNetwork.java':
+        s = s.replace('private static final String PROTOCOL = "8";', 'private static final String PROTOCOL = "7";')
     return s
 
 Path.read_text = legacy_read
