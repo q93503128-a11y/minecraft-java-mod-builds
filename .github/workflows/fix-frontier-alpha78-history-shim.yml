@@ -1,0 +1,48 @@
+name: Fix Frontier Alpha.78 History Shim
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-frontier-alpha78-history-shim.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch one-off apply workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git reset --hard origin/main
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/apply-frontier-alpha78.yml')
+          s = p.read_text(encoding='utf-8')
+          needle = "              return s\n\n          Path.read_text = legacy_read"
+          if s.count(needle) < 2:
+              raise SystemExit(f'unexpected alpha.78 legacy shim layout: {s.count(needle)}')
+          replacement = "              elif self.name == 'SettlementOutpostLogisticsService.java':\n                  s = s.replace('int normalBatch = productiveTransportBatchSize(data);',\n                                'int normalBatch = transportBatchSize(data);')\n              return s\n\n          Path.read_text = legacy_read"
+          s = s.replace(needle, replacement, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          rm -f .github/workflows/fix-frontier-alpha78-history-shim.yml
+          git add .github/workflows/apply-frontier-alpha78.yml .github/workflows/fix-frontier-alpha78-history-shim.yml
+          git commit -m 'fix(frontier): preserve alpha.42 logistics audit view'
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          exit 1
