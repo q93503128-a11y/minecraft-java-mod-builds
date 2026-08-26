@@ -193,12 +193,16 @@ public final class ExpeditionInterdictionService {
             ExpeditionOperationData.ActiveOperation active,
             int wave,
             WaveResult result) {
-        String phase = switch (active.complication()) {
-            case FORWARD_SHIFT when wave == 2 -> "재전개선 차단";
-            case HOT_EXTRACTION when wave == 2 -> "긴급 철수선 차단";
-            case DEEP_FRONT when wave == 1 -> "고착 전선 돌파";
-            default -> wave == 1 ? "전진선 차단" : "회수선 차단";
-        };
+        String phase;
+        if (wave == 2 && active.complication() == ExpeditionComplication.FORWARD_SHIFT) {
+            phase = "재전개선 차단";
+        } else if (wave == 2 && active.complication() == ExpeditionComplication.HOT_EXTRACTION) {
+            phase = "긴급 철수선 차단";
+        } else if (wave == 1 && active.complication() == ExpeditionComplication.DEEP_FRONT) {
+            phase = "고착 전선 돌파";
+        } else {
+            phase = wave == 1 ? "전진선 차단" : "회수선 차단";
+        }
         player.sendSystemMessage(Component.literal("§c[작전 저지대] §f" + active.region().koreanName() + " · §e" + phase
                 + " §7· 적 " + result.spawned() + "체가 현장에 투입되었습니다."
                 + (result.contentSpawned() > 0 ? " §b· 외부 이변 개체 1체 포함" : "")
