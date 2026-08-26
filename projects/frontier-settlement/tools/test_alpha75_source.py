@@ -9,6 +9,12 @@ def legacy_read(self, *args, **kwargs):
     s = _real_read(self, *args, **kwargs)
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.75', 'mod_version=0.1.0-alpha.74')
+    elif self.name == 'SettlementExplorationBenefitService.java':
+        s = s.replace(
+            'return SettlementOutpostService.STONE_COST\n'
+            '                - conquestLevel(data) * OUTPOST_STONE_DISCOUNT_PER_CONQUEST\n'
+            '                - fortifiedKnowledge(data) * OUTPOST_STONE_DISCOUNT_PER_FORTIFIED;',
+            'return SettlementOutpostService.STONE_COST - conquestLevel(data) * OUTPOST_STONE_DISCOUNT_PER_CONQUEST;')
     return s
 
 Path.read_text = legacy_read
