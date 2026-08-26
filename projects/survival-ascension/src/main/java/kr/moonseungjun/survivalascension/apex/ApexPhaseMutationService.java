@@ -49,11 +49,12 @@ public final class ApexPhaseMutationService {
 
         ApexArchetype archetype = archetypeOf(boss);
         if (archetype == null) return;
-        double healthRatio = boss.getHealth() / Math.max(1.0F, boss.getMaxHealth());
+        double projectedHealth = Math.max(0.0D, boss.getHealth() - event.getAmount());
+        double healthRatio = projectedHealth / Math.max(1.0F, boss.getMaxHealth());
 
-        // A very large hit can skip directly below both thresholds. In that case both phase
-        // mutations are deliberately installed before the next damage application instead of
-        // permanently losing the first half of the encounter's kit.
+        // Evaluate the post-hit health projection while the incoming hit is still mutable. This
+        // makes a threshold-crossing hit trigger its phase immediately instead of one hit late.
+        // A very large hit can cross both thresholds at once, so both mutations are installed.
         if (healthRatio <= 0.32D && !boss.getPersistentData().getBooleanOr(PHASE_TWO_KEY, false)) {
             if (!boss.getPersistentData().getBooleanOr(PHASE_ONE_KEY, false)) triggerPhaseOne(level, boss, archetype);
             triggerPhaseTwo(level, boss, archetype);
