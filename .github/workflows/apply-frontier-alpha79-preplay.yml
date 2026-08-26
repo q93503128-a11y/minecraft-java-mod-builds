@@ -31,6 +31,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch origin main
           git reset --hard origin/main
+          python3 .github/scripts/frontier-alpha79-fix-apply.py
           python3 .github/scripts/frontier-alpha79-apply.py
           cd projects/frontier-settlement
           python3 tools/test_alpha79_source.py
