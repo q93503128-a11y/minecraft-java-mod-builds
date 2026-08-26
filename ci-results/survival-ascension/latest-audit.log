@@ -1,6 +1,5 @@
-RELEASE SOURCE AUDIT FAIL
-- release version drifted: expected 0.59.0-alpha.1, got 0.59.1-alpha.1
-- 0.52 runtime banner missing: VERSION = "0.59.0-alpha.1"
-- 0.53 shield event wiring missing: VERSION = "0.59.0-alpha.1"
-- 0.54 runtime banner missing: VERSION = "0.59.0-alpha.1"
-RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.59 identity
+SOURCE AUDIT FAIL
+- toolchain missing: mod_version=0.59.0-alpha.1
+- main missing: VERSION = "0.59.0-alpha.1"
+RELEASE SOURCE AUDIT FAIL: baseline regression contract failed
+RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.59.1 runtime identity
