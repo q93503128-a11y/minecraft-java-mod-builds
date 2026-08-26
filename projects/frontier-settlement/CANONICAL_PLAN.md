@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.74**.
+Current canonical implementation: **0.1.0-alpha.78**.
 
 ## 1. Product identity
 
@@ -976,3 +976,18 @@ Real-play observations override assumptions. Fix root causes before adding more 
 - Each level extends loaded barracks hostile detection by 4 blocks, from 28 to at most 40, so unfamiliar companion threats become a concrete reason to explore and fight before expanding the garrison.
 - Detection is namespace/class-generic and references no Variants & Ventures Java class or item. Optional companion absence remains boot-safe.
 - This is the next gameplay-feedback link after Alpha.73: external combat knowledge -> cheaper/more capable settlement defense -> safer outward expansion.
+
+
+### Alpha.78 territory-network physical freight efficiency
+
+- gate: `DOMAIN` + completed cart station + the existing diversified productive-outpost network level;
+- normal productive outpost -> town pickup batch: network Lv.0/1/2/3 = **32/36/40/44**, hard cap 44;
+- no cart station: historical 16-item normal batch remains unchanged;
+- military and waterfront reverse supply keep the historical 16/32 `transportBatchSize` and existing priority order;
+- only `SettlementOutpostLogisticsService` remains long-distance transport authority and transport workers remain assigned to one outpost;
+- pickup removes real ItemStacks from the physical outpost stockpile, MAINHAND carries them over the persisted road, and delivery inserts into real town storage;
+- unloaded route boundaries still pause movement; no chunk force-load or logistics teleport is introduced;
+- Alpha.42 deferred logistics may double one later real pickup but remains capped at 64 and never stores virtual cargo;
+- no save field, currency, menu, worker, free resource generation, hard companion class dependency or second logistics authority is introduced.
+
+Runtime acceptance for route unload/reload, transporter-death cargo recovery, save/reload and long two-player sessions remains unfinished.

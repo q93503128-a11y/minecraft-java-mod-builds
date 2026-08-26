@@ -2,7 +2,7 @@
 
 The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
-Current implementation delta: **0.1.0-alpha.77**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
+Current implementation delta: **0.1.0-alpha.78**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
 
 Non-negotiable summary:
 
@@ -27,3 +27,8 @@ Alpha.76 deepens the exploration -> territory loop without a new menu, building 
 Alpha.77 makes the DOMAIN stage care about a diversified physical territory instead of raw outpost count alone. Distinct productive outpost roles among lumber, agriculture, quarry and mining create a capped territory-network level: two different roles -> level 1, three -> level 2, four -> level 3. Repeating the same specialization never raises the level. The level strengthens only existing town services: market relic payout gains +1 emerald per level, one-metal workshop repair gains +8 durability per level, and advanced forge/reforge selection power gains +1 per level. The underlying market goods, metal, relics, weapons, outpost production and transport remain real ItemStacks; no research currency, virtual cargo, new menu, worker family or second logistics authority is created.
 
 Always validate actual Minecraft presentation: no floating roofs/foundations, no unsafe block destruction or loose-drop preparation, proper windows/lighting, readable worker movement, and no magical instant-building feel.
+
+
+### Alpha.78 territory-network physical freight efficiency
+
+Alpha.78 turns the Alpha.77 territory-network level into a small physical logistics payoff without adding another logistics system. With DOMAIN + a completed cart station, normal productive outpost -> town pickups use 32 / 36 / 40 / 44 items at territory-network levels 0 / 1 / 2 / 3. The cap is 44, so four-way specialization adds at most +12 over the existing cart-station batch. Military food/metal/weapon reverse supply and waterfront wood reverse supply still call the historical 16/32 `transportBatchSize`, and priority remains military first, waterfront second, normal freight last. The source ItemStack still leaves the real outpost stockpile, stays in the outpost-assigned transporter's MAINHAND, follows the persisted road, pauses at unloaded route boundaries and is inserted into real town storage. Alpha.42 deferred logistics may still enlarge one later real pickup, capped at 64; it does not become virtual cargo. No new save authority, logistics menu, transport worker class, teleport, force-load or free-resource path is added.

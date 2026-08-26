@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.74
+## Current version: 0.1.0-alpha.78
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -516,3 +516,8 @@ Automated validation does not replace final real Minecraft acceptance. Important
 ## Alpha.74 — external-threat field knowledge gameplay pass
 
 External hostile variants now feed settlement defense without a new currency or management screen. The first direct player kill of each distinct non-vanilla hostile type becomes bounded field knowledge (max level 3). Bosses remain conquest targets instead of being double-counted. Each field-knowledge level cuts barracks recruitment food by 1 real unit (8 -> minimum 5, metal stays 2) and expands the loaded garrison threat radius by 4 blocks (28 -> maximum 40). The logic is registry/class-generic, so Variants & Ventures and future compatible hostile-mob companions work without Frontier linking against their Java classes.
+
+
+## Alpha.78 — territory-network physical freight efficiency
+
+A diversified DOMAIN now makes the existing cart station slightly better at the physical job it already performs. Normal productive outpost-to-town pickup caps are 32 / 36 / 40 / 44 at territory-network levels 0 / 1 / 2 / 3. Military and waterfront reverse supply stay on the historical 16/32 cap and retain their priority over normal freight. No cargo is virtualized: the same outpost-assigned transporter removes real ItemStacks from the outpost stockpile, carries them in MAINHAND over the persisted road, pauses at unloaded route boundaries and deposits them into real settlement storage. Alpha.42 deferred credit can still enlarge one later real pickup up to 64; it never becomes stored cargo.

@@ -45,6 +45,8 @@ public final class SettlementOutpostLogisticsService {
     private static final String LEGACY_TRANSPORT_WORKER_NAME = "운송 주민";
     private static final int BASE_TRANSPORT_STACK = 16;
     private static final int CART_STATION_TRANSPORT_STACK = 32;
+    private static final int TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL = 4;
+    private static final int MAX_PRODUCTIVE_TRANSPORT_STACK = 44;
     private static final int ROAD_WAYPOINT_STRIDE = 3;
     private static final double ROAD_JOIN_RANGE_SQR = 25.0D;
     private static final double ENDPOINT_RANGE_SQR = 16.0D;
@@ -82,6 +84,18 @@ public final class SettlementOutpostLogisticsService {
         return data.buildingCount(BuildingType.CART_STATION) > 0
                 ? CART_STATION_TRANSPORT_STACK
                 : BASE_TRANSPORT_STACK;
+    }
+
+    /**
+     * Normal productive outpost -> town freight only. A completed cart station is still required,
+     * while diversified DOMAIN territory raises only this physical pickup cap from 32 to at most 44.
+     * Military/waterfront reverse supply deliberately remains on transportBatchSize(data).
+     */
+    public static int productiveTransportBatchSize(SettlementData data) {
+        if (data.buildingCount(BuildingType.CART_STATION) <= 0) return BASE_TRANSPORT_STACK;
+        int networkLevel = SettlementExplorationBenefitService.territoryNetworkLevel(data);
+        return Math.min(MAX_PRODUCTIVE_TRANSPORT_STACK, CART_STATION_TRANSPORT_STACK
+                + networkLevel * TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL);
     }
 
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
@@ -322,7 +336,7 @@ public final class SettlementOutpostLogisticsService {
                 return;
             }
             if (!(level.getBlockEntity(stock) instanceof Container container)) return;
-            int normalBatch = transportBatchSize(data);
+            int normalBatch = productiveTransportBatchSize(data);
             int adjustedBatch = SettlementDeferredOutpostService.adjustedTransportBatch(
                     level.getServer(), outpost, normalBatch);
             ItemStack picked = takeFirstTransportStack(container, outpost, adjustedBatch);

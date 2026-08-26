@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.74`
+현재 구현 기준: `0.1.0-alpha.78`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -662,3 +662,15 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - 병영의 로드된 적 탐지 반경은 28 -> 32 -> 36 -> 최대 40블록으로 늘어난다.
 - V&V 같은 외부 적대몹을 잡는 행동이 단순 변종 감상이 아니라 정착지 군사 성장으로 되돌아오며, companion class hard dependency는 없다.
 - 남은 검증: 사람 클라이언트에서 실제 스폰 밀도/전투 빈도/체감 밸런스는 문승준 실플레이 영역이다.
+
+
+### Alpha.78 영지망 물리 물류 효율 패스
+
+- `DOMAIN` + cart station + 서로 다른 생산 전문 전초 조합을 기존 Alpha.77 영지망 레벨로 재사용;
+- 일반 생산물 전초 -> 본진 회수만 Lv.0/1/2/3에서 32/36/40/44, 최대 44;
+- cart station이 없으면 기존 16 유지;
+- 군사 food/metal/외부무기 및 수변 wood 역보급은 기존 16/32 상한과 우선순위를 그대로 유지;
+- real outpost stockpile -> assigned transporter MAINHAND -> persisted road -> real town storage 권위 유지;
+- route unload에서는 정지하며 force-load/teleport/virtual cargo/free resource/두 번째 운송자 시스템 없음;
+- Alpha.42 backlog는 다음 실제 픽업만 최대 64까지 보정하며 화물 장부가 아님;
+- 장시간 2인, route unload/reload, 운송자 사망 화물 회수, save/reload 실제 acceptance는 여전히 남음.
