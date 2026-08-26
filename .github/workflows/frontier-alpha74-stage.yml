@@ -38,6 +38,20 @@ jobs:
       - name: Repair Alpha.74 historical audit view
         working-directory: ${{ env.PROJECT_DIR }}
         run: python3 tools/fix_alpha74_audit_temp.py
+      - name: Repair Alpha.74 generated docs audit
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/test_alpha74_docs.py')
+          s = p.read_text(encoding='utf-8')
+          bad = "notes='" + chr(10) + "'.join(lock.get('notes',[]));"
+          good = "notes='" + chr(92) + "n'.join(lock.get('notes',[]));"
+          if s.count(bad) != 1:
+              raise SystemExit(f'expected one malformed docs-audit newline, got {s.count(bad)}')
+          p.write_text(s.replace(bad, good, 1), encoding='utf-8')
+          print('Alpha.74 generated docs audit repaired')
+          PY
       - name: Alpha.74 cumulative source audit
         working-directory: ${{ env.PROJECT_DIR }}
         run: python3 tools/test_alpha74_source.py
