@@ -6,15 +6,36 @@ from pathlib import Path
 
 if len(sys.argv) != 2:
     raise SystemExit('usage: verify_jar.py <jar>')
+
+ROOT = Path(__file__).resolve().parents[1]
 jar = Path(sys.argv[1]).resolve()
 if not jar.is_file():
     raise SystemExit(f'JAR not found: {jar}')
+
+
+def read_gradle_properties() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw in (ROOT / 'gradle.properties').read_text(encoding='utf-8').splitlines():
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+props = read_gradle_properties()
+for key in ('mod_id', 'mod_name', 'mod_version', 'neo_version', 'minecraft_version_range'):
+    if not props.get(key):
+        raise SystemExit(f'gradle.properties missing invariant: {key}')
+
 required = {
     'META-INF/neoforge.mods.toml',
     'kr/moonseungjun/frontiersettlement/FrontierSettlement.class',
     'kr/moonseungjun/frontiersettlement/content/FrontierContent.class',
     'kr/moonseungjun/frontiersettlement/content/PioneerMarkerItem.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementData.class',
+    'kr/moonseungjun/frontiersettlement/settlement/SettlementThreatKnowledgeData.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementGuidanceService.class',
     'kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.class',
@@ -57,6 +78,7 @@ required = {
     'assets/frontier_settlement/lang/ko_kr.json',
     'data/frontier_settlement/recipe/pioneer_marker.json',
 }
+
 with zipfile.ZipFile(jar) as zf:
     names = set(zf.namelist())
     missing = sorted(required - names)
@@ -64,22 +86,26 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit('JAR missing runtime entries: ' + ', '.join(missing))
     if any(name.endswith('.java') for name in names):
         raise SystemExit('runtime JAR unexpectedly contains Java source')
+
     metadata = zf.read('META-INF/neoforge.mods.toml').decode('utf-8')
     if '${' in metadata:
         raise SystemExit('NeoForge metadata contains unresolved Gradle placeholders')
-    for token in (
+
+    expected_tokens = (
         'modLoader="javafml"',
-        'modId="frontier_settlement"',
-        'version="0.1.0-alpha.74"',
-        'displayName="Frontier Settlement"',
+        f'modId="{props["mod_id"]}"',
+        f'version="{props["mod_version"]}"',
+        f'displayName="{props["mod_name"]}"',
         'javaVersion="[25,)"',
         'modId="neoforge"',
-        'versionRange="[26.2.0.38-beta,26.3.0)"',
+        f'versionRange="[{props["neo_version"]},26.3.0)"',
         'modId="minecraft"',
-        'versionRange="[26.2,26.3)"',
-    ):
+        f'versionRange="{props["minecraft_version_range"]}"',
+    )
+    for token in expected_tokens:
         if token not in metadata:
             raise SystemExit(f'NeoForge metadata missing invariant: {token}')
+
 sha = hashlib.sha256(jar.read_bytes()).hexdigest()
 jar.with_suffix(jar.suffix + '.sha256').write_text(f'{sha}  {jar.name}\n', encoding='utf-8')
 print(f'Frontier Settlement JAR verify: PASS\nSHA-256: {sha}')
