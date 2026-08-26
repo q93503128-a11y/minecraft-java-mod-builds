@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +11,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.81', 'mod_version=0.1.0-alpha.80')
         s = s.replace(', plus Alpha.81 first-run UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and Korean companion language overlays.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.81"', '"frontier_settlement": "0.1.0-alpha.80"')
     return s
 
 Path.read_text = legacy_read
@@ -29,7 +32,17 @@ def must(src, tokens, label):
 
 props = text('gradle.properties')
 note = text('UI_AND_KOREAN_ALPHA81.md')
+lock = json.loads(text('COMPANION_LOCK.json'))
 must(props, ('mod_version=0.1.0-alpha.81', 'Alpha.81 first-run UI', 'Korean companion language overlays'), 'alpha.81 props docs')
+if lock.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('alpha.81 docs lock status drifted')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.81':
+    raise SystemExit('alpha.81 docs lock target drifted')
+notes = lock.get('notes', [])
+if not any('Alpha.81 keeps the Alpha.80 candidate binary pins unchanged' in value for value in notes):
+    raise SystemExit('alpha.81 docs lock rationale missing')
+if not any('No companion code/assets are copied into Frontier' in value for value in notes):
+    raise SystemExit('alpha.81 docs lock copy/dependency boundary missing')
 must(note, (
     '0.1.0-alpha.81',
     'YACL',
