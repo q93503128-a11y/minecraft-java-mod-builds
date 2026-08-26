@@ -21,7 +21,7 @@ permissions:
 
 concurrency:
   group: frontier-companion-server-preflight-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PROJECT_DIR: projects/frontier-settlement
@@ -191,6 +191,7 @@ jobs:
           expanded['binary_resolution_verified'] = True
           expanded['binary_resolution_source_sha'] = client['resolution']['source_sha']
           expanded['dedicated_server_preflight_verified'] = True
+          expanded['preflight_frontier_version'] = os.environ['MOD_VERSION']
           expanded['preflight_run_id'] = int(os.environ['PREFLIGHT_RUN_ID'])
           expanded['preflight_source_sha'] = os.environ['PREFLIGHT_SOURCE_SHA']
           expanded['server_payload_jars_including_frontier'] = 16
