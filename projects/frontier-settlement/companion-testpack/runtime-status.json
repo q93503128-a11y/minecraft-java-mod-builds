@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "status": "expanded_fresh_world_server_smoke_pass",
+  "status": "expanded_dedicated_server_pre_eula_pass",
   "frontier": {
-    "version": "0.1.0-alpha.74",
-    "jar_sha256": "ce648c08f12461254af87a56f8ff25b1d5ba22d2cf2bf015a503759ac23d1783"
+    "version": "0.1.0-alpha.78",
+    "jar_sha256": "6df039c41c23a2cff42ef13acd70d76d66150ad51adfc8f6902f98a9ef5f4cee"
   },
   "minecraft": "26.2",
   "neoforge": "26.2.0.38-beta",
@@ -28,8 +28,8 @@
     "binary_resolution_verified": true,
     "dedicated_server_preflight_verified": true,
     "binary_resolution_source_sha": "0b59a47a900f78af0d92d707b2230023565dce51",
-    "preflight_run_id": 32926441937,
-    "preflight_source_sha": "2d4abac94b8bf2bb5c02861eeff8f0b3f454b759",
+    "preflight_run_id": 32932864032,
+    "preflight_source_sha": "cae20601d4e0fe05a07be96d2c3d7849f7d12d73",
     "server_payload_jars_including_frontier": 16,
     "conclusion": "success",
     "ci_eula_accepted": true,
@@ -38,7 +38,7 @@
     "fresh_world_source_sha": "becbe3abfdb3f6a8bc55f59b625fa946484f46c5",
     "fresh_world_conclusion": "success",
     "fresh_world_server_payload_jars_including_frontier": 16,
-    "preflight_frontier_version": "0.1.0-alpha.74",
+    "preflight_frontier_version": "0.1.0-alpha.78",
     "fresh_world_frontier_version": "0.1.0-alpha.74"
   }
 }
