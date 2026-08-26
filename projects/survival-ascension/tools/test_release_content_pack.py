@@ -58,6 +58,9 @@ apex2 = read("src/main/resources/data/survivalascension/tags/entity_type/apex_es
 exp2 = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_reinforcements_tier_2.json")
 resonance = read("src/main/resources/data/survivalascension/tags/item/expedition_resonance_rewards.json")
 amethyst_ko = read("src/main/resources/assets/amethyst_resonance/lang/ko_kr.json")
+tbos_ko = read("src/main/resources/assets/tbos/lang/ko_kr.json")
+bop_ko = read("src/main/resources/assets/biomesoplenty/lang/ko_kr.json")
+terrablender_ko = read("src/main/resources/assets/terrablender/lang/ko_kr.json")
 lock = read("modpack/content-lock.json")
 
 need(lock, [f'"version": "{CURRENT_LOCK_VERSION}"', '"The Birth of Steve"', '"Amethyst Resonance"', '"Biomes O\' Plenty"'],
@@ -95,6 +98,7 @@ need(resonance, [
 ], "0.59.1 Resonance reward pool")
 need(compat, ["randomIncidentReinforcementId", "resonanceOperationRewardIds", "[content-census]" if False else "censusLines"],
      "0.59.1 runtime registry/tag compatibility")
+
 need(amethyst_ko, [
     '"item.amethyst_resonance.resonant_crystal": "공명 수정"',
     '"item.amethyst_resonance.resonant_sword": "공명 검"',
@@ -112,13 +116,37 @@ need(amethyst_ko, [
     '"tooltip.amethyst_resonance.tool": "수정 계열 블록과 공명해 채굴 효율이 높아집니다"',
     '"tooltip.amethyst_resonance.silent_mining": "채굴해도 스컬크를 자극하지 않습니다"',
     '"tooltip.amethyst_resonance.infused": "공명 주입됨 ✦"',
-    '"text.autoconfig.amethyst_resonance.option.vibrationDampening": "진동 억제 (스컬크 센서)"',
-    '"text.autoconfig.amethyst_resonance.option.crystalAffinity": "수정 친화 (추가 조각)"',
-    '"text.autoconfig.amethyst_resonance.option.resonanceInfusion": "공명 주입 (대장장이 작업)"',
-    '"item.amethyst_resonance.resonance_upgrade_smithing_template": "공명 강화 대장장이 형판"',
-    '"item.amethyst_resonance.smithing_template.applies_to": "모든 방어구"',
-    '"item.amethyst_resonance.smithing_template.ingredients": "공명 수정"'
+    '"item.amethyst_resonance.resonance_upgrade_smithing_template": "공명 강화 대장장이 형판"'
 ], "0.59.1 Amethyst Resonance Korean localization")
+
+need(tbos_ko, [
+    '"itemGroup.tbos.yesterglass": "스티브의 탄생"',
+    '"block.tbos.archive_stone": "기록보관소 석재"',
+    '"block.tbos.yesterglass": "예스터글라스"',
+    '"block.tbos.cantor_gate": "기록보관소 보스 관문"',
+    '"item.tbos.cracked_yesterglass_lens": "금 간 예스터글라스 렌즈"',
+    '"item.tbos.archivists_journal": "기록관의 일지"',
+    '"item.tbos.memory_plate.tooltip": "기억 등불에 사용하면 이 장면을 불러옵니다. 기억 판은 소모되지 않습니다."',
+    '"entity.tbos.parallax_wraith": "시차 망령"',
+    '"entity.tbos.hour_cantor": "시간의 칸토르"',
+    '"entity.tbos.phoenix_guardian": "최후의 큐레이터"',
+    '"pickup.tbos.key": "기록보관소 열쇠"',
+    '"boss.tbos.last_curator.title": "최후의 큐레이터"'
+], "0.59.1 TBS Korean inventory localization")
+
+need(bop_ko, [
+    '"biome.biomesoplenty.subtropics": "아열대"',
+    '"block.biomesoplenty.chiseled_orpiment": "조각된 유황"',
+    '"block.biomesoplenty.sphalerite_bricks": "가열된 방해석 벽돌"',
+    '"tag.item.biomesoplenty.fir_logs": "전나무 원목"',
+    '"tag.item.biomesoplenty.redwood_logs": "삼나무 원목"',
+    '"tag.item.biomesoplenty.willow_logs": "버드나무 원목"'
+], "0.59.1 BOP Korean gap overlay")
+
+need(terrablender_ko, [
+    '"commands.terrablender.biomeparams.success": "생물군계 매개변수 정보를 생성했습니다."',
+    '"commands.terrablender.biomeparams.failed": "생물군계 매개변수 정보를 생성하지 못했습니다."'
+], "0.59.1 TerraBlender Korean overlay")
 
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
@@ -130,4 +158,7 @@ print("apex_optional_escort_replacement_bridge=PASS")
 print("expanded_tbs_expedition_pool=PASS")
 print("resonance_nine_slot_reward_pool=PASS")
 print("amethyst_resonance_korean_localization=PASS")
+print("tbos_inventory_korean_localization=PASS")
+print("biomesoplenty_korean_gap_overlay=PASS")
+print("terrablender_korean_command_overlay=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")
