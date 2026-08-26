@@ -21,7 +21,9 @@ import net.minecraft.world.item.Items;
  * assigned one. The renderer itself never creates or inserts economic equipment.
  */
 public final class FrontierSoldierRenderer extends HumanoidMobRenderer<FrontierSoldierEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
-    private static final ItemStack VISUAL_SERVICE_SWORD = new ItemStack(Items.IRON_SWORD);
+    // Do not construct registry-backed ItemStacks during class initialization. Minecraft 26.2 can load
+    // entity renderer classes while item components are still being bound during the resource reload.
+    private ItemStack visualServiceSword;
 
     public FrontierSoldierRenderer(EntityRendererProvider.Context context) {
         super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), 0.5F);
@@ -39,11 +41,12 @@ public final class FrontierSoldierRenderer extends HumanoidMobRenderer<FrontierS
         // Renderer rule: Never call entity.setItemSlot here; the server armory owns real equipment.
         ItemStack physicalWeapon = entity.getMainHandItem();
         if (physicalWeapon.isEmpty()) {
-            state.rightHandItemStack = VISUAL_SERVICE_SWORD;
+            ItemStack serviceSword = visualServiceSword();
+            state.rightHandItemStack = serviceSword;
             state.rightArmPose = HumanoidModel.ArmPose.ITEM;
             this.itemModelResolver.updateForLiving(
                     state.rightHandItemState,
-                    VISUAL_SERVICE_SWORD,
+                    serviceSword,
                     ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
                     entity);
         } else {
@@ -57,6 +60,15 @@ public final class FrontierSoldierRenderer extends HumanoidMobRenderer<FrontierS
         }
         int attackTicks = entity.getAttackAnimationTick();
         if (attackTicks > 0) state.attackTime = Math.max(state.attackTime, 1.0F - Math.min(1.0F, attackTicks / 10.0F));
+    }
+
+    private ItemStack visualServiceSword() {
+        if (visualServiceSword == null) {
+            // First real entity-render extraction occurs after registry/component bootstrap. This stack is
+            // presentation-only and is never inserted into the entity, world, inventory, or settlement economy.
+            visualServiceSword = new ItemStack(Items.IRON_SWORD);
+        }
+        return visualServiceSword;
     }
 
     @Override
