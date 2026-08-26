@@ -45,13 +45,52 @@ public final class SettlementInventory {
         return remaining;
     }
 
+    private static final int RESOURCE_WOOD = 1;
+    private static final int RESOURCE_STONE = 2;
+    private static final int RESOURCE_METAL = 4;
+    private static final int RESOURCE_FOOD = 8;
+
     public static boolean isWood(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_WOOD);
+    }
+
+    public static boolean isStone(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_STONE);
+    }
+
+    public static boolean isFood(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_FOOD);
+    }
+
+    /** Metal participates in the same exclusive physical-resource classification as wood/stone/food. */
+    public static boolean isMetalResource(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_METAL);
+    }
+
+    /**
+     * A physical stack may fund exactly one settlement resource ledger. Mis-tagged companion/datapack
+     * items that match several categories fail closed instead of being counted twice and then only
+     * partly removed. Expedition relics and recognized external weapons are never construction,
+     * recruitment or upkeep material even if an external datapack accidentally gives them a resource tag.
+     */
+    private static boolean exclusiveResource(ItemStack stack, int expected) {
+        if (stack.isEmpty() || stack.is(ExternalContentTags.EXPEDITION_RELICS)
+                || SettlementExternalContentService.isExternalWeapon(stack)) return false;
+        int mask = 0;
+        if (rawWood(stack)) mask |= RESOURCE_WOOD;
+        if (rawStone(stack)) mask |= RESOURCE_STONE;
+        if (rawMetal(stack)) mask |= RESOURCE_METAL;
+        if (rawFood(stack)) mask |= RESOURCE_FOOD;
+        return mask == expected;
+    }
+
+    private static boolean rawWood(ItemStack stack) {
         return stack.is(ItemTags.LOGS)
                 || stack.is(ItemTags.PLANKS)
                 || stack.is(ExternalContentTags.SETTLEMENT_WOOD);
     }
 
-    public static boolean isStone(ItemStack stack) {
+    private static boolean rawStone(ItemStack stack) {
         return stack.is(Items.STONE)
                 || stack.is(Items.COBBLESTONE)
                 || stack.is(Items.DEEPSLATE)
@@ -65,7 +104,19 @@ public final class SettlementInventory {
                 || stack.is(ExternalContentTags.SETTLEMENT_STONE);
     }
 
-    public static boolean isFood(ItemStack stack) {
+    private static boolean rawMetal(ItemStack stack) {
+        return stack.is(Items.IRON_INGOT)
+                || stack.is(Items.RAW_IRON)
+                || stack.is(Items.COPPER_INGOT)
+                || stack.is(Items.RAW_COPPER)
+                || stack.is(Items.GOLD_INGOT)
+                || stack.is(Items.RAW_GOLD)
+                || stack.is(ExternalContentTags.C_INGOTS)
+                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
+                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
+    }
+
+    private static boolean rawFood(ItemStack stack) {
         if (stack.get(DataComponents.FOOD) != null) return true;
         // Settlement food represents staple reserves, not only items the player can eat directly.
         // Wheat is the important bridge: the starter farm can sustain population growth without

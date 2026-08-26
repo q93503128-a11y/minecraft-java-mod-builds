@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.78**.
+Current canonical implementation: **0.1.0-alpha.79**.
 
 ## 1. Product identity
 
@@ -991,3 +991,15 @@ Real-play observations override assumptions. Fix root causes before adding more 
 - no save field, currency, menu, worker, free resource generation, hard companion class dependency or second logistics authority is introduced.
 
 Runtime acceptance for route unload/reload, transporter-death cargo recovery, save/reload and long two-player sessions remains unfinished.
+
+
+### Alpha.79 pre-playtest manual-audit hardening
+
+- new physical outpost construction must consume the exact material delta for a blueprint step even when the desired block already exists at that position;
+- legacy prepaid outpost save phases retain their historical no-second-charge behavior;
+- a physical ItemStack may satisfy exactly one of wood / stone / metal / food for settlement accounting; ambiguous cross-tagged stacks fail closed;
+- expedition relics and recognized external weapons never satisfy ordinary settlement resource predicates even if an external datapack cross-tags them;
+- the rule is centralized through existing inventory/storage predicates, so building, recruitment, workshop and local military costs share one physical authority;
+- no resource is minted, no virtual balance is added, no force-load/teleport path is added, and no companion Java class dependency is introduced.
+
+This pass is a manual source hardening pass. Long two-player sessions, simultaneous request timing under a real client, reconnect/save-reload, transporter death/recovery and route chunk unload/reload remain runtime acceptance work.

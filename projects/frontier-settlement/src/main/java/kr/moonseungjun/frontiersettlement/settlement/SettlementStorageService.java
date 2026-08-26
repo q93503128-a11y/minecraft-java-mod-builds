@@ -203,6 +203,7 @@ public final class SettlementStorageService {
     }
 
     public static boolean isMetalStack(ItemStack stack) {
+        if (!SettlementInventory.isMetalResource(stack)) return false;
         return stack.is(Items.IRON_INGOT)
                 || stack.is(Items.RAW_IRON)
                 || stack.is(Items.COPPER_INGOT)

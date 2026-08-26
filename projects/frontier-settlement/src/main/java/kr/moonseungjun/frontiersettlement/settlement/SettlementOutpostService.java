@@ -260,11 +260,8 @@ public final class SettlementOutpostService {
         if (level.getGameTime() % WORK_INTERVAL_TICKS != 0L) return false;
 
         BlockState current = level.getBlockState(placement.pos());
-        if (current.is(placement.state().getBlock())) {
-            data.advanceOutpostConstruction();
-            return false;
-        }
-        if (!canReplaceForBlueprint(level, placement.pos(), current)) {
+        boolean alreadyPlaced = current.is(placement.state().getBlock());
+        if (!alreadyPlaced && !canReplaceForBlueprint(level, placement.pos(), current)) {
             builder.getNavigation().stop();
             return false;
         }
@@ -287,6 +284,15 @@ public final class SettlementOutpostService {
         }
 
         if (predicate != null && !ensureBuildMaterial(server, data, builder, predicate, requiredNow, remainingCost)) {
+            return false;
+        }
+
+        // A matching player-preplaced block is useful physical work, but it is not free settlement
+        // material. New physical outpost projects still consume this blueprint step's exact share.
+        // Pre-Alpha.26 legacy prepaid projects never enter this branch and remain migration-safe.
+        if (alreadyPlaced) {
+            if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) return false;
+            data.advanceOutpostConstruction();
             return false;
         }
 

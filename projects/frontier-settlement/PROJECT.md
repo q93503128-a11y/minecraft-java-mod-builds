@@ -2,7 +2,7 @@
 
 The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
-Current implementation delta: **0.1.0-alpha.78**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
+Current implementation delta: **0.1.0-alpha.79**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
 
 Non-negotiable summary:
 
@@ -32,3 +32,8 @@ Always validate actual Minecraft presentation: no floating roofs/foundations, no
 ### Alpha.78 territory-network physical freight efficiency
 
 Alpha.78 turns the Alpha.77 territory-network level into a small physical logistics payoff without adding another logistics system. With DOMAIN + a completed cart station, normal productive outpost -> town pickups use 32 / 36 / 40 / 44 items at territory-network levels 0 / 1 / 2 / 3. The cap is 44, so four-way specialization adds at most +12 over the existing cart-station batch. Military food/metal/weapon reverse supply and waterfront wood reverse supply still call the historical 16/32 `transportBatchSize`, and priority remains military first, waterfront second, normal freight last. The source ItemStack still leaves the real outpost stockpile, stays in the outpost-assigned transporter's MAINHAND, follows the persisted road, pauses at unloaded route boundaries and is inserted into real town storage. Alpha.42 deferred logistics may still enlarge one later real pickup, capped at 64; it does not become virtual cargo. No new save authority, logistics menu, transport worker class, teleport, force-load or free-resource path is added.
+
+
+### Alpha.79 pre-playtest manual-audit hardening
+
+A full manual source pass before the next real client test found two resource-authority edge cases and closes both without adding gameplay scope. New physical outpost construction no longer advances a matching pre-placed blueprint block for free: the builder must still fetch and consume that step's exact wood/stone share, while old prepaid save phases remain untouched. Settlement resource classification is now fail-closed across wood/stone/metal/food: one ItemStack can fund exactly one category, while expedition relics and recognized external weapons can never be consumed as ordinary settlement material even if a companion/datapack accidentally cross-tags them. This also closes the same cross-tag edge in recruitment, workshop upkeep and every shared-storage cost path. No new virtual ledger, menu, worker, chunk loading or companion class dependency is introduced. Real multiplayer/save/reload/transporter-death/route-unload acceptance remains a playtest requirement, not something this source audit claims to prove.

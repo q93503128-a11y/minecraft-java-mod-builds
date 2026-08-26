@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.78
+## Current version: 0.1.0-alpha.79
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -521,3 +521,8 @@ External hostile variants now feed settlement defense without a new currency or 
 ## Alpha.78 — territory-network physical freight efficiency
 
 A diversified DOMAIN now makes the existing cart station slightly better at the physical job it already performs. Normal productive outpost-to-town pickup caps are 32 / 36 / 40 / 44 at territory-network levels 0 / 1 / 2 / 3. Military and waterfront reverse supply stay on the historical 16/32 cap and retain their priority over normal freight. No cargo is virtualized: the same outpost-assigned transporter removes real ItemStacks from the outpost stockpile, carries them in MAINHAND over the persisted road, pauses at unloaded route boundaries and deposits them into real settlement storage. Alpha.42 deferred credit can still enlarge one later real pickup up to 64; it never becomes stored cargo.
+
+
+## Alpha.79 — pre-playtest manual-audit hardening
+
+Before the next real client test, the resident/logistics/construction/storage/network/save paths were manually reread rather than relying on CI alone. Matching pre-placed blocks can no longer skip a new outpost blueprint material step, and ambiguous companion resource tags fail closed so one real ItemStack cannot be counted toward multiple settlement resource categories. Expedition relics and recognized external weapons are explicitly excluded from ordinary material accounting. No new gameplay system or virtual authority is added.

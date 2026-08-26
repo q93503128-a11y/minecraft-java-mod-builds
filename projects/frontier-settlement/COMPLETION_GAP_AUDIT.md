@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.78`
+현재 구현 기준: `0.1.0-alpha.79`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -674,3 +674,13 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - route unload에서는 정지하며 force-load/teleport/virtual cargo/free resource/두 번째 운송자 시스템 없음;
 - Alpha.42 backlog는 다음 실제 픽업만 최대 64까지 보정하며 화물 장부가 아님;
 - 장시간 2인, route unload/reload, 운송자 사망 화물 회수, save/reload 실제 acceptance는 여전히 남음.
+
+
+### Alpha.79 테스트 전 전체 수동검사 하드닝
+
+- 신규 전초 청사진 위치에 같은 블록을 미리 놓아 단계 비용을 건너뛰던 경로를 차단: 동일 블록이어도 해당 단계의 실제 목재/석재 몫을 운반·소비한 뒤에만 진행;
+- 과거 prepaid 전초 공사 save는 재과금하지 않음;
+- wood/stone/metal/food가 겹치게 태그된 외부 ItemStack은 모든 일반 자원 판정에서 fail-closed;
+- expedition relic/recognized external weapon은 잘못된 외부 태그가 붙어도 건설·모집·수리 재료로 소모하지 않음;
+- 주민 replacement, MAINHAND cargo, shared-project race, client cache reset, save phase codec, 도로/토목 rollback, force-load/teleport 부재를 수동 재검토;
+- 실제 장시간 2인, reconnect, save/reload, 운송자 사망, route unload/reload 등의 실플레이 acceptance는 여전히 별도 검증 필요.

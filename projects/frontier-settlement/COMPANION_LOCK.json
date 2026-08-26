@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.78"
+    "frontier_settlement": "0.1.0-alpha.79"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -46,7 +46,8 @@
     "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion.",
     "Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; fresh binary resolution and repeated dedicated-server preflight are required before any expanded-stack runtime claim.",
     "Alpha.74 adds bounded first-kill external-hostile field knowledge: up to 3 levels lower real barracks recruitment food from 8 to a floor of 5 and extend loaded garrison threat detection from 28 to 40 blocks. The knowledge ledger owns no items/currency/population/logistics, references no companion classes, and does not promote human client/spawn-density acceptance.",
-    "Alpha.78 reuses the existing DOMAIN territory-network level only to raise normal cart-station productive outpost-to-town physical pickup batches from 32 to at most 44. Military/waterfront reverse supply keeps the historical 16/32 cap and priority, while the same outpost-assigned transporter still extracts real stockpile ItemStacks, carries them in MAINHAND over loaded persisted roads and inserts them into real town storage; no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency is added."
+    "Alpha.78 reuses the existing DOMAIN territory-network level only to raise normal cart-station productive outpost-to-town physical pickup batches from 32 to at most 44. Military/waterfront reverse supply keeps the historical 16/32 cap and priority, while the same outpost-assigned transporter still extracts real stockpile ItemStacks, carries them in MAINHAND over loaded persisted roads and inserts them into real town storage; no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency is added.",
+    "Alpha.79 pre-playtest hardening keeps companion integration soft while making resource tags fail closed: one physical stack may satisfy exactly one wood/stone/metal/food category, and expedition relics/recognized external weapons are never ordinary settlement material. Matching pre-placed blocks in new physical outpost projects still pay the exact blueprint material delta; legacy prepaid saves remain untouched."
   ],
   "entries": [
     {
