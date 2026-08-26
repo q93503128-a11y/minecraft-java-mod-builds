@@ -39,10 +39,6 @@ legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_VERSION = "0.58.0-alpha.1"', f'REQUIRED_VERSION = "{CURRENT_VERSION}"')
 legacy = legacy.replace(r'VERSION = \"0.58.0-alpha.1\"', rf'VERSION = \"{CURRENT_VERSION}\"')
 legacy = legacy.replace('Mod version: `0.58.0-alpha.1`', f'Mod version: `{PREVIOUS_DOC_VERSION}`')
-legacy = legacy.replace(
-    'baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)',
-    f'baseline = baseline.replace(BASELINE_VERSION, "{PREVIOUS_DOC_VERSION}")'
-)
 namespace = {"__file__": str(legacy_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
