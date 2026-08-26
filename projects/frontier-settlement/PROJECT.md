@@ -1,6 +1,6 @@
 # Frontier Settlement — canonical direction
 
-The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file and the current `main` source before continuing development.
+The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
 Non-negotiable summary:
 
