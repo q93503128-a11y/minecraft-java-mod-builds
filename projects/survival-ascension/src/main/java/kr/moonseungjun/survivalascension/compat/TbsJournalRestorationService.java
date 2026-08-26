@@ -21,7 +21,6 @@ import java.util.UUID;
  */
 public final class TbsJournalRestorationService {
     private static final Identifier TBS_ARCHIVISTS_JOURNAL = Identifier.fromNamespaceAndPath("tbos", "archivists_journal");
-    private static final String RESTORED_TAG = "survivalascension.tbs_journal_restored_v1";
     private static final int RESTORE_DELAY_TICKS = 80;
     private static final Map<UUID, Long> READY_AT = new HashMap<>();
 
@@ -29,8 +28,9 @@ public final class TbsJournalRestorationService {
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!ModList.get().isLoaded("tbos") || player.getTags().contains(RESTORED_TAG)) return;
+        if (!ModList.get().isLoaded("tbos")) return;
         if (!ExpeditionData.get(player).tbsJournalGuardChecked(player)) return;
+        if (TbsJournalRestorationData.get(player).isRestored(player)) return;
         READY_AT.put(player.getUUID(), player.level().getGameTime() + RESTORE_DELAY_TICKS);
     }
 
@@ -44,8 +44,10 @@ public final class TbsJournalRestorationService {
         if (ready == null || player.level().getGameTime() < ready) return;
         READY_AT.remove(player.getUUID());
 
-        if (!ModList.get().isLoaded("tbos") || player.getTags().contains(RESTORED_TAG)) return;
+        if (!ModList.get().isLoaded("tbos")) return;
         if (!ExpeditionData.get(player).tbsJournalGuardChecked(player)) return;
+        TbsJournalRestorationData migration = TbsJournalRestorationData.get(player);
+        if (migration.isRestored(player)) return;
 
         if (!hasJournal(player)) {
             Item item = BuiltInRegistries.ITEM.getValue(TBS_ARCHIVISTS_JOURNAL);
@@ -56,7 +58,7 @@ public final class TbsJournalRestorationService {
             }
             player.sendSystemMessage(Component.literal("[Survival Ascension] 기존 버전에서 제거되었던 기록관의 일지를 복구했습니다."));
         }
-        player.addTag(RESTORED_TAG);
+        migration.markRestored(player);
     }
 
     private static boolean hasJournal(ServerPlayer player) {

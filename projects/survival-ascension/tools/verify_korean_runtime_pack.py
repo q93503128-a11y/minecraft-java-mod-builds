@@ -26,12 +26,16 @@ with zipfile.ZipFile(jar) as zf:
             raise SystemExit(f"Korean runtime pack registration token missing: {token!r}")
 
     restore_class = "kr/moonseungjun/survivalascension/compat/TbsJournalRestorationService.class"
-    if restore_class not in names:
-        raise SystemExit(f"TBS journal restoration class missing: {restore_class}")
+    restore_data_class = "kr/moonseungjun/survivalascension/compat/TbsJournalRestorationData.class"
+    for class_name in [restore_class, restore_data_class]:
+        if class_name not in names:
+            raise SystemExit(f"TBS journal restoration runtime class missing: {class_name}")
     restore_bytes = zf.read(restore_class)
-    for token in [b"tbos", b"archivists_journal", b"survivalascension.tbs_journal_restored_v1"]:
+    for token in [b"tbos", b"archivists_journal", b"TbsJournalRestorationData"]:
         if token not in restore_bytes:
             raise SystemExit(f"TBS journal restoration token missing: {token!r}")
+    if b"tbs_journal_restoration_v1" not in zf.read(restore_data_class):
+        raise SystemExit("TBS journal persistent migration key missing")
 
     for pack in [*TBOS_PACKS, MISC_PACK]:
         meta = f"{BASE}/{pack}/pack.mcmeta"
