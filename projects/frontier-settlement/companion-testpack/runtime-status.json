@@ -28,8 +28,8 @@
     "binary_resolution_verified": true,
     "dedicated_server_preflight_verified": true,
     "binary_resolution_source_sha": "0b59a47a900f78af0d92d707b2230023565dce51",
-    "preflight_run_id": 32925898935,
-    "preflight_source_sha": "6aa8b1815aeab146b05e4e98ca9e97f24918a0ea",
+    "preflight_run_id": 32926025048,
+    "preflight_source_sha": "410e5e2bf1c183998c217c53fe62c056818a2a04",
     "server_payload_jars_including_frontier": 16,
     "conclusion": "success",
     "ci_eula_accepted": true,
@@ -37,6 +37,7 @@
     "fresh_world_run_id": 32925934025,
     "fresh_world_source_sha": "39c895b13876c3b50c7a0fe4ec8e87cc64bf6e08",
     "fresh_world_conclusion": "success",
-    "fresh_world_server_payload_jars_including_frontier": 16
+    "fresh_world_server_payload_jars_including_frontier": 16,
+    "preflight_frontier_version": "0.1.0-alpha.74"
   }
 }
