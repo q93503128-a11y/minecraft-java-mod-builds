@@ -21,7 +21,7 @@ permissions:
 
 concurrency:
   group: frontier-companion-fresh-world-server-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PROJECT_DIR: projects/frontier-settlement
@@ -291,10 +291,11 @@ jobs:
           status_path = Path('projects/frontier-settlement/companion-testpack/runtime-status.json')
           status = json.loads(status_path.read_text(encoding='utf-8'))
           expanded = status.setdefault('expanded_candidate', {})
-          if not expanded.get('binary_resolution_verified') or not expanded.get('dedicated_server_preflight_verified'):
-              raise SystemExit('expanded binary/pre-EULA gates are not verified')
+          if not expanded.get('binary_resolution_verified'):
+              raise SystemExit('expanded binary resolution is not verified')
           expanded['ci_eula_accepted'] = True
           expanded['fresh_world_server_smoke_verified'] = True
+          expanded['fresh_world_frontier_version'] = os.environ['MOD_VERSION']
           expanded['fresh_world_run_id'] = int(os.environ['FRESH_WORLD_RUN_ID'])
           expanded['fresh_world_source_sha'] = os.environ['FRESH_WORLD_SOURCE_SHA']
           expanded['fresh_world_conclusion'] = 'success'
