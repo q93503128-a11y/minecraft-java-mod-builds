@@ -5,6 +5,7 @@ import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.combat.CombatProgression;
 import kr.moonseungjun.survivalascension.command.AscensionCommands;
 import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
+import kr.moonseungjun.survivalascension.compat.ApexContentRewardService;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.compat.ContentPackLootBridge;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
@@ -37,9 +38,9 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.59.0-alpha.1";
-    // 0.59: optional content is now present in Apex hunts, regional incidents and Deep-operation rewards;
-    // Combat Academy high mastery also converts sprint melee into a visible directional fracture lane.
+    public static final String VERSION = "0.59.1-alpha.1";
+    // 0.59.1 content pass: long-form operations gain two contested interdiction waves and
+    // Apex hunts that actually involve external escorts can return tagged Resonance gear.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -63,6 +64,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(ApexContentRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
@@ -104,6 +106,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: contested expedition operation interdiction waves + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: contested expedition operation interdiction waves + Apex external-escort Resonance trophies + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
