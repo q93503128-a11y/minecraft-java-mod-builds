@@ -62,28 +62,30 @@ public final class MobilityProgression {
         int level = SkillProgressData.get(player).level(player, SkillType.MOBILITY);
         if (level < 30) return;
         long now = player.level().getGameTime();
-        if (now < DASH_READY_TICK.getOrDefault(player.getUUID(), 0L)) return;
+        UUID uuid = player.getUUID();
+        if (now < DASH_READY_TICK.getOrDefault(uuid, 0L)) return;
 
         boolean airborne = !player.onGround();
+        int usedAirDashes = 0;
         if (airborne) {
             if (level < 60) return;
-            int used = AIR_DASH_COUNT.getOrDefault(player.getUUID(), 0);
+            usedAirDashes = AIR_DASH_COUNT.getOrDefault(uuid, 0);
             int allowed = maxAirDashes(player, level);
-            if (used >= allowed) return;
-            AIR_DASH_COUNT.put(player.getUUID(), used + 1);
+            if (usedAirDashes >= allowed) return;
         }
 
         Vec3 look = player.getLookAngle();
         Vec3 horizontal = new Vec3(look.x, 0.0D, look.z);
         if (horizontal.lengthSqr() < 1.0E-5D) return;
         horizontal = horizontal.normalize();
+        if (airborne) AIR_DASH_COUNT.put(uuid, usedAirDashes + 1);
         double power = SkillTuning.mobilityDashPower(level);
         double lift = airborne ? Math.max(0.04D, player.getDeltaMovement().y) : Math.max(0.10D, player.getDeltaMovement().y);
         Vec3 impulse = horizontal.scale(power);
         player.setDeltaMovement(impulse.x, lift, impulse.z);
         player.hurtMarked = true;
         player.resetFallDistance();
-        DASH_READY_TICK.put(player.getUUID(), now + SkillTuning.mobilityDashCooldownTicks(level));
+        DASH_READY_TICK.put(uuid, now + SkillTuning.mobilityDashCooldownTicks(level));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
         ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1);
     }

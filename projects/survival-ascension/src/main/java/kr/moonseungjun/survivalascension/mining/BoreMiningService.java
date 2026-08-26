@@ -83,7 +83,7 @@ public final class BoreMiningService {
             BoreJob job = JOBS.removeFirst();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(job.playerId);
             ServerLevel level = event.getServer().getLevel(job.dimension);
-            if (player == null || level == null || player.isSpectator()) {
+            if (player == null || level == null || player.isSpectator() || player.level() != level) {
                 removePending(job.playerId, job.targets.size());
                 continue;
             }

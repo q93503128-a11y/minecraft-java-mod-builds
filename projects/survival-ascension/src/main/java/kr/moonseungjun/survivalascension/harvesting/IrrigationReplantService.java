@@ -44,7 +44,7 @@ public final class IrrigationReplantService {
             ReplantJob job = JOBS.removeFirst();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(job.playerId);
             ServerLevel level = event.getServer().getLevel(job.dimension);
-            if (player == null || level == null || player.isSpectator()) continue;
+            if (player == null || level == null || player.isSpectator() || player.level() != level) continue;
             if (!InfrastructureData.get(player).isComplete(InfrastructureProject.IRRIGATION_WORKS)) continue;
             tryReplant(player, level, job.pos, job.kind);
         }
