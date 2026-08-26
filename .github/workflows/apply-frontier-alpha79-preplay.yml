@@ -1,0 +1,410 @@
+name: Apply Frontier Settlement Alpha.79 Pre-Playtest Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-frontier-alpha79-preplay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-settlement-alpha79-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Alpha.79 hardening on latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git reset --hard origin/main
+
+          python3 <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          sett = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+          props_path = root / 'gradle.properties'
+          project_path = root / 'PROJECT.md'
+          canonical_path = root / 'CANONICAL_PLAN.md'
+          gap_path = root / 'COMPLETION_GAP_AUDIT.md'
+          readme_path = root / 'README.md'
+          lock_path = root / 'COMPANION_LOCK.json'
+          inv_path = sett / 'SettlementInventory.java'
+          storage_path = sett / 'SettlementStorageService.java'
+          outpost_path = sett / 'SettlementOutpostService.java'
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, got {count}')
+              return text.replace(old, new, 1)
+
+          props = props_path.read_text(encoding='utf-8')
+          if 'mod_version=0.1.0-alpha.79' in props:
+              raise SystemExit('Alpha.79 already present')
+          if 'mod_version=0.1.0-alpha.78' not in props:
+              raise SystemExit('Expected Alpha.78 base version')
+
+          # 1) Fail closed when a physical stack is ambiguously tagged as multiple settlement resources.
+          inv = inv_path.read_text(encoding='utf-8')
+          old_methods = '''    public static boolean isWood(ItemStack stack) {
+        return stack.is(ItemTags.LOGS)
+                || stack.is(ItemTags.PLANKS)
+                || stack.is(ExternalContentTags.SETTLEMENT_WOOD);
+    }
+
+    public static boolean isStone(ItemStack stack) {
+        return stack.is(Items.STONE)
+                || stack.is(Items.COBBLESTONE)
+                || stack.is(Items.DEEPSLATE)
+                || stack.is(Items.COBBLED_DEEPSLATE)
+                || stack.is(Items.ANDESITE)
+                || stack.is(Items.DIORITE)
+                || stack.is(Items.GRANITE)
+                || stack.is(Items.TUFF)
+                || stack.is(ExternalContentTags.C_STONES)
+                || stack.is(ExternalContentTags.C_COBBLESTONES)
+                || stack.is(ExternalContentTags.SETTLEMENT_STONE);
+    }
+
+    public static boolean isFood(ItemStack stack) {
+        if (stack.get(DataComponents.FOOD) != null) return true;
+        // Settlement food represents staple reserves, not only items the player can eat directly.
+        // Wheat is the important bridge: the starter farm can sustain population growth without
+        // forcing the player to manually craft every loaf. Common crop staples are grouped with it.
+        return stack.is(Items.WHEAT)
+                || stack.is(Items.CARROT)
+                || stack.is(Items.POTATO)
+                || stack.is(Items.BEETROOT)
+                || stack.is(ExternalContentTags.C_FOODS)
+                || stack.is(ExternalContentTags.SETTLEMENT_FOOD);
+    }
+'''
+          new_methods = '''    private static final int RESOURCE_WOOD = 1;
+    private static final int RESOURCE_STONE = 2;
+    private static final int RESOURCE_METAL = 4;
+    private static final int RESOURCE_FOOD = 8;
+
+    public static boolean isWood(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_WOOD);
+    }
+
+    public static boolean isStone(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_STONE);
+    }
+
+    public static boolean isFood(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_FOOD);
+    }
+
+    /** Metal participates in the same exclusive physical-resource classification as wood/stone/food. */
+    public static boolean isMetalResource(ItemStack stack) {
+        return exclusiveResource(stack, RESOURCE_METAL);
+    }
+
+    /**
+     * A physical stack may fund exactly one settlement resource ledger. Mis-tagged companion/datapack
+     * items that match several categories fail closed instead of being counted twice and then only
+     * partly removed. Expedition relics and recognized external weapons are never construction,
+     * recruitment or upkeep material even if an external datapack accidentally gives them a resource tag.
+     */
+    private static boolean exclusiveResource(ItemStack stack, int expected) {
+        if (stack.isEmpty() || stack.is(ExternalContentTags.EXPEDITION_RELICS)
+                || SettlementExternalContentService.isExternalWeapon(stack)) return false;
+        int mask = 0;
+        if (rawWood(stack)) mask |= RESOURCE_WOOD;
+        if (rawStone(stack)) mask |= RESOURCE_STONE;
+        if (rawMetal(stack)) mask |= RESOURCE_METAL;
+        if (rawFood(stack)) mask |= RESOURCE_FOOD;
+        return mask == expected;
+    }
+
+    private static boolean rawWood(ItemStack stack) {
+        return stack.is(ItemTags.LOGS)
+                || stack.is(ItemTags.PLANKS)
+                || stack.is(ExternalContentTags.SETTLEMENT_WOOD);
+    }
+
+    private static boolean rawStone(ItemStack stack) {
+        return stack.is(Items.STONE)
+                || stack.is(Items.COBBLESTONE)
+                || stack.is(Items.DEEPSLATE)
+                || stack.is(Items.COBBLED_DEEPSLATE)
+                || stack.is(Items.ANDESITE)
+                || stack.is(Items.DIORITE)
+                || stack.is(Items.GRANITE)
+                || stack.is(Items.TUFF)
+                || stack.is(ExternalContentTags.C_STONES)
+                || stack.is(ExternalContentTags.C_COBBLESTONES)
+                || stack.is(ExternalContentTags.SETTLEMENT_STONE);
+    }
+
+    private static boolean rawMetal(ItemStack stack) {
+        return stack.is(Items.IRON_INGOT)
+                || stack.is(Items.RAW_IRON)
+                || stack.is(Items.COPPER_INGOT)
+                || stack.is(Items.RAW_COPPER)
+                || stack.is(Items.GOLD_INGOT)
+                || stack.is(Items.RAW_GOLD)
+                || stack.is(ExternalContentTags.C_INGOTS)
+                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
+                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
+    }
+
+    private static boolean rawFood(ItemStack stack) {
+        if (stack.get(DataComponents.FOOD) != null) return true;
+        // Settlement food represents staple reserves, not only items the player can eat directly.
+        // Wheat is the important bridge: the starter farm can sustain population growth without
+        // forcing the player to manually craft every loaf. Common crop staples are grouped with it.
+        return stack.is(Items.WHEAT)
+                || stack.is(Items.CARROT)
+                || stack.is(Items.POTATO)
+                || stack.is(Items.BEETROOT)
+                || stack.is(ExternalContentTags.C_FOODS)
+                || stack.is(ExternalContentTags.SETTLEMENT_FOOD);
+    }
+'''
+          inv = replace_once(inv, old_methods, new_methods, 'exclusive resource classification')
+          inv_path.write_text(inv, encoding='utf-8')
+
+          storage = storage_path.read_text(encoding='utf-8')
+          old_metal = '''    public static boolean isMetalStack(ItemStack stack) {
+        return stack.is(Items.IRON_INGOT)
+'''
+          new_metal = '''    public static boolean isMetalStack(ItemStack stack) {
+        if (!SettlementInventory.isMetalResource(stack)) return false;
+        return stack.is(Items.IRON_INGOT)
+'''
+          storage = replace_once(storage, old_metal, new_metal, 'metal exclusive gate')
+          storage_path.write_text(storage, encoding='utf-8')
+
+          # 2) Physical outpost building must charge the step even if the desired block was pre-placed.
+          outpost = outpost_path.read_text(encoding='utf-8')
+          old_early = '''        BlockState current = level.getBlockState(placement.pos());
+        if (current.is(placement.state().getBlock())) {
+            data.advanceOutpostConstruction();
+            return false;
+        }
+        if (!canReplaceForBlueprint(level, data, placement.pos(), current)) {
+'''
+          new_early = '''        BlockState current = level.getBlockState(placement.pos());
+        boolean alreadyPlaced = current.is(placement.state().getBlock());
+        if (!alreadyPlaced && !canReplaceForBlueprint(level, data, placement.pos(), current)) {
+'''
+          outpost = replace_once(outpost, old_early, new_early, 'outpost preplaced early skip')
+          old_after_ensure = '''        if (predicate != null && !ensureBuildMaterial(server, data, builder, predicate, requiredNow, remainingCost)) {
+            return false;
+        }
+
+        if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+'''
+          new_after_ensure = '''        if (predicate != null && !ensureBuildMaterial(server, data, builder, predicate, requiredNow, remainingCost)) {
+            return false;
+        }
+
+        // A matching player-preplaced block is useful physical work, but it is not free settlement
+        // material. New physical outpost projects still consume this blueprint step's exact share.
+        // Pre-Alpha.26 legacy prepaid projects never enter this branch and remain migration-safe.
+        if (alreadyPlaced) {
+            if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) return false;
+            data.advanceOutpostConstruction();
+            return false;
+        }
+
+        if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+'''
+          outpost = replace_once(outpost, old_after_ensure, new_after_ensure, 'outpost preplaced exact charge')
+          outpost_path.write_text(outpost, encoding='utf-8')
+
+          # Version and current-direction docs.
+          props = props.replace('mod_version=0.1.0-alpha.78', 'mod_version=0.1.0-alpha.79', 1)
+          desc = 'plus pre-playtest manual-audit hardening that charges matching pre-placed outpost blueprint steps and rejects ambiguous/relic/weapon resource tags from settlement cost accounting.'
+          lines = props.splitlines()
+          for i, line in enumerate(lines):
+              if line.startswith('mod_description='):
+                  lines[i] = line.rstrip('.') + ', ' + desc
+                  break
+          props_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          project = project_path.read_text(encoding='utf-8')
+          project = replace_once(project, 'Current implementation delta: **0.1.0-alpha.78**.',
+                                 'Current implementation delta: **0.1.0-alpha.79**.', 'PROJECT version')
+          project += '''\n\n### Alpha.79 pre-playtest manual-audit hardening\n\nA full manual source pass before the next real client test found two resource-authority edge cases and closes both without adding gameplay scope. New physical outpost construction no longer advances a matching pre-placed blueprint block for free: the builder must still fetch and consume that step's exact wood/stone share, while old prepaid save phases remain untouched. Settlement resource classification is now fail-closed across wood/stone/metal/food: one ItemStack can fund exactly one category, while expedition relics and recognized external weapons can never be consumed as ordinary settlement material even if a companion/datapack accidentally cross-tags them. This also closes the same cross-tag edge in recruitment, workshop upkeep and every shared-storage cost path. No new virtual ledger, menu, worker, chunk loading or companion class dependency is introduced. Real multiplayer/save/reload/transporter-death/route-unload acceptance remains a playtest requirement, not something this source audit claims to prove.\n'''
+          project_path.write_text(project, encoding='utf-8')
+
+          canonical = canonical_path.read_text(encoding='utf-8')
+          canonical, n = re.subn(r'Current canonical implementation: \*\*0\.1\.0-alpha\.\d+\*\*\.',
+                                  'Current canonical implementation: **0.1.0-alpha.79**.', canonical, count=1)
+          if n != 1: raise SystemExit('CANONICAL version line missing')
+          canonical += '''\n\n### Alpha.79 pre-playtest manual-audit hardening\n\n- new physical outpost construction must consume the exact material delta for a blueprint step even when the desired block already exists at that position;\n- legacy prepaid outpost save phases retain their historical no-second-charge behavior;\n- a physical ItemStack may satisfy exactly one of wood / stone / metal / food for settlement accounting; ambiguous cross-tagged stacks fail closed;\n- expedition relics and recognized external weapons never satisfy ordinary settlement resource predicates even if an external datapack cross-tags them;\n- the rule is centralized through existing inventory/storage predicates, so building, recruitment, workshop and local military costs share one physical authority;\n- no resource is minted, no virtual balance is added, no force-load/teleport path is added, and no companion Java class dependency is introduced.\n\nThis pass is a manual source hardening pass. Long two-player sessions, simultaneous request timing under a real client, reconnect/save-reload, transporter death/recovery and route chunk unload/reload remain runtime acceptance work.\n'''
+          canonical_path.write_text(canonical, encoding='utf-8')
+
+          gap = gap_path.read_text(encoding='utf-8')
+          gap, n = re.subn(r'현재 구현 기준: `0\.1\.0-alpha\.\d+`', '현재 구현 기준: `0.1.0-alpha.79`', gap, count=1)
+          if n != 1: raise SystemExit('GAP version line missing')
+          gap += '''\n\n### Alpha.79 테스트 전 전체 수동검사 하드닝\n\n- 신규 전초 청사진 위치에 같은 블록을 미리 놓아 단계 비용을 건너뛰던 경로를 차단: 동일 블록이어도 해당 단계의 실제 목재/석재 몫을 운반·소비한 뒤에만 진행;\n- 과거 prepaid 전초 공사 save는 재과금하지 않음;\n- wood/stone/metal/food가 겹치게 태그된 외부 ItemStack은 모든 일반 자원 판정에서 fail-closed;\n- expedition relic/recognized external weapon은 잘못된 외부 태그가 붙어도 건설·모집·수리 재료로 소모하지 않음;\n- 주민 replacement, MAINHAND cargo, shared-project race, client cache reset, save phase codec, 도로/토목 rollback, force-load/teleport 부재를 수동 재검토;\n- 실제 장시간 2인, reconnect, save/reload, 운송자 사망, route unload/reload 등의 실플레이 acceptance는 여전히 별도 검증 필요.\n'''
+          gap_path.write_text(gap, encoding='utf-8')
+
+          readme = readme_path.read_text(encoding='utf-8')
+          readme, n = re.subn(r'## Current version: 0\.1\.0-alpha\.\d+', '## Current version: 0.1.0-alpha.79', readme, count=1)
+          if n != 1: raise SystemExit('README version line missing')
+          readme += '''\n\n## Alpha.79 — pre-playtest manual-audit hardening\n\nBefore the next real client test, the resident/logistics/construction/storage/network/save paths were manually reread rather than relying on CI alone. Matching pre-placed blocks can no longer skip a new outpost blueprint material step, and ambiguous companion resource tags fail closed so one real ItemStack cannot be counted toward multiple settlement resource categories. Expedition relics and recognized external weapons are explicitly excluded from ordinary material accounting. No new gameplay system or virtual authority is added.\n'''
+          readme_path.write_text(readme, encoding='utf-8')
+
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          lock.setdefault('target', {})['frontier_settlement'] = '0.1.0-alpha.79'
+          note = ('Alpha.79 pre-playtest hardening keeps companion integration soft while making resource tags fail closed: one physical stack may satisfy exactly one wood/stone/metal/food category, and expedition relics/recognized external weapons are never ordinary settlement material. Matching pre-placed blocks in new physical outpost projects still pay the exact blueprint material delta; legacy prepaid saves remain untouched.')
+          if note not in lock.setdefault('notes', []): lock['notes'].append(note)
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          audit_doc = '''# Frontier Settlement Alpha.79 — Pre-Playtest Manual Source Audit\n\nThis is a human/manual source review performed before the next real Minecraft client test. It does not claim that CI or source inspection proves real-world multiplayer behavior.\n\n## Scope manually reread\n\n- shared project authority and server MAIN-thread request handling;\n- civilian population reconciliation, replacement evidence and worker assignment multiplicity;\n- outpost production and long-distance transporter authority;\n- MAINHAND cargo death recovery and military/external-weapon recovery;\n- settlement storage scanning, extraction, insertion and compound costs;\n- ordinary buildings, roads, outposts and civil cut/fill/retaining rollback paths;\n- player container/fluid/non-natural block protection;\n- client snapshot reset on disconnect and shared B/R/Enter/Backspace controls;\n- old construction/road/outpost/civil save codec defaults and phase compatibility;\n- absence of force-load/logistics teleport/virtual cargo in the inspected authorities.\n\n## Findings fixed\n\n1. **New physical outpost pre-placement material bypass** — a desired block already present at the current blueprint position advanced the step before the per-step material charge. Alpha.79 keeps the existing block, but the builder must fetch and consume that exact wood/stone delta before advancing. Historical prepaid save phases are unchanged.\n2. **Ambiguous companion resource tags** — independent wood/stone/metal/food scans could let one badly cross-tagged physical stack appear sufficient for more than one compound cost, producing a partial-removal/success edge. Alpha.79 centralizes an exclusive resource classifier. Any stack matching more than one category fails closed; expedition relics and recognized external weapons are always reserved from ordinary resource use.\n\n## Manual review outcome\n\nNo additional source-level critical blocker was found in the inspected paths. Loaded-evidence replacement gates, deterministic first-UUID activity, physical MAINHAND cargo, server-side confirm revalidation, project serialization, rollback ordering, client cache reset and optional/default save codecs remain intact.\n\n## Still not proven until real play\n\n- long two-player session;\n- simultaneous building/road/outpost/civil requests from two clients;\n- reconnect and repeated save/reload;\n- resident death/replacement loops;\n- transporter death and cargo pickup/recovery;\n- route chunk unload/reload and outpost production unload/reload;\n- military reverse supply and external-weapon equip/death/recovery;\n- civil cut/fill/retaining save/reload;\n- bridge/tunnel NPC navigation;\n- full companion candidate stack with graphical client;\n- actual spawn/combat density and HUD/UI feel.\n'''
+          (root / 'PRE_PLAYTEST_MANUAL_AUDIT_ALPHA79.md').write_text(audit_doc, encoding='utf-8')
+
+          source_audit = r'''#!/usr/bin/env python3
+          from pathlib import Path
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement'
+          A78 = ROOT / 'tools/test_alpha78_source.py'
+          _real_read = Path.read_text
+
+          def legacy_read(self, *args, **kwargs):
+              s = _real_read(self, *args, **kwargs)
+              if self.name == 'gradle.properties':
+                  s = s.replace('mod_version=0.1.0-alpha.79', 'mod_version=0.1.0-alpha.78')
+              elif self.name == 'PROJECT.md':
+                  s = s.replace('Current implementation delta: **0.1.0-alpha.79**', 'Current implementation delta: **0.1.0-alpha.78**')
+              elif self.name == 'CANONICAL_PLAN.md':
+                  s = s.replace('Current canonical implementation: **0.1.0-alpha.79**.', 'Current canonical implementation: **0.1.0-alpha.78**.')
+              elif self.name == 'COMPLETION_GAP_AUDIT.md':
+                  s = s.replace('현재 구현 기준: `0.1.0-alpha.79`', '현재 구현 기준: `0.1.0-alpha.78`')
+              elif self.name == 'README.md':
+                  s = s.replace('## Current version: 0.1.0-alpha.79', '## Current version: 0.1.0-alpha.78')
+              elif self.name == 'COMPANION_LOCK.json':
+                  s = s.replace('"frontier_settlement": "0.1.0-alpha.79"', '"frontier_settlement": "0.1.0-alpha.78"')
+              elif self.name == 'SettlementOutpostService.java':
+                  new = '''        BlockState current = level.getBlockState(placement.pos());\n        boolean alreadyPlaced = current.is(placement.state().getBlock());\n        if (!alreadyPlaced && !canReplaceForBlueprint(level, data, placement.pos(), current)) {\n'''
+                  old = '''        BlockState current = level.getBlockState(placement.pos());\n        if (current.is(placement.state().getBlock())) {\n            data.advanceOutpostConstruction();\n            return false;\n        }\n        if (!canReplaceForBlueprint(level, data, placement.pos(), current)) {\n'''
+                  s = s.replace(new, old)
+                  extra = '''        // A matching player-preplaced block is useful physical work, but it is not free settlement\n        // material. New physical outpost projects still consume this blueprint step's exact share.\n        // Pre-Alpha.26 legacy prepaid projects never enter this branch and remain migration-safe.\n        if (alreadyPlaced) {\n            if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) return false;\n            data.advanceOutpostConstruction();\n            return false;\n        }\n\n'''
+                  s = s.replace(extra, '')
+              return s
+
+          Path.read_text = legacy_read
+          try:
+              chain = _real_read(A78, encoding='utf-8').replace("print('Frontier Settlement alpha.23-78 cumulative source audit: PASS')", 'pass')
+              ns = {'__file__': str(A78), '__name__': '__main__'}
+              exec(compile(chain, str(A78), 'exec'), ns, ns)
+          finally:
+              Path.read_text = _real_read
+
+          def text(path): return Path(path).read_text(encoding='utf-8')
+          def must(src, tokens, label):
+              for token in tokens:
+                  if token not in src: raise SystemExit(f'{label} missing: {token}')
+
+          sett = JAVA / 'settlement'
+          inv = text(sett / 'SettlementInventory.java')
+          storage = text(sett / 'SettlementStorageService.java')
+          outpost = text(sett / 'SettlementOutpostService.java')
+          props = text(ROOT / 'gradle.properties')
+          project = text(ROOT / 'PROJECT.md')
+
+          must(inv, ('RESOURCE_WOOD = 1', 'RESOURCE_STONE = 2', 'RESOURCE_METAL = 4', 'RESOURCE_FOOD = 8',
+                     'exclusiveResource(stack, RESOURCE_WOOD)', 'exclusiveResource(stack, RESOURCE_STONE)',
+                     'exclusiveResource(stack, RESOURCE_FOOD)', 'isMetalResource(ItemStack stack)',
+                     'stack.is(ExternalContentTags.EXPEDITION_RELICS)', 'SettlementExternalContentService.isExternalWeapon(stack)',
+                     'return mask == expected;'), 'alpha.79 exclusive physical resources')
+          must(storage, ('if (!SettlementInventory.isMetalResource(stack)) return false;',), 'alpha.79 metal authority gate')
+          must(outpost, ('boolean alreadyPlaced = current.is(placement.state().getBlock());',
+                         'if (!alreadyPlaced && !canReplaceForBlueprint',
+                         'if (alreadyPlaced) {',
+                         'if (requiredNow > 0L && !consumeCarried(builder, predicate, requiredNow)) return false;',
+                         'Pre-Alpha.26 legacy prepaid projects never enter this branch',
+                         'legacyPrepaidBuilding()'), 'alpha.79 outpost preplacement charge')
+          idx_cost = outpost.index('long requiredNow = 0L;')
+          idx_preplaced = outpost.index('if (alreadyPlaced) {')
+          if idx_preplaced <= idx_cost: raise SystemExit('alpha.79 preplaced outpost branch occurs before exact cost calculation')
+          must(props, ('mod_version=0.1.0-alpha.79', 'pre-playtest manual-audit hardening'), 'alpha.79 props')
+          must(project, ('Current implementation delta: **0.1.0-alpha.79**', 'Alpha.79 pre-playtest manual-audit hardening'), 'alpha.79 project')
+          for forbidden in ('forceChunk(', 'setChunkForced(', 'teleportTo('):
+              if forbidden in outpost: raise SystemExit(f'alpha.79 forbidden outpost shortcut: {forbidden}')
+          print('Frontier Settlement alpha.23-79 cumulative source audit: PASS')
+          '''
+          (root / 'tools/test_alpha79_source.py').write_text(source_audit.replace('          ', '', 1), encoding='utf-8')
+
+          docs_audit = r'''#!/usr/bin/env python3
+          import json
+          from pathlib import Path
+          ROOT = Path(__file__).resolve().parents[1]
+          A78 = ROOT / 'tools/test_alpha78_docs.py'
+          _real_read = Path.read_text
+
+          def legacy_read(self, *args, **kwargs):
+              s = _real_read(self, *args, **kwargs)
+              if self.name == 'gradle.properties': s = s.replace('mod_version=0.1.0-alpha.79', 'mod_version=0.1.0-alpha.78')
+              elif self.name == 'PROJECT.md': s = s.replace('Current implementation delta: **0.1.0-alpha.79**', 'Current implementation delta: **0.1.0-alpha.78**')
+              elif self.name == 'CANONICAL_PLAN.md': s = s.replace('Current canonical implementation: **0.1.0-alpha.79**.', 'Current canonical implementation: **0.1.0-alpha.78**.')
+              elif self.name == 'COMPLETION_GAP_AUDIT.md': s = s.replace('현재 구현 기준: `0.1.0-alpha.79`', '현재 구현 기준: `0.1.0-alpha.78`')
+              elif self.name == 'README.md': s = s.replace('## Current version: 0.1.0-alpha.79', '## Current version: 0.1.0-alpha.78')
+              elif self.name == 'COMPANION_LOCK.json': s = s.replace('"frontier_settlement": "0.1.0-alpha.79"', '"frontier_settlement": "0.1.0-alpha.78"')
+              return s
+          Path.read_text = legacy_read
+          try:
+              chain = _real_read(A78, encoding='utf-8').replace("print('Frontier Settlement alpha.78 canonical docs audit: PASS')", 'pass')
+              ns = {'__file__': str(A78), '__name__': '__main__'}
+              exec(compile(chain, str(A78), 'exec'), ns, ns)
+          finally: Path.read_text = _real_read
+
+          def text(name): return (ROOT / name).read_text(encoding='utf-8')
+          def must(src, tokens, label):
+              for token in tokens:
+                  if token not in src: raise SystemExit(f'{label} missing: {token}')
+          props=text('gradle.properties'); project=text('PROJECT.md'); canonical=text('CANONICAL_PLAN.md'); gap=text('COMPLETION_GAP_AUDIT.md'); readme=text('README.md'); audit=text('PRE_PLAYTEST_MANUAL_AUDIT_ALPHA79.md')
+          lock=json.loads(text('COMPANION_LOCK.json'))
+          must(props, ('mod_version=0.1.0-alpha.79','pre-playtest manual-audit hardening'), 'alpha.79 props docs')
+          must(project, ('Current implementation delta: **0.1.0-alpha.79**','Alpha.79 pre-playtest manual-audit hardening'), 'alpha.79 PROJECT')
+          must(canonical, ('Current canonical implementation: **0.1.0-alpha.79**','### Alpha.79 pre-playtest manual-audit hardening','ambiguous cross-tagged stacks fail closed'), 'alpha.79 canonical')
+          must(gap, ('현재 구현 기준: `0.1.0-alpha.79`','### Alpha.79 테스트 전 전체 수동검사 하드닝'), 'alpha.79 gap')
+          must(readme, ('## Current version: 0.1.0-alpha.79','## Alpha.79 — pre-playtest manual-audit hardening'), 'alpha.79 readme')
+          must(audit, ('human/manual source review','New physical outpost pre-placement material bypass','Ambiguous companion resource tags','Still not proven until real play'), 'alpha.79 manual audit')
+          if lock.get('target',{}).get('frontier_settlement') != '0.1.0-alpha.79': raise SystemExit('alpha.79 companion lock mismatch')
+          print('Frontier Settlement alpha.79 canonical docs audit: PASS')
+          '''
+          (root / 'tools/test_alpha79_docs.py').write_text(docs_audit.replace('          ', '', 1), encoding='utf-8')
+          PY
+
+          cd projects/frontier-settlement
+          python3 tools/test_alpha79_source.py
+          python3 tools/test_alpha79_docs.py
+          cd ../..
+
+          git add projects/frontier-settlement
+          git commit -m 'Harden Frontier Settlement alpha.79 before playtest'
+
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            echo 'Concurrent main update detected; refusing to regenerate an already-mutated Alpha.79 tree automatically.'
+            exit 1
+          done
+          exit 1
