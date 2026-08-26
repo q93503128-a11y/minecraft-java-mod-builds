@@ -21,22 +21,28 @@ with zipfile.ZipFile(jar) as zf:
     if client_class not in names:
         raise SystemExit(f"Korean runtime client class missing: {client_class}")
     client_bytes = zf.read(client_class)
-    for token in [
-        b"korean_tbos_1",
-        b"korean_tbos_6",
-        b"korean_external_misc",
-        b"resourcepacks/",
-    ]:
+    for token in [b"korean_tbos_1", b"korean_tbos_6", b"korean_external_misc", b"resourcepacks/"]:
         if token not in client_bytes:
             raise SystemExit(f"Korean runtime pack registration token missing: {token!r}")
+
+    restore_class = "kr/moonseungjun/survivalascension/compat/TbsJournalRestorationService.class"
+    if restore_class not in names:
+        raise SystemExit(f"TBS journal restoration class missing: {restore_class}")
+    restore_bytes = zf.read(restore_class)
+    for token in [b"tbos", b"archivists_journal", b"survivalascension.tbs_journal_restored_v1"]:
+        if token not in restore_bytes:
+            raise SystemExit(f"TBS journal restoration token missing: {token!r}")
 
     for pack in [*TBOS_PACKS, MISC_PACK]:
         meta = f"{BASE}/{pack}/pack.mcmeta"
         if meta not in names:
             raise SystemExit(f"forced Korean pack metadata missing: {meta}")
         parsed = json.loads(zf.read(meta).decode("utf-8"))
-        if parsed.get("pack", {}).get("pack_format") != 88:
-            raise SystemExit(f"forced Korean pack format mismatch: {meta}")
+        pack_meta = parsed.get("pack", {})
+        if "pack_format" in pack_meta:
+            raise SystemExit(f"legacy pack_format must not be used for modern 26.2 forced pack: {meta}")
+        if pack_meta.get("min_format") != [88, 0] or pack_meta.get("max_format") != [88, 0]:
+            raise SystemExit(f"forced Korean modern min/max format mismatch: {meta}")
 
     merged_tbos: dict[str, str] = {}
     for pack in TBOS_PACKS:
@@ -104,8 +110,10 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit(f"forced TerraBlender Korean key count mismatch: {len(terrablender)} != 2")
 
 print("forced_korean_builtin_pack_registration=present")
+print("forced_korean_pack_metadata=modern_88_0")
 print("forced_tbos_korean_keys=507/507")
 print("forced_tbos_onboarding_memory_journal=present")
+print("tbs_journal_one_time_restoration=present")
 print("forced_amethyst_tooltips=present")
 print("forced_bop_terrablender_overlay=present")
 print("KOREAN RUNTIME PACK VERIFY PASS")

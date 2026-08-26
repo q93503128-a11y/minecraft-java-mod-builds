@@ -9,6 +9,7 @@ import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
 import kr.moonseungjun.survivalascension.compat.ApexContentRewardService;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.compat.ContentPackLootBridge;
+import kr.moonseungjun.survivalascension.compat.TbsJournalRestorationService;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
@@ -77,9 +78,9 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onServerStarted);
         NeoForge.EVENT_BUS.addListener(ApexContentPackBridge::onServerStarted);
-        NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerLoggedOut);
-        NeoForge.EVENT_BUS.addListener(ContentPackCompatibility::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onPlayerTick);
@@ -109,6 +110,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: two-stage archetype-specific Apex mutation phases + contested expedition operation interdiction waves + region-targeted Apex Resonance trophies + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: two-stage archetype-specific Apex mutation phases + contested expedition operation interdiction waves + region-targeted Apex Resonance trophies + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-time TBS journal restoration + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
