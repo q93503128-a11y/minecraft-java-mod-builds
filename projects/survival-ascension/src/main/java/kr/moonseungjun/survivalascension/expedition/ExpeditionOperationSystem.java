@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.expedition;
 
 import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
+import kr.moonseungjun.survivalascension.compat.TargetedResonanceRecovery;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.production.OutpostData;
 import kr.moonseungjun.survivalascension.production.OutpostService;
@@ -80,7 +81,9 @@ public final class ExpeditionOperationSystem {
         player.sendSystemMessage(Component.literal("§6[원정 작전 출발] §f" + operation.koreanName() + " §7· 보급권1 소비"));
         player.sendSystemMessage(Component.literal("§c[작전 변수] §f" + complication.koreanName() + " §7· " + complication.description()));
         if (region == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) {
-            player.sendSystemMessage(Component.literal("§d[공명 회수 계약] §f심층 작전 귀환 성공 시 외부 공명 장비 1개를 확보합니다. §7승천 각인은 귀환 뒤 직접 선택합니다."));
+            player.sendSystemMessage(Component.literal("§d[공명 회수 계약] §f심층 작전 귀환 성공 시 외부 공명 장비 1개를 확보합니다."
+                    + " §7귀환 순간 주손/보조손 장비 종류로 목표를 좁힐 수 있습니다. 현재: §d"
+                    + TargetedResonanceRecovery.describeFocus(player.getMainHandItem(), player.getOffhandItem())));
         }
         player.sendSystemMessage(Component.literal("§7전초에서 최소 §e" + operation.rangeTarget() + "블록§7까지 전진한 뒤, 전초 반경 "
                 + WORK_RADIUS + "블록 밖의 §f" + region.koreanName() + "§7에서 수행: §f" + operation.taskSummary()));
@@ -232,7 +235,8 @@ public final class ExpeditionOperationSystem {
         player.sendSystemMessage(Component.literal("§c작전 변수 §f" + active.complication().koreanName() + " §7· "
                 + active.complication().description()));
         if (active.region() == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) {
-            player.sendSystemMessage(Component.literal("  §d공명 회수 계약 §7· 귀환 성공 시 외부 공명 장비 1개"));
+            player.sendSystemMessage(Component.literal("  §d공명 회수 계약 §7· 귀환 시 현재 손 장비 종류 우선 · 현재 §d"
+                    + TargetedResonanceRecovery.describeFocus(player.getMainHandItem(), player.getOffhandItem())));
         }
         if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0) {
             player.sendSystemMessage(Component.literal("  §c재전개 대기 §7· 원점에서 §e" + active.complicationState() + "블록§7까지 추가 전진 필요"));
@@ -277,10 +281,13 @@ public final class ExpeditionOperationSystem {
     private static ExpeditionComplication chooseComplication(ServerPlayer player, ServerLevel level, ExpeditionOperationData data) {
         long mix = level.getGameTime() ^ player.getUUID().getMostSignificantBits() ^ player.getUUID().getLeastSignificantBits()
                 ^ ((long) data.totalCompletions(player) << 32);
-        return switch (Math.floorMod(Long.hashCode(mix), 3)) {
+        return switch (Math.floorMod(Long.hashCode(mix), 6)) {
             case 0 -> ExpeditionComplication.DEEP_FRONT;
             case 1 -> ExpeditionComplication.FORWARD_SHIFT;
-            default -> ExpeditionComplication.HOT_EXTRACTION;
+            case 2 -> ExpeditionComplication.HOT_EXTRACTION;
+            case 3 -> ExpeditionComplication.PURSUIT;
+            case 4 -> ExpeditionComplication.ANOMALY_SURGE;
+            default -> ExpeditionComplication.HIDDEN_AMBUSH;
         };
     }
 
@@ -312,10 +319,15 @@ public final class ExpeditionOperationSystem {
         }
 
         if (operation.region() == ExpeditionRegion.DEEP && player.level() instanceof ServerLevel level) {
-            ItemStack resonanceReward = ContentPackCompatibility.randomResonanceOperationReward(level.getRandom());
+            TargetedResonanceRecovery.Recovery recovery = TargetedResonanceRecovery.select(
+                    level.getRandom(), player.getMainHandItem(), player.getOffhandItem());
+            ItemStack resonanceReward = recovery.stack();
             if (!resonanceReward.isEmpty()) {
+                String itemName = resonanceReward.getHoverName().getString();
                 giveOrDrop(player, resonanceReward);
-                player.sendSystemMessage(Component.literal("§d[공명 회수] §f심층 작전에서 외부 공명 장비 1개를 확보했습니다. §7원본 기능은 유지되며 승천 각인은 장비 메뉴에서 직접 선택합니다."));
+                player.sendSystemMessage(Component.literal("§d[공명 회수] §f심층 작전에서 §d" + itemName + "§f을 확보했습니다. §7"
+                        + recovery.focusLabel() + (recovery.focused() ? " 적용" : "")
+                        + " · 원본 기능은 유지되며 승천 각인은 장비 메뉴에서 직접 선택합니다."));
             }
         }
 
