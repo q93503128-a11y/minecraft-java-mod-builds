@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "expanded_fresh_world_server_smoke_pass",
+  "status": "expanded_dedicated_server_pre_eula_pass",
   "frontier": {
     "version": "0.1.0-alpha.73",
     "jar_sha256": "d300d11a8b6fe595f98c574ef9c4f71a86db6bebaaf74522a97b0bffcc7ef43c"
@@ -27,9 +27,9 @@
     "server_payload_jars_including_frontier_expected": 16,
     "binary_resolution_verified": true,
     "dedicated_server_preflight_verified": true,
-    "binary_resolution_source_sha": "50f3c9ed4645d5ef0d1a52d66ecfb1952dc5cbb7",
-    "preflight_run_id": 32846326595,
-    "preflight_source_sha": "40971dcaf1016c5719da7484f911820f2ecb8ee0",
+    "binary_resolution_source_sha": "0b59a47a900f78af0d92d707b2230023565dce51",
+    "preflight_run_id": 32925898935,
+    "preflight_source_sha": "6aa8b1815aeab146b05e4e98ca9e97f24918a0ea",
     "server_payload_jars_including_frontier": 16,
     "conclusion": "success",
     "ci_eula_accepted": true,
