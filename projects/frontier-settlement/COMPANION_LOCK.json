@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-25",
+  "generated_at": "2026-08-26",
   "status": "candidate_runtime_lock",
   "target": {
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.80"
+    "frontier_settlement": "0.1.0-alpha.81"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -48,7 +48,8 @@
     "Alpha.74 adds bounded first-kill external-hostile field knowledge: up to 3 levels lower real barracks recruitment food from 8 to a floor of 5 and extend loaded garrison threat detection from 28 to 40 blocks. The knowledge ledger owns no items/currency/population/logistics, references no companion classes, and does not promote human client/spawn-density acceptance.",
     "Alpha.78 reuses the existing DOMAIN territory-network level only to raise normal cart-station productive outpost-to-town physical pickup batches from 32 to at most 44. Military/waterfront reverse supply keeps the historical 16/32 cap and priority, while the same outpost-assigned transporter still extracts real stockpile ItemStacks, carries them in MAINHAND over loaded persisted roads and inserts them into real town storage; no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency is added.",
     "Alpha.79 pre-playtest hardening keeps companion integration soft while making resource tags fail closed: one physical stack may satisfy exactly one wood/stone/metal/food category, and expedition relics/recognized external weapons are never ordinary settlement material. Matching pre-placed blocks in new physical outpost projects still pay the exact blueprint material delta; legacy prepaid saves remain untouched.",
-    "Alpha.80 changes only Frontier client renderer bootstrap timing; companion versions and binary pins are unchanged, and this lock is retargeted so the same candidate stack can be re-preflighted against the hotfix JAR."
+    "Alpha.80 changes only Frontier client renderer bootstrap timing; companion versions and binary pins are unchanged, and this lock is retargeted so the same candidate stack can be re-preflighted against the hotfix JAR.",
+    "Alpha.81 keeps the Alpha.80 candidate binary pins unchanged while adding Frontier-owned first-run settlement UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and resource-only Korean language overlays for selected companion namespaces. No companion code/assets are copied into Frontier and no new hard companion Java dependency is added."
   ],
   "entries": [
     {
