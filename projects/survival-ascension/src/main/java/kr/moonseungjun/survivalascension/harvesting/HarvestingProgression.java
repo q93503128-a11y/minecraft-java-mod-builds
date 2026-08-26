@@ -69,11 +69,13 @@ public final class HarvestingProgression {
         if (JOBS.containsKey(player.getUUID())) return;
 
         int skillLevel = SkillProgressData.get(player).level(player, SkillType.HARVESTING);
+        boolean fieldMastery = skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
         int baseSize = SkillTuning.harvestingAreaSize(skillLevel);
-        if (skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player)) baseSize = 13;
+        if (fieldMastery) baseSize = 13;
         int size = AscensionAffixes.adjustHarvestArea(tool, baseSize);
         if (size <= 1) return;
-        scheduleHarvestArea(player, level, center, size);
+        int forwardDepth = fieldMastery ? 8 : (skillLevel >= 100 ? 6 : (skillLevel >= 90 ? 4 : 0));
+        scheduleHarvestArea(player, level, center, size, forwardDepth);
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -108,22 +110,57 @@ public final class HarvestingProgression {
         }
     }
 
-    private static void scheduleHarvestArea(ServerPlayer player, ServerLevel level, BlockPos center, int size) {
+    private static void scheduleHarvestArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, int forwardDepth) {
         int radius = size / 2;
         Deque<BlockPos> targets = new ArrayDeque<>();
+        Set<BlockPos> queued = new HashSet<>();
         outer:
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 BlockPos target = center.offset(dx, 0, dz).immutable();
-                if (!level.hasChunkAt(target)) continue;
-                BlockState targetState = level.getBlockState(target);
-                if (!isMatureHarvest(targetState) || level.getBlockEntity(target) != null) continue;
-                targets.addLast(target);
-                if (targets.size() >= MAX_PENDING_PER_PLAYER) break outer;
+                if (queueHarvestTarget(level, target, targets, queued) && targets.size() >= MAX_PENDING_PER_PLAYER) break outer;
             }
         }
-        if (!targets.isEmpty()) JOBS.put(player.getUUID(), new HarvestJob(level.dimension(), targets));
+
+        if (forwardDepth > 0 && targets.size() < MAX_PENDING_PER_PLAYER) {
+            double lookX = player.getLookAngle().x;
+            double lookZ = player.getLookAngle().z;
+            boolean forwardX = Math.abs(lookX) >= Math.abs(lookZ);
+            int stepX = forwardX ? (lookX >= 0.0D ? 1 : -1) : 0;
+            int stepZ = forwardX ? 0 : (lookZ >= 0.0D ? 1 : -1);
+            int sideX = forwardX ? 0 : 1;
+            int sideZ = forwardX ? 1 : 0;
+            for (int depth = radius + 1; depth <= radius + forwardDepth && targets.size() < MAX_PENDING_PER_PLAYER; depth++) {
+                for (int lateral = -radius; lateral <= radius && targets.size() < MAX_PENDING_PER_PLAYER; lateral++) {
+                    BlockPos target = center.offset(
+                            stepX * depth + sideX * lateral,
+                            0,
+                            stepZ * depth + sideZ * lateral).immutable();
+                    queueHarvestTarget(level, target, targets, queued);
+                }
+            }
+        }
+
+        if (!targets.isEmpty()) {
+            JOBS.put(player.getUUID(), new HarvestJob(level.dimension(), targets));
+            if (forwardDepth > 0) {
+                player.sendSystemMessage(Component.literal("§a[전진 수확로] §f기본 " + size + "×" + size
+                        + " 수확 뒤 바라보는 방향으로 §e" + size + "폭 × " + forwardDepth + "칸§f을 추가 수확합니다."), true);
+            }
+        }
+    }
+
+    private static boolean queueHarvestTarget(
+            ServerLevel level,
+            BlockPos target,
+            Deque<BlockPos> targets,
+            Set<BlockPos> queued) {
+        if (!queued.add(target) || !level.hasChunkAt(target)) return false;
+        BlockState targetState = level.getBlockState(target);
+        if (!isMatureHarvest(targetState) || level.getBlockEntity(target) != null) return false;
+        targets.addLast(target);
+        return true;
     }
 
     private static boolean isHarvestableBlock(BlockState state) {
@@ -144,10 +181,12 @@ public final class HarvestingProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§a[농사] §f3×3 광역 수확 해금! 웅크리면 1×1로 수확합니다."));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e5×5§f로 확장됩니다. 관개 시설 완공 시 씨앗 소비 자동 재파종도 활성화됩니다."));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e7×7§f로 확장됩니다."));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[농사] §f광역 수확이 §e9×9§f로 확장됩니다."));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[농사 해금] §f9×9 광역 수확 + 바라보는 방향 §e9폭 × 4칸 전진 수확로§f · Shift는 1×1"));
         if (oldLevel < 100 && newLevel >= 100) {
-            String cap = ExpeditionProgression.hasFieldMastery(player) ? "13×13" : "11×11";
-            player.sendSystemMessage(Component.literal("§a[농사 숙련 VI] §f광역 수확 " + cap + " · 대형 수확은 서버 틱 분산"));
+            boolean mastery = ExpeditionProgression.hasFieldMastery(player);
+            String cap = mastery ? "13×13" : "11×11";
+            String depth = mastery ? "8" : "6";
+            player.sendSystemMessage(Component.literal("§a[농사 숙련 VI] §f광역 수확 " + cap + " + 전진 수확로 " + depth + "칸 · 대형 수확은 서버 틱 분산"));
         }
     }
 
