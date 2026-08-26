@@ -34,8 +34,8 @@
     "conclusion": "success",
     "ci_eula_accepted": true,
     "fresh_world_server_smoke_verified": true,
-    "fresh_world_run_id": 32847130202,
-    "fresh_world_source_sha": "0555b6edf16398cf8cd364217d6a1c22bb288cfe",
+    "fresh_world_run_id": 32925934025,
+    "fresh_world_source_sha": "39c895b13876c3b50c7a0fe4ec8e87cc64bf6e08",
     "fresh_world_conclusion": "success",
     "fresh_world_server_payload_jars_including_frontier": 16
   }
