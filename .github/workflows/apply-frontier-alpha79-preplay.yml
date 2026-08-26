@@ -1,4 +1,4 @@
-# retry-current-signature
+# retry-physical-only
 name: Apply Frontier Settlement Alpha.79 Pre-Playtest Hardening
 
 on:
