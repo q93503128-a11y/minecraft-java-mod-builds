@@ -186,7 +186,9 @@ public final class ApexPhaseMutationService {
                     player.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 38, 0));
                     player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0));
                 });
-                burst(level, boss, ParticleTypes.DRAGON_BREATH, 44);
+                // DRAGON_BREATH requires a PowerParticleOption in 26.2; keep the End-themed
+                // purple vortex presentation with a simple particle that fits this generic burst helper.
+                burst(level, boss, ParticleTypes.REVERSE_PORTAL, 44);
             }
         }
         announce(players, "§4[정점 최종단계] §f" + archetype.koreanName() + "§f이 최종 전투 양상에 돌입합니다.");
