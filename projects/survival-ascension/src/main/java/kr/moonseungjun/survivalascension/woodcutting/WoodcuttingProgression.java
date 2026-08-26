@@ -53,11 +53,13 @@ public final class WoodcuttingProgression {
         }
         if (CHAIN_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
         int skillLevel = SkillProgressData.get(player).level(player, SkillType.WOODCUTTING);
+        boolean fieldMastery = skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player);
         int baseLimit = SkillTuning.woodcuttingLogLimit(skillLevel);
-        if (skillLevel >= 100 && ExpeditionProgression.hasFieldMastery(player)) baseLimit = FIELD_MASTERY_LOG_LIMIT;
+        if (fieldMastery) baseLimit = FIELD_MASTERY_LOG_LIMIT;
         int limit = AscensionAffixes.adjustWoodcuttingLimit(tool, baseLimit);
         if (limit <= 1 || JOBS.containsKey(player.getUUID())) return;
-        scheduleNaturalTree(player, level, center, limit);
+        int groveTreeCap = fieldMastery ? 4 : (skillLevel >= 100 ? 3 : (skillLevel >= 90 ? 2 : 1));
+        scheduleNaturalTree(player, level, center, limit, groveTreeCap);
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -97,15 +99,59 @@ public final class WoodcuttingProgression {
         }
     }
 
-    private static void scheduleNaturalTree(ServerPlayer player, ServerLevel level, BlockPos origin, int limit) {
+    private static void scheduleNaturalTree(ServerPlayer player, ServerLevel level, BlockPos origin, int limit, int groveTreeCap) {
         Set<BlockPos> gathered = gatherConnectedLogs(level, origin, limit);
+        if (!hasLeavesNearby(level, origin, gathered)) return;
+
+        int trees = 1;
+        if (groveTreeCap > 1 && gathered.size() < limit) {
+            trees = expandNearbyGrove(level, origin, gathered, limit, groveTreeCap);
+        }
         gathered.remove(origin.immutable());
         if (gathered.isEmpty()) return;
 
-        if (!hasLeavesNearby(level, origin, gathered)) return;
-
         Deque<BlockPos> targets = new ArrayDeque<>(gathered);
         JOBS.put(player.getUUID(), new FellJob(level.dimension(), targets));
+        if (trees > 1) {
+            player.sendSystemMessage(Component.literal("§a[수림 연쇄] §f주변 자연목 §e" + trees
+                    + "그루§f를 하나의 벌목 작업으로 연결했습니다. §7총 로그 상한 " + limit), true);
+        }
+    }
+
+    private static int expandNearbyGrove(
+            ServerLevel level,
+            BlockPos origin,
+            Set<BlockPos> gathered,
+            int totalLimit,
+            int treeCap) {
+        int acceptedTrees = 1;
+        int radius = treeCap >= 4 ? 7 : (treeCap >= 3 ? 6 : 5);
+        outer:
+        for (int ring = 2; ring <= radius; ring++) {
+            for (int dx = -ring; dx <= ring; dx++) {
+                for (int dz = -ring; dz <= ring; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) continue;
+                    for (int dy = -1; dy <= 2; dy++) {
+                        if (acceptedTrees >= treeCap || gathered.size() >= totalLimit) break outer;
+                        BlockPos candidate = origin.offset(dx, dy, dz).immutable();
+                        if (gathered.contains(candidate) || !level.hasChunkAt(candidate)) continue;
+                        BlockState candidateState = level.getBlockState(candidate);
+                        if (!candidateState.is(BlockTags.LOGS) || level.getBlockEntity(candidate) != null) continue;
+
+                        int remaining = totalLimit - gathered.size();
+                        Set<BlockPos> cluster = gatherConnectedLogs(level, candidate, remaining);
+                        cluster.removeAll(gathered);
+                        if (cluster.size() < 2 || !hasLeavesNearby(level, candidate, cluster)) continue;
+                        for (BlockPos log : cluster) {
+                            if (gathered.size() >= totalLimit) break;
+                            gathered.add(log);
+                        }
+                        acceptedTrees++;
+                    }
+                }
+            }
+        }
+        return acceptedTrees;
     }
 
     private static Set<BlockPos> gatherConnectedLogs(ServerLevel level, BlockPos origin, int limit) {
@@ -172,10 +218,11 @@ public final class WoodcuttingProgression {
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 16개 일괄 벌목"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 48개 일괄 벌목"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 128개 일괄 벌목"));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f자연 나무 연결 로그 최대 256개 · 대형 작업은 서버 틱 분산"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§a[벌목 해금] §f수림 연쇄 2그루 · 자연 나무 연결 로그 최대 256개 · Shift는 단일 벌목"));
         if (oldLevel < 100 && newLevel >= 100) {
             String cap = ExpeditionProgression.hasFieldMastery(player) ? "448" : "384";
-            player.sendSystemMessage(Component.literal("§a[벌목 숙련 VI] §f자연 나무 연결 로그 최대 " + cap + "개 · 서버 틱 분산"));
+            String trees = ExpeditionProgression.hasFieldMastery(player) ? "4" : "3";
+            player.sendSystemMessage(Component.literal("§a[벌목 숙련 VI] §f수림 연쇄 " + trees + "그루 · 자연 로그 최대 " + cap + "개 · 서버 틱 분산"));
         }
     }
 
