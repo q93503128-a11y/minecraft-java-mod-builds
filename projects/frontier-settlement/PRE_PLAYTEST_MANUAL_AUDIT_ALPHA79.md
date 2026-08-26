@@ -2,6 +2,8 @@
 
 This is a human/manual source review performed before the next real Minecraft client test. It does not claim that CI or source inspection proves real-world multiplayer behavior.
 
+Canonical validation trigger: the Alpha.79 source/docs audit set is ready for the repository Java 25 CI pipeline.
+
 ## Scope manually reread
 
 - shared project authority and server MAIN-thread request handling;
