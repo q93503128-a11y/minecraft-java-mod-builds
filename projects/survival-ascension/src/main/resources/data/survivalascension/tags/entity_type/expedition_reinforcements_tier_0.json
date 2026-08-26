@@ -1,6 +1,10 @@
 {
   "replace": false,
   "values": [
-    { "id": "tbos:armillary_scout", "required": false }
+    { "id": "tbos:armillary_scout", "required": false },
+    { "id": "tbos:shelf_crawler", "required": false },
+    { "id": "tbos:metronome_hound", "required": false },
+    { "id": "tbos:index_wight", "required": false },
+    { "id": "tbos:parallax_wraith", "required": false }
   ]
 }
