@@ -12,6 +12,7 @@ on:
       - 'projects/frontier-settlement/companion-testpack/runtime-sources.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'
       - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
+      - 'projects/frontier-settlement/tools/test_companion_testpack.py'
       - 'projects/frontier-settlement/tools/verify_jar.py'
       - '.github/workflows/frontier-companion-server-preflight.yml'
 
@@ -24,7 +25,6 @@ concurrency:
 
 env:
   PROJECT_DIR: projects/frontier-settlement
-  NEOFORGE_VERSION: 26.2.0.38-beta
 
 jobs:
   preflight:
@@ -50,24 +50,40 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Resolve Frontier runtime versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^mod_version=//p' "$PROJECT_DIR/gradle.properties")"
+          neoforge="$(sed -n 's/^neo_version=//p' "$PROJECT_DIR/gradle.properties")"
+          test -n "$version"
+          test -n "$neoforge"
+          echo "MOD_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPECTED_JAR=frontier_settlement-$version.jar" >> "$GITHUB_ENV"
+          echo "NEOFORGE_VERSION=$neoforge" >> "$GITHUB_ENV"
+
       - name: Verify Companion manifests
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -euo pipefail
           python3 tools/test_companion_testpack.py
 
-      - name: Build Frontier Alpha.73
+      - name: Build and verify current Frontier
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           set -euo pipefail
           chmod +x gradlew
-          python3 tools/test_alpha73_source.py
-          python3 tools/test_alpha73_docs.py
+          source_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_source.py' -printf '%f\n' | sort -V | tail -1)"
+          docs_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_docs.py' -printf '%f\n' | sort -V | tail -1)"
+          test -n "$source_audit"
+          test -n "$docs_audit"
+          python3 "tools/$source_audit"
+          python3 "tools/$docs_audit"
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
-          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.73.jar
-          unzip -p build/libs/frontier_settlement-0.1.0-alpha.73.jar META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
+          python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          unzip -p "build/libs/$EXPECTED_JAR" META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
           grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
-          grep -F 'version="0.1.0-alpha.73"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
+          grep -F "version=\"$MOD_VERSION\"" "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
 
       - name: Assemble locked server mod payload
         run: |
@@ -75,7 +91,7 @@ jobs:
           python3 "$PROJECT_DIR/companion-testpack/install.py" \
             --profile server \
             --output /tmp/frontier-companion-payload \
-            --frontier-jar "$PROJECT_DIR/build/libs/frontier_settlement-0.1.0-alpha.73.jar"
+            --frontier-jar "$PROJECT_DIR/build/libs/$EXPECTED_JAR"
           test "$(find /tmp/frontier-companion-payload/mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 16
 
       - name: Install exact NeoForge dedicated server
@@ -121,8 +137,10 @@ jobs:
               raise SystemExit('server did not reach the expected EULA gate')
           eula_at = min(positions)
           prefix = log[:eula_at]
-          if 'Frontier Settlement 0.1.0-alpha.73 (frontier_settlement)' not in prefix:
-              raise SystemExit('Frontier was not discovered with the canonical Alpha.73 version')
+          version = os.environ['MOD_VERSION']
+          expected_frontier = f'Frontier Settlement {version} (frontier_settlement)'
+          if expected_frontier not in prefix:
+              raise SystemExit(f'Frontier was not discovered with the canonical {version} version')
           forbidden = (
               'ModLoadingException', 'NoClassDefFoundError', 'Mixin apply failed',
               'Encountered an unexpected exception', 'Exception in thread "main"',
