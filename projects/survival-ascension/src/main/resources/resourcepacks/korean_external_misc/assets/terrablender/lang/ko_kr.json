@@ -1,0 +1,4 @@
+{
+  "commands.terrablender.biomeparams.success": "생물군계 매개변수 정보를 생성했습니다.",
+  "commands.terrablender.biomeparams.failed": "생물군계 매개변수 정보를 생성하지 못했습니다."
+}
