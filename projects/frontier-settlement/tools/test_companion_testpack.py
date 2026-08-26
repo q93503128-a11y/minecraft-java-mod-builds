@@ -11,10 +11,25 @@ SERVER = json.loads((PACK / 'resolved-lock.server.json').read_text(encoding='utf
 INSTALLER = (PACK / 'install.py').read_text(encoding='utf-8')
 README = (PACK / 'README.md').read_text(encoding='utf-8')
 
+
+def read_gradle_properties() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw in (ROOT / 'gradle.properties').read_text(encoding='utf-8').splitlines():
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+CURRENT_VERSION = read_gradle_properties().get('mod_version', '')
+if not CURRENT_VERSION:
+    raise SystemExit('gradle.properties is missing mod_version')
 if LOCK.get('status') != 'candidate_runtime_lock':
     raise SystemExit('companion lock must remain candidate_runtime_lock before real runtime acceptance')
-if LOCK.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.73':
-    raise SystemExit('companion target must match Alpha.73')
+if LOCK.get('target', {}).get('frontier_settlement') != CURRENT_VERSION:
+    raise SystemExit(f'companion target must match current Frontier version {CURRENT_VERSION}')
 
 required = [e for e in LOCK.get('entries', []) if e.get('required')]
 expected_client = {
@@ -82,4 +97,4 @@ if 'Third-party JARs are fetched directly from their official distribution URLs'
 if 'Variants & Ventures' not in README or "Alex's Mobs Continued" not in README:
     raise SystemExit('promoted/deferred companion content must remain documented')
 
-print('Frontier Settlement companion testpack static audit: PASS')
+print(f'Frontier Settlement {CURRENT_VERSION} companion testpack static audit: PASS')
