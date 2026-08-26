@@ -15,15 +15,15 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Turns long-form expedition operations into contested field work instead of a pure checklist.
  *
- * Two bounded interdiction waves are attached to each operation. The current operation complication
- * changes when the second wave arrives and how large it is, so the existing complication catalog now
- * has a visible combat consequence instead of being only movement/timer bookkeeping. One audited
- * content-pack monster may replace a vanilla slot without increasing the wave headcount.
+ * Two bounded interdiction waves are attached to each operation. The operation complication now
+ * changes wave timing, size and optional-content composition so repeating the same regional operation
+ * can produce a materially different field fight without adding a separate currency or encounter UI.
  */
 public final class ExpeditionInterdictionService {
     private static final String SESSION_KEY = "survivalascension_operation_interdiction_session";
@@ -52,7 +52,7 @@ public final class ExpeditionInterdictionService {
 
         int stage = persistent.getIntOr(STAGE_KEY, 0);
         ExpeditionOperation operation = ExpeditionOperation.forRegion(active.region());
-        if (stage == 0 && active.rangeReached()) {
+        if (stage == 0 && firstWaveReady(active, operation)) {
             WaveResult result = spawnWave(player, level, active, 1);
             if (result.spawned() > 0) {
                 persistent.putInt(STAGE_KEY, 1);
@@ -70,13 +70,22 @@ public final class ExpeditionInterdictionService {
         }
     }
 
+    private static boolean firstWaveReady(ExpeditionOperationData.ActiveOperation active, ExpeditionOperation operation) {
+        if (!active.rangeReached()) return false;
+        if (active.complication() != ExpeditionComplication.HIDDEN_AMBUSH) return true;
+        int target = Math.max(1, operation.tasks().get(0).target());
+        return active.progressA() * 4 >= target;
+    }
+
     private static boolean secondWaveReady(ExpeditionOperationData.ActiveOperation active, ExpeditionOperation operation) {
-        boolean firstObjectiveDone = active.progressA() >= operation.tasks().get(0).target();
+        int firstTarget = Math.max(1, operation.tasks().get(0).target());
+        boolean firstObjectiveDone = active.progressA() >= firstTarget;
         return switch (active.complication()) {
             case FORWARD_SHIFT -> firstObjectiveDone && active.complicationState() < 0;
             case HOT_EXTRACTION -> firstObjectiveDone
                     && active.progressB() >= operation.tasks().get(1).target()
                     && active.complicationState() == 1;
+            case PURSUIT -> active.progressA() * 2 >= firstTarget;
             default -> firstObjectiveDone;
         };
     }
@@ -98,19 +107,19 @@ public final class ExpeditionInterdictionService {
         int targetCount = wave == 1 ? 2 + worldTier : 3 + worldTier;
         if (active.complication() == ExpeditionComplication.DEEP_FRONT && wave == 1) targetCount++;
         if (active.complication() == ExpeditionComplication.HOT_EXTRACTION && wave == 2) targetCount++;
+        if (active.complication() == ExpeditionComplication.PURSUIT && wave == 2) targetCount++;
+        if (active.complication() == ExpeditionComplication.HIDDEN_AMBUSH && wave == 1) targetCount += 2;
         List<String> vanilla = fallbackIds(region);
 
-        String contentId = region == ExpeditionRegion.OCEAN
-                ? null
-                : ContentPackCompatibility.randomIncidentReinforcementId(level.getRandom(), worldTier);
-        int contentSlot = contentId == null ? -1 : level.getRandom().nextInt(targetCount);
+        List<ContentSlot> contentSlots = chooseContentSlots(level, region, worldTier, targetCount, active.complication());
         int spawned = 0;
         int contentSpawned = 0;
 
         for (int i = 0; i < targetCount; i++) {
             String vanillaId = vanilla.get(i % vanilla.size());
-            boolean contentAttempt = i == contentSlot;
-            String typeId = contentAttempt ? contentId : vanillaId;
+            ContentSlot content = contentAt(contentSlots, i);
+            boolean contentAttempt = content != null;
+            String typeId = contentAttempt ? content.typeId() : vanillaId;
             Mob mob = spawnOne(level, player.blockPosition(), region == ExpeditionRegion.OCEAN,
                     typeId, i, targetCount);
             if (mob == null && contentAttempt) {
@@ -128,6 +137,35 @@ public final class ExpeditionInterdictionService {
                     0.35D, 0.45D, 0.35D, 0.02D);
         }
         return new WaveResult(spawned, contentSpawned);
+    }
+
+    private static List<ContentSlot> chooseContentSlots(
+            ServerLevel level,
+            ExpeditionRegion region,
+            int worldTier,
+            int targetCount,
+            ExpeditionComplication complication) {
+        if (region == ExpeditionRegion.OCEAN || targetCount <= 0) return List.of();
+        int desired = complication == ExpeditionComplication.ANOMALY_SURGE ? Math.min(2, targetCount) : 1;
+        List<ContentSlot> out = new ArrayList<>(desired);
+        for (int i = 0; i < desired; i++) {
+            String id = ContentPackCompatibility.randomIncidentReinforcementId(level.getRandom(), worldTier);
+            if (id == null) break;
+            int slot;
+            if (i == 0) {
+                slot = level.getRandom().nextInt(targetCount);
+            } else {
+                int first = out.get(0).slot();
+                slot = (first + 1 + level.getRandom().nextInt(Math.max(1, targetCount - 1))) % targetCount;
+            }
+            out.add(new ContentSlot(slot, id));
+        }
+        return List.copyOf(out);
+    }
+
+    private static ContentSlot contentAt(List<ContentSlot> slots, int slot) {
+        for (ContentSlot content : slots) if (content.slot() == slot) return content;
+        return null;
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, boolean water, String typeId, int index, int count) {
@@ -198,6 +236,12 @@ public final class ExpeditionInterdictionService {
             phase = "재전개선 차단";
         } else if (wave == 2 && active.complication() == ExpeditionComplication.HOT_EXTRACTION) {
             phase = "긴급 철수선 차단";
+        } else if (wave == 2 && active.complication() == ExpeditionComplication.PURSUIT) {
+            phase = "추격대 접촉";
+        } else if (active.complication() == ExpeditionComplication.HIDDEN_AMBUSH && wave == 1) {
+            phase = "잠복대 기습";
+        } else if (active.complication() == ExpeditionComplication.ANOMALY_SURGE) {
+            phase = wave == 1 ? "이변 전진선" : "이변 회수선";
         } else if (wave == 1 && active.complication() == ExpeditionComplication.DEEP_FRONT) {
             phase = "고착 전선 돌파";
         } else {
@@ -205,9 +249,10 @@ public final class ExpeditionInterdictionService {
         }
         player.sendSystemMessage(Component.literal("§c[작전 저지대] §f" + active.region().koreanName() + " · §e" + phase
                 + " §7· 적 " + result.spawned() + "체가 현장에 투입되었습니다."
-                + (result.contentSpawned() > 0 ? " §b· 외부 이변 개체 1체 포함" : "")
+                + (result.contentSpawned() > 0 ? " §b· 외부 이변 개체 " + result.contentSpawned() + "체 포함" : "")
                 + " §7· 변수: " + active.complication().koreanName()));
     }
 
+    private record ContentSlot(int slot, String typeId) {}
     private record WaveResult(int spawned, int contentSpawned) {}
 }
