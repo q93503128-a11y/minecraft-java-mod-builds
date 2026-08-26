@@ -100,7 +100,8 @@ need(interdiction, [
     "spawnWave(player, level, active, 2)", "ContentPackCompatibility.randomIncidentReinforcementId"
 ], "0.59.1 operation interdictions")
 need(woodcutting, [
-    "skillLevel >= 90", "maxTrees", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER"
+    "skillLevel >= 90", "groveTreeCap", "player.isShiftKeyDown()", "FIELD_MASTERY_LOG_LIMIT = 448",
+    "SkillTuning.woodcuttingLogLimit"
 ], "0.59.1 high-rank woodcutting")
 need(harvesting, [
     "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"
