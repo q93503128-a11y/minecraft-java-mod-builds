@@ -81,6 +81,8 @@ jobs:
           python3 "tools/$docs_audit"
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
+          test -f "build/libs/$EXPECTED_JAR.sha256"
+          echo "FRONTIER_JAR_SHA256=$(awk '{print $1}' "build/libs/$EXPECTED_JAR.sha256")" >> "$GITHUB_ENV"
           unzip -p "build/libs/$EXPECTED_JAR" META-INF/neoforge.mods.toml | tee "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
           grep -F 'modId="frontier_settlement"' "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
           grep -F "version=\"$MOD_VERSION\"" "$GITHUB_WORKSPACE/frontier-neoforge-metadata.txt"
@@ -165,7 +167,14 @@ jobs:
           PREFLIGHT_SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
+          test -n "${FRONTIER_JAR_SHA256:-}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            python3 - <<'PY'
           import json
           import os
           from pathlib import Path
@@ -183,6 +192,9 @@ jobs:
           if client['resolution'].get('source_sha') != server['resolution'].get('source_sha'):
               raise SystemExit('client/server resolution source SHA mismatch')
 
+          frontier = status.setdefault('frontier', {})
+          frontier['version'] = os.environ['MOD_VERSION']
+          frontier['jar_sha256'] = os.environ['FRONTIER_JAR_SHA256']
           expanded = status.setdefault('expanded_candidate', {})
           expanded['variants_and_ventures_promoted'] = True
           expanded['required_client_entries_expected'] = 16
@@ -196,18 +208,17 @@ jobs:
           expanded['preflight_source_sha'] = os.environ['PREFLIGHT_SOURCE_SHA']
           expanded['server_payload_jars_including_frontier'] = 16
           expanded['conclusion'] = 'success'
-          status['status'] = 'expanded_dedicated_server_pre_eula_pass'
+          fresh_current = (expanded.get('fresh_world_server_smoke_verified') is True
+                           and expanded.get('fresh_world_frontier_version') == os.environ['MOD_VERSION'])
+          status['status'] = ('expanded_fresh_world_server_smoke_pass' if fresh_current
+                              else 'expanded_dedicated_server_pre_eula_pass')
           status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$PROJECT_DIR/companion-testpack/runtime-status.json"
-          git commit -m "Record Frontier expanded companion preflight ${GITHUB_RUN_ID} [skip ci]"
-          for attempt in 1 2 3 4 5 6; do
+            git diff --check
+            git add "$PROJECT_DIR/companion-testpack/runtime-status.json"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Record Frontier expanded companion preflight ${GITHUB_RUN_ID} [skip ci]"
             if git push origin HEAD:main; then exit 0; fi
-            git fetch origin main
-            git rebase origin/main
             sleep $((attempt * 2))
           done
           exit 1
