@@ -14,6 +14,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.81', 'mod_version=0.1.0-alpha.80')
         s = s.replace(', plus Alpha.81 first-run UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and Korean companion language overlays.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.81"', '"frontier_settlement": "0.1.0-alpha.80"')
     elif self.name == 'SettlementNetwork.java':
         s = s.replace('private static final String PROTOCOL = "8";', 'private static final String PROTOCOL = "7";')
     elif self.name == 'BuildingPaletteScreen.java':
@@ -52,8 +54,15 @@ start = text(CLIENT / 'SettlementStartScreen.java')
 guide = text(CLIENT / 'SettlementGuideScreen.java')
 palette = text(CLIENT / 'BuildingPaletteScreen.java')
 hud = text(CLIENT / 'SettlementHudOverlay.java')
+lock = json.loads(text(ROOT / 'COMPANION_LOCK.json'))
 
 must(props, ('mod_version=0.1.0-alpha.81', 'Alpha.81 first-run UI', 'Korean companion language overlays'), 'alpha.81 props')
+if lock.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('alpha.81 companion lock status must stay candidate_runtime_lock')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.81':
+    raise SystemExit('alpha.81 companion lock target drifted')
+if not any('Alpha.81 keeps the Alpha.80 candidate binary pins unchanged' in note for note in lock.get('notes', [])):
+    raise SystemExit('alpha.81 companion lock rationale missing')
 must(network, (
     'private static final String PROTOCOL = "8";',
     'registrar.playToServer(FoundSettlementRequestPayload.TYPE',
