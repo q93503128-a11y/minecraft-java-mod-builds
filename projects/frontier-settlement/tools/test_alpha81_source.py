@@ -21,10 +21,12 @@ def legacy_read(self, *args, **kwargs):
         # are verified separately below; expose these only while replaying the Alpha.23-80 chain.
         s += '\n// Alpha.80 historical palette: innerY+186 물류·교역 생산·건설 "토목 평탄화"\n'
     elif self.name == 'test_alpha72_source.py':
-        # Alpha.81 intentionally adds exactly three Java classes (first-run screen, guide, founding payload).
-        # Keep Alpha.72's full source inventory audit meaningful while rebasing only its obsolete exact count.
         s = s.replace('len(java_files)!=105', 'len(java_files)!=108')
         s = s.replace('expected 105 Java files', 'expected 108 Java files')
+    elif self.name == 'test_alpha73_source.py':
+        s = s.replace("rglob('*.java')))!=105", "rglob('*.java')))!=108")
+    elif self.name == 'test_alpha74_source.py':
+        s = s.replace("rglob('*.java')))!=106", "rglob('*.java')))!=109")
     return s
 
 Path.read_text = legacy_read
@@ -101,17 +103,11 @@ yacl = json.loads(text(langs['yet_another_config_lib_v3']))
 if yacl.get('yacl.gui.save') != '변경 사항 저장':
     raise SystemExit('alpha.81 YACL key coverage mismatch')
 
-# Translation overlays are resource-only. Frontier must not turn optional/candidate companions into Java dependencies.
 for path in JAVA.rglob('*.java'):
     src = text(path)
     for forbidden in (
-        'import com.github.fabriciuss',
-        'import net.blay09.mods.balm',
-        'import snownee.jade',
-        'import xaero.',
-        'import dev.isxander.yacl',
-        'import com.faboslav',
-        'import net.p3pp3rf1y',
+        'import com.github.fabriciuss', 'import net.blay09.mods.balm', 'import snownee.jade',
+        'import xaero.', 'import dev.isxander.yacl', 'import com.faboslav', 'import net.p3pp3rf1y',
     ):
         if forbidden in src:
             raise SystemExit(f'alpha.81 hard companion Java dependency: {path.relative_to(ROOT)} -> {forbidden}')
