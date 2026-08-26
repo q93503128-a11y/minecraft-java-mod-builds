@@ -4,15 +4,20 @@ import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -21,7 +26,9 @@ import java.util.UUID;
  * Apex mobs already carry owner/archetype markers. When an external escort dies we remember that
  * participation for the short lifetime of the hunt; when the marked Apex boss dies, a surviving
  * external escort or that recent mark can convert the encounter into a Resonance recovery reward.
- * No external implementation classes are linked and the reward pool remains Survival-owned data.
+ * The specific Resonance target is selected by Survival-owned item tags per Apex region, so players
+ * can farm a desired equipment piece by choosing where they open the hunt without Java-linking the
+ * external item's implementation class or registry ID.
  */
 public final class ApexContentRewardService {
     private static final String APEX_OWNER_KEY = "survivalascension_apex_owner";
@@ -70,14 +77,50 @@ public final class ApexContentRewardService {
         clearParticipationMark(owner);
         if (!participated) return;
 
-        ItemStack reward = ContentPackCompatibility.randomResonanceOperationReward(level.getRandom());
+        RewardFocus focus = focusFor(apexType);
+        ItemStack reward = randomFocusedReward(level, focus);
         if (reward.isEmpty()) return;
         int rank = WorldAscensionData.get(level.getServer()).stage() >= 2 ? 3 : 2;
         if (!AscensionAffixes.imprint(reward, level.getRandom(), rank)) return;
 
+        String itemName = reward.getHoverName().getString();
         if (!owner.getInventory().add(reward)) owner.drop(reward, false);
-        owner.sendSystemMessage(Component.literal("§d[정점 공명 전리품] §f외부 이변 개체가 참여한 정점 사냥에서 공명 장비 1개를 회수했습니다."
-                + " §7승천 " + (rank >= 3 ? "III" : "II") + " 각인 포함"));
+        owner.sendSystemMessage(Component.literal("§d[정점 공명 전리품] §f외부 이변 개체가 참여한 정점 사냥에서 §d"
+                + itemName + "§f을 회수했습니다. §7"
+                + (focus == null ? "범용 회수" : focus.koreanLabel())
+                + " · 승천 " + (rank >= 3 ? "III" : "II") + " 각인 포함"));
+    }
+
+    private static ItemStack randomFocusedReward(ServerLevel level, RewardFocus focus) {
+        if (focus == null) return ContentPackCompatibility.randomResonanceOperationReward(level.getRandom());
+        TagKey<Item> tag = TagKey.create(
+                Registries.ITEM,
+                Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, focus.tagPath()));
+        List<Item> pool = new ArrayList<>();
+        for (Identifier id : BuiltInRegistries.ITEM.keySet()) {
+            Item item = BuiltInRegistries.ITEM.getValue(id);
+            if (item == null || !item.builtInRegistryHolder().is(tag)) continue;
+            ItemStack stack = new ItemStack(item);
+            if (stack.isEmpty() || stack.getMaxStackSize() != 1) continue;
+            pool.add(item);
+        }
+        if (pool.isEmpty()) return ContentPackCompatibility.randomResonanceOperationReward(level.getRandom());
+        return new ItemStack(pool.get(level.getRandom().nextInt(pool.size())));
+    }
+
+    private static RewardFocus focusFor(String apexType) {
+        return switch (apexType) {
+            case "WOODLAND_BREAKER" -> new RewardFocus("apex_resonance_woodland", "수림 목표: 공명 도끼");
+            case "ARID_COMMANDER" -> new RewardFocus("apex_resonance_arid", "황야 목표: 공명 삽");
+            case "WETLAND_PLAGUEHEART" -> new RewardFocus("apex_resonance_wetland", "습원 목표: 공명 괭이");
+            case "HIGHLAND_HUNTER" -> new RewardFocus("apex_resonance_highlands", "능선 목표: 공명 검");
+            case "OCEAN_TYRANT" -> new RewardFocus("apex_resonance_ocean", "외해 목표: 공명 장화");
+            case "DEEP_STALKER" -> new RewardFocus("apex_resonance_deep", "심층 목표: 공명 곡괭이");
+            case "FROZEN_WARDEN" -> new RewardFocus("apex_resonance_frozen", "설원 목표: 공명 흉갑");
+            case "NETHER_REAVER" -> new RewardFocus("apex_resonance_nether", "네더 목표: 공명 투구");
+            case "END_HARBINGER" -> new RewardFocus("apex_resonance_end", "공허 목표: 공명 각반");
+            default -> null;
+        };
     }
 
     private static boolean hasLivingExternalEscort(ServerLevel level, Mob boss, String ownerText) {
@@ -116,4 +159,6 @@ public final class ApexContentRewardService {
         if (id == null) return false;
         return !"minecraft".equals(id.getNamespace()) && !SurvivalAscension.MOD_ID.equals(id.getNamespace());
     }
+
+    private record RewardFocus(String tagPath, String koreanLabel) {}
 }
