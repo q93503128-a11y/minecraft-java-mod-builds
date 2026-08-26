@@ -14,6 +14,7 @@ import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionInterdictionService;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
@@ -77,6 +78,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ExpeditionInterdictionService::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onEntityJoin);
@@ -102,6 +104,6 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: contested expedition operation interdiction waves + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-shot TBS journal guard + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }
