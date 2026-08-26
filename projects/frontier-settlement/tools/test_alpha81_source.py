@@ -17,8 +17,6 @@ def legacy_read(self, *args, **kwargs):
     elif self.name == 'SettlementNetwork.java':
         s = s.replace('private static final String PROTOCOL = "8";', 'private static final String PROTOCOL = "7";')
     elif self.name == 'BuildingPaletteScreen.java':
-        # Historical audits assert superseded compact-palette labels/layout. Alpha.81 current semantics
-        # are verified separately below; expose these only while replaying the Alpha.23-80 chain.
         s += '\n// Alpha.80 historical palette: innerY+186 물류·교역 생산·건설 "토목 평탄화"\n'
     elif self.name == 'test_alpha72_source.py':
         s = s.replace('len(java_files)!=105', 'len(java_files)!=108')
@@ -103,13 +101,18 @@ yacl = json.loads(text(langs['yet_another_config_lib_v3']))
 if yacl.get('yacl.gui.save') != '변경 사항 저장':
     raise SystemExit('alpha.81 YACL key coverage mismatch')
 
+# Jade has one longstanding compileOnly integration seam under compat/jade. It is intentionally allowed
+# only there; every other companion package remains forbidden from Frontier Java code.
 for path in JAVA.rglob('*.java'):
     src = text(path)
+    rel = path.relative_to(ROOT).as_posix()
     for forbidden in (
-        'import com.github.fabriciuss', 'import net.blay09.mods.balm', 'import snownee.jade',
-        'import xaero.', 'import dev.isxander.yacl', 'import com.faboslav', 'import net.p3pp3rf1y',
+        'import com.github.fabriciuss', 'import net.blay09.mods.balm', 'import xaero.',
+        'import dev.isxander.yacl', 'import com.faboslav', 'import net.p3pp3rf1y',
     ):
         if forbidden in src:
-            raise SystemExit(f'alpha.81 hard companion Java dependency: {path.relative_to(ROOT)} -> {forbidden}')
+            raise SystemExit(f'alpha.81 hard companion Java dependency: {rel} -> {forbidden}')
+    if 'import snownee.jade' in src and '/compat/jade/' not in ('/' + rel):
+        raise SystemExit(f'alpha.81 hard Jade dependency outside compat seam: {rel}')
 
 print('Frontier Settlement alpha.23-81 cumulative source audit: PASS')
