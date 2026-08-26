@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "expanded_dedicated_server_pre_eula_pass",
+  "status": "expanded_fresh_world_server_smoke_pass",
   "frontier": {
     "version": "0.1.0-alpha.74",
     "jar_sha256": "ce648c08f12461254af87a56f8ff25b1d5ba22d2cf2bf015a503759ac23d1783"
@@ -34,10 +34,11 @@
     "conclusion": "success",
     "ci_eula_accepted": true,
     "fresh_world_server_smoke_verified": true,
-    "fresh_world_run_id": 32925934025,
-    "fresh_world_source_sha": "39c895b13876c3b50c7a0fe4ec8e87cc64bf6e08",
+    "fresh_world_run_id": 32926477888,
+    "fresh_world_source_sha": "becbe3abfdb3f6a8bc55f59b625fa946484f46c5",
     "fresh_world_conclusion": "success",
     "fresh_world_server_payload_jars_including_frontier": 16,
-    "preflight_frontier_version": "0.1.0-alpha.74"
+    "preflight_frontier_version": "0.1.0-alpha.74",
+    "fresh_world_frontier_version": "0.1.0-alpha.74"
   }
 }
