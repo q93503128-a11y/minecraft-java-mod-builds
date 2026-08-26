@@ -1,9 +1,9 @@
 status=failure
-source_sha=9071e1c1d274332e36f0e58cae34b50096e0eeb1
-docs_sha=9071e1c1d274332e36f0e58cae34b50096e0eeb1
-source_docs_sha=9071e1c1d274332e36f0e58cae34b50096e0eeb1
-run_id=32965154188
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32965154188
+source_sha=9e8639e7bbc9052403610297380a34ed4d38650d
+docs_sha=9e8639e7bbc9052403610297380a34ed4d38650d
+source_docs_sha=9e8639e7bbc9052403610297380a34ed4d38650d
+run_id=32965434080
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/32965434080
 version=0.1.0-alpha.81
 jar_sha256=unknown
 minecraft=26.2
