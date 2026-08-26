@@ -82,6 +82,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.80', 'mod_version=0.1.0-alpha.79')
         s = s.replace(', plus Alpha.80 client-boot hardening that defers the presentation-only service-sword ItemStack until real render-state extraction after registry component binding and audits client code against registry-backed static ItemStack initialization.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.80"', '"frontier_settlement": "0.1.0-alpha.79"')
     elif self.name == 'FrontierSoldierRenderer.java':
         # Historical audits intentionally assert Alpha.48's old presentation implementation. Feed the
         # Alpha.79 view only while replaying that historical chain; Alpha.80 is audited below for real.
