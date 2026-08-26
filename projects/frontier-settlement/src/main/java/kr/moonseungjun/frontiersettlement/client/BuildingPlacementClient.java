@@ -49,7 +49,11 @@ public final class BuildingPlacementClient {
     public static void tick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) { cancelAllModes(); return; }
-        while (PALETTE.consumeClick()) { cancelAllModes(); minecraft.gui.setScreen(new BuildingPaletteScreen()); }
+        while (PALETTE.consumeClick()) {
+            cancelAllModes();
+            if (ClientSettlementState.snapshot().founded()) minecraft.gui.setScreen(new BuildingPaletteScreen());
+            else minecraft.gui.setScreen(new SettlementStartScreen());
+        }
         if (minecraft.gui.screen() != null) return;
 
         while (RESET.consumeClick()) {

@@ -11,6 +11,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionServi
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWatchtowerService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWorkshopService;
 import net.minecraft.core.BlockPos;
@@ -24,7 +25,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.function.Consumer;
 
 public final class SettlementNetwork {
-    private static final String PROTOCOL = "7";
+    private static final String PROTOCOL = "8";
     private static Consumer<SettlementSnapshotPayload> snapshotSink = payload -> {};
     private static Consumer<PlacementPreviewPayload> placementPreviewSink = payload -> {};
     private static Consumer<RoadPreviewPayload> roadPreviewSink = payload -> {};
@@ -39,11 +40,19 @@ public final class SettlementNetwork {
         registrar.playToClient(RoadPreviewPayload.TYPE,RoadPreviewPayload.CODEC,(p,c)->roadPreviewSink.accept(p));
         registrar.playToClient(OutpostPreviewPayload.TYPE,OutpostPreviewPayload.CODEC,(p,c)->outpostPreviewSink.accept(p));
         registrar.playToClient(CivilWorkPreviewPayload.TYPE,CivilWorkPreviewPayload.CODEC,(p,c)->civilWorkPreviewSink.accept(p));
+        registrar.playToServer(FoundSettlementRequestPayload.TYPE,FoundSettlementRequestPayload.CODEC,SettlementNetwork::handleFoundSettlementRequest);
         registrar.playToServer(PlacementRequestPayload.TYPE,PlacementRequestPayload.CODEC,SettlementNetwork::handlePlacementRequest);
         registrar.playToServer(RoadPlacementRequestPayload.TYPE,RoadPlacementRequestPayload.CODEC,SettlementNetwork::handleRoadPlacementRequest);
         registrar.playToServer(OutpostPlacementRequestPayload.TYPE,OutpostPlacementRequestPayload.CODEC,SettlementNetwork::handleOutpostPlacementRequest);
         registrar.playToServer(CivilWorkRequestPayload.TYPE,CivilWorkRequestPayload.CODEC,SettlementNetwork::handleCivilWorkRequest);
     }
+
+    private static void handleFoundSettlementRequest(FoundSettlementRequestPayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !payload.confirm()) return;
+        var result = SettlementService.foundAt(player, player.blockPosition());
+        player.sendSystemMessage(Component.literal(result.message()));
+    }
+
     private static void handlePlacementRequest(PlacementRequestPayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context){
         if(!(context.player() instanceof ServerPlayer player))return; BuildingType type=BuildingType.fromId(payload.buildingType());
         if(type==null){context.reply(new PlacementPreviewPayload(payload.nonce(),payload.buildingType(),false,false,0,0,0,payload.rotation(),"알 수 없는 건물입니다."));return;}

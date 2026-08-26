@@ -5,6 +5,7 @@ import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 
 public final class SettlementHudOverlay {
     private SettlementHudOverlay() {}
@@ -13,13 +14,24 @@ public final class SettlementHudOverlay {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
         SettlementSnapshotPayload data = ClientSettlementState.snapshot();
-        if (!data.founded()) return;
-        SettlementContextPayload context = ClientSettlementState.context();
-
-        String line = data.tier() + "   목재 " + data.wood() + "   석재 " + data.stone()
-                + "   금속 " + data.metal() + "   식량 " + data.food() + "   인구 " + data.population();
         int x = 8;
         int y = ClientCompanionLayout.resourceHudY();
+
+        if (!data.founded()) {
+            String title = "Frontier Settlement";
+            String hint = "공동 개척지 없음 · B를 눌러 시작";
+            int width = Math.max(minecraft.font.width(title), minecraft.font.width(hint)) + 12;
+            graphics.fill(x, y, x + width, y + 32, 0xA8000000);
+            graphics.fill(x, y, x + 3, y + 32, 0xFFD0A45C);
+            graphics.text(minecraft.font, Component.literal(title), x + 7, y + 4, 0xFFFFFFFF, true);
+            graphics.text(minecraft.font, Component.literal(hint), x + 7, y + 18, 0xFFFFD58A, false);
+            SettlementNoticeQueue.render(graphics, minecraft);
+            return;
+        }
+
+        SettlementContextPayload context = ClientSettlementState.context();
+        String line = data.tier() + "   목재 " + data.wood() + "   석재 " + data.stone()
+                + "   금속 " + data.metal() + "   식량 " + data.food() + "   인구 " + data.population();
         String project = context.projectLabel().isBlank() ? ""
                 : context.projectLabel() + (context.projectProgress() >= 0 ? "   " + context.projectProgress() + "%" : "");
         int width = Math.max(minecraft.font.width(line), minecraft.font.width(data.nextGoal()));
@@ -27,6 +39,7 @@ public final class SettlementHudOverlay {
         width += 12;
         int height = project.isBlank() ? 32 : 45;
         graphics.fill(x, y, x + width, y + height, 0xA8000000);
+        graphics.fill(x, y, x + 3, y + height, 0xFFD0A45C);
         graphics.text(minecraft.font, line, x + 6, y + 4, 0xFFFFFFFF, true);
         graphics.text(minecraft.font, data.nextGoal(), x + 6, y + 18, 0xFFFFD58A, false);
         if (!project.isBlank()) graphics.text(minecraft.font, project, x + 6, y + 31, 0xFFD7D7D7, false);
