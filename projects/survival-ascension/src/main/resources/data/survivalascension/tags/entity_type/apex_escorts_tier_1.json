@@ -2,6 +2,10 @@
   "replace": false,
   "values": [
     { "id": "tbos:armillary_scout", "required": false },
-    { "id": "tbos:blank_chronist", "required": false }
+    { "id": "tbos:blank_chronist", "required": false },
+    { "id": "tbos:parallax_wraith", "required": false },
+    { "id": "tbos:memory_leech", "required": false },
+    { "id": "tbos:prism_stalker", "required": false },
+    { "id": "tbos:wake_cutter", "required": false }
   ]
 }
