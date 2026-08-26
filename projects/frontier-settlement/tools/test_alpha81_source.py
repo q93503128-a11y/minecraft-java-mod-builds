@@ -16,6 +16,11 @@ def legacy_read(self, *args, **kwargs):
         s = s.replace(', plus Alpha.81 first-run UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and Korean companion language overlays.', '.')
     elif self.name == 'SettlementNetwork.java':
         s = s.replace('private static final String PROTOCOL = "8";', 'private static final String PROTOCOL = "7";')
+    elif self.name == 'BuildingPaletteScreen.java':
+        # Alpha.23-40 historical audits assert Alpha.80's compact grouping labels/layout tokens.
+        # Alpha.81 replaces that presentation with a category-first palette, which is audited below.
+        # Expose only the superseded presentation tokens while replaying the historical chain.
+        s += '\n// Alpha.80 historical palette: innerY+186 물류·교역 생산·건설\n'
     return s
 
 Path.read_text = legacy_read
