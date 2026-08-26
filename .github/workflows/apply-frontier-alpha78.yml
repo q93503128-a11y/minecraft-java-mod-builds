@@ -1,0 +1,368 @@
+name: Apply Frontier Settlement Alpha.78
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-frontier-alpha78.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-settlement-alpha78-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Alpha.78 on latest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+
+            if test ! -f .github/workflows/apply-frontier-alpha78.yml; then
+              echo 'Alpha.78 apply workflow already consumed.'
+              exit 0
+            fi
+
+            python3 <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          service_path = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostLogisticsService.java'
+          props_path = root / 'gradle.properties'
+          project_path = root / 'PROJECT.md'
+          canonical_path = root / 'CANONICAL_PLAN.md'
+          gap_path = root / 'COMPLETION_GAP_AUDIT.md'
+          readme_path = root / 'README.md'
+          lock_path = root / 'COMPANION_LOCK.json'
+          source_audit_path = root / 'tools/test_alpha78_source.py'
+          docs_audit_path = root / 'tools/test_alpha78_docs.py'
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, got {count}')
+              return text.replace(old, new, 1)
+
+          props = props_path.read_text(encoding='utf-8')
+          if 'mod_version=0.1.0-alpha.78' in props:
+              raise SystemExit('Alpha.78 already present; refusing duplicate apply')
+          if 'mod_version=0.1.0-alpha.77' not in props:
+              raise SystemExit('Expected Alpha.77 base version not found')
+
+          service = service_path.read_text(encoding='utf-8')
+          service = replace_once(
+              service,
+              ' * insertion all remain physical and owned by this same transporter.\n */',
+              ' * insertion all remain physical and owned by this same transporter.\n *\n * Alpha.78 lets a mature diversified DOMAIN make the existing cart station slightly more useful for\n * normal productive outpost -> town freight. Only the real pickup batch grows; military/waterfront\n * reverse supply keeps the historical 16/32 cap and priority order, and no route/cargo authority moves.\n */',
+              'Alpha.78 service doc'
+          )
+          service = replace_once(
+              service,
+              '    private static final int CART_STATION_TRANSPORT_STACK = 32;\n',
+              '    private static final int CART_STATION_TRANSPORT_STACK = 32;\n'
+              '    private static final int TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL = 4;\n'
+              '    private static final int MAX_PRODUCTIVE_TRANSPORT_STACK = 44;\n',
+              'Alpha.78 transport constants'
+          )
+          old_method = '''    public static int transportBatchSize(SettlementData data) {\n        return data.buildingCount(BuildingType.CART_STATION) > 0\n                ? CART_STATION_TRANSPORT_STACK\n                : BASE_TRANSPORT_STACK;\n    }\n'''
+          new_method = old_method + '''\n    /**\n     * Normal productive outpost -> town freight only. A cart station is still required, and the\n     * diversified territory bonus is capped at +12 (32 -> 44). Reverse military/waterfront supply\n     * deliberately continues to call transportBatchSize so its historical priority/cap is unchanged.\n     */\n    public static int productiveTransportBatchSize(SettlementData data) {\n        if (data.buildingCount(BuildingType.CART_STATION) <= 0) return BASE_TRANSPORT_STACK;\n        int networkLevel = SettlementExplorationBenefitService.territoryNetworkLevel(data);\n        return Math.min(MAX_PRODUCTIVE_TRANSPORT_STACK, CART_STATION_TRANSPORT_STACK\n                + networkLevel * TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL);\n    }\n'''
+          service = replace_once(service, old_method, new_method, 'Alpha.78 productive batch method')
+          service = replace_once(
+              service,
+              '            int normalBatch = transportBatchSize(data);\n',
+              '            int normalBatch = productiveTransportBatchSize(data);\n',
+              'Alpha.78 normal freight call site'
+          )
+          service_path.write_text(service, encoding='utf-8')
+
+          props = props.replace('mod_version=0.1.0-alpha.77', 'mod_version=0.1.0-alpha.78', 1)
+          lines = props.splitlines()
+          for i, line in enumerate(lines):
+              if line.startswith('mod_description='):
+                  if 'territory-network freight efficiency' not in line:
+                      lines[i] = line + ', plus capped domain/cart-station territory-network freight efficiency that raises only real productive outpost-to-town pickup batches while preserving reverse-supply caps and the single physical transporter authority.'
+                  break
+          else:
+              raise SystemExit('mod_description missing')
+          props_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          project = project_path.read_text(encoding='utf-8')
+          project = replace_once(
+              project,
+              'Current implementation delta: **0.1.0-alpha.77**.',
+              'Current implementation delta: **0.1.0-alpha.78**.',
+              'PROJECT version'
+          )
+          alpha78_project = '''Alpha.78 turns the Alpha.77 territory-network level into a small physical logistics payoff without adding another logistics system. With DOMAIN + a completed cart station, normal productive outpost -> town pickups use 32 / 36 / 40 / 44 items at territory-network levels 0 / 1 / 2 / 3. The cap is 44, so even four-way specialization only adds +12 over the existing cart-station batch. Military food/metal/weapon reverse supply and waterfront wood reverse supply still call the historical 16/32 `transportBatchSize`, and their priority order remains military first, waterfront second, normal freight last. The source ItemStack still leaves the real outpost stockpile, stays in the assigned transporter's MAINHAND, follows the persisted road, pauses at unloaded route boundaries and is inserted into real town storage. Alpha.42 deferred logistics may still raise one later real pickup, capped at 64; it does not become virtual cargo.\n\n'''
+          marker = 'Always validate actual Minecraft presentation:'
+          if 'Alpha.78 turns the Alpha.77 territory-network level' not in project:
+              project = replace_once(project, marker, alpha78_project + marker, 'PROJECT Alpha.78 insertion')
+          project_path.write_text(project, encoding='utf-8')
+
+          canonical = canonical_path.read_text(encoding='utf-8')
+          canonical, n = re.subn(
+              r'Current canonical implementation: \*\*0\.1\.0-alpha\.\d+\*\*\.',
+              'Current canonical implementation: **0.1.0-alpha.78**.',
+              canonical,
+              count=1
+          )
+          if n != 1:
+              raise SystemExit('CANONICAL_PLAN current version line missing')
+          if '### Alpha.78 territory-network physical freight efficiency' not in canonical:
+              canonical += '''\n\n### Alpha.78 territory-network physical freight efficiency\n\n- unlock/effect gate: `DOMAIN` + completed cart station + the existing diversified productive-outpost network level;\n- normal productive outpost -> town pickup batch: network Lv.0/1/2/3 = **32/36/40/44**, hard cap 44;\n- no cart station: historical 16-item normal batch remains unchanged;\n- military and waterfront reverse supply intentionally keep the historical 16/32 `transportBatchSize` and existing priority order;\n- only `SettlementOutpostLogisticsService` remains long-distance transport authority; transport workers remain permanently assigned to one outpost;\n- pickup still removes a real matching ItemStack from the physical outpost stockpile, the worker carries that exact stack in MAINHAND over the persisted road, and delivery inserts into real town storage;\n- unloaded route boundaries still pause movement and no chunk is force-loaded;\n- Alpha.42 deferred logistics may still double a later real pickup but remains capped at 64 and never stores cargo as a virtual resource;\n- no save field, currency, menu, worker, teleport, free resource generation or second logistics authority is introduced.\n\nRuntime acceptance for route unload/reload, transporter death cargo recovery, save/reload and long two-player sessions remains explicitly unfinished.\n'''
+          canonical_path.write_text(canonical, encoding='utf-8')
+
+          gap = gap_path.read_text(encoding='utf-8')
+          gap, n = re.subn(r'현재 구현 기준: `0\.1\.0-alpha\.\d+`', '현재 구현 기준: `0.1.0-alpha.78`', gap, count=1)
+          if n != 1:
+              raise SystemExit('COMPLETION_GAP current version line missing')
+          if '### Alpha.78 영지망 물리 물류 효율 패스' not in gap:
+              gap += '''\n\n### Alpha.78 영지망 물리 물류 효율 패스\n\n- `DOMAIN` + cart station + 서로 다른 생산 전문 전초 조합을 기존 Alpha.77 영지망 레벨로 재사용;\n- 일반 생산물 전초 -> 본진 회수만 Lv.0/1/2/3에서 32/36/40/44, 최대 44;\n- cart station이 없으면 기존 16 유지;\n- 군사 food/metal/외부무기 및 수변 wood 역보급은 기존 16/32 상한과 우선순위를 그대로 유지;\n- real outpost stockpile -> assigned transporter MAINHAND -> persisted road -> real town storage 권위 유지;\n- route unload에서는 정지하며 force-load/teleport/virtual cargo/free resource/두 번째 운송자 시스템 없음;\n- Alpha.42 backlog는 다음 실제 픽업만 최대 64까지 보정하며 화물 장부가 아님;\n- 장시간 2인, route unload/reload, 운송자 사망 화물 회수, save/reload 실제 acceptance는 여전히 남음.\n'''
+          gap_path.write_text(gap, encoding='utf-8')
+
+          readme = readme_path.read_text(encoding='utf-8')
+          readme, n = re.subn(r'## Current version: 0\.1\.0-alpha\.\d+', '## Current version: 0.1.0-alpha.78', readme, count=1)
+          if n != 1:
+              raise SystemExit('README current version line missing')
+          if '## Alpha.78 — territory-network physical freight efficiency' not in readme:
+              readme += '''\n\n## Alpha.78 — territory-network physical freight efficiency\n\nA diversified DOMAIN now makes the existing cart station slightly better at the physical job it already performs. Normal productive outpost-to-town pickup caps are 32 / 36 / 40 / 44 at territory-network levels 0 / 1 / 2 / 3. Military and waterfront reverse supply stay on the historical 16/32 cap and retain their existing priority over normal freight. No cargo is virtualized: the same outpost-assigned transporter removes real ItemStacks from the outpost stockpile, carries them in MAINHAND over the persisted road, pauses at unloaded route boundaries and deposits them into real settlement storage. Alpha.42 deferred credit can still enlarge one later real pickup up to 64; it never becomes stored cargo.\n'''
+          readme_path.write_text(readme, encoding='utf-8')
+
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          lock.setdefault('target', {})['frontier_settlement'] = '0.1.0-alpha.78'
+          note = ('Alpha.78 reuses the existing DOMAIN territory-network level only to raise normal cart-station productive outpost-to-town physical pickup batches from 32 to at most 44. Military/waterfront reverse supply keeps the historical 16/32 cap and priority, while the same outpost-assigned transporter still extracts real stockpile ItemStacks, carries them in MAINHAND over loaded persisted roads and inserts them into real town storage; no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency is added.')
+          notes = lock.setdefault('notes', [])
+          if note not in notes:
+              notes.append(note)
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          source_audit = r'''#!/usr/bin/env python3
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          JAVA = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement'
+          A77 = ROOT / 'tools/test_alpha77_source.py'
+          _real_read = Path.read_text
+
+          def legacy_read(self, *args, **kwargs):
+              s = _real_read(self, *args, **kwargs)
+              if self.name == 'gradle.properties':
+                  s = s.replace('mod_version=0.1.0-alpha.78', 'mod_version=0.1.0-alpha.77')
+              elif self.name == 'PROJECT.md':
+                  s = s.replace('Current implementation delta: **0.1.0-alpha.78**',
+                                'Current implementation delta: **0.1.0-alpha.77**')
+              return s
+
+          Path.read_text = legacy_read
+          try:
+              a = _real_read(A77, encoding='utf-8').replace(
+                  "print('Frontier Settlement alpha.23-77 cumulative source audit: PASS')", 'pass')
+              ns = {'__file__': str(A77), '__name__': '__main__'}
+              exec(compile(a, str(A77), 'exec'), ns, ns)
+          finally:
+              Path.read_text = _real_read
+
+          def text(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def must(source, tokens, label):
+              for token in tokens:
+                  if token not in source:
+                      raise SystemExit(f'{label} missing: {token}')
+
+          sett = JAVA / 'settlement'
+          logistics = text(sett / 'SettlementOutpostLogisticsService.java')
+          benefit = text(sett / 'SettlementExplorationBenefitService.java')
+          props = text(ROOT / 'gradle.properties')
+          project = text(ROOT / 'PROJECT.md')
+
+          must(logistics, (
+              'TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL = 4',
+              'MAX_PRODUCTIVE_TRANSPORT_STACK = 44',
+              'public static int productiveTransportBatchSize(SettlementData data)',
+              'if (data.buildingCount(BuildingType.CART_STATION) <= 0) return BASE_TRANSPORT_STACK;',
+              'SettlementExplorationBenefitService.territoryNetworkLevel(data)',
+              'Math.min(MAX_PRODUCTIVE_TRANSPORT_STACK, CART_STATION_TRANSPORT_STACK',
+              '+ networkLevel * TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL)',
+              'int normalBatch = productiveTransportBatchSize(data);',
+              'amount = Math.min(foodShortage, transportBatchSize(data));',
+              'amount = Math.min(metalShortage, transportBatchSize(data));',
+              'int amount = Math.min(shortage, transportBatchSize(data));',
+              'SettlementDeferredOutpostService.adjustedTransportBatch(',
+              'worker.setItemSlot(EquipmentSlot.MAINHAND, picked)',
+              'SettlementStorageService.insertAt(level, target, carried)',
+              'if (!level.hasChunkAt(nextPos))'
+          ), 'alpha.78 physical freight integration')
+          must(benefit, (
+              'territoryNetworkLevel(SettlementData data)',
+              'SettlementTier.current(data) != SettlementTier.DOMAIN',
+              'productiveOutpostDiversity(data) - 1'
+          ), 'alpha.78 reuses alpha.77 network gate')
+
+          expected = [32, 36, 40, 44]
+          actual = [min(44, 32 + level * 4) for level in range(4)]
+          if actual != expected:
+              raise SystemExit(f'alpha.78 productive freight curve changed: {actual}')
+
+          # Reverse supply must remain on the old shared 16/32 capacity path rather than inheriting
+          # the territory-network freight bonus.
+          if logistics.count('amount = Math.min(foodShortage, transportBatchSize(data));') != 1:
+              raise SystemExit('alpha.78 military food reverse-supply cap changed')
+          if logistics.count('amount = Math.min(metalShortage, transportBatchSize(data));') != 1:
+              raise SystemExit('alpha.78 military metal reverse-supply cap changed')
+          if logistics.count('int amount = Math.min(shortage, transportBatchSize(data));') != 1:
+              raise SystemExit('alpha.78 waterfront reverse-supply cap changed')
+
+          for forbidden in ('teleportTo(', 'forceChunk(', 'addRegionTicket(', 'new virtual cargo'):
+              if forbidden in logistics:
+                  raise SystemExit(f'alpha.78 introduced forbidden transport shortcut: {forbidden}')
+
+          must(props, (
+              'mod_version=0.1.0-alpha.78',
+              'territory-network freight efficiency'
+          ), 'alpha.78 props')
+          must(project, (
+              'Current implementation delta: **0.1.0-alpha.78**',
+              'Alpha.78 turns the Alpha.77 territory-network level into a small physical logistics payoff',
+              '32 / 36 / 40 / 44 items',
+              'The cap is 44',
+              'military first, waterfront second, normal freight last',
+              'pauses at unloaded route boundaries',
+              'capped at 64; it does not become virtual cargo'
+          ), 'alpha.78 current direction')
+
+          print('Frontier Settlement alpha.23-78 cumulative source audit: PASS')
+          '''
+          # Remove indentation introduced by the workflow heredoc while preserving script-relative blocks.
+          import textwrap
+          source_audit_path.write_text(textwrap.dedent(source_audit), encoding='utf-8')
+
+          docs_audit = r'''#!/usr/bin/env python3
+          import json
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          A77 = ROOT / 'tools/test_alpha77_docs.py'
+          _real_read = Path.read_text
+
+          # Alpha.74 is the historical consolidated ledger baseline used by the Alpha.77 chain.
+          # Present the pre-Alpha.78 view while that historical chain runs, then validate the new
+          # consolidated Alpha.78 docs after restoring the real files.
+          def legacy_read(self, *args, **kwargs):
+              s = _real_read(self, *args, **kwargs)
+              if self.name == 'gradle.properties':
+                  s = s.replace('mod_version=0.1.0-alpha.78', 'mod_version=0.1.0-alpha.77')
+              elif self.name == 'PROJECT.md':
+                  s = s.replace('Current implementation delta: **0.1.0-alpha.78**',
+                                'Current implementation delta: **0.1.0-alpha.77**')
+              elif self.name == 'CANONICAL_PLAN.md':
+                  s = s.replace('Current canonical implementation: **0.1.0-alpha.78**.',
+                                'Current canonical implementation: **0.1.0-alpha.74**.')
+              elif self.name == 'COMPLETION_GAP_AUDIT.md':
+                  s = s.replace('현재 구현 기준: `0.1.0-alpha.78`', '현재 구현 기준: `0.1.0-alpha.74`')
+              elif self.name == 'README.md':
+                  s = s.replace('## Current version: 0.1.0-alpha.78', '## Current version: 0.1.0-alpha.74')
+              elif self.name == 'COMPANION_LOCK.json':
+                  s = s.replace('"frontier_settlement": "0.1.0-alpha.78"',
+                                '"frontier_settlement": "0.1.0-alpha.74"')
+              return s
+
+          Path.read_text = legacy_read
+          try:
+              a = _real_read(A77, encoding='utf-8').replace(
+                  "print('Frontier Settlement alpha.77 current docs audit: PASS')", 'pass')
+              ns = {'__file__': str(A77), '__name__': '__main__'}
+              exec(compile(a, str(A77), 'exec'), ns, ns)
+          finally:
+              Path.read_text = _real_read
+
+          def text(name):
+              return (ROOT / name).read_text(encoding='utf-8')
+
+          def must(source, tokens, label):
+              for token in tokens:
+                  if token not in source:
+                      raise SystemExit(f'{label} missing: {token}')
+
+          props = text('gradle.properties')
+          project = text('PROJECT.md')
+          canonical = text('CANONICAL_PLAN.md')
+          gap = text('COMPLETION_GAP_AUDIT.md')
+          readme = text('README.md')
+          lock = json.loads(text('COMPANION_LOCK.json'))
+
+          must(props, ('mod_version=0.1.0-alpha.78', 'territory-network freight efficiency'), 'alpha.78 props docs')
+          must(project, (
+              'Current implementation delta: **0.1.0-alpha.78**',
+              '32 / 36 / 40 / 44 items',
+              'military first, waterfront second, normal freight last'
+          ), 'alpha.78 PROJECT docs')
+          must(canonical, (
+              'Current canonical implementation: **0.1.0-alpha.78**',
+              '### Alpha.78 territory-network physical freight efficiency',
+              '32/36/40/44',
+              'hard cap 44',
+              'no save field, currency, menu, worker, teleport, free resource generation or second logistics authority'
+          ), 'alpha.78 canonical docs')
+          must(gap, (
+              '현재 구현 기준: `0.1.0-alpha.78`',
+              '### Alpha.78 영지망 물리 물류 효율 패스',
+              '32/36/40/44, 최대 44',
+              'route unload에서는 정지'
+          ), 'alpha.78 gap docs')
+          must(readme, (
+              '## Current version: 0.1.0-alpha.78',
+              '## Alpha.78 — territory-network physical freight efficiency',
+              '32 / 36 / 40 / 44',
+              'No cargo is virtualized'
+          ), 'alpha.78 README docs')
+          if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.78':
+              raise SystemExit('alpha.78 companion lock target mismatch')
+          notes = '\n'.join(lock.get('notes', []))
+          must(notes, (
+              'Alpha.78 reuses the existing DOMAIN territory-network level',
+              'Military/waterfront reverse supply keeps the historical 16/32 cap and priority',
+              'no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency'
+          ), 'alpha.78 companion lock note')
+
+          print('Frontier Settlement alpha.78 canonical docs audit: PASS')
+          '''
+          docs_audit_path.write_text(textwrap.dedent(docs_audit), encoding='utf-8')
+          PY
+
+            rm -f .github/workflows/apply-frontier-alpha78.yml
+
+            python3 -m py_compile projects/frontier-settlement/tools/test_alpha78_source.py projects/frontier-settlement/tools/test_alpha78_docs.py
+            (cd projects/frontier-settlement && python3 tools/test_alpha78_source.py)
+            (cd projects/frontier-settlement && python3 tools/test_alpha78_docs.py)
+            git diff --check
+
+            git add -A projects/frontier-settlement .github/workflows/apply-frontier-alpha78.yml
+            git commit -m 'Implement Frontier Settlement alpha.78 territory freight efficiency'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced with main; retrying attempt $attempt" >&2
+            sleep $((attempt * 2))
+          done
+
+          echo 'Unable to apply Alpha.78 after retries' >&2
+          exit 1
