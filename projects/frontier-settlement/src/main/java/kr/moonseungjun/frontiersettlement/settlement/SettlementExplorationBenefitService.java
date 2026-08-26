@@ -1,5 +1,7 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import net.minecraft.server.MinecraftServer;
+
 /**
  * Deterministic exploration-to-settlement feedback.
  * First-time survey/conquest metadata never becomes currency or item authority: it only improves
@@ -8,6 +10,9 @@ package kr.moonseungjun.frontiersettlement.settlement;
 public final class SettlementExplorationBenefitService {
     public static final int MAX_SURVEY_LEVEL = 3;
     public static final int MAX_CONQUEST_LEVEL = 2;
+    public static final int MAX_THREAT_LEVEL = 3;
+    public static final long RECRUIT_FOOD_DISCOUNT_PER_THREAT = 1L;
+    public static final double BARRACKS_THREAT_RADIUS_BONUS_PER_LEVEL = 4.0D;
     public static final long OUTPOST_WOOD_DISCOUNT_PER_CONQUEST = 4L;
     public static final long OUTPOST_STONE_DISCOUNT_PER_CONQUEST = 2L;
     public static final int MARKET_EMERALD_BONUS_PER_SURVEY = 1;
@@ -25,6 +30,26 @@ public final class SettlementExplorationBenefitService {
 
     public static int conquestLevel(SettlementData data) {
         return Math.min(MAX_CONQUEST_LEVEL, data.defeatedExternalBosses().size());
+    }
+
+    public static int threatLevel(MinecraftServer server) {
+        return SettlementThreatKnowledgeData.get(server).threatLevel();
+    }
+
+    public static long barracksRecruitFoodCost(MinecraftServer server) {
+        return Math.max(5L, SettlementBarracksService.RECRUIT_FOOD_COST
+                - threatLevel(server) * RECRUIT_FOOD_DISCOUNT_PER_THREAT);
+    }
+
+    public static double barracksThreatRadius(MinecraftServer server) {
+        return SettlementBarracksService.BASE_THREAT_RADIUS
+                + threatLevel(server) * BARRACKS_THREAT_RADIUS_BONUS_PER_LEVEL;
+    }
+
+    public static String threatSupportSummary(MinecraftServer server) {
+        return "위협정보 " + threatLevel(server) + "/" + MAX_THREAT_LEVEL
+                + " · 병사 식량 " + barracksRecruitFoodCost(server)
+                + " · 감시반경 " + (int) barracksThreatRadius(server);
     }
 
     public static long outpostWoodCost(SettlementData data) {

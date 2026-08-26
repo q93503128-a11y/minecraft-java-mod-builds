@@ -59,13 +59,22 @@ public final class SettlementExplorationService {
 
         LivingEntity victim = event.getEntity();
         Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(victim.getType());
-        if (id == null || !isConquestTarget(victim, id)) return;
-        if (!data.recordExternalBoss(id.toString())) return;
+        if (id == null) return;
 
-        player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)
-                + " · 신규 전초 " + SettlementExplorationBenefitService.outpostWoodCost(data) + "목재/"
-                + SettlementExplorationBenefitService.outpostStoneCost(data) + "석재"));
-        SettlementService.broadcast(server, data);
+        if (isConquestTarget(victim, id)) {
+            if (!data.recordExternalBoss(id.toString())) return;
+            player.sendSystemMessage(Component.literal("개척 정복 · 강적 " + id + " | " + SettlementExplorationBenefitService.supportSummary(data)
+                    + " · 신규 전초 " + SettlementExplorationBenefitService.outpostWoodCost(data) + "목재/"
+                    + SettlementExplorationBenefitService.outpostStoneCost(data) + "석재"));
+            SettlementService.broadcast(server, data);
+            return;
+        }
+
+        if (!isExternalThreat(victim, id)) return;
+        SettlementThreatKnowledgeData knowledge = SettlementThreatKnowledgeData.get(server);
+        if (!knowledge.recordExternalThreat(id.toString())) return;
+        player.sendSystemMessage(Component.literal("개척 전투보고 · 외부 위협 " + id + " | "
+                + SettlementExplorationBenefitService.threatSupportSummary(server)));
     }
 
     private static boolean isExternalStructure(Identifier id) {
@@ -75,6 +84,12 @@ public final class SettlementExplorationService {
     private static boolean isConquestTarget(LivingEntity victim, Identifier id) {
         if (VANILLA_CONQUEST_TARGETS.contains(id.toString())) return true;
         if (!(victim instanceof Mob) || victim.getMaxHealth() < EXTERNAL_BOSS_MIN_HEALTH) return false;
+        String namespace = id.getNamespace();
+        return !"minecraft".equals(namespace) && !FrontierSettlement.MOD_ID.equals(namespace) && !"neoforge".equals(namespace);
+    }
+
+    private static boolean isExternalThreat(LivingEntity victim, Identifier id) {
+        if (!(victim instanceof net.minecraft.world.entity.monster.Monster)) return false;
         String namespace = id.getNamespace();
         return !"minecraft".equals(namespace) && !FrontierSettlement.MOD_ID.equals(namespace) && !"neoforge".equals(namespace);
     }

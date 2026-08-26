@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.73`
+현재 구현 기준: `0.1.0-alpha.74`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -653,3 +653,12 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - full candidate companion-stack fresh-world client/server acceptance.
 
 자동 cumulative source audit / canonical docs audit / Java25 clean build / JAR verify는 필수지만 실제 Minecraft acceptance를 대체하지 않는다.
+
+### Alpha.74 외부 위협 전투지식 게임성 패스
+
+- 외부 적대 몹의 서로 다른 타입을 플레이어가 처음 직접 처치하면 최대 3단계의 `위협정보`로 누적한다. 기존 80HP 이상 강적/보스 정복 기록과는 분리해 의미를 유지한다.
+- 위협정보는 재화가 아니며 아이템/드랍/가상자원을 생성하지 않는다.
+- 병영의 실제 모집 식량비가 8 -> 7 -> 6 -> 최소 5로 줄고 금속 2는 그대로 소비한다.
+- 병영의 로드된 적 탐지 반경은 28 -> 32 -> 36 -> 최대 40블록으로 늘어난다.
+- V&V 같은 외부 적대몹을 잡는 행동이 단순 변종 감상이 아니라 정착지 군사 성장으로 되돌아오며, companion class hard dependency는 없다.
+- 남은 검증: 사람 클라이언트에서 실제 스폰 밀도/전투 빈도/체감 밸런스는 문승준 실플레이 영역이다.

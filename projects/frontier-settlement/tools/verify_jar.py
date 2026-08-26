@@ -70,7 +70,7 @@ with zipfile.ZipFile(jar) as zf:
     for token in (
         'modLoader="javafml"',
         'modId="frontier_settlement"',
-        'version="0.1.0-alpha.73"',
+        'version="0.1.0-alpha.74"',
         'displayName="Frontier Settlement"',
         'javaVersion="[25,)"',
         'modId="neoforge"',

@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.73"
+    "frontier_settlement": "0.1.0-alpha.74"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -44,7 +44,8 @@
     "Alpha.72 is full-project error hardening only: the shared builder uses loaded-evidence/UUID authority and physically returns home after every project, building/road/outpost/civil cleanup keeps carried/crate ItemStacks physical, road grading and waterfront placement commit only after successful world mutation, founding is rollback-safe and always leaves a physical pioneer marker, fishing/market/waterfront/civic-defense replacement is loaded-evidence-safe, renewable civic Iron Golems drop no iron, and military-outpost historical duplicates are non-destructively UUID-contained. No new content, UUID save ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
     "Alpha.73 is a gameplay feedback pass: capped first-time survey/conquest metadata now raises existing physical market relic payouts, one-metal weapon repair efficiency and advanced forge/reforge selection power while preserving exact ItemStack costs, no new currency/menu/save authority, optional companion boot, and the existing outpost-cost/specialization benefits.",
     "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion.",
-    "Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; fresh binary resolution and repeated dedicated-server preflight are required before any expanded-stack runtime claim."
+    "Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; fresh binary resolution and repeated dedicated-server preflight are required before any expanded-stack runtime claim.",
+    "Alpha.74 adds bounded first-kill external-hostile field knowledge: up to 3 levels lower real barracks recruitment food from 8 to a floor of 5 and extend loaded garrison threat detection from 28 to 40 blocks. The knowledge ledger owns no items/currency/population/logistics, references no companion classes, and does not promote human client/spawn-density acceptance."
   ],
   "entries": [
     {

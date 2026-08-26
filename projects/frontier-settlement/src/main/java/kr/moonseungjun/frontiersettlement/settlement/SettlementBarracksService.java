@@ -33,7 +33,7 @@ public final class SettlementBarracksService {
     private static final int PATROL_INTERVAL_TICKS = 40;
     private static final int RECRUIT_INTERVAL_TICKS = 600;
     private static final int PATROL_RADIUS = 24;
-    private static final double THREAT_RADIUS = 28.0D;
+    public static final double BASE_THREAT_RADIUS = 28.0D;
     private static final double SOLDIER_SEARCH_RADIUS = 176.0D;
     private static final int SOLDIER_ROUTE_MARGIN = 32;
     private static final double HOME_RADIUS_SQR = 12.0D * 12.0D;
@@ -118,12 +118,13 @@ public final class SettlementBarracksService {
         if (findSoldier(level, data, assignment.barracks(), assignment.slot()) != null) return false;
         if (!SettlementStorageService.storageAvailable(level, data)) return false;
         SettlementResources resources = SettlementStorageService.scan(level, data);
-        if (resources.food() < RECRUIT_FOOD_COST || resources.metal() < RECRUIT_METAL_COST) return false;
+        long recruitFoodCost = SettlementExplorationBenefitService.barracksRecruitFoodCost(level.getServer());
+        if (resources.food() < recruitFoodCost || resources.metal() < RECRUIT_METAL_COST) return false;
         BlockPos home = soldierHome(assignment.barracks(), assignment.slot());
         if (!level.hasChunkAt(home)) return false;
         FrontierSoldierEntity soldier = createSoldier(level, assignment.barracks(), assignment.slot(), home);
         if (!level.addFreshEntity(soldier)) return false;
-        if (!SettlementStorageService.consumeMetalAndFood(level, data, RECRUIT_METAL_COST, RECRUIT_FOOD_COST)) {
+        if (!SettlementStorageService.consumeMetalAndFood(level, data, RECRUIT_METAL_COST, recruitFoodCost)) {
             soldier.discard();
             return false;
         }
@@ -161,7 +162,8 @@ public final class SettlementBarracksService {
     }
 
     private static Monster nearestThreat(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(THREAT_RADIUS, 12.0D, THREAT_RADIUS);
+        double threatRadius = SettlementExplorationBenefitService.barracksThreatRadius(level.getServer());
+        AABB area = new AABB(center).inflate(threatRadius, 12.0D, threatRadius);
         return level.getEntitiesOfClass(Monster.class, area, monster -> monster.isAlive() && !(monster instanceof Creeper)).stream()
                 .min(Comparator.comparingDouble(monster -> monster.distanceToSqr(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D))).orElse(null);
     }

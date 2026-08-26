@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.73
+## Current version: 0.1.0-alpha.74
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -512,3 +512,7 @@ Canonical Alpha.53 CI order:
 6. exact source/docs SHA + CI result commit/run recording.
 
 Automated validation does not replace final real Minecraft acceptance. Important final play checks include Alpha.51 retaining-plan boundary/cobblestone depletion/save-reload behavior, Alpha.50 imported-fill depletion/resupply/cargo-return behavior, civil pathing/exploit resistance, Alpha.48 humanoid render/attack presentation, external weapon breadth, waterfront pathing/trade balance, dangerous-outpost combat, deferred-work pacing, Jade/Xaero visual coexistence, two-player shared-state behavior and full candidate companion-stack fresh-world launch.
+
+## Alpha.74 — external-threat field knowledge gameplay pass
+
+External hostile variants now feed settlement defense without a new currency or management screen. The first direct player kill of each distinct non-vanilla hostile type becomes bounded field knowledge (max level 3). Bosses remain conquest targets instead of being double-counted. Each field-knowledge level cuts barracks recruitment food by 1 real unit (8 -> minimum 5, metal stays 2) and expands the loaded garrison threat radius by 4 blocks (28 -> maximum 40). The logic is registry/class-generic, so Variants & Ventures and future compatible hostile-mob companions work without Frontier linking against their Java classes.

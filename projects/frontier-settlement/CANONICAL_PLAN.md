@@ -4,7 +4,7 @@ This file is the repository-side implementation authority for Frontier Settlemen
 
 `ORIGINAL_DESIGN_v0.2.md` is the scope foundation/ceiling. This file may make that design more concrete, but it must never silently shrink unfinished original requirements to match the current code.
 
-Current canonical implementation: **0.1.0-alpha.73**.
+Current canonical implementation: **0.1.0-alpha.74**.
 
 ## 1. Product identity
 
@@ -967,3 +967,12 @@ At the final/test-worthy point verify at least:
 - full companion-stack fresh world.
 
 Real-play observations override assumptions. Fix root causes before adding more breadth when testing exposes a regression.
+
+### Alpha.74 external-threat field knowledge gameplay pass
+
+- First direct player kills of distinct non-vanilla hostile `Monster` entity types are recorded in a bounded server-side knowledge ledger; bosses keep the existing conquest meaning and are not double-counted as ordinary threats.
+- Field knowledge is capped at 3 gameplay levels. It does not create loot, currency, population, virtual inventory, or logistics authority.
+- Each level lowers the existing barracks recruit food requirement by 1 real food ItemStack-equivalent, from 8 down to a floor of 5; metal remains exactly 2.
+- Each level extends loaded barracks hostile detection by 4 blocks, from 28 to at most 40, so unfamiliar companion threats become a concrete reason to explore and fight before expanding the garrison.
+- Detection is namespace/class-generic and references no Variants & Ventures Java class or item. Optional companion absence remains boot-safe.
+- This is the next gameplay-feedback link after Alpha.73: external combat knowledge -> cheaper/more capable settlement defense -> safer outward expansion.
