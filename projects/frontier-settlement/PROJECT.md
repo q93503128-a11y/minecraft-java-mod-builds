@@ -2,6 +2,8 @@
 
 The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
+Current implementation delta: **0.1.0-alpha.76**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
+
 Non-negotiable summary:
 
 - The player should keep playing Minecraft, not a spreadsheet.
@@ -19,5 +21,7 @@ Non-negotiable summary:
 - NPC event/dialogue/social breadth is intentionally bounded. Frontier does not require lifelike daily-life simulation; add NPC interactions only when they create a clear gameplay decision, reward, service or progression effect.
 - Content work should prefer deeper use of existing settlement systems and companion content over adding decorative NPC behavior or another management layer.
 - External structures should not all collapse into one generic survey reward: broad soft archetypes may feed different existing systems while unknown companions still fall back to generic survey progression.
+
+Alpha.76 deepens the exploration -> territory loop without a new menu, building or NPC interaction layer. Previously discovered trade-settlement knowledge adds at most +16 field evidence and industrial-site knowledge adds at most +6 exposed-stone evidence when a new road-end outpost is evaluated. Those bonuses stack with the existing bounded biome/survey bias but are deliberately too small to create agriculture or quarry specialization without real local terrain evidence. Mining remains untouched so metadata cannot fabricate an ore specialization where no physical ore exists.
 
 Always validate actual Minecraft presentation: no floating roofs/foundations, no unsafe block destruction or loose-drop preparation, proper windows/lighting, readable worker movement, and no magical instant-building feel.
