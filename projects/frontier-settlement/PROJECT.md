@@ -16,5 +16,8 @@ Non-negotiable summary:
 - UI information architecture follows proven references such as Against the Storm, Manor Lords and MineColonies instead of generic invented panels.
 - Normal controls stay compact and avoid important vanilla key conflicts.
 - World/combat/dungeon/item depth remains compatible with selected external mods rather than being reimplemented here.
+- NPC event/dialogue/social breadth is intentionally bounded. Frontier does not require lifelike daily-life simulation; add NPC interactions only when they create a clear gameplay decision, reward, service or progression effect.
+- Content work should prefer deeper use of existing settlement systems and companion content over adding decorative NPC behavior or another management layer.
+- External structures should not all collapse into one generic survey reward: broad soft archetypes may feed different existing systems while unknown companions still fall back to generic survey progression.
 
 Always validate actual Minecraft presentation: no floating roofs/foundations, no unsafe block destruction or loose-drop preparation, proper windows/lighting, readable worker movement, and no magical instant-building feel.
