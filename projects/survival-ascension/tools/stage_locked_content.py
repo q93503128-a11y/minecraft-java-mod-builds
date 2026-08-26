@@ -8,7 +8,6 @@ import hashlib
 from pathlib import Path
 import urllib.error
 import urllib.request
-import zipfile
 
 from build_mrpack import (
     DEFAULT_LOCK,
@@ -67,29 +66,6 @@ def download_verified(packed: dict, output_dir: Path) -> Path:
     return destination
 
 
-def inspect_amethyst_localization(path: Path) -> None:
-    """Temporary pre-localization audit: expose the locked mod's exact translation keys."""
-    if "amethyst_resonance" not in path.name:
-        return
-    with zipfile.ZipFile(path) as archive:
-        names = archive.namelist()
-        print("AMETHYST_RESOURCE_PATHS_BEGIN")
-        for name in names:
-            lowered = name.lower()
-            if ("lang/" in lowered or "mods.toml" in lowered) and not lowered.endswith("/"):
-                print(name)
-        print("AMETHYST_RESOURCE_PATHS_END")
-        for candidate in (
-            "assets/amethyst_resonance/lang/en_us.json",
-            "assets/amethystresonance/lang/en_us.json",
-            "assets/amethyst_resonance/lang/es_es.json",
-        ):
-            if candidate in names:
-                print(f"AMETHYST_LANG_BEGIN={candidate}")
-                print(archive.read(candidate).decode("utf-8"))
-                print(f"AMETHYST_LANG_END={candidate}")
-
-
 def stage(lock_path: Path, output_dir: Path) -> None:
     lock = read_json(lock_path)
     for key in ("minecraft", "neoforge", "mods"):
@@ -116,7 +92,6 @@ def stage(lock_path: Path, output_dir: Path) -> None:
         path = download_verified(packed, output_dir)
         staged.append(path.name)
         print(f"staged={name}|{path.name}|bytes={path.stat().st_size}")
-        inspect_amethyst_localization(path)
 
     if len(staged) != len(lock["mods"]):
         fail(f"staged mod count mismatch: {len(staged)} != {len(lock['mods'])}")

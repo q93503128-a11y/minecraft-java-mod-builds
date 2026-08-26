@@ -57,6 +57,7 @@ apex1 = read("src/main/resources/data/survivalascension/tags/entity_type/apex_es
 apex2 = read("src/main/resources/data/survivalascension/tags/entity_type/apex_escorts_tier_2.json")
 exp2 = read("src/main/resources/data/survivalascension/tags/entity_type/expedition_reinforcements_tier_2.json")
 resonance = read("src/main/resources/data/survivalascension/tags/item/expedition_resonance_rewards.json")
+amethyst_ko = read("src/main/resources/assets/amethyst_resonance/lang/ko_kr.json")
 lock = read("modpack/content-lock.json")
 
 need(lock, [f'"version": "{CURRENT_LOCK_VERSION}"', '"The Birth of Steve"', '"Amethyst Resonance"', '"Biomes O\' Plenty"'],
@@ -94,6 +95,30 @@ need(resonance, [
 ], "0.59.1 Resonance reward pool")
 need(compat, ["randomIncidentReinforcementId", "resonanceOperationRewardIds", "[content-census]" if False else "censusLines"],
      "0.59.1 runtime registry/tag compatibility")
+need(amethyst_ko, [
+    '"item.amethyst_resonance.resonant_crystal": "공명 수정"',
+    '"item.amethyst_resonance.resonant_sword": "공명 검"',
+    '"item.amethyst_resonance.resonant_pickaxe": "공명 곡괭이"',
+    '"item.amethyst_resonance.resonant_axe": "공명 도끼"',
+    '"item.amethyst_resonance.resonant_shovel": "공명 삽"',
+    '"item.amethyst_resonance.resonant_hoe": "공명 괭이"',
+    '"item.amethyst_resonance.resonant_helmet": "공명 투구"',
+    '"item.amethyst_resonance.resonant_chestplate": "공명 흉갑"',
+    '"item.amethyst_resonance.resonant_leggings": "공명 각반"',
+    '"item.amethyst_resonance.resonant_boots": "공명 장화"',
+    '"tooltip.amethyst_resonance.armor": "착용 시 스컬크가 감지하는 진동을 억제합니다"',
+    '"tooltip.amethyst_resonance.helmet_gaze": "엔더맨과 눈이 마주쳐도 적대하지 않습니다"',
+    '"tooltip.amethyst_resonance.warden": "워든의 분노가 더 천천히 쌓입니다"',
+    '"tooltip.amethyst_resonance.tool": "수정 계열 블록과 공명해 채굴 효율이 높아집니다"',
+    '"tooltip.amethyst_resonance.silent_mining": "채굴해도 스컬크를 자극하지 않습니다"',
+    '"tooltip.amethyst_resonance.infused": "공명 주입됨 ✦"',
+    '"text.autoconfig.amethyst_resonance.option.vibrationDampening": "진동 억제 (스컬크 센서)"',
+    '"text.autoconfig.amethyst_resonance.option.crystalAffinity": "수정 친화 (추가 조각)"',
+    '"text.autoconfig.amethyst_resonance.option.resonanceInfusion": "공명 주입 (대장장이 작업)"',
+    '"item.amethyst_resonance.resonance_upgrade_smithing_template": "공명 강화 대장장이 형판"',
+    '"item.amethyst_resonance.smithing_template.applies_to": "모든 방어구"',
+    '"item.amethyst_resonance.smithing_template.ingredients": "공명 수정"'
+], "0.59.1 Amethyst Resonance Korean localization")
 
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
@@ -104,4 +129,5 @@ if errors:
 print("apex_optional_escort_replacement_bridge=PASS")
 print("expanded_tbs_expedition_pool=PASS")
 print("resonance_nine_slot_reward_pool=PASS")
+print("amethyst_resonance_korean_localization=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")

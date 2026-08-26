@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -50,6 +51,23 @@ with zipfile.ZipFile(jar) as zf:
         if forbidden in combined:
             raise SystemExit(f"0.59 unsafe Apex escort entry packaged: {forbidden!r}")
 
+    lang_name = "assets/amethyst_resonance/lang/ko_kr.json"
+    if lang_name not in zf.namelist():
+        raise SystemExit(f"0.59.1 packaged Korean integration resource missing: {lang_name}")
+    lang = json.loads(zf.read(lang_name).decode("utf-8"))
+    expected_localization = {
+        "item.amethyst_resonance.resonant_helmet": "공명 투구",
+        "tooltip.amethyst_resonance.armor": "착용 시 스컬크가 감지하는 진동을 억제합니다",
+        "tooltip.amethyst_resonance.helmet_gaze": "엔더맨과 눈이 마주쳐도 적대하지 않습니다",
+        "tooltip.amethyst_resonance.warden": "워든의 분노가 더 천천히 쌓입니다",
+        "tooltip.amethyst_resonance.silent_mining": "채굴해도 스컬크를 자극하지 않습니다",
+        "item.amethyst_resonance.resonance_upgrade_smithing_template": "공명 강화 대장장이 형판",
+    }
+    for key, value in expected_localization.items():
+        if lang.get(key) != value:
+            raise SystemExit(f"0.59.1 packaged Korean localization mismatch: {key}")
+
 print("apex_optional_escort_runtime=present")
 print("apex_optional_escort_tags=present")
+print("amethyst_resonance_korean_localization=present")
 print("apex_optional_escort_release_verify=PASS")
