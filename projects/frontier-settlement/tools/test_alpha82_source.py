@@ -70,7 +70,7 @@ must(profile, (
     'mapping.getName().toLowerCase(Locale.ROOT)',
     'name.contains("xaero")',
     'mapping.getKey().getValue() != GLFW.GLFW_KEY_B',
-    'minecraft.options.setKey(mapping, InputConstants.UNKNOWN)',
+    'mapping.setKey(InputConstants.UNKNOWN)',
     'KeyMapping.resetMapping()',
     'minecraft.options.save()',
 ), 'alpha.82 companion key profile')

@@ -33,7 +33,7 @@ public final class CompanionKeyProfile {
             if (!name.contains("xaero")) continue;
             if (mapping.getKey().getValue() != GLFW.GLFW_KEY_B) continue;
 
-            minecraft.options.setKey(mapping, InputConstants.UNKNOWN);
+            mapping.setKey(InputConstants.UNKNOWN);
             changed = true;
         }
         if (changed) {
