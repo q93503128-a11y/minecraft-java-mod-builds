@@ -55,8 +55,9 @@ public final class ReflexFieldService {
 
         Field strongest = null;
         double strongestDistance = Double.MAX_VALUE;
+        ResourceKey<Level> entityDimension = entity.level().dimension();
         for (Field field : FIELDS.values()) {
-            if (field.dimension() != entity.level().dimension()) continue;
+            if (!field.dimension().equals(entityDimension)) continue;
             double distance = entity.position().distanceToSqr(field.center());
             if (distance > field.radius() * field.radius()) continue;
             if (strongest == null || field.rating() > strongest.rating()
@@ -70,7 +71,7 @@ public final class ReflexFieldService {
         int localRating = 0;
         if (entity instanceof Player player) {
             Field own = FIELDS.get(player.getUUID());
-            if (own != null && own.dimension() == entity.level().dimension()) localRating = own.rating();
+            if (own != null && own.dimension().equals(entityDimension)) localRating = own.rating();
         }
 
         double relativeRate = relativeRate(localRating, strongest.rating());
