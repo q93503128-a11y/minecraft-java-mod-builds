@@ -56,9 +56,10 @@ public final class TitanHud {
         drawRail(g, x, y + 12, barWidth, sanity / 100.0, 0xFF171D27, 0xFF83A8E8,
                 mc.player.tickCount + 7, false);
 
-        g.text(font, Component.literal(String.format(Locale.ROOT, "HP %.0f / %.0f", health, maxHealth)),
+        g.text(font, Component.translatable("hud.titanbreak.health",
+                        String.format(Locale.ROOT, "%.0f", health), String.format(Locale.ROOT, "%.0f", maxHealth)),
                 x, y - 10, 0xFFE6DCE0);
-        g.text(font, Component.literal(String.format(Locale.ROOT, "정신 %.0f", sanity)),
+        g.text(font, Component.translatable("hud.titanbreak.sanity", String.format(Locale.ROOT, "%.0f", sanity)),
                 x, y + 16, 0xFFC8D5EA);
 
         if (active || heat > 1.0) {
@@ -66,9 +67,12 @@ public final class TitanHud {
             int heatHeight = 24;
             int filled = (int) Math.round(heatHeight * heat / 100.0);
             g.fill(hx, y, hx + 3, y + heatHeight, 0xFF2D2020);
-            g.fill(hx, y + heatHeight - filled, hx + 3, y + heatHeight, heat >= 80.0 ? 0xFFFF5A4C : 0xFFE59655);
-            String field = active ? "TR " + TitanClientState.integer("rating", 0) : "냉각";
-            g.text(font, Component.literal(field), hx + 7, y + 7, active ? 0xFFF0D8B8 : 0xFF9A928A);
+            g.fill(hx, y + heatHeight - filled, hx + 3, y + heatHeight,
+                    heat >= 80.0 ? 0xFFFF5A4C : 0xFFE59655);
+            Component stateText = Component.translatable(active
+                    ? "hud.titanbreak.reflex_active"
+                    : "hud.titanbreak.cooling");
+            g.text(font, stateText, hx + 7, y + 7, active ? 0xFFF0D8B8 : 0xFF9A928A);
         }
     }
 
