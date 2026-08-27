@@ -5,6 +5,7 @@ import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.ReflexFieldService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
+import kr.moonseungjun.titanbreak.registry.ModEntities;
 import kr.moonseungjun.titanbreak.registry.ModItems;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +14,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
@@ -29,6 +29,7 @@ public final class Titanbreak {
 
     public Titanbreak(IEventBus modEventBus) {
         ModItems.register(modEventBus);
+        ModEntities.register(modEventBus);
         modEventBus.addListener(TitanbreakNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
