@@ -1,3 +1,7 @@
 {
-  "item.titanbreak.reflex_drive_i": "반응가속기 I"
+  "item.titanbreak.reflex_drive_i": "반응가속기 I",
+  "hud.titanbreak.health": "체력 %s / %s",
+  "hud.titanbreak.sanity": "정신력 %s",
+  "hud.titanbreak.reflex_active": "반응가속",
+  "hud.titanbreak.cooling": "냉각"
 }
