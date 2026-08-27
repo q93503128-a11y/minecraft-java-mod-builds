@@ -19,14 +19,14 @@ import net.neoforged.neoforge.entity.PartEntity;
 
 public final class HollowColossusEntity extends Pig {
     private static final PartSpec[] SPECS = {
-            new PartSpec(PartSlot.HEAD, 0.0, 7.0, -2.0, 3.0F, 3.0F, 36.0F),
-            new PartSpec(PartSlot.CORE, 0.0, 4.0, 0.0, 3.5F, 3.5F, 60.0F),
-            new PartSpec(PartSlot.LEFT_ARM, -3.4, 4.5, 0.0, 2.2F, 4.5F, 42.0F),
-            new PartSpec(PartSlot.RIGHT_ARM, 3.4, 4.5, 0.0, 2.2F, 4.5F, 42.0F),
-            new PartSpec(PartSlot.LEFT_LEG, -1.6, 1.5, 0.0, 2.2F, 4.0F, 40.0F),
-            new PartSpec(PartSlot.RIGHT_LEG, 1.6, 1.5, 0.0, 2.2F, 4.0F, 40.0F),
-            new PartSpec(PartSlot.LEFT_SHOULDER, -2.1, 6.0, 0.0, 2.4F, 2.4F, 34.0F),
-            new PartSpec(PartSlot.RIGHT_SHOULDER, 2.1, 6.0, 0.0, 2.4F, 2.4F, 34.0F)
+            new PartSpec(PartSlot.HEAD, 0.0, 8.6, -0.8, 2.8F, 2.8F, 36.0F),
+            new PartSpec(PartSlot.CORE, 0.0, 5.5, 0.0, 3.4F, 3.0F, 60.0F),
+            new PartSpec(PartSlot.LEFT_ARM, -4.4, 5.2, 0.0, 2.0F, 5.2F, 42.0F),
+            new PartSpec(PartSlot.RIGHT_ARM, 4.4, 5.2, 0.0, 2.0F, 5.2F, 42.0F),
+            new PartSpec(PartSlot.LEFT_LEG, -1.9, 1.8, 0.0, 2.0F, 4.8F, 40.0F),
+            new PartSpec(PartSlot.RIGHT_LEG, 1.9, 1.8, 0.0, 2.0F, 4.8F, 40.0F),
+            new PartSpec(PartSlot.LEFT_SHOULDER, -2.8, 7.0, 0.0, 2.2F, 2.2F, 34.0F),
+            new PartSpec(PartSlot.RIGHT_SHOULDER, 2.8, 7.0, 0.0, 2.2F, 2.2F, 34.0F)
     };
 
     private final ColossusPart[] parts = new ColossusPart[SPECS.length];
@@ -108,8 +108,14 @@ public final class HollowColossusEntity extends Pig {
         super.recreateFromPacket(packet);
         PartEntity<?>[] entityParts = getParts();
         for (int i = 0; i < entityParts.length; i++) {
-            entityParts[i].setId(packet.getId() + i);
+            entityParts[i].setId(packet.getId() + i + 1);
         }
+        updatePartPositions();
+    }
+
+    @Override
+    public boolean isPickable() {
+        return false;
     }
 
     private enum PartSlot {
