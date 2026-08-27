@@ -32,7 +32,7 @@ public final class TitanKeyMappings {
         if (event.getAction() != InputConstants.PRESS || !REFLEX_DRIVE.matches(event.getKeyEvent())) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
+        if (mc.player == null || mc.getConnection() == null) return;
 
         boolean nextRequested = !TitanClientState.flag("requested");
         ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
