@@ -34,12 +34,17 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Apply confirmed manual-audit corrections
+      - name: Verify audited source is clean
         shell: bash
         run: |
           set -euo pipefail
-          python3 "${PROJECT_DIR}/tools/apply_v01833_manual_audit_fixes.py" 2>&1 | tee /tmp/vg-manual-patch.log
-          python3 "${PROJECT_DIR}/tools/apply_v01833_manual_audit_compile_fix.py" 2>&1 | tee -a /tmp/vg-manual-patch.log
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageFacilityScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageFusionScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageQuickChatScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRelicChoiceScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageStatusScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiScreen.java"
+          test ! -e "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelScreen.java"
           git diff --check 2>&1 | tee /tmp/vg-manual-diff.log
 
       - name: Run every deterministic regression contract
@@ -114,31 +119,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Commit verified corrected source to main
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageWaveIntelDossierScreen.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageLocalActionSystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiController.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageUiService.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageProgressionSystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageEquipmentRaritySystem.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageRoleProgressScreen.java" \
-            "${PROJECT_DIR}/src/main/java/kr/moonseungjun/villageguardians/VillageMercenaryDeploymentSystem.java"
-          git diff --cached --check
-          git commit -m 'fix(village): resolve manual audit findings [skip ci]'
-          for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then break; fi
-            git pull --rebase origin main
-            if [ "$attempt" -eq 6 ]; then exit 1; fi
-            sleep $((attempt * 2))
-          done
-          echo "SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
       - name: Record manual-audit acceptance metadata
         shell: bash
         run: |
@@ -150,7 +130,7 @@ jobs:
           cat > "${PROJECT_DIR}/.ci/v01833-manual-audit.txt" <<EOF
           version=${BUILD_VERSION}
           run_id=${GITHUB_RUN_ID}
-          source_sha=${SOURCE_SHA}
+          source_sha=${GITHUB_SHA}
           jar_name=${EXPECTED_JAR}
           jar_sha256=${SHA}
           jar_size=${SIZE}
@@ -188,7 +168,7 @@ jobs:
               echo "--- failed test files ---"
               cat /tmp/vg-manual-failed-tests.txt
             fi
-            for log in /tmp/vg-manual-patch.log /tmp/vg-manual-diff.log /tmp/vg-manual-tests.log /tmp/vg-manual-build.log /tmp/vg-manual-verify.log; do
+            for log in /tmp/vg-manual-diff.log /tmp/vg-manual-tests.log /tmp/vg-manual-build.log /tmp/vg-manual-verify.log; do
               if [ -f "$log" ]; then
                 echo "--- $(basename "$log") tail ---"
                 tail -n 180 "$log"
