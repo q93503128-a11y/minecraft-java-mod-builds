@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.82', 'mod_version=0.1.0-alpha.81')
         s = s.replace(', plus Alpha.82 collision-safe pack key profile with M as the Frontier settlement menu and default-only Xaero quick-waypoint B normalization that preserves user-customized controls.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.82"', '"frontier_settlement": "0.1.0-alpha.81"')
     return s
 
 
@@ -32,7 +35,14 @@ def must(src, tokens, label):
 
 props = text('gradle.properties')
 note = text('KEYBIND_PROFILE_ALPHA82.md')
+lock = json.loads(text('COMPANION_LOCK.json'))
 must(props, ('mod_version=0.1.0-alpha.82', 'Alpha.82 collision-safe pack key profile'), 'alpha.82 props docs')
+if lock.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('alpha.82 docs lock status drifted')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.82':
+    raise SystemExit('alpha.82 docs lock target drifted')
+if not any('Alpha.82 keeps every Alpha.81 companion binary pin unchanged' in value for value in lock.get('notes', [])):
+    raise SystemExit('alpha.82 docs lock rationale missing')
 must(note, (
     '0.1.0-alpha.82',
     '`M` — Frontier Settlement main menu',

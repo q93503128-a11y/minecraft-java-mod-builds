@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,8 @@ def legacy_read(self, *args, **kwargs):
     if self.name == 'gradle.properties':
         s = s.replace('mod_version=0.1.0-alpha.82', 'mod_version=0.1.0-alpha.81')
         s = s.replace(', plus Alpha.82 collision-safe pack key profile with M as the Frontier settlement menu and default-only Xaero quick-waypoint B normalization that preserves user-customized controls.', '.')
+    elif self.name == 'COMPANION_LOCK.json':
+        s = s.replace('"frontier_settlement": "0.1.0-alpha.82"', '"frontier_settlement": "0.1.0-alpha.81"')
     elif self.name == 'BuildingPlacementClient.java':
         s = s.replace('GLFW.GLFW_KEY_M, CATEGORY', 'GLFW.GLFW_KEY_B, CATEGORY')
     elif self.name == 'SettlementHudOverlay.java':
@@ -61,8 +64,15 @@ hud = text(ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/client/Settl
 guide = text(ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/client/SettlementGuideScreen.java')
 palette = text(ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/client/BuildingPaletteScreen.java')
 ko = text(ROOT / 'src/main/resources/assets/frontier_settlement/lang/ko_kr.json')
+lock = json.loads(text(ROOT / 'COMPANION_LOCK.json'))
 
 must(props, ('mod_version=0.1.0-alpha.82', 'Alpha.82 collision-safe pack key profile', 'preserves user-customized controls'), 'alpha.82 props')
+if lock.get('status') != 'candidate_runtime_lock':
+    raise SystemExit('alpha.82 companion lock status must stay candidate_runtime_lock')
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.82':
+    raise SystemExit('alpha.82 companion lock target drifted')
+if not any('Alpha.82 keeps every Alpha.81 companion binary pin unchanged' in note for note in lock.get('notes', [])):
+    raise SystemExit('alpha.82 companion lock key-profile rationale missing')
 must(placement, ('"key.frontier_settlement.build_mode", GLFW.GLFW_KEY_M, CATEGORY', 'GLFW.GLFW_KEY_R', 'GLFW.GLFW_KEY_ENTER', 'GLFW.GLFW_KEY_BACKSPACE'), 'alpha.82 Frontier keys')
 forbid(placement, ('"key.frontier_settlement.build_mode", GLFW.GLFW_KEY_B, CATEGORY',), 'alpha.82 Frontier must release B')
 must(profile, (
