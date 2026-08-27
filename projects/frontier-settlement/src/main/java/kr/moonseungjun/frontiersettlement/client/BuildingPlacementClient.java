@@ -19,7 +19,7 @@ public final class BuildingPlacementClient {
     public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(
             Identifier.fromNamespaceAndPath(FrontierSettlement.MOD_ID, "construction"));
     public static final KeyMapping PALETTE = new KeyMapping(
-            "key.frontier_settlement.build_mode", GLFW.GLFW_KEY_B, CATEGORY);
+            "key.frontier_settlement.build_mode", GLFW.GLFW_KEY_M, CATEGORY);
     public static final KeyMapping ROTATE = new KeyMapping(
             "key.frontier_settlement.rotate_building", GLFW.GLFW_KEY_R, CATEGORY);
     public static final KeyMapping CONFIRM = new KeyMapping(

@@ -125,7 +125,7 @@ public final class BuildingPaletteScreen extends Screen {
         g.text(this.font, Component.literal(category.label), contentX, panelY + 44, 0xFFFFD58A, true);
         g.text(this.font, Component.literal(category.description), contentX, panelY + 57, 0xFFAFA99E, false);
         if (panelHeight >= 245) {
-            g.text(this.font, Component.literal("B 닫기/다시 열기 · 배치 후 R 회전 / Enter 확정"),
+            g.text(this.font, Component.literal("M 닫기/다시 열기 · 배치 후 R 회전 / Enter 확정"),
                     contentX, panelY + panelHeight - 16, 0xFF8F8A82, false);
         }
         super.extractRenderState(g, mx, my, p);

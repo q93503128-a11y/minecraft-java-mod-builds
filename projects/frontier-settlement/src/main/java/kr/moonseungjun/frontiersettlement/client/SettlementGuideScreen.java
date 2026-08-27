@@ -46,14 +46,14 @@ public final class SettlementGuideScreen extends Screen {
         g.text(this.font, Component.literal("FRONTIER GUIDE   " + (page + 1) + " / " + PAGE_COUNT), x, y, 0xFFD0A45C, true);
         switch (page) {
             case 0 -> draw(g, x, y, "1. 개척지 시작",
-                    "B → ‘현재 위치에 개척지 세우기’를 누릅니다.",
+                    "M → ‘현재 위치에 개척지 세우기’를 누릅니다.",
                     "표식과 공동 창고가 실제 월드에 생성됩니다.",
                     "실패하면 평평하고 빈 지면으로 이동해 다시 시도하세요.",
                     "명령어는 필요 없습니다.");
             case 1 -> draw(g, x, y, "2. 자원과 건설",
                     "공동 창고에 목재·돌·금속·음식을 넣습니다.",
                     "HUD 숫자는 창고의 실제 아이템을 집계한 값입니다.",
-                    "B → 건물 선택 / R 회전 / Enter 확정.",
+                    "M → 건물 선택 / R 회전 / Enter 확정.",
                     "주민이 재료를 운반해 실제 블록으로 건설합니다.");
             case 2 -> draw(g, x, y, "3. 초반 성장",
                     "권장 순서: 주택 → 벌목소 → 농장 → 채석장 → 창고.",
@@ -61,7 +61,7 @@ public final class SettlementGuideScreen extends Screen {
                     "HUD의 노란 ‘다음 목표’를 따라가면 해금 흐름이 이어집니다.",
                     "주민 직업을 한 명씩 지정할 필요는 없습니다.");
             default -> draw(g, x, y, "4. 영토와 물류",
-                    "B → 도로 계획으로 마을 밖까지 길을 연결합니다.",
+                    "M → 도로 계획으로 마을 밖까지 길을 연결합니다.",
                     "도로 끝에 전초기지를 세워 영토·생산 거점을 넓힙니다.",
                     "수레 정거장·시장·방어·제작 시설이 차례로 열립니다.",
                     "언로드 지역은 강제로 로드하지 않으며 운송도 멈춥니다.");

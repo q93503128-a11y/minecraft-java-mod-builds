@@ -19,7 +19,7 @@ public final class SettlementHudOverlay {
 
         if (!data.founded()) {
             String title = "Frontier Settlement";
-            String hint = "공동 개척지 없음 · B를 눌러 시작";
+            String hint = "공동 개척지 없음 · M을 눌러 시작";
             int width = Math.max(minecraft.font.width(title), minecraft.font.width(hint)) + 12;
             graphics.fill(x, y, x + width, y + 32, 0xA8000000);
             graphics.fill(x, y, x + 3, y + 32, 0xFFD0A45C);
@@ -46,16 +46,16 @@ public final class SettlementHudOverlay {
 
         int modeY = y + height + 5;
         if (BuildingPlacementClient.active()) {
-            drawModePanel(graphics, minecraft, x, modeY, BuildingPlacementClient.statusLine(), "B 팔레트   R 회전   Enter 건설");
+            drawModePanel(graphics, minecraft, x, modeY, BuildingPlacementClient.statusLine(), "M 메뉴   R 회전   Enter 건설");
         } else if (RoadPlacementClient.active()) {
-            String controls = RoadPlacementClient.start() == null ? "B 팔레트   Enter 시작점" : "B 팔레트   Backspace 시작점 재선택   Enter 확정";
+            String controls = RoadPlacementClient.start() == null ? "M 메뉴   Enter 시작점" : "M 메뉴   Backspace 시작점 재선택   Enter 확정";
             drawModePanel(graphics, minecraft, x, modeY, RoadPlacementClient.statusLine(), controls);
         } else if (OutpostPlacementClient.active()) {
-            drawModePanel(graphics, minecraft, x, modeY, OutpostPlacementClient.statusLine(), "B 팔레트   도로 끝 조준   Enter 건설");
+            drawModePanel(graphics, minecraft, x, modeY, OutpostPlacementClient.statusLine(), "M 메뉴   도로 끝 조준   Enter 건설");
         } else if (CivilWorkPlacementClient.active()) {
             String controls = CivilWorkPlacementClient.first() == null
-                    ? "B 팔레트   Enter 첫 모서리"
-                    : "B 팔레트   Backspace 첫 모서리 재선택   Enter 착공";
+                    ? "M 메뉴   Enter 첫 모서리"
+                    : "M 메뉴   Backspace 첫 모서리 재선택   Enter 착공";
             drawModePanel(graphics, minecraft, x, modeY, CivilWorkPlacementClient.statusLine(), controls);
         }
 

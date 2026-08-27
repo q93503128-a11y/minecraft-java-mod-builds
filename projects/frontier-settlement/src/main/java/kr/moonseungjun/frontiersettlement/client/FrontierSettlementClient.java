@@ -27,6 +27,7 @@ public final class FrontierSettlementClient {
         modBus.addListener(RegisterGuiLayersEvent.class, FrontierSettlementClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, BuildingPlacementClient::registerKeys);
         modBus.addListener(EntityRenderersEvent.RegisterRenderers.class, FrontierSettlementClient::onRegisterEntityRenderers);
+        NeoForge.EVENT_BUS.addListener(CompanionKeyProfile::tick);
         NeoForge.EVENT_BUS.addListener(BuildingPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(RoadPlacementClient::tick);
         NeoForge.EVENT_BUS.addListener(OutpostPlacementClient::tick);
@@ -46,6 +47,7 @@ public final class FrontierSettlementClient {
         ClientSettlementState.reset();
         BuildingPlacementClient.cancelAllModes();
         SettlementNoticeQueue.clear();
+        CompanionKeyProfile.resetSession();
     }
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {

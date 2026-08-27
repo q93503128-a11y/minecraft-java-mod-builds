@@ -1,12 +1,12 @@
 {
-  "key.category.frontier_settlement.construction": "Frontier Settlement Construction",
-  "key.frontier_settlement.build_mode": "Toggle Construction Mode",
+  "key.category.frontier_settlement.construction": "Frontier Settlement",
+  "key.frontier_settlement.build_mode": "Open Settlement Menu",
   "key.frontier_settlement.next_building": "Next Building",
-  "key.frontier_settlement.rotate_building": "Rotate Building 90 Degrees",
-  "key.frontier_settlement.confirm_building": "Confirm Building Placement",
+  "key.frontier_settlement.rotate_building": "Rotate Building 90 Degrees While Placing",
+  "key.frontier_settlement.confirm_building": "Confirm Current Placement Step",
   "key.frontier_settlement.road_mode": "Toggle Road Planning Mode",
   "key.frontier_settlement.road_confirm": "Confirm Road Start/Route",
-  "key.frontier_settlement.road_reset": "Reset Road Start",
+  "key.frontier_settlement.road_reset": "Reset Current Placement Start",
   "key.frontier_settlement.outpost_mode": "Toggle Outpost Placement Mode",
   "key.frontier_settlement.outpost_confirm": "Confirm Outpost Construction",
   "config.jade.plugin_frontier_settlement.settlement_status": "Frontier settlement status"
