@@ -5,6 +5,7 @@ import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
+import kr.moonseungjun.titanbreak.player.VanillaArmorLockout;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import kr.moonseungjun.titanbreak.registry.ModItems;
 import net.minecraft.server.level.ServerLevel;
@@ -68,6 +69,7 @@ public final class Titanbreak {
 
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0F);
+        VanillaArmorLockout.tick(player);
 
         boolean installed = player.getOffhandItem().is(ModItems.REFLEX_DRIVE_I.get());
         if (!installed) ReflexDriveService.setRequested(player, false);
