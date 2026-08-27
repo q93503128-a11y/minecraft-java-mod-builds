@@ -40,8 +40,12 @@ public final class TitanPlayerData extends SavedData {
 
     private TitanPlayerData(List<PlayerEntry> entries) {
         for (PlayerEntry entry : entries) {
+            if (entry.schemaVersion() > CURRENT_SCHEMA_VERSION) {
+                Titanbreak.LOGGER.warn("TITANBREAK player profile {} uses newer schema {} (supported: {}). Preserving its schema marker without downgrading it.",
+                        entry.uuid(), entry.schemaVersion(), CURRENT_SCHEMA_VERSION);
+            }
             State state = new State(entry.sanity(), entry.heat(), entry.schemaVersion());
-            state.migrate();
+            state.migrateKnownSchemas();
             players.put(entry.uuid(), state);
         }
     }
@@ -72,6 +76,7 @@ public final class TitanPlayerData extends SavedData {
 
     public void setHeat(ServerPlayer player, double value) {
         State state = state(player);
+        if (!state.isWritableByCurrentVersion()) return;
         double clamped = clamp(value, 0.0, 100.0);
         if (Math.abs(state.heat - clamped) < 0.001) return;
         state.heat = clamped;
@@ -80,6 +85,7 @@ public final class TitanPlayerData extends SavedData {
 
     public void setSanity(ServerPlayer player, double value) {
         State state = state(player);
+        if (!state.isWritableByCurrentVersion()) return;
         double clamped = clamp(value, 0.0, 100.0);
         if (Math.abs(state.sanity - clamped) < 0.001) return;
         state.sanity = clamped;
@@ -101,9 +107,12 @@ public final class TitanPlayerData extends SavedData {
             this.schemaVersion = schemaVersion;
         }
 
-        private void migrate() {
+        private void migrateKnownSchemas() {
             if (schemaVersion < 1) schemaVersion = 1;
-            if (schemaVersion > CURRENT_SCHEMA_VERSION) schemaVersion = CURRENT_SCHEMA_VERSION;
+        }
+
+        public boolean isWritableByCurrentVersion() {
+            return schemaVersion <= CURRENT_SCHEMA_VERSION;
         }
 
         public double sanity() { return sanity; }
