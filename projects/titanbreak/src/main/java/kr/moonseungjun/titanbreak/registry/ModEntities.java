@@ -22,8 +22,10 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<HollowColossusEntity>> HOLLOW_COLOSSUS =
             ENTITIES.register("hollow_colossus", () -> EntityType.Builder
                     .of(HollowColossusEntity::new, MobCategory.MONSTER)
-                    .sized(4.5F, 8.0F)
-                    .clientTrackingRange(16)
+                    // The parent exists only as the multipart anchor. Combat collision is delegated
+                    // to explicit body parts, so the anchor must not hide those parts behind one box.
+                    .sized(0.6F, 0.6F)
+                    .clientTrackingRange(20)
                     .build(ResourceKey.create(Registries.ENTITY_TYPE,
                             Identifier.fromNamespaceAndPath(Titanbreak.MOD_ID, "hollow_colossus"))));
 
