@@ -1,0 +1,15 @@
+version=0.18.33-alpha.1
+run_id=33057703699
+head=efbfdc4f4113e2711c432556b6a377db2a8d2d4c
+--- vg-manual-patch.log tail ---
+Traceback (most recent call last):
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_manual_audit_fixes.py", line 382, in <module>
+    main()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_manual_audit_fixes.py", line 371, in main
+    patch_wave_intel()
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_manual_audit_fixes.py", line 188, in patch_wave_intel
+    text = replace_once(text,
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/village-guardians/tools/apply_v01833_manual_audit_fixes.py", line 19, in replace_once
+    raise RuntimeError(f"{label}: expected one match, found {count}")
+RuntimeError: wave click clipping: expected one match, found 0
