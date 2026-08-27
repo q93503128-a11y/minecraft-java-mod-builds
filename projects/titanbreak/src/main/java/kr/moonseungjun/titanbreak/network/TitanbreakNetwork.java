@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Locale;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha2";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha3";
 
     private TitanbreakNetwork() {}
 
@@ -21,9 +21,15 @@ public final class TitanbreakNetwork {
         registrar.playToClient(StatusPayload.TYPE, StatusPayload.STREAM_CODEC);
         registrar.playToServer(DriveTogglePayload.TYPE, DriveTogglePayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
-            boolean installed = player.getOffhandItem().is(ModItems.REFLEX_DRIVE_I.get());
+            boolean installed = hasP0ReflexDrive(player);
             ReflexDriveService.setRequested(player, payload.enabled() && installed);
+            sync(player);
         });
+    }
+
+    public static boolean hasP0ReflexDrive(ServerPlayer player) {
+        return player.getMainHandItem().is(ModItems.REFLEX_DRIVE_I.get())
+                || player.getOffhandItem().is(ModItems.REFLEX_DRIVE_I.get());
     }
 
     public static void sync(ServerPlayer player) {
@@ -31,6 +37,7 @@ public final class TitanbreakNetwork {
         boolean active = ReflexDriveService.active(player.getUUID());
         String snapshot = "sanity=" + one(state.sanity())
                 + ";heat=" + one(state.heat())
+                + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
                 + ";active=" + (active ? 1 : 0)
                 + ";rating=" + ReflexDriveService.rating(player.getUUID())
                 + ";worldRate=" + one(ReflexDriveService.currentWorldTickRate())
