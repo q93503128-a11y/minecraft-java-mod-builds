@@ -12,9 +12,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Titanbreak.MOD_ID);
 
-    public static final DeferredItem<Item> REFLEX_DRIVE_I = ITEMS.registerSimpleItem(
+    public static final DeferredItem<Item> REFLEX_DRIVE_I = ITEMS.registerItem(
             "reflex_drive_i",
-            properties -> properties.stacksTo(1).rarity(Rarity.RARE));
+            properties -> new Item(properties.stacksTo(1).rarity(Rarity.RARE)));
 
     private ModItems() {}
 
