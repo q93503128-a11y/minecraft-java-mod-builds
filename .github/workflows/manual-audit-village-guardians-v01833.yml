@@ -119,15 +119,14 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Record manual-audit acceptance metadata
+      - name: Write manual-audit acceptance summary
         shell: bash
         run: |
           set -euo pipefail
           JAR="${PROJECT_DIR}/build/libs/${EXPECTED_JAR}"
           SHA=$(sha256sum "$JAR" | awk '{print $1}')
           SIZE=$(stat -c%s "$JAR")
-          mkdir -p "${PROJECT_DIR}/.ci"
-          cat > "${PROJECT_DIR}/.ci/v01833-manual-audit.txt" <<EOF
+          cat > /tmp/v01833-manual-audit.txt <<EOF
           version=${BUILD_VERSION}
           run_id=${GITHUB_RUN_ID}
           source_sha=${GITHUB_SHA}
@@ -136,50 +135,11 @@ jobs:
           jar_size=${SIZE}
           audit=manual-source-review-plus-full-regression
           EOF
-          git add "${PROJECT_DIR}/.ci/v01833-manual-audit.txt"
-          if git ls-files --error-unmatch "${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt" >/dev/null 2>&1; then
-            git rm -f "${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt"
-          fi
-          git diff --cached --check
-          git commit -m 'ci(village): record v0.18.33 manual audit acceptance [skip ci]'
-          for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then exit 0; fi
-            git pull --rebase origin main
-            sleep $((attempt * 2))
-          done
-          exit 1
 
-      - name: Record manual-audit failure diagnostics
-        if: failure()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git reset --hard HEAD
-          git clean -fd "${PROJECT_DIR}/build" || true
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          mkdir -p "${PROJECT_DIR}/.ci"
-          OUT="${PROJECT_DIR}/.ci/v01833-manual-audit-failure.txt"
-          {
-            echo "version=${BUILD_VERSION}"
-            echo "run_id=${GITHUB_RUN_ID}"
-            echo "head=$(git rev-parse HEAD)"
-            if [ -s /tmp/vg-manual-failed-tests.txt ]; then
-              echo "--- failed test files ---"
-              cat /tmp/vg-manual-failed-tests.txt
-            fi
-            for log in /tmp/vg-manual-diff.log /tmp/vg-manual-tests.log /tmp/vg-manual-build.log /tmp/vg-manual-verify.log; do
-              if [ -f "$log" ]; then
-                echo "--- $(basename "$log") tail ---"
-                tail -n 180 "$log"
-              fi
-            done
-          } > "$OUT"
-          git add "$OUT"
-          git commit -m 'ci(village): record v0.18.33 manual audit failure [skip ci]' || true
-          for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then exit 0; fi
-            git pull --rebase origin main
-            sleep $((attempt * 2))
-          done
-          exit 1
+      - name: Upload manual-audit acceptance summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: villageguardians-0.18.33-alpha.1-manual-audit-summary
+          path: /tmp/v01833-manual-audit.txt
+          if-no-files-found: error
+          retention-days: 30
