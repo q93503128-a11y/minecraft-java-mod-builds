@@ -12,7 +12,7 @@ def main() -> None:
     test = read("VillageSkillTestSystem.java")
     role = read("VillageRoleSkillSystem.java")
     controller = read("VillageUiController.java")
-    screen = read("VillageFacilityScreen.java")
+    screen = read("VillageSkillTestScreen.java")
     guard = read("VillageGuardians.java")
 
     assert "mod_version=" in props
@@ -33,9 +33,9 @@ def main() -> None:
     assert '"시험 직업 관리함"' in controller and '"시험 스킬 관리함"' in controller
     assert "openSkillTestSlot" not in controller
 
-    assert 'payload.screenId().startsWith("skill_test_")' in screen
-    assert 'selectedAction.startsWith("test_role:")' in screen
-    assert 'selectedAction.startsWith("test_equip:")' in screen
+    assert '"skill_test_role".equals(payload.screenId())' in screen
+    assert 'action.startsWith("test_role:")' in screen
+    assert 'action.startsWith("test_equip:")' in screen
 
     print("[PASS] Test arena owns separate role and skill management barrels")
     print("[PASS] Test-only job selection leaves permanent role and progression untouched")

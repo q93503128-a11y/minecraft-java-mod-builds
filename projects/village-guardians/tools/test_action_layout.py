@@ -100,11 +100,10 @@ def shop_geometry(width: int, height: int) -> tuple[int, int, int, bool]:
 
 
 def main() -> None:
-    # Retired classes may remain temporarily as inert migration history, but production routing must never open them.
+    # Retired screens have no serialized/runtime contract and must not return as inert duplicate code.
     for retired in RETIRED_CLASSES:
         assert retired not in CLIENT, f"retired UI routed again: {retired}"
-    assert not (JAVA / "VillageTownHallScreen.java").exists()
-    assert not (JAVA / "VillageShopScreen.java").exists()
+        assert not (JAVA / f"{retired}.java").exists(), f"retired UI source remains: {retired}"
 
     render = TOWN.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
     buttons = TOWN.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]

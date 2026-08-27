@@ -21,7 +21,7 @@ def main() -> None:
     guard = read("VillageGuardians.java")
     keys = read("VillageClientKeys.java")
     inventory = read("VillageInventoryPanel.java")
-    quick = read("VillageQuickChatScreen.java")
+    quick = read("VillageQuickChatSafeScreen.java")
     starter = read("VillageStarterKit.java")
     controller = read("VillageUiController.java")
     skills = read("VillageRoleSkillSystem.java")

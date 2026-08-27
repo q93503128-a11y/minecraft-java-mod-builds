@@ -16,7 +16,6 @@ def main() -> None:
     role = read("VillageRoleSkillSystem.java")
     controller = read("VillageUiController.java")
     client = read("VillageClientUi.java")
-    status = read("VillageStatusScreen.java")
     screen = read("VillageRelicScreen.java")
 
     assert "mod_version=" in props
@@ -58,8 +57,6 @@ def main() -> None:
     assert "fit(name, grid.cellWidth() - 8)" in screen
     assert "font.split(Component.literal(description)" in screen
     assert "maxLines = safe.height() < 245 ? 2 : 3" in screen
-    assert "actionSpace = action.isBlank() ? 0 : 34" in status
-    assert "buttonWidth = Math.min(220" in status
     print("[PASS] 유물 UI는 안전영역 폭에 따라 4~6열로 재배치되고 스크롤·텍스트 제한으로 넘침을 방지합니다")
 
     enum_order = [

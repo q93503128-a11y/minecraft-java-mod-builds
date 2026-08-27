@@ -51,14 +51,13 @@ public final class VillageUiHudSuppressor {
                 || screen instanceof VillageSkillTreeScreen
                 || screen instanceof VillageRoleProgressScreen
                 || screen instanceof VillageRelicScreen
-                || screen instanceof VillageRelicChoiceScreen
-                || screen instanceof VillageWaveIntelScreen
                 || screen instanceof VillageGameOverScreen
                 || screen instanceof VillageSkillTestScreen
                 || screen instanceof VillageSkillTestPasswordScreen
-                || screen instanceof VillageFacilityScreen
                 || screen instanceof VillageResultScreen
                 || screen instanceof VillageConfirmScreen
-                || screen instanceof VillageUiScreen;
+                || screen instanceof VillageActionDetailScreen
+                || screen instanceof VillageRelicChoiceConfirmScreen
+                || screen instanceof VillageWaveIntelDossierScreen;
     }
 }

@@ -79,6 +79,12 @@ def main() -> None:
         assert f"VanillaGuiLayers.{layer}" in hud_suppressor
     assert "event.setCanceled(true)" in hud_suppressor
     assert "Minecraft.getInstance().gui.screen()" in hud_suppressor
+    for active_modal in ("VillageActionDetailScreen", "VillageRelicChoiceConfirmScreen",
+                         "VillageWaveIntelDossierScreen"):
+        assert f"screen instanceof {active_modal}" in hud_suppressor
+    for retired_modal in ("VillageFacilityScreen", "VillageUiScreen",
+                          "VillageRelicChoiceScreen", "VillageWaveIntelScreen"):
+        assert f"screen instanceof {retired_modal}" not in hud_suppressor
 
     # Production routing must use current responsive surfaces, never retired parchment/generic screens.
     assert 'case "quick_chat" -> new VillageQuickChatSafeScreen(payload)' in client_ui

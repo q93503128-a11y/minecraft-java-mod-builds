@@ -41,7 +41,8 @@ public final class VillageQuickChatSafeScreen extends Screen {
         Layout layout = layout(safe);
         int hoveredIndex = -1;
 
-        graphics.centeredText(font, "V  수호단 통신", layout.cx(), safe.top() + 5, TEXT);
+        graphics.centeredText(font, VillageClientKeys.quickCommunicationKeyName() + "  수호단 통신",
+                layout.cx(), safe.top() + 5, TEXT);
         graphics.centeredText(font, "신호를 선택하면 즉시 전송됩니다", layout.cx(), safe.top() + 20, MUTED);
         graphics.fill(safe.left() + 18, safe.top() + 34, safe.right() - 18, safe.top() + 35, 0x705A747D);
 

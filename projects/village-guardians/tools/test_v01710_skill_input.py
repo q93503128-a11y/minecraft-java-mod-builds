@@ -14,7 +14,7 @@ def main() -> None:
     keys = read("VillageClientKeys.java")
     test = read("VillageSkillTestSystem.java")
     controller = read("VillageUiController.java")
-    screen = read("VillageFacilityScreen.java")
+    screen = read("VillageSkillTestScreen.java")
 
     assert "mod_version=" in props
     assert "@EventBusSubscriber(value = Dist.CLIENT, modid = VillageGuardians.MOD_ID)" in keys
@@ -41,8 +41,8 @@ def main() -> None:
     assert "openSkillTest(" not in equip_block
     assert "openSkillTestSkillManager(" not in equip_block
 
-    assert 'payload.screenId().startsWith("skill_test_")' in screen
-    assert 'selectedAction.startsWith("test_equip:")' in screen
+    assert '"skill_test_role".equals(payload.screenId())' in screen
+    assert 'action.startsWith("test_equip:")' in screen
     assert "onClose();" in screen
 
     print("[PASS] Client Z/X mappings are registered by the client event subscriber")
