@@ -6,7 +6,7 @@ import kr.moonseungjun.titanbreak.network.DriveTogglePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.lwjgl.glfw.GLFW;
@@ -21,8 +21,6 @@ public final class TitanKeyMappings {
             GLFW.GLFW_KEY_R,
             CATEGORY);
 
-    private static boolean requested;
-
     private TitanKeyMappings() {}
 
     public static void register(RegisterKeyMappingsEvent event) {
@@ -30,16 +28,13 @@ public final class TitanKeyMappings {
         event.register(REFLEX_DRIVE);
     }
 
-    public static void onClientTick(ClientTickEvent.Pre event) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null) {
-            requested = false;
-            return;
-        }
+    public static void onKeyInput(InputEvent.Key event) {
+        if (event.getAction() != InputConstants.PRESS || !REFLEX_DRIVE.matches(event.getKeyEvent())) return;
 
-        while (REFLEX_DRIVE.consumeClick()) {
-            requested = !requested;
-            ClientPacketDistributor.sendToServer(new DriveTogglePayload(requested));
-        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
+
+        boolean nextRequested = !TitanClientState.flag("requested");
+        ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
     }
 }
