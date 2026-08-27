@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak;
 
 import kr.moonseungjun.titanbreak.client.ClientNetworkHandlers;
+import kr.moonseungjun.titanbreak.client.TitanEntityRenderers;
 import kr.moonseungjun.titanbreak.client.TitanHud;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -12,6 +13,7 @@ public final class TitanbreakClient {
     public TitanbreakClient(IEventBus modEventBus) {
         modEventBus.addListener(ClientNetworkHandlers::register);
         modEventBus.addListener(TitanHud::registerLayers);
+        modEventBus.addListener(TitanEntityRenderers::register);
         NeoForge.EVENT_BUS.addListener(TitanHud::onVanillaLayer);
     }
 }
