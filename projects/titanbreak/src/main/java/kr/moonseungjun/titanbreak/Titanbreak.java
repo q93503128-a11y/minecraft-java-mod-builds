@@ -2,7 +2,7 @@ package kr.moonseungjun.titanbreak;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
-import kr.moonseungjun.titanbreak.combat.ReflexFieldService;
+import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
@@ -20,12 +20,11 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.1";
+    public static final String VERSION = "0.1.0-alpha.2";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int REFLEX_RATING = 80;
-    private static final double REFLEX_RADIUS = 96.0;
     private static final double OVERHEAT_LOCK = 95.0;
+    private static final double OVERHEAT_RESTART = 45.0;
 
     public Titanbreak(IEventBus modEventBus) {
         ModItems.register(modEventBus);
@@ -35,7 +34,6 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
-        NeoForge.EVENT_BUS.addListener(ReflexFieldService::onEntityTickPre);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -47,13 +45,18 @@ public final class Titanbreak {
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        ReflexFieldService.clear(event.getEntity().getUUID());
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ReflexDriveService.clear(player.getUUID());
+        AugmentedMobilityService.clear(player);
+        ReflexDriveService.tickServer(((ServerLevel) player.level()).getServer());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ReflexFieldService.clear(player.getUUID());
+        ReflexDriveService.clear(player.getUUID());
+        AugmentedMobilityService.clear(player);
         TitanPlayerData.get(((ServerLevel) player.level()).getServer()).ensureProfile(player);
+        ReflexDriveService.tickServer(((ServerLevel) player.level()).getServer());
         TitanbreakNetwork.sync(player);
     }
 
@@ -67,23 +70,29 @@ public final class Titanbreak {
         player.getFoodData().setSaturation(5.0F);
 
         boolean installed = player.getOffhandItem().is(ModItems.REFLEX_DRIVE_I.get());
-        boolean requested = installed && player.isCrouching();
-        boolean active = requested && state.heat() < OVERHEAT_LOCK;
+        if (!installed) ReflexDriveService.setRequested(player, false);
 
+        boolean requested = installed && ReflexDriveService.requested(player.getUUID());
+        boolean wasActive = ReflexDriveService.active(player.getUUID());
+        boolean active = requested && (wasActive ? state.heat() < OVERHEAT_LOCK : state.heat() < OVERHEAT_RESTART);
+        ReflexDriveService.setActive(player, active);
+        ReflexDriveService.tickServer(level.getServer());
+
+        double rateScale = ReflexDriveService.NORMAL_TICK_RATE /
+                Math.max(1.0F, ReflexDriveService.currentWorldTickRate());
         if (active) {
-            data.setHeat(player, state.heat() + 0.65);
-            data.setSanity(player, state.sanity() - 0.002);
-        } else if (!requested) {
-            data.setHeat(player, state.heat() - 0.45);
+            data.setHeat(player, state.heat() + 0.65 * rateScale);
+            data.setSanity(player, state.sanity() - 0.002 * rateScale);
+        } else {
+            data.setHeat(player, state.heat() - 0.45 * rateScale);
         }
 
-        ReflexFieldService.update(player, active, REFLEX_RATING, REFLEX_RADIUS);
-        AugmentedMobilityService.tick(player, active);
+        AugmentedMobilityService.tick(player, active, ReflexDriveService.userCompensation(player.getUUID()));
 
-        if (player.tickCount % 4 == 0) TitanbreakNetwork.sync(player);
+        if (player.tickCount % 2 == 0) TitanbreakNetwork.sync(player);
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
-        ReflexFieldService.clearAll();
+        ReflexDriveService.restore(event.getServer());
     }
 }
