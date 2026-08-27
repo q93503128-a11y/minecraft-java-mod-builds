@@ -1,7 +1,10 @@
 {
   "item.titanbreak.reflex_drive_i": "Reflex Drive I",
+  "entity.titanbreak.hollow_colossus": "Hollow Colossus",
   "hud.titanbreak.health": "Health %s / %s",
   "hud.titanbreak.sanity": "Sanity %s",
   "hud.titanbreak.reflex_active": "Reflex Boost",
-  "hud.titanbreak.cooling": "Cooling"
+  "hud.titanbreak.cooling": "Cooling",
+  "key.titanbreak.reflex_drive": "Toggle Reflex Drive",
+  "key.category.titanbreak.controls": "TITANBREAK"
 }

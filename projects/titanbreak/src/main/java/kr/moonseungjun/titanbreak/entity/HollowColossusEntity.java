@@ -10,33 +10,41 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
+import net.minecraft.world.entity.monster.Giant;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
 
-public final class HollowColossusEntity extends Pig {
+public final class HollowColossusEntity extends Giant {
     private static final PartSpec[] SPECS = {
-            new PartSpec(PartSlot.HEAD, 0.0, 8.6, -0.8, 2.8F, 2.8F, 36.0F),
-            new PartSpec(PartSlot.CORE, 0.0, 5.5, 0.0, 3.4F, 3.0F, 60.0F),
-            new PartSpec(PartSlot.LEFT_ARM, -4.4, 5.2, 0.0, 2.0F, 5.2F, 42.0F),
-            new PartSpec(PartSlot.RIGHT_ARM, 4.4, 5.2, 0.0, 2.0F, 5.2F, 42.0F),
-            new PartSpec(PartSlot.LEFT_LEG, -1.9, 1.8, 0.0, 2.0F, 4.8F, 40.0F),
-            new PartSpec(PartSlot.RIGHT_LEG, 1.9, 1.8, 0.0, 2.0F, 4.8F, 40.0F),
-            new PartSpec(PartSlot.LEFT_SHOULDER, -2.8, 7.0, 0.0, 2.2F, 2.2F, 34.0F),
-            new PartSpec(PartSlot.RIGHT_SHOULDER, 2.8, 7.0, 0.0, 2.2F, 2.2F, 34.0F)
+            new PartSpec(PartSlot.HEAD, 0.0, 9.3, -0.3, 3.0F, 2.5F, 36.0F),
+            new PartSpec(PartSlot.CORE, 0.0, 6.2, 0.0, 3.4F, 3.2F, 60.0F),
+            new PartSpec(PartSlot.LEFT_ARM, -3.4, 5.2, 0.0, 1.8F, 5.4F, 42.0F),
+            new PartSpec(PartSlot.RIGHT_ARM, 3.4, 5.2, 0.0, 1.8F, 5.4F, 42.0F),
+            new PartSpec(PartSlot.LEFT_LEG, -1.25, 1.9, 0.0, 1.8F, 4.6F, 40.0F),
+            new PartSpec(PartSlot.RIGHT_LEG, 1.25, 1.9, 0.0, 1.8F, 4.6F, 40.0F),
+            new PartSpec(PartSlot.LEFT_SHOULDER, -2.35, 7.35, 0.0, 2.0F, 2.0F, 34.0F),
+            new PartSpec(PartSlot.RIGHT_SHOULDER, 2.35, 7.35, 0.0, 2.0F, 2.0F, 34.0F)
     };
 
     private final ColossusPart[] parts = new ColossusPart[SPECS.length];
 
-    public HollowColossusEntity(EntityType<? extends Pig> type, Level level) {
+    public HollowColossusEntity(EntityType<? extends Giant> type, Level level) {
         super(type, level);
         for (int i = 0; i < SPECS.length; i++) {
             PartSpec spec = SPECS[i];
             parts[i] = new ColossusPart(this, spec.slot(), spec.width(), spec.height(), spec.health());
         }
+    }
+
+    @Override
+    protected void registerGoals() {
+        goalSelector.addGoal(5, new RandomStrollGoal(this, 0.8D, 40));
+        goalSelector.addGoal(6, new RandomLookAroundGoal(this));
     }
 
     @Override
@@ -106,9 +114,8 @@ public final class HollowColossusEntity extends Pig {
     @Override
     public void recreateFromPacket(ClientboundAddEntityPacket packet) {
         super.recreateFromPacket(packet);
-        PartEntity<?>[] entityParts = getParts();
-        for (int i = 0; i < entityParts.length; i++) {
-            entityParts[i].setId(packet.getId() + i + 1);
+        for (int i = 0; i < parts.length; i++) {
+            parts[i].setId(packet.getId() + i + 1);
         }
         updatePartPositions();
     }
@@ -135,7 +142,6 @@ public final class HollowColossusEntity extends Pig {
     private static final class ColossusPart extends PartEntity<HollowColossusEntity> {
         private final PartSlot slot;
         private final EntityDimensions dimensions;
-        private final float maxPartHealth;
         private float partHealth;
 
         private ColossusPart(HollowColossusEntity parent, PartSlot slot,
@@ -143,7 +149,6 @@ public final class HollowColossusEntity extends Pig {
             super(parent);
             this.slot = slot;
             this.dimensions = EntityDimensions.scalable(width, height);
-            this.maxPartHealth = health;
             this.partHealth = health;
             refreshDimensions();
         }

@@ -7,7 +7,6 @@ import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.player.VanillaArmorLockout;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
-import kr.moonseungjun.titanbreak.registry.ModItems;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -21,14 +20,14 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.2";
+    public static final String VERSION = "0.1.0-alpha.3";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0;
     private static final double OVERHEAT_RESTART = 45.0;
 
     public Titanbreak(IEventBus modEventBus) {
-        ModItems.register(modEventBus);
+        kr.moonseungjun.titanbreak.registry.ModItems.register(modEventBus);
         ModEntities.register(modEventBus);
         modEventBus.addListener(TitanbreakNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
@@ -71,7 +70,7 @@ public final class Titanbreak {
         player.getFoodData().setSaturation(5.0F);
         VanillaArmorLockout.tick(player);
 
-        boolean installed = player.getOffhandItem().is(ModItems.REFLEX_DRIVE_I.get());
+        boolean installed = TitanbreakNetwork.hasP0ReflexDrive(player);
         if (!installed) ReflexDriveService.setRequested(player, false);
 
         boolean requested = installed && ReflexDriveService.requested(player.getUUID());
