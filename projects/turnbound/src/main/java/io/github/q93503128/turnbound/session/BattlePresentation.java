@@ -8,36 +8,96 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 final class BattlePresentation {
-    private final Map<String,UUID> actors=new LinkedHashMap<>();
-    private final Map<String,Vec3> homes=new LinkedHashMap<>();
-    private String moving; private int returnTicks;
+    private final Map<String, UUID> actors = new LinkedHashMap<>();
+    private final Map<String, Vec3> homes = new LinkedHashMap<>();
+    private String moving;
+    private int returnTicks;
 
-    void spawn(ServerPlayer player, Iterable<CombatantState> combatants){
-        ServerLevel level=(ServerLevel)player.level(); Vec3 anchor=player.position(); Vec3 forward=horizontal(player.getLookAngle()); Vec3 right=new Vec3(-forward.z,0,forward.x);
-        int ai=0,ei=0;
-        for(CombatantState c:combatants){
-            double lane; double distance;
-            if(c.side()==CombatantSide.ALLY){ lane=-4.6+ai*1.25; distance=4.2; ai++; }
-            else { lane=-3.0+ei*1.5; distance=8.0; ei++; }
-            Vec3 pos=anchor.add(forward.scale(distance)).add(right.scale(lane));
-            ArmorStand stand=new ArmorStand(level,pos.x,pos.y,pos.z);
-            stand.setCustomName(Component.literal(c.definition().name())); stand.setCustomNameVisible(true); stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
-            stand.setItemSlot(EquipmentSlot.HEAD,new ItemStack(c.side()==CombatantSide.ALLY?Items.LIGHT_BLUE_WOOL:Items.RED_WOOL));
-            level.addFreshEntity(stand); actors.put(c.instanceId(),stand.getUUID()); homes.put(c.instanceId(),pos);
+    void spawn(ServerPlayer player, Iterable<CombatantState> combatants) {
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 anchor = player.position();
+        Vec3 forward = horizontal(player.getLookAngle());
+        Vec3 right = new Vec3(-forward.z, 0, forward.x);
+        int allyIndex = 0;
+        int enemyIndex = 0;
+        for (CombatantState combatant : combatants) {
+            double lane;
+            double distance;
+            if (combatant.side() == CombatantSide.ALLY) {
+                lane = -4.6 + allyIndex * 1.25;
+                distance = 4.2;
+                allyIndex++;
+            } else {
+                lane = -3.0 + enemyIndex * 1.5;
+                distance = 8.0;
+                enemyIndex++;
+            }
+            Vec3 pos = anchor.add(forward.scale(distance)).add(right.scale(lane));
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
+            stand.setCustomName(Component.literal(combatant.definition().name()));
+            stand.setCustomNameVisible(true);
+            stand.setInvulnerable(true);
+            stand.setNoGravity(true);
+            stand.setShowArms(true);
+            Block marker = combatant.side() == CombatantSide.ALLY ? Blocks.LIGHT_BLUE_WOOL : Blocks.RED_WOOL;
+            stand.setItemSlot(EquipmentSlot.HEAD, new ItemStack(marker.asItem()));
+            level.addFreshEntity(stand);
+            actors.put(combatant.instanceId(), stand.getUUID());
+            homes.put(combatant.instanceId(), pos);
         }
     }
-    void lunge(ServerLevel level,String actorId,String targetId){
-        var actor=entity(level,actorId); Vec3 target=homes.get(targetId); if(actor==null||target==null)return; Vec3 home=homes.get(actorId); Vec3 delta=target.subtract(home); if(delta.lengthSqr()>0.001) actor.setPos(target.subtract(delta.normalize().scale(1.4))); moving=actorId; returnTicks=5;
+
+    void lunge(ServerLevel level, String actorId, String targetId) {
+        ArmorStand actor = entity(level, actorId);
+        Vec3 target = homes.get(targetId);
+        if (actor == null || target == null) return;
+        Vec3 home = homes.get(actorId);
+        Vec3 delta = target.subtract(home);
+        if (delta.lengthSqr() > 0.001) {
+            actor.setPos(target.subtract(delta.normalize().scale(1.4)));
+        }
+        moving = actorId;
+        returnTicks = 5;
     }
-    void tick(ServerLevel level){ if(moving==null)return; if(--returnTicks<=0){ var e=entity(level,moving); Vec3 home=homes.get(moving); if(e!=null&&home!=null)e.setPos(home); moving=null; } }
-    void cleanup(ServerLevel level){ for(UUID id:actors.values()){ var e=level.getEntity(id); if(e!=null)e.discard(); } actors.clear(); homes.clear(); moving=null; }
-    private ArmorStand entity(ServerLevel level,String id){ UUID uuid=actors.get(id); if(uuid==null)return null; var e=level.getEntity(uuid); return e instanceof ArmorStand a?a:null; }
-    private static Vec3 horizontal(Vec3 v){ Vec3 h=new Vec3(v.x,0,v.z); return h.lengthSqr()<0.001?new Vec3(0,0,1):h.normalize(); }
+
+    void tick(ServerLevel level) {
+        if (moving == null) return;
+        if (--returnTicks <= 0) {
+            ArmorStand actor = entity(level, moving);
+            Vec3 home = homes.get(moving);
+            if (actor != null && home != null) actor.setPos(home);
+            moving = null;
+        }
+    }
+
+    void cleanup(ServerLevel level) {
+        for (UUID id : actors.values()) {
+            var entity = level.getEntity(id);
+            if (entity != null) entity.discard();
+        }
+        actors.clear();
+        homes.clear();
+        moving = null;
+    }
+
+    private ArmorStand entity(ServerLevel level, String id) {
+        UUID uuid = actors.get(id);
+        if (uuid == null) return null;
+        var entity = level.getEntity(uuid);
+        return entity instanceof ArmorStand armorStand ? armorStand : null;
+    }
+
+    private static Vec3 horizontal(Vec3 vector) {
+        Vec3 horizontal = new Vec3(vector.x, 0, vector.z);
+        return horizontal.lengthSqr() < 0.001 ? new Vec3(0, 0, 1) : horizontal.normalize();
+    }
 }

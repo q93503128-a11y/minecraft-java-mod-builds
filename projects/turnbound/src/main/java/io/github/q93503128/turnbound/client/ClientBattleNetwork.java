@@ -5,7 +5,23 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public final class ClientBattleNetwork { private ClientBattleNetwork(){}
-    public static void register(RegisterClientPayloadHandlersEvent e){e.register(BattleSnapshotPayload.TYPE,ClientBattleNetwork::handle);}
-    private static void handle(BattleSnapshotPayload p, IPayloadContext c){ ClientBattleState.update(p.snapshot()); Minecraft mc=Minecraft.getInstance(); var s=ClientBattleState.snapshot(); if(s.active()){if(!(mc.gui.screen() instanceof BattleScreen))mc.setScreen(new BattleScreen());}else if(mc.gui.screen() instanceof BattleScreen)mc.setScreen(null); }
+public final class ClientBattleNetwork {
+    private ClientBattleNetwork() {}
+
+    public static void register(RegisterClientPayloadHandlersEvent event) {
+        event.register(BattleSnapshotPayload.TYPE, ClientBattleNetwork::handle);
+    }
+
+    private static void handle(BattleSnapshotPayload payload, IPayloadContext context) {
+        ClientBattleState.update(payload.snapshot());
+        Minecraft minecraft = Minecraft.getInstance();
+        var snapshot = ClientBattleState.snapshot();
+        if (snapshot.active()) {
+            if (!(minecraft.gui.screen() instanceof BattleScreen)) {
+                minecraft.gui.setScreen(new BattleScreen());
+            }
+        } else if (minecraft.gui.screen() instanceof BattleScreen) {
+            minecraft.gui.setScreen(null);
+        }
+    }
 }
