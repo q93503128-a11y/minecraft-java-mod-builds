@@ -13,6 +13,7 @@ Use the 0.61 JAR with `0.61.0-alpha.1-content-preview.1`. Back up any long-lived
 - Complete the third collapse seal in an open loaded arena.
 - PASS: the old placeholder ending is replaced by the unique Final Ascension boss `세계의 경계자`.
 - The boss must appear only after acts 1-3; selecting the old repeatable Ascension Trial must remain a separate action.
+- During all boss phases, the Warden shell must remain actively hostile to the run owner. It must not lose the owner target, enter its idle burrow/dig-away behavior, or become a passive arena prop while the owner is valid and inside the arena.
 - Attempt a second large activity for the same owner while the final boss is active. It must not stack another Final Ascension/Apex/Trial state machine.
 
 ## 3. Phase gate at 65%
@@ -92,4 +93,4 @@ Current practical validation is single-player first. Before future multiplayer s
 - reward ownership and helper behavior need a dedicated multiplayer pass when real multiplayer testing becomes available.
 
 ## Stop-and-report signals
-Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, unavoidable invisible attacks, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, or any external content classloading error.
+Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, Warden target loss or idle burrow during the active fight, unavoidable invisible attacks, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, or any external content classloading error.
