@@ -1,31 +1,9 @@
-# TURNBOUND External Asset / Reference Register
+# TURNBOUND external asset lock
 
-## UI Lib
-- Version: 21.1.1 for NeoForge 26.2
-- License: Apache-2.0
-- Source: https://github.com/DAQEM/UILib
-- Distribution: https://modrinth.com/mod/ui-lib/version/7PnHRvVW
-- Usage: client UI screen/widget/9-slice foundation. Never reference from server/common code.
+- Kenney UI Pack: RPG Expansion — CC0. Original: https://kenney.nl/assets/ui-pack-rpg-expansion
+  - Vendored P0 files: `buttonLong_blue.png`, `buttonLong_blue_pressed.png`, `panel_blue.png`, `panelInset_blue.png`.
+  - P0 source mirror was used only to transfer exact CC0 binaries; the visual design is Kenney's, not a TURNBOUND redraw.
+- UI Lib 21.1.1 — Apache-2.0, API/reference only in P0. The final visual assets remain Kenney originals.
+- GeckoLib 5.5.3 — animation/runtime dependency reserved for authored character models after the P0 stand-in presentation.
 
-## Kenney — UI Pack (RPG Expansion)
-- License: CC0
-- Source: https://kenney.nl/assets/ui-pack-rpg-expansion
-- Files: 85 assets
-- Planned usage: RPG buttons, panels and sliders.
-- Status: source/license locked; binary vendoring occurs in the UI asset-import phase.
-
-## Kenney — Fantasy UI Borders
-- License: CC0
-- Source: https://kenney.nl/assets/fantasy-ui-borders
-- Files: 140 assets
-- Planned usage: 9-slice frames and decorative borders.
-- Status: source/license locked; binary vendoring occurs in the UI asset-import phase.
-
-## GeckoLib
-- Version: 5.5.3 for NeoForge 26.2
-- License: MIT
-- Distribution: https://modrinth.com/mod/geckolib/version/Kgc42zo3
-- Usage: character/enemy/boss keyframe animation runtime.
-
-## Proprietary game references
-R_PG and commercial JRPGs are reference-only for information hierarchy, timeline layout, party readability, action flow and presentation rhythm. Do not copy proprietary images, icons, textures or audio.
+Do not replace the battle screen with improvised vanilla gray rectangles. Temporary stand-in 3D actors are explicitly non-final and must be replaced by authored character models/animations in the presentation pass.
