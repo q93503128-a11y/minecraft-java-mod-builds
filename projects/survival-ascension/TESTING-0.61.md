@@ -19,7 +19,7 @@ Use the 0.61 JAR with `0.61.0-alpha.1-content-preview.1`. Back up any long-lived
 - Damage the boss from full health toward 65%.
 - PASS: one hit may land exactly on the 65% boundary but must not skip below it.
 - At 65%, further incoming damage must be suppressed while the anchor phase is active.
-- Exactly three physical Crying Obsidian world anchors must appear in loaded open positions.
+- Exactly 고정점 3개, implemented as physical Crying Obsidian world anchors, must appear in loaded open positions.
 - Mine the anchors normally and with Shift precision. They must respond to the same real Mining rules as ordinary blocks.
 - Destroying all three anchors must remove protection and enter the breakthrough phase.
 
@@ -69,8 +69,8 @@ Before/after snapshots must show:
 
 ## 9. Final Mobility authority
 Use Mobility Lv.100 after world completion.
-- Without Field Mastery: maximum air-dash count must be 4.
-- With Field Mastery: maximum air-dash count must be 5.
+- Without Field Mastery: maximum 공중 돌진(air-dash) count must be 4.
+- With Field Mastery: maximum 공중 돌진 count must be 5.
 - Dash power must be observably higher than pre-final Lv.100 by the authored +0.15 addition.
 - Dash cooldown must be 4 ticks shorter than the ordinary Lv.100 value but never below 12 ticks.
 - Ground reset, logout cleanup, water/passenger/fall-flying restrictions and existing Shift-independent controls must remain intact.
