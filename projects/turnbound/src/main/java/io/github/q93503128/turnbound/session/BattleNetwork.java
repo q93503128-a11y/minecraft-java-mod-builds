@@ -8,11 +8,26 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class BattleNetwork {
-    public static final String PROTOCOL="turnbound-alpha2"; private BattleNetwork(){}
-    public static void register(RegisterPayloadHandlersEvent event){
-        PayloadRegistrar r=event.registrar(PROTOCOL); r.playToClient(BattleSnapshotPayload.TYPE,BattleSnapshotPayload.STREAM_CODEC);
-        r.playToServer(BattleCommandPayload.TYPE,BattleCommandPayload.STREAM_CODEC,(payload,context)->{ if(context.player() instanceof ServerPlayer p) BattleSessionManager.command(p,payload.command()); });
+    public static final String PROTOCOL = "turnbound-alpha2";
+
+    private BattleNetwork() {}
+
+    public static void register(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL);
+        registrar.playToClient(BattleSnapshotPayload.TYPE, BattleSnapshotPayload.STREAM_CODEC);
+        registrar.playToServer(BattleCommandPayload.TYPE, BattleCommandPayload.STREAM_CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        BattleSessionManager.command(player, payload.command());
+                    }
+                }));
     }
-    static void sync(ServerPlayer p,BattleSession s){PacketDistributor.sendToPlayer(p,new BattleSnapshotPayload(BattleSnapshotCodec.encode(s)));}
-    static void close(ServerPlayer p){PacketDistributor.sendToPlayer(p,new BattleSnapshotPayload("H|0|0|1|RUNNING||1\n"));}
+
+    static void sync(ServerPlayer player, BattleSession session) {
+        PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload(BattleSnapshotCodec.encode(session)));
+    }
+
+    static void close(ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload("H|0|0|1|RUNNING||1\n"));
+    }
 }

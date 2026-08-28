@@ -13,15 +13,17 @@ public final class ClientBattleNetwork {
     }
 
     private static void handle(BattleSnapshotPayload payload, IPayloadContext context) {
-        ClientBattleState.update(payload.snapshot());
-        Minecraft minecraft = Minecraft.getInstance();
-        var snapshot = ClientBattleState.snapshot();
-        if (snapshot.active()) {
-            if (!(minecraft.gui.screen() instanceof BattleScreen)) {
-                minecraft.gui.setScreen(new BattleScreen());
+        context.enqueueWork(() -> {
+            ClientBattleState.update(payload.snapshot());
+            Minecraft minecraft = Minecraft.getInstance();
+            var snapshot = ClientBattleState.snapshot();
+            if (snapshot.active()) {
+                if (!(minecraft.gui.screen() instanceof BattleScreen)) {
+                    minecraft.gui.setScreen(new BattleScreen());
+                }
+            } else if (minecraft.gui.screen() instanceof BattleScreen) {
+                minecraft.gui.setScreen(null);
             }
-        } else if (minecraft.gui.screen() instanceof BattleScreen) {
-            minecraft.gui.setScreen(null);
-        }
+        });
     }
 }

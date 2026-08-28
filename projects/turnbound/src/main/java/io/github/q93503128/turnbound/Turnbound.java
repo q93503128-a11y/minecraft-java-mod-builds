@@ -11,6 +11,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
@@ -25,6 +26,7 @@ public final class Turnbound {
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::logout);
+        NeoForge.EVENT_BUS.addListener(this::serverStopping);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onEntityInteract);
@@ -39,5 +41,9 @@ public final class Turnbound {
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) BattleSessionManager.end(player);
+    }
+
+    private void serverStopping(ServerStoppingEvent event) {
+        BattleSessionManager.clearAll(event.getServer().getPlayerList().getPlayers());
     }
 }
