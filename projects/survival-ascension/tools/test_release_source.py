@@ -135,7 +135,7 @@ need(final_system, [
     "ACT2_SET_ONE", "ACT2_SET_TWO", "ACT2_SET_THREE",
     "ACT3_SEAL_ONE", "ACT3_SEAL_TWO", "ACT3_SEAL_THREE",
     "Blocks.CRYING_OBSIDIAN", "Blocks.AMETHYST_BLOCK", "Blocks.GLOWSTONE",
-    "player.isShiftKeyDown()", "level.hasChunkAt", "clearTransient(run)",
+    "isShiftKeyDown()", "level.hasChunkAt", "clearTransient(run)",
     '"minecraft:spider"', '"minecraft:skeleton"', '"minecraft:drowned"',
     '"minecraft:ravager"', '"minecraft:guardian"', '"minecraft:witch"',
     '"minecraft:stray"', '"minecraft:wither_skeleton"', '"minecraft:enderman"',
