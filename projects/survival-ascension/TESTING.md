@@ -1,9 +1,9 @@
-# Survival Ascension 0.59 — First Gameplay Test Matrix
+# Survival Ascension 0.60 — First Gameplay Test Matrix
 
-Back up any long-lived world first. Test with the 0.59 JAR and matching 0.59 content-preview pack.
+Back up any long-lived world first. Test with the 0.60 JAR and matching 0.60 content-preview pack.
 
 ## 1. Boot / save compatibility
-- Start one fresh world and one existing 0.58 world.
+- Start one fresh world and one existing 0.59 world.
 - PASS: no load crash, registry/data error, migration prompt or repeated login exception.
 - Run `/ascension stats`; all six skills plus expedition/operation/apex/logistics/outpost/recovery summaries must render.
 
@@ -39,7 +39,7 @@ Back up any long-lived world first. Test with the 0.59 JAR and matching 0.59 con
 
 ## 7. Death / encounter cleanup
 - Normal death near an armed operational outpost: one pending recovery, one post-respawn teleport, contract consumed only after successful move.
-- Death/logout/timeout during incident, defense, apex hunt and ascension trial: encounter mobs/boss bars/state clean up without duplicate rewards.
+- Death/logout/timeout during incident, defense, apex hunt, ascension trial and 최후의 승천: encounter mobs/boss bars/state clean up without duplicate rewards.
 
 ## Stop-and-report signals
 Capture screenshot/log + reproduction steps for any crash, save corruption, item duplication/loss, unloaded-chunk hitch/forced generation, repeated reward, objective increase larger than real actions, bulk work crossing Shift precision, invisible/remote storage consumption, stale encounter state after failure, or external-mod classloading error.
@@ -61,3 +61,17 @@ Capture screenshot/log + reproduction steps for any crash, save corruption, item
 - Remove the optional content mod and boot standalone Survival Ascension: no classloading/linkage failure, empty Apex escort pools, and normal vanilla Apex composition.
 - Confirm Minotaur, Hour Cantor and Phoenix Guardian never appear through the Apex escort tags.
 - During logout/death/timeout, a substituted content escort must be removed by the same owner-scoped Apex cleanup as vanilla escorts; no glowing orphan mob may remain.
+
+## 0.60 focused checks
+- Before all four canonical requirements are complete, choose `M → 인프라 → 최후의 승천`. It must refuse entry and print the same `최후의 승천 준비` checklist; do not observe a second independent readiness counter.
+- With Dragon stage2 + Expedition 9/9 + Apex first-clear 9/9 + Ascension Nexus complete, start `최후의 승천` in an open loaded area. The existing `승천 중추` re-selection must still start the old repeatable 승천 시련, not silently redirect to the final encounter.
+- 1막 채굴: six purple mining blocks form a compact real wall. Normal high-rank area/vein behavior may clear multiple real targets; 웅크리기 must preserve the existing precision/single-block behavior.
+- 1막 건축: place real blocks above all four amethyst markers. Construction line/plane follow-up may satisfy multiple target cells only when it actually places blocks there. The four player repair blocks must remain after the temporary amethyst markers are cleaned.
+- 1막 전투/기동: three marked guards are real hostile entities and the three glowstone checkpoints require actual player movement through the arena. No GUI-only submit button or numeric skill check may advance the phase.
+- 2막: verify exactly three compressed sets — 삼림/건조/습지, 고산/대양/심층, 빙설/네더/엔드 — rather than nine Apex bosses. Snapshot Apex 진행 before/after: unique first-clear count, defeated mask semantics and Apex rewards must not change from these echo kills.
+- 3막: each of the three collapse anchors spawns one high-threat guard. After that guard dies, only standing near the actual purple anchor while 웅크리기 is held should build the precision-seal channel; releasing Shift or leaving the radius must reduce/reset progress rather than auto-complete remotely.
+- Start with a second player nearby: helpers may fight/build, but only the owner movement/checkpoint and owner Shift seal drive those owner-specific objectives. A second Final Ascension center inside 128 blocks must be rejected.
+- While Final Ascension is active, trying to start a repeatable Ascension Trial or Apex hunt for the same player must be rejected. If another conflicting large activity appears, Final Ascension must fail-clean rather than stack both state machines.
+- Kill the owner, leave the 72-block arena, log out, or force a phase timeout. All Survival-owned temporary marker blocks and marked encounter mobs must disappear; already placed player repair blocks must not be deleted.
+- Restart after an interrupted run and revisit the area. Any persisted orphan mob carrying the final-ascension owner marker must be rejected on entity join. No new SavedData file/id should appear from 0.60 acts 1-3.
+- Run the complete 1-3 sequence. Completion must not grant `World Final Ascension Complete` yet and must not duplicate Apex/Trial rewards; the final unique boss remains a separate later stage.

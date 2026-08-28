@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.infrastructure;
 import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionProgression;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
@@ -18,6 +19,7 @@ import net.minecraft.world.item.Item;
 public final class InfrastructureService {
     public static final String ACTION_FUND = "fund";
     public static final String ACTION_STATUS = "status";
+    public static final String ACTION_FINAL_ASCENSION = "final_ascension";
     public static final String ALL_PROJECTS = "all";
 
     private InfrastructureService() {}
@@ -28,6 +30,10 @@ public final class InfrastructureService {
             player.sendSystemMessage(Component.literal("§5[월드 승천] §f단계 §d" + world.stage() + "§7/§f2 §7· §d" + world.stageName()));
             for (InfrastructureProject project : InfrastructureProject.values()) sendStatus(player, project);
             FinalAscensionProgression.sendStatus(player);
+            return;
+        }
+        if (ACTION_FINAL_ASCENSION.equals(action)) {
+            FinalAscensionSystem.tryStart(player);
             return;
         }
         InfrastructureProject project = InfrastructureProject.fromId(projectId);
@@ -70,6 +76,10 @@ public final class InfrastructureService {
         boolean wasComplete = data.isComplete(project);
         if (wasComplete) {
             if (project == InfrastructureProject.APEX_TRACKING_POST) {
+                if (FinalAscensionSystem.isActive(player)) {
+                    player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 §d최후의 승천§f을 먼저 끝내세요."));
+                    return;
+                }
                 if (ExpeditionOperationSystem.isActive(player)) {
                     player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 §e원정 작전§f을 먼저 완료하거나 실패 처리하세요."));
                     return;
@@ -82,6 +92,10 @@ public final class InfrastructureService {
             } else if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
                 ProductionService.sendStatus(player);
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
+                if (FinalAscensionSystem.isActive(player)) {
+                    player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 §d최후의 승천§f을 먼저 끝내세요."));
+                    return;
+                }
                 if (ExpeditionIncidentSystem.isActive(player)) {
                     player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 §e현장 사건§f을 먼저 끝내거나 실패 처리한 뒤 시작하세요."));
                     return;
@@ -177,6 +191,9 @@ public final class InfrastructureService {
                 player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
                 player.sendSystemMessage(Component.literal("  §5- 반복 승천 시련 §f메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8 §7· 최후의 승천 준비 조건 중 하나"));
+                if (FinalAscensionProgression.isReady(player)) {
+                    player.sendSystemMessage(Component.literal("  §d- 최후의 승천 §f개방됨 §7· 인프라 메뉴의 최후의 승천에서 시작"));
+                }
             }
             return;
         }

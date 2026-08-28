@@ -30,6 +30,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("산업 가공소", "전설 · 대량재료 + 마지막 실제 배럴 준공 현장", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),
             new Entry("정점 추적소", "전설 · 대량재료 + 등록 배럴 기반 추적소 준공 현장", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),
             new Entry("승천 중추", "종말 · 대량재료 + 등록 배럴 기반 중추 준공 현장", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
+            new Entry("최후의 승천", "준비 4조건 · 세계의 시험 → 9지역 잔향 → 붕괴 봉쇄", new ItemStack(Items.NETHER_STAR), InfrastructureProject.ASCENSION_NEXUS, Action.FINAL_ASCENSION),
             new Entry("진행도", "월드 · 인프라 · 최후의 승천 준비 현황", new ItemStack(Items.MAP), null, Action.STATUS),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), null, Action.BACK)
     };
@@ -50,9 +51,17 @@ public final class InfrastructureRadialMenuScreen extends Screen {
         String caption="대량 자원 → 실제 준공 현장 → 월드에 남는 작업 체급";graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
-    @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){if(event.button()!=0)return false;Entry entry=ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)];if(entry.action()==Action.BACK){this.minecraft.gui.setScreen(new AscensionRadialMenuScreen());return true;}if(entry.action()==Action.STATUS){ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureService.ALL_PROJECTS,InfrastructureService.ACTION_STATUS));this.minecraft.gui.setScreen(null);return true;}if(entry.action()==Action.OPEN_PRODUCTION){this.minecraft.gui.setScreen(new ProductionRadialMenuScreen());return true;}ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(entry.project().id(),InfrastructureService.ACTION_FUND));this.minecraft.gui.setScreen(null);return true;}
+    @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
+        if(event.button()!=0)return false;
+        Entry entry=ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)];
+        if(entry.action()==Action.BACK){this.minecraft.gui.setScreen(new AscensionRadialMenuScreen());return true;}
+        if(entry.action()==Action.STATUS){ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureService.ALL_PROJECTS,InfrastructureService.ACTION_STATUS));this.minecraft.gui.setScreen(null);return true;}
+        if(entry.action()==Action.OPEN_PRODUCTION){this.minecraft.gui.setScreen(new ProductionRadialMenuScreen());return true;}
+        if(entry.action()==Action.FINAL_ASCENSION){ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(entry.project().id(),InfrastructureService.ACTION_FINAL_ASCENSION));this.minecraft.gui.setScreen(null);return true;}
+        ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(entry.project().id(),InfrastructureService.ACTION_FUND));this.minecraft.gui.setScreen(null);return true;
+    }
 
-    private enum Action{FUND,OPEN_PRODUCTION,STATUS,BACK}
+    private enum Action{FUND,OPEN_PRODUCTION,FINAL_ASCENSION,STATUS,BACK}
     private record Entry(String title,String detail,ItemStack icon,InfrastructureProject project,Action action){}
     private record WheelElement(RenderPipeline pipeline,TextureSetup textureSetup,Matrix3x2f pose,int x,int y,int selected,ScreenRectangle scissorArea,ScreenRectangle bounds) implements GuiElementRenderState{
         private WheelElement(RenderPipeline p,TextureSetup t,Matrix3x2f pose,int x,int y,int s,ScreenRectangle a){this(p,t,pose,x,y,s,a,boundsFor(x,y,pose,a));}

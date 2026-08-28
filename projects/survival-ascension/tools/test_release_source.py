@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_VERSION = "0.59.1-alpha.1"
+CURRENT_VERSION = "0.60.0-alpha.1"
 PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
 
 
@@ -33,7 +33,7 @@ def forbid(text: str, needles: list[str], label: str) -> None:
 
 
 # Preserve the complete 0.58 regression contract. Runtime/version checks advance to the
-# current 0.59.1 release; historical 0.59.0 documentation remains a regression target.
+# current 0.60 release; historical 0.59.0 documentation remains a regression target.
 legacy_path = ROOT / "tools/test_release_source_058.py"
 legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_VERSION = "0.58.0-alpha.1"', f'REQUIRED_VERSION = "{CURRENT_VERSION}"')
@@ -52,7 +52,7 @@ except (SystemExit, AssertionError) as exc:
 legacy_output = buffer.getvalue().replace("protocol8", "protocol9")
 print(legacy_output, end="")
 if exit_code != 0:
-    print("RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.59.1 runtime identity")
+    print("RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.60 runtime identity")
     sys.exit(exit_code)
 
 props = read("gradle.properties")
@@ -64,19 +64,22 @@ interdiction = read("src/main/java/kr/moonseungjun/survivalascension/expedition/
 woodcutting = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
 harvesting = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
 final_gate = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionProgression.java")
+final_system = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionSystem.java")
 infrastructure = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
+menu = read("src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java")
 project = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
 testing = read("TESTING.md")
 
-need(props, [f"mod_version={CURRENT_VERSION}"], "0.59.1 release identity")
+need(props, [f"mod_version={CURRENT_VERSION}"], "0.60 release identity")
 need(main, [
     f'VERSION = "{CURRENT_VERSION}"', "ApexContentPackBridge::onServerStarted",
     "ApexPhaseMutationService::onIncomingDamage", "ExpeditionInterdictionService::onPlayerTick",
     "WoodcuttingProgression::onServerTick", "HarvestingProgression::onServerTick",
+    "FinalAscensionSystem::onServerTick", "FinalAscensionSystem::onEntityJoin",
     "data-driven Apex content escorts"
-], "0.59.1 runtime wiring")
+], "0.60 runtime wiring")
 
 # 0.59.0 optional Apex escort behavior is still a required regression contract.
 need(bridge, [
@@ -92,8 +95,7 @@ need(apex, [
 forbid(bridge, ["tbos:", "com.nightbeam", "setChunkForced", "addRegionTicket", "getChunk("],
        "0.59 optional-content/force-load policy")
 
-# 0.59.1 closure checks: threshold crossing must use projected post-hit health, long operations
-# must wire bounded staged interdictions, and Lv90 wood/farm growth must remain physical + Shift-safe.
+# 0.59.1 closure checks remain regression contracts.
 need(phase, [
     "boss.getHealth() - event.getAmount()", "healthRatio <= 0.62D", "healthRatio <= 0.32D",
     "triggerPhaseOne", "triggerPhaseTwo"
@@ -110,9 +112,7 @@ need(harvesting, [
     "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"
 ], "0.59.1 high-rank harvesting")
 
-# Endgame closure foundation: the final gate must reuse the existing persistent authorities
-# instead of creating duplicate progression state, and the existing infrastructure status action
-# must expose the checklist in normal play.
+# The canonical readiness authority remains unchanged and is exposed through normal play.
 need(final_gate, [
     "WorldAscensionData.get(level.getServer()).stage() >= 2",
     "expeditions.countCompleted(player)", "apex.uniqueDefeated(player)",
@@ -120,18 +120,42 @@ need(final_gate, [
     "최후의 승천 준비", "missingRequirements()"
 ], "final ascension canonical gate")
 need(infrastructure, [
-    "FinalAscensionProgression.sendStatus(player)", "최후의 승천 준비 현황은 인프라 → 진행도"
-], "final ascension status exposure")
+    "FinalAscensionProgression.sendStatus(player)", "최후의 승천 준비 현황은 인프라 → 진행도",
+    'ACTION_FINAL_ASCENSION = "final_ascension"', "FinalAscensionSystem.tryStart(player)",
+    "FinalAscensionSystem.isActive(player)"
+], "final ascension admission/status exposure")
+need(menu, [
+    'new Entry("최후의 승천"', "ACTION_FINAL_ASCENSION", "세계의 시험 → 9지역 잔향 → 붕괴 봉쇄"
+], "final ascension menu entry")
 
-# Keep the previous 0.59 documentation as historical regression evidence and require the new
-# release to be recorded in the changelog without rewriting the large design docs during test closure.
+# 0.60 Endgame Closure: real world actions, 3x3 regional echo compression and collapse sealing.
+need(final_system, [
+    "FinalAscensionProgression.isReady(player)",
+    "ACT1_MINING", "ACT1_BUILD", "ACT1_COMBAT", "ACT1_MOVE",
+    "ACT2_SET_ONE", "ACT2_SET_TWO", "ACT2_SET_THREE",
+    "ACT3_SEAL_ONE", "ACT3_SEAL_TWO", "ACT3_SEAL_THREE",
+    "Blocks.CRYING_OBSIDIAN", "Blocks.AMETHYST_BLOCK", "Blocks.GLOWSTONE",
+    "player.isShiftKeyDown()", "level.hasChunkAt", "clearTransient(run)",
+    '"minecraft:spider"', '"minecraft:skeleton"', '"minecraft:drowned"',
+    '"minecraft:ravager"', '"minecraft:guardian"', '"minecraft:witch"',
+    '"minecraft:stray"', '"minecraft:wither_skeleton"', '"minecraft:enderman"',
+    "OWNER_KEY", "PHASE_KEY", "SEAL_CHANNEL_TICKS"
+], "0.60 Final Ascension acts 1-3")
+forbid(final_system, [
+    "ApexHuntData", "defeatedMask", "recordDefeat", "tbos:", "com.nightbeam",
+    "setChunkForced", "addRegionTicket", "getChunk(", "extends SavedData"
+], "0.60 final encounter isolation policy")
+
+# Historical docs remain regression evidence while the release delta is recorded explicitly.
 need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "0.59 PROJECT regression docs")
 need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "0.59 README regression docs")
 need(changelog, [
+    "## 0.60.0-alpha.1", "Final Ascension", "World Test", "nine regional Apex pressures",
+    "0.60.0-alpha.1-content-preview.1", "Network protocol remains 9",
     "## 0.59.1-alpha.1", "two bounded combat interdiction waves", "Woodcutting Lv90+",
     "0.59.1-alpha.1-content-preview.1", "## 0.59.0-alpha.1", "apex_escorts_tier_0"
-], "0.59.1 CHANGELOG docs")
-need(testing, ["## 0.59 focused checks", "이변 호위", "Ocean"], "0.59 manual test matrix")
+], "0.60 CHANGELOG docs")
+need(testing, ["## 0.60 focused checks", "최후의 승천", "웅크리기", "Apex 진행"], "0.60 manual test matrix")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -146,4 +170,7 @@ print("apex_phase_crossing_hit=PASS")
 print("operation_interdictions=PASS")
 print("high_rank_woodcutting_harvesting=PASS")
 print("final_ascension_canonical_gate=PASS")
+print("final_ascension_acts_1_3=PASS")
+print("final_ascension_apex_state_mutation=ABSENT")
+print("final_ascension_force_load=ABSENT")
 print("RELEASE SOURCE AUDIT PASS")

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.60.0-alpha.1
+- Added `Final Ascension / 최후의 승천` acts 1-3 behind the existing canonical `FinalAscensionProgression.isReady()` gate; readiness still comes only from Ender Dragon stage2, Expedition 9/9, Apex first-clear 9/9 and the completed Ascension Nexus.
+- Act 1 `World Test / 세계의 시험` uses real world actions instead of menu counters: a bounded 3×2 mining wall, four real construction repair targets, three high-pressure combat guards and three physical movement checkpoints. Existing Mining/Construction/Combat/Mobility behavior therefore acts on the same blocks, mobs and movement, while Shift remains the precision/safe override.
+- Act 2 compresses the nine regional Apex pressures into three sets instead of replaying nine Apex bosses: Forest/Arid/Wetland, Highland/Ocean/Deep and Frozen/Nether/End. The encounter uses its own owner/phase markers and never calls Apex defeat/reward persistence, so `defeatedMask` and Apex rewards cannot be duplicated.
+- Act 3 compresses pursuit/anomaly/ambush pressure into three collapse anchors. Each anchor has one high-threat guard, then requires a short Shift precision seal at the actual marker block; no 30-50 mob swarm or external story boss is used.
+- Final Ascension runtime state is deliberately non-persistent in 0.60: failure/death/leave cleanup removes only Survival-owned temporary markers and encounter mobs, while player-placed repair blocks remain real world construction. No World Final Ascension Complete flag is written before the later unique final boss.
+- All encounter placement/spawn searches are bounded and `hasChunkAt`-guarded. No force-loading, background simulation, optional-mod Java dependency, TBS implementation class, external mob-count inflation or new SavedData schema was introduced.
+- The existing repeatable Ascension Trial remains independent and can still be run after the Ascension Nexus; the infrastructure menu now exposes a separate `최후의 승천` action and prevents overlapping Apex/Trial starts for the same player.
+- Network protocol remains 9.
+- Content pack release: `0.60.0-alpha.1-content-preview.1`; the same seven locked external project/version IDs remain unchanged.
+
 ## 0.59.1-alpha.1
 - Expanded integrated Biomes O' Plenty terrain from scenery into Survival-owned regional incidents; the field incident catalog is now roughly 37 variants.
 - Expanded curated The Birth of Steve participation across expedition/interdiction/Apex pools through Survival-owned optional EntityType tags while preserving slot-replacement limits and avoiding story/boss-heavy actors.
@@ -43,7 +54,7 @@
 ## 0.56.0-alpha.1
 - Added firing-player UUID to the existing Survival ranged projectile launch snapshot.
 - Added bounded online-owner fallback when a Survival-snapshotted projectile's `DamageSource` no longer exposes its ServerPlayer shooter.
-- Routed fallback attribution through Combat damage/burst, Combat kill XP + major-target credit, Ascension elite-affix drops, Elite reactions/rank rewards, endgame-mutation reactions/rewards, and Warband leader rewards.
+- Routed fallback attribution through Combat damage/burst, Combat kill XP + major-target expedition credit, Ascension elite-affix drops, Elite reactions/rank rewards, endgame-mutation reactions/rewards, and Warband leader rewards.
 - Fixed armor `보호` environmental classification so a direct projectile with a missing attacking-entity reference is not treated as environmental damage.
 - Kept live `DamageSource` ServerPlayer authority first; fallback is only for Survival-marked ranged projectiles and never queues offline rewards.
 - Added no SavedData, packet/protocol, custom projectile/entity, force-load or background simulation. Network protocol remains8.

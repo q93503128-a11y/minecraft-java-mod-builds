@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_LOCK_VERSION = "0.59.1-alpha.1-content-preview.1"
+CURRENT_LOCK_VERSION = "0.60.0-alpha.1-content-preview.1"
 PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
 
 
@@ -27,7 +27,7 @@ def need(text: str, needles: list[str], label: str) -> None:
 
 
 # Preserve the complete 0.58 content-pack regression contract while advancing the locked pack
-# identity to 0.59.1. The large PROJECT document remains historical 0.59.0 regression evidence.
+# identity to 0.60. The large PROJECT document remains historical 0.59.0 regression evidence.
 legacy_path = ROOT / "tools/test_release_content_pack_058.py"
 legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_LOCK_VERSION = "0.58.0-alpha.1-content-preview.1"',
@@ -46,7 +46,7 @@ except (SystemExit, AssertionError) as exc:
         print(f"0.58 content-pack regression assertion: {exc}", file=sys.stderr)
 print(buffer.getvalue(), end="")
 if exit_code != 0:
-    print("RELEASE CONTENT-PACK AUDIT FAIL: 0.58 regression contract failed under 0.59.1 pack identity")
+    print("RELEASE CONTENT-PACK AUDIT FAIL: 0.58 regression contract failed under 0.60 pack identity")
     sys.exit(exit_code)
 
 bridge = read("src/main/java/kr/moonseungjun/survivalascension/compat/ApexContentPackBridge.java")
@@ -64,7 +64,7 @@ terrablender_ko = read("src/main/resources/assets/terrablender/lang/ko_kr.json")
 lock = read("modpack/content-lock.json")
 
 need(lock, [f'"version": "{CURRENT_LOCK_VERSION}"', '"The Birth of Steve"', '"Amethyst Resonance"', '"Biomes O\' Plenty"'],
-     "0.59.1 locked content identity")
+     "0.60 locked content identity")
 need(bridge, [
     "APEX_ESCORTS_TIER_0", "APEX_ESCORTS_TIER_1", "APEX_ESCORTS_TIER_2",
     "randomEscortId", "escortIds", "apex_escort_tier_", "Tags.EntityTypes.BOSSES"
@@ -96,7 +96,7 @@ need(resonance, [
     "amethyst_resonance:resonant_chestplate", "amethyst_resonance:resonant_leggings",
     "amethyst_resonance:resonant_boots", '"required":false'
 ], "0.59.1 Resonance reward pool")
-need(compat, ["randomIncidentReinforcementId", "resonanceOperationRewardIds", "[content-census]" if False else "censusLines"],
+need(compat, ["randomIncidentReinforcementId", "resonanceOperationRewardIds", "censusLines"],
      "0.59.1 runtime registry/tag compatibility")
 
 need(amethyst_ko, [
