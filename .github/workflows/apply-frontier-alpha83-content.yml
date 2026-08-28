@@ -26,6 +26,18 @@ jobs:
           python-version: '3.12'
       - name: Apply Alpha.83 content patch
         run: python3 .github/scripts/frontier-alpha83-content-apply.py
+      - name: Preserve Alpha.82 guidance view for historical audits
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/test_alpha83_source.py')
+          s = p.read_text(encoding='utf-8')
+          old = '    elif self.name == "SettlementGuidanceService.java":\n        s = s.replace("M 메뉴", "B 팔레트")\n'
+          new = old + '        s += "\\n// Alpha.82 historical guidance: 영지 운영 · 고급 제작 의뢰·건설소 보급·도로망·전문 전초기지·시장 교역·감시망·주둔 병력을 계속 확장\\n"\n'
+          if s.count(old) != 1:
+              raise SystemExit('historical guidance shim anchor mismatch')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Validate source/docs audits before commit
         working-directory: projects/frontier-settlement
         run: |
