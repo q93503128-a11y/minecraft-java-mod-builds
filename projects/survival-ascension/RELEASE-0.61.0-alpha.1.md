@@ -30,9 +30,9 @@ Acts 1-3 still own no persistence and still cannot write Expedition/Apex/Infrast
 The reward is not a new universal raw-stat tier. It expands the physical action scale of existing Lv.100 systems.
 
 ### Mobility
-- Final Ascension complete + Mobility Lv.100: one additional endgame air-dash tier.
-- Without Field Mastery: up to 4 air dashes.
-- With Field Mastery: up to 5 air dashes.
+- Final Ascension complete + Mobility Lv.100: one additional endgame 공중 돌진(air dash) tier.
+- Without Field Mastery: up to 4 공중 돌진.
+- With Field Mastery: up to 5 공중 돌진.
 - Final mastery adds +0.15 dash power and reduces the Lv.100 dash cooldown by 4 ticks, with a 12-tick floor.
 
 ### Construction
