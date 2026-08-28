@@ -36,13 +36,13 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Runtime-only first three acts of the final ascension.
+ * Runtime first three acts of the final ascension. The permanent admission authority remains
+ * {@link FinalAscensionProgression}; the unique boss and permanent world closure are owned by
+ * {@link FinalAscensionBossSystem} and {@link FinalAscensionData}.
  *
- * <p>The permanent admission authority remains {@link FinalAscensionProgression}. This system never
- * writes expedition/Apex/infrastructure completion and intentionally owns no SavedData. Every
- * temporary block is placed only into already-loaded air and is removed only if it is still the
- * exact marker that Survival Ascension placed. Player-built repair blocks remain as real world
- * construction.</p>
+ * <p>This system never writes expedition/Apex/infrastructure completion. Every temporary block is
+ * placed only into already-loaded air and is removed only if it is still the exact marker that
+ * Survival Ascension placed. Player-built repair blocks remain as real world construction.</p>
  */
 public final class FinalAscensionSystem {
     private static final String OWNER_KEY = "survivalascension_final_ascension_owner";
@@ -105,12 +105,17 @@ public final class FinalAscensionSystem {
             FinalAscensionProgression.sendStatus(player);
             return;
         }
+        if (FinalAscensionData.get(level.getServer()).isComplete()) {
+            player.sendSystemMessage(Component.literal("§d[최후의 승천] §f이 월드는 이미 최종 관문을 돌파했습니다."));
+            FinalAscensionData.sendStatus(player);
+            return;
+        }
         if (ACTIVE.containsKey(player.getUUID())) {
             player.sendSystemMessage(Component.literal("§5[최후의 승천] §f이미 진행 중입니다."));
             return;
         }
         if (hasConflictingActivity(player)) {
-            player.sendSystemMessage(Component.literal("§5[최후의 승천] §f진행 중인 현장 사건·원정 작전·정점 사냥·방어전·승천 시련을 먼저 끝내세요."));
+            player.sendSystemMessage(Component.literal("§5[최후의 승천] §f진행 중인 현장 사건·원정 작전·정점 사냥·방어전·승천 시련·최종 관문을 먼저 끝내세요."));
             return;
         }
         for (Run other : ACTIVE.values()) {
@@ -136,7 +141,7 @@ public final class FinalAscensionSystem {
             return;
         }
 
-        player.sendSystemMessage(Component.literal("§d[최후의 승천 개방] §f세계의 시험 → 아홉 지역의 잔향 → 붕괴 봉쇄를 한 전장에서 연속 돌파합니다."));
+        player.sendSystemMessage(Component.literal("§d[최후의 승천 개방] §f세계의 시험 → 아홉 지역의 잔향 → 붕괴 봉쇄 → 최종 관문을 한 전장에서 연속 돌파합니다."));
         player.sendSystemMessage(Component.literal("§7실제 채굴·건축·전투·기동 능력이 그대로 적용됩니다. 웅크리기는 기존처럼 정밀/안전 작업입니다."));
     }
 
@@ -318,9 +323,13 @@ public final class FinalAscensionSystem {
         if (result != SealTick.COMPLETE) return false;
 
         cleanup(run);
-        owner.sendSystemMessage(Component.literal("§d[최후의 승천] §f세계의 시험, 아홉 지역의 잔향, 붕괴 봉쇄를 모두 돌파했습니다."));
-        owner.sendSystemMessage(Component.literal("§7승천 중추가 최심부의 문을 붙잡았습니다. 문 너머의 존재는 아직 모습을 드러내지 않았습니다."));
         closeBossBar(run);
+        owner.sendSystemMessage(Component.literal("§d[최후의 승천] §f세계의 시험, 아홉 지역의 잔향, 붕괴 봉쇄를 모두 돌파했습니다."));
+        if (!FinalAscensionBossSystem.tryStartFromClosure(owner, run.center)) {
+            owner.sendSystemMessage(Component.literal("§c[최후의 승천] §f최종 관문을 형성하지 못했습니다. 열린 전장에서 다시 도전하세요."));
+            return true;
+        }
+        owner.sendSystemMessage(Component.literal("§7승천 중추가 최심부의 문을 열었습니다. 세계의 경계가 모습을 드러냅니다."));
         return true;
     }
 
@@ -616,7 +625,8 @@ public final class FinalAscensionSystem {
                 || ApexHuntSystem.isActive(player)
                 || ExpeditionIncidentSystem.isActive(player)
                 || ExpeditionOperationSystem.isActive(player)
-                || OutpostSiegeSystem.isActive(player);
+                || OutpostSiegeSystem.isActive(player)
+                || FinalAscensionBossSystem.isActive(player);
     }
 
     private static void clearTransient(Run run) {

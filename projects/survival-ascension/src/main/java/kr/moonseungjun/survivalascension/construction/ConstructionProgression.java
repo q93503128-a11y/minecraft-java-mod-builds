@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.construction;
  * NeoForge placement hooks, and tick-budgeted bulk work.
  */
 
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
@@ -44,7 +45,7 @@ public final class ConstructionProgression {
     private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 64;
     private static final int MAX_PENDING_BLOCKS_PER_PLAYER = 512;
     private static final int CAUSEWAY_WIDTH = 3;
-    private static final int[] CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65};
+    private static final int[] CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65, 81};
     private static final Map<UUID, ConstructionMode> MODES = new HashMap<>();
     private static final Map<UUID, Integer> PENDING_COUNTS = new HashMap<>();
     private static final Deque<BuildJob> JOBS = new ArrayDeque<>();
@@ -117,9 +118,17 @@ public final class ConstructionProgression {
     }
 
     private static int maxUnlockedLength(ServerPlayer player, int level) {
+        if (level >= 100 && finalAscensionComplete(player)) {
+            return ExpeditionProgression.hasFieldMastery(player) ? 81 : 65;
+        }
         return level >= 100 && ExpeditionProgression.hasFieldMastery(player)
                 ? 65
                 : SkillTuning.constructionLineLength(level);
+    }
+
+    private static boolean finalAscensionComplete(ServerPlayer player) {
+        return player.level() instanceof ServerLevel level
+                && FinalAscensionData.get(level.getServer()).isComplete();
     }
 
     public static void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
@@ -227,6 +236,7 @@ public final class ConstructionProgression {
         double absZLook = Math.abs(zLook);
         boolean lookingMostlyX = absXLook >= absZLook;
         boolean fieldMastery = level >= 100 && ExpeditionProgression.hasFieldMastery(player);
+        boolean finalMastery = level >= 100 && finalAscensionComplete(player);
 
         if (mode == ConstructionMode.LINE) {
             int size = selectedLength(player, level);
@@ -271,7 +281,7 @@ public final class ConstructionProgression {
             return targets;
         }
 
-        int size = fieldMastery ? 13 : SkillTuning.constructionPlaneSize(level);
+        int size = finalMastery ? 15 : fieldMastery ? 13 : SkillTuning.constructionPlaneSize(level);
         if (size <= 1) return targets;
         int half = size / 2;
         if (mode == ConstructionMode.FLOOR) {

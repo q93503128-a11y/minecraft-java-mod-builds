@@ -15,6 +15,7 @@ import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
 import kr.moonseungjun.survivalascension.elite.WarbandDirector;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionBossSystem;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
@@ -41,10 +42,10 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.60.0-alpha.1";
-    // 0.60 closure pass: Final Ascension acts 1-3 are a bounded, server-authoritative runtime
-    // encounter layered after the existing canonical readiness gate. The repeatable Ascension
-    // Trial remains independent and no final-completion SavedData is introduced before the boss.
+    public static final String VERSION = "0.61.0-alpha.1";
+    // 0.61 closure pass: acts 1-3 now lead into a Survival-owned three-phase final boss.
+    // Completion is stored once at world scope and unlocks bounded Lv100 mobility/construction
+    // authority without changing the existing canonical gate or network protocol.
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -64,11 +65,13 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(CombatProgression::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ApexPhaseMutationService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onShieldBlock);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ApexContentRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
@@ -109,10 +112,13 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onServerTick);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(WorldAscensionProgression::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionAffixes::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(ContentPackLootBridge::onEliteDeath);
         NeoForge.EVENT_BUS.addListener(AscensionCommands::onRegisterCommands);
-        LOGGER.info("Survival Ascension {} loaded: bounded Final Ascension acts 1-3 + canonical readiness gate + repeatable Ascension Trial + two-stage archetype-specific Apex mutation phases + contested expedition operation interdiction waves + region-targeted Apex Resonance trophies + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-time TBS journal restoration + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
+        LOGGER.info("Survival Ascension {} loaded: three-phase Final Ascension boundary boss + permanent world closure + final Lv100 mobility/construction authority + bounded Final Ascension acts 1-3 + canonical readiness gate + repeatable Ascension Trial + two-stage archetype-specific Apex mutation phases + contested expedition operation interdiction waves + region-targeted Apex Resonance trophies + regional integrated-terrain incidents + bounded general content encounters + targeted Deep resonance recovery + directional Combat Academy fracture lane + data-driven Apex content escorts + runtime content census + high-rank content-pack gear drops + rare bounded field incidents + visible incident perimeters + multiplayer incident admission + selectable server-authoritative construction length + one-time TBS journal restoration + pre-test chunk/accounting hardening + scaled mastery + ranged shooter attribution + spear momentum drive lines + mace outer impact rings + shield guard waves + ranged projectile snapshots/impact bursts + armor affix progression + regional 3/6/9 logistics + frontline freight/local supply + tagged major targets + shovel earthworks + optional expedition biome tags + content-pack gear imprint + physical logistics/freight + civil works + destructible bastion defense", VERSION);
     }
 }

@@ -63,6 +63,7 @@ public final class FinalAscensionProgression {
         } else {
             player.sendSystemMessage(Component.literal("§7남은 조건 · " + String.join(" · ", req.missingRequirements())));
         }
+        FinalAscensionData.sendStatus(player);
     }
 
     private static String check(boolean done) {

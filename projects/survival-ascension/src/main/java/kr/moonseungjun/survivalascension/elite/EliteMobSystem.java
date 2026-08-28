@@ -7,6 +7,7 @@ package kr.moonseungjun.survivalascension.elite;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionBossSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
@@ -52,6 +53,7 @@ public final class EliteMobSystem {
     private EliteMobSystem() {}
 
     public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
+        if (FinalAscensionBossSystem.isInternalSpawn()) return;
         Mob mob = event.getEntity();
         if (!(mob instanceof Enemy) || mob instanceof EnderDragon || mob instanceof WitherBoss || mob.isBaby()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;

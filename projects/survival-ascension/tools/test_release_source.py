@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_VERSION = "0.60.0-alpha.1"
+CURRENT_VERSION = "0.61.0-alpha.1"
 PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
 
 
@@ -33,7 +33,7 @@ def forbid(text: str, needles: list[str], label: str) -> None:
 
 
 # Preserve the complete 0.58 regression contract. Runtime/version checks advance to the
-# current 0.60 release; historical 0.59.0 documentation remains a regression target.
+# current release; PROJECT remains the historical 0.59 long-form design baseline.
 legacy_path = ROOT / "tools/test_release_source_058.py"
 legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_VERSION = "0.58.0-alpha.1"', f'REQUIRED_VERSION = "{CURRENT_VERSION}"')
@@ -52,7 +52,7 @@ except (SystemExit, AssertionError) as exc:
 legacy_output = buffer.getvalue().replace("protocol8", "protocol9")
 print(legacy_output, end="")
 if exit_code != 0:
-    print("RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.60 runtime identity")
+    print("RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.61 runtime identity")
     sys.exit(exit_code)
 
 props = read("gradle.properties")
@@ -65,23 +65,32 @@ woodcutting = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/
 harvesting = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
 final_gate = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionProgression.java")
 final_system = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionSystem.java")
+final_boss = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionBossSystem.java")
+final_data = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionData.java")
+mobility = read("src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java")
+construction = read("src/main/java/kr/moonseungjun/survivalascension/construction/ConstructionProgression.java")
+elite = read("src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java")
 infrastructure = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
 menu = read("src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java")
 project = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
 testing = read("TESTING.md")
+release_061 = read("RELEASE-0.61.0-alpha.1.md")
+testing_061 = read("TESTING-0.61.md")
 
-need(props, [f"mod_version={CURRENT_VERSION}"], "0.60 release identity")
+need(props, [f"mod_version={CURRENT_VERSION}"], "0.61 release identity")
 need(main, [
     f'VERSION = "{CURRENT_VERSION}"', "ApexContentPackBridge::onServerStarted",
     "ApexPhaseMutationService::onIncomingDamage", "ExpeditionInterdictionService::onPlayerTick",
     "WoodcuttingProgression::onServerTick", "HarvestingProgression::onServerTick",
     "FinalAscensionSystem::onServerTick", "FinalAscensionSystem::onEntityJoin",
-    "data-driven Apex content escorts"
-], "0.60 runtime wiring")
+    "FinalAscensionBossSystem::onIncomingDamage", "FinalAscensionBossSystem::onLivingDeath",
+    "FinalAscensionBossSystem::onServerTick", "FinalAscensionBossSystem::onEntityJoin",
+    "three-phase Final Ascension boundary boss"
+], "0.61 runtime wiring")
 
-# 0.59.0 optional Apex escort behavior is still a required regression contract.
+# 0.59 optional Apex escort behavior remains a regression contract.
 need(bridge, [
     "APEX_ESCORTS_TIER_0", "APEX_ESCORTS_TIER_1", "APEX_ESCORTS_TIER_2",
     "randomEscortId(RandomSource random, int worldStage)", "escortIds(int worldStage)",
@@ -112,12 +121,12 @@ need(harvesting, [
     "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"
 ], "0.59.1 high-rank harvesting")
 
-# The canonical readiness authority remains unchanged and is exposed through normal play.
+# Canonical final admission authority remains unchanged and visible through normal play.
 need(final_gate, [
     "WorldAscensionData.get(level.getServer()).stage() >= 2",
     "expeditions.countCompleted(player)", "apex.uniqueDefeated(player)",
     "InfrastructureProject.ASCENSION_NEXUS", "REQUIRED_EXPEDITIONS = 9", "REQUIRED_APEX = 9",
-    "최후의 승천 준비", "missingRequirements()"
+    "최후의 승천 준비", "missingRequirements()", "FinalAscensionData.sendStatus(player)"
 ], "final ascension canonical gate")
 need(infrastructure, [
     "FinalAscensionProgression.sendStatus(player)", "최후의 승천 준비 현황은 인프라 → 진행도",
@@ -128,9 +137,9 @@ need(menu, [
     'new Entry("최후의 승천"', "ACTION_FINAL_ASCENSION", "세계의 시험 → 9지역 잔향 → 붕괴 봉쇄"
 ], "final ascension menu entry")
 
-# 0.60 Endgame Closure: real world actions, 3x3 regional echo compression and collapse sealing.
+# 0.60 acts 1-3 remain real-world, bounded and isolated from Apex persistence.
 need(final_system, [
-    "FinalAscensionProgression.isReady(player)",
+    "FinalAscensionProgression.isReady(player)", "FinalAscensionData.get(level.getServer()).isComplete()",
     "ACT1_MINING", "ACT1_BUILD", "ACT1_COMBAT", "ACT1_MOVE",
     "ACT2_SET_ONE", "ACT2_SET_TWO", "ACT2_SET_THREE",
     "ACT3_SEAL_ONE", "ACT3_SEAL_TWO", "ACT3_SEAL_THREE",
@@ -139,23 +148,74 @@ need(final_system, [
     '"minecraft:spider"', '"minecraft:skeleton"', '"minecraft:drowned"',
     '"minecraft:ravager"', '"minecraft:guardian"', '"minecraft:witch"',
     '"minecraft:stray"', '"minecraft:wither_skeleton"', '"minecraft:enderman"',
-    "OWNER_KEY", "PHASE_KEY", "SEAL_CHANNEL_TICKS"
-], "0.60 Final Ascension acts 1-3")
+    "OWNER_KEY", "PHASE_KEY", "SEAL_CHANNEL_TICKS",
+    "FinalAscensionBossSystem.tryStartFromClosure(owner, run.center)"
+], "0.60/0.61 Final Ascension acts 1-3")
 forbid(final_system, [
     "ApexHuntData", "defeatedMask", "recordDefeat", "tbos:", "com.nightbeam",
     "setChunkForced", "addRegionTicket", "getChunk(", "extends SavedData"
-], "0.60 final encounter isolation policy")
+], "final acts isolation policy")
 
-# Historical docs remain regression evidence while the release delta is recorded explicitly.
-need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "0.59 PROJECT regression docs")
-need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "0.59 README regression docs")
-need(changelog, [
-    "## 0.60.0-alpha.1", "Final Ascension", "World Test", "nine regional Apex pressures",
-    "0.60.0-alpha.1-content-preview.1", "Network protocol remains 9",
-    "## 0.59.1-alpha.1", "two bounded combat interdiction waves", "Woodcutting Lv90+",
-    "0.59.1-alpha.1-content-preview.1", "## 0.59.0-alpha.1", "apex_escorts_tier_0"
-], "0.60 CHANGELOG docs")
-need(testing, ["## 0.60 focused checks", "최후의 승천", "웅크리기", "Apex 진행"], "0.60 manual test matrix")
+# 0.61 unique final boss: actual phase gates, physical anchors and readable arena telegraphs.
+need(final_boss, [
+    'BOSS_KEY = "survivalascension_final_boss"', 'OWNER_KEY = "survivalascension_final_boss_owner"',
+    'Identifier.parse("minecraft:warden")', "FinalAscensionData.get(level.getServer()).isComplete()",
+    "Phase.OPENING", "Phase.ANCHORS", "Phase.BREAKTHROUGH", "Phase.FINAL",
+    "floorRatio = run.phase == Phase.OPENING ? 0.65F : run.phase == Phase.BREAKTHROUGH ? 0.30F : 0.0F",
+    "event.setAmount(Math.max(0.0F, boss.getHealth() - floor))",
+    "Blocks.CRYING_OBSIDIAN", "run.anchorTotal++", "run.anchors.entrySet().removeIf",
+    "AttackPattern.LINE", "AttackPattern.RING", "AttackPattern.MARKED",
+    "TELEGRAPH_TICKS = 30", "insideLine", "horizontalDistance", "renderTelegraph",
+    "level.hasChunkAt", "findOpenSpawn", "clearMarkers(run)",
+    "FinalAscensionData.get(run.level.getServer()).complete(owner)",
+    "AscensionAffixes.createEliteDrop", "AscensionAffixes.awaken", "승천의 증표"
+], "0.61 final boundary boss")
+forbid(final_boss, [
+    "ApexHuntData", "recordVictory", "recordDefeat", "tbos:", "com.nightbeam",
+    "setChunkForced", "addRegionTicket", "getChunk(", "teleportTo", "randomTeleport"
+], "0.61 boss isolation/force-load policy")
+
+# Only one new world SavedData authority is introduced, with backwards-safe optional defaults.
+need(final_data, [
+    '"final_ascension_v1"', 'Codec.BOOL.optionalFieldOf("complete", false)',
+    'Codec.STRING.optionalFieldOf("first_conqueror", "")',
+    'Codec.LONG.optionalFieldOf("completed_game_time", 0L)',
+    "public boolean complete(ServerPlayer player)", "setDirty()", "isComplete()"
+], "0.61 final completion persistence")
+forbid(final_data, ["ApexHuntData", "ExpeditionData", "InfrastructureData", "setChunkForced", "getChunk("],
+       "0.61 final completion authority separation")
+
+# Final reward is action-scale authority, not another universal raw-stat tier.
+need(mobility, [
+    "FinalAscensionData", "level >= 100 && finalAscensionComplete(player)",
+    "return ExpeditionProgression.hasFieldMastery(player) ? 5 : 4",
+    "SkillTuning.mobilityDashPower(level) + (finalMastery ? 0.15D : 0.0D)",
+    "cooldown = Math.max(12, cooldown - 4)"
+], "0.61 final mobility authority")
+need(construction, [
+    "FinalAscensionData", "CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65, 81}",
+    "return ExpeditionProgression.hasFieldMastery(player) ? 81 : 65",
+    "int size = finalMastery ? 15 : fieldMastery ? 13 : SkillTuning.constructionPlaneSize(level)"
+], "0.61 final construction authority")
+forbid(mobility + construction, ["setChunkForced", "addRegionTicket", "getChunk("],
+       "0.61 final authority world-loading policy")
+
+# The Warden shell must not be randomly converted into a normal elite during internal boss spawn.
+need(elite, ["FinalAscensionBossSystem.isInternalSpawn()"], "0.61 final boss elite isolation")
+
+# Historical docs remain regression evidence; 0.61 has a focused release/acceptance note.
+need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")
+need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "historical README regression docs")
+need(changelog, ["## 0.60.0-alpha.1", "Final Ascension", "Network protocol remains 9"], "0.60 CHANGELOG regression docs")
+need(testing, ["## 0.60 focused checks", "최후의 승천", "웅크리기", "Apex 진행"], "0.60 manual regression matrix")
+need(release_061, [
+    "0.61.0-alpha.1", "세계의 경계자", "65%", "30%", "final_ascension_v1",
+    "공중 돌진", "81", "15×15", "Network protocol 9"
+], "0.61 release note")
+need(testing_061, [
+    "Final Ascension", "세계의 경계자", "65%", "고정점 3개", "LINE", "RING", "MARKED",
+    "final_ascension_v1", "공중 돌진", "81", "15×15", "Apex"
+], "0.61 focused test matrix")
 
 if errors:
     print("RELEASE SOURCE AUDIT FAIL")
@@ -171,6 +231,9 @@ print("operation_interdictions=PASS")
 print("high_rank_woodcutting_harvesting=PASS")
 print("final_ascension_canonical_gate=PASS")
 print("final_ascension_acts_1_3=PASS")
+print("final_boundary_boss_three_phase=PASS")
+print("final_completion_saved_data=PASS")
+print("final_mobility_construction_authority=PASS")
 print("final_ascension_apex_state_mutation=ABSENT")
 print("final_ascension_force_load=ABSENT")
 print("RELEASE SOURCE AUDIT PASS")

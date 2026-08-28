@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_LOCK_VERSION = "0.60.0-alpha.1-content-preview.1"
+CURRENT_LOCK_VERSION = "0.61.0-alpha.1-content-preview.1"
 PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
 
 
@@ -27,7 +27,7 @@ def need(text: str, needles: list[str], label: str) -> None:
 
 
 # Preserve the complete 0.58 content-pack regression contract while advancing the locked pack
-# identity to 0.60. The large PROJECT document remains historical 0.59.0 regression evidence.
+# identity. PROJECT remains the historical 0.59 long-form baseline.
 legacy_path = ROOT / "tools/test_release_content_pack_058.py"
 legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_LOCK_VERSION = "0.58.0-alpha.1-content-preview.1"',
@@ -46,7 +46,7 @@ except (SystemExit, AssertionError) as exc:
         print(f"0.58 content-pack regression assertion: {exc}", file=sys.stderr)
 print(buffer.getvalue(), end="")
 if exit_code != 0:
-    print("RELEASE CONTENT-PACK AUDIT FAIL: 0.58 regression contract failed under 0.60 pack identity")
+    print("RELEASE CONTENT-PACK AUDIT FAIL: 0.58 regression contract failed under 0.61 pack identity")
     sys.exit(exit_code)
 
 bridge = read("src/main/java/kr/moonseungjun/survivalascension/compat/ApexContentPackBridge.java")
@@ -62,9 +62,10 @@ tbos_ko = read("src/main/resources/assets/tbos/lang/ko_kr.json")
 bop_ko = read("src/main/resources/assets/biomesoplenty/lang/ko_kr.json")
 terrablender_ko = read("src/main/resources/assets/terrablender/lang/ko_kr.json")
 lock = read("modpack/content-lock.json")
+release_061 = read("RELEASE-0.61.0-alpha.1.md")
 
 need(lock, [f'"version": "{CURRENT_LOCK_VERSION}"', '"The Birth of Steve"', '"Amethyst Resonance"', '"Biomes O\' Plenty"'],
-     "0.60 locked content identity")
+     "0.61 locked content identity")
 need(bridge, [
     "APEX_ESCORTS_TIER_0", "APEX_ESCORTS_TIER_1", "APEX_ESCORTS_TIER_2",
     "randomEscortId", "escortIds", "apex_escort_tier_", "Tags.EntityTypes.BOSSES"
@@ -83,7 +84,6 @@ for forbidden in ("tbos:hour_cantor", "tbos:phoenix_guardian"):
     if forbidden in apex0 + apex1 + apex2:
         errors.append(f"0.59 Apex escort safety: boss {forbidden} must stay out of escort allowlists")
 
-# 0.59.1 expands the same data-owned integration instead of linking external implementation classes.
 need(exp2, [
     "tbos:parallax_wraith", "tbos:shard_drifter", "tbos:wake_cutter", "tbos:memory_leech",
     "tbos:prism_stalker", "tbos:null_portrait", "tbos:meridian_sentinel", "tbos:hour_hand_wraith",
@@ -148,6 +148,11 @@ need(terrablender_ko, [
     '"commands.terrablender.biomeparams.failed": "생물군계 매개변수 정보를 생성하지 못했습니다."'
 ], "0.59.1 TerraBlender Korean overlay")
 
+# 0.61 changes no external content file. The lock identity advances only with the Survival release.
+need(release_061, [
+    "external project/version IDs remain unchanged", "0.61.0-alpha.1-content-preview.1", "Network protocol 9"
+], "0.61 content-pack release note")
+
 if errors:
     print("RELEASE CONTENT-PACK AUDIT FAIL")
     for error in errors:
@@ -161,4 +166,5 @@ print("amethyst_resonance_korean_localization=PASS")
 print("tbos_inventory_korean_localization=PASS")
 print("biomesoplenty_korean_gap_overlay=PASS")
 print("terrablender_korean_command_overlay=PASS")
+print("content_pack_external_versions_unchanged=PASS")
 print("RELEASE CONTENT-PACK AUDIT PASS")

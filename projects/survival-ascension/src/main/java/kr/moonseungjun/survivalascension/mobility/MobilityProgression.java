@@ -6,6 +6,7 @@ package kr.moonseungjun.survivalascension.mobility;
  */
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionAction;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
@@ -79,19 +80,25 @@ public final class MobilityProgression {
         if (horizontal.lengthSqr() < 1.0E-5D) return;
         horizontal = horizontal.normalize();
         if (airborne) AIR_DASH_COUNT.put(uuid, usedAirDashes + 1);
-        double power = SkillTuning.mobilityDashPower(level);
+        boolean finalMastery = level >= 100 && finalAscensionComplete(player);
+        double power = SkillTuning.mobilityDashPower(level) + (finalMastery ? 0.15D : 0.0D);
         double lift = airborne ? Math.max(0.04D, player.getDeltaMovement().y) : Math.max(0.10D, player.getDeltaMovement().y);
         Vec3 impulse = horizontal.scale(power);
         player.setDeltaMovement(impulse.x, lift, impulse.z);
         player.hurtMarked = true;
         player.resetFallDistance();
-        DASH_READY_TICK.put(uuid, now + SkillTuning.mobilityDashCooldownTicks(level));
+        int cooldown = SkillTuning.mobilityDashCooldownTicks(level);
+        if (finalMastery) cooldown = Math.max(12, cooldown - 4);
+        DASH_READY_TICK.put(uuid, now + cooldown);
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
         ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1);
     }
 
     private static int maxAirDashes(ServerPlayer player, int level) {
         if (level < 60) return 0;
+        if (level >= 100 && finalAscensionComplete(player)) {
+            return ExpeditionProgression.hasFieldMastery(player) ? 5 : 4;
+        }
         if (level >= 90
                 && player.level() instanceof ServerLevel serverLevel
                 && WorldAscensionData.get(serverLevel.getServer()).stage() >= 2
@@ -100,6 +107,11 @@ public final class MobilityProgression {
             return level >= 100 ? 3 : 2;
         }
         return 1;
+    }
+
+    private static boolean finalAscensionComplete(ServerPlayer player) {
+        return player.level() instanceof ServerLevel level
+                && FinalAscensionData.get(level.getServer()).isComplete();
     }
 
     private static void trackTraversal(ServerPlayer player) {
