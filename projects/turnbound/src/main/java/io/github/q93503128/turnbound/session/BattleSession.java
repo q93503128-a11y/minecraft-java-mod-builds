@@ -1,10 +1,12 @@
 package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.BattleEngine;
+import io.github.q93503128.turnbound.combat.BattleEvent;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
+import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.TargetRule;
@@ -79,7 +81,7 @@ public final class BattleSession {
             } else {
                 engine.useSkill(actorId, skillId, targetId);
             }
-            presentation.lunge((ServerLevel) player.level(), actorId, targetId);
+            animateDirectDamage((ServerLevel) player.level(), actor, skill, targetId);
             readyShown = false;
             delayTicks = presentationDelay();
             if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
@@ -106,19 +108,37 @@ public final class BattleSession {
     }
 
     private void autoAct(ServerLevel level, CombatantState actor) {
-        String targetBefore = defaultTarget(actor);
+        int eventStart = engine.state().events().size();
         try {
             P0Scenario.chooseAutoAction(engine, engine.state(), actor);
         } catch (RuntimeException ex) {
             safeBasicFallback(actor);
         }
-        if (targetBefore != null) presentation.lunge(level, actor.instanceId(), targetBefore);
+        animateRecordedAction(level, actor, eventStart);
         if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
     }
 
-    private String defaultTarget(CombatantState actor) {
-        List<CombatantState> living = engine.state().living(actor.side().opposite());
-        return living.isEmpty() ? null : living.getFirst().instanceId();
+    private void animateRecordedAction(ServerLevel level, CombatantState actor, int eventStart) {
+        List<BattleEvent> events = engine.state().events();
+        for (int index = events.size() - 1; index >= eventStart; index--) {
+            BattleEvent event = events.get(index);
+            if (!"ACTION".equals(event.type()) || !actor.instanceId().equals(event.sourceId())) continue;
+            SkillDefinition skill = actor.definition().skill(event.detail());
+            String targetId = event.targetId();
+            if (targetId != null && !targetId.isBlank()) {
+                int comma = targetId.indexOf(',');
+                if (comma >= 0) targetId = targetId.substring(0, comma);
+            }
+            animateDirectDamage(level, actor, skill, targetId);
+            return;
+        }
+    }
+
+    private void animateDirectDamage(ServerLevel level, CombatantState actor, SkillDefinition skill, String targetId) {
+        boolean damages = skill.effects().stream().anyMatch(effect -> effect.type() == EffectType.DAMAGE);
+        if (damages && targetId != null && !targetId.isBlank()) {
+            presentation.lunge(level, actor.instanceId(), targetId);
+        }
     }
 
     private void safeBasicFallback(CombatantState actor) {
