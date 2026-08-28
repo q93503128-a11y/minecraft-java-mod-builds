@@ -39,6 +39,13 @@ legacy = legacy_path.read_text(encoding="utf-8")
 legacy = legacy.replace('REQUIRED_VERSION = "0.58.0-alpha.1"', f'REQUIRED_VERSION = "{CURRENT_VERSION}"')
 legacy = legacy.replace(r'VERSION = \"0.58.0-alpha.1\"', rf'VERSION = \"{CURRENT_VERSION}\"')
 legacy = legacy.replace('Mod version: `0.58.0-alpha.1`', f'Mod version: `{PREVIOUS_DOC_VERSION}`')
+# 0.61 preserves every 0.58 construction length and appends 81 as a post-final mastery ceiling.
+# Rewrite only the historical audit needle so the legacy contract verifies the preserved prefix
+# instead of falsely requiring the array to terminate at 65.
+legacy = legacy.replace(
+    'CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65}',
+    'CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65, 81}'
+)
 namespace = {"__file__": str(legacy_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
