@@ -39,7 +39,8 @@ with zipfile.ZipFile(jar) as zf:
         b"ACT1_MINING", b"ACT1_BUILD", b"ACT1_COMBAT", b"ACT1_MOVE",
         b"ACT2_SET_ONE", b"ACT2_SET_TWO", b"ACT2_SET_THREE",
         b"ACT3_SEAL_ONE", b"ACT3_SEAL_TWO", b"ACT3_SEAL_THREE",
-        b"survivalascension_final_ascension_owner", b"FinalAscensionBossSystem"
+        b"survivalascension_final_ascension_owner", b"FinalAscensionBossSystem",
+        b"onServerStopping", b"ServerStoppingEvent"
     ]:
         if token not in compiled_system:
             raise SystemExit(f"final ascension compiled acts token missing: {token!r}")
@@ -50,7 +51,8 @@ with zipfile.ZipFile(jar) as zf:
         b"minecraft:warden", b"OPENING", b"ANCHORS", b"BREAKTHROUGH", b"FINAL",
         b"LINE", b"RING", b"MARKED", b"renderTelegraph", b"insideLine",
         b"FinalAscensionData", b"createEliteDrop", b"awaken",
-        b"maintainBossAggro", b"increaseAngerAt", b"setAttackTarget", b"WARDEN_AGGRO_REFRESH_TICKS"
+        b"maintainBossAggro", b"increaseAngerAt", b"setAttackTarget", b"WARDEN_AGGRO_REFRESH_TICKS",
+        b"onServerStopping", b"ServerStoppingEvent"
     ]:
         if token not in compiled_boss:
             raise SystemExit(f"0.61 compiled final boss token missing: {token!r}")
@@ -83,7 +85,10 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit("final ascension menu label missing from packaged client runtime")
 
     compiled_main = zf.read(main)
-    for token in [b"0.61.0-alpha.1", b"three-phase Final Ascension boundary boss", b"FinalAscensionBossSystem"]:
+    for token in [
+        b"0.61.0-alpha.1", b"three-phase Final Ascension boundary boss", b"FinalAscensionBossSystem",
+        b"FinalAscensionSystem", b"onServerStopping", b"orderly server-stop encounter cleanup"
+    ]:
         if token not in compiled_main:
             raise SystemExit(f"0.61 compiled release identity/wiring token missing: {token!r}")
 
@@ -91,6 +96,7 @@ print("final_ascension_canonical_gate_runtime=present")
 print("final_ascension_acts_1_3_runtime=present")
 print("final_boundary_boss_runtime=present")
 print("final_boundary_warden_aggro_runtime=present")
+print("final_ascension_orderly_shutdown_cleanup_runtime=present")
 print("final_completion_saved_data_runtime=present")
 print("final_mobility_construction_authority_runtime=present")
 print("final_ascension_menu_action_runtime=present")
