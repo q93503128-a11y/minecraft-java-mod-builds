@@ -65,7 +65,16 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
-test { useJUnitPlatform() }
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+        showExceptions true
+        showCauses true
+        showStackTraces true
+    }
+}
 
 jar {
     manifest {
