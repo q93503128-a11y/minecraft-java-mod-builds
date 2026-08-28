@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.infrastructure;
 
 import kr.moonseungjun.survivalascension.apex.ApexHuntSystem;
 import kr.moonseungjun.survivalascension.endgame.AscensionTrialSystem;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionProgression;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
@@ -26,6 +27,7 @@ public final class InfrastructureService {
             WorldAscensionData world = WorldAscensionData.get(((ServerLevel) player.level()).getServer());
             player.sendSystemMessage(Component.literal("§5[월드 승천] §f단계 §d" + world.stage() + "§7/§f2 §7· §d" + world.stageName()));
             for (InfrastructureProject project : InfrastructureProject.values()) sendStatus(player, project);
+            FinalAscensionProgression.sendStatus(player);
             return;
         }
         InfrastructureProject project = InfrastructureProject.fromId(projectId);
@@ -143,7 +145,7 @@ public final class InfrastructureService {
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 M → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
-                player.sendSystemMessage(Component.literal("§5[승천 시련] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 시련을 개방할 수 있습니다."));
+                player.sendSystemMessage(Component.literal("§5[승천 중추] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 승천 시련을 열 수 있습니다. §7최후의 승천 준비 현황은 인프라 → 진행도에서 확인합니다."));
             }
         }
     }
@@ -174,7 +176,7 @@ public final class InfrastructureService {
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
                 player.sendSystemMessage(Component.literal("  §4- 정점 사냥 추적 §f메아리8 · 자수정32 · 금32 §7· 완수한 원정권 현지에서 시작"));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
-                player.sendSystemMessage(Component.literal("  §5- 승천 시련 입장 §f메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8"));
+                player.sendSystemMessage(Component.literal("  §5- 반복 승천 시련 §f메아리 조각 32 · 자수정 조각 64 · 드래곤의 숨결 8 §7· 최후의 승천 준비 조건 중 하나"));
             }
             return;
         }

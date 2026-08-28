@@ -63,6 +63,8 @@ phase = read("src/main/java/kr/moonseungjun/survivalascension/apex/ApexPhaseMuta
 interdiction = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionInterdictionService.java")
 woodcutting = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")
 harvesting = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
+final_gate = read("src/main/java/kr/moonseungjun/survivalascension/endgame/FinalAscensionProgression.java")
+infrastructure = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
 project = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
@@ -108,6 +110,19 @@ need(harvesting, [
     "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"
 ], "0.59.1 high-rank harvesting")
 
+# Endgame closure foundation: the final gate must reuse the existing persistent authorities
+# instead of creating duplicate progression state, and the existing infrastructure status action
+# must expose the checklist in normal play.
+need(final_gate, [
+    "WorldAscensionData.get(level.getServer()).stage() >= 2",
+    "expeditions.countCompleted(player)", "apex.uniqueDefeated(player)",
+    "InfrastructureProject.ASCENSION_NEXUS", "REQUIRED_EXPEDITIONS = 9", "REQUIRED_APEX = 9",
+    "최후의 승천 준비", "missingRequirements()"
+], "final ascension canonical gate")
+need(infrastructure, [
+    "FinalAscensionProgression.sendStatus(player)", "최후의 승천 준비 현황은 인프라 → 진행도"
+], "final ascension status exposure")
+
 # Keep the previous 0.59 documentation as historical regression evidence and require the new
 # release to be recorded in the changelog without rewriting the large design docs during test closure.
 need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "0.59 PROJECT regression docs")
@@ -130,4 +145,5 @@ print("apex_escort_count_inflation=ABSENT")
 print("apex_phase_crossing_hit=PASS")
 print("operation_interdictions=PASS")
 print("high_rank_woodcutting_harvesting=PASS")
+print("final_ascension_canonical_gate=PASS")
 print("RELEASE SOURCE AUDIT PASS")

@@ -30,7 +30,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
             new Entry("산업 가공소", "전설 · 대량재료 + 마지막 실제 배럴 준공 현장", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),
             new Entry("정점 추적소", "전설 · 대량재료 + 등록 배럴 기반 추적소 준공 현장", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),
             new Entry("승천 중추", "종말 · 대량재료 + 등록 배럴 기반 중추 준공 현장", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),
-            new Entry("진행도", "월드 승천 단계 + 프로젝트 재료/준공 현황", new ItemStack(Items.MAP), null, Action.STATUS),
+            new Entry("진행도", "월드 · 인프라 · 최후의 승천 준비 현황", new ItemStack(Items.MAP), null, Action.STATUS),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), null, Action.BACK)
     };
     private static final int ITEM_COUNT=ENTRIES.length;
