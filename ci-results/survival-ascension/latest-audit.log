@@ -26,11 +26,5 @@ RELEASE SOURCE AUDIT PASS
 - 0.56 Survival-snapshotted ranged projectiles retain bounded online shooter attribution across combat/reward layers
 - 0.57 Mining/Woodcutting enlarged work is loaded-only and Woodland/Arid origin actions are counted
 - README / PROJECT / CHANGELOG / TESTING are committed and synchronized to 0.57
-apex_optional_escort_replacement=PASS
-apex_optional_java_dependency=ABSENT
-apex_escort_count_inflation=ABSENT
-apex_phase_crossing_hit=PASS
-operation_interdictions=PASS
-high_rank_woodcutting_harvesting=PASS
-final_ascension_canonical_gate=PASS
-RELEASE SOURCE AUDIT PASS
+RELEASE SOURCE AUDIT FAIL
+- 0.60 Final Ascension acts 1-3 missing: player.isShiftKeyDown()
