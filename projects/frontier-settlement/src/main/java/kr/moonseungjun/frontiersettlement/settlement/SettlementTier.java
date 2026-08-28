@@ -5,7 +5,8 @@ public enum SettlementTier {
     HAMLET("촌락"),
     VILLAGE("마을"),
     FRONTIER_TOWN("개척 도시"),
-    DOMAIN("영지");
+    DOMAIN("영지"),
+    FRONTIER_CAPITAL("개척 수도");
 
     private final String displayName;
 
@@ -19,6 +20,15 @@ public enum SettlementTier {
 
     public static SettlementTier current(SettlementData data) {
         if (!data.founded()) return CAMP;
+
+        boolean frontierCapital = data.population() >= 20
+                && data.outposts().size() >= 5
+                && data.roads().size() >= 4
+                && data.buildingCount(BuildingType.CIVIC_HALL) >= 1
+                && data.buildingCount(BuildingType.TRADE_HALL) >= 1
+                && data.buildingCount(BuildingType.CITADEL) >= 1
+                && data.explorationScore() >= 7;
+        if (frontierCapital) return FRONTIER_CAPITAL;
 
         boolean legacyDomain = data.population() >= 16
                 && data.outposts().size() >= 4

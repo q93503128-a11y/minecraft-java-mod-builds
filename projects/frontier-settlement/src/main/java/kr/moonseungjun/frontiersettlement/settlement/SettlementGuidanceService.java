@@ -19,8 +19,8 @@ public final class SettlementGuidanceService {
         if (data.buildingCount(BuildingType.FARM) < 1) return buildingGoal(data, BuildingType.FARM);
         if (data.buildingCount(BuildingType.QUARRY) < 1) return buildingGoal(data, BuildingType.QUARRY);
         if (data.buildingCount(BuildingType.WAREHOUSE) < 1) return buildingGoal(data, BuildingType.WAREHOUSE);
-        if (data.roads().isEmpty()) return "다음 목표 · B 팔레트 → 도로 계획";
-        if (data.outposts().isEmpty()) return "다음 목표 · B 팔레트 → 도로 끝에 전초기지";
+        if (data.roads().isEmpty()) return "다음 목표 · M 메뉴 → 도로 계획";
+        if (data.outposts().isEmpty()) return "다음 목표 · M 메뉴 → 도로 끝에 전초기지";
         if (data.population() < 4) return populationGoal(data, 4);
         if (data.buildingCount(BuildingType.MARKET) < 1) return buildingGoal(data, BuildingType.MARKET);
         if (data.buildingCount(BuildingType.CART_STATION) < 1) return buildingGoal(data, BuildingType.CART_STATION);
@@ -31,6 +31,10 @@ public final class SettlementGuidanceService {
         if (data.buildingCount(BuildingType.BLACKSMITH) < 1) return buildingGoal(data, BuildingType.BLACKSMITH);
         if (data.buildingCount(BuildingType.WORKSHOP) < 1) return buildingGoal(data, BuildingType.WORKSHOP);
         if (data.buildingCount(BuildingType.FARM) < 2) return "다음 목표 · 농장 2곳으로 식량 기반 확대";
+        if (data.buildingCount(BuildingType.CIVIC_HALL) < 1) {
+            String lock = SettlementConstructionService.lockedReason(data, BuildingType.CIVIC_HALL);
+            return lock == null ? buildingGoal(data, BuildingType.CIVIC_HALL) : "중후반 목표 · " + lock;
+        }
         if (data.outposts().size() < 4) return "다음 목표 · 전초기지 4곳까지 영토 확장";
         if (data.population() < 16) return populationGoal(data, 16);
         if (data.buildingCount(BuildingType.GUARD_POST) < 1) return buildingGoal(data, BuildingType.GUARD_POST);
@@ -40,7 +44,24 @@ public final class SettlementGuidanceService {
                 && SettlementAdvancedWorkshopService.lockedReason(data) == null) {
             return buildingGoal(data, BuildingType.ADVANCED_WORKSHOP);
         }
-        return "영지 운영 · 고급 제작 의뢰·건설소 보급·도로망·전문 전초기지·시장 교역·감시망·주둔 병력을 계속 확장";
+        if (data.buildingCount(BuildingType.TRADE_HALL) < 1) {
+            String lock = SettlementConstructionService.lockedReason(data, BuildingType.TRADE_HALL);
+            return lock == null ? buildingGoal(data, BuildingType.TRADE_HALL) : "후반 목표 · " + lock;
+        }
+        if (data.buildingCount(BuildingType.CITADEL) < 1) {
+            String lock = SettlementConstructionService.lockedReason(data, BuildingType.CITADEL);
+            return lock == null ? buildingGoal(data, BuildingType.CITADEL) : "후반 목표 · " + lock;
+        }
+        if (data.outposts().size() < 5) return "최종 목표 · 전초기지 5곳으로 영지망 완성";
+        if (data.roads().size() < 4) return "최종 목표 · 완성된 도로 4개 이상 확보";
+        if (data.population() < 20) return populationGoal(data, 20);
+        if (data.explorationScore() < 7) {
+            return "최종 목표 · 탐험 점수 7 달성 (새 구조물 조사·강적 정복)";
+        }
+        if (SettlementTier.current(data) == SettlementTier.FRONTIER_CAPITAL) {
+            return "개척 수도 완성 · 도로망·전초기지·교역·성채를 자유롭게 확장하세요.";
+        }
+        return "최종 목표 · 개척 수도 승격 조건을 확인하세요.";
     }
 
     private static String buildingGoal(SettlementData data, BuildingType type) {
@@ -48,11 +69,11 @@ public final class SettlementGuidanceService {
         if (r.wood() < type.woodCost() || r.stone() < type.stoneCost()) {
             return "다음 목표 · " + type.displayName() + " 자원 목" + type.woodCost() + " 석" + type.stoneCost();
         }
-        return "다음 목표 · B 팔레트 → " + type.displayName() + " 건설";
+        return "다음 목표 · M 메뉴 → " + type.displayName() + " 건설";
     }
 
     private static String populationGoal(SettlementData data, int target) {
-        if (data.housingCapacity() <= data.population()) return "다음 목표 · 주택을 늘려 인구 " + target + " 준비";
+        if (data.housingCapacity() <= data.population()) return "다음 목표 · 주택/시민시설을 늘려 인구 " + target + " 준비";
         if (data.resources().food() < 8L) return "다음 목표 · 공동 창고 식량 확보 → 인구 " + target;
         return "다음 목표 · 생산 거점을 늘려 인구 " + target + " 유치";
     }

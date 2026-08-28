@@ -19,6 +19,7 @@ public final class BuildingPaletteScreen extends Screen {
                 BuildingType.CONSTRUCTION_OFFICE, BuildingType.BLACKSMITH, BuildingType.WORKSHOP,
                 BuildingType.ADVANCED_WORKSHOP, BuildingType.MARKET, BuildingType.CART_STATION)),
         DEFENSE("방어", "경계 감시와 주둔 병력", List.of(BuildingType.GUARD_POST, BuildingType.WATCHTOWER, BuildingType.BARRACKS)),
+        LANDMARKS("랜드마크", "중후반 도시 기능과 최종 목표", List.of(BuildingType.CIVIC_HALL, BuildingType.TRADE_HALL, BuildingType.CITADEL)),
         INFRA("인프라", "도로, 전초기지, 영지 토목", List.of());
 
         final String label;
@@ -100,11 +101,12 @@ public final class BuildingPaletteScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("전초기지 · 영토/생산 확장"),
                 b -> { OutpostPlacementClient.beginPlacement(); this.minecraft.gui.setScreen(null); })
                 .bounds(x, y + 29, width, 22).build());
+        boolean civilUnlocked = data.tier().equals("영지") || data.tier().equals("개척 수도");
         Button civil = Button.builder(Component.literal(
-                        data.tier().equals("영지") ? "토목 평탄화 · 절토/성토" : "토목 평탄화 [영지 잠김]"),
+                        civilUnlocked ? "토목 평탄화 · 절토/성토" : "토목 평탄화 [영지 잠김]"),
                 b -> { CivilWorkPlacementClient.beginPlacement(); this.minecraft.gui.setScreen(null); })
                 .bounds(x, y + 58, width, 22).build();
-        civil.active = data.tier().equals("영지");
+        civil.active = civilUnlocked;
         addRenderableWidget(civil);
     }
 

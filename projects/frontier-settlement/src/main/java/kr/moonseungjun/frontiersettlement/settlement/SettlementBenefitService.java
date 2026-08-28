@@ -27,6 +27,7 @@ public final class SettlementBenefitService {
     private static final int WATCHTOWER_CHECK_INTERVAL_TICKS = 100;
     private static final double BLACKSMITH_RADIUS_SQR = 10.0D * 10.0D;
     private static final double WATCHTOWER_ALERT_RADIUS = 40.0D;
+    private static final double CITADEL_WATCH_RADIUS_BONUS = 16.0D;
     private static final double GUARD_POST_SEARCH_RADIUS = 64.0D;
     private static final double GUARD_POST_HOME_RADIUS_SQR = 24.0D * 24.0D;
     private static final double WATCH_GUARD_SEARCH_RADIUS = 64.0D;
@@ -144,7 +145,7 @@ public final class SettlementBenefitService {
                 continue;
             }
 
-            Monster threat = nearestWatchThreat(level, home);
+            Monster threat = nearestWatchThreat(level, home, data);
             if (threat != null) {
                 guard.setTarget(threat);
                 continue;
@@ -203,8 +204,10 @@ public final class SettlementBenefitService {
         return true;
     }
 
-    private static Monster nearestWatchThreat(ServerLevel level, BlockPos home) {
-        AABB area = new AABB(home).inflate(WATCHTOWER_ALERT_RADIUS, 16.0D, WATCHTOWER_ALERT_RADIUS);
+    private static Monster nearestWatchThreat(ServerLevel level, BlockPos home, SettlementData data) {
+        double radius = WATCHTOWER_ALERT_RADIUS
+                + (data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_WATCH_RADIUS_BONUS : 0.0D);
+        AABB area = new AABB(home).inflate(radius, 16.0D, radius);
         return level.getEntitiesOfClass(Monster.class, area,
                         monster -> monster.isAlive() && !(monster instanceof Creeper))
                 .stream()

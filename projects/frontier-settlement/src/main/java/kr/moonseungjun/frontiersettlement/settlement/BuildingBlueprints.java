@@ -41,6 +41,7 @@ public final class BuildingBlueprints {
             case ADVANCED_WORKSHOP -> AdvancedWorkshopBuildingBlueprint.create(origin);
             case MARKET -> MarketBuildingBlueprint.create(origin);
             case CART_STATION -> CartStationBuildingBlueprint.create(origin);
+            case CIVIC_HALL, TRADE_HALL, CITADEL -> LandmarkBuildingBlueprints.create(type, origin);
         };
     }
 

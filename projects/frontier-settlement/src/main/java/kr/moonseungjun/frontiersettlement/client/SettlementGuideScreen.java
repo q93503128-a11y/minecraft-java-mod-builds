@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 
 /** Lightweight in-game guide: enough to play without turning Frontier into a quest checklist. */
 public final class SettlementGuideScreen extends Screen {
-    private static final int PAGE_COUNT = 4;
+    private static final int PAGE_COUNT = 5;
     private final Screen parent;
     private final int page;
     private int panelX, panelY, panelWidth, panelHeight;
@@ -60,11 +60,16 @@ public final class SettlementGuideScreen extends Screen {
                     "주택은 인구를, 생산 건물은 자동 생산 기반을 늘립니다.",
                     "HUD의 노란 ‘다음 목표’를 따라가면 해금 흐름이 이어집니다.",
                     "주민 직업을 한 명씩 지정할 필요는 없습니다.");
-            default -> draw(g, x, y, "4. 영토와 물류",
+            case 3 -> draw(g, x, y, "4. 영토와 물류",
                     "M → 도로 계획으로 마을 밖까지 길을 연결합니다.",
                     "도로 끝에 전초기지를 세워 영토·생산 거점을 넓힙니다.",
                     "수레 정거장·시장·방어·제작 시설이 차례로 열립니다.",
                     "언로드 지역은 강제로 로드하지 않으며 운송도 멈춥니다.");
+            default -> draw(g, x, y, "5. 영지와 개척 수도",
+                    "개척 도시부터 시민회관, 영지부터 교역회관·성채가 열립니다.",
+                    "교역회관은 기존 유물 교역 가치를 높이고 성채는 감시망을 넓힙니다.",
+                    "인구 20 · 전초 5 · 도로 4 · 탐험 7과 랜드마크 3종을 완성하세요.",
+                    "조건을 모두 채우면 최종 단계 ‘개척 수도’가 완성됩니다.");
         }
         super.extractRenderState(g, mx, my, p);
     }

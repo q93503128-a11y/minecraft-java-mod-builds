@@ -17,7 +17,10 @@ public enum BuildingType {
     WATCHTOWER("watchtower", "감시탑", 96, 72, 7, 7, 14, 0, "경비초소 1곳 필요"),
     BARRACKS("barracks", "병영", 144, 112, 15, 11, 10, 0, "감시탑 + 개척 도시 단계 필요"),
     MARKET("market", "시장", 96, 48, 11, 11, 8, 0, "마을 단계 필요"),
-    CART_STATION("cart_station", "수레 정거장", 104, 56, 13, 9, 8, 0, "도로 + 전초기지 필요");
+    CART_STATION("cart_station", "수레 정거장", 104, 56, 13, 9, 8, 0, "도로 + 전초기지 필요"),
+    CIVIC_HALL("civic_hall", "시민회관", 180, 140, 15, 13, 10, 8, "개척 도시 + 시장 + 창고 필요"),
+    TRADE_HALL("trade_hall", "교역회관", 156, 116, 15, 13, 9, 4, "영지 + 시장 + 수레 정거장 필요"),
+    CITADEL("citadel", "성채", 240, 220, 17, 15, 14, 4, "영지 + 병영 + 감시탑 + 탐험 필요");
 
     private final String id;
     private final String displayName;

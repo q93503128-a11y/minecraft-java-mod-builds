@@ -77,6 +77,12 @@ public final class SettlementCoreService {
             addCornerAccents(placements, center, 5, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
             addLampRing(placements, center, 5, 4, Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState());
         }
+        if (tier.ordinal() >= SettlementTier.FRONTIER_CAPITAL.ordinal()) {
+            addFloor(placements, center, 6, Blocks.STONE_BRICKS.defaultBlockState());
+            addCross(placements, center, 6, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+            addCornerAccents(placements, center, 6, Blocks.CHISELED_STONE_BRICKS.defaultBlockState());
+            addLampRing(placements, center, 6, 5, Blocks.STRIPPED_DARK_OAK_LOG.defaultBlockState());
+        }
         return new ArrayList<>(placements.values());
     }
 

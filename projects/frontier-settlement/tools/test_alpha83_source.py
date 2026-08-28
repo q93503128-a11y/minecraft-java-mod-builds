@@ -1,13 +1,34 @@
 #!/usr/bin/env python3
 import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/frontiersettlement"
 A82 = ROOT / "tools/test_alpha82_source.py"
 _real_read = Path.read_text
+ALPHA82_SHA = "38fad8764f6a21bea59aaadfb7e931339943fb9a"
+REPO = ROOT.parents[1]
+LEGACY_ALPHA82_FILES = {
+    "gradle.properties", "COMPANION_LOCK.json", "BuildingType.java", "BuildingBlueprints.java",
+    "SettlementData.java", "SettlementTier.java", "SettlementConstructionService.java",
+    "SettlementExplorationBenefitService.java", "SettlementBenefitService.java",
+    "SettlementTierInfrastructureService.java", "SettlementCoreService.java",
+    "BuildingPaletteScreen.java", "SettlementGuideScreen.java", "SettlementGuidanceService.java",
+}
 
 def legacy_read(self, *args, **kwargs):
+    if self.name == "LandmarkBuildingBlueprints.java":
+        return "// Alpha.83-only landmark file hidden from Alpha.82 historical replay.\n"
+    if self.name in LEGACY_ALPHA82_FILES:
+        try:
+            rel = self.resolve().relative_to(REPO.resolve()).as_posix()
+        except ValueError:
+            rel = ""
+        if rel.startswith("projects/frontier-settlement/"):
+            return subprocess.check_output(
+                ["git", "show", f"{ALPHA82_SHA}:{rel}"], cwd=REPO, text=True, encoding="utf-8"
+            )
     s = _real_read(self, *args, **kwargs)
     if self.name == "gradle.properties":
         s = s.replace("mod_version=0.1.0-alpha.83", "mod_version=0.1.0-alpha.82")
@@ -83,7 +104,7 @@ must(bp, (
     "case CIVIC_HALL -> civicHall(origin);",
     "case TRADE_HALL -> tradeHall(origin);",
     "case CITADEL -> citadel(origin);",
-    "no new free functional containers",
+    "second storage or resource authority",
 ), "alpha.83 landmark blueprints")
 forbid(bp, ("Blocks.BARREL", "Blocks.CHEST", "Blocks.SHULKER_BOX"), "alpha.83 landmarks must not mint storage")
 must(construction, (

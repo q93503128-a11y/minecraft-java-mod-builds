@@ -37,6 +37,7 @@ public final class SettlementExplorationBenefitService {
     public static final int MARKET_EMERALD_BONUS_PER_CONQUEST = 2;
     public static final int MARKET_EMERALD_BONUS_PER_TRADE = 1;
     public static final int MARKET_EMERALD_BONUS_PER_NETWORK_LEVEL = 1;
+    public static final int MARKET_EMERALD_BONUS_TRADE_HALL = 4;
     public static final int REPAIR_BONUS_PER_SURVEY = 16;
     public static final int REPAIR_BONUS_PER_CONQUEST = 8;
     public static final int REPAIR_BONUS_PER_INDUSTRIAL = 12;
@@ -101,7 +102,7 @@ public final class SettlementExplorationBenefitService {
      * settlement has to establish at least two different productive regions before the first bonus.
      */
     public static int territoryNetworkLevel(SettlementData data) {
-        if (SettlementTier.current(data) != SettlementTier.DOMAIN) return 0;
+        if (SettlementTier.current(data).ordinal() < SettlementTier.DOMAIN.ordinal()) return 0;
         return Math.min(MAX_TERRITORY_NETWORK_LEVEL, Math.max(0, productiveOutpostDiversity(data) - 1));
     }
 
@@ -139,7 +140,8 @@ public final class SettlementExplorationBenefitService {
         return surveyLevel(data) * MARKET_EMERALD_BONUS_PER_SURVEY
                 + conquestLevel(data) * MARKET_EMERALD_BONUS_PER_CONQUEST
                 + tradeKnowledge(data) * MARKET_EMERALD_BONUS_PER_TRADE
-                + territoryNetworkLevel(data) * MARKET_EMERALD_BONUS_PER_NETWORK_LEVEL;
+                + territoryNetworkLevel(data) * MARKET_EMERALD_BONUS_PER_NETWORK_LEVEL
+                + (data.buildingCount(BuildingType.TRADE_HALL) > 0 ? MARKET_EMERALD_BONUS_TRADE_HALL : 0);
     }
 
     public static int marketPayout(SettlementData data, int basePayout) {

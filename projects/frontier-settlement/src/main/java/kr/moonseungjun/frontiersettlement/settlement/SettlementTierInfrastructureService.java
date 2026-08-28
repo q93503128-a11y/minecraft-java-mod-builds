@@ -15,6 +15,7 @@ public final class SettlementTierInfrastructureService {
     private static final int PUBLIC_WORKS_INTERVAL_TICKS = 100;
     private static final int FRONTIER_TOWN_LAMP_SPACING = 16;
     private static final int DOMAIN_LAMP_SPACING = 8;
+    private static final int CAPITAL_LAMP_SPACING = 6;
     private static final int LAMP_START_OFFSET = 8;
     private static final int PUBLIC_WORKS_UPDATE = 3;
 
@@ -27,7 +28,9 @@ public final class SettlementTierInfrastructureService {
     }
 
     private static void maintainRoadPublicWorks(ServerLevel level, SettlementData data, SettlementTier tier) {
-        int spacing = tier == SettlementTier.DOMAIN ? DOMAIN_LAMP_SPACING : FRONTIER_TOWN_LAMP_SPACING;
+        int spacing = tier.ordinal() >= SettlementTier.FRONTIER_CAPITAL.ordinal()
+                ? CAPITAL_LAMP_SPACING
+                : tier.ordinal() >= SettlementTier.DOMAIN.ordinal() ? DOMAIN_LAMP_SPACING : FRONTIER_TOWN_LAMP_SPACING;
         int changed = 0;
         for (int roadIndex = 0; roadIndex < data.roads().size() && changed < 2; roadIndex++) {
             List<BlockPos> centers = data.roads().get(roadIndex).centers();
@@ -72,7 +75,9 @@ public final class SettlementTierInfrastructureService {
         if (!(event.getLevel() instanceof ServerLevel level)) return; MinecraftServer server=level.getServer(); if(level!=server.overworld())return;
         SettlementData data=SettlementData.get(server); if(!data.founded())return; BlockPos pos=event.getPos(); Block block=level.getBlockState(pos).getBlock();
         if(block!=Blocks.OAK_FENCE&&block!=Blocks.LANTERN)return;
-        if(matchesLampPlan(level,data,pos,block,DOMAIN_LAMP_SPACING)||matchesLampPlan(level,data,pos,block,FRONTIER_TOWN_LAMP_SPACING)){event.setCanceled(true);event.setNotifyClient(true);}
+        if(matchesLampPlan(level,data,pos,block,CAPITAL_LAMP_SPACING)
+                ||matchesLampPlan(level,data,pos,block,DOMAIN_LAMP_SPACING)
+                ||matchesLampPlan(level,data,pos,block,FRONTIER_TOWN_LAMP_SPACING)){event.setCanceled(true);event.setNotifyClient(true);}
     }
     private static boolean matchesLampPlan(ServerLevel level,SettlementData data,BlockPos pos,Block block,int spacing){ for(int r=0;r<data.roads().size();r++){List<BlockPos> c=data.roads().get(r).centers();for(int i=LAMP_START_OFFSET;i<c.size()-2;i+=spacing){LampSite s=lampSite(level,data,c,r,i,spacing);if(s==null)continue;if(pos.equals(s.post())&&block==Blocks.OAK_FENCE&&level.getBlockState(s.light()).is(Blocks.LANTERN))return true;if(pos.equals(s.light())&&block==Blocks.LANTERN&&level.getBlockState(s.post()).is(Blocks.OAK_FENCE))return true;}}return false; }
     private record LampSite(BlockPos post, BlockPos light) {}

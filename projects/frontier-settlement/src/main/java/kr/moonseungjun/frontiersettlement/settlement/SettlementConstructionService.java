@@ -88,6 +88,25 @@ public final class SettlementConstructionService {
                 && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
             return "시장은 마을 단계에 도달하면 열립니다.";
         }
+        if (type == BuildingType.CIVIC_HALL
+                && (SettlementTier.current(data).ordinal() < SettlementTier.FRONTIER_TOWN.ordinal()
+                || data.buildingCount(BuildingType.MARKET) < 1
+                || data.buildingCount(BuildingType.WAREHOUSE) < 1)) {
+            return "시민회관은 개척 도시 단계와 시장·창고 각 1곳이 필요합니다.";
+        }
+        if (type == BuildingType.TRADE_HALL
+                && (SettlementTier.current(data).ordinal() < SettlementTier.DOMAIN.ordinal()
+                || data.buildingCount(BuildingType.MARKET) < 1
+                || data.buildingCount(BuildingType.CART_STATION) < 1)) {
+            return "교역회관은 영지 단계와 시장·수레 정거장 각 1곳이 필요합니다.";
+        }
+        if (type == BuildingType.CITADEL
+                && (SettlementTier.current(data).ordinal() < SettlementTier.DOMAIN.ordinal()
+                || data.buildingCount(BuildingType.BARRACKS) < 1
+                || data.buildingCount(BuildingType.WATCHTOWER) < 1
+                || data.explorationScore() < 5)) {
+            return "성채는 영지 단계, 병영·감시탑 각 1곳, 탐험 점수 5가 필요합니다.";
+        }
         return null;
     }
 
