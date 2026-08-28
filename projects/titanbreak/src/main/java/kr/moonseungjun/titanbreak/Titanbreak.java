@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -20,7 +21,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.4";
+    public static final String VERSION = "0.1.0-alpha.5";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0;
@@ -34,6 +35,7 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(this::onUseItemStart);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -91,6 +93,17 @@ public final class Titanbreak {
         AugmentedMobilityService.tick(player, active, ReflexDriveService.userCompensation(player.getUUID()));
 
         if (player.tickCount % 2 == 0) TitanbreakNetwork.sync(player);
+    }
+
+    private void onUseItemStart(LivingEntityUseItemEvent.Start event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!ReflexDriveService.active(player.getUUID())) return;
+
+        double compensation = ReflexDriveService.userCompensation(player.getUUID());
+        int duration = event.getDuration();
+        if (duration > 1 && compensation > 1.0D) {
+            event.setDuration(Math.max(1, (int) Math.ceil(duration / compensation)));
+        }
     }
 
     private void onServerStopped(ServerStoppedEvent event) {

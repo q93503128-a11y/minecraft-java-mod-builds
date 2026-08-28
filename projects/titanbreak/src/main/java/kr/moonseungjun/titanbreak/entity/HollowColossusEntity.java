@@ -137,6 +137,14 @@ public final class HollowColossusEntity extends Giant {
         return false;
     }
 
+    @Override
+    public void setId(int id) {
+        super.setId(id);
+        for (int i = 0; i < parts.length; i++) {
+            parts[i].setId(id + i + 1);
+        }
+    }
+
     private enum PartSlot {
         HEAD,
         CORE,

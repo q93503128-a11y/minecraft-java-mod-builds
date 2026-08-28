@@ -22,9 +22,8 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<Giant>> HOLLOW_COLOSSUS =
             ENTITIES.register("hollow_colossus", () -> EntityType.Builder.<Giant>of(
                             (type, level) -> new HollowColossusEntity(type, level), MobCategory.MONSTER)
-                    .sized(3.6F, 12.0F)
-                    .eyeHeight(10.44F)
-                    .ridingOffset(-3.75F)
+                    .sized(0.8F, 0.8F)
+                    .eyeHeight(0.72F)
                     .clientTrackingRange(20)
                     .build(ResourceKey.create(Registries.ENTITY_TYPE,
                             Identifier.fromNamespaceAndPath(Titanbreak.MOD_ID, "hollow_colossus"))));
