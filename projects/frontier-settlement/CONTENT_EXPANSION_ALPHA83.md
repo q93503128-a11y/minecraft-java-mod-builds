@@ -55,3 +55,4 @@ Frontier menu to M.
   transport authority is introduced.
 - Automated source/build/JAR checks are not graphical-client acceptance; actual Alpha.83 play remains
   to be tested in-game.
+- Promotion requires the canonical Java 25 clean build and runtime JAR verification on the committed Alpha.83 tree.
