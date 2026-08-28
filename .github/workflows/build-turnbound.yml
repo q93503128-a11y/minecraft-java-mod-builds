@@ -27,6 +27,21 @@ jobs:
       - name: Test and build TURNBOUND
         working-directory: projects/turnbound
         run: gradle clean test build --stacktrace
+      - name: Smoke-test NeoForge server load
+        working-directory: projects/turnbound
+        run: |
+          mkdir -p run/server
+          printf 'eula=true\n' > run/server/eula.txt
+          set +e
+          timeout 120s gradle runServer --no-daemon > server-smoke.log 2>&1
+          code=$?
+          set -e
+          cat server-smoke.log
+          grep -q 'TURNBOUND 0.1.0-alpha.2 loaded' server-smoke.log
+          grep -q 'Done (' server-smoke.log
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            exit "$code"
+          fi
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
