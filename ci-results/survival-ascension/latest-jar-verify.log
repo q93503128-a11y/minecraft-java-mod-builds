@@ -22,8 +22,8 @@ field_depot_runtime=present
 outpost_runtime=present
 field_recovery_runtime=present
 ranged_projectile_owner_attribution_runtime=present
-size=644956
-sha256=fbc388bd406a93ae63af2a42bd99aa09c5ee5e04a98f45c112de3aeb186ef7a9
+size=649252
+sha256=1e7bd0cffcceb80772d13837d77d1ed1d95927e59bfe84d00c556cacc17310ea
 frontline_freight_manifest_runtime=present
 frontline_freight_release_verify=PASS
 regional_logistics_scale_runtime=present
@@ -57,4 +57,5 @@ tbs_journal_one_time_restoration=present
 forced_amethyst_tooltips=present
 forced_bop_terrablender_overlay=present
 KOREAN RUNTIME PACK VERIFY PASS
+final_ascension_canonical_gate_runtime=present
 survival_ascension_release_verify=PASS
