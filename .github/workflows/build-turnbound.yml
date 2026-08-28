@@ -32,16 +32,24 @@ jobs:
         run: |
           mkdir -p run/server
           printf 'eula=true\n' > run/server/eula.txt
-          set +e
-          timeout 120s gradle runServer --no-daemon > server-smoke.log 2>&1
-          code=$?
-          set -e
+          setsid gradle runServer --no-daemon > server-smoke.log 2>&1 &
+          pid=$!
+          started=0
+          for i in $(seq 1 120); do
+            if grep -q 'Done (' server-smoke.log; then
+              started=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
           cat server-smoke.log
           grep -q 'TURNBOUND 0.1.0-alpha.2 loaded' server-smoke.log
-          grep -q 'Done (' server-smoke.log
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            exit "$code"
-          fi
+          test "$started" -eq 1
+          kill -TERM -- "-$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
