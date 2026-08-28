@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -160,6 +161,19 @@ public final class FinalAscensionSystem {
             if (tickRun(event.getServer(), entry.getValue())) finished.add(entry.getKey());
         }
         for (UUID owner : finished) ACTIVE.remove(owner);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        if (ACTIVE.isEmpty()) return;
+        List<UUID> stopped = new ArrayList<>();
+        for (Map.Entry<UUID, Run> entry : new ArrayList<>(ACTIVE.entrySet())) {
+            Run run = entry.getValue();
+            if (run.level.getServer() != event.getServer()) continue;
+            cleanup(run);
+            closeBossBar(run);
+            stopped.add(entry.getKey());
+        }
+        for (UUID owner : stopped) ACTIVE.remove(owner);
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
