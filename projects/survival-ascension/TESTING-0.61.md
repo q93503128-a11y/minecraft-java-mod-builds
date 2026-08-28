@@ -44,9 +44,12 @@ For each case below, verify no boss/marker/bossbar remains after failure:
 - owner leaves the 72-block arena long enough to fail;
 - logout;
 - encounter timeout;
-- server restart after an interrupted run.
+- normal server Stop followed by restart while acts 1-3 are active;
+- normal server Stop followed by restart while the final boss/anchors are active.
 
-PASS: Survival-owned markers are removed only if still the exact block placed by the encounter. No unrelated player blocks are deleted. Persisted orphan entities with the final-boss owner marker must not become a free reusable boss after restart.
+PASS: orderly `ServerStoppingEvent` cleanup removes Survival-owned active marker/anchor blocks, encounter mobs, the final boss, and boss bars before save. Cleanup removes a temporary block only when it is still the exact expected Survival marker. Player repair blocks and unrelated world blocks must remain.
+
+A forced process kill, power loss, or JVM crash may bypass the orderly stopping event and is not claimed as a 0.61 cleanup guarantee. Report such a case separately instead of treating it as equivalent to a normal Stop/restart.
 
 ## 7. Permanent SavedData
 - Before the first boss kill, inspect world data: no completed final state should be reported.
@@ -66,7 +69,8 @@ Before/after snapshots must show:
 - Apex first-clear count unchanged by the final boss;
 - no Apex mastery reward duplication;
 - no repeatable Ascension Trial reward duplication;
-- no random normal Elite conversion stacked onto `세계의 경계자`.
+- no random normal Elite conversion stacked onto `세계의 경계자`;
+- the final boss is not absorbed into a normal Warband/tactical squad.
 
 ## 9. Final Mobility authority
 Use Mobility Lv.100 after world completion.
@@ -93,4 +97,4 @@ Current practical validation is single-player first. Before future multiplayer s
 - reward ownership and helper behavior need a dedicated multiplayer pass when real multiplayer testing becomes available.
 
 ## Stop-and-report signals
-Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, Warden target loss or idle burrow during the active fight, unavoidable invisible attacks, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, or any external content classloading error.
+Immediately report crash/save corruption, duplicate first-clear reward, Apex state mutation, force-loaded/generated chunks, boss health skipping the 65% or 30% boundary, anchors becoming remotely completable, Warden target loss or idle burrow during the active fight, unavoidable invisible attacks, orderly Stop/restart leaving temporary Final Ascension markers or the boss behind, marker cleanup deleting player blocks, orphan boss persistence, final SavedData disappearing after reload, air-dash count exceeding its bound, construction exceeding 81 or 15×15, or any external content classloading error.
