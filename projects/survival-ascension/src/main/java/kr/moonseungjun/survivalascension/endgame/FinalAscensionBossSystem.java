@@ -19,6 +19,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -50,6 +51,7 @@ public final class FinalAscensionBossSystem {
     private static final int OWNER_GRACE_TICKS = 120;
     private static final int ENCOUNTER_TIMEOUT_TICKS = 4200;
     private static final int TELEGRAPH_TICKS = 30;
+    private static final int WARDEN_AGGRO_REFRESH_TICKS = 80;
     private static final double PLAYER_RADIUS = 72.0D;
     private static final double RECALL_RADIUS = 44.0D;
 
@@ -173,12 +175,12 @@ public final class FinalAscensionBossSystem {
             return true;
         }
 
+        maintainBossAggro(boss, owner, now);
         if (distanceToCenterSqr(boss, run.center) > RECALL_RADIUS * RECALL_RADIUS) {
             boss.getNavigation().moveTo(run.center.getX() + 0.5D, run.center.getY(), run.center.getZ() + 0.5D, 1.35D);
         } else if (boss.distanceToSqr(owner) > 20.0D * 20.0D) {
             boss.getNavigation().moveTo(owner, 1.30D);
         }
-        if (boss.getTarget() == null) boss.setTarget(owner);
 
         float ratio = boss.getHealth() / Math.max(1.0F, boss.getMaxHealth());
         if (run.phase == Phase.OPENING && ratio <= 0.6501F) {
@@ -194,6 +196,17 @@ public final class FinalAscensionBossSystem {
         else tickAttack(run, owner, boss, now);
         updateBossBar(run, boss);
         return false;
+    }
+
+    private static void maintainBossAggro(Mob boss, ServerPlayer owner, long now) {
+        if (boss instanceof Warden warden) {
+            if (warden.getTarget() != owner || now % WARDEN_AGGRO_REFRESH_TICKS < TICK_INTERVAL) {
+                warden.increaseAngerAt(owner, 150, false);
+                warden.setAttackTarget(owner);
+            }
+            return;
+        }
+        if (boss.getTarget() != owner) boss.setTarget(owner);
     }
 
     private static boolean beginAnchors(Run run, ServerPlayer owner, Mob boss) {
@@ -382,27 +395,27 @@ public final class FinalAscensionBossSystem {
             } finally {
                 internalSpawn = false;
             }
-            if (!(entity instanceof Mob boss)) {
+            if (!(entity instanceof Warden warden)) {
                 if (entity != null) entity.discard();
                 continue;
             }
-            boss.setPersistenceRequired();
-            boss.getPersistentData().putBoolean(BOSS_KEY, true);
-            boss.getPersistentData().putString(OWNER_KEY, owner.getUUID().toString());
-            boss.getPersistentData().putBoolean(NO_WARBAND_KEY, true);
-            boss.setCustomName(Component.literal("§4세계의 경계자"));
-            boss.setCustomNameVisible(true);
-            AttributeInstance health = boss.getAttribute(Attributes.MAX_HEALTH);
+            warden.setPersistenceRequired();
+            warden.getPersistentData().putBoolean(BOSS_KEY, true);
+            warden.getPersistentData().putString(OWNER_KEY, owner.getUUID().toString());
+            warden.getPersistentData().putBoolean(NO_WARBAND_KEY, true);
+            warden.setCustomName(Component.literal("§4세계의 경계자"));
+            warden.setCustomNameVisible(true);
+            AttributeInstance health = warden.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) health.setBaseValue(460.0D);
-            AttributeInstance attack = boss.getAttribute(Attributes.ATTACK_DAMAGE);
+            AttributeInstance attack = warden.getAttribute(Attributes.ATTACK_DAMAGE);
             if (attack != null) attack.setBaseValue(Math.min(24.0D, Math.max(18.0D, attack.getBaseValue())));
-            AttributeInstance armor = boss.getAttribute(Attributes.ARMOR);
+            AttributeInstance armor = warden.getAttribute(Attributes.ARMOR);
             if (armor != null) armor.setBaseValue(Math.max(10.0D, armor.getBaseValue()));
-            AttributeInstance speed = boss.getAttribute(Attributes.MOVEMENT_SPEED);
+            AttributeInstance speed = warden.getAttribute(Attributes.MOVEMENT_SPEED);
             if (speed != null) speed.setBaseValue(Math.min(0.32D, Math.max(0.26D, speed.getBaseValue())));
-            boss.setHealth(boss.getMaxHealth());
-            boss.setTarget(owner);
-            return boss;
+            warden.setHealth(warden.getMaxHealth());
+            maintainBossAggro(warden, owner, level.getGameTime());
+            return warden;
         }
         return null;
     }
