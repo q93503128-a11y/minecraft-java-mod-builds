@@ -54,12 +54,21 @@ public final class P0Scenario {
                 engine.useSkill(actor.instanceId(), skill, target.instanceId());
             }
             case "P02" -> {
-                CombatantState kyren = state.living(CombatantSide.ALLY).stream()
-                        .filter(unit -> unit.definition().id().equals("P01"))
-                        .findFirst()
-                        .orElseGet(() -> state.living(CombatantSide.ALLY).getFirst());
-                String skill = actor.cooldown("p02_time_leap") == 0 ? "p02_time_leap" : "p02_basic";
-                engine.useSkill(actor.instanceId(), skill, kyren.instanceId());
+                CombatantState otherAlly = state.living(CombatantSide.ALLY).stream()
+                        .filter(unit -> unit != actor)
+                        .min(Comparator
+                                .comparing((CombatantState unit) -> !unit.definition().id().equals("P01"))
+                                .thenComparingLong(CombatantState::gauge))
+                        .orElse(null);
+                if (otherAlly != null && actor.cooldown("p02_time_leap") == 0) {
+                    engine.useSkill(actor.instanceId(), "p02_time_leap", otherAlly.instanceId());
+                } else if (otherAlly != null) {
+                    engine.useSkill(actor.instanceId(), "p02_basic", otherAlly.instanceId());
+                } else if (actor.cooldown("p02_delay_field") == 0) {
+                    engine.useSkill(actor.instanceId(), "p02_delay_field");
+                } else {
+                    engine.useSkill(actor.instanceId(), "p02_basic", actor.instanceId());
+                }
             }
             case "P03" -> {
                 List<CombatantState> enemies = state.living(CombatantSide.ENEMY);
