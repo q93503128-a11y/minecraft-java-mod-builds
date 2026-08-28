@@ -2,13 +2,16 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.network.BattleCommandPayload;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,6 +98,7 @@ public final class BattleScreen extends Screen {
         }
         autoButton.setMessage(Component.literal(snapshot.auto() ? "AUTO ON" : "AUTO"));
         speedButton.setMessage(Component.literal("×" + snapshot.speed()));
+        fleeButton.setMessage(Component.literal(snapshot.finished() ? "복귀" : "퇴각"));
         autoButton.active = !snapshot.finished();
         speedButton.active = !snapshot.finished();
         fleeButton.active = true;
@@ -138,8 +142,35 @@ public final class BattleScreen extends Screen {
     }
 
     @Override
+    public boolean keyPressed(KeyEvent keyEvent) {
+        var player = Minecraft.getInstance().player;
+        if (player != null) {
+            switch (keyEvent.key()) {
+                case GLFW.GLFW_KEY_LEFT -> {
+                    player.setYRot(player.getYRot() - 10.0F);
+                    return true;
+                }
+                case GLFW.GLFW_KEY_RIGHT -> {
+                    player.setYRot(player.getYRot() + 10.0F);
+                    return true;
+                }
+                case GLFW.GLFW_KEY_UP -> {
+                    player.setXRot(Math.max(-65.0F, player.getXRot() - 6.0F));
+                    return true;
+                }
+                case GLFW.GLFW_KEY_DOWN -> {
+                    player.setXRot(Math.min(65.0F, player.getXRot() + 6.0F));
+                    return true;
+                }
+                default -> { }
+            }
+        }
+        return super.keyPressed(keyEvent);
+    }
+
+    @Override
     public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, width, height, 0x9910131A);
+        graphics.fill(0, 0, width, height, 0x5510131A);
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, 8, 48, Math.min(160, width / 4), 220);
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, width - Math.min(160, width / 4) - 8, 48, Math.min(160, width / 4), 270);
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, INSET, width / 2 - 230, 8, 460, 42);
@@ -151,6 +182,7 @@ public final class BattleScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         var snapshot = ClientBattleState.snapshot();
         graphics.text(font, Component.literal("TURNBOUND · " + (snapshot.finished() ? result(snapshot.outcome()) : "전투 진행")), width / 2 - 65, 17, 0xFFF4F0E6, true);
+        graphics.text(font, Component.literal("방향키: 시점 조절"), width / 2 - 48, 49, 0xFFB9C6D8, true);
         int x = width / 2 - 190;
         for (String id : snapshot.timeline()) {
             var unit = snapshot.units().stream().filter(value -> value.id().equals(id)).findFirst().orElse(null);
