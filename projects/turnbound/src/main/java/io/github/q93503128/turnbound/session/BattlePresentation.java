@@ -7,9 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.LinkedHashMap;
@@ -48,8 +46,11 @@ final class BattlePresentation {
             stand.setInvulnerable(true);
             stand.setNoGravity(true);
             stand.setShowArms(true);
-            Block marker = combatant.side() == CombatantSide.ALLY ? Blocks.LIGHT_BLUE_WOOL : Blocks.RED_WOOL;
-            stand.setItemSlot(EquipmentSlot.HEAD, new ItemStack(marker.asItem()));
+            stand.setItemSlot(
+                    EquipmentSlot.HEAD,
+                    combatant.side() == CombatantSide.ALLY
+                            ? Items.DIAMOND_HELMET.getDefaultInstance()
+                            : Items.NETHERITE_HELMET.getDefaultInstance());
             level.addFreshEntity(stand);
             actors.put(combatant.instanceId(), stand.getUUID());
             homes.put(combatant.instanceId(), pos);
