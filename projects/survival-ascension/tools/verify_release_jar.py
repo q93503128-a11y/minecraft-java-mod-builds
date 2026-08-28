@@ -49,7 +49,8 @@ with zipfile.ZipFile(jar) as zf:
         b"survivalascension_final_boss", b"survivalascension_final_boss_owner",
         b"minecraft:warden", b"OPENING", b"ANCHORS", b"BREAKTHROUGH", b"FINAL",
         b"LINE", b"RING", b"MARKED", b"renderTelegraph", b"insideLine",
-        b"FinalAscensionData", b"createEliteDrop", b"awaken"
+        b"FinalAscensionData", b"createEliteDrop", b"awaken",
+        b"maintainBossAggro", b"increaseAngerAt", b"setAttackTarget", b"WARDEN_AGGRO_REFRESH_TICKS"
     ]:
         if token not in compiled_boss:
             raise SystemExit(f"0.61 compiled final boss token missing: {token!r}")
@@ -89,6 +90,7 @@ with zipfile.ZipFile(jar) as zf:
 print("final_ascension_canonical_gate_runtime=present")
 print("final_ascension_acts_1_3_runtime=present")
 print("final_boundary_boss_runtime=present")
+print("final_boundary_warden_aggro_runtime=present")
 print("final_completion_saved_data_runtime=present")
 print("final_mobility_construction_authority_runtime=present")
 print("final_ascension_menu_action_runtime=present")
