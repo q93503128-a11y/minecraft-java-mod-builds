@@ -151,6 +151,9 @@ public final class SettlementContextService {
             case BARRACKS -> "완공 · 정식 주둔 3슬롯";
             case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);
             case CART_STATION -> "완공 · 도로 화물 허브";
+            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain();
+            case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
+            case CITADEL -> "완공 · 감시망 반경 56 · 주거 +" + type.housingGain();
         };
     }
 }

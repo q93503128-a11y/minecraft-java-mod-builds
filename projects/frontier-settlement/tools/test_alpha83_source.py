@@ -13,7 +13,7 @@ LEGACY_ALPHA82_FILES = {
     "gradle.properties", "COMPANION_LOCK.json", "BuildingType.java", "BuildingBlueprints.java",
     "SettlementData.java", "SettlementTier.java", "SettlementConstructionService.java",
     "SettlementExplorationBenefitService.java", "SettlementBenefitService.java",
-    "SettlementTierInfrastructureService.java", "SettlementCoreService.java",
+    "SettlementTierInfrastructureService.java", "SettlementCoreService.java", "SettlementContextService.java",
     "BuildingPaletteScreen.java", "SettlementGuideScreen.java", "SettlementGuidanceService.java",
 }
 
@@ -79,6 +79,7 @@ explore = text(JAVA / "settlement/SettlementExplorationBenefitService.java")
 benefit = text(JAVA / "settlement/SettlementBenefitService.java")
 infra = text(JAVA / "settlement/SettlementTierInfrastructureService.java")
 core = text(JAVA / "settlement/SettlementCoreService.java")
+context = text(JAVA / "settlement/SettlementContextService.java")
 palette = text(JAVA / "client/BuildingPaletteScreen.java")
 guide = text(JAVA / "client/SettlementGuideScreen.java")
 lock = json.loads(text(ROOT / "COMPANION_LOCK.json"))
@@ -136,6 +137,11 @@ must(infra, (
     "SettlementTier.FRONTIER_CAPITAL.ordinal()",
 ), "alpha.83 capital public works")
 must(core, ("SettlementTier.FRONTIER_CAPITAL.ordinal()", "addFloor(placements, center, 6"), "alpha.83 capital core")
+must(context, (
+    'case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain();',
+    'case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();',
+    'case CITADEL -> "완공 · 감시망 반경 56 · 주거 +" + type.housingGain();',
+), "alpha.83 landmark context details")
 must(palette, (
     'LANDMARKS("랜드마크"',
     "BuildingType.CIVIC_HALL, BuildingType.TRADE_HALL, BuildingType.CITADEL",
