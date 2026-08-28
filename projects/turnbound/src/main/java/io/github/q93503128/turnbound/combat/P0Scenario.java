@@ -36,7 +36,12 @@ public final class P0Scenario {
                 .map(BattleEvent::sourceId)
                 .reduce((left, right) -> left + " > " + right)
                 .orElse("none");
-        return "outcome=" + state.outcome() + ", actions=" + actions + ", pulses=" + state.logicalPulse() + ", timeline=" + timeline;
+        return "outcome=" + state.outcome()
+                + ", actions=" + actions
+                + ", pulses=" + state.logicalPulse()
+                + ", allies=" + state.living(CombatantSide.ALLY).size()
+                + ", enemies=" + state.living(CombatantSide.ENEMY).size()
+                + ", timeline=" + timeline;
     }
 
     public static void chooseAutoAction(BattleEngine engine, BattleState state, CombatantState actor) {
@@ -47,7 +52,7 @@ public final class P0Scenario {
 
         switch (actor.definition().id()) {
             case "P01" -> {
-                CombatantState target = state.living(CombatantSide.ENEMY).getFirst();
+                CombatantState target = priorityEnemy(state.living(CombatantSide.ENEMY));
                 String skill = actor.cooldown("p01_shatter") == 0 && actor.counter("focus") >= 1
                         ? "p01_shatter"
                         : "p01_basic";
@@ -73,7 +78,7 @@ public final class P0Scenario {
             case "P03" -> {
                 List<CombatantState> enemies = state.living(CombatantSide.ENEMY);
                 if (actor.cooldown("p03_press") == 0 && !enemies.isEmpty()) {
-                    engine.useSkill(actor.instanceId(), "p03_press", enemies.getFirst().instanceId());
+                    engine.useSkill(actor.instanceId(), "p03_press", priorityEnemy(enemies).instanceId());
                 } else {
                     engine.useSkill(actor.instanceId(), "p03_basic");
                 }
@@ -110,7 +115,7 @@ public final class P0Scenario {
                             .orElseThrow();
                     engine.useSkill(actor.instanceId(), "e_shield_active", target.instanceId());
                 } else {
-                    engine.useSkill(actor.instanceId(), "e_shield_basic", allies.getFirst().instanceId());
+                    engine.useSkill(actor.instanceId(), "e_shield_basic", distributedTarget(allies, actor).instanceId());
                 }
             }
             case "E_SHAMAN" -> {
@@ -126,7 +131,29 @@ public final class P0Scenario {
                     engine.useSkill(actor.instanceId(), "e_shaman_basic", target.instanceId());
                 }
             }
-            default -> engine.useSkill(actor.instanceId(), actor.definition().basicSkillId(), allies.getFirst().instanceId());
+            default -> engine.useSkill(actor.instanceId(), actor.definition().basicSkillId(), distributedTarget(allies, actor).instanceId());
         }
+    }
+
+    private static CombatantState priorityEnemy(List<CombatantState> enemies) {
+        return enemies.stream()
+                .min(Comparator
+                        .comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id()))
+                        .thenComparingDouble(unit -> unit.hp() / (double) unit.maxHp())
+                        .thenComparingInt(CombatantState::initiativeSeed))
+                .orElseThrow();
+    }
+
+    private static int enemyPriority(String id) {
+        if (id.equals("E_SHAMAN")) return 0;
+        if (id.equals("E_ARCHER")) return 1;
+        if (id.startsWith("E_SWORD")) return 2;
+        if (id.equals("E_SHIELD")) return 3;
+        return 4;
+    }
+
+    private static CombatantState distributedTarget(List<CombatantState> allies, CombatantState actor) {
+        if (allies.isEmpty()) throw new IllegalStateException("Enemy has no living target");
+        return allies.get(Math.floorMod(actor.initiativeSeed(), allies.size()));
     }
 }
