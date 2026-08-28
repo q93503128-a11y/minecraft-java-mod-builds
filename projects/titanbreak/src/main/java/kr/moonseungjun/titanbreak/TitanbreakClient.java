@@ -1,7 +1,6 @@
 package kr.moonseungjun.titanbreak;
 
 import kr.moonseungjun.titanbreak.client.ClientNetworkHandlers;
-import kr.moonseungjun.titanbreak.client.ClientTimeCompensation;
 import kr.moonseungjun.titanbreak.client.TitanEntityRenderers;
 import kr.moonseungjun.titanbreak.client.TitanHud;
 import kr.moonseungjun.titanbreak.client.TitanKeyMappings;
@@ -19,6 +18,5 @@ public final class TitanbreakClient {
         modEventBus.addListener(TitanKeyMappings::register);
         NeoForge.EVENT_BUS.addListener(TitanHud::onVanillaLayer);
         NeoForge.EVENT_BUS.addListener(TitanKeyMappings::onKeyInput);
-        NeoForge.EVENT_BUS.addListener(ClientTimeCompensation::onClientTick);
     }
 }

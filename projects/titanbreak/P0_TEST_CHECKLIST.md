@@ -1,4 +1,4 @@
-# TITANBREAK P0 alpha.3 singleplayer test checklist
+# TITANBREAK P0 alpha.4 singleplayer test checklist
 
 ## Environment
 - Minecraft Java 26.2
@@ -7,50 +7,52 @@
 - Test without other gameplay mods first.
 - Multiplayer validation remains deferred.
 
-## 1. HUD / armor replacement
-- Confirm vanilla hearts, armor icons, and hunger icons are hidden.
-- Confirm the replacement health and mentality gauges stay on-screen at different GUI scales.
-- Take damage and heal once; confirm health follows the real value.
-- Try equipping vanilla armor; it must not become part of normal progression or restore the vanilla armor HUD.
-
-## 2. Reflex Drive input
+## 1. Reflex Drive input and real tick-rate slow motion
 - Obtain `반응가속기 I` from the Combat creative tab.
 - Hold it in either main hand or off hand.
-- Press `R` once to engage and `R` again to disengage. Crouching is no longer part of activation.
-- If R has been rebound in Controls, use the rebound key.
+- Press `R` once to engage and `R` again to disengage.
+- While active, run `/tick query` if cheats are enabled.
 
-PASS: one press reliably toggles the ability and the HUD changes state.
-FAIL: no response, repeated presses required, or the ability activates without the item.
+PASS:
+- active world tick rate reports about 8 TPS;
+- disengaged world tick rate returns to 20 TPS;
+- mobs/projectiles/world simulation look like ordinary `/tick rate 8` slow motion instead of stop-start motion.
 
-## 3. Global slow-motion proof
-- Spawn a zombie, skeleton, passive animal, and several projectiles.
-- Engage Reflex Drive.
-- The world simulation should slow globally rather than entities moving in stop-start tick skips.
-- The local player should remain substantially more responsive/faster relative to the world.
-- Disengage and confirm normal speed returns without teleporting or permanent AI freeze.
+FAIL:
+- client/world snaps between slow and normal speed;
+- entities move in visible chunks;
+- the world remains below 20 TPS after disengaging, death, or reloading the world.
 
-Report any stutter, input delay, projectile jump, sound oddity, or world remaining slow after disengage.
+The client no longer forces its own level tick rate back to 20 while Reflex Drive is active. User speed compensation is separate from world time.
 
-## 4. Heat / recovery
-- Keep Reflex Drive active until it overheats.
-- Confirm it shuts off and cannot be immediately re-enabled.
-- Let it cool and confirm it can be enabled again.
-- Test death, respawn, world exit/reload, and dimension change once. The world must not remain stuck below normal tick rate.
+## 2. Player relative-speed compensation
+- Walk, sprint, jump, attack, place blocks, open containers, and fire projectiles while Reflex Drive is active.
+- Report whether the player feels too slow, too fast, jittery, or correction-heavy relative to the slowed world.
+- Terrain must not break from Reflex Drive movement alone.
 
-## 5. Breach separation
-- While Reflex Drive is active, sprint into leaves, glass, dirt, planks, and logs.
-- Reflex Drive alone must NOT break terrain. Breach is reserved for later heavy-frame / reinforced-body augment builds.
+## 3. HUD / armor replacement
+- Confirm vanilla hearts, armor icons, and hunger icons are hidden.
+- Confirm replacement health and mentality gauges remain visible at different GUI scales.
+- Take damage and heal once.
+- Try equipping vanilla armor and confirm it does not return vanilla armor progression/HUD.
 
-## 6. Multipart giant target
+## 4. Heat / recovery / safety restore
+- Keep Reflex Drive active until overheat shutdown.
+- Confirm immediate reactivation is blocked until sufficient cooling.
+- Test death/respawn, world exit/reload, and dimension travel.
+- World tick rate must always recover to 20 TPS when the drive is no longer active.
+
+## 5. Multipart giant target — alpha.4 rebuild
 1. Run `/summon titanbreak:hollow_colossus ~ ~ ~10` on open ground.
 2. Press `F3+B`.
-3. The placeholder should be a giant humanoid target, not a pig.
-4. Verify the small parent anchor does not cover the body.
-5. Verify eight distinct part boxes are visible: head, core, left/right arms, left/right shoulders, left/right legs.
+3. The giant humanoid's real parent physical box should be approximately the visible Giant size rather than an ant-sized anchor.
+4. Verify six distinct attack parts approximately cover the rendered body: head, core/torso, left/right arms, left/right legs.
+5. Confirm the boxes rotate and travel with the giant instead of lagging behind or snapping from another location.
 6. Hit head/core/arms/legs separately.
-7. Destroy one leg and confirm mobility drops noticeably; destroy both and confirm movement becomes nearly disabled.
-8. Move away and return; part boxes must remain attached to the target.
-9. Engage Reflex Drive near it and confirm the body and multipart boxes stay aligned.
+7. Destroy one leg and confirm movement drops sharply; destroy both and confirm near-immobilization.
+8. Engage Reflex Drive near the giant and confirm body and part boxes remain aligned during slow motion.
+
+This P0 deliberately uses six coarse humanoid regions. More detailed bone/OBB hitboxes come only after this coarse alignment passes.
 
 ## Bug report
-For each problem, send the symptom in plain language. Add a screenshot/video for visual issues and `latest.log` or crash-report for crashes.
+Send the symptom in plain language. For visual hitbox problems, send one F3+B screenshot from the front or side. For crashes, attach `latest.log` or the crash report.

@@ -21,17 +21,16 @@ import net.neoforged.neoforge.entity.PartEntity;
 
 public final class HollowColossusEntity extends Giant {
     private static final PartSpec[] SPECS = {
-            new PartSpec(PartSlot.HEAD, 0.0, 9.3, -0.3, 3.0F, 2.5F, 36.0F),
-            new PartSpec(PartSlot.CORE, 0.0, 6.2, 0.0, 3.4F, 3.2F, 60.0F),
-            new PartSpec(PartSlot.LEFT_ARM, -3.4, 5.2, 0.0, 1.8F, 5.4F, 42.0F),
-            new PartSpec(PartSlot.RIGHT_ARM, 3.4, 5.2, 0.0, 1.8F, 5.4F, 42.0F),
-            new PartSpec(PartSlot.LEFT_LEG, -1.25, 1.9, 0.0, 1.8F, 4.6F, 40.0F),
-            new PartSpec(PartSlot.RIGHT_LEG, 1.25, 1.9, 0.0, 1.8F, 4.6F, 40.0F),
-            new PartSpec(PartSlot.LEFT_SHOULDER, -2.35, 7.35, 0.0, 2.0F, 2.0F, 34.0F),
-            new PartSpec(PartSlot.RIGHT_SHOULDER, 2.35, 7.35, 0.0, 2.0F, 2.0F, 34.0F)
+            new PartSpec(PartSlot.HEAD, 0.0, 9.0, 0.0, 3.2F, 3.0F, 40.0F),
+            new PartSpec(PartSlot.CORE, 0.0, 5.1, 0.0, 3.6F, 4.2F, 80.0F),
+            new PartSpec(PartSlot.LEFT_ARM, -2.65, 4.8, 0.0, 1.7F, 4.8F, 50.0F),
+            new PartSpec(PartSlot.RIGHT_ARM, 2.65, 4.8, 0.0, 1.7F, 4.8F, 50.0F),
+            new PartSpec(PartSlot.LEFT_LEG, -0.95, 0.0, 0.0, 1.55F, 5.3F, 55.0F),
+            new PartSpec(PartSlot.RIGHT_LEG, 0.95, 0.0, 0.0, 1.55F, 5.3F, 55.0F)
     };
 
     private final ColossusPart[] parts = new ColossusPart[SPECS.length];
+    private boolean partsInitialized;
 
     public HollowColossusEntity(EntityType<? extends Giant> type, Level level) {
         super(type, level);
@@ -63,6 +62,11 @@ public final class HollowColossusEntity extends Giant {
     }
 
     private void updatePartPositions() {
+        Vec3[] previousPositions = new Vec3[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            previousPositions[i] = parts[i].position();
+        }
+
         double yaw = Math.toRadians(-getYRot());
         double cos = Math.cos(yaw);
         double sin = Math.sin(yaw);
@@ -73,13 +77,19 @@ public final class HollowColossusEntity extends Giant {
             double offsetX = spec.x() * cos - spec.z() * sin;
             double offsetZ = spec.x() * sin + spec.z() * cos;
             part.setPos(getX() + offsetX, getY() + spec.y(), getZ() + offsetZ);
-            part.xo = part.getX();
-            part.yo = part.getY();
-            part.zo = part.getZ();
-            part.xOld = part.getX();
-            part.yOld = part.getY();
-            part.zOld = part.getZ();
         }
+
+        for (int i = 0; i < parts.length; i++) {
+            ColossusPart part = parts[i];
+            Vec3 previous = partsInitialized ? previousPositions[i] : part.position();
+            part.xo = previous.x;
+            part.yo = previous.y;
+            part.zo = previous.z;
+            part.xOld = previous.x;
+            part.yOld = previous.y;
+            part.zOld = previous.z;
+        }
+        partsInitialized = true;
     }
 
     private boolean isBroken(PartSlot slot) {
@@ -96,7 +106,8 @@ public final class HollowColossusEntity extends Giant {
         float transferred = switch (part.slot) {
             case CORE -> amount * 1.25F;
             case HEAD -> amount * 0.75F;
-            default -> amount * 0.35F;
+            case LEFT_LEG, RIGHT_LEG -> amount * 0.35F;
+            case LEFT_ARM, RIGHT_ARM -> amount * 0.30F;
         };
         return super.hurtServer(level, source, transferred);
     }
@@ -117,6 +128,7 @@ public final class HollowColossusEntity extends Giant {
         for (int i = 0; i < parts.length; i++) {
             parts[i].setId(packet.getId() + i + 1);
         }
+        partsInitialized = false;
         updatePartPositions();
     }
 
@@ -131,9 +143,7 @@ public final class HollowColossusEntity extends Giant {
         LEFT_ARM,
         RIGHT_ARM,
         LEFT_LEG,
-        RIGHT_LEG,
-        LEFT_SHOULDER,
-        RIGHT_SHOULDER
+        RIGHT_LEG
     }
 
     private record PartSpec(PartSlot slot, double x, double y, double z,
