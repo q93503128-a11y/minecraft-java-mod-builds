@@ -29,6 +29,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -100,6 +101,18 @@ public final class FinalAscensionBossSystem {
             if (tickRun(event.getServer(), entry.getValue())) finished.add(entry.getKey());
         }
         for (UUID owner : finished) ACTIVE.remove(owner);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        if (ACTIVE.isEmpty()) return;
+        List<UUID> stopped = new ArrayList<>();
+        for (Map.Entry<UUID, Run> entry : new ArrayList<>(ACTIVE.entrySet())) {
+            Run run = entry.getValue();
+            if (run.level.getServer() != event.getServer()) continue;
+            fail(run, null, "서버 종료");
+            stopped.add(entry.getKey());
+        }
+        for (UUID owner : stopped) ACTIVE.remove(owner);
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
