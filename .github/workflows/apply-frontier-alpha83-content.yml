@@ -45,6 +45,7 @@ jobs:
           if s.count(old) != 1:
               raise SystemExit('historical source hook mismatch')
           s = s.replace(old, new, 1)
+          s = s.replace('"no new free functional containers",', '"second storage or resource authority",')
           p.write_text(s, encoding='utf-8')
           PY
       - name: Validate source/docs audits before commit
