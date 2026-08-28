@@ -9,7 +9,7 @@
 
 ## Toolchain
 - Minecraft Java 26.2
-- NeoForge 26.2.0 stable
+- NeoForge 26.2.0.62 stable artifact
 - Java 25
 - Gradle 9.2.1
 - ModDevGradle 2.0.143

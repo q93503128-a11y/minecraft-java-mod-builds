@@ -1,6 +1,6 @@
 # TURNBOUND
 
-Minecraft Java 26.2 / NeoForge 26.2.0 기반 3D 파티 턴제 RPG.
+Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 파티 턴제 RPG.
 
 현재 버전: `0.1.0-alpha.1` — P0 전투 코어.
 
