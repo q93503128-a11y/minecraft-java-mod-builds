@@ -12,6 +12,7 @@ Acts 1-3 from 0.60 remain the same real-world sequence: World Test, three compre
 - Breakthrough phase is damage-gated at 30% health.
 - Final phase removes the gate and accelerates the encounter.
 - Three readable Survival-owned attack patterns are used: `LINE`, `RING`, and `MARKED`. Each has a visible particle telegraph before execution instead of unavoidable hidden damage.
+- The Warden shell periodically refreshes owner anger/attack-target authority so the active final boss does not drift into an idle/burrow state while its owner remains valid in the arena.
 - Boss/anchor placement is bounded to loaded chunks. No force-load, region ticket, teleport-to-unloaded-area, optional-mod implementation dependency or Apex persistence mutation is used.
 
 ## Permanent completion
@@ -25,6 +26,12 @@ Codec fields all have backwards-safe defaults:
 - `completed_game_time=0`
 
 Acts 1-3 still own no persistence and still cannot write Expedition/Apex/Infrastructure completion.
+
+## Orderly shutdown cleanup
+- `FinalAscensionSystem` and `FinalAscensionBossSystem` listen for NeoForge `ServerStoppingEvent`.
+- During a normal server stop/restart they remove their still-active Survival-owned temporary mobs, marker/anchor blocks, and boss bars before the world is saved.
+- Cleanup still checks the exact expected temporary block before replacing it with air, so player-built repair blocks are not deleted.
+- This is intentionally not described as crash recovery: a forced process kill, power loss, or JVM crash can bypass an orderly stopping event. No extra persistent encounter schema or force-loaded cleanup pass is introduced solely to cover those abnormal terminations.
 
 ## Final authority rewards
 The reward is not a new universal raw-stat tier. It expands the physical action scale of existing Lv.100 systems.
@@ -45,7 +52,7 @@ The reward is not a new universal raw-stat tier. It expands the physical action 
 ## Rewards and isolation
 The first world completion grants the owner one named Nether Star `승천의 증표`, one awakened Mythic III Ascension equipment roll, and 500 XP. The final encounter does not call `ApexHuntData.recordVictory`, does not mutate Apex first-clear bits, and does not duplicate Apex or Ascension Trial rewards.
 
-The internal Warden spawn is explicitly excluded from normal random Elite conversion so the final boss cannot accidentally inherit a second unrelated rank/trait ruleset.
+The internal Warden spawn is explicitly excluded from normal random Elite conversion so the final boss cannot accidentally inherit a second unrelated rank/trait ruleset. The existing Warband exclusion marker also keeps it out of normal tactical-squad formation.
 
 ## Compatibility
 - Minecraft 26.2
