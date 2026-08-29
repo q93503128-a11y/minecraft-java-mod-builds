@@ -26,9 +26,12 @@ public final class SettlementContextService {
             if (type != null) {
                 int width = construction.buildingRotation().rotatedWidth(type);
                 int depth = construction.buildingRotation().rotatedDepth(type);
-                int total = SettlementConstructionService.totalSteps(type, construction.origin());
-                int worked = construction.grading() ? 0 : Math.max(0, construction.buildStep());
-                projectProgress = percent(worked, total);
+                int buildTotal = SettlementConstructionService.totalSteps(type, construction.origin(), construction.rotation());
+                int gradeTotal = SettlementConstructionService.gradingSteps(level, construction, type);
+                int worked = construction.grading()
+                        ? Math.min(gradeTotal, Math.max(0, construction.gradeStep()))
+                        : gradeTotal + Math.max(0, construction.buildStep());
+                projectProgress = percent(worked, gradeTotal + buildTotal);
                 projectLabel = type.displayName() + " 공사";
                 targets.add(new SettlementContextTarget(
                         "construction", "construction",

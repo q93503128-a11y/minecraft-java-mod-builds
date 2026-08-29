@@ -111,4 +111,21 @@ if lock.get("target", {}).get("frontier_settlement") != "0.1.0-alpha.84":
     raise SystemExit("alpha.84 companion lock target drifted")
 if not any("Alpha.84 keeps every Alpha.83 companion binary pin unchanged" in n for n in lock.get("notes", [])):
     raise SystemExit("alpha.84 companion rationale missing")
+
+# Alpha.84 graphical-playtest follow-up: no silent start, no historical loaded-chunk dependency,
+# and grading must report real progress instead of a hard-coded zero.
+construction_now = text(JAVA / "settlement/SettlementConstructionService.java")
+context_now = text(JAVA / "settlement/SettlementContextService.java")
+must(construction_now, (
+    "if (builder == null)",
+    "data.clearConstruction();",
+    "자원은 차감되지 않았습니다.",
+    "Completed historical infrastructure is not a legal builder location",
+    "public static int gradingSteps",
+), "alpha.84 construction recovery")
+route_body = construction_now.split("private static AABB builderRouteBounds", 1)[1].split("private static boolean builderAssignmentEvidenceLoaded", 1)[0]
+forbid(route_body, ("for (BuildingRecord building : data.buildings())", "for (RoadSegment road : data.roads())", "for (OutpostRecord outpost : data.outposts())"), "alpha.84 historical builder envelope")
+must(context_now, ("gradeTotal", "construction.gradeStep()", "gradeTotal + buildTotal"), "alpha.84 real grading progress")
+forbid(context_now, ("construction.grading() ? 0",), "alpha.84 hard-coded grading zero")
+
 print("Frontier Settlement alpha.23-84 cumulative source audit: PASS")

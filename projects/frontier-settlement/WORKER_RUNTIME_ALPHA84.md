@@ -27,3 +27,10 @@ starts staging after grading, while retaining stone is consumed during grading o
 Automated audits/build/JAR checks are not graphical acceptance. In game, verify a fresh settlement can
 start a HOUSE, progress grading above 0%, stage real wood/stone, complete the house, and show a villager-
 shaped worker that has no vanilla profession/trade/POI behaviour.
+
+## Graphical playtest follow-up audit
+
+The same pass also fixes three adjacent failure modes: a project now rolls back instead of silently
+starting when no authoritative builder can be secured; builder absence proof ignores completed remote
+infrastructure and covers only town/storage plus the active project; and HUD/Jade progress includes
+grading cells instead of reporting a hard-coded 0% until grading ends.

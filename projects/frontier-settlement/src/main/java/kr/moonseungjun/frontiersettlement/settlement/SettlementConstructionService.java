@@ -200,7 +200,12 @@ public final class SettlementConstructionService {
         data.beginConstruction(type, check.origin(), rotation);
         data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
         FrontierWorkerEntity builder = ensureBuilder(level, data);
-        if (builder != null) builder.setInvulnerable(true);
+        if (builder == null) {
+            data.clearConstruction();
+            SettlementService.broadcast(server, data);
+            return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 착공하지 않았습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
+        }
+        builder.setInvulnerable(true);
         SettlementService.broadcast(server, data);
         String terrain = check.terrainWork()
                 ? " 지형 공사 포함: 건설 주민이 절토·성토와 노출 기초 옹벽을 먼저 시공합니다."
@@ -590,6 +595,11 @@ public final class SettlementConstructionService {
         return totalCost * step / totalSteps;
     }
 
+    public static int gradingSteps(ServerLevel level, ConstructionState construction, BuildingType type) {
+        if (construction == null || !construction.active() || type == null) return 0;
+        return createGradePlan(level, construction, type).size();
+    }
+
     public static int totalSteps(BuildingType type, BlockPos origin) {
         return totalSteps(type, origin, BuildingRotation.NONE.id());
     }
@@ -966,21 +976,9 @@ public final class SettlementConstructionService {
             minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY()); minZ = Math.min(minZ, pos.getZ());
             maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 1); maxZ = Math.max(maxZ, pos.getZ() + 1);
         }
-        for (BuildingRecord building : data.buildings()) {
-            minX = Math.min(minX, building.originX()); minY = Math.min(minY, building.originY()); minZ = Math.min(minZ, building.originZ());
-            maxX = Math.max(maxX, building.originX() + building.rotatedWidth());
-            maxY = Math.max(maxY, building.originY() + building.buildingType().clearHeight() + 1);
-            maxZ = Math.max(maxZ, building.originZ() + building.rotatedDepth());
-        }
-        for (RoadSegment road : data.roads()) for (BlockPos pos : road.centers()) {
-            minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY()); minZ = Math.min(minZ, pos.getZ());
-            maxX = Math.max(maxX, pos.getX() + 1); maxY = Math.max(maxY, pos.getY() + 1); maxZ = Math.max(maxZ, pos.getZ() + 1);
-        }
-        for (OutpostRecord outpost : data.outposts()) {
-            BlockPos pos = outpost.center();
-            minX = Math.min(minX, pos.getX() - 6); minY = Math.min(minY, pos.getY() - 8); minZ = Math.min(minZ, pos.getZ() - 6);
-            maxX = Math.max(maxX, pos.getX() + 7); maxY = Math.max(maxY, pos.getY() + 17); maxZ = Math.max(maxZ, pos.getZ() + 7);
-        }
+        // Completed historical infrastructure is not a legal builder location. Including every old
+        // building/road/outpost here made an unrelated distant unloaded chunk block builder recovery.
+        // The builder is authoritative only at the town/storage envelope or the currently active project.
         if (data.construction().active()) {
             BlockPos pos = data.construction().origin();
             minX = Math.min(minX, pos.getX()); minY = Math.min(minY, pos.getY() - MAX_GRADE_FILL_DEPTH); minZ = Math.min(minZ, pos.getZ());
