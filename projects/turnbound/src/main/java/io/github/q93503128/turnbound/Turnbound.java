@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.world.PlayerShellRules;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
 @Mod(Turnbound.MOD_ID)
 public final class Turnbound {
     public static final String MOD_ID = "turnbound";
-    public static final String VERSION = "0.1.0-alpha.5";
+    public static final String VERSION = "0.1.0-alpha.6";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
@@ -27,6 +28,7 @@ public final class Turnbound {
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::logout);
         NeoForge.EVENT_BUS.addListener(this::serverStopping);
+        NeoForge.EVENT_BUS.addListener(PlayerShellRules::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onEntityInteract);
@@ -36,7 +38,10 @@ public final class Turnbound {
     }
 
     private void tick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player) BattleSessionManager.tick(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerShellRules.maintain(player);
+            BattleSessionManager.tick(player);
+        }
     }
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {

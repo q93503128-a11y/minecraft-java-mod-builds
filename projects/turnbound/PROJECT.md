@@ -5,65 +5,58 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.5`
+- Version: `0.1.0-alpha.6`
 
 ## Toolchain
 - Minecraft Java 26.2
-- NeoForge 26.2.0.62 stable artifact
+- NeoForge 26.2.0.62
 - Java 25
 - Gradle 9.2.1
 - ModDevGradle 2.0.143
-- UI Lib 21.1.1 retained as optional client-side UI dependency.
-- GeckoLib 5.5.3 retained for authored hero/enemy model and animation phase.
+- GeckoLib 5.5.3 retained for the authored model/animation phase
 
-## Design sources
-- MasterDocs v0.4 remains the game direction / number rules / character canon.
-- `DESIGN_DELTA_ALPHA5.md` is the current implementation canon for battle HUD, camera and P0 flee where it intentionally narrows or corrects the older presentation wording after real client testing.
-- `REFERENCE_STUDY_ALPHA4.md` retains external reference research history.
-
-## First playable P0 acceptance
+## Core combat acceptance
 - Turn threshold 1000.
-- Gauge overflow survives an action.
-- Natural consecutive actions are allowed without an arbitrary count cap.
+- Gauge overflow survives actions.
+- Natural consecutive actions have no arbitrary count cap.
 - Decision time does not advance logical combat time.
-- Cooldowns tick on the owner’s later regular turns.
+- Cooldowns tick on the owner's later regular turns.
 - Basic actions may be non-damaging.
-- 1–4 allies / 1–5 enemies are supported; playable test scenario is 4 allies vs 5 enemies.
-- Damage, heal, barrier, gauge manipulation, death, revive, redirect, counter and simple status effects are represented.
-- P01–P04 core kits are playable.
-- Enemy turns are server-authoritative; AUTO uses deterministic role-aware priorities.
-- Battle speed 1.0x/2.0x changes presentation delay only, not logical outcomes.
-- Battle movement and ordinary world interactions are locked while a session exists, including result state until explicit return.
-- General P0 field encounter allows deterministic mid-battle flee; `/turnbound leave` remains an emergency/test cleanup command.
-- Deterministic timeline preview does not mutate battle state.
-- `/turnbound p0` runs deterministic diagnostic simulation.
-- `/turnbound battle` starts the playable P0 battle session.
-- Java 25 clean test/build must be green before a test JAR is handed off.
+- 1–4 allies / 1–5 enemies supported; P0 is 4 vs 5.
+- Damage, heal, barrier, gauge manipulation, death, revive, redirect, counter and simple status effects represented.
+- P01–P04 core kits playable.
+- Enemy turns and AUTO are server-authoritative.
+- x1/x2 affects presentation only.
+- General field battles allow deterministic flee; boss/event locks are encounter data.
 
-## alpha.5 battle HUD acceptance
-- 3D world remains visually dominant; no full-screen battle veil.
-- No permanent giant ally/enemy button columns.
-- Ally status is a compact bottom party strip; enemy summary is compact at the upper-right.
-- Action buttons appear contextually on the right only when a player-controlled ally can act.
-- Target selection is tied to a world-space marker as well as HUD highlight.
-- Internal combat IDs/events are not player-facing text.
-- P0 ArmorStand custom names are hidden.
-- Battle UI keeps positive in-viewport bounds at high GUI scale / low logical resolution.
-- LMB drag on empty scene orbits; mouse wheel zooms; RMB cancels selection; Esc opens battle settings.
-- A toggles AUTO, X toggles speed, R flees/returns, 1–5 chooses actions, Tab/Shift+Tab cycles valid targets.
+## alpha.6 presentation acceptance
+- alpha.4/5 large side panels, framed target-card walls and legacy battle button classes are not reused.
+- The 3D battlefield remains visually dominant; no full-screen battle veil.
+- Party state is a thin bottom strip; enemy state is a compact top-right summary.
+- Timeline is a thin top-center strip.
+- Skills appear only when the current ally can act.
+- Auto/speed/flee remain small bottom-right secondary controls.
+- Internal instance IDs / TURN_READY / pulse data never appear in player-facing HUD.
+- Target HUD and the 3D focus marker must refer to the same target ID.
+- High GUI scale / low logical resolution must never create zero-sized or off-viewport HUD rectangles.
 
-## P0 camera acceptance
-- Battle entry switches to third-person-back presentation camera.
-- Default detached distance 11 blocks.
-- Zoom clamp 6–18.
-- Pitch clamp -10°–58°.
-- Camera state restores when battle snapshot closes.
-- P0 commander body is hidden server-side for the temporary third-person battle view and restored on cleanup.
+## Minecraft player shell rule
+TURNBOUND is not a survival game. The Minecraft Player entity is an exploration/input/camera/session shell, not the party's combat health object.
 
-## Presentation boundary
-- ArmorStand actors are temporary placement/motion stand-ins, not final-quality characters.
-- alpha.5 widens their formation and adds basic role silhouettes only to make battle spacing testable.
-- Final character meshes, rigs, clips, VFX, damage/heal numbers, model outline and ground targeting rings belong to the GeckoLib presentation phase.
+- Vanilla player hearts are not a gameplay HP system.
+- Vanilla incoming damage to the player shell is ignored.
+- Vanilla hunger is kept full and is not a resource.
+- Player-health and food HUD layers are hidden.
+- Combat health is exclusively `CombatantState.hp` on party/enemy combatants.
+- Do not create a second survival-health economy beside the party RPG combat model.
+- Future field hazards must use authored RPG rules, encounter triggers or checkpoint consequences instead of vanilla hearts/hunger.
 
-## UI/asset rule
-Do not ship improvised Minecraft-grey-box UI as the final interface. The current HUD uses TURNBOUND `Dark Glass + Ivory` color rules and reference-derived information hierarchy. Proprietary R_PG UI art/code is reference-only and is not copied.
+## Reference boundary
+- R_PG/R_PG X: spatial/information/pacing reference only; proprietary assets/code/layout values are not copied.
+- TurnBasedMC, Soulbound and Cobblemon: open-source architecture/UX study only unless compatible licensed reuse is explicitly recorded.
+- Craftics: behavior reference only.
+
+## Required validation
+- Java 25 clean test/build green.
+- NeoForge real server boot smoke green.
+- Final JAR metadata/classes/resources verified before handoff.
