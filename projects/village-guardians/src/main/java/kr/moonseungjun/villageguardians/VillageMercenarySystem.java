@@ -280,9 +280,8 @@ public final class VillageMercenarySystem {
 
     public static synchronized String retire(ServerPlayer player, UUID uuid) {
         if (player == null || uuid == null) return "퇴역할 용병을 찾을 수 없습니다.";
-        if (!VillageLocationRules.isNearTownHall(player)
-                && !VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
-            return "용병 퇴역은 병영 또는 마을 회관 근처에서만 가능합니다.";
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+            return "용병 퇴역은 병영 단말기 근처에서만 가능합니다.";
         }
         String blocked = VillageMaintenanceRules.blockReason("용병 퇴역");
         if (blocked != null) return blocked;

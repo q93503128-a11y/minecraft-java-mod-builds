@@ -95,6 +95,9 @@ public final class VillagePlacedTurretSystem {
 
     public static String selectPlacement(ServerPlayer player, TurretType type) {
         if (type == null) return "알 수 없는 포탑 계열입니다.";
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "포탑 배치 지휘는 북문 성벽 지휘 레버 근처에서만 시작할 수 있습니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("포탑 배치");
         if (blocked != null) return blocked;
         if (count() >= capacity()) return "포탑 설치 한도입니다. 현재 " + count() + " / " + capacity();
@@ -108,6 +111,12 @@ public final class VillagePlacedTurretSystem {
         PendingPlacement pending = PENDING.get(player.getUUID());
         if (pending == null) return false;
         event.setCanceled(true);
+        String blocked = VillageMaintenanceRules.blockReason("포탑 배치");
+        if (blocked != null) {
+            PENDING.remove(player.getUUID());
+            player.sendSystemMessage(Component.literal("§c" + blocked + " 배치 모드를 취소했습니다."));
+            return true;
+        }
         BlockPos candidate = event.getPos().above();
         String invalid = invalidReason(level, candidate, -1);
         if (invalid != null) {
@@ -175,6 +184,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, int id) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "포탑 수리는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("포탑 수리");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
@@ -194,6 +206,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String upgrade(ServerPlayer player, int id) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "포탑 강화는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("포탑 강화");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
@@ -221,6 +236,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String dismantle(ServerPlayer player, int id) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "포탑 철거는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("포탑 철거");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.remove(id);
@@ -234,6 +252,9 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repairAll(ServerPlayer player) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "포탑 일괄 수리는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("포탑 일괄 수리");
         if (blocked != null) return blocked;
         int repaired = 0;

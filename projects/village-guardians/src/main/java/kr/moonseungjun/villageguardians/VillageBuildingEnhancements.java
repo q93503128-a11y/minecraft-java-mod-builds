@@ -61,8 +61,7 @@ final class VillageBuildingEnhancements {
             BlockPos villageCenter,
             BlockPos clicked) {
         for (VillageProgressionSystem.Building building : VillageProgressionSystem.Building.values()) {
-            if (building == VillageProgressionSystem.Building.TOWN_HALL
-                    || building == VillageProgressionSystem.Building.WALLS) {
+            if (building == VillageProgressionSystem.Building.TOWN_HALL) {
                 continue;
             }
             if (terminalPosition(level, villageCenter, building).equals(clicked)

@@ -22,13 +22,12 @@ public final class VillageMercenaryDeploymentSystem {
 
     public static boolean canOpenAt(ServerPlayer player) {
         return player != null
-                && (VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)
-                || VillageLocationRules.isNearTownHall(player));
+                && VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS);
     }
 
     public static void openCommand(ServerPlayer player) {
         if (!canOpenAt(player)) {
-            player.sendSystemMessage(Component.literal("§c용병 지휘는 병영 또는 마을 회관에서만 가능합니다."));
+            player.sendSystemMessage(Component.literal("§c용병 지휘는 병영 단말기 근처에서만 가능합니다."));
             return;
         }
         java.util.ArrayList<String> actions = new java.util.ArrayList<>();
@@ -43,6 +42,10 @@ public final class VillageMercenaryDeploymentSystem {
     }
 
     public static void openClass(ServerPlayer player, VillageMercenarySystem.MercenaryClass kind) {
+        if (!canOpenAt(player)) {
+            player.sendSystemMessage(Component.literal("§c용병 병과 관리는 병영 단말기 근처에서만 가능합니다."));
+            return;
+        }
         if (kind == null) { openCommand(player); return; }
         java.util.ArrayList<String> actions = new java.util.ArrayList<>();
         java.util.ArrayList<String> labels = new java.util.ArrayList<>();
@@ -69,7 +72,7 @@ public final class VillageMercenaryDeploymentSystem {
 
     public static String setDeployment(ServerPlayer player, VillageMercenarySystem.MercenaryClass kind, Deployment zone) {
         if (kind == null || zone == null) return "알 수 없는 용병 배치입니다.";
-        if (!canOpenAt(player)) return "용병 배치는 병영 또는 마을 회관 근처에서만 변경할 수 있습니다.";
+        if (!canOpenAt(player)) return "용병 배치는 병영 단말기 근처에서만 변경할 수 있습니다.";
         String blocked = VillageMaintenanceRules.blockReason("용병 배치 변경");
         if (blocked != null) return blocked;
         if (!allowed(kind, zone)) return kind.displayName() + "은(는) " + zone.displayName() + "에 배치할 수 없습니다.";

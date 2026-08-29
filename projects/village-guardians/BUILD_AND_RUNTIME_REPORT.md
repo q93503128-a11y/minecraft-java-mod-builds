@@ -2,13 +2,13 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.33-alpha.1`
+- Current source version: `0.18.34-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.33-alpha.1.jar`
+- Target JAR: `villageguardians-0.18.34-alpha.1.jar`
 - Manual audit base: `96442b8e45e39da6cbb131e1163ab55f8fafb78f`
 - Local verification date: `2026-08-29 Asia/Seoul`
 - Final JAR SHA-256: `903804ae199f518b50528bc2443de4a3c0e98e1d7ba3adaba9dd4f160eea94f0`

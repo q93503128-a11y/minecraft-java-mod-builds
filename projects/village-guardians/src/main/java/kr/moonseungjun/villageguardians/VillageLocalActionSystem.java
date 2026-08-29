@@ -13,21 +13,15 @@ public final class VillageLocalActionSystem {
     public static boolean handle(ServerPlayer player, String action) {
         if (player == null || action == null) return false;
 
-        if (requiresSiegeCommandAccess(action) && !VillageLocationRules.isNearTownHall(player)) {
-            player.sendSystemMessage(Component.literal("§c성벽·포탑 관리 동작은 마을 회관 지휘대 근처에서만 실행할 수 있습니다."));
+        if (isSiegeCommandAction(action)
+                && !VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            player.sendSystemMessage(Component.literal("§c성벽·포탑 지휘는 북문 성벽 지휘 레버 근처에서만 실행할 수 있습니다."));
             return true;
         }
 
-        if (action.startsWith("facility:")) {
-            VillageProgressionSystem.Building building = VillageProgressionSystem.Building.fromId(
-                    action.substring("facility:".length()));
-            if (building == null) {
-                player.sendSystemMessage(Component.literal("§c알 수 없는 시설입니다."));
-            } else if (building == VillageProgressionSystem.Building.WALLS) {
-                VillageSiegeCommandUi.open(player);
-            } else {
-                VillageUiController.openBuilding(player, building);
-            }
+        if (action.startsWith("facility:") || action.startsWith("manage:")) {
+            player.sendSystemMessage(Component.literal(
+                    "§c구식 시설 바로가기는 폐기되었습니다. 회관은 수리·강화만, 고유 기능은 각 시설 단말기에서 사용하세요."));
             return true;
         }
 
@@ -107,7 +101,7 @@ public final class VillageLocalActionSystem {
         }
         if (action.startsWith("merc_deploy:")) {
             if (!VillageMercenaryDeploymentSystem.canOpenAt(player)) {
-                player.sendSystemMessage(Component.literal("§c용병 배치는 병영 또는 마을 회관 근처에서만 변경할 수 있습니다."));
+                player.sendSystemMessage(Component.literal("§c용병 배치는 병영 단말기 근처에서만 변경할 수 있습니다."));
                 return true;
             }
             String[] parts = action.split(":", 3);
@@ -120,7 +114,7 @@ public final class VillageLocalActionSystem {
         }
         if (action.startsWith("retire_mercenary:")) {
             if (!VillageMercenaryDeploymentSystem.canOpenAt(player)) {
-                player.sendSystemMessage(Component.literal("§c용병 퇴역은 병영 또는 마을 회관 근처에서만 가능합니다."));
+                player.sendSystemMessage(Component.literal("§c용병 퇴역은 병영 단말기 근처에서만 가능합니다."));
                 return true;
             }
             try {
@@ -172,11 +166,22 @@ public final class VillageLocalActionSystem {
         }
     }
 
-    private static boolean requiresSiegeCommandAccess(String action) {
-        return action.equals("siege_turret_repair_all")
+    private static boolean isSiegeCommandAction(String action) {
+        return action.equals("siege_command")
+                || action.equals("siege_turret_catalog")
+                || action.equals("siege_turret_list")
+                || action.equals("siege_turret_repair_all")
+                || action.equals("siege_turret_cancel")
+                || action.equals("open_tower_control")
+                || action.equals("tower_status")
+                || action.startsWith("tower_open:")
+                || action.startsWith("tower_branch:")
+                || action.startsWith("tower_upgrade:")
+                || action.startsWith("siege_segment_open:")
                 || action.startsWith("siege_segment_repair:")
                 || action.startsWith("siege_segment_upgrade:")
                 || action.startsWith("siege_turret_select:")
+                || action.startsWith("siege_turret_open:")
                 || action.startsWith("siege_turret_repair:")
                 || action.startsWith("siege_turret_upgrade:")
                 || action.startsWith("siege_turret_dismantle:");

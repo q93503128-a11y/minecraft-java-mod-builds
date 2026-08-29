@@ -277,7 +277,7 @@ public final class VillageRoleSkillSystem {
                 ? VillageSkillTestSystem.selectedRole(player)
                 : VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) {
-            return "마을 회관에서 직업을 먼저 배치해야 합니다.";
+            return "기술 연구소에서 직업을 먼저 배치해야 합니다.";
         }
         ActiveSkill skill = equippedSkill(player, slot).orElse(null);
         if (skill == null) {

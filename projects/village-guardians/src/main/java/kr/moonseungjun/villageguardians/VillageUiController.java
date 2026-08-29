@@ -34,7 +34,7 @@ public final class VillageUiController {
             String nextEffect = canUpgrade ? managementEffect(building, level + 1, server) : "";
             String levelText = building == VillageProgressionSystem.Building.TOWN_HALL
                     ? "회관 본체" : "Lv." + level + " / " + VillageProgressionSystem.MAX_BUILDING_LEVEL;
-            actions.add("facility:" + building.id());
+            actions.add("facility_card:" + building.id());
             labels.add(String.join("|", "facility", building.id(), building.displayName(), levelText,
                     Integer.toString(current), Integer.toString(maximum), managementEffect(building, level, server),
                     nextEffect, Integer.toString(upgradeCost), Integer.toString(repairCost)));
@@ -386,6 +386,10 @@ public final class VillageUiController {
     }
 
     public static void openMercenaryCommand(ServerPlayer player) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+            player.sendSystemMessage(Component.literal("§c용병 지휘는 병영 단말기 근처에서만 가능합니다."));
+            return;
+        }
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             player.sendSystemMessage(Component.literal("§c병영이 파괴되어 용병을 고용할 수 없습니다."));
             return;
@@ -450,7 +454,8 @@ public final class VillageUiController {
             return true;
         }
         if (action.startsWith("manage:") || action.startsWith("facility:")) {
-            openDashboard(player);
+            player.sendSystemMessage(Component.literal(
+                    "§c구식 시설 바로가기는 폐기되었습니다. 각 시설의 고유 기능은 해당 시설 단말기에서 사용하세요."));
             return true;
         }
         if (action.startsWith("select_role:")) {
@@ -712,6 +717,7 @@ public final class VillageUiController {
                                          List<String> actions, List<String> labels) {
         switch (building) {
             case WALLS -> add(actions, labels,
+                    "siege_command", "성벽·포탑 지휘|성벽 구역 상태와 10계열 포탑 배치·수리·강화·철거",
                     "open_wave_intel", "다음 웨이브 정찰|예상 병과·특성·보스 확인");
             case SMITHY -> add(actions, labels,
                     "open_forge_enhancement", "장비 선택 강화|보유한 등급 장비를 골라 개별 강화",
@@ -732,7 +738,7 @@ public final class VillageUiController {
 
     private static String localDescription(ServerPlayer player, VillageProgressionSystem.Building building) {
         return switch (building) {
-            case WALLS -> "현장에서는 정찰만 확인합니다. 수리·강화·포탑 건설은 회관에서 진행합니다.";
+            case WALLS -> "북문 성벽 지휘 레버에서 정찰과 포탑 배치·수리·강화·철거를 관리합니다. 시설 내구도 수리·강화는 회관에서도 관리할 수 있습니다.";
             case SMITHY -> "등급 장비를 하나씩 선택해 강화하고, 같은 종류·등급·강화 단계 장비 세 개를 합성합니다.";
             case SKILL_HALL -> "직업 배치·직업 기술과 용병·포탑 방어 연구를 담당합니다. 연구소 레벨마다 기술 위력·지속시간이 +5% 상승하고 재사용 효율도 개선됩니다.";
             case INFIRMARY -> "낮 동안 마을 안 플레이어의 체력을 항상 완전히 회복하고, 레벨별 전투 버프를 제공합니다.";

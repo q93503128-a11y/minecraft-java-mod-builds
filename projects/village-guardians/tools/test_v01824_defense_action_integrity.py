@@ -23,8 +23,8 @@ def main() -> None:
 
     # Client actions are untrusted strings; mutations must be re-authorized server-side at packet execution time.
     assert "VillageUiActionPayload" in network and "VillageLocalActionSystem.handle(player, payload.action())" in network
-    assert "requiresSiegeCommandAccess(action)" in local
-    assert "VillageLocationRules.isNearTownHall(player)" in local
+    assert "isSiegeCommandAction(action)" in local
+    assert "VillageProgressionSystem.Building.WALLS" in local
     for token in (
         'action.equals("siege_turret_repair_all")',
         'action.startsWith("siege_segment_repair:")',
@@ -36,7 +36,7 @@ def main() -> None:
     ):
         assert token in local
 
-    # Persistent defense maintenance is day-only and blocked after game over.
+    # Persistent defense maintenance is day-only, game-over safe and owned by the physical wall command.
     assert 'public static String blockReason(String action)' in rules
     assert 'VillageProgressionSystem.isGameOver()' in rules
     assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in rules
@@ -47,15 +47,21 @@ def main() -> None:
         'public static synchronized String dismantle(ServerPlayer player, int id)',
         'public static synchronized String repairAll(ServerPlayer player)',
     ):
-        chunk = body(placed, signature, '\n    }')
+        chunk = placed.split(signature, 1)[1].split('\n    public static', 1)[0]
         assert 'VillageMaintenanceRules.blockReason(' in chunk
+        assert 'VillageProgressionSystem.Building.WALLS' in chunk
+
+    confirm = placed.split('public static boolean handlePlacementClick', 1)[1].split(
+        'public static String cancelPlacement', 1)[0]
+    assert 'VillageMaintenanceRules.blockReason("포탑 배치")' in confirm
 
     # Emergency consumable field repair intentionally remains a combat action.
     field = body(placed, 'public static synchronized String fieldRepairNearest', '\n    }')
     assert 'VillageMaintenanceRules.blockReason(' not in field
 
     # Upgrade cannot be used as a free full repair anymore.
-    upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)', '\n    }')
+    upgrade = placed.split('public static synchronized String upgrade(ServerPlayer player, int id)', 1)[1].split(
+        'public static synchronized String dismantle', 1)[0]
     for token in ('oldMaximum', 'missingHp', 'newMaximum', 'newHp', '기존 손상 유지'):
         assert token in upgrade
     assert 'maxHp(upgradedBase), true' not in upgrade
@@ -63,7 +69,7 @@ def main() -> None:
     assert segment.count('String blocked = VillageMaintenanceRules.blockReason(') >= 2
     assert '현재 손상분은 유지' in ui
 
-    print('[PASS] siege mutation packets revalidate town-hall locality server-side')
+    print('[PASS] siege mutation packets revalidate physical wall-command locality server-side')
     print('[PASS] persistent wall/turret maintenance is day-only and game-over safe')
     print('[PASS] emergency field repair remains usable as a combat consumable')
     print('[PASS] turret upgrades preserve existing damage instead of granting a free full repair')

@@ -29,7 +29,8 @@ def main() -> None:
     assert "VillageLocationRules.isNearSkillHall(player)" in controller
     assert "장비 강화는 대장간 단말기 근처" in controller
     assert "보유품 판매는 상점 단말기 근처" in controller
-    assert "VillageLocationRules.isNearTownHall(player)" in local
+    assert "isSiegeCommandAction(action)" in local
+    assert "VillageProgressionSystem.Building.WALLS" in local
     assert "용병 고용은 병영 단말기 근처" in local
     assert "화살 구매는 창고 단말기 근처" in local
 

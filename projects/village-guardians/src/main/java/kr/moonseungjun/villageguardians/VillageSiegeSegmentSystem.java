@@ -98,6 +98,9 @@ public final class VillageSiegeSegmentSystem {
 
     public static String repair(ServerPlayer player, Segment segment) {
         if (segment == null) return "알 수 없는 방어 구역입니다.";
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "성벽 구역 수리는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("성벽 수리");
         if (blocked != null) return blocked;
         if (segment == Segment.NORTH_GATE) {
@@ -119,6 +122,9 @@ public final class VillageSiegeSegmentSystem {
 
     public static String upgrade(ServerPlayer player, Segment segment) {
         if (segment == null) return "알 수 없는 방어 구역입니다.";
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.WALLS)) {
+            return "성벽 구역 강화는 북문 성벽 지휘 레버 근처에서만 가능합니다.";
+        }
         String blocked = VillageMaintenanceRules.blockReason("성벽 강화");
         if (blocked != null) return blocked;
         if (segment == Segment.NORTH_GATE) {

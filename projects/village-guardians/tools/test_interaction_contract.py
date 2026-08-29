@@ -14,6 +14,7 @@ def read(name: str) -> str:
 def main() -> None:
     client = read("VillageClientUi.java")
     local = read("VillageLocalActionSystem.java")
+    building_router = read("VillageBuildingInteractionRouter.java")
     trading = read("VillageTradingSystem.java")
     town = read("VillageTownHallGridScreen.java")
     shop = read("VillageShopCatalogScreen.java")
@@ -26,7 +27,9 @@ def main() -> None:
     consumables = read("VillageConsumableSystem.java")
 
     assert 'action.startsWith("facility:")' in local
-    assert "VillageUiController.openBuilding(player, building)" in local
+    assert "구식 시설 바로가기는 폐기되었습니다" in local
+    assert "VillageUiController.openBuilding(player, building)" not in local
+    assert "VillageUiController.openBuilding(player, building)" in building_router
     assert 'case "buy_arrows"' in local
     assert "VillageUiController.openEquipmentShop(player)" in local
 

@@ -19,8 +19,8 @@ def main() -> None:
     world = read("VillageWorldSystem.java")
     old = (ROOT / "tools/test_v01832_ranger_wall_traffic.py").read_text(encoding="utf-8")
 
-    assert "mod_version=0.18.33-alpha.1" in props
-    assert "0.18.33-alpha.1" in readme and "villageguardians-0.18.33-alpha.1.jar" in readme
+    assert "mod_version=" in props
+    assert "현재 소스 버전" in readme and "목표 JAR" in readme
     assert 'assert "mod_version=0.18.32-alpha.1" in props' not in old
 
     render = town.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
@@ -40,7 +40,7 @@ def main() -> None:
 
     dashboard = controller.split("public static void openDashboard", 1)[1].split("public static void openRoleAssignment", 1)[0]
     assert '"role"' not in dashboard and "select_role:" not in dashboard
-    assert 'actions.add("facility:" + building.id())' in dashboard
+    assert 'actions.add("facility_card:" + building.id())' in dashboard
     assignment = controller.split("public static void openRoleAssignment", 1)[1].split("public static void openCaller", 1)[0]
     assert "VillageLocationRules.isNearSkillHall(player)" in assignment
     assert "select_role:" in assignment
