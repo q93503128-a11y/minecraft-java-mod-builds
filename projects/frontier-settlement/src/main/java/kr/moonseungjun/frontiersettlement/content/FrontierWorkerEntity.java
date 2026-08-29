@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
  * services issuing physical navigation/work orders. The client renderer reuses the villager model
  * and base texture as presentation only; there are no professions, trades, POIs, breeding rules,
  * gossip, village Brain activities, beds/jobsites, or vanilla villager schedules here.
+ * Alpha.84 final candidate boundary: this class is server behaviour, never vanilla villager AI.
  */
 public final class FrontierWorkerEntity extends PathfinderMob {
     public FrontierWorkerEntity(EntityType<? extends FrontierWorkerEntity> type, Level level) {
