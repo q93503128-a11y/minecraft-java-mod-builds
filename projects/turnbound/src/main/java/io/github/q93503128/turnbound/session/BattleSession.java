@@ -20,6 +20,7 @@ import java.util.List;
 public final class BattleSession {
     private final BattleEngine engine;
     private final Vec3 anchor;
+    private final boolean playerWasInvisible;
     private final BattlePresentation presentation = new BattlePresentation();
     private boolean auto;
     private int speed = 1;
@@ -30,6 +31,8 @@ public final class BattleSession {
     BattleSession(ServerPlayer player) {
         engine = new BattleEngine(P0Scenario.create());
         anchor = player.position();
+        playerWasInvisible = player.isInvisible();
+        player.setInvisible(true);
         presentation.spawn(player, engine.state().combatants());
     }
 
@@ -41,7 +44,7 @@ public final class BattleSession {
     void tick(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         presentation.tick(level);
-        if (!finished) lock(player);
+        lock(player);
         if (engine.state().outcome() != BattleOutcome.RUNNING) {
             finished = true;
             return;
@@ -60,6 +63,7 @@ public final class BattleSession {
             return;
         }
         if (actor.side() == CombatantSide.ENEMY || auto) {
+            presentation.clearFocus(level);
             autoAct(level, actor);
             readyShown = false;
             delayTicks = presentationDelay();
@@ -72,8 +76,10 @@ public final class BattleSession {
         if (!actorId.equals(engine.state().currentActorId())) return;
         CombatantState actor = engine.state().combatant(actorId);
         if (actor.side() != CombatantSide.ALLY) return;
+        ServerLevel level = (ServerLevel) player.level();
         try {
             SkillDefinition skill = actor.definition().skill(skillId);
+            presentation.clearFocus(level);
             if (skill.targetRule() == TargetRule.SELF
                     || skill.targetRule() == TargetRule.ALLY_ALL
                     || skill.targetRule() == TargetRule.ENEMY_ALL) {
@@ -81,7 +87,7 @@ public final class BattleSession {
             } else {
                 engine.useSkill(actorId, skillId, targetId);
             }
-            animateDirectDamage((ServerLevel) player.level(), actor, skill, targetId);
+            animateDirectDamage(level, actor, skill, targetId);
             readyShown = false;
             delayTicks = presentationDelay();
             if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
@@ -91,8 +97,23 @@ public final class BattleSession {
         }
     }
 
+    void focusTarget(ServerPlayer player, String targetId) {
+        ServerLevel level = (ServerLevel) player.level();
+        if (targetId == null || targetId.isBlank()) {
+            presentation.clearFocus(level);
+            return;
+        }
+        try {
+            engine.state().combatant(targetId);
+            presentation.focus(level, targetId);
+        } catch (RuntimeException ignored) {
+            presentation.clearFocus(level);
+        }
+    }
+
     void toggleAuto(ServerPlayer player) {
         if (finished) return;
+        presentation.clearFocus((ServerLevel) player.level());
         auto = !auto;
         BattleNetwork.sync(player, this);
     }
@@ -105,6 +126,9 @@ public final class BattleSession {
 
     void cleanup(ServerPlayer player) {
         presentation.cleanup((ServerLevel) player.level());
+        player.setInvisible(playerWasInvisible);
+        player.setPos(anchor.x, anchor.y, anchor.z);
+        player.setDeltaMovement(Vec3.ZERO);
     }
 
     private void autoAct(ServerLevel level, CombatantState actor) {
