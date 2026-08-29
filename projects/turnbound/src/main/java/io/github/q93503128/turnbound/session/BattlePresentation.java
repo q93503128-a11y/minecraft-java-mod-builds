@@ -61,12 +61,12 @@ final class BattlePresentation {
         Vec3 target = homes.get(targetId);
         if (target == null) return;
 
-        ArmorStand marker = new ArmorStand(level, target.x, target.y + 0.55, target.z);
+        // NeoForge/Minecraft 26.2 exposes ArmorStand small/marker mutators privately.
+        // A normal invisible, invulnerable no-gravity stand is sufficient because this entity is presentation-only.
+        ArmorStand marker = new ArmorStand(level, target.x, target.y + 0.35, target.z);
         marker.setInvisible(true);
         marker.setInvulnerable(true);
         marker.setNoGravity(true);
-        marker.setSmall(true);
-        marker.setMarker(true);
         marker.setCustomName(Component.literal("▼").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
         marker.setCustomNameVisible(true);
         level.addFreshEntity(marker);
