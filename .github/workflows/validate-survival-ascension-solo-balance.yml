@@ -37,8 +37,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 "$PROJECT_DIR/tools/apply_061_solo_balance.py"
-          # The original source used the same numeric switch for tool utility and spear primary.
-          # After the broad migration, restore the intended spear-specific direct-damage tier.
           python3 - <<'PY'
           from pathlib import Path
           p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java')
@@ -54,12 +52,28 @@ jobs:
         run: git diff --check
 
       - name: Source and content regression audits
+        id: audits
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           cd "$PROJECT_DIR"
-          python3 tools/test_release_source.py
-          python3 tools/test_release_content_pack.py
+          : > /tmp/sa-solo-audit.log
+          python3 tools/test_release_source.py 2>&1 | tee -a /tmp/sa-solo-audit.log
+          S1=${PIPESTATUS[0]}
+          python3 tools/test_release_content_pack.py 2>&1 | tee -a /tmp/sa-solo-audit.log
+          S2=${PIPESTATUS[0]}
+          echo "source_status=$S1" | tee -a /tmp/sa-solo-audit.log
+          echo "content_status=$S2" | tee -a /tmp/sa-solo-audit.log
+          if [ "$S1" -ne 0 ] || [ "$S2" -ne 0 ]; then exit 1; fi
+
+      - name: Upload audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-ascension-solo-audit-diagnostics
+          path: /tmp/sa-solo-audit.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Clean Java 25 build
         shell: bash
