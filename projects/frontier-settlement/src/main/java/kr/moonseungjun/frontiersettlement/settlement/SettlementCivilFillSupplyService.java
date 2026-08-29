@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -66,7 +66,7 @@ public final class SettlementCivilFillSupplyService {
      * Ensures the builder physically carries imported fill. Returns true only when an eligible
      * carried stack is already in hand and can be consumed at the work cell.
      */
-    public static boolean ensureCarriedFill(ServerLevel level, SettlementData data, Villager builder,
+    public static boolean ensureCarriedFill(ServerLevel level, SettlementData data, FrontierWorkerEntity builder,
                                             CivilWorkState project) {
         ItemStack carried = builder.getMainHandItem();
         if (isFillStack(carried)) return true;
@@ -96,7 +96,7 @@ public final class SettlementCivilFillSupplyService {
      * inventory teleport. If storage is unloaded/full the project simply remains paused with the
      * real ItemStack still in the worker's hand.
      */
-    public static boolean returnCarriedToStorage(ServerLevel level, SettlementData data, Villager builder) {
+    public static boolean returnCarriedToStorage(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
@@ -111,14 +111,14 @@ public final class SettlementCivilFillSupplyService {
         return remaining.isEmpty();
     }
 
-    public static BlockState carriedFillState(Villager builder) {
+    public static BlockState carriedFillState(FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (!isFillStack(carried)) return Blocks.COARSE_DIRT.defaultBlockState();
         Block block = Block.byItem(carried.getItem());
         return block.defaultBlockState();
     }
 
-    public static void consumeOne(Villager builder) {
+    public static void consumeOne(FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (!isFillStack(carried)) return;
         carried.shrink(1);

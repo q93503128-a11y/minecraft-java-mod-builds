@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -124,7 +124,7 @@ public final class SettlementCivilRetainingService {
         return remaining;
     }
 
-    public static boolean ensureCarriedRetaining(ServerLevel level, SettlementData data, Villager builder,
+    public static boolean ensureCarriedRetaining(ServerLevel level, SettlementData data, FrontierWorkerEntity builder,
                                                  CivilWorkState project) {
         ItemStack carried = builder.getMainHandItem();
         if (isRetainingStack(carried)) return true;
@@ -146,7 +146,7 @@ public final class SettlementCivilRetainingService {
         return true;
     }
 
-    public static void consumeOne(Villager builder) {
+    public static void consumeOne(FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (!isRetainingStack(carried)) return;
         carried.shrink(1);

@@ -56,5 +56,6 @@ public final class FrontierSettlementClient {
 
     private static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(FrontierContent.FRONTIER_SOLDIER.get(), FrontierSoldierRenderer::new);
+        event.registerEntityRenderer(FrontierContent.FRONTIER_WORKER.get(), FrontierWorkerRenderer::new);
     }
 }

@@ -1,14 +1,14 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -54,7 +54,7 @@ public final class SettlementWorkshopService {
             if (!level.hasChunkAt(work) || !level.hasChunkAt(cratePos)) continue;
             if (!(level.getBlockEntity(cratePos) instanceof Container crate)) continue;
 
-            Villager worker = findAssignedWorker(level, data, workshop);
+            FrontierWorkerEntity worker = findAssignedWorker(level, data, workshop);
             if (worker == null) continue;
             runService(server, level, data, workshop, cratePos, crate, worker);
         }
@@ -77,7 +77,7 @@ public final class SettlementWorkshopService {
         Set<java.util.UUID> ids = new HashSet<>();
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
-            for (Villager worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());
+            for (FrontierWorkerEntity worker : findAssignedWorkers(level, data, workshop)) ids.add(worker.getUUID());
         }
         return ids.size();
     }
@@ -91,12 +91,12 @@ public final class SettlementWorkshopService {
         return null;
     }
 
-    public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+    public static FrontierWorkerEntity spawnAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         if (workshop == null || workshop.buildingType() != BuildingType.WORKSHOP
                 || !SettlementWorkerService.workerRouteEvidenceLoaded(level, data, workshop.workCenter(), 12)
                 || !level.hasChunkAt(WorkshopLayout.serviceCrate(workshop))
                 || !findAssignedWorkers(level, data, workshop).isEmpty()) return null;
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         BlockPos spawn = workshop.workCenter();
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal(WORKER_NAME));
@@ -110,7 +110,7 @@ public final class SettlementWorkshopService {
     }
 
     private static void runService(MinecraftServer server, ServerLevel level, SettlementData data,
-                                   BuildingRecord workshop, BlockPos cratePos, Container crate, Villager worker) {
+                                   BuildingRecord workshop, BlockPos cratePos, Container crate, FrontierWorkerEntity worker) {
         int targetSlot = findDamagedExternalWeapon(crate);
         ItemStack carried = worker.getMainHandItem();
 
@@ -184,7 +184,7 @@ public final class SettlementWorkshopService {
         return Math.floorMod(server.getTickCount() + salt, SERVICE_PERIOD_TICKS) < 10;
     }
 
-    private static void returnCarriedItem(ServerLevel level, SettlementData data, Villager worker, ItemStack carried) {
+    private static void returnCarriedItem(ServerLevel level, SettlementData data, FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) {
             worker.getNavigation().stop();
@@ -204,15 +204,15 @@ public final class SettlementWorkshopService {
         if (remaining.isEmpty()) worker.getNavigation().stop();
     }
 
-    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
-        List<Villager> assigned = findAssignedWorkers(level, data, workshop);
+    private static FrontierWorkerEntity findAssignedWorker(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+        List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, workshop);
         return assigned.isEmpty() ? null : assigned.getFirst();
     }
 
-    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop) {
+    private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, SettlementData data, BuildingRecord workshop) {
         String assignment = assignmentTag(workshop);
         AABB area = SettlementWorkerService.workerRouteBounds(data, workshop.workCenter(), 12);
-        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
+        List<FrontierWorkerEntity> assigned = level.getEntitiesOfClass(FrontierWorkerEntity.class, area,
                 villager -> villager.entityTags().contains(WORKSHOP_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
         assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
@@ -227,7 +227,7 @@ public final class SettlementWorkshopService {
         return value < 0 ? "n" + Math.abs((long) value) : "p" + value;
     }
 
-    private static void moveOrStop(Villager worker, BlockPos target, double speed) {
+    private static void moveOrStop(FrontierWorkerEntity worker, BlockPos target, double speed) {
         double distance = worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D);
         if (distance > 4.0D) worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
         else worker.getNavigation().stop();

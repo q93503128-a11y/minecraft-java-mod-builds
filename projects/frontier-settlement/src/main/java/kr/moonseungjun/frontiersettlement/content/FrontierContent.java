@@ -26,6 +26,13 @@ public final class FrontierContent {
                     MobCategory.CREATURE,
                     builder -> builder.sized(0.6F, 1.95F).clientTrackingRange(10));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<FrontierWorkerEntity>> FRONTIER_WORKER =
+            ENTITIES.registerEntityType(
+                    "frontier_worker",
+                    FrontierWorkerEntity::new,
+                    MobCategory.CREATURE,
+                    builder -> builder.sized(0.6F, 1.95F).clientTrackingRange(10));
+
     private FrontierContent() {}
 
     public static void register(IEventBus modBus) {
@@ -38,5 +45,6 @@ public final class FrontierContent {
         // Keep the proven combat body exactly at Iron Golem attribute strength; Alpha.48 changes presentation,
         // collision silhouette and migration identity, not military slot count or recruitment combat economics.
         event.put(FRONTIER_SOLDIER.get(), IronGolem.createAttributes().build());
+        event.put(FRONTIER_WORKER.get(), FrontierWorkerEntity.createAttributes().build());
     }
 }

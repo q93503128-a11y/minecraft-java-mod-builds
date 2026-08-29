@@ -1,15 +1,15 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -61,13 +61,13 @@ public final class SettlementWorkerService {
 
     @FunctionalInterface
     private interface BuildingWork {
-        void run(ServerLevel level, SettlementData data, Villager worker, BuildingRecord building);
+        void run(ServerLevel level, SettlementData data, FrontierWorkerEntity worker, BuildingRecord building);
     }
 
     private static void runBuildingWorkers(ServerLevel level, SettlementData data, BuildingType type,
                                            String workerName, BuildingWork work) {
         List<BuildingRecord> buildings = buildings(data, type);
-        List<Villager> workers = workersByName(level, data, type, workerName);
+        List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);
         int count = Math.min(buildings.size(), workers.size());
         for (int i = 0; i < count; i++) {
             BuildingRecord building = buildings.get(i);
@@ -77,10 +77,10 @@ public final class SettlementWorkerService {
     }
 
     private static void tryAttractWorker(MinecraftServer server, ServerLevel level, SettlementData data) {
-        List<Villager> lumber = workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
-        List<Villager> farm = workersByName(level, data, BuildingType.FARM, FARM_WORKER_NAME);
-        List<Villager> quarry = workersByName(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
-        List<Villager> mine = workersByName(level, data, BuildingType.MINE, MINE_WORKER_NAME);
+        List<FrontierWorkerEntity> lumber = workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
+        List<FrontierWorkerEntity> farm = workersByName(level, data, BuildingType.FARM, FARM_WORKER_NAME);
+        List<FrontierWorkerEntity> quarry = workersByName(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
+        List<FrontierWorkerEntity> mine = workersByName(level, data, BuildingType.MINE, MINE_WORKER_NAME);
         boolean localEvidenceLoaded = localProductionEvidenceLoaded(level, data);
 
         // Population is repaired downward/upward only when every civilian evidence corridor is visible.
@@ -110,7 +110,7 @@ public final class SettlementWorkerService {
         BuildingRecord missingWorkshop = SettlementWorkshopService.firstMissingLoadedAssignment(level, data);
         if (missingWorkshop != null) {
             if (!arrivalFoodAvailable(level, data)) return;
-            Villager arrival = SettlementWorkshopService.spawnAssignedWorker(level, data, missingWorkshop);
+            FrontierWorkerEntity arrival = SettlementWorkshopService.spawnAssignedWorker(level, data, missingWorkshop);
             commitArrival(server, level, data, arrival);
             return;
         }
@@ -118,7 +118,7 @@ public final class SettlementWorkerService {
         BuildingRecord missingAdvanced = SettlementAdvancedWorkshopService.firstMissingLoadedAssignment(level, data);
         if (missingAdvanced != null) {
             if (!arrivalFoodAvailable(level, data)) return;
-            Villager arrival = SettlementAdvancedWorkshopService.spawnAssignedWorker(level, data, missingAdvanced);
+            FrontierWorkerEntity arrival = SettlementAdvancedWorkshopService.spawnAssignedWorker(level, data, missingAdvanced);
             commitArrival(server, level, data, arrival);
             return;
         }
@@ -126,7 +126,7 @@ public final class SettlementWorkerService {
         OutpostRecord missing = SettlementOutpostLogisticsService.firstMissingLoadedAssignment(level, data);
         if (missing != null) {
             if (!arrivalFoodAvailable(level, data)) return;
-            Villager arrival = SettlementOutpostLogisticsService.spawnAssignedWorker(level, data, missing);
+            FrontierWorkerEntity arrival = SettlementOutpostLogisticsService.spawnAssignedWorker(level, data, missing);
             commitArrival(server, level, data, arrival);
         }
     }
@@ -205,7 +205,7 @@ public final class SettlementWorkerService {
         BuildingRecord target = available.get(existingWorkers);
         if (!level.hasChunkAt(target.workCenter())) return true;
         if (!arrivalFoodAvailable(level, data)) return true;
-        Villager arrival = spawnWorker(level, target.workCenter(), workerName);
+        FrontierWorkerEntity arrival = spawnWorker(level, target.workCenter(), workerName);
         commitArrival(server, level, data, arrival);
         return true;
     }
@@ -220,7 +220,7 @@ public final class SettlementWorkerService {
     }
 
     private static boolean commitArrival(MinecraftServer server, ServerLevel level,
-                                         SettlementData data, Villager arrival) {
+                                         SettlementData data, FrontierWorkerEntity arrival) {
         if (arrival == null) return false;
         if (!consumeArrivalFood(level, data)) {
             arrival.discard();
@@ -236,9 +236,9 @@ public final class SettlementWorkerService {
         SettlementService.broadcast(server, data);
     }
 
-    private static Villager spawnWorker(ServerLevel level, BlockPos spawn, String name) {
+    private static FrontierWorkerEntity spawnWorker(ServerLevel level, BlockPos spawn, String name) {
         if (!level.hasChunkAt(spawn)) return null;
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal(name));
         worker.setCustomNameVisible(true);
@@ -255,7 +255,7 @@ public final class SettlementWorkerService {
      * The road transporter keeps its separate Alpha.63 handler and is explicitly excluded here.
      */
     public static void onLivingDrops(LivingDropsEvent event) {
-        if (!(event.getEntity() instanceof Villager worker)) return;
+        if (!(event.getEntity() instanceof FrontierWorkerEntity worker)) return;
         if (worker.entityTags().contains(SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG)) return;
         if (!isManagedCargoWorker(worker)) return;
         ItemStack carried = worker.getMainHandItem();
@@ -265,7 +265,7 @@ public final class SettlementWorkerService {
                 worker.level(), worker.getX(), worker.getY(), worker.getZ(), carried.copy()));
     }
 
-    private static boolean isManagedCargoWorker(Villager worker) {
+    private static boolean isManagedCargoWorker(FrontierWorkerEntity worker) {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
                 || worker.entityTags().contains(SettlementConstructionService.BUILDER_TAG)
                 || worker.entityTags().contains(SettlementFishingOutpostService.FISHING_WORKER_TAG)
@@ -286,7 +286,7 @@ public final class SettlementWorkerService {
     }
 
     private static void workLumber(ServerLevel level, SettlementData data,
-                                   Villager worker, BuildingRecord camp) {
+                                   FrontierWorkerEntity worker, BuildingRecord camp) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos target = findTree(level, data, camp.workCenter());
@@ -303,7 +303,7 @@ public final class SettlementWorkerService {
     }
 
     private static void workFarm(ServerLevel level, SettlementData data,
-                                 Villager worker, BuildingRecord farm) {
+                                 FrontierWorkerEntity worker, BuildingRecord farm) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {
@@ -330,7 +330,7 @@ public final class SettlementWorkerService {
     }
 
     private static void workQuarry(ServerLevel level, SettlementData data,
-                                   Villager worker, BuildingRecord quarry) {
+                                   FrontierWorkerEntity worker, BuildingRecord quarry) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos target = findExposedStone(level, data, quarry.workCenter(), 14);
@@ -347,7 +347,7 @@ public final class SettlementWorkerService {
     }
 
     private static void workMine(ServerLevel level, SettlementData data,
-                                 Villager worker, BuildingRecord mine) {
+                                 FrontierWorkerEntity worker, BuildingRecord mine) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) { deliverToTownStorage(level, data, worker, carried); return; }
         BlockPos work = mine.workCenter();
@@ -372,7 +372,7 @@ public final class SettlementWorkerService {
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
-                                             Villager worker, ItemStack carried) {
+                                             FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) {
             worker.getNavigation().stop();
@@ -386,7 +386,7 @@ public final class SettlementWorkerService {
         worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
     }
 
-    private static void move(Villager worker, BlockPos target, double speed) {
+    private static void move(FrontierWorkerEntity worker, BlockPos target, double speed) {
         worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
     }
 
@@ -541,13 +541,13 @@ public final class SettlementWorkerService {
         return result;
     }
 
-    private static List<Villager> workersByName(ServerLevel level, SettlementData data,
+    private static List<FrontierWorkerEntity> workersByName(ServerLevel level, SettlementData data,
                                                 BuildingType type, String name) {
-        List<Villager> workers = new ArrayList<>();
+        List<FrontierWorkerEntity> workers = new ArrayList<>();
         Set<java.util.UUID> ids = new HashSet<>();
         for (BuildingRecord building : buildings(data, type)) {
             AABB search = workerRouteBounds(data, building.workCenter(), 24);
-            for (Villager villager : level.getEntitiesOfClass(Villager.class, search,
+            for (FrontierWorkerEntity villager : level.getEntitiesOfClass(FrontierWorkerEntity.class, search,
                     candidate -> candidate.getCustomName() != null
                             && name.equals(candidate.getCustomName().getString()))) {
                 if (ids.add(villager.getUUID())) workers.add(villager);

@@ -1,13 +1,13 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -58,7 +58,7 @@ public final class SettlementConstructionOfficeService {
         for (BuildingRecord office : offices(data)) {
             BlockPos home = office.localToWorld(6, 1, 5);
             if (!localServiceAreaLoaded(level, office)) continue;
-            Villager runner = ensureSingleRunner(level, data, office, home);
+            FrontierWorkerEntity runner = ensureSingleRunner(level, data, office, home);
             if (runner == null) continue;
             runner.setInvulnerable(true);
 
@@ -90,7 +90,7 @@ public final class SettlementConstructionOfficeService {
     }
 
     private static void refillOffice(ServerLevel level, SettlementData data, BuildingRecord office,
-                                     Villager runner, BlockPos home) {
+                                     FrontierWorkerEntity runner, BlockPos home) {
         int wood = countOffice(level, office, SettlementInventory::isWood);
         int stone = countOffice(level, office, SettlementInventory::isStone);
         int missingWood = Math.max(0, TARGET_WOOD_RESERVE - wood);
@@ -129,7 +129,7 @@ public final class SettlementConstructionOfficeService {
         if (!extracted.isEmpty()) runner.setItemSlot(EquipmentSlot.MAINHAND, extracted);
     }
 
-    private static boolean deliverCarried(ServerLevel level, SettlementData data, BuildingRecord office, Villager runner) {
+    private static boolean deliverCarried(ServerLevel level, SettlementData data, BuildingRecord office, FrontierWorkerEntity runner) {
         ItemStack carried = runner.getMainHandItem();
         BlockPos target = nearestOfficeRoom(level, office, carried, runner.blockPosition());
         if (target == null) target = nearestOrdinaryDeposit(level, data, office, carried, runner.blockPosition());
@@ -197,14 +197,14 @@ public final class SettlementConstructionOfficeService {
         return total;
     }
 
-    private static Villager ensureSingleRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
-        List<Villager> existing = findRunners(level, data, office, home);
+    private static FrontierWorkerEntity ensureSingleRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
+        List<FrontierWorkerEntity> existing = findRunners(level, data, office, home);
         if (!existing.isEmpty()) {
-            Villager keep = existing.getFirst();
+            FrontierWorkerEntity keep = existing.getFirst();
             keep.setNoAi(false);
             keep.setInvulnerable(true);
             for (int i = 1; i < existing.size(); i++) {
-                Villager duplicate = existing.get(i);
+                FrontierWorkerEntity duplicate = existing.get(i);
                 duplicate.getNavigation().stop();
                 duplicate.setNoAi(true);
                 duplicate.setInvulnerable(true);
@@ -212,7 +212,7 @@ public final class SettlementConstructionOfficeService {
             return keep;
         }
         if (!runnerAssignmentEvidenceLoaded(level, data, office)) return null;
-        Villager runner = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity runner = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         runner.setPos(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
         runner.setCustomName(Component.literal(RUNNER_NAME));
         runner.setCustomNameVisible(true);
@@ -223,14 +223,14 @@ public final class SettlementConstructionOfficeService {
         return level.addFreshEntity(runner) ? runner : null;
     }
 
-    private static Villager findRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
-        List<Villager> runners = findRunners(level, data, office, home);
+    private static FrontierWorkerEntity findRunner(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
+        List<FrontierWorkerEntity> runners = findRunners(level, data, office, home);
         return runners.isEmpty() ? null : runners.getFirst();
     }
 
-    private static List<Villager> findRunners(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
+    private static List<FrontierWorkerEntity> findRunners(ServerLevel level, SettlementData data, BuildingRecord office, BlockPos home) {
         String assignment = assignmentTag(office);
-        List<Villager> runners = level.getEntitiesOfClass(Villager.class, runnerRouteBounds(data, office),
+        List<FrontierWorkerEntity> runners = level.getEntitiesOfClass(FrontierWorkerEntity.class, runnerRouteBounds(data, office),
                 villager -> villager.entityTags().contains(SUPPLY_RUNNER_TAG)
                         && villager.entityTags().contains(assignment));
         runners.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
@@ -291,7 +291,7 @@ public final class SettlementConstructionOfficeService {
         return true;
     }
 
-    private static void moveOrStop(Villager runner, BlockPos target, double speed) {
+    private static void moveOrStop(FrontierWorkerEntity runner, BlockPos target, double speed) {
         if (runner.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 4.0D) {
             runner.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
         } else runner.getNavigation().stop();

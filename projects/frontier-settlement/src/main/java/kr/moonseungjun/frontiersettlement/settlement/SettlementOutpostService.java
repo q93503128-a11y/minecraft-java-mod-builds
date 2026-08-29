@@ -8,7 +8,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -149,7 +149,7 @@ public final class SettlementOutpostService {
         }
 
         ServerLevel level = server.overworld();
-        Villager builder = findOutpostBuilder(level, data, data.centerPos(), state, plan);
+        FrontierWorkerEntity builder = findOutpostBuilder(level, data, data.centerPos(), state, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -162,7 +162,7 @@ public final class SettlementOutpostService {
         return tickPhysicalBuilding(server, data, state, plan, builder);
     }
 
-    private static Villager findOutpostBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
+    private static FrontierWorkerEntity findOutpostBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
                                                OutpostConstructionState state,
                                                List<OutpostBlueprints.Placement> plan) {
         BlockPos hint;
@@ -183,7 +183,7 @@ public final class SettlementOutpostService {
         double maxY = Math.max(settlementCenter.getY(), hint.getY()) + 65.0D;
         double maxZ = Math.max(settlementCenter.getZ(), hint.getZ()) + OUTPOST_BUILDER_SEARCH_MARGIN + 1.0D;
         AABB corridor = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
-        List<Villager> tagged = level.getEntitiesOfClass(Villager.class, corridor,
+        List<FrontierWorkerEntity> tagged = level.getEntitiesOfClass(FrontierWorkerEntity.class, corridor,
                 villager -> villager.entityTags().contains(SettlementConstructionService.BUILDER_TAG));
         tagged.sort(java.util.Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!tagged.isEmpty()) return tagged.getFirst();
@@ -191,7 +191,7 @@ public final class SettlementOutpostService {
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data,
-                                       OutpostConstructionState state, Villager builder) {
+                                       OutpostConstructionState state, FrontierWorkerEntity builder) {
         List<BlockPos> footprint = footprint(state);
         int step = state.gradeStep();
         if (step >= footprint.size()) {
@@ -223,7 +223,7 @@ public final class SettlementOutpostService {
     private static boolean tickLegacyPrepaid(MinecraftServer server, SettlementData data,
                                              OutpostConstructionState state,
                                              List<OutpostBlueprints.Placement> plan,
-                                             Villager builder) {
+                                             FrontierWorkerEntity builder) {
         int step = state.legacyStep();
         if (step >= plan.size()) return finishIfValid(server, data, state, plan, builder);
 
@@ -251,7 +251,7 @@ public final class SettlementOutpostService {
     private static boolean tickPhysicalBuilding(MinecraftServer server, SettlementData data,
                                                 OutpostConstructionState state,
                                                 List<OutpostBlueprints.Placement> plan,
-                                                Villager builder) {
+                                                FrontierWorkerEntity builder) {
         int step = state.buildStep();
         OutpostBlueprints.Placement placement = plan.get(step);
         ServerLevel level = server.overworld();
@@ -309,7 +309,7 @@ public final class SettlementOutpostService {
         return false;
     }
 
-    private static boolean ensureBuildMaterial(MinecraftServer server, SettlementData data, Villager builder,
+    private static boolean ensureBuildMaterial(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder,
                                                Predicate<ItemStack> predicate,
                                                long requiredNow, long remainingCost) {
         ItemStack carried = builder.getMainHandItem();
@@ -338,7 +338,7 @@ public final class SettlementOutpostService {
         return false;
     }
 
-    private static boolean consumeCarried(Villager builder, Predicate<ItemStack> predicate, long amount) {
+    private static boolean consumeCarried(FrontierWorkerEntity builder, Predicate<ItemStack> predicate, long amount) {
         if (amount <= 0L) return true;
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty() || !predicate.test(carried) || carried.getCount() < amount) return false;
@@ -347,7 +347,7 @@ public final class SettlementOutpostService {
         return true;
     }
 
-    private static boolean returnCarriedToStorage(MinecraftServer server, SettlementData data, Villager builder) {
+    private static boolean returnCarriedToStorage(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
@@ -423,7 +423,7 @@ public final class SettlementOutpostService {
     private static boolean finishIfValid(MinecraftServer server, SettlementData data,
                                          OutpostConstructionState state,
                                          List<OutpostBlueprints.Placement> plan,
-                                         Villager builder) {
+                                         FrontierWorkerEntity builder) {
         ServerLevel level = server.overworld();
         boolean legacyPrepaidRepair = state.legacyPrepaidBuilding();
         for (OutpostBlueprints.Placement placement : plan) {
@@ -533,7 +533,7 @@ public final class SettlementOutpostService {
         return positions;
     }
 
-    private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
+    private static boolean moveBuilderToCurrentSurface(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
         if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());

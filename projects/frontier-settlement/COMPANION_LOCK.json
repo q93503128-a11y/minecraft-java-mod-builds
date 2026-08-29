@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.83"
+    "frontier_settlement": "0.1.0-alpha.84"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -51,7 +51,8 @@
     "Alpha.80 changes only Frontier client renderer bootstrap timing; companion versions and binary pins are unchanged, and this lock is retargeted so the same candidate stack can be re-preflighted against the hotfix JAR.",
     "Alpha.81 keeps the Alpha.80 candidate binary pins unchanged while adding Frontier-owned first-run settlement UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and resource-only Korean language overlays for selected companion namespaces. No companion code/assets are copied into Frontier and no new hard companion Java dependency is added.",
     "Alpha.82 keeps every Alpha.81 companion binary pin unchanged. Frontier moves its settlement menu to M, reserves B for Sophisticated Backpacks, leaves Xaero waypoint management on U, and removes only Xaero's redundant default-B quick-waypoint mapping while it is still on its shipped default; player-customized mappings are preserved, and no companion code or assets are copied.",
-    "Alpha.83 keeps every Alpha.82 companion binary pin unchanged while adding Frontier-owned late-game landmarks (civic hall, trade hall, citadel) and the derived Frontier Capital end-state. Landmark construction still consumes real shared wood/stone through the existing builder transaction; the trade hall only boosts existing physical relic emerald payout, the citadel only extends existing loaded watchtower coverage, and no companion code/assets, new currency, force-load, teleport or second logistics authority is added."
+    "Alpha.83 keeps every Alpha.82 companion binary pin unchanged while adding Frontier-owned late-game landmarks (civic hall, trade hall, citadel) and the derived Frontier Capital end-state. Landmark construction still consumes real shared wood/stone through the existing builder transaction; the trade hall only boosts existing physical relic emerald payout, the citadel only extends existing loaded watchtower coverage, and no companion code/assets, new currency, force-load, teleport or second logistics authority is added.",
+    "Alpha.84 keeps every Alpha.83 companion binary pin unchanged while replacing vanilla Villager worker bodies with a Frontier-owned PathfinderMob runtime; villager model/texture reuse is client-only presentation."
   ],
   "entries": [
     {

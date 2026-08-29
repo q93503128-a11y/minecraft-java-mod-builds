@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -7,9 +8,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -70,14 +70,14 @@ public final class SettlementWaterfrontService {
 
             List<Placement> plan = createPlan(state);
             if (state.buildStep() < plan.size()) {
-                Villager worker = SettlementFishingOutpostService.ensureAssignedWorker(level, outpost);
+                FrontierWorkerEntity worker = SettlementFishingOutpostService.ensureAssignedWorker(level, outpost);
                 if (worker != null) workConstruction(level, settlement, data, outpost, state, plan, worker);
                 continue;
             }
 
             BlockPos crate = tradeCrate(state);
             if (!level.hasChunkAt(crate) || !(level.getBlockEntity(crate) instanceof Container container)) continue;
-            Villager trader = ensureTrader(level, outpost, state);
+            FrontierWorkerEntity trader = ensureTrader(level, outpost, state);
             if (trader == null) continue;
             BlockPos station = traderStation(state);
             if (trader.distanceToSqr(station.getX() + 0.5D, station.getY(), station.getZ() + 0.5D)
@@ -168,7 +168,7 @@ public final class SettlementWaterfrontService {
 
     private static void workConstruction(ServerLevel level, SettlementData settlement, SettlementWaterfrontData data,
                                          OutpostRecord outpost, WaterfrontState state, List<Placement> plan,
-                                         Villager worker) {
+                                         FrontierWorkerEntity worker) {
         int step = state.buildStep();
         if (step >= plan.size()) return;
         Placement placement = plan.get(step);
@@ -207,7 +207,7 @@ public final class SettlementWaterfrontService {
         if (next.buildStep() >= plan.size()) SettlementService.broadcast(level.getServer(), settlement);
     }
 
-    private static void loadLocalWood(ServerLevel level, OutpostRecord outpost, Villager worker) {
+    private static void loadLocalWood(ServerLevel level, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos stock = outpost.stockpile();
         if (!level.hasChunkAt(stock)) {
             worker.getNavigation().stop();
@@ -272,19 +272,19 @@ public final class SettlementWaterfrontService {
         return local(state, 4, 0, 1);
     }
 
-    private static Villager ensureTrader(ServerLevel level, OutpostRecord outpost, WaterfrontState state) {
+    private static FrontierWorkerEntity ensureTrader(ServerLevel level, OutpostRecord outpost, WaterfrontState state) {
         String assignment = WATER_TRADER_ASSIGNMENT_PREFIX + outpost.id();
         BlockPos station = traderStation(state);
         AABB area = new AABB(station).inflate(ENTITY_SEARCH_RADIUS, 24.0D, ENTITY_SEARCH_RADIUS);
-        List<Villager> traders = level.getEntitiesOfClass(Villager.class, area,
+        List<FrontierWorkerEntity> traders = level.getEntitiesOfClass(FrontierWorkerEntity.class, area,
                 villager -> villager.entityTags().contains(WATER_TRADER_TAG)
                         && villager.entityTags().contains(assignment));
         traders.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!traders.isEmpty()) {
-            Villager active = traders.getFirst();
+            FrontierWorkerEntity active = traders.getFirst();
             active.setNoAi(false);
             for (int i = 1; i < traders.size(); i++) {
-                Villager duplicate = traders.get(i);
+                FrontierWorkerEntity duplicate = traders.get(i);
                 duplicate.getNavigation().stop();
                 duplicate.setNoAi(true);
                 duplicate.setInvulnerable(true);
@@ -293,7 +293,7 @@ public final class SettlementWaterfrontService {
         }
         if (!entityAreaLoaded(level, area) || !level.hasChunkAt(station)) return null;
 
-        Villager trader = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity trader = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         trader.setPos(station.getX() + 0.5D, station.getY(), station.getZ() + 0.5D);
         trader.setCustomName(Component.literal("수변 상인 #" + outpost.id()));
         trader.setCustomNameVisible(true);
@@ -324,7 +324,7 @@ public final class SettlementWaterfrontService {
         return Math.floorMod(server.getTickCount() + salt, TRADE_PERIOD_TICKS) < 20;
     }
 
-    private static void tradeOne(Container container, Villager trader) {
+    private static void tradeOne(Container container, FrontierWorkerEntity trader) {
         if (countFish(container) < TRADE_FISH_COST || !hasEmeraldRoom(container)) return;
         removeFish(container, TRADE_FISH_COST);
         ItemStack remainder = SettlementInventory.insert(container, new ItemStack(Items.EMERALD, 1));

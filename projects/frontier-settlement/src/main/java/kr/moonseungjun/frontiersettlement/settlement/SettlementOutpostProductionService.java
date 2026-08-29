@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -7,9 +8,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -58,7 +58,7 @@ public final class SettlementOutpostProductionService {
             if ("agriculture".equals(outpost.specialization()) && pristineLegacyAgriculturePlot(level, data, outpost)) {
                 initializeSpecializationSite(level, data, outpost);
             }
-            Villager worker = ensureWorker(level, outpost);
+            FrontierWorkerEntity worker = ensureWorker(level, outpost);
             if (worker != null) work(level, data, outpost, worker);
         }
     }
@@ -73,9 +73,9 @@ public final class SettlementOutpostProductionService {
         return level.hasChunkAt(outpost.center()) && level.hasChunkAt(outpost.stockpile());
     }
 
-    private static Villager ensureWorker(ServerLevel level, OutpostRecord outpost) {
+    private static FrontierWorkerEntity ensureWorker(ServerLevel level, OutpostRecord outpost) {
         if (!outpostLoaded(level, outpost)) return null;
-        List<Villager> assigned = findAssignedWorkers(level, outpost);
+        List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, outpost);
         if (!assigned.isEmpty()) return assigned.getFirst();
 
         // Missing is authority. Do not migrate or spawn from a partial entity view.
@@ -83,17 +83,17 @@ public final class SettlementOutpostProductionService {
 
         String assignmentTag = productionTag(outpost.id());
         String name = workerName(outpost);
-        List<Villager> legacy = level.getEntitiesOfClass(Villager.class, assignmentBounds(outpost),
+        List<FrontierWorkerEntity> legacy = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentBounds(outpost),
                 villager -> villager.getCustomName() != null && name.equals(villager.getCustomName().getString()));
         legacy.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!legacy.isEmpty()) {
-            Villager worker = legacy.getFirst();
+            FrontierWorkerEntity worker = legacy.getFirst();
             worker.addTag(PRODUCTION_WORKER_TAG);
             worker.addTag(assignmentTag);
             return worker;
         }
 
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         BlockPos spawn = outpost.center().above();
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal(name));
@@ -106,9 +106,9 @@ public final class SettlementOutpostProductionService {
         return worker;
     }
 
-    private static List<Villager> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
+    private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
         String assignmentTag = productionTag(outpost.id());
-        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, assignmentBounds(outpost),
+        List<FrontierWorkerEntity> assigned = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentBounds(outpost),
                 villager -> villager.entityTags().contains(PRODUCTION_WORKER_TAG)
                         && villager.entityTags().contains(assignmentTag));
         assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
@@ -153,7 +153,7 @@ public final class SettlementOutpostProductionService {
         return "전초 " + role + " 주민 #" + outpost.id();
     }
 
-    private static void work(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+    private static void work(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) {
             deliver(level, outpost, worker, carried);
@@ -169,7 +169,7 @@ public final class SettlementOutpostProductionService {
         }
     }
 
-    private static void deliver(ServerLevel level, OutpostRecord outpost, Villager worker, ItemStack carried) {
+    private static void deliver(ServerLevel level, OutpostRecord outpost, FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos stock = outpost.stockpile();
         if (!level.hasChunkAt(stock)) {
             worker.getNavigation().stop();
@@ -183,7 +183,7 @@ public final class SettlementOutpostProductionService {
         worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementInventory.insert(container, carried));
     }
 
-    private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+    private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos target = findTree(level, data, outpost.center(), TREE_RADIUS);
         if (target == null) {
             move(worker, outpost.center().above(), 0.65D);
@@ -202,7 +202,7 @@ public final class SettlementOutpostProductionService {
         }
     }
 
-    private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+    private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos target = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
         if (target == null) {
             move(worker, outpost.center().above(), 0.65D);
@@ -221,7 +221,7 @@ public final class SettlementOutpostProductionService {
         }
     }
 
-    private static void workMine(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+    private static void workMine(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos minehead = outpost.center().above();
         if (worker.distanceToSqr(minehead.getX() + 0.5D, minehead.getY(), minehead.getZ() + 0.5D) > 9.0D) {
             move(worker, minehead, 0.72D);
@@ -238,7 +238,7 @@ public final class SettlementOutpostProductionService {
         }
     }
 
-    private static void workAgriculture(ServerLevel level, SettlementData data, OutpostRecord outpost, Villager worker) {
+    private static void workAgriculture(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos firstMature = findMatureCrop(level, data, outpost);
         if (firstMature == null) {
             move(worker, outpost.center().above(), 0.6D);
@@ -486,7 +486,7 @@ public final class SettlementOutpostProductionService {
         return false;
     }
 
-    private static void move(Villager worker, BlockPos target, double speed) {
+    private static void move(FrontierWorkerEntity worker, BlockPos target, double speed) {
         worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
     }
 }

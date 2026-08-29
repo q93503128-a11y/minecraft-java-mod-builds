@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -9,9 +10,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,6 +36,7 @@ public final class SettlementConstructionService {
     private static final int HAUL_BATCH_SIZE = 16;
     private static final long MAX_SITE_RESERVE_PER_CATEGORY = 12L;
     private static final int GRADE_INTERVAL_TICKS = 8;
+    private static final double GRADE_WORK_RANGE_SQR = 36.0D;
     private static final int BUILD_INTERVAL_TICKS = 10;
     private static final int MAX_GRADE_FILL_DEPTH = 3;
     private static final int SMALL_TERRAIN_SPAN = 2;
@@ -198,7 +199,7 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
         data.beginConstruction(type, check.origin(), rotation);
         data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
-        Villager builder = ensureBuilder(level, data);
+        FrontierWorkerEntity builder = ensureBuilder(level, data);
         if (builder != null) builder.setInvulnerable(true);
         SettlementService.broadcast(server, data);
         String terrain = check.terrainWork()
@@ -215,13 +216,13 @@ public final class SettlementConstructionService {
         ServerLevel level = server.overworld();
         BuildingType type = BuildingType.fromId(construction.type());
         if (type == null) {
-            Villager strandedBuilder = findBuilder(level, data);
+            FrontierWorkerEntity strandedBuilder = findBuilder(level, data);
             if (strandedBuilder != null) strandedBuilder.setInvulnerable(false);
             data.clearConstruction();
             return true;
         }
 
-        Villager builder = ensureBuilder(level, data);
+        FrontierWorkerEntity builder = ensureBuilder(level, data);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -278,7 +279,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data,
-                                       BuildingType type, Villager builder) {
+                                       BuildingType type, FrontierWorkerEntity builder) {
         ServerLevel level = server.overworld();
         ConstructionState construction = data.construction();
         List<GradeCell> plan = createGradePlan(level, construction, type);
@@ -303,8 +304,8 @@ public final class SettlementConstructionService {
         if (server.getTickCount() % GRADE_INTERVAL_TICKS != 0) return false;
 
         BlockPos work = gradeWorkPosition(level, cell.floor());
-        if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 4.0D) {
-            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 0.82D);
+        if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > GRADE_WORK_RANGE_SQR) {
+            moveBuilderTowardGradeCell(level, builder, work);
             return false;
         }
 
@@ -330,6 +331,26 @@ public final class SettlementConstructionService {
         if (data.construction().gradeStep() >= plan.size()) {
             data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
         }
+        return false;
+    }
+
+    private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        if (builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.82D)) return true;
+        int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
+        for (int[] offset : offsets) {
+            int x = target.getX() + offset[0];
+            int z = target.getZ() + offset[1];
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (!level.hasChunkAt(candidate) || !level.hasChunkAt(candidate.above()) || !level.hasChunkAt(candidate.below())) continue;
+            BlockState feet = level.getBlockState(candidate);
+            BlockState head = level.getBlockState(candidate.above());
+            BlockState below = level.getBlockState(candidate.below());
+            if ((!feet.isAir() && !feet.canBeReplaced()) || (!head.isAir() && !head.canBeReplaced())) continue;
+            if (below.isAir() || !below.getFluidState().isEmpty()) continue;
+            if (builder.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 0.82D)) return true;
+        }
+        builder.getNavigation().stop();
         return false;
     }
 
@@ -444,7 +465,7 @@ public final class SettlementConstructionService {
         }
     }
 
-    private static boolean stageTerrainStone(MinecraftServer server, SettlementData data, Villager builder,
+    private static boolean stageTerrainStone(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder,
                                              Container crate, BlockPos supply, int requiredStone) {
         long missing = Math.max(0L, requiredStone - SettlementInventory.countStone(crate));
         if (missing <= 0L) return true;
@@ -483,7 +504,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean stageRemainingMaterials(MinecraftServer server, SettlementData data, BuildingType type,
-                                                   int totalSteps, Villager builder, Container crate, BlockPos supply) {
+                                                   int totalSteps, FrontierWorkerEntity builder, Container crate, BlockPos supply) {
         int step = data.construction().buildStep();
         long spentWood = costAtStep(type.woodCost(), step, totalSteps);
         long spentStone = costAtStep(type.stoneCost(), step, totalSteps);
@@ -539,7 +560,7 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    private static boolean returnCarriedToTownStorage(MinecraftServer server, SettlementData data, Villager builder) {
+    private static boolean returnCarriedToTownStorage(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
@@ -595,7 +616,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean finishIfValid(MinecraftServer server, SettlementData data, BuildingType type,
-                                         List<BuildingBlueprints.Placement> plan, Villager builder,
+                                         List<BuildingBlueprints.Placement> plan, FrontierWorkerEntity builder,
                                          Container crate, BlockPos supply) {
         ServerLevel level = server.overworld();
         for (BuildingBlueprints.Placement placement : plan) {
@@ -632,7 +653,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean returnCrateExtrasPhysically(MinecraftServer server, SettlementData data,
-                                                       Villager builder, Container crate, BlockPos supply) {
+                                                       FrontierWorkerEntity builder, Container crate, BlockPos supply) {
         if (!builder.getMainHandItem().isEmpty()) return returnCarriedToTownStorage(server, data, builder);
         int sourceSlot = -1;
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
@@ -668,7 +689,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
-                                                     BuildingBlueprints.Placement placement, Villager builder, BlockPos supply) {
+                                                     BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
         BlockPos work = workPositionFor(level, construction, type, placement, supply);
         double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
         if (workDistance > WORK_POSITION_REACHED_SQR) {
@@ -879,14 +900,14 @@ public final class SettlementConstructionService {
         }
     }
 
-    public static Villager ensureBuilder(ServerLevel level, SettlementData data) {
-        List<Villager> existing = findBuilders(level, data);
+    public static FrontierWorkerEntity ensureBuilder(ServerLevel level, SettlementData data) {
+        List<FrontierWorkerEntity> existing = findBuilders(level, data);
         if (!existing.isEmpty()) {
-            Villager active = existing.getFirst();
+            FrontierWorkerEntity active = existing.getFirst();
             if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
             active.setNoAi(false);
             for (int i = 1; i < existing.size(); i++) {
-                Villager duplicate = existing.get(i);
+                FrontierWorkerEntity duplicate = existing.get(i);
                 duplicate.getNavigation().stop();
                 duplicate.setNoAi(true);
                 duplicate.setInvulnerable(true);
@@ -896,7 +917,7 @@ public final class SettlementConstructionService {
         if (!builderAssignmentEvidenceLoaded(level, data)) return null;
         BlockPos spawn = data.centerPos().offset(1, 0, 1);
         if (!level.hasChunkAt(spawn)) return null;
-        Villager builder = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity builder = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         builder.setYRot(0.0F);
         builder.setXRot(0.0F);
@@ -908,7 +929,7 @@ public final class SettlementConstructionService {
         return level.addFreshEntity(builder) ? builder : null;
     }
 
-    static boolean returnBuilderHome(ServerLevel level, SettlementData data, Villager builder) {
+    static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
         BlockPos home = data.centerPos().offset(1, 0, 1);
         if (!level.hasChunkAt(home)) {
             builder.getNavigation().stop();
@@ -923,14 +944,14 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    static Villager findBuilder(ServerLevel level, SettlementData data) {
-        List<Villager> builders = findBuilders(level, data);
+    static FrontierWorkerEntity findBuilder(ServerLevel level, SettlementData data) {
+        List<FrontierWorkerEntity> builders = findBuilders(level, data);
         return builders.isEmpty() ? null : builders.getFirst();
     }
 
-    private static List<Villager> findBuilders(ServerLevel level, SettlementData data) {
+    private static List<FrontierWorkerEntity> findBuilders(ServerLevel level, SettlementData data) {
         AABB search = builderRouteBounds(level, data);
-        List<Villager> builders = level.getEntitiesOfClass(Villager.class, search, villager ->
+        List<FrontierWorkerEntity> builders = level.getEntitiesOfClass(FrontierWorkerEntity.class, search, villager ->
                 villager.entityTags().contains(BUILDER_TAG)
                         || (villager.getCustomName() != null && BUILDER_NAME.equals(villager.getCustomName().getString())));
         builders.sort(Comparator.comparing(villager -> villager.getUUID().toString()));

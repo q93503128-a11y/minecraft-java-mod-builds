@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -7,8 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -43,7 +43,7 @@ public final class SettlementMarketService {
             if (!level.hasChunkAt(market.workCenter()) || !level.hasChunkAt(crate)) continue;
             if (!(level.getBlockEntity(crate) instanceof Container container)) continue;
 
-            Villager trader = ensureTrader(level, market);
+            FrontierWorkerEntity trader = ensureTrader(level, market);
             if (trader == null) continue;
             if (trader.distanceToSqr(crate.getX() + 0.5D, crate.getY() + 0.5D, crate.getZ() + 0.5D) > CRATE_REACHED_SQR) {
                 trader.getNavigation().moveTo(crate.getX() + 0.5D, crate.getY(), crate.getZ() + 0.5D, 0.7D);
@@ -59,7 +59,7 @@ public final class SettlementMarketService {
         return Math.floorMod(server.getTickCount() + salt, TRADE_PERIOD_TICKS) < 10;
     }
 
-    private static void tradeOne(Container container, Villager trader, SettlementData data) {
+    private static void tradeOne(Container container, FrontierWorkerEntity trader, SettlementData data) {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
             ItemStack goods = container.getItem(slot);
             if (goods.isEmpty() || !goods.is(ExternalContentTags.EXPEDITION_RELICS)) continue;
@@ -122,18 +122,18 @@ public final class SettlementMarketService {
         }
     }
 
-    private static Villager ensureTrader(ServerLevel level, BuildingRecord market) {
+    private static FrontierWorkerEntity ensureTrader(ServerLevel level, BuildingRecord market) {
         String assignment = assignmentTag(market);
         AABB area = new AABB(market.workCenter()).inflate(48.0D, 24.0D, 48.0D);
-        List<Villager> assigned = level.getEntitiesOfClass(Villager.class, area,
+        List<FrontierWorkerEntity> assigned = level.getEntitiesOfClass(FrontierWorkerEntity.class, area,
                 villager -> villager.entityTags().contains(MARKET_TRADER_TAG)
                         && villager.entityTags().contains(assignment));
         assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!assigned.isEmpty()) {
-            Villager active = assigned.getFirst();
+            FrontierWorkerEntity active = assigned.getFirst();
             active.setNoAi(false);
             for (int i = 1; i < assigned.size(); i++) {
-                Villager duplicate = assigned.get(i);
+                FrontierWorkerEntity duplicate = assigned.get(i);
                 duplicate.getNavigation().stop();
                 duplicate.setNoAi(true);
                 duplicate.setInvulnerable(true);
@@ -142,7 +142,7 @@ public final class SettlementMarketService {
         }
         if (!entityAreaLoaded(level, area)) return null;
 
-        Villager trader = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity trader = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         BlockPos spawn = market.workCenter().above();
         trader.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         trader.setCustomName(Component.literal("방문 상인"));

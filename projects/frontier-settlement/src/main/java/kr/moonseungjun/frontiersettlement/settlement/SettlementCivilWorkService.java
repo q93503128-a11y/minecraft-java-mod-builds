@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -155,7 +155,7 @@ public final class SettlementCivilWorkService {
 
         data.begin(new CivilWorkState(true, check.minX(), check.maxX(), check.minZ(), check.maxZ(), check.gradeY(),
                 CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks(), check.retainingBlocks()));
-        Villager builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement);
+        FrontierWorkerEntity builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement);
         if (builder != null) {
             builder.setInvulnerable(true);
             builder.setCustomName(Component.literal("건설 주민 · 토목"));
@@ -172,7 +172,7 @@ public final class SettlementCivilWorkService {
         CivilWorkState project = data.project();
         if (!project.active()) return false;
         ServerLevel level = server.overworld();
-        Villager builder = SettlementConstructionService.ensureBuilder(level, settlement);
+        FrontierWorkerEntity builder = SettlementConstructionService.ensureBuilder(level, settlement);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -302,7 +302,7 @@ public final class SettlementCivilWorkService {
     }
 
     private static boolean finish(MinecraftServer server, SettlementData settlement,
-                                  SettlementCivilWorkData data, Villager builder) {
+                                  SettlementCivilWorkData data, FrontierWorkerEntity builder) {
         if (!builder.getMainHandItem().isEmpty()) return false;
         if (!SettlementConstructionService.returnBuilderHome(server.overworld(), settlement, builder)) return false;
         data.clear();
@@ -333,7 +333,7 @@ public final class SettlementCivilWorkService {
         return null;
     }
 
-    private static boolean moveBuilder(ServerLevel level, Villager builder, BlockPos target) {
+    private static boolean moveBuilder(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
         if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());

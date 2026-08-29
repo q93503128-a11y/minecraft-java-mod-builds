@@ -3,7 +3,7 @@ package kr.moonseungjun.frontiersettlement.settlement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public final class SettlementResidentRoutineService {
 
     private static void restTownWorkers(ServerLevel level, SettlementData data, List<BuildingRecord> houses) {
         if (houses.isEmpty()) return;
-        List<Villager> residents = townWorkers(level, data.centerPos());
+        List<FrontierWorkerEntity> residents = townWorkers(level, data.centerPos());
         for (int i = 0; i < residents.size(); i++) {
             moveToHouseSlot(residents.get(i), houses, i);
         }
@@ -56,9 +56,9 @@ public final class SettlementResidentRoutineService {
 
     private static void restTransportWorkers(ServerLevel level, SettlementData data, List<BuildingRecord> houses) {
         AABB bounds = settlementBounds(data);
-        List<Villager> transports = level.getEntitiesOfClass(Villager.class, bounds,
+        List<FrontierWorkerEntity> transports = level.getEntitiesOfClass(FrontierWorkerEntity.class, bounds,
                 villager -> villager.entityTags().contains(SettlementOutpostLogisticsService.TRANSPORT_WORKER_TAG));
-        for (Villager villager : transports) {
+        for (FrontierWorkerEntity villager : transports) {
             OutpostRecord assigned = assignedTransportOutpost(data, villager);
             if (assigned != null && level.hasChunkAt(assigned.center())
                     && villager.distanceToSqr(assigned.center().getX() + 0.5D, assigned.center().getY(),
@@ -83,14 +83,14 @@ public final class SettlementResidentRoutineService {
             if (!level.hasChunkAt(outpost.center())) continue;
             String assignment = SettlementOutpostProductionService.PRODUCTION_OUTPOST_TAG_PREFIX + outpost.id();
             AABB search = new AABB(outpost.center()).inflate(48.0D, 24.0D, 48.0D);
-            List<Villager> workers = level.getEntitiesOfClass(Villager.class, search,
+            List<FrontierWorkerEntity> workers = level.getEntitiesOfClass(FrontierWorkerEntity.class, search,
                     villager -> villager.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)
                             && villager.entityTags().contains(assignment));
-            for (Villager worker : workers) moveOrStop(worker, outpost.center().above(), 0.68D);
+            for (FrontierWorkerEntity worker : workers) moveOrStop(worker, outpost.center().above(), 0.68D);
         }
     }
 
-    private static OutpostRecord assignedTransportOutpost(SettlementData data, Villager villager) {
+    private static OutpostRecord assignedTransportOutpost(SettlementData data, FrontierWorkerEntity villager) {
         for (OutpostRecord outpost : data.outposts()) {
             if (villager.entityTags().contains(
                     SettlementOutpostLogisticsService.TRANSPORT_OUTPOST_TAG_PREFIX + outpost.id())) {
@@ -100,14 +100,14 @@ public final class SettlementResidentRoutineService {
         return null;
     }
 
-    private static void moveToHouseSlot(Villager villager, List<BuildingRecord> houses, int residentIndex) {
+    private static void moveToHouseSlot(FrontierWorkerEntity villager, List<BuildingRecord> houses, int residentIndex) {
         BuildingRecord house = houses.get((residentIndex / 4) % houses.size());
         int slot = residentIndex % 4;
         BlockPos rest = house.localToWorld(REST_X[slot], 1, REST_Z[slot]);
         moveOrStop(villager, rest, 0.75D);
     }
 
-    private static void moveOrStop(Villager villager, BlockPos target, double speed) {
+    private static void moveOrStop(FrontierWorkerEntity villager, BlockPos target, double speed) {
         double distance = villager.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D);
         if (distance > 4.0D) {
             villager.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
@@ -116,11 +116,11 @@ public final class SettlementResidentRoutineService {
         }
     }
 
-    private static List<Villager> townWorkers(ServerLevel level, BlockPos center) {
+    private static List<FrontierWorkerEntity> townWorkers(ServerLevel level, BlockPos center) {
         AABB search = new AABB(
                 center.getX() - 256.0D, center.getY() - 96.0D, center.getZ() - 256.0D,
                 center.getX() + 257.0D, center.getY() + 97.0D, center.getZ() + 257.0D);
-        List<Villager> result = level.getEntitiesOfClass(Villager.class, search, villager -> {
+        List<FrontierWorkerEntity> result = level.getEntitiesOfClass(FrontierWorkerEntity.class, search, villager -> {
             if (villager.getCustomName() == null) return false;
             return TOWN_WORKER_NAMES.contains(villager.getCustomName().getString());
         });

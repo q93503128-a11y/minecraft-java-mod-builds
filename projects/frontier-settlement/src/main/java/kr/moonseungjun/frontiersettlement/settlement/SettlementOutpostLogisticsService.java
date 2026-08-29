@@ -1,13 +1,13 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
@@ -58,7 +58,7 @@ public final class SettlementOutpostLogisticsService {
     public static void migrateLegacyWorkers(ServerLevel level, SettlementData data) {
         for (OutpostRecord outpost : data.outposts()) {
             if (!routeFullyLoaded(level, data, outpost)) continue;
-            Villager legacy = findLegacyWorker(level, data, outpost);
+            FrontierWorkerEntity legacy = findLegacyWorker(level, data, outpost);
             if (legacy == null) continue;
             // Migration also changes assignment authority. Do not tag a visible legacy worker while a
             // legitimate assigned transporter could merely be hidden in an unloaded search-bound chunk.
@@ -72,7 +72,7 @@ public final class SettlementOutpostLogisticsService {
         for (OutpostRecord outpost : data.outposts()) {
             List<BlockPos> route = routeFromTown(data, outpost);
             if (route.isEmpty()) continue;
-            Villager worker = findAssignedWorker(level, data, outpost, route);
+            FrontierWorkerEntity worker = findAssignedWorker(level, data, outpost, route);
             if (worker == null) continue;
             SettlementDeferredOutpostService.observeTransportReady(level.getServer(), outpost);
             if (worker.isNoAi()) worker.setNoAi(false);
@@ -102,7 +102,7 @@ public final class SettlementOutpostLogisticsService {
         Set<java.util.UUID> ids = new HashSet<>();
         for (OutpostRecord outpost : data.outposts()) {
             if (!assignmentEvidenceLoaded(level, data, outpost)) continue;
-            for (Villager worker : findAssignedWorkers(level, data, outpost)) ids.add(worker.getUUID());
+            for (FrontierWorkerEntity worker : findAssignedWorkers(level, data, outpost)) ids.add(worker.getUUID());
         }
         return ids.size();
     }
@@ -141,10 +141,10 @@ public final class SettlementOutpostLogisticsService {
                 event.getEntity().getZ(), carried.copy()));
     }
 
-    public static Villager spawnAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+    public static FrontierWorkerEntity spawnAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         if (outpost == null || !assignmentEvidenceLoaded(level, data, outpost)
                 || !findAssignedWorkers(level, data, outpost).isEmpty()) return null;
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         BlockPos spawn = outpost.center().above();
         if (!level.hasChunkAt(spawn)) return null;
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
@@ -155,7 +155,7 @@ public final class SettlementOutpostLogisticsService {
         return worker;
     }
 
-    private static void assignWorker(Villager worker, OutpostRecord outpost) {
+    private static void assignWorker(FrontierWorkerEntity worker, OutpostRecord outpost) {
         worker.addTag(TRANSPORT_WORKER_TAG);
         worker.addTag(outpostTag(outpost));
         worker.setCustomName(Component.literal(workerName(outpost)));
@@ -172,37 +172,37 @@ public final class SettlementOutpostLogisticsService {
         return "운송 주민 #" + outpost.id();
     }
 
-    private static Villager findAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-        List<Villager> found = findAssignedWorkers(level, data, outpost);
+    private static FrontierWorkerEntity findAssignedWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        List<FrontierWorkerEntity> found = findAssignedWorkers(level, data, outpost);
         return found.isEmpty() ? null : found.getFirst();
     }
 
-    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+    private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
         return findAssignedWorkers(level, data, outpost, route);
     }
 
-    private static Villager findAssignedWorker(ServerLevel level, SettlementData data,
+    private static FrontierWorkerEntity findAssignedWorker(ServerLevel level, SettlementData data,
                                                OutpostRecord outpost, List<BlockPos> route) {
-        List<Villager> found = findAssignedWorkers(level, data, outpost, route);
+        List<FrontierWorkerEntity> found = findAssignedWorkers(level, data, outpost, route);
         return found.isEmpty() ? null : found.getFirst();
     }
 
-    private static List<Villager> findAssignedWorkers(ServerLevel level, SettlementData data,
+    private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, SettlementData data,
                                                       OutpostRecord outpost, List<BlockPos> route) {
         if (route.isEmpty()) return List.of();
         String assignment = outpostTag(outpost);
-        List<Villager> found = level.getEntitiesOfClass(Villager.class, routeBounds(data, outpost, route),
+        List<FrontierWorkerEntity> found = level.getEntitiesOfClass(FrontierWorkerEntity.class, routeBounds(data, outpost, route),
                 villager -> villager.entityTags().contains(TRANSPORT_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
         found.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         return found;
     }
 
-    private static Villager findLegacyWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+    private static FrontierWorkerEntity findLegacyWorker(ServerLevel level, SettlementData data, OutpostRecord outpost) {
         List<BlockPos> route = routeFromTown(data, outpost);
         if (route.isEmpty()) return null;
-        List<Villager> candidates = level.getEntitiesOfClass(Villager.class, routeBounds(data, outpost, route),
+        List<FrontierWorkerEntity> candidates = level.getEntitiesOfClass(FrontierWorkerEntity.class, routeBounds(data, outpost, route),
                 villager -> !villager.entityTags().contains(TRANSPORT_WORKER_TAG)
                         && villager.getCustomName() != null
                         && LEGACY_TRANSPORT_WORKER_NAME.equals(villager.getCustomName().getString()));
@@ -273,7 +273,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void workTransport(ServerLevel level, SettlementData data,
-                                      OutpostRecord outpost, Villager worker, List<BlockPos> route) {
+                                      OutpostRecord outpost, FrontierWorkerEntity worker, List<BlockPos> route) {
         boolean military = SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost);
         boolean waterfrontSupply = !military && SettlementWaterfrontService.woodSupplyShortage(level, outpost) > 0;
         if (!military) {
@@ -354,7 +354,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void loadMilitarySupply(ServerLevel level, SettlementData data,
-                                           OutpostRecord outpost, Villager worker) {
+                                           OutpostRecord outpost, FrontierWorkerEntity worker) {
         if (!SettlementStorageService.storageAvailable(level, data)) {
             worker.getNavigation().stop();
             return;
@@ -399,7 +399,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void deliverMilitarySupply(ServerLevel level, OutpostRecord outpost,
-                                               Villager worker, ItemStack carried) {
+                                               FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos stock = outpost.stockpile();
         if (!level.hasChunkAt(stock)) {
             worker.getNavigation().stop();
@@ -429,7 +429,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void loadWaterfrontSupply(ServerLevel level, SettlementData data,
-                                             OutpostRecord outpost, Villager worker) {
+                                             OutpostRecord outpost, FrontierWorkerEntity worker) {
         if (!SettlementStorageService.storageAvailable(level, data)) {
             worker.getNavigation().stop();
             return;
@@ -460,7 +460,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void deliverWaterfrontSupply(ServerLevel level, OutpostRecord outpost,
-                                                Villager worker, ItemStack carried) {
+                                                FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos stock = outpost.stockpile();
         if (!level.hasChunkAt(stock)) {
             worker.getNavigation().stop();
@@ -508,7 +508,7 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
-                                             Villager worker, ItemStack carried) {
+                                             FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);
         if (!level.hasChunkAt(target)) {
             worker.getNavigation().stop();
@@ -522,7 +522,7 @@ public final class SettlementOutpostLogisticsService {
         worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementStorageService.insertAt(level, target, carried));
     }
 
-    private static boolean moveAlongRoute(ServerLevel level, Villager worker,
+    private static boolean moveAlongRoute(ServerLevel level, FrontierWorkerEntity worker,
                                           List<BlockPos> route, boolean towardOutpost) {
         if (route.isEmpty()) return false;
         int nearest = nearestRouteIndex(worker, route);
@@ -563,7 +563,7 @@ public final class SettlementOutpostLogisticsService {
         return false;
     }
 
-    private static int nearestRouteIndex(Villager worker, List<BlockPos> route) {
+    private static int nearestRouteIndex(FrontierWorkerEntity worker, List<BlockPos> route) {
         int bestIndex = 0;
         double bestDistance = Double.MAX_VALUE;
         for (int i = 0; i < route.size(); i++) {
@@ -577,7 +577,7 @@ public final class SettlementOutpostLogisticsService {
         return bestIndex;
     }
 
-    private static void move(Villager worker, BlockPos target, double speed) {
+    private static void move(FrontierWorkerEntity worker, BlockPos target, double speed) {
         worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
     }
 

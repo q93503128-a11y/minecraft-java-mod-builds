@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -7,9 +8,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -56,7 +56,7 @@ public final class SettlementFishingOutpostService {
             if (!"general".equals(outpost.specialization())) continue;
             if (!level.hasChunkAt(outpost.center()) || !level.hasChunkAt(outpost.stockpile())) continue;
 
-            Villager worker = findAssignedWorker(level, outpost);
+            FrontierWorkerEntity worker = findAssignedWorker(level, outpost);
             if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) {
                 SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
                         SettlementDeferredOutpostService.OVERLAY_MILITARY);
@@ -85,8 +85,8 @@ public final class SettlementFishingOutpostService {
         return level.hasChunkAt(outpost.center()) && findFishingSpot(level, outpost) != null;
     }
 
-    public static Villager ensureAssignedWorker(ServerLevel level, OutpostRecord outpost) {
-        Villager worker = findAssignedWorker(level, outpost);
+    public static FrontierWorkerEntity ensureAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+        FrontierWorkerEntity worker = findAssignedWorker(level, outpost);
         return worker != null ? worker : spawnAssignedWorker(level, outpost);
     }
 
@@ -111,11 +111,11 @@ public final class SettlementFishingOutpostService {
                 : "어업·수변교역";
     }
 
-    private static Villager spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+    private static FrontierWorkerEntity spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
         AABB area = assignmentArea(outpost);
         if (!assignmentEvidenceLoaded(level, area) || !findAssignedWorkers(level, outpost).isEmpty()) return null;
         if (!level.hasChunkAt(outpost.center())) return null;
-        Villager worker = new Villager(EntityTypes.VILLAGER, level);
+        FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         BlockPos spawn = outpost.center().above();
         worker.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         worker.setCustomName(Component.literal("전초 어업 주민 #" + outpost.id()));
@@ -128,13 +128,13 @@ public final class SettlementFishingOutpostService {
         return level.addFreshEntity(worker) ? worker : null;
     }
 
-    private static Villager findAssignedWorker(ServerLevel level, OutpostRecord outpost) {
-        List<Villager> workers = findAssignedWorkers(level, outpost);
+    private static FrontierWorkerEntity findAssignedWorker(ServerLevel level, OutpostRecord outpost) {
+        List<FrontierWorkerEntity> workers = findAssignedWorkers(level, outpost);
         if (workers.isEmpty()) return null;
-        Villager active = workers.getFirst();
+        FrontierWorkerEntity active = workers.getFirst();
         active.setNoAi(false);
         for (int i = 1; i < workers.size(); i++) {
-            Villager duplicate = workers.get(i);
+            FrontierWorkerEntity duplicate = workers.get(i);
             duplicate.getNavigation().stop();
             duplicate.setNoAi(true);
             duplicate.setInvulnerable(true);
@@ -142,9 +142,9 @@ public final class SettlementFishingOutpostService {
         return active;
     }
 
-    private static List<Villager> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
+    private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
         String assignment = assignmentTag(outpost);
-        List<Villager> workers = level.getEntitiesOfClass(Villager.class, assignmentArea(outpost),
+        List<FrontierWorkerEntity> workers = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentArea(outpost),
                 villager -> villager.entityTags().contains(FISHING_WORKER_TAG)
                         && villager.entityTags().contains(assignment));
         workers.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
@@ -173,7 +173,7 @@ public final class SettlementFishingOutpostService {
         return FISHING_OUTPOST_TAG_PREFIX + outpost.id();
     }
 
-    private static void work(ServerLevel level, OutpostRecord outpost, FishingSpot spot, Villager worker) {
+    private static void work(ServerLevel level, OutpostRecord outpost, FishingSpot spot, FrontierWorkerEntity worker) {
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty()) {
             deliver(level, outpost, worker, carried);
@@ -196,7 +196,7 @@ public final class SettlementFishingOutpostService {
         SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, WORK_PERIOD_TICKS);
     }
 
-    private static void deliver(ServerLevel level, OutpostRecord outpost, Villager worker, ItemStack carried) {
+    private static void deliver(ServerLevel level, OutpostRecord outpost, FrontierWorkerEntity worker, ItemStack carried) {
         BlockPos stock = outpost.stockpile();
         if (!level.hasChunkAt(stock)) {
             worker.getNavigation().stop();
@@ -272,7 +272,7 @@ public final class SettlementFishingOutpostService {
                 && (space.isAir() || space.canBeReplaced()) && space.getFluidState().isEmpty();
     }
 
-    private static void moveOrStop(Villager worker, BlockPos target, double speed) {
+    private static void moveOrStop(FrontierWorkerEntity worker, BlockPos target, double speed) {
         double distance = worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D);
         if (distance > 4.0D) worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
         else worker.getNavigation().stop();

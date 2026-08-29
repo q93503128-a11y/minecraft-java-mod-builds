@@ -9,7 +9,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.villager.Villager;
+import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
@@ -195,7 +195,7 @@ public final class SettlementRoadService {
         }
 
         ServerLevel level = server.overworld();
-        Villager builder = findRoadBuilder(level, data, data.centerPos(), road, plan);
+        FrontierWorkerEntity builder = findRoadBuilder(level, data, data.centerPos(), road, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(true);
@@ -206,7 +206,7 @@ public final class SettlementRoadService {
         return tickPaving(server, data, road, plan, builder);
     }
 
-    private static Villager findRoadBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
+    private static FrontierWorkerEntity findRoadBuilder(ServerLevel level, SettlementData data, BlockPos settlementCenter,
                                             RoadConstructionState road, List<Placement> plan) {
         BlockPos hint;
         if (road.tunneling()) {
@@ -225,7 +225,7 @@ public final class SettlementRoadService {
         double maxY = Math.max(settlementCenter.getY(), hint.getY()) + 65.0D;
         double maxZ = Math.max(settlementCenter.getZ(), hint.getZ()) + ROAD_BUILDER_SEARCH_MARGIN + 1.0D;
         AABB corridor = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
-        List<Villager> tagged = level.getEntitiesOfClass(Villager.class, corridor,
+        List<FrontierWorkerEntity> tagged = level.getEntitiesOfClass(FrontierWorkerEntity.class, corridor,
                 villager -> villager.entityTags().contains(SettlementConstructionService.BUILDER_TAG));
         tagged.sort(java.util.Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!tagged.isEmpty()) return tagged.getFirst();
@@ -233,7 +233,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data, RoadConstructionState road,
-                                       List<Placement> plan, Villager builder) {
+                                       List<Placement> plan, FrontierWorkerEntity builder) {
         int gradeStep = road.gradeStep();
         if (gradeStep >= plan.size()) {
             data.replaceRoadConstructionStep(0);
@@ -261,7 +261,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean tickTunneling(MinecraftServer server, SettlementData data,
-                                         RoadConstructionState road, Villager builder) {
+                                         RoadConstructionState road, FrontierWorkerEntity builder) {
         List<TunnelCell> cells = tunnelExcavationPlan(road);
         int step = road.tunnelStep();
         if (step < 0) return false;
@@ -293,7 +293,7 @@ public final class SettlementRoadService {
         return false;
     }
 
-    private static boolean moveBuilderToTunnelWork(Villager builder, BlockPos floor) {
+    private static boolean moveBuilderToTunnelWork(FrontierWorkerEntity builder, BlockPos floor) {
         double x = floor.getX() + 0.5D;
         double y = floor.getY() + 1.0D;
         double z = floor.getZ() + 0.5D;
@@ -303,7 +303,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean tickPaving(MinecraftServer server, SettlementData data, RoadConstructionState road,
-                                      List<Placement> plan, Villager builder) {
+                                      List<Placement> plan, FrontierWorkerEntity builder) {
         int step = road.step();
         int totalCost = stoneCost(road);
         long spentBefore = costAtStep(totalCost, step, plan.size());
@@ -357,7 +357,7 @@ public final class SettlementRoadService {
         return current.isAir() || isRoadGround(current);
     }
 
-    private static boolean ensurePavingMaterial(MinecraftServer server, SettlementData data, Villager builder,
+    private static boolean ensurePavingMaterial(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder,
                                                 long requiredNow, long remainingCost) {
         ItemStack carried = builder.getMainHandItem();
         if (!carried.isEmpty() && !SettlementInventory.isStone(carried)) {
@@ -385,7 +385,7 @@ public final class SettlementRoadService {
         return false;
     }
 
-    private static boolean consumeCarriedStone(Villager builder, long amount) {
+    private static boolean consumeCarriedStone(FrontierWorkerEntity builder, long amount) {
         if (amount <= 0L) return true;
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty() || !SettlementInventory.isStone(carried) || carried.getCount() < amount) return false;
@@ -394,7 +394,7 @@ public final class SettlementRoadService {
         return true;
     }
 
-    private static boolean returnCarriedToStorage(MinecraftServer server, SettlementData data, Villager builder) {
+    private static boolean returnCarriedToStorage(MinecraftServer server, SettlementData data, FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
@@ -418,7 +418,7 @@ public final class SettlementRoadService {
         return remaining.isEmpty();
     }
 
-    private static boolean moveBuilderToPlacement(ServerLevel level, Villager builder, Placement placement) {
+    private static boolean moveBuilderToPlacement(ServerLevel level, FrontierWorkerEntity builder, Placement placement) {
         if (!level.hasChunkAt(placement.pos())) {
             builder.getNavigation().stop();
             return false;
@@ -496,7 +496,7 @@ public final class SettlementRoadService {
                 || state.is(Blocks.COBBLESTONE_STAIRS) || state.is(Blocks.STONE_BRICKS);
     }
 
-    private static boolean moveBuilderToCurrentSurface(ServerLevel level, Villager builder, BlockPos target) {
+    private static boolean moveBuilderToCurrentSurface(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
         if (!level.hasChunkAt(target)) return false;
         int workY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
         BlockPos work = new BlockPos(target.getX(), workY, target.getZ());
@@ -640,7 +640,7 @@ public final class SettlementRoadService {
     }
 
     private static boolean finishIfValid(MinecraftServer server, SettlementData data,
-                                         RoadConstructionState road, List<Placement> plan, Villager builder) {
+                                         RoadConstructionState road, List<Placement> plan, FrontierWorkerEntity builder) {
         ServerLevel level = server.overworld();
         // Alpha.24-and-earlier roads already paid their full stone cost before construction state was saved.
         // New physical roads must pay for every repair, but legacy prepaid saves must never be charged twice.

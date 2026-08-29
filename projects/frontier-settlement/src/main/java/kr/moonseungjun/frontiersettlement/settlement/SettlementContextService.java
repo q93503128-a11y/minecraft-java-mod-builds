@@ -36,7 +36,7 @@ public final class SettlementContextService {
                         construction.originX() + width - 1, construction.originY() + type.clearHeight() + 2,
                         construction.originZ() + depth - 1,
                         construction.originX() + width / 2, construction.originY() + 1, construction.originZ() + depth / 2,
-                        type.displayName(), construction.grading() ? "부지 정리 중" : "자재 운반·시공 중", projectProgress));
+                        type.displayName(), construction.grading() ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반" : "자재 운반·시공 중", projectProgress));
             }
         } else if (data.roadConstruction().active()) {
             RoadConstructionState road = data.roadConstruction();

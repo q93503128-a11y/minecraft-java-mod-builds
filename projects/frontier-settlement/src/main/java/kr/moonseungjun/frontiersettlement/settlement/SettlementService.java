@@ -21,6 +21,7 @@ public final class SettlementService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return;
         int tick = server.getTickCount();
+        SettlementLegacyWorkerMigrationService.tick(server, data);
         boolean explorationChanged = SettlementExplorationService.tick(server, data);
         if (tick % 5 == 0) {
             if (data.construction().active()) SettlementConstructionService.tick(server, data);
