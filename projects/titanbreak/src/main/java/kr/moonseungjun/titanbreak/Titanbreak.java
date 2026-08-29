@@ -2,12 +2,14 @@ package kr.moonseungjun.titanbreak;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
+import kr.moonseungjun.titanbreak.combat.HuntRewardService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.combat.ReflexFieldService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.player.VanillaArmorLockout;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
+import kr.moonseungjun.titanbreak.registry.ModItems;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -21,20 +23,21 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.7";
+    public static final String VERSION = "0.1.0-alpha.8";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final double OVERHEAT_LOCK = 95.0;
-    private static final double OVERHEAT_RESTART = 45.0;
+    private static final double OVERHEAT_LOCK = 95.0D;
+    private static final double OVERHEAT_RESTART = 45.0D;
 
     public Titanbreak(IEventBus modEventBus) {
-        kr.moonseungjun.titanbreak.registry.ModItems.register(modEventBus);
+        ModItems.register(modEventBus);
         ModEntities.register(modEventBus);
         modEventBus.addListener(TitanbreakNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -83,14 +86,12 @@ public final class Titanbreak {
         ReflexFieldService.update(player, active, ReflexDriveService.rating(player.getUUID()), ReflexFieldService.P0_RADIUS);
 
         if (active) {
-            data.setHeat(player, state.heat() + 0.65);
-            data.setSanity(player, state.sanity() - 0.002);
+            data.setHeat(player, state.heat() + 0.65D);
+            data.setSanity(player, state.sanity() - 0.002D);
         } else {
-            data.setHeat(player, state.heat() - 0.45);
+            data.setHeat(player, state.heat() - 0.45D);
         }
 
-        // The user remains on the ordinary 20 TPS time axis. alpha.7 dilates nearby simulation
-        // at its movement/AI/projectile choke points instead of compensating the active player.
         AugmentedMobilityService.clear(player);
 
         if (player.tickCount % 5 == 0) TitanbreakNetwork.sync(player);

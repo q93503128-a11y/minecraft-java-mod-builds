@@ -1,10 +1,17 @@
 {
   "item.titanbreak.reflex_drive_i": "Reflex Drive I",
+  "item.titanbreak.servo_bundle": "Servo Bundle",
+  "item.titanbreak.synthetic_tendon": "Synthetic Tendon",
+  "item.titanbreak.high_density_muscle_fiber": "High-Density Muscle Fiber",
+  "item.titanbreak.high_density_neural_fiber": "High-Density Neural Fiber",
   "entity.titanbreak.hollow_colossus": "Hollow Colossus",
+  "entity.titanbreak.ripper": "Ripper",
+  "entity.titanbreak.skitter": "Skitter",
   "hud.titanbreak.health": "Health %s / %s",
   "hud.titanbreak.sanity": "Sanity %s",
   "hud.titanbreak.reflex_active": "Reflex Boost",
   "hud.titanbreak.cooling": "Cooling",
+  "message.titanbreak.first_hunt_rd": "New combat data acquired · Research Data +%s",
   "key.titanbreak.reflex_drive": "Toggle Reflex Drive",
   "key.category.titanbreak.controls": "TITANBREAK"
 }

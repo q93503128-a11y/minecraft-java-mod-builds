@@ -1,4 +1,4 @@
-# TITANBREAK P0 alpha.7 singleplayer test checklist
+# TITANBREAK alpha.8 T0 hunting test checklist
 
 ## Environment
 - Minecraft Java 26.2
@@ -7,66 +7,101 @@
 - Test without other gameplay mods first.
 - Multiplayer validation remains deferred.
 
-## 1. Reflex Drive continuous local temporal field
-- Obtain `반응가속기 I` from the Combat creative tab and hold it in either hand.
-- Press `R` once to engage and again to disengage.
-- Run `/tick query` while active if cheats are enabled.
+## 1. Baseline combat display
+Enter a world at full health.
 
 PASS:
-- `/tick query` remains at the ordinary 20 TPS while the drive is active and after it disengages;
-- the drive user keeps ordinary wall-clock walking, sprinting, jumping, falling, melee swing/recovery, mining and item-use timing;
-- nearby ordinary mobs move at roughly 40% pacing without the obvious move-freeze-move cadence caused by complete entity tick cancellation;
-- mob attack/goal cadence also slows instead of only their ground speed changing;
-- entities outside the 64-block field are unaffected.
+- TITANBREAK health HUD reads approximately `100 / 100` for an unmodified player;
+- vanilla hearts, hunger and armor HUD remain hidden;
+- existing Reflex Drive HUD behavior is unchanged.
 
-## 2. Smoothness comparison
-Spawn or find at least one continuously moving mob and watch it from the side with the drive enabled.
+## 2. Ripper hunt
+Spawn one Ripper on open ground:
 
-PASS:
-- walking should remain visually continuous rather than holding the exact same world position for multiple complete server ticks;
-- turning/path changes may be slower because AI itself is time-dilated, but the body should not repeatedly hard-freeze between allowed entity ticks;
-- crossing the field boundary should change speed without teleporting the mob.
-
-If it still visibly stutters, send a short description of whether the problem is position stepping, rotation stepping, animation stepping, or all three.
-
-## 3. Projectile split
-- Let a skeleton or another ordinary hostile mob fire a projectile through the field.
-- Fire a bow yourself while your Reflex Drive is active.
-- If practical, let a hostile projectile cross the field boundary.
+```mcfunction
+/summon titanbreak:ripper ~ ~ ~6
+```
 
 PASS:
-- hostile projectiles are visibly slower inside the field and continue moving every frame/tick rather than freezing on skipped entity ticks;
-- your own projectile does not get slowed by your own field;
-- entering/leaving the field does not cause a large position teleport or sudden reversal.
+- the entity is named Ripper/리퍼;
+- it pursues faster than an ordinary slow zombie and periodically tries to approach from a lateral angle at medium range;
+- one successful melee sequence contains an initial strike and one delayed follow-up rather than one giant single-hit value;
+- killing it drops High-Density Muscle Fiber x1-2;
+- High-Density Neural Fiber appears occasionally (20% target chance);
+- the first player kill of the species shows `Research Data +10` once;
+- immediately summoning and killing a second Ripper does not grant another first-kill +10 message.
 
-Projectile gravity/drag parity is not final in alpha.7; report obvious trajectory distortion separately from stutter.
+For a quick repeat-kill check:
 
-## 4. Player timer regression sweep
-While the field is active, compare each action once with the drive disabled:
-- receive knockback and land;
-- take two closely spaced hits and observe hurt/invulnerability timing;
-- use a shield and an item with a cooldown;
-- drink/eat or fully charge a bow/crossbow;
-- jump from a small ledge and compare gravity/fall pacing.
+```mcfunction
+/summon titanbreak:ripper ~ ~ ~6
+/summon titanbreak:ripper ~2 ~ ~6
+```
 
-The drive user should remain on the normal 20 TPS time axis for all of these.
+## 3. Skitter hunt
+Spawn one Skitter:
 
-## 5. Safety restore
-- Test overheat shutdown, death/respawn and world exit/reload.
-- The drive field must disappear immediately when the drive is no longer active.
-- No movement/attack/mining compensation modifier may remain after deactivation.
-- `/tick query` must never be changed by Reflex Drive.
+```mcfunction
+/summon titanbreak:skitter ~ ~ ~6
+```
 
-## 6. Multipart giant target
-1. Run `/summon titanbreak:hollow_colossus ~ ~ ~10` on open ground.
-2. Press `F3+B`.
-3. Confirm the six cyan TITANBREAK part boxes remain aligned to head, torso, arms and legs.
-4. Engage Reflex Drive and watch the giant walk/turn.
-5. Confirm the parent and all six parts travel together while the giant is time-dilated.
-6. Hit the separate regions again and confirm part damage still works.
+PASS:
+- the entity is named Skitter/스키터;
+- it uses spider-like wall climbing rather than behaving as a grounded humanoid;
+- a successful melee sequence can produce three separated strikes;
+- killing it drops Servo Bundle x1 and Synthetic Tendon x1-2;
+- the first player kill of the species shows `Research Data +10` once;
+- repeat kills keep dropping physical materials but do not repeat the first-kill Research Data reward.
 
-## Known alpha.7 P0 boundary
-The field currently splits entity movement, mob AI and projectile motion onto local temporal paths. Range-local block ticks/redstone/weather/time-of-day, every custom entity timer, exact projectile gravity/drag parity and dedicated-server presentation synchronization remain later P0 work.
+A wall-climb setup can be made by spawning it beside a simple wall:
 
-## Bug report
-Send the symptom in plain language. For hitbox problems, send one F3+B screenshot from the front or side. For crashes, attach `latest.log` or the crash report.
+```mcfunction
+/summon titanbreak:skitter ~ ~ ~4
+```
+
+## 4. Reflex Drive regression with production enemies
+Obtain the drive if needed:
+
+```mcfunction
+/give @s titanbreak:reflex_drive_i 1
+```
+
+Hold it in either hand and press `R` to engage. For a controlled comparison, spawn both enemies:
+
+```mcfunction
+/summon titanbreak:ripper ~-3 ~ ~8
+/summon titanbreak:skitter ~3 ~ ~8
+```
+
+PASS:
+- the player keeps normal movement and melee timing;
+- Ripper and Skitter movement is slowed by the local temporal field;
+- their multi-strike cadence slows with their AI clock instead of continuing at full real-time speed;
+- neither enemy repeatedly hard-freezes due to whole-entity tick cancellation;
+- `/tick query` remains at normal server tick rate.
+
+Tick-rate verification command:
+
+```mcfunction
+/tick query
+```
+
+## 5. Existing giant regression
+Spawn the multipart target:
+
+```mcfunction
+/summon titanbreak:hollow_colossus ~ ~ ~10
+```
+
+Then press `F3+B`.
+
+PASS:
+- six cyan part hitboxes remain aligned to the giant;
+- part damage and leg-break movement reduction still work;
+- Reflex Drive can slow the giant without breaking part alignment.
+
+## What to report
+For enemies: say whether the issue is movement, attack cadence, wall climbing/flanking, damage, or drops.
+For Reflex Drive: distinguish player timing from enemy timing.
+For giant hitboxes: send one front/side `F3+B` screenshot.
+For crashes: attach `latest.log` or the crash report.

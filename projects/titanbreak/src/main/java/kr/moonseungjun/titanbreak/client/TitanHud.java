@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak.client;
 
 import kr.moonseungjun.titanbreak.Titanbreak;
+import kr.moonseungjun.titanbreak.combat.CombatScale;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -44,20 +45,22 @@ public final class TitanHud {
         int x = Math.max(12, width / 2 - 116);
         int y = height - 68;
 
-        double health = Math.max(0.0, mc.player.getHealth());
-        double maxHealth = Math.max(1.0, mc.player.getMaxHealth());
-        double hp = Math.min(1.0, health / maxHealth);
-        double sanity = Math.max(0.0, Math.min(100.0, TitanClientState.decimal("sanity", 100.0)));
-        double heat = Math.max(0.0, Math.min(100.0, TitanClientState.decimal("heat", 0.0)));
+        double internalHealth = Math.max(0.0D, mc.player.getHealth());
+        double internalMaxHealth = Math.max(1.0D, mc.player.getMaxHealth());
+        double health = CombatScale.toVisible(internalHealth);
+        double maxHealth = CombatScale.toVisible(internalMaxHealth);
+        double hp = Math.min(1.0D, internalHealth / internalMaxHealth);
+        double sanity = Math.max(0.0D, Math.min(100.0D, TitanClientState.decimal("sanity", 100.0D)));
+        double heat = Math.max(0.0D, Math.min(100.0D, TitanClientState.decimal("heat", 0.0D)));
         boolean active = TitanClientState.flag("active");
 
         drawMechanicalLiquidGauge(g, x, y, barWidth, hp,
                 0xFF0D1014, 0xFF313942, 0xFF9DA8B1,
-                hp < 0.25 ? 0xFFC93243 : 0xFFB92E40,
+                hp < 0.25D ? 0xFFC93243 : 0xFFB92E40,
                 0xFFF27882, mc.player.tickCount, true);
-        drawMechanicalLiquidGauge(g, x, y + 18, barWidth, sanity / 100.0,
+        drawMechanicalLiquidGauge(g, x, y + 18, barWidth, sanity / 100.0D,
                 0xFF0D1014, 0xFF313942, 0xFF9DA8B1,
-                sanity < 25.0 ? 0xFF654A9C : 0xFF355C91,
+                sanity < 25.0D ? 0xFF654A9C : 0xFF355C91,
                 0xFF8DB7EA, mc.player.tickCount + 11, false);
 
         g.text(font, Component.translatable("hud.titanbreak.health",
@@ -66,15 +69,15 @@ public final class TitanHud {
         g.text(font, Component.translatable("hud.titanbreak.sanity", String.format(Locale.ROOT, "%.0f", sanity)),
                 x + 8, y + 28, 0xFFD4E2F2);
 
-        if (active || heat > 1.0) {
+        if (active || heat > 1.0D) {
             int hx = x + barWidth + 14;
             int top = y - 1;
             int gaugeHeight = 34;
             g.fill(hx - 3, top - 2, hx + 8, top + gaugeHeight + 3, 0xFF0A0D10);
             g.fill(hx - 2, top - 1, hx + 7, top + gaugeHeight + 2, 0xFF4A5158);
             g.fill(hx, top + 1, hx + 5, top + gaugeHeight, 0xFF171B1F);
-            int filled = (int) Math.round((gaugeHeight - 3) * heat / 100.0);
-            int color = heat >= 80.0 ? 0xFFFF554D : 0xFFE39443;
+            int filled = (int) Math.round((gaugeHeight - 3) * heat / 100.0D);
+            int color = heat >= 80.0D ? 0xFFFF554D : 0xFFE39443;
             g.fill(hx + 1, top + gaugeHeight - filled, hx + 4, top + gaugeHeight - 1, color);
             Component stateText = Component.translatable(active
                     ? "hud.titanbreak.reflex_active"
@@ -89,8 +92,6 @@ public final class TitanHud {
                                                    int tick, boolean turbulent) {
         int height = 9;
 
-        // Mechanical housing and corner clamps. This is a P0 functional treatment;
-        // final art will be replaced by licensed external UI assets.
         g.fill(x, y, x + width, y + height, voidColor);
         g.fill(x, y, x + width, y + 2, frameColor);
         g.fill(x, y + height - 2, x + width, y + height, frameColor);

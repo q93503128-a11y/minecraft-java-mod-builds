@@ -1,10 +1,17 @@
 {
   "item.titanbreak.reflex_drive_i": "반응가속기 I",
+  "item.titanbreak.servo_bundle": "서보 묶음",
+  "item.titanbreak.synthetic_tendon": "합성건",
+  "item.titanbreak.high_density_muscle_fiber": "고밀도 근섬유",
+  "item.titanbreak.high_density_neural_fiber": "고밀도 신경섬유",
   "entity.titanbreak.hollow_colossus": "중공 거체",
+  "entity.titanbreak.ripper": "리퍼",
+  "entity.titanbreak.skitter": "스키터",
   "hud.titanbreak.health": "체력 %s / %s",
   "hud.titanbreak.sanity": "정신력 %s",
   "hud.titanbreak.reflex_active": "반응가속",
   "hud.titanbreak.cooling": "냉각",
+  "message.titanbreak.first_hunt_rd": "신규 개체 전투 데이터 확보 · Research Data +%s",
   "key.titanbreak.reflex_drive": "반응가속기 전환",
   "key.category.titanbreak.controls": "TITANBREAK"
 }

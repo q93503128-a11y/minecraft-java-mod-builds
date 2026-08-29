@@ -60,6 +60,19 @@ jobs:
           grep -q 'method = "serverAiStep"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.java
           grep -q 'method = "tick"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.java
 
+      - name: T0 hunting source audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'class RipperEntity' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/entity/RipperEntity.java
+          grep -q 'class SkitterEntity' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/entity/SkitterEntity.java
+          grep -q 'recordNormalFirstKill' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/player/TitanPlayerData.java
+          grep -q 'VISIBLE_PER_INTERNAL_HEALTH = 5.0D' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/combat/CombatScale.java
+          grep -q 'SERVO_BUNDLE' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
+          grep -q 'SYNTHETIC_TENDON' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
+          grep -q 'HIGH_DENSITY_MUSCLE_FIBER' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
+          grep -q 'HIGH_DENSITY_NEURAL_FIBER' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
+
       - name: Clean build
         run: projects/senbonzakura-showcase/gradlew -p projects/titanbreak clean build --no-daemon --stacktrace
 
@@ -110,6 +123,12 @@ jobs:
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/RipperEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/SkitterEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/combat/HuntRewardService.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/combat/CombatScale.class'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/items/servo_bundle.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/items/synthetic_tendon.json'
           echo "jar=$JAR"
           sha256sum "$JAR"
 

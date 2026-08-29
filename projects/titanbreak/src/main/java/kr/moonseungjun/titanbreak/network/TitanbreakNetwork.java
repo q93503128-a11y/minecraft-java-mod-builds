@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Locale;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha7";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha8";
 
     private TitanbreakNetwork() {}
 
@@ -37,6 +37,7 @@ public final class TitanbreakNetwork {
         boolean active = ReflexDriveService.active(player.getUUID());
         String snapshot = "sanity=" + one(state.sanity())
                 + ";heat=" + one(state.heat())
+                + ";rd=" + state.researchData()
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
                 + ";active=" + (active ? 1 : 0)
                 + ";rating=" + ReflexDriveService.rating(player.getUUID())
