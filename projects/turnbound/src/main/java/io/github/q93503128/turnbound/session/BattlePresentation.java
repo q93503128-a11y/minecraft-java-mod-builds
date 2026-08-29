@@ -2,11 +2,13 @@ package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
@@ -17,6 +19,7 @@ import java.util.UUID;
 final class BattlePresentation {
     private final Map<String, UUID> actors = new LinkedHashMap<>();
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
+    private UUID focusMarker;
     private String moving;
     private int returnTicks;
 
@@ -27,44 +30,64 @@ final class BattlePresentation {
         Vec3 right = new Vec3(-forward.z, 0, forward.x);
         int allyIndex = 0;
         int enemyIndex = 0;
+
         for (CombatantState combatant : combatants) {
-            double lane;
-            double distance;
-            if (combatant.side() == CombatantSide.ALLY) {
-                lane = -4.6 + allyIndex * 1.25;
-                distance = 4.2;
-                allyIndex++;
-            } else {
-                lane = -3.0 + enemyIndex * 1.5;
-                distance = 8.0;
-                enemyIndex++;
-            }
+            boolean ally = combatant.side() == CombatantSide.ALLY;
+            int index = ally ? allyIndex++ : enemyIndex++;
+            double lane = ally
+                    ? -3.0 + index * 2.0
+                    : -3.2 + index * 1.6;
+            double distance = ally ? 3.8 : 7.3;
             Vec3 pos = anchor.add(forward.scale(distance)).add(right.scale(lane));
+
             ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setCustomName(Component.literal(combatant.definition().name()));
-            stand.setCustomNameVisible(true);
+            stand.setCustomNameVisible(false);
             stand.setInvulnerable(true);
             stand.setNoGravity(true);
             stand.setShowArms(true);
-            stand.setItemSlot(
-                    EquipmentSlot.HEAD,
-                    combatant.side() == CombatantSide.ALLY
-                            ? Items.DIAMOND_HELMET.getDefaultInstance()
-                            : Items.NETHERITE_HELMET.getDefaultInstance());
+            stand.setYRot(player.getYRot() + (ally ? 0.0F : 180.0F));
+            equipStandIn(stand, combatant, index);
             level.addFreshEntity(stand);
+
             actors.put(combatant.instanceId(), stand.getUUID());
             homes.put(combatant.instanceId(), pos);
         }
     }
 
+    void focus(ServerLevel level, String targetId) {
+        clearFocus(level);
+        if (targetId == null || targetId.isBlank()) return;
+        Vec3 target = homes.get(targetId);
+        if (target == null) return;
+
+        ArmorStand marker = new ArmorStand(level, target.x, target.y + 0.55, target.z);
+        marker.setInvisible(true);
+        marker.setInvulnerable(true);
+        marker.setNoGravity(true);
+        marker.setSmall(true);
+        marker.setMarker(true);
+        marker.setCustomName(Component.literal("▼").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+        marker.setCustomNameVisible(true);
+        level.addFreshEntity(marker);
+        focusMarker = marker.getUUID();
+    }
+
+    void clearFocus(ServerLevel level) {
+        if (focusMarker == null) return;
+        var entity = level.getEntity(focusMarker);
+        if (entity != null) entity.discard();
+        focusMarker = null;
+    }
+
     void lunge(ServerLevel level, String actorId, String targetId) {
         ArmorStand actor = entity(level, actorId);
         Vec3 target = homes.get(targetId);
-        if (actor == null || target == null) return;
         Vec3 home = homes.get(actorId);
+        if (actor == null || target == null || home == null) return;
         Vec3 delta = target.subtract(home);
         if (delta.lengthSqr() > 0.001) {
-            actor.setPos(target.subtract(delta.normalize().scale(1.4)));
+            actor.setPos(target.subtract(delta.normalize().scale(1.45)));
         }
         moving = actorId;
         returnTicks = 5;
@@ -81,6 +104,7 @@ final class BattlePresentation {
     }
 
     void cleanup(ServerLevel level) {
+        clearFocus(level);
         for (UUID id : actors.values()) {
             var entity = level.getEntity(id);
             if (entity != null) entity.discard();
@@ -95,6 +119,41 @@ final class BattlePresentation {
         if (uuid == null) return null;
         var entity = level.getEntity(uuid);
         return entity instanceof ArmorStand armorStand ? armorStand : null;
+    }
+
+    private static void equipStandIn(ArmorStand stand, CombatantState combatant, int index) {
+        boolean ally = combatant.side() == CombatantSide.ALLY;
+        stand.setItemSlot(EquipmentSlot.CHEST,
+                (ally ? Items.CHAINMAIL_CHESTPLATE : Items.IRON_CHESTPLATE).getDefaultInstance());
+        stand.setItemSlot(EquipmentSlot.LEGS,
+                (ally ? Items.LEATHER_LEGGINGS : Items.IRON_LEGGINGS).getDefaultInstance());
+        stand.setItemSlot(EquipmentSlot.FEET,
+                (ally ? Items.LEATHER_BOOTS : Items.IRON_BOOTS).getDefaultInstance());
+
+        if (ally) {
+            String id = combatant.definition().id();
+            ItemStack mainHand = switch (id) {
+                case "P01" -> Items.DIAMOND_SWORD.getDefaultInstance();
+                case "P02" -> Items.CLOCK.getDefaultInstance();
+                case "P03" -> Items.IRON_SWORD.getDefaultInstance();
+                case "P04" -> Items.BLAZE_ROD.getDefaultInstance();
+                default -> Items.IRON_SWORD.getDefaultInstance();
+            };
+            stand.setItemSlot(EquipmentSlot.MAINHAND, mainHand);
+            if (id.equals("P03")) stand.setItemSlot(EquipmentSlot.OFFHAND, Items.SHIELD.getDefaultInstance());
+            stand.setItemSlot(EquipmentSlot.HEAD, Items.DIAMOND_HELMET.getDefaultInstance());
+        } else {
+            stand.setItemSlot(EquipmentSlot.HEAD, Items.IRON_HELMET.getDefaultInstance());
+            switch (index) {
+                case 2 -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BOW.getDefaultInstance());
+                case 3 -> {
+                    stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
+                    stand.setItemSlot(EquipmentSlot.OFFHAND, Items.SHIELD.getDefaultInstance());
+                }
+                case 4 -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BLAZE_ROD.getDefaultInstance());
+                default -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
+            }
+        }
     }
 
     private static Vec3 horizontal(Vec3 vector) {
