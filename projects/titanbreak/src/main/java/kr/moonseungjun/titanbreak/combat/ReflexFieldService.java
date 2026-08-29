@@ -56,35 +56,19 @@ public final class ReflexFieldService {
         return field == null ? 0.0D : field.radius();
     }
 
-    /**
-     * Continuous local time factor used by the alpha.7 simulation path.
-     * The logical server is authoritative. Client entities are left alone and interpolate
-     * the positions produced by the server instead of running a second time-dilation pass.
-     */
     public static double timeScale(Entity entity) {
         if (entity == null || entity.isRemoved() || entity.level().isClientSide() || FIELDS.isEmpty()) return 1.0D;
-
         Field strongest = strongestField(entity);
         if (strongest == null) return 1.0D;
-
         int localRating = localRating(entity, entity.level().dimension());
         return relativeRate(localRating, strongest.rating());
     }
 
-    /**
-     * Projectiles are velocity-scaled separately so their collision ray follows the slowed path.
-     * Returning 1 here prevents a projectile which happens to call Entity#move from being slowed twice.
-     */
     public static double movementScale(Entity entity) {
         if (entity instanceof Projectile) return 1.0D;
         return timeScale(entity);
     }
 
-    /**
-     * Mob AI progresses on a fractional budget while the entity itself still receives every normal
-     * 20 TPS entity tick. This keeps navigation intent/attack cadence on the local time axis without
-     * freezing the whole entity between sparse ticks.
-     */
     public static boolean shouldAdvanceMobAi(Mob mob) {
         double scale = timeScale(mob);
         UUID id = mob.getUUID();
@@ -103,12 +87,6 @@ public final class ReflexFieldService {
         return false;
     }
 
-    /**
-     * Keep projectile motion continuous instead of cancelling projectile ticks. Velocity changes only
-     * when the projectile crosses between time scales; while it remains in one field it ticks every
-     * server tick at the scaled velocity. The active drive user's own projectile inherits that user's
-     * rating through localRating() and therefore stays at 1x.
-     */
     public static void applyProjectileTimeScale(Projectile projectile) {
         if (projectile == null || projectile.level().isClientSide()) return;
         UUID id = projectile.getUUID();
@@ -154,6 +132,9 @@ public final class ReflexFieldService {
         }
         if (entity instanceof Projectile projectile && projectile.getOwner() instanceof Player owner) {
             return ratingForOwner(owner.getUUID(), dimension);
+        }
+        if (entity instanceof TemporalRated temporalRated) {
+            return Math.max(0, temporalRated.temporalRating());
         }
         return 0;
     }
