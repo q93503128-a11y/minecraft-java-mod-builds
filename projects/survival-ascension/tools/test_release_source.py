@@ -46,6 +46,9 @@ legacy = legacy.replace(
     'CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65}',
     'CONSTRUCTION_LENGTHS = {5, 9, 17, 33, 49, 65, 81}'
 )
+# 0.61 also replaces the player-facing developer term "affix" with "승천 옵션".
+# Keep the historical 0.58 source untouched and adapt only its UI regression needle here.
+legacy = legacy.replace('h("방어구 affix")', 'h("방어구 승천 옵션")')
 namespace = {"__file__": str(legacy_path), "__name__": "__main__"}
 buffer = io.StringIO()
 exit_code = 0
@@ -79,6 +82,8 @@ construction = read("src/main/java/kr/moonseungjun/survivalascension/constructio
 elite = read("src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java")
 infrastructure = read("src/main/java/kr/moonseungjun/survivalascension/infrastructure/InfrastructureService.java")
 menu = read("src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java")
+guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
+equipment_menu = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")
 project = read("PROJECT.md")
 readme = read("README.md")
 changelog = read("CHANGELOG.md")
@@ -143,6 +148,16 @@ need(infrastructure, [
 need(menu, [
     'new Entry("최후의 승천"', "ACTION_FINAL_ASCENSION", "세계의 시험 → 9지역 잔향 → 붕괴 봉쇄"
 ], "final ascension menu entry")
+need(guide, [
+    'h("방어구 승천 옵션")', 'h("최후의 승천")',
+    "최후의 승천 완료 후 Lv.100", "선/도로81", "공중돌진5회",
+    "승천 옵션이 없는 표준 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패"
+], "0.61 player-facing guide")
+need(equipment_menu, [
+    "이미 Survival Ascension 승천 옵션 장비입니다", "4번째 승천 옵션 개방"
+], "0.61 player-facing equipment wording")
+forbid(guide + equipment_menu, ["방어구 affix", "장비 affix", "4번째 affix 개방"],
+       "0.61 player-facing developer terminology")
 
 # 0.60 acts 1-3 remain real-world, bounded and isolated from Apex persistence.
 need(final_system, [
@@ -243,4 +258,5 @@ print("final_completion_saved_data=PASS")
 print("final_mobility_construction_authority=PASS")
 print("final_ascension_apex_state_mutation=ABSENT")
 print("final_ascension_force_load=ABSENT")
+print("player_facing_final_unlock_guidance=PASS")
 print("RELEASE SOURCE AUDIT PASS")
