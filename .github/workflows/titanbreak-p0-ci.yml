@@ -60,18 +60,52 @@ jobs:
           grep -q 'method = "serverAiStep"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.java
           grep -q 'method = "tick"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.java
 
-      - name: T0 hunting source audit
+      - name: First playable source audit
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'class RipperEntity' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/entity/RipperEntity.java
-          grep -q 'class SkitterEntity' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/entity/SkitterEntity.java
-          grep -q 'recordNormalFirstKill' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/player/TitanPlayerData.java
-          grep -q 'VISIBLE_PER_INTERNAL_HEALTH = 5.0D' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/combat/CombatScale.java
-          grep -q 'SERVO_BUNDLE' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
-          grep -q 'SYNTHETIC_TENDON' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
-          grep -q 'HIGH_DENSITY_MUSCLE_FIBER' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
-          grep -q 'HIGH_DENSITY_NEURAL_FIBER' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java
+          ROOT=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak
+          for cls in RipperEntity SkitterEntity BulwarkEntity NeedlerEntity HowlerEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+            test -f "$ROOT/entity/$cls.java"
+          done
+          test -f "$ROOT/world/EncounterDirector.java"
+          test -f "$ROOT/augmentation/AugmentationCatalog.java"
+          test -f "$ROOT/augmentation/AugmentationEffectService.java"
+          test -f "$ROOT/station/StationService.java"
+          grep -q 'recordNormalFirstKill' "$ROOT/player/TitanPlayerData.java"
+          grep -q 'recordEliteFirstKill' "$ROOT/player/TitanPlayerData.java"
+          grep -q 'recordBossFirstKill' "$ROOT/player/TitanPlayerData.java"
+          grep -q 'VISIBLE_PER_INTERNAL_HEALTH = 5.0D' "$ROOT/combat/CombatScale.java"
+          grep -q 'EncounterDirector.tick' "$ROOT/Titanbreak.java"
+          grep -q 'class FabricatorScreen' "$ROOT/client/FabricatorScreen.java"
+          grep -q 'class SurgeryScreen' "$ROOT/client/SurgeryScreen.java"
+          grep -q 'normalFirstKillCount() >= NORMAL_SPECIES.length' "$ROOT/world/EncounterDirector.java"
+          grep -q 'eliteFirstKillCount() >= ELITE_SPECIES.length' "$ROOT/world/EncounterDirector.java"
+
+      - name: First playable resource audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ASSETS=projects/titanbreak/src/main/resources/assets/titanbreak
+          for lang in ko_kr en_us; do
+            test -f "$ASSETS/lang/$lang.json"
+            grep -q 'screen.titanbreak.fabricator' "$ASSETS/lang/$lang.json"
+            grep -q 'screen.titanbreak.surgery' "$ASSETS/lang/$lang.json"
+            grep -q 'entity.titanbreak.the_pursuer' "$ASSETS/lang/$lang.json"
+            grep -q 'augmentation.titanbreak.powered_spine' "$ASSETS/lang/$lang.json"
+            grep -q 'message.titanbreak.pursuer_warning' "$ASSETS/lang/$lang.json"
+          done
+          for item in \
+            composite_armor_plate dense_bone_lattice optic_sensor_cluster calculation_core \
+            resonant_neural_ganglion thermal_optic_cluster temporal_neural_bundle reaction_temporal_matrix \
+            predictive_optic_core pursuer_reaction_organ tactical_eye thermal_eye ballistic_correction_eye \
+            target_assist_coprocessor reflex_accelerator_node threat_detection_node powered_spine \
+            bioalloy_skeleton subdermal_armor_plate blade_arm wire_hook_arm reinforced_tendon_legs \
+            fabricator_i surgical_bay; do
+            test -f "$ASSETS/items/$item.json"
+          done
+          test -f "$ASSETS/blockstates/fabricator_i.json"
+          test -f "$ASSETS/blockstates/surgical_bay.json"
 
       - name: Clean build
         run: projects/senbonzakura-showcase/gradlew -p projects/titanbreak clean build --no-daemon --stacktrace
@@ -105,7 +139,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE '산데비스탄|sandevistan|DESIGN_TARGET|\bP0\b|prototype|\bdebug\b|TODO' \
+          if grep -RniE '산데비스탄|sandevistan|DESIGN_TARGET|\bP0\b|\bP1\b|prototype|\bdebug\b|TODO' \
             projects/titanbreak/src/main/resources projects/titanbreak/src/main/templates; then
             echo 'Forbidden player-facing/development wording detected.' >&2
             exit 1
@@ -123,12 +157,15 @@ jobs:
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/RipperEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/SkitterEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/combat/HuntRewardService.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/combat/CombatScale.class'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/items/servo_bundle.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/items/synthetic_tendon.json'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/world/EncounterDirector.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/PursuerEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/items/fabricator_i.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/items/surgical_bay.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/fabricator_i.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/surgical_bay.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
           echo "jar=$JAR"
           sha256sum "$JAR"
 

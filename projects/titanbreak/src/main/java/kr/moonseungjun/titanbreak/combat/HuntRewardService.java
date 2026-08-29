@@ -96,7 +96,8 @@ public final class HuntRewardService {
         int levels = data.addAdaptationXp(player, adaptationXp);
         if (levels > 0) {
             TitanPlayerData.State state = data.state(player);
-            player.sendSystemMessage(Component.translatable("message.titanbreak.adaptation_level", state.adaptationLevel(), state.adaptationPoints()), true);
+            player.sendSystemMessage(Component.translatable("message.titanbreak.adaptation_level",
+                    state.adaptationLevel(), state.adaptationPoints()), true);
         }
 
         boolean first = switch (huntClass) {
@@ -111,6 +112,14 @@ public final class HuntRewardService {
                 case BOSS -> BOSS_FIRST_KILL_RD;
             };
             player.sendSystemMessage(Component.translatable("message.titanbreak.first_hunt_rd", reward), true);
+            TitanPlayerData.State state = data.state(player);
+            if (huntClass == HuntClass.NORMAL && state.normalFirstKillCount() == 5) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.normal_catalog_complete"));
+            } else if (huntClass == HuntClass.ELITE && state.eliteFirstKillCount() == 2) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.elite_catalog_complete"));
+            } else if (huntClass == HuntClass.BOSS) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.pursuer_defeated"));
+            }
         }
         TitanbreakNetwork.sync(player);
     }

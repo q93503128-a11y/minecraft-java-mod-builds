@@ -1,6 +1,6 @@
 package kr.moonseungjun.titanbreak.network;
 
-import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
+import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.station.StationService;
@@ -12,11 +12,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.Comparator;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha9";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha10";
 
     private TitanbreakNetwork() {}
 
@@ -61,8 +60,12 @@ public final class TitanbreakNetwork {
                 + ";adaptXp=" + state.adaptationXp()
                 + ";adaptNext=" + TitanPlayerData.xpForNext(state.adaptationLevel())
                 + ";apt=" + state.adaptationPoints()
+                + ";normalSeen=" + state.normalFirstKillCount()
+                + ";eliteSeen=" + state.eliteFirstKillCount()
+                + ";bossSeen=" + (state.hasBossFirstKill("the_pursuer") ? 1 : 0)
                 + ";installed=" + installed
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
+                + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
                 + ";active=" + (active ? 1 : 0)
                 + ";rating=" + ReflexDriveService.rating(player.getUUID())

@@ -109,6 +109,18 @@ public final class TitanHud {
         g.fill(left + 2, top + 2, width - 16, top + 22, 0xDD20313B);
         g.text(font, Component.translatable("hud.titanbreak.analysis"), left + 10, top + 8, 0xFFE7EEF2);
 
+        int jamTicks = TitanClientState.integer("jamTicks", 0);
+        if (jamTicks > 0) {
+            int phase = mc.player == null ? 0 : Math.floorMod(mc.player.tickCount, 12);
+            for (int y = top + 30 + phase; y < top + 106; y += 12) {
+                g.fill(left + 8, y, width - 22, y + 2, 0x887A345E);
+            }
+            g.text(font, Component.translatable("hud.titanbreak.analysis_jammed",
+                            String.format(Locale.ROOT, "%.1f", jamTicks / 20.0D)),
+                    left + 10, top + 48, 0xFFE37C9D);
+            return;
+        }
+
         Entity target = mc.crosshairPickEntity;
         int y = top + 32;
         if (target instanceof LivingEntity living) {
