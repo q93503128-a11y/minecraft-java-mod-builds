@@ -65,15 +65,17 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onShieldBlock);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onLivingDeath);
-        NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onLivingDeath);
+        // Recovery inspects encounter state before encounter death handlers tear runtime state down.
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(FinalAscensionSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionOperationSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(FinalAscensionBossSystem::onLivingDeath);
+        // Apex content participation must be sampled before the hunt cleanup discards surviving escorts.
+        NeoForge.EVENT_BUS.addListener(ApexContentRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onLivingDeath);
-        NeoForge.EVENT_BUS.addListener(ApexContentRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
