@@ -14,15 +14,21 @@ public final class ClientBattleNetwork {
 
     private static void handle(BattleSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
+            boolean wasActive = ClientBattleState.snapshot().active();
             ClientBattleState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             var snapshot = ClientBattleState.snapshot();
+
             if (snapshot.active()) {
+                if (!wasActive) BattleCameraController.enter();
                 if (!(minecraft.gui.screen() instanceof BattleScreen)) {
                     minecraft.gui.setScreen(new BattleScreen());
                 }
-            } else if (minecraft.gui.screen() instanceof BattleScreen) {
-                minecraft.gui.setScreen(null);
+            } else {
+                if (wasActive) BattleCameraController.exit();
+                if (minecraft.gui.screen() instanceof BattleScreen) {
+                    minecraft.gui.setScreen(null);
+                }
             }
         });
     }
