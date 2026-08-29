@@ -30,6 +30,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -82,6 +83,10 @@ public final class AscensionTrialSystem {
         }
         if (ACTIVE.containsKey(player.getUUID())) {
             player.sendSystemMessage(Component.literal("§5[승천 시련] §f이미 진행 중인 시련이 있습니다."));
+            return;
+        }
+        if (FinalAscensionSystem.isFinalSequenceActive(player)) {
+            player.sendSystemMessage(Component.literal("§5[승천 시련] §f최후의 승천 진행 중에는 반복 시련을 열 수 없습니다."));
             return;
         }
         for (Trial active : ACTIVE.values()) {
@@ -139,6 +144,18 @@ public final class AscensionTrialSystem {
             if (tickTrial(event.getServer(), entry.getValue())) finished.add(entry.getKey());
         }
         for (UUID owner : finished) ACTIVE.remove(owner);
+    }
+
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (event.isCanceled() || !(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
+        String ownerText = mob.getPersistentData().getStringOr(TRIAL_OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+        try {
+            UUID owner = UUID.fromString(ownerText);
+            Trial trial = ACTIVE.get(owner);
+            if (trial != null && trial.level == level) trial.mobIds.remove(mob.getUUID());
+        } catch (IllegalArgumentException ignored) {
+        }
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
@@ -360,11 +377,15 @@ public final class AscensionTrialSystem {
 
     private static void pruneAndRecall(Trial trial, ServerPlayer owner) {
         if (trial.mobIds.isEmpty()) return;
-        Set<UUID> alive = new HashSet<>();
+        Set<UUID> unresolved = new HashSet<>();
         for (UUID id : trial.mobIds) {
             Entity entity = trial.level.getEntity(id);
+            if (entity == null) {
+                unresolved.add(id);
+                continue;
+            }
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-            alive.add(id);
+            unresolved.add(id);
             if (owner != null && mob.getTarget() == null) mob.setTarget(owner);
             if (owner != null && trial.doctrine == AscensionTrialDoctrine.PURSUIT && mob.distanceToSqr(owner) > 100.0D) {
                 mob.getNavigation().moveTo(owner, 1.35D);
@@ -373,7 +394,7 @@ public final class AscensionTrialSystem {
             }
         }
         trial.mobIds.clear();
-        trial.mobIds.addAll(alive);
+        trial.mobIds.addAll(unresolved);
     }
 
     private static void syncBossBarPlayers(MinecraftServer server, Trial trial) {

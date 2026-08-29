@@ -55,6 +55,7 @@ public final class FinalAscensionBossSystem {
     private static final int WARDEN_AGGRO_REFRESH_TICKS = 80;
     private static final double PLAYER_RADIUS = 72.0D;
     private static final double RECALL_RADIUS = 44.0D;
+    private static final double ATTACK_VERTICAL_TOLERANCE = 3.0D;
 
     private static final Map<UUID, Run> ACTIVE = new HashMap<>();
     private static boolean internalSpawn;
@@ -137,7 +138,13 @@ public final class FinalAscensionBossSystem {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || !(event.getEntity() instanceof Mob boss) || !isFinalBoss(boss)) return;
+        if (event.isCanceled()) return;
+        if (event.getEntity() instanceof ServerPlayer player) {
+            Run run = ACTIVE.remove(player.getUUID());
+            if (run != null) fail(run, null, "도전 중 사망했습니다.");
+            return;
+        }
+        if (!(event.getEntity() instanceof Mob boss) || !isFinalBoss(boss)) return;
         Run run = findRun(boss);
         if (run == null || run.phase != Phase.FINAL) return;
         ServerPlayer owner = run.level.getServer().getPlayerList().getPlayer(run.owner);
@@ -182,6 +189,10 @@ public final class FinalAscensionBossSystem {
             return true;
         }
         if (owner == null) return false;
+        if (FinalAscensionSystem.hasOtherMajorActivity(owner)) {
+            fail(run, owner, "다른 대형 전투가 동시에 시작되어 최종 관문을 유지할 수 없습니다.");
+            return true;
+        }
         long now = run.level.getGameTime();
         if (now >= run.deadline) {
             fail(run, owner, "최종 관문의 제한시간을 초과했습니다.");
@@ -346,9 +357,10 @@ public final class FinalAscensionBossSystem {
                 case LINE -> insideLine(player.position(), run.attackOrigin, run.attackDirection, 16.0D, 2.2D);
                 case RING -> {
                     double d = horizontalDistance(player.position(), run.attackOrigin);
-                    yield d >= 4.25D && d <= 8.75D;
+                    yield withinVerticalBand(player.position(), run.attackOrigin) && d >= 4.25D && d <= 8.75D;
                 }
-                case MARKED -> horizontalDistance(player.position(), run.markedPoint) <= 3.75D;
+                case MARKED -> withinVerticalBand(player.position(), run.markedPoint)
+                        && horizontalDistance(player.position(), run.markedPoint) <= 3.75D;
                 default -> false;
             };
             if (!hit) continue;
@@ -372,11 +384,16 @@ public final class FinalAscensionBossSystem {
     }
 
     private static boolean insideLine(Vec3 point, Vec3 origin, Vec3 direction, double length, double halfWidth) {
+        if (!withinVerticalBand(point, origin)) return false;
         Vec3 delta = point.subtract(origin).multiply(1.0D, 0.0D, 1.0D);
         double projection = delta.dot(direction);
         if (projection < 0.0D || projection > length) return false;
         Vec3 lateral = delta.subtract(direction.scale(projection));
         return lateral.lengthSqr() <= halfWidth * halfWidth;
+    }
+
+    private static boolean withinVerticalBand(Vec3 point, Vec3 origin) {
+        return Math.abs(point.y - origin.y) <= ATTACK_VERTICAL_TOLERANCE;
     }
 
     private static double horizontalDistance(Vec3 a, Vec3 b) {

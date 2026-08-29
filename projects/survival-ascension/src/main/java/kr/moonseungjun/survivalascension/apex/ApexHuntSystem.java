@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.apex;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
@@ -35,6 +36,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -98,6 +100,10 @@ public final class ApexHuntSystem {
         }
         if (ExpeditionIncidentSystem.isActive(player)) {
             player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 현장 사건을 먼저 끝내세요."));
+            return;
+        }
+        if (FinalAscensionSystem.isFinalSequenceActive(player)) {
+            player.sendSystemMessage(Component.literal("§4[정점 사냥] §f최후의 승천 진행 중에는 새 정점 사냥을 열 수 없습니다."));
             return;
         }
 
@@ -166,6 +172,25 @@ public final class ApexHuntSystem {
             if (tickHunt(event.getServer(), entry.getValue())) finished.add(entry.getKey());
         }
         for (UUID owner : finished) ACTIVE.remove(owner);
+    }
+
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (event.isCanceled() || !(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
+        String ownerText = mob.getPersistentData().getStringOr(APEX_OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+        UUID ownerId;
+        try {
+            ownerId = UUID.fromString(ownerText);
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        Hunt hunt = ACTIVE.get(ownerId);
+        if (hunt == null || hunt.level != level || !hunt.mobIds.contains(mob.getUUID())) return;
+        hunt.mobIds.remove(mob.getUUID());
+        if (!mob.getUUID().equals(hunt.bossId)) return;
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        complete(hunt, owner);
+        ACTIVE.remove(ownerId);
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -256,6 +281,11 @@ public final class ApexHuntSystem {
         }
 
         Entity bossEntity = hunt.level.getEntity(hunt.bossId);
+        if (bossEntity == null) {
+            int seconds = Math.max(0, (int) ((hunt.deadline - now + 19L) / 20L));
+            hunt.bossBar.setName(Component.literal("§4정점 사냥 §7[" + hunt.archetype.koreanName() + "] §f대상 재확인 중 §7· " + seconds + "초"));
+            return false;
+        }
         if (!(bossEntity instanceof Mob boss) || !boss.isAlive()) {
             complete(hunt, owner);
             return true;
@@ -403,18 +433,22 @@ public final class ApexHuntSystem {
     }
 
     private static void pruneAndRecall(Hunt hunt, ServerPlayer owner, Mob boss) {
-        Set<UUID> alive = new HashSet<>();
+        Set<UUID> unresolved = new HashSet<>();
         for (UUID id : hunt.mobIds) {
             Entity entity = hunt.level.getEntity(id);
+            if (entity == null) {
+                unresolved.add(id);
+                continue;
+            }
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-            alive.add(id);
+            unresolved.add(id);
             if (owner != null && mob.getTarget() == null) mob.setTarget(owner);
             if (mob != boss && distanceToCenterSqr(mob, hunt.center) > RECALL_RADIUS * RECALL_RADIUS) {
                 mob.getNavigation().moveTo(hunt.center.getX() + 0.5D, hunt.center.getY(), hunt.center.getZ() + 0.5D, 1.20D);
             }
         }
         hunt.mobIds.clear();
-        hunt.mobIds.addAll(alive);
+        hunt.mobIds.addAll(unresolved);
     }
 
     private static void complete(Hunt hunt, ServerPlayer owner) {

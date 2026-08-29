@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.expedition;
 
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
+import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -19,6 +20,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -33,6 +36,7 @@ import java.util.UUID;
 public final class ExpeditionIncidentSystem {
     private static final String READY_TICK_KEY = "survivalascension_expedition_incident_ready";
     private static final String TRIAL_READY_TICK_KEY = "survivalascension_ascension_trial_ready";
+    private static final String INCIDENT_OWNER_KEY = "survivalascension_expedition_incident_owner";
     private static final int CHECK_INTERVAL_TICKS = 600;
     private static final double START_CHANCE = 0.10D;
     private static final int START_COOLDOWN_TICKS = 3600;
@@ -76,6 +80,7 @@ public final class ExpeditionIncidentSystem {
         }
 
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0 || player.isCreative() || player.isSpectator() || !player.isAlive()) return;
+        if (FinalAscensionSystem.isFinalSequenceActive(player)) return;
         long now = level.getGameTime();
         if (now < player.getPersistentData().getLongOr(READY_TICK_KEY, 0L)) return;
         long trialReady = player.getPersistentData().getLongOr(TRIAL_READY_TICK_KEY, 0L);
@@ -103,6 +108,31 @@ public final class ExpeditionIncidentSystem {
         }
     }
 
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (event.isCanceled() || !(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
+        String ownerText = mob.getPersistentData().getStringOr(INCIDENT_OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+        try {
+            UUID owner = UUID.fromString(ownerText);
+            ActiveIncident active = ACTIVE.get(owner);
+            if (active != null && active.level == level) active.mobIds.remove(mob.getUUID());
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof Mob mob)) return;
+        String ownerText = mob.getPersistentData().getStringOr(INCIDENT_OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+        try {
+            UUID owner = UUID.fromString(ownerText);
+            ActiveIncident active = ACTIVE.get(owner);
+            if (active == null || active.level != level || !active.mobIds.contains(mob.getUUID())) event.setCanceled(true);
+        } catch (IllegalArgumentException ignored) {
+            event.setCanceled(true);
+        }
+    }
+
     public static void recordAction(ServerPlayer player, ExpeditionAction action, int amount) {
         if (amount <= 0) return;
         ActiveIncident active = ACTIVE.get(player.getUUID());
@@ -116,6 +146,7 @@ public final class ExpeditionIncidentSystem {
 
     private static void queueStart(ServerPlayer player, ServerLevel level, ExpeditionRegion region,
                                    ExpeditionIncident incident, boolean rare) {
+        if (FinalAscensionSystem.isFinalSequenceActive(player)) return;
         long now = level.getGameTime();
         BlockPos center = player.blockPosition().immutable();
         if (overlapsActiveIncident(level, center, player.getUUID())) {
@@ -142,10 +173,11 @@ public final class ExpeditionIncidentSystem {
         long now = pending.level.getGameTime();
         boolean invalid = !player.isAlive() || player.isCreative() || player.isSpectator()
                 || player.level() != pending.level
+                || FinalAscensionSystem.isFinalSequenceActive(player)
                 || ExpeditionProgression.currentRegion(player) != pending.region
                 || distanceToCenterSqr(player, pending.center) > EVENT_RADIUS * EVENT_RADIUS;
         if (invalid) {
-            cancelPending(player, pending, "예고 지점 또는 현재 원정권을 벗어나 개방이 취소되었습니다.");
+            cancelPending(player, pending, "예고 조건이 바뀌어 개방이 취소되었습니다.");
             return;
         }
 
@@ -183,6 +215,7 @@ public final class ExpeditionIncidentSystem {
                               ExpeditionIncident incident, boolean rare, BlockPos center) {
         long now = level.getGameTime();
         if (!player.isAlive() || player.isCreative() || player.isSpectator() || player.level() != level
+                || FinalAscensionSystem.isFinalSequenceActive(player)
                 || ExpeditionProgression.currentRegion(player) != region
                 || distanceToCenterSqr(player, center) > EVENT_RADIUS * EVENT_RADIUS) {
             player.getPersistentData().putLong(READY_TICK_KEY, now + OVERLAP_RETRY_TICKS);
@@ -270,11 +303,15 @@ public final class ExpeditionIncidentSystem {
         }
 
         if (active.incident.kind() == ExpeditionIncident.Kind.AMBUSH) {
-            Set<UUID> alive = new HashSet<>();
+            Set<UUID> unresolved = new HashSet<>();
             for (UUID id : active.mobIds) {
                 Entity entity = active.level.getEntity(id);
+                if (entity == null) {
+                    unresolved.add(id);
+                    continue;
+                }
                 if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-                alive.add(id);
+                unresolved.add(id);
                 mob.setGlowingTag(true);
                 if (mob.getTarget() == null) mob.setTarget(player);
                 if (distanceToCenterSqr(mob, active.center) > EVENT_RADIUS * EVENT_RADIUS) {
@@ -282,7 +319,7 @@ public final class ExpeditionIncidentSystem {
                 }
             }
             active.mobIds.clear();
-            active.mobIds.addAll(alive);
+            active.mobIds.addAll(unresolved);
             if (active.mobIds.isEmpty()) {
                 complete(player, active);
                 return;
@@ -317,7 +354,7 @@ public final class ExpeditionIncidentSystem {
                 mob = spawnOne(active.level, active.center, false, vanillaTypeId, i, spawnTarget);
             }
             if (mob == null) continue;
-            mob.setPersistenceRequired();
+            markIncidentMob(mob, active);
             mob.setGlowingTag(true);
             mob.setTarget(player);
             spawned.add(mob.getUUID());
@@ -337,10 +374,15 @@ public final class ExpeditionIncidentSystem {
         int baseCount = Math.max(1, active.spawnTarget());
         Mob mob = spawnOne(active.level, active.center, false, typeId, baseCount, baseCount + 1);
         if (mob == null) return null;
-        mob.setPersistenceRequired();
+        markIncidentMob(mob, active);
         mob.setGlowingTag(true);
         mob.setTarget(player);
         return mob;
+    }
+
+    private static void markIncidentMob(Mob mob, ActiveIncident active) {
+        mob.setPersistenceRequired();
+        mob.getPersistentData().putString(INCIDENT_OWNER_KEY, active.owner.toString());
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, boolean water, String typeId, int index, int count) {
@@ -387,6 +429,7 @@ public final class ExpeditionIncidentSystem {
 
     private static void complete(ServerPlayer player, ActiveIncident active) {
         if (ACTIVE.remove(player.getUUID()) != active) return;
+        cleanupMobs(active);
         ExpeditionData data = ExpeditionData.get(player);
         boolean firstResolution = data.claimIncidentReward(player, active.incident.region());
         closeBossBar(active.bossBar);

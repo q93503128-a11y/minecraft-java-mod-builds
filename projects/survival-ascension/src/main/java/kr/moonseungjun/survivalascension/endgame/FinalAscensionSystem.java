@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -150,6 +151,18 @@ public final class FinalAscensionSystem {
         return ACTIVE.containsKey(player.getUUID());
     }
 
+    public static boolean isFinalSequenceActive(ServerPlayer player) {
+        return isActive(player) || FinalAscensionBossSystem.isActive(player);
+    }
+
+    public static boolean hasOtherMajorActivity(ServerPlayer player) {
+        return AscensionTrialSystem.isActive(player)
+                || ApexHuntSystem.isActive(player)
+                || ExpeditionIncidentSystem.isActive(player)
+                || ExpeditionOperationSystem.isActive(player)
+                || OutpostSiegeSystem.isActive(player);
+    }
+
     public static void onServerTick(ServerTickEvent.Pre event) {
         removeStaleServerRuns(event.getServer());
         if (++ticker < TICK_INTERVAL) return;
@@ -174,6 +187,26 @@ public final class FinalAscensionSystem {
             stopped.add(entry.getKey());
         }
         for (UUID owner : stopped) ACTIVE.remove(owner);
+    }
+
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (event.isCanceled()) return;
+        if (event.getEntity() instanceof ServerPlayer player) {
+            Run run = ACTIVE.remove(player.getUUID());
+            if (run != null) fail(run, player, "도전 중 사망했습니다.");
+            return;
+        }
+        if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
+        String ownerText = mob.getPersistentData().getStringOr(OWNER_KEY, "");
+        if (ownerText.isEmpty()) return;
+        UUID owner;
+        try {
+            owner = UUID.fromString(ownerText);
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        Run run = ACTIVE.get(owner);
+        if (run != null && run.level == level) run.mobIds.remove(mob.getUUID());
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
@@ -237,8 +270,8 @@ public final class FinalAscensionSystem {
     }
 
     private static boolean tickMining(Run run, ServerPlayer owner) {
-        run.mineTargets.removeIf(pos -> !run.level.hasChunkAt(pos)
-                || !run.level.getBlockState(pos).is(Blocks.CRYING_OBSIDIAN));
+        run.mineTargets.removeIf(pos -> run.level.hasChunkAt(pos)
+                && !run.level.getBlockState(pos).is(Blocks.CRYING_OBSIDIAN));
         int done = MINING_TARGETS - run.mineTargets.size();
         setObjectiveBar(run, "1막 · 채굴로 균열 노출", done, MINING_TARGETS);
         if (!run.mineTargets.isEmpty()) return false;
@@ -255,7 +288,10 @@ public final class FinalAscensionSystem {
         run.buildTargets.removeIf(pos -> {
             if (!run.level.hasChunkAt(pos)) return false;
             BlockState state = run.level.getBlockState(pos);
-            return !state.isAir() && state.getFluidState().isEmpty() && !state.hasBlockEntity();
+            return !state.isAir()
+                    && state.getFluidState().isEmpty()
+                    && !state.hasBlockEntity()
+                    && !state.getCollisionShape(run.level, pos).isEmpty();
         });
         int done = BUILD_TARGETS - run.buildTargets.size();
         setObjectiveBar(run, "1막 · 전장 지지대 복구", done, BUILD_TARGETS);
@@ -444,7 +480,7 @@ public final class FinalAscensionSystem {
                 if (!placeMarker(run, marker, Blocks.AMETHYST_BLOCK)) return false;
                 run.buildTargets.add(marker.above().immutable());
             }
-            owner.sendSystemMessage(Component.literal("§5[세계의 시험] §f자수정 표식 4개 바로 위 빈칸을 실제 블록으로 연결해 전장 지지대를 복구하세요."));
+            owner.sendSystemMessage(Component.literal("§5[세계의 시험] §f자수정 표식 4개 바로 위 빈칸을 충돌 판정이 있는 실제 블록으로 연결해 전장 지지대를 복구하세요."));
             owner.sendSystemMessage(Component.literal("§7선/면 건축 등 기존 건축 숙련이 그대로 적용됩니다. 플레이어가 놓은 복구 블록은 전장에 남습니다."));
             setObjectiveBar(run, run.phase.title, 0, BUILD_TARGETS);
             return true;
@@ -521,11 +557,15 @@ public final class FinalAscensionSystem {
 
     private static void pruneAndPressure(Run run, ServerPlayer owner) {
         if (run.mobIds.isEmpty()) return;
-        Set<UUID> alive = new HashSet<>();
+        Set<UUID> unresolved = new HashSet<>();
         for (UUID id : run.mobIds) {
             Entity entity = run.level.getEntity(id);
+            if (entity == null) {
+                unresolved.add(id);
+                continue;
+            }
             if (!(entity instanceof Mob mob) || !mob.isAlive()) continue;
-            alive.add(id);
+            unresolved.add(id);
             if (mob.getTarget() == null) mob.setTarget(owner);
             if (distanceToCenterSqr(mob, run.center) > MOB_RECALL_RADIUS * MOB_RECALL_RADIUS) {
                 mob.getNavigation().moveTo(run.center.getX() + 0.5D, run.center.getY(),
@@ -535,7 +575,7 @@ public final class FinalAscensionSystem {
             }
         }
         run.mobIds.clear();
-        run.mobIds.addAll(alive);
+        run.mobIds.addAll(unresolved);
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, ThreatSpec spec, int index, int count) {
@@ -635,12 +675,7 @@ public final class FinalAscensionSystem {
     }
 
     private static boolean hasConflictingActivity(ServerPlayer player) {
-        return AscensionTrialSystem.isActive(player)
-                || ApexHuntSystem.isActive(player)
-                || ExpeditionIncidentSystem.isActive(player)
-                || ExpeditionOperationSystem.isActive(player)
-                || OutpostSiegeSystem.isActive(player)
-                || FinalAscensionBossSystem.isActive(player);
+        return hasOtherMajorActivity(player) || FinalAscensionBossSystem.isActive(player);
     }
 
     private static void clearTransient(Run run) {
