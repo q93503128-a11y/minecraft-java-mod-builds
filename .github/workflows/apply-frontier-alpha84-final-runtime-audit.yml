@@ -68,7 +68,7 @@ jobs:
           extra = '''\n\n## Final runtime audit\n\nPlacement now preflights the same one-block grading envelope that the builder will actually mutate, so\na protected/unsafe border cell is rejected before an active project can be created. Frontier civilian\nwork and logistics also run without a night/bed/jobsite schedule; the villager resemblance is strictly\npresentation, not a lifestyle or profession simulation.\n'''
           if '## Final runtime audit' not in s:
               s += extra
-          note.write_text(s + '\n', encoding='utf-8')
+          note.write_text(s.rstrip() + '\n', encoding='utf-8')
           PY
       - name: Audit Alpha.84 source and docs
         working-directory: projects/frontier-settlement
