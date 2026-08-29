@@ -1,0 +1,83 @@
+name: Validate Survival Ascension Solo Balance
+
+on:
+  push:
+    paths:
+      - 'projects/survival-ascension/.solo-balance-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    env:
+      PROJECT_DIR: projects/survival-ascension
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply solo balance and QOL patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$PROJECT_DIR/tools/apply_061_solo_balance.py"
+          # The original source used the same numeric switch for tool utility and spear primary.
+          # After the broad migration, restore the intended spear-specific direct-damage tier.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java')
+          s = p.read_text(encoding='utf-8')
+          old = 'if (category == Category.SPEAR) return switch (rarity) { case 1 -> 1.25D; case 2 -> 1.45D; default -> 1.75D; };'
+          new = 'if (category == Category.SPEAR) return switch (rarity) { case 1 -> 1.35D; case 2 -> 1.65D; default -> 2.00D; };'
+          if old not in s:
+              raise SystemExit('spear direct-damage migration token missing')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Diff safety
+        run: git diff --check
+
+      - name: Source and content regression audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+
+      - name: Clean Java 25 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+
+      - name: Commit validated balance pass to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f "$PROJECT_DIR/.solo-balance-trigger"
+          rm -f "$PROJECT_DIR/tools/apply_061_solo_balance.py"
+          rm -f .github/workflows/validate-survival-ascension-solo-balance.yml
+          git add "$PROJECT_DIR" .github/workflows/validate-survival-ascension-solo-balance.yml
+          git commit -m "Retune Survival Ascension for solo progression"
+          git pull --rebase origin main
+          git push origin HEAD:main
