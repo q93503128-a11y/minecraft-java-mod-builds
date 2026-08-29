@@ -58,42 +58,31 @@ def main() -> None:
 ''', "defense action ownership")
     replace_once(defense,
 '''    # Persistent defense maintenance is day-only and blocked after game over.
-    assert 'public static String blockReason(String action)' in rules
-    assert 'VillageProgressionSystem.isGameOver()' in rules
-    assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in rules
-    for signature in (
-        'public static String selectPlacement',
-        'public static synchronized String repair(ServerPlayer player, int id)',
-        'public static synchronized String upgrade(ServerPlayer player, int id)',
-        'public static synchronized String dismantle(ServerPlayer player, int id)',
-        'public static synchronized String repairAll(ServerPlayer player)',
-    ):
-        chunk = body(placed, signature, '\n    }')
-        assert 'VillageMaintenanceRules.blockReason(' in chunk
 ''',
 '''    # Persistent defense maintenance is day-only, game-over safe and owned by the physical wall command.
-    assert 'public static String blockReason(String action)' in rules
-    assert 'VillageProgressionSystem.isGameOver()' in rules
-    assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in rules
-    method_ranges = (
-        ('public static String selectPlacement', 'public static boolean handlePlacementClick'),
-        ('public static synchronized String repair(ServerPlayer player, int id)', 'public static synchronized String upgrade'),
-        ('public static synchronized String upgrade(ServerPlayer player, int id)', 'public static synchronized String dismantle'),
-        ('public static synchronized String dismantle(ServerPlayer player, int id)', 'public static synchronized String repairAll'),
-        ('public static synchronized String repairAll(ServerPlayer player)', 'public static void tick'),
-    )
-    for signature, end in method_ranges:
-        chunk = body(placed, signature, end)
+''', "defense contract comment")
+    replace_once(defense,
+'''        chunk = body(placed, signature, '\\n    }')
+        assert 'VillageMaintenanceRules.blockReason(' in chunk
+''',
+'''        chunk = placed.split(signature, 1)[1].split('\\n    public static', 1)[0]
         assert 'VillageMaintenanceRules.blockReason(' in chunk
         assert 'VillageProgressionSystem.Building.WALLS' in chunk
-    confirm = body(placed, 'public static boolean handlePlacementClick', 'public static String cancelPlacement')
-    assert 'VillageMaintenanceRules.blockReason("포탑 배치")' in confirm
-''', "defense leaf contract")
+''', "defense method slicing")
     replace_once(defense,
-'''    upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)', '\n    }')
+'''    # Emergency consumable field repair intentionally remains a combat action.
 ''',
-'''    upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)',
-                   'public static synchronized String dismantle')
+'''    confirm = placed.split('public static boolean handlePlacementClick', 1)[1].split(
+        'public static String cancelPlacement', 1)[0]
+    assert 'VillageMaintenanceRules.blockReason("포탑 배치")' in confirm
+
+    # Emergency consumable field repair intentionally remains a combat action.
+''', "placement confirmation contract")
+    replace_once(defense,
+'''    upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)', '\\n    }')
+''',
+'''    upgrade = placed.split('public static synchronized String upgrade(ServerPlayer player, int id)', 1)[1].split(
+        'public static synchronized String dismantle', 1)[0]
 ''', "defense upgrade slice")
     replace_once(defense,
 '''    print('[PASS] siege mutation packets revalidate town-hall locality server-side')
