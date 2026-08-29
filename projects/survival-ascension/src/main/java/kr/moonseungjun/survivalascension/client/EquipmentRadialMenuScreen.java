@@ -69,12 +69,12 @@ public final class EquipmentRadialMenuScreen extends Screen {
     private static String detail(Action action,ItemStack held,int rarity,boolean imprintable){
         if(action==Action.BACK)return "통합 메뉴로 돌아가기";
         if(action==Action.IMPRINT){
-            if(rarity>0)return "이미 Survival Ascension affix 장비입니다";
+            if(rarity>0)return "이미 Survival Ascension 승천 옵션 장비입니다";
             if(!imprintable)return "검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 표준 태그 장비 필요";
             return EquipmentReforgeService.imprintRangeText();
         }
         if(rarity<=0)return "정예 / 승천 / 신화 장비 필요";
-        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 affix 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(rarity);case INFO->AscensionAffixes.affixSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
+        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 승천 옵션 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(rarity);case INFO->AscensionAffixes.affixSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
