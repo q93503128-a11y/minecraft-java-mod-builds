@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.titanbreak.augmentation.AugmentationEffectService;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.HuntRewardService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
@@ -8,8 +9,10 @@ import kr.moonseungjun.titanbreak.combat.ReflexFieldService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.player.VanillaArmorLockout;
+import kr.moonseungjun.titanbreak.registry.ModBlocks;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import kr.moonseungjun.titanbreak.registry.ModItems;
+import kr.moonseungjun.titanbreak.station.StationService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -23,13 +26,14 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.8";
+    public static final String VERSION = "0.1.0-alpha.9";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
     private static final double OVERHEAT_RESTART = 45.0D;
 
     public Titanbreak(IEventBus modEventBus) {
+        ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModEntities.register(modEventBus);
         modEventBus.addListener(TitanbreakNetwork::register);
@@ -38,6 +42,8 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(StationService::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(StationService::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -47,6 +53,8 @@ public final class Titanbreak {
         TitanPlayerData.get(((ServerLevel) player.level()).getServer()).ensureProfile(player);
         ReflexFieldService.clear(player.getUUID());
         AugmentedMobilityService.clear(player);
+        AugmentationEffectService.clear(player);
+        StationService.clear(player.getUUID());
         TitanbreakNetwork.sync(player);
     }
 
@@ -55,6 +63,8 @@ public final class Titanbreak {
         ReflexDriveService.clear(player.getUUID());
         ReflexFieldService.clear(player.getUUID());
         AugmentedMobilityService.clear(player);
+        AugmentationEffectService.clear(player);
+        StationService.clear(player.getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -62,6 +72,8 @@ public final class Titanbreak {
         ReflexDriveService.clear(player.getUUID());
         ReflexFieldService.clear(player.getUUID());
         AugmentedMobilityService.clear(player);
+        AugmentationEffectService.clear(player);
+        StationService.clear(player.getUUID());
         TitanPlayerData.get(((ServerLevel) player.level()).getServer()).ensureProfile(player);
         TitanbreakNetwork.sync(player);
     }
@@ -75,8 +87,10 @@ public final class Titanbreak {
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0F);
         VanillaArmorLockout.tick(player);
+        AugmentationEffectService.tick(player, state);
+        StationService.tick(player);
 
-        boolean installed = TitanbreakNetwork.hasP0ReflexDrive(player);
+        boolean installed = TitanbreakNetwork.hasReflexDrive(player);
         if (!installed) ReflexDriveService.setRequested(player, false);
 
         boolean requested = installed && ReflexDriveService.requested(player.getUUID());
@@ -93,7 +107,6 @@ public final class Titanbreak {
         }
 
         AugmentedMobilityService.clear(player);
-
         if (player.tickCount % 5 == 0) TitanbreakNetwork.sync(player);
     }
 

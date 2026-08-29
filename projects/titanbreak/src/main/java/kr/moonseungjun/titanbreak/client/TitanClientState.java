@@ -20,6 +20,10 @@ public final class TitanClientState {
         values = Map.copyOf(next);
     }
 
+    public static String text(String key, String fallback) {
+        return values.getOrDefault(key, fallback);
+    }
+
     public static double decimal(String key, double fallback) {
         try { return Double.parseDouble(values.getOrDefault(key, Double.toString(fallback))); }
         catch (NumberFormatException ignored) { return fallback; }
@@ -32,5 +36,25 @@ public final class TitanClientState {
 
     public static boolean flag(String key) {
         return integer(key, 0) != 0;
+    }
+
+    public static boolean hasInstalled(String augmentId) {
+        String installed = text("installed", "");
+        if (installed.isEmpty()) return false;
+        for (String entry : installed.split(",")) {
+            int split = entry.indexOf(':');
+            if (split > 0 && entry.substring(split + 1).equals(augmentId)) return true;
+        }
+        return false;
+    }
+
+    public static String installedIn(String slot) {
+        String installed = text("installed", "");
+        if (installed.isEmpty()) return "";
+        for (String entry : installed.split(",")) {
+            int split = entry.indexOf(':');
+            if (split > 0 && entry.substring(0, split).equals(slot)) return entry.substring(split + 1);
+        }
+        return "";
     }
 }

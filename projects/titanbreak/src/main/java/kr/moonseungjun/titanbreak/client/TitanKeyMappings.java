@@ -2,6 +2,7 @@ package kr.moonseungjun.titanbreak.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import kr.moonseungjun.titanbreak.Titanbreak;
+import kr.moonseungjun.titanbreak.network.AugmentAbilityPayload;
 import kr.moonseungjun.titanbreak.network.DriveTogglePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -21,20 +22,37 @@ public final class TitanKeyMappings {
             GLFW.GLFW_KEY_R,
             CATEGORY);
 
+    public static final KeyMapping ANALYSIS = new KeyMapping(
+            "key.titanbreak.analysis",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_Z,
+            CATEGORY);
+
+    public static final KeyMapping HOOK = new KeyMapping(
+            "key.titanbreak.hook",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,
+            CATEGORY);
+
     private TitanKeyMappings() {}
 
     public static void register(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
         event.register(REFLEX_DRIVE);
+        event.register(ANALYSIS);
+        event.register(HOOK);
     }
 
     public static void onKeyInput(InputEvent.Key event) {
-        if (event.getAction() != InputConstants.PRESS || !REFLEX_DRIVE.matches(event.getKeyEvent())) return;
-
+        if (event.getAction() != InputConstants.PRESS) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null) return;
+        if (mc.player == null || mc.getConnection() == null || mc.gui.screen() != null) return;
 
-        boolean nextRequested = !TitanClientState.flag("requested");
-        ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
+        if (REFLEX_DRIVE.matches(event.getKeyEvent())) {
+            boolean nextRequested = !TitanClientState.flag("requested");
+            ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
+        } else if (HOOK.matches(event.getKeyEvent())) {
+            ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(AugmentAbilityPayload.HOOK));
+        }
     }
 }
