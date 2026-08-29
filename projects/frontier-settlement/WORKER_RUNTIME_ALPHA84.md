@@ -41,3 +41,7 @@ Placement now preflights the same one-block grading envelope that the builder wi
 a protected/unsafe border cell is rejected before an active project can be created. Frontier civilian
 work and logistics also run without a night/bed/jobsite schedule; the villager resemblance is strictly
 presentation, not a lifestyle or profession simulation.
+
+Canonical build boundary: the final Alpha.84 candidate includes the independent worker runtime, exact
+grading-envelope preflight, recovery-safe builder evidence, real grading progress, and no runtime
+civilian lifestyle schedule.
