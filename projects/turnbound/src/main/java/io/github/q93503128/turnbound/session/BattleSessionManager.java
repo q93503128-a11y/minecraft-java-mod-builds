@@ -45,12 +45,10 @@ public final class BattleSessionManager {
             case "ACT" -> {
                 if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]);
             }
+            case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
             case "AUTO" -> session.toggleAuto(player);
             case "SPEED" -> session.toggleSpeed(player);
-            case "FLEE" -> {
-                // P0 has no mid-battle flee. This packet is the post-result return action only.
-                if (session.finished()) end(player);
-            }
+            case "FLEE" -> end(player); // P0 is a normal field encounter: deterministic flee is always allowed.
             default -> {
             }
         }
