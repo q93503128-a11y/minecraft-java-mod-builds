@@ -1,0 +1,101 @@
+name: Apply Frontier Alpha84 Final Runtime Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-frontier-alpha84-final-runtime-audit.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha84-final-runtime-audit
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - name: Apply final runtime audit findings
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          settlement = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+          construction = settlement / 'SettlementConstructionService.java'
+          s = construction.read_text(encoding='utf-8')
+          anchor = '''        if (overlapsInfrastructure(data, site.origin(), type, rotation)) {\n            return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");\n        }\n        String message = "배치 가능";\n'''
+          replacement = '''        if (overlapsInfrastructure(data, site.origin(), type, rotation)) {\n            return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");\n        }\n        ConstructionState gradingPreview = new ConstructionState(\n                type.id(), site.origin().getX(), site.origin().getY(), site.origin().getZ(),\n                rotation.id(), ConstructionState.GRADE_STEP_OFFSET);\n        for (GradeCell cell : createGradePlan(level, gradingPreview, type)) {\n            if (!canGradeCell(level, gradingPreview, type, cell)) {\n                return invalidPlacement("건물 주변 1블록까지 부지 정리가 가능한 공간이 필요합니다. 물·보호된 블록·깊은 절벽·미로드 경계를 피해 다시 지정해 주세요.");\n            }\n        }\n        String message = "배치 가능";\n'''
+          if s.count(anchor) != 1:
+              raise SystemExit('grading preflight anchor mismatch')
+          construction.write_text(s.replace(anchor, replacement, 1), encoding='utf-8')
+
+          service = settlement / 'SettlementService.java'
+          s = service.read_text(encoding='utf-8')
+          old = '''        if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);\n        else {\n            SettlementWorkerService.tick(server, data);\n            SettlementWaterfrontService.tick(server, data);\n            SettlementOutpostProductionService.tick(server, data);\n            SettlementFishingOutpostService.tick(server, data);\n            SettlementMarketService.tick(server, data);\n            SettlementWorkshopService.tick(server, data);\n            SettlementDeferredOutpostService.tick(server, data);\n        }\n'''
+          new = '''        // Civilian appearance does not imply a villager lifestyle simulation. Frontier work/logistics\n        // remains the only runtime authority at every time of day; no bed/jobsite/night schedule layer.\n        SettlementWorkerService.tick(server, data);\n        SettlementWaterfrontService.tick(server, data);\n        SettlementOutpostProductionService.tick(server, data);\n        SettlementFishingOutpostService.tick(server, data);\n        SettlementMarketService.tick(server, data);\n        SettlementWorkshopService.tick(server, data);\n        SettlementDeferredOutpostService.tick(server, data);\n'''
+          if s.count(old) != 1:
+              raise SystemExit('night routine runtime anchor mismatch')
+          service.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          audit = root / 'tools/test_alpha84_source.py'
+          s = audit.read_text(encoding='utf-8')
+          marker = 'print("Frontier Settlement alpha.23-84 cumulative source audit: PASS")'
+          checks = '''\n# Final graphical-playtest audit: accepted placement must preflight the exact grading envelope,\n# and worker appearance must not reintroduce a civilian night/bed/jobsite schedule layer.\nconstruction_final = text(JAVA / "settlement/SettlementConstructionService.java")\nservice_final = text(JAVA / "settlement/SettlementService.java")\nmust(construction_final, ("ConstructionState gradingPreview", "for (GradeCell cell : createGradePlan", "건물 주변 1블록까지 부지 정리가 가능한 공간"), "alpha.84 grading preflight")\nmust(service_final, ("Civilian appearance does not imply a villager lifestyle simulation", "SettlementWorkerService.tick(server, data);"), "alpha.84 no lifestyle schedule")\nforbid(service_final, ("SettlementResidentRoutineService.isRestTime", "SettlementResidentRoutineService.tick(server, data)"), "alpha.84 runtime night schedule")\n\n'''
+          if s.count(marker) != 1:
+              raise SystemExit('alpha.84 source audit marker mismatch')
+          audit.write_text(s.replace(marker, checks + marker, 1), encoding='utf-8')
+
+          note = root / 'WORKER_RUNTIME_ALPHA84.md'
+          s = note.read_text(encoding='utf-8').rstrip()
+          extra = '''\n\n## Final runtime audit\n\nPlacement now preflights the same one-block grading envelope that the builder will actually mutate, so\na protected/unsafe border cell is rejected before an active project can be created. Frontier civilian\nwork and logistics also run without a night/bed/jobsite schedule; the villager resemblance is strictly\npresentation, not a lifestyle or profession simulation.\n'''
+          if '## Final runtime audit' not in s:
+              s += extra
+          note.write_text(s + '\n', encoding='utf-8')
+          PY
+      - name: Audit Alpha.84 source and docs
+        working-directory: projects/frontier-settlement
+        run: |
+          set -euo pipefail
+          python3 tools/test_alpha84_source.py
+          python3 tools/test_alpha84_docs.py
+          git diff --check
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+      - name: Commit verified final runtime audit atomically
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/apply-frontier-alpha84-final-runtime-audit.yml
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Finalize Frontier alpha.84 independent worker runtime'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
