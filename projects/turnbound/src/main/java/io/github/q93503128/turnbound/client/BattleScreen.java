@@ -24,6 +24,7 @@ public final class BattleScreen extends Screen {
     private KenneyButton autoButton;
     private KenneyButton speedButton;
     private KenneyButton fleeButton;
+    private BattleScreenLayout.Layout layout;
     private String selectedSkill = "";
     private long seen = -1;
 
@@ -36,27 +37,38 @@ public final class BattleScreen extends Screen {
         super.init();
         skillButtons.clear();
         targetButtons.clear();
-        int skillWidth = Math.min(150, Math.max(105, width / 6));
-        int skillY = height - 62;
-        for (int i = 0; i < 5; i++) {
+        layout = BattleScreenLayout.calculate(width, height);
+
+        for (int i = 0; i < BattleScreenLayout.SKILL_COUNT; i++) {
             final int index = i;
+            BattleScreenLayout.Rect bounds = layout.skillButtons().get(i);
             KenneyButton button = new KenneyButton(
-                    width / 2 - ((skillWidth + 4) * 5) / 2 + i * (skillWidth + 4),
-                    skillY, skillWidth, 42, Component.empty(), ignored -> skill(index));
+                    bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+                    Component.empty(), ignored -> skill(index));
             skillButtons.add(addRenderableWidget(button));
         }
-        int targetWidth = Math.min(138, Math.max(96, width / 7));
-        for (int i = 0; i < 9; i++) {
+
+        for (int i = 0; i < BattleScreenLayout.ALLY_TARGET_COUNT + BattleScreenLayout.ENEMY_TARGET_COUNT; i++) {
             final int index = i;
-            int x = i < 4 ? 18 : width - targetWidth - 18;
-            int row = i < 4 ? i : i - 4;
-            int y = 58 + row * 50;
-            KenneyButton button = new KenneyButton(x, y, targetWidth, 42, Component.empty(), ignored -> target(index));
+            BattleScreenLayout.Rect bounds = layout.targetButtons().get(i);
+            KenneyButton button = new KenneyButton(
+                    bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+                    Component.empty(), ignored -> target(index));
             targetButtons.add(addRenderableWidget(button));
         }
-        autoButton = addRenderableWidget(new KenneyButton(width - 228, 12, 66, 32, Component.literal("AUTO"), b -> send("AUTO")));
-        speedButton = addRenderableWidget(new KenneyButton(width - 156, 12, 66, 32, Component.literal("×1"), b -> send("SPEED")));
-        fleeButton = addRenderableWidget(new KenneyButton(width - 84, 12, 66, 32, Component.literal("퇴각"), b -> send("FLEE")));
+
+        BattleScreenLayout.Rect autoBounds = layout.autoButton();
+        autoButton = addRenderableWidget(new KenneyButton(
+                autoBounds.x(), autoBounds.y(), autoBounds.width(), autoBounds.height(),
+                Component.literal("AUTO"), b -> send("AUTO")));
+        BattleScreenLayout.Rect speedBounds = layout.speedButton();
+        speedButton = addRenderableWidget(new KenneyButton(
+                speedBounds.x(), speedBounds.y(), speedBounds.width(), speedBounds.height(),
+                Component.literal("×1"), b -> send("SPEED")));
+        BattleScreenLayout.Rect fleeBounds = layout.fleeButton();
+        fleeButton = addRenderableWidget(new KenneyButton(
+                fleeBounds.x(), fleeBounds.y(), fleeBounds.width(), fleeBounds.height(),
+                Component.literal("퇴각"), b -> send("FLEE")));
         refresh();
     }
 
@@ -170,30 +182,49 @@ public final class BattleScreen extends Screen {
 
     @Override
     public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        BattleScreenLayout.Layout current = currentLayout();
         graphics.fill(0, 0, width, height, 0x5510131A);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, 8, 48, Math.min(160, width / 4), 220);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, width - Math.min(160, width / 4) - 8, 48, Math.min(160, width / 4), 270);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, INSET, width / 2 - 230, 8, 460, 42);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, INSET, width / 2 - 390, height - 72, 780, 62);
+        blit(graphics, PANEL, current.leftPanel());
+        blit(graphics, PANEL, current.rightPanel());
+        blit(graphics, INSET, current.topInset());
+        blit(graphics, INSET, current.bottomInset());
+    }
+
+    private static void blit(GuiGraphicsExtractor graphics, Identifier sprite, BattleScreenLayout.Rect bounds) {
+        graphics.blitSprite(
+                RenderPipelines.GUI_TEXTURED,
+                sprite,
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height()
+        );
     }
 
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        BattleScreenLayout.Layout current = currentLayout();
         var snapshot = ClientBattleState.snapshot();
-        graphics.text(font, Component.literal("TURNBOUND · " + (snapshot.finished() ? result(snapshot.outcome()) : "전투 진행")), width / 2 - 65, 17, 0xFFF4F0E6, true);
-        graphics.text(font, Component.literal("방향키: 시점 조절"), width / 2 - 48, 49, 0xFFB9C6D8, true);
-        int x = width / 2 - 190;
+        graphics.text(font, Component.literal("TURNBOUND · " + (snapshot.finished() ? result(snapshot.outcome()) : "전투 진행")), Math.max(8, width / 2 - 65), 17, 0xFFF4F0E6, true);
+        graphics.text(font, Component.literal("방향키: 시점 조절"), Math.max(8, width / 2 - 48), current.hintY(), 0xFFB9C6D8, true);
+        int x = Math.max(8, width / 2 - 190);
         for (String id : snapshot.timeline()) {
             var unit = snapshot.units().stream().filter(value -> value.id().equals(id)).findFirst().orElse(null);
             if (unit != null) {
                 graphics.text(font, Component.literal(unit.name().substring(0, Math.min(2, unit.name().length()))), x, 35, unit.side().equals("ALLY") ? 0xFF6DC6FF : 0xFFFF7A59, true);
                 x += 48;
+                if (x >= width - 24) break;
             }
         }
         if (!snapshot.message().isBlank()) {
-            graphics.text(font, Component.literal(snapshot.message()), width / 2 - 150, height - 84, 0xFFAEB7C6, true);
+            graphics.text(font, Component.literal(snapshot.message()), Math.max(8, width / 2 - 150), current.messageY(), 0xFFAEB7C6, true);
         }
+    }
+
+    private BattleScreenLayout.Layout currentLayout() {
+        if (layout == null) layout = BattleScreenLayout.calculate(width, height);
+        return layout;
     }
 
     private static String result(String outcome) {

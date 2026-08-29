@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.2`
+- Version: `0.1.0-alpha.3`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -34,12 +34,14 @@
 - Deterministic timeline preview does not mutate battle state.
 - `/turnbound p0` runs the deterministic diagnostic simulation.
 - `/turnbound battle` starts the playable P0 battle session.
+- Battle widgets and decorative panels must keep positive, in-viewport bounds at high GUI scales and low logical resolutions.
 - Java 25 clean test/build must be green before a test JAR is handed off.
 
 ## P0 presentation boundary
 - The battle scene uses temporary ArmorStand actors solely as 3D placement/motion stand-ins.
 - Temporary actors already occupy the intended 4v5 battlefield positions and perform short lunge/return motions.
 - The battle UI uses vendored Kenney CC0 RPG UI sprites instead of an improvised Minecraft-grey-box skin.
+- The P0 battle UI uses responsive target grids and action widths when the logical GUI viewport is small; it must not place the fifth enemy or any action widget below/outside the render viewport.
 - The world remains visible behind the battle UI; arrow keys can adjust view yaw/pitch while the mouse is reserved for battle UI selection.
 - Final character meshes, rigs, animation clips, VFX and polished camera direction belong to the next character/presentation phase and will replace the ArmorStand stand-ins.
 
