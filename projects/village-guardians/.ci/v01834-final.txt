@@ -1,0 +1,7 @@
+version=0.18.34-alpha.1
+run_id=33229488902
+source_sha=0a7e654d57b841edc932c9491b5ba0e74f957f1e
+jar_name=villageguardians-0.18.34-alpha.1.jar
+jar_sha256=4c6aa5aaba5e84d7d8d2399266a1e9d74c44c2f66b4521cee313f100b66a3bf8
+jar_size=862803
+audit=post-codex-facility-ownership-and-leaf-validation
