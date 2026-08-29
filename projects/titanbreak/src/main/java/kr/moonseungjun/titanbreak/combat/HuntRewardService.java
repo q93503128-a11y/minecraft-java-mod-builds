@@ -44,7 +44,7 @@ public final class HuntRewardService {
 
         TitanPlayerData data = TitanPlayerData.get(level.getServer());
         if (data.recordNormalFirstKill(player, speciesKey, NORMAL_FIRST_KILL_RD)) {
-            player.displayClientMessage(Component.translatable("message.titanbreak.first_hunt_rd", NORMAL_FIRST_KILL_RD), true);
+            player.sendSystemMessage(Component.translatable("message.titanbreak.first_hunt_rd", NORMAL_FIRST_KILL_RD), true);
             TitanbreakNetwork.sync(player);
         }
     }
