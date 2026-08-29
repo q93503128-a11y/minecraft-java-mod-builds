@@ -75,6 +75,14 @@ public final class VillageEquipmentRaritySystem {
     }
 
     public static String combineSelected(ServerPlayer player, int firstSlot, int secondSlot, int thirdSlot) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+            return "장비 합성은 대장간 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("장비 합성");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SMITHY)) {
+            return "대장간이 파괴되어 장비를 합성할 수 없습니다.";
+        }
         int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
         Set<Integer> unique = new HashSet<>(List.of(firstSlot, secondSlot, thirdSlot));
         if (unique.size() != 3 || unique.stream().anyMatch(slot -> slot < 0 || slot >= limit)) {
@@ -122,6 +130,11 @@ public final class VillageEquipmentRaritySystem {
     }
 
     public static String enhanceSelected(ServerPlayer player, int slot) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.SMITHY)) {
+            return "장비 강화는 대장간 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("장비 강화");
+        if (blocked != null) return blocked;
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SMITHY)) {
             return "대장간이 파괴되어 장비를 강화할 수 없습니다.";
         }

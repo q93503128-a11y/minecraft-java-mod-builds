@@ -27,7 +27,8 @@ assert "radiusX" in quick and "radiusY" in quick and "insideDiamond" in quick
 assert 'graphics.text(font, "ESC 닫기"' in quick
 assert "VillageUiSafeArea.screen(width, height)" in detail
 assert "confirmationRequired" in detail and "panelWidth < 390" in detail
-assert 'case "building", "management", "funding"' in client
+assert 'case "building", "management", "tower_control"' in client
+assert '"funding"' not in client
 
 assert "enhanceSelected" in rarity and "EnhancementCandidate" in rarity
 assert "enhancementLevel" in rarity and "createNamed" in rarity

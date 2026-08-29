@@ -64,7 +64,7 @@ def main() -> None:
     assert "Display.ItemDisplay" not in visuals and "Display.BlockDisplay" not in visuals
 
     assert "respawnDelayTicks" in progression
-    assert "clearTreatmentEffects" in progression
+    assert "clearTreatmentEffects" not in progression
     assert "MobEffects.ABSORPTION" in progression
     assert "VillageProgressionSystem.respawnDelayTicks()" in respawn
 

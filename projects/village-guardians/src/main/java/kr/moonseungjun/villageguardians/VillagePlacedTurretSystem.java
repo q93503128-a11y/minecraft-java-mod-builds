@@ -95,7 +95,7 @@ public final class VillagePlacedTurretSystem {
 
     public static String selectPlacement(ServerPlayer player, TurretType type) {
         if (type == null) return "알 수 없는 포탑 계열입니다.";
-        String blocked = maintenanceBlockReason("배치");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 배치");
         if (blocked != null) return blocked;
         if (count() >= capacity()) return "포탑 설치 한도입니다. 현재 " + count() + " / " + capacity();
         PENDING.put(player.getUUID(), new PendingPlacement(type, null));
@@ -175,7 +175,7 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, int id) {
-        String blocked = maintenanceBlockReason("수리");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 수리");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
@@ -194,7 +194,7 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String upgrade(ServerPlayer player, int id) {
-        String blocked = maintenanceBlockReason("강화");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 강화");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.get(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
@@ -221,7 +221,7 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String dismantle(ServerPlayer player, int id) {
-        String blocked = maintenanceBlockReason("철거");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 철거");
         if (blocked != null) return blocked;
         TurretState state = TURRETS.remove(id);
         if (state == null) return "해당 포탑을 찾을 수 없습니다.";
@@ -234,7 +234,7 @@ public final class VillagePlacedTurretSystem {
     }
 
     public static synchronized String repairAll(ServerPlayer player) {
-        String blocked = maintenanceBlockReason("일괄 수리");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 일괄 수리");
         if (blocked != null) return blocked;
         int repaired = 0;
         int totalCost = 0;
@@ -579,18 +579,8 @@ public final class VillagePlacedTurretSystem {
         }
     }
 
-    private static String maintenanceBlockReason(String action) {
-        if (VillageProgressionSystem.isGameOver()) {
-            return "게임 오버 상태에서는 포탑 " + action + "을(를) 실행할 수 없습니다. 재시작을 먼저 선택하세요.";
-        }
-        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
-            return "포탑 " + action + "은(는) 낮 정비 시간에만 가능합니다.";
-        }
-        return null;
-    }
-
     private static String invalidReason(ServerLevel level, BlockPos pos, int ignoredId) {
-        String blocked = maintenanceBlockReason("배치");
+        String blocked = VillageMaintenanceRules.blockReason("포탑 배치");
         if (blocked != null) return blocked;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return "마을 중심이 설정되지 않았습니다.";

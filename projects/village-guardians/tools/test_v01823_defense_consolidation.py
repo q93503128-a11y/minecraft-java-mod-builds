@@ -48,8 +48,8 @@ def main() -> None:
     assert "action.equals(\"open_tower_control\")" in local
     assert "action.startsWith(\"tower_branch:\")" in local
     assert "VillageSiegeCommandUi.open(player);" in local
-    assert "public static void openTowerControl(ServerPlayer player)" in service
-    assert "VillageSiegeCommandUi.open(player);" in service
+    assert "public static void openTowerControl(ServerPlayer player)" not in service
+    assert "VillageSiegeCommandUi.open(player);" in local
     assert "public static void openTowerDetail" not in service
     assert 'send(player, "tower_detail"' not in service
     assert "purchaseBranch" not in service and "upgradeBranch" not in service

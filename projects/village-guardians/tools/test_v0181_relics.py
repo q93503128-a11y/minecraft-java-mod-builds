@@ -34,7 +34,8 @@ def main() -> None:
     assert "VillageRelicSystem.meleeMultiplier(attacker)" in rpg
     assert "VillageRelicSystem.executionMultiplier(attacker" in rpg
     assert "VillageRelicSystem.incomingMultiplier(defender)" in rpg
-    assert role.count("VillageRelicSystem.skillMultiplier(player)") >= 2
+    # Skill damage has one authoritative multiplier owner before the cast is delegated.
+    assert role.count("VillageRelicSystem.skillMultiplier(player)") == 1
     assert "VillageRelicSystem.cooldownReductionSeconds(player)" in role
     assert "VillageRelicSystem.vanguardLifeStealBonus(attacker)" in read("VillageRoleAbilitySystem.java")
     print("[PASS] 근접·원거리·처형·방어·기술·쿨다운·흡혈 유물이 실제 전투 경로에 연결됩니다")

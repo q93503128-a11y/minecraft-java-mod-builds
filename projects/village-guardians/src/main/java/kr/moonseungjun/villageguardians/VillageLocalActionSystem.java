@@ -118,6 +118,19 @@ public final class VillageLocalActionSystem {
             player.sendSystemMessage(Component.literal("§b" + VillageMercenaryDeploymentSystem.setDeployment(player, kind, zone)));
             VillageMercenaryDeploymentSystem.openClass(player, kind); return true;
         }
+        if (action.startsWith("retire_mercenary:")) {
+            if (!VillageMercenaryDeploymentSystem.canOpenAt(player)) {
+                player.sendSystemMessage(Component.literal("§c용병 퇴역은 병영 또는 마을 회관 근처에서만 가능합니다."));
+                return true;
+            }
+            try {
+                java.util.UUID uuid = java.util.UUID.fromString(action.substring(17));
+                player.sendSystemMessage(Component.literal("§e" + VillageMercenarySystem.retire(player, uuid)));
+            } catch (IllegalArgumentException ignored) {
+                player.sendSystemMessage(Component.literal("§c잘못된 용병 식별자입니다."));
+            }
+            VillageMercenaryDeploymentSystem.openCommand(player); return true;
+        }
 
         switch (action) {
             case "buy_arrows" -> {

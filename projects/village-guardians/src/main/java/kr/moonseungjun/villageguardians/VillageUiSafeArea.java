@@ -27,13 +27,5 @@ public final class VillageUiSafeArea {
         public int height() { return Math.max(1, bottom - top); }
         public int centerX() { return left + width() / 2; }
         public int centerY() { return top + height() / 2; }
-
-        public int clampX(int x, int radius) {
-            return clamp(x, left + radius, Math.max(left + radius, right - radius));
-        }
-
-        public int clampY(int y, int radius) {
-            return clamp(y, top + radius, Math.max(top + radius, bottom - radius));
-        }
     }
 }

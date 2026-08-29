@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Compact command-table town hall. Nothing executes from the list itself: the left rail selects,
- * the right dossier explains, and the bottom actions expose facility use, repair and upgrade separately.
+ * the right dossier explains, and the bottom actions expose repair and upgrade separately.
  */
 public final class VillageTownHallGridScreen extends Screen {
     private static final String SEP = "\u001F";
@@ -29,13 +29,9 @@ public final class VillageTownHallGridScreen extends Screen {
     private static final int GOLD = 0xFFF2C35D;
     private static final int RED = 0xFFE56A64;
     private static final int GREEN = 0xFF76D39A;
-    private static final int BLUE = 0xFF7AA9E8;
 
     private final String body;
-    private final List<RoleCard> roles = new ArrayList<>();
     private final List<FacilityCard> facilities = new ArrayList<>();
-    private Tab tab = Tab.FACILITIES;
-    private int selectedRole;
     private int selectedFacility;
     private int listScroll;
 
@@ -43,12 +39,6 @@ public final class VillageTownHallGridScreen extends Screen {
         super(Component.literal(payload.title()));
         body = plain(payload.body());
         parse(payload);
-        for (int i = 0; i < roles.size(); i++) {
-            if (roles.get(i).current()) {
-                selectedRole = i;
-                break;
-            }
-        }
     }
 
     @Override public boolean isPauseScreen() { return false; }
@@ -91,24 +81,6 @@ public final class VillageTownHallGridScreen extends Screen {
         graphics.fill(layout.left() + 14, layout.top() + 52, layout.right() - 14, layout.top() + 53, LINE);
     }
 
-    private void drawTabs(GuiGraphicsExtractor graphics, Layout layout, int mouseX, int mouseY) {
-        int x = layout.left() + 14;
-        int y = layout.top() + 50;
-        int gap = 5;
-        int w = Math.min(144, Math.max(60, (layout.width() - 33) / 2));
-        drawTab(graphics, x, y, w, Tab.FACILITIES, mouseX, mouseY);
-        drawTab(graphics, x + w + gap, y, w, Tab.ROLES, mouseX, mouseY);
-    }
-
-    private void drawTab(GuiGraphicsExtractor graphics, int x, int y, int w, Tab value, int mouseX, int mouseY) {
-        boolean active = tab == value;
-        boolean hover = inside(mouseX, mouseY, x, y, w, 20);
-        int accent = value == Tab.FACILITIES ? GOLD : CYAN;
-        graphics.fill(x, y, x + w, y + 20, active ? PANEL_3 : hover ? PANEL_2 : PANEL);
-        graphics.fill(x, y + 18, x + w, y + 20, active ? accent : LINE);
-        graphics.centeredText(font, value.label(), x + w / 2, y + 6, active ? TEXT : MUTED);
-    }
-
     private void drawList(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
         graphics.fill(pane.left(), pane.top(), pane.right(), pane.bottom(), PANEL_2);
         int count = facilities.size();
@@ -147,28 +119,6 @@ public final class VillageTownHallGridScreen extends Screen {
     private void drawDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
         graphics.fill(pane.left(), pane.top(), pane.right(), pane.bottom(), 0xD90D171D);
         drawFacilityDetail(graphics, pane, mouseX, mouseY);
-    }
-
-    private void drawRoleDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
-        if (roles.isEmpty()) return;
-        RoleCard role = roles.get(clamp(selectedRole, 0, roles.size() - 1));
-        int x = pane.left() + 16;
-        int right = pane.right() - 16;
-        int y = pane.top() + 14;
-        graphics.text(font, fit(font, role.name(), Math.max(40, right - x)), x, y, role.current() ? GOLD : CYAN, false);
-        graphics.text(font, role.current() ? "현재 직업" : "배치 변경 후보", x, y + 16, role.current() ? GOLD : MUTED, false);
-        y += 38;
-        Button action = roleButton(pane);
-        int clipBottom = role.current() ? pane.bottom() - 8 : action.y() - 6;
-        graphics.enableScissor(pane.left() + 1, pane.top() + 1, pane.right() - 1, Math.max(pane.top() + 2, clipBottom));
-        y = section(graphics, "역할", role.overview(), x, right, y, TEXT);
-        y = section(graphics, "상시 효과", role.passive(), x, right, y, CYAN);
-        y = section(graphics, "전투 방식", role.active(), x, right, y, GOLD);
-        section(graphics, "추천 위치", role.recommended(), x, right, y, BLUE);
-        graphics.disableScissor();
-        if (!role.current()) {
-            drawButton(graphics, action, "이 직업으로 배치", true, CYAN, mouseX, mouseY);
-        }
     }
 
     private void drawFacilityDetail(GuiGraphicsExtractor graphics, Pane pane, int mouseX, int mouseY) {
@@ -253,18 +203,6 @@ public final class VillageTownHallGridScreen extends Screen {
         return result;
     }
 
-    private String functionAction(FacilityCard f) {
-        if (f.id().equals("town_hall")) return "open_funding";
-        if (f.id().equals("walls")) return "open_tower_control";
-        return f.action();
-    }
-
-    private Button roleButton(Pane pane) {
-        int w = Math.min(178, Math.max(76, pane.width() / 3));
-        w = Math.min(w, Math.max(1, pane.width() - 28));
-        return new Button(pane.right() - w - 14, pane.bottom() - 34, w, 23);
-    }
-
     private void drawButton(GuiGraphicsExtractor graphics, Button b, String label, boolean enabled,
                             int accent, int mouseX, int mouseY) {
         boolean hover = enabled && inside(mouseX, mouseY, b.x(), b.y(), b.w(), b.h());
@@ -346,11 +284,8 @@ public final class VillageTownHallGridScreen extends Screen {
         int count = Math.min(actions.length, labels.length);
         for (int i = 0; i < count; i++) {
             String[] p = labels[i].split("\\|", -1);
-            if (p.length >= 8 && "role".equals(p[0])) {
-                roles.add(new RoleCard(actions[i], plain(p[2]), plain(p[3]), plain(p[4]), plain(p[5]),
-                        plain(p[6]), "current".equals(p[7])));
-            } else if (p.length >= 7 && "facility".equals(p[0])) {
-                facilities.add(new FacilityCard(actions[i], plain(p[1]), plain(p[2]), plain(p[3]),
+            if (p.length >= 7 && "facility".equals(p[0])) {
+                facilities.add(new FacilityCard(plain(p[1]), plain(p[2]), plain(p[3]),
                         parseInt(p[4]), parseInt(p[5]), plain(p[6]), p.length > 7 ? plain(p[7]) : "",
                         p.length > 8 ? parseInt(p[8]) : 0, p.length > 9 ? parseInt(p[9]) : 0));
             }
@@ -390,16 +325,7 @@ public final class VillageTownHallGridScreen extends Screen {
 
     @Override public void onClose() { if (minecraft != null) minecraft.gui.setScreen(null); }
 
-    private enum Tab {
-        FACILITIES("시설 관리"), ROLES("직업 배치");
-        private final String label;
-        Tab(String label) { this.label = label; }
-        String label() { return label; }
-    }
-
-    private record RoleCard(String action, String name, String overview, String passive,
-                            String active, String recommended, boolean current) {}
-    private record FacilityCard(String action, String id, String name, String meta,
+    private record FacilityCard(String id, String name, String meta,
                                 int current, int maximum, String effect, String nextEffect,
                                 int upgradeCost, int repairCost) {}
     private record Button(int x, int y, int w, int h) {}
@@ -408,7 +334,5 @@ public final class VillageTownHallGridScreen extends Screen {
         int width() { return Math.max(1, right - left); }
         int height() { return Math.max(1, bottom - top); }
     }
-    private record Layout(int left, int top, int right, int bottom, Pane list, Pane detail) {
-        int width() { return right - left; }
-    }
+    private record Layout(int left, int top, int right, int bottom, Pane list, Pane detail) {}
 }

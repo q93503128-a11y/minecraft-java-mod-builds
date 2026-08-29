@@ -2,17 +2,50 @@
 
 - Project: Village Guardians — 마을지키기
 - Mod ID: `villageguardians`
-- Current source version: `0.18.22-alpha.1`
+- Current source version: `0.18.33-alpha.1`
 - Minecraft: `26.2`
 - NeoForge build dependency: `26.2.0.37-beta`
 - Java target: `25`
 - Gradle: `9.2.1`
 - ModDevGradle: `2.0.143`
-- Target JAR: `villageguardians-0.18.22-alpha.1.jar`
-- Final acceptance Actions run: `32338345420`
-- Final acceptance head: `f27a50b1c7fd1632fb4443b908c8e83d73846885`
-- Final JAR SHA-256: `cd7712bacac503748ff0a03e3f6a76f5ae90df6d9322fea674e156225e67f990`
-- Final JAR size: `958353` bytes
+- Target JAR: `villageguardians-0.18.33-alpha.1.jar`
+- Manual audit base: `96442b8e45e39da6cbb131e1163ab55f8fafb78f`
+- Local verification date: `2026-08-29 Asia/Seoul`
+- Final JAR SHA-256: `903804ae199f518b50528bc2443de4a3c0e98e1d7ba3adaba9dd4f160eea94f0`
+- Final JAR size: `862374` bytes
+
+## 0.18.33 대규모 수동 코드 감사·런타임 검증
+
+### 핵심 교정
+
+- P0/P1 권한 경계를 중앙화했다. 영속 상태나 재화를 바꾸는 시설 강화·수리, 포탑, 연구, 상점, 장비, 용병 작업은 서버 leaf 메서드에서 위치·시설 가동·낮 정비·게임오버 상태를 다시 검증한다.
+- 매 틱 모든 지상 적의 경로를 북문으로 덮어쓰던 중복 `VillageGatePrioritySystem`을 제거했다. 정면/측후방/공중 경로의 소유자를 분리하고 정예·보스의 직접 추격도 외곽 공격 계획이 소유할 때 양보하도록 했다.
+- 활성 적과 용병 hot loop의 대형 AABB 검색을 SavedData/UUID 정본 해석으로 교체했다. 전투 종료·재시작 정리용 제한 검색은 의도적으로 유지했다.
+- 임의 강연대 상호작용을 가로채던 중복 `VillageTownHallSystem`, 생산 경로가 사라진 `VillageFundingSystem`, 구식 회관 역할 UI와 1,300줄 이상의 dead/duplicate API를 제거했다.
+- 새 게임의 오프라인 플레이어 초기화 누락을 영속 대기 마커로 보완했다. 다음 접속 시 인벤토리, 엔더 상자와 스타터 태그를 정리한 뒤 새 키트를 지급한다.
+- 개인 기술 연구와 용병 퇴역을 현행 시설 UI에 연결하고, 파괴된 시설의 상점 진입과 원격/전투 중 변경 패킷을 leaf 검증에서 거부한다.
+- 기존 저장 codec의 폐기된 forge-rank 필드는 읽기 호환성을 위해 유지하되 빈 값으로 다시 기록해 안전하게 소거한다. mod id, 등록 ID, 기존 핵심 저장 키와 enum 순서는 변경하지 않았다.
+
+### 실행 결과
+
+- `tools/test_*.py`: **PASS**, 58/58, 실패 0.
+- `gradle --no-daemon --no-configuration-cache clean build`: **PASS** with Temurin `25.0.4.1` and Gradle `9.2.1`.
+- NeoForge/Minecraft: 공식 Maven에 `26.2.0.37-beta`가 존재함을 확인했고 빌드/로더 로그에서 Minecraft `26.2`, NeoForge `26.2.0.37-beta`, Village Guardians `0.18.33-alpha.1` 조합을 확인했다.
+- 기본 `maven.neoforged.net` 서울 CDN은 첫 시도에서 `Unsupported or unrecognized SSL message`로 차단됐다. 동일 NeoForged 아티팩트를 제공하는 `neoforged.forgecdn.net`을 저장소 밖 임시 init script로 매핑해 빌드했으며 이 우회 설정은 소스/커밋에 포함하지 않는다.
+- Datagen: **PASS**. 모드가 정상 로드됐고 provider 0개, 생성/삭제 파일 0개로 종료했다.
+- GameTest: **NOT RUN**. 프로젝트에 GameTest 태스크가 없다.
+- Dedicated server minimal boot: **PASS**. dev server가 `Done (12.087s)`까지 부팅됐고 검증 후 수동 종료했다. Windows 성능 카운터(OSHI) 경고와 최초 `server.properties` 생성 로그는 모드 오류가 아니다.
+- Client minimal loading: **NOT RUN**. 대화형 그래픽 클라이언트 세션을 사용할 수 없었다.
+- Multiplayer gameplay: **NOT RUN**. 실제 2인 이상 플레이, 장기 웨이브 밸런스와 조작 체감은 검증하지 않았다.
+- JAR verifier: **PASS**. NeoForge metadata, 실제 class, `assets/villageguardians`, `data/villageguardians`, 라이선스 고지, 중복 entry 부재, Java 소스 부재, 폐기 class 부재를 확인했다.
+- 최종 JAR: `villageguardians-0.18.33-alpha.1.jar`, `862374` bytes, SHA-256 `903804ae199f518b50528bc2443de4a3c0e98e1d7ba3adaba9dd4f160eea94f0`.
+- 원본 로그: `audit-output/raw-logs.zip`에 clean build, 전체 Python 테스트, datagen, 서버 부팅과 JAR 검증 로그를 묶는다.
+
+### 남은 수동 검증 권고
+
+- 1/2/4인 파티에서 1·5·10·15·20일차 웨이브를 반복해 전선 분산, 포탑/용병 기여도, 주화 수입 대비 수리·연구 지출을 기록해야 한다.
+- 역할 5종과 기술 20종의 실제 선택률·피해/치유·다운 횟수를 수집한 뒤에만 수치 밸런스를 조정한다. 이번 감사는 데이터 없이 취향성 수치를 변경하지 않았다.
+- 저사양 환경에서 100개 활성 적, 10개 포탑, 다수 용병이 동시에 존재할 때 server MSPT와 client FPS를 계측한다.
 
 ## 0.18.22 UI 롤백 완결 · 후속 시스템 보존 감사
 

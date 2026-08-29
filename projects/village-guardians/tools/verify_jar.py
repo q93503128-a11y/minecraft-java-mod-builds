@@ -40,10 +40,8 @@ REQUIRED_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageSkillEffectRenderer.class",
     "kr/moonseungjun/villageguardians/VillageSkillEffectClient.class",
     "kr/moonseungjun/villageguardians/VillageSkillMeshLibrary.class",
-    "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
     "kr/moonseungjun/villageguardians/VillageRespawnSystem.class",
     "kr/moonseungjun/villageguardians/VillageRaidLootSystem.class",
-    "kr/moonseungjun/villageguardians/VillageFundingSystem.class",
     "kr/moonseungjun/villageguardians/VillageLocationRules.class",
     "kr/moonseungjun/villageguardians/VillageCombatTechniqueSystem.class",
     "kr/moonseungjun/villageguardians/VillageSkillTreeSystem.class",
@@ -83,6 +81,9 @@ OBSOLETE_CLASSES = {
     "kr/moonseungjun/villageguardians/VillageShopScreen.class",
     "kr/moonseungjun/villageguardians/VillageTowerProgressData.class",
     "kr/moonseungjun/villageguardians/VillageTowerSpecializationSystem.class",
+    "kr/moonseungjun/villageguardians/VillageFundingSystem.class",
+    "kr/moonseungjun/villageguardians/VillageGatePrioritySystem.class",
+    "kr/moonseungjun/villageguardians/VillageTownHallSystem.class",
 }
 
 

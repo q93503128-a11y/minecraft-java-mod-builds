@@ -10,8 +10,9 @@ def read(name: str) -> str:
 def main() -> None:
     attack = read("VillageAttackPlanSystem.java")
     raid = read("VillageRaidSystem.java")
-    gate = read("VillageGatePrioritySystem.java")
     guardians = read("VillageGuardians.java")
+    elite = read("VillageEnemyEliteSystem.java")
+    boss = read("VillageSiegeBossSystem.java")
     old = (ROOT / "tools/test_v01824_defense_action_integrity.py").read_text(encoding="utf-8")
 
     assert 'assert "mod_version=0.18.24-alpha.1" in props' not in old
@@ -39,13 +40,17 @@ def main() -> None:
     assert "ServerPlayer nearbyPlayer = fortressAccess" in raid
     assert "villageCenter, mob.blockPosition(), fortressAccess, archetype" in raid
 
-    # Last-in-tick north-gate priority is scoped so it cannot overwrite multi-front routing.
-    assert "VillageAttackPlanSystem.frontOf(mob.getUUID()) != VillageAttackPlanSystem.Front.NORTH" in gate
-    assert "VillageAttackPlanSystem.isInsideFortress(mob.blockPosition())" in gate
-    assert guardians.index("VillageAttackPlanSystem.tick(event.getServer())") < guardians.index("VillageGatePrioritySystem.tick(event.getServer())")
+    # North-gate routing stays in raid AI; the former last-in-tick global override is physically absent.
+    assert not (JAVA / "VillageGatePrioritySystem.java").exists()
+    assert "VillageGatePrioritySystem" not in guardians
+    assert "if (!gatePassable && VillageProgressionSystem.isOperational" in raid
+    assert "return VillageProgressionSystem.Building.WALLS;" in raid
+    # Pursuit doctrines yield to the same side/rear exterior owner until the mob reaches an interior route.
+    assert elite.count("VillageAttackPlanSystem.ownsExteriorRouting(mob.getUUID(), mob.blockPosition())") >= 2
+    assert "VillageAttackPlanSystem.ownsExteriorRouting(boss.getUUID(), boss.blockPosition())" in boss
 
     print("[PASS] side/rear exterior attackers have one navigation owner")
-    print("[PASS] global north-gate priority cannot collapse multi-front assaults")
+    print("[PASS] raid-owned north-gate routing cannot collapse multi-front assaults")
     print("[PASS] breached side/rear attackers clear stale targets and route through the breach")
     print("[PASS] infiltrated or breached attackers recognize interior access even while north gate survives")
     print("[PASS] historical v0.18.24 regression is version-independent")

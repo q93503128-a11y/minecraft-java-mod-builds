@@ -47,7 +47,8 @@ def main() -> None:
 
     require("mercenary deployment uses authoritative saved class map instead of display-name parsing",
             "public static synchronized MercenaryClass classOf(Mob mob)" in merc
-            and "VillageMercenarySystem.classOf(mob) == kind" in deploy
+            and "VillageMercenarySystem.loadedMercenaries" in deploy
+            and "VillageMercenarySystem.classOf(golem) != kind" in deploy
             and "classFromName" not in deploy
             and "ChatFormatting" not in deploy)
     require("support mercenaries suppress melee wandering without cancelling rally return",

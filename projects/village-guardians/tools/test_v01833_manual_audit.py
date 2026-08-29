@@ -97,7 +97,9 @@ def main() -> None:
 
     ui_service = read("VillageUiService.java")
     restart = block(ui_service, 'case "restart_previous"', 'default ->')
-    assert restart.count("VillageProgressionSystem.isGameOver()") == 2
+    assert 'restart(server, player, false)' in restart and 'restart(server, player, true)' in restart
+    restart_guard = block(ui_service, "private static void restart", "private static void broadcastQuick")
+    assert restart_guard.count("VillageProgressionSystem.isGameOver()") == 1
     progression = read("VillageProgressionSystem.java")
     reset = block(progression, "public static synchronized void resetForRestart", "public static int upgradeCost")
     assert "if (!gameOver) return;" in reset
@@ -113,8 +115,7 @@ def main() -> None:
 
     role_node = block(controller, 'if (action.startsWith("role_node:"))', 'if (action.startsWith("gear:"))')
     assert "isNearSkillHall" not in role_node
-    legacy_role_node = block(ui_service, 'if (action.startsWith("role_node:"))', 'if (action.startsWith("role_skill_unlock:"))')
-    assert "requireSkillHall" not in legacy_role_node
+    assert 'action.startsWith("role_node:")' not in ui_service
     research = block(controller, 'if (action.startsWith("research_skill_unlock:"))', 'if (action.startsWith("research_skill_equip:"))')
     assert "isNearSkillHall" in research
 
@@ -130,7 +131,7 @@ def main() -> None:
     assert role_screen.count("VillageClientKeys.skillTwoKeyName()") >= 2
 
     # The retired paid-food route is compatibility-only: it must remain a no-op if a stale action reaches it.
-    buy_food = block(progression, "public static synchronized String buyFood", "public static synchronized String improveForgeRank")
+    buy_food = block(progression, "public static synchronized String buyFood", "public static synchronized String learnNextSkill")
     assert "유료 일반 식량은 일일 배급 식량으로 통합" in buy_food
     assert "spendCoins" not in buy_food and "giveOrDrop" not in buy_food
 

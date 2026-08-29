@@ -37,6 +37,14 @@ public final class VillageDefenseResearchSystem {
 
     public static synchronized String upgrade(ServerPlayer player, Branch branch) {
         if (branch == null) return "알 수 없는 연구 분야입니다.";
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "마을 방어 연구는 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("마을 방어 연구");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SKILL_HALL)) {
+            return "기술·마법 연구소가 파괴되어 방어 연구를 진행할 수 없습니다.";
+        }
         int current = level(branch);
         if (current >= MAX_LEVEL) return branch.displayName() + " 연구가 최고 단계입니다.";
         int cost = upgradeCost(branch);

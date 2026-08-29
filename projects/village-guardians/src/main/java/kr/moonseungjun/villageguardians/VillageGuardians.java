@@ -54,7 +54,6 @@ public final class VillageGuardians {
         VillageRpgSystem.resetTransientState();
         VillageWorldSystem.resetTransientState();
         VillageDefenseSystem.reset();
-        VillageGatePrioritySystem.reset();
         VillageRespawnSystem.reset();
         VillageStructureHud.reset();
         VillageHudSystem.reset();
@@ -116,7 +115,6 @@ public final class VillageGuardians {
         if (VillageDoorSystem.handle(event)) return;
         if (VillageTownHallInteraction.handle(event)) return;
         if (VillageBuildingInteractionRouter.handle(event)) return;
-        VillageProgressionSystem.handleBuildingInteraction(event);
     }
 
     @SubscribeEvent
@@ -202,7 +200,6 @@ public final class VillageGuardians {
         VillageEnemyEliteSystem.tick(event.getServer());
         VillageSiegeBossSystem.tick(event.getServer());
         VillagePlacedTurretSystem.tick(event.getServer());
-        VillageGatePrioritySystem.tick(event.getServer());
         // v0.18.9: legacy fixed corner firing is retired; visible towers remain fortress architecture.
         VillageMercenarySystem.tick(event.getServer());
         VillageMercenaryDeploymentSystem.tick(event.getServer());

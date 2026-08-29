@@ -47,7 +47,6 @@ def main() -> None:
     signatures = read("VillageBuildingSignatures.java")
     building_router = read("VillageBuildingInteractionRouter.java")
     respawn = read("VillageRespawnSystem.java")
-    gate = read("VillageGatePrioritySystem.java")
     raid = read("VillageRaidSystem.java")
     descriptions = read("VillageActionDescriptions.java")
 
@@ -80,7 +79,8 @@ def main() -> None:
     assert "event.setCanceled(true)" in hud_suppressor
     assert "Minecraft.getInstance().gui.screen()" in hud_suppressor
     for active_modal in ("VillageActionDetailScreen", "VillageRelicChoiceConfirmScreen",
-                         "VillageWaveIntelDossierScreen"):
+                         "VillageWaveIntelDossierScreen", "VillageTownHallGridScreen",
+                         "VillageShopCatalogScreen", "VillageVictoryScreen"):
         assert f"screen instanceof {active_modal}" in hud_suppressor
     for retired_modal in ("VillageFacilityScreen", "VillageUiScreen",
                           "VillageRelicChoiceScreen", "VillageWaveIntelScreen"):
@@ -92,7 +92,7 @@ def main() -> None:
     assert 'case "town_hall" -> new VillageTownHallGridScreen(payload)' in client_ui
     assert 'case "equipment_shop" -> new VillageShopCatalogScreen(payload)' in client_ui
     assert 'case "status", "caller" -> new VillageCommandCenterScreen(payload)' in client_ui
-    assert '"building", "management", "funding", "tower_control", "tower_detail", "skill_test" ->' in client_ui
+    assert '"building", "management", "tower_control", "tower_detail", "skill_test" ->' in client_ui
     assert 'case "relic_collection" -> new VillageRelicScreen(payload)' in client_ui
     assert 'case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload)' in client_ui
     assert 'case "wave_intel" -> new VillageWaveIntelDossierScreen(payload)' in client_ui
@@ -112,7 +112,7 @@ def main() -> None:
     assert '"fusion_combine:"' in fusion_safe
     assert "enableScissor" in fusion_safe and "enableScissor" in command_ui
     town_render = town_ui.split("public void extractRenderState", 1)[1].split("private void drawFrame", 1)[0]
-    town_buttons = town_ui.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private String functionAction", 1)[0]
+    town_buttons = town_ui.split("private List<ButtonSpec> facilityButtons", 1)[1].split("private void drawButton", 1)[0]
     assert "drawTabs(" not in town_render
     assert '"repair:" + f.id()' in town_buttons and '"upgrade:" + f.id()' in town_buttons
     assert "functionAction" not in town_buttons and "open_funding" not in town_buttons
@@ -153,8 +153,9 @@ def main() -> None:
     assert "openPersonalProgress(ServerPlayer player)" in controller
     assert "openSkillTree(player);" in controller
     assert "장비 강화는 대장간 단말기 근처에서만 가능합니다." in controller
-    assert "기술 장착은 기술 연구소에서만 가능합니다." not in read("VillageUiService.java")
-    assert "직업 기술 습득은 기술 연구소에서만 가능합니다." in read("VillageUiService.java")
+    service = read("VillageUiService.java")
+    assert "public static void openDashboard" not in service
+    assert "public static void openQuickChat" in service
     assert "TreeBubble" in read("VillageRoleProgressScreen.java")
     assert "SkillBubble" in read("VillageRoleProgressScreen.java")
     assert "renderDetail" not in read("VillageSkillTreeScreen.java")
@@ -211,7 +212,8 @@ def main() -> None:
     assert 'action.equals("forge_combine")' in descriptions
 
     assert "RESPAWN_DELAY_TICKS = 20 * 20" in respawn
-    assert "VillageProgressionSystem.Building.WALLS" in gate
+    assert not (JAVA / "VillageGatePrioritySystem.java").exists()
+    assert "VillageProgressionSystem.Building.WALLS" in raid
     assert "FORCED_NEXT_WAVE_TICKS = 20 * 60" in raid
     assert "MAX_ACTIVE_ENEMIES = 100" in raid
     assert "VillageFortressBuildings.isTouchingStructure" in raid

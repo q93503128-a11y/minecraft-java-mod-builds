@@ -47,10 +47,13 @@ public final class VillageUiHudSuppressor {
     static boolean isVillageModal(Screen screen) {
         return screen instanceof VillageCommandCenterScreen
                 || screen instanceof VillageQuickChatSafeScreen
+                || screen instanceof VillageTownHallGridScreen
+                || screen instanceof VillageShopCatalogScreen
                 || screen instanceof VillageFusionSafeScreen
                 || screen instanceof VillageSkillTreeScreen
                 || screen instanceof VillageRoleProgressScreen
                 || screen instanceof VillageRelicScreen
+                || screen instanceof VillageVictoryScreen
                 || screen instanceof VillageGameOverScreen
                 || screen instanceof VillageSkillTestScreen
                 || screen instanceof VillageSkillTestPasswordScreen

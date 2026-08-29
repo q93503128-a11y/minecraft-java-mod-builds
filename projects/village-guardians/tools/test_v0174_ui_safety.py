@@ -33,8 +33,10 @@ def main() -> None:
     assert "용병 고용은 병영 단말기 근처" in local
     assert "화살 구매는 창고 단말기 근처" in local
 
-    # Legacy service remains only as a compatibility route; current controller/action screen own new UI.
-    assert "public static void openDashboard" in service
+    # The shared service now owns multiplayer prompts only; current controller owns every production menu.
+    assert "public static void openDashboard" not in service
+    assert "public static void openQuickChat" in service
+    assert "VillageFundingSystem" not in service
     assert "VillageSiegeCommandUi.open(player)" in local
     assert "자동 버프 건물" in local and "전투 훈련은 패시브" in local
 

@@ -137,14 +137,6 @@ public final class VillageRpgSystem {
         return VillageRoleSkillSystem.useEquippedSkill(player, slot);
     }
 
-    public static String testRoleSkill(ServerPlayer player, String skillId) {
-        return VillageRoleSkillSystem.useTestSkill(player, skillId);
-    }
-
-    public static String roleLoadout(ServerPlayer player) {
-        return VillageRoleSkillSystem.loadoutSummary(player);
-    }
-
     private static float roleOutgoingMultiplier(ServerPlayer player, boolean projectile) {
         VillageRole role = VillageCouncilState.roleOf(player.getUUID()).orElse(null);
         if (role == null) return 1.0f;

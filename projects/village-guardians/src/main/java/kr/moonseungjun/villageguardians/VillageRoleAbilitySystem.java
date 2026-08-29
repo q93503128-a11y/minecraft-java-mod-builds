@@ -795,14 +795,6 @@ public final class VillageRoleAbilitySystem {
         output.add(label + " §f" + String.format(java.util.Locale.ROOT, "%.1f초", (until - now) / 20.0));
     }
 
-    public static boolean isRapidFire(ServerPlayer player) {
-        return player != null && RAPID_UNTIL.getOrDefault(player.getUUID(), 0L) >= player.level().getGameTime();
-    }
-
-    public static boolean isFortress(ServerPlayer player) {
-        return player != null && FORTRESS_UNTIL.getOrDefault(player.getUUID(), 0L) >= player.level().getGameTime();
-    }
-
     private static void bladeWave(ServerLevel level, ServerPlayer player, float power, int specialRank) {
         player.swing(InteractionHand.MAIN_HAND, true);
         Vec3 direction = horizontalLook(player);
@@ -991,13 +983,6 @@ public final class VillageRoleAbilitySystem {
         MOVING.put(projectile.getUUID(), new MovingSkill(player.getUUID(), MovingKind.FIRE_ORB,
                 maxAge, damage, radius, specialRank, origin,
                 visual == null ? null : visual.getUUID()));
-    }
-
-    private static void launchMoving(
-            ServerLevel level, ServerPlayer player, MovingKind kind, ItemStack item,
-            double speed, int maxAge, float damage, double radius, int specialRank, Vec3 direction) {
-        launchMovingAt(level, player, kind, item, speed, maxAge, damage, radius, specialRank,
-                player.getEyePosition().add(direction.scale(0.8)), direction);
     }
 
     private static void launchMovingAt(

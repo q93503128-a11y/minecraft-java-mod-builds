@@ -58,6 +58,11 @@ public final class VillageConsumableSystem {
     }
 
     public static String purchase(ServerPlayer player, String id) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "전투 소모품 구매는 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("전투 소모품 구매");
+        if (blocked != null) return blocked;
         Consumable consumable = Consumable.fromId(id);
         if (consumable == null) return "알 수 없는 전투 소모품입니다.";
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.STOREHOUSE)) {

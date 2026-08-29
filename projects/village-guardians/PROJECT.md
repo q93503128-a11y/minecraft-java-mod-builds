@@ -2,8 +2,8 @@
 
 - Slug: `village-guardians`
 - Mod ID / namespace: `villageguardians`
-- Current source version: `0.7.0-alpha.1`
-- Target JAR: `villageguardians-0.7.0-alpha.1.jar`
+- Current source version: `0.18.33-alpha.1`
+- Target JAR: `villageguardians-0.18.33-alpha.1.jar`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: NeoForge `26.2.0.37-beta` 이상
@@ -33,16 +33,14 @@
 13. UI는 개발자용 회색 메뉴, 무지개 버튼과 두꺼운 장식 프레임을 사용하지 않는다.
 14. 최종 배포물은 Java 25로 컴파일되고 내부 검증을 통과한 실행용 JAR이어야 한다.
 
-## 0.7 외부 자산 정책
+## 외부 자산 정책
 
 무료 공개라는 말만 믿고 무단 복사하지 않는다. 수정·비상업 재사용과 공유 조건이 명시된 자산만 고정 버전으로 사용한다.
 
 - Default Dark Mode: 26.2 인벤토리·버튼 GUI
-- Towns and Towers: 마을 건물 구조 NBT 6개
-- 빌드 결과에는 출처, 버전, 라이선스와 선택된 구조 파일 경로를 포함한다.
-- 외부 건물은 한 건축 스타일로 선별하고 Village Guardians 네임스페이스로 복사한다.
-- 외부 월드젠 코드, 전초기지, 선박, 좀비 마을과 불필요한 데이터는 포함하지 않는다.
-- 외부 구조가 없거나 크기 제한을 넘으면 바닐라 구조, 마지막으로 자체 구조를 사용한다.
+- Tiny Creatures: CC0 판타지 적 시각 참고 자료이며 바이너리를 번들하지 않는다.
+- 건물은 자체 생성 구조만 사용하며 제3자 구조 NBT를 번들하지 않는다.
+- 빌드 결과에는 번들된 자산의 출처, 고정 버전과 라이선스 고지를 포함한다.
 
 ## 요새 규격
 
@@ -81,9 +79,8 @@
 - NeoForge 메타데이터와 컴파일 클래스
 - Village Guardians 자체 assets/data
 - Default Dark Mode GUI PNG 3개
-- Towns and Towers 건물 NBT 6개
 - 제3자 라이선스 고지
-- 실제 선택된 구조 파일 경로 기록
+- 제3자 구조 NBT 부재
 - 중복 ZIP 항목과 Java 소스 혼입 금지
 - SHA-256 생성
 

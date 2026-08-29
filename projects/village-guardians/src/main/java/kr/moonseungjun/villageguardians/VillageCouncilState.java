@@ -58,10 +58,6 @@ public final class VillageCouncilState {
         if (changed) persist();
     }
 
-    public static synchronized boolean isMayor(ServerPlayer player) {
-        return player.getUUID().equals(mayorId);
-    }
-
     public static synchronized Optional<VillageRole> roleOf(UUID playerId) {
         return Optional.ofNullable(ROLES.get(playerId));
     }
@@ -111,19 +107,18 @@ public final class VillageCouncilState {
     }
 
     public static synchronized String chooseRole(ServerPlayer player, VillageRole role) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "직업 배치 변경은 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("직업 배치 변경");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SKILL_HALL)) {
+            return "기술·마법 연구소가 파괴되어 직업 배치를 변경할 수 없습니다.";
+        }
         ROLES.put(player.getUUID(), role);
         RPG_PROGRESS.putIfAbsent(player.getUUID(), RpgProgress.initial());
         persist();
         return player.getGameProfile().name() + "님의 역할이 " + role.displayName() + "(으)로 정해졌습니다.";
-    }
-
-    public static synchronized String transferMayor(ServerPlayer actor, ServerPlayer target) {
-        mayorId = target.getUUID();
-        mayorName = target.getGameProfile().name();
-        activeProposal = null;
-        persist();
-        VillageStarterKit.grantCaller(target);
-        return "내부 월드 관리자를 변경했습니다. 게임 기능 권한 차이는 없습니다.";
     }
 
     public static synchronized String proposeAdvanceTime(ServerPlayer proposer) {
@@ -188,15 +183,6 @@ public final class VillageCouncilState {
                     + " 님이 레벨 " + level + "에 도달했습니다.");
         }
         return new ExperienceResult(amount, previous, updated, levelsGained);
-    }
-
-    public static synchronized String rpgStatus(ServerPlayer player) {
-        RpgProgress progress = progressOf(player.getUUID());
-        String next = progress.level() >= RpgProgress.MAX_LEVEL
-                ? "최고 레벨" : progress.experience() + "/" + progress.experienceToNextLevel() + " XP";
-        return "레벨 " + progress.level() + " | " + next
-                + " | 장착 장비 최고 강화 +" + VillageEquipmentRaritySystem.bestEquippedEnhancement(player)
-                + " | 능력 습득 " + VillageProgressionSystem.skillRank(player);
     }
 
     public static synchronized String status(MinecraftServer server, ServerPlayer viewer) {

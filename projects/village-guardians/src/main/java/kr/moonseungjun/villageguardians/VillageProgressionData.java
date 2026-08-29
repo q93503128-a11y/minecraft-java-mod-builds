@@ -126,10 +126,6 @@ public final class VillageProgressionData extends SavedData {
         return parseUuidMap(guardianCoins, Integer.MAX_VALUE);
     }
 
-    public Map<UUID, Integer> forgeRanks() {
-        return parseUuidMap(forgeRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
-    }
-
     public Map<UUID, Integer> skillRanks() {
         return parseUuidMap(skillRanks, VillageProgressionSystem.MAX_PERSONAL_RANK);
     }

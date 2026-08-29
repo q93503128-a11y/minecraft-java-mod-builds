@@ -180,12 +180,6 @@ public final class VillageWorldSystem {
                 <= (long) VillageCouncilState.VILLAGE_RADIUS * VillageCouncilState.VILLAGE_RADIUS;
     }
 
-    public static boolean isInsideBattlefield(BlockPos pos) {
-        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        return center != null && horizontalDistanceSquared(pos, center)
-                <= (long) BATTLEFIELD_RADIUS * BATTLEFIELD_RADIUS;
-    }
-
     public static void purgeDaytimeHostiles(MinecraftServer server) {
         if (server == null || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) return;
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);

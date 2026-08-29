@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.phys.AABB;
 
 import java.util.List;
 import java.util.Locale;
@@ -54,6 +53,15 @@ public final class VillageMercenaryDeploymentSystem {
             actions.add("merc_deploy:" + kind.id() + ":" + zone.id());
             labels.add(zone.displayName() + " 배치|" + zone.description() + (deployment(kind) == zone ? " · 현재 선택" : ""));
         }
+        MinecraftServer server = player.level().getServer();
+        if (server != null) {
+            for (VillageMercenarySystem.RosterEntry entry : VillageMercenarySystem.rosterEntries(server)) {
+                if (entry.kind() != kind || !entry.loaded()) continue;
+                actions.add("retire_mercenary:" + entry.uuid());
+                labels.add("퇴역 · " + kind.displayName() + " Lv." + entry.level()
+                        + "|누적 훈련 진척 " + entry.kills() + " · 영구 퇴역 · 환불 없음");
+            }
+        }
         actions.add("open_mercenary_command"); labels.add("용병 지휘 목록|다른 병과 관리");
         send(player, "management", kind.displayName(), kind.description() + "\n현재 배치: " + deployment(kind).displayName()
                 + "\n전투 시작 후 세밀한 RTS 조작 없이 자동 전투하며, 배치 거점에서 지나치게 이탈하면 복귀합니다.", actions, labels);
@@ -61,10 +69,13 @@ public final class VillageMercenaryDeploymentSystem {
 
     public static String setDeployment(ServerPlayer player, VillageMercenarySystem.MercenaryClass kind, Deployment zone) {
         if (kind == null || zone == null) return "알 수 없는 용병 배치입니다.";
-        if (VillageRaidSystem.isActive()) return "습격 중에는 용병 배치 거점을 바꿀 수 없습니다.";
+        if (!canOpenAt(player)) return "용병 배치는 병영 또는 마을 회관 근처에서만 변경할 수 있습니다.";
+        String blocked = VillageMaintenanceRules.blockReason("용병 배치 변경");
+        if (blocked != null) return blocked;
         if (!allowed(kind, zone)) return kind.displayName() + "은(는) " + zone.displayName() + "에 배치할 수 없습니다.";
         VillageSiegePersistence.putInt("merc_zone_" + kind.id(), zone.ordinal());
-        moveClass(player.level().getServer(), kind, zone, true);
+        MinecraftServer server = player.level().getServer();
+        if (server != null) moveMercenaries(server, VillageMercenarySystem.loadedMercenaries(server.overworld()), kind, zone, true);
         return kind.displayName() + " 배치를 " + zone.displayName() + "(으)로 지정했습니다.";
     }
 
@@ -82,21 +93,21 @@ public final class VillageMercenaryDeploymentSystem {
     public static void tick(MinecraftServer server) {
         if (server == null || ++ticks < 5) return;
         ticks = 0;
+        List<IronGolem> loaded = VillageMercenarySystem.loadedMercenaries(server.overworld());
         for (VillageMercenarySystem.MercenaryClass kind : VillageMercenarySystem.MercenaryClass.values()) {
-            moveClass(server, kind, deployment(kind), false);
+            moveMercenaries(server, loaded, kind, deployment(kind), false);
         }
     }
 
-    private static void moveClass(MinecraftServer server, VillageMercenarySystem.MercenaryClass kind,
-                                  Deployment zone, boolean force) {
+    private static void moveMercenaries(MinecraftServer server, List<IronGolem> loaded,
+                                        VillageMercenarySystem.MercenaryClass kind,
+                                        Deployment zone, boolean force) {
         if (server == null) return;
-        ServerLevel level = server.overworld();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
-                VillageWorldSystem.BATTLEFIELD_RADIUS);
-        for (IronGolem golem : level.getEntitiesOfClass(IronGolem.class, area,
-                mob -> VillageMercenarySystem.classOf(mob) == kind && mob.isAlive())) {
+        ServerLevel level = server.overworld();
+        for (IronGolem golem : loaded) {
+            if (VillageMercenarySystem.classOf(golem) != kind) continue;
             BlockPos rally = rallyPoint(center, zone, kind, golem.getUUID());
             double leash = switch (kind) {
                 case BASTION -> 18.0;

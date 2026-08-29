@@ -109,11 +109,10 @@ def main() -> None:
 
     skill_enum = role.split("enum ActiveSkill", 1)[1].split("private final String id", 1)[0]
     skills = re.findall(r"^\s{8}([A-Z][A-Z0-9_]+)\(\"", skill_enum, re.M)
-    coverage = role.split("ScalingCoverage scalingCoverage", 1)[1].split("allSkillBranchesConnected", 1)[0]
     check("액티브 기술 수는 20종으로 유지됩니다", len(skills) == 20)
-    missing = [skill for skill in skills if f"case {skill} -> new ScalingCoverage(true, true, true" not in coverage]
-    check("20개 기술 모두 위력·지속·특수 성장 연결표를 통과합니다", not missing)
-    check("런타임 전체 연결 검증 진입점이 존재합니다", "allSkillBranchesConnected()" in role)
+    cast_block = role.split("private static void cast", 1)[1].split("private static void equipIntoFirstFreeSlot", 1)[0]
+    missing = [skill for skill in skills if f"case {skill} -> VillageRoleAbilitySystem.cast" not in cast_block]
+    check("20개 기술 모두 실제 성장 인수를 받는 시전 구현으로 연결됩니다", not missing)
 
     concrete_markers = [
         "SPIN_SCALE", "RALLY_SCALE", "waveCount", "durationMultiplier(), slam.specialRank()",

@@ -51,13 +51,6 @@ public final class VillageEquipmentSetSystem {
         return Math.max(0.78f, value);
     }
 
-    public static String inventorySummary(Player player) {
-        int wall = countEquipped(player, EquipmentSet.WALL_GUARDIAN);
-        int hunter = countEquipped(player, EquipmentSet.NIGHT_HUNTER);
-        return "성벽 수호자 " + wall + "/3 " + (wall >= 2 ? "◆2" : "◇2") + " " + (wall >= 3 ? "◆3" : "◇3")
-                + " · 밤사냥꾼 " + hunter + "/3 " + (hunter >= 2 ? "◆2" : "◇2") + " " + (hunter >= 3 ? "◆3" : "◇3");
-    }
-
     public static String tooltipSummary(Player player, ItemStack stack) {
         EquipmentSet set = setOf(stack);
         if (set == null) return "";

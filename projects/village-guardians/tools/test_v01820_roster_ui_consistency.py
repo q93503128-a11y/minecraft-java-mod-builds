@@ -7,14 +7,15 @@ def read(name):
     return (JAVA / name).read_text(encoding="utf-8")
 
 def main():
-    ui = read("VillageUiService.java")
+    ui = read("VillageUiController.java")
+    deploy = read("VillageMercenaryDeploymentSystem.java")
     merc = read("VillageMercenarySystem.java")
     research = read("VillageDefenseResearchSystem.java")
     assert "public static int capacity()" in merc
     assert "VillageDefenseResearchSystem.mercenaryCapacityBonus()" in merc
-    assert '" · 용병 정원 " + (1 + safe / 2 + VillageDefenseResearchSystem.mercenaryCapacityBonus())' in ui
+    assert '"% · 용병 정원 " + (1 + safe / 2 + VillageDefenseResearchSystem.mercenaryCapacityBonus())' in ui
     assert "mercenaryCapacityAt" in research
-    assert '"open_mercenary_roster", "용병 명부 · " + VillageMercenarySystem.rosterCount() + " / "' in ui
+    assert "VillageMercenarySystem.status(player.level().getServer())" in deploy
     print("[PASS] barracks management and roster screens show research-aware mercenary capacity")
 
 if __name__ == "__main__":

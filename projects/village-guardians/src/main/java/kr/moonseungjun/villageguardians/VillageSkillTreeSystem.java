@@ -52,6 +52,14 @@ public final class VillageSkillTreeSystem {
     }
 
     public static synchronized String purchase(ServerPlayer player, String nodeId) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "전술 발전은 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("전술 발전");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SKILL_HALL)) {
+            return "기술·마법 연구소가 파괴되어 전술을 연구할 수 없습니다.";
+        }
         if (!hasValidAllocation(player)) {
             return "사용한 포인트가 획득 포인트보다 많아 안전 잠금되었습니다.";
         }
@@ -295,14 +303,6 @@ public final class VillageSkillTreeSystem {
         UNLOCKED_MASKS.clear();
         SPENT_POINTS.clear();
         persist();
-    }
-
-    public static int branchRanks(ServerPlayer player, Branch branch) {
-        int count = 0;
-        for (Node node : Node.values()) {
-            if (node.branch() == branch && has(player, node)) count++;
-        }
-        return count;
     }
 
     public static List<Node> nodes() {

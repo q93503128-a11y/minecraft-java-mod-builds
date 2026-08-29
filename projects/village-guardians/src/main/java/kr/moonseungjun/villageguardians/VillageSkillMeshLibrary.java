@@ -1322,28 +1322,6 @@ public final class VillageSkillMeshLibrary {
         }
     }
 
-    private static void crescent(
-            PoseStack.Pose pose, VertexConsumer out, Basis b,
-            double radius, double y, double z, double sweep, int color) {
-        int segments = 28;
-        double start = -sweep * 0.5;
-        for (int i = 0; i < segments; i++) {
-            double t0 = i / (double) segments;
-            double t1 = (i + 1) / (double) segments;
-            double a0 = start + sweep * t0;
-            double a1 = start + sweep * t1;
-            double w0 = 0.04 + Math.sin(Math.PI * t0) * 0.32;
-            double w1 = 0.04 + Math.sin(Math.PI * t1) * 0.32;
-            Vec3 p0 = b.local(Math.sin(a0) * radius, y + Math.cos(a0) * radius * 0.52, z);
-            Vec3 p1 = b.local(Math.sin(a0) * (radius + w0),
-                    y + Math.cos(a0) * (radius + w0) * 0.52, z + 0.04);
-            Vec3 p2 = b.local(Math.sin(a1) * (radius + w1),
-                    y + Math.cos(a1) * (radius + w1) * 0.52, z + 0.04);
-            Vec3 p3 = b.local(Math.sin(a1) * radius, y + Math.cos(a1) * radius * 0.52, z);
-            quadTwoSided(pose, out, p0, p1, p2, p3, color);
-        }
-    }
-
     private static void ring(
             PoseStack.Pose pose, VertexConsumer out, Basis b,
             double radius, double y, double width, int segments, int color, double phase) {
@@ -1418,16 +1396,6 @@ public final class VillageSkillMeshLibrary {
         Vec3 tail = start.add(b.forward.scale(length * 0.18));
         triangleTwoSided(pose, out, start.add(r.scale(1.2)), tail, start.subtract(r.scale(1.2)), color);
         triangleTwoSided(pose, out, start.add(u.scale(1.2)), tail, start.subtract(u.scale(1.2)), color);
-    }
-
-    private static void customArrowBetween(
-            PoseStack.Pose pose, VertexConsumer out, Vec3 start, Vec3 end,
-            double thickness, int color) {
-        Vec3 delta = end.subtract(start);
-        Basis b = Basis.from(delta);
-        double length = delta.length();
-        Vec3 center = start.add(delta.scale(0.5));
-        customArrow(pose, out, b, center, length, thickness, color);
     }
 
     private static void energyBlade(
@@ -1517,37 +1485,6 @@ public final class VillageSkillMeshLibrary {
         double edge = Math.pow(Math.abs(x) / Math.max(0.001, width * 0.5), 1.7);
         double z = -Math.abs(curve) * edge + 0.05 * Math.cos((v - 0.5) * Math.PI);
         return center.add(b.local(x, y, z));
-    }
-
-    private static void hexGrid(
-            PoseStack.Pose pose, VertexConsumer out, Basis b,
-            double width, double height, double z, double age, int color) {
-        double size = 0.42;
-        int rows = Math.max(2, (int) (height / (size * 1.45)));
-        int cols = Math.max(3, (int) (width / (size * 1.7)));
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                double x = (col - (cols - 1) * 0.5) * size * 1.72
-                        + (row % 2) * size * 0.86;
-                double y = 0.35 + row * size * 1.48;
-                hexagonOutline(pose, out, b, b.local(x, y, z), size,
-                        color, age * 0.01 + row * 0.07);
-            }
-        }
-    }
-
-    private static void hexagonOutline(
-            PoseStack.Pose pose, VertexConsumer out, Basis b, Vec3 center,
-            double radius, int color, double phase) {
-        for (int i = 0; i < 6; i++) {
-            double a0 = phase + i * TAU / 6.0;
-            double a1 = phase + (i + 1) * TAU / 6.0;
-            Vec3 p0 = center.add(b.right.scale(Math.cos(a0) * radius))
-                    .add(0, Math.sin(a0) * radius, 0);
-            Vec3 p1 = center.add(b.right.scale(Math.cos(a1) * radius))
-                    .add(0, Math.sin(a1) * radius, 0);
-            prism(pose, out, p0, p1, radius * 0.055, color);
-        }
     }
 
     private static void tornadoRibbon(
@@ -1737,19 +1674,6 @@ public final class VillageSkillMeshLibrary {
                 center.add(radial.scale(0.05)), 0.045, color);
     }
 
-    private static void shieldGlyph(
-            PoseStack.Pose pose, VertexConsumer out, Basis b,
-            double angle, double radius, double y, int color) {
-        Vec3 center = b.local(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-        Basis face = Basis.from(center.lengthSqr() < 1.0E-5 ? b.forward : center);
-        double w = 0.28;
-        double h = 0.42;
-        Vec3 a = center.add(face.right.scale(-w)).add(0, h, 0);
-        Vec3 c = center.add(face.right.scale(w)).add(0, h, 0);
-        Vec3 d = center.add(0, -h, 0).add(face.forward.scale(0.08));
-        triangleTwoSided(pose, out, a, c, d, color);
-    }
-
     private static void verticalBlade(
             PoseStack.Pose pose, VertexConsumer out, Basis b,
             Vec3 root, double height, double width, int color) {
@@ -1790,10 +1714,6 @@ public final class VillageSkillMeshLibrary {
         }
         if (result.isEmpty()) result.add(fallback);
         return result;
-    }
-
-    private static long stateSeed(Random random, int index, int frame) {
-        return random.nextLong() ^ ((long) index << 32) ^ frame * 0x9E3779B97F4A7C15L;
     }
 
     private static double envelope(double progress, double attack, double release) {

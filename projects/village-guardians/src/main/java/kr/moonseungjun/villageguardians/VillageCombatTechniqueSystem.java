@@ -1,6 +1,5 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
@@ -38,33 +37,6 @@ public final class VillageCombatTechniqueSystem {
         } else if (attacker.getMainHandItem().is(ItemTags.SWORDS)) {
             handleSwordTechnique(level, attacker, primary, event.getAmount(), playerLevel, research);
         }
-    }
-
-    public static void castRoleTechnique(ServerPlayer player, VillageRole role, int learned) {
-        if (!(player.level() instanceof ServerLevel level) || !VillageRaidSystem.isActive() || learned < 2) return;
-        int playerLevel = VillageCouncilState.levelOf(player.getUUID());
-        double radius = 6.0 + learned * 1.5;
-        float damage = 3.0f + playerLevel * 0.28f + learned * 1.5f;
-        int limit = switch (role) {
-            case VANGUARD -> 9;
-            case RANGER -> 7;
-            case ARCANIST -> 11;
-            case LUMINAR -> 3;
-            case WARDEN -> 5;
-        };
-        List<Mob> targets = VillageRaidSystem.activeEnemiesNear(level, player.position(), radius, limit, null);
-        secondaryDamage(level, targets, damage);
-        if (!targets.isEmpty()) player.sendSystemMessage(Component.literal(
-                "§d[연계 전술] §f주변 적 " + targets.size() + "명에게 전술 충격을 가했습니다."));
-    }
-
-    public static String unlockSummary(ServerPlayer player) {
-        StringBuilder text = new StringBuilder();
-        if (VillageSkillTreeSystem.projectileFireBonusTicks(player) > 0) text.append("발화 촉");
-        if (VillageCouncilState.levelOf(player.getUUID()) >= 8 && VillageProgressionSystem.skillRank(player) >= 2) append(text, "검기 휩쓸기");
-        if (VillageSkillTreeSystem.extraRicochetTargets(player) > 0) append(text, "도탄 사격");
-        if (VillageSkillTreeSystem.executionMultiplier(player, 1.0f, 4.0f) > 1.0f) append(text, "처형 본능");
-        return text.isEmpty() ? "아직 해금된 고급 전투 기술 없음" : text.toString();
     }
 
     private static void handleArrowTechnique(
@@ -113,8 +85,4 @@ public final class VillageCombatTechniqueSystem {
         }
     }
 
-    private static void append(StringBuilder builder, String value) {
-        if (!builder.isEmpty()) builder.append(" · ");
-        builder.append(value);
-    }
 }

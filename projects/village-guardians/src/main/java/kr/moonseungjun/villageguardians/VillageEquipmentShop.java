@@ -48,6 +48,11 @@ public final class VillageEquipmentShop {
     }
 
     public static String purchase(ServerPlayer player, String offerId) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "장비 구매는 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("장비 구매");
+        if (blocked != null) return blocked;
         Offer offer = Offer.parse(offerId).orElse(null);
         if (offer == null) return "알 수 없는 장비 상품입니다.";
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.STOREHOUSE)) {

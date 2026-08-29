@@ -17,6 +17,9 @@ public final class VillageStarterKit {
     private VillageStarterKit() {}
 
     public static void grantOnLogin(ServerPlayer player) {
+        if (VillageProgressionSystem.consumePendingNewGameReset(player)) {
+            clearForNewGame(player);
+        }
         if (player.addTag(STARTER_KIT_TAG)) {
             giveOrDrop(player, VillageEquipmentRaritySystem.createNamed(
                     Items.IRON_SWORD, VillageEquipmentRaritySystem.Rarity.COMMON, "초임 수호검"));
@@ -52,12 +55,17 @@ public final class VillageStarterKit {
     }
 
     public static void resetForNewGame(ServerPlayer player) {
-        player.getInventory().clearContent();
-        player.removeTag(STARTER_KIT_TAG); player.removeTag(CALLER_MIGRATION_TAG);
+        VillageProgressionSystem.consumePendingNewGameReset(player);
+        clearForNewGame(player);
         grantOnLogin(player);
     }
 
-    public static void grantMayorCaller(ServerPlayer player) { grantCaller(player); }
+    private static void clearForNewGame(ServerPlayer player) {
+        player.getInventory().clearContent();
+        player.getEnderChestInventory().clearContent();
+        player.removeTag(STARTER_KIT_TAG);
+        player.removeTag(CALLER_MIGRATION_TAG);
+    }
 
     public static void handleItemInteraction(PlayerInteractEvent.RightClickItem event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.level().isClientSide()) return;

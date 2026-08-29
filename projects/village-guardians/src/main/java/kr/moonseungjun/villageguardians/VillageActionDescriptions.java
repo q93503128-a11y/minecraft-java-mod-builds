@@ -56,9 +56,6 @@ final class VillageActionDescriptions {
         if (action.startsWith("retire_mercenary:")) {
             return label + "\n현재 로드된 용병을 명부에서 영구 퇴역시킵니다. 고용비는 환불되지 않습니다.";
         }
-        if (action.startsWith("funding:")) {
-            return label + "\n개인 수호 주화를 공동 보급품으로 전환해 시설 수리와 강화에 사용합니다.";
-        }
         if (action.startsWith("tower_branch:")) {
             return label + "\n방어탑의 전투 방식과 외형을 선택한 전문 분기로 교체합니다.";
         }
@@ -81,7 +78,6 @@ final class VillageActionDescriptions {
             case "open_quick_chat" -> "접속 중인 수호단에게 보낼 빠른 신호를 엽니다.";
             case "open_dashboard", "open_mayor" -> "마을 회관의 직업 배치와 시설 관리 화면을 엽니다.";
             case "open_tower_control" -> "마을 회관에서 성벽과 네 종류 방어탑을 관리합니다.";
-            case "open_funding" -> "마을 회관에서 개인 수호 주화로 공동 보급품을 조달합니다.";
             case "return_village" -> "전투 중이 아닐 때 마을 중앙 광장으로 귀환합니다.";
             case "claim_bread" -> "오늘의 무료 배급 식량을 받습니다. 일반 식량 구매는 이 배급으로 통합되었습니다.";
             case "buy_arrows" -> label + "\n수호 주화로 화살 묶음을 구매합니다.";
@@ -122,7 +118,6 @@ final class VillageActionDescriptions {
                 || action.startsWith("role_node:")
                 || action.startsWith("role_skill_unlock:")
                 || action.startsWith("gear:")
-                || action.startsWith("funding:")
                 || action.equals("buy_arrows")
                 || action.equals("sell_loot")
                 || action.equals("forge_upgrade")
@@ -148,7 +143,6 @@ final class VillageActionDescriptions {
         if (action.startsWith("upgrade:")) return "시설 강화";
         if (action.startsWith("tower_branch:")) return "분기 적용";
         if (action.startsWith("tower_upgrade:")) return "분기 강화";
-        if (action.startsWith("funding:")) return "보급 조달";
         if (action.startsWith("hire_mercenary:")) return "용병 고용";
         if (action.startsWith("retire_mercenary:")) return "용병 퇴역";
         if (action.startsWith("gear:")) return "장비 구매";

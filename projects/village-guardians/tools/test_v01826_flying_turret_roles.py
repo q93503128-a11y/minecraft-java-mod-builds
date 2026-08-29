@@ -13,7 +13,6 @@ def main() -> None:
     enemy = read("VillageEnemyArchetypeSystem.java")
     raid = read("VillageRaidSystem.java")
     attack = read("VillageAttackPlanSystem.java")
-    gate = read("VillageGatePrioritySystem.java")
     turret = read("VillagePlacedTurretSystem.java")
     old = (ROOT / "tools/test_v01825_multifront_routing_integrity.py").read_text(encoding="utf-8")
 
@@ -29,7 +28,8 @@ def main() -> None:
 
     assert "VillageEnemyArchetypeSystem.isFlying(mob)" in attack
     assert "spawnOrigin(front, index).above(" in attack
-    assert "VillageEnemyArchetypeSystem.isFlying(mob)" in gate
+    assert not (JAVA / "VillageGatePrioritySystem.java").exists()
+    assert "if (VillageEnemyArchetypeSystem.isFlying(mob))" in attack
     assert "directFlyingEnemy(server, level, mob, archetype, villageCenter)" in raid
     assert "mob.getMoveControl().setWantedPosition" in raid
     assert "chooseTarget(" in raid and "villageCenter, mob.blockPosition(), true, archetype" in raid

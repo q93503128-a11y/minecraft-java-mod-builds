@@ -20,7 +20,8 @@ def main():
     assert "mod_version=" in (ROOT / "gradle.properties").read_text(encoding="utf-8")
     merc = read("VillageMercenarySystem.java")
     defense = read("VillageDefenseSystem.java")
-    ui = read("VillageUiService.java")
+    deploy = read("VillageMercenaryDeploymentSystem.java")
+    local = read("VillageLocalActionSystem.java")
     desc = read("VillageActionDescriptions.java")
     detail = read("VillageActionDetailScreen.java")
 
@@ -39,21 +40,21 @@ def main():
     assert "loadedCount(level)" in merc
     assert "private static synchronized int count(ServerLevel level)" not in merc
 
-    # Legacy generic mercenaries migrate once into the classed SavedData system.
+    # Legacy generic mercenaries migrate once into the classed SavedData system;
+    # new hires enter only through the current barracks-local class command.
     assert 'LEGACY_MERCENARY_NAME = "마을 용병"' in merc
     assert "public static synchronized boolean adoptLegacy(Mob mob)" in merc
     assert "MercenaryClass kind = MercenaryClass.BASTION;" in merc
     assert "return VillageMercenarySystem.adoptLegacy(mob);" in defense
-    assert "VillageMercenarySystem.hire(player, VillageMercenarySystem.MercenaryClass.BASTION)" in defense
+    assert "VillageMercenarySystem.hire(player" not in defense
     assert "EntityTypes.IRON_GOLEM.create(level, EntitySpawnReason.EVENT)" not in defense
 
-    # Barracks UI enters one roster owner; four classes and retirement use explicit action IDs.
-    assert 'send(player, "mercenary_roster", "용병 명부"' in ui
-    assert '"hire_mercenary:" + kind.id()' in ui
-    assert '"retire_mercenary:" + entry.uuid()' in ui
-    assert 'case "open_mercenary_roster", "hire_mercenary" -> openMercenaryRoster(player);' in ui
-    assert "VillageDefenseSystem.hireMercenary(player)" not in ui
-    assert '"open_mercenary_roster", "용병 명부 · "' in ui
+    # Current class command exposes hiring, deployment and confirmation-gated retirement from one owner.
+    assert 'actions.add("merc_hire:" + kind.id())' in deploy
+    assert 'actions.add("retire_mercenary:" + entry.uuid())' in deploy
+    assert 'action.startsWith("retire_mercenary:")' in local
+    assert "VillageMercenarySystem.retire(player, uuid)" in local
+    assert "VillageDefenseSystem.hireMercenary(player)" not in deploy
     assert "public static synchronized String retire(ServerPlayer player, UUID uuid)" in merc
     assert "VillageMercenaryPresentationSystem.remove(level, uuid);" in merc
     assert "unregister(uuid);" in merc

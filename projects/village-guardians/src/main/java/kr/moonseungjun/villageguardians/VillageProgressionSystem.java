@@ -1,37 +1,33 @@
 package kr.moonseungjun.villageguardians;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class VillageProgressionSystem {
     public static final int MAX_BUILDING_LEVEL = 5;
     public static final int MAX_PERSONAL_RANK = 5;
     public static final int STARTING_COINS = 120;
+    private static final String PENDING_RESET_PREFIX = "$pending_player_reset_";
 
     private static final Map<UUID, Integer> CLAIM_DAYS = new LinkedHashMap<>();
-    private static final Map<UUID, Long> TRAINING_READY_AT = new LinkedHashMap<>();
     private static final Map<UUID, Integer> COINS = new LinkedHashMap<>();
-    private static final Map<UUID, Integer> FORGE_RANKS = new LinkedHashMap<>();
     private static final Map<UUID, Integer> SKILL_RANKS = new LinkedHashMap<>();
+    private static final Set<UUID> PENDING_NEW_GAME_RESETS = new HashSet<>();
     private static final EnumMap<Building, Integer> DURABILITY = new EnumMap<>(Building.class);
     private static final EnumMap<Building, Integer> NIGHT_START_DURABILITY = new EnumMap<>(Building.class);
     private static int nightPlanDay;
@@ -66,15 +62,17 @@ public final class VillageProgressionSystem {
         CLAIM_DAYS.putAll(savedData.claimDays());
         COINS.clear();
         COINS.putAll(savedData.coins());
-        FORGE_RANKS.clear();
-        FORGE_RANKS.putAll(savedData.forgeRanks());
         SKILL_RANKS.clear();
         SKILL_RANKS.putAll(savedData.skillRanks());
-        TRAINING_READY_AT.clear();
-
         DURABILITY.clear();
         NIGHT_START_DURABILITY.clear();
         Map<String, Integer> loadedDurability = savedData.buildingDurability();
+        PENDING_NEW_GAME_RESETS.clear();
+        loadedDurability.forEach((key, value) -> {
+            if (value > 0 && key.startsWith(PENDING_RESET_PREFIX)) {
+                parseUuid(key.substring(PENDING_RESET_PREFIX.length()), PENDING_NEW_GAME_RESETS::add);
+            }
+        });
         nightPlanDay = Math.max(0, loadedDurability.getOrDefault("$night_plan_day", 0));
         nightPlanPlayers = Math.max(1, loadedDurability.getOrDefault("$night_plan_players", 1));
         retryPlanLocked = loadedDurability.getOrDefault("$retry_plan_locked", 0) > 0;
@@ -93,10 +91,6 @@ public final class VillageProgressionSystem {
             COINS.put(player.getUUID(), STARTING_COINS);
             changed = true;
         }
-        if (!FORGE_RANKS.containsKey(player.getUUID())) {
-            FORGE_RANKS.put(player.getUUID(), 0);
-            changed = true;
-        }
         if (!SKILL_RANKS.containsKey(player.getUUID())) {
             SKILL_RANKS.put(player.getUUID(), 0);
             changed = true;
@@ -104,27 +98,6 @@ public final class VillageProgressionSystem {
         if (changed) {
             persist();
         }
-    }
-
-    public static void handleBuildingInteraction(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getHand() != InteractionHand.MAIN_HAND
-                || !(event.getEntity() instanceof ServerPlayer player)
-                || !(player.level() instanceof ServerLevel level)
-                || !VillageCouncilState.isInsideVillage(player)) {
-            return;
-        }
-        BlockPos villageCenter = VillageCouncilState.villageCenter().orElse(null);
-        if (villageCenter == null) {
-            return;
-        }
-        Building building = VillageFortressBuildings.buildingAtTerminal(level, villageCenter, event.getPos());
-        if (building == null) {
-            return;
-        }
-
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        VillageUiService.openBuilding(player, building);
     }
 
     public static synchronized String status() {
@@ -171,10 +144,6 @@ public final class VillageProgressionSystem {
         return COINS.getOrDefault(player.getUUID(), STARTING_COINS);
     }
 
-    public static synchronized int forgeRank(ServerPlayer player) {
-        return FORGE_RANKS.getOrDefault(player.getUUID(), 0);
-    }
-
     public static synchronized int skillRank(ServerPlayer player) {
         return SKILL_RANKS.getOrDefault(player.getUUID(), 0);
     }
@@ -184,10 +153,6 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized int smithyLevel() {
-        return smithyLevel;
-    }
-
-    public static synchronized int armoryLevel() {
         return smithyLevel;
     }
 
@@ -275,10 +240,6 @@ public final class VillageProgressionSystem {
         return Math.max(0.62f, 0.94f - wallLevel * 0.064f);
     }
 
-    public static synchronized int skillDurationBonusTicks(ServerPlayer player) {
-        return skillHallLevel * 30 + skillRank(player) * 60;
-    }
-
     public static synchronized int skillCooldownReductionSeconds(ServerPlayer player) {
         int research = isOperational(Building.SKILL_HALL) ? skillHallLevel : 0;
         int barracksSupport = isOperational(Building.BARRACKS) ? barracksLevel / 2 : 0;
@@ -346,6 +307,11 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized String buyArrows(ServerPlayer player) {
+        if (!VillageLocationRules.isNear(player, Building.STOREHOUSE)) {
+            return "화살 구매는 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("화살 구매");
+        if (blocked != null) return blocked;
         if (!isOperational(Building.STOREHOUSE)) {
             return "상점·보급소가 파괴되어 상점을 이용할 수 없습니다.";
         }
@@ -366,11 +332,12 @@ public final class VillageProgressionSystem {
         return "유료 일반 식량은 일일 배급 식량으로 통합되었습니다. 상점의 전투 소모품을 이용하세요.";
     }
 
-    public static synchronized String improveForgeRank(ServerPlayer player) {
-        return "장비 강화는 대장간에서 강화할 장비를 직접 선택하는 방식으로 변경되었습니다.";
-    }
-
     public static synchronized String learnNextSkill(ServerPlayer player) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "전투·마법 연구는 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("전투·마법 연구");
+        if (blocked != null) return blocked;
         if (!isOperational(Building.SKILL_HALL)) {
             return "기술·마법 연구소가 파괴되어 능력을 배울 수 없습니다.";
         }
@@ -385,18 +352,6 @@ public final class VillageProgressionSystem {
         SKILL_RANKS.put(player.getUUID(), current + 1);
         persist();
         return "전투·마법 능력 단계 " + (current + 1) + " 습득 | 역할 스킬과 공격력 강화";
-    }
-
-    public static synchronized String train(ServerPlayer player) {
-        return "병영 훈련은 패시브 효과입니다. 현재 모든 경험치 획득량 +"
-                + (experienceMultiplierPercent() - 100) + "%";
-    }
-
-    public static synchronized String useInfirmary(ServerPlayer player) {
-        if (!isOperational(Building.INFIRMARY)) return "의무소가 파괴되어 효과를 받을 수 없습니다.";
-        if (isDaytime()) player.setHealth(player.getMaxHealth());
-        applyInfirmaryBuffs(player);
-        return "의무소 효과 적용 | 낮에는 체력이 완전히 회복되고 시설 단계에 따라 전투 버프를 받습니다.";
     }
 
     public static synchronized int respawnDelayTicks() {
@@ -425,20 +380,16 @@ public final class VillageProgressionSystem {
         if (level >= 5) player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 0, false, true, true));
     }
 
-    private static void clearTreatmentEffects(ServerPlayer player) {
-        player.removeEffect(MobEffects.POISON);
-        player.removeEffect(MobEffects.WITHER);
-        player.removeEffect(MobEffects.WEAKNESS);
-        player.removeEffect(MobEffects.SLOWNESS);
-    }
-
     public static synchronized String upgrade(ServerPlayer player, Building building) {
+        if (building == null) return "알 수 없는 시설입니다.";
         if (building == Building.TOWN_HALL) {
             return "마을 회관은 직접 업그레이드하지 않습니다.";
         }
-        if (VillageRaidSystem.isRaidLocked()) {
-            return "습격 중에는 업그레이드할 수 없습니다.";
+        if (!VillageLocationRules.isNearTownHall(player) && !VillageLocationRules.isNear(player, building)) {
+            return "시설 강화는 해당 시설 단말기 또는 마을 회관 근처에서만 가능합니다.";
         }
+        String blocked = VillageMaintenanceRules.blockReason("시설 강화");
+        if (blocked != null) return blocked;
         if (!isOperational(building)) {
             return "파괴된 건물은 먼저 수리해야 합니다.";
         }
@@ -464,9 +415,12 @@ public final class VillageProgressionSystem {
     }
 
     public static synchronized String repair(ServerPlayer player, Building building) {
-        if (VillageRaidSystem.isRaidLocked()) {
-            return "습격 중에는 수리할 수 없습니다.";
+        if (building == null) return "알 수 없는 시설입니다.";
+        if (!VillageLocationRules.isNearTownHall(player) && !VillageLocationRules.isNear(player, building)) {
+            return "시설 수리는 해당 시설 단말기 또는 마을 회관 근처에서만 가능합니다.";
         }
+        String blocked = VillageMaintenanceRules.blockReason("시설 수리");
+        if (blocked != null) return blocked;
         int current = durability(building);
         int maximum = maxDurability(building);
         if (current >= maximum) {
@@ -534,9 +488,13 @@ public final class VillageProgressionSystem {
         VillageRaidSystem.resetAfterRestart(server);
         VillageSkillTestSystem.clearAll(server);
         if (fromStart) {
+            PENDING_NEW_GAME_RESETS.clear();
+            PENDING_NEW_GAME_RESETS.addAll(COINS.keySet());
+            PENDING_NEW_GAME_RESETS.addAll(SKILL_RANKS.keySet());
+            PENDING_NEW_GAME_RESETS.addAll(CLAIM_DAYS.keySet());
             supplies = 180; wallLevel = 0; smithyLevel = 0; infirmaryLevel = 0;
             storehouseLevel = 0; barracksLevel = 0; skillHallLevel = 0;
-            CLAIM_DAYS.clear(); FORGE_RANKS.clear(); SKILL_RANKS.clear(); COINS.clear();
+            CLAIM_DAYS.clear(); SKILL_RANKS.clear(); COINS.clear();
             NIGHT_START_DURABILITY.clear(); nightPlanDay = 0; nightPlanPlayers = 1; retryPlanLocked = false;
             VillageSkillTreeSystem.resetForNewGame();
             VillageRoleSkillSystem.resetForNewGame();
@@ -545,7 +503,6 @@ public final class VillageProgressionSystem {
             VillageMercenarySystem.resetForNewGame(server);
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 COINS.put(player.getUUID(), STARTING_COINS);
-                FORGE_RANKS.put(player.getUUID(), 0);
                 SKILL_RANKS.put(player.getUUID(), 0);
             }
         } else {
@@ -580,10 +537,6 @@ public final class VillageProgressionSystem {
         return true;
     }
 
-    private static boolean allCoreBuildingsDestroyed() {
-        return !isOperational(Building.TOWN_HALL);
-    }
-
     private static void setLevel(Building building, int value) {
         int level = Math.max(0, Math.min(MAX_BUILDING_LEVEL, value));
         switch (building) {
@@ -608,6 +561,8 @@ public final class VillageProgressionSystem {
         encodedDurability.put("$night_plan_day", nightPlanDay);
         encodedDurability.put("$night_plan_players", Math.max(1, nightPlanPlayers));
         encodedDurability.put("$retry_plan_locked", retryPlanLocked ? 1 : 0);
+        PENDING_NEW_GAME_RESETS.forEach(uuid ->
+                encodedDurability.put(PENDING_RESET_PREFIX + uuid, 1));
         savedData.replaceState(
                 supplies,
                 wallLevel,
@@ -618,7 +573,7 @@ public final class VillageProgressionSystem {
                 skillHallLevel,
                 CLAIM_DAYS,
                 COINS,
-                FORGE_RANKS,
+                Map.of(),
                 SKILL_RANKS,
                 encodedDurability,
                 gameOver);
@@ -630,23 +585,32 @@ public final class VillageProgressionSystem {
         }
     }
 
+    public static synchronized boolean consumePendingNewGameReset(ServerPlayer player) {
+        if (player == null || !PENDING_NEW_GAME_RESETS.remove(player.getUUID())) return false;
+        persist();
+        return true;
+    }
+
+    private static void parseUuid(String value, java.util.function.Consumer<UUID> consumer) {
+        try { consumer.accept(UUID.fromString(value)); }
+        catch (IllegalArgumentException ignored) { }
+    }
+
     public enum Building {
-        TOWN_HALL("town_hall", "마을 회관", Blocks.BELL),
-        WALLS("walls", "북문·성벽", Blocks.STONECUTTER),
-        SMITHY("smithy", "대장간", Blocks.SMITHING_TABLE),
-        SKILL_HALL("skill_hall", "기술·마법 연구소", Blocks.ENCHANTING_TABLE),
-        INFIRMARY("infirmary", "의무소", Blocks.BREWING_STAND),
-        STOREHOUSE("storehouse", "상점·보급소", Blocks.BARREL),
-        BARRACKS("barracks", "병영·훈련장", Blocks.TARGET);
+        TOWN_HALL("town_hall", "마을 회관"),
+        WALLS("walls", "북문·성벽"),
+        SMITHY("smithy", "대장간"),
+        SKILL_HALL("skill_hall", "기술·마법 연구소"),
+        INFIRMARY("infirmary", "의무소"),
+        STOREHOUSE("storehouse", "상점·보급소"),
+        BARRACKS("barracks", "병영·훈련장");
 
         private final String id;
         private final String displayName;
-        private final Block terminal;
 
-        Building(String id, String displayName, Block terminal) {
+        Building(String id, String displayName) {
             this.id = id;
             this.displayName = displayName;
-            this.terminal = terminal;
         }
 
         public String id() {
@@ -655,15 +619,6 @@ public final class VillageProgressionSystem {
 
         public String displayName() {
             return displayName;
-        }
-
-        public static Building fromTerminal(Block block) {
-            for (Building building : values()) {
-                if (building.terminal == block) {
-                    return building;
-                }
-            }
-            return null;
         }
 
         public static Building fromId(String id) {

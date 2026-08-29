@@ -16,7 +16,6 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -186,11 +185,5 @@ public final class VillageBossAspectSystem {
         public String displayName() { return displayName; }
         public String description() { return description; }
 
-        public static Aspect fromName(String name) {
-            if (name == null) return null;
-            String normalized = name.toUpperCase(Locale.ROOT);
-            for (Aspect aspect : values()) if (aspect.name().equals(normalized)) return aspect;
-            return null;
-        }
     }
 }

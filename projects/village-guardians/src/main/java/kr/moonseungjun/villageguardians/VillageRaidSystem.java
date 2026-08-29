@@ -183,7 +183,6 @@ public final class VillageRaidSystem {
         return Math.max(1, ACTIVE_WAVES.getOrDefault(mob.getUUID(), Math.max(1, wave)));
     }
 
-    public static VillageWaveTrait currentTrait() { return currentTrait; }
     public static boolean isActive() { return active; }
     public static boolean isRaidLocked() { return active || countdownTicks > 0; }
 
@@ -212,6 +211,17 @@ public final class VillageRaidSystem {
         return nearby.isEmpty() ? null : nearby.getFirst();
     }
 
+    /** Resolves the authoritative raid roster without scanning the surrounding world volume. */
+    public static List<Mob> activeEnemies(ServerLevel level) {
+        if (level == null) return List.of();
+        List<Mob> result = new ArrayList<>();
+        for (UUID id : ACTIVE_ENEMIES) {
+            Entity entity = level.getEntity(id);
+            if (entity instanceof Mob mob && mob.isAlive()) result.add(mob);
+        }
+        return List.copyOf(result);
+    }
+
     public static List<Mob> activeEnemiesNear(
             ServerLevel level,
             Vec3 origin,
@@ -220,12 +230,9 @@ public final class VillageRaidSystem {
             UUID excluded) {
         double radiusSquared = radius * radius;
         List<Mob> result = new ArrayList<>();
-        for (UUID id : ACTIVE_ENEMIES) {
-            if (excluded != null && excluded.equals(id)) continue;
-            Entity entity = level.getEntity(id);
-            if (entity instanceof Mob mob
-                    && mob.isAlive()
-                    && mob.position().distanceToSqr(origin) <= radiusSquared) {
+        for (Mob mob : activeEnemies(level)) {
+            if (excluded != null && excluded.equals(mob.getUUID())) continue;
+            if (mob.position().distanceToSqr(origin) <= radiusSquared) {
                 result.add(mob);
             }
         }

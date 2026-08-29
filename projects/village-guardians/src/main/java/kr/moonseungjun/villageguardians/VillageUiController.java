@@ -224,7 +224,8 @@ public final class VillageUiController {
             openDashboard(player);
             return;
         }
-        if (building == VillageProgressionSystem.Building.STOREHOUSE) {
+        if (building == VillageProgressionSystem.Building.STOREHOUSE
+                && VillageProgressionSystem.isOperational(building)) {
             openEquipmentShop(player);
             return;
         }
@@ -670,6 +671,14 @@ public final class VillageUiController {
                             ? "open_role_skill_research" : "open_dashboard");
             case "forge_upgrade", "smithy_forge_upgrade" -> openForgeEnhancement(player);
             case "forge_combine" -> openFusion(player);
+            case "skill_learn" -> {
+                if (!VillageLocationRules.isNearSkillHall(player)) {
+                    player.sendSystemMessage(Component.literal("§c개인 연구는 기술·마법 연구소에서만 가능합니다."));
+                } else {
+                    openResult(player, "개인 연구 결과", VillageProgressionSystem.learnNextSkill(player),
+                            "open_dashboard");
+                }
+            }
             case "buy_arrows" -> {
                 if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
                     player.sendSystemMessage(Component.literal("§c화살 구매는 창고 단말기 근처에서만 가능합니다."));
@@ -709,6 +718,7 @@ public final class VillageUiController {
                     "open_fusion", "장비 3개 합성|같은 종류·같은 등급·같은 강화 단계 세 개를 상위 등급으로 합성");
             case SKILL_HALL -> add(actions, labels,
                     "open_role_assignment", "직업 배치|플레이어 직업 선택·변경",
+                    "skill_learn", "개인 전투·마법 연구|수호 주화로 개인 연구 단계를 높여 기술 피해와 재사용 효율 강화",
                     "open_role_skill_research", "직업 기술 연구|현재 직업의 기술 습득과 {SKILL1}/{SKILL2} 장착만 관리",
                     "open_defense_research", "마을 방어 연구|용병·포탑·전리품 연구 트리",
                     "open_skill_test", "외부 기술 시험장|야외 시험장으로 이동해 {SKILL1}/{SKILL2}에 기술을 임시 장착하고 실제 모션 시험");
@@ -749,7 +759,7 @@ public final class VillageUiController {
                     + (safe >= 5 ? " · 보호막" : "");
             case STOREHOUSE -> "최대 내구도 " + (560 + safe * 120) + " · 일일 배급·전투 소모품·상품·전리품 정산";
             case BARRACKS -> "최대 내구도 " + (620 + safe * 130) + " · 모든 XP +" + (safe * 10)
-                    + "% · 기본 용병 정원 " + (1 + safe / 2);
+                    + "% · 용병 정원 " + (1 + safe / 2 + VillageDefenseResearchSystem.mercenaryCapacityBonus());
         };
     }
 

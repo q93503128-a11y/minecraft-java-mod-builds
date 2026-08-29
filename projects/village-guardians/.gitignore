@@ -1,6 +1,7 @@
 .gradle/
 .gradle-bootstrap/
 build/
+audit-output/
 run/
 run-data/
 .idea/

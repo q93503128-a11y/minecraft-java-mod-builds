@@ -23,7 +23,7 @@ public final class VillageClientUi {
                                 case "town_hall" -> new VillageTownHallGridScreen(payload);
                                 case "equipment_shop" -> new VillageShopCatalogScreen(payload);
                                 case "status", "caller" -> new VillageCommandCenterScreen(payload);
-                                case "building", "management", "funding", "tower_control", "tower_detail", "skill_test" ->
+                                case "building", "management", "tower_control", "tower_detail", "skill_test" ->
                                         new VillageActionDetailScreen(payload);
                                 case "relic_collection" -> new VillageRelicScreen(payload);
                                 case "relic_choice" -> new VillageRelicChoiceConfirmScreen(payload);

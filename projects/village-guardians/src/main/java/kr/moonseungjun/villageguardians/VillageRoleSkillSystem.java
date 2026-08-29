@@ -1,12 +1,8 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Mob;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,6 +142,14 @@ public final class VillageRoleSkillSystem {
     }
 
     public static synchronized String unlockSkill(ServerPlayer player, String skillId) {
+        if (!VillageLocationRules.isNearSkillHall(player)) {
+            return "직업 기술 연구는 기술·마법 연구소 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("직업 기술 연구");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.SKILL_HALL)) {
+            return "기술·마법 연구소가 파괴되어 직업 기술을 연구할 수 없습니다.";
+        }
         ActiveSkill skill = ActiveSkill.parse(skillId).orElse(null);
         if (skill == null) {
             return "알 수 없는 직업 기술입니다.";
@@ -239,60 +243,6 @@ public final class VillageRoleSkillSystem {
         return key + " §f" + skill.displayName() + " §c" + remaining + "초 " + bar;
     }
 
-    public static ScalingCoverage scalingCoverage(ActiveSkill skill) {
-        if (skill == null) return new ScalingCoverage(false, false, false, "기술 없음");
-        return switch (skill) {
-            case VANGUARD_WHIRLWIND -> new ScalingCoverage(true, true, true,
-                    "위력=틱 피해 · 지속=회전 시간 · 특수=범위/대상/밀치기");
-            case VANGUARD_BREAKER -> new ScalingCoverage(true, true, true,
-                    "위력=공격 증폭 · 지속=버프 시간 · 특수=효과 단계/아군 강화");
-            case VANGUARD_CRY -> new ScalingCoverage(true, true, true,
-                    "위력=검기 피해 · 지속=검기 횟수 · 특수=검기 크기/사거리");
-            case VANGUARD_STORM -> new ScalingCoverage(true, true, true,
-                    "위력=강하 피해 · 지속=균열 약화 시간 · 특수=범위/제어");
-            case RANGER_VOLLEY -> new ScalingCoverage(true, true, true,
-                    "위력=본체/추가 화살 피해 · 지속=준비 시간 · 특수=장전/추가 화살 수");
-            case RANGER_PIERCE -> new ScalingCoverage(true, true, true,
-                    "위력=추적/도탄 피해 · 지속=준비 시간 · 특수=도탄 반경/대상 수");
-            case RANGER_RICOCHET -> new ScalingCoverage(true, true, true,
-                    "위력=화살비 피해 · 지속=준비/장판 시간 · 특수=범위/화상");
-            case RANGER_FIRE_RAIN -> new ScalingCoverage(true, true, true,
-                    "위력=대궁 피해 · 지속=준비 시간 · 특수=크기/관통 범위");
-            case ARCANIST_FIRE_ORB -> new ScalingCoverage(true, true, true,
-                    "위력=폭발 피해 · 지속=비행 사거리 · 특수=폭발 범위/화상");
-            case ARCANIST_FROST_RING -> new ScalingCoverage(true, true, true,
-                    "위력=지속 피해 · 지속=장판 시간 · 특수=범위/사거리");
-            case ARCANIST_CHAIN -> new ScalingCoverage(true, true, true,
-                    "위력=회랑 피해 · 지속=토네이도 시간 · 특수=범위/제어");
-            case ARCANIST_NOVA -> new ScalingCoverage(true, true, true,
-                    "위력=낙뢰 피해 · 지속=폭격 시간 · 특수=범위/낙뢰 대상");
-            case LUMINAR_HEAL -> new ScalingCoverage(true, true, true,
-                    "위력=즉시 회복 · 지속=재생/보호막 시간 · 특수=보호막 강도");
-            case LUMINAR_CLEANSE -> new ScalingCoverage(true, true, true,
-                    "위력=회복량 · 지속=정화 후 보호 시간 · 특수=보호막/정화 범위");
-            case LUMINAR_VEIL -> new ScalingCoverage(true, true, true,
-                    "위력=틱 회복 · 지속=성역 시간 · 특수=범위/보호");
-            case LUMINAR_SANCTUARY -> new ScalingCoverage(true, true, true,
-                    "위력=전체 회복 · 지속=보호막/재생 시간 · 특수=보호막 강도/부활");
-            case WARDEN_TAUNT -> new ScalingCoverage(true, true, true,
-                    "위력=돌진 피해 · 지속=돌진 거리 · 특수=방패 폭/밀치기");
-            case WARDEN_BASH -> new ScalingCoverage(true, true, true,
-                    "위력=함성 피해 · 지속=도발/약화 시간 · 특수=범위/약화 단계");
-            case WARDEN_FORMATION -> new ScalingCoverage(true, true, true,
-                    "위력=보호막/접촉 피해 · 지속=태세 시간 · 특수=방패 범위/밀치기");
-            case WARDEN_FIELD -> new ScalingCoverage(true, true, true,
-                    "위력=보호막/진군 피해 · 지속=진군 시간 · 특수=방패 범위/저항");
-        };
-    }
-
-    public static boolean allSkillBranchesConnected() {
-        return Arrays.stream(ActiveSkill.values()).allMatch(skill -> scalingCoverage(skill).complete());
-    }
-
-    public record ScalingCoverage(boolean power, boolean duration, boolean special, String detail) {
-        public boolean complete() { return power && duration && special; }
-    }
-
     public static List<ActiveSkill> skillsFor(VillageRole role) {
         return Arrays.stream(ActiveSkill.values()).filter(skill -> skill.role() == role).toList();
     }
@@ -379,22 +329,6 @@ public final class VillageRoleSkillSystem {
                         - VillageRelicSystem.cooldownReductionSeconds(player));
     }
 
-    public static String useTestSkill(ServerPlayer player, String skillId) {
-        if (!VillageSkillTestSystem.isEnabled(player)) return "먼저 기술 시험 모드를 활성화해야 합니다.";
-        ActiveSkill skill = ActiveSkill.parse(skillId).orElse(null);
-        VillageRole role = VillageSkillTestSystem.selectedRole(player);
-        if (skill == null || skill.role() != role) return "현재 시험 직업의 기술만 시험할 수 있습니다.";
-        if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 시험할 수 없습니다.";
-        cast(level, player, skill, powerMultiplier(player, role)
-                * VillageProgressionSystem.learnedSkillDamageMultiplier(player)
-                * VillageProgressionSystem.skillHallPowerMultiplier()
-                * VillageRelicSystem.skillMultiplier(player)
-                * VillageConsumableSystem.skillMultiplier(player),
-                durationMultiplier(player, role) * VillageProgressionSystem.skillHallDurationMultiplier(),
-                specialRank(player, role));
-        return skill.displayName() + " 시험 시전 완료 · 비용과 재사용 대기시간 없음";
-    }
-
     public static synchronized void resetForNewGame() {
         TREE_MASKS.clear(); SKILL_MASKS.clear(); EQUIPPED_SKILLS.clear(); READY_AT.clear(); persist();
     }
@@ -428,66 +362,6 @@ public final class VillageRoleSkillSystem {
             case WARDEN_FORMATION -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
             case WARDEN_FIELD -> VillageRoleAbilitySystem.cast(level, player, skill, power, durationMultiplier, specialRank);
         }
-    }
-
-    private static List<Mob> damageArea(
-            ServerLevel level,
-            ServerPlayer player,
-            double radius,
-            int limit,
-            float damage,
-            int specialRank,
-            boolean lifeSteal) {
-        List<Mob> targets = VillageSkillTestSystem.isEnabled(player)
-                ? VillageSkillTestSystem.targetsNear(level, player, radius, limit + specialRank)
-                : VillageRaidSystem.activeEnemiesNear(
-                        level, player.position(), radius, limit + specialRank, null);
-        int hits = 0;
-        for (Mob target : targets) {
-            if (!target.isAlive()) {
-                continue;
-            }
-            float finalDamage = damage;
-            if (specialRank >= 3 && target.getHealth() <= target.getMaxHealth() * 0.30f) {
-                finalDamage *= 1.28f;
-            }
-            target.hurtServer(level, level.damageSources().magic(), finalDamage);
-            if (specialRank >= 2) {
-                target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 50 + specialRank * 20, 0));
-            }
-            hits++;
-        }
-        if (lifeSteal && specialRank >= 1 && hits > 0) {
-            player.heal(Math.min(8.0f, hits * (0.55f + specialRank * 0.20f)));
-        }
-        return targets;
-    }
-
-    private static void healAllies(
-            ServerPlayer player,
-            double radius,
-            float heal,
-            int duration,
-            int specialRank,
-            boolean barrier) {
-        for (ServerPlayer ally : allies(player, radius)) {
-            ally.heal(heal);
-            ally.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, Math.min(2, specialRank)));
-            if (barrier || specialRank >= 2) {
-                ally.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, Math.min(4, 1 + specialRank)));
-            }
-        }
-    }
-
-    private static List<ServerPlayer> allies(ServerPlayer player, double radius) {
-        MinecraftServer server = player.level().getServer();
-        if (server == null) {
-            return List.of(player);
-        }
-        double squared = radius * radius;
-        return server.getPlayerList().getPlayers().stream()
-                .filter(other -> other.level() == player.level() && other.distanceToSqr(player) <= squared)
-                .toList();
     }
 
     private static void equipIntoFirstFreeSlot(ServerPlayer player, ActiveSkill skill) {

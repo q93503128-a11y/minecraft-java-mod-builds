@@ -14,6 +14,7 @@ def main() -> None:
     local = read("VillageLocalActionSystem.java")
     placed = read("VillagePlacedTurretSystem.java")
     segment = read("VillageSiegeSegmentSystem.java")
+    rules = read("VillageMaintenanceRules.java")
     ui = read("VillageSiegeCommandUi.java")
     network = read("VillageNetwork.java")
     v23 = (ROOT / "tools/test_v01823_defense_consolidation.py").read_text(encoding="utf-8")
@@ -36,9 +37,9 @@ def main() -> None:
         assert token in local
 
     # Persistent defense maintenance is day-only and blocked after game over.
-    assert 'private static String maintenanceBlockReason(String action)' in placed
-    assert 'VillageProgressionSystem.isGameOver()' in placed
-    assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in placed
+    assert 'public static String blockReason(String action)' in rules
+    assert 'VillageProgressionSystem.isGameOver()' in rules
+    assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in rules
     for signature in (
         'public static String selectPlacement',
         'public static synchronized String repair(ServerPlayer player, int id)',
@@ -47,11 +48,11 @@ def main() -> None:
         'public static synchronized String repairAll(ServerPlayer player)',
     ):
         chunk = body(placed, signature, '\n    }')
-        assert 'maintenanceBlockReason(' in chunk
+        assert 'VillageMaintenanceRules.blockReason(' in chunk
 
     # Emergency consumable field repair intentionally remains a combat action.
     field = body(placed, 'public static synchronized String fieldRepairNearest', '\n    }')
-    assert 'maintenanceBlockReason(' not in field
+    assert 'VillageMaintenanceRules.blockReason(' not in field
 
     # Upgrade cannot be used as a free full repair anymore.
     upgrade = body(placed, 'public static synchronized String upgrade(ServerPlayer player, int id)', '\n    }')
@@ -59,10 +60,7 @@ def main() -> None:
         assert token in upgrade
     assert 'maxHp(upgradedBase), true' not in upgrade
 
-    assert 'private static String maintenanceBlockReason(String action)' in segment
-    assert segment.count('String blocked = maintenanceBlockReason(') >= 2
-    assert 'VillageProgressionSystem.isGameOver()' in segment
-    assert 'VillageCouncilState.currentPhase() != VillageTimePhase.DAY' in segment
+    assert segment.count('String blocked = VillageMaintenanceRules.blockReason(') >= 2
     assert '현재 손상분은 유지' in ui
 
     print('[PASS] siege mutation packets revalidate town-hall locality server-side')

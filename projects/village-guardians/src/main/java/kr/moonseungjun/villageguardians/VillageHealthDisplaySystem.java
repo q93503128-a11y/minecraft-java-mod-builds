@@ -1,12 +1,10 @@
 package kr.moonseungjun.villageguardians;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.scores.PlayerTeam;
 
 import java.util.ArrayList;
@@ -62,17 +60,8 @@ public final class VillageHealthDisplaySystem {
     }
 
     private static void updateRaidEnemyHealth(MinecraftServer server) {
-        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) {
-            return;
-        }
         ServerLevel level = server.overworld();
-        AABB area = new AABB(center).inflate(VillageWorldSystem.ENEMY_SPAWN_DISTANCE + 48, 64,
-                VillageWorldSystem.ENEMY_SPAWN_DISTANCE + 48);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!VillageRaidSystem.isActiveEnemy(mob.getUUID()) || !mob.isAlive()) {
-                continue;
-            }
+        for (Mob mob : VillageRaidSystem.activeEnemies(level)) {
             Component baseName = ENEMY_BASE_NAMES.computeIfAbsent(
                     mob.getUUID(),
                     ignored -> mob.getCustomName() != null

@@ -34,7 +34,7 @@ def main() -> None:
     assert len(skill_names) == 20, skill_names
     for prefix in ("VANGUARD", "RANGER", "ARCANIST", "LUMINAR", "WARDEN"):
         assert sum(name.startswith(prefix + "_") for name in skill_names) == 4
-    cast_block = role.split("switch (skill)", 1)[1].split("private static List<Mob> damageArea", 1)[0]
+    cast_block = role.split("switch (skill)", 1)[1].split("private static void equipIntoFirstFreeSlot", 1)[0]
     for name in skill_names:
         assert f"case {name}" in cast_block, name
     for role_prefix in ("vanguard_", "ranger_", "arcanist_", "luminar_", "warden_"):

@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
@@ -54,7 +53,7 @@ public final class VillageSiegeBossSystem {
         ServerLevel level = server.overworld();
         BlockPos center = VillageCouncilState.villageCenter().orElse(null);
         if (center == null) return;
-        if (ticks % 20 == 1) discover(level, center);
+        if (ticks % 20 == 1) discover(level);
         for (UUID id : new HashSet<>(ACTIVE.keySet())) {
             var entity = level.getEntity(id);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) {
@@ -88,10 +87,8 @@ public final class VillageSiegeBossSystem {
         return values[Math.floorMod(day * 5 + wave * 2 + salt, values.length)];
     }
 
-    private static void discover(ServerLevel level, BlockPos center) {
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
-                VillageWorldSystem.BATTLEFIELD_RADIUS);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area, value -> value.isAlive())) {
+    private static void discover(ServerLevel level) {
+        for (Mob mob : VillageRaidSystem.activeEnemies(level)) {
             VillageEnemyArchetypeSystem.Archetype type = VillageRaidSystem.archetypeOf(mob);
             if (type == null || !VillageEnemyArchetypeSystem.isBoss(type) || ACTIVE.containsKey(mob.getUUID())) continue;
             BossDoctrine doctrine = doctrineFor(VillageCouncilState.currentDay(), VillageRaidSystem.waveOf(mob), type);
@@ -177,6 +174,7 @@ public final class VillageSiegeBossSystem {
 
     private static void tickDuel(MinecraftServer server, Mob boss) {
         if (ticks % 35 != 0) return;
+        if (VillageAttackPlanSystem.ownsExteriorRouting(boss.getUUID(), boss.blockPosition())) return;
         ServerPlayer target = server.getPlayerList().getPlayers().stream()
                 .filter(player -> player.level() == boss.level() && player.isAlive() && !player.isSpectator()
                         && !VillageRespawnSystem.isDowned(player) && player.distanceToSqr(boss) <= 42.0 * 42.0)

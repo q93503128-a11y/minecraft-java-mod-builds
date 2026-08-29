@@ -13,7 +13,6 @@ import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -100,6 +99,11 @@ public final class VillageMercenarySystem {
 
     public static synchronized String hire(ServerPlayer player, MercenaryClass kind) {
         if (kind == null) return "알 수 없는 용병 병과입니다.";
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+            return "용병 고용은 병영 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("용병 고용");
+        if (blocked != null) return blocked;
         if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.BARRACKS)) {
             return "병영이 파괴되어 용병을 고용할 수 없습니다.";
         }
@@ -185,12 +189,7 @@ public final class VillageMercenarySystem {
         if (++tickCounter < 20) return;
         tickCounter = 0;
         ServerLevel level = server.overworld();
-        BlockPos center = VillageCouncilState.villageCenter().orElse(null);
-        if (center == null) return;
-        AABB area = new AABB(center).inflate(VillageWorldSystem.BATTLEFIELD_RADIUS, 96,
-                VillageWorldSystem.BATTLEFIELD_RADIUS);
-        for (IronGolem mercenary : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> isMercenary(entity.getUUID()))) {
+        for (IronGolem mercenary : loadedMercenaries(level)) {
             recognize(mercenary);
             MercenaryClass kind = mercenaryClass(mercenary);
             int rank = rank(mercenary);
@@ -252,13 +251,18 @@ public final class VillageMercenarySystem {
     }
 
     public static synchronized int loadedCount(ServerLevel level) {
-        if (level == null) return 0;
-        int count = 0;
+        return loadedMercenaries(level).size();
+    }
+
+    /** Resolves the saved roster directly, avoiding repeated battlefield-sized entity scans. */
+    public static synchronized List<IronGolem> loadedMercenaries(ServerLevel level) {
+        if (level == null) return List.of();
+        List<IronGolem> result = new ArrayList<>();
         for (UUID uuid : CLASSES.keySet()) {
             var entity = level.getEntity(uuid);
-            if (entity instanceof IronGolem golem && golem.isAlive()) count++;
+            if (entity instanceof IronGolem golem && golem.isAlive()) result.add(golem);
         }
-        return count;
+        return List.copyOf(result);
     }
 
     public static synchronized List<RosterEntry> rosterEntries(MinecraftServer server) {
@@ -276,9 +280,12 @@ public final class VillageMercenarySystem {
 
     public static synchronized String retire(ServerPlayer player, UUID uuid) {
         if (player == null || uuid == null) return "퇴역할 용병을 찾을 수 없습니다.";
-        if (VillageRaidSystem.isRaidLocked() || VillageCouncilState.currentPhase() != VillageTimePhase.DAY) {
-            return "용병 퇴역은 낮 정비 시간에만 가능합니다.";
+        if (!VillageLocationRules.isNearTownHall(player)
+                && !VillageLocationRules.isNear(player, VillageProgressionSystem.Building.BARRACKS)) {
+            return "용병 퇴역은 병영 또는 마을 회관 근처에서만 가능합니다.";
         }
+        String blocked = VillageMaintenanceRules.blockReason("용병 퇴역");
+        if (blocked != null) return blocked;
         MercenaryClass kind = CLASSES.get(uuid);
         if (kind == null) return "이미 명부에서 제외된 용병입니다.";
         if (!(player.level() instanceof ServerLevel level)) return "현재 월드에서는 용병을 퇴역시킬 수 없습니다.";
@@ -340,10 +347,10 @@ public final class VillageMercenarySystem {
     private static void healAllies(ServerLevel level, MinecraftServer server, IronGolem medic, int rank) {
         float amount = 2.3f * mercenaryPower(rank) * VillageDefenseResearchSystem.mercenaryHealingMultiplier();
         double radius = 8.0 + Math.min(13.0, rank * 0.22);
-        AABB area = medic.getBoundingBox().inflate(radius);
-        for (IronGolem ally : level.getEntitiesOfClass(IronGolem.class, area,
-                entity -> isMercenary(entity.getUUID()) && entity.isAlive())) ally.heal(amount);
         double radiusSquared = radius * radius;
+        for (IronGolem ally : loadedMercenaries(level)) {
+            if (ally.distanceToSqr(medic) <= radiusSquared) ally.heal(amount);
+        }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == level && player.distanceToSqr(medic) <= radiusSquared
                     && !VillageRespawnSystem.isDowned(player)) player.heal(amount * 0.65f);

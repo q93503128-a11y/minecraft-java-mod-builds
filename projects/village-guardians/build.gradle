@@ -14,12 +14,13 @@ base {
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 var licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
+var pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'python' : 'python3'
 
 var prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
     inputs.file 'tools/prepare_licensed_assets.py'
     inputs.property 'defaultDarkModeCommit', 'c804cb546dc260a5ae98b0754d599e1337faf43a'
     outputs.dir licensedAssetsOutput
-    commandLine 'python3',
+    commandLine pythonCommand,
             file('tools/prepare_licensed_assets.py').absolutePath,
             licensedAssetsOutput.get().asFile.absolutePath
 }

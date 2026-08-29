@@ -55,6 +55,14 @@ public final class VillageTradingSystem {
     }
 
     public static String sellSelected(ServerPlayer player, int slot) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "보유품 판매는 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("보유품 판매");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "상점·보급소가 파괴되어 보유품을 판매할 수 없습니다.";
+        }
         int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());
         if (slot < 0 || slot >= limit) return "판매할 아이템 슬롯이 올바르지 않습니다.";
         ItemStack stack = player.getInventory().getItem(slot);
@@ -70,6 +78,14 @@ public final class VillageTradingSystem {
     }
 
     public static String sellMonsterDrops(ServerPlayer player) {
+        if (!VillageLocationRules.isNear(player, VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "전리품 정산은 상점·보급소 단말기 근처에서만 가능합니다.";
+        }
+        String blocked = VillageMaintenanceRules.blockReason("전리품 정산");
+        if (blocked != null) return blocked;
+        if (!VillageProgressionSystem.isOperational(VillageProgressionSystem.Building.STOREHOUSE)) {
+            return "상점·보급소가 파괴되어 전리품을 정산할 수 없습니다.";
+        }
         int soldItems = 0;
         int value = 0;
         int limit = Math.min(MAIN_INVENTORY_SLOTS, player.getInventory().getContainerSize());

@@ -43,12 +43,6 @@ public final class VillageWarfrontSystem {
         return Math.min(28, chapter * 3 + Math.max(0, safe - 15) / 2);
     }
 
-    public static float healthMultiplier(int day) {
-        int safe = Math.max(1, day);
-        if (safe <= 12) return 1.0f;
-        return Math.min(1.85f, 1.0f + (safe - 12) * 0.025f);
-    }
-
     public static float structureDamageMultiplier(int day) {
         int safe = Math.max(1, day);
         float chapter = 1.0f + Math.max(0, safe - 10) * 0.012f;
