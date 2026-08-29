@@ -37,6 +37,9 @@ jobs:
       - name: Apply post-Codex ownership fixes
         run: python3 projects/village-guardians/tools/apply_v01834_post_codex_followup.py
 
+      - name: Migrate superseded historical contracts
+        run: python3 projects/village-guardians/tools/apply_v01834_historical_contracts.py
+
       - name: Diff safety
         run: git diff --check
 
@@ -117,6 +120,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f projects/village-guardians/.v01834-post-codex-trigger
           rm -f projects/village-guardians/tools/apply_v01834_post_codex_followup.py
+          rm -f projects/village-guardians/tools/apply_v01834_historical_contracts.py
           rm -f .github/workflows/validate-village-guardians-v01834-post-codex.yml
           git add projects/village-guardians .github/workflows/validate-village-guardians-v01834-post-codex.yml
           git commit -m "Harden Village Guardians facility ownership after Codex audit"
