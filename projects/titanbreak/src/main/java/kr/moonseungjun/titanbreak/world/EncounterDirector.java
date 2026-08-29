@@ -189,7 +189,8 @@ public final class EncounterDirector {
 
             Entity entity = type.create(level, EntitySpawnReason.EVENT);
             if (!(entity instanceof Mob mob)) return false;
-            mob.moveTo(x + 0.5D, y, z + 0.5D, player.getRandom().nextFloat() * 360.0F, 0.0F);
+            mob.setPos(x + 0.5D, y, z + 0.5D);
+            mob.setYRot(player.getRandom().nextFloat() * 360.0F);
             if (!level.noCollision(mob)) continue;
             mob.setTarget(player);
             return level.addFreshEntity(mob);
