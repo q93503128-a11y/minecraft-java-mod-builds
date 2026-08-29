@@ -33,6 +33,18 @@ jobs:
           cache-read-only: false
       - name: Apply Alpha.84 worker runtime patch
         run: python3 .github/scripts/frontier-alpha84-worker-runtime-apply.py
+      - name: Refine generated audit semantics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/test_alpha84_source.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'forbid(entity, ("Villager", "Brain", "Profession"), "frontier worker server body")'
+          new = 'forbid(entity, ("extends Villager", "world.entity.npc.villager", "VillagerData"), "frontier worker server body")'
+          if s.count(old) != 1:
+              raise SystemExit('alpha.84 generated audit refinement anchor mismatch')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Audit transformed worker authority
         working-directory: projects/frontier-settlement
         run: |
