@@ -8,5 +8,6 @@ public enum EffectType {
     SELF_GAUGE_ADD,
     GAUGE_AT_LEAST,
     GUARD_REDIRECT,
+    DEFENSE_UP,
     REVIVE
 }

@@ -10,6 +10,7 @@ import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.TargetRule;
+import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -19,6 +20,7 @@ import java.util.List;
 
 public final class BattleSession {
     private final BattleEngine engine;
+    private final String encounterId;
     private final Vec3 returnPosition;
     private final float returnYaw;
     private final float returnPitch;
@@ -32,8 +34,14 @@ public final class BattleSession {
     private boolean finished;
     private boolean readyShown;
 
-    BattleSession(ServerPlayer player) {
-        engine = new BattleEngine(P0Scenario.create());
+    BattleSession(ServerPlayer player) { this(player, ""); }
+
+    BattleSession(ServerPlayer player, String encounterId) {
+        this.encounterId = encounterId == null ? "" : encounterId;
+        BattleState initial = FieldSessionManager.ENCOUNTER_A01_PATROL.equals(this.encounterId)
+                ? P0Scenario.createFieldPatrol()
+                : P0Scenario.create();
+        engine = new BattleEngine(initial);
         returnPosition = player.position();
         returnYaw = player.getYRot();
         returnPitch = player.getXRot();
@@ -54,6 +62,7 @@ public final class BattleSession {
     public boolean auto() { return auto; }
     public int speed() { return speed; }
     public boolean finished() { return finished; }
+    String encounterId() { return encounterId; }
     Vec3 battleAnchor() { return battleAnchor; }
     float battleYaw() { return battleYaw; }
     Vec3 combatantPosition(String id) { return presentation.home(id); }
@@ -97,9 +106,7 @@ public final class BattleSession {
         try {
             SkillDefinition skill = actor.definition().skill(skillId);
             presentation.clearFocus(level);
-            if (skill.targetRule() == TargetRule.SELF
-                    || skill.targetRule() == TargetRule.ALLY_ALL
-                    || skill.targetRule() == TargetRule.ENEMY_ALL) {
+            if (skill.targetRule() == TargetRule.SELF || skill.targetRule() == TargetRule.ALLY_ALL || skill.targetRule() == TargetRule.ENEMY_ALL) {
                 engine.useSkill(actorId, skillId);
             } else {
                 engine.useSkill(actorId, skillId, targetId);
@@ -152,11 +159,8 @@ public final class BattleSession {
 
     private void autoAct(ServerLevel level, CombatantState actor) {
         int eventStart = engine.state().events().size();
-        try {
-            P0Scenario.chooseAutoAction(engine, engine.state(), actor);
-        } catch (RuntimeException ex) {
-            safeBasicFallback(actor);
-        }
+        try { P0Scenario.chooseAutoAction(engine, engine.state(), actor); }
+        catch (RuntimeException ex) { safeBasicFallback(actor); }
         animateRecordedAction(level, actor, eventStart);
         if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
     }
@@ -179,9 +183,7 @@ public final class BattleSession {
 
     private void animateDirectDamage(ServerLevel level, CombatantState actor, SkillDefinition skill, String targetId) {
         boolean damages = skill.effects().stream().anyMatch(effect -> effect.type() == EffectType.DAMAGE);
-        if (damages && targetId != null && !targetId.isBlank()) {
-            presentation.lunge(level, actor.instanceId(), targetId);
-        }
+        if (damages && targetId != null && !targetId.isBlank()) presentation.lunge(level, actor.instanceId(), targetId);
     }
 
     private void safeBasicFallback(CombatantState actor) {
@@ -194,8 +196,7 @@ public final class BattleSession {
             }
             case ALLY_SINGLE -> {
                 CombatantState target = engine.state().living(actor.side()).stream()
-                        .min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp()))
-                        .orElse(actor);
+                        .min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElse(actor);
                 engine.useSkill(actor.instanceId(), basic.id(), target.instanceId());
             }
             case DEAD_ALLY_SINGLE -> {
@@ -206,13 +207,9 @@ public final class BattleSession {
     }
 
     private void lock(ServerPlayer player) {
-        if (player.position().distanceToSqr(battleAnchor) > 0.0025) {
-            player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
-        }
+        if (player.position().distanceToSqr(battleAnchor) > 0.0025) player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
         player.setDeltaMovement(Vec3.ZERO);
     }
 
-    private int presentationDelay() {
-        return speed == 2 ? 4 : 8;
-    }
+    private int presentationDelay() { return speed == 2 ? 4 : 8; }
 }

@@ -1,5 +1,7 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.combat.BattleOutcome;
+import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
@@ -9,12 +11,14 @@ import java.util.UUID;
 public final class BattleSessionManager {
     private static final Map<UUID, BattleSession> SESSIONS = new HashMap<>();
 
-    private BattleSessionManager() {
-    }
+    private BattleSessionManager() {}
 
-    public static void start(ServerPlayer player) {
+    public static void start(ServerPlayer player) { startInternal(player, ""); }
+    public static void startEncounter(ServerPlayer player, String encounterId) { startInternal(player, encounterId); }
+
+    private static void startInternal(ServerPlayer player, String encounterId) {
         end(player);
-        BattleSession session = new BattleSession(player);
+        BattleSession session = new BattleSession(player, encounterId);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
     }
@@ -24,9 +28,7 @@ public final class BattleSessionManager {
         return session != null && !session.finished();
     }
 
-    public static boolean exists(ServerPlayer player) {
-        return SESSIONS.containsKey(player.getUUID());
-    }
+    public static boolean exists(ServerPlayer player) { return SESSIONS.containsKey(player.getUUID()); }
 
     public static void tick(ServerPlayer player) {
         BattleSession session = SESSIONS.get(player.getUUID());
@@ -39,24 +41,25 @@ public final class BattleSessionManager {
     public static void command(ServerPlayer player, String command) {
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null) return;
-
         String[] parts = command.split("\\|", -1);
         switch (parts[0]) {
-            case "ACT" -> {
-                if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]);
-            }
+            case "ACT" -> { if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]); }
             case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
             case "AUTO" -> session.toggleAuto(player);
             case "SPEED" -> session.toggleSpeed(player);
-            case "FLEE" -> end(player); // P0 is a normal field encounter: deterministic flee is always allowed.
-            default -> {
-            }
+            case "FLEE" -> end(player);
+            default -> { }
         }
     }
 
     public static void end(ServerPlayer player) {
         BattleSession old = SESSIONS.remove(player.getUUID());
-        if (old != null) old.cleanup(player);
+        if (old != null) {
+            String encounterId = old.encounterId();
+            BattleOutcome outcome = old.state().outcome();
+            old.cleanup(player);
+            if (!encounterId.isBlank()) FieldSessionManager.onBattleEnded(player, encounterId, outcome);
+        }
         BattleNetwork.close(player);
     }
 

@@ -6,6 +6,8 @@ import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.world.FieldInteractionGuard;
+import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -19,7 +21,7 @@ import org.slf4j.Logger;
 @Mod(Turnbound.MOD_ID)
 public final class Turnbound {
     public static final String MOD_ID = "turnbound";
-    public static final String VERSION = "0.1.0-alpha.7";
+    public static final String VERSION = "0.1.0-alpha.8";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
@@ -34,21 +36,32 @@ public final class Turnbound {
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(BattleInteractionGuard::onAttackEntity);
+        NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onLeftClickBlock);
+        NeoForge.EVENT_BUS.addListener(FieldInteractionGuard::onAttackEntity);
         LOGGER.info("TURNBOUND {} loaded; {}", VERSION, P0Scenario.runAutoDiagnostic(160));
     }
 
     private void tick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             PlayerShellRules.maintain(player);
+            FieldSessionManager.tick(player);
             BattleSessionManager.tick(player);
         }
     }
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) BattleSessionManager.end(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            BattleSessionManager.end(player);
+            FieldSessionManager.remove(player);
+        }
     }
 
     private void serverStopping(ServerStoppingEvent event) {
-        BattleSessionManager.clearAll(event.getServer().getPlayerList().getPlayers());
+        var players = event.getServer().getPlayerList().getPlayers();
+        BattleSessionManager.clearAll(players);
+        FieldSessionManager.clearAll(players);
     }
 }

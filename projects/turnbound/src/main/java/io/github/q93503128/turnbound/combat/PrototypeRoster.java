@@ -33,6 +33,23 @@ public final class PrototypeRoster {
                 new SkillDefinition("p04_rest_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.90)))));
     }
 
+    public static CombatantDefinition corruptedWalker() {
+        return new CombatantDefinition("E001", "부패 보행자", new BattleStats(720, 92, 68, 82), "e001_basic", List.of(
+                new SkillDefinition("e001_basic", "썩은 주먹", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00)))));
+    }
+
+    public static CombatantDefinition boneArcher() {
+        return new CombatantDefinition("E002", "뼈 사수", new BattleStats(560, 100, 54, 105), "e002_basic", List.of(
+                new SkillDefinition("e002_basic", "뼈 화살", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.95))),
+                new SkillDefinition("e002_aimed", "조준 사격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.45)))));
+    }
+
+    public static CombatantDefinition fieldMedic() {
+        return new CombatantDefinition("E005", "야전 치유사", new BattleStats(590, 82, 60, 94), "e005_basic", List.of(
+                new SkillDefinition("e005_basic", "응급 봉합", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.heal(0.55))),
+                new SkillDefinition("e005_reform", "전열 정비", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.defenseUp(0.15, 2)))));
+    }
+
     public static CombatantDefinition swordEnemy(String id, String name) {
         String basic = id.toLowerCase() + "_basic";
         return new CombatantDefinition(id, name, new BattleStats(700, 95, 70, 90), basic, List.of(

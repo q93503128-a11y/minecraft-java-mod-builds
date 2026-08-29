@@ -8,5 +8,6 @@ public record SkillEffect(EffectType type, double magnitude, int flatValue, int 
     public static SkillEffect selfGaugeAdd(int amount) { return new SkillEffect(EffectType.SELF_GAUGE_ADD, 0.0, amount, 0); }
     public static SkillEffect gaugeAtLeast(int amount) { return new SkillEffect(EffectType.GAUGE_AT_LEAST, 0.0, amount, 0); }
     public static SkillEffect guardRedirect(double redirectRatio, int targetTurns) { return new SkillEffect(EffectType.GUARD_REDIRECT, redirectRatio, 0, targetTurns); }
+    public static SkillEffect defenseUp(double ratio, int ownerTurns) { return new SkillEffect(EffectType.DEFENSE_UP, ratio, 0, ownerTurns); }
     public static SkillEffect revive(double maxHpRatio) { return new SkillEffect(EffectType.REVIVE, maxHpRatio, 0, 0); }
 }

@@ -39,7 +39,11 @@ public final class CombatantState {
         double multiplier = boost == null ? 1.0 : 1.0 + boost.magnitude();
         return Math.max(1, (int) Math.floor(definition.stats().attack() * multiplier));
     }
-    public int defense() { return definition.stats().defense(); }
+    public int defense() {
+        StatusInstance boost = status("defense_multiplier");
+        double multiplier = boost == null ? 1.0 : 1.0 + boost.magnitude();
+        return Math.max(0, (int) Math.floor(definition.stats().defense() * multiplier));
+    }
     public int speed() { return definition.stats().speed(); }
     public int barrier() { return barrier; }
     public long gauge() { return gauge; }
