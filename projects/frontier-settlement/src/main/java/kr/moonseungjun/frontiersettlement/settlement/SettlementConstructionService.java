@@ -147,6 +147,14 @@ public final class SettlementConstructionService {
         if (overlapsInfrastructure(data, site.origin(), type, rotation)) {
             return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
         }
+        ConstructionState gradingPreview = new ConstructionState(
+                type.id(), site.origin().getX(), site.origin().getY(), site.origin().getZ(),
+                rotation.id(), ConstructionState.GRADE_STEP_OFFSET);
+        for (GradeCell cell : createGradePlan(level, gradingPreview, type)) {
+            if (!canGradeCell(level, gradingPreview, type, cell)) {
+                return invalidPlacement("건물 주변 1블록까지 부지 정리가 가능한 공간이 필요합니다. 물·보호된 블록·깊은 절벽·미로드 경계를 피해 다시 지정해 주세요.");
+            }
+        }
         String message = "배치 가능";
         if (site.terrainWork()) {
             message += " · 지형 공사 포함";

@@ -34,3 +34,10 @@ The same pass also fixes three adjacent failure modes: a project now rolls back 
 starting when no authoritative builder can be secured; builder absence proof ignores completed remote
 infrastructure and covers only town/storage plus the active project; and HUD/Jade progress includes
 grading cells instead of reporting a hard-coded 0% until grading ends.
+
+## Final runtime audit
+
+Placement now preflights the same one-block grading envelope that the builder will actually mutate, so
+a protected/unsafe border cell is rejected before an active project can be created. Frontier civilian
+work and logistics also run without a night/bed/jobsite schedule; the villager resemblance is strictly
+presentation, not a lifestyle or profession simulation.

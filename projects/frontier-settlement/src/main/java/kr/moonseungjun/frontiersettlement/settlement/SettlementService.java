@@ -34,16 +34,15 @@ public final class SettlementService {
         SettlementBarracksService.tick(server, data);
         SettlementMilitaryOutpostService.tick(server, data);
         SettlementAdvancedWorkshopService.tick(server, data);
-        if (SettlementResidentRoutineService.isRestTime(server.overworld())) SettlementResidentRoutineService.tick(server, data);
-        else {
-            SettlementWorkerService.tick(server, data);
-            SettlementWaterfrontService.tick(server, data);
-            SettlementOutpostProductionService.tick(server, data);
-            SettlementFishingOutpostService.tick(server, data);
-            SettlementMarketService.tick(server, data);
-            SettlementWorkshopService.tick(server, data);
-            SettlementDeferredOutpostService.tick(server, data);
-        }
+        // Civilian appearance does not imply a villager lifestyle simulation. Frontier work/logistics
+        // remains the only runtime authority at every time of day; no bed/jobsite/night schedule layer.
+        SettlementWorkerService.tick(server, data);
+        SettlementWaterfrontService.tick(server, data);
+        SettlementOutpostProductionService.tick(server, data);
+        SettlementFishingOutpostService.tick(server, data);
+        SettlementMarketService.tick(server, data);
+        SettlementWorkshopService.tick(server, data);
+        SettlementDeferredOutpostService.tick(server, data);
         SettlementTierInfrastructureService.tick(server, data);
         SettlementBenefitService.tick(server, data);
         if (tick % 20 == 0) {

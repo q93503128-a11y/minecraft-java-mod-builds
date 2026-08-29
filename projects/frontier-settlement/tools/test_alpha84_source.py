@@ -128,4 +128,13 @@ forbid(route_body, ("for (BuildingRecord building : data.buildings())", "for (Ro
 must(context_now, ("gradeTotal", "construction.gradeStep()", "gradeTotal + buildTotal"), "alpha.84 real grading progress")
 forbid(context_now, ("construction.grading() ? 0",), "alpha.84 hard-coded grading zero")
 
+
+# Final graphical-playtest audit: accepted placement must preflight the exact grading envelope,
+# and worker appearance must not reintroduce a civilian night/bed/jobsite schedule layer.
+construction_final = text(JAVA / "settlement/SettlementConstructionService.java")
+service_final = text(JAVA / "settlement/SettlementService.java")
+must(construction_final, ("ConstructionState gradingPreview", "for (GradeCell cell : createGradePlan", "건물 주변 1블록까지 부지 정리가 가능한 공간"), "alpha.84 grading preflight")
+must(service_final, ("Civilian appearance does not imply a villager lifestyle simulation", "SettlementWorkerService.tick(server, data);"), "alpha.84 no lifestyle schedule")
+forbid(service_final, ("SettlementResidentRoutineService.isRestTime", "SettlementResidentRoutineService.tick(server, data)"), "alpha.84 runtime night schedule")
+
 print("Frontier Settlement alpha.23-84 cumulative source audit: PASS")
