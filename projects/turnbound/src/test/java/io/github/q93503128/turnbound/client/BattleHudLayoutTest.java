@@ -42,20 +42,34 @@ class BattleHudLayoutTest {
 
     @Test
     void standardViewportKeepsCenterFreeOfLegacySideWalls() {
-        BattleHudLayout.Layout layout = BattleHudLayout.calculate(854, 480);
-        int centerLeft = 854 / 4;
-        int centerRight = 854 * 3 / 4;
+        int width = 854;
+        int height = 480;
+        BattleHudLayout.Layout layout = BattleHudLayout.calculate(width, height);
+        int centerLeft = width / 4;
+        int centerRight = width * 3 / 4;
 
-        for (BattleHudLayout.Rect rect : layout.enemyBars()) {
-            assertTrue(rect.x() >= centerRight - 80, "enemy summary should remain near the upper-right edge");
-        }
+        int minEnemyX = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::x).min().orElseThrow();
+        int maxEnemyRight = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::right).max().orElseThrow();
+        int maxEnemyBottom = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::bottom).max().orElseThrow();
+        assertTrue(minEnemyX > width / 2 + 60,
+                "enemy summary must live in the right half instead of rebuilding a side wall across the battlefield");
+        assertTrue(maxEnemyRight >= width - 12,
+                "enemy summary must stay anchored to the upper-right edge");
+        assertTrue(maxEnemyBottom < height / 5,
+                "enemy summary must remain a shallow top-edge HUD");
+
         for (BattleHudLayout.Rect rect : layout.skillButtons()) {
-            assertTrue(rect.x() >= centerRight, "contextual skills should remain on the right edge");
+            assertTrue(rect.x() >= centerRight,
+                    "contextual skills should remain on the right edge");
         }
         for (BattleHudLayout.Rect rect : layout.allyBars()) {
-            assertTrue(rect.y() >= 430, "party strip should stay at the bottom edge");
-            assertTrue(rect.right() < centerRight + 20, "party strip must not become a full-screen wall");
+            assertTrue(rect.y() >= height - 50,
+                    "party strip should stay at the bottom edge");
+            assertTrue(rect.right() < centerRight + 20,
+                    "party strip must not become a full-screen wall");
         }
-        assertTrue(layout.timeline().x() > centerLeft && layout.timeline().right() < centerRight + 40);
+        assertTrue(layout.timeline().x() > centerLeft
+                        && layout.timeline().right() < centerRight + 40,
+                "timeline should stay a narrow top-center strip");
     }
 }
