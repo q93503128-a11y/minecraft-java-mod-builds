@@ -19,8 +19,12 @@ import java.util.List;
 
 public final class BattleSession {
     private final BattleEngine engine;
-    private final Vec3 anchor;
+    private final Vec3 returnPosition;
+    private final float returnYaw;
+    private final float returnPitch;
     private final boolean playerWasInvisible;
+    private final Vec3 battleAnchor;
+    private final float battleYaw;
     private final BattlePresentation presentation = new BattlePresentation();
     private boolean auto;
     private int speed = 1;
@@ -30,16 +34,29 @@ public final class BattleSession {
 
     BattleSession(ServerPlayer player) {
         engine = new BattleEngine(P0Scenario.create());
-        anchor = player.position();
+        returnPosition = player.position();
+        returnYaw = player.getYRot();
+        returnPitch = player.getXRot();
         playerWasInvisible = player.isInvisible();
+
+        BattleArenaLocator.Arena arena = BattleArenaLocator.locate(player);
+        battleAnchor = arena.center();
+        battleYaw = arena.facingYaw();
         player.setInvisible(true);
-        presentation.spawn(player, engine.state().combatants());
+        player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
+        player.setYRot(battleYaw);
+        player.setXRot(0.0F);
+        player.setDeltaMovement(Vec3.ZERO);
+        presentation.spawn((ServerLevel) player.level(), battleAnchor, battleYaw, engine.state().combatants());
     }
 
     public BattleState state() { return engine.state(); }
     public boolean auto() { return auto; }
     public int speed() { return speed; }
     public boolean finished() { return finished; }
+    Vec3 battleAnchor() { return battleAnchor; }
+    float battleYaw() { return battleYaw; }
+    Vec3 combatantPosition(String id) { return presentation.home(id); }
 
     void tick(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
@@ -127,7 +144,9 @@ public final class BattleSession {
     void cleanup(ServerPlayer player) {
         presentation.cleanup((ServerLevel) player.level());
         player.setInvisible(playerWasInvisible);
-        player.setPos(anchor.x, anchor.y, anchor.z);
+        player.setPos(returnPosition.x, returnPosition.y, returnPosition.z);
+        player.setYRot(returnYaw);
+        player.setXRot(returnPitch);
         player.setDeltaMovement(Vec3.ZERO);
     }
 
@@ -187,8 +206,8 @@ public final class BattleSession {
     }
 
     private void lock(ServerPlayer player) {
-        if (player.position().distanceToSqr(anchor) > 0.0025) {
-            player.setPos(anchor.x, anchor.y, anchor.z);
+        if (player.position().distanceToSqr(battleAnchor) > 0.0025) {
+            player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
         }
         player.setDeltaMovement(Vec3.ZERO);
     }

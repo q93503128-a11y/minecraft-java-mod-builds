@@ -5,7 +5,6 @@ import io.github.q93503128.turnbound.combat.CombatantState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
@@ -23,22 +22,19 @@ final class BattlePresentation {
     private String moving;
     private int returnTicks;
 
-    void spawn(ServerPlayer player, Iterable<CombatantState> combatants) {
-        ServerLevel level = (ServerLevel) player.level();
-        Vec3 anchor = player.position();
-        Vec3 forward = horizontal(player.getLookAngle());
-        Vec3 right = new Vec3(-forward.z, 0, forward.x);
+    void spawn(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
+        Vec3 forward = BattleArenaLocator.forward(facingYaw);
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
         int allyIndex = 0;
         int enemyIndex = 0;
 
         for (CombatantState combatant : combatants) {
             boolean ally = combatant.side() == CombatantSide.ALLY;
             int index = ally ? allyIndex++ : enemyIndex++;
-            double lane = ally
-                    ? -3.0 + index * 2.0
-                    : -3.2 + index * 1.6;
-            double distance = ally ? 3.8 : 7.3;
-            Vec3 pos = anchor.add(forward.scale(distance)).add(right.scale(lane));
+            double lane = ally ? -3.0 + index * 2.0 : -3.2 + index * 1.6;
+            double depth = ally ? -2.2 : 2.8;
+            Vec3 raw = center.add(forward.scale(depth)).add(right.scale(lane));
+            Vec3 pos = BattleArenaLocator.groundPosition(level, raw);
 
             ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setCustomName(Component.literal(combatant.definition().name()));
@@ -46,7 +42,7 @@ final class BattlePresentation {
             stand.setInvulnerable(true);
             stand.setNoGravity(true);
             stand.setShowArms(true);
-            stand.setYRot(player.getYRot() + (ally ? 0.0F : 180.0F));
+            stand.setYRot(facingYaw + (ally ? 0.0F : 180.0F));
             equipStandIn(stand, combatant, index);
             level.addFreshEntity(stand);
 
@@ -55,15 +51,17 @@ final class BattlePresentation {
         }
     }
 
+    Vec3 home(String combatantId) {
+        return homes.get(combatantId);
+    }
+
     void focus(ServerLevel level, String targetId) {
         clearFocus(level);
         if (targetId == null || targetId.isBlank()) return;
         Vec3 target = homes.get(targetId);
         if (target == null) return;
 
-        // NeoForge/Minecraft 26.2 exposes ArmorStand small/marker mutators privately.
-        // A normal invisible, invulnerable no-gravity stand is sufficient because this entity is presentation-only.
-        ArmorStand marker = new ArmorStand(level, target.x, target.y + 0.35, target.z);
+        ArmorStand marker = new ArmorStand(level, target.x, target.y + 1.0, target.z);
         marker.setInvisible(true);
         marker.setInvulnerable(true);
         marker.setNoGravity(true);
@@ -86,9 +84,7 @@ final class BattlePresentation {
         Vec3 home = homes.get(actorId);
         if (actor == null || target == null || home == null) return;
         Vec3 delta = target.subtract(home);
-        if (delta.lengthSqr() > 0.001) {
-            actor.setPos(target.subtract(delta.normalize().scale(1.45)));
-        }
+        if (delta.lengthSqr() > 0.001) actor.setPos(target.subtract(delta.normalize().scale(1.45)));
         moving = actorId;
         returnTicks = 5;
     }
@@ -154,10 +150,5 @@ final class BattlePresentation {
                 default -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
             }
         }
-    }
-
-    private static Vec3 horizontal(Vec3 vector) {
-        Vec3 horizontal = new Vec3(vector.x, 0, vector.z);
-        return horizontal.lengthSqr() < 0.001 ? new Vec3(0, 0, 1) : horizontal.normalize();
     }
 }

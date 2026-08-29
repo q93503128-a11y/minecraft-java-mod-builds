@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.6`
+- Version: `0.1.0-alpha.7`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -29,15 +29,20 @@
 - x1/x2 affects presentation only.
 - General field battles allow deterministic flee; boss/event locks are encounter data.
 
-## alpha.6 presentation acceptance
-- alpha.4/5 large side panels, framed target-card walls and legacy battle button classes are not reused.
-- The 3D battlefield remains visually dominant; no full-screen battle veil.
-- Party state is a thin bottom strip; enemy state is a compact top-right summary.
-- Timeline is a thin top-center strip.
-- Skills appear only when the current ally can act.
-- Auto/speed/flee remain small bottom-right secondary controls.
-- Internal instance IDs / TURN_READY / pulse data never appear in player-facing HUD.
-- Target HUD and the 3D focus marker must refer to the same target ID.
+## alpha.7 battle UX acceptance
+- The battlefield, not the HUD, remains visually dominant.
+- Battle creation finds a nearby open arena instead of anchoring the encounter at the exact command/player block.
+- During battle the invisible Minecraft player shell is the battlefield-center camera pivot; its original field position/yaw/pitch are restored on cleanup.
+- Default camera distance is materially closer than alpha.6, orbit is smooth and responsive, and zoom stays bounded.
+- Party state is a thin bottom strip; enemy state is a compact top-right summary; timeline is a thin top-center strip.
+- Contextual skills occupy only the right edge and do not overlap Auto/speed/flee or the party strip.
+- Vanilla hotbar and crosshair are hidden during battle.
+- Skill selection and action execution are separate phases for every skill, including SELF and ALL targets.
+- Clicking a skill never emits an ACT command by itself.
+- A single-target skill can select a valid combatant by clicking its projected 3D model position; HUD bars and Tab remain fallback selectors.
+- Target HUD highlight and the 3D focus marker refer to the same target ID.
+- Enter or the explicit confirm control commits the pending action.
+- RMB cancels the pending skill/target selection.
 - High GUI scale / low logical resolution must never create zero-sized or off-viewport HUD rectangles.
 
 ## Minecraft player shell rule
@@ -46,7 +51,7 @@ TURNBOUND is not a survival game. The Minecraft Player entity is an exploration/
 - Vanilla player hearts are not a gameplay HP system.
 - Vanilla incoming damage to the player shell is ignored.
 - Vanilla hunger is kept full and is not a resource.
-- Player-health and food HUD layers are hidden.
+- Player-health, food, armor, air and XP survival HUD layers are hidden.
 - Combat health is exclusively `CombatantState.hp` on party/enemy combatants.
 - Do not create a second survival-health economy beside the party RPG combat model.
 - Future field hazards must use authored RPG rules, encounter triggers or checkpoint consequences instead of vanilla hearts/hunger.

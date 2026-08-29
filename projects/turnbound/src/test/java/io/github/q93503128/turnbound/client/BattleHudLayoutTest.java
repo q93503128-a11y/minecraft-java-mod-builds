@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BattleHudLayoutTest {
@@ -26,6 +27,7 @@ class BattleHudLayoutTest {
             all.addAll(layout.enemyBars());
             all.addAll(layout.skillButtons());
             all.add(layout.actionHeader());
+            all.add(layout.confirmButton());
             all.add(layout.timeline());
             all.add(layout.autoButton());
             all.add(layout.speedButton());
@@ -41,35 +43,31 @@ class BattleHudLayoutTest {
     }
 
     @Test
-    void standardViewportKeepsCenterFreeOfLegacySideWalls() {
-        int width = 854;
-        int height = 480;
-        BattleHudLayout.Layout layout = BattleHudLayout.calculate(width, height);
-        int centerLeft = width / 4;
-        int centerRight = width * 3 / 4;
+    void standardViewportKeepsBattlefieldCenterOpenAndControlsSeparated() {
+        BattleHudLayout.Layout layout = BattleHudLayout.calculate(854, 480);
+        int centerLeft = 854 / 4;
+        int centerRight = 854 * 3 / 4;
 
-        int minEnemyX = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::x).min().orElseThrow();
-        int maxEnemyRight = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::right).max().orElseThrow();
-        int maxEnemyBottom = layout.enemyBars().stream().mapToInt(BattleHudLayout.Rect::bottom).max().orElseThrow();
-        assertTrue(minEnemyX > width / 2 + 60,
-                "enemy summary must live in the right half instead of rebuilding a side wall across the battlefield");
-        assertTrue(maxEnemyRight >= width - 12,
-                "enemy summary must stay anchored to the upper-right edge");
-        assertTrue(maxEnemyBottom < height / 5,
-                "enemy summary must remain a shallow top-edge HUD");
-
+        for (BattleHudLayout.Rect rect : layout.enemyBars()) {
+            assertTrue(rect.x() >= 854 / 2, "enemy summaries stay in the upper-right half");
+            assertTrue(rect.bottom() < 100, "enemy summaries remain shallow");
+        }
         for (BattleHudLayout.Rect rect : layout.skillButtons()) {
-            assertTrue(rect.x() >= centerRight,
-                    "contextual skills should remain on the right edge");
+            assertTrue(rect.x() >= centerRight, "contextual skills stay on the right edge");
+            assertFalse(rect.overlaps(layout.autoButton()));
+            assertFalse(rect.overlaps(layout.speedButton()));
+            assertFalse(rect.overlaps(layout.fleeButton()));
         }
-        for (BattleHudLayout.Rect rect : layout.allyBars()) {
-            assertTrue(rect.y() >= height - 50,
-                    "party strip should stay at the bottom edge");
-            assertTrue(rect.right() < centerRight + 20,
-                    "party strip must not become a full-screen wall");
+        assertFalse(layout.confirmButton().overlaps(layout.autoButton()));
+        assertFalse(layout.confirmButton().overlaps(layout.speedButton()));
+        assertFalse(layout.confirmButton().overlaps(layout.fleeButton()));
+
+        for (BattleHudLayout.Rect ally : layout.allyBars()) {
+            assertTrue(ally.y() >= 450, "party bars stay on the bottom edge");
+            assertFalse(ally.overlaps(layout.autoButton()));
+            assertFalse(ally.overlaps(layout.speedButton()));
+            assertFalse(ally.overlaps(layout.fleeButton()));
         }
-        assertTrue(layout.timeline().x() > centerLeft
-                        && layout.timeline().right() < centerRight + 40,
-                "timeline should stay a narrow top-center strip");
+        assertTrue(layout.timeline().x() > centerLeft && layout.timeline().right() < centerRight + 50);
     }
 }

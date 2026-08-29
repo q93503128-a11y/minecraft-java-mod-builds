@@ -20,15 +20,13 @@ public final class ClientBattleNetwork {
             var snapshot = ClientBattleState.snapshot();
 
             if (snapshot.active()) {
-                if (!wasActive) BattleCameraController.enter();
+                if (!wasActive) BattleCameraController.enter(snapshot.arenaYaw());
                 if (!(minecraft.gui.screen() instanceof BattleScreen)) {
                     minecraft.gui.setScreen(new BattleScreen());
                 }
             } else {
                 if (wasActive) BattleCameraController.exit();
-                if (minecraft.gui.screen() instanceof BattleScreen) {
-                    minecraft.gui.setScreen(null);
-                }
+                if (minecraft.gui.screen() instanceof BattleScreen) minecraft.gui.setScreen(null);
             }
         });
     }
