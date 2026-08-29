@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
@@ -151,7 +152,7 @@ public final class TitanHud {
         if (mc.level == null || mc.player == null) return;
         AABB area = mc.player.getBoundingBox().inflate(10.0D);
         boolean danger = !mc.level.getEntitiesOfClass(LivingEntity.class, area,
-                entity -> entity != mc.player && entity.isAlive() && entity.getType().getCategory().isAggressive()).isEmpty();
+                entity -> entity != mc.player && entity.isAlive() && entity instanceof Enemy).isEmpty();
         if (danger) {
             Component text = Component.translatable("hud.titanbreak.threat_warning");
             int textWidth = font.width(text);
