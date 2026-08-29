@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
@@ -100,6 +101,12 @@ public final class BoreMiningService {
             }
             if (!job.targets.isEmpty()) JOBS.addLast(job);
         }
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        JOBS.clear();
+        PENDING_COUNTS.clear();
+        INTERNAL_BREAK_GUARD.clear();
     }
 
     private static void tryBreak(ServerPlayer player, ServerLevel level, BlockPos target, float maxHardness) {

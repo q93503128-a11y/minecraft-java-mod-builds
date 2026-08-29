@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
@@ -99,6 +100,11 @@ public final class WoodcuttingProgression {
         }
     }
 
+    public static void onServerStopping(ServerStoppingEvent event) {
+        JOBS.clear();
+        CHAIN_GUARD.clear();
+    }
+
     private static void scheduleNaturalTree(ServerPlayer player, ServerLevel level, BlockPos origin, int limit, int groveTreeCap) {
         Set<BlockPos> gathered = gatherConnectedLogs(level, origin, limit);
         if (!hasLeavesNearby(level, origin, gathered)) return;
@@ -118,12 +124,7 @@ public final class WoodcuttingProgression {
         }
     }
 
-    private static int expandNearbyGrove(
-            ServerLevel level,
-            BlockPos origin,
-            Set<BlockPos> gathered,
-            int totalLimit,
-            int treeCap) {
+    private static int expandNearbyGrove(ServerLevel level, BlockPos origin, Set<BlockPos> gathered, int totalLimit, int treeCap) {
         int acceptedTrees = 1;
         int radius = treeCap >= 4 ? 7 : (treeCap >= 3 ? 6 : 5);
         outer:

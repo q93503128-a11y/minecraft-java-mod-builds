@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
@@ -48,6 +49,10 @@ public final class IrrigationReplantService {
             if (!InfrastructureData.get(player).isComplete(InfrastructureProject.IRRIGATION_WORKS)) continue;
             tryReplant(player, level, job.pos, job.kind);
         }
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        JOBS.clear();
     }
 
     private static void tryReplant(ServerPlayer player, ServerLevel level, BlockPos pos, ReplantKind kind) {

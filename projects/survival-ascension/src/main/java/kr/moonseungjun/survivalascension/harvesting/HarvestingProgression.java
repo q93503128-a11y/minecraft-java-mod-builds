@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
@@ -110,6 +111,11 @@ public final class HarvestingProgression {
         }
     }
 
+    public static void onServerStopping(ServerStoppingEvent event) {
+        JOBS.clear();
+        AREA_GUARD.clear();
+    }
+
     private static void scheduleHarvestArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, int forwardDepth) {
         int radius = size / 2;
         Deque<BlockPos> targets = new ArrayDeque<>();
@@ -133,10 +139,7 @@ public final class HarvestingProgression {
             int sideZ = forwardX ? 1 : 0;
             for (int depth = radius + 1; depth <= radius + forwardDepth && targets.size() < MAX_PENDING_PER_PLAYER; depth++) {
                 for (int lateral = -radius; lateral <= radius && targets.size() < MAX_PENDING_PER_PLAYER; lateral++) {
-                    BlockPos target = center.offset(
-                            stepX * depth + sideX * lateral,
-                            0,
-                            stepZ * depth + sideZ * lateral).immutable();
+                    BlockPos target = center.offset(stepX * depth + sideX * lateral, 0, stepZ * depth + sideZ * lateral).immutable();
                     queueHarvestTarget(level, target, targets, queued);
                 }
             }
@@ -151,11 +154,7 @@ public final class HarvestingProgression {
         }
     }
 
-    private static boolean queueHarvestTarget(
-            ServerLevel level,
-            BlockPos target,
-            Deque<BlockPos> targets,
-            Set<BlockPos> queued) {
+    private static boolean queueHarvestTarget(ServerLevel level, BlockPos target, Deque<BlockPos> targets, Set<BlockPos> queued) {
         if (!queued.add(target) || !level.hasChunkAt(target)) return false;
         BlockState targetState = level.getBlockState(target);
         if (!isMatureHarvest(targetState) || level.getBlockEntity(target) != null) return false;
@@ -193,7 +192,6 @@ public final class HarvestingProgression {
     private static final class HarvestJob {
         private final ResourceKey<Level> dimension;
         private final Deque<BlockPos> targets;
-
         private HarvestJob(ResourceKey<Level> dimension, Deque<BlockPos> targets) {
             this.dimension = dimension;
             this.targets = targets;

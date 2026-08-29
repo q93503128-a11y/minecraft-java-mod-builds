@@ -29,6 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayDeque;
@@ -199,6 +200,13 @@ public final class ConstructionProgression {
                 announceMilestones(player, SkillProgressionService.award(player, SkillType.CONSTRUCTION, job.placed));
             }
         }
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        JOBS.clear();
+        PENDING_COUNTS.clear();
+        INTERNAL_PLACE_GUARD.clear();
+        MODES.clear();
     }
 
     private static PlaceResult tryPlace(ServerPlayer player, ServerLevel level, BlockState state, BlockPos target) {

@@ -24,10 +24,10 @@ import org.joml.Matrix3x2f;
 public final class ConstructionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("단일", "한 블록씩 정확하게 배치", new ItemStack(Items.BRICKS), ConstructionMode.SINGLE, false),
-            new Entry("선", "Lv.10 · 5/9/17/33/49 · 현장65", new ItemStack(Items.OAK_PLANKS), ConstructionMode.LINE, false),
-            new Entry("벽", "Lv.30 · 3×3 → 5×5 → 9×9", new ItemStack(Items.STONE_BRICKS), ConstructionMode.WALL, false),
-            new Entry("바닥", "Lv.30 · 3×3 → 5×5 → 9×9", new ItemStack(Items.SMOOTH_STONE_SLAB), ConstructionMode.FLOOR, false),
-            new Entry("도로/교량", "Lv.60 + 토목 공사소 · 3폭 × 17/33/49/65", new ItemStack(Items.STONE_BRICKS), ConstructionMode.CAUSEWAY, false),
+            new Entry("선", "Lv.10 · 5/9/17/33/49 · 현장65 · 최후65/81", new ItemStack(Items.OAK_PLANKS), ConstructionMode.LINE, false),
+            new Entry("벽", "Lv.30 · 3×3 → 5×5 → 9×9 · 현장13×13 · 최후15×15", new ItemStack(Items.STONE_BRICKS), ConstructionMode.WALL, false),
+            new Entry("바닥", "Lv.30 · 3×3 → 5×5 → 9×9 · 현장13×13 · 최후15×15", new ItemStack(Items.SMOOTH_STONE_SLAB), ConstructionMode.FLOOR, false),
+            new Entry("도로/교량", "Lv.60 + 토목 · 3폭 × 17/33/49 · 현장65 · 최후65/81", new ItemStack(Items.STONE_BRICKS), ConstructionMode.CAUSEWAY, false),
             new Entry("입체", "Lv.90 + 건축 공방 · 5×5×5 → 7×7×7", new ItemStack(Items.OBSIDIAN), ConstructionMode.VOLUME, false),
             new Entry("뒤로", "통합 메뉴로 돌아가기", new ItemStack(Items.ARROW), ConstructionMode.SINGLE, true)
     };
