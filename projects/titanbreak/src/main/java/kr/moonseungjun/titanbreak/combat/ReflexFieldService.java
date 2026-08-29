@@ -3,6 +3,7 @@ package kr.moonseungjun.titanbreak.combat;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -12,8 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflexFieldService {
-    private static final int WINDOW_TICKS = 20;
-    private static final double MIN_RELATIVE_RATE = 0.08;
+    public static final double P0_RADIUS = 64.0D;
+
+    private static final double MIN_RELATIVE_RATE = ReflexDriveService.P0_WORLD_RELATIVE_RATE;
     private static final Map<UUID, Field> FIELDS = new ConcurrentHashMap<>();
 
     private ReflexFieldService() {}
@@ -68,27 +70,38 @@ public final class ReflexFieldService {
         }
         if (strongest == null) return;
 
-        int localRating = 0;
-        if (entity instanceof Player player) {
-            Field own = FIELDS.get(player.getUUID());
-            if (own != null && own.dimension().equals(entityDimension)) localRating = own.rating();
-        }
-
+        int localRating = localRating(entity, entityDimension);
         double relativeRate = relativeRate(localRating, strongest.rating());
-        if (relativeRate >= 0.999) return;
+        if (relativeRate >= 0.999D) return;
 
-        int allowedTicks = Math.max(1, Math.min(WINDOW_TICKS,
-                (int) Math.round(relativeRate * WINDOW_TICKS)));
-        long phase = entity.level().getGameTime() + entity.getId() * 7L;
-        int slot = Math.floorMod((int) (phase % WINDOW_TICKS), WINDOW_TICKS);
-        if (slot >= allowedTicks) event.setCanceled(true);
+        // Spread allowed ticks across time instead of running a burst at the start of a window.
+        // At the current P0 rate of 0.40 this produces an even 2-of-5 cadence per entity.
+        long phase = entity.level().getGameTime() + entity.getId() * 31L;
+        long previousStep = (long) Math.floor(phase * relativeRate);
+        long nextStep = (long) Math.floor((phase + 1L) * relativeRate);
+        if (nextStep <= previousStep) event.setCanceled(true);
+    }
+
+    private static int localRating(Entity entity, ResourceKey<Level> dimension) {
+        if (entity instanceof Player player) {
+            return ratingForOwner(player.getUUID(), dimension);
+        }
+        if (entity instanceof Projectile projectile && projectile.getOwner() instanceof Player owner) {
+            return ratingForOwner(owner.getUUID(), dimension);
+        }
+        return 0;
+    }
+
+    private static int ratingForOwner(UUID owner, ResourceKey<Level> dimension) {
+        Field own = FIELDS.get(owner);
+        return own != null && own.dimension().equals(dimension) ? own.rating() : 0;
     }
 
     public static double relativeRate(int localRating, int fieldRating) {
-        if (fieldRating <= 0 || localRating >= fieldRating) return 1.0;
+        if (fieldRating <= 0 || localRating >= fieldRating) return 1.0D;
         if (localRating <= 0) return MIN_RELATIVE_RATE;
-        double ratio = Math.max(0.0, Math.min(1.0, localRating / (double) fieldRating));
-        return MIN_RELATIVE_RATE + (1.0 - MIN_RELATIVE_RATE) * Math.pow(ratio, 1.35);
+        double ratio = Math.max(0.0D, Math.min(1.0D, localRating / (double) fieldRating));
+        return MIN_RELATIVE_RATE + (1.0D - MIN_RELATIVE_RATE) * Math.pow(ratio, 1.6D);
     }
 
     private record Field(UUID owner, ResourceKey<Level> dimension, Vec3 center, int rating, double radius) {}

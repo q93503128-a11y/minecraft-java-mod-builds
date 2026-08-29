@@ -9,11 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflexDriveService {
     public static final float NORMAL_TICK_RATE = 20.0F;
-    public static final float P0_TICK_RATE = 8.0F;
     public static final int P0_RATING = 80;
+    public static final double P0_WORLD_RELATIVE_RATE = 0.40D;
 
     private static final Map<UUID, DriveState> STATES = new ConcurrentHashMap<>();
-    private static float appliedTickRate = NORMAL_TICK_RATE;
 
     private ReflexDriveService() {}
 
@@ -54,29 +53,16 @@ public final class ReflexDriveService {
         STATES.remove(playerId);
     }
 
-    public static void tickServer(MinecraftServer server) {
-        boolean anyActive = STATES.values().stream().anyMatch(DriveState::active);
-        applyTickRate(server, anyActive ? P0_TICK_RATE : NORMAL_TICK_RATE);
-    }
-
+    /**
+     * Reflex Drive no longer mutates the server's global tick rate. The status value remains
+     * available for the existing network snapshot and should stay at the vanilla 20 TPS axis.
+     */
     public static float currentWorldTickRate() {
-        return appliedTickRate;
-    }
-
-    public static double userCompensation(UUID playerId) {
-        if (!active(playerId)) return 1.0;
-        return NORMAL_TICK_RATE / Math.max(1.0F, appliedTickRate);
+        return NORMAL_TICK_RATE;
     }
 
     public static void restore(MinecraftServer server) {
         STATES.clear();
-        applyTickRate(server, NORMAL_TICK_RATE);
-    }
-
-    private static void applyTickRate(MinecraftServer server, float rate) {
-        if (Math.abs(appliedTickRate - rate) < 0.001F) return;
-        server.tickRateManager().setTickRate(rate);
-        appliedTickRate = rate;
     }
 
     private record DriveState(boolean requested, boolean active, int rating) {}
