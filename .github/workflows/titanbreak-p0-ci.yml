@@ -14,7 +14,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,8 +28,65 @@ jobs:
       - name: Prepare shared Gradle wrapper
         run: chmod +x projects/senbonzakura-showcase/gradlew
 
+      - name: Temporal architecture audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIELD=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/combat/ReflexFieldService.java
+          MAIN=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/Titanbreak.java
+          MIXINS=projects/titanbreak/src/main/resources/titanbreak.mixins.json
+          TOML=projects/titanbreak/src/main/templates/META-INF/neoforge.mods.toml
+
+          if grep -qE 'EntityTickEvent|event\.setCanceled\(true\)' "$FIELD"; then
+            echo 'Whole-entity sparse tick cancellation returned to ReflexFieldService.' >&2
+            exit 1
+          fi
+          if grep -Rni 'tickRateManager().setTickRate' projects/titanbreak/src/main/java; then
+            echo 'Global server tick-rate mutation returned to TITANBREAK.' >&2
+            exit 1
+          fi
+          if grep -q 'ReflexFieldService::onEntityTickPre' "$MAIN"; then
+            echo 'Legacy entity-tick cancellation listener is still registered.' >&2
+            exit 1
+          fi
+
+          test -f "$MIXINS"
+          grep -q 'EntityMovementTimeScaleMixin' "$MIXINS"
+          grep -q 'MobAiTimeScaleMixin' "$MIXINS"
+          grep -q 'ProjectileTimeScaleMixin' "$MIXINS"
+          grep -q '\[\[mixins\]\]' "$TOML"
+          grep -q 'config="titanbreak.mixins.json"' "$TOML"
+          grep -q 'ModifyVariable(method = "move"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.java
+          grep -q 'method = "serverAiStep"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.java
+          grep -q 'method = "tick"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.java
+
       - name: Clean build
         run: projects/senbonzakura-showcase/gradlew -p projects/titanbreak clean build --no-daemon --stacktrace
+
+      - name: Dedicated server mixin smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p projects/titanbreak/run
+          printf 'eula=true\n' > projects/titanbreak/run/eula.txt
+          set +e
+          timeout 90s projects/senbonzakura-showcase/gradlew -p projects/titanbreak runServer --no-daemon --stacktrace --console=plain > /tmp/titanbreak-server.log 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/titanbreak-server.log
+
+          if grep -Eqi 'MixinApplyError|InvalidInjectionException|InjectionError|Critical injection failure|mixin.*failed|Exception in thread "main"|Failed to start the minecraft server' /tmp/titanbreak-server.log; then
+            echo 'Dedicated-server mixin/runtime smoke detected a fatal error.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'Done \(|For help, type' /tmp/titanbreak-server.log; then
+            echo "Dedicated server did not reach successful startup (exit=$STATUS)." >&2
+            exit 1
+          fi
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
+            echo "Unexpected dedicated-server smoke exit status: $STATUS" >&2
+            exit "$STATUS"
+          fi
 
       - name: Player-facing text audit
         shell: bash
@@ -49,6 +106,10 @@ jobs:
           test -n "$JAR"
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/Titanbreak.class'
           jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          jar tf "$JAR" | grep -q 'titanbreak.mixins.json'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.class'
           echo "jar=$JAR"
           sha256sum "$JAR"
 

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "kr.moonseungjun.titanbreak.mixin",
+  "mixins": [
+    "EntityMovementTimeScaleMixin",
+    "MobAiTimeScaleMixin",
+    "ProjectileTimeScaleMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

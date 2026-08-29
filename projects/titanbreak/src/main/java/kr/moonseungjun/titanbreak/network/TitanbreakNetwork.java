@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Locale;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha6";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha7";
 
     private TitanbreakNetwork() {}
 

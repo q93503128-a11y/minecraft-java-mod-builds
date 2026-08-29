@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.6";
+    public static final String VERSION = "0.1.0-alpha.7";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0;
@@ -35,7 +35,6 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
-        NeoForge.EVENT_BUS.addListener(ReflexFieldService::onEntityTickPre);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -90,8 +89,8 @@ public final class Titanbreak {
             data.setHeat(player, state.heat() - 0.45);
         }
 
-        // alpha.5 repaired selected player attributes after slowing the whole server. alpha.6 keeps
-        // the player on the normal 20 TPS time axis, so any stale compensation must be removed.
+        // The user remains on the ordinary 20 TPS time axis. alpha.7 dilates nearby simulation
+        // at its movement/AI/projectile choke points instead of compensating the active player.
         AugmentedMobilityService.clear(player);
 
         if (player.tickCount % 5 == 0) TitanbreakNetwork.sync(player);

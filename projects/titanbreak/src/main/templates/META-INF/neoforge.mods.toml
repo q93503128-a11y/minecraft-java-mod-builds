@@ -11,6 +11,9 @@ description='''
 거대 개체 사냥과 신체 개조, 반응가속 전투를 중심으로 한 Minecraft Java 액션 모드.
 '''
 
+[[mixins]]
+config="titanbreak.mixins.json"
+
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
