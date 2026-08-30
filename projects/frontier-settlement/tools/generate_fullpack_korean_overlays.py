@@ -10,7 +10,7 @@ import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 ROOT = Path(__file__).resolve().parents[3]
-TMP = ROOT / ".tmp-full-ko-v2"
+TMP = ROOT / ".tmp-full-ko-v3"
 TMP.mkdir(exist_ok=True)
 
 frontier = json.loads(
@@ -23,7 +23,7 @@ survival = json.loads(
 for mod in survival["mods"]:
     req = urllib.request.Request(
         f"https://api.modrinth.com/v2/version/{mod['version_id']}",
-        headers={"User-Agent": "Frontier-Full-Korean-V2/1.0"},
+        headers={"User-Agent": "Frontier-Full-Korean-V3/1.0"},
     )
     with urllib.request.urlopen(req, timeout=60) as response:
         meta = json.load(response)
@@ -34,7 +34,7 @@ sources = list({s["name"]: s for s in sources}.values())
 langs = defaultdict(lambda: {"en": {}, "ko": {}})
 for index, source in enumerate(sources):
     jar = TMP / f"{index}.jar"
-    req = urllib.request.Request(source["url"], headers={"User-Agent": "Frontier-Full-Korean-V2/1.0"})
+    req = urllib.request.Request(source["url"], headers={"User-Agent": "Frontier-Full-Korean-V3/1.0"})
     with urllib.request.urlopen(req, timeout=90) as response:
         jar.write_bytes(response.read())
     with zipfile.ZipFile(jar) as zf:
@@ -107,21 +107,23 @@ for todo in todos.values():
 unique = list(dict.fromkeys(fragments))
 print("unique_fragments=", len(unique))
 
+# These localization strings are short UI labels/tooltips. Greedy decoding is substantially faster
+# than beam search on GitHub CPU runners while preserving placeholders because tokens are split above.
 tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-tc-big-en-ko")
 model = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-tc-big-en-ko")
 model.eval()
 torch.set_num_threads(max(1, min(4, torch.get_num_threads())))
 translated_fragments = {}
-batch_size = 16
+batch_size = 32
 with torch.inference_mode():
     for start in range(0, len(unique), batch_size):
         batch = unique[start : start + batch_size]
-        encoded = tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=512)
-        output = model.generate(**encoded, max_new_tokens=512, num_beams=2)
+        encoded = tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=384)
+        output = model.generate(**encoded, max_new_tokens=128, num_beams=1)
         decoded = tokenizer.batch_decode(output, skip_special_tokens=True)
         for source, translated in zip(batch, decoded):
             translated_fragments[source] = translated
-        if start % 160 == 0:
+        if start % 320 == 0:
             print("translated", min(start + batch_size, len(unique)), "/", len(unique))
 
 
