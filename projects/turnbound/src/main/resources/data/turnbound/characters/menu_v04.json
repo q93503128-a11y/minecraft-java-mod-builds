@@ -9,9 +9,9 @@
     {"id":"P06","role":"Death Trigger / Burst / Comeback","primaryRole":"DPS","difficulty":"어려움","weapon":"가느다란 낫/의식용 칼/문서형 매개체","reason":"전투에서 발생한 사망을 전투 내 자원으로 바꾼다.","personality":"냉소적이며 죽음을 가볍게 말하지만 실제로는 매우 정확히 기억하고 거의 당황하지 않음.","profileQuest":true,"awakening":"자가부활 시 기억 2, Gauge +500을 얻고 부활 후 첫 직접 공격 피해 +20%."},
     {"id":"P07","role":"Summon / Utility / Extra Body","primaryRole":"SUMMON","difficulty":"어려움","weapon":"작은 인형/계약서/토템","reason":"4인 파티 밖에 독립 행동체를 하나 더 만든다.","personality":"혼자 있는 걸 싫어하지만 먼저 다가가진 못하며 소환물과 대화할 때 가장 편안함.","profileQuest":true,"awakening":"전투당 1회 계약수 사망 후 P07의 다음 정규 행동 종료 시 MaxHP 50%로 자동 재소환. Active 1 CD는 변경하지 않음."},
     {"id":"P08","role":"Low HP / Burst / High Risk","primaryRole":"DPS","difficulty":"보통","weapon":"양손 도끼 또는 거친 대검","reason":"낮은 태생 등급이지만 HP 관리가 가능하면 높은 순간 화력을 낸다.","personality":"직선적이고 전투를 즐기며 자기 몸의 한계를 정확히 앎.","profileQuest":true,"awakening":"전투당 1회 치명 피해를 HP 1로 버티고 Gauge +500. 다음 피의 돌진 HP 비용 1회 제거."},
-    {"id":"F01","role":"Basic Melee","primaryRole":"DPS","difficulty":"쉬움","weapon":"훈련용 근접무기","reason":"기본 근접 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"Basic 후 0.15x 추가타."},
-    {"id":"F02","role":"Basic Heal","primaryRole":"SUPPORT","difficulty":"쉬움","weapon":"응급 처치 도구","reason":"기본 회복 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"Basic 회복에 대상 MaxHP 3% 추가 회복."},
-    {"id":"F03","role":"Ranged DPS","primaryRole":"DPS","difficulty":"쉬움","weapon":"활/원거리 무기","reason":"원거리 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"캐릭터 데이터의 소재형 각성 추가효과 적용."},
-    {"id":"F04","role":"Basic Defense","primaryRole":"TANK","difficulty":"쉬움","weapon":"방패","reason":"방어 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"캐릭터 데이터의 소재형 각성 추가효과 적용."}
+    {"id":"F01","role":"Basic Melee","primaryRole":"DPS","difficulty":"쉬움","weapon":"훈련용 근접무기","reason":"기본 근접 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"Basic 사용 후 별도 0.15x 추가타."},
+    {"id":"F02","role":"Basic Heal","primaryRole":"SUPPORT","difficulty":"쉬움","weapon":"응급 처치 도구","reason":"기본 회복 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"Basic 사용 후 대상 MaxHP 3% 추가 회복."},
+    {"id":"F03","role":"Ranged DPS","primaryRole":"DPS","difficulty":"쉬움","weapon":"짧은 활","reason":"원거리 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"집중 사격 사용 후 Gauge +80."},
+    {"id":"F04","role":"Basic Defense","primaryRole":"TANK","difficulty":"쉬움","weapon":"둥근 중형 방패 + 곤봉","reason":"방어 소재형.","personality":"소재형 캐릭터.","profileQuest":false,"awakening":"버티기 사용 시 MaxHP 5% Barrier 추가."}
   ]
 }
