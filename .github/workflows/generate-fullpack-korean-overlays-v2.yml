@@ -43,10 +43,9 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
-            # The NLLB generator is allowed to stop only at its quality gate after producing files.
-            # Any download/model/runtime failure must still fail the workflow.
             grep -q 'empty translations for non-empty English strings:' /tmp/fullpack-ko-generator.log || exit "$status"
           fi
+          test -f projects/frontier-settlement/tools/postprocess_fullpack_korean_overlays.py
           python3 projects/frontier-settlement/tools/postprocess_fullpack_korean_overlays.py
 
       - name: Preserve generated overlays for inspection
