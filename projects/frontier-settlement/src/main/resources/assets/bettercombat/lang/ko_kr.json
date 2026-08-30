@@ -1,15 +1,15 @@
 {
   "key.category.bettercombat.main": "개선된 전투",
-  "text.autoconfig.bettercombat.option.client.isSwingThruGrassSmart": "혼합, 펠릿",
-  "text.autoconfig.bettercombat.option.client.isSwingThruGrassSmart.@Tooltip": "doggystyle, 작은, 작은, 작은, 작은, 작은",
-  "text.autoconfig.bettercombat.option.client.isShowingWeaponTrails": "",
-  "text.autoconfig.bettercombat.option.client.isShowingWeaponTrails.@Tooltip": "",
-  "text.autoconfig.bettercombat.option.client.isTooltipAttackRangeReformat": "청정기 with기도",
-  "text.autoconfig.bettercombat.option.client.isTooltipAttackRangeReformat.@Tooltip": "️ 더 이상 ️ ️",
-  "text.autoconfig.bettercombat.option.client.mineWithWeaponWhitelist": "지혜 (76)",
-  "text.autoconfig.bettercombat.option.client.mineWithWeaponWhitelist.@Tooltip": "지혜의 역사적 식사 값  popcha Greece 속옷                호텔 인기",
-  "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "원칙 1.",
-  "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "킹",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": ""
+  "text.autoconfig.bettercombat.option.client.isSwingThruGrassSmart": "풀을 통과해 공격",
+  "text.autoconfig.bettercombat.option.client.isSwingThruGrassSmart.@Tooltip": "공격 범위 안에 적이 있으면 풀 같은 얇은 블록을 무시하고 공격합니다.",
+  "text.autoconfig.bettercombat.option.client.isShowingWeaponTrails": "무기 궤적 표시",
+  "text.autoconfig.bettercombat.option.client.isShowingWeaponTrails.@Tooltip": "공격할 때 무기 궤적 효과를 표시합니다.",
+  "text.autoconfig.bettercombat.option.client.isTooltipAttackRangeReformat": "아이템 툴팁 공격 범위 재표시",
+  "text.autoconfig.bettercombat.option.client.isTooltipAttackRangeReformat.@Tooltip": "엔티티 상호작용 범위를 공격 범위 형식으로 표시합니다.",
+  "text.autoconfig.bettercombat.option.client.mineWithWeaponWhitelist": "무기 채굴 허용 목록",
+  "text.autoconfig.bettercombat.option.client.mineWithWeaponWhitelist.@Tooltip": "이 정규식과 일치하는 ID를 가진 무기는 항상 블록을 채굴할 수 있습니다.",
+  "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "1인칭 공격 애니메이션",
+  "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "1인칭에서 플레이어 공격 애니메이션을 표시합니다. 사용자 지정 카메라 모드 사용 시에만 변경할 수 있습니다.",
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "다리 애니메이션 비활성화 속도",
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "실험적 기능: 이 속도보다 빠르게 이동할 때 다리 애니메이션을 비활성화합니다."
 }
