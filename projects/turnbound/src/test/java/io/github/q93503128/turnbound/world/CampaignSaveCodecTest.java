@@ -44,8 +44,12 @@ class CampaignSaveCodecTest {
         List<PlayerProfile.SummonHistory> history = List.of(
                 new PlayerProfile.SummonHistory("P05", 5, true, 0, 0),
                 new PlayerProfile.SummonHistory("P01", 4, false, 100, 1));
+        List<List<String>> presets = List.of(
+                List.of("P01", "P03", "P04", "F03"),
+                List.of("P05", "P08", "P03"),
+                List.of());
         CampaignProgressStore.Snapshot snapshot = new CampaignProgressStore.Snapshot(
-                new PlayerProfile.Snapshot(17_000, 2_100, 410, 2, owned, 37, true, true, history),
+                new PlayerProfile.Snapshot(17_000, 2_100, 410, 2, owned, 37, true, true, history, presets),
                 characters, growth, inventory.snapshot(), quests,
                 Set.of("ENC_M01", "BATTLE_B01"),
                 Set.of("P99_ORPHAN"), Set.of("OLD_EQUIPMENT"));
@@ -53,10 +57,11 @@ class CampaignSaveCodecTest {
         CampaignProgressStore.Snapshot decoded = CampaignSaveCodec.decode(CampaignSaveCodec.encode(snapshot));
         assertEquals(snapshot, decoded);
         assertEquals(history, decoded.profile().summonHistory());
+        assertEquals(presets, decoded.profile().partyPresets());
     }
 
     @Test
-    void schemaOneMigratesMissingGrowthEquipmentQuestAndArchiveHistoryToCanonicalDefaults() {
+    void schemaOneMigratesMissingGrowthEquipmentQuestArchiveAndPresetsToCanonicalDefaults() {
         String old = """
                 {
                   "schemaVersion": 1,
@@ -82,6 +87,7 @@ class CampaignSaveCodecTest {
         assertTrue(migrated.equipment().items().isEmpty());
         assertTrue(migrated.quests().completed().isEmpty());
         assertTrue(migrated.profile().summonHistory().isEmpty());
+        assertEquals(List.of(List.of(), List.of(), List.of()), migrated.profile().partyPresets());
         assertTrue(migrated.orphanedCharacterIds().contains("REMOVED_CHARACTER"));
     }
 
