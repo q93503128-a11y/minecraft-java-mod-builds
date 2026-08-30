@@ -56,7 +56,8 @@ public final class VillageWorldSystem {
                 || !level.getBlockState(center.below(6)).is(Blocks.LAPIS_BLOCK)
                 || !level.getBlockState(center.below(7)).is(Blocks.EMERALD_BLOCK)
                 || !level.getBlockState(center.below(8)).is(Blocks.DIAMOND_BLOCK)
-                || !level.getBlockState(center.below(9)).is(Blocks.GOLD_BLOCK);
+                || !level.getBlockState(center.below(9)).is(Blocks.GOLD_BLOCK)
+                || !level.getBlockState(center.below(10)).is(Blocks.REDSTONE_BLOCK);
         if (!firstBuild && !visualRevisionMissing) return;
 
         generationInProgress = true;
@@ -66,7 +67,7 @@ public final class VillageWorldSystem {
                 VillageProgressionSystem.restoreFacilitiesForMigration();
             } else {
                 player.sendSystemMessage(Component.literal(
-                        "§6[마을 정비] §f성벽 4면 접근 계단·사격구·포좌 동선을 최신 실전 배치로 갱신합니다."));
+                        "§6[마을 정비] §f성벽 4면 접근 계단·상단 착지부·사격구·포좌 동선을 최신 실전 배치로 갱신합니다."));
             }
             buildAll(level, center);
             if (!firstBuild) {
@@ -264,7 +265,9 @@ public final class VillageWorldSystem {
         VillageDefenseTowerBuilder.build(level, center);
         VillageBuildingSignatures.buildAll(level, center);
         VillageFortressTerrain.restoreCentralBell(level, center);
-        // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so the migration marker uses a stable block.
+        // 26.2 exposes Blocks.COPPER_BLOCK as a weathering collection, so migration markers use stable blocks.
+        // v0.18.35: force one rebuild so old overlapping stair landings are physically removed from existing saves.
+        VillageFortressTerrain.set(level, center.below(10), Blocks.REDSTONE_BLOCK);
         VillageFortressTerrain.set(level, center.below(9), Blocks.GOLD_BLOCK);
         VillageFortressTerrain.set(level, center.below(8), Blocks.DIAMOND_BLOCK);
         VillageFortressTerrain.set(level, center.below(7), Blocks.EMERALD_BLOCK);

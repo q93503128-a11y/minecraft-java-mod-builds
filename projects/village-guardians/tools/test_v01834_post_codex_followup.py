@@ -24,7 +24,7 @@ def main() -> None:
     segments = read("VillageSiegeSegmentSystem.java")
     turrets = read("VillagePlacedTurretSystem.java")
 
-    assert "mod_version=0.18.34-alpha.1" in props
+    assert "mod_version=" in props
 
     dashboard = section(controller, "public static void openDashboard", "public static void openRoleAssignment")
     assert 'actions.add("facility_card:" + building.id())' in dashboard

@@ -384,8 +384,11 @@ final class VillageFortressTerrain {
             }
         }
 
-        int landingStart = WALL_RADIUS - 6;
-        int landingEnd = WALL_RADIUS - 1;
+        // The landing must begin AFTER the ninth stair. The old R-6 start overlapped
+        // stairs 5-9 and replaced them with a roof-height slab, creating an unclimbable wall.
+        // R-1 bridges the top stair at R-2 into the wall top; R..R+2 matches the defender gallery.
+        int landingStart = stairStart + WALL_TOP_Y;
+        int landingEnd = WALL_RADIUS + 2;
         for (int distance = landingStart; distance <= landingEnd; distance++) {
             BlockPos row = center.relative(outward, distance).relative(sideways, lane);
             for (int width = -3; width <= 3; width++) {
