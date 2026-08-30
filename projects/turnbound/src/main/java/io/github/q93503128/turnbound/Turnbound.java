@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
@@ -32,6 +33,7 @@ public final class Turnbound {
         modEventBus.addListener(FieldNetwork::register);
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
         NeoForge.EVENT_BUS.addListener(this::tick);
+        NeoForge.EVENT_BUS.addListener(this::login);
         NeoForge.EVENT_BUS.addListener(this::logout);
         NeoForge.EVENT_BUS.addListener(this::serverStopping);
         NeoForge.EVENT_BUS.addListener(PlayerShellRules::onIncomingDamage);
@@ -54,12 +56,19 @@ public final class Turnbound {
             StarterSliceBootstrap.tick(player);
             FieldSessionManager.tick(player);
             BattleSessionManager.tick(player);
+            CampaignPersistence.autosave(player);
         }
+    }
+
+    private void login(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) CampaignPersistence.load(player);
     }
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             BattleSessionManager.end(player);
+            CampaignPersistence.saveIfDirty(player);
+            CampaignProgressStore.removeRuntime(player.getUUID());
             StarterSliceBootstrap.remove(player);
             FieldSessionManager.remove(player);
         }
@@ -68,6 +77,7 @@ public final class Turnbound {
     private void serverStopping(ServerStoppingEvent event) {
         var players = event.getServer().getPlayerList().getPlayers();
         BattleSessionManager.clearAll(players);
+        for (ServerPlayer player : players) CampaignPersistence.saveIfDirty(player);
         StarterSliceBootstrap.clearAll(players);
         FieldSessionManager.clearAll(players);
         CampaignProgressStore.clearRuntime();

@@ -11,6 +11,10 @@ public final class GachaCatalog {
     public static final int HARD_PITY = 80;
     public static final int SOFT_PITY_START = 65;
     public static final double BASE_FIVE_STAR_RATE = 0.03;
+    public static final double FOUR_STAR_RATE = 0.12;
+    public static final double THREE_STAR_RATE = 0.35;
+    public static final double TWO_STAR_RATE = 0.30;
+    public static final double ONE_STAR_RATE = 0.20;
     public static final double SOFT_PITY_STEP = 0.03;
 
     private static final Map<Integer, List<String>> STANDARD_POOL = Map.of(
@@ -42,6 +46,22 @@ public final class GachaCatalog {
         Integer value = NATIVE_STARS.get(characterId);
         if (value == null) throw new IllegalArgumentException("Unknown summon character " + characterId);
         return value;
+    }
+
+    public static double baseRarityRate(int nativeStars) {
+        return switch (nativeStars) {
+            case 5 -> BASE_FIVE_STAR_RATE;
+            case 4 -> FOUR_STAR_RATE;
+            case 3 -> THREE_STAR_RATE;
+            case 2 -> TWO_STAR_RATE;
+            case 1 -> ONE_STAR_RATE;
+            default -> throw new IllegalArgumentException("Unsupported native stars " + nativeStars);
+        };
+    }
+
+    public static double standardCharacterWeight(String characterId) {
+        int stars = nativeStars(characterId);
+        return baseRarityRate(stars) / standardPool(stars).size();
     }
 
     public static int duplicateEssence(int nativeStars) {

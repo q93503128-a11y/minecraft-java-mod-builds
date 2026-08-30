@@ -14,11 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
-/**
- * Server-side campaign progression authority.
- * Character XP still uses the alpha.16 vertical-slice party, while economy/collection/gacha state now lives in
- * PlayerProfile so persistence can snapshot one authoritative model instead of reconstructing UI state.
- */
+/** Server-side campaign progression authority shared by combat rewards, gacha and persistence. */
 public final class CampaignProgressStore {
     public record Snapshot(
             PlayerProfile.Snapshot profile,
@@ -35,7 +31,7 @@ public final class CampaignProgressStore {
 
     private static final Map<UUID, PlayerProgress> PLAYERS = new LinkedHashMap<>();
     private static final GachaService GACHA = new GachaService(RandomGenerator.getDefault());
-    private static final List<CharacterSpec> PARTY = List.of(
+    private static final List<CharacterSpec> STORY_PARTY = List.of(
             new CharacterSpec("P01", "카이렌", 40),
             new CharacterSpec("P03", "브람", 40),
             new CharacterSpec("P04", "엘리시아", 40),
@@ -52,7 +48,7 @@ public final class CampaignProgressStore {
         var encounter = SouthgateEncounterCatalog.spec(encounterId);
         int xp = firstClear ? encounter.rewardXp() : 0;
         int gold = firstClear ? encounter.rewardGold() : 0;
-        List<BattleResultSummary.PartyXp> party = PARTY.stream().map(spec -> {
+        List<BattleResultSummary.PartyXp> party = STORY_PARTY.stream().map(spec -> {
             CharacterProgression.State before = progress.characters.get(spec.id());
             CharacterProgression.Gain gain = CharacterProgression.gain(before, xp, spec.levelCap());
             return new BattleResultSummary.PartyXp(spec.id(), spec.name(),
@@ -71,9 +67,8 @@ public final class CampaignProgressStore {
         for (BattleResultSummary.PartyXp member : preview.party()) {
             progress.characters.put(member.characterId(), new CharacterProgression.State(member.levelAfter(), member.xpAfter()));
         }
-        if (SouthgateEncounterCatalog.B01_GRAUL.equals(encounterId)) {
-            applyB01FirstClear(progress.profile);
-        }
+        if (SouthgateEncounterCatalog.B01_GRAUL.equals(encounterId)) applyB01FirstClear(progress);
+        progress.dirty = true;
         return preview;
     }
 
@@ -89,6 +84,14 @@ public final class CampaignProgressStore {
         return player(playerId).profile.ownedCharacters();
     }
 
+    public static boolean starterArchiveAvailable(UUID playerId) {
+        return player(playerId).profile.starterArchiveAvailable();
+    }
+
+    public static int fiveStarPity(UUID playerId) {
+        return player(playerId).profile.fiveStarPity();
+    }
+
     public static Snapshot snapshot(UUID playerId) {
         PlayerProgress progress = player(playerId);
         return new Snapshot(progress.profile.snapshot(), progress.characters, progress.clearedEncounters);
@@ -100,18 +103,29 @@ public final class CampaignProgressStore {
         restored.profile = PlayerProfile.restore(snapshot.profile());
         restored.characters.putAll(snapshot.characters());
         restored.clearedEncounters.addAll(snapshot.clearedEncounters());
-        for (CharacterSpec spec : PARTY) {
-            restored.characters.putIfAbsent(spec.id(), new CharacterProgression.State(1, 0));
-        }
+        ensureProgressionForOwned(restored);
+        restored.dirty = false;
         PLAYERS.put(playerId, restored);
     }
 
     public static GachaService.BatchResult summonStandard(UUID playerId, int count) {
-        return switch (count) {
-            case 1 -> GACHA.summonStandardSingle(player(playerId).profile);
-            case 10 -> GACHA.summonStandardTen(player(playerId).profile);
+        PlayerProgress progress = player(playerId);
+        GachaService.BatchResult result = switch (count) {
+            case 1 -> GACHA.summonStandardSingle(progress.profile);
+            case 10 -> GACHA.summonStandardTen(progress.profile);
             default -> throw new IllegalArgumentException("Standard Archive supports only 1 or 10 pulls");
         };
+        registerNewCharacters(progress, result);
+        progress.dirty = true;
+        return result;
+    }
+
+    public static GachaService.BatchResult summonStarter(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        GachaService.BatchResult result = GACHA.summonStarterTen(progress.profile);
+        registerNewCharacters(progress, result);
+        progress.dirty = true;
+        return result;
     }
 
     public static CharacterProgression.State character(UUID playerId, String characterId) {
@@ -120,15 +134,58 @@ public final class CampaignProgressStore {
         return state;
     }
 
+    public static void ensureNewGame(UUID playerId) {
+        player(playerId);
+    }
+
+    public static boolean hasRuntime(UUID playerId) {
+        return playerId != null && PLAYERS.containsKey(playerId);
+    }
+
+    public static boolean isDirty(UUID playerId) {
+        PlayerProgress progress = PLAYERS.get(playerId);
+        return progress != null && progress.dirty;
+    }
+
+    public static void markClean(UUID playerId) {
+        PlayerProgress progress = PLAYERS.get(playerId);
+        if (progress != null) progress.dirty = false;
+    }
+
+    public static void markDirty(UUID playerId) {
+        PlayerProgress progress = PLAYERS.get(playerId);
+        if (progress != null) progress.dirty = true;
+    }
+
+    public static void removeRuntime(UUID playerId) {
+        PLAYERS.remove(playerId);
+    }
+
     static void resetForTests(UUID playerId) { PLAYERS.remove(playerId); }
     public static void clearRuntime() { PLAYERS.clear(); }
 
-    private static void applyB01FirstClear(PlayerProfile profile) {
+    private static void applyB01FirstClear(PlayerProgress progress) {
         // Canonical v0.4 unlock package: boss reward 1,200 + tutorial 1,800 crystals, 60 essence and P08.
-        profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, 3_000);
-        profile.grant(PlayerProfile.Currency.STAR_ESSENCE, 60);
-        profile.acquireCharacter("P08");
-        profile.unlockStarterArchive();
+        progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, 3_000);
+        progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, 60);
+        PlayerProfile.Acquisition p08 = progress.profile.acquireCharacter("P08");
+        if (p08.newlyOwned()) progress.characters.putIfAbsent("P08", new CharacterProgression.State(1, 0));
+        progress.profile.unlockStarterArchive();
+    }
+
+    private static void registerNewCharacters(PlayerProgress progress, GachaService.BatchResult result) {
+        for (GachaService.PullResult pull : result.pulls()) {
+            if (pull.newlyOwned()) progress.characters.putIfAbsent(pull.characterId(), new CharacterProgression.State(1, 0));
+        }
+    }
+
+    private static void ensureProgressionForOwned(PlayerProgress progress) {
+        for (String characterId : progress.profile.ownedCharacters()) {
+            progress.characters.putIfAbsent(characterId, new CharacterProgression.State(1, 0));
+        }
+        for (CharacterSpec spec : STORY_PARTY) {
+            progress.characters.putIfAbsent(spec.id(), new CharacterProgression.State(1, 0));
+        }
     }
 
     private static PlayerProgress player(UUID playerId) {
@@ -142,16 +199,18 @@ public final class CampaignProgressStore {
         private final Map<String, CharacterProgression.State> characters = new LinkedHashMap<>();
         private final Set<String> clearedEncounters = new LinkedHashSet<>();
         private PlayerProfile profile = PlayerProfile.newGame();
+        private boolean dirty;
 
         private PlayerProgress() {
             this(true);
         }
 
         private PlayerProgress(boolean seedStoryParty) {
-            for (CharacterSpec spec : PARTY) {
+            for (CharacterSpec spec : STORY_PARTY) {
                 characters.put(spec.id(), new CharacterProgression.State(1, 0));
                 if (seedStoryParty) profile.acquireCharacter(spec.id());
             }
+            dirty = seedStoryParty;
         }
     }
 }

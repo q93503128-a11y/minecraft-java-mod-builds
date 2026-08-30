@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.progression;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -37,6 +38,34 @@ class GachaServiceTest {
         assertEquals(10, result.pulls().size());
         assertTrue(result.pulls().stream().anyMatch(p -> p.nativeStars() >= 4));
         assertEquals(0, profile.currency(PlayerProfile.Currency.SUMMON_CRYSTAL));
+    }
+
+    @Test
+    void starterArchiveUsesOnceAndSlotTenIsUnownedFourPlus() {
+        Set<String> owned = new HashSet<>(Set.of("P01", "P03", "P04", "F03", "P08"));
+        PlayerProfile profile = PlayerProfile.restore(new PlayerProfile.Snapshot(
+                17_000, 3_000, 60, 0, owned, 0, true, false));
+        GachaService.BatchResult result = new GachaService(new Random(1234)).summonStarterTen(profile);
+
+        assertEquals(10, result.pulls().size());
+        GachaService.PullResult guaranteed = result.pulls().getLast();
+        assertTrue(GachaCatalog.starterGuaranteePool().contains(guaranteed.characterId()));
+        assertTrue(guaranteed.nativeStars() >= 4);
+        assertTrue(guaranteed.newlyOwned());
+        assertEquals(0, profile.currency(PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertFalse(profile.starterArchiveAvailable());
+        assertThrows(IllegalStateException.class, () -> new GachaService(new Random(1)).summonStarterTen(profile));
+    }
+
+    @Test
+    void starterArchiveDoesNotSpendIfNoUnownedGuaranteeCandidateExists() {
+        Set<String> owned = new HashSet<>(Set.of("P01", "P03", "P04", "F03", "P08", "P02", "P05", "P06", "P07"));
+        PlayerProfile profile = PlayerProfile.restore(new PlayerProfile.Snapshot(
+                17_000, 3_000, 60, 0, owned, 0, true, false));
+
+        assertThrows(IllegalStateException.class, () -> new GachaService(new Random(5)).summonStarterTen(profile));
+        assertEquals(3_000, profile.currency(PlayerProfile.Currency.SUMMON_CRYSTAL));
+        assertTrue(profile.starterArchiveAvailable());
     }
 
     @Test

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.random.RandomGenerator;
 
-/** Server-side v0.4 Standard Archive resolver. */
+/** Server-side v0.4 Standard/Starter Archive resolver. */
 public final class GachaService {
     public record PullResult(String characterId, int nativeStars, boolean newlyOwned, int starEssenceGranted, int pityAfter) {}
     public record BatchResult(List<PullResult> pulls, int crystalSpent) {
@@ -20,7 +20,7 @@ public final class GachaService {
 
     public BatchResult summonStandardSingle(PlayerProfile profile) {
         spend(profile, GachaCatalog.SINGLE_COST);
-        return new BatchResult(List.of(pullStandard(profile, false)), GachaCatalog.SINGLE_COST);
+        return new BatchResult(List.of(pullStandard(profile, false, null)), GachaCatalog.SINGLE_COST);
     }
 
     public BatchResult summonStandardTen(PlayerProfile profile) {
@@ -29,10 +29,30 @@ public final class GachaService {
         boolean hasFourPlus = false;
         for (int slot = 0; slot < 10; slot++) {
             boolean guaranteeFourPlus = slot == 9 && !hasFourPlus;
-            PullResult result = pullStandard(profile, guaranteeFourPlus);
+            PullResult result = pullStandard(profile, guaranteeFourPlus, null);
             pulls.add(result);
             hasFourPlus |= result.nativeStars() >= 4;
         }
+        return new BatchResult(pulls, GachaCatalog.TEN_COST);
+    }
+
+    /**
+     * Canonical Starter Archive: one 10-pull after B01, with slot 10 guaranteed to be an unowned P02/P05/P06/P07.
+     * The source defines the eligible set but no separate Starter weights, so the guarantee preserves each candidate's
+     * Standard Archive per-character weight after conditioning on the currently unowned eligible set.
+     */
+    public BatchResult summonStarterTen(PlayerProfile profile) {
+        if (!profile.starterArchiveAvailable()) throw new IllegalStateException("Starter Archive is not available");
+        String reservedGuarantee = rollStarterGuarantee(profile);
+        spend(profile, GachaCatalog.TEN_COST);
+
+        List<PullResult> pulls = new ArrayList<>(10);
+        for (int slot = 0; slot < 9; slot++) {
+            // Keep the guaranteed character unowned through slot 9 so slot 10 satisfies the canonical rule exactly.
+            pulls.add(pullStandard(profile, false, reservedGuarantee));
+        }
+        pulls.add(pullSpecific(profile, reservedGuarantee));
+        profile.consumeStarterArchive();
         return new BatchResult(pulls, GachaCatalog.TEN_COST);
     }
 
@@ -48,10 +68,14 @@ public final class GachaService {
         return Math.min(1.0, boosted);
     }
 
-    private PullResult pullStandard(PlayerProfile profile, boolean guaranteeFourPlus) {
+    private PullResult pullStandard(PlayerProfile profile, boolean guaranteeFourPlus, String excludedCharacterId) {
         int stars = guaranteeFourPlus ? rollFourPlus(profile.fiveStarPity()) : rollRarity(profile.fiveStarPity());
-        List<String> pool = GachaCatalog.standardPool(stars);
-        String characterId = pool.get(random.nextInt(pool.size()));
+        String characterId = pickFromPool(GachaCatalog.standardPool(stars), excludedCharacterId);
+        return pullSpecific(profile, characterId);
+    }
+
+    private PullResult pullSpecific(PlayerProfile profile, String characterId) {
+        int stars = GachaCatalog.nativeStars(characterId);
         PlayerProfile.Acquisition acquisition = profile.acquireCharacter(characterId);
         profile.recordSummonRarity(stars);
         return new PullResult(characterId, stars, acquisition.newlyOwned(), acquisition.starEssenceGranted(), profile.fiveStarPity());
@@ -65,18 +89,40 @@ public final class GachaService {
 
         // As soft pity grows, preserve the canonical ★1~★4 relative weights inside the remaining probability mass.
         double nonFive = (roll - fiveRate) / (1.0 - fiveRate);
-        double total = 0.97;
-        if (nonFive < 0.12 / total) return 4;
-        if (nonFive < (0.12 + 0.35) / total) return 3;
-        if (nonFive < (0.12 + 0.35 + 0.30) / total) return 2;
+        double total = 1.0 - GachaCatalog.BASE_FIVE_STAR_RATE;
+        if (nonFive < GachaCatalog.FOUR_STAR_RATE / total) return 4;
+        if (nonFive < (GachaCatalog.FOUR_STAR_RATE + GachaCatalog.THREE_STAR_RATE) / total) return 3;
+        if (nonFive < (GachaCatalog.FOUR_STAR_RATE + GachaCatalog.THREE_STAR_RATE + GachaCatalog.TWO_STAR_RATE) / total) return 2;
         return 1;
     }
 
     private int rollFourPlus(int pityBeforePull) {
         double fiveRate = effectiveFiveStarRate(pityBeforePull);
         if (fiveRate >= 1.0) return 5;
-        double fiveWithinGuarantee = fiveRate / (fiveRate + 0.12);
+        double fiveWithinGuarantee = fiveRate / (fiveRate + GachaCatalog.FOUR_STAR_RATE);
         return random.nextDouble() < fiveWithinGuarantee ? 5 : 4;
+    }
+
+    private String rollStarterGuarantee(PlayerProfile profile) {
+        List<String> unowned = GachaCatalog.starterGuaranteePool().stream().filter(id -> !profile.owns(id)).toList();
+        if (unowned.isEmpty()) throw new IllegalStateException("Starter Archive has no unowned ★4+ guarantee candidate");
+        double total = unowned.stream().mapToDouble(GachaCatalog::standardCharacterWeight).sum();
+        double roll = random.nextDouble() * total;
+        double cursor = 0.0;
+        for (String id : unowned) {
+            cursor += GachaCatalog.standardCharacterWeight(id);
+            if (roll < cursor) return id;
+        }
+        return unowned.getLast();
+    }
+
+    private String pickFromPool(List<String> pool, String excludedCharacterId) {
+        if (excludedCharacterId == null || !pool.contains(excludedCharacterId)) {
+            return pool.get(random.nextInt(pool.size()));
+        }
+        List<String> eligible = pool.stream().filter(id -> !id.equals(excludedCharacterId)).toList();
+        if (eligible.isEmpty()) throw new IllegalStateException("Starter guarantee reservation exhausted a rarity pool");
+        return eligible.get(random.nextInt(eligible.size()));
     }
 
     private static void spend(PlayerProfile profile, int amount) {

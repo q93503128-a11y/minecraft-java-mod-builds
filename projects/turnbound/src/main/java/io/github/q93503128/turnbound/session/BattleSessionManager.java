@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
+import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -88,7 +89,10 @@ public final class BattleSessionManager {
         if (old != null) {
             String encounterId = old.encounterId();
             BattleOutcome outcome = old.state().outcome();
-            if (!encounterId.isBlank()) CampaignProgressStore.commit(player.getUUID(), encounterId, outcome);
+            if (!encounterId.isBlank()) {
+                CampaignProgressStore.commit(player.getUUID(), encounterId, outcome);
+                CampaignPersistence.saveIfDirty(player);
+            }
             old.cleanup(player);
             if (!encounterId.isBlank()) FieldSessionManager.onBattleEnded(player, encounterId, outcome);
         }
