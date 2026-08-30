@@ -82,6 +82,50 @@ jobs:
           grep -q 'normalFirstKillCount() >= NORMAL_SPECIES.length' "$ROOT/world/EncounterDirector.java"
           grep -q 'eliteFirstKillCount() >= ELITE_SPECIES.length' "$ROOT/world/EncounterDirector.java"
 
+      - name: Creature presentation audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=projects/titanbreak/src/main
+          JAVA="$ROOT/java/kr/moonseungjun/titanbreak"
+          ASSETS="$ROOT/resources/assets/titanbreak"
+
+          grep -q 'geckolib_version=5.5.3' projects/titanbreak/gradle.properties
+          grep -q 'jarJar(implementation' projects/titanbreak/build.gradle
+          grep -q 'modId="geckolib"' "$ROOT/templates/META-INF/neoforge.mods.toml"
+          test -f projects/titanbreak/ASSET_REGISTRY.md
+          test -f "$JAVA/entity/TitanGeoEntity.java"
+          grep -q 'GeoEntityRenderer' "$JAVA/client/TitanEntityRenderers.java"
+
+          if grep -Eq 'ZombieRenderer|SkeletonRenderer|SpiderRenderer|GiantMobRenderer' "$JAVA/client/TitanEntityRenderers.java"; then
+            echo 'A first-playable TITANBREAK creature still uses a vanilla mob renderer.' >&2
+            exit 1
+          fi
+
+          for cls in RipperEntity SkitterEntity BulwarkEntity NeedlerEntity HowlerEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+            grep -q 'TitanGeoEntity' "$JAVA/entity/$cls.java"
+          done
+
+          for entity in ripper skitter bulwark needler howler chrono_hound null_eye the_pursuer; do
+            test -f "$ASSETS/geckolib/models/entity/$entity.geo.json"
+            test -f "$ASSETS/geckolib/animations/entity/$entity.animation.json"
+            test -f "$ASSETS/textures/entity/$entity.png"
+          done
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('projects/titanbreak/src/main/resources/assets/titanbreak/geckolib')
+          for path in sorted(root.rglob('*.json')):
+              data=json.loads(path.read_text(encoding='utf-8'))
+              if path.name.endswith('.geo.json'):
+                  assert 'minecraft:geometry' in data, path
+              if path.name.endswith('.animation.json'):
+                  animations=data.get('animations', {})
+                  for key in ('misc.idle','move.walk','attack.swing'):
+                      assert key in animations, (path,key)
+          PY
+
       - name: First playable resource audit
         shell: bash
         run: |
@@ -159,6 +203,7 @@ jobs:
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/world/EncounterDirector.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/PursuerEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/TitanGeoEntity.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
           jar tf "$JAR" | grep -q 'assets/titanbreak/items/fabricator_i.json'
@@ -166,6 +211,10 @@ jobs:
           jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/fabricator_i.json'
           jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/surgical_bay.json'
           jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/geckolib/models/entity/ripper.geo.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/geckolib/animations/entity/the_pursuer.animation.json'
+          jar tf "$JAR" | grep -q 'assets/titanbreak/textures/entity/null_eye.png'
+          jar tf "$JAR" | grep -q 'META-INF/jarjar/.*geckolib'
           echo "jar=$JAR"
           sha256sum "$JAR"
 

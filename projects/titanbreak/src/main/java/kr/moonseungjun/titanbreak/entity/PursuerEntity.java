@@ -7,6 +7,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
@@ -20,10 +21,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
 
-public final class PursuerEntity extends Giant implements TemporalRated {
+public final class PursuerEntity extends Giant implements TemporalRated, TitanGeoEntity {
     private static final PartSpec[] SPECS = {
             new PartSpec(PartSlot.LEFT_EYE, -2.4D, 29.0D, -1.8D, 2.4F, 2.4F, 85.0F),
             new PartSpec(PartSlot.RIGHT_EYE, 2.4D, 29.0D, -1.8D, 2.4F, 2.4F, 85.0F),
@@ -117,6 +119,14 @@ public final class PursuerEntity extends Giant implements TemporalRated {
         partsInitialized = true;
     }
 
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        if (!partsInitialized) return getBoundingBox().inflate(8.0D, 32.0D, 8.0D);
+        AABB bounds = getBoundingBox();
+        for (PursuerPart part : parts) bounds = bounds.minmax(part.getBoundingBox());
+        return bounds;
+    }
+
     private boolean hurtPart(PursuerPart part, ServerLevel level, DamageSource source, float amount) {
         if (part.broken()) return false;
         part.applyPartDamage(amount);
@@ -199,6 +209,7 @@ public final class PursuerEntity extends Giant implements TemporalRated {
             }
 
             if (distanceToSqr(target) <= 9.0D * 9.0D && attackCooldown <= 0 && level() instanceof ServerLevel serverLevel) {
+                swing(InteractionHand.MAIN_HAND);
                 float visibleDamage = phase == 1 ? 46.0F : phase == 2 ? 58.0F : 72.0F;
                 target.hurtServer(serverLevel, damageSources().mobAttack(PursuerEntity.this),
                         (float) CombatScale.toInternal(visibleDamage));

@@ -9,6 +9,18 @@ group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter { includeGroupAndSubgroups('com.geckolib') }
+    }
+}
+
 neoForge {
     version = project.neo_version
     runs {
@@ -19,11 +31,21 @@ neoForge {
     mods { "${mod_id}" { sourceSet sourceSets.main } }
 }
 
+dependencies {
+    jarJar(implementation("com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}")) {
+        version {
+            strictly "[${geckolib_version},5.6)"
+            prefer geckolib_version
+        }
+    }
+}
+
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
             minecraft_version: minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version: neo_version,
+            geckolib_version: geckolib_version,
             mod_id: mod_id,
             mod_name: mod_name,
             mod_license: mod_license,
@@ -37,6 +59,10 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
+
+tasks.named('build') {
+    dependsOn tasks.named('jarJar')
+}
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

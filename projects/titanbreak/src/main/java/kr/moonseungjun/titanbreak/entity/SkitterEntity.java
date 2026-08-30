@@ -1,12 +1,13 @@
 package kr.moonseungjun.titanbreak.entity;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.level.Level;
 
-public final class SkitterEntity extends Spider {
+public final class SkitterEntity extends Spider implements TitanGeoEntity {
     private Entity comboTarget;
     private int comboHitsRemaining;
     private int comboDelay;
@@ -34,6 +35,7 @@ public final class SkitterEntity extends Spider {
         if (--comboDelay > 0) return;
 
         if (comboTarget.isAlive() && distanceToSqr(comboTarget) <= 10.0D) {
+            swing(InteractionHand.MAIN_HAND);
             super.doHurtTarget(level, comboTarget);
             comboHitsRemaining--;
             comboDelay = 10;

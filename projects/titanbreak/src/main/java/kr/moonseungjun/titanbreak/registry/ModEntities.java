@@ -37,51 +37,51 @@ public final class ModEntities {
                     .sized(0.8F, 0.8F).eyeHeight(0.72F).clientTrackingRange(20)
                     .build(key("hollow_colossus")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Zombie>> RIPPER =
-            ENTITIES.register("ripper", () -> EntityType.Builder.<Zombie>of(
-                            (type, level) -> new RipperEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<RipperEntity>> RIPPER =
+            ENTITIES.register("ripper", () -> EntityType.Builder.<RipperEntity>of(
+                            RipperEntity::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.95F).eyeHeight(1.74F).clientTrackingRange(10)
                     .build(key("ripper")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Spider>> SKITTER =
-            ENTITIES.register("skitter", () -> EntityType.Builder.<Spider>of(
-                            (type, level) -> new SkitterEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<SkitterEntity>> SKITTER =
+            ENTITIES.register("skitter", () -> EntityType.Builder.<SkitterEntity>of(
+                            SkitterEntity::new, MobCategory.MONSTER)
                     .sized(1.4F, 0.9F).eyeHeight(0.65F).clientTrackingRange(10)
                     .build(key("skitter")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Zombie>> BULWARK =
-            ENTITIES.register("bulwark", () -> EntityType.Builder.<Zombie>of(
-                            (type, level) -> new BulwarkEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<BulwarkEntity>> BULWARK =
+            ENTITIES.register("bulwark", () -> EntityType.Builder.<BulwarkEntity>of(
+                            BulwarkEntity::new, MobCategory.MONSTER)
                     .sized(0.9F, 2.2F).eyeHeight(1.92F).clientTrackingRange(10)
                     .build(key("bulwark")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Skeleton>> NEEDLER =
-            ENTITIES.register("needler", () -> EntityType.Builder.<Skeleton>of(
-                            (type, level) -> new NeedlerEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<NeedlerEntity>> NEEDLER =
+            ENTITIES.register("needler", () -> EntityType.Builder.<NeedlerEntity>of(
+                            NeedlerEntity::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.99F).eyeHeight(1.74F).clientTrackingRange(12)
                     .build(key("needler")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Zombie>> HOWLER =
-            ENTITIES.register("howler", () -> EntityType.Builder.<Zombie>of(
-                            (type, level) -> new HowlerEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<HowlerEntity>> HOWLER =
+            ENTITIES.register("howler", () -> EntityType.Builder.<HowlerEntity>of(
+                            HowlerEntity::new, MobCategory.MONSTER)
                     .sized(0.72F, 2.05F).eyeHeight(1.8F).clientTrackingRange(12)
                     .build(key("howler")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Zombie>> CHRONO_HOUND =
-            ENTITIES.register("chrono_hound", () -> EntityType.Builder.<Zombie>of(
-                            (type, level) -> new ChronoHoundEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<ChronoHoundEntity>> CHRONO_HOUND =
+            ENTITIES.register("chrono_hound", () -> EntityType.Builder.<ChronoHoundEntity>of(
+                            ChronoHoundEntity::new, MobCategory.MONSTER)
                     .sized(0.9F, 1.4F).eyeHeight(1.1F).clientTrackingRange(14)
                     .build(key("chrono_hound")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Zombie>> NULL_EYE =
-            ENTITIES.register("null_eye", () -> EntityType.Builder.<Zombie>of(
-                            (type, level) -> new NullEyeEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<NullEyeEntity>> NULL_EYE =
+            ENTITIES.register("null_eye", () -> EntityType.Builder.<NullEyeEntity>of(
+                            NullEyeEntity::new, MobCategory.MONSTER)
                     .sized(0.8F, 2.15F).eyeHeight(1.9F).clientTrackingRange(14)
                     .build(key("null_eye")));
 
-    public static final DeferredHolder<EntityType<?>, EntityType<Giant>> THE_PURSUER =
-            ENTITIES.register("the_pursuer", () -> EntityType.Builder.<Giant>of(
-                            (type, level) -> new PursuerEntity(type, level), MobCategory.MONSTER)
+    public static final DeferredHolder<EntityType<?>, EntityType<PursuerEntity>> THE_PURSUER =
+            ENTITIES.register("the_pursuer", () -> EntityType.Builder.<PursuerEntity>of(
+                            PursuerEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(40)
                     .build(key("the_pursuer")));
 

@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak.entity;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -8,7 +9,7 @@ import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public final class RipperEntity extends Zombie {
+public final class RipperEntity extends Zombie implements TitanGeoEntity {
     private Entity comboTarget;
     private int comboHitsRemaining;
     private int comboDelay;
@@ -47,6 +48,7 @@ public final class RipperEntity extends Zombie {
         if (--comboDelay > 0) return;
 
         if (comboTarget.isAlive() && distanceToSqr(comboTarget) <= 9.0D) {
+            swing(InteractionHand.MAIN_HAND);
             super.doHurtTarget(level, comboTarget);
         }
         comboHitsRemaining = 0;

@@ -8,7 +8,7 @@ import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public final class BulwarkEntity extends Zombie {
+public final class BulwarkEntity extends Zombie implements TitanGeoEntity {
     public BulwarkEntity(EntityType<? extends Zombie> type, Level level) {
         super(type, level);
     }
