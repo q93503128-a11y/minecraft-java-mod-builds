@@ -1,0 +1,62 @@
+name: Apply Frontier Alpha89 Duplicate Worker Recovery
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-frontier-alpha89.yml'
+      - 'projects/frontier-settlement/tools/apply_alpha89.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Apply Alpha.89 patch
+        run: python3 projects/frontier-settlement/tools/apply_alpha89.py
+
+      - name: Cumulative source audit
+        run: python3 projects/frontier-settlement/tools/test_alpha89_source.py
+
+      - name: Canonical docs audit
+        run: python3 projects/frontier-settlement/tools/test_alpha89_docs.py
+
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Runtime JAR verify
+        working-directory: projects/frontier-settlement
+        run: |
+          test -f build/libs/frontier_settlement-0.1.0-alpha.89.jar
+          jar tf build/libs/frontier_settlement-0.1.0-alpha.89.jar | grep -q 'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class'
+          jar tf build/libs/frontier_settlement-0.1.0-alpha.89.jar | grep -q 'kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.class'
+
+      - name: Diff sanity
+        run: git diff --check
+
+      - name: Commit verified Alpha.89
+        run: |
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement
+          git commit -m 'Fix Frontier alpha.89 duplicate worker recovery'
+          git pull --rebase origin main
+          git push origin HEAD:main
