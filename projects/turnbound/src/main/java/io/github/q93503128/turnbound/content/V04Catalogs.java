@@ -15,8 +15,8 @@ import java.util.Map;
 
 /** Typed access to the remaining canonical v0.4 data resources. */
 public final class V04Catalogs {
-    private static final Map<String, Encounter> ENCOUNTERS = encounters();
-    private static final Map<String, EquipmentSpec> EQUIPMENT = equipment();
+    private static final Map<String, Encounter> ENCOUNTERS = loadEncounters();
+    private static final Map<String, EquipmentSpec> EQUIPMENT = loadEquipment();
     private static final Map<String, SignatureSpec> SIGNATURES = signatures();
     private static final Map<Integer, RiftFloor> RIFT = rift();
     private static final JsonObject REGIONS = load("/data/turnbound/regions/v04.json");
@@ -103,7 +103,7 @@ public final class V04Catalogs {
         return (int)Math.round(50.0 * factor * Math.pow(fromLevel + 1, 1.55));
     }
 
-    private static Map<String, Encounter> encounters() {
+    private static Map<String, Encounter> loadEncounters() {
         Map<String, Encounter> out = new LinkedHashMap<>();
         for (JsonElement e : load("/data/turnbound/battles/v04.json").getAsJsonArray("encounters")) {
             JsonObject o = e.getAsJsonObject();
@@ -113,7 +113,7 @@ public final class V04Catalogs {
         return Map.copyOf(out);
     }
 
-    private static Map<String, EquipmentSpec> equipment() {
+    private static Map<String, EquipmentSpec> loadEquipment() {
         Map<String, EquipmentSpec> out = new LinkedHashMap<>();
         for (JsonElement e : load("/data/turnbound/equipment/v04.json").getAsJsonArray("items")) {
             JsonObject o = e.getAsJsonObject();
