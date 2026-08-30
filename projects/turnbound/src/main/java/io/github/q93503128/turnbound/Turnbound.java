@@ -52,6 +52,7 @@ public final class Turnbound {
 
     private void tick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            if (CampaignPersistence.blocked(player)) return;
             PlayerShellRules.maintain(player);
             StarterSliceBootstrap.tick(player);
             FieldSessionManager.tick(player);
@@ -66,11 +67,14 @@ public final class Turnbound {
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            BattleSessionManager.end(player);
-            CampaignPersistence.saveIfDirty(player);
+            if (!CampaignPersistence.blocked(player)) {
+                BattleSessionManager.end(player);
+                CampaignPersistence.saveIfDirty(player);
+            }
             CampaignProgressStore.removeRuntime(player.getUUID());
             StarterSliceBootstrap.remove(player);
             FieldSessionManager.remove(player);
+            CampaignPersistence.forget(player);
         }
     }
 

@@ -6,6 +6,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.q93503128.turnbound.content.V04Catalogs;
+import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
+import io.github.q93503128.turnbound.progression.EquipmentInventory;
+import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 
 import java.util.LinkedHashMap;
@@ -13,9 +17,9 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Versioned JSON codec for one player's authoritative TURNBOUND campaign snapshot. */
+/** Versioned JSON codec mirroring the canonical v0.4 player save schema. */
 public final class CampaignSaveCodec {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private CampaignSaveCodec() {}
@@ -24,40 +28,46 @@ public final class CampaignSaveCodec {
         JsonObject root = new JsonObject();
         root.addProperty("schemaVersion", SCHEMA_VERSION);
         root.add("profile", encodeProfile(snapshot.profile()));
-
-        JsonObject characters = new JsonObject();
-        snapshot.characters().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
-            JsonObject state = new JsonObject();
-            state.addProperty("level", entry.getValue().level());
-            state.addProperty("xp", entry.getValue().xp());
-            characters.add(entry.getKey(), state);
-        });
-        root.add("characters", characters);
-
-        JsonArray cleared = new JsonArray();
-        snapshot.clearedEncounters().stream().sorted().forEach(cleared::add);
-        root.add("clearedEncounters", cleared);
+        root.add("characters", encodeCharacters(snapshot.characters()));
+        root.add("growth", encodeGrowth(snapshot.growth()));
+        root.add("equipment", encodeEquipment(snapshot.equipment()));
+        root.add("clearedEncounters", strings(snapshot.clearedEncounters()));
+        root.add("orphanedCharacterIds", strings(snapshot.orphanedCharacterIds()));
+        root.add("orphanedEquipmentIds", strings(snapshot.orphanedEquipmentIds()));
         return GSON.toJson(root);
     }
 
     public static CampaignProgressStore.Snapshot decode(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-        int schema = requiredInt(root, "schemaVersion");
-        if (schema != SCHEMA_VERSION) throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
-
-        PlayerProfile.Snapshot profile = decodeProfile(requiredObject(root, "profile"));
-        Map<String, CharacterProgression.State> characters = new LinkedHashMap<>();
-        for (var entry : requiredObject(root, "characters").entrySet()) {
-            JsonObject state = entry.getValue().getAsJsonObject();
-            if (characters.put(entry.getKey(), new CharacterProgression.State(
-                    requiredInt(state, "level"), requiredInt(state, "xp"))) != null) {
-                throw new IllegalStateException("Duplicate character progression " + entry.getKey());
-            }
+        int schema = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 1;
+        if (schema != 1 && schema != SCHEMA_VERSION) {
+            throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
         }
 
-        Set<String> cleared = new LinkedHashSet<>();
-        for (JsonElement element : requiredArray(root, "clearedEncounters")) cleared.add(element.getAsString());
-        return new CampaignProgressStore.Snapshot(profile, characters, cleared);
+        Set<String> orphanedCharacters = new LinkedHashSet<>();
+        Set<String> orphanedEquipment = new LinkedHashSet<>();
+        ProfileDecode profile = decodeProfile(requiredObject(root, "profile"));
+        orphanedCharacters.addAll(profile.orphanedCharacters());
+
+        Map<String, CharacterProgression.State> characters = decodeCharacters(optionalObject(root, "characters"), orphanedCharacters);
+        Map<String, CharacterGrowthRules.State> growth = schema >= 4
+                ? decodeGrowth(optionalObject(root, "growth"), orphanedCharacters)
+                : new LinkedHashMap<>();
+        for (String characterId : profile.snapshot().ownedCharacters()) {
+            characters.putIfAbsent(characterId, new CharacterProgression.State(1, 0));
+            growth.putIfAbsent(characterId, CharacterGrowthRules.initial(characterId));
+        }
+
+        EquipmentInventory.Snapshot equipment = schema >= 4 && root.has("equipment")
+                ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment)
+                : EquipmentInventory.Snapshot.empty();
+
+        Set<String> cleared = stringSet(optionalArray(root, "clearedEncounters"));
+        orphanedCharacters.addAll(stringSet(optionalArray(root, "orphanedCharacterIds")));
+        orphanedEquipment.addAll(stringSet(optionalArray(root, "orphanedEquipmentIds")));
+
+        return new CampaignProgressStore.Snapshot(profile.snapshot(), characters, growth, equipment,
+                cleared, orphanedCharacters, orphanedEquipment);
     }
 
     private static JsonObject encodeProfile(PlayerProfile.Snapshot profile) {
@@ -66,51 +76,143 @@ public final class CampaignSaveCodec {
         out.addProperty("summonCrystal", profile.summonCrystal());
         out.addProperty("starEssence", profile.starEssence());
         out.addProperty("awakeningCore", profile.awakeningCore());
-        JsonArray owned = new JsonArray();
-        profile.ownedCharacters().stream().sorted().forEach(owned::add);
-        out.add("ownedCharacters", owned);
+        out.add("ownedCharacters", strings(profile.ownedCharacters()));
         out.addProperty("fiveStarPity", profile.fiveStarPity());
         out.addProperty("starterArchiveUnlocked", profile.starterArchiveUnlocked());
         out.addProperty("starterArchiveUsed", profile.starterArchiveUsed());
         return out;
     }
 
-    private static PlayerProfile.Snapshot decodeProfile(JsonObject raw) {
-        Set<String> owned = new LinkedHashSet<>();
-        for (JsonElement element : requiredArray(raw, "ownedCharacters")) owned.add(element.getAsString());
-        return new PlayerProfile.Snapshot(
-                requiredLong(raw, "gold"),
-                requiredLong(raw, "summonCrystal"),
-                requiredLong(raw, "starEssence"),
-                requiredLong(raw, "awakeningCore"),
-                owned,
-                requiredInt(raw, "fiveStarPity"),
-                requiredBoolean(raw, "starterArchiveUnlocked"),
-                requiredBoolean(raw, "starterArchiveUsed"));
+    private static ProfileDecode decodeProfile(JsonObject raw) {
+        Set<String> known = new LinkedHashSet<>();
+        Set<String> orphaned = new LinkedHashSet<>();
+        for (JsonElement element : optionalArray(raw, "ownedCharacters")) {
+            String id = element.getAsString();
+            if (GachaCatalog.isSummonable(id)) known.add(id); else orphaned.add(id);
+        }
+        return new ProfileDecode(new PlayerProfile.Snapshot(
+                optionalLong(raw, "gold", 5_000), optionalLong(raw, "summonCrystal", 0),
+                optionalLong(raw, "starEssence", 0), optionalLong(raw, "awakeningCore", 0),
+                known, optionalInt(raw, "fiveStarPity", 0),
+                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false)), orphaned);
     }
 
-    private static JsonObject requiredObject(JsonObject object, String key) {
-        if (!object.has(key) || !object.get(key).isJsonObject()) throw new IllegalStateException("Missing object " + key);
-        return object.getAsJsonObject(key);
+    private static JsonObject encodeCharacters(Map<String, CharacterProgression.State> characters) {
+        JsonObject out = new JsonObject();
+        characters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+            JsonObject state = new JsonObject();
+            state.addProperty("level", entry.getValue().level()); state.addProperty("xp", entry.getValue().xp());
+            out.add(entry.getKey(), state);
+        });
+        return out;
     }
 
-    private static JsonArray requiredArray(JsonObject object, String key) {
-        if (!object.has(key) || !object.get(key).isJsonArray()) throw new IllegalStateException("Missing array " + key);
-        return object.getAsJsonArray(key);
+    private static Map<String, CharacterProgression.State> decodeCharacters(JsonObject raw, Set<String> orphaned) {
+        Map<String, CharacterProgression.State> out = new LinkedHashMap<>();
+        for (var entry : raw.entrySet()) {
+            if (!GachaCatalog.isSummonable(entry.getKey())) { orphaned.add(entry.getKey()); continue; }
+            JsonObject state = entry.getValue().getAsJsonObject();
+            out.put(entry.getKey(), new CharacterProgression.State(optionalInt(state, "level", 1), optionalInt(state, "xp", 0)));
+        }
+        return out;
     }
 
-    private static int requiredInt(JsonObject object, String key) {
-        if (!object.has(key)) throw new IllegalStateException("Missing int " + key);
-        return object.get(key).getAsInt();
+    private static JsonObject encodeGrowth(Map<String, CharacterGrowthRules.State> growth) {
+        JsonObject out = new JsonObject();
+        growth.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+            JsonObject state = new JsonObject();
+            state.addProperty("currentStar", entry.getValue().currentStar());
+            state.addProperty("awakened", entry.getValue().awakened());
+            state.addProperty("characterQuestComplete", entry.getValue().characterQuestComplete());
+            state.addProperty("signatureTrialCleared", entry.getValue().signatureTrialCleared());
+            out.add(entry.getKey(), state);
+        });
+        return out;
     }
 
-    private static long requiredLong(JsonObject object, String key) {
-        if (!object.has(key)) throw new IllegalStateException("Missing long " + key);
-        return object.get(key).getAsLong();
+    private static Map<String, CharacterGrowthRules.State> decodeGrowth(JsonObject raw, Set<String> orphaned) {
+        Map<String, CharacterGrowthRules.State> out = new LinkedHashMap<>();
+        for (var entry : raw.entrySet()) {
+            String id = entry.getKey();
+            if (!GachaCatalog.isSummonable(id)) { orphaned.add(id); continue; }
+            JsonObject state = entry.getValue().getAsJsonObject();
+            out.put(id, new CharacterGrowthRules.State(
+                    optionalInt(state, "currentStar", GachaCatalog.nativeStars(id)), optionalBoolean(state, "awakened", false),
+                    optionalBoolean(state, "characterQuestComplete", false), optionalBoolean(state, "signatureTrialCleared", false)));
+        }
+        return out;
     }
 
-    private static boolean requiredBoolean(JsonObject object, String key) {
-        if (!object.has(key)) throw new IllegalStateException("Missing boolean " + key);
-        return object.get(key).getAsBoolean();
+    private static JsonObject encodeEquipment(EquipmentInventory.Snapshot snapshot) {
+        JsonObject out = new JsonObject();
+        out.addProperty("nextSerial", snapshot.nextSerial());
+        JsonArray items = new JsonArray();
+        snapshot.items().values().stream().sorted(java.util.Comparator.comparing(EquipmentInventory.Item::instanceId)).forEach(item -> {
+            JsonObject row = new JsonObject();
+            row.addProperty("instanceId", item.instanceId()); row.addProperty("itemId", item.itemId());
+            row.addProperty("enhancementLevel", item.enhancementLevel()); items.add(row);
+        });
+        out.add("items", items);
+        JsonObject loadouts = new JsonObject();
+        snapshot.loadouts().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+            EquipmentInventory.Loadout value = entry.getValue();
+            JsonObject row = new JsonObject();
+            row.addProperty("weapon", value.weapon()); row.addProperty("armor", value.armor());
+            row.addProperty("accessory", value.accessory()); row.addProperty("signature", value.signature());
+            loadouts.add(entry.getKey(), row);
+        });
+        out.add("loadouts", loadouts);
+        JsonObject choices = new JsonObject();
+        snapshot.choiceTokens().forEach(choices::addProperty);
+        out.add("choiceTokens", choices);
+        return out;
     }
+
+    private static EquipmentInventory.Snapshot decodeEquipment(JsonObject raw, Set<String> orphaned) {
+        long nextSerial = optionalLong(raw, "nextSerial", 1);
+        Map<String, EquipmentInventory.Item> items = new LinkedHashMap<>();
+        for (JsonElement element : optionalArray(raw, "items")) {
+            JsonObject row = element.getAsJsonObject();
+            String itemId = requiredString(row, "itemId");
+            if (!knownEquipment(itemId)) { orphaned.add(itemId); continue; }
+            EquipmentInventory.Item item = new EquipmentInventory.Item(
+                    requiredString(row, "instanceId"), itemId, optionalInt(row, "enhancementLevel", 0));
+            items.put(item.instanceId(), item);
+        }
+        Map<String, EquipmentInventory.Loadout> loadouts = new LinkedHashMap<>();
+        JsonObject loadoutRaw = optionalObject(raw, "loadouts");
+        for (var entry : loadoutRaw.entrySet()) {
+            JsonObject row = entry.getValue().getAsJsonObject();
+            loadouts.put(entry.getKey(), new EquipmentInventory.Loadout(
+                    validInstance(optionalString(row, "weapon", ""), items),
+                    validInstance(optionalString(row, "armor", ""), items),
+                    validInstance(optionalString(row, "accessory", ""), items),
+                    validInstance(optionalString(row, "signature", ""), items)));
+        }
+        Map<String, Integer> choices = new LinkedHashMap<>();
+        for (var entry : optionalObject(raw, "choiceTokens").entrySet()) choices.put(entry.getKey(), entry.getValue().getAsInt());
+        return new EquipmentInventory.Snapshot(nextSerial, items, loadouts, choices);
+    }
+
+    private static boolean knownEquipment(String itemId) {
+        try { V04Catalogs.equipment(itemId); return true; } catch (RuntimeException ignored) { }
+        try { V04Catalogs.signature(itemId); return true; } catch (RuntimeException ignored) { return false; }
+    }
+
+    private static String validInstance(String value, Map<String, EquipmentInventory.Item> items) {
+        return value.isBlank() || !items.containsKey(value) ? "" : value;
+    }
+
+    private static JsonArray strings(Iterable<String> values) { JsonArray out = new JsonArray(); for (String value : values) out.add(value); return out; }
+    private static Set<String> stringSet(JsonArray values) { Set<String> out = new LinkedHashSet<>(); for (JsonElement e : values) out.add(e.getAsString()); return out; }
+    private static JsonObject requiredObject(JsonObject object, String key) { if (!object.has(key) || !object.get(key).isJsonObject()) throw new IllegalStateException("Missing object " + key); return object.getAsJsonObject(key); }
+    private static JsonObject optionalObject(JsonObject object, String key) { return object.has(key) && object.get(key).isJsonObject() ? object.getAsJsonObject(key) : new JsonObject(); }
+    private static JsonArray optionalArray(JsonObject object, String key) { return object.has(key) && object.get(key).isJsonArray() ? object.getAsJsonArray(key) : new JsonArray(); }
+    private static int optionalInt(JsonObject object, String key, int fallback) { return object.has(key) ? object.get(key).getAsInt() : fallback; }
+    private static long optionalLong(JsonObject object, String key, long fallback) { return object.has(key) ? object.get(key).getAsLong() : fallback; }
+    private static boolean optionalBoolean(JsonObject object, String key, boolean fallback) { return object.has(key) ? object.get(key).getAsBoolean() : fallback; }
+    private static String optionalString(JsonObject object, String key, String fallback) { return object.has(key) ? object.get(key).getAsString() : fallback; }
+    private static String requiredString(JsonObject object, String key) { if (!object.has(key)) throw new IllegalStateException("Missing string " + key); return object.get(key).getAsString(); }
+
+    private record ProfileDecode(PlayerProfile.Snapshot snapshot, Set<String> orphanedCharacters) {}
 }

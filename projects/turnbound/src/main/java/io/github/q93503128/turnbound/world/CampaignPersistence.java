@@ -1,23 +1,29 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.Turnbound;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /** Minecraft-server adapter for persistent TURNBOUND campaign profiles. */
 public final class CampaignPersistence {
     private static final LevelResource TURNBOUND_DATA = new LevelResource("turnbound");
     private static final int AUTOSAVE_TICKS = 100;
+    private static final Set<UUID> BLOCKED = new LinkedHashSet<>();
 
     private CampaignPersistence() {}
 
     public static void load(ServerPlayer player) {
         var playerId = player.getUUID();
+        BLOCKED.remove(playerId);
         CampaignProgressStore.removeRuntime(playerId);
         Path file = playerFile(player);
         try {
@@ -34,27 +40,37 @@ public final class CampaignPersistence {
                 CampaignProgressStore.ensureNewGame(playerId);
             }
         } catch (Exception ex) {
-            Turnbound.LOGGER.error("TURNBOUND failed to load campaign save for {}; quarantining unreadable data", playerId, ex);
+            BLOCKED.add(playerId);
+            Turnbound.LOGGER.error("TURNBOUND campaign save migration/load failed for {}; preserving unreadable data and blocking session entry", playerId, ex);
             try {
                 CampaignSaveFiles.quarantine(file);
             } catch (IOException quarantineFailure) {
                 Turnbound.LOGGER.error("TURNBOUND failed to quarantine unreadable campaign save for {}", playerId, quarantineFailure);
             }
-            CampaignProgressStore.ensureNewGame(playerId);
+            player.connection.disconnect(Component.literal(
+                    "TURNBOUND 저장 데이터를 안전하게 불러오지 못했습니다. 원본은 보존되었으며 새 게임으로 덮어쓰지 않았습니다."));
         }
     }
 
+    public static boolean blocked(ServerPlayer player) {
+        return player != null && BLOCKED.contains(player.getUUID());
+    }
+
+    public static void forget(ServerPlayer player) {
+        if (player != null) BLOCKED.remove(player.getUUID());
+    }
+
     public static void autosave(ServerPlayer player) {
-        if (player.tickCount % AUTOSAVE_TICKS == 0) saveIfDirty(player);
+        if (!blocked(player) && player.tickCount % AUTOSAVE_TICKS == 0) saveIfDirty(player);
     }
 
     public static void saveIfDirty(ServerPlayer player) {
-        if (CampaignProgressStore.isDirty(player.getUUID())) save(player);
+        if (!blocked(player) && CampaignProgressStore.isDirty(player.getUUID())) save(player);
     }
 
     public static void save(ServerPlayer player) {
         var playerId = player.getUUID();
-        if (!CampaignProgressStore.hasRuntime(playerId)) return;
+        if (blocked(player) || !CampaignProgressStore.hasRuntime(playerId)) return;
         try {
             CampaignSaveFiles.save(playerFile(player), CampaignProgressStore.snapshot(playerId));
             CampaignProgressStore.markClean(playerId);
