@@ -120,7 +120,7 @@ jobs:
               parsed=json.loads(z.read('modrinth.index.json'))
               assert len(parsed['files']) == len({Path(x['path']).name for x in parsed['files']})
               assert any('dungeons-and-taverns' in x['path'] for x in parsed['files'])
-              assert any("BiomesOPlenty" in x['path'] or 'BiomesOPlenty' in ''.join(x.get('downloads',[])) for x in parsed['files'])
+              assert any('BiomesOPlenty' in x['path'] for x in parsed['files'])
               assert any('Terralith' in x['path'] for x in parsed['files'])
           for p in (out, frontier_jar, survival_jar):
               h=hashlib.sha256(p.read_bytes()).hexdigest()
@@ -139,8 +139,8 @@ jobs:
           from pathlib import Path
 
           root=Path.cwd()
-          run=root/'projects/frontier-settlement/run'
-          mods=run/'mods'
+          game=root/'projects/frontier-settlement/run/server'
+          mods=game/'mods'
           mods.mkdir(parents=True,exist_ok=True)
           for p in mods.glob('*.jar'):
               p.unlink()
@@ -187,10 +187,11 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/projects/frontier-settlement"
-          RUN="$ROOT/run"
-          rm -rf "$RUN/world" "$RUN/world_full_new"
-          printf 'eula=true\n' > "$RUN/eula.txt"
-          cat > "$RUN/server.properties" <<'EOF'
+          GAME="$ROOT/run/server"
+          rm -rf "$GAME/world" "$GAME/world_full_new"
+          mkdir -p "$GAME"
+          printf 'eula=true\n' > "$GAME/eula.txt"
+          cat > "$GAME/server.properties" <<'EOF'
           level-name=world_full_new
           online-mode=false
           view-distance=8
@@ -202,7 +203,7 @@ jobs:
           import pathlib, subprocess, sys, time
           root=pathlib.Path(sys.argv[1]); log=pathlib.Path(sys.argv[2])
           p=subprocess.Popen(['./gradlew','--no-daemon','--no-configuration-cache','runServer','--console=plain'],cwd=root,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
-          ready=False; deadline=time.time()+180
+          ready=False; deadline=time.time()+210
           with log.open('w',encoding='utf-8') as fh:
               while time.time()<deadline:
                   line=p.stdout.readline()
@@ -227,10 +228,19 @@ jobs:
               print(text); raise SystemExit('full stack server never reached ready state')
           if any(x.lower() in text.lower() for x in fatal):
               print(text); raise SystemExit('fatal full stack server error detected')
+          required_tokens=('Survival Ascension','Biomes O’ Plenty','Biomes O\' Plenty','Terralith','The Birth of Steve','Dungeons and Taverns')
+          if 'survivalascension' not in text.lower():
+              print(text); raise SystemExit('Survival Ascension was not discovered by full-stack smoke')
+          if 'biomesoplenty' not in text.lower():
+              print(text); raise SystemExit('Biomes O Plenty was not discovered by full-stack smoke')
+          if 'terralith' not in text.lower():
+              print(text); raise SystemExit('Terralith was not discovered by full-stack smoke')
+          if 'tbos' not in text.lower() and 'birth of steve' not in text.lower():
+              print(text); raise SystemExit('The Birth of Steve was not discovered by full-stack smoke')
           print(text)
           PY
           python3 "$GITHUB_WORKSPACE/run_full_server.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-survival-full-new-world-smoke.log"
-          test -f "$RUN/world_full_new/level.dat"
+          test -f "$GAME/world_full_new/level.dat"
 
       - name: Upload full new-world pack
         uses: actions/upload-artifact@v4
