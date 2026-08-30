@@ -17,20 +17,31 @@ concurrency:
 jobs:
   apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Generate missing Korean translations for the pinned FULL stack
+      - name: Install offline translation runtime
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece sacremoses
+          python3 -m pip install --disable-pip-version-check --no-input torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Generate missing Korean translations for the pinned FULL stack
+        shell: bash
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
-          import json, re, time, urllib.parse, urllib.request, zipfile
+          import json, re, urllib.request, zipfile
           from collections import defaultdict
           from pathlib import Path
+          import torch
+          from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
           ROOT=Path.cwd()
           TMP=ROOT/'.tmp-full-ko'
@@ -65,14 +76,12 @@ jobs:
                       langs[ns]['en'].update(data)
                       if loc=='ko_kr': langs[ns]['ko'].update(data)
 
-          existing={}
           for project in ('frontier-settlement','survival-ascension'):
               base=ROOT/f'projects/{project}/src/main/resources/assets'
               if not base.exists(): continue
               for p in base.glob('*/lang/ko_kr.json'):
                   try: data=json.loads(p.read_text(encoding='utf-8'))
                   except Exception: continue
-                  existing.setdefault(p.parent.parent.name,{}).update(data)
                   langs[p.parent.parent.name]['ko'].update(data)
 
           target_namespaces={
@@ -80,17 +89,7 @@ jobs:
               'tbos','weaponsexpanded','xaerobetterpvp','xaerominimap'
           }
 
-          # Keep all formatting / substitution tokens byte-identical through machine translation.
-          TOKEN_RE=re.compile(r'(?:%\d*\$?[sdif]|\{[^{}]*\}|§.|\\n|\n)')
-          def protect(text):
-              saved=[]
-              def sub(m):
-                  idx=len(saved); saved.append(m.group(0)); return f'ZXPH{idx:03d}XZ'
-              return TOKEN_RE.sub(sub,text),saved
-          def restore(text,saved):
-              for i,v in enumerate(saved): text=text.replace(f'ZXPH{i:03d}XZ',v)
-              return text
-
+          TOKEN_RE=re.compile(r'(%\d*\$?[sdif]|\{[^{}]*\}|§.|\\n|\n)')
           manual={
               'Mob Catcher Upgrade':'몹 포획 기능',
               'Captures passive mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹을 배낭 보관 슬롯에 포획합니다.',
@@ -98,36 +97,52 @@ jobs:
               'Captures passive and hostile mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹과 적대적 몹을 배낭 보관 슬롯에 포획합니다.',
               'Better Combat':'개선된 전투',
               "Xaero's Minimap":'제로의 미니맵',
+              'Mob Catcher':'몹 포획',
+              'Advanced Mob Catcher':'고급 몹 포획',
           }
-          cache=dict(manual)
 
-          def translate_one(text):
-              if not isinstance(text,str) or not text.strip(): return text
-              if text in cache: return cache[text]
-              safe,saved=protect(text)
-              params=urllib.parse.urlencode({'client':'gtx','sl':'en','tl':'ko','dt':'t','q':safe})
-              url='https://translate.googleapis.com/translate_a/single?'+params
-              last=None
-              for attempt in range(6):
-                  try:
-                      req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Frontier-Full-Korean/1.0'})
-                      with urllib.request.urlopen(req,timeout=30) as r: payload=json.load(r)
-                      out=''.join(part[0] for part in payload[0] if part and part[0])
-                      out=restore(out,saved)
-                      cache[text]=out
-                      time.sleep(0.03)
-                      return out
-                  except Exception as e:
-                      last=e; time.sleep(min(8,1.3**attempt))
-              raise RuntimeError(f'translation failed: {text!r}: {last}')
-
-          generated={}
+          # Prepare all values first so the model can translate unique text fragments in batches.
+          todos={}
           for ns in sorted(target_namespaces):
               en=langs[ns]['en']; ko=langs[ns]['ko']
-              # DNT's shipped ko_kr is malformed, so supply every English key ourselves.
-              todo=dict(en) if ns=='dnt' else {k:v for k,v in en.items() if k not in ko}
-              print(f'{ns}: translating {len(todo)} keys')
-              translated={k:translate_one(v) for k,v in todo.items()}
+              todos[ns]=dict(en) if ns=='dnt' else {k:v for k,v in en.items() if k not in ko}
+              print(f'{ns}: translation overlay keys={len(todos[ns])}')
+
+          fragments=[]
+          for todo in todos.values():
+              for text in todo.values():
+                  if text in manual: continue
+                  for part in TOKEN_RE.split(text):
+                      if not part or TOKEN_RE.fullmatch(part) or not re.search(r'[A-Za-z]',part): continue
+                      fragments.append(part)
+          unique=list(dict.fromkeys(fragments))
+          print('unique English fragments=',len(unique))
+
+          model_name='Helsinki-NLP/opus-mt-tc-big-en-ko'
+          tokenizer=AutoTokenizer.from_pretrained(model_name)
+          model=AutoModelForSeq2SeqLM.from_pretrained(model_name)
+          model.eval()
+          torch.set_num_threads(max(1,min(4,torch.get_num_threads())))
+          translated_fragments={}
+          batch_size=16
+          with torch.inference_mode():
+              for start in range(0,len(unique),batch_size):
+                  batch=unique[start:start+batch_size]
+                  enc=tokenizer(batch,return_tensors='pt',padding=True,truncation=True,max_length=512)
+                  out=model.generate(**enc,max_new_tokens=512,num_beams=2)
+                  dec=tokenizer.batch_decode(out,skip_special_tokens=True)
+                  for src,dst in zip(batch,dec):
+                      translated_fragments[src]=dst
+                  if start % 160 == 0: print('translated fragments',min(start+batch_size,len(unique)),'/',len(unique))
+
+          def translate_value(text):
+              if text in manual: return manual[text]
+              parts=TOKEN_RE.split(text)
+              return ''.join(part if not part or TOKEN_RE.fullmatch(part) or not re.search(r'[A-Za-z]',part) else translated_fragments.get(part,part) for part in parts)
+
+          generated={}
+          for ns,todo in todos.items():
+              translated={k:translate_value(v) for k,v in todo.items()}
               if not translated: continue
               if ns=='tbos':
                   dst=ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json'
@@ -139,11 +154,19 @@ jobs:
                   try: base=json.loads(dst.read_text(encoding='utf-8'))
                   except Exception: base={}
               base.update(translated)
+              # Explicitly lock the screenshot-visible Mob Catcher strings to natural Korean.
+              if ns=='sophisticatedbackpacks':
+                  base.update({
+                      'item.sophisticatedbackpacks.mob_catcher_upgrade':'몹 포획 기능',
+                      'item.sophisticatedbackpacks.mob_catcher_upgrade.tooltip':'웅크린 채 우클릭하면 수동적 몹을 배낭 보관 슬롯에 포획합니다.',
+                      'item.sophisticatedbackpacks.advanced_mob_catcher_upgrade':'고급 몹 포획 기능',
+                      'item.sophisticatedbackpacks.advanced_mob_catcher_upgrade.tooltip':'웅크린 채 우클릭하면 수동적 몹과 적대적 몹을 배낭 보관 슬롯에 포획합니다.',
+                  })
               dst.write_text(json.dumps(base,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
               generated[ns]=len(translated)
 
-          # Hard acceptance: every pinned English localization key must be covered by upstream Korean or our overlay.
           failures=[]
+          english_left=[]
           for ns in sorted(target_namespaces):
               en=langs[ns]['en']
               if ns=='tbos': dst=ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json'
@@ -152,7 +175,14 @@ jobs:
               covered=dict(langs[ns]['ko']); covered.update(ours)
               missing=sorted(set(en)-set(covered))
               if missing: failures.append(f'{ns}: {len(missing)} missing: {missing[:10]}')
+              for k in todos[ns]:
+                  v=ours.get(k,'')
+                  # Proper names / formatting tokens may retain Latin text, so only flag a value that stayed byte-identical English.
+                  if v == en[k] and en[k] not in manual:
+                      english_left.append(f'{ns}:{k}={v}')
           if failures: raise SystemExit('\n'.join(failures))
+          if english_left:
+              raise SystemExit('untranslated byte-identical English values remain:\n'+'\n'.join(english_left[:40]))
           print('KOREAN COVERAGE PASS',generated)
           PY
 
@@ -165,7 +195,6 @@ jobs:
           p=Path('.github/workflows/frontier-survival-full-new-world.yml')
           s=p.read_text(encoding='utf-8')
 
-          # Resolve and append exact JEI 30.13.0.77 / NeoForge 26.2 client binary at build time.
           needle="""          with zipfile.ZipFile(survival_pack) as z:\n              survival_index=json.loads(z.read('modrinth.index.json'))\n\n          files=[]\n"""
           repl="""          with zipfile.ZipFile(survival_pack) as z:\n              survival_index=json.loads(z.read('modrinth.index.json'))\n\n          # JEI recipe viewer, pinned to the tested NeoForge 26.2 build. Client only.\n          import urllib.request\n          req=urllib.request.Request('https://api.modrinth.com/v2/version/k8NezZZW',headers={'User-Agent':'Frontier-Full-Pack/1.0'})\n          with urllib.request.urlopen(req,timeout=60) as r:\n              jei_meta=json.load(r)\n          jei_file=next((f for f in jei_meta['files'] if f.get('primary')),jei_meta['files'][0])\n          if jei_meta.get('version_number') != '30.13.0.77':\n              raise SystemExit('JEI pin drifted from 30.13.0.77')\n\n          files=[]\n"""
           if needle not in s: raise SystemExit('JEI insertion anchor not found')
@@ -186,7 +215,7 @@ jobs:
               1)
 
           old="""          fatal=('NoClassDefFoundError','ClassNotFoundException','Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')\n          if not ready:\n              print(text); raise SystemExit('full stack server never reached ready state')\n          if any(x.lower() in text.lower() for x in fatal):\n              print(text); raise SystemExit('fatal full stack server error detected')\n"""
-          new="""          # ClassNotFoundException by itself is not fatal: optional integrations (for example Sophisticated Core -> Create)\n          # can log one and still reach a healthy ready/save state. Actual startup/tick/datapack failures remain fatal.\n          fatal=('Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')\n          if not ready:\n              print(text); raise SystemExit('full stack server never reached ready state')\n          if any(x.lower() in text.lower() for x in fatal):\n              print(text); raise SystemExit('fatal full stack server error detected')\n"""
+          new="""          # Optional integration class lookups can log ClassNotFoundException and still boot normally.\n          # Treat actual failed startup/tick/datapack/registry states as fatal; readiness plus save is the boundary.\n          fatal=('Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')\n          if not ready:\n              print(text); raise SystemExit('full stack server never reached ready state')\n          if any(x.lower() in text.lower() for x in fatal):\n              print(text); raise SystemExit('fatal full stack server error detected')\n"""
           if old not in s: raise SystemExit('smoke classifier anchor not found')
           s=s.replace(old,new,1)
           p.write_text(s,encoding='utf-8')
