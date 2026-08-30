@@ -2,7 +2,6 @@ package io.github.q93503128.turnbound.progression;
 
 import io.github.q93503128.turnbound.content.V04Catalogs;
 
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -11,6 +10,8 @@ import java.util.Set;
 
 /** Server-authoritative v0.4 equipment inventory, enhancement and equip rules. */
 public final class EquipmentInventory {
+    public static final int MAX_INSTANCES = 300;
+
     public enum Slot { WEAPON, ARMOR, ACCESSORY, SIGNATURE }
 
     public record Item(String instanceId, String itemId, int enhancementLevel) {
@@ -54,6 +55,7 @@ public final class EquipmentInventory {
             items = Map.copyOf(items);
             loadouts = Map.copyOf(loadouts);
             choiceTokens = Map.copyOf(choiceTokens);
+            if (items.size() > MAX_INSTANCES) throw new IllegalArgumentException("Equipment inventory exceeds " + MAX_INSTANCES + " instances");
             choiceTokens.forEach((tier, count) -> {
                 if (count < 0) throw new IllegalArgumentException("Negative equipment choice token");
             });
@@ -89,6 +91,10 @@ public final class EquipmentInventory {
         return new Snapshot(nextSerial, items, loadouts, choiceTokens);
     }
 
+    public int size() { return items.size(); }
+    public int freeSlots() { return MAX_INSTANCES - items.size(); }
+    public boolean hasFreeSlot() { return items.size() < MAX_INSTANCES; }
+
     public Set<String> unknownItemIds() {
         Set<String> out = new LinkedHashSet<>();
         for (Item item : items.values()) if (!isKnownItemId(item.itemId())) out.add(item.itemId());
@@ -97,6 +103,7 @@ public final class EquipmentInventory {
 
     public Item grant(String itemId) {
         requireKnown(itemId);
+        requireFreeSlot();
         String instanceId = "eq_" + String.format("%08d", nextSerial++);
         Item item = new Item(instanceId, itemId, 0);
         items.put(instanceId, item);
@@ -116,6 +123,7 @@ public final class EquipmentInventory {
         if (count <= 0) throw new IllegalStateException("No " + tier + " equipment choice token");
         ItemSpec spec = spec(itemId);
         if (spec.signature || !spec.tier.equals(tier)) throw new IllegalArgumentException("Choice token tier mismatch");
+        requireFreeSlot();
         if (count == 1) choiceTokens.remove(tier); else choiceTokens.put(tier, count - 1);
         return grant(itemId);
     }
@@ -217,6 +225,10 @@ public final class EquipmentInventory {
             for (Slot slot : Slot.values()) if (instanceId.equals(loadout.get(slot))) loadout = loadout.with(slot, "");
             loadouts.put(entry.getKey(), loadout);
         }
+    }
+
+    private void requireFreeSlot() {
+        if (!hasFreeSlot()) throw new IllegalStateException("Equipment inventory is full (" + MAX_INSTANCES + "/" + MAX_INSTANCES + ")");
     }
 
     private static void merge(Map<String, Double> values, String type, double amount) {
