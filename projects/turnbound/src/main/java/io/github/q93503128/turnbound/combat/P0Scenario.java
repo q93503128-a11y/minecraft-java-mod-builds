@@ -17,9 +17,13 @@ public final class P0Scenario {
         return new BattleState(units);
     }
 
-    /** Compatibility entry retained for alpha.8 tests; M01 is now one row of the production catalog. */
+    /** Compatibility entry retained for alpha.8 regression tests; production field sessions use SouthgateEncounterCatalog. */
     public static BattleState createFieldPatrol() {
-        return SouthgateEncounterCatalog.createBattle(SouthgateEncounterCatalog.ENC_M01);
+        List<CombatantState> units = baseAllies();
+        units.add(new CombatantState("enemy_e001", PrototypeRoster.corruptedWalker(), CombatantSide.ENEMY, 4));
+        units.add(new CombatantState("enemy_e002", PrototypeRoster.boneArcher(), CombatantSide.ENEMY, 5));
+        units.add(new CombatantState("enemy_e005", PrototypeRoster.fieldMedic(), CombatantSide.ENEMY, 6));
+        return new BattleState(units);
     }
 
     static List<CombatantState> baseAllies() {
