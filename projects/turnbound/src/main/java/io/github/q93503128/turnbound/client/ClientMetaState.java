@@ -13,15 +13,18 @@ public final class ClientMetaState {
     public record ShopRow(String itemId, String name, String tier, String slot, int price, boolean unlocked) {}
     public record Snapshot(long gold, long crystal, long essence, long core, int partyCp, boolean riftUnlocked,
                            int fiveStarPity, boolean starterArchiveAvailable,
-                           List<String> activeParty, List<CharacterRow> characters, List<EndgameRow> endgame,
+                           List<String> activeParty, List<List<String>> partyPresets,
+                           List<CharacterRow> characters, List<EndgameRow> endgame,
                            List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
                            List<ArchiveRow> archiveHistory, List<ShopRow> shopItems) {
         public Snapshot {
-            activeParty = List.copyOf(activeParty); characters = List.copyOf(characters); endgame = List.copyOf(endgame);
+            activeParty = List.copyOf(activeParty);
+            partyPresets = partyPresets.stream().map(List::copyOf).toList();
+            characters = List.copyOf(characters); endgame = List.copyOf(endgame);
             challenges = List.copyOf(challenges); regionQuests = List.copyOf(regionQuests);
             archiveHistory = List.copyOf(archiveHistory); shopItems = List.copyOf(shopItems);
         }
-        public static Snapshot empty() { return new Snapshot(0,0,0,0,0,false,0,false,List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of()); }
+        public static Snapshot empty() { return new Snapshot(0,0,0,0,0,false,0,false,List.of(),List.of(List.of(),List.of(),List.of()),List.of(),List.of(),List.of(),List.of(),List.of(),List.of()); }
     }
 
     private static volatile Snapshot snapshot = Snapshot.empty();
@@ -30,8 +33,8 @@ public final class ClientMetaState {
 
     public static void update(String raw) {
         long gold=0, crystal=0, essence=0, core=0; int cp=0, pity=0; boolean rift=false, starter=false;
-        List<String> party = new ArrayList<>(); List<CharacterRow> chars = new ArrayList<>();
-        List<EndgameRow> endgame = new ArrayList<>(); List<ChallengeRow> challenges = new ArrayList<>();
+        List<String> party = new ArrayList<>(); List<List<String>> presets = new ArrayList<>(List.of(List.of(),List.of(),List.of()));
+        List<CharacterRow> chars = new ArrayList<>(); List<EndgameRow> endgame = new ArrayList<>(); List<ChallengeRow> challenges = new ArrayList<>();
         List<RegionQuestRow> regions = new ArrayList<>(); List<ArchiveRow> archive = new ArrayList<>(); List<ShopRow> shop = new ArrayList<>();
         for (String line : raw.split("\n")) {
             if (line.isBlank()) continue;
@@ -45,6 +48,13 @@ public final class ClientMetaState {
                         if (p.length>8) starter="1".equals(p[8]);
                     }
                     case "P" -> { if (p.length>1 && !p[1].isBlank()) party.addAll(Arrays.asList(p[1].split(","))); }
+                    case "PP" -> {
+                        int slot=Integer.parseInt(p[1])-1;
+                        if(slot>=0&&slot<3){
+                            List<String> values=p.length>2&&!p[2].isBlank()?List.of(p[2].split(",")):List.of();
+                            presets.set(slot, values);
+                        }
+                    }
                     case "C" -> chars.add(new CharacterRow(p[1],p[2],Integer.parseInt(p[3]),Integer.parseInt(p[4]),"1".equals(p[5]),Integer.parseInt(p[6]),"1".equals(p[7])));
                     case "E" -> endgame.add(new EndgameRow(p[1],p[2],p[3],"1".equals(p[4]),"1".equals(p[5]),Integer.parseInt(p[6]),"1".equals(p[7])));
                     case "X" -> challenges.add(new ChallengeRow(p[1],Integer.parseInt(p[2]),p[3],"1".equals(p[4]),"1".equals(p[5]),p.length>6?p[6]:""));
@@ -55,6 +65,6 @@ public final class ClientMetaState {
                 }
             } catch (RuntimeException ignored) { }
         }
-        snapshot = new Snapshot(gold,crystal,essence,core,cp,rift,pity,starter,party,chars,endgame,challenges,regions,archive,shop);
+        snapshot = new Snapshot(gold,crystal,essence,core,cp,rift,pity,starter,party,presets,chars,endgame,challenges,regions,archive,shop);
     }
 }
