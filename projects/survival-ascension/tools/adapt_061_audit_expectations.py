@@ -80,7 +80,14 @@ def inject_content_wrapper():
     lines += ["]:", "    legacy = legacy.replace(_old, _new)", "", "# Inject approved translations into nested test_content_pack_source.py baseline.", "_content_lines = []", "for _old, _new in ["]
     for old, new in SOURCE_REPLACEMENTS:
         lines.append(f"    ({old!r}, {new!r}),")
-    lines += ["]:", "    _content_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")", "_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'", "legacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + '\\n'.join(_content_lines), 1)", ""]
+    lines += ["]:",
+              "    _content_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")",
+              "    _escaped_old = _old.replace(chr(34), chr(92) + chr(34))",
+              "    _escaped_new = _new.replace(chr(34), chr(92) + chr(34))",
+              "    if _escaped_old != _old:",
+              "        _content_lines.append(f\"baseline = baseline.replace({_escaped_old!r}, {_escaped_new!r})\")",
+              "_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'",
+              "legacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + '\\n'.join(_content_lines), 1)", ""]
     text = text.replace(marker, "\n".join(lines) + "\n" + marker, 1)
     path.write_text(text, encoding="utf-8")
 
