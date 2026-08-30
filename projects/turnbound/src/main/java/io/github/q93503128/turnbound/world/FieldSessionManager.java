@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Automatic alpha.15 vertical slice: peaceful starter village + one visible-encounter field cell. */
+/** Automatic alpha.16 starter field session: visible patrols with deterministic leash/return behavior. */
 public final class FieldSessionManager {
     public static final String ENCOUNTER_A01_PATROL = SouthgateEncounterCatalog.ENC_M01;
     private static final Map<UUID, FieldSession> SESSIONS = new LinkedHashMap<>();
@@ -253,6 +253,7 @@ public final class FieldSessionManager {
         private final Vec3 patrolEnd;
         private final List<UUID> actors = new ArrayList<>();
         private Vec3 pivot;
+        private Vec3 facing = new Vec3(0, 0, -1);
         private boolean towardEnd = true;
         private boolean defeated;
         private int graceTicks = 40;
@@ -268,19 +269,40 @@ public final class FieldSessionManager {
 
         private boolean tick(ServerLevel level, ServerPlayer player) {
             Vec3 playerFlat = new Vec3(player.getX(), pivot.y, player.getZ());
-            double distance = playerFlat.distanceTo(pivot);
-            phase = FieldEncounterRules.nextPhase(phase, distance, graceTicks);
-            if (FieldEncounterRules.shouldEngage(distance, graceTicks)) {
+            double playerDistance = playerFlat.distanceTo(pivot);
+            double homeDistance = pivot.distanceTo(home);
+            FieldEncounterRules.Phase previous = phase;
+            phase = FieldEncounterRules.nextPhase(phase, playerDistance, homeDistance, graceTicks);
+            if (previous == FieldEncounterRules.Phase.RETURN && phase == FieldEncounterRules.Phase.PATROL) {
+                pivot = home;
+                towardEnd = true;
+                graceTicks = Math.max(graceTicks, FieldEncounterRules.RETURN_REAGGRO_GRACE_TICKS);
+            }
+            if (FieldEncounterRules.shouldEngage(phase, playerDistance, graceTicks)) {
                 despawn(level);
                 BattleSessionManager.startEncounter(player, encounterId, false, false);
                 return true;
             }
-            Vec3 target = phase == FieldEncounterRules.Phase.ALERT ? playerFlat : towardEnd ? patrolEnd : home;
-            double speed = phase == FieldEncounterRules.Phase.ALERT ? 0.105 : 0.035;
+
+            Vec3 target = switch (phase) {
+                case ALERT -> playerFlat;
+                case RETURN -> home;
+                case PATROL -> towardEnd ? patrolEnd : home;
+            };
+            double speed = switch (phase) {
+                case ALERT -> 0.105;
+                case RETURN -> 0.075;
+                case PATROL -> 0.035;
+            };
             Vec3 delta = target.subtract(pivot);
-            if (delta.lengthSqr() < 0.36 && phase != FieldEncounterRules.Phase.ALERT) towardEnd = !towardEnd;
-            else if (delta.lengthSqr() > 0.0001) pivot = pivot.add(delta.normalize().scale(Math.min(speed, delta.length())));
-            updateActors(level, delta);
+            if (phase == FieldEncounterRules.Phase.PATROL && delta.lengthSqr() < 0.36) {
+                towardEnd = !towardEnd;
+            } else if (delta.lengthSqr() > 0.0001) {
+                Vec3 movement = delta.normalize().scale(Math.min(speed, delta.length()));
+                pivot = pivot.add(movement);
+                facing = horizontalDirection(movement, facing);
+            }
+            updateActors(level, facing);
             return false;
         }
 
@@ -288,10 +310,12 @@ public final class FieldSessionManager {
             if (defeated) return;
             despawn(level);
             for (int i = 0; i < spec.enemyDefinitionIds().size(); i++) {
-                Vec3 pos = formation(i, new Vec3(0, 0, -1));
+                Vec3 pos = formation(i, facing);
                 ArmorStand stand = actor(level, pos, spec.enemyDefinitionIds().get(i));
-                level.addFreshEntity(stand); actors.add(stand.getUUID());
+                level.addFreshEntity(stand);
+                actors.add(stand.getUUID());
             }
+            updateActors(level, facing);
         }
 
         private ArmorStand actor(ServerLevel level, Vec3 pos, String defId) {
@@ -303,17 +327,20 @@ public final class FieldSessionManager {
             stand.setItemSlot(EquipmentSlot.LEGS, Items.LEATHER_LEGGINGS.getDefaultInstance());
             if ("E002".equals(defId)) stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BOW.getDefaultInstance());
             else stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
-            level.addFreshEntity(stand);
             return stand;
         }
 
         private void updateActors(ServerLevel level, Vec3 heading) {
-            Vec3 forward = heading.lengthSqr() < 0.0001 ? new Vec3(0, 0, -1) : new Vec3(heading.x, 0, heading.z).normalize();
+            facing = horizontalDirection(heading, facing);
+            float targetYaw = yawFor(facing);
             for (int i = 0; i < actors.size(); i++) {
                 Entity e = level.getEntity(actors.get(i));
                 if (!(e instanceof ArmorStand stand)) continue;
-                Vec3 p = formation(i, forward);
+                Vec3 p = formation(i, facing);
                 stand.setPos(p.x, p.y, p.z);
+                float yaw = smoothYaw(stand.getYRot(), targetYaw, 0.35F);
+                stand.setYRot(yaw);
+                stand.setYHeadRot(yaw);
                 stand.setCustomNameVisible(i == 0 && phase == FieldEncounterRules.Phase.ALERT);
                 if (i == 0 && phase == FieldEncounterRules.Phase.ALERT) stand.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
                 else stand.setCustomName(Component.literal(SouthgateEncounterCatalog.enemyDefinition(spec.enemyDefinitionIds().get(i)).name()));
@@ -332,11 +359,42 @@ public final class FieldSessionManager {
         }
 
         private void reset(ServerLevel level) {
-            defeated = false; graceTicks = 100; phase = FieldEncounterRules.Phase.PATROL; pivot = home; towardEnd = true; spawn(level);
+            defeated = false;
+            graceTicks = 100;
+            phase = FieldEncounterRules.Phase.PATROL;
+            pivot = home;
+            facing = new Vec3(0, 0, -1);
+            towardEnd = true;
+            spawn(level);
         }
+
         private void despawn(ServerLevel level) {
-            for (UUID id : actors) { Entity e = level.getEntity(id); if (e != null) e.discard(); }
+            for (UUID id : actors) {
+                Entity e = level.getEntity(id);
+                if (e != null) e.discard();
+            }
             actors.clear();
+        }
+
+        private static Vec3 horizontalDirection(Vec3 candidate, Vec3 fallback) {
+            Vec3 flat = new Vec3(candidate.x, 0, candidate.z);
+            return flat.lengthSqr() > 0.000001 ? flat.normalize() : fallback;
+        }
+
+        private static float yawFor(Vec3 forward) {
+            return (float) Math.toDegrees(Math.atan2(-forward.x, forward.z));
+        }
+
+        private static float smoothYaw(float current, float target, float factor) {
+            float delta = wrapDegrees(target - current);
+            return current + delta * factor;
+        }
+
+        private static float wrapDegrees(float degrees) {
+            float wrapped = degrees % 360.0F;
+            if (wrapped >= 180.0F) wrapped -= 360.0F;
+            if (wrapped < -180.0F) wrapped += 360.0F;
+            return wrapped;
         }
     }
 }
