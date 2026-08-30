@@ -19,9 +19,16 @@ public final class ClientFieldNetwork {
             Minecraft minecraft = Minecraft.getInstance();
             FieldUiSnapshot snapshot = ClientFieldState.snapshot();
             if (!snapshot.active()) {
-                if (minecraft.gui.screen() instanceof FieldPanelScreen) minecraft.gui.setScreen(null);
+                if (minecraft.gui.screen() instanceof FieldPanelScreen || minecraft.gui.screen() instanceof WorldLoadingScreen) {
+                    minecraft.gui.setScreen(null);
+                }
                 return;
             }
+            if (snapshot.mode() == FieldUiSnapshot.Mode.LOADING) {
+                if (!(minecraft.gui.screen() instanceof WorldLoadingScreen)) minecraft.gui.setScreen(new WorldLoadingScreen());
+                return;
+            }
+            if (minecraft.gui.screen() instanceof WorldLoadingScreen) minecraft.gui.setScreen(null);
             if (snapshot.mode() == FieldUiSnapshot.Mode.NONE) return;
             // Battle rewards now stay in BattleResultScreen; the legacy field RESULT packet only updates field state.
             if (snapshot.mode() == FieldUiSnapshot.Mode.RESULT) return;
