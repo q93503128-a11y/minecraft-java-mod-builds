@@ -23,8 +23,9 @@ public final class ClientFieldNetwork {
                 return;
             }
             if (snapshot.mode() == FieldUiSnapshot.Mode.NONE) return;
-            boolean resultMayReplaceBattle = snapshot.mode() == FieldUiSnapshot.Mode.RESULT;
-            if (resultMayReplaceBattle || !(minecraft.gui.screen() instanceof BattleScreen)) {
+            // Battle rewards now stay in BattleResultScreen; the legacy field RESULT packet only updates field state.
+            if (snapshot.mode() == FieldUiSnapshot.Mode.RESULT) return;
+            if (!(minecraft.gui.screen() instanceof BattleScreen) && !(minecraft.gui.screen() instanceof BattleResultScreen)) {
                 minecraft.gui.setScreen(new FieldPanelScreen(snapshot.mode()));
             }
         });
