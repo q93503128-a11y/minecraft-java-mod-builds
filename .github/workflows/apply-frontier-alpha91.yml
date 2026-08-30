@@ -31,6 +31,21 @@ jobs:
           distribution: 'temurin'
           java-version: '25'
 
+      - name: Repair Alpha.91 patch driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/apply_alpha91_patch.py')
+          s = p.read_text(encoding='utf-8')
+          old = '''# Local work methods: jobsite barrels and rotation-safe farms.\nworker = worker.replace("deliverToTownStorage(level, data, worker, carried);", "deliverToWorksiteStorage(level, data, worker, camp, carried);", 4)\n# The blanket replacement above only touches the first four lumber occurrences in source order. Replace exact\n# farm/quarry/mine method bodies deliberately to avoid accidental changes elsewhere.\n'''
+          new = '''# Local work methods: jobsite barrels and rotation-safe farms. Patch each method inside its\n# own source slice so similarly named delivery calls in another profession can never inherit the\n# wrong BuildingRecord variable.\nstart = worker.index("    private static void workLumber(")\nend = worker.index("    private static void workFarm(", start)\nlumber = worker[start:end]\nlumber = lumber.replace("deliverToTownStorage(level, data, worker, carried);", "deliverToWorksiteStorage(level, data, worker, camp, carried);")\nworker = worker[:start] + lumber + worker[end:]\n# Patch farm/quarry/mine method bodies deliberately to avoid accidental changes elsewhere.\n'''
+          if old not in s:
+              raise SystemExit('Alpha.91 patch-driver lumber block no longer matches expected source')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply Alpha.91 patch
         shell: bash
         run: |
