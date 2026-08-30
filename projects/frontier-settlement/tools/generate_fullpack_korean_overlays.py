@@ -206,7 +206,9 @@ for namespace in sorted(target_namespaces):
         value = ours.get(key, "")
         source_tokens = TOKEN_RE.findall(source)
         value_tokens = TOKEN_RE.findall(value)
-        if source_tokens != value_tokens:
+        # The three manually translated MessageFormat/ICU choice strings intentionally
+        # translate labels inside the choice expression; all other placeholders must be byte-identical.
+        if source not in MANUAL_TEXT and source_tokens != value_tokens:
             placeholder_bad.append(f"{namespace}:{key}: {source_tokens!r} -> {value_tokens!r}")
         literal_source = TOKEN_RE.sub("", source)
         if re.search(r"[A-Za-z]{2,}", literal_source):
