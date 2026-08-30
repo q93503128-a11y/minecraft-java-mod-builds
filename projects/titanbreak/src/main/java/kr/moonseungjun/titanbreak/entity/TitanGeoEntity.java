@@ -8,6 +8,8 @@ import com.geckolib.animation.object.PlayState;
 import com.geckolib.constant.DataTickets;
 import com.geckolib.constant.DefaultAnimations;
 import com.geckolib.util.GeckoLibUtil;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 
 import java.util.Collections;
 import java.util.Map;
@@ -37,5 +39,13 @@ public interface TitanGeoEntity extends GeoEntity {
         synchronized (GEO_CACHES) {
             return GEO_CACHES.computeIfAbsent(this, GeckoLibUtil::createInstanceCache);
         }
+    }
+
+    /**
+     * Presentation-space bounds hook used by oversized TITANBREAK creatures.
+     * Ordinary creatures inherit their actual entity bounds; multipart bosses can override it.
+     */
+    default AABB getBoundingBoxForCulling() {
+        return ((Entity) this).getBoundingBox();
     }
 }
