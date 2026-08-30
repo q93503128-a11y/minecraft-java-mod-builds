@@ -76,7 +76,12 @@ public final class SettlementWorkerService {
         for (int i = 0; i < count; i++) {
             BuildingRecord building = buildings.get(i);
             if (!level.hasChunkAt(building.workCenter())) continue;
-            work.run(level, data, workers.get(i), building);
+            FrontierWorkerEntity worker = workers.get(i);
+            // Frontier owns the work order, but workers remain ordinary damageable mobs.
+            // Clear stale Alpha.84-87 quarantine/active-project flags on every ordinary work tick.
+            worker.setNoAi(false);
+            worker.setInvulnerable(false);
+            work.run(level, data, worker, building);
         }
     }
 
@@ -293,11 +298,11 @@ public final class SettlementWorkerService {
         BlockPos target = findTree(level, data, camp.workCenter(), expected);
         if (target == null) {
             if (!carried.isEmpty()) deliverToTownStorage(level, data, worker, carried);
-            else move(worker, camp.workCenter(), 0.82D);
+            else moveNear(level, worker, camp.workCenter(), 0.82D);
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
-            move(worker, target, 0.92D);
+            moveNear(level, worker, target, 0.92D);
             return;
         }
         if (!workDue(level, camp, LUMBER_WORK_PERIOD_TICKS)) return;
@@ -323,7 +328,7 @@ public final class SettlementWorkerService {
             return;
         }
         if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {
-            move(worker, farm.workCenter(), 0.88D);
+            moveNear(level, worker, farm.workCenter(), 0.88D);
             return;
         }
         if (!workDue(level, farm, FARM_WORK_PERIOD_TICKS)) return;
@@ -368,11 +373,11 @@ public final class SettlementWorkerService {
         BlockPos target = findExposedStone(level, data, quarry.workCenter(), QUARRY_SEARCH_RADIUS, expected);
         if (target == null) {
             if (!carried.isEmpty()) deliverToTownStorage(level, data, worker, carried);
-            else move(worker, quarry.workCenter(), 0.82D);
+            else moveNear(level, worker, quarry.workCenter(), 0.82D);
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
-            move(worker, target, 0.90D);
+            moveNear(level, worker, target, 0.90D);
             return;
         }
         if (!workDue(level, quarry, QUARRY_WORK_PERIOD_TICKS)) return;
@@ -395,7 +400,7 @@ public final class SettlementWorkerService {
         }
         BlockPos work = mine.workCenter();
         if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {
-            move(worker, work, 0.86D);
+            moveNear(level, worker, work, 0.86D);
             return;
         }
         if (!workDue(level, mine, MINING_WORK_PERIOD_TICKS)) return;
@@ -462,15 +467,51 @@ public final class SettlementWorkerService {
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) > 9.0D) {
-            move(worker, target, 0.85D);
+            moveNear(level, worker, target, 0.85D);
             return;
         }
         ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
         worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
     }
 
-    private static void move(FrontierWorkerEntity worker, BlockPos target, double speed) {
-        worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
+    /**
+     * PathfinderMob has no villager POI/interaction brain to turn a solid target block into a usable
+     * standing position. Never path to a log, quarry block, barrel, or fenced work-center directly:
+     * try nearby loaded walkable cells and let vanilla ground navigation choose a real path.
+     */
+    private static boolean moveNear(ServerLevel level, FrontierWorkerEntity worker, BlockPos target, double speed) {
+        int[] dyOrder = {0, 1, -1, 2, -2, 3, -3};
+        for (int radius = 1; radius <= 3; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    for (int dy : dyOrder) {
+                        BlockPos approach = target.offset(dx, dy, dz);
+                        if (!isWalkableApproach(level, approach)) continue;
+                        if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) <= 1.0D) {
+                            worker.getNavigation().stop();
+                            return true;
+                        }
+                        if (worker.getNavigation().moveTo(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D, speed)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        worker.getNavigation().stop();
+        return false;
+    }
+
+    private static boolean isWalkableApproach(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.above()) || !level.hasChunkAt(pos.below())) return false;
+        BlockState feet = level.getBlockState(pos);
+        BlockState head = level.getBlockState(pos.above());
+        BlockState below = level.getBlockState(pos.below());
+        if (level.getBlockEntity(pos) != null || level.getBlockEntity(pos.above()) != null) return false;
+        if (!feet.getFluidState().isEmpty() || !head.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
+        if ((!feet.isAir() && !feet.canBeReplaced()) || (!head.isAir() && !head.canBeReplaced())) return false;
+        return !below.isAir() && !below.canBeReplaced();
     }
 
     private static BlockPos findTree(ServerLevel level, SettlementData data, BlockPos center, Item expected) {
@@ -649,7 +690,7 @@ public final class SettlementWorkerService {
         List<FrontierWorkerEntity> workers = new ArrayList<>();
         Set<java.util.UUID> ids = new HashSet<>();
         for (BuildingRecord building : buildings(data, type)) {
-            AABB search = workerRouteBounds(data, building.workCenter(), 24);
+            AABB search = workerRouteBounds(data, building.workCenter(), LOCAL_RESOURCE_ROUTE_MARGIN);
             for (FrontierWorkerEntity villager : level.getEntitiesOfClass(FrontierWorkerEntity.class, search,
                     candidate -> candidate.getCustomName() != null
                             && name.equals(candidate.getCustomName().getString()))) {

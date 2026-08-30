@@ -214,7 +214,7 @@ public final class SettlementConstructionService {
             SettlementService.broadcast(server, data);
             return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 착공하지 않았습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
         }
-        builder.setInvulnerable(true);
+        builder.setInvulnerable(false);
         SettlementService.broadcast(server, data);
         String terrain = check.terrainWork()
                 ? " 지형 공사 포함: 건설 주민이 절토·성토와 노출 기초 옹벽을 먼저 시공합니다."
@@ -239,25 +239,28 @@ public final class SettlementConstructionService {
         FrontierWorkerEntity builder = ensureBuilder(level, data);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
-        builder.setInvulnerable(true);
+        builder.setInvulnerable(false);
 
         if (construction.grading()) return tickGrading(server, data, type, builder);
 
         List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
         BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
-        Container crate = ensureSupplyCrate(level, supply);
-        if (crate == null) return false;
-        ensureConstructionScaffolds(level, data, type, supply);
         construction = data.construction();
         int buildStep = construction.buildStep();
 
-        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        // Once every blueprint step is consumed, completion no longer requires a recreated/accessible
+        // site crate or repaired scaffold. Those are cleanup details, not construction authority.
+        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
+
+        Container crate = ensureSupplyCrate(level, supply);
+        if (crate == null) return false;
+        ensureConstructionScaffolds(level, data, type, supply);
         if (!stageRemainingMaterials(server, data, type, plan.size(), builder, crate, supply)) return false;
         if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
 
         construction = data.construction();
         buildStep = construction.buildStep();
-        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
         BuildingBlueprints.Placement placement = plan.get(buildStep);
         if (!moveBuilderToWorkPosition(level, construction, type, placement, builder, supply)) return false;
 
@@ -288,7 +291,7 @@ public final class SettlementConstructionService {
         }
         if (placedNow) builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
-        if (data.construction().buildStep() >= plan.size()) return finishIfValid(server, data, type, plan, builder, crate, supply);
+        if (data.construction().buildStep() >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
         return false;
     }
 
@@ -652,7 +655,7 @@ public final class SettlementConstructionService {
 
     private static boolean finishIfValid(MinecraftServer server, SettlementData data, BuildingType type,
                                          List<BuildingBlueprints.Placement> plan, FrontierWorkerEntity builder,
-                                         Container crate, BlockPos supply) {
+                                         BlockPos supply) {
         ServerLevel level = server.overworld();
         for (BuildingBlueprints.Placement placement : plan) {
             if (!level.hasChunkAt(placement.pos())) return false;
@@ -669,19 +672,24 @@ public final class SettlementConstructionService {
             return false;
         }
 
-        // A valid, physically finished structure owns completion. Alpha.86 incorrectly made the
-        // builder's return walk part of the commit condition, so one failed path could hold 99% forever.
-        consolidateCompletionCargo(builder, crate, supply);
-        boolean keepPhysicalLeftovers = !crateIsEmpty(crate) || !builder.getMainHandItem().isEmpty();
-        if (!removeConstructionScaffolds(level, data.construction(), type, supply)) return false;
-        if (!keepPhysicalLeftovers && level.getBlockState(supply).is(Blocks.BARREL)
-                && !level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return false;
+        // The valid physical blueprint is the commit boundary. Cargo consolidation, temporary scaffold
+        // cleanup, an empty site barrel, and the builder's return walk are explicitly best-effort after
+        // the settlement record commits, so none can leave a real finished building stuck at 100%.
+        ConstructionState finished = data.construction();
+        Container crate = level.getBlockEntity(supply) instanceof Container existing ? existing : null;
+        if (crate != null) consolidateCompletionCargo(builder, crate, supply);
+        boolean keepPhysicalLeftovers = (crate != null && !crateIsEmpty(crate)) || !builder.getMainHandItem().isEmpty();
 
         data.completeConstruction(type);
         builder.setInvulnerable(false);
+        builder.setNoAi(false);
         builder.setCustomName(Component.literal(BUILDER_NAME));
 
-        // Best-effort physical return only. It can no longer block completion; no teleport/force-load.
+        removeConstructionScaffoldsBestEffort(level, finished, type, supply);
+        if (!keepPhysicalLeftovers && crate != null && level.getBlockState(supply).is(Blocks.BARREL)) {
+            level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+        }
+
         returnBuilderHome(level, data, builder);
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
@@ -889,6 +897,22 @@ public final class SettlementConstructionService {
             }
         }
         return true;
+    }
+
+    private static void removeConstructionScaffoldsBestEffort(ServerLevel level, ConstructionState construction,
+                                                              BuildingType type, BlockPos supply) {
+        List<ScaffoldTower> towers = scaffoldTowers(construction.origin(), type, construction.buildingRotation(), supply);
+        for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
+            if (!construction.ownsScaffold(towerIndex)) continue;
+            List<ScaffoldPiece> pieces = towers.get(towerIndex).pieces();
+            for (int i = pieces.size() - 1; i >= 0; i--) {
+                ScaffoldPiece piece = pieces.get(i);
+                if (!level.hasChunkAt(piece.pos())) continue;
+                if (level.getBlockState(piece.pos()).is(piece.state().getBlock())) {
+                    level.setBlock(piece.pos(), Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE);
+                }
+            }
+        }
     }
 
     private static boolean isProtectedScaffoldBlock(ServerLevel level, ConstructionState construction,
