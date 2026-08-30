@@ -48,6 +48,16 @@ public final class BattleSnapshotCodec {
                         .append(current.cooldown(skill.id())).append('|').append(safe(skill.description())).append('\n');
             }
         }
+
+        BattleResultSummary result = session.resultSummary();
+        out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|')
+                .append(result.firstClear() ? 1 : 0).append('\n');
+        for (BattleResultSummary.PartyXp member : result.party()) {
+            out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
+                    .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
+                    .append(member.levelAfter()).append('|').append(member.xpAfter()).append('|')
+                    .append(member.xpToNextAfter()).append('\n');
+        }
         return out.toString();
     }
 
