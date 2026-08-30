@@ -2,21 +2,25 @@ package io.github.q93503128.turnbound.world;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * alpha.15 playable vertical slice: a peaceful south-gate village directly attached to one 64x64 field cell.
- * The authored X/Z footprint is fixed, while Y is sampled from the current world's surface so default Superflat
- * works without presets or commands.
+ * Authored starter slice bootstrap. alpha.16 builds terrain in bounded column batches and writes a hidden
+ * layout-version marker so later logins/server restarts reuse the completed world instead of flattening it again.
  */
 public final class StarterSliceWorld {
     public static final int ORIGIN_X = -32;
     public static final int VILLAGE_Z = 64;
     public static final int FIELD_Z = 128;
     public static final int SIZE = 64;
+    public static final int LAYOUT_VERSION = 16;
+
+    private static final int MARKER_X = ORIGIN_X + 2;
+    private static final int MARKER_Z = VILLAGE_Z + 2;
+    private static final int COLUMN_COUNT = SIZE * SIZE;
 
     public record BuiltSlice(
             int baseY,
@@ -29,15 +33,119 @@ public final class StarterSliceWorld {
             Vec3 m02End
     ) {}
 
+    public enum BuildStage {
+        VILLAGE_TERRAIN,
+        FIELD_TERRAIN,
+        VILLAGE_DETAIL,
+        FIELD_DETAIL,
+        FINALIZE,
+        DONE
+    }
+
+    /** Mutable server-thread build job; one job is advanced once per player tick by StarterSliceBootstrap. */
+    public static final class BuildJob {
+        private final int baseY;
+        private BuildStage stage = BuildStage.VILLAGE_TERRAIN;
+        private int columnCursor;
+
+        private BuildJob(int baseY) { this.baseY = baseY; }
+
+        public int baseY() { return baseY; }
+        public BuildStage stage() { return stage; }
+        public boolean done() { return stage == BuildStage.DONE; }
+
+        public String stageLabel() {
+            return switch (stage) {
+                case VILLAGE_TERRAIN -> "남문 마을 지형 준비";
+                case FIELD_TERRAIN -> "남문 초원 지형 준비";
+                case VILLAGE_DETAIL -> "마을 구조 배치";
+                case FIELD_DETAIL -> "첫 필드 구조 배치";
+                case FINALIZE -> "월드 정합성 확인";
+                case DONE -> "완료";
+            };
+        }
+
+        public int progressPercent() {
+            return switch (stage) {
+                case VILLAGE_TERRAIN -> (int)Math.floor(34.0 * columnCursor / COLUMN_COUNT);
+                case FIELD_TERRAIN -> 34 + (int)Math.floor(34.0 * columnCursor / COLUMN_COUNT);
+                case VILLAGE_DETAIL -> 72;
+                case FIELD_DETAIL -> 84;
+                case FINALIZE -> 96;
+                case DONE -> 100;
+            };
+        }
+
+        /** Returns true on the tick that the complete layout becomes ready for play. */
+        public boolean tick(ServerLevel level, int columnBudget) {
+            int budget = Math.max(1, columnBudget);
+            while (budget > 0 && (stage == BuildStage.VILLAGE_TERRAIN || stage == BuildStage.FIELD_TERRAIN)) {
+                int originZ = stage == BuildStage.VILLAGE_TERRAIN ? VILLAGE_Z : FIELD_Z;
+                levelColumn(level, originZ, baseY, columnCursor++);
+                budget--;
+                if (columnCursor >= COLUMN_COUNT) {
+                    columnCursor = 0;
+                    stage = stage == BuildStage.VILLAGE_TERRAIN ? BuildStage.FIELD_TERRAIN : BuildStage.VILLAGE_DETAIL;
+                }
+            }
+            if (stage == BuildStage.VILLAGE_DETAIL) {
+                buildVillage(level, baseY);
+                stage = BuildStage.FIELD_DETAIL;
+                return false;
+            }
+            if (stage == BuildStage.FIELD_DETAIL) {
+                buildField(level, baseY);
+                stage = BuildStage.FINALIZE;
+                return false;
+            }
+            if (stage == BuildStage.FINALIZE) {
+                writeLayoutMarker(level, baseY);
+                stage = BuildStage.DONE;
+                return true;
+            }
+            return stage == BuildStage.DONE;
+        }
+
+        public BuiltSlice result() {
+            if (!done()) throw new IllegalStateException("Starter slice build is not complete");
+            return built(baseY);
+        }
+    }
+
     private StarterSliceWorld() {}
 
+    public static BuildJob begin(ServerLevel level) {
+        return new BuildJob(sampleBaseY(level));
+    }
+
+    /** Returns the persisted authored layout when its hidden version marker matches this build. */
+    public static BuiltSlice findExisting(ServerLevel level) {
+        int baseY = sampleBaseY(level);
+        if (!hasLayoutMarker(level, baseY)) return null;
+        return built(baseY);
+    }
+
+    /** Synchronous developer fallback. Normal gameplay uses begin()+BuildJob.tick() through StarterSliceBootstrap. */
     public static BuiltSlice build(ServerLevel level) {
+        BuiltSlice existing = findExisting(level);
+        if (existing != null) return existing;
+        BuildJob job = begin(level);
+        while (!job.done()) job.tick(level, COLUMN_COUNT * 2);
+        return job.result();
+    }
+
+    public static boolean contains(BuiltSlice slice, Vec3 position) {
+        return position.x >= ORIGIN_X - 2 && position.x <= ORIGIN_X + SIZE + 2
+                && position.z >= VILLAGE_Z - 2 && position.z <= FIELD_Z + SIZE + 2
+                && position.y >= slice.baseY() - 8 && position.y <= slice.baseY() + 24;
+    }
+
+    private static int sampleBaseY(ServerLevel level) {
         int sampled = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, VILLAGE_Z + 28) - 1;
-        int baseY = Math.max(level.getMinY() + 4, sampled);
-        levelArea(level, VILLAGE_Z, baseY);
-        levelArea(level, FIELD_Z, baseY);
-        buildVillage(level, baseY);
-        buildField(level, baseY);
+        return Math.max(level.getMinY() + 4, sampled);
+    }
+
+    private static BuiltSlice built(int baseY) {
         return new BuiltSlice(
                 baseY,
                 pos(0.5, baseY + 1, VILLAGE_Z + 18.5),
@@ -49,22 +157,26 @@ public final class StarterSliceWorld {
                 pos(-5.0, baseY + 1, FIELD_Z + 48.0));
     }
 
-    public static boolean contains(BuiltSlice slice, Vec3 position) {
-        return position.x >= ORIGIN_X - 2 && position.x <= ORIGIN_X + SIZE + 2
-                && position.z >= VILLAGE_Z - 2 && position.z <= FIELD_Z + SIZE + 2
-                && position.y >= slice.baseY() - 8 && position.y <= slice.baseY() + 24;
+    private static void levelColumn(ServerLevel level, int originZ, int baseY, int cursor) {
+        int lx = cursor / SIZE;
+        int lz = cursor % SIZE;
+        int x = ORIGIN_X + lx;
+        int z = originZ + lz;
+        for (int y = baseY - 3; y < baseY; y++) set(level, x, y, z, Blocks.DIRT);
+        set(level, x, baseY, z, Blocks.GRASS_BLOCK);
+        for (int y = baseY + 1; y <= baseY + 12; y++) set(level, x, y, z, Blocks.AIR);
     }
 
-    private static void levelArea(ServerLevel level, int originZ, int baseY) {
-        for (int lx = 0; lx < SIZE; lx++) {
-            for (int lz = 0; lz < SIZE; lz++) {
-                int x = ORIGIN_X + lx;
-                int z = originZ + lz;
-                for (int y = baseY - 3; y < baseY; y++) set(level, x, y, z, Blocks.DIRT);
-                set(level, x, baseY, z, Blocks.GRASS_BLOCK);
-                for (int y = baseY + 1; y <= baseY + 12; y++) set(level, x, y, z, Blocks.AIR);
-            }
-        }
+    private static void writeLayoutMarker(ServerLevel level, int baseY) {
+        set(level, MARKER_X, baseY - 2, MARKER_Z, Blocks.LODESTONE);
+        set(level, MARKER_X + 1, baseY - 2, MARKER_Z, Blocks.AMETHYST_BLOCK);
+        set(level, MARKER_X + 2, baseY - 2, MARKER_Z, Blocks.CRYING_OBSIDIAN);
+    }
+
+    private static boolean hasLayoutMarker(ServerLevel level, int baseY) {
+        return level.getBlockState(new BlockPos(MARKER_X, baseY - 2, MARKER_Z)).is(Blocks.LODESTONE)
+                && level.getBlockState(new BlockPos(MARKER_X + 1, baseY - 2, MARKER_Z)).is(Blocks.AMETHYST_BLOCK)
+                && level.getBlockState(new BlockPos(MARKER_X + 2, baseY - 2, MARKER_Z)).is(Blocks.CRYING_OBSIDIAN);
     }
 
     private static void buildVillage(ServerLevel level, int y) {
