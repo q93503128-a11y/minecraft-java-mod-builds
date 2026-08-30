@@ -16,8 +16,6 @@ import java.util.UUID;
 
 /** Applies only rewards explicitly defined by the v0.4 Hard/Rift tables. */
 public final class EndgameProgressService {
-    private static final List<String> RESULT_PARTY = List.of("P01", "P03", "P04", "F03");
-
     private EndgameProgressService() {}
 
     public static BattleResultSummary previewVictory(UUID playerId, String encounterId) {
@@ -54,7 +52,7 @@ public final class EndgameProgressService {
 
         CampaignProgressStore.restore(playerId, new CampaignProgressStore.Snapshot(
                 profile.snapshot(), snapshot.characters(), snapshot.growth(), equipment.snapshot(), snapshot.quests(),
-                clears, snapshot.orphanedCharacterIds(), snapshot.orphanedEquipmentIds()));
+                snapshot.activeParty(), clears, snapshot.orphanedCharacterIds(), snapshot.orphanedEquipmentIds()));
         CampaignProgressStore.markDirty(playerId);
         return new BattleResultSummary(preview.xp(), preview.gold(), preview.crystal(), preview.starEssence(),
                 preview.equipmentRewards(), firstClear, preview.party());
@@ -81,8 +79,7 @@ public final class EndgameProgressService {
 
     private static List<BattleResultSummary.PartyXp> party(UUID playerId) {
         ArrayList<BattleResultSummary.PartyXp> out = new ArrayList<>();
-        for (String characterId : RESULT_PARTY) {
-            if (!CampaignProgressStore.ownedCharacters(playerId).contains(characterId)) continue;
+        for (String characterId : CampaignProgressStore.activeParty(playerId)) {
             CharacterProgression.State state = CampaignProgressStore.character(playerId, characterId);
             out.add(new BattleResultSummary.PartyXp(characterId, CanonicalData.definition(characterId).name(),
                     state.level(), state.xp(), state.level(), state.xp(), CharacterProgression.xpToNext(state.level())));
