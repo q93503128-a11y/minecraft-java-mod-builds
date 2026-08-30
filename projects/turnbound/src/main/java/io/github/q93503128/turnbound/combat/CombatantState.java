@@ -1,5 +1,7 @@
 package io.github.q93503128.turnbound.combat;
 
+import io.github.q93503128.turnbound.content.CharacterSkillRegistry;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -74,9 +76,11 @@ public final class CombatantState {
     public void spendTurnGauge() { gauge = Math.max(0L, gauge - BattleEngine.TURN_THRESHOLD); }
 
     public void setCooldown(String skillId, int value) {
-        if (value <= 0) cooldowns.remove(skillId); else cooldowns.put(skillId, Math.min(9, value));
+        String runtimeId = CharacterSkillRegistry.runtimeSkillId(skillId);
+        if (value <= 0) cooldowns.remove(runtimeId); else cooldowns.put(runtimeId, Math.min(9, value));
     }
-    public int cooldown(String skillId) { return cooldowns.getOrDefault(skillId, 0); }
+    public int cooldown(String skillId) { return cooldowns.getOrDefault(CharacterSkillRegistry.runtimeSkillId(skillId), 0); }
+    /** Internal runtime view; network boundaries canonicalize these keys explicitly. */
     public Map<String, Integer> cooldownsView() { return Map.copyOf(cooldowns); }
 
     public int counter(String id) { return counters.getOrDefault(id, 0); }
