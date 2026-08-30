@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 public final class TitanPlayerData extends SavedData {
-    public static final int CURRENT_SCHEMA_VERSION = 3;
+    public static final int CURRENT_SCHEMA_VERSION = 4;
     public static final int MAX_ADAPTATION_LEVEL = 50;
 
     private record PlayerEntry(String uuid, double sanity, double heat, int researchData,
@@ -184,10 +184,17 @@ public final class TitanPlayerData extends SavedData {
         return 100 + Math.max(0, currentLevel - 1) * 40;
     }
 
-    public boolean install(ServerPlayer player, AugmentationCatalog.Slot slot, String augmentId) {
+    public boolean install(ServerPlayer player, AugmentationCatalog.Slot anchor, String augmentId) {
         State state = state(player);
-        if (!state.isWritableByCurrentVersion() || state.installed.containsKey(slot)) return false;
-        state.installed.put(slot, augmentId);
+        if (!state.isWritableByCurrentVersion()) return false;
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
+        if (definition == null) return false;
+        AugmentationCatalog.Placement placement = definition.placementFor(anchor);
+        if (placement == null) return false;
+        for (AugmentationCatalog.Slot slot : placement.slots()) {
+            if (state.installed.containsKey(slot)) return false;
+        }
+        for (AugmentationCatalog.Slot slot : placement.slots()) state.installed.put(slot, augmentId);
         setDirty();
         return true;
     }
@@ -195,8 +202,19 @@ public final class TitanPlayerData extends SavedData {
     public String remove(ServerPlayer player, AugmentationCatalog.Slot slot) {
         State state = state(player);
         if (!state.isWritableByCurrentVersion()) return null;
-        String removed = state.installed.remove(slot);
-        if (removed != null) setDirty();
+        String removed = state.installed.get(slot);
+        if (removed == null) return null;
+
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId(removed);
+        AugmentationCatalog.Placement placement = definition == null ? null : definition.placementFor(slot);
+        if (placement == null) {
+            state.installed.remove(slot);
+        } else {
+            for (AugmentationCatalog.Slot occupied : placement.slots()) {
+                if (removed.equals(state.installed.get(occupied))) state.installed.remove(occupied);
+            }
+        }
+        setDirty();
         return removed;
     }
 
@@ -236,14 +254,35 @@ public final class TitanPlayerData extends SavedData {
             this.adaptationXp = Math.max(0, adaptationXp);
             this.adaptationPoints = Math.max(0, adaptationPoints);
             this.schemaVersion = schemaVersion;
-            for (String entry : installedAugments) {
-                int split = entry.indexOf('=');
-                if (split <= 0 || split >= entry.length() - 1) continue;
-                try {
-                    AugmentationCatalog.Slot slot = AugmentationCatalog.Slot.valueOf(entry.substring(0, split));
-                    String augment = entry.substring(split + 1);
-                    if (AugmentationCatalog.byId(augment) != null) installed.put(slot, augment);
-                } catch (IllegalArgumentException ignored) {}
+            for (String entry : installedAugments) loadInstalled(entry);
+        }
+
+        private void loadInstalled(String entry) {
+            int split = entry.indexOf('=');
+            if (split <= 0 || split >= entry.length() - 1) return;
+            String slotName = entry.substring(0, split);
+            String augment = entry.substring(split + 1);
+            if (AugmentationCatalog.byId(augment) == null) return;
+
+            try {
+                installed.putIfAbsent(AugmentationCatalog.Slot.valueOf(slotName), augment);
+                return;
+            } catch (IllegalArgumentException ignored) {}
+
+            switch (slotName) {
+                case "EYE" -> installed.putIfAbsent(AugmentationCatalog.Slot.EYE_1, augment);
+                case "BRAIN" -> installed.putIfAbsent(AugmentationCatalog.Slot.BRAIN_1, augment);
+                case "NERVES" -> installed.putIfAbsent(AugmentationCatalog.Slot.NERVES_1, augment);
+                case "SPINE" -> installed.putIfAbsent(AugmentationCatalog.Slot.SPINE_MAIN, augment);
+                case "SKELETON" -> installed.putIfAbsent(AugmentationCatalog.Slot.SKELETON_1, augment);
+                case "SKIN" -> installed.putIfAbsent(AugmentationCatalog.Slot.SKIN_1, augment);
+                case "LEFT_ARM" -> installed.putIfAbsent(AugmentationCatalog.Slot.LEFT_ARM_MAIN, augment);
+                case "RIGHT_ARM" -> installed.putIfAbsent(AugmentationCatalog.Slot.RIGHT_ARM_MAIN, augment);
+                case "LEGS" -> {
+                    installed.putIfAbsent(AugmentationCatalog.Slot.LEFT_LEG_MAIN, augment);
+                    installed.putIfAbsent(AugmentationCatalog.Slot.RIGHT_LEG_MAIN, augment);
+                }
+                default -> { }
             }
         }
 
@@ -251,6 +290,7 @@ public final class TitanPlayerData extends SavedData {
             if (schemaVersion < 1) schemaVersion = 1;
             if (schemaVersion == 1) schemaVersion = 2;
             if (schemaVersion == 2) schemaVersion = 3;
+            if (schemaVersion == 3) schemaVersion = 4;
         }
 
         public boolean isWritableByCurrentVersion() {

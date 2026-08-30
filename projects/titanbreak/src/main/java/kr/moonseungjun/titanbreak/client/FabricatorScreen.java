@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
@@ -61,7 +62,7 @@ public final class FabricatorScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         int cx = width / 2;
         int top = height / 2 - 108;
-        graphics.fill(cx - 176, top, cx + 246, top + 188, 0xE512181D);
+        graphics.fill(cx - 176, top, cx + 246, top + 196, 0xE512181D);
         graphics.fill(cx - 174, top + 2, cx + 244, top + 32, 0xFF1D2B33);
         graphics.text(font, title, cx - 160, top + 12, 0xFFE7EEF2);
 
@@ -69,6 +70,7 @@ public final class FabricatorScreen extends Screen {
         graphics.text(font, Component.translatable(definition.nameKey()), cx - 160, top + 48, 0xFFF3D7A2);
         graphics.text(font, Component.translatable("screen.titanbreak.tier", definition.tier()), cx - 160, top + 64, 0xFF9FB3BF);
         graphics.text(font, Component.translatable(definition.effectKey()), cx - 160, top + 84, 0xFFD4E0E5);
+        graphics.text(font, compatibleText(definition), cx - 160, top + 108, 0xFF8FC3D4);
         graphics.text(font, Component.translatable("screen.titanbreak.requirements"), cx + 54, top + 48, 0xFFE7EEF2);
 
         int y = top + 68;
@@ -80,9 +82,22 @@ public final class FabricatorScreen extends Screen {
                     cx + 54, y, color);
             y += 16;
         }
-        graphics.text(font, Component.translatable("screen.titanbreak.fabricator_hint"), cx - 160, top + 132, 0xFF94A7B0);
-        graphics.text(font, Component.translatable("screen.titanbreak.surgery_cost_short"), cx + 54, top + 132, 0xFF94A7B0);
+        graphics.text(font, Component.translatable("screen.titanbreak.fabricator_hint"), cx - 160, top + 140, 0xFF94A7B0);
+        graphics.text(font, Component.translatable("screen.titanbreak.surgery_cost_short"), cx + 54, top + 140, 0xFF94A7B0);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private Component compatibleText(AugmentationCatalog.Definition definition) {
+        MutableComponent text = Component.translatable("screen.titanbreak.compatible_slots").append(" · ");
+        for (int i = 0; i < definition.placements().size(); i++) {
+            if (i > 0) text.append(" / ");
+            AugmentationCatalog.Placement placement = definition.placements().get(i);
+            for (int j = 0; j < placement.slots().size(); j++) {
+                if (j > 0) text.append(" + ");
+                text.append(Component.translatable(placement.slots().get(j).translationKey()));
+            }
+        }
+        return text;
     }
 
     private int owned(String itemPath) {

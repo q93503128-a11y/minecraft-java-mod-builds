@@ -61,10 +61,8 @@ public final class AugmentationEffectService {
         set(player, SKELETON_ATTACK, state.hasInstalled("bioalloy_skeleton"));
         set(player, SKIN_ARMOR, state.hasInstalled("subdermal_armor"));
 
-        boolean blade = state.installed(AugmentationCatalog.Slot.LEFT_ARM) != null
-                && state.installed(AugmentationCatalog.Slot.LEFT_ARM).equals("blade_arm")
-                || state.installed(AugmentationCatalog.Slot.RIGHT_ARM) != null
-                && state.installed(AugmentationCatalog.Slot.RIGHT_ARM).equals("blade_arm");
+        boolean blade = "blade_arm".equals(state.installed(AugmentationCatalog.Slot.LEFT_ARM_MAIN))
+                || "blade_arm".equals(state.installed(AugmentationCatalog.Slot.RIGHT_ARM_MAIN));
         set(player, BLADE_DAMAGE, blade);
         set(player, LEGS_MOVE, state.hasInstalled("reinforced_legs"));
         set(player, REFLEX_NODE_MOVE, state.hasInstalled("reflex_accelerator"));

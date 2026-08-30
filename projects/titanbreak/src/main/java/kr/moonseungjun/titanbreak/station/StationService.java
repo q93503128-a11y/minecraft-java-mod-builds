@@ -53,10 +53,10 @@ public final class StationService {
     }
 
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
+        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
         AugmentationCatalog.Slot slot = event.getHand() == InteractionHand.MAIN_HAND
-                ? AugmentationCatalog.Slot.RIGHT_ARM : AugmentationCatalog.Slot.LEFT_ARM;
+                ? AugmentationCatalog.Slot.RIGHT_ARM_MAIN : AugmentationCatalog.Slot.LEFT_ARM_MAIN;
         String installed = state.installed(slot);
         if ("blade_arm".equals(installed)) {
             event.setCanceled(true);
@@ -154,31 +154,38 @@ public final class StationService {
     private static void beginInstall(ServerPlayer player, BlockPos pos, String argument) {
         if (SURGERIES.containsKey(player.getUUID())) return;
         String[] args = argument.split(":", 2);
+        if (args.length < 2) return;
+
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(args[0]);
         if (definition == null) return;
-        AugmentationCatalog.Slot slot = definition.slot();
-        if (definition.armModule()) {
-            if (args.length < 2) return;
-            try {
-                slot = AugmentationCatalog.Slot.valueOf(args[1]);
-            } catch (IllegalArgumentException ignored) {
-                return;
-            }
-            if (slot != AugmentationCatalog.Slot.LEFT_ARM && slot != AugmentationCatalog.Slot.RIGHT_ARM) return;
+        AugmentationCatalog.Slot anchor;
+        try {
+            anchor = AugmentationCatalog.Slot.valueOf(args[1]);
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+
+        AugmentationCatalog.Placement placement = definition.placementFor(anchor);
+        if (placement == null) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.slot_incompatible"));
+            return;
         }
 
         TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
-        if (state.installed(slot) != null) {
-            player.sendSystemMessage(Component.translatable("message.titanbreak.slot_occupied"));
-            return;
+        for (AugmentationCatalog.Slot slot : placement.slots()) {
+            if (state.installed(slot) != null) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.slot_occupied"));
+                return;
+            }
         }
+
         Item module = ModItems.augmentationByPath(definition.itemId());
         if (module == null || count(player, module) < 1) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.module_missing"));
             return;
         }
         long finish = ((ServerLevel) player.level()).getGameTime() + INSTALL_TICKS;
-        SURGERIES.put(player.getUUID(), new SurgeryProcess(pos, true, definition.id(), slot, finish));
+        SURGERIES.put(player.getUUID(), new SurgeryProcess(pos, true, definition.id(), anchor, finish));
         player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_install_started"));
         TitanbreakNetwork.sync(player);
     }
