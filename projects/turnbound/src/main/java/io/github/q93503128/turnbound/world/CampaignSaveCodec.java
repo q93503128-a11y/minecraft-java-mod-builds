@@ -95,6 +95,9 @@ public final class CampaignSaveCodec {
             history.add(item);
         }
         out.add("summonHistory", history);
+        JsonArray presets = new JsonArray();
+        for (List<String> preset : profile.partyPresets()) presets.add(strings(preset));
+        out.add("partyPresets", presets);
         return out;
     }
 
@@ -117,10 +120,23 @@ public final class CampaignSaveCodec {
                     Math.max(0, optionalInt(row, "starEssenceGranted", 0)), pityAfter));
         }
         if (history.size() > GachaCatalog.HISTORY_LIMIT) history = history.subList(history.size() - GachaCatalog.HISTORY_LIMIT, history.size());
+        List<List<String>> presets = new ArrayList<>();
+        for (JsonElement element : optionalArray(raw, "partyPresets")) {
+            if (!element.isJsonArray()) continue;
+            LinkedHashSet<String> preset = new LinkedHashSet<>();
+            for (JsonElement idElement : element.getAsJsonArray()) {
+                String id = idElement.getAsString();
+                if (known.contains(id)) { if (preset.size() < 4) preset.add(id); }
+                else if (!id.isBlank()) orphaned.add(id);
+            }
+            presets.add(List.copyOf(preset));
+            if (presets.size() >= PlayerProfile.PARTY_PRESET_COUNT) break;
+        }
+        while (presets.size() < PlayerProfile.PARTY_PRESET_COUNT) presets.add(List.of());
         return new ProfileDecode(new PlayerProfile.Snapshot(
                 optionalLong(raw, "gold", 5_000), optionalLong(raw, "summonCrystal", 0), optionalLong(raw, "starEssence", 0),
                 optionalLong(raw, "awakeningCore", 0), known, optionalInt(raw, "fiveStarPity", 0),
-                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history), orphaned);
+                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history, presets), orphaned);
     }
 
     private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned) {
