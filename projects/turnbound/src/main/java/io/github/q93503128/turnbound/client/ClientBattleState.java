@@ -10,14 +10,11 @@ public final class ClientBattleState {
             int hp, int maxHp, int barrier, long gauge, boolean downed,
             double x, double y, double z, List<String> statuses
     ) {
-        public Unit {
-            statuses = List.copyOf(statuses == null ? List.of() : statuses);
-        }
+        public Unit { statuses = List.copyOf(statuses == null ? List.of() : statuses); }
         public Unit(String id, String defId, String side, String name,
                     int hp, int maxHp, int barrier, long gauge, boolean downed) {
             this(id, defId, side, name, hp, maxHp, barrier, gauge, downed, 0.0, 0.0, 0.0, List.of());
         }
-        /** Compatibility constructor retained for projection tests and alpha.9 callers. */
         public Unit(String id, String defId, String side, String name,
                     int hp, int maxHp, int barrier, long gauge, boolean downed,
                     double x, double y, double z) {
@@ -42,11 +39,23 @@ public final class ClientBattleState {
             int xpToNextAfter
     ) {}
 
-    public record Result(int xp, int gold, boolean firstClear, List<PartyXp> party) {
+    public record Result(
+            int xp,
+            int gold,
+            int crystal,
+            int starEssence,
+            List<String> equipmentRewards,
+            boolean firstClear,
+            List<PartyXp> party
+    ) {
+        public Result(int xp, int gold, boolean firstClear, List<PartyXp> party) {
+            this(xp, gold, 0, 0, List.of(), firstClear, party);
+        }
         public Result {
+            equipmentRewards = List.copyOf(equipmentRewards == null ? List.of() : equipmentRewards);
             party = List.copyOf(party == null ? List.of() : party);
         }
-        public static Result none() { return new Result(0, 0, false, List.of()); }
+        public static Result none() { return new Result(0, 0, 0, 0, List.of(), false, List.of()); }
     }
 
     public record Snapshot(
@@ -56,9 +65,7 @@ public final class ClientBattleState {
             double arenaX, double arenaY, double arenaZ, float arenaYaw,
             Result result
     ) {
-        public Snapshot {
-            result = result == null ? Result.none() : result;
-        }
+        public Snapshot { result = result == null ? Result.none() : result; }
         public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
                         boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
                         List<Unit> units, List<String> timeline, List<Skill> skills, String message,
@@ -92,8 +99,9 @@ public final class ClientBattleState {
         List<Unit> units = new ArrayList<>();
         List<String> timeline = new ArrayList<>();
         List<Skill> skills = new ArrayList<>();
-        int resultXp = 0, resultGold = 0;
+        int resultXp = 0, resultGold = 0, resultCrystal = 0, resultEssence = 0;
         boolean firstClear = false;
+        List<String> equipmentRewards = new ArrayList<>();
         List<PartyXp> partyXp = new ArrayList<>();
 
         for (String line : raw.split("\n")) {
@@ -132,6 +140,11 @@ public final class ClientBattleState {
                             resultGold = Integer.parseInt(p[2]);
                             firstClear = "1".equals(p[3]);
                         }
+                        if (p.length >= 6) {
+                            resultCrystal = Integer.parseInt(p[4]);
+                            resultEssence = Integer.parseInt(p[5]);
+                        }
+                        if (p.length >= 7 && !p[6].isBlank()) equipmentRewards.addAll(Arrays.asList(p[6].split(",")));
                     }
                     case "P" -> {
                         if (p.length >= 8) partyXp.add(new PartyXp(p[1], p[2], Integer.parseInt(p[3]), Integer.parseInt(p[4]),
@@ -142,7 +155,8 @@ public final class ClientBattleState {
             } catch (RuntimeException ignored) { }
         }
 
-        Result result = new Result(resultXp, resultGold, firstClear, partyXp);
+        Result result = new Result(resultXp, resultGold, resultCrystal, resultEssence,
+                List.copyOf(equipmentRewards), firstClear, partyXp);
         snapshot = new Snapshot(active, auto, speed, outcome, actor, finished, autoAllowed, speedAllowed, fleeAllowed,
                 List.copyOf(units), List.copyOf(timeline), List.copyOf(skills), message,
                 arenaX, arenaY, arenaZ, arenaYaw, result);
