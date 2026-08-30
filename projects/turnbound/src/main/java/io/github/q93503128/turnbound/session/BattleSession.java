@@ -8,10 +8,12 @@ import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.EffectType;
+import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.TargetRule;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
+import io.github.q93503128.turnbound.world.EndgameProgressService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -57,9 +59,14 @@ public final class BattleSession {
         this.autoAllowed = autoAllowed;
         this.speedAllowed = speedAllowed;
         this.fleeAllowed = fleeAllowed;
-        BattleState initial = CampaignEncounterCatalog.contains(this.encounterId)
-                ? CampaignEncounterCatalog.createBattle(ownerId, this.encounterId)
-                : P0Scenario.create();
+        BattleState initial;
+        if (CampaignEncounterCatalog.contains(this.encounterId)) {
+            initial = CampaignEncounterCatalog.createBattle(ownerId, this.encounterId);
+        } else if (EndgameEncounterCatalog.contains(this.encounterId)) {
+            initial = EndgameEncounterCatalog.createBattle(ownerId, this.encounterId);
+        } else {
+            initial = P0Scenario.create();
+        }
         engine = new BattleEngine(initial);
         returnPosition = player.position();
         returnYaw = player.getYRot();
@@ -69,7 +76,7 @@ public final class BattleSession {
         presentationCenter = arena.center();
         battleYaw = arena.facingYaw();
         player.setInvisible(true);
-        presentation.spawn((ServerLevel) player.level(), presentationCenter, battleYaw, engine.state().combatants());
+        presentation.spawn((ServerLevel)player.level(), presentationCenter, battleYaw, engine.state().combatants());
         Vec3 actualCenter = presentation.center();
         battleAnchor = actualCenter.lengthSqr() < 0.001 ? presentationCenter : actualCenter;
         player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
@@ -92,14 +99,11 @@ public final class BattleSession {
     Vec3 combatantPosition(String id) { return presentation.home(id); }
 
     void tick(ServerPlayer player) {
-        ServerLevel level = (ServerLevel) player.level();
+        ServerLevel level = (ServerLevel)player.level();
         presentation.tick(level);
         syncPresentation(level);
         lock(player);
-        if (engine.state().outcome() != BattleOutcome.RUNNING) {
-            markFinished();
-            return;
-        }
+        if (engine.state().outcome() != BattleOutcome.RUNNING) { markFinished(); return; }
         if (delayTicks > 0) { delayTicks--; return; }
         CombatantState actor = engine.state().currentActorId() == null
                 ? engine.nextReady() : engine.state().combatant(engine.state().currentActorId());
@@ -125,7 +129,7 @@ public final class BattleSession {
         if (!actorId.equals(engine.state().currentActorId())) return;
         CombatantState actor = engine.state().combatant(actorId);
         if (actor.side() != CombatantSide.ALLY) return;
-        ServerLevel level = (ServerLevel) player.level();
+        ServerLevel level = (ServerLevel)player.level();
         try {
             SkillDefinition skill = actor.definition().skill(skillId);
             presentation.clearFocus(level);
@@ -146,7 +150,7 @@ public final class BattleSession {
     }
 
     void focusTarget(ServerPlayer player, String targetId) {
-        ServerLevel level = (ServerLevel) player.level();
+        ServerLevel level = (ServerLevel)player.level();
         if (targetId == null || targetId.isBlank()) { presentation.clearFocus(level); return; }
         try {
             engine.state().combatant(targetId);
@@ -158,7 +162,7 @@ public final class BattleSession {
 
     void toggleAuto(ServerPlayer player) {
         if (finished || !autoAllowed) return;
-        presentation.clearFocus((ServerLevel) player.level());
+        presentation.clearFocus((ServerLevel)player.level());
         auto = !auto;
         BattleNetwork.sync(player, this);
     }
@@ -170,7 +174,7 @@ public final class BattleSession {
     }
 
     void cleanup(ServerPlayer player) {
-        presentation.cleanup((ServerLevel) player.level());
+        presentation.cleanup((ServerLevel)player.level());
         player.setInvisible(playerWasInvisible);
         player.setPos(returnPosition.x, returnPosition.y, returnPosition.z);
         player.setYRot(returnYaw);
@@ -189,7 +193,8 @@ public final class BattleSession {
         if (finished || engine.state().outcome() == BattleOutcome.RUNNING) return;
         finished = true;
         if (engine.state().outcome() == BattleOutcome.ALLY_VICTORY && !encounterId.isBlank()) {
-            resultSummary = CampaignProgressStore.previewVictory(ownerId, encounterId);
+            if (EndgameEncounterCatalog.contains(encounterId)) resultSummary = EndgameProgressService.previewVictory(ownerId, encounterId);
+            else resultSummary = CampaignProgressStore.previewVictory(ownerId, encounterId);
         }
     }
 
@@ -229,7 +234,7 @@ public final class BattleSession {
             }
             case ALLY_SINGLE -> {
                 CombatantState target = engine.state().living(actor.side()).stream()
-                        .min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElse(actor);
+                        .min(Comparator.comparingDouble(unit -> unit.hp() / (double)unit.maxHp())).orElse(actor);
                 engine.useSkill(actor.instanceId(), basic.id(), target.instanceId());
             }
             case DEAD_ALLY_SINGLE -> {
