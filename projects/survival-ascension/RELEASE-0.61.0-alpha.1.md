@@ -49,6 +49,18 @@ The reward is not a new universal raw-stat tier. It expands the physical action 
 - Final mastery expands wall/floor work to 15×15.
 - Existing loaded-chunk, interaction, material-consumption, job-budget and Shift precision rules remain authoritative.
 
+## Solo balance and logistics closure
+The 0.61 source was re-audited for actual single-player pacing after the final content path was complete. The goal is to keep physical-world logistics and progression meaningful without turning repeated play into bulk-resource chores.
+
+- Large one-time infrastructure requirements and repeated production/frontline costs were reduced to single-player scale; rare ingredients remain concentrated in genuinely late/final upgrades instead of routine rerolls.
+- Ascension equipment options were made materially stronger and their actual effects are shown directly in player-facing equipment UI/messages.
+- Ambiguous material labels were replaced with exact item/category names such as `철 주괴`, `자수정 조각`, `메아리 조각`, `석재 벽돌`, `아무 종류의 통나무`, `연료(석탄 또는 숯)`, and `식량(밀/당근/감자/비트)`.
+- The frontline freight manifest now matches one expedition + one normal defense + one bastion defense at the retuned costs: food 60, iron ingot 16, fuel 3, logs 12, stone bricks 32.
+- Registered logistics storage is a same-dimension network while loaded: player distance is no longer an artificial material-access tax, but unloaded chunks are still skipped and never force-loaded.
+- Player-owned registered Barrel storage can be packed and moved without spilling its 27-slot contents. A moved ordinary depot restores its registration without consuming another field-supply charge; linked storage can auto-relink when replaced within six blocks of the owner's depot.
+- Outpost-promoted depot anchors remain non-portable, linked barrels must be moved/unlinked before their anchor, another player's packed Barrel cannot auto-register, and packed logistics Barrels cannot be nested inside another packed logistics Barrel.
+- Portable Barrel block-entity contents use Minecraft 26.2 `TypedEntityData`/`BLOCK_ENTITY_DATA`; the implementation was compile-validated with Java 25 rather than relying on pre-26.2 `CustomData` block-entity assumptions.
+
 ## Rewards and isolation
 The first world completion grants the owner one named Nether Star `승천의 증표`, one awakened Mythic III Ascension equipment roll, and 500 XP. The final encounter does not call `ApexHuntData.recordVictory`, does not mutate Apex first-clear bits, and does not duplicate Apex or Ascension Trial rewards.
 
