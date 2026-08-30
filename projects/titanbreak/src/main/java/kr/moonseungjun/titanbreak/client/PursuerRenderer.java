@@ -3,6 +3,7 @@ package kr.moonseungjun.titanbreak.client;
 import com.geckolib.constant.dataticket.DataTicket;
 import com.geckolib.renderer.GeoEntityRenderer;
 import com.geckolib.renderer.base.BoneSnapshots;
+import com.geckolib.renderer.base.GeoRenderState;
 import com.geckolib.renderer.base.RenderPassInfo;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
@@ -10,25 +11,30 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.phys.AABB;
 
-public final class PursuerRenderer extends GeoEntityRenderer<PursuerEntity, LivingEntityRenderState> {
-    private static final DataTicket<Integer> BROKEN_PARTS =
-            DataTicket.create("titanbreak:pursuer_broken_parts", Integer.class);
+import java.util.HashMap;
+import java.util.Map;
 
+public final class PursuerRenderer extends GeoEntityRenderer<PursuerEntity, PursuerRenderer.PursuerRenderState> {
     public PursuerRenderer(EntityRendererProvider.Context context) {
         super(context, ModEntities.THE_PURSUER.get());
         withScale(18.0F);
     }
 
     @Override
-    public void addRenderData(PursuerEntity animatable, Void relatedObject,
-                              LivingEntityRenderState renderState, float partialTick) {
-        renderState.addGeckolibData(BROKEN_PARTS, animatable.brokenPartsMask());
+    public PursuerRenderState createRenderState(PursuerEntity animatable, Void relatedObject) {
+        return new PursuerRenderState();
     }
 
     @Override
-    public void adjustModelBonesForRender(RenderPassInfo<LivingEntityRenderState> renderPassInfo,
+    public void addRenderData(PursuerEntity animatable, Void relatedObject,
+                              PursuerRenderState renderState, float partialTick) {
+        renderState.brokenParts = animatable.brokenPartsMask();
+    }
+
+    @Override
+    public void adjustModelBonesForRender(RenderPassInfo<PursuerRenderState> renderPassInfo,
                                           BoneSnapshots snapshots) {
-        int broken = renderPassInfo.getOrDefaultGeckolibData(BROKEN_PARTS, 0);
+        int broken = renderPassInfo.renderState().brokenParts;
         hideIfBroken(snapshots, broken, PursuerEntity.PART_LEFT_EYE, "left_eye");
         hideIfBroken(snapshots, broken, PursuerEntity.PART_RIGHT_EYE, "right_eye");
         hideIfBroken(snapshots, broken, PursuerEntity.PART_LEFT_FORE_UPPER, "left_fore_upper");
@@ -50,5 +56,15 @@ public final class PursuerRenderer extends GeoEntityRenderer<PursuerEntity, Livi
     @Override
     protected AABB getBoundingBoxForCulling(PursuerEntity entity) {
         return entity.getBoundingBoxForCulling();
+    }
+
+    public static final class PursuerRenderState extends LivingEntityRenderState implements GeoRenderState {
+        private final Map<DataTicket<?>, Object> geckoData = new HashMap<>();
+        private int brokenParts;
+
+        @Override
+        public Map<DataTicket<?>, Object> getDataMap() {
+            return geckoData;
+        }
     }
 }
