@@ -1,0 +1,50 @@
+name: Generate Full Pack Korean Overlays V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/generate-fullpack-korean-overlays-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-fullpack-korean-overlays-v2
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install translation runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece sacremoses
+          python3 -m pip install --disable-pip-version-check --no-input torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Generate and validate Korean overlays
+        shell: bash
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          set -euo pipefail
+          python3 projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py
+
+      - name: Commit overlays
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/src/main/resources/assets projects/survival-ascension/src/main/resources/assets
+          git diff --cached --stat
+          git commit -m 'Complete Korean localization overlays for full pack'
+          git push origin HEAD:main
