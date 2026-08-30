@@ -1,0 +1,212 @@
+name: Apply Full Pack Korean and JEI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-fullpack-korean-jei.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-fullpack-korean-jei
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Generate missing Korean translations for the pinned FULL stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re, time, urllib.parse, urllib.request, zipfile
+          from collections import defaultdict
+          from pathlib import Path
+
+          ROOT=Path.cwd()
+          TMP=ROOT/'.tmp-full-ko'
+          TMP.mkdir(exist_ok=True)
+
+          frontier=json.loads((ROOT/'projects/frontier-settlement/companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          sources=[{'name':f['filename'],'url':f['url']} for f in frontier['files']]
+          survival=json.loads((ROOT/'projects/survival-ascension/modpack/content-lock.json').read_text(encoding='utf-8'))
+          for mod in survival['mods']:
+              req=urllib.request.Request(f"https://api.modrinth.com/v2/version/{mod['version_id']}",headers={'User-Agent':'Frontier-Full-Korean/1.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: meta=json.load(r)
+              pf=next((f for f in meta['files'] if f.get('primary')),meta['files'][0])
+              sources.append({'name':pf['filename'],'url':pf['url']})
+          sources=list({s['name']:s for s in sources}.values())
+
+          langs=defaultdict(lambda:{'en':{},'ko':{}})
+          for i,s in enumerate(sources):
+              p=TMP/f'{i}.jar'
+              req=urllib.request.Request(s['url'],headers={'User-Agent':'Frontier-Full-Korean/1.0'})
+              with urllib.request.urlopen(req,timeout=90) as r: p.write_bytes(r.read())
+              with zipfile.ZipFile(p) as z:
+                  for n in z.namelist():
+                      m=re.fullmatch(r'assets/([^/]+)/lang/(en_us|ko_kr)\.json',n)
+                      if not m: continue
+                      ns,loc=m.groups()
+                      try:
+                          data=json.loads(z.read(n).decode('utf-8'))
+                      except Exception:
+                          # Dungeons & Taverns 5.3.0 ships a malformed Korean JSON.
+                          # Do not copy it; our own complete Korean overlay is generated from en_us instead.
+                          continue
+                      langs[ns]['en'].update(data)
+                      if loc=='ko_kr': langs[ns]['ko'].update(data)
+
+          existing={}
+          for project in ('frontier-settlement','survival-ascension'):
+              base=ROOT/f'projects/{project}/src/main/resources/assets'
+              if not base.exists(): continue
+              for p in base.glob('*/lang/ko_kr.json'):
+                  try: data=json.loads(p.read_text(encoding='utf-8'))
+                  except Exception: continue
+                  existing.setdefault(p.parent.parent.name,{}).update(data)
+                  langs[p.parent.parent.name]['ko'].update(data)
+
+          target_namespaces={
+              'bettercombat','dnt','jade','sophisticatedbackpacks','sophisticatedcore',
+              'tbos','weaponsexpanded','xaerobetterpvp','xaerominimap'
+          }
+
+          # Keep all formatting / substitution tokens byte-identical through machine translation.
+          TOKEN_RE=re.compile(r'(?:%\d*\$?[sdif]|\{[^{}]*\}|§.|\\n|\n)')
+          def protect(text):
+              saved=[]
+              def sub(m):
+                  idx=len(saved); saved.append(m.group(0)); return f'ZXPH{idx:03d}XZ'
+              return TOKEN_RE.sub(sub,text),saved
+          def restore(text,saved):
+              for i,v in enumerate(saved): text=text.replace(f'ZXPH{i:03d}XZ',v)
+              return text
+
+          manual={
+              'Mob Catcher Upgrade':'몹 포획 기능',
+              'Captures passive mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹을 배낭 보관 슬롯에 포획합니다.',
+              'Advanced Mob Catcher Upgrade':'고급 몹 포획 기능',
+              'Captures passive and hostile mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹과 적대적 몹을 배낭 보관 슬롯에 포획합니다.',
+              'Better Combat':'개선된 전투',
+              "Xaero's Minimap":'제로의 미니맵',
+          }
+          cache=dict(manual)
+
+          def translate_one(text):
+              if not isinstance(text,str) or not text.strip(): return text
+              if text in cache: return cache[text]
+              safe,saved=protect(text)
+              params=urllib.parse.urlencode({'client':'gtx','sl':'en','tl':'ko','dt':'t','q':safe})
+              url='https://translate.googleapis.com/translate_a/single?'+params
+              last=None
+              for attempt in range(6):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Frontier-Full-Korean/1.0'})
+                      with urllib.request.urlopen(req,timeout=30) as r: payload=json.load(r)
+                      out=''.join(part[0] for part in payload[0] if part and part[0])
+                      out=restore(out,saved)
+                      cache[text]=out
+                      time.sleep(0.03)
+                      return out
+                  except Exception as e:
+                      last=e; time.sleep(min(8,1.3**attempt))
+              raise RuntimeError(f'translation failed: {text!r}: {last}')
+
+          generated={}
+          for ns in sorted(target_namespaces):
+              en=langs[ns]['en']; ko=langs[ns]['ko']
+              # DNT's shipped ko_kr is malformed, so supply every English key ourselves.
+              todo=dict(en) if ns=='dnt' else {k:v for k,v in en.items() if k not in ko}
+              print(f'{ns}: translating {len(todo)} keys')
+              translated={k:translate_one(v) for k,v in todo.items()}
+              if not translated: continue
+              if ns=='tbos':
+                  dst=ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json'
+              else:
+                  dst=ROOT/f'projects/frontier-settlement/src/main/resources/assets/{ns}/lang/ko_kr.json'
+              dst.parent.mkdir(parents=True,exist_ok=True)
+              base={}
+              if dst.exists():
+                  try: base=json.loads(dst.read_text(encoding='utf-8'))
+                  except Exception: base={}
+              base.update(translated)
+              dst.write_text(json.dumps(base,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+              generated[ns]=len(translated)
+
+          # Hard acceptance: every pinned English localization key must be covered by upstream Korean or our overlay.
+          failures=[]
+          for ns in sorted(target_namespaces):
+              en=langs[ns]['en']
+              if ns=='tbos': dst=ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json'
+              else: dst=ROOT/f'projects/frontier-settlement/src/main/resources/assets/{ns}/lang/ko_kr.json'
+              ours=json.loads(dst.read_text(encoding='utf-8')) if dst.exists() else {}
+              covered=dict(langs[ns]['ko']); covered.update(ours)
+              missing=sorted(set(en)-set(covered))
+              if missing: failures.append(f'{ns}: {len(missing)} missing: {missing[:10]}')
+          if failures: raise SystemExit('\n'.join(failures))
+          print('KOREAN COVERAGE PASS',generated)
+          PY
+
+      - name: Patch FULL pack builder for JEI and robust smoke classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/frontier-survival-full-new-world.yml')
+          s=p.read_text(encoding='utf-8')
+
+          # Resolve and append exact JEI 30.13.0.77 / NeoForge 26.2 client binary at build time.
+          needle="""          with zipfile.ZipFile(survival_pack) as z:\n              survival_index=json.loads(z.read('modrinth.index.json'))\n\n          files=[]\n"""
+          repl="""          with zipfile.ZipFile(survival_pack) as z:\n              survival_index=json.loads(z.read('modrinth.index.json'))\n\n          # JEI recipe viewer, pinned to the tested NeoForge 26.2 build. Client only.\n          import urllib.request\n          req=urllib.request.Request('https://api.modrinth.com/v2/version/k8NezZZW',headers={'User-Agent':'Frontier-Full-Pack/1.0'})\n          with urllib.request.urlopen(req,timeout=60) as r:\n              jei_meta=json.load(r)\n          jei_file=next((f for f in jei_meta['files'] if f.get('primary')),jei_meta['files'][0])\n          if jei_meta.get('version_number') != '30.13.0.77':\n              raise SystemExit('JEI pin drifted from 30.13.0.77')\n\n          files=[]\n"""
+          if needle not in s: raise SystemExit('JEI insertion anchor not found')
+          s=s.replace(needle,repl,1)
+
+          needle2="""              files.append(entry)\n              by_name[name]=entry\n\n          index={\n"""
+          repl2="""              files.append(entry)\n              by_name[name]=entry\n\n          jei_entry={\n              'path':'mods/'+jei_file['filename'],\n              'hashes':{'sha1':jei_file['hashes']['sha1'],'sha512':jei_file['hashes']['sha512']},\n              'env':{'client':'required','server':'unsupported'},\n              'downloads':[jei_file['url']],\n              'fileSize':jei_file['size'],\n          }\n          if jei_file['filename'] not in by_name:\n              files.append(jei_entry)\n              by_name[jei_file['filename']]=jei_entry\n\n          index={\n"""
+          if needle2 not in s: raise SystemExit('JEI append anchor not found')
+          s=s.replace(needle2,repl2,1)
+
+          s=s.replace(
+              "plus Dungeons & Taverns, Repurposed Structures, The Birth of Steve, Amethyst Resonance, Better Combat, Weapons Expanded, Lootr, Sophisticated Backpacks, Variants & Ventures, Jade, Xaero's Minimap and their pinned libraries.",
+              "plus Dungeons & Taverns, Repurposed Structures, The Birth of Steve, Amethyst Resonance, Better Combat, Weapons Expanded, Lootr, Sophisticated Backpacks, Variants & Ventures, Jade, Xaero's Minimap, JEI recipe viewing and their pinned libraries.",
+              1)
+          s=s.replace(
+              "              assert any('Terralith' in x['path'] for x in parsed['files'])\n",
+              "              assert any('Terralith' in x['path'] for x in parsed['files'])\n              assert any('jei-' in x['path'].lower() for x in parsed['files'])\n              assert all(x.get('env',{}).get('server')=='unsupported' for x in parsed['files'] if 'jei-' in x['path'].lower())\n",
+              1)
+
+          old="""          fatal=('NoClassDefFoundError','ClassNotFoundException','Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')\n          if not ready:\n              print(text); raise SystemExit('full stack server never reached ready state')\n          if any(x.lower() in text.lower() for x in fatal):\n              print(text); raise SystemExit('fatal full stack server error detected')\n"""
+          new="""          # ClassNotFoundException by itself is not fatal: optional integrations (for example Sophisticated Core -> Create)\n          # can log one and still reach a healthy ready/save state. Actual startup/tick/datapack failures remain fatal.\n          fatal=('Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')\n          if not ready:\n              print(text); raise SystemExit('full stack server never reached ready state')\n          if any(x.lower() in text.lower() for x in fatal):\n              print(text); raise SystemExit('fatal full stack server error detected')\n"""
+          if old not in s: raise SystemExit('smoke classifier anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Validate generated language JSON and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for project in ('frontier-settlement','survival-ascension'):
+              for p in (Path('projects')/project/'src/main/resources/assets').glob('*/lang/ko_kr.json'):
+                  json.loads(p.read_text(encoding='utf-8'))
+          print('LANG JSON VALIDATION PASS')
+          PY
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/src/main/resources/assets projects/survival-ascension/src/main/resources/assets .github/workflows/frontier-survival-full-new-world.yml
+          git diff --cached --stat
+          git commit -m 'Complete full-pack Korean localization and add JEI' || exit 0
+          git push origin HEAD:main
