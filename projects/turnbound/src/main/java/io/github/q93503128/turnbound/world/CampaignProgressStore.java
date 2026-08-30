@@ -13,6 +13,7 @@ import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.progression.QuestProgress;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,22 +24,39 @@ import java.util.random.RandomGenerator;
 
 /** Server-side campaign progression authority shared by combat, growth, equipment, quests, gacha and persistence. */
 public final class CampaignProgressStore {
+    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
+
     public record Snapshot(
             PlayerProfile.Snapshot profile,
             Map<String, CharacterProgression.State> characters,
             Map<String, CharacterGrowthRules.State> growth,
             EquipmentInventory.Snapshot equipment,
             QuestProgress.Snapshot quests,
+            List<String> activeParty,
             Set<String> clearedEncounters,
             Set<String> orphanedCharacterIds,
             Set<String> orphanedEquipmentIds) {
+        public Snapshot(
+                PlayerProfile.Snapshot profile,
+                Map<String, CharacterProgression.State> characters,
+                Map<String, CharacterGrowthRules.State> growth,
+                EquipmentInventory.Snapshot equipment,
+                QuestProgress.Snapshot quests,
+                Set<String> clearedEncounters,
+                Set<String> orphanedCharacterIds,
+                Set<String> orphanedEquipmentIds) {
+            this(profile, characters, growth, equipment, quests, defaultPartyFor(profile), clearedEncounters,
+                    orphanedCharacterIds, orphanedEquipmentIds);
+        }
+
         public Snapshot {
             if (profile == null || characters == null || growth == null || equipment == null || quests == null
-                    || clearedEncounters == null || orphanedCharacterIds == null || orphanedEquipmentIds == null) {
+                    || activeParty == null || clearedEncounters == null || orphanedCharacterIds == null || orphanedEquipmentIds == null) {
                 throw new IllegalArgumentException("Incomplete campaign snapshot");
             }
             characters = Map.copyOf(characters);
             growth = Map.copyOf(growth);
+            activeParty = validateParty(profile, activeParty);
             clearedEncounters = Set.copyOf(clearedEncounters);
             orphanedCharacterIds = Set.copyOf(orphanedCharacterIds);
             orphanedEquipmentIds = Set.copyOf(orphanedEquipmentIds);
@@ -64,10 +82,10 @@ public final class CampaignProgressStore {
         boolean firstClear = !progress.clearedEncounters.contains(canonicalId);
         int xp = V04Catalogs.battleXp(encounter);
         int gold = V04Catalogs.battleGold(encounter);
-        List<BattleResultSummary.PartyXp> party = STORY_PARTY.stream().map(spec -> {
-            CharacterProgression.Gain gain = gain(progress, spec.id(), xp);
-            return new BattleResultSummary.PartyXp(spec.id(), spec.name(), gain.before().level(), gain.before().xp(),
-                    gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
+        List<BattleResultSummary.PartyXp> party = progress.activeParty.stream().map(characterId -> {
+            CharacterProgression.Gain gain = gain(progress, characterId, xp);
+            return new BattleResultSummary.PartyXp(characterId, CanonicalData.definition(characterId).name(),
+                    gain.before().level(), gain.before().xp(), gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
         }).toList();
         return new BattleResultSummary(xp, gold, firstClear, party);
     }
@@ -108,13 +126,24 @@ public final class CampaignProgressStore {
     public static CharacterGrowthRules.State growth(UUID playerId, String characterId) { return requireGrowth(player(playerId), characterId); }
     public static EquipmentInventory.Snapshot equipment(UUID playerId) { return player(playerId).equipment.snapshot(); }
     public static QuestProgress.Snapshot quests(UUID playerId) { return player(playerId).quests.snapshot(); }
+    public static List<String> activeParty(UUID playerId) { return List.copyOf(player(playerId).activeParty); }
+
+    public static void setActiveParty(UUID playerId, List<String> characterIds) {
+        PlayerProgress progress = player(playerId);
+        List<String> validated = validateParty(progress.profile.snapshot(), characterIds);
+        progress.activeParty.clear();
+        progress.activeParty.addAll(validated);
+        recordQuestEvent(progress, QuestProgress.Event.partyConfirm(Set.copyOf(validated)));
+        progress.dirty = true;
+    }
 
     public static Snapshot snapshot(UUID playerId) {
         PlayerProgress progress = player(playerId);
         Set<String> equipmentOrphans = new LinkedHashSet<>(progress.orphanedEquipmentIds);
         equipmentOrphans.addAll(progress.equipment.unknownItemIds());
         return new Snapshot(progress.profile.snapshot(), progress.characters, progress.growth, progress.equipment.snapshot(),
-                progress.quests.snapshot(), progress.clearedEncounters, progress.orphanedCharacterIds, equipmentOrphans);
+                progress.quests.snapshot(), progress.activeParty, progress.clearedEncounters,
+                progress.orphanedCharacterIds, equipmentOrphans);
     }
 
     public static void restore(UUID playerId, Snapshot snapshot) {
@@ -125,10 +154,12 @@ public final class CampaignProgressStore {
         restored.growth.putAll(snapshot.growth());
         restored.equipment = EquipmentInventory.restore(snapshot.equipment());
         restored.quests = QuestProgress.restore(snapshot.quests());
+        restored.activeParty.addAll(snapshot.activeParty());
         for (String id : snapshot.clearedEncounters()) restored.clearedEncounters.add(canonicalEncounterId(id));
         restored.orphanedCharacterIds.addAll(snapshot.orphanedCharacterIds());
         restored.orphanedEquipmentIds.addAll(snapshot.orphanedEquipmentIds());
         ensureStateForOwned(restored);
+        if (restored.activeParty.isEmpty()) restored.activeParty.addAll(defaultPartyFor(restored.profile.snapshot()));
         restored.dirty = false;
         PLAYERS.put(playerId, restored);
     }
@@ -380,8 +411,8 @@ public final class CampaignProgressStore {
     }
 
     private static void grantPartyAndReserveXp(PlayerProgress progress, int fullXp) {
-        for (CharacterSpec spec : STORY_PARTY) {
-            if (progress.profile.owns(spec.id())) progress.characters.put(spec.id(), gain(progress, spec.id(), fullXp).after());
+        for (String characterId : progress.activeParty) {
+            progress.characters.put(characterId, gain(progress, characterId, fullXp).after());
         }
         grantReserveXp(progress, fullXp);
     }
@@ -389,8 +420,7 @@ public final class CampaignProgressStore {
     private static void grantReserveXp(PlayerProgress progress, int fullXp) {
         int reserveXp = (int)Math.floor(fullXp * 0.20);
         if (reserveXp <= 0) return;
-        Set<String> active = new LinkedHashSet<>();
-        for (CharacterSpec spec : STORY_PARTY) active.add(spec.id());
+        Set<String> active = Set.copyOf(progress.activeParty);
         for (String characterId : progress.profile.ownedCharacters()) {
             if (!active.contains(characterId)) progress.characters.put(characterId, gain(progress, characterId, reserveXp).after());
         }
@@ -447,11 +477,29 @@ public final class CampaignProgressStore {
         return PLAYERS.computeIfAbsent(playerId, ignored -> new PlayerProgress());
     }
 
+    private static List<String> defaultPartyFor(PlayerProfile.Snapshot profile) {
+        ArrayList<String> out = new ArrayList<>();
+        for (String id : DEFAULT_PARTY) if (profile.ownedCharacters().contains(id)) out.add(id);
+        if (out.isEmpty()) {
+            for (String id : profile.ownedCharacters()) { out.add(id); if (out.size() == 4) break; }
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<String> validateParty(PlayerProfile.Snapshot profile, List<String> requested) {
+        if (requested == null || requested.isEmpty() || requested.size() > 4) throw new IllegalArgumentException("Party requires 1-4 characters");
+        LinkedHashSet<String> unique = new LinkedHashSet<>(requested);
+        if (unique.size() != requested.size()) throw new IllegalArgumentException("Party cannot contain duplicate characters");
+        for (String id : unique) if (!profile.ownedCharacters().contains(id)) throw new IllegalArgumentException("Party character is not owned: " + id);
+        return List.copyOf(unique);
+    }
+
     private record CharacterSpec(String id, String name) {}
 
     private static final class PlayerProgress {
         private final Map<String, CharacterProgression.State> characters = new LinkedHashMap<>();
         private final Map<String, CharacterGrowthRules.State> growth = new LinkedHashMap<>();
+        private final List<String> activeParty = new ArrayList<>();
         private final Set<String> clearedEncounters = new LinkedHashSet<>();
         private final Set<String> orphanedCharacterIds = new LinkedHashSet<>();
         private final Set<String> orphanedEquipmentIds = new LinkedHashSet<>();
@@ -467,6 +515,7 @@ public final class CampaignProgressStore {
                 for (CharacterSpec spec : STORY_PARTY) {
                     profile.acquireCharacter(spec.id());
                     initializeCharacter(this, spec.id());
+                    activeParty.add(spec.id());
                 }
             }
             dirty = seedStoryParty;
