@@ -14,7 +14,6 @@ import java.util.UUID;
 
 /** Canonical v0.4 Hard boss rematches and Rift Gate 1..30 battle factory. */
 public final class EndgameEncounterCatalog {
-    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
     private static final Map<String, Integer> BOSS_BASE_LEVEL = Map.of(
             "B01", 6, "B02", 10, "B03", 13, "B04", 16, "B05", 20);
 
@@ -30,9 +29,7 @@ public final class EndgameEncounterCatalog {
         try {
             int floor = Integer.parseInt(id.substring("RIFT_F".length()));
             return floor >= 1 && floor <= 30;
-        } catch (NumberFormatException ignored) {
-            return false;
-        }
+        } catch (NumberFormatException ignored) { return false; }
     }
 
     public static boolean hardBoss(String id) { return id != null && id.matches("HARD_B0[1-5]"); }
@@ -95,8 +92,7 @@ public final class EndgameEncounterCatalog {
     private static List<CombatantState> party(UUID playerId) {
         ArrayList<CombatantState> units = new ArrayList<>();
         int formation = 0;
-        for (String characterId : DEFAULT_PARTY) {
-            if (!CampaignProgressStore.ownedCharacters(playerId).contains(characterId)) continue;
+        for (String characterId : CampaignProgressStore.activeParty(playerId)) {
             units.add(new CombatantState("ally_" + characterId.toLowerCase(), campaignDefinition(playerId, characterId),
                     CombatantSide.ALLY, formation++));
         }
@@ -116,8 +112,6 @@ public final class EndgameEncounterCatalog {
 
     private static CombatantDefinition hardBossDefinition(String bossId, int encounterLevel, double extraHpFactor) {
         int baseLevel = BOSS_BASE_LEVEL.get(bossId);
-        // Boss FinalStat does not receive normal level scaling. Hard multipliers are applied exactly once.
-        // The definition level is encounterLevel+5 so boss-spawned adds inherit the canonical Hard +5 level rule.
         CombatantDefinition base = CanonicalData.definition(bossId, encounterLevel + 5, 0, false);
         BattleStats stats = base.stats();
         int hp = Math.max(1, (int)Math.floor(stats.maxHp() * 1.65 * extraHpFactor));
