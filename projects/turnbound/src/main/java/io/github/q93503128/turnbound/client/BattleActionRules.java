@@ -8,6 +8,7 @@ final class BattleActionRules {
 
     static boolean needsSingleTarget(String rule) {
         return "ALLY_SINGLE".equals(rule)
+                || "ALLY_SINGLE_EXCEPT_SELF".equals(rule)
                 || "ENEMY_SINGLE".equals(rule)
                 || "DEAD_ALLY_SINGLE".equals(rule);
     }
