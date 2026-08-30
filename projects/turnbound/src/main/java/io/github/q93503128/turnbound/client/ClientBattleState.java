@@ -17,6 +17,12 @@ public final class ClientBattleState {
                     int hp, int maxHp, int barrier, long gauge, boolean downed) {
             this(id, defId, side, name, hp, maxHp, barrier, gauge, downed, 0.0, 0.0, 0.0, List.of());
         }
+        /** Compatibility constructor retained for projection tests and alpha.9 callers. */
+        public Unit(String id, String defId, String side, String name,
+                    int hp, int maxHp, int barrier, long gauge, boolean downed,
+                    double x, double y, double z) {
+            this(id, defId, side, name, hp, maxHp, barrier, gauge, downed, x, y, z, List.of());
+        }
         public boolean hasStatus(String id) { return statuses.contains(id); }
     }
 
