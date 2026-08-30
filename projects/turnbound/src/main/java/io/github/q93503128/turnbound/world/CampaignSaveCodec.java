@@ -84,6 +84,17 @@ public final class CampaignSaveCodec {
         out.addProperty("fiveStarPity", profile.fiveStarPity());
         out.addProperty("starterArchiveUnlocked", profile.starterArchiveUnlocked());
         out.addProperty("starterArchiveUsed", profile.starterArchiveUsed());
+        JsonArray history = new JsonArray();
+        for (PlayerProfile.SummonHistory row : profile.summonHistory()) {
+            JsonObject item = new JsonObject();
+            item.addProperty("characterId", row.characterId());
+            item.addProperty("nativeStars", row.nativeStars());
+            item.addProperty("newlyOwned", row.newlyOwned());
+            item.addProperty("starEssenceGranted", row.starEssenceGranted());
+            item.addProperty("pityAfter", row.pityAfter());
+            history.add(item);
+        }
+        out.add("summonHistory", history);
         return out;
     }
 
@@ -94,10 +105,22 @@ public final class CampaignSaveCodec {
             String id = element.getAsString();
             if (GachaCatalog.isSummonable(id)) known.add(id); else orphaned.add(id);
         }
+        List<PlayerProfile.SummonHistory> history = new ArrayList<>();
+        for (JsonElement element : optionalArray(raw, "summonHistory")) {
+            JsonObject row = element.getAsJsonObject();
+            String characterId = optionalString(row, "characterId", "");
+            if (!GachaCatalog.isSummonable(characterId)) { if (!characterId.isBlank()) orphaned.add(characterId); continue; }
+            int stars = optionalInt(row, "nativeStars", GachaCatalog.nativeStars(characterId));
+            int pityAfter = Math.max(0, Math.min(GachaCatalog.HARD_PITY - 1, optionalInt(row, "pityAfter", 0)));
+            history.add(new PlayerProfile.SummonHistory(characterId, stars,
+                    optionalBoolean(row, "newlyOwned", false),
+                    Math.max(0, optionalInt(row, "starEssenceGranted", 0)), pityAfter));
+        }
+        if (history.size() > GachaCatalog.HISTORY_LIMIT) history = history.subList(history.size() - GachaCatalog.HISTORY_LIMIT, history.size());
         return new ProfileDecode(new PlayerProfile.Snapshot(
                 optionalLong(raw, "gold", 5_000), optionalLong(raw, "summonCrystal", 0), optionalLong(raw, "starEssence", 0),
                 optionalLong(raw, "awakeningCore", 0), known, optionalInt(raw, "fiveStarPity", 0),
-                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false)), orphaned);
+                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history), orphaned);
     }
 
     private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned) {
