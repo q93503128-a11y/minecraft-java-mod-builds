@@ -12,16 +12,17 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * so the requested distance is still shortened when terrain blocks the camera.
  */
 public final class BattleCameraController {
-    private static final float DEFAULT_DISTANCE = 11.0F;
+    /** alpha.16 visual calibration: closer/lower default while preserving the authored v0.4 orbit limits. */
+    private static final float DEFAULT_DISTANCE = 9.25F;
     private static final float MIN_DISTANCE = 6.0F;
     private static final float MAX_DISTANCE = 18.0F;
-    private static final float DEFAULT_PITCH = 22.0F;
+    private static final float DEFAULT_PITCH = 16.0F;
     private static final float MIN_PITCH = -10.0F;
     private static final float MAX_PITCH = 58.0F;
     private static final float HORIZONTAL_DEGREES_PER_PIXEL = 0.18F;
     private static final float VERTICAL_DEGREES_PER_PIXEL = 0.15F;
     private static final float WHEEL_DISTANCE_STEP = 0.75F;
-    private static final float FOV = 70.0F;
+    private static final float FOV = 62.0F;
 
     private static boolean active;
     private static CameraType previousCameraType = CameraType.FIRST_PERSON;
