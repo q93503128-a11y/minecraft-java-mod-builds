@@ -2,7 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Heightmap;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
@@ -68,14 +68,12 @@ public final class StarterSliceWorld {
     }
 
     private static void buildVillage(ServerLevel level, int y) {
-        // North/south spine leading naturally into the field tile.
         for (int z = VILLAGE_Z; z < VILLAGE_Z + SIZE; z++) {
             for (int dx = -3; dx <= 3; dx++) {
                 Block road = Math.abs(dx) <= 1 ? Blocks.GRAVEL : Blocks.DIRT_PATH;
                 set(level, dx, y, z, road);
             }
         }
-        // Small plaza: deliberately peaceful and legible rather than a dense survival village.
         for (int x = -10; x <= 10; x++) for (int z = VILLAGE_Z + 22; z <= VILLAGE_Z + 39; z++) {
             if ((x + z) % 7 == 0) set(level, x, y, z, Blocks.MOSSY_STONE_BRICKS);
             else set(level, x, y, z, Blocks.STONE_BRICKS);
@@ -84,7 +82,6 @@ public final class StarterSliceWorld {
         house(level, 15, y, VILLAGE_Z + 12, 10, 9);
         house(level, -25, y, VILLAGE_Z + 42, 11, 10);
         house(level, 14, y, VILLAGE_Z + 43, 11, 9);
-        // Gate into the combat field.
         int gateZ = VILLAGE_Z + SIZE - 1;
         for (int x = -9; x <= 9; x++) {
             if (Math.abs(x) <= 4) continue;
@@ -94,7 +91,6 @@ public final class StarterSliceWorld {
             set(level, x, y + 1, gateZ - 2, Blocks.COBBLESTONE_WALL);
             set(level, x, y + 2, gateZ - 2, Blocks.LANTERN);
         }
-        // Village edge hints without surrounding the player in a solid box.
         for (int z = VILLAGE_Z + 4; z < VILLAGE_Z + SIZE - 4; z += 4) {
             set(level, ORIGIN_X + 1, y + 1, z, Blocks.OAK_LEAVES);
             set(level, ORIGIN_X + SIZE - 2, y + 1, z, Blocks.OAK_LEAVES);
@@ -120,7 +116,6 @@ public final class StarterSliceWorld {
             for (int dx = -3; dx <= 3; dx++) set(level, center + dx, y, FIELD_Z + lz,
                     Math.abs(dx) <= 1 ? Blocks.GRAVEL : Blocks.DIRT_PATH);
         }
-        // Stream + bridge.
         for (int x = ORIGIN_X + 3; x < ORIGIN_X + SIZE - 3; x++) {
             int z = FIELD_Z + 34 + (int)Math.round(Math.sin(x / 8.0));
             for (int dz = -1; dz <= 1; dz++) {
@@ -129,11 +124,9 @@ public final class StarterSliceWorld {
             }
         }
         for (int x = -5; x <= 5; x++) for (int z = FIELD_Z + 32; z <= FIELD_Z + 37; z++) set(level, x, y + 1, z, Blocks.OAK_PLANKS);
-        // Two clearings are intentionally apart so encounters can be avoided.
         clearing(level, -12, y, FIELD_Z + 24, 10);
         clearing(level, 13, y, FIELD_Z + 44, 11);
         for (int i = 0; i < 10; i++) tree(level, ORIGIN_X + 5 + (i * 13) % 54, y, FIELD_Z + 7 + (i * 19) % 50, i % 3 == 0);
-        // Ruin silhouettes at the far edge.
         for (int x = -26; x <= -17; x++) {
             int h = 1 + Math.floorMod(x, 4);
             for (int dy = 1; dy <= h; dy++) set(level, x, y + dy, FIELD_Z + 55, dy % 2 == 0 ? Blocks.MOSSY_COBBLESTONE : Blocks.STONE_BRICKS);
