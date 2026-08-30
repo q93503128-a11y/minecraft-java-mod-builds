@@ -28,6 +28,8 @@ dependencies {
     implementation "maven.modrinth:8BmcQJ2H:${geckolib_version_id}"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    // CanonicalData exposes Gson JSON nodes; tests that audit canonical resource IDs need the type on their compile classpath.
+    testImplementation 'com.google.code.gson:gson:2.14.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.12.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
 }
