@@ -102,8 +102,10 @@ def forbid(src,tokens,label):
 props=text(ROOT/"gradle.properties"); construction=text(JAVA/"settlement/SettlementConstructionService.java"); service=text(JAVA/"settlement/SettlementService.java"); lock=json.loads(text(ROOT/"COMPANION_LOCK.json"))
 must(props,("mod_version=0.1.0-alpha.85","Alpha.85 construction pacing"),"alpha.85 props")
 must(construction,("WORK_POSITION_REACHED_SQR = 12.25D","HAUL_BATCH_SIZE = 32","MAX_SITE_RESERVE_PER_CATEGORY = 32L","GRADE_INTERVAL_TICKS = 3","BUILD_INTERVAL_TICKS = 4"),"alpha.85 building pacing")
-must(service,("must not be quantized behind the","LCM(5, 8)=40 ticks","if (data.construction().active()) SettlementConstructionService.tick(server, data);\n        if (tick % 5 == 0) {","if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);","if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);"),"alpha.85 scheduler separation")
-forbid(service,("if (tick % 5 == 0) {\n            if (data.construction().active()) SettlementConstructionService.tick(server, data);",),"alpha.85 old five-tick building scheduler")
+must(service,("must not be quantized behind the","LCM(5, 8)=40 ticks","if (data.construction().active()) SettlementConstructionService.tick(server, data);","if (tick % 5 == 0) {","if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);","if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);"),"alpha.85 scheduler separation")
+build_call="if (data.construction().active()) SettlementConstructionService.tick(server, data);"
+if service.count(build_call) != 1: raise SystemExit("alpha.85 building scheduler call count drifted")
+if service.index(build_call) >= service.index("if (tick % 5 == 0) {"): raise SystemExit("alpha.85 building tick is still behind the five-tick infrastructure gate")
 forbid(construction,("teleportTo(","setChunkForced","forceChunk"),"alpha.85 no pacing shortcut")
 if lock.get("target",{}).get("frontier_settlement")!="0.1.0-alpha.85": raise SystemExit("alpha.85 companion lock target drifted")
 if not any("Alpha.85 keeps every Alpha.84 companion binary pin unchanged" in n for n in lock.get("notes",[])): raise SystemExit("alpha.85 companion rationale missing")
