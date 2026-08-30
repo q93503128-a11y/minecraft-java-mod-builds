@@ -2,6 +2,8 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
+import io.github.q93503128.turnbound.progression.GachaService;
+import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
 
 import java.util.LinkedHashMap;
@@ -10,14 +12,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.random.RandomGenerator;
 
 /**
- * Server-side alpha.16 campaign progression authority for the current vertical slice.
- * The shape matches the future player Data Attachment payload so this runtime store can be replaced without
- * changing combat/result code when persistent progression lands.
+ * Server-side campaign progression authority.
+ * Character XP still uses the alpha.16 vertical-slice party, while economy/collection/gacha state now lives in
+ * PlayerProfile so persistence can snapshot one authoritative model instead of reconstructing UI state.
  */
 public final class CampaignProgressStore {
+    public record Snapshot(
+            PlayerProfile.Snapshot profile,
+            Map<String, CharacterProgression.State> characters,
+            Set<String> clearedEncounters) {
+        public Snapshot {
+            if (profile == null || characters == null || clearedEncounters == null) {
+                throw new IllegalArgumentException("Incomplete campaign snapshot");
+            }
+            characters = Map.copyOf(characters);
+            clearedEncounters = Set.copyOf(clearedEncounters);
+        }
+    }
+
     private static final Map<UUID, PlayerProgress> PLAYERS = new LinkedHashMap<>();
+    private static final GachaService GACHA = new GachaService(RandomGenerator.getDefault());
     private static final List<CharacterSpec> PARTY = List.of(
             new CharacterSpec("P01", "카이렌", 40),
             new CharacterSpec("P03", "브람", 40),
@@ -50,14 +67,53 @@ public final class CampaignProgressStore {
         if (!preview.firstClear()) return preview;
         PlayerProgress progress = player(playerId);
         progress.clearedEncounters.add(encounterId);
-        progress.gold += preview.gold();
+        progress.profile.grant(PlayerProfile.Currency.GOLD, preview.gold());
         for (BattleResultSummary.PartyXp member : preview.party()) {
             progress.characters.put(member.characterId(), new CharacterProgression.State(member.levelAfter(), member.xpAfter()));
+        }
+        if (SouthgateEncounterCatalog.B01_GRAUL.equals(encounterId)) {
+            applyB01FirstClear(progress.profile);
         }
         return preview;
     }
 
-    public static int gold(UUID playerId) { return player(playerId).gold; }
+    public static int gold(UUID playerId) {
+        return Math.toIntExact(player(playerId).profile.currency(PlayerProfile.Currency.GOLD));
+    }
+
+    public static long currency(UUID playerId, PlayerProfile.Currency currency) {
+        return player(playerId).profile.currency(currency);
+    }
+
+    public static Set<String> ownedCharacters(UUID playerId) {
+        return player(playerId).profile.ownedCharacters();
+    }
+
+    public static Snapshot snapshot(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        return new Snapshot(progress.profile.snapshot(), progress.characters, progress.clearedEncounters);
+    }
+
+    public static void restore(UUID playerId, Snapshot snapshot) {
+        if (playerId == null || snapshot == null) throw new IllegalArgumentException("Missing campaign restore data");
+        PlayerProgress restored = new PlayerProgress(false);
+        restored.profile = PlayerProfile.restore(snapshot.profile());
+        restored.characters.putAll(snapshot.characters());
+        restored.clearedEncounters.addAll(snapshot.clearedEncounters());
+        for (CharacterSpec spec : PARTY) {
+            restored.characters.putIfAbsent(spec.id(), new CharacterProgression.State(1, 0));
+        }
+        PLAYERS.put(playerId, restored);
+    }
+
+    public static GachaService.BatchResult summonStandard(UUID playerId, int count) {
+        return switch (count) {
+            case 1 -> GACHA.summonStandardSingle(player(playerId).profile);
+            case 10 -> GACHA.summonStandardTen(player(playerId).profile);
+            default -> throw new IllegalArgumentException("Standard Archive supports only 1 or 10 pulls");
+        };
+    }
+
     public static CharacterProgression.State character(UUID playerId, String characterId) {
         CharacterProgression.State state = player(playerId).characters.get(characterId);
         if (state == null) throw new IllegalArgumentException("Unknown campaign character " + characterId);
@@ -67,7 +123,16 @@ public final class CampaignProgressStore {
     static void resetForTests(UUID playerId) { PLAYERS.remove(playerId); }
     public static void clearRuntime() { PLAYERS.clear(); }
 
+    private static void applyB01FirstClear(PlayerProfile profile) {
+        // Canonical v0.4 unlock package: boss reward 1,200 + tutorial 1,800 crystals, 60 essence and P08.
+        profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, 3_000);
+        profile.grant(PlayerProfile.Currency.STAR_ESSENCE, 60);
+        profile.acquireCharacter("P08");
+        profile.unlockStarterArchive();
+    }
+
     private static PlayerProgress player(UUID playerId) {
+        if (playerId == null) throw new IllegalArgumentException("Missing player id");
         return PLAYERS.computeIfAbsent(playerId, ignored -> new PlayerProgress());
     }
 
@@ -76,10 +141,17 @@ public final class CampaignProgressStore {
     private static final class PlayerProgress {
         private final Map<String, CharacterProgression.State> characters = new LinkedHashMap<>();
         private final Set<String> clearedEncounters = new LinkedHashSet<>();
-        private int gold;
+        private PlayerProfile profile = PlayerProfile.newGame();
 
         private PlayerProgress() {
-            for (CharacterSpec spec : PARTY) characters.put(spec.id(), new CharacterProgression.State(1, 0));
+            this(true);
+        }
+
+        private PlayerProgress(boolean seedStoryParty) {
+            for (CharacterSpec spec : PARTY) {
+                characters.put(spec.id(), new CharacterProgression.State(1, 0));
+                if (seedStoryParty) profile.acquireCharacter(spec.id());
+            }
         }
     }
 }
