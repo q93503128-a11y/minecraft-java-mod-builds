@@ -144,12 +144,12 @@ public final class P0Scenario {
     }
 
     private static CombatantState weakest(List<CombatantState> units) {
-        return units.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())
+        return units.stream().min(Comparator.comparingDouble((CombatantState unit) -> unit.hp() / (double) unit.maxHp())
                 .thenComparingInt(CombatantState::initiativeSeed)).orElseThrow();
     }
 
     private static CombatantState highestGaugeTarget(List<CombatantState> units) {
-        return units.stream().max(Comparator.comparingLong(CombatantState::gauge)
+        return units.stream().max(Comparator.comparingLong((CombatantState unit) -> unit.gauge())
                 .thenComparingInt(unit -> -unit.initiativeSeed())).orElseThrow();
     }
 
