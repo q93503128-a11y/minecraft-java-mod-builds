@@ -23,8 +23,11 @@ public final class SettlementService {
         int tick = server.getTickCount();
         SettlementLegacyWorkerMigrationService.tick(server, data);
         boolean explorationChanged = SettlementExplorationService.tick(server, data);
+        // Building construction is presentation-sensitive and must not be quantized behind the
+        // 5-tick infrastructure scheduler: e.g. an 8-tick grading gate sampled every 5 ticks
+        // only fires every LCM(5, 8)=40 ticks. Roads/outposts/civil work keep their old cadence.
+        if (data.construction().active()) SettlementConstructionService.tick(server, data);
         if (tick % 5 == 0) {
-            if (data.construction().active()) SettlementConstructionService.tick(server, data);
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
             if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);
             if (SettlementCivilWorkData.get(server).project().active()) SettlementCivilWorkService.tick(server, data);
