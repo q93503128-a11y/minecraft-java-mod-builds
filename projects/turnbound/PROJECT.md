@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.14`
+- Version: `0.1.0-alpha.15`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -20,7 +20,7 @@ Implementation must be checked against:
 2. `02_수치규칙위키_v0.4`
 3. `03_캐릭터설계위키_v0.4`
 
-Later explicit user decisions may override these. Alpha delta docs may clarify implementation state but do not silently replace v0.4 content.
+Later explicit user decisions override older implementation assumptions. Alpha delta docs describe implementation state but do not silently erase v0.4 world/content canon.
 
 ## Combat contract
 - Turn threshold 1000; action subtracts 1000 rather than resetting Gauge.
@@ -33,17 +33,31 @@ Later explicit user decisions may override these. Alpha delta docs may clarify i
 - B01 is flee-locked.
 - Campaign AUTO/2.0x are locked until B01 first clear.
 
-## Battle UX contract
-- 3D battlefield remains dominant; no full-screen battle veil.
-- Camera pivot derives from battle formation anchors.
-- Every skill requires explicit final confirmation.
+## Battle UX contract — alpha.15
+- 3D battlefield remains dominant; no full-screen battle veil or giant enemy/ally wall panels.
+- Camera pivot is the midpoint of the ally formation centroid and enemy formation centroid, so uneven team sizes do not pull the frame off-center.
+- Direct 3D click is the primary target input; HUD/Tab remain fallbacks.
+- Mouse picking must use the actual live Minecraft camera projection so click position follows the rendered actor after camera collision/zoom/orbit.
 - Single-target skills do not silently preselect the first target.
-- Direct 3D click is primary target input; HUD/Tab are fallbacks.
+- A skill click arms/selects it. Clicking the same skill again quickly commits it when its target state is already valid.
+- A target click selects it. Clicking the same valid target again quickly commits the armed skill.
+- There is no separate permanent `사용` button. Enter remains keyboard confirmation fallback.
+- Selected enemy uses a red world marker; selected ally uses an aqua marker; current actor has a distinct gold emphasis.
+- Enemy HP/status belongs beside the actual 3D enemy, not in a large detached top-right wall.
+- Party state stays compact at the lower edge; timeline stays thin at top center; contextual skills stay lower-right; AUTO/speed/flee occupy a separate non-overlapping control strip.
 - Hovering a skill shows detail.
-- Danger telegraphs must be visible in both world association and HUD/timeline data.
+- Danger telegraphs must remain associated with the relevant world actor and readable in combat state.
 - Locked AUTO/2x/flee controls must visibly communicate their locked state and not send invalid client commands.
 
-## Southgate Chapter 1 v0.4 contract
+## UI reference policy
+- Do not improvise a generic Minecraft/AI-style rectangle UI as the visual baseline.
+- Minecraft mod UI references are preferred for frame hierarchy, density and interaction patterns.
+- BetterQuesting is a reference for compact nested quest surfaces and information hierarchy.
+- REI is a reference for compact framed controls, dense layouts and tooltip hierarchy.
+- User-supplied reference-game screenshots are spatial/hierarchy references only: world-dominant scene, compact party/action UI and clear target association.
+- Do not copy proprietary pixels, textures, icons, fonts or source code. See `EXTERNAL_ASSETS.md`.
+
+## Southgate Chapter 1 v0.4 content contract
 Campaign party: P01 / P03 / P04 / F03.
 
 Encounter template:
@@ -84,18 +98,22 @@ TURNBOUND is not a survival game.
 - Survival HUD is hidden.
 - Combat HP belongs only to CombatantState.
 
-## World
-- Fixed authored RPG world, not vanilla infinite progression.
-- v0.1 target Aster March 1024×1024.
-- `AsterMarchRegionCatalog` is the code-side v0.4 coordinate authority for region bounds, major FT anchors and boss anchors.
-- Current A01/A02 are Southgate Meadow development cells, now connected to the canonical coordinate spine rather than treated as separate chapters.
-- P2 authored route currently connects FT_RADIA `(0,66,20)` → South Gate/A01/A02 → FT_MEADOW `(190,67,230)` → M04/M05 clearings → B01 `(355,68,245)`.
-- Fixed authored battle anchors must not silently relocate to nearby terrain when obstructed.
-- Chapter 2 target is Gloamwood; alpha.14 does not claim Gloamwood implementation.
+## Current playable world slice — alpha.15
+- Normal play does not require `/turnbound` commands.
+- After entering a new Overworld, TURNBOUND automatically starts after the initial load delay.
+- Default Superflat is supported without a custom preset; the starter slice samples the actual surface Y before authoring itself.
+- Current intentionally small test scope is `peaceful starter village 64×64 → south gate → first field 64×64`.
+- The village has no combat enemies. It contains the scout NPC and relay/travel object.
+- The first field contains visible M01/M02 patrol encounters separated enough to be avoided before engagement.
+- This small vertical slice temporarily replaces the much larger alpha.14 implementation as the active playtest surface; it does not delete the v0.4 Aster March/Southgate content plan.
+- Future expansion may repeat `safe village/hub → combat field → safe village/hub → next field` where it improves pacing.
+- PvP/team battle is a future extension candidate, not current P2 scope.
 
 ## Required validation
 - Java 25 clean test/build green.
 - NeoForge real server boot smoke green.
 - JAR metadata/classes/resources verified.
-- Existing camera/direct-target/explicit-confirm/hover-tooltip regressions remain green.
-- Canonical FT/Boss coordinates and quest-gated Southgate route tests remain green.
+- Automatic starter-slice entry must remain command-free on Overworld/Superflat.
+- HUD rectangles must remain inside the viewport and party/skills/control strip must not overlap at supported test resolutions.
+- Live-camera direct targeting, double-click commit, battlefield centering and hover tooltip regressions remain green.
+- Later restoration/extension of the full Southgate route must preserve v0.4 quest/encounter/boss canon unless explicitly changed.
