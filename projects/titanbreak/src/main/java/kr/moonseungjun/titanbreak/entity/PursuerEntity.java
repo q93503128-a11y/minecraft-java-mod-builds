@@ -5,6 +5,9 @@ import kr.moonseungjun.titanbreak.combat.TemporalRated;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -26,6 +29,19 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
 
 public final class PursuerEntity extends Giant implements TemporalRated, TitanGeoEntity {
+    public static final int PART_LEFT_EYE = 1 << 0;
+    public static final int PART_RIGHT_EYE = 1 << 1;
+    public static final int PART_LEFT_FORE_UPPER = 1 << 2;
+    public static final int PART_LEFT_FORE_LOWER = 1 << 3;
+    public static final int PART_RIGHT_FORE_UPPER = 1 << 4;
+    public static final int PART_RIGHT_FORE_LOWER = 1 << 5;
+    public static final int PART_SPINE_REACTION = 1 << 6;
+    public static final int PART_CHEST_CORE = 1 << 7;
+    public static final int ALL_PARTS_MASK = 0xFF;
+
+    private static final EntityDataAccessor<Integer> BROKEN_PARTS =
+            SynchedEntityData.defineId(PursuerEntity.class, EntityDataSerializers.INT);
+
     private static final PartSpec[] SPECS = {
             new PartSpec(PartSlot.LEFT_EYE, -2.4D, 29.0D, -1.8D, 2.4F, 2.4F, 85.0F),
             new PartSpec(PartSlot.RIGHT_EYE, 2.4D, 29.0D, -1.8D, 2.4F, 2.4F, 85.0F),
@@ -46,6 +62,12 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
             PartSpec spec = SPECS[i];
             parts[i] = new PursuerPart(this, spec.slot(), spec.width(), spec.height(), spec.health());
         }
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(BROKEN_PARTS, 0);
     }
 
     @Override
@@ -79,6 +101,14 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
         return 1;
     }
 
+    public int brokenPartsMask() {
+        return getEntityData().get(BROKEN_PARTS) & ALL_PARTS_MASK;
+    }
+
+    public boolean isPartBroken(int bit) {
+        return (brokenPartsMask() & bit) != 0;
+    }
+
     private int brokenJointCount() {
         int count = 0;
         for (PartSlot slot : new PartSlot[]{PartSlot.LEFT_FORE_UPPER, PartSlot.LEFT_FORE_LOWER,
@@ -89,8 +119,13 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
     }
 
     private boolean isBroken(PartSlot slot) {
-        for (PursuerPart part : parts) if (part.slot == slot) return part.broken();
-        return false;
+        return isPartBroken(slot.mask());
+    }
+
+    private void markBroken(PartSlot slot) {
+        int current = brokenPartsMask();
+        int updated = current | slot.mask();
+        if (updated != current) getEntityData().set(BROKEN_PARTS, updated);
     }
 
     private void updatePartPositions() {
@@ -130,6 +165,7 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
     private boolean hurtPart(PursuerPart part, ServerLevel level, DamageSource source, float amount) {
         if (part.broken()) return false;
         part.applyPartDamage(amount);
+        if (part.broken()) markBroken(part.slot);
         float transferred = switch (part.slot) {
             case CHEST_CORE -> amount * 1.55F;
             case SPINE_REACTION -> amount * 0.70F;
@@ -137,6 +173,31 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
             case LEFT_FORE_UPPER, LEFT_FORE_LOWER, RIGHT_FORE_UPPER, RIGHT_FORE_LOWER -> amount * 0.34F;
         };
         return super.hurtServer(level, source, transferred);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        int savedMask = input.getIntOr("TitanbreakBrokenParts", 0) & ALL_PARTS_MASK;
+        int rebuiltMask = 0;
+        for (int i = 0; i < parts.length; i++) {
+            PursuerPart part = parts[i];
+            float savedHealth = input.getFloatOr("TitanbreakPartHealth" + i, SPECS[i].health());
+            if ((savedMask & part.slot.mask()) != 0) savedHealth = 0.0F;
+            part.setPartHealth(savedHealth);
+            if (part.broken()) rebuiltMask |= part.slot.mask();
+        }
+        getEntityData().set(BROKEN_PARTS, rebuiltMask);
+        partsInitialized = false;
+    }
+
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putInt("TitanbreakBrokenParts", brokenPartsMask());
+        for (int i = 0; i < parts.length; i++) {
+            output.putFloat("TitanbreakPartHealth" + i, parts[i].partHealth);
+        }
     }
 
     @Override
@@ -219,14 +280,24 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
     }
 
     private enum PartSlot {
-        LEFT_EYE,
-        RIGHT_EYE,
-        LEFT_FORE_UPPER,
-        LEFT_FORE_LOWER,
-        RIGHT_FORE_UPPER,
-        RIGHT_FORE_LOWER,
-        SPINE_REACTION,
-        CHEST_CORE
+        LEFT_EYE(PART_LEFT_EYE),
+        RIGHT_EYE(PART_RIGHT_EYE),
+        LEFT_FORE_UPPER(PART_LEFT_FORE_UPPER),
+        LEFT_FORE_LOWER(PART_LEFT_FORE_LOWER),
+        RIGHT_FORE_UPPER(PART_RIGHT_FORE_UPPER),
+        RIGHT_FORE_LOWER(PART_RIGHT_FORE_LOWER),
+        SPINE_REACTION(PART_SPINE_REACTION),
+        CHEST_CORE(PART_CHEST_CORE);
+
+        private final int mask;
+
+        PartSlot(int mask) {
+            this.mask = mask;
+        }
+
+        int mask() {
+            return mask;
+        }
     }
 
     private record PartSpec(PartSlot slot, double x, double y, double z,
@@ -249,12 +320,16 @@ public final class PursuerEntity extends Giant implements TemporalRated, TitanGe
             return partHealth <= 0.0F;
         }
 
+        private void setPartHealth(float health) {
+            partHealth = Math.max(0.0F, health);
+        }
+
         private void applyPartDamage(float amount) {
-            partHealth = Math.max(0.0F, partHealth - Math.max(0.0F, amount));
+            setPartHealth(partHealth - Math.max(0.0F, amount));
         }
 
         @Override
-        protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {}
+        protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
         @Override
         protected void readAdditionalSaveData(ValueInput input) {}
