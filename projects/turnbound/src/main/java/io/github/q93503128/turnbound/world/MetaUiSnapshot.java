@@ -6,11 +6,13 @@ import java.util.List;
 public record MetaUiSnapshot(
         long gold, long crystal, long starEssence, long awakeningCore, int partyCp, boolean riftUnlocked,
         int fiveStarPity, boolean starterArchiveAvailable,
-        List<String> activeParty, List<CharacterRow> characters, List<EndgameRow> endgame,
+        List<String> activeParty, List<List<String>> partyPresets,
+        List<CharacterRow> characters, List<EndgameRow> endgame,
         List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
         List<ArchiveRow> archiveHistory, List<ShopRow> shopItems) {
     public MetaUiSnapshot {
         activeParty = List.copyOf(activeParty);
+        partyPresets = partyPresets.stream().map(List::copyOf).toList();
         characters = List.copyOf(characters);
         endgame = List.copyOf(endgame);
         challenges = List.copyOf(challenges);
