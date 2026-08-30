@@ -24,13 +24,13 @@ class SouthgateEncounterCatalogTest {
     }
 
     @Test
-    void e003E004AndGraulHaveDistinctCombatRoles() {
+    void e003E004AndGraulMatchV04Roles() {
         CombatantDefinition e003 = SouthgateEncounterCatalog.enemyDefinition("E003");
         CombatantDefinition e004 = SouthgateEncounterCatalog.enemyDefinition("E004");
         CombatantDefinition graul = SouthgateEncounterCatalog.enemyDefinition("B01");
-        assertTrue(e003.stats().speed() > e004.stats().speed());
-        assertTrue(e004.stats().defense() > e003.stats().defense());
-        assertTrue(graul.stats().maxHp() > e004.stats().maxHp() * 3);
-        assertEquals(TargetRule.ENEMY_ALL, graul.skill("b01_roar").targetRule());
+        assertEquals(78, e003.stats().speed());
+        assertEquals(100, e004.stats().speed());
+        assertEquals(2800, graul.stats().maxHp());
+        assertEquals(TargetRule.ENEMY_ALL, graul.skill("b01_charge").targetRule());
     }
 }

@@ -64,6 +64,7 @@ public final class BattleEngine {
         tickCooldowns(actor, skill.id());
         actor.tickStatusesOnOwnTurn();
         triggerLumeaPassive(actor);
+        refreshBossPackDefense();
         state.setCurrentActorId(null);
         state.addEvent(new BattleEvent("TURN_END", actorId, actorId, 0, skillId));
     }
@@ -176,6 +177,8 @@ public final class BattleEngine {
         if (dealt <= 0) return;
         if (target.downed()) state.addEvent(new BattleEvent("DOWN", attacker.instanceId(), target.instanceId(), 0, "hp=0"));
         triggerEnemyThresholdPassives(target);
+        triggerGraulThresholds(target);
+        refreshBossPackDefense();
         if (direct && depth == 0 && target.definition().id().equals("P03") && !target.downed()) {
             reactions.addLast(new Reaction(target.instanceId(), attacker.instanceId(), 0.65, "P03_COUNTER", 1));
         }
@@ -190,6 +193,36 @@ public final class BattleEngine {
             int value = target.addBarrier((int) Math.floor(target.maxHp() * 0.10));
             state.addEvent(new BattleEvent("BARRIER", target.instanceId(), target.instanceId(), value, "e001_tenacity"));
         }
+    }
+
+    private void triggerGraulThresholds(CombatantState target) {
+        if (!target.definition().id().equals("B01") || target.downed()) return;
+        if (!target.flag("b01_phase2") && target.hp() * 100 <= target.maxHp() * 70) {
+            target.setFlag("b01_phase2");
+            spawnBossAdd("b01_add_e001", PrototypeRoster.corruptedWalker(), 5);
+            spawnBossAdd("b01_add_e002", PrototypeRoster.boneArcher(), 6);
+            state.addEvent(new BattleEvent("BOSS_PHASE", target.instanceId(), target.instanceId(), 2, "E001+E002 summon"));
+        }
+        if (!target.flag("b01_phase3") && target.hp() * 100 <= target.maxHp() * 35) {
+            target.setFlag("b01_phase3");
+            target.putStatus(new StatusInstance("speed_multiplier", target.instanceId(), 999, 0.20));
+            state.addEvent(new BattleEvent("BOSS_PHASE", target.instanceId(), target.instanceId(), 3, "SPD+20"));
+        }
+    }
+
+    private void spawnBossAdd(String instanceId, CombatantDefinition definition, int seed) {
+        if (state.combatants().stream().anyMatch(unit -> unit.instanceId().equals(instanceId))) return;
+        state.addCombatant(new CombatantState(instanceId, definition, CombatantSide.ENEMY, seed));
+        state.addEvent(new BattleEvent("SPAWN", "b01_graul", instanceId, 0, definition.id()));
+    }
+
+    private void refreshBossPackDefense() {
+        CombatantState boss = state.combatants().stream().filter(unit -> unit.definition().id().equals("B01")).findFirst().orElse(null);
+        if (boss == null || boss.downed() || !boss.flag("b01_phase2")) return;
+        boolean addAlive = state.living(CombatantSide.ENEMY).stream().anyMatch(unit ->
+                unit.instanceId().equals("b01_add_e001") || unit.instanceId().equals("b01_add_e002"));
+        if (addAlive) boss.putStatus(new StatusInstance("defense_multiplier", boss.instanceId(), 999, 0.15));
+        else boss.removeStatus("defense_multiplier");
     }
 
     private void triggerElysia(CombatantState hurt) {
@@ -219,6 +252,29 @@ public final class BattleEngine {
     }
 
     private void postRules(CombatantState actor, SkillDefinition skill, List<CombatantState> targets, boolean direct) {
+        if (actor.definition().id().equals("E003")) {
+            if (skill.id().equals("e003_arm")) {
+                actor.putStatus(new StatusInstance("e003_armed", actor.instanceId(), 2, 1.0));
+                state.addEvent(new BattleEvent("STATUS", actor.instanceId(), actor.instanceId(), 1, "e003_armed"));
+            } else if (skill.id().equals("e003_explode")) {
+                actor.removeStatus("e003_armed");
+                int lost = actor.takeDamage(Integer.MAX_VALUE);
+                state.addEvent(new BattleEvent("DOWN", actor.instanceId(), actor.instanceId(), lost, "e003_self_explosion"));
+            }
+        }
+        if (actor.definition().id().equals("B01")) {
+            if (skill.id().equals("b01_scratch")) {
+                actor.putStatus(new StatusInstance("attack_multiplier", actor.instanceId(), 3, 0.15));
+                state.addEvent(new BattleEvent("STATUS", actor.instanceId(), actor.instanceId(), 2, "attack_multiplier"));
+            } else if (skill.id().equals("b01_warn")) {
+                actor.setFlag("b01_charge_ready");
+                actor.putStatus(new StatusInstance("b01_charge_warning", actor.instanceId(), 2, 1.0));
+                state.addEvent(new BattleEvent("STATUS", actor.instanceId(), actor.instanceId(), 1, "b01_charge_warning"));
+            } else if (skill.id().equals("b01_charge")) {
+                actor.clearFlag("b01_charge_ready");
+                actor.removeStatus("b01_charge_warning");
+            }
+        }
         if (!actor.definition().id().equals("P01")) return;
         if (skill.id().equals("p01_duel_lock")) {
             var target = targets.getFirst();

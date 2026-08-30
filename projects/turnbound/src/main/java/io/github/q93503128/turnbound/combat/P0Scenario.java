@@ -17,7 +17,7 @@ public final class P0Scenario {
         return new BattleState(units);
     }
 
-    /** Compatibility entry retained for alpha.8 regression tests; production field sessions use SouthgateEncounterCatalog. */
+    /** Compatibility regression fixture; production field sessions use SouthgateEncounterCatalog. */
     public static BattleState createFieldPatrol() {
         List<CombatantState> units = baseAllies();
         units.add(new CombatantState("enemy_e001", PrototypeRoster.corruptedWalker(), CombatantSide.ENEMY, 4));
@@ -44,26 +44,15 @@ public final class P0Scenario {
             chooseAutoAction(engine, state, actor);
             actions++;
         }
-        String timeline = state.events().stream()
-                .filter(event -> event.type().equals("TURN_READY"))
-                .limit(12)
-                .map(BattleEvent::sourceId)
-                .reduce((left, right) -> left + " > " + right)
-                .orElse("none");
-        return "outcome=" + state.outcome()
-                + ", actions=" + actions
-                + ", pulses=" + state.logicalPulse()
-                + ", allies=" + state.living(CombatantSide.ALLY).size()
-                + ", enemies=" + state.living(CombatantSide.ENEMY).size()
+        String timeline = state.events().stream().filter(event -> event.type().equals("TURN_READY")).limit(12)
+                .map(BattleEvent::sourceId).reduce((left, right) -> left + " > " + right).orElse("none");
+        return "outcome=" + state.outcome() + ", actions=" + actions + ", pulses=" + state.logicalPulse()
+                + ", allies=" + state.living(CombatantSide.ALLY).size() + ", enemies=" + state.living(CombatantSide.ENEMY).size()
                 + ", timeline=" + timeline;
     }
 
     public static void chooseAutoAction(BattleEngine engine, BattleState state, CombatantState actor) {
-        if (actor.side() == CombatantSide.ENEMY) {
-            chooseEnemy(engine, state, actor);
-            return;
-        }
-
+        if (actor.side() == CombatantSide.ENEMY) { chooseEnemy(engine, state, actor); return; }
         switch (actor.definition().id()) {
             case "P01" -> {
                 CombatantState target = priorityEnemy(state.living(CombatantSide.ENEMY));
@@ -71,14 +60,11 @@ public final class P0Scenario {
                 engine.useSkill(actor.instanceId(), skill, target.instanceId());
             }
             case "P02" -> {
-                CombatantState otherAlly = state.living(CombatantSide.ALLY).stream()
-                        .filter(unit -> unit != actor)
-                        .min(Comparator.comparing((CombatantState unit) -> !unit.definition().id().equals("P01")).thenComparingLong(CombatantState::gauge))
-                        .orElse(null);
-                if (otherAlly != null && actor.cooldown("p02_time_leap") == 0) engine.useSkill(actor.instanceId(), "p02_time_leap", otherAlly.instanceId());
-                else if (otherAlly != null) engine.useSkill(actor.instanceId(), "p02_basic", otherAlly.instanceId());
-                else if (actor.cooldown("p02_delay_field") == 0) engine.useSkill(actor.instanceId(), "p02_delay_field");
-                else engine.useSkill(actor.instanceId(), "p02_basic", actor.instanceId());
+                CombatantState other = state.living(CombatantSide.ALLY).stream().filter(unit -> unit != actor)
+                        .min(Comparator.comparing((CombatantState unit) -> !unit.definition().id().equals("P01")).thenComparingLong(CombatantState::gauge)).orElse(null);
+                if (other != null && actor.cooldown("p02_time_leap") == 0) engine.useSkill(actor.instanceId(), "p02_time_leap", other.instanceId());
+                else if (other != null) engine.useSkill(actor.instanceId(), "p02_basic", other.instanceId());
+                else engine.useSkill(actor.instanceId(), "p02_delay_field");
             }
             case "P03" -> {
                 List<CombatantState> enemies = state.living(CombatantSide.ENEMY);
@@ -89,10 +75,14 @@ public final class P0Scenario {
                 if (!state.downed(CombatantSide.ALLY).isEmpty() && actor.cooldown("p04_revive") == 0) {
                     engine.useSkill(actor.instanceId(), "p04_revive", state.downed(CombatantSide.ALLY).getFirst().instanceId());
                 } else {
-                    CombatantState target = state.living(CombatantSide.ALLY).stream()
-                            .min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElseThrow();
+                    CombatantState target = weakest(state.living(CombatantSide.ALLY));
                     engine.useSkill(actor.instanceId(), "p04_basic", target.instanceId());
                 }
+            }
+            case "F03" -> {
+                CombatantState target = priorityEnemy(state.living(CombatantSide.ENEMY));
+                String skill = actor.cooldown("f03_focus_shot") == 0 ? "f03_focus_shot" : "f03_shot";
+                engine.useSkill(actor.instanceId(), skill, target.instanceId());
             }
             default -> throw new IllegalStateException("Unknown prototype actor " + actor.definition().id());
         }
@@ -102,40 +92,31 @@ public final class P0Scenario {
         List<CombatantState> allies = state.living(CombatantSide.ALLY);
         List<CombatantState> own = state.living(CombatantSide.ENEMY);
         switch (actor.definition().id()) {
-            case "E002" -> {
-                CombatantState target = weakest(allies);
-                String skill = actor.cooldown("e002_aimed") == 0 ? "e002_aimed" : "e002_basic";
-                engine.useSkill(actor.instanceId(), skill, target.instanceId());
-            }
+            case "E002" -> engine.useSkill(actor.instanceId(), actor.cooldown("e002_aimed") == 0 ? "e002_aimed" : "e002_basic", weakest(allies).instanceId());
             case "E003" -> {
-                CombatantState target = highestGaugeTarget(allies);
-                String skill = actor.cooldown("e003_pounce") == 0 ? "e003_pounce" : "e003_basic";
-                engine.useSkill(actor.instanceId(), skill, target.instanceId());
+                if (actor.status("e003_armed") != null) engine.useSkill(actor.instanceId(), "e003_explode");
+                else if (actor.cooldown("e003_arm") == 0) engine.useSkill(actor.instanceId(), "e003_arm");
+                else engine.useSkill(actor.instanceId(), "e003_basic", distributedTarget(allies, actor).instanceId());
             }
             case "E004" -> {
-                boolean needsBarrier = own.stream().anyMatch(unit -> unit.barrier() == 0);
-                if (needsBarrier && actor.cooldown("e004_bulwark") == 0) engine.useSkill(actor.instanceId(), "e004_bulwark");
-                else engine.useSkill(actor.instanceId(), "e004_basic", distributedTarget(allies, actor).instanceId());
+                CombatantState target = weakest(allies);
+                boolean execute = target.hp() * 2 <= target.maxHp() && actor.cooldown("e004_stab") == 0;
+                engine.useSkill(actor.instanceId(), execute ? "e004_stab" : "e004_basic", target.instanceId());
             }
             case "E005" -> {
                 if (actor.cooldown("e005_reform") == 0) engine.useSkill(actor.instanceId(), "e005_reform");
                 else engine.useSkill(actor.instanceId(), "e005_basic", weakest(own).instanceId());
             }
             case "B01" -> {
-                if (actor.cooldown("b01_roar") == 0) engine.useSkill(actor.instanceId(), "b01_roar");
-                else if (actor.cooldown("b01_crush") == 0) engine.useSkill(actor.instanceId(), "b01_crush", weakest(allies).instanceId());
-                else engine.useSkill(actor.instanceId(), "b01_basic", distributedTarget(allies, actor).instanceId());
+                if (actor.flag("b01_charge_ready") && actor.cooldown("b01_charge") == 0) engine.useSkill(actor.instanceId(), "b01_charge");
+                else if (actor.flag("b01_phase3") && actor.cooldown("b01_charge") == 0) engine.useSkill(actor.instanceId(), "b01_warn");
+                else if (actor.cooldown("b01_scratch") == 0) engine.useSkill(actor.instanceId(), "b01_scratch");
+                else engine.useSkill(actor.instanceId(), "b01_basic", weakest(allies).instanceId());
             }
-            case "E_ARCHER" -> {
-                CombatantState target = weakest(allies);
-                String skill = actor.cooldown("e_archer_active") == 0 ? "e_archer_active" : "e_archer_basic";
-                engine.useSkill(actor.instanceId(), skill, target.instanceId());
-            }
+            case "E_ARCHER" -> engine.useSkill(actor.instanceId(), actor.cooldown("e_archer_active") == 0 ? "e_archer_active" : "e_archer_basic", weakest(allies).instanceId());
             case "E_SHIELD" -> {
-                if (actor.cooldown("e_shield_active") == 0) {
-                    CombatantState target = own.stream().min(Comparator.comparingInt(CombatantState::barrier).thenComparingInt(CombatantState::hp)).orElseThrow();
-                    engine.useSkill(actor.instanceId(), "e_shield_active", target.instanceId());
-                } else engine.useSkill(actor.instanceId(), "e_shield_basic", distributedTarget(allies, actor).instanceId());
+                if (actor.cooldown("e_shield_active") == 0) engine.useSkill(actor.instanceId(), "e_shield_active", weakest(own).instanceId());
+                else engine.useSkill(actor.instanceId(), "e_shield_basic", distributedTarget(allies, actor).instanceId());
             }
             case "E_SHAMAN" -> {
                 if (actor.cooldown("e_shaman_active") == 0) {
@@ -152,21 +133,15 @@ public final class P0Scenario {
                 .thenComparingInt(CombatantState::initiativeSeed)).orElseThrow();
     }
 
-    private static CombatantState highestGaugeTarget(List<CombatantState> units) {
-        return units.stream().max(Comparator.comparingLong((CombatantState unit) -> unit.gauge())
-                .thenComparingInt(unit -> -unit.initiativeSeed())).orElseThrow();
-    }
-
     private static CombatantState priorityEnemy(List<CombatantState> enemies) {
         return enemies.stream().min(Comparator.comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id()))
-                        .thenComparingDouble(unit -> unit.hp() / (double) unit.maxHp()).thenComparingInt(CombatantState::initiativeSeed)).orElseThrow();
+                .thenComparingDouble(unit -> unit.hp() / (double) unit.maxHp()).thenComparingInt(CombatantState::initiativeSeed)).orElseThrow();
     }
 
     private static int enemyPriority(String id) {
         if (id.equals("E005") || id.equals("E_SHAMAN")) return 0;
         if (id.equals("E002") || id.equals("E003") || id.equals("E_ARCHER")) return 1;
-        if (id.equals("E001") || id.startsWith("E_SWORD")) return 2;
-        if (id.equals("E004") || id.equals("E_SHIELD")) return 3;
+        if (id.equals("E001") || id.equals("E004") || id.startsWith("E_SWORD")) return 2;
         if (id.equals("B01")) return 4;
         return 5;
     }

@@ -44,7 +44,11 @@ public final class CombatantState {
         double multiplier = boost == null ? 1.0 : 1.0 + boost.magnitude();
         return Math.max(0, (int) Math.floor(definition.stats().defense() * multiplier));
     }
-    public int speed() { return definition.stats().speed(); }
+    public int speed() {
+        StatusInstance boost = status("speed_multiplier");
+        double multiplier = boost == null ? 1.0 : 1.0 + boost.magnitude();
+        return Math.max(30, (int) Math.floor(definition.stats().speed() * multiplier));
+    }
     public int barrier() { return barrier; }
     public long gauge() { return gauge; }
     public boolean downed() { return downed; }
@@ -66,6 +70,7 @@ public final class CombatantState {
     public void setRef(String id, String value) { if (value == null) refs.remove(id); else refs.put(id, value); }
     public boolean flag(String id) { return flags.contains(id); }
     public void setFlag(String id) { flags.add(id); }
+    public void clearFlag(String id) { flags.remove(id); }
 
     public StatusInstance status(String id) { return statuses.get(id); }
     public void putStatus(StatusInstance status) { statuses.put(status.id(), status); }

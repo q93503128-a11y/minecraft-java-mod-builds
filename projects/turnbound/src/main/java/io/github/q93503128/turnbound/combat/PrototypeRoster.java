@@ -33,6 +33,12 @@ public final class PrototypeRoster {
                 new SkillDefinition("p04_rest_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.90)))));
     }
 
+    public static CombatantDefinition borderHunter() {
+        return new CombatantDefinition("F03", "변경 사냥꾼", new BattleStats(650, 88, 56, 103), "f03_shot", List.of(
+                new SkillDefinition("f03_shot", "사격", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.90))),
+                new SkillDefinition("f03_focus_shot", "집중 사격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.45)))));
+    }
+
     public static CombatantDefinition corruptedWalker() {
         return new CombatantDefinition("E001", "부패 보행자", new BattleStats(720, 92, 68, 82), "e001_basic", List.of(
                 new SkillDefinition("e001_basic", "썩은 주먹", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00)))));
@@ -44,20 +50,27 @@ public final class PrototypeRoster {
                 new SkillDefinition("e002_aimed", "조준 사격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.45)))));
     }
 
-    /** alpha.11 production definition: fast pressure unit filling Southgate's SPD/melee gap. */
-    public static CombatantDefinition hookTracker() {
-        return new CombatantDefinition("E003", "갈고리 추적자", new BattleStats(640, 108, 58, 112), "e003_basic", List.of(
-                new SkillDefinition("e003_basic", "갈고리 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.05))),
-                new SkillDefinition("e003_pounce", "사냥 도약", TargetRule.ENEMY_SINGLE, 2,
-                        List.of(SkillEffect.damage(1.35), SkillEffect.selfGaugeAdd(100)))));
+    public static CombatantDefinition unstableExploder() {
+        return new CombatantDefinition("E003", "불안정 폭발체", new BattleStats(650, 125, 50, 78), "e003_basic", List.of(
+                new SkillDefinition("e003_basic", "몸통 박기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.70))),
+                new SkillDefinition("e003_arm", "팽창", TargetRule.SELF, 3, List.of(SkillEffect.selfGaugeAdd(0)),
+                        "Armed 상태가 됩니다. 다음 정규 행동에 대폭발을 사용합니다."),
+                new SkillDefinition("e003_explode", "대폭발", TargetRule.ENEMY_ALL, 0, List.of(SkillEffect.damage(1.20)),
+                        "적 전체에 ATK 120% 피해를 주고 자신은 전투불능이 됩니다.")));
     }
 
-    /** alpha.11 production definition: slow defensive anchor for mixed Southgate parties. */
-    public static CombatantDefinition ironSentinel() {
-        return new CombatantDefinition("E004", "철갑 파수병", new BattleStats(980, 84, 130, 70), "e004_basic", List.of(
-                new SkillDefinition("e004_basic", "철갑 타격", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.85))),
-                new SkillDefinition("e004_bulwark", "전열 방벽", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.barrier(0.08)))));
+    /** Compatibility name retained for alpha.11 code/tests. */
+    public static CombatantDefinition hookTracker() { return unstableExploder(); }
+
+    public static CombatantDefinition roadsideRaider() {
+        return new CombatantDefinition("E004", "길목 약탈자", new BattleStats(680, 98, 64, 100), "e004_basic", List.of(
+                new SkillDefinition("e004_basic", "베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00))),
+                new SkillDefinition("e004_stab", "비열한 찌르기", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.55)),
+                        "HP 50% 이하 대상을 우선해 ATK 155% 피해를 줍니다.")));
     }
+
+    /** Compatibility name retained for alpha.11 code/tests. */
+    public static CombatantDefinition ironSentinel() { return roadsideRaider(); }
 
     public static CombatantDefinition fieldMedic() {
         return new CombatantDefinition("E005", "야전 치유사", new BattleStats(590, 82, 60, 94), "e005_basic", List.of(
@@ -65,13 +78,15 @@ public final class PrototypeRoster {
                 new SkillDefinition("e005_reform", "전열 정비", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.defenseUp(0.15, 2)))));
     }
 
-    /** First Chapter 1 boss. Values are an alpha.11 P2 tuning baseline, not a frozen final economy/balance number. */
     public static CombatantDefinition graul() {
-        return new CombatantDefinition("B01", "그라울", new BattleStats(3600, 126, 112, 98), "b01_basic", List.of(
-                new SkillDefinition("b01_basic", "찢기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00))),
-                new SkillDefinition("b01_crush", "대지 압살", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.65))),
-                new SkillDefinition("b01_roar", "균열 포효", TargetRule.ENEMY_ALL, 3,
-                        List.of(SkillEffect.damage(0.55), SkillEffect.gaugeAdd(-90)))));
+        return new CombatantDefinition("B01", "들이받는 왕 그라울", new BattleStats(2800, 150, 115, 92), "b01_basic", List.of(
+                new SkillDefinition("b01_basic", "뿔치기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.20))),
+                new SkillDefinition("b01_scratch", "지면 긁기", TargetRule.SELF, 3, List.of(SkillEffect.selfGaugeAdd(0)),
+                        "자신의 ATK +15%, 2행동 지속."),
+                new SkillDefinition("b01_warn", "돌파 예고", TargetRule.SELF, 0, List.of(SkillEffect.selfGaugeAdd(0)),
+                        "다음 정규 행동에 왕의 돌진을 사용합니다."),
+                new SkillDefinition("b01_charge", "왕의 돌진", TargetRule.ENEMY_ALL, 4, List.of(SkillEffect.damage(1.05)),
+                        "적 전체에 ATK 105% 피해.")));
     }
 
     public static CombatantDefinition swordEnemy(String id, String name) {
