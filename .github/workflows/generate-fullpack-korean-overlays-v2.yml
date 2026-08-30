@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: generate-fullpack-korean-overlays-v2
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   generate:
@@ -39,7 +39,18 @@ jobs:
           set -euo pipefail
           python3 projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py
 
+      - name: Preserve generated overlays for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fullpack-korean-overlays-nllb
+          path: |
+            projects/frontier-settlement/src/main/resources/assets/*/lang/ko_kr.json
+            projects/survival-ascension/src/main/resources/assets/*/lang/ko_kr.json
+          if-no-files-found: warn
+
       - name: Commit overlays safely on latest main
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
