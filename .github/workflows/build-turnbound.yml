@@ -52,6 +52,27 @@ jobs:
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
+      - name: Verify built JAR
+        working-directory: projects/turnbound
+        run: |
+          shopt -s nullglob
+          jars=(build/libs/turnbound-*.jar)
+          test "${#jars[@]}" -eq 1
+          jar_file="${jars[0]}"
+          echo "Verifying $jar_file"
+          jar tf "$jar_file" > jar-contents.txt
+          grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
+          grep -qx 'data/turnbound/characters/v04.json' jar-contents.txt
+          grep -qx 'data/turnbound/enemies/v04.json' jar-contents.txt
+          grep -qx 'data/turnbound/equipment/v04.json' jar-contents.txt
+          grep -qx 'data/turnbound/battles/v04.json' jar-contents.txt
+          unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
+          grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
+          unzip -p "$jar_file" META-INF/MANIFEST.MF > built-manifest.mf
+          grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
+          grep -q '^Implementation-Version: ' built-manifest.mf
+          sha256sum "$jar_file"
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
