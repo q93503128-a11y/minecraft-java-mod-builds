@@ -14,7 +14,7 @@ class V04BattleRuntimeTest {
     @Test
     void gaugeAndCooldownCommitBeforePrimaryEffects() {
         CombatantState hunter = new CombatantState("hunter", CanonicalData.definition("E012", 1, 0, false), CombatantSide.ENEMY, 0);
-        CombatantState target = new CombatantState("target", PrototypeRoster.trainingEnemy("TARGET", 9999, 50, 50, 100), CombatantSide.ALLY, 1);
+        CombatantState target = new CombatantState("target", PrototypeRoster.trainingEnemy("TARGET", "Target", 9999, 50, 50, 100), CombatantSide.ALLY, 1);
         hunter.setGauge(1000);
         target.setGauge(500);
         BattleEngine engine = new BattleEngine(new BattleState(List.of(target, hunter)));
@@ -32,7 +32,7 @@ class V04BattleRuntimeTest {
     void morwenReturnsAfterExactlyTwoOtherRegularActions() {
         CombatantState morwen = new CombatantState("morwen", CanonicalData.definition("P06", 1, 5, false), CombatantSide.ALLY, 0);
         CombatantState survivor = new CombatantState("survivor", PrototypeRoster.kyren(), CombatantSide.ALLY, 1);
-        CombatantState killer = new CombatantState("killer", PrototypeRoster.trainingEnemy("KILLER", 99999, 5000, 0, 100), CombatantSide.ENEMY, 2);
+        CombatantState killer = new CombatantState("killer", PrototypeRoster.trainingEnemy("KILLER", "Killer", 99999, 5000, 0, 100), CombatantSide.ENEMY, 2);
         BattleEngine engine = new BattleEngine(new BattleState(List.of(morwen, survivor, killer)));
 
         killer.setGauge(1000);
@@ -43,13 +43,13 @@ class V04BattleRuntimeTest {
 
         survivor.setGauge(1000);
         assertEquals("survivor", engine.nextReady().instanceId());
-        engine.useSkill("survivor", "p01_basic", "killer");
+        engine.useSkill("survivor", "p01_chase_slash", "killer");
         assertTrue(morwen.downed());
         assertEquals(1, morwen.counter("p06_return_wait"));
 
         survivor.setGauge(1000);
         assertEquals("survivor", engine.nextReady().instanceId());
-        engine.useSkill("survivor", "p01_basic", "killer");
+        engine.useSkill("survivor", "p01_chase_slash", "killer");
         assertFalse(morwen.downed());
         assertEquals((int)Math.floor(morwen.maxHp() * 0.35), morwen.hp());
         assertEquals(0, morwen.gauge());
@@ -61,13 +61,13 @@ class V04BattleRuntimeTest {
         CombatantState a2 = new CombatantState("a2", PrototypeRoster.kyren(), CombatantSide.ALLY, 1);
         CombatantState a3 = new CombatantState("a3", PrototypeRoster.bram(), CombatantSide.ALLY, 2);
         CombatantState a4 = new CombatantState("a4", PrototypeRoster.elysia(), CombatantSide.ALLY, 3);
-        CombatantState enemy = new CombatantState("enemy", PrototypeRoster.trainingEnemy("ENEMY", 99999, 1, 0, 30), CombatantSide.ENEMY, 4);
+        CombatantState enemy = new CombatantState("enemy", PrototypeRoster.trainingEnemy("ENEMY", "Enemy", 99999, 1, 0, 30), CombatantSide.ENEMY, 4);
         BattleState state = new BattleState(List.of(marion, a2, a3, a4, enemy));
         BattleEngine engine = new BattleEngine(state);
 
         marion.setGauge(1000);
         assertEquals("marion", engine.nextReady().instanceId());
-        engine.useSkill("marion", "p07_summon");
+        engine.useSkill("marion", "p07_summon_toto");
 
         assertEquals(5, state.living(CombatantSide.ALLY).size());
         CombatantState summon = state.living(CombatantSide.ALLY).stream().filter(unit -> unit.definition().summon()).findFirst().orElse(null);
@@ -85,7 +85,7 @@ class V04BattleRuntimeTest {
     }
 
     private static void assertFirstPhase(String bossId, double preDamageRatio, String phaseFlag, String expectedAdd) {
-        CombatantState striker = new CombatantState("striker", PrototypeRoster.trainingEnemy("STRIKER", 99999, 1, 0, 100), CombatantSide.ALLY, 0);
+        CombatantState striker = new CombatantState("striker", PrototypeRoster.trainingEnemy("STRIKER", "Striker", 99999, 1, 0, 100), CombatantSide.ALLY, 0);
         CombatantState boss = new CombatantState("boss", CanonicalData.definition(bossId, 1, 0, false), CombatantSide.ENEMY, 1);
         boss.takeDamage((int)Math.floor(boss.maxHp() * preDamageRatio));
         BattleState state = new BattleState(List.of(striker, boss));
