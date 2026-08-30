@@ -49,7 +49,7 @@ public final class PrototypeRoster {
         return new CombatantDefinition("E003", "갈고리 추적자", new BattleStats(640, 108, 58, 112), "e003_basic", List.of(
                 new SkillDefinition("e003_basic", "갈고리 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.05))),
                 new SkillDefinition("e003_pounce", "사냥 도약", TargetRule.ENEMY_SINGLE, 2,
-                        List.of(SkillEffect.damage(1.35), SkillEffect.selfGaugeAdd(100))))));
+                        List.of(SkillEffect.damage(1.35), SkillEffect.selfGaugeAdd(100)))));
     }
 
     /** alpha.11 production definition: slow defensive anchor for mixed Southgate parties. */

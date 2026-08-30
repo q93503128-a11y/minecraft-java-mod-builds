@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 턴제 RPG.
 
-현재 버전: `0.1.0-alpha.10` — alpha.9 직접 타겟/스킬 UX를 유지하면서 전투 카메라를 v0.4 기술 정본 값으로 고정하고, P2→P4 전체 제작 게이트를 명문화.
+현재 버전: `0.1.0-alpha.11` — Southgate Meadow Chapter 1 첫 콘텐츠 루프.
 
 ## 현재 구현 범위
 - 서버 정본 SPD 누적 Turn Gauge 엔진
@@ -13,24 +13,25 @@ Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 �
 - P01 카이렌, P02 루메아, P03 브람, P04 엘리시아
 - 서버 권한 적 AI 및 AUTO
 - 모든 스킬 `선택 → 필요 시 대상 → 사용 확정`
-- 단일 대상 스킬은 자동 첫 타겟을 잡지 않고 실제 3D 전투원 클릭 또는 Tab으로 선택
-- 3D 클릭 판정은 발~머리 body capsule 기반
-- 스킬 버튼 hover 시 대상/쿨타임/남은 쿨타임/효과 상세 설명
-- 전투원 anchor 평균을 기준으로 하는 orbit/zoom 카메라
-- 카메라 정본: 기본 pitch 22°, distance 11, clamp -10~58° / 6~18 blocks, drag 0.18°/px·0.15°/px, wheel 0.75 block
-- 실제 3인칭 카메라 위치 계산과 렌더 yaw/pitch 동기화
-- 전투/필드에서 Minecraft Player는 생존 전투원이 아니라 이동·카메라·세션 shell
-- 바닐라 플레이어 피해 무시, 허기 제거, 생존 HUD 제거
+- 단일 대상 스킬은 실제 3D 전투원 클릭 또는 Tab으로 선택
+- 스킬 hover 상세 설명
+- 전투원 anchor 평균 중심 orbit/zoom 카메라
+- Minecraft Player는 전투원이 아닌 이동·카메라·세션 shell
+- 바닐라 플레이어 피해/허기/생존 HUD 제거
 
-## Southgate Meadow A01
+## Southgate Meadow A01 — Chapter 1
 - Aster March 안의 첫 64×64 제작형 필드 셀
 - X `-32..31`, Z `128..191`, 기준 Y `64`
-- 주도로 / 관개 수로 / 다리 / 조우 공터 / Relay 잔해 / 숲·석재 경계
-- 보이는 적 `E001 부패 보행자 + E002 뼈 사수 + E005 야전 치유사`
+- 주도로 / 관개 수로 / 다리 / 조우 공터 / Relay 잔해 / 남쪽 봉쇄선
+- 가시적 조우 5개 `ENC_M01~M05`
+- 정식 Southgate 적 E001~E005
+- 신규 E003 갈고리 추적자 / E004 철갑 파수병
 - PATROL → ALERT/추적 → ENGAGE
-- 랜덤 인카운터 아님
-- 회피 가능
-- 승리 시 해당 필드 세션에서 제거, 도주/패배 시 유예 후 복귀
+- 랜덤 인카운터 아님 / 회피 가능
+- 조우별 최초 승리 보상 및 Chapter 1 진행도
+- 5개 일반 조우 클리어 후 B01 그라울 출현
+- B01 승리 시 Chapter 1 클리어
+- 입구 `남문 정찰관` 우클릭으로 목표 확인
 - 블록 파괴/설치/바닐라 생존 아이템 진행 차단
 
 ## 조작
@@ -46,27 +47,26 @@ Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 �
 - `R`: 일반 필드전 도주 / 전투 종료 후 복귀
 - `Esc`: 전투 설정
 
-스킬 상세 설명은 스킬 버튼에 마우스를 올리면 표시한다.
-
-## 테스트 진입
-- `/turnbound field` : Southgate Meadow A01 정상 플레이 진입
+## 테스트 명령어
+- `/turnbound field` : Southgate Meadow Chapter 1 정상 진입
+- `/turnbound status` : 현재 5개 조우/B01/누적 보상 진행 확인
 - `/turnbound battle` : 필드 조우를 건너뛰는 4v5 전투 코어 진단
 - `/turnbound leave` : 현재 전투 강제 종료
 - `/turnbound p0` : 결정론적 자동 전투 진단
 
-## 디자인/제작 정본 델타
+## 디자인 정본 델타
 - `DESIGN_DELTA_ALPHA5.md` : 3D 장면 우선
 - `DESIGN_DELTA_ALPHA6.md` : world-first HUD + 비생존 player shell
 - `DESIGN_DELTA_ALPHA7.md` : 전장 카메라 + 3D 타겟 + 명시적 확정
 - `DESIGN_DELTA_ALPHA8_FIELD_CELL.md` : A01 + 가시적 조우
 - `DESIGN_DELTA_ALPHA9_BATTLE_UX.md` : 카메라 피벗/직접 클릭/action dock/hover tooltip
-- `DESIGN_DELTA_ALPHA10_PRODUCTION_GATE.md` : v0.4 전체 목표까지 P2→P4 제작 순서 및 검증 게이트
+- `DESIGN_DELTA_ALPHA10_PRODUCTION_GATE.md` : P2→P3→P4 제작 순서
+- `DESIGN_DELTA_ALPHA11_SOUTHGATE_CH1.md` : ENC_M01~M05 / E003/E004 / 보상 / B01
 
 ## 다음 제작 방향
-기획서 v0.4의 단계 순서를 유지한다.
+기획서 단계 순서를 유지한다.
+- P2 계속: Southgate 셀 확장, 실제 NPC/대화, 퀘스트 UI, 결과창, Relay/Fast Travel, 다음 지역 연결
+- P3: saveSchemaVersion 4, 레벨/성급/보유/가챠/장비/강화/파티 UI/CP
+- P4: ★6 각성/전용 장비/보스/스토리/신규 지역/캐릭터/반복 콘텐츠
 
-- P2 완성: Southgate ENC_M01~M05, NPC, 퀘스트, 보상, 지역 이동, B01
-- P3: 레벨/성급/보유/가챠/장비/강화/파티 UI/CP 및 저장
-- P4: ★6 각성/전용 장비/P01~P08/보스/스토리/전체 지역/반복 콘텐츠
-
-현재 ArmorStand는 시스템 검증용 presentation stand-in이며 최종 캐릭터 모델/애니메이션/VFX가 아니다. 모델/애니메이션/VFX/SFX는 기능 제작과 병행한다.
+현재 ArmorStand는 시스템 검증용 presentation stand-in이며 최종 캐릭터 모델/애니메이션/VFX가 아니다.
