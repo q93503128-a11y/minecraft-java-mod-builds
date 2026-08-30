@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 @Mod(Turnbound.MOD_ID)
 public final class Turnbound {
     public static final String MOD_ID = "turnbound";
-    public static final String VERSION = "0.1.0-alpha.14";
+    public static final String VERSION = "0.1.0-alpha.15";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
@@ -49,6 +49,7 @@ public final class Turnbound {
     private void tick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             PlayerShellRules.maintain(player);
+            FieldSessionManager.ensureAutomatic(player);
             FieldSessionManager.tick(player);
             BattleSessionManager.tick(player);
         }
