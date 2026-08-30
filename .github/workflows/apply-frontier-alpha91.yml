@@ -38,8 +38,11 @@ jobs:
           python projects/frontier-settlement/tools/apply_alpha91_patch.py 2>&1 | tee alpha91-run.log
 
       - name: Java 25 clean build
-        working-directory: projects/frontier-settlement
-        run: ./gradlew clean build --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          cd projects/frontier-settlement
+          ./gradlew clean build --no-daemon --stacktrace 2>&1 | tee ../../alpha91-build.log
 
       - name: Upload Alpha.91 build result
         if: always()
@@ -48,6 +51,7 @@ jobs:
           name: frontier-alpha91-build
           path: |
             alpha91-run.log
+            alpha91-build.log
             projects/frontier-settlement/build/libs/*.jar
           if-no-files-found: ignore
 
