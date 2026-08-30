@@ -43,7 +43,8 @@ public final class BattleSnapshotCodec {
         if (state.currentActorId() != null) {
             CombatantState current = state.combatant(state.currentActorId());
             for (SkillDefinition skill : current.definition().skills()) {
-                out.append("S|").append(skill.id()).append('|').append(safe(skill.name())).append('|')
+                String canonicalSkillId = current.definition().canonicalSkillId(skill.id());
+                out.append("S|").append(canonicalSkillId).append('|').append(safe(skill.name())).append('|')
                         .append(skill.targetRule()).append('|').append(skill.cooldown()).append('|')
                         .append(current.cooldown(skill.id())).append('|').append(safe(skill.description())).append('\n');
             }
