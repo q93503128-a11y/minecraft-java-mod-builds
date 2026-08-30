@@ -9,8 +9,8 @@ import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
+import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.combat.TargetRule;
-import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -39,8 +39,8 @@ public final class BattleSession {
 
     BattleSession(ServerPlayer player, String encounterId) {
         this.encounterId = encounterId == null ? "" : encounterId;
-        BattleState initial = FieldSessionManager.ENCOUNTER_A01_PATROL.equals(this.encounterId)
-                ? P0Scenario.createFieldPatrol()
+        BattleState initial = SouthgateEncounterCatalog.contains(this.encounterId)
+                ? SouthgateEncounterCatalog.createBattle(this.encounterId)
                 : P0Scenario.create();
         engine = new BattleEngine(initial);
         returnPosition = player.position();

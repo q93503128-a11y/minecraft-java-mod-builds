@@ -17,12 +17,16 @@ public final class TurnboundCommands {
                     var player = context.getSource().getPlayerOrException();
                     return FieldSessionManager.enter(player) ? Command.SINGLE_SUCCESS : 0;
                 }))
+                .then(Commands.literal("status").executes(context -> {
+                    var player = context.getSource().getPlayerOrException();
+                    FieldSessionManager.sendStatus(player);
+                    return Command.SINGLE_SUCCESS;
+                }))
                 .then(Commands.literal("p0").executes(context -> {
                     String result = P0Scenario.runAutoDiagnostic(160);
                     context.getSource().sendSuccess(() -> Component.literal("TURNBOUND P0: " + result), false);
                     return Command.SINGLE_SUCCESS;
                 }))
-                // Direct battle start remains a diagnostic shortcut; the normal field flow is visible encounter -> battle.
                 .then(Commands.literal("battle").executes(context -> {
                     var player = context.getSource().getPlayerOrException();
                     BattleSessionManager.start(player);

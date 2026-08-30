@@ -46,13 +46,13 @@ jobs:
             sleep 1
           done
           cat server-smoke.log
-          grep -q 'TURNBOUND 0.1.0-alpha.10 loaded' server-smoke.log
+          grep -q 'TURNBOUND 0.1.0-alpha.11 loaded' server-smoke.log
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: turnbound-alpha10-production-gate
+          name: turnbound-alpha11-southgate-ch1
           path: projects/turnbound/build/libs/*.jar
           if-no-files-found: error

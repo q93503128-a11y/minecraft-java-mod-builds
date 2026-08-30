@@ -5,7 +5,7 @@ import net.minecraft.world.InteractionResult;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** Prevents vanilla survival interaction from becoming the field progression loop. */
+/** Prevents vanilla survival interaction from becoming the field progression loop while allowing TURNBOUND NPC interaction. */
 public final class FieldInteractionGuard {
     private FieldInteractionGuard() {}
 
@@ -24,7 +24,8 @@ public final class FieldInteractionGuard {
     }
 
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (inField(event.getEntity())) {
+        if (event.getEntity() instanceof ServerPlayer player && FieldSessionManager.active(player)) {
+            FieldSessionManager.interactEntity(player, event.getTarget());
             event.setCancellationResult(InteractionResult.SUCCESS);
             event.setCanceled(true);
         }

@@ -17,15 +17,12 @@ public final class P0Scenario {
         return new BattleState(units);
     }
 
+    /** Compatibility entry retained for alpha.8 tests; M01 is now one row of the production catalog. */
     public static BattleState createFieldPatrol() {
-        List<CombatantState> units = baseAllies();
-        units.add(new CombatantState("enemy_e001", PrototypeRoster.corruptedWalker(), CombatantSide.ENEMY, 4));
-        units.add(new CombatantState("enemy_e002", PrototypeRoster.boneArcher(), CombatantSide.ENEMY, 5));
-        units.add(new CombatantState("enemy_e005", PrototypeRoster.fieldMedic(), CombatantSide.ENEMY, 6));
-        return new BattleState(units);
+        return SouthgateEncounterCatalog.createBattle(SouthgateEncounterCatalog.ENC_M01);
     }
 
-    private static List<CombatantState> baseAllies() {
+    static List<CombatantState> baseAllies() {
         List<CombatantState> units = new ArrayList<>();
         units.add(new CombatantState("ally_kyren", PrototypeRoster.kyren(), CombatantSide.ALLY, 0));
         units.add(new CombatantState("ally_lumea", PrototypeRoster.lumea(), CombatantSide.ALLY, 1));
@@ -102,19 +99,31 @@ public final class P0Scenario {
         List<CombatantState> own = state.living(CombatantSide.ENEMY);
         switch (actor.definition().id()) {
             case "E002" -> {
-                CombatantState target = allies.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElseThrow();
+                CombatantState target = weakest(allies);
                 String skill = actor.cooldown("e002_aimed") == 0 ? "e002_aimed" : "e002_basic";
                 engine.useSkill(actor.instanceId(), skill, target.instanceId());
             }
+            case "E003" -> {
+                CombatantState target = highestGaugeTarget(allies);
+                String skill = actor.cooldown("e003_pounce") == 0 ? "e003_pounce" : "e003_basic";
+                engine.useSkill(actor.instanceId(), skill, target.instanceId());
+            }
+            case "E004" -> {
+                boolean needsBarrier = own.stream().anyMatch(unit -> unit.barrier() == 0);
+                if (needsBarrier && actor.cooldown("e004_bulwark") == 0) engine.useSkill(actor.instanceId(), "e004_bulwark");
+                else engine.useSkill(actor.instanceId(), "e004_basic", distributedTarget(allies, actor).instanceId());
+            }
             case "E005" -> {
                 if (actor.cooldown("e005_reform") == 0) engine.useSkill(actor.instanceId(), "e005_reform");
-                else {
-                    CombatantState target = own.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElseThrow();
-                    engine.useSkill(actor.instanceId(), "e005_basic", target.instanceId());
-                }
+                else engine.useSkill(actor.instanceId(), "e005_basic", weakest(own).instanceId());
+            }
+            case "B01" -> {
+                if (actor.cooldown("b01_roar") == 0) engine.useSkill(actor.instanceId(), "b01_roar");
+                else if (actor.cooldown("b01_crush") == 0) engine.useSkill(actor.instanceId(), "b01_crush", weakest(allies).instanceId());
+                else engine.useSkill(actor.instanceId(), "b01_basic", distributedTarget(allies, actor).instanceId());
             }
             case "E_ARCHER" -> {
-                CombatantState target = allies.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElseThrow();
+                CombatantState target = weakest(allies);
                 String skill = actor.cooldown("e_archer_active") == 0 ? "e_archer_active" : "e_archer_basic";
                 engine.useSkill(actor.instanceId(), skill, target.instanceId());
             }
@@ -128,13 +137,20 @@ public final class P0Scenario {
                 if (actor.cooldown("e_shaman_active") == 0) {
                     engine.useSkill(actor.instanceId(), "e_shaman_active");
                     for (CombatantState unit : state.living(CombatantSide.ENEMY)) unit.putStatus(new StatusInstance("attack_multiplier", actor.instanceId(), 2, 0.15));
-                } else {
-                    CombatantState target = own.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())).orElseThrow();
-                    engine.useSkill(actor.instanceId(), "e_shaman_basic", target.instanceId());
-                }
+                } else engine.useSkill(actor.instanceId(), "e_shaman_basic", weakest(own).instanceId());
             }
             default -> engine.useSkill(actor.instanceId(), actor.definition().basicSkillId(), distributedTarget(allies, actor).instanceId());
         }
+    }
+
+    private static CombatantState weakest(List<CombatantState> units) {
+        return units.stream().min(Comparator.comparingDouble(unit -> unit.hp() / (double) unit.maxHp())
+                .thenComparingInt(CombatantState::initiativeSeed)).orElseThrow();
+    }
+
+    private static CombatantState highestGaugeTarget(List<CombatantState> units) {
+        return units.stream().max(Comparator.comparingLong(CombatantState::gauge)
+                .thenComparingInt(unit -> -unit.initiativeSeed())).orElseThrow();
     }
 
     private static CombatantState priorityEnemy(List<CombatantState> enemies) {
@@ -144,10 +160,11 @@ public final class P0Scenario {
 
     private static int enemyPriority(String id) {
         if (id.equals("E005") || id.equals("E_SHAMAN")) return 0;
-        if (id.equals("E002") || id.equals("E_ARCHER")) return 1;
+        if (id.equals("E002") || id.equals("E003") || id.equals("E_ARCHER")) return 1;
         if (id.equals("E001") || id.startsWith("E_SWORD")) return 2;
-        if (id.equals("E_SHIELD")) return 3;
-        return 4;
+        if (id.equals("E004") || id.equals("E_SHIELD")) return 3;
+        if (id.equals("B01")) return 4;
+        return 5;
     }
 
     private static CombatantState distributedTarget(List<CombatantState> allies, CombatantState actor) {
