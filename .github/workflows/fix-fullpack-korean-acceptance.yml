@@ -1,0 +1,48 @@
+name: Fix Full Pack Korean Acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-fullpack-korean-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Patch translation acceptance and ICU strings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/apply-fullpack-korean-jei.yml')
+          s=p.read_text(encoding='utf-8')
+
+          anchor="""              'Advanced Mob Catcher':'고급 몹 포획',\n          }\n"""
+          repl="""              'Advanced Mob Catcher':'고급 몹 포획',\n              '{0} {1,choice,0#Buckets|1#Bucket|1.0<Buckets}':'{0} {1,choice,0#양동이|1#양동이|1.0<양동이}',\n              '{0} {1,choice,0#Millibuckets|1#Millibucket|1.0<Millibuckets}':'{0} {1,choice,0#밀리버킷|1#밀리버킷|1.0<밀리버킷}',\n              '{1,choice,1#Small|2≤Medium|4≤Large|8≤Huge} {0}':'{1,choice,1#소형|2≤중형|4≤대형|8≤초대형} {0}',\n          }\n"""
+          if anchor not in s:
+              raise SystemExit('manual map anchor not found')
+          s=s.replace(anchor,repl,1)
+
+          old="""                  # Proper names / formatting tokens may retain Latin text, so only flag a value that stayed byte-identical English.\n                  if v == en[k] and en[k] not in manual:\n                      english_left.append(f'{ns}:{k}={v}')\n"""
+          new="""                  # Formatting-only values such as %s, {0}, profile numbers and ICU shells are intentionally language-neutral.\n                  # Only fail byte-identical values when there is translatable Latin text outside protected formatting tokens.\n                  literal=TOKEN_RE.sub('',en[k])\n                  if v == en[k] and en[k] not in manual and re.search(r'[A-Za-z]{2,}',literal):\n                      english_left.append(f'{ns}:{k}={v}')\n"""
+          if old not in s:
+              raise SystemExit('acceptance anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add .github/workflows/apply-fullpack-korean-jei.yml
+          git commit -m 'Fix Korean translation acceptance for formatting values'
+          git push origin HEAD:main
