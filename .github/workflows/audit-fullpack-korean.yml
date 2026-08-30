@@ -1,0 +1,124 @@
+name: Audit Full Pack Korean Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-fullpack-korean.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download pinned full-pack mods and compare Korean coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re, urllib.request, zipfile
+          from collections import defaultdict
+          from pathlib import Path
+
+          root = Path.cwd()
+          out = root / 'fullpack-korean-audit'
+          jars = out / 'jars'
+          jars.mkdir(parents=True, exist_ok=True)
+
+          sources = []
+          frontier = json.loads((root/'projects/frontier-settlement/companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          for f in frontier['files']:
+              sources.append({'name': f['filename'], 'url': f['url']})
+
+          survival = json.loads((root/'projects/survival-ascension/modpack/content-lock.json').read_text(encoding='utf-8'))
+          for mod in survival['mods']:
+              req = urllib.request.Request(f"https://api.modrinth.com/v2/version/{mod['version_id']}", headers={'User-Agent':'FullPack-Korean-Audit/1.0'})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  meta = json.load(r)
+              primary = next((f for f in meta['files'] if f.get('primary')), meta['files'][0])
+              sources.append({'name': primary['filename'], 'url': primary['url']})
+
+          dedup = {}
+          for s in sources:
+              dedup.setdefault(s['name'], s)
+          sources = list(dedup.values())
+
+          def download(url, path):
+              req = urllib.request.Request(url, headers={'User-Agent':'FullPack-Korean-Audit/1.0'})
+              with urllib.request.urlopen(req, timeout=90) as r:
+                  path.write_bytes(r.read())
+
+          jar_lang = defaultdict(lambda: {'en': {}, 'ko': {}, 'jars': set()})
+          errors=[]
+          for s in sources:
+              p = jars / re.sub(r'[^A-Za-z0-9._+-]+','_', s['name'])
+              try:
+                  download(s['url'], p)
+                  with zipfile.ZipFile(p) as z:
+                      for n in z.namelist():
+                          m = re.fullmatch(r'assets/([^/]+)/lang/(en_us|ko_kr)\.json', n)
+                          if not m:
+                              continue
+                          ns, lang = m.groups()
+                          try:
+                              data = json.loads(z.read(n).decode('utf-8'))
+                          except Exception as e:
+                              errors.append(f'{s["name"]}:{n}:{e}')
+                              continue
+                          jar_lang[ns]['jars'].add(s['name'])
+                          target = jar_lang[ns]['en' if lang=='en_us' else 'ko']
+                          target.update(data)
+              except Exception as e:
+                  errors.append(f'{s["name"]}:DOWNLOAD_OR_ZIP:{e}')
+
+          # Merge our existing Korean overlays; these are intended to fill companion gaps.
+          for project in ('frontier-settlement','survival-ascension'):
+              assets = root/f'projects/{project}/src/main/resources/assets'
+              if not assets.exists():
+                  continue
+              for p in assets.glob('*/lang/ko_kr.json'):
+                  try:
+                      jar_lang[p.parent.parent.name]['ko'].update(json.loads(p.read_text(encoding='utf-8')))
+                  except Exception as e:
+                      errors.append(f'{p}:{e}')
+
+          report={}
+          missing_all={}
+          for ns, langs in sorted(jar_lang.items()):
+              en=langs['en']; ko=langs['ko']
+              missing={k:v for k,v in en.items() if k not in ko}
+              report[ns]={
+                  'english_keys':len(en),
+                  'korean_keys_after_overlays':len(ko),
+                  'missing_keys':len(missing),
+                  'jars':sorted(langs['jars']),
+              }
+              if missing:
+                  missing_all[ns]=missing
+
+          (out/'coverage.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          (out/'missing-ko.json').write_text(json.dumps(missing_all,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          (out/'errors.txt').write_text('\n'.join(errors)+'\n',encoding='utf-8')
+
+          # Human-readable summary.
+          lines=[]
+          for ns,r in report.items():
+              lines.append(f"{ns}: en={r['english_keys']} ko={r['korean_keys_after_overlays']} missing={r['missing_keys']}")
+          (out/'summary.txt').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+          print('\n'.join(lines))
+          if errors:
+              print('AUDIT WARNINGS:')
+              print('\n'.join(errors))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fullpack-korean-audit
+          path: fullpack-korean-audit/
+          if-no-files-found: error
