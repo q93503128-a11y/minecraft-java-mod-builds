@@ -669,22 +669,32 @@ public final class SettlementConstructionService {
             return false;
         }
 
-        if (!returnCrateExtrasPhysically(server, data, builder, crate, supply)) return false;
-        if (!crateIsEmpty(crate)) return false;
-        // A single shared builder must finish every project back at its authoritative town anchor.
-        // This prevents the next project from inferring "missing" while the previous builder is
-        // legitimately unloaded at a remote work site. The walk is physical; no teleport/force-load.
-        if (!returnBuilderHome(level, data, builder)) return false;
-        if (level.getBlockState(supply).is(Blocks.BARREL)
-                && !level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return false;
+        // A valid, physically finished structure owns completion. Alpha.86 incorrectly made the
+        // builder's return walk part of the commit condition, so one failed path could hold 99% forever.
+        consolidateCompletionCargo(builder, crate, supply);
+        boolean keepPhysicalLeftovers = !crateIsEmpty(crate) || !builder.getMainHandItem().isEmpty();
         if (!removeConstructionScaffolds(level, data.construction(), type, supply)) return false;
+        if (!keepPhysicalLeftovers && level.getBlockState(supply).is(Blocks.BARREL)
+                && !level.setBlock(supply, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return false;
+
         data.completeConstruction(type);
-        builder.getNavigation().stop();
         builder.setInvulnerable(false);
         builder.setCustomName(Component.literal(BUILDER_NAME));
+
+        // Best-effort physical return only. It can no longer block completion; no teleport/force-load.
+        returnBuilderHome(level, data, builder);
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
         return true;
+    }
+
+    private static void consolidateCompletionCargo(FrontierWorkerEntity builder, Container crate, BlockPos supply) {
+        ItemStack carried = builder.getMainHandItem();
+        if (carried.isEmpty()) return;
+        if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
+                > SUPPLY_INTERACTION_RANGE_SQR) return;
+        ItemStack remaining = SettlementInventory.insert(crate, carried);
+        builder.setItemSlot(EquipmentSlot.MAINHAND, remaining);
     }
 
     private static boolean returnCrateExtrasPhysically(MinecraftServer server, SettlementData data,

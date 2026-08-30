@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-28",
+  "generated_at": "2026-08-30",
   "status": "candidate_runtime_lock",
   "target": {
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.86"
+    "frontier_settlement": "0.1.0-alpha.87"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -54,7 +54,8 @@
     "Alpha.83 keeps every Alpha.82 companion binary pin unchanged while adding Frontier-owned late-game landmarks (civic hall, trade hall, citadel) and the derived Frontier Capital end-state. Landmark construction still consumes real shared wood/stone through the existing builder transaction; the trade hall only boosts existing physical relic emerald payout, the citadel only extends existing loaded watchtower coverage, and no companion code/assets, new currency, force-load, teleport or second logistics authority is added.",
     "Alpha.84 keeps every Alpha.83 companion binary pin unchanged while replacing vanilla Villager worker bodies with a Frontier-owned PathfinderMob runtime; villager model/texture reuse is client-only presentation.",
     "Alpha.85 keeps every Alpha.84 companion binary pin unchanged while fixing building pacing: building construction now ticks independently of the five-tick infrastructure scheduler, grading/build intervals are 3/4 ticks, ordinary work reach is 3.5 blocks, and the same physical builder hauls/reserves up to 32 real material items per category. No teleport, force-load, virtual resource ledger, second builder authority, or companion dependency is added.",
-    "Alpha.86 keeps every Alpha.85 companion binary pin unchanged while removing the remaining ordinary-building pacing bottlenecks: site material staging now uses a 64-item target with an 8-item low-water refill gate instead of one-item micro-resupply, grade/build cadence is 1/2 ticks, and the same physical builder uses a 10.5-block local work envelope with faster navigation modifiers for the few storage/site/home walks that remain. Real ItemStacks, loaded-chunk boundaries, one-builder authority, rollback rules, no force-load and no teleport are unchanged."
+    "Alpha.86 keeps every Alpha.85 companion binary pin unchanged while removing the remaining ordinary-building pacing bottlenecks: site material staging now uses a 64-item target with an 8-item low-water refill gate instead of one-item micro-resupply, grade/build cadence is 1/2 ticks, and the same physical builder uses a 10.5-block local work envelope with faster navigation modifiers for the few storage/site/home walks that remain. Real ItemStacks, loaded-chunk boundaries, one-builder authority, rollback rules, no force-load and no teleport are unchanged.",
+    "Alpha.87 keeps every Alpha.86 companion binary pin unchanged. Local production workers accumulate compatible real output up to one 64-item stack before ordinary return trips, search a wider loaded-only work envelope, farms automatically restore missing wheat on their own farmland, and a physically complete building no longer waits at 99% for the builder to path home. No force-loading, teleport logistics, periodic civilian upkeep, virtual resource ledger, or second construction authority is introduced."
   ],
   "entries": [
     {

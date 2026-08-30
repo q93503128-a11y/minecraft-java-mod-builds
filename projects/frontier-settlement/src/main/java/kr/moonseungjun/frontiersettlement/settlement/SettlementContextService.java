@@ -133,7 +133,7 @@ public final class SettlementContextService {
 
     private static int percent(int worked, int total) {
         if (total <= 0) return 0;
-        return Math.max(0, Math.min(99, worked * 100 / total));
+        return Math.max(0, Math.min(100, worked * 100 / total));
     }
 
     private static String buildingDetail(BuildingType type, SettlementData data) {
