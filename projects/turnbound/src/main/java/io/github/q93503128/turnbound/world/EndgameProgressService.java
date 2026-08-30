@@ -27,7 +27,8 @@ public final class EndgameProgressService {
         int gold = rewardGold(encounterId);
         int crystal = firstClear ? firstClearCrystal(encounterId) : 0;
         int essence = firstClear ? firstClearEssence(encounterId) : 0;
-        List<String> equipment = firstClearEquipment(encounterId);
+        List<String> equipment = firstClear && EndgameEncounterCatalog.hardBoss(encounterId)
+                ? List.of("T4 장비 선택권 ×1") : List.of();
         return new BattleResultSummary(0, gold, crystal, essence, equipment, firstClear, party(playerId));
     }
 
@@ -47,8 +48,8 @@ public final class EndgameProgressService {
             if (preview.crystal() > 0) profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, preview.crystal());
             if (preview.starEssence() > 0) profile.grant(PlayerProfile.Currency.STAR_ESSENCE, preview.starEssence());
             if (EndgameEncounterCatalog.hardBoss(encounterId)) equipment.grantChoiceToken("T4", 1);
-            // v0.4 says F10/F20/F30 add a T3/T4 choice reward but does not assign an exact tier per milestone.
-            // Do not fabricate a tier here; this remains an explicit content-audit gap.
+            // v0.4 states that F10/F20/F30 add a T3/T4 choice reward, but does not assign an exact tier.
+            // That ambiguous tier is intentionally left as a content-audit gap rather than fabricated here.
         }
 
         CampaignProgressStore.restore(playerId, new CampaignProgressStore.Snapshot(
@@ -76,15 +77,6 @@ public final class EndgameProgressService {
 
     private static int firstClearEssence(String encounterId) {
         return EndgameEncounterCatalog.rift(encounterId) ? 25 : 0;
-    }
-
-    private static List<String> firstClearEquipment(String encounterId) {
-        if (EndgameEncounterCatalog.hardBoss(encounterId)) return List.of("T4 장비 선택권 ×1");
-        if (EndgameEncounterCatalog.rift(encounterId)) {
-            int floor = EndgameEncounterCatalog.riftFloorNumber(encounterId);
-            if (floor == 10 || floor == 20 || floor == 30) return List.of("T3/T4 선택 보상 · 정본 티어 배정 미정");
-        }
-        return List.of();
     }
 
     private static List<BattleResultSummary.PartyXp> party(UUID playerId) {
