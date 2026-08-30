@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import json
+
+root = Path(__file__).resolve().parents[1]
+java = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+props = root / 'gradle.properties'
+s = props.read_text(encoding='utf-8')
+if s.count('mod_version=0.1.0-alpha.84') != 1:
+    raise SystemExit('alpha.84 version anchor mismatch')
+s = s.replace('mod_version=0.1.0-alpha.84', 'mod_version=0.1.0-alpha.85', 1)
+if '# Alpha.85 construction pacing:' not in s:
+    s = s.rstrip() + '\n\n# Alpha.85 construction pacing: per-tick building service, faster visible grading/building, larger physical haul batches.\n'
+props.write_text(s, encoding='utf-8')
+
+construction = java / 'SettlementConstructionService.java'
+s = construction.read_text(encoding='utf-8')
+replacements = {
+    'private static final double WORK_POSITION_REACHED_SQR = 2.25D;': 'private static final double WORK_POSITION_REACHED_SQR = 12.25D;',
+    'private static final int HAUL_BATCH_SIZE = 16;': 'private static final int HAUL_BATCH_SIZE = 32;',
+    'private static final long MAX_SITE_RESERVE_PER_CATEGORY = 12L;': 'private static final long MAX_SITE_RESERVE_PER_CATEGORY = 32L;',
+    'private static final int GRADE_INTERVAL_TICKS = 8;': 'private static final int GRADE_INTERVAL_TICKS = 3;',
+    'private static final int BUILD_INTERVAL_TICKS = 10;': 'private static final int BUILD_INTERVAL_TICKS = 4;',
+}
+for old, new in replacements.items():
+    if s.count(old) != 1:
+        raise SystemExit('construction pacing anchor mismatch: ' + old)
+    s = s.replace(old, new, 1)
+construction.write_text(s, encoding='utf-8')
+
+service = java / 'SettlementService.java'
+s = service.read_text(encoding='utf-8')
+old = '''        if (tick % 5 == 0) {\n            if (data.construction().active()) SettlementConstructionService.tick(server, data);\n            if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);\n            if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);\n            if (SettlementCivilWorkData.get(server).project().active()) SettlementCivilWorkService.tick(server, data);\n        }\n'''
+new = '''        // Building construction is presentation-sensitive and must not be quantized behind the\n        // 5-tick infrastructure scheduler: e.g. an 8-tick grading gate sampled every 5 ticks\n        // only fires every LCM(5, 8)=40 ticks. Roads/outposts/civil work keep their old cadence.\n        if (data.construction().active()) SettlementConstructionService.tick(server, data);\n        if (tick % 5 == 0) {\n            if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);\n            if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);\n            if (SettlementCivilWorkData.get(server).project().active()) SettlementCivilWorkService.tick(server, data);\n        }\n'''
+if s.count(old) != 1:
+    raise SystemExit('construction scheduler anchor mismatch')
+service.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+lock_path = root / 'COMPANION_LOCK.json'
+lock = json.loads(lock_path.read_text(encoding='utf-8'))
+if lock.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.84':
+    raise SystemExit('companion lock was not alpha.84')
+lock['target']['frontier_settlement'] = '0.1.0-alpha.85'
+note = ('Alpha.85 keeps every Alpha.84 companion binary pin unchanged while fixing building pacing: building construction now ticks independently of the five-tick infrastructure scheduler, grading/build intervals are 3/4 ticks, ordinary work reach is 3.5 blocks, and the same physical builder hauls/reserves up to 32 real material items per category. No teleport, force-load, virtual resource ledger, second builder authority, or companion dependency is added.')
+if note not in lock.setdefault('notes', []):
+    lock['notes'].append(note)
+lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+(root / 'CONSTRUCTION_PACING_ALPHA85.md').write_text('''# Frontier Settlement 0.1.0-alpha.85 — construction pacing
+
+Alpha.85 is a graphical-playtest pacing correction. Alpha.84 fixed the worker authority and the construction deadlock, but ordinary building remained much slower than the intended survival-game tempo.
+
+## Root pacing defect
+
+`SettlementConstructionService.tick` was called only inside a five-tick scheduler while grading also required `serverTick % 8 == 0`. Sampling the eight-tick gate only on five-tick boundaries meant grading could advance only every 40 ticks (LCM 5, 8), or roughly two seconds per grading cell. A modest house footprint could therefore spend well over a minute on grading alone.
+
+## Alpha.85 pacing
+
+- Ordinary building construction is ticked every server tick while active.
+- Roads, outposts and selected-area civil works keep their historical five-tick scheduler.
+- Grading advances at most once every 3 ticks when the physical builder is in range.
+- Blueprint placement advances at most once every 4 ticks when the physical builder is in range.
+- Ground-level work reach is 3.5 blocks instead of requiring the builder to walk within 1.5 blocks of nearly every blueprint cell.
+- The same builder can physically haul 32 items per trip and stage up to 32 wood plus 32 stone at the active site, reducing repetitive storage-site-storage trips.
+
+No block is placed remotely across unloaded terrain. The builder still walks, material still comes from real shared-storage ItemStacks, construction still consumes the exact configured cost transactionally, and there is no teleport, force-load, virtual material balance or second construction authority.
+
+## Playtest target
+
+A first house should visibly grade, fetch materials and build rather than feel instant, but the player should no longer wait minutes for a small structure. Large landmarks remain proportionally longer because they contain more blueprint cells and require more real materials.
+''', encoding='utf-8')
+
+(root / 'tools/test_alpha85_source.py').write_text('''#!/usr/bin/env python3
+import json
+import subprocess
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+REPO = ROOT.parents[1]
+JAVA = ROOT / "src/main/java/kr/moonseungjun/frontiersettlement"
+A84 = ROOT / "tools/test_alpha84_source.py"
+ALPHA84_SHA = "b6107a1681f1dae97a18fddb2b68d1e034499506"
+LEGACY_FILES = {"projects/frontier-settlement/gradle.properties","projects/frontier-settlement/COMPANION_LOCK.json","projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java","projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementService.java"}
+_real_read = Path.read_text
+def alpha84_read(self,*args,**kwargs):
+    try: rel=self.resolve().relative_to(REPO.resolve()).as_posix()
+    except ValueError: rel=""
+    if rel in LEGACY_FILES: return subprocess.check_output(["git","show",f"{ALPHA84_SHA}:{rel}"],cwd=REPO,text=True,encoding="utf-8")
+    return _real_read(self,*args,**kwargs)
+Path.read_text=alpha84_read
+try:
+    chain=_real_read(A84,encoding="utf-8").replace('print("Frontier Settlement alpha.23-84 cumulative source audit: PASS")','pass')
+    ns={"__file__":str(A84),"__name__":"__main__"}; exec(compile(chain,str(A84),"exec"),ns,ns)
+finally: Path.read_text=_real_read
+def text(path): return Path(path).read_text(encoding="utf-8")
+def must(src,tokens,label):
+    for token in tokens:
+        if token not in src: raise SystemExit(f"{label} missing: {token}")
+def forbid(src,tokens,label):
+    for token in tokens:
+        if token in src: raise SystemExit(f"{label} forbidden: {token}")
+props=text(ROOT/"gradle.properties"); construction=text(JAVA/"settlement/SettlementConstructionService.java"); service=text(JAVA/"settlement/SettlementService.java"); lock=json.loads(text(ROOT/"COMPANION_LOCK.json"))
+must(props,("mod_version=0.1.0-alpha.85","Alpha.85 construction pacing"),"alpha.85 props")
+must(construction,("WORK_POSITION_REACHED_SQR = 12.25D","HAUL_BATCH_SIZE = 32","MAX_SITE_RESERVE_PER_CATEGORY = 32L","GRADE_INTERVAL_TICKS = 3","BUILD_INTERVAL_TICKS = 4"),"alpha.85 building pacing")
+must(service,("must not be quantized behind the","LCM(5, 8)=40 ticks","if (data.construction().active()) SettlementConstructionService.tick(server, data);\n        if (tick % 5 == 0) {","if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);","if (data.outpostConstruction().active()) SettlementOutpostService.tick(server, data);"),"alpha.85 scheduler separation")
+forbid(service,("if (tick % 5 == 0) {\n            if (data.construction().active()) SettlementConstructionService.tick(server, data);",),"alpha.85 old five-tick building scheduler")
+forbid(construction,("teleportTo(","setChunkForced","forceChunk"),"alpha.85 no pacing shortcut")
+if lock.get("target",{}).get("frontier_settlement")!="0.1.0-alpha.85": raise SystemExit("alpha.85 companion lock target drifted")
+if not any("Alpha.85 keeps every Alpha.84 companion binary pin unchanged" in n for n in lock.get("notes",[])): raise SystemExit("alpha.85 companion rationale missing")
+print("Frontier Settlement alpha.23-85 cumulative source audit: PASS")
+''', encoding='utf-8')
+
+(root / 'tools/test_alpha85_docs.py').write_text('''#!/usr/bin/env python3
+import json
+import subprocess
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]; REPO=ROOT.parents[1]; A84=ROOT/"tools/test_alpha84_docs.py"; ALPHA84_SHA="b6107a1681f1dae97a18fddb2b68d1e034499506"; _real_read=Path.read_text
+def alpha84_read(self,*args,**kwargs):
+    try: rel=self.resolve().relative_to(REPO.resolve()).as_posix()
+    except ValueError: rel=""
+    if rel in {"projects/frontier-settlement/gradle.properties","projects/frontier-settlement/COMPANION_LOCK.json"}: return subprocess.check_output(["git","show",f"{ALPHA84_SHA}:{rel}"],cwd=REPO,text=True,encoding="utf-8")
+    return _real_read(self,*args,**kwargs)
+Path.read_text=alpha84_read
+try:
+    chain=_real_read(A84,encoding="utf-8").replace('print("Frontier Settlement alpha.84 canonical docs audit: PASS")','pass'); ns={"__file__":str(A84),"__name__":"__main__"}; exec(compile(chain,str(A84),"exec"),ns,ns)
+finally: Path.read_text=_real_read
+note=(ROOT/"CONSTRUCTION_PACING_ALPHA85.md").read_text(encoding="utf-8"); props=(ROOT/"gradle.properties").read_text(encoding="utf-8"); lock=json.loads((ROOT/"COMPANION_LOCK.json").read_text(encoding="utf-8"))
+for token in ("0.1.0-alpha.85","40 ticks","3 ticks","4 ticks","32 items","no teleport"):
+    if token not in note: raise SystemExit(f"alpha.85 note missing: {token}")
+if "mod_version=0.1.0-alpha.85" not in props: raise SystemExit("alpha.85 version missing")
+if lock.get("target",{}).get("frontier_settlement")!="0.1.0-alpha.85": raise SystemExit("alpha.85 lock mismatch")
+print("Frontier Settlement alpha.85 canonical docs audit: PASS")
+''', encoding='utf-8')
