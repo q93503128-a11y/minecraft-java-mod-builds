@@ -11,6 +11,7 @@ import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
+import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import io.github.q93503128.turnbound.world.StarterSliceBootstrap;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +32,7 @@ public final class Turnbound {
     public Turnbound(IEventBus modEventBus) {
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(FieldNetwork::register);
+        modEventBus.addListener(MetaNetwork::register);
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::login);
