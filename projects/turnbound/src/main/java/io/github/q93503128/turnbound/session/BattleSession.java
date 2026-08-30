@@ -11,16 +11,19 @@ import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.combat.TargetRule;
+import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 public final class BattleSession {
     private final BattleEngine engine;
     private final String encounterId;
+    private final UUID ownerId;
     private final Vec3 returnPosition;
     private final float returnYaw;
     private final float returnPitch;
@@ -37,6 +40,7 @@ public final class BattleSession {
     private int delayTicks = 8;
     private boolean finished;
     private boolean readyShown;
+    private BattleResultSummary resultSummary = BattleResultSummary.none();
 
     BattleSession(ServerPlayer player) {
         this(player, "", true, true, true, BattleArenaLocator.locate(player));
@@ -49,6 +53,7 @@ public final class BattleSession {
     BattleSession(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
                   BattleArenaLocator.Arena arena) {
         this.encounterId = encounterId == null ? "" : encounterId;
+        this.ownerId = player.getUUID();
         this.autoAllowed = autoAllowed;
         this.speedAllowed = speedAllowed;
         this.fleeAllowed = fleeAllowed;
@@ -80,6 +85,7 @@ public final class BattleSession {
     public boolean autoAllowed() { return autoAllowed; }
     public boolean speedAllowed() { return speedAllowed; }
     public boolean fleeAllowed() { return fleeAllowed; }
+    public BattleResultSummary resultSummary() { return resultSummary; }
     String encounterId() { return encounterId; }
     Vec3 battleAnchor() { return battleAnchor; }
     float battleYaw() { return battleYaw; }
@@ -91,7 +97,7 @@ public final class BattleSession {
         syncPresentation(level);
         lock(player);
         if (engine.state().outcome() != BattleOutcome.RUNNING) {
-            finished = true;
+            markFinished();
             return;
         }
         if (delayTicks > 0) { delayTicks--; return; }
@@ -109,6 +115,7 @@ public final class BattleSession {
             syncPresentation(level);
             readyShown = false;
             delayTicks = presentationDelay();
+            markFinished();
             BattleNetwork.sync(player, this);
         }
     }
@@ -131,7 +138,7 @@ public final class BattleSession {
             syncPresentation(level);
             readyShown = false;
             delayTicks = presentationDelay();
-            if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
+            markFinished();
             BattleNetwork.sync(player, this);
         } catch (RuntimeException ignored) {
             BattleNetwork.sync(player, this);
@@ -176,7 +183,14 @@ public final class BattleSession {
         try { P0Scenario.chooseAutoAction(engine, engine.state(), actor); }
         catch (RuntimeException ex) { safeBasicFallback(actor); }
         animateRecordedAction(level, actor, eventStart);
-        if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
+    }
+
+    private void markFinished() {
+        if (finished || engine.state().outcome() == BattleOutcome.RUNNING) return;
+        finished = true;
+        if (engine.state().outcome() == BattleOutcome.ALLY_VICTORY && !encounterId.isBlank()) {
+            resultSummary = CampaignProgressStore.previewVictory(ownerId, encounterId);
+        }
     }
 
     private void syncPresentation(ServerLevel level) {
