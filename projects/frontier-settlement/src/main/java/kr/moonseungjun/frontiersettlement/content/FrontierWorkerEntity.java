@@ -6,6 +6,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.PathType;
 
 /**
  * Frontier civilian work body.
@@ -20,6 +21,7 @@ public final class FrontierWorkerEntity extends PathfinderMob {
     public FrontierWorkerEntity(EntityType<? extends FrontierWorkerEntity> type, Level level) {
         super(type, level);
         setPersistenceRequired();
+        setPathfindingMalus(PathType.WATER, -1.0F);
     }
 
     public static AttributeSupplier.Builder createAttributes() {

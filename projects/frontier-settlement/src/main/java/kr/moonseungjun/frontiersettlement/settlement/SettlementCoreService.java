@@ -154,7 +154,7 @@ public final class SettlementCoreService {
 
         BlockPos pos = event.getPos();
         BlockState current = level.getBlockState(pos);
-        if (pos.equals(data.stockpilePos()) && current.is(Blocks.BARREL)) {
+        if (SettlementStorageService.isManagedStoragePosition(data, pos) && current.is(Blocks.BARREL)) {
             event.setCanceled(true);
             event.setNotifyClient(true);
             return;

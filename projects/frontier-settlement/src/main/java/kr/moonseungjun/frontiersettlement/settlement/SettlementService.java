@@ -33,6 +33,7 @@ public final class SettlementService {
             if (SettlementCivilWorkData.get(server).project().active()) SettlementCivilWorkService.tick(server, data);
         }
         SettlementCoreService.tick(server, data);
+        if (tick % 40 == 0) SettlementStorageService.ensureManagedStorage(server.overworld(), data);
         SettlementConstructionOfficeService.tick(server, data);
         SettlementBarracksService.tick(server, data);
         SettlementMilitaryOutpostService.tick(server, data);
@@ -109,6 +110,7 @@ public final class SettlementService {
             return new FoundResult(false, "공동 창고를 월드에 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
         }
         data.found(center, stockpile);
+        SettlementStorageService.ensureManagedStorage(level, data);
         SettlementConstructionService.ensureBuilder(level, data);
         refreshResources(server, data);
         broadcast(server, data);

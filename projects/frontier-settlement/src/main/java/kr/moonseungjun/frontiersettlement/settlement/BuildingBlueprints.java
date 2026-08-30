@@ -163,6 +163,7 @@ public final class BuildingBlueprints {
             b.put(5, 10, z, Blocks.SPRUCE_SLAB.defaultBlockState(), Phase.ROOF);
         }
         b.put(5, 1, 3, Blocks.CRAFTING_TABLE.defaultBlockState(), Phase.FINISH);
+        b.put(5, 1, 6, Blocks.BARREL.defaultBlockState(), Phase.FINISH);
         b.put(2, 1, 5, Blocks.STRIPPED_OAK_LOG.defaultBlockState(), Phase.FINISH);
         b.put(3, 1, 5, Blocks.STRIPPED_OAK_LOG.defaultBlockState(), Phase.FINISH);
         b.put(7, 1, 5, Blocks.STRIPPED_OAK_LOG.defaultBlockState(), Phase.FINISH);

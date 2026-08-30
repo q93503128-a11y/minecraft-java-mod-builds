@@ -369,10 +369,15 @@ worker = replace_once(
 ''',
     "dynamic worker lookup margin",
 )
-# Local work methods: jobsite barrels and rotation-safe farms.
-worker = worker.replace("deliverToTownStorage(level, data, worker, carried);", "deliverToWorksiteStorage(level, data, worker, camp, carried);", 4)
-# The blanket replacement above only touches the first four lumber occurrences in source order. Replace exact
-# farm/quarry/mine method bodies deliberately to avoid accidental changes elsewhere.
+# Local work methods: jobsite barrels and rotation-safe farms. Patch each method inside its
+# own source slice so similarly named delivery calls in another profession can never inherit the
+# wrong BuildingRecord variable.
+start = worker.index("    private static void workLumber(")
+end = worker.index("    private static void workFarm(", start)
+lumber = worker[start:end]
+lumber = lumber.replace("deliverToTownStorage(level, data, worker, carried);", "deliverToWorksiteStorage(level, data, worker, camp, carried);")
+worker = worker[:start] + lumber + worker[end:]
+# Patch farm/quarry/mine method bodies deliberately to avoid accidental changes elsewhere.
 start = worker.index("    private static void workFarm(")
 end = worker.index("    private static void workQuarry(", start)
 farm = worker[start:end]

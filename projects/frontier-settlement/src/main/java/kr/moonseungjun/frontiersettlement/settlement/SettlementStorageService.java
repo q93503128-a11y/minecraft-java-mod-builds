@@ -6,6 +6,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -14,6 +16,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public final class SettlementStorageService {
+    private static final int PUBLIC_STOCKPILE_TARGET_BARRELS = 4;
+    private static final int[][] PUBLIC_STOCKPILE_OFFSETS = {
+            {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
+    };
+
     private SettlementStorageService() {}
 
     /**
@@ -28,9 +35,87 @@ public final class SettlementStorageService {
         return new ArrayList<>(positions);
     }
 
-    public static List<BlockPos> ordinaryStoragePositions(SettlementData data) {
+    /**
+     * Public storage remains ordinary vanilla barrels. The first barrel is the persisted founding
+     * stockpile; up to three safe neighboring cells are maintained as physical capacity annexes.
+     * One vanilla barrel still has 27 slots, so the cluster provides up to 108 slots without a
+     * custom block entity/menu/network protocol or save migration.
+     */
+    public static List<BlockPos> publicStockpilePositions(SettlementData data) {
+        List<BlockPos> positions = new ArrayList<>();
+        BlockPos origin = data.stockpilePos();
+        for (int[] offset : PUBLIC_STOCKPILE_OFFSETS) {
+            positions.add(origin.offset(offset[0], 0, offset[1]));
+        }
+        return positions;
+    }
+
+    public static BlockPos worksiteStoragePosition(BuildingRecord building) {
+        BuildingType type = building.buildingType();
+        if (type == BuildingType.LUMBER_CAMP) return building.localToWorld(5, 1, 6);
+        if (type == BuildingType.FARM) return building.localToWorld(6, 1, 2);
+        if (type == BuildingType.QUARRY || type == BuildingType.MINE) return building.localToWorld(5, 1, 2);
+        return null;
+    }
+
+    public static List<BlockPos> worksiteStoragePositions(SettlementData data) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (BuildingRecord building : data.buildings()) {
+            BlockPos pos = worksiteStoragePosition(building);
+            if (pos != null) positions.add(pos);
+        }
+        return positions;
+    }
+
+    public static boolean isManagedStoragePosition(SettlementData data, BlockPos pos) {
+        for (BlockPos candidate : publicStockpilePositions(data)) {
+            if (candidate.equals(pos)) return true;
+        }
+        for (BlockPos candidate : worksiteStoragePositions(data)) {
+            if (candidate.equals(pos)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Save-compatible backfill. Missing Frontier-owned barrels are created only in loaded, dry,
+     * replaceable cells with solid dry support. Existing block entities and solid player blocks are
+     * never overwritten. A blocked annex is simply skipped and retried on a later maintenance tick.
+     */
+    public static void ensureManagedStorage(ServerLevel level, SettlementData data) {
+        int existingPublic = 0;
+        for (BlockPos pos : publicStockpilePositions(data)) {
+            if (level.hasChunkAt(pos) && level.getBlockState(pos).is(Blocks.BARREL)
+                    && level.getBlockEntity(pos) instanceof Container) existingPublic++;
+        }
+        if (existingPublic < PUBLIC_STOCKPILE_TARGET_BARRELS) {
+            for (BlockPos pos : publicStockpilePositions(data)) {
+                if (existingPublic >= PUBLIC_STOCKPILE_TARGET_BARRELS) break;
+                if (!canSafelyCreateManagedBarrel(level, pos)) continue;
+                if (level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3)
+                        && level.getBlockEntity(pos) instanceof Container) existingPublic++;
+            }
+        }
+        for (BlockPos pos : worksiteStoragePositions(data)) {
+            if (!canSafelyCreateManagedBarrel(level, pos)) continue;
+            level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
+        }
+    }
+
+    private static boolean canSafelyCreateManagedBarrel(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.below())) return false;
+        BlockState current = level.getBlockState(pos);
+        BlockState below = level.getBlockState(pos.below());
+        if (current.is(Blocks.BARREL) && level.getBlockEntity(pos) instanceof Container) return false;
+        if (level.getBlockEntity(pos) != null) return false;
+        if (!current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
+        if (!current.isAir() && !current.canBeReplaced()) return false;
+        return !below.isAir() && !below.canBeReplaced();
+    }
+
+    private static List<BlockPos> generalStoragePositions(SettlementData data) {
         Set<BlockPos> positions = new LinkedHashSet<>();
-        positions.add(data.stockpilePos());
+        positions.addAll(publicStockpilePositions(data));
         for (BuildingRecord building : data.buildings()) {
             if (building.buildingType() == BuildingType.WAREHOUSE) {
                 positions.addAll(WarehouseLayout.storagePositions(building));
@@ -38,6 +123,13 @@ public final class SettlementStorageService {
                 positions.addAll(CartStationLayout.freightPositions(building));
             }
         }
+        return new ArrayList<>(positions);
+    }
+
+    public static List<BlockPos> ordinaryStoragePositions(SettlementData data) {
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        positions.addAll(generalStoragePositions(data));
+        positions.addAll(worksiteStoragePositions(data));
         return new ArrayList<>(positions);
     }
 
@@ -132,10 +224,15 @@ public final class SettlementStorageService {
     }
 
     private static List<BlockPos> depositPositions(SettlementData data, ItemStack stack) {
-        // Wood/stone production can naturally feed the construction office. Food, metal and random
-        // loot stay out of its dedicated material bays unless a player deliberately puts them there.
-        if (SettlementInventory.isWood(stack) || SettlementInventory.isStone(stack)) return storagePositions(data);
-        return ordinaryStoragePositions(data);
+        // Generic delivery never steals another profession's local barrel. Local production workers
+        // explicitly target their own worksite barrel first; shared overflow uses only public/warehouse/
+        // cart storage (plus construction-office material bays for wood/stone).
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        if (SettlementInventory.isWood(stack) || SettlementInventory.isStone(stack)) {
+            positions.addAll(constructionOfficeSupplyPositions(data));
+        }
+        positions.addAll(generalStoragePositions(data));
+        return new ArrayList<>(positions);
     }
 
     public static ItemStack insertAt(ServerLevel level, BlockPos pos, ItemStack stack) {
