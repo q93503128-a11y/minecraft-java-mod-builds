@@ -4,12 +4,12 @@ import io.github.q93503128.turnbound.combat.BattleEngine;
 import io.github.q93503128.turnbound.combat.BattleEvent;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
+import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.EffectType;
 import io.github.q93503128.turnbound.combat.P0Scenario;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
-import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.combat.TargetRule;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import net.minecraft.server.level.ServerLevel;
@@ -57,8 +57,8 @@ public final class BattleSession {
         this.autoAllowed = autoAllowed;
         this.speedAllowed = speedAllowed;
         this.fleeAllowed = fleeAllowed;
-        BattleState initial = SouthgateEncounterCatalog.contains(this.encounterId)
-                ? SouthgateEncounterCatalog.createBattle(this.encounterId)
+        BattleState initial = CampaignEncounterCatalog.contains(this.encounterId)
+                ? CampaignEncounterCatalog.createBattle(ownerId, this.encounterId)
                 : P0Scenario.create();
         engine = new BattleEngine(initial);
         returnPosition = player.position();
