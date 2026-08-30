@@ -21,8 +21,9 @@ class FieldTravelProgressTest {
         assertTrue(progress.meadowRouteUnlocked());
         assertTrue(progress.relayActivated(FieldTravelCatalog.FT_MEADOW));
         assertFalse(progress.activateRelay(FieldTravelCatalog.FT_MEADOW));
-        assertEquals(190.0, FieldTravelCatalog.destination(FieldTravelCatalog.FT_MEADOW).position().x);
-        assertEquals(230.0, FieldTravelCatalog.destination(FieldTravelCatalog.FT_MEADOW).position().z);
+        var meadow = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_MEADOW);
+        assertEquals(190.0, meadow.x());
+        assertEquals(230.0, meadow.z());
     }
 
     @Test

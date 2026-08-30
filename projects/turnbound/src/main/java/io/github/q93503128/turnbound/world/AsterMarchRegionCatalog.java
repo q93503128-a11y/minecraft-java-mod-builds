@@ -26,6 +26,8 @@ public final class AsterMarchRegionCatalog {
     }
 
     public record Anchor(String id, String label, Vec3 position, float yaw) {}
+    /** Primitive mirror used by unit tests that intentionally do not depend on Minecraft runtime classes. */
+    public record Point(double x, double y, double z, float yaw) {}
 
     public static final Region RADIA = new Region("radia", "라디아", -128, 128, -112, 128, 1, 60);
     public static final Region SOUTHGATE = new Region("southgate_meadow", "남문 초원", -80, 430, 120, 360, 1, 6);
@@ -65,5 +67,15 @@ public final class AsterMarchRegionCatalog {
     public static Anchor boss(String id) {
         return BOSSES.stream().filter(anchor -> anchor.id().equals(id)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown boss anchor " + id));
+    }
+
+    public static Point fastTravelPoint(String id) {
+        Anchor anchor = fastTravel(id);
+        return new Point(anchor.position().x, anchor.position().y, anchor.position().z, anchor.yaw());
+    }
+
+    public static Point bossPoint(String id) {
+        Anchor anchor = boss(id);
+        return new Point(anchor.position().x, anchor.position().y, anchor.position().z, anchor.yaw());
     }
 }
