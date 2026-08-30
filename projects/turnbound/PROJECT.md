@@ -5,90 +5,93 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.12`
+- Version: `0.1.0-alpha.13`
 
 ## Toolchain
 - Minecraft Java 26.2
 - NeoForge 26.2.0.62
 - Java 25
 - Gradle 9.2.1
-- ModDevGradle 2.0.143
-- GeckoLib 5.5.3 retained for authored model/animation phase
+- GeckoLib retained for authored model/animation phase
 
-## Combat rules contract
+## Canon authority
+Implementation must be checked against:
+1. `01_세부기획서_v0.4`
+2. `02_수치규칙위키_v0.4`
+3. `03_캐릭터설계위키_v0.4`
+
+Later explicit user decisions may override these. Alpha delta docs may clarify implementation state but do not silently replace v0.4 content.
+
+## Combat contract
 - Turn threshold 1000; action subtracts 1000 rather than resetting Gauge.
 - Gauge overflow survives actions and natural consecutive turns have no arbitrary cap.
 - Player decision time does not advance logical combat time.
 - Cooldowns tick on the owner's later regular actions, not reactions.
 - Basic actions may be non-damaging and have cooldown 0.
 - 1–4 allies / 1–5 enemies.
-- Damage, heal, barrier, gauge manipulation, death, revive, redirect, counter and status effects are represented.
-- P01–P04 are playable.
-- Enemy turns and AUTO are server-authoritative.
-- 1×/2× changes presentation only.
-- General field battles retain deterministic flee; boss/event locks are encounter data.
+- General field battle flee is allowed; boss/event locks are encounter data.
+- B01 is flee-locked.
+- Campaign AUTO/2.0x are locked until B01 first clear.
 
-## Battle UX acceptance
+## Battle UX contract
 - 3D battlefield remains dominant; no full-screen battle veil.
-- Camera pivot is the average position of actual combatant anchors.
-- Detached third-person camera position and rendered yaw/pitch stay synchronized.
-- Default camera: pitch 22°, distance 11; yaw 360°, pitch -10°~58°, distance 6~18.
-- All skills require explicit final confirmation.
-- Single-target skills do not silently preselect the first valid target.
-- Single targets can be selected by clicking the projected 3D combatant body; HUD/Tab remain secondary inputs.
-- Skill actions use a two-column contextual dock and hover detail.
-- Party/enemy state remains edge HUD and must not obscure the center battle scene.
+- Camera pivot derives from battle formation anchors.
+- Every skill requires explicit final confirmation.
+- Single-target skills do not silently preselect the first target.
+- Direct 3D click is primary target input; HUD/Tab are fallbacks.
+- Hovering a skill shows detail.
+- Danger telegraphs must be visible in both world association and HUD/timeline data.
 
-## Southgate Meadow Chapter 1 acceptance
-- A01: X `-32..31`, Z `128..191`, base Y `64`, 64×64.
-- Five visible normal encounters: `ENC_M01~M05`.
-- E001/E002/E005 retain alpha.8 canonical data.
-- E003/E004 remain distinct speed-pressure and defense-anchor roles.
-- All visible encounter compositions use the same definitions as their battle sessions.
-- Field phases: PATROL → ALERT/chase → ENGAGE.
-- Engagement transitions to the same server-authoritative battle session.
-- Battle cleanup returns to exact pre-battle field position/yaw/pitch.
-- Victory removes only that encounter for the current field session.
-- Flee/defeat restores only that encounter after grace.
-- First-clear rewards are idempotent.
-- Five normal clears unlock B01 Graul at the south blockade.
-- B01 victory marks Chapter 1 cleared.
+## Southgate Chapter 1 v0.4 contract
+Campaign party: P01 / P03 / P04 / F03.
 
-## alpha.12 field UX / travel acceptance
-- `남문 정찰관` opens a world-first quest panel, not a full-screen opaque menu.
-- Quest UI shows current objective, five normal encounter states, B01 lock/clear state, cumulative XP/Gold.
-- Field UI state is server-authoritative and synchronized with a dedicated payload.
-- Returning from a victorious encounter opens a reward result panel with first-clear XP/Gold and next objective.
-- A01 relay requires physical interaction before it becomes a Fast Travel destination.
-- A02 relay cannot activate before Chapter 1 clear.
-- B01 clear removes the A02 north lock and allows the player into South Road A02.
-- A02 is contiguous with A01: X `-32..31`, Z `192..255`, base Y `64`.
-- Physically reaching and activating A02 relay enables two-way Fast Travel between the two activated relays.
-- Locked relay destinations are visible but cannot be selected.
-- `/turnbound status` opens the same server-backed quest panel.
-- Field block/item/vanilla combat interactions remain suppressed.
+Encounter template:
+- M01 Lv1 E001×2
+- M02 Lv2 E001+E002
+- M03 Lv3 E004×2
+- M04 Lv4 E003+E002
+- M05 Lv5 E005+E001×2
 
-## Minecraft player shell rule
+Main quest gate:
+- M01+M02 → MQ_C01_01 complete / forward Meadow route
+- M04 E003 fight → MQ_C01_02 complete / B01 route
+- B01 → MQ_C01_03 complete
+M03/M05 remain optional to the main boss gate.
+
+E003: 650/125/50/78, body slam 0.70x, arm, next own normal action AoE 1.20x then self-down.
+E004: 680/98/64/100, slash 1.00x, low-HP priority stab 1.55x CD2.
+E005: 590/82/60/94, heal 0.55x, team DEF +15% 2 owner actions CD3.
+
+B01 Graul:
+- Lv6 / HP2800 ATK150 DEF115 SPD92
+- 100–70: horn 1.20x; ground scratch ATK+15% 2 actions CD3
+- ≤70 once: summon E001+E002; while add alive DEF+15%
+- ≤35 once: SPD+20%
+- charge cycle: warning action → next action ally-all 1.05x, CD4
+
+B01 first clear:
+- XP 5000 / Gold 12000
+- Crystal 1200 / Star Essence 60 / T2 choice box 1
+- P08 / Echo Archive / AUTO / 2.0x unlock
+- P3 must additionally connect tutorial Crystal +1800 so Starter 10-pull is immediately possible.
+
+## Minecraft shell
 TURNBOUND is not a survival game.
 - Vanilla player hearts are not gameplay HP.
 - Incoming vanilla damage to the shell is ignored.
 - Hunger is kept full and is not a resource.
 - Survival HUD is hidden.
-- Combat HP belongs exclusively to party/enemy CombatantState.
+- Combat HP belongs only to CombatantState.
 
-## World contract
+## World
 - Fixed authored RPG world, not vanilla infinite progression.
-- v0.1 target: Aster March 1024×1024.
-- World boundaries are disguised by terrain/architecture/story gating.
-- External maps/structures may be used only with license review and gameplay re-authoring.
-
-## Development target
-Follow the established P2→P3→P4 phase order rather than adding disconnected features.
-- P2: fixed world, visible enemies, encounter, NPC, quest, reward, region travel.
-- P3: level/star progression, ownership, gacha, duplicate conversion, three normal equipment slots, gold enhancement, party UI, CP.
-- P4: ★6 awakening, signature equipment, advanced AUTO, expanded bosses/story/regions/characters, high-difficulty repeatable content.
+- v0.1 target Aster March 1024×1024.
+- Current A01/A02 are Southgate Meadow development cells, not separate chapters.
+- Chapter 2 target is Gloamwood.
+- Final major FT and boss anchors follow v0.4 coordinate tables unless the design docs are revised together.
 
 ## Required validation
 - Java 25 clean test/build green.
 - NeoForge real server boot smoke green.
-- Final JAR metadata/classes/resources verified before handoff.
+- JAR metadata/classes/resources verified.
+- Existing camera/direct-target/explicit-confirm/hover-tooltip regressions remain green.

@@ -25,9 +25,12 @@ public final class BattleSession {
     private final float returnYaw;
     private final float returnPitch;
     private final boolean playerWasInvisible;
-    /** Exact camera pivot: average of the spawned combatant anchors. */
+    private final Vec3 presentationCenter;
     private final Vec3 battleAnchor;
     private final float battleYaw;
+    private final boolean autoAllowed;
+    private final boolean speedAllowed;
+    private final boolean fleeAllowed;
     private final BattlePresentation presentation = new BattlePresentation();
     private boolean auto;
     private int speed = 1;
@@ -35,10 +38,13 @@ public final class BattleSession {
     private boolean finished;
     private boolean readyShown;
 
-    BattleSession(ServerPlayer player) { this(player, ""); }
+    BattleSession(ServerPlayer player) { this(player, "", true, true, true); }
 
-    BattleSession(ServerPlayer player, String encounterId) {
+    BattleSession(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed) {
         this.encounterId = encounterId == null ? "" : encounterId;
+        this.autoAllowed = autoAllowed;
+        this.speedAllowed = speedAllowed;
+        this.fleeAllowed = fleeAllowed;
         BattleState initial = SouthgateEncounterCatalog.contains(this.encounterId)
                 ? SouthgateEncounterCatalog.createBattle(this.encounterId)
                 : P0Scenario.create();
@@ -49,12 +55,12 @@ public final class BattleSession {
         playerWasInvisible = player.isInvisible();
 
         BattleArenaLocator.Arena arena = BattleArenaLocator.locate(player);
-        Vec3 formationCenter = arena.center();
+        presentationCenter = arena.center();
         battleYaw = arena.facingYaw();
         player.setInvisible(true);
-        presentation.spawn((ServerLevel) player.level(), formationCenter, battleYaw, engine.state().combatants());
+        presentation.spawn((ServerLevel) player.level(), presentationCenter, battleYaw, engine.state().combatants());
         Vec3 actualCenter = presentation.center();
-        battleAnchor = actualCenter.lengthSqr() < 0.001 ? formationCenter : actualCenter;
+        battleAnchor = actualCenter.lengthSqr() < 0.001 ? presentationCenter : actualCenter;
         player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
         player.setYRot(battleYaw);
         player.setXRot(18.0F);
@@ -65,6 +71,9 @@ public final class BattleSession {
     public boolean auto() { return auto; }
     public int speed() { return speed; }
     public boolean finished() { return finished; }
+    public boolean autoAllowed() { return autoAllowed; }
+    public boolean speedAllowed() { return speedAllowed; }
+    public boolean fleeAllowed() { return fleeAllowed; }
     String encounterId() { return encounterId; }
     Vec3 battleAnchor() { return battleAnchor; }
     float battleYaw() { return battleYaw; }
@@ -73,18 +82,15 @@ public final class BattleSession {
     void tick(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         presentation.tick(level);
+        syncPresentation(level);
         lock(player);
         if (engine.state().outcome() != BattleOutcome.RUNNING) {
             finished = true;
             return;
         }
-        if (delayTicks > 0) {
-            delayTicks--;
-            return;
-        }
+        if (delayTicks > 0) { delayTicks--; return; }
         CombatantState actor = engine.state().currentActorId() == null
-                ? engine.nextReady()
-                : engine.state().combatant(engine.state().currentActorId());
+                ? engine.nextReady() : engine.state().combatant(engine.state().currentActorId());
         if (!readyShown) {
             readyShown = true;
             delayTicks = presentationDelay();
@@ -94,6 +100,7 @@ public final class BattleSession {
         if (actor.side() == CombatantSide.ENEMY || auto) {
             presentation.clearFocus(level);
             autoAct(level, actor);
+            syncPresentation(level);
             readyShown = false;
             delayTicks = presentationDelay();
             BattleNetwork.sync(player, this);
@@ -115,6 +122,7 @@ public final class BattleSession {
                 engine.useSkill(actorId, skillId, targetId);
             }
             animateDirectDamage(level, actor, skill, targetId);
+            syncPresentation(level);
             readyShown = false;
             delayTicks = presentationDelay();
             if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
@@ -126,10 +134,7 @@ public final class BattleSession {
 
     void focusTarget(ServerPlayer player, String targetId) {
         ServerLevel level = (ServerLevel) player.level();
-        if (targetId == null || targetId.isBlank()) {
-            presentation.clearFocus(level);
-            return;
-        }
+        if (targetId == null || targetId.isBlank()) { presentation.clearFocus(level); return; }
         try {
             engine.state().combatant(targetId);
             presentation.focus(level, targetId);
@@ -139,14 +144,14 @@ public final class BattleSession {
     }
 
     void toggleAuto(ServerPlayer player) {
-        if (finished) return;
+        if (finished || !autoAllowed) return;
         presentation.clearFocus((ServerLevel) player.level());
         auto = !auto;
         BattleNetwork.sync(player, this);
     }
 
     void toggleSpeed(ServerPlayer player) {
-        if (finished) return;
+        if (finished || !speedAllowed) return;
         speed = speed == 1 ? 2 : 1;
         BattleNetwork.sync(player, this);
     }
@@ -166,6 +171,11 @@ public final class BattleSession {
         catch (RuntimeException ex) { safeBasicFallback(actor); }
         animateRecordedAction(level, actor, eventStart);
         if (engine.state().outcome() != BattleOutcome.RUNNING) finished = true;
+    }
+
+    private void syncPresentation(ServerLevel level) {
+        presentation.spawnMissing(level, presentationCenter, battleYaw, engine.state().combatants());
+        presentation.syncDanger(level, engine.state().combatants());
     }
 
     private void animateRecordedAction(ServerLevel level, CombatantState actor, int eventStart) {

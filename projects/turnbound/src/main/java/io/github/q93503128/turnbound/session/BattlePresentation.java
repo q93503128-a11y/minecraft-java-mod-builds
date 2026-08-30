@@ -19,23 +19,30 @@ final class BattlePresentation {
     private final Map<String, UUID> actors = new LinkedHashMap<>();
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
     private UUID focusMarker;
+    private UUID dangerMarker;
+    private String dangerTarget = "";
     private String moving;
     private int returnTicks;
 
     void spawn(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
+        actors.clear();
+        homes.clear();
+        spawnMissing(level, center, facingYaw, combatants);
+    }
+
+    void spawnMissing(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
         Vec3 forward = BattleArenaLocator.forward(facingYaw);
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
         int allyIndex = 0;
         int enemyIndex = 0;
-
         for (CombatantState combatant : combatants) {
             boolean ally = combatant.side() == CombatantSide.ALLY;
             int index = ally ? allyIndex++ : enemyIndex++;
-            double lane = ally ? -3.0 + index * 2.0 : -3.2 + index * 1.6;
-            double depth = ally ? -2.2 : 2.8;
+            if (actors.containsKey(combatant.instanceId())) continue;
+            double lane = ally ? -3.0 + index * 2.0 : -4.0 + index * 2.0;
+            double depth = ally ? -4.0 : 4.0;
             Vec3 raw = center.add(forward.scale(depth)).add(right.scale(lane));
             Vec3 pos = BattleArenaLocator.groundPosition(level, raw);
-
             ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setCustomName(Component.literal(combatant.definition().name()));
             stand.setCustomNameVisible(false);
@@ -45,45 +52,56 @@ final class BattlePresentation {
             stand.setYRot(facingYaw + (ally ? 0.0F : 180.0F));
             equipStandIn(stand, combatant);
             level.addFreshEntity(stand);
-
             actors.put(combatant.instanceId(), stand.getUUID());
             homes.put(combatant.instanceId(), pos);
         }
     }
 
-    Vec3 home(String combatantId) {
-        return homes.get(combatantId);
-    }
+    Vec3 home(String combatantId) { return homes.get(combatantId); }
 
-    /** Camera pivot: actual average of the combatants' fixed battle anchors. */
     Vec3 center() {
         if (homes.isEmpty()) return Vec3.ZERO;
-        double x = 0.0;
-        double y = 0.0;
-        double z = 0.0;
-        for (Vec3 home : homes.values()) {
-            x += home.x;
-            y += home.y;
-            z += home.z;
-        }
+        double x = 0.0, y = 0.0, z = 0.0;
+        for (Vec3 home : homes.values()) { x += home.x; y += home.y; z += home.z; }
         double count = homes.size();
         return new Vec3(x / count, y / count, z / count);
     }
 
     void focus(ServerLevel level, String targetId) {
         clearFocus(level);
-        if (targetId == null || targetId.isBlank()) return;
         Vec3 target = homes.get(targetId);
         if (target == null) return;
+        ArmorStand marker = marker(level, target.add(0, 1.0, 0), "▼", ChatFormatting.RED);
+        focusMarker = marker.getUUID();
+    }
 
-        ArmorStand marker = new ArmorStand(level, target.x, target.y + 1.0, target.z);
+    void syncDanger(ServerLevel level, Iterable<CombatantState> combatants) {
+        String targetId = "";
+        for (CombatantState unit : combatants) {
+            if (!unit.downed() && (unit.status("e003_armed") != null || unit.status("b01_charge_warning") != null)) {
+                targetId = unit.instanceId();
+                break;
+            }
+        }
+        if (targetId.equals(dangerTarget)) return;
+        clearDanger(level);
+        dangerTarget = targetId;
+        if (targetId.isBlank()) return;
+        Vec3 target = homes.get(targetId);
+        if (target == null) return;
+        ArmorStand marker = marker(level, target.add(0, 1.35, 0), "!", ChatFormatting.GOLD);
+        dangerMarker = marker.getUUID();
+    }
+
+    private ArmorStand marker(ServerLevel level, Vec3 pos, String text, ChatFormatting color) {
+        ArmorStand marker = new ArmorStand(level, pos.x, pos.y, pos.z);
         marker.setInvisible(true);
         marker.setInvulnerable(true);
         marker.setNoGravity(true);
-        marker.setCustomName(Component.literal("▼").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+        marker.setCustomName(Component.literal(text).withStyle(color, ChatFormatting.BOLD));
         marker.setCustomNameVisible(true);
         level.addFreshEntity(marker);
-        focusMarker = marker.getUUID();
+        return marker;
     }
 
     void clearFocus(ServerLevel level) {
@@ -91,6 +109,15 @@ final class BattlePresentation {
         var entity = level.getEntity(focusMarker);
         if (entity != null) entity.discard();
         focusMarker = null;
+    }
+
+    private void clearDanger(ServerLevel level) {
+        if (dangerMarker != null) {
+            var entity = level.getEntity(dangerMarker);
+            if (entity != null) entity.discard();
+        }
+        dangerMarker = null;
+        dangerTarget = "";
     }
 
     void lunge(ServerLevel level, String actorId, String targetId) {
@@ -116,6 +143,7 @@ final class BattlePresentation {
 
     void cleanup(ServerLevel level) {
         clearFocus(level);
+        clearDanger(level);
         for (UUID id : actors.values()) {
             var entity = level.getEntity(id);
             if (entity != null) entity.discard();
@@ -134,13 +162,9 @@ final class BattlePresentation {
 
     private static void equipStandIn(ArmorStand stand, CombatantState combatant) {
         boolean ally = combatant.side() == CombatantSide.ALLY;
-        stand.setItemSlot(EquipmentSlot.CHEST,
-                (ally ? Items.CHAINMAIL_CHESTPLATE : Items.IRON_CHESTPLATE).getDefaultInstance());
-        stand.setItemSlot(EquipmentSlot.LEGS,
-                (ally ? Items.LEATHER_LEGGINGS : Items.IRON_LEGGINGS).getDefaultInstance());
-        stand.setItemSlot(EquipmentSlot.FEET,
-                (ally ? Items.LEATHER_BOOTS : Items.IRON_BOOTS).getDefaultInstance());
-
+        stand.setItemSlot(EquipmentSlot.CHEST, (ally ? Items.CHAINMAIL_CHESTPLATE : Items.IRON_CHESTPLATE).getDefaultInstance());
+        stand.setItemSlot(EquipmentSlot.LEGS, (ally ? Items.LEATHER_LEGGINGS : Items.IRON_LEGGINGS).getDefaultInstance());
+        stand.setItemSlot(EquipmentSlot.FEET, (ally ? Items.LEATHER_BOOTS : Items.IRON_BOOTS).getDefaultInstance());
         String id = combatant.definition().id();
         if (ally) {
             ItemStack mainHand = switch (id) {
@@ -148,22 +172,20 @@ final class BattlePresentation {
                 case "P02" -> Items.CLOCK.getDefaultInstance();
                 case "P03" -> Items.IRON_SWORD.getDefaultInstance();
                 case "P04" -> Items.BLAZE_ROD.getDefaultInstance();
+                case "F03" -> Items.BOW.getDefaultInstance();
                 default -> Items.IRON_SWORD.getDefaultInstance();
             };
             stand.setItemSlot(EquipmentSlot.MAINHAND, mainHand);
             if (id.equals("P03")) stand.setItemSlot(EquipmentSlot.OFFHAND, Items.SHIELD.getDefaultInstance());
-            stand.setItemSlot(EquipmentSlot.HEAD, Items.DIAMOND_HELMET.getDefaultInstance());
+            stand.setItemSlot(EquipmentSlot.HEAD, id.equals("F03") ? Items.LEATHER_HELMET.getDefaultInstance() : Items.DIAMOND_HELMET.getDefaultInstance());
             return;
         }
-
         stand.setItemSlot(EquipmentSlot.HEAD, Items.IRON_HELMET.getDefaultInstance());
         switch (id) {
             case "E002", "E_ARCHER" -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BOW.getDefaultInstance());
-            case "E_SHIELD" -> {
-                stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
-                stand.setItemSlot(EquipmentSlot.OFFHAND, Items.SHIELD.getDefaultInstance());
-            }
+            case "E003" -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.TNT.getDefaultInstance());
             case "E005", "E_SHAMAN" -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BLAZE_ROD.getDefaultInstance());
+            case "B01" -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_AXE.getDefaultInstance());
             default -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
         }
     }

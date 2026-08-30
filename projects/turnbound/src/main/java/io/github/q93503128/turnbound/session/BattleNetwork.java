@@ -8,7 +8,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class BattleNetwork {
-    public static final String PROTOCOL = "turnbound-alpha5";
+    public static final String PROTOCOL = "turnbound-alpha13";
 
     private BattleNetwork() {}
 
@@ -17,9 +17,7 @@ public final class BattleNetwork {
         registrar.playToClient(BattleSnapshotPayload.TYPE, BattleSnapshotPayload.STREAM_CODEC);
         registrar.playToServer(BattleCommandPayload.TYPE, BattleCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        BattleSessionManager.command(player, payload.command());
-                    }
+                    if (context.player() instanceof ServerPlayer player) BattleSessionManager.command(player, payload.command());
                 }));
     }
 
@@ -28,6 +26,6 @@ public final class BattleNetwork {
     }
 
     static void close(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload("H|0|0|1|RUNNING||1\n"));
+        PacketDistributor.sendToPlayer(player, new BattleSnapshotPayload("H|0|0|1|RUNNING||1|1|1|1\n"));
     }
 }

@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
+import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -13,12 +14,22 @@ public final class BattleSessionManager {
 
     private BattleSessionManager() {}
 
-    public static void start(ServerPlayer player) { startInternal(player, ""); }
-    public static void startEncounter(ServerPlayer player, String encounterId) { startInternal(player, encounterId); }
-
-    private static void startInternal(ServerPlayer player, String encounterId) {
+    /** Direct diagnostic battle keeps AUTO/2x/flee available for regression testing. */
+    public static void start(ServerPlayer player) {
         end(player);
-        BattleSession session = new BattleSession(player, encounterId);
+        BattleSession session = new BattleSession(player);
+        SESSIONS.put(player.getUUID(), session);
+        BattleNetwork.sync(player, session);
+    }
+
+    public static void startEncounter(ServerPlayer player, String encounterId) {
+        startEncounter(player, encounterId, false, false);
+    }
+
+    public static void startEncounter(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed) {
+        end(player);
+        boolean fleeAllowed = !SouthgateEncounterCatalog.spec(encounterId).boss();
+        BattleSession session = new BattleSession(player, encounterId, autoAllowed, speedAllowed, fleeAllowed);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
     }
@@ -47,7 +58,9 @@ public final class BattleSessionManager {
             case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
             case "AUTO" -> session.toggleAuto(player);
             case "SPEED" -> session.toggleSpeed(player);
-            case "FLEE" -> end(player);
+            case "FLEE" -> {
+                if (session.finished() || session.fleeAllowed()) end(player);
+            }
             default -> { }
         }
     }
