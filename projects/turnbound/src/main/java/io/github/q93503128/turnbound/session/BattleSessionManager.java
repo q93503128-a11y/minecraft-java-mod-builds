@@ -2,8 +2,10 @@ package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
+import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
+import io.github.q93503128.turnbound.world.EndgameProgressService;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -17,7 +19,6 @@ public final class BattleSessionManager {
 
     private BattleSessionManager() {}
 
-    /** Direct diagnostic battle keeps AUTO/2x/flee available for regression testing. */
     public static void start(ServerPlayer player) {
         end(player);
         BattleSession session = new BattleSession(player);
@@ -31,20 +32,29 @@ public final class BattleSessionManager {
 
     public static void startEncounter(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed) {
         end(player);
-        boolean fleeAllowed = !CampaignEncounterCatalog.spec(encounterId).boss();
-        BattleSession session = new BattleSession(player, encounterId, autoAllowed, speedAllowed, fleeAllowed);
+        boolean endgame = EndgameEncounterCatalog.contains(encounterId);
+        if (endgame && !EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) {
+            throw new IllegalStateException("Endgame encounter is locked: " + encounterId);
+        }
+        boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
+        boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
+        boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
+        BattleSession session = new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
     }
 
-    /** Starts a field encounter only when the exact authored formation/camera footprint is open. */
     public static boolean startEncounterAt(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed,
                                            Vec3 center, float yaw) {
         BattleArenaLocator.Arena arena = BattleArenaLocator.fixedIfOpen(player, center, yaw);
         if (arena == null) return false;
         end(player);
-        boolean fleeAllowed = !CampaignEncounterCatalog.spec(encounterId).boss();
-        BattleSession session = new BattleSession(player, encounterId, autoAllowed, speedAllowed, fleeAllowed, arena);
+        boolean endgame = EndgameEncounterCatalog.contains(encounterId);
+        if (endgame && !EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) return false;
+        boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
+        boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
+        boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
+        BattleSession session = new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed, arena);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
         return true;
@@ -85,11 +95,14 @@ public final class BattleSessionManager {
             String encounterId = old.encounterId();
             BattleOutcome outcome = old.state().outcome();
             if (!encounterId.isBlank()) {
-                CampaignProgressStore.commit(player.getUUID(), encounterId, outcome);
+                if (EndgameEncounterCatalog.contains(encounterId)) EndgameProgressService.commit(player.getUUID(), encounterId, outcome);
+                else CampaignProgressStore.commit(player.getUUID(), encounterId, outcome);
                 CampaignPersistence.saveIfDirty(player);
             }
             old.cleanup(player);
-            if (!encounterId.isBlank()) FieldSessionManager.onBattleEnded(player, encounterId, outcome);
+            if (!encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
+                FieldSessionManager.onBattleEnded(player, encounterId, outcome);
+            }
         }
         BattleNetwork.close(player);
     }
