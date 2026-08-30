@@ -32,11 +32,12 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
-      - name: Apply solo balance and QOL patch
+      - name: Apply solo balance and logistics QOL patch
         shell: bash
         run: |
           set -euo pipefail
           python3 "$PROJECT_DIR/tools/apply_061_solo_balance.py"
+          python3 "$PROJECT_DIR/tools/apply_061_logistics_qol.py"
           python3 - <<'PY'
           from pathlib import Path
           p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/equipment/AscensionAffixes.java')
@@ -56,28 +57,23 @@ jobs:
           from pathlib import Path
 
           root = Path('projects/survival-ascension')
-
-          # Keep historical audit files immutable. The current 0.61 wrapper translates only
-          # values/text that this explicitly approved solo-balance pass intentionally changed.
           source = root / 'tools/test_release_source.py'
           s = source.read_text(encoding='utf-8')
           marker = 'namespace = {"__file__": str(legacy_path), "__name__": "__main__"}'
-          additions = '''# 0.61 solo-balance expectation translation; historical contracts stay immutable.\nfor old, new in [\n    ('Math.min(8', 'Math.min(20'),\n    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),\n    ('최대35%', '상한은 70%'),\n    ('최대32%', '최대 2배'),\n    ('new MaterialCost(Items.AMETHYST_SHARD, 48', 'new MaterialCost(Items.AMETHYST_SHARD, 12'),\n    ('new MaterialCost(Items.AMETHYST_SHARD, 96', 'new MaterialCost(Items.AMETHYST_SHARD, 24'),\n    ('재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터', '재료 소비: 같은 차원에서 현재 로딩된 등록 창고 전체를 공용 재고로 사용하고'),\n    ('new LocalRequirement("연료", 8', 'new LocalRequirement("연료", 3'),\n    ('new LocalRequirement("식량", 48', 'new LocalRequirement("식량", 16'),\n    ('new LocalRequirement("철 주괴", 16', 'new LocalRequirement("철 주괴", 5'),\n    ('new LocalRequirement("통나무", 32', 'new LocalRequirement("통나무", 12'),\n    ('new LocalRequirement("식량", 96', 'new LocalRequirement("식량", 32'),\n    ('new LocalRequirement("철 주괴", 32', 'new LocalRequirement("철 주괴", 8'),\n    ('new LocalRequirement("석재 벽돌", 128', 'new LocalRequirement("석재 벽돌", 32'),\n    ('전초재고(식량48/철16/통나무32)', '전초재고(식량16/철5/통나무12)'),\n    ('전초재고(식량96/철32/석재벽돌128)', '전초재고(식량32/철8/석재벽돌32)'),\n    ('전초재고(식량32/철8/연료8)', '전초재고(식량12/철3/연료3)'),\n    ('화물 → 전초 현지재고 → 방어/원정', '반복 배치는 흔한 재료 위주'),\n    ('new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)'),\n    ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),\n    ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),\n]:\n    legacy = legacy.replace(old, new)\n'''
+          additions = '''# 0.61 solo/QOL expectation translation; historical contracts stay immutable.\nfor old, new in [\n    ('Math.min(8', 'Math.min(20'),\n    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),\n    ('최대35%', '상한은 70%'),\n    ('최대32%', '최대 2배'),\n    ('new MaterialCost(Items.AMETHYST_SHARD, 48', 'new MaterialCost(Items.AMETHYST_SHARD, 12'),\n    ('new MaterialCost(Items.AMETHYST_SHARD, 96', 'new MaterialCost(Items.AMETHYST_SHARD, 24'),\n    ('재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터', '재료 소비: 같은 차원에서 현재 로딩된 등록 창고 전체를 공용 재고로 사용하고'),\n    ('new LocalRequirement("연료", 8', 'new LocalRequirement("연료(석탄 또는 숯)", 3'),\n    ('new LocalRequirement("식량", 32', 'new LocalRequirement("식량(밀/당근/감자/비트)", 12'),\n    ('new LocalRequirement("철 주괴", 8', 'new LocalRequirement("철 주괴", 3'),\n    ('new LocalRequirement("식량", 48', 'new LocalRequirement("식량(밀/당근/감자/비트)", 16'),\n    ('new LocalRequirement("철 주괴", 16', 'new LocalRequirement("철 주괴", 5'),\n    ('new LocalRequirement("통나무", 32', 'new LocalRequirement("아무 종류의 통나무", 12'),\n    ('new LocalRequirement("식량", 96', 'new LocalRequirement("식량(밀/당근/감자/비트)", 32'),\n    ('new LocalRequirement("철 주괴", 32', 'new LocalRequirement("철 주괴", 8'),\n    ('new LocalRequirement("석재 벽돌", 128', 'new LocalRequirement("석재 벽돌", 32'),\n    ('전초재고(식량48/철16/통나무32)', '전초 재고(식량 16 · 철 주괴 5 · 아무 종류의 통나무 12)'),\n    ('전초재고(식량96/철32/석재벽돌128)', '전초 재고(식량 32 · 철 주괴 8 · 석재 벽돌 32)'),\n    ('전초재고(식량32/철8/연료8)', '전초 재고(식량 12 · 철 주괴 3 · 연료: 석탄 또는 숯 3)'),\n    ('화물 → 전초 현지재고 → 방어/원정', '등록 물류 통은 같은 차원 로딩 중이면 원격 사용'),\n    ('new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)'),\n    ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),\n    ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),\n]:\n    legacy = legacy.replace(old, new)\n'''
           if marker not in s:
               raise SystemExit('source audit namespace marker missing')
-          # Replace any earlier temporary translation block wholesale by inserting immediately
-          # before namespace; repeated inserts are prevented by sentinel.
-          if '0.61 solo-balance expectation translation' not in s:
+          if '0.61 solo/QOL expectation translation' not in s:
               s = s.replace(marker, additions + marker, 1)
           source.write_text(s, encoding='utf-8')
 
           content = root / 'tools/test_release_content_pack.py'
           s = content.read_text(encoding='utf-8')
           marker = 'namespace = {"__file__": str(legacy_path), "__name__": "__main__"}'
-          inject = '''# 0.61 solo-balance content expectation translation.\n_translation = """\nbaseline = baseline.replace('new LocalRequirement(\\"연료\\", 8', 'new LocalRequirement(\\"연료\\", 3')\nbaseline = baseline.replace('new LocalRequirement(\\"식량\\", 48', 'new LocalRequirement(\\"식량\\", 16')\nbaseline = baseline.replace('new LocalRequirement(\\"철 주괴\\", 16', 'new LocalRequirement(\\"철 주괴\\", 5')\nbaseline = baseline.replace('new LocalRequirement(\\"통나무\\", 32', 'new LocalRequirement(\\"통나무\\", 12')\nbaseline = baseline.replace('new LocalRequirement(\\"식량\\", 96', 'new LocalRequirement(\\"식량\\", 32')\nbaseline = baseline.replace('new LocalRequirement(\\"철 주괴\\", 32', 'new LocalRequirement(\\"철 주괴\\", 8')\nbaseline = baseline.replace('new LocalRequirement(\\"석재 벽돌\\", 128', 'new LocalRequirement(\\"석재 벽돌\\", 32')\nbaseline = baseline.replace('전초재고(식량48/철16/통나무32)', '전초재고(식량16/철5/통나무12)')\nbaseline = baseline.replace('전초재고(식량96/철32/석재벽돌128)', '전초재고(식량32/철8/석재벽돌32)')\nbaseline = baseline.replace('전초재고(식량32/철8/연료8)', '전초재고(식량12/철3/연료3)')\n"""\nlegacy = legacy.replace(\n    'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)',\n    'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)\\n' + _translation\n)\n'''
+          inject = '''# 0.61 solo/QOL content expectation translation.\n_translation = """\nbaseline = baseline.replace('new LocalRequirement(\\"연료\\", 8', 'new LocalRequirement(\\"연료(석탄 또는 숯)\\", 3')\nbaseline = baseline.replace('new LocalRequirement(\\"식량\\", 32', 'new LocalRequirement(\\"식량(밀/당근/감자/비트)\\", 12')\nbaseline = baseline.replace('new LocalRequirement(\\"철 주괴\\", 8', 'new LocalRequirement(\\"철 주괴\\", 3')\nbaseline = baseline.replace('new LocalRequirement(\\"식량\\", 48', 'new LocalRequirement(\\"식량(밀/당근/감자/비트)\\", 16')\nbaseline = baseline.replace('new LocalRequirement(\\"철 주괴\\", 16', 'new LocalRequirement(\\"철 주괴\\", 5')\nbaseline = baseline.replace('new LocalRequirement(\\"통나무\\", 32', 'new LocalRequirement(\\"아무 종류의 통나무\\", 12')\nbaseline = baseline.replace('new LocalRequirement(\\"식량\\", 96', 'new LocalRequirement(\\"식량(밀/당근/감자/비트)\\", 32')\nbaseline = baseline.replace('new LocalRequirement(\\"철 주괴\\", 32', 'new LocalRequirement(\\"철 주괴\\", 8')\nbaseline = baseline.replace('new LocalRequirement(\\"석재 벽돌\\", 128', 'new LocalRequirement(\\"석재 벽돌\\", 32')\nbaseline = baseline.replace('전초재고(식량48/철16/통나무32)', '전초 재고(식량 16 · 철 주괴 5 · 아무 종류의 통나무 12)')\nbaseline = baseline.replace('전초재고(식량96/철32/석재벽돌128)', '전초 재고(식량 32 · 철 주괴 8 · 석재 벽돌 32)')\nbaseline = baseline.replace('전초재고(식량32/철8/연료8)', '전초 재고(식량 12 · 철 주괴 3 · 연료: 석탄 또는 숯 3)')\n"""\nlegacy = legacy.replace(\n    'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)',\n    'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)\\n' + _translation\n)\n'''
           if marker not in s:
               raise SystemExit('content audit namespace marker missing')
-          if '0.61 solo-balance content expectation translation' not in s:
+          if '0.61 solo/QOL content expectation translation' not in s:
               s = s.replace(marker, inject + marker, 1)
           content.write_text(s, encoding='utf-8')
           PY
@@ -116,7 +112,7 @@ jobs:
           cd "$PROJECT_DIR"
           gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
 
-      - name: Commit validated balance pass to main
+      - name: Commit validated solo and logistics pass to main
         shell: bash
         run: |
           set -euo pipefail
@@ -124,8 +120,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f "$PROJECT_DIR/.solo-balance-trigger"
           rm -f "$PROJECT_DIR/tools/apply_061_solo_balance.py"
+          rm -f "$PROJECT_DIR/tools/apply_061_logistics_qol.py"
           rm -f .github/workflows/validate-survival-ascension-solo-balance.yml
           git add "$PROJECT_DIR" .github/workflows/validate-survival-ascension-solo-balance.yml
-          git commit -m "Retune Survival Ascension for solo progression"
+          git commit -m "Retune Survival Ascension solo progression and portable logistics"
           git pull --rebase origin main
           git push origin HEAD:main
