@@ -29,7 +29,7 @@ public final class BattleSnapshotCodec {
             if (pos == null) pos = arena;
             String statuses = combatant.statusesView().keySet().stream().sorted().collect(Collectors.joining(","));
             out.append("U|").append(combatant.instanceId()).append('|').append(combatant.definition().id()).append('|')
-                    .append(combatant.side()).append('|').append(combatant.definition().name()).append('|')
+                    .append(combatant.side()).append('|').append(safe(combatant.definition().name())).append('|')
                     .append(combatant.hp()).append('|').append(combatant.maxHp()).append('|')
                     .append(combatant.barrier()).append('|').append(combatant.gauge()).append('|')
                     .append(combatant.downed() ? 1 : 0).append('|')
@@ -51,7 +51,9 @@ public final class BattleSnapshotCodec {
 
         BattleResultSummary result = session.resultSummary();
         out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|')
-                .append(result.firstClear() ? 1 : 0).append('\n');
+                .append(result.firstClear() ? 1 : 0).append('|').append(result.crystal()).append('|')
+                .append(result.starEssence()).append('|')
+                .append(safe(String.join(",", result.equipmentRewards()))).append('\n');
         for (BattleResultSummary.PartyXp member : result.party()) {
             out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
                     .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
