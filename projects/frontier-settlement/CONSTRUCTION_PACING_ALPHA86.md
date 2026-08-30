@@ -26,3 +26,5 @@ The hard cadence floor for 367 blueprint placements is about 36.7 seconds at 20 
 ## Authority and safety unchanged
 
 No material is virtualized or prepaid into a second ledger. No builder teleports, no chunk is force-loaded, and no additional worker authority is created. Block placement still follows the existing world-success-before-ItemStack-consume transaction and rollback rules. Roads, outposts and civil works keep their separate pacing/authority.
+
+Canonical verification trigger: 2026-08-30.
