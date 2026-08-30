@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import runpy
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Apply the last real source/QOL migration in the same validated worktree, then remove the helper.
+_final_qol = ROOT / "tools/apply_061_final_qol.py"
+if _final_qol.exists():
+    runpy.run_path(str(_final_qol), run_name="__main__")
+    _final_qol.unlink()
 
 SOURCE_REPLACEMENTS = [
     ("Math.min(13, base + bonus)", "Math.min(21, base + bonus)"),
@@ -35,8 +42,6 @@ SOURCE_REPLACEMENTS = [
     ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
     ("전초 방어는 식량48+철16+통나무32", "전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12"),
     ("요새 방어는 식량96+철32+석재벽돌128", "요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32"),
-    ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
-    ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
 ]
 
 
