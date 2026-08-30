@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BattleTargetingTest {
     private static final ClientBattleState.Unit ALLY_ALIVE =
             new ClientBattleState.Unit("ally_1", "p01", "ALLY", "Kyren", 900, 900, 0, 0, false);
+    private static final ClientBattleState.Unit ALLY_OTHER =
+            new ClientBattleState.Unit("ally_3", "p03", "ALLY", "Bram", 1000, 1000, 0, 0, false);
     private static final ClientBattleState.Unit ALLY_DOWN =
             new ClientBattleState.Unit("ally_2", "p04", "ALLY", "Elysia", 0, 800, 0, 0, true);
     private static final ClientBattleState.Unit ENEMY_ALIVE =
@@ -26,6 +28,14 @@ class BattleTargetingTest {
         assertTrue(BattleTargeting.validTarget("ENEMY_SINGLE", ENEMY_ALIVE, "ally_1"));
         assertFalse(BattleTargeting.validTarget("ENEMY_SINGLE", ENEMY_DOWN, "ally_1"));
         assertFalse(BattleTargeting.validTarget("ENEMY_SINGLE", ENEMY_ALIVE, ""));
+    }
+
+    @Test
+    void selfForbiddenAllyRuleSkipsTheCurrentActor() {
+        List<ClientBattleState.Unit> units = List.of(ALLY_ALIVE, ALLY_OTHER, ALLY_DOWN, ENEMY_ALIVE);
+        assertFalse(BattleTargeting.validTarget("ALLY_SINGLE_EXCEPT_SELF", ALLY_ALIVE, "ally_1"));
+        assertTrue(BattleTargeting.validTarget("ALLY_SINGLE_EXCEPT_SELF", ALLY_OTHER, "ally_1"));
+        assertEquals(1, BattleTargeting.firstValid(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_1"));
     }
 
     @Test
