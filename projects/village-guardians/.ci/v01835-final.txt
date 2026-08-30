@@ -1,0 +1,7 @@
+version=0.18.35-alpha.1
+run_id=33284044933
+source_sha=b4607bf6aba4f122e32b99913bf75f9103afb596
+jar_name=villageguardians-0.18.35-alpha.1.jar
+jar_sha256=71c5d91021893d1407566b8e0b94bcd0d788527eaeea92dc8b641dd595c6a1a5
+jar_size=862845
+audit=wall-access-climb-landing-overlap-and-existing-world-migration
