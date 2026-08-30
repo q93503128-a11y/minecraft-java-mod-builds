@@ -1,0 +1,97 @@
+name: Build Survival Ascension Frontier Compat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-survival-frontier-compat.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: survival-frontier-compat
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Patch only the conflicting default key
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java')
+          s = p.read_text(encoding='utf-8')
+          old = '"key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);'
+          new = '"key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected exactly one Survival menu M mapping, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          print('Patched Survival Ascension menu default: M -> K')
+          PY
+          grep -F '"key.survivalascension.menu", InputConstants.KEY_K' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java
+          grep -F 'mod_id=survivalascension' projects/survival-ascension/gradle.properties
+          test "$(sed -n 's/^minecraft_version=//p' projects/survival-ascension/gradle.properties)" = '26.2'
+          test "$(sed -n 's/^neo_version=//p' projects/survival-ascension/gradle.properties)" = '26.2.0.38-beta'
+
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --stacktrace --console=plain 2>&1 | tee "$GITHUB_WORKSPACE/survival-frontier-compat-build.log"
+
+      - name: Verify compatibility JAR
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          jar="build/libs/survivalascension-$version.jar"
+          test -f "$jar"
+          python3 tools/verify_release_jar.py "$jar" 2>&1 | tee "$GITHUB_WORKSPACE/survival-frontier-compat-verify.log"
+          mkdir -p "$GITHUB_WORKSPACE/deliverables"
+          cp "$jar" "$GITHUB_WORKSPACE/deliverables/"
+          sha256sum "$jar" > "$GITHUB_WORKSPACE/deliverables/$(basename "$jar").sha256"
+          cat > "$GITHUB_WORKSPACE/deliverables/FRONTIER_COMPAT_REPORT.md" <<REPORT
+          # Survival Ascension / Frontier Settlement compatibility build
+
+          - Source commit: $GITHUB_SHA
+          - Survival Ascension mod id: survivalascension (unchanged for save continuity)
+          - Survival Ascension version: $version
+          - Minecraft: 26.2
+          - NeoForge: 26.2.0.38-beta
+          - Java: 25
+          - Source change in this artifact only: default Survival menu key M -> K
+          - Canonical Survival source on main is not modified by this build.
+          - Biomes O' Plenty / TerraBlender / GlitchCore are intentionally not bundled here.
+          - This artifact is intended for an existing Frontier world where Frontier's current world-generation stack must remain authoritative.
+          REPORT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survivalascension-0.61.0-alpha.1-frontier-compat
+          path: |
+            deliverables/
+            survival-frontier-compat-build.log
+            survival-frontier-compat-verify.log
+          if-no-files-found: error
+          retention-days: 30
