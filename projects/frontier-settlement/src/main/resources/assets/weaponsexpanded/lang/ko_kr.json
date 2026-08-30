@@ -112,5 +112,10 @@
   "config.weaponsexpanded.option.altTwoHandedSwordHandling": "대체 양손검 조작 방식",
   "config.weaponsexpanded.option.disableExtraDurabilityDamageForAxes": "도끼 추가 내구도 소모 비활성화",
   "key.category.weaponsexpanded.general": "Weapons Expanded",
-  "key.weaponsexpanded.toggle_bastard_sword_mode": "무기 모드 전환"
+  "key.weaponsexpanded.toggle_bastard_sword_mode": "무기 모드 전환",
+  "weaponsexpanded.configuration.enable_custom_loot_tables": "ai 크게 드래그",
+  "weaponsexpanded.configuration.enable_entity_melee_equipment": "더 이상 작업",
+  "weaponsexpanded.configuration.enable_trial_chamber_melee_equipment": "작업",
+  "weaponsexpanded.configuration.alternate_two_handed_sword": "에픽 원",
+  "weaponsexpanded.configuration.disable_extra_axe_damage": "방전"
 }
