@@ -24,6 +24,7 @@ import java.util.Set;
 public final class CampaignSaveCodec {
     public static final int SCHEMA_VERSION = 4;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
 
     private CampaignSaveCodec() {}
 
@@ -35,6 +36,7 @@ public final class CampaignSaveCodec {
         root.add("growth", encodeGrowth(snapshot.growth()));
         root.add("equipment", encodeEquipment(snapshot.equipment()));
         root.add("quests", encodeQuests(snapshot.quests()));
+        root.add("activeParty", strings(snapshot.activeParty()));
         root.add("clearedEncounters", strings(snapshot.clearedEncounters()));
         root.add("orphanedCharacterIds", strings(snapshot.orphanedCharacterIds()));
         root.add("orphanedEquipmentIds", strings(snapshot.orphanedEquipmentIds()));
@@ -63,12 +65,13 @@ public final class CampaignSaveCodec {
                 ? decodeEquipment(root.getAsJsonObject("equipment"), orphanedEquipment) : EquipmentInventory.Snapshot.empty();
         QuestProgress.Snapshot quests = schema >= 4 && root.has("quests")
                 ? decodeQuests(root.getAsJsonObject("quests")) : QuestProgress.Snapshot.empty();
+        List<String> activeParty = decodeParty(optionalArray(root, "activeParty"), profile.snapshot(), orphanedCharacters);
 
         Set<String> cleared = stringSet(optionalArray(root, "clearedEncounters"));
         orphanedCharacters.addAll(stringSet(optionalArray(root, "orphanedCharacterIds")));
         orphanedEquipment.addAll(stringSet(optionalArray(root, "orphanedEquipmentIds")));
         return new CampaignProgressStore.Snapshot(profile.snapshot(), characters, growth, equipment, quests,
-                cleared, orphanedCharacters, orphanedEquipment);
+                activeParty, cleared, orphanedCharacters, orphanedEquipment);
     }
 
     private static JsonObject encodeProfile(PlayerProfile.Snapshot profile) {
@@ -95,6 +98,24 @@ public final class CampaignSaveCodec {
                 optionalLong(raw, "gold", 5_000), optionalLong(raw, "summonCrystal", 0), optionalLong(raw, "starEssence", 0),
                 optionalLong(raw, "awakeningCore", 0), known, optionalInt(raw, "fiveStarPity", 0),
                 optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false)), orphaned);
+    }
+
+    private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned) {
+        LinkedHashSet<String> party = new LinkedHashSet<>();
+        for (JsonElement element : raw) {
+            String id = element.getAsString();
+            if (!GachaCatalog.isSummonable(id) || !profile.ownedCharacters().contains(id)) {
+                orphaned.add(id);
+                continue;
+            }
+            if (party.size() < 4) party.add(id);
+        }
+        if (party.isEmpty()) {
+            for (String id : DEFAULT_PARTY) if (profile.ownedCharacters().contains(id)) party.add(id);
+            if (party.isEmpty()) for (String id : profile.ownedCharacters()) { party.add(id); if (party.size() >= 4) break; }
+        }
+        if (party.isEmpty()) throw new IllegalStateException("TURNBOUND save contains no usable party character");
+        return List.copyOf(party);
     }
 
     private static JsonObject encodeCharacters(Map<String, CharacterProgression.State> characters) {
