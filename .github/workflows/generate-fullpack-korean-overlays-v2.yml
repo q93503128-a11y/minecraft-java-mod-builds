@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/generate-fullpack-korean-overlays-v2.yml'
       - 'projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py'
+      - 'projects/frontier-settlement/tools/postprocess_fullpack_korean_overlays.py'
   workflow_dispatch:
 
 permissions:
@@ -31,13 +32,22 @@ jobs:
           python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece
           python3 -m pip install --disable-pip-version-check --no-input torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Generate and validate Korean overlays
+      - name: Generate, postprocess and validate Korean overlays
         shell: bash
         env:
           HF_HUB_DISABLE_XET: '1'
         run: |
           set -euo pipefail
-          python3 projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py
+          set +e
+          python3 projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py 2>&1 | tee /tmp/fullpack-ko-generator.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            # The NLLB generator is allowed to stop only at its quality gate after producing files.
+            # Any download/model/runtime failure must still fail the workflow.
+            grep -q 'empty translations for non-empty English strings:' /tmp/fullpack-ko-generator.log || exit "$status"
+          fi
+          python3 projects/frontier-settlement/tools/postprocess_fullpack_korean_overlays.py
 
       - name: Preserve generated overlays for inspection
         if: always()
@@ -62,7 +72,7 @@ jobs:
             exit 0
           fi
           git diff --cached --stat
-          git commit -m 'Regenerate Korean localization overlays with NLLB'
+          git commit -m 'Regenerate and polish Korean localization overlays'
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
