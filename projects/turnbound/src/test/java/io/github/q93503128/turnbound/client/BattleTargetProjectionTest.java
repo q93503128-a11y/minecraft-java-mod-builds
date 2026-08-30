@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BattleTargetProjectionTest {
     @Test
     void projectsAndPicksAVisibleEnemyAcrossItsBodyNotOnlyOneCenterPixel() {
-        BattleCameraController.View view = new BattleCameraController.View(0.0F, 18.0F, 8.4F, 70.0F);
+        BattleCameraController.View view = new BattleCameraController.View(0.0F, 22.0F, 11.0F, 70.0F);
         ClientBattleState.Unit ally = new ClientBattleState.Unit(
                 "ally_1", "P01", "ALLY", "Kairen", 900, 900, 0, 0, false,
                 -1.0, 64.0, -2.2);
@@ -31,7 +31,7 @@ class BattleTargetProjectionTest {
 
     @Test
     void doesNotPickInvalidSideEvenWhenCoordinatesOverlap() {
-        BattleCameraController.View view = new BattleCameraController.View(0.0F, 18.0F, 8.4F, 70.0F);
+        BattleCameraController.View view = new BattleCameraController.View(0.0F, 22.0F, 11.0F, 70.0F);
         ClientBattleState.Unit ally = new ClientBattleState.Unit(
                 "ally_1", "P01", "ALLY", "Kairen", 900, 900, 0, 0, false,
                 0.0, 64.0, 2.8);

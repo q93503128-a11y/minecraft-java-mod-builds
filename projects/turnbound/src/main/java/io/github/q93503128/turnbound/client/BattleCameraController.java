@@ -7,20 +7,20 @@ import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
- * Battlefield-centered orbit camera.
- *
- * Minecraft's detached third-person camera computes its position from the camera entity's yaw/pitch.
- * The previous implementation changed only the rendered Viewport angles, which could leave the physical
- * third-person camera offset looking from a different direction. alpha.9 keeps the invisible player shell
- * rotation and the rendered camera rotation on the same smoothed view.
+ * Battlefield-centered orbit camera following the v0.4 battle-camera contract.
+ * Minecraft's own third-person collision ray cast runs after the detached-distance event,
+ * so the requested distance is still shortened when terrain blocks the camera.
  */
 public final class BattleCameraController {
-    private static final float DEFAULT_DISTANCE = 8.4F;
-    private static final float MIN_DISTANCE = 4.5F;
-    private static final float MAX_DISTANCE = 16.0F;
-    private static final float DEFAULT_PITCH = 18.0F;
+    private static final float DEFAULT_DISTANCE = 11.0F;
+    private static final float MIN_DISTANCE = 6.0F;
+    private static final float MAX_DISTANCE = 18.0F;
+    private static final float DEFAULT_PITCH = 22.0F;
     private static final float MIN_PITCH = -10.0F;
-    private static final float MAX_PITCH = 60.0F;
+    private static final float MAX_PITCH = 58.0F;
+    private static final float HORIZONTAL_DEGREES_PER_PIXEL = 0.18F;
+    private static final float VERTICAL_DEGREES_PER_PIXEL = 0.15F;
+    private static final float WHEEL_DISTANCE_STEP = 0.75F;
     private static final float FOV = 70.0F;
 
     private static boolean active;
@@ -70,19 +70,20 @@ public final class BattleCameraController {
 
     static void orbit(double deltaX, double deltaY) {
         if (!active) return;
-        targetYaw = Mth.wrapDegrees(targetYaw - (float) deltaX * 0.92F);
-        targetPitch = Mth.clamp(targetPitch + (float) deltaY * 0.66F, MIN_PITCH, MAX_PITCH);
+        targetYaw = Mth.wrapDegrees(targetYaw - (float) deltaX * HORIZONTAL_DEGREES_PER_PIXEL);
+        targetPitch = Mth.clamp(targetPitch + (float) deltaY * VERTICAL_DEGREES_PER_PIXEL, MIN_PITCH, MAX_PITCH);
     }
 
     static void zoom(double scrollY) {
         if (!active || scrollY == 0.0D) return;
-        distance = Mth.clamp(distance - (float) scrollY * 0.80F, MIN_DISTANCE, MAX_DISTANCE);
+        distance = Mth.clamp(distance - (float) scrollY * WHEEL_DISTANCE_STEP, MIN_DISTANCE, MAX_DISTANCE);
     }
 
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (!active) return;
-        currentYaw = Mth.wrapDegrees(currentYaw + Mth.wrapDegrees(targetYaw - currentYaw) * 0.52F);
-        currentPitch += (targetPitch - currentPitch) * 0.52F;
+        // Short ease removes mouse stepping without making orbit feel detached from the cursor.
+        currentYaw = Mth.wrapDegrees(currentYaw + Mth.wrapDegrees(targetYaw - currentYaw) * 0.62F);
+        currentPitch += (targetPitch - currentPitch) * 0.62F;
         applyPlayerView(Minecraft.getInstance());
         event.setYaw(currentYaw);
         event.setPitch(currentPitch);

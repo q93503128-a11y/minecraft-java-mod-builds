@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.9`
+- Version: `0.1.0-alpha.10`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -28,24 +28,25 @@
 - 1×/2× changes presentation only.
 - General field battles retain deterministic flee; boss/event locks are encounter data.
 
-## Battle UX acceptance — alpha.9
+## Battle UX acceptance — alpha.10
 - 3D battlefield remains dominant; no full-screen battle veil.
-- Camera pivot is the average position of actual combatant anchors, not an arbitrary player viewpoint.
+- Camera pivot is the average position of actual combatant anchors.
+- Canonical default camera: yaw encounter-facing, pitch 22°, distance 11 blocks.
+- Camera clamps: pitch -10°..58°, distance 6..18 blocks; Minecraft third-person collision may shorten closer to 4.5.
+- Camera input: horizontal drag 0.18°/px, vertical drag 0.15°/px, wheel 0.75 block/step.
 - Detached third-person camera position and rendered yaw/pitch use the same smoothed player-shell rotation.
-- Default camera follows the v0.4 recommended orbit range; player can freely yaw 360° and zoom within the safe range.
 - All skills require explicit final confirmation.
 - Single-target skills do not silently preselect the first valid target.
 - Single targets can be selected by clicking the projected 3D combatant body; HUD/Tab remain secondary inputs.
 - 3D click picking uses a feet-to-head body capsule rather than one projected center point.
 - Selected target updates both world marker and HUD emphasis.
 - Skill actions use a two-column contextual dock at the right edge.
-- Standard viewport skill buttons retain a practical click footprint close to the v0.4 56–72 logical-px recommendation.
-- Hovering any visible skill shows skill name, target type, base cooldown, remaining cooldown and player-facing effect description.
+- Hovering any visible skill shows name, target type, base cooldown, remaining cooldown and player-facing effect description.
 - Party/enemy state remains edge HUD and must not obscure the center battle scene.
 
 ## Southgate Meadow A01 acceptance
 - First field cell: X `-32..31`, Z `128..191`, base Y `64`, 64×64.
-- Visible encounter party uses real `E001 + E002 + E005` data.
+- Visible encounter party currently uses real `E001 + E002 + E005` data for the first integrated field-loop test.
 - Field phases: PATROL → ALERT/chase → ENGAGE.
 - Random encounter is not the normal flow.
 - Engagement transitions to the same server-authoritative battle session.
@@ -68,11 +69,12 @@ TURNBOUND is not a survival game.
 - World boundaries are disguised by terrain/architecture/story gating.
 - External maps/structures may be used only with license review and gameplay re-authoring.
 
-## Development target
-Follow `01_세부기획서_v0.4.md` phase order rather than adding disconnected features.
-- P2: fixed world, visible enemies, encounter, NPC, quest, reward, region travel.
-- P3: level/star progression, ownership, gacha, duplicate conversion, three normal equipment slots, gold enhancement, party UI, CP.
-- P4: ★6 awakening, signature equipment, advanced AUTO, expanded bosses/story/regions/characters, high-difficulty repeatable content.
+## Production gate
+Follow `01_세부기획서_v0.4.md`, `02_수치규칙위키_v0.4.md`, and `03_캐릭터설계위키_v0.4.md` phase order rather than adding disconnected features.
+- P2: fixed world, Southgate encounter catalog, visible enemies, NPC, quest, reward, region travel, B01/Chapter 1.
+- P3: save schema 4, level/star progression, ownership, gacha, duplicate conversion, three normal equipment slots, gold enhancement, party UI, CP.
+- P4: ★6 awakening, signature equipment, P01–P08, advanced AUTO, expanded bosses/story/regions/characters, high-difficulty repeatable content.
+- Presentation is developed alongside each feature set; ArmorStand stand-ins do not count as final presentation completion.
 
 ## Required validation
 - Java 25 clean test/build green.
