@@ -32,7 +32,7 @@ def patch_portable_logistics_api():
         (
             "        blockEntity.saveToItem(packed, level.registryAccess());",
             "        CompoundTag blockEntityData = blockEntity.saveWithoutMetadata(level.registryAccess());\n"
-            "        packed.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.create(blockEntity.getType(), blockEntityData));",
+            "        packed.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(blockEntity.getType(), blockEntityData));",
         ),
         (
             "        String owner = persistent.getString(OWNER_KEY);",
@@ -54,7 +54,7 @@ def patch_portable_logistics_api():
     required = [
         "BreakBlockEvent event",
         "saveWithoutMetadata(level.registryAccess())",
-        "TypedEntityData.create(blockEntity.getType(), blockEntityData)",
+        "TypedEntityData.of(blockEntity.getType(), blockEntityData)",
         "DataComponents.BLOCK_ENTITY_DATA",
         "getStringOr(OWNER_KEY, \"\")",
         "getStringOr(ROLE_KEY, \"\")",
