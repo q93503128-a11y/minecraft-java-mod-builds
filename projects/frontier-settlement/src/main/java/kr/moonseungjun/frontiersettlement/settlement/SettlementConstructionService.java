@@ -30,14 +30,15 @@ public final class SettlementConstructionService {
     private static final String BUILDER_NAME = "건설 주민";
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
-    private static final double WORK_POSITION_REACHED_SQR = 12.25D;
-    private static final double HIGH_WORK_RANGE_SQR = 49.0D;
+    private static final double WORK_POSITION_REACHED_SQR = 110.25D;
+    private static final double HIGH_WORK_RANGE_SQR = 196.0D;
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
-    private static final int HAUL_BATCH_SIZE = 32;
-    private static final long MAX_SITE_RESERVE_PER_CATEGORY = 32L;
-    private static final int GRADE_INTERVAL_TICKS = 3;
-    private static final double GRADE_WORK_RANGE_SQR = 36.0D;
-    private static final int BUILD_INTERVAL_TICKS = 4;
+    private static final int HAUL_BATCH_SIZE = 64;
+    private static final long SITE_RESERVE_TARGET_PER_CATEGORY = 64L;
+    private static final long SITE_RESERVE_LOW_WATER = 8L;
+    private static final int GRADE_INTERVAL_TICKS = 1;
+    private static final double GRADE_WORK_RANGE_SQR = 110.25D;
+    private static final int BUILD_INTERVAL_TICKS = 2;
     private static final int MAX_GRADE_FILL_DEPTH = 3;
     private static final int SMALL_TERRAIN_SPAN = 2;
     private static final int MAX_TERRAIN_WORK_SPAN = 4;
@@ -348,7 +349,7 @@ public final class SettlementConstructionService {
     }
 
     private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-        if (builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.82D)) return true;
+        if (builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 1.05D)) return true;
         int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
         for (int[] offset : offsets) {
             int x = target.getX() + offset[0];
@@ -361,7 +362,7 @@ public final class SettlementConstructionService {
             BlockState below = level.getBlockState(candidate.below());
             if ((!feet.isAir() && !feet.canBeReplaced()) || (!head.isAir() && !head.canBeReplaced())) continue;
             if (below.isAir() || !below.getFluidState().isEmpty()) continue;
-            if (builder.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 0.82D)) return true;
+            if (builder.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 1.05D)) return true;
         }
         builder.getNavigation().stop();
         return false;
@@ -486,7 +487,7 @@ public final class SettlementConstructionService {
         if (!carried.isEmpty()) {
             if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                     > SUPPLY_INTERACTION_RANGE_SQR) {
-                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.9D);
+                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
                 return false;
             }
             int before = carried.getCount();
@@ -504,7 +505,7 @@ public final class SettlementConstructionService {
         if (source == null) return false;
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.9D);
+            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 1.10D);
             return false;
         }
         int amount = (int) Math.min((long) HAUL_BATCH_SIZE, missing);
@@ -523,10 +524,25 @@ public final class SettlementConstructionService {
         long spentStone = costAtStep(type.stoneCost(), step, totalSteps);
         long remainingWood = Math.max(0L, type.woodCost() - spentWood);
         long remainingStone = Math.max(0L, type.stoneCost() - spentStone);
-        long targetWood = Math.min(MAX_SITE_RESERVE_PER_CATEGORY, remainingWood);
-        long targetStone = Math.min(MAX_SITE_RESERVE_PER_CATEGORY, remainingStone);
-        long missingWood = Math.max(0L, targetWood - SettlementInventory.countWood(crate));
-        long missingStone = Math.max(0L, targetStone - SettlementInventory.countStone(crate));
+        long currentWood = SettlementInventory.countWood(crate);
+        long currentStone = SettlementInventory.countStone(crate);
+        long nextWoodDelta = Math.max(0L, costAtStep(type.woodCost(), step + 1, totalSteps) - spentWood);
+        long nextStoneDelta = Math.max(0L, costAtStep(type.stoneCost(), step + 1, totalSteps) - spentStone);
+
+        // Alpha.85 accidentally treated every item consumed from a full reserve as an immediate
+        // refill request. A 32 -> 31 transition therefore sent the same builder back to town for
+        // exactly one item before another blueprint step could run. Keep physical hauling, but use
+        // a low-water mark: initial staging is large, construction continues locally, and another
+        // town trip is requested only when the crate is actually running low (or cannot fund the
+        // very next transactional placement).
+        boolean needsWood = currentWood < nextWoodDelta
+                || (remainingWood > currentWood && currentWood <= SITE_RESERVE_LOW_WATER);
+        boolean needsStone = currentStone < nextStoneDelta
+                || (remainingStone > currentStone && currentStone <= SITE_RESERVE_LOW_WATER);
+        long targetWood = Math.min(SITE_RESERVE_TARGET_PER_CATEGORY, remainingWood);
+        long targetStone = Math.min(SITE_RESERVE_TARGET_PER_CATEGORY, remainingStone);
+        long missingWood = needsWood ? Math.max(0L, targetWood - currentWood) : 0L;
+        long missingStone = needsStone ? Math.max(0L, targetStone - currentStone) : 0L;
 
         ItemStack carried = builder.getMainHandItem();
         if (!carried.isEmpty()) {
@@ -538,7 +554,7 @@ public final class SettlementConstructionService {
             }
             if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                     > SUPPLY_INTERACTION_RANGE_SQR) {
-                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.9D);
+                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
                 return false;
             }
             int before = carried.getCount();
@@ -552,15 +568,16 @@ public final class SettlementConstructionService {
             return false;
         }
 
-        if (missingWood <= 0L && missingStone <= 0L) return true;
-        Predicate<ItemStack> wanted = missingWood > 0L ? SettlementInventory::isWood : SettlementInventory::isStone;
-        long missing = missingWood > 0L ? missingWood : missingStone;
+        if (!needsWood && !needsStone) return true;
+        Predicate<ItemStack> wanted = needsWood ? SettlementInventory::isWood : SettlementInventory::isStone;
+        long missing = needsWood ? missingWood : missingStone;
+        if (missing <= 0L) return true;
         ServerLevel level = server.overworld();
         BlockPos source = SettlementStorageService.findExtractionTarget(level, data, wanted);
         if (source == null) return false;
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.9D);
+            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 1.10D);
             return false;
         }
 
@@ -584,7 +601,7 @@ public final class SettlementConstructionService {
         }
         if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.86D);
+            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 1.10D);
             return false;
         }
         ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
@@ -680,7 +697,7 @@ public final class SettlementConstructionService {
         if (sourceSlot < 0) return true;
         if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 0.86D);
+            builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
             return false;
         }
         ItemStack moving = crate.getItem(sourceSlot).copy();
@@ -711,7 +728,7 @@ public final class SettlementConstructionService {
         BlockPos work = workPositionFor(level, construction, type, placement, supply);
         double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
         if (workDistance > WORK_POSITION_REACHED_SQR) {
-            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 0.85D);
+            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
             return false;
         }
         if (work.getY() <= construction.originY()) return true;
@@ -958,7 +975,7 @@ public final class SettlementConstructionService {
             builder.getNavigation().stop();
             return true;
         }
-        builder.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.86D);
+        builder.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.10D);
         return false;
     }
 
