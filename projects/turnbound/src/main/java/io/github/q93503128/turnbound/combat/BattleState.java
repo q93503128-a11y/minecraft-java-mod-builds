@@ -27,23 +27,41 @@ public final class BattleState {
         if (combatants.stream().anyMatch(unit -> unit.instanceId().equals(combatant.instanceId()))) {
             throw new IllegalArgumentException("Duplicate combatant " + combatant.instanceId());
         }
-        long sideCount = combatants.stream().filter(unit -> unit.side() == combatant.side()).count();
-        int sideCap = combatant.side() == CombatantSide.ALLY ? 4 : 5;
-        if (sideCount >= sideCap || combatants.size() >= 16) throw new IllegalStateException("Battle combatant cap reached");
+        if (combatant.side() == CombatantSide.ALLY) {
+            long regularAllies = combatants.stream().filter(unit -> unit.side() == CombatantSide.ALLY && !unit.definition().summon()).count();
+            long livingSummons = combatants.stream().filter(unit -> unit.side() == CombatantSide.ALLY && unit.definition().summon() && !unit.downed()).count();
+            if ((!combatant.definition().summon() && regularAllies >= 4) || (combatant.definition().summon() && livingSummons >= 1)) {
+                throw new IllegalStateException("TURNBOUND ally/summon cap reached");
+            }
+        } else {
+            long livingEnemies = combatants.stream().filter(unit -> unit.side() == CombatantSide.ENEMY && !unit.downed()).count();
+            if (livingEnemies >= 5) throw new IllegalStateException("TURNBOUND enemy cap reached");
+        }
+        if (combatants.size() >= 16) throw new IllegalStateException("Battle combatant cap reached");
         combatants.add(combatant);
     }
 
+    public void removeCombatant(String instanceId) {
+        if (instanceId != null && instanceId.equals(currentActorId)) currentActorId = null;
+        combatants.removeIf(unit -> unit.instanceId().equals(instanceId));
+    }
+
     private void validateSides() {
-        long allies = combatants.stream().filter(c -> c.side() == CombatantSide.ALLY).count();
+        long regularAllies = combatants.stream().filter(c -> c.side() == CombatantSide.ALLY && !c.definition().summon()).count();
+        long allySummons = combatants.stream().filter(c -> c.side() == CombatantSide.ALLY && c.definition().summon()).count();
         long enemies = combatants.stream().filter(c -> c.side() == CombatantSide.ENEMY).count();
-        if (allies < 1 || allies > 4 || enemies < 1 || enemies > 5) {
-            throw new IllegalArgumentException("Battle requires 1-4 allies and 1-5 enemies");
+        if (regularAllies < 1 || regularAllies > 4 || allySummons > 1 || enemies < 1 || enemies > 5) {
+            throw new IllegalArgumentException("Battle requires 1-4 allies, at most one allied summon, and 1-5 enemies");
         }
     }
 
     public CombatantState combatant(String id) {
         return combatants.stream().filter(c -> c.instanceId().equals(id)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown combatant " + id));
+    }
+
+    public CombatantState find(String id) {
+        return combatants.stream().filter(c -> c.instanceId().equals(id)).findFirst().orElse(null);
     }
 
     public List<CombatantState> living(CombatantSide side) {
@@ -56,7 +74,11 @@ public final class BattleState {
 
     public BattleOutcome outcome() {
         if (living(CombatantSide.ENEMY).isEmpty()) return BattleOutcome.ALLY_VICTORY;
-        if (living(CombatantSide.ALLY).isEmpty()) return BattleOutcome.ENEMY_VICTORY;
+        if (living(CombatantSide.ALLY).isEmpty()) {
+            boolean pendingReturn = combatants.stream().anyMatch(c -> c.side() == CombatantSide.ALLY && c.downed()
+                    && c.definition().id().equals("P06") && c.counter("p06_return_wait") > 0);
+            if (!pendingReturn) return BattleOutcome.ENEMY_VICTORY;
+        }
         return BattleOutcome.RUNNING;
     }
 
