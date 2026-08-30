@@ -16,9 +16,11 @@ public final class ClientMetaNetwork {
         context.enqueueWork(() -> {
             ClientMetaState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
-            MetaMenuScreen.Tab tab = minecraft.gui.screen() instanceof MetaMenuScreen screen ? screen.tab() : MetaMenuScreen.Tab.PARTY;
-            if (!(minecraft.gui.screen() instanceof BattleScreen) && !(minecraft.gui.screen() instanceof BattleResultScreen)) {
-                minecraft.gui.setScreen(new MetaMenuScreen(tab));
+            if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
+            if (minecraft.gui.screen() instanceof MetaMenuScreen screen) {
+                screen.refreshSnapshot();
+            } else {
+                minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.PARTY));
             }
         });
     }
