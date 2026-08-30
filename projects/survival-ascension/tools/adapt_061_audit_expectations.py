@@ -18,8 +18,8 @@ def patch_portable_logistics_api():
 
     replacements = [
         (
-            "import net.minecraft.core.component.DataComponents;\n",
-            "import net.minecraft.core.component.DataComponents;\nimport net.minecraft.core.registries.BuiltInRegistries;\n",
+            "import net.minecraft.world.item.component.CustomData;\n",
+            "import net.minecraft.world.item.component.CustomData;\nimport net.minecraft.world.item.component.TypedEntityData;\n",
         ),
         (
             "import net.neoforged.neoforge.event.level.BlockEvent;",
@@ -32,9 +32,7 @@ def patch_portable_logistics_api():
         (
             "        blockEntity.saveToItem(packed, level.registryAccess());",
             "        CompoundTag blockEntityData = blockEntity.saveWithoutMetadata(level.registryAccess());\n"
-            "        var blockEntityTypeId = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType());\n"
-            "        if (blockEntityTypeId != null) blockEntityData.putString(\"id\", blockEntityTypeId.toString());\n"
-            "        packed.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(blockEntityData));",
+            "        packed.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.create(blockEntity.getType(), blockEntityData));",
         ),
         (
             "        String owner = persistent.getString(OWNER_KEY);",
@@ -50,14 +48,14 @@ def patch_portable_logistics_api():
             raise SystemExit(f"portable logistics 26.2 API token missing: {old}")
         text = text.replace(old, new, 1)
 
-    # The placed barrel should receive BLOCK_ENTITY_DATA before this event fires, including the
-    # NeoForge persistent-data owner/role/token written before packing. CUSTOM_DATA remains on the
-    # item only as a cheap marker for nested-package rejection.
+    # BLOCK_ENTITY_DATA now carries both the concrete block-entity type and serialized data.
+    # NeoForge persistent data written before packing rides inside that serialized data and is
+    # available when the barrel placement event restores the logistics registration.
     required = [
         "BreakBlockEvent event",
         "saveWithoutMetadata(level.registryAccess())",
+        "TypedEntityData.create(blockEntity.getType(), blockEntityData)",
         "DataComponents.BLOCK_ENTITY_DATA",
-        "BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey",
         "getStringOr(OWNER_KEY, \"\")",
         "getStringOr(ROLE_KEY, \"\")",
     ]
