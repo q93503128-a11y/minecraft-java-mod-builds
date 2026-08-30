@@ -7,7 +7,8 @@ public final class MetaUiCodec {
         StringBuilder out = new StringBuilder();
         out.append("H|").append(snapshot.gold()).append('|').append(snapshot.crystal()).append('|')
                 .append(snapshot.starEssence()).append('|').append(snapshot.awakeningCore()).append('|')
-                .append(snapshot.partyCp()).append('|').append(snapshot.riftUnlocked() ? 1 : 0).append('\n');
+                .append(snapshot.partyCp()).append('|').append(snapshot.riftUnlocked() ? 1 : 0).append('|')
+                .append(snapshot.fiveStarPity()).append('|').append(snapshot.starterArchiveAvailable() ? 1 : 0).append('\n');
         out.append("P|").append(String.join(",", snapshot.activeParty())).append('\n');
         for (var row : snapshot.characters()) out.append("C|").append(row.id()).append('|').append(safe(row.name())).append('|')
                 .append(row.level()).append('|').append(row.star()).append('|').append(row.awakened() ? 1 : 0).append('|')
@@ -21,10 +22,16 @@ public final class MetaUiCodec {
         for (var row : snapshot.regionQuests()) out.append("Q|").append(row.id()).append('|').append(row.region()).append('|')
                 .append(row.objectiveSpecified() ? 1 : 0).append('|').append(row.completed() ? 1 : 0).append('|')
                 .append(safe(row.chestRule())).append('\n');
+        for (var row : snapshot.archiveHistory()) out.append("A|").append(row.characterId()).append('|').append(safe(row.name())).append('|')
+                .append(row.nativeStars()).append('|').append(row.newlyOwned() ? 1 : 0).append('|')
+                .append(row.essenceGranted()).append('|').append(row.pityAfter()).append('\n');
+        for (var row : snapshot.shopItems()) out.append("S|").append(row.itemId()).append('|').append(safe(row.name())).append('|')
+                .append(row.tier()).append('|').append(row.slot()).append('|').append(row.price()).append('|')
+                .append(row.unlocked() ? 1 : 0).append('\n');
         return out.toString();
     }
 
     private static String safe(String value) {
-        return value == null ? "" : value.replace('|', '/').replace('\n', ' ' ).replace('\r', ' ');
+        return value == null ? "" : value.replace('|', '/').replace('\n', ' ').replace('\r', ' ');
     }
 }
