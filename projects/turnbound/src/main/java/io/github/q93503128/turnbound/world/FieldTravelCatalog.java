@@ -17,8 +17,8 @@ public final class FieldTravelCatalog {
     public record Destination(String id, String label, Vec3 position, float yaw) {}
 
     private static final List<Destination> DESTINATIONS = List.of(
-            destination(FT_RADIA),
-            destination(FT_MEADOW)
+            fromAnchor(FT_RADIA),
+            fromAnchor(FT_MEADOW)
     );
 
     private FieldTravelCatalog() {}
@@ -30,7 +30,7 @@ public final class FieldTravelCatalog {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown field travel destination " + id));
     }
 
-    private static Destination destination(String id) {
+    private static Destination fromAnchor(String id) {
         var anchor = AsterMarchRegionCatalog.fastTravel(id);
         return new Destination(anchor.id(), anchor.label(), anchor.position(), anchor.yaw());
     }
