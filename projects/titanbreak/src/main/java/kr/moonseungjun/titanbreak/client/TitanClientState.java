@@ -5,6 +5,7 @@ import java.util.Map;
 
 public final class TitanClientState {
     private static volatile Map<String, String> values = Map.of();
+    private static volatile long snapshotNanos = System.nanoTime();
 
     private TitanClientState() {}
 
@@ -18,6 +19,7 @@ public final class TitanClientState {
             }
         }
         values = Map.copyOf(next);
+        snapshotNanos = System.nanoTime();
     }
 
     public static String text(String key, String fallback) {
@@ -32,6 +34,13 @@ public final class TitanClientState {
     public static int integer(String key, int fallback) {
         try { return Integer.parseInt(values.getOrDefault(key, Integer.toString(fallback))); }
         catch (NumberFormatException ignored) { return fallback; }
+    }
+
+    public static double liveCountdownSeconds(String tickKey) {
+        int ticks = integer(tickKey, 0);
+        if (ticks <= 0) return 0.0D;
+        double elapsed = Math.max(0.0D, (System.nanoTime() - snapshotNanos) / 1_000_000_000.0D);
+        return Math.max(0.0D, ticks / 20.0D - elapsed);
     }
 
     public static boolean flag(String key) {
