@@ -1,9 +1,11 @@
-# TURNBOUND external asset lock
+# TURNBOUND external asset / UI reference lock
 
-- Kenney UI Pack: RPG Expansion — CC0. Previously used by alpha.4 P0; the large framed battle UI and vendored battle sprites were removed in the alpha.6 rewrite because they fought the world-first R_PG-like information structure. Kenney remains an allowed CC0 source for future small compatible elements, not a mandated skin.
+- Kenney UI Pack: RPG Expansion — CC0. The alpha.4 large framed battle skin was retired in alpha.6. Kenney remains an allowed small-element source, not the TURNBOUND house skin.
+- BetterQuesting (`Funwayguy/BetterQuesting`, MIT) — alpha.15 UI design reference for compact nested frames, bounded quest surfaces, tab/header hierarchy and dense readable information. No BetterQuesting pixels or source code are vendored in alpha.15.
+- Roughly Enough Items / REI — alpha.15 design reference for compact framed controls, grid density and tooltip hierarchy. No REI pixels or source code are vendored.
 - UI Lib 21.1.1 — Apache-2.0, API/reference only.
-- GeckoLib 5.5.3 — animation/runtime dependency reserved for authored character models after the P0 stand-in presentation.
+- GeckoLib 5.5.3 — animation/runtime dependency reserved for authored character models.
 
-Current alpha.7 battle HUD is code-rendered dark-glass edge UI so it can be validated without shipping copied proprietary game assets. R_PG/R_PG X are spatial/information/pacing references only. Do not copy their textures, icons, fonts, code or exact proprietary layout values.
+The user-supplied reference-game screenshots are used only for spatial hierarchy: world-dominant field/battle view, party on the lower edge, small contextual actions, world-space HP, and a clear arrow over the selected 3D target. Do not copy proprietary textures, icons, fonts or exact UI assets.
 
-Do not regress to improvised full-screen vanilla gray panels. Temporary ArmorStand actors remain explicitly non-final and must be replaced by authored character models/animations in the presentation pass.
+alpha.15 replaces the improvised giant dark panels with a reusable TURNBOUND renderer whose frame hierarchy is intentionally informed by the Minecraft mod references above. Temporary ArmorStand actors remain non-final and must later be replaced by authored character models/animations.
