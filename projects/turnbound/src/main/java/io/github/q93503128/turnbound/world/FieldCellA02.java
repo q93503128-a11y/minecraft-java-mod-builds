@@ -26,7 +26,7 @@ public final class FieldCellA02 {
         buildRelayDais(level);
         buildNorthLock(level);
         addVegetation(level);
-        return new BuiltCell(BASE_Y, local(32.5, 1.0, 5.5), local(19.5, 1.0, 27.5), local(32.5, 1.0, 58.5));
+        return new BuiltCell(BASE_Y, local(32.5, 1.0, 5.5), local(19.5, 3.0, 27.5), local(32.5, 1.0, 58.5));
     }
 
     public static boolean containsXZ(double x, double z) {
@@ -122,8 +122,7 @@ public final class FieldCellA02 {
                         ((dx + dz) & 1) == 0 ? Blocks.POLISHED_ANDESITE : Blocks.STONE_BRICKS);
             }
         }
-        set(level, ORIGIN_X + cx, BASE_Y + 2, ORIGIN_Z + cz, Blocks.CHISELED_STONE_BRICKS);
-        set(level, ORIGIN_X + cx, BASE_Y + 3, ORIGIN_Z + cz, Blocks.AMETHYST_BLOCK);
+        set(level, ORIGIN_X + cx, BASE_Y + 2, ORIGIN_Z + cz, Blocks.AMETHYST_BLOCK);
     }
 
     private static void buildNorthLock(ServerLevel level) {

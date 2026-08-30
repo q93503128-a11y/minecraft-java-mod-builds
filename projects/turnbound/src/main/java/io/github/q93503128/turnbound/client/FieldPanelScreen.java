@@ -17,7 +17,6 @@ import java.util.List;
 /** World-first quest/reward/relay panel. It never replaces the field with a full-screen menu backdrop. */
 public final class FieldPanelScreen extends Screen {
     private static final int DEEP = 0xE810131A;
-    private static final int PANEL = 0xDB171C26;
     private static final int TEXT = 0xFFF4F0E6;
     private static final int SECONDARY = 0xFFAEB7C6;
     private static final int MUTED = 0xFF707987;
@@ -64,6 +63,7 @@ public final class FieldPanelScreen extends Screen {
         if (mode == FieldUiSnapshot.Mode.TRAVEL) {
             int y = panel.y() + 68;
             for (FieldUiSnapshot.Travel travel : snapshot.travels()) {
+                if (y + 24 > buttonY - 4) break;
                 String suffix = travel.current() ? "  · 현재 위치" : travel.unlocked() ? "" : "  · 미활성";
                 BattleHudButton button = addRenderableWidget(new BattleHudButton(
                         panel.x() + 14, y, panel.width() - 28, 24,
@@ -111,22 +111,33 @@ public final class FieldPanelScreen extends Screen {
     }
 
     private void drawQuest(GuiGraphicsExtractor graphics, Rect panel, FieldUiSnapshot snapshot) {
+        boolean compact = panel.height() < 260;
         int x = panel.x() + 14;
         int y = panel.y() + 12;
         graphics.text(font, Component.literal("남문 정찰관"), x, y, GOLD, true);
         graphics.text(font, Component.literal("CHAPTER 1 · 남문 초원"), x, y + 15, SECONDARY, true);
-        y += 38;
-        for (String line : wrap(snapshot.dialogue(), panel.width() - 28)) {
-            graphics.text(font, Component.literal(line), x, y, TEXT, true);
+        y += compact ? 31 : 38;
+
+        List<String> dialogueLines = wrap(snapshot.dialogue(), panel.width() - 28);
+        int dialogueLimit = compact ? Math.min(1, dialogueLines.size()) : Math.min(3, dialogueLines.size());
+        for (int i = 0; i < dialogueLimit; i++) {
+            graphics.text(font, Component.literal(dialogueLines.get(i)), x, y, TEXT, true);
             y += 11;
         }
-        y += 7;
+        y += compact ? 3 : 7;
         graphics.text(font, Component.literal("현재 목표"), x, y, SECONDARY, true);
-        y += 13;
-        graphics.text(font, Component.literal(snapshot.objective()), x, y, TEXT, true);
-        y += 19;
+        y += 12;
+        for (String line : wrap(snapshot.objective(), panel.width() - 28)) {
+            graphics.text(font, Component.literal(line), x, y, TEXT, true);
+            y += 10;
+            if (compact) break;
+        }
+        y += compact ? 5 : 9;
 
+        int row = compact ? 10 : 13;
+        int footerY = panel.bottom() - 49;
         for (FieldUiSnapshot.Encounter encounter : snapshot.encounters()) {
+            if (y + row > footerY - 4) break;
             String mark;
             int color;
             if (encounter.cleared()) {
@@ -143,10 +154,9 @@ public final class FieldPanelScreen extends Screen {
                 color = TEXT;
             }
             graphics.text(font, Component.literal(mark + "  " + encounter.label()), x, y, color, true);
-            y += 13;
+            y += row;
         }
 
-        int footerY = panel.bottom() - 49;
         graphics.fill(x, footerY - 5, panel.right() - 14, footerY - 4, 0x806D7786);
         graphics.text(font, Component.literal("누적 보상  XP " + snapshot.earnedXp() + "  ·  Gold " + snapshot.earnedGold()),
                 x, footerY + 3, SECONDARY, true);
@@ -172,7 +182,9 @@ public final class FieldPanelScreen extends Screen {
         y += 13;
         graphics.text(font, Component.literal("다음 목표"), x, y, SECONDARY, true);
         y += 13;
+        int maxY = panel.bottom() - 34;
         for (String line : wrap(snapshot.objective(), panel.width() - 32)) {
+            if (y + 9 > maxY) break;
             graphics.text(font, Component.literal(line), x, y, TEXT, true);
             y += 11;
         }
@@ -183,7 +195,9 @@ public final class FieldPanelScreen extends Screen {
         int y = panel.y() + 12;
         graphics.text(font, Component.literal("ASTER RELAY"), x, y, BLUE, true);
         graphics.text(font, Component.literal("활성화한 계전석 사이를 이동합니다."), x, y + 16, SECONDARY, true);
-        graphics.text(font, Component.literal("미활성 거점은 직접 도달해 계전석을 조사해야 합니다."), x, y + 31, MUTED, true);
+        if (panel.height() >= 210) {
+            graphics.text(font, Component.literal("미활성 거점은 직접 도달해 조사해야 합니다."), x, y + 31, MUTED, true);
+        }
     }
 
     private List<String> wrap(String text, int maxWidth) {
@@ -204,18 +218,22 @@ public final class FieldPanelScreen extends Screen {
     }
 
     private Rect panel(FieldUiSnapshot.Mode mode) {
-        int w = switch (mode) {
-            case RESULT -> Math.min(340, Math.max(260, width - 32));
-            case TRAVEL -> Math.min(330, Math.max(270, width - 24));
-            default -> Math.min(360, Math.max(292, width - 24));
+        int desiredWidth = switch (mode) {
+            case RESULT -> 340;
+            case TRAVEL -> 330;
+            default -> 360;
         };
-        int h = switch (mode) {
-            case RESULT -> Math.min(190, Math.max(150, height - 30));
-            case TRAVEL -> Math.min(230, Math.max(180, height - 24));
-            default -> Math.min(310, Math.max(240, height - 24));
+        int desiredHeight = switch (mode) {
+            case RESULT -> 190;
+            case TRAVEL -> 230;
+            default -> 310;
         };
-        int x = mode == FieldUiSnapshot.Mode.QUEST ? 12 : Math.max(12, (width - w) / 2);
-        int y = Math.max(12, (height - h) / 2);
+        int w = Math.max(180, Math.min(desiredWidth, Math.max(180, width - 24)));
+        int h = Math.max(140, Math.min(desiredHeight, Math.max(140, height - 24)));
+        w = Math.min(w, Math.max(1, width - 4));
+        h = Math.min(h, Math.max(1, height - 4));
+        int x = mode == FieldUiSnapshot.Mode.QUEST ? Math.min(12, Math.max(2, width - w - 2)) : Math.max(2, (width - w) / 2);
+        int y = Math.max(2, (height - h) / 2);
         return new Rect(x, y, w, h);
     }
 
