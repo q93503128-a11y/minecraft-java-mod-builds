@@ -14,7 +14,10 @@ public final class FieldTravelCatalog {
     /** @deprecated alpha.12 local relay id now maps to canonical FT_MEADOW. */
     @Deprecated public static final String RELAY_A02 = FT_MEADOW;
 
-    public record Destination(String id, String label, Vec3 position, float yaw) {}
+    /** Primitive static data; Vec3 is materialized only when the live Minecraft runtime asks for position(). */
+    public record Destination(String id, String label, double x, double y, double z, float yaw) {
+        public Vec3 position() { return new Vec3(x, y, z); }
+    }
 
     private static final List<Destination> DESTINATIONS = List.of(
             fromAnchor(FT_RADIA),
@@ -32,6 +35,6 @@ public final class FieldTravelCatalog {
 
     private static Destination fromAnchor(String id) {
         var anchor = AsterMarchRegionCatalog.fastTravel(id);
-        return new Destination(anchor.id(), anchor.label(), anchor.position(), anchor.yaw());
+        return new Destination(anchor.id(), anchor.label(), anchor.x(), anchor.y(), anchor.z(), anchor.yaw());
     }
 }
