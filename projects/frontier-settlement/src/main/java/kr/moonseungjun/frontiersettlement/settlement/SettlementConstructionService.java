@@ -11,6 +11,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
@@ -970,17 +971,13 @@ public final class SettlementConstructionService {
     }
 
     public static FrontierWorkerEntity ensureBuilder(ServerLevel level, SettlementData data) {
+        reconcileBuilderDuplicates(level, data);
         List<FrontierWorkerEntity> existing = findBuilders(level, data);
         if (!existing.isEmpty()) {
             FrontierWorkerEntity active = existing.getFirst();
             if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
             active.setNoAi(false);
-            for (int i = 1; i < existing.size(); i++) {
-                FrontierWorkerEntity duplicate = existing.get(i);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
-                duplicate.setInvulnerable(true);
-            }
+            active.setInvulnerable(false);
             return active;
         }
         if (!builderAssignmentEvidenceLoaded(level, data)) return null;
@@ -996,6 +993,40 @@ public final class SettlementConstructionService {
         builder.setNoAi(false);
         builder.addTag(BUILDER_TAG);
         return level.addFreshEntity(builder) ? builder : null;
+    }
+
+    /**
+     * Reclaims historical duplicate shared builders once their complete legal lookup envelope is loaded.
+     * The first UUID-ordered builder remains authoritative. Extras are never frozen or made invulnerable;
+     * their exact MAINHAND cargo is first materialized as an ItemEntity, and only then are they discarded.
+     */
+    public static int reconcileBuilderDuplicates(ServerLevel level, SettlementData data) {
+        if (!builderAssignmentEvidenceLoaded(level, data)) return 0;
+        List<FrontierWorkerEntity> builders = findBuilders(level, data);
+        if (builders.isEmpty()) return 0;
+        FrontierWorkerEntity active = builders.getFirst();
+        if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
+        active.setNoAi(false);
+        active.setInvulnerable(false);
+        int removed = 0;
+        for (int i = 1; i < builders.size(); i++) {
+            if (removeDuplicateBuilderPreservingCargo(level, builders.get(i))) removed++;
+        }
+        return removed;
+    }
+
+    private static boolean removeDuplicateBuilderPreservingCargo(ServerLevel level, FrontierWorkerEntity duplicate) {
+        duplicate.getNavigation().stop();
+        duplicate.setNoAi(false);
+        duplicate.setInvulnerable(false);
+        ItemStack carried = duplicate.getMainHandItem();
+        if (!carried.isEmpty()) {
+            ItemEntity physical = new ItemEntity(level, duplicate.getX(), duplicate.getY(), duplicate.getZ(), carried.copy());
+            if (!level.addFreshEntity(physical)) return false;
+            duplicate.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        duplicate.discard();
+        return true;
     }
 
     static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {

@@ -52,7 +52,11 @@ public final class SettlementWorkerService {
         ServerLevel level = server.overworld();
         if (server.getTickCount() % 10 == 0) {
             SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data);
+            SettlementConstructionService.reconcileBuilderDuplicates(level, data);
+            reconcileProductionDuplicates(server, level, data);
         }
+        // Duplicate reconciliation must run first on the same 600-tick boundary so an excess
+        // historical worker can never be removed and immediately replaced from stale population state.
         if (server.getTickCount() % 600 == 0) tryAttractWorker(server, level, data);
         if (server.getTickCount() % 10 != 0) return;
 
@@ -61,6 +65,69 @@ public final class SettlementWorkerService {
         runBuildingWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, SettlementWorkerService::workQuarry);
         runBuildingWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME, SettlementWorkerService::workMine);
         SettlementOutpostLogisticsService.tick(level, data);
+    }
+
+    /**
+     * Save-recovery cleanup for historical Alpha.84-88 local production duplicates.
+     *
+     * Cleanup is destructive only after the complete local production/storage evidence envelope is
+     * loaded. UUID order is already deterministic in workersByName(), so exactly one physical worker
+     * per completed production building remains authoritative. No unloaded resident is treated as dead.
+     */
+    private static void reconcileProductionDuplicates(MinecraftServer server, ServerLevel level, SettlementData data) {
+        if (!localProductionEvidenceLoaded(level, data)) return;
+        int removed = 0;
+        removed += trimExcessProductionWorkers(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
+        removed += trimExcessProductionWorkers(level, data, BuildingType.FARM, FARM_WORKER_NAME);
+        removed += trimExcessProductionWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
+        removed += trimExcessProductionWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME);
+        if (removed <= 0) return;
+
+        repairPopulationAfterDuplicateCleanup(level, data);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
+    }
+
+    private static int trimExcessProductionWorkers(ServerLevel level, SettlementData data,
+                                                    BuildingType type, String workerName) {
+        int allowed = buildings(data, type).size();
+        List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);
+        if (workers.size() <= allowed) return 0;
+        int removed = 0;
+        for (int i = allowed; i < workers.size(); i++) {
+            if (removeDuplicateWorkerPreservingCargo(level, workers.get(i))) removed++;
+        }
+        return removed;
+    }
+
+    private static boolean removeDuplicateWorkerPreservingCargo(ServerLevel level, FrontierWorkerEntity worker) {
+        worker.getNavigation().stop();
+        worker.setNoAi(false);
+        worker.setInvulnerable(false);
+        ItemStack carried = worker.getMainHandItem();
+        if (!carried.isEmpty()) {
+            ItemEntity physical = new ItemEntity(level, worker.getX(), worker.getY(), worker.getZ(), carried.copy());
+            if (!level.addFreshEntity(physical)) return false;
+            worker.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        worker.discard();
+        return true;
+    }
+
+    private static void repairPopulationAfterDuplicateCleanup(ServerLevel level, SettlementData data) {
+        if (!SettlementOutpostLogisticsService.allRoutesLoaded(level, data)
+                || !SettlementWorkshopService.allAssignmentsLoaded(level, data)
+                || !SettlementAdvancedWorkshopService.allAssignmentsLoaded(level, data)) return;
+        int transport = SettlementOutpostLogisticsService.loadedAssignedWorkerCount(level, data);
+        int workshop = SettlementWorkshopService.loadedAssignedWorkerCount(level, data);
+        int advanced = SettlementAdvancedWorkshopService.loadedAssignedWorkerCount(level, data);
+        int actualPopulation = 1
+                + workersByName(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME).size()
+                + workersByName(level, data, BuildingType.FARM, FARM_WORKER_NAME).size()
+                + workersByName(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME).size()
+                + workersByName(level, data, BuildingType.MINE, MINE_WORKER_NAME).size()
+                + transport + workshop + advanced;
+        if (data.population() != actualPopulation) data.setPopulation(actualPopulation);
     }
 
     @FunctionalInterface
