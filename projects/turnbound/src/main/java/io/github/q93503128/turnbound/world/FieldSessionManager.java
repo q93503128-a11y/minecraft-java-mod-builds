@@ -17,39 +17,43 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-/** Southgate Meadow P2 slice aligned to v0.4 world anchors and MQ_C01 progression. */
+/** Automatic alpha.15 vertical slice: peaceful starter village + one visible-encounter field cell. */
 public final class FieldSessionManager {
     public static final String ENCOUNTER_A01_PATROL = SouthgateEncounterCatalog.ENC_M01;
     private static final Map<UUID, FieldSession> SESSIONS = new LinkedHashMap<>();
 
     private FieldSessionManager() {}
 
+    /** Called from the player tick: no command is required on a normal Overworld/Superflat start. */
+    public static void ensureAutomatic(ServerPlayer player) {
+        if (SESSIONS.containsKey(player.getUUID()) || BattleSessionManager.exists(player)) return;
+        if (player.level().dimension() != Level.OVERWORLD || player.tickCount < 40) return;
+        enter(player);
+    }
+
+    /** Developer fallback; normal gameplay enters automatically. */
     public static boolean enter(ServerPlayer player) {
-        if (player.level().dimension() != Level.OVERWORLD) {
-            player.sendSystemMessage(Component.literal("남문 초원은 오버월드에서 진입해야 합니다."));
-            return false;
-        }
+        if (player.level().dimension() != Level.OVERWORLD) return false;
         BattleSessionManager.end(player);
         remove(player);
         ServerLevel level = (ServerLevel) player.level();
-        FieldCellA01.BuiltCell a01 = FieldCellA01.build(level);
-        FieldCellA02.BuiltCell a02 = FieldCellA02.build(level);
-        SouthgateMeadowExpansion.build(level);
-        FieldSession session = new FieldSession(a01, a02);
+        StarterSliceWorld.BuiltSlice slice = StarterSliceWorld.build(level);
+        FieldSession session = new FieldSession(slice);
         SESSIONS.put(player.getUUID(), session);
-        Vec3 radia = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA).position();
-        player.setPos(radia.x, radia.y, radia.z);
+        player.setPos(slice.spawn().x, slice.spawn().y, slice.spawn().z);
         player.setYRot(180.0F);
-        player.setXRot(4.0F);
+        player.setXRot(3.0F);
         player.setDeltaMovement(Vec3.ZERO);
         session.spawnAll(level);
-        player.sendSystemMessage(Component.literal("라디아 남문 → 남문 초원 · Chapter 1 — 남문의 소란").withStyle(ChatFormatting.GOLD));
-        player.sendSystemMessage(Component.literal("FT_RADIA에서 남쪽 길을 따라 정찰관과 첫 순찰대로 이동하십시오.").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(Component.literal("TURNBOUND · 남문 마을").withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(Component.literal("마을 남문을 지나면 첫 필드 조우가 시작됩니다. 명령어는 필요하지 않습니다.").withStyle(ChatFormatting.GRAY));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         return true;
     }
@@ -62,21 +66,14 @@ public final class FieldSessionManager {
         FieldSession session = SESSIONS.get(player.getUUID());
         if (session == null || player.level().dimension() != Level.OVERWORLD || BattleSessionManager.exists(player)) return;
         ServerLevel level = (ServerLevel) player.level();
-        if (!session.allowedPosition(player.position())) {
-            Vec3 fallback = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA).position();
-            player.setPos(fallback.x, fallback.y, fallback.z);
+        if (!StarterSliceWorld.contains(session.slice, player.position())) {
+            Vec3 spawn = session.slice.spawn();
+            player.setPos(spawn.x, spawn.y, spawn.z);
             player.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (player.tickCount % 20 == 0) clearVanillaMobs(level);
-        if (session.progress.meadowRouteUnlocked()) {
-            FieldCellA02.unlockNorthGate(level);
-            session.spawnMeadowRelay(level);
-            session.spawnUnlockedPatrols(level);
-        }
-        if (session.progress.bossUnlocked()) SouthgateMeadowExpansion.unlockBossGate(level);
-        session.ensureBoss(level);
-        session.tickEncounters(level, player);
+        if (player.tickCount % 20 == 0) clearVanillaMobs(level, session.slice);
+        session.tickPatrols(level, player);
     }
 
     public static void onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
@@ -86,35 +83,21 @@ public final class FieldSessionManager {
         if (patrol == null) return;
         patrol.despawn(level);
         if (outcome != BattleOutcome.ALLY_VICTORY) {
-            patrol.resetAfterNonVictory(level);
+            patrol.reset(level);
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
             return;
         }
-
-        boolean routeBefore = session.progress.meadowRouteUnlocked();
-        boolean bossBefore = session.progress.bossUnlocked();
-        SouthgateChapterProgress.RewardReceipt reward = session.progress.recordVictory(encounterId);
-        patrol.defeated = true;
+        boolean first = session.cleared.add(encounterId);
         var spec = SouthgateEncounterCatalog.spec(encounterId);
+        int xp = first ? spec.rewardXp() : 0;
+        int gold = first ? spec.rewardGold() : 0;
+        session.earnedXp += xp;
+        session.earnedGold += gold;
+        patrol.defeated = true;
+        boolean starterDone = session.starterComplete();
+        FieldUiSnapshot.Reward reward = new FieldUiSnapshot.Reward(spec.label(), xp, gold, first, false);
         player.sendSystemMessage(Component.literal("승리 · " + spec.label()).withStyle(ChatFormatting.GREEN));
-
-        if (!routeBefore && session.progress.meadowRouteUnlocked()) {
-            FieldCellA02.unlockNorthGate(level);
-            session.spawnMeadowRelay(level);
-            session.spawnUnlockedPatrols(level);
-            player.sendSystemMessage(Component.literal("MQ_C01_01 완료 — FT_MEADOW와 초원 동쪽 경로가 열렸습니다.").withStyle(ChatFormatting.AQUA));
-        }
-        if (!bossBefore && session.progress.bossUnlocked()) {
-            SouthgateMeadowExpansion.unlockBossGate(level);
-            session.ensureBoss(level);
-            player.sendSystemMessage(Component.literal("MQ_C01_02 완료 — B01 그라울 전투장이 개방되었습니다.").withStyle(ChatFormatting.RED));
-        }
-        if (reward.chapterCleared()) {
-            player.sendSystemMessage(Component.literal("MQ_C01_03 완료 — Chapter 1 클리어").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
-            player.sendSystemMessage(Component.literal("해금: Echo Archive · AUTO · 2.0x · P08 라제").withStyle(ChatFormatting.LIGHT_PURPLE));
-            player.sendSystemMessage(Component.literal("B01 첫 보상: Crystal +1200 · Star Essence +60 · T2 장비 선택 상자 ×1")
-                    .withStyle(ChatFormatting.YELLOW));
-        }
+        if (starterDone) player.sendSystemMessage(Component.literal("남문 초원 체험 구간 확보 — 다음 필드는 이후 제작 단계에서 연결됩니다.").withStyle(ChatFormatting.AQUA));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.RESULT, reward));
     }
 
@@ -126,14 +109,7 @@ public final class FieldSessionManager {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             return true;
         }
-        if (id.equals(session.relayRadia)) {
-            session.progress.activateRelay(FieldTravelCatalog.FT_RADIA);
-            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
-            return true;
-        }
-        if (id.equals(session.relayMeadow)) {
-            if (!session.progress.meadowRouteUnlocked()) return true;
-            session.progress.activateRelay(FieldTravelCatalog.FT_MEADOW);
+        if (id.equals(session.relay)) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
             return true;
         }
@@ -142,18 +118,22 @@ public final class FieldSessionManager {
 
     public static void sendStatus(ServerPlayer player) {
         FieldSession session = SESSIONS.get(player.getUUID());
-        if (session == null) {
-            player.sendSystemMessage(Component.literal("활성 TURNBOUND 필드 세션이 없습니다."));
-            return;
-        }
+        if (session == null) return;
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
     }
 
     public static void command(ServerPlayer player, String command) {
         FieldSession session = SESSIONS.get(player.getUUID());
-        if (session == null || command == null || command.isBlank() || BattleSessionManager.exists(player)) return;
+        if (session == null || command == null || BattleSessionManager.exists(player)) return;
         String[] parts = command.split("\\|", -1);
-        if (parts.length >= 2 && "TRAVEL".equals(parts[0])) session.travel(player, parts[1]);
+        if (parts.length >= 2 && "TRAVEL".equals(parts[0])) {
+            Vec3 spawn = session.slice.spawn();
+            player.setPos(spawn.x, spawn.y, spawn.z);
+            player.setYRot(180.0F);
+            player.setXRot(3.0F);
+            player.setDeltaMovement(Vec3.ZERO);
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
+        }
     }
 
     public static void remove(ServerPlayer player) {
@@ -167,98 +147,52 @@ public final class FieldSessionManager {
         SESSIONS.clear();
     }
 
-    private static void clearVanillaMobs(ServerLevel level) {
-        var meadow = AsterMarchRegionCatalog.SOUTHGATE;
-        AABB playable = new AABB(meadow.minX() - 8, 54, 8,
-                meadow.maxX() + 8, 100, meadow.maxZ() + 8);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, playable)) mob.discard();
+    private static void clearVanillaMobs(ServerLevel level, StarterSliceWorld.BuiltSlice slice) {
+        AABB area = new AABB(StarterSliceWorld.ORIGIN_X - 4, slice.baseY() - 6, StarterSliceWorld.VILLAGE_Z - 4,
+                StarterSliceWorld.ORIGIN_X + StarterSliceWorld.SIZE + 4, slice.baseY() + 20,
+                StarterSliceWorld.FIELD_Z + StarterSliceWorld.SIZE + 4);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) mob.discard();
     }
-
-    private static Vec3 a01(double x, double y, double z) {
-        return new Vec3(FieldCellA01.ORIGIN_X + x, FieldCellA01.BASE_Y + y, FieldCellA01.ORIGIN_Z + z);
-    }
-    private static Vec3 a02(double x, double y, double z) {
-        return new Vec3(FieldCellA02.ORIGIN_X + x, FieldCellA02.BASE_Y + y, FieldCellA02.ORIGIN_Z + z);
-    }
-
-    private static List<PatrolLayout> normalLayouts() {
-        return List.of(
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M01, a01(22.5,1,22.5), a01(36.5,1,24.5), false, null, 0.0F),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M02, a01(18.0,1,39.0), a01(31.0,1,41.0), false, null, 0.0F),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M03, a01(48.0,1,17.5), a01(40.0,1,27.0), false, null, 0.0F),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M04, SouthgateMeadowExpansion.M04_CLEARING.add(-8.0,0,0),
-                        SouthgateMeadowExpansion.M04_CLEARING.add(8.0,0,2.0), true, SouthgateMeadowExpansion.M04_CLEARING, 90.0F),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M05, SouthgateMeadowExpansion.M05_CLEARING.add(-7.0,0,-2.0),
-                        SouthgateMeadowExpansion.M05_CLEARING.add(7.0,0,3.0), true, SouthgateMeadowExpansion.M05_CLEARING, 45.0F)
-        );
-    }
-
-    private static PatrolLayout bossLayout() {
-        var boss = AsterMarchRegionCatalog.boss(AsterMarchRegionCatalog.B01);
-        return new PatrolLayout(SouthgateEncounterCatalog.B01_GRAUL, boss.position().add(-10.0,0,0),
-                boss.position().add(-4.0,0,4.0), true, boss.position(), boss.yaw());
-    }
-
-    private record PatrolLayout(String encounterId, Vec3 home, Vec3 patrolEnd, boolean requiresRoute,
-                                Vec3 battleAnchor, float battleYaw) {}
 
     private static final class FieldSession {
-        private final FieldCellA01.BuiltCell a01;
-        private final FieldCellA02.BuiltCell a02;
-        private final SouthgateChapterProgress progress = new SouthgateChapterProgress();
+        private final StarterSliceWorld.BuiltSlice slice;
         private final Map<String, Patrol> encounters = new LinkedHashMap<>();
+        private final Set<String> cleared = new HashSet<>();
         private UUID npc;
-        private UUID relayRadia;
-        private UUID relayMeadow;
+        private UUID relay;
+        private int earnedXp;
+        private int earnedGold;
 
-        private FieldSession(FieldCellA01.BuiltCell a01, FieldCellA02.BuiltCell a02) {
-            this.a01 = a01;
-            this.a02 = a02;
-            progress.activateRelay(FieldTravelCatalog.FT_RADIA);
-            for (PatrolLayout layout : normalLayouts()) encounters.put(layout.encounterId(), new Patrol(layout));
-        }
-
-        private boolean allowedPosition(Vec3 position) {
-            return SouthgateMeadowExpansion.allowedPosition(position, progress.meadowRouteUnlocked(), progress.bossUnlocked());
+        private FieldSession(StarterSliceWorld.BuiltSlice slice) {
+            this.slice = slice;
+            encounters.put(SouthgateEncounterCatalog.ENC_M01,
+                    new Patrol(SouthgateEncounterCatalog.ENC_M01, slice.m01Home(), slice.m01End()));
+            encounters.put(SouthgateEncounterCatalog.ENC_M02,
+                    new Patrol(SouthgateEncounterCatalog.ENC_M02, slice.m02Home(), slice.m02End()));
         }
 
         private void spawnAll(ServerLevel level) {
             spawnNpc(level);
-            spawnRadiaRelay(level);
-            spawnUnlockedPatrols(level);
+            spawnRelay(level);
+            for (Patrol patrol : encounters.values()) patrol.spawn(level);
         }
 
-        private void spawnUnlockedPatrols(ServerLevel level) {
+        private void tickPatrols(ServerLevel level, ServerPlayer player) {
             for (Patrol patrol : encounters.values()) {
-                if (!patrol.layout.requiresRoute() || progress.meadowRouteUnlocked()) {
-                    if (!patrol.defeated && !patrol.entitiesAlive(level)) patrol.spawn(level);
-                }
-            }
-        }
-
-        private void tickEncounters(ServerLevel level, ServerPlayer player) {
-            for (Patrol patrol : encounters.values()) {
-                if (patrol.defeated || (patrol.layout.requiresRoute() && !progress.meadowRouteUnlocked())) continue;
+                if (patrol.defeated) continue;
                 if (patrol.graceTicks > 0) patrol.graceTicks--;
                 if (!patrol.entitiesAlive(level)) patrol.spawn(level);
-                if (patrol.tick(level, player, progress.autoUnlocked(), progress.speedUnlocked())) return;
+                if (patrol.tick(level, player)) return;
             }
         }
 
-        private void ensureBoss(ServerLevel level) {
-            if (!progress.bossUnlocked() || progress.chapterCleared()) return;
-            Patrol boss = encounters.get(SouthgateEncounterCatalog.B01_GRAUL);
-            if (boss == null) {
-                boss = new Patrol(bossLayout());
-                encounters.put(SouthgateEncounterCatalog.B01_GRAUL, boss);
-            }
-            if (!boss.defeated && !boss.entitiesAlive(level)) boss.spawn(level);
+        private boolean starterComplete() {
+            return cleared.contains(SouthgateEncounterCatalog.ENC_M01) && cleared.contains(SouthgateEncounterCatalog.ENC_M02);
         }
 
         private void spawnNpc(ServerLevel level) {
-            if (npc != null && level.getEntity(npc) != null) return;
-            Vec3 pos = a01.entry().add(-3.0,0,2.0);
-            ArmorStand stand = new ArmorStand(level,pos.x,pos.y,pos.z);
+            Vec3 pos = slice.npc();
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
             stand.setCustomName(Component.literal("남문 정찰관").withStyle(ChatFormatting.AQUA));
             stand.setCustomNameVisible(true);
@@ -268,205 +202,127 @@ public final class FieldSessionManager {
             level.addFreshEntity(stand); npc = stand.getUUID();
         }
 
-        private void spawnRadiaRelay(ServerLevel level) {
-            if (relayRadia != null && level.getEntity(relayRadia) != null) return;
-            var anchor = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA);
-            relayRadia = spawnRelay(level, anchor.position().add(2.5,0,0), anchor.label(), ChatFormatting.AQUA);
-        }
-
-        private void spawnMeadowRelay(ServerLevel level) {
-            if (!progress.meadowRouteUnlocked() || (relayMeadow != null && level.getEntity(relayMeadow) != null)) return;
-            var anchor = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_MEADOW);
-            relayMeadow = spawnRelay(level, anchor.position().add(2.5,0,0), anchor.label(), ChatFormatting.LIGHT_PURPLE);
-        }
-
-        private UUID spawnRelay(ServerLevel level, Vec3 pos, String name, ChatFormatting color) {
-            ArmorStand stand = new ArmorStand(level,pos.x,pos.y,pos.z);
+        private void spawnRelay(ServerLevel level) {
+            Vec3 pos = slice.relay();
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
-            stand.setCustomName(Component.literal(name).withStyle(color)); stand.setCustomNameVisible(true);
+            stand.setCustomName(Component.literal("남문 마을 계전석").withStyle(ChatFormatting.LIGHT_PURPLE));
+            stand.setCustomNameVisible(true);
             stand.setItemSlot(EquipmentSlot.HEAD, Items.AMETHYST_SHARD.getDefaultInstance());
-            stand.setItemSlot(EquipmentSlot.CHEST, Items.CHAINMAIL_CHESTPLATE.getDefaultInstance());
             stand.setItemSlot(EquipmentSlot.MAINHAND, Items.COMPASS.getDefaultInstance());
-            level.addFreshEntity(stand); return stand.getUUID();
+            level.addFreshEntity(stand); relay = stand.getUUID();
         }
 
-        private void travel(ServerPlayer player, String destinationId) {
-            if (!progress.relayActivated(destinationId)) {
-                player.sendSystemMessage(Component.literal("아직 해금하지 않은 계전소입니다.").withStyle(ChatFormatting.GRAY));
-                FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
-                return;
-            }
-            FieldTravelCatalog.Destination destination;
-            try { destination = FieldTravelCatalog.destination(destinationId); }
-            catch (IllegalArgumentException ignored) { return; }
-            player.setPos(destination.position().x, destination.position().y, destination.position().z);
-            player.setYRot(destination.yaw()); player.setXRot(4.0F); player.setDeltaMovement(Vec3.ZERO);
-            FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.NONE, null));
+        private FieldUiSnapshot snapshot(ServerPlayer player, FieldUiSnapshot.Mode mode, FieldUiSnapshot.Reward reward) {
+            List<FieldUiSnapshot.Encounter> views = List.of(
+                    encounterView(SouthgateEncounterCatalog.ENC_M01),
+                    encounterView(SouthgateEncounterCatalog.ENC_M02));
+            boolean current = player.position().distanceToSqr(slice.spawn()) <= 144.0;
+            List<FieldUiSnapshot.Travel> travels = List.of(new FieldUiSnapshot.Travel("START_VILLAGE", "남문 마을", true, current));
+            return new FieldUiSnapshot(true, mode, cleared.size(), 2, false, false, earnedXp, earnedGold,
+                    objective(), dialogue(), reward == null ? FieldUiSnapshot.Reward.none() : reward, views, travels);
         }
 
-        private FieldUiSnapshot snapshot(ServerPlayer player, FieldUiSnapshot.Mode mode, SouthgateChapterProgress.RewardReceipt receipt) {
-            List<FieldUiSnapshot.Encounter> encounterViews = new ArrayList<>();
-            for (String id : SouthgateEncounterCatalog.normalEncounterIds()) {
-                var spec = SouthgateEncounterCatalog.spec(id);
-                boolean unlocked = !id.equals(SouthgateEncounterCatalog.ENC_M04) && !id.equals(SouthgateEncounterCatalog.ENC_M05)
-                        || progress.meadowRouteUnlocked();
-                encounterViews.add(new FieldUiSnapshot.Encounter(id,spec.label(),progress.cleared(id),unlocked,false));
-            }
-            var boss = SouthgateEncounterCatalog.boss();
-            encounterViews.add(new FieldUiSnapshot.Encounter(boss.id(),boss.label(),progress.cleared(boss.id()),progress.bossUnlocked(),true));
-
-            List<FieldUiSnapshot.Travel> travelViews = new ArrayList<>();
-            for (FieldTravelCatalog.Destination destination : FieldTravelCatalog.destinations()) {
-                travelViews.add(new FieldUiSnapshot.Travel(destination.id(),destination.label(),
-                        progress.relayActivated(destination.id()),player.position().distanceToSqr(destination.position()) <= 64.0));
-            }
-            FieldUiSnapshot.Reward reward = receipt == null ? FieldUiSnapshot.Reward.none()
-                    : new FieldUiSnapshot.Reward(SouthgateEncounterCatalog.spec(receipt.encounterId()).label(),
-                    receipt.xp(),receipt.gold(),receipt.firstClear(),receipt.chapterCleared());
-            return new FieldUiSnapshot(true,mode,progress.patrolsCleared(),progress.patrolGoal(),progress.bossUnlocked(),
-                    progress.chapterCleared(),progress.earnedXp(),progress.earnedGold(),objective(),dialogue(),reward,encounterViews,travelViews);
+        private FieldUiSnapshot.Encounter encounterView(String id) {
+            var spec = SouthgateEncounterCatalog.spec(id);
+            return new FieldUiSnapshot.Encounter(id, spec.label(), cleared.contains(id), true, false);
         }
 
         private String objective() {
-            if (progress.chapterCleared()) return "Chapter 1 완료 · Echo Archive / AUTO / 2.0x / P08 해금";
-            if (progress.bossUnlocked()) return "MQ_C01_03 · B01 전투장 (355,68,245)의 그라울을 처치하십시오.";
-            if (progress.meadowRouteUnlocked()) return "MQ_C01_02 · FT_MEADOW 동쪽의 불안정 폭발체(E003)를 처치하십시오.";
-            return "MQ_C01_01 · ENC_M01 / ENC_M02를 정리하십시오.  " + progress.patrolsCleared() + "/2";
+            if (starterComplete()) return "남문 초원 1구역 확보 완료 · 마을로 돌아가 정찰관에게 보고";
+            return "남문을 지나 보이는 적 무리 2개를 정리하십시오.  " + cleared.size() + "/2";
         }
 
         private String dialogue() {
-            if (progress.chapterCleared()) return "그라울이 쓰러졌다. 중계 기록도 다시 열렸어. 라디아로 돌아가면 Echo Archive와 새 전투 기능을 쓸 수 있을 거야.";
-            if (progress.bossUnlocked()) return "폭발체가 사라지면서 동쪽 봉쇄문이 열렸다. 그라울의 전투장은 바로 앞이다.";
-            if (progress.meadowRouteUnlocked()) return "FT_MEADOW가 지도에 잡혔다. 동쪽 전진로에서 불안정 폭발체를 먼저 처리해.";
-            return "라디아 남문에서 가까운 두 순찰 무리부터 정리해 줘. 그 뒤 초원 계전로를 열겠다.";
+            if (starterComplete()) return "첫 길은 확보됐어. 마을은 안전하다. 다음 지역은 이 구간의 전투·UI가 안정된 뒤 이어서 열겠다.";
+            return "마을 안에는 적이 없어. 남문 밖 초원에 보이는 두 무리만 정리해 줘. 피해서 지나가는 것도 가능해.";
         }
 
         private void despawnAll(ServerLevel level) {
             for (Patrol patrol : encounters.values()) patrol.despawn(level);
-            despawn(level,npc); despawn(level,relayRadia); despawn(level,relayMeadow);
-            npc = null; relayRadia = null; relayMeadow = null;
+            despawn(level, npc); despawn(level, relay);
+            npc = null; relay = null;
         }
-        private void despawn(ServerLevel level, UUID id) {
-            if (id == null) return;
-            Entity entity = level.getEntity(id); if (entity != null) entity.discard();
-        }
+        private void despawn(ServerLevel level, UUID id) { if (id != null) { Entity e = level.getEntity(id); if (e != null) e.discard(); } }
     }
 
     private static final class Patrol {
-        private final PatrolLayout layout;
+        private final String encounterId;
         private final SouthgateEncounterCatalog.EncounterSpec spec;
+        private final Vec3 home;
+        private final Vec3 patrolEnd;
         private final List<UUID> actors = new ArrayList<>();
         private Vec3 pivot;
-        private boolean patrolTowardEnd = true;
+        private boolean towardEnd = true;
         private boolean defeated;
-        private int graceTicks = 30;
+        private int graceTicks = 40;
         private FieldEncounterRules.Phase phase = FieldEncounterRules.Phase.PATROL;
 
-        private Patrol(PatrolLayout layout) {
-            this.layout = layout; this.spec = SouthgateEncounterCatalog.spec(layout.encounterId()); this.pivot = layout.home();
+        private Patrol(String encounterId, Vec3 home, Vec3 patrolEnd) {
+            this.encounterId = encounterId;
+            this.spec = SouthgateEncounterCatalog.spec(encounterId);
+            this.home = home;
+            this.patrolEnd = patrolEnd;
+            this.pivot = home;
         }
 
-        private boolean tick(ServerLevel level, ServerPlayer player, boolean autoUnlocked, boolean speedUnlocked) {
-            Vec3 playerFlat = new Vec3(player.getX(),pivot.y,player.getZ());
+        private boolean tick(ServerLevel level, ServerPlayer player) {
+            Vec3 playerFlat = new Vec3(player.getX(), pivot.y, player.getZ());
             double distance = playerFlat.distanceTo(pivot);
-            phase = FieldEncounterRules.nextPhase(phase,distance,graceTicks);
-            if (FieldEncounterRules.shouldEngage(distance,graceTicks)) {
-                boolean started;
-                if (layout.battleAnchor() != null) {
-                    started = BattleSessionManager.startEncounterAt(player, spec.id(), autoUnlocked, speedUnlocked,
-                            layout.battleAnchor(), layout.battleYaw());
-                    if (!started) {
-                        graceTicks = 40;
-                        return false;
-                    }
-                    despawn(level);
-                } else {
-                    despawn(level);
-                    BattleSessionManager.startEncounter(player,spec.id(),autoUnlocked,speedUnlocked);
-                }
+            phase = FieldEncounterRules.nextPhase(phase, distance, graceTicks);
+            if (FieldEncounterRules.shouldEngage(distance, graceTicks)) {
+                despawn(level);
+                BattleSessionManager.startEncounter(player, encounterId, false, false);
                 return true;
             }
-            Vec3 target;
-            double speed;
-            if (phase == FieldEncounterRules.Phase.ALERT) {
-                target = playerFlat; speed = spec.boss() ? 0.115 : 0.105;
-            } else {
-                target = patrolTowardEnd ? layout.patrolEnd() : layout.home();
-                speed = spec.boss() ? 0.025 : 0.035;
-                if (pivot.distanceTo(target) < 0.6) patrolTowardEnd = !patrolTowardEnd;
-            }
+            Vec3 target = phase == FieldEncounterRules.Phase.ALERT ? playerFlat : towardEnd ? patrolEnd : home;
+            double speed = phase == FieldEncounterRules.Phase.ALERT ? 0.105 : 0.035;
             Vec3 delta = target.subtract(pivot);
-            if (delta.lengthSqr() > 0.0001) {
-                Vec3 step = delta.normalize().scale(Math.min(speed,Math.sqrt(delta.lengthSqr())));
-                pivot = new Vec3(pivot.x + step.x,pivot.y,pivot.z + step.z);
-            }
-            updateActors(level,delta);
+            if (delta.lengthSqr() < 0.36 && phase != FieldEncounterRules.Phase.ALERT) towardEnd = !towardEnd;
+            else if (delta.lengthSqr() > 0.0001) pivot = pivot.add(delta.normalize().scale(Math.min(speed, delta.length())));
+            updateActors(level, delta);
             return false;
         }
 
         private void spawn(ServerLevel level) {
             if (defeated) return;
             despawn(level);
-            List<String> defs = spec.enemyDefinitionIds();
-            for (int i=0;i<defs.size();i++) {
-                Vec3 pos = formationPosition(i,new Vec3(0,0,-1));
-                ArmorStand stand = createActor(level,pos,defs.get(i));
+            for (int i = 0; i < spec.enemyDefinitionIds().size(); i++) {
+                Vec3 pos = formation(i, new Vec3(0, 0, -1));
+                ArmorStand stand = actor(level, pos, spec.enemyDefinitionIds().get(i));
                 level.addFreshEntity(stand); actors.add(stand.getUUID());
             }
         }
 
-        private ArmorStand createActor(ServerLevel level, Vec3 pos, String defId) {
-            ArmorStand stand = new ArmorStand(level,pos.x,pos.y,pos.z);
+        private ArmorStand actor(ServerLevel level, Vec3 pos, String defId) {
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
             stand.setCustomName(Component.literal(SouthgateEncounterCatalog.enemyDefinition(defId).name()));
-            stand.setCustomNameVisible(false); stand.setYRot(180.0F);
-            switch (defId) {
-                case "E001" -> {
-                    stand.setItemSlot(EquipmentSlot.HEAD,Items.CHAINMAIL_HELMET.getDefaultInstance());
-                    stand.setItemSlot(EquipmentSlot.CHEST,Items.LEATHER_CHESTPLATE.getDefaultInstance());
-                }
-                case "E002" -> stand.setItemSlot(EquipmentSlot.MAINHAND,Items.BOW.getDefaultInstance());
-                case "E003" -> {
-                    stand.setItemSlot(EquipmentSlot.HEAD,Items.GUNPOWDER.getDefaultInstance());
-                    stand.setItemSlot(EquipmentSlot.MAINHAND,Items.TNT.getDefaultInstance());
-                }
-                case "E004" -> stand.setItemSlot(EquipmentSlot.MAINHAND,Items.IRON_SWORD.getDefaultInstance());
-                case "E005" -> stand.setItemSlot(EquipmentSlot.MAINHAND,Items.SHEARS.getDefaultInstance());
-                case "B01" -> {
-                    stand.setItemSlot(EquipmentSlot.HEAD,Items.IRON_HELMET.getDefaultInstance());
-                    stand.setItemSlot(EquipmentSlot.CHEST,Items.IRON_CHESTPLATE.getDefaultInstance());
-                    stand.setItemSlot(EquipmentSlot.MAINHAND,Items.IRON_AXE.getDefaultInstance());
-                }
-                default -> { }
-            }
+            stand.setCustomNameVisible(false);
+            stand.setItemSlot(EquipmentSlot.CHEST, Items.IRON_CHESTPLATE.getDefaultInstance());
+            stand.setItemSlot(EquipmentSlot.LEGS, Items.LEATHER_LEGGINGS.getDefaultInstance());
+            if ("E002".equals(defId)) stand.setItemSlot(EquipmentSlot.MAINHAND, Items.BOW.getDefaultInstance());
+            else stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
+            level.addFreshEntity(stand);
             return stand;
         }
 
         private void updateActors(ServerLevel level, Vec3 heading) {
-            if (actors.size() != spec.enemyDefinitionIds().size()) return;
-            double yaw = heading.lengthSqr() < 0.0001 ? 180.0 : Math.toDegrees(Math.atan2(-heading.x,heading.z));
-            Vec3 forward = heading.lengthSqr() < 0.0001 ? new Vec3(0,0,-1) : new Vec3(heading.x,0,heading.z).normalize();
-            for (int i=0;i<actors.size();i++) {
-                Entity entity = level.getEntity(actors.get(i));
-                if (entity instanceof ArmorStand stand) {
-                    Vec3 pos = formationPosition(i,forward); stand.setPos(pos.x,pos.y,pos.z); stand.setYRot((float)yaw);
-                    stand.setCustomNameVisible(i==0 && phase==FieldEncounterRules.Phase.ALERT);
-                    stand.setCustomName(i==0 && phase==FieldEncounterRules.Phase.ALERT
-                            ? Component.literal("!").withStyle(ChatFormatting.RED,ChatFormatting.BOLD)
-                            : Component.literal(SouthgateEncounterCatalog.enemyDefinition(spec.enemyDefinitionIds().get(i)).name()));
-                }
+            Vec3 forward = heading.lengthSqr() < 0.0001 ? new Vec3(0, 0, -1) : new Vec3(heading.x, 0, heading.z).normalize();
+            for (int i = 0; i < actors.size(); i++) {
+                Entity e = level.getEntity(actors.get(i));
+                if (!(e instanceof ArmorStand stand)) continue;
+                Vec3 p = formation(i, forward);
+                stand.setPos(p.x, p.y, p.z);
+                stand.setCustomNameVisible(i == 0 && phase == FieldEncounterRules.Phase.ALERT);
+                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT) stand.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                else stand.setCustomName(Component.literal(SouthgateEncounterCatalog.enemyDefinition(spec.enemyDefinitionIds().get(i)).name()));
             }
         }
 
-        private Vec3 formationPosition(int index, Vec3 forward) {
-            Vec3 right = new Vec3(-forward.z,0,forward.x);
-            return switch(index) {
-                case 0 -> pivot;
-                case 1 -> pivot.subtract(forward.scale(1.25)).subtract(right.scale(1.35));
-                case 2 -> pivot.subtract(forward.scale(1.25)).add(right.scale(1.35));
-                case 3 -> pivot.subtract(forward.scale(2.45));
-                default -> pivot.subtract(forward.scale(2.45)).add(right.scale((index-3)*1.35));
-            };
+        private Vec3 formation(int index, Vec3 forward) {
+            Vec3 right = new Vec3(-forward.z, 0, forward.x);
+            return index == 0 ? pivot : pivot.subtract(forward.scale(1.2)).add(right.scale(index % 2 == 0 ? 1.25 : -1.25));
         }
 
         private boolean entitiesAlive(ServerLevel level) {
@@ -474,11 +330,12 @@ public final class FieldSessionManager {
             for (UUID id : actors) if (level.getEntity(id) == null) return false;
             return true;
         }
-        private void resetAfterNonVictory(ServerLevel level) {
-            defeated=false; graceTicks=100; phase=FieldEncounterRules.Phase.PATROL; pivot=layout.home(); patrolTowardEnd=true; spawn(level);
+
+        private void reset(ServerLevel level) {
+            defeated = false; graceTicks = 100; phase = FieldEncounterRules.Phase.PATROL; pivot = home; towardEnd = true; spawn(level);
         }
         private void despawn(ServerLevel level) {
-            for (UUID id:actors) { Entity entity=level.getEntity(id); if(entity!=null) entity.discard(); }
+            for (UUID id : actors) { Entity e = level.getEntity(id); if (e != null) e.discard(); }
             actors.clear();
         }
     }
