@@ -234,7 +234,7 @@ final class BattlePresentation {
         boolean ally = combatant.side() == CombatantSide.ALLY;
         String id = combatant.definition().id();
         if (combatant.definition().summon()) {
-            stand.setSmall(true);
+            setSmall(stand);
             stand.setItemSlot(EquipmentSlot.HEAD, Items.WOLF_ARMOR.getDefaultInstance());
             return;
         }
@@ -269,5 +269,11 @@ final class BattlePresentation {
             case "B05" -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.DIAMOND_SWORD.getDefaultInstance());
             default -> stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
         }
+    }
+
+    /** Mojang 1.21.11/26.2 made ArmorStand#setSmall private; reproduce its synced flag update. */
+    private static void setSmall(ArmorStand stand) {
+        byte flags = stand.getEntityData().get(ArmorStand.DATA_CLIENT_FLAGS);
+        stand.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS, (byte)(flags | ArmorStand.CLIENT_FLAG_SMALL));
     }
 }
