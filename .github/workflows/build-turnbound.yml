@@ -2,7 +2,9 @@ name: Build TURNBOUND
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - turnbound-alpha17-full-v04
     paths:
       - 'projects/turnbound/**'
       - '.github/workflows/build-turnbound.yml'
@@ -46,13 +48,13 @@ jobs:
             sleep 1
           done
           cat server-smoke.log
-          grep -q 'TURNBOUND 0.1.0-alpha.15 loaded' server-smoke.log
+          grep -q 'TURNBOUND .* loaded;' server-smoke.log
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: turnbound-alpha15-starter-slice-ui
+          name: turnbound-v04-workbranch
           path: projects/turnbound/build/libs/*.jar
           if-no-files-found: error
