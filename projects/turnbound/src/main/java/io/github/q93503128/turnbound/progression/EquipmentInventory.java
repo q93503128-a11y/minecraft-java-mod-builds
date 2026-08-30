@@ -139,6 +139,22 @@ public final class EquipmentInventory {
         return upgraded;
     }
 
+    /**
+     * Sells one unequipped normal equipment instance at the exact v0.4 §99 tier value.
+     * Canon does not define a Signature sale price or equipped-item auto-unequip behavior,
+     * so both remain explicitly blocked instead of inventing rules.
+     */
+    public int sell(String instanceId, PlayerProfile profile) {
+        Item item = item(instanceId);
+        ItemSpec spec = spec(item.itemId());
+        if (spec.signature) throw new IllegalStateException("Signature equipment has no canonical sale price");
+        if (isEquipped(instanceId)) throw new IllegalStateException("Unequip equipment before selling it");
+        int price = EquipmentRules.salePrice(spec.tier);
+        profile.grant(PlayerProfile.Currency.GOLD, price);
+        items.remove(instanceId);
+        return price;
+    }
+
     public void equip(String characterId, String instanceId, int currentStar) {
         Item item = item(instanceId);
         ItemSpec spec = spec(item.itemId());
@@ -217,6 +233,13 @@ public final class EquipmentInventory {
                 if (!equipped.add(instanceId)) throw new IllegalStateException("Equipment instance is equipped twice " + instanceId);
             }
         }
+    }
+
+    private boolean isEquipped(String instanceId) {
+        for (Loadout loadout : loadouts.values()) {
+            for (Slot slot : Slot.values()) if (instanceId.equals(loadout.get(slot))) return true;
+        }
+        return false;
     }
 
     private void removeFromAllLoadouts(String instanceId) {
