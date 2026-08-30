@@ -10,6 +10,9 @@ public final class MetaUiCodec {
                 .append(snapshot.partyCp()).append('|').append(snapshot.riftUnlocked() ? 1 : 0).append('|')
                 .append(snapshot.fiveStarPity()).append('|').append(snapshot.starterArchiveAvailable() ? 1 : 0).append('\n');
         out.append("P|").append(String.join(",", snapshot.activeParty())).append('\n');
+        for (int i = 0; i < snapshot.partyPresets().size(); i++) {
+            out.append("PP|").append(i + 1).append('|').append(String.join(",", snapshot.partyPresets().get(i))).append('\n');
+        }
         for (var row : snapshot.characters()) out.append("C|").append(row.id()).append('|').append(safe(row.name())).append('|')
                 .append(row.level()).append('|').append(row.star()).append('|').append(row.awakened() ? 1 : 0).append('|')
                 .append(row.cp()).append('|').append(row.active() ? 1 : 0).append('\n');
