@@ -15,6 +15,20 @@ public final class EquipmentRules {
         };
     }
 
+    /**
+     * v0.4 numeric wiki §99 duplicate-equipment sale values.
+     * Signature equipment intentionally has no sale price because canon does not define one.
+     */
+    public static int salePrice(String tier) {
+        return switch (tier) {
+            case "T1" -> 2_000;
+            case "T2" -> 6_000;
+            case "T3" -> 15_000;
+            case "T4" -> 30_000;
+            default -> throw new IllegalArgumentException("No canonical sale price for equipment tier " + tier);
+        };
+    }
+
     public static EquipmentInventory.Item buyNormal(
             EquipmentInventory inventory,
             PlayerProfile profile,
