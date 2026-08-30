@@ -17,6 +17,15 @@ def swap(rel, pairs):
         text = text.replace(old, new, 1)
     write(rel, text)
 
+# Repair the solo migration's generated status line before compilation.
+p = 'src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java'
+text = read(p)
+bad = '                + " §7· 같은 차원 로딩 창고는 거리 제한 없음));'
+good = '                + " §7· 같은 차원 로딩 창고는 거리 제한 없음"));'
+if bad not in text:
+    raise SystemExit('FieldDepotService generated status-string hotfix token missing')
+write(p, text.replace(bad, good, 1))
+
 # The frontline manifest is exactly one new solo expedition + one normal defense + one bastion defense.
 swap('src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java', [
     ('// 0.48 local-operation costs combined exactly once each:\n    // expedition food32/iron8/fuel8 + defense food48/iron16/logs32\n    // + bastion food96/iron32/stone bricks128.\n    public static final int FRONTLINE_FOOD = 176;\n    public static final int FRONTLINE_IRON = 56;\n    public static final int FRONTLINE_FUEL = 8;\n    public static final int FRONTLINE_LOGS = 32;\n    public static final int FRONTLINE_STONE_BRICKS = 128;',
