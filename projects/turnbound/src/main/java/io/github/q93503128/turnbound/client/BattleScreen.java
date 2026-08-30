@@ -100,16 +100,19 @@ public final class BattleScreen extends Screen {
         if (selected == null) {
             selectedTarget = -1;
             setWorldFocus("");
-        } else if (BattleActionRules.needsSingleTarget(selected.targetRule())) {
-            if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
-                    || !BattleTargeting.validTarget(selected.targetRule(), snapshot.units().get(selectedTarget), snapshot.actorId()))) selectedTarget = -1;
-            syncSelectedTarget(snapshot);
-        } else if ("SELF".equals(selected.targetRule())) {
-            selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), selected.targetRule(), snapshot.actorId());
-            syncSelectedTarget(snapshot);
         } else {
-            selectedTarget = -1;
-            setWorldFocus("");
+            String rule = clientTargetRule(selected);
+            if (BattleActionRules.needsSingleTarget(rule)) {
+                if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
+                        || !BattleTargeting.validTarget(rule, snapshot.units().get(selectedTarget), snapshot.actorId()))) selectedTarget = -1;
+                syncSelectedTarget(snapshot);
+            } else if ("SELF".equals(rule)) {
+                selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), rule, snapshot.actorId());
+                syncSelectedTarget(snapshot);
+            } else {
+                selectedTarget = -1;
+                setWorldFocus("");
+            }
         }
 
         BattleControlRules.State controls = BattleControlRules.state(snapshot);
@@ -133,7 +136,16 @@ public final class BattleScreen extends Screen {
         return snapshot.skills().stream().filter(skill -> skill.id().equals(selectedSkill)).findFirst().orElse(null);
     }
 
-    /** First click selects. Clicking the same skill again commits if its current target state is valid. */
+    /** Client-only refinement for skills whose server effects explicitly forbid targeting the acting ally. */
+    private static String clientTargetRule(ClientBattleState.Skill skill) {
+        if (skill == null) return "";
+        return switch (skill.id()) {
+            case "p02_time_leap", "p03_guard" -> "ALLY_SINGLE_EXCEPT_SELF";
+            default -> skill.targetRule();
+        };
+    }
+
+    /** First click selects. Clicking the same skill again commits, choosing the first valid target only at commit time. */
     private void skill(int index) {
         if (settingsOpen) return;
         var snapshot = ClientBattleState.snapshot();
@@ -143,11 +155,15 @@ public final class BattleScreen extends Screen {
         long now = System.currentTimeMillis();
         boolean repeated = selectedSkill.equals(skill.id()) && lastSkillClick.equals(skill.id()) && now - lastSkillClickAt <= DOUBLE_COMMIT_MS;
         selectedSkill = skill.id();
-        if ("SELF".equals(skill.targetRule())) {
-            selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), skill.targetRule(), snapshot.actorId());
-        } else if (BattleActionRules.needsSingleTarget(skill.targetRule())) {
+        String rule = clientTargetRule(skill);
+        if ("SELF".equals(rule)) {
+            selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), rule, snapshot.actorId());
+        } else if (BattleActionRules.needsSingleTarget(rule)) {
             if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
-                    || !BattleTargeting.validTarget(skill.targetRule(), snapshot.units().get(selectedTarget), snapshot.actorId()))) selectedTarget = -1;
+                    || !BattleTargeting.validTarget(rule, snapshot.units().get(selectedTarget), snapshot.actorId()))) selectedTarget = -1;
+            if (repeated && selectedTarget < 0) {
+                selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), rule, snapshot.actorId());
+            }
         } else {
             selectedTarget = -1;
         }
@@ -163,9 +179,10 @@ public final class BattleScreen extends Screen {
         if (settingsOpen) return;
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        if (selected == null || !BattleActionRules.needsSingleTarget(selected.targetRule())) return;
+        String rule = clientTargetRule(selected);
+        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return;
         if (index < 0 || index >= snapshot.units().size()) return;
-        if (!BattleTargeting.validTarget(selected.targetRule(), snapshot.units().get(index), snapshot.actorId())) return;
+        if (!BattleTargeting.validTarget(rule, snapshot.units().get(index), snapshot.actorId())) return;
         long now = System.currentTimeMillis();
         boolean repeated = selectedTarget == index && (platformDoubleClick || (lastTargetClick == index && now - lastTargetClickAt <= DOUBLE_COMMIT_MS));
         selectedTarget = index;
@@ -179,8 +196,9 @@ public final class BattleScreen extends Screen {
     private void cycleTarget(int direction) {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        if (selected == null || !BattleActionRules.needsSingleTarget(selected.targetRule())) return;
-        selectedTarget = BattleTargeting.cycle(snapshot.units(), selected.targetRule(), snapshot.actorId(), selectedTarget, direction);
+        String rule = clientTargetRule(selected);
+        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return;
+        selectedTarget = BattleTargeting.cycle(snapshot.units(), rule, snapshot.actorId(), selectedTarget, direction);
         syncSelectedTarget(snapshot);
         refresh();
     }
@@ -190,7 +208,8 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         if (selected == null || !canChooseSkill(snapshot)) return;
-        String targetId = BattleActionRules.confirmedTarget(snapshot.units(), selected.targetRule(), snapshot.actorId(), selectedTarget);
+        String rule = clientTargetRule(selected);
+        String targetId = BattleActionRules.confirmedTarget(snapshot.units(), rule, snapshot.actorId(), selectedTarget);
         if (targetId == null) return;
         send("ACT|" + snapshot.actorId() + "|" + selected.id() + "|" + targetId);
         clearSelection(true);
@@ -296,21 +315,23 @@ public final class BattleScreen extends Screen {
     private int worldTargetAt(double x, double y) {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        if (selected == null || !BattleActionRules.needsSingleTarget(selected.targetRule())) return -1;
-        return BattleLiveProjection.pick(snapshot.units(), selected.targetRule(), snapshot.actorId(), width, height, x, y);
+        String rule = clientTargetRule(selected);
+        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return -1;
+        return BattleLiveProjection.pick(snapshot.units(), rule, snapshot.actorId(), width, height, x, y);
     }
 
     private int hudTargetAt(double x, double y) {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        if (selected == null || !BattleActionRules.needsSingleTarget(selected.targetRule())) return -1;
+        String rule = clientTargetRule(selected);
+        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return -1;
         int allySlot = 0;
         for (int i = 0; i < snapshot.units().size(); i++) {
             var unit = snapshot.units().get(i);
             if (!"ALLY".equals(unit.side())) continue;
             int slot = allySlot++;
             if (slot < currentLayout().allyBars().size() && currentLayout().allyBars().get(slot).contains(x, y)
-                    && BattleTargeting.validTarget(selected.targetRule(), unit, snapshot.actorId())) return i;
+                    && BattleTargeting.validTarget(rule, unit, snapshot.actorId())) return i;
         }
         return -1;
     }
@@ -407,8 +428,9 @@ public final class BattleScreen extends Screen {
         ClientBattleState.Unit actor = findUnit(snapshot, snapshot.actorId());
         String actorName = actor == null ? "행동" : actor.name();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        String hint = selected == null ? "스킬 선택" : BattleActionRules.needsSingleTarget(selected.targetRule()) && selectedTarget < 0
-                ? "대상 클릭" : "한 번 더 클릭 = 사용";
+        String rule = clientTargetRule(selected);
+        String hint = selected == null ? "스킬 선택" : BattleActionRules.needsSingleTarget(rule) && selectedTarget < 0
+                ? "대상 클릭 · 스킬 재클릭=자동" : "한 번 더 클릭 = 사용";
         graphics.text(font, Component.literal(actorName), rect.x() + 6, rect.y() + 4, TEXT, true);
         int hx = rect.right() - 6 - font.width(hint);
         if (hx > rect.x() + 30) graphics.text(font, Component.literal(hint), hx, rect.y() + 4, SECONDARY, true);
@@ -459,7 +481,7 @@ public final class BattleScreen extends Screen {
         graphics.text(font, Component.literal("전투 설정"), x, y, TEXT, true);
         graphics.text(font, Component.literal("드래그 회전 · 휠 줌"), x, y + 18, SECONDARY, true);
         graphics.text(font, Component.literal("캐릭터/Tab 대상 · 같은 대상 2번 = 사용"), x, y + 34, SECONDARY, true);
-        graphics.text(font, Component.literal("같은 스킬 2번 = 사용 · Enter도 확정"), x, y + 50, SECONDARY, true);
+        graphics.text(font, Component.literal("같은 스킬 2번 = 자동 대상 후 사용 · Enter 확정"), x, y + 50, SECONDARY, true);
         String controls = (snapshot.autoAllowed() ? "A 자동" : "A 자동 잠금") + " · "
                 + (snapshot.speedAllowed() ? "X 배속" : "X 배속 잠금") + " · "
                 + (snapshot.fleeAllowed() ? "R 도주" : "R 도주 불가");
