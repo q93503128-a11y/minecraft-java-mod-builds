@@ -9,10 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: frontier-survival-existing-world-smoke
+  cancel-in-progress: true
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
@@ -48,40 +52,58 @@ jobs:
           mkdir -p "$RUN/mods"
           rm -f "$RUN/mods"/*.jar
           printf 'eula=true\n' > "$RUN/eula.txt"
+          cat > "$GITHUB_WORKSPACE/run_server_once.py" <<'PY'
+          import subprocess, sys, time, pathlib
+          root=pathlib.Path(sys.argv[1])
+          log_path=pathlib.Path(sys.argv[2])
+          p=subprocess.Popen(
+              ['./gradlew','--no-daemon','--no-configuration-cache','runServer','--console=plain'],
+              cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+              text=True, bufsize=1)
+          ready=False
+          deadline=time.time()+120
+          with log_path.open('w', encoding='utf-8') as log:
+              while time.time() < deadline:
+                  line=p.stdout.readline()
+                  if line:
+                      log.write(line); log.flush()
+                      if 'Done (' in line and 'For help' in line:
+                          ready=True
+                          try:
+                              p.stdin.write('stop\n'); p.stdin.flush()
+                          except Exception:
+                              pass
+                          break
+                  elif p.poll() is not None:
+                      break
+              try:
+                  tail,_=p.communicate(timeout=35)
+                  if tail: log.write(tail)
+              except subprocess.TimeoutExpired:
+                  p.terminate()
+                  try: tail,_=p.communicate(timeout=10)
+                  except subprocess.TimeoutExpired:
+                      p.kill(); tail,_=p.communicate()
+                  if tail: log.write(tail)
+          text=log_path.read_text(encoding='utf-8', errors='replace')
+          fatal=('NoClassDefFoundError','ClassNotFoundException','Exception in server tick loop',
+                 'Failed to start the minecraft server','Mod loading error has occurred',
+                 'Errors in currently selected datapacks prevented the world from loading')
+          if not ready:
+              print(text)
+              raise SystemExit('server never reached ready state')
+          if any(x.lower() in text.lower() for x in fatal):
+              print(text)
+              raise SystemExit('fatal server error detected')
+          print(text)
+          PY
 
-          run_until_ready() {
-            local log="$1"
-            shift
-            rm -f "$log"
-            (cd "$ROOT" && setsid ./gradlew --no-daemon --no-configuration-cache runServer --console=plain > "$log" 2>&1) &
-            local pid=$!
-            local ready=0
-            for _ in $(seq 1 150); do
-              if grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$log" 2>/dev/null; then ready=1; break; fi
-              if ! kill -0 "$pid" 2>/dev/null; then break; fi
-              sleep 1
-            done
-            if kill -0 "$pid" 2>/dev/null; then
-              kill -INT -- "-$pid" 2>/dev/null || true
-              for _ in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
-              kill -KILL -- "-$pid" 2>/dev/null || true
-            fi
-            wait "$pid" 2>/dev/null || true
-            cat "$log"
-            test "$ready" -eq 1
-            ! grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred|Errors in currently selected datapacks prevented the world from loading)' "$log"
-          }
-
-          run_until_ready "$GITHUB_WORKSPACE/frontier-only-first-boot.log"
+          python3 "$GITHUB_WORKSPACE/run_server_once.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-only-first-boot.log"
           test -f "$RUN/world/level.dat"
-          before="$(sha256sum "$RUN/world/level.dat" | cut -d' ' -f1)"
           cp "$GITHUB_WORKSPACE/projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar" "$RUN/mods/"
-          run_until_ready "$GITHUB_WORKSPACE/frontier-plus-survival-reopen.log"
+          python3 "$GITHUB_WORKSPACE/run_server_once.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-plus-survival-reopen.log"
           test -f "$RUN/world/level.dat"
-          after="$(sha256sum "$RUN/world/level.dat" | cut -d' ' -f1)"
           echo "Frontier-only world reopened successfully after adding Survival Ascension core."
-          echo "level.dat before=$before"
-          echo "level.dat after =$after"
 
       - uses: actions/upload-artifact@v4
         if: always()
