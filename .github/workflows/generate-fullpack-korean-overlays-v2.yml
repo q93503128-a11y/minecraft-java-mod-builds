@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/generate-fullpack-korean-overlays-v2.yml'
+      - 'projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py'
   workflow_dispatch:
 
 permissions:
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece sacremoses
+          python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece
           python3 -m pip install --disable-pip-version-check --no-input torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Generate and validate Korean overlays
@@ -50,7 +51,7 @@ jobs:
             exit 0
           fi
           git diff --cached --stat
-          git commit -m 'Complete Korean localization overlays for full pack'
+          git commit -m 'Regenerate Korean localization overlays with NLLB'
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
