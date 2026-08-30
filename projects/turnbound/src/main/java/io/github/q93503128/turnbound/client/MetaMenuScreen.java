@@ -83,6 +83,19 @@ public final class MetaMenuScreen extends Screen {
             addRenderableWidget(new BattleHudButton(x, y, cardW, cardH, Component.literal(text), selected ? GREEN : MUTED,
                     ignored -> toggleParty(row.id())));
         }
+        int presetY = top + panelHeight - 70;
+        int px = left + 18;
+        for (int slot = 1; slot <= 3; slot++) {
+            final int preset = slot;
+            List<String> saved = snapshot.partyPresets().size() >= slot ? snapshot.partyPresets().get(slot - 1) : List.of();
+            var load = new BattleHudButton(px, presetY, 76, 21, Component.literal("P" + slot + " 불러오기"), saved.isEmpty() ? MUTED : BLUE,
+                    ignored -> loadPreset(preset));
+            load.active = !saved.isEmpty();
+            addRenderableWidget(load);
+            addRenderableWidget(new BattleHudButton(px + 80, presetY, 64, 21, Component.literal("저장"), GREEN,
+                    ignored -> savePreset(preset)));
+            px += 150;
+        }
         int y = top + panelHeight - 42;
         addRenderableWidget(new BattleHudButton(left + panelWidth - 140, y, 122, 24,
                 Component.literal("편성 저장  " + draftParty.size() + "/4"), GREEN, ignored -> saveParty()));
@@ -167,6 +180,8 @@ public final class MetaMenuScreen extends Screen {
         clearWidgets(); init();
     }
     private void saveParty() { send("PARTY|" + String.join(",", draftParty)); }
+    private void savePreset(int slot) { send("PRESET_SAVE|" + slot); }
+    private void loadPreset(int slot) { send("PRESET_LOAD|" + slot); }
     private void buy(ClientMetaState.ShopRow row) { if (row.unlocked()) send("BUY|" + row.itemId()); }
     private void start(ClientMetaState.EndgameRow row) { if (row.unlocked()) send("START|" + row.id()); }
     private static void send(String command) { ClientPacketDistributor.sendToServer(new MetaCommandPayload(command)); }
@@ -190,7 +205,7 @@ public final class MetaMenuScreen extends Screen {
         graphics.text(font, Component.literal(resources), left + 18, top + 35, SECONDARY, false);
         graphics.text(font, Component.literal(title(tab)), left + 18, top + 88, TEXT, true);
         switch (tab) {
-            case PARTY -> drawPartyInfo(graphics);
+            case PARTY -> drawPartyInfo(graphics, snapshot);
             case CHARACTERS -> drawCharacters(graphics, snapshot);
             case EQUIPMENT -> drawEquipment(graphics, snapshot);
             case ARCHIVE -> drawArchive(graphics, snapshot);
@@ -201,9 +216,14 @@ public final class MetaMenuScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void drawPartyInfo(GuiGraphicsExtractor graphics) {
+    private void drawPartyInfo(GuiGraphicsExtractor graphics, ClientMetaState.Snapshot snapshot) {
         graphics.text(font, Component.literal("4 Slot · 참가 100% XP · 미편성 보유 캐릭터 20% XP · 중복 편성 불가"), left + 160, top + 88, SECONDARY, false);
-        graphics.text(font, Component.literal("Preset 3개는 다음 저장 상태 확장에서 연결 예정"), left + 18, top + panelHeight - 22, GOLD, false);
+        int x=left+18, y=top+panelHeight-86;
+        for(int i=0;i<3;i++){
+            List<String> preset=snapshot.partyPresets().size()>i?snapshot.partyPresets().get(i):List.of();
+            String summary=preset.isEmpty()?"비어 있음":String.join(" / ",preset);
+            graphics.text(font, Component.literal("P"+(i+1)+"  "+summary), x+i*150, y, preset.isEmpty()?MUTED:SECONDARY, false);
+        }
     }
 
     private void drawCharacters(GuiGraphicsExtractor graphics, ClientMetaState.Snapshot snapshot) {
@@ -238,7 +258,7 @@ public final class MetaMenuScreen extends Screen {
         int y=top+112;
         graphics.text(font, Component.literal("Main / Character / Region / Challenge · 동시 Track 최대 3"), left+18, y, SECONDARY, false); y+=20;
         int complete=(int)snapshot.challenges().stream().filter(ClientMetaState.ChallengeRow::completed).count();
-        graphics.text(font, Component.literal("Challenge  "+complete+" / "+snapshot.challenges().size()+"    · Region Quest "+snapshot.regionQuests().size()+""), left+18, y, TEXT, false); y+=20;
+        graphics.text(font, Component.literal("Challenge  "+complete+" / "+snapshot.challenges().size()+"    · Region Quest "+snapshot.regionQuests().size()), left+18, y, TEXT, false); y+=20;
         for(var c:snapshot.challenges().stream().limit(12).toList()){
             graphics.text(font, Component.literal((c.completed()?"✓ ":c.autoEvaluable()?"○ ":"◇ ")+c.ordinal()+". "+c.label()), left+18, y, c.completed()?GREEN:c.autoEvaluable()?TEXT:GOLD, false); y+=15;
         }
