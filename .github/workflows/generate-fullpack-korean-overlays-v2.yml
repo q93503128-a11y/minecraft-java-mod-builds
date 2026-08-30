@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Install translation runtime
         shell: bash
@@ -38,13 +38,19 @@ jobs:
           set -euo pipefail
           python3 projects/frontier-settlement/tools/generate_fullpack_korean_overlays.py
 
-      - name: Commit overlays
+      - name: Commit overlays safely on latest main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'coworkaccount'
           git config user.email 'cyp1jhh2@gmail.com'
           git add projects/frontier-settlement/src/main/resources/assets projects/survival-ascension/src/main/resources/assets
+          if git diff --cached --quiet; then
+            echo 'No localization changes to commit.'
+            exit 0
+          fi
           git diff --cached --stat
           git commit -m 'Complete Korean localization overlays for full pack'
+          git fetch origin main
+          git rebase origin/main
           git push origin HEAD:main
