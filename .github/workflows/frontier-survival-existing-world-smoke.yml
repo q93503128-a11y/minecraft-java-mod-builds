@@ -48,10 +48,10 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/projects/frontier-settlement"
-          RUN="$ROOT/run"
-          mkdir -p "$RUN/mods"
-          rm -f "$RUN/mods"/*.jar
-          printf 'eula=true\n' > "$RUN/eula.txt"
+          SERVER_RUN="$ROOT/run/server"
+          mkdir -p "$SERVER_RUN/mods"
+          rm -f "$SERVER_RUN/mods"/*.jar
+          printf 'eula=true\n' > "$SERVER_RUN/eula.txt"
           cat > "$GITHUB_WORKSPACE/run_server_once.py" <<'PY'
           import subprocess, sys, time, pathlib
           root=pathlib.Path(sys.argv[1])
@@ -99,10 +99,10 @@ jobs:
           PY
 
           python3 "$GITHUB_WORKSPACE/run_server_once.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-only-first-boot.log"
-          test -f "$RUN/world/level.dat"
-          cp "$GITHUB_WORKSPACE/projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar" "$RUN/mods/"
+          test -f "$SERVER_RUN/world/level.dat"
+          cp "$GITHUB_WORKSPACE/projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar" "$SERVER_RUN/mods/"
           python3 "$GITHUB_WORKSPACE/run_server_once.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-plus-survival-reopen.log"
-          test -f "$RUN/world/level.dat"
+          test -f "$SERVER_RUN/world/level.dat"
           echo "Frontier-only world reopened successfully after adding Survival Ascension core."
 
       - uses: actions/upload-artifact@v4
