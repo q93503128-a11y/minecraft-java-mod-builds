@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.15`
+- Version: `0.1.0-alpha.17`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -33,7 +33,7 @@ Later explicit user decisions override older implementation assumptions. Alpha d
 - B01 is flee-locked.
 - Campaign AUTO/2.0x are locked until B01 first clear.
 
-## Battle UX contract — alpha.15
+## Battle UX contract — alpha.15 baseline retained in alpha.17
 - 3D battlefield remains dominant; no full-screen battle veil or giant enemy/ally wall panels.
 - Camera pivot is the midpoint of the ally formation centroid and enemy formation centroid, so uneven team sizes do not pull the frame off-center.
 - Direct 3D click is the primary target input; HUD/Tab remain fallbacks.
@@ -98,14 +98,14 @@ TURNBOUND is not a survival game.
 - Survival HUD is hidden.
 - Combat HP belongs only to CombatantState.
 
-## Current playable world slice — alpha.15
+## Current playable world slice — alpha.15 baseline retained while alpha.17 v0.4 integration proceeds
 - Normal play does not require `/turnbound` commands.
 - After entering a new Overworld, TURNBOUND automatically starts after the initial load delay.
 - Default Superflat is supported without a custom preset; the starter slice samples the actual surface Y before authoring itself.
 - Current intentionally small test scope is `peaceful starter village 64×64 → south gate → first field 64×64`.
 - The village has no combat enemies. It contains the scout NPC and relay/travel object.
 - The first field contains visible M01/M02 patrol encounters separated enough to be avoided before engagement.
-- This small vertical slice temporarily replaces the much larger alpha.14 implementation as the active playtest surface; it does not delete the v0.4 Aster March/Southgate content plan.
+- This small vertical slice is the active playtest shell while alpha.17 integrates the larger v0.4 systems; it does not delete the v0.4 Aster March/Southgate content plan.
 - Future expansion may repeat `safe village/hub → combat field → safe village/hub → next field` where it improves pacing.
 - PvP/team battle is a future extension candidate, not current P2 scope.
 
@@ -113,6 +113,7 @@ TURNBOUND is not a survival game.
 - Java 25 clean test/build green.
 - NeoForge real server boot smoke green.
 - JAR metadata/classes/resources verified.
+- Runtime version, NeoForge metadata version and JAR manifest version must match `mod_version`.
 - Automatic starter-slice entry must remain command-free on Overworld/Superflat.
 - HUD rectangles must remain inside the viewport and party/skills/control strip must not overlap at supported test resolutions.
 - Live-camera direct targeting, double-click commit, battlefield centering and hover tooltip regressions remain green.
