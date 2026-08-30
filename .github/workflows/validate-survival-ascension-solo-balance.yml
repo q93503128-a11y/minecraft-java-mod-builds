@@ -77,6 +77,7 @@ jobs:
               s = s.replace(marker, inject + marker, 1)
           content.write_text(s, encoding='utf-8')
           PY
+          python3 "$PROJECT_DIR/tools/adapt_061_audit_expectations.py"
 
       - name: Diff safety
         run: git diff --check
@@ -121,6 +122,7 @@ jobs:
           rm -f "$PROJECT_DIR/.solo-balance-trigger"
           rm -f "$PROJECT_DIR/tools/apply_061_solo_balance.py"
           rm -f "$PROJECT_DIR/tools/apply_061_logistics_qol.py"
+          rm -f "$PROJECT_DIR/tools/adapt_061_audit_expectations.py"
           rm -f .github/workflows/validate-survival-ascension-solo-balance.yml
           git add "$PROJECT_DIR" .github/workflows/validate-survival-ascension-solo-balance.yml
           git commit -m "Retune Survival Ascension solo progression and portable logistics"
