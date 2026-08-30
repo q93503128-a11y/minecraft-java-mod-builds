@@ -12,8 +12,6 @@ import java.util.UUID;
 
 /** v0.4 campaign encounter factory for every authored field/boss encounter. */
 public final class CampaignEncounterCatalog {
-    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
-
     private CampaignEncounterCatalog() {}
 
     public static String canonicalId(String id) { return CampaignProgressStore.canonicalEncounterId(id); }
@@ -25,9 +23,9 @@ public final class CampaignEncounterCatalog {
         V04Catalogs.Encounter encounter = spec(encounterId);
         ArrayList<CombatantState> units = new ArrayList<>();
         int formation = 0;
-        for (String characterId : DEFAULT_PARTY) {
-            if (!CampaignProgressStore.ownedCharacters(playerId).contains(characterId)) continue;
-            units.add(new CombatantState("ally_" + characterId.toLowerCase(), campaignDefinition(playerId, characterId), CombatantSide.ALLY, formation++));
+        for (String characterId : CampaignProgressStore.activeParty(playerId)) {
+            units.add(new CombatantState("ally_" + characterId.toLowerCase(), campaignDefinition(playerId, characterId),
+                    CombatantSide.ALLY, formation++));
         }
         if (units.isEmpty()) throw new IllegalStateException("TURNBOUND campaign has no active allies");
         if (units.size() > 4) throw new IllegalStateException("TURNBOUND party exceeds four allies");
