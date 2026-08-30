@@ -29,6 +29,10 @@ SOURCE_REPLACEMENTS = [
 ]
 
 
+def injected_runtime_lines(variable: str) -> list[str]:
+    return [f"{variable} = {variable}.replace({old!r}, {new!r})" for old, new in SOURCE_REPLACEMENTS]
+
+
 def inject_source_wrapper():
     path = ROOT / "tools/test_release_source.py"
     text = path.read_text(encoding="utf-8")
@@ -72,7 +76,25 @@ def inject_content_wrapper():
     marker = 'namespace = {"__file__": str(legacy_path), "__name__": "__main__"}'
     if marker not in text:
         raise SystemExit("content wrapper namespace marker missing")
-    block = f'''{sentinel}\n# The 0.58 pack audit still expects the old compact depot-limit caption.\nlegacy = legacy.replace({"한도3→토목6→중추9"!r}, {"산업 가공소 완공 → 통 4블록 이내"!r})\n# Its nested baseline is adapted without changing the historical source file.\n_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'\n_content_line = {"baseline = baseline.replace('한도3→토목6→중추9', '산업 가공소 완공 → 통 4블록 이내')"!r}\nlegacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + _content_line, 1)\n\n'''
+
+    lines = [sentinel, "# Adapt direct 0.58 pack needles without editing the historical audit file."]
+    lines.append("for _old, _new in [")
+    for old, new in SOURCE_REPLACEMENTS:
+        lines.append(f"    ({old!r}, {new!r}),")
+    lines.append("]:")
+    lines.append("    legacy = legacy.replace(_old, _new)")
+    lines.append("")
+    lines.append("# test_release_content_pack_058.py executes test_content_pack_source.py; translate that nested baseline too.")
+    lines.append("_content_lines = []")
+    lines.append("for _old, _new in [")
+    for old, new in SOURCE_REPLACEMENTS:
+        lines.append(f"    ({old!r}, {new!r}),")
+    lines.append("]:")
+    lines.append("    _content_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")")
+    lines.append("_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'")
+    lines.append("legacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + '\\n'.join(_content_lines), 1)")
+    lines.append("")
+    block = "\n".join(lines) + "\n"
     text = text.replace(marker, block + marker, 1)
     path.write_text(text, encoding="utf-8")
 
