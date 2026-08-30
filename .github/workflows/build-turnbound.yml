@@ -32,6 +32,7 @@ jobs:
       - name: Smoke-test NeoForge server load
         working-directory: projects/turnbound
         run: |
+          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
           mkdir -p run/server
           printf 'eula=true\n' > run/server/eula.txt
           setsid gradle runServer --no-daemon > server-smoke.log 2>&1 &
@@ -48,17 +49,16 @@ jobs:
             sleep 1
           done
           cat server-smoke.log
-          grep -q 'TURNBOUND .* loaded;' server-smoke.log
+          grep -Fq "TURNBOUND ${expected_version} loaded;" server-smoke.log
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
       - name: Verify built JAR
         working-directory: projects/turnbound
         run: |
-          shopt -s nullglob
-          jars=(build/libs/turnbound-*.jar)
-          test "${#jars[@]}" -eq 1
-          jar_file="${jars[0]}"
+          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
+          jar_file="build/libs/turnbound-${expected_version}.jar"
+          test -f "$jar_file"
           echo "Verifying $jar_file"
           jar tf "$jar_file" > jar-contents.txt
           grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
@@ -69,9 +69,10 @@ jobs:
           grep -qx 'data/turnbound/battles/v04.json' jar-contents.txt
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
+          grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
           unzip -p "$jar_file" META-INF/MANIFEST.MF > built-manifest.mf
           grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
-          grep -q '^Implementation-Version: ' built-manifest.mf
+          grep -Fq "Implementation-Version: ${expected_version}" built-manifest.mf
           sha256sum "$jar_file"
       - name: Upload JAR
         uses: actions/upload-artifact@v4
