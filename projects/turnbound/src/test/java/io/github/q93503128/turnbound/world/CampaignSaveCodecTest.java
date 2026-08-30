@@ -7,6 +7,7 @@ import io.github.q93503128.turnbound.progression.QuestProgress;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,23 +35,28 @@ class CampaignSaveCodecTest {
         growth.put("P05", new CharacterGrowthRules.State(5, false, true, false));
         QuestProgress.Snapshot quests = new QuestProgress.Snapshot(
                 Set.of("MQ_P00_01_arrival"),
-                java.util.List.of("MQ_P00_02_first_party"),
+                List.of("MQ_P00_02_first_party"),
                 Set.of("MENU_E", "MENU_P"),
                 Map.of("REGION_TIER_CHEST", 1),
                 Map.of("MQ_C02_02_root_wall", 1),
                 Map.of("MQ_C01_01_patrol", Set.of("ENC_M01")));
 
+        List<PlayerProfile.SummonHistory> history = List.of(
+                new PlayerProfile.SummonHistory("P05", 5, true, 0, 0),
+                new PlayerProfile.SummonHistory("P01", 4, false, 100, 1));
         CampaignProgressStore.Snapshot snapshot = new CampaignProgressStore.Snapshot(
-                new PlayerProfile.Snapshot(17_000, 2_100, 410, 2, owned, 37, true, true),
+                new PlayerProfile.Snapshot(17_000, 2_100, 410, 2, owned, 37, true, true, history),
                 characters, growth, inventory.snapshot(), quests,
                 Set.of("ENC_M01", "BATTLE_B01"),
                 Set.of("P99_ORPHAN"), Set.of("OLD_EQUIPMENT"));
 
-        assertEquals(snapshot, CampaignSaveCodec.decode(CampaignSaveCodec.encode(snapshot)));
+        CampaignProgressStore.Snapshot decoded = CampaignSaveCodec.decode(CampaignSaveCodec.encode(snapshot));
+        assertEquals(snapshot, decoded);
+        assertEquals(history, decoded.profile().summonHistory());
     }
 
     @Test
-    void schemaOneMigratesMissingGrowthEquipmentAndQuestProgressToCanonicalDefaults() {
+    void schemaOneMigratesMissingGrowthEquipmentQuestAndArchiveHistoryToCanonicalDefaults() {
         String old = """
                 {
                   "schemaVersion": 1,
@@ -75,6 +81,7 @@ class CampaignSaveCodecTest {
         assertEquals(new CharacterProgression.State(1, 0), migrated.characters().get("P08"));
         assertTrue(migrated.equipment().items().isEmpty());
         assertTrue(migrated.quests().completed().isEmpty());
+        assertTrue(migrated.profile().summonHistory().isEmpty());
         assertTrue(migrated.orphanedCharacterIds().contains("REMOVED_CHARACTER"));
     }
 
