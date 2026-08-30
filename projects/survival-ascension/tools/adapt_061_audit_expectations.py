@@ -26,11 +26,18 @@ SOURCE_REPLACEMENTS = [
     ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),
     ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),
     ("한도3→토목6→중추9", "산업 가공소 완공 → 통 4블록 이내"),
+    ("FRONTLINE_FOOD = 176", "FRONTLINE_FOOD = 60"),
+    ("FRONTLINE_IRON = 56", "FRONTLINE_IRON = 16"),
+    ("FRONTLINE_FUEL = 8", "FRONTLINE_FUEL = 3"),
+    ("FRONTLINE_LOGS = 32", "FRONTLINE_LOGS = 12"),
+    ("FRONTLINE_STONE_BRICKS = 128", "FRONTLINE_STONE_BRICKS = 32"),
+    ("식량176+철56+석탄/목탄8+통나무32+석재벽돌128", "식량(밀/당근/감자/비트) 60 + 철 주괴 16 + 연료(석탄 또는 숯) 3 + 아무 종류의 통나무 12 + 석재 벽돌 32"),
+    ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
+    ("전초 방어는 식량48+철16+통나무32", "전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12"),
+    ("요새 방어는 식량96+철32+석재벽돌128", "요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32"),
+    ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
+    ("원정은 식량32+철8+석탄/목탄8", "원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3"),
 ]
-
-
-def injected_runtime_lines(variable: str) -> list[str]:
-    return [f"{variable} = {variable}.replace({old!r}, {new!r})" for old, new in SOURCE_REPLACEMENTS]
 
 
 def inject_source_wrapper():
@@ -42,28 +49,14 @@ def inject_source_wrapper():
     marker = 'namespace = {"__file__": str(legacy_path), "__name__": "__main__"}'
     if marker not in text:
         raise SystemExit("source wrapper namespace marker missing")
-
-    direct_lines = [sentinel]
-    direct_lines.append("# Adapt direct 0.58 needles without editing the historical audit file.")
-    direct_lines.append("for _old, _new in [")
+    lines = [sentinel, "# Adapt direct 0.58 needles without editing the historical audit file.", "for _old, _new in ["]
     for old, new in SOURCE_REPLACEMENTS:
-        direct_lines.append(f"    ({old!r}, {new!r}),")
-    direct_lines.append("]:")
-    direct_lines.append("    legacy = legacy.replace(_old, _new)")
-    direct_lines.append("")
-    direct_lines.append("# test_release_source_058.py itself executes test_current_source.py.")
-    direct_lines.append("# Inject the same approved translations into that nested baseline at runtime.")
-    direct_lines.append("_baseline_lines = []")
-    direct_lines.append("for _old, _new in [")
+        lines.append(f"    ({old!r}, {new!r}),")
+    lines += ["]:", "    legacy = legacy.replace(_old, _new)", "", "# Inject approved translations into nested test_current_source.py baseline.", "_baseline_lines = []", "for _old, _new in ["]
     for old, new in SOURCE_REPLACEMENTS:
-        direct_lines.append(f"    ({old!r}, {new!r}),")
-    direct_lines.append("]:")
-    direct_lines.append("    _baseline_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")")
-    direct_lines.append("_baseline_anchor = 'baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)'")
-    direct_lines.append("legacy = legacy.replace(_baseline_anchor, _baseline_anchor + '\\n' + '\\n'.join(_baseline_lines), 1)")
-    direct_lines.append("")
-    block = "\n".join(direct_lines) + "\n"
-    text = text.replace(marker, block + marker, 1)
+        lines.append(f"    ({old!r}, {new!r}),")
+    lines += ["]:", "    _baseline_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")", "_baseline_anchor = 'baseline = baseline.replace(BASELINE_VERSION, REQUIRED_VERSION)'", "legacy = legacy.replace(_baseline_anchor, _baseline_anchor + '\\n' + '\\n'.join(_baseline_lines), 1)", ""]
+    text = text.replace(marker, "\n".join(lines) + "\n" + marker, 1)
     path.write_text(text, encoding="utf-8")
 
 
@@ -76,26 +69,14 @@ def inject_content_wrapper():
     marker = 'namespace = {"__file__": str(legacy_path), "__name__": "__main__"}'
     if marker not in text:
         raise SystemExit("content wrapper namespace marker missing")
-
-    lines = [sentinel, "# Adapt direct 0.58 pack needles without editing the historical audit file."]
-    lines.append("for _old, _new in [")
+    lines = [sentinel, "# Adapt direct 0.58 pack needles without editing the historical audit file.", "for _old, _new in ["]
     for old, new in SOURCE_REPLACEMENTS:
         lines.append(f"    ({old!r}, {new!r}),")
-    lines.append("]:")
-    lines.append("    legacy = legacy.replace(_old, _new)")
-    lines.append("")
-    lines.append("# test_release_content_pack_058.py executes test_content_pack_source.py; translate that nested baseline too.")
-    lines.append("_content_lines = []")
-    lines.append("for _old, _new in [")
+    lines += ["]:", "    legacy = legacy.replace(_old, _new)", "", "# Inject approved translations into nested test_content_pack_source.py baseline.", "_content_lines = []", "for _old, _new in ["]
     for old, new in SOURCE_REPLACEMENTS:
         lines.append(f"    ({old!r}, {new!r}),")
-    lines.append("]:")
-    lines.append("    _content_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")")
-    lines.append("_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'")
-    lines.append("legacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + '\\n'.join(_content_lines), 1)")
-    lines.append("")
-    block = "\n".join(lines) + "\n"
-    text = text.replace(marker, block + marker, 1)
+    lines += ["]:", "    _content_lines.append(f\"baseline = baseline.replace({_old!r}, {_new!r})\")", "_content_anchor = 'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)'", "legacy = legacy.replace(_content_anchor, _content_anchor + '\\n' + '\\n'.join(_content_lines), 1)", ""]
+    text = text.replace(marker, "\n".join(lines) + "\n" + marker, 1)
     path.write_text(text, encoding="utf-8")
 
 
