@@ -252,7 +252,7 @@ public final class FieldSessionManager {
 
         private void spawnA01Relay(ServerLevel level) {
             if (relayA01 != null && level.getEntity(relayA01) != null) return;
-            relayA01 = spawnRelay(level, a01(50.0, 1.0, 31.0), "남문 초원 계전석", ChatFormatting.AQUA);
+            relayA01 = spawnRelay(level, a01(50.0, 3.0, 31.0), "남문 초원 계전석", ChatFormatting.AQUA);
         }
 
         private void spawnA02Relay(ServerLevel level) {
@@ -284,10 +284,10 @@ public final class FieldSessionManager {
             Vec3 destination;
             float yaw;
             if (FieldTravelCatalog.RELAY_A01.equals(destinationId)) {
-                destination = a01(48.0, 1.0, 31.0);
-                yaw = 90.0F;
+                destination = a01(50.0, 1.0, 28.5);
+                yaw = 180.0F;
             } else if (FieldTravelCatalog.RELAY_A02.equals(destinationId) && progress.chapterCleared()) {
-                destination = a02.relay().add(2.0, 0.0, 0.0);
+                destination = a02.relay().add(2.5, -1.0, 0.0);
                 yaw = -90.0F;
             } else {
                 return;
@@ -312,7 +312,7 @@ public final class FieldSessionManager {
 
             List<FieldUiSnapshot.Travel> travelViews = new ArrayList<>();
             for (FieldTravelCatalog.Destination destination : FieldTravelCatalog.destinations()) {
-                Vec3 anchor = destination.id().equals(FieldTravelCatalog.RELAY_A01) ? a01(50.0, 1.0, 31.0) : a02.relay();
+                Vec3 anchor = destination.id().equals(FieldTravelCatalog.RELAY_A01) ? a01(50.0, 3.0, 31.0) : a02.relay();
                 boolean current = player.position().distanceToSqr(anchor) <= 36.0;
                 travelViews.add(new FieldUiSnapshot.Travel(destination.id(), destination.label(),
                         progress.relayActivated(destination.id()), current));
