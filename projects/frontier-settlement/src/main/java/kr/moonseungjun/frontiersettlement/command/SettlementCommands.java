@@ -21,6 +21,7 @@ public final class SettlementCommands {
                 .then(Commands.literal("found").executes(SettlementCommands::found))
                 .then(Commands.literal("status").executes(SettlementCommands::status))
                 .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
+                .then(Commands.literal("normalize").executes(SettlementCommands::normalize))
                 .then(Commands.literal("road").executes(SettlementCommands::road))
                 .then(Commands.literal("outpost").executes(SettlementCommands::outpost))
                 .then(Commands.literal("build")
@@ -87,7 +88,7 @@ public final class SettlementCommands {
             String retaining=civil.initialRetainingBlocks()<=0?"없음":civil.remainingRetainingBlocks()+" / "+civil.initialRetainingBlocks();
             String retainingStorage=availableRetaining<0?"미로드":Integer.toString(availableRetaining);
             player.sendSystemMessage(Component.literal("토목 | "+SettlementCivilWorkService.phaseLabel(server)+" "+civil.progressPercent()+"% | "+civil.width()+"×"+civil.depth()+" | 절토 "+civil.initialCutBlocks()+" | 성토 "+civil.initialFillBlocks()+" | 현장 토사 "+civil.earthBank()+" | 외부 흙 필요 "+imported+" | 공동 창고 흙 "+storage+" | 옹벽 잔여 "+retaining+" | 창고 조약돌 "+retainingStorage+" | 가상 토사 0"));
-        } else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | B 팔레트 · 최대 17×17 / 절토·성토 ±7 · 3블록+ 노출 가장자리 실제 조약돌 옹벽 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0":"토목 | "+civilLock)); }
+        } else { String civilLock=SettlementCivilWorkService.lockedReason(data); player.sendSystemMessage(Component.literal(civilLock==null?"토목 | M 팔레트 · 최대 17×17 / 절토·성토 ±7 · 3블록+ 노출 가장자리 실제 조약돌 옹벽 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0":"토목 | "+civilLock)); }
         if(data.buildingCount(BuildingType.ADVANCED_WORKSHOP)>0){
             String reforge=SettlementAdvancedWorkshopService.reforgeUnlocked(data)
                     ? " | 영지 재련 준비 "+SettlementAdvancedWorkshopService.readyReforgeCommissionCount(server.overworld(),data)+" | 재련 유물 "+SettlementAdvancedWorkshopService.REFORGE_RELIC_COST+" + 금속 "+SettlementAdvancedWorkshopService.REFORGE_METAL_COST+" | 재련력 "+SettlementAdvancedWorkshopService.REFORGE_POWER
@@ -111,6 +112,38 @@ public final class SettlementCommands {
         ConstructionState c=data.construction(); if(c.active()){BuildingType t=BuildingType.fromId(c.type()); if(t!=null){int total=SettlementConstructionService.totalSteps(t,c.origin());player.sendSystemMessage(Component.literal("공사 중 | "+t.displayName()+" "+(total<=0?0:Math.min(100,c.step()*100/total))+"%"));}}
         RoadConstructionState road=data.roadConstruction(); if(road.active()){int total=SettlementRoadService.totalSteps(road);player.sendSystemMessage(Component.literal("도로 공사 중 | "+(total<=0?0:Math.min(100,road.step()*100/total))+"%"));}
         OutpostConstructionState o=data.outpostConstruction(); if(o.active()){int total=SettlementOutpostService.totalSteps(o);player.sendSystemMessage(Component.literal("전초기지 공사 중 | "+(total<=0?0:Math.min(100,o.step()*100/total))+"%"));}
+        return 1;
+    }
+
+    private static int normalize(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        MinecraftServer server = player.level().getServer();
+        SettlementData data = SettlementData.get(server);
+        if (!data.founded()) {
+            player.sendSystemMessage(Component.literal("아직 공동 마을이 없습니다."));
+            return 0;
+        }
+        if (player.level() != server.overworld()) {
+            player.sendSystemMessage(Component.literal("개척지 정상화는 오버월드에서 실행해 주세요."));
+            return 0;
+        }
+
+        SettlementConstructionService.NormalizeConstructionResult construction =
+                SettlementConstructionService.normalizeCompletedConstruction(server, data);
+        int removedBuilders = SettlementConstructionService.normalizeLoadedBuilders(server.overworld(), data);
+        SettlementWorkerService.NormalizeResult workers =
+                SettlementWorkerService.normalizeLoadedWorkers(server, data);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
+
+        player.sendSystemMessage(Component.literal(
+                "개척지 정상화 완료 | 생산 중복 " + workers.removedProductionWorkers() + "명 제거"
+                        + " | 건설 중복 " + removedBuilders + "명 제거"
+                        + " | 로드된 생산 주민 " + workers.loadedProductionWorkers() + "명 재지정"));
+        player.sendSystemMessage(Component.literal("공사 상태 | " + construction.message()
+                + (construction.repairedBlocks() > 0 ? " | 복구 블록 " + construction.repairedBlocks() : "")));
+        player.sendSystemMessage(Component.literal(
+                "참고 | 건설 주민 1명은 공동 건설 담당이라 공사가 없어도 정상적으로 유지됩니다."));
         return 1;
     }
 

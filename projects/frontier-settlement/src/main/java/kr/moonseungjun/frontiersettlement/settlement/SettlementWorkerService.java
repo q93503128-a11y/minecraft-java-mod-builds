@@ -22,8 +22,10 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class SettlementWorkerService {
@@ -39,7 +41,7 @@ public final class SettlementWorkerService {
     private static final int MINE_HORIZONTAL_SEARCH_RADIUS = 24;
     private static final int MINE_SEARCH_DEPTH = 48;
     private static final int PRODUCTION_HAUL_STACK = 64;
-    private static final int MAX_LOGS_PER_WORK = 12;
+    private static final int MAX_LOGS_PER_WORK = 16;
     private static final int MAX_STONE_PER_WORK = 16;
     private static final int LUMBER_WORK_PERIOD_TICKS = 100;
     private static final int FARM_WORK_PERIOD_TICKS = 120;
@@ -47,6 +49,9 @@ public final class SettlementWorkerService {
     private static final int MINING_WORK_PERIOD_TICKS = 160;
 
     private SettlementWorkerService() {}
+
+    public record NormalizeResult(int removedProductionWorkers, int loadedProductionWorkers) {}
+    private record TreeCandidate(BlockPos base, Item item, double distance, int availableLogs) {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
         ServerLevel level = server.overworld();
@@ -74,18 +79,83 @@ public final class SettlementWorkerService {
      * loaded. UUID order is already deterministic in workersByName(), so exactly one physical worker
      * per completed production building remains authoritative. No unloaded resident is treated as dead.
      */
-    private static void reconcileProductionDuplicates(MinecraftServer server, ServerLevel level, SettlementData data) {
-        if (!localProductionEvidenceLoaded(level, data)) return;
+    private static int reconcileProductionDuplicates(MinecraftServer server, ServerLevel level, SettlementData data) {
+        // Seeing more loaded physical workers than completed jobs is already sufficient proof of an
+        // excess entity. No unloaded resident can make N+1 loaded bodies legal for N completed jobs,
+        // so duplicate removal itself must not be blocked by the much wider recruitment evidence gate.
         int removed = 0;
         removed += trimExcessProductionWorkers(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
         removed += trimExcessProductionWorkers(level, data, BuildingType.FARM, FARM_WORKER_NAME);
         removed += trimExcessProductionWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
         removed += trimExcessProductionWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME);
-        if (removed <= 0) return;
+        if (removed > 0) {
+            repairPopulationAfterDuplicateCleanup(level, data);
+            SettlementService.refreshResources(server, data);
+            SettlementService.broadcast(server, data);
+        }
+        return removed;
+    }
 
-        repairPopulationAfterDuplicateCleanup(level, data);
+    /**
+     * Explicit loaded-world maintenance entry point used by /frontier normalize.
+     * The command never force-loads chunks and only deletes a worker when the loaded count alone
+     * already exceeds the number of completed local jobs. Surviving workers have stale navigation
+     * and historical invulnerability/NoAI state cleared once so the next work tick can retarget.
+     */
+    public static NormalizeResult normalizeLoadedWorkers(MinecraftServer server, SettlementData data) {
+        ServerLevel level = server.overworld();
+        int removed = 0;
+        removed += trimExcessLoadedTownWorkers(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME);
+        removed += trimExcessLoadedTownWorkers(level, data, BuildingType.FARM, FARM_WORKER_NAME);
+        removed += trimExcessLoadedTownWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
+        removed += trimExcessLoadedTownWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME);
+
+        int loaded = 0;
+        loaded += resetLoadedTownWorkers(level, data, LUMBER_WORKER_NAME);
+        loaded += resetLoadedTownWorkers(level, data, FARM_WORKER_NAME);
+        loaded += resetLoadedTownWorkers(level, data, QUARRY_WORKER_NAME);
+        loaded += resetLoadedTownWorkers(level, data, MINE_WORKER_NAME);
+
+        if (removed > 0) repairPopulationAfterDuplicateCleanup(level, data);
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
+        return new NormalizeResult(removed, loaded);
+    }
+
+    private static int trimExcessLoadedTownWorkers(ServerLevel level, SettlementData data,
+                                                   BuildingType type, String workerName) {
+        int allowed = buildings(data, type).size();
+        List<FrontierWorkerEntity> workers = loadedTownWorkersByName(level, data, workerName);
+        if (workers.size() <= allowed) return 0;
+        int removed = 0;
+        for (int i = allowed; i < workers.size(); i++) {
+            if (removeDuplicateWorkerPreservingCargo(level, workers.get(i))) removed++;
+        }
+        return removed;
+    }
+
+    private static int resetLoadedTownWorkers(ServerLevel level, SettlementData data, String workerName) {
+        int count = 0;
+        for (FrontierWorkerEntity worker : loadedTownWorkersByName(level, data, workerName)) {
+            worker.setNoAi(false);
+            worker.setInvulnerable(false);
+            worker.getNavigation().stop();
+            count++;
+        }
+        return count;
+    }
+
+    private static List<FrontierWorkerEntity> loadedTownWorkersByName(ServerLevel level, SettlementData data,
+                                                                      String workerName) {
+        BlockPos center = data.centerPos();
+        AABB loadedTown = new AABB(
+                center.getX() - 256.0D, center.getY() - 96.0D, center.getZ() - 256.0D,
+                center.getX() + 257.0D, center.getY() + 97.0D, center.getZ() + 257.0D);
+        List<FrontierWorkerEntity> workers = level.getEntitiesOfClass(FrontierWorkerEntity.class, loadedTown,
+                candidate -> candidate.getCustomName() != null
+                        && workerName.equals(candidate.getCustomName().getString()));
+        workers.sort(Comparator.comparing(worker -> worker.getUUID().toString()));
+        return workers;
     }
 
     private static int trimExcessProductionWorkers(ServerLevel level, SettlementData data,
@@ -242,6 +312,17 @@ public final class SettlementWorkerService {
             maxX = Math.max(maxX, storage.getX() + margin);
             minZ = Math.min(minZ, storage.getZ() - margin);
             maxZ = Math.max(maxZ, storage.getZ() + margin);
+        }
+        // Historical routines could leave a town worker at a completed house. Keep houses in the
+        // legal lookup/evidence envelope so a sleeping/stranded loaded worker cannot disappear from
+        // assignment accounting merely because it is no longer next to its production building.
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() != BuildingType.HOUSE) continue;
+            BlockPos rest = building.workCenter();
+            minX = Math.min(minX, rest.getX() - margin);
+            maxX = Math.max(maxX, rest.getX() + margin);
+            minZ = Math.min(minZ, rest.getZ() - margin);
+            maxZ = Math.max(maxZ, rest.getZ() + margin);
         }
         double minY = data.centerPos().getY() - 96.0D;
         double maxY = data.centerPos().getY() + 97.0D;
@@ -548,22 +629,28 @@ public final class SettlementWorkerService {
      */
     private static boolean moveNear(ServerLevel level, FrontierWorkerEntity worker, BlockPos target, double speed) {
         int[] dyOrder = {0, 1, -1, 2, -2, 3, -3};
+        List<BlockPos> approaches = new ArrayList<>();
         for (int radius = 1; radius <= 3; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                     for (int dy : dyOrder) {
                         BlockPos approach = target.offset(dx, dy, dz);
-                        if (!isWalkableApproach(level, approach)) continue;
-                        if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) <= 1.0D) {
-                            worker.getNavigation().stop();
-                            return true;
-                        }
-                        if (worker.getNavigation().moveTo(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D, speed)) {
-                            return true;
-                        }
+                        if (isWalkableApproach(level, approach)) approaches.add(approach);
                     }
                 }
+            }
+        }
+        approaches.sort(Comparator.comparingDouble(approach ->
+                worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D)));
+        for (BlockPos approach : approaches) {
+            if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) <= 1.0D) {
+                worker.getNavigation().stop();
+                return true;
+            }
+            if (worker.getNavigation().moveTo(
+                    approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D, speed)) {
+                return true;
             }
         }
         worker.getNavigation().stop();
@@ -582,30 +669,121 @@ public final class SettlementWorkerService {
     }
 
     private static BlockPos findTree(ServerLevel level, SettlementData data, BlockPos center, Item expected) {
-        for (int radius = 0; radius <= TREE_SEARCH_RADIUS; radius++) {
-            BlockPos best = null;
-            double bestDistance = Double.MAX_VALUE;
+        List<TreeCandidate> candidates = new ArrayList<>();
+        Set<BlockPos> seenBases = new HashSet<>();
+        int radiusSqr = TREE_SEARCH_RADIUS * TREE_SEARCH_RADIUS;
+        for (int dx = -TREE_SEARCH_RADIUS; dx <= TREE_SEARCH_RADIUS; dx++) {
+            for (int dz = -TREE_SEARCH_RADIUS; dz <= TREE_SEARCH_RADIUS; dz++) {
+                if (dx * dx + dz * dz > radiusSqr) continue;
+                int x = center.getX() + dx;
+                int z = center.getZ() + dz;
+                for (int y = center.getY() - 6; y <= center.getY() + 16; y++) {
+                    BlockPos probe = new BlockPos(x, y, z);
+                    if (!level.hasChunkAt(probe)) continue;
+                    BlockState state = level.getBlockState(probe);
+                    if (!state.is(BlockTags.LOGS) || isProtected(data, probe) || !hasLeavesAbove(level, probe)) continue;
+                    Item item = state.getBlock().asItem();
+                    if (item == Items.AIR || (expected != null && item != expected)) continue;
+
+                    // Tall spruce/dark-oak trunks can have no leaves within eight blocks of their base.
+                    // The old search therefore selected an upper log under the canopy and asked a ground
+                    // mob to path to an impossible high-air target. Descend that evidence to the actual
+                    // contiguous trunk base and only accept a tree with a real standing approach.
+                    BlockPos base = descendToTrunkBase(level, data, probe, item);
+                    if (!seenBases.add(base) || !isNaturalTreeBase(level, base) || !hasWalkableApproach(level, base)) {
+                        continue;
+                    }
+                    int availableLogs = countVerticalTrunk(level, data, base, item);
+                    if (availableLogs <= 0) continue;
+                    candidates.add(new TreeCandidate(base, item, base.distSqr(center), availableLogs));
+                    break;
+                }
+            }
+        }
+        if (candidates.isEmpty()) return null;
+
+        if (expected != null) {
+            TreeCandidate best = null;
+            for (TreeCandidate candidate : candidates) {
+                if (candidate.item() != expected) continue;
+                if (best == null || candidate.distance() < best.distance()) best = candidate;
+            }
+            return best == null ? null : best.base();
+        }
+
+        // Empty-handed lumber workers choose the species with the largest visible real-log supply
+        // instead of blindly taking the nearest rare tree. That makes a normal trip converge on a
+        // full same-item stack whenever enough of one species exists in the work radius.
+        Map<Item, Integer> availableByItem = new HashMap<>();
+        Map<Item, Double> nearestByItem = new HashMap<>();
+        for (TreeCandidate candidate : candidates) {
+            availableByItem.merge(candidate.item(), candidate.availableLogs(), Integer::sum);
+            nearestByItem.merge(candidate.item(), candidate.distance(), Math::min);
+        }
+        Item preferred = null;
+        int bestLogs = -1;
+        double bestNearest = Double.MAX_VALUE;
+        for (Map.Entry<Item, Integer> entry : availableByItem.entrySet()) {
+            double nearest = nearestByItem.getOrDefault(entry.getKey(), Double.MAX_VALUE);
+            if (entry.getValue() > bestLogs || (entry.getValue() == bestLogs && nearest < bestNearest)) {
+                preferred = entry.getKey();
+                bestLogs = entry.getValue();
+                bestNearest = nearest;
+            }
+        }
+        TreeCandidate best = null;
+        for (TreeCandidate candidate : candidates) {
+            if (candidate.item() != preferred) continue;
+            if (best == null || candidate.distance() < best.distance()) best = candidate;
+        }
+        return best == null ? null : best.base();
+    }
+
+    private static BlockPos descendToTrunkBase(ServerLevel level, SettlementData data, BlockPos start, Item item) {
+        BlockPos base = start;
+        for (int depth = 0; depth < 24; depth++) {
+            BlockPos below = base.below();
+            if (!level.hasChunkAt(below) || isProtected(data, below)) break;
+            BlockState state = level.getBlockState(below);
+            if (!state.is(BlockTags.LOGS) || state.getBlock().asItem() != item) break;
+            base = below;
+        }
+        return base;
+    }
+
+    private static int countVerticalTrunk(ServerLevel level, SettlementData data, BlockPos base, Item item) {
+        int count = 0;
+        for (int y = 0; y < 24; y++) {
+            BlockPos pos = base.above(y);
+            if (!level.hasChunkAt(pos) || isProtected(data, pos)) break;
+            BlockState state = level.getBlockState(pos);
+            if (!state.is(BlockTags.LOGS) || state.getBlock().asItem() != item) break;
+            count++;
+        }
+        return count;
+    }
+
+    private static boolean isNaturalTreeBase(ServerLevel level, BlockPos base) {
+        if (!level.hasChunkAt(base.below())) return false;
+        BlockState below = level.getBlockState(base.below());
+        return below.is(Blocks.GRASS_BLOCK) || below.is(Blocks.DIRT) || below.is(Blocks.COARSE_DIRT)
+                || below.is(Blocks.PODZOL) || below.is(Blocks.ROOTED_DIRT) || below.is(Blocks.MOSS_BLOCK)
+                || below.is(Blocks.MYCELIUM) || below.is(Blocks.MUD);
+    }
+
+    private static boolean hasWalkableApproach(ServerLevel level, BlockPos target) {
+        int[] dyOrder = {0, 1, -1, 2, -2, 3, -3};
+        for (int radius = 1; radius <= 3; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                    int x = center.getX() + dx;
-                    int z = center.getZ() + dz;
-                    for (int y = center.getY() - 6; y <= center.getY() + 16; y++) {
-                        BlockPos pos = new BlockPos(x, y, z);
-                        if (!level.hasChunkAt(pos)) continue;
-                        BlockState state = level.getBlockState(pos);
-                        if (!state.is(BlockTags.LOGS) || isProtected(data, pos) || !hasLeavesAbove(level, pos)) continue;
-                        Item item = state.getBlock().asItem();
-                        if (item == Items.AIR || (expected != null && item != expected)) continue;
-                        double distance = pos.distSqr(center);
-                        if (distance < bestDistance) { best = pos; bestDistance = distance; }
-                        break;
+                    for (int dy : dyOrder) {
+                        if (isWalkableApproach(level, target.offset(dx, dy, dz))) return true;
                     }
                 }
             }
-            if (best != null) return best;
         }
-        return null;
+        return false;
     }
 
     private static boolean hasLeavesAbove(ServerLevel level, BlockPos trunk) {
@@ -656,7 +834,8 @@ public final class SettlementWorkerService {
                         BlockState state = level.getBlockState(pos);
                         Item item = state.getBlock().asItem();
                         if (!isQuarryStone(state) || item == Items.AIR || (expected != null && item != expected)
-                                || isProtected(data, pos) || !level.getBlockState(pos.above()).isAir()) continue;
+                                || isProtected(data, pos) || !level.getBlockState(pos.above()).isAir()
+                                || !hasWalkableApproach(level, pos)) continue;
                         double distance = pos.distSqr(center);
                         if (distance < bestDistance) { best = pos; bestDistance = distance; }
                     }

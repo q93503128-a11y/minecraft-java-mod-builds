@@ -56,6 +56,7 @@ public final class SettlementConstructionService {
     public record StartResult(boolean started, String message) {}
     public record PlacementCheck(boolean valid, BlockPos origin, String message,
                                  boolean terrainWork, int terrainStoneCost) {}
+    public record NormalizeConstructionResult(boolean active, boolean completed, int repairedBlocks, String message) {}
     private record Site(BlockPos origin, int terrainSpan, int terrainStoneCost) {
         boolean terrainWork() {
             return terrainSpan > SMALL_TERRAIN_SPAN || terrainStoneCost > 0;
@@ -654,6 +655,76 @@ public final class SettlementConstructionService {
         };
     }
 
+    /**
+     * Explicit safe repair for /frontier normalize. Only a construction that has already consumed
+     * every blueprint step is eligible. Air gaps and known self-changing farm/path blocks are repaired;
+     * an unexpected solid/container is reported instead of being overwritten or deleting player items.
+     */
+    public static NormalizeConstructionResult normalizeCompletedConstruction(MinecraftServer server, SettlementData data) {
+        ConstructionState construction = data.construction();
+        if (!construction.active()) {
+            return new NormalizeConstructionResult(false, false, 0, "활성 건물 공사 없음");
+        }
+        BuildingType type = BuildingType.fromId(construction.type());
+        if (type == null) {
+            return new NormalizeConstructionResult(true, false, 0, "알 수 없는 건물 공사 상태");
+        }
+        List<BuildingBlueprints.Placement> plan =
+                RotatedBlueprints.create(type, construction.origin(), construction.rotation());
+        if (construction.buildStep() < plan.size()) {
+            return new NormalizeConstructionResult(true, false, 0,
+                    type.displayName() + " 공사 " + construction.buildStep() + " / " + plan.size()
+                            + " · 아직 100% 마감 단계가 아님");
+        }
+
+        ServerLevel level = server.overworld();
+        int repaired = 0;
+        for (BuildingBlueprints.Placement placement : plan) {
+            BlockPos pos = placement.pos();
+            if (!level.hasChunkAt(pos)) {
+                return new NormalizeConstructionResult(true, false, repaired,
+                        "마감 위치 청크 미로드: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ());
+            }
+            BlockState current = level.getBlockState(pos);
+            if (current.is(placement.state().getBlock())) continue;
+            if (level.getBlockEntity(pos) != null) {
+                return new NormalizeConstructionResult(true, false, repaired,
+                        "예상치 못한 보관/블록 엔티티 보호: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ());
+            }
+            if (!current.isAir() && !isRecoverableBlueprintDrift(current, placement.state())) {
+                return new NormalizeConstructionResult(true, false, repaired,
+                        "예상치 못한 고체 블록 보호: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
+                                + " · 직접 확인 후 다시 실행");
+            }
+            if (!level.setBlock(pos, placement.state(), NORMAL_BLOCK_UPDATE)) {
+                return new NormalizeConstructionResult(true, false, repaired,
+                        "마감 복구 실패: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ());
+            }
+            repaired++;
+        }
+
+        FrontierWorkerEntity builder = ensureBuilder(level, data);
+        if (builder == null) {
+            return new NormalizeConstructionResult(true, false, repaired,
+                    "건설 주민을 안전하게 확인할 수 없어 마감 기록은 유지됨");
+        }
+        BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+        boolean completed = finishIfValid(server, data, type, plan, builder, supply);
+        return new NormalizeConstructionResult(true, completed, repaired,
+                completed ? type.displayName() + " 마감 정상화 완료"
+                        : type.displayName() + " 마감 상태 재검사 필요");
+    }
+
+    private static boolean isRecoverableBlueprintDrift(BlockState current, BlockState expected) {
+        if (expected.is(Blocks.FARMLAND)) {
+            return current.is(Blocks.DIRT) || current.is(Blocks.GRASS_BLOCK) || current.is(Blocks.COARSE_DIRT);
+        }
+        if (expected.is(Blocks.DIRT_PATH)) {
+            return current.is(Blocks.DIRT) || current.is(Blocks.GRASS_BLOCK);
+        }
+        return false;
+    }
+
     private static boolean finishIfValid(MinecraftServer server, SettlementData data, BuildingType type,
                                          List<BuildingBlueprints.Placement> plan, FrontierWorkerEntity builder,
                                          BlockPos supply) {
@@ -662,6 +733,15 @@ public final class SettlementConstructionService {
             if (!level.hasChunkAt(placement.pos())) return false;
             BlockState current = level.getBlockState(placement.pos());
             if (current.is(placement.state().getBlock())) continue;
+            if (isRecoverableBlueprintDrift(current, placement.state())) {
+                // Farmland may naturally fall back to dirt while a large farm is still being built.
+                // This is Frontier-owned blueprint drift, not player obstruction; repair it in place
+                // instead of leaving an otherwise completed farm permanently at 100% "마감 확인".
+                if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
+                if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
+                builder.swing(InteractionHand.MAIN_HAND);
+                return false;
+            }
             if (!current.isAir()) {
                 builder.getNavigation().stop();
                 return false;
@@ -1001,7 +1081,8 @@ public final class SettlementConstructionService {
      * their exact MAINHAND cargo is first materialized as an ItemEntity, and only then are they discarded.
      */
     public static int reconcileBuilderDuplicates(ServerLevel level, SettlementData data) {
-        if (!builderAssignmentEvidenceLoaded(level, data)) return 0;
+        // N+1 loaded builders are definitive duplicate evidence for one shared builder even if a
+        // wider route chunk is unloaded. The evidence gate remains only on spawning a missing builder.
         List<FrontierWorkerEntity> builders = findBuilders(level, data);
         if (builders.isEmpty()) return 0;
         FrontierWorkerEntity active = builders.getFirst();
@@ -1027,6 +1108,39 @@ public final class SettlementConstructionService {
         }
         duplicate.discard();
         return true;
+    }
+
+    /**
+     * Broader explicit maintenance scan for old saves. It is loaded-entity-only and never force-loads:
+     * one UUID-ordered shared builder survives, excess loaded historical builders preserve cargo before
+     * removal, and an idle survivor is sent back toward the settlement center.
+     */
+    public static int normalizeLoadedBuilders(ServerLevel level, SettlementData data) {
+        List<FrontierWorkerEntity> builders = new ArrayList<>(findBuilders(level, data));
+        BlockPos center = data.centerPos();
+        AABB maintenance = new AABB(
+                center.getX() - 256.0D, center.getY() - 96.0D, center.getZ() - 256.0D,
+                center.getX() + 257.0D, center.getY() + 97.0D, center.getZ() + 257.0D);
+        for (FrontierWorkerEntity candidate : level.getEntitiesOfClass(FrontierWorkerEntity.class, maintenance, worker ->
+                worker.entityTags().contains(BUILDER_TAG)
+                        || (worker.getCustomName() != null && BUILDER_NAME.equals(worker.getCustomName().getString())))) {
+            if (!builders.contains(candidate)) builders.add(candidate);
+        }
+        builders.sort(Comparator.comparing(worker -> worker.getUUID().toString()));
+        if (builders.isEmpty()) return 0;
+
+        FrontierWorkerEntity active = builders.getFirst();
+        if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
+        active.setNoAi(false);
+        active.setInvulnerable(false);
+        active.getNavigation().stop();
+
+        int removed = 0;
+        for (int i = 1; i < builders.size(); i++) {
+            if (removeDuplicateBuilderPreservingCargo(level, builders.get(i))) removed++;
+        }
+        if (!SettlementProjectAuthority.anyActive(level.getServer(), data)) returnBuilderHome(level, data, active);
+        return removed;
     }
 
     static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
