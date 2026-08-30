@@ -1,0 +1,331 @@
+name: Finalize Frontier Survival Full Pack Korean JEI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-frontier-survival-fullpack-ko-jei.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-frontier-survival-fullpack-ko-jei
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Install offline Korean translation runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input 'transformers<5' sentencepiece sacremoses
+          python3 -m pip install --disable-pip-version-check --no-input torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Generate complete Korean overlays for pinned FULL stack
+        shell: bash
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re, urllib.request, zipfile
+          from collections import defaultdict
+          from pathlib import Path
+          import torch
+          from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+          ROOT=Path.cwd(); TMP=ROOT/'.tmp-full-ko-final'; TMP.mkdir(exist_ok=True)
+          frontier=json.loads((ROOT/'projects/frontier-settlement/companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          sources=[{'name':f['filename'],'url':f['url']} for f in frontier['files']]
+          survival=json.loads((ROOT/'projects/survival-ascension/modpack/content-lock.json').read_text(encoding='utf-8'))
+          for mod in survival['mods']:
+              req=urllib.request.Request(f"https://api.modrinth.com/v2/version/{mod['version_id']}",headers={'User-Agent':'Frontier-Full-Korean-Final/1.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: meta=json.load(r)
+              pf=next((f for f in meta['files'] if f.get('primary')),meta['files'][0])
+              sources.append({'name':pf['filename'],'url':pf['url']})
+          sources=list({s['name']:s for s in sources}.values())
+
+          langs=defaultdict(lambda:{'en':{},'ko':{}})
+          for i,s in enumerate(sources):
+              p=TMP/f'{i}.jar'
+              req=urllib.request.Request(s['url'],headers={'User-Agent':'Frontier-Full-Korean-Final/1.0'})
+              with urllib.request.urlopen(req,timeout=90) as r: p.write_bytes(r.read())
+              with zipfile.ZipFile(p) as z:
+                  for n in z.namelist():
+                      m=re.fullmatch(r'assets/([^/]+)/lang/(en_us|ko_kr)\.json',n)
+                      if not m: continue
+                      ns,loc=m.groups()
+                      try: data=json.loads(z.read(n).decode('utf-8'))
+                      except Exception:
+                          # Dungeons & Taverns 5.3.0 contains malformed Korean JSON; replace it with our valid overlay.
+                          continue
+                      langs[ns]['en'].update(data)
+                      if loc=='ko_kr': langs[ns]['ko'].update(data)
+
+          for project in ('frontier-settlement','survival-ascension'):
+              base=ROOT/f'projects/{project}/src/main/resources/assets'
+              if not base.exists(): continue
+              for p in base.glob('*/lang/ko_kr.json'):
+                  try: langs[p.parent.parent.name]['ko'].update(json.loads(p.read_text(encoding='utf-8')))
+                  except Exception: pass
+
+          target={'bettercombat','dnt','jade','sophisticatedbackpacks','sophisticatedcore','tbos','weaponsexpanded','xaerobetterpvp','xaerominimap'}
+          TOKEN_RE=re.compile(r'(%\d*\$?[sdif]|\{[^{}]*\}|§.|\\n|\n)')
+          manual={
+              'Mob Catcher Upgrade':'몹 포획 기능',
+              'Captures passive mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹을 배낭 보관 슬롯에 포획합니다.',
+              'Advanced Mob Catcher Upgrade':'고급 몹 포획 기능',
+              'Captures passive and hostile mobs into backpack storage slots with sneak right-click':'웅크린 채 우클릭하면 수동적 몹과 적대적 몹을 배낭 보관 슬롯에 포획합니다.',
+              'Mob Catcher':'몹 포획', 'Advanced Mob Catcher':'고급 몹 포획',
+              'Better Combat':'개선된 전투', "Xaero's Minimap":'제로의 미니맵',
+              '{0} {1,choice,0#Buckets|1#Bucket|1.0<Buckets}':'{0} {1,choice,0#양동이|1#양동이|1.0<양동이}',
+              '{0} {1,choice,0#Millibuckets|1#Millibucket|1.0<Millibuckets}':'{0} {1,choice,0#밀리버킷|1#밀리버킷|1.0<밀리버킷}',
+              '{1,choice,1#Small|2≤Medium|4≤Large|8≤Huge} {0}':'{1,choice,1#소형|2≤중형|4≤대형|8≤초대형} {0}',
+          }
+          todos={}
+          for ns in sorted(target):
+              en=langs[ns]['en']; ko=langs[ns]['ko']
+              todos[ns]=dict(en) if ns=='dnt' else {k:v for k,v in en.items() if k not in ko}
+              print(ns,'overlay_keys=',len(todos[ns]))
+
+          fragments=[]
+          for todo in todos.values():
+              for text in todo.values():
+                  if text in manual: continue
+                  for part in TOKEN_RE.split(text):
+                      if part and not TOKEN_RE.fullmatch(part) and re.search(r'[A-Za-z]',part): fragments.append(part)
+          unique=list(dict.fromkeys(fragments)); print('unique_fragments=',len(unique))
+          tokenizer=AutoTokenizer.from_pretrained('Helsinki-NLP/opus-mt-tc-big-en-ko')
+          model=AutoModelForSeq2SeqLM.from_pretrained('Helsinki-NLP/opus-mt-tc-big-en-ko'); model.eval()
+          torch.set_num_threads(max(1,min(4,torch.get_num_threads())))
+          translated={}; batch_size=16
+          with torch.inference_mode():
+              for start in range(0,len(unique),batch_size):
+                  batch=unique[start:start+batch_size]
+                  enc=tokenizer(batch,return_tensors='pt',padding=True,truncation=True,max_length=512)
+                  out=model.generate(**enc,max_new_tokens=512,num_beams=2)
+                  for src,dst in zip(batch,tokenizer.batch_decode(out,skip_special_tokens=True)): translated[src]=dst
+                  if start % 160 == 0: print('translated',min(start+batch_size,len(unique)),'/',len(unique))
+
+          def tr(text):
+              if text in manual: return manual[text]
+              parts=TOKEN_RE.split(text)
+              return ''.join(part if not part or TOKEN_RE.fullmatch(part) or not re.search(r'[A-Za-z]',part) else translated.get(part,part) for part in parts)
+
+          generated={}
+          for ns,todo in todos.items():
+              vals={k:tr(v) for k,v in todo.items()}
+              if ns=='tbos': dst=ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json'
+              else: dst=ROOT/f'projects/frontier-settlement/src/main/resources/assets/{ns}/lang/ko_kr.json'
+              dst.parent.mkdir(parents=True,exist_ok=True)
+              base={}
+              if dst.exists():
+                  try: base=json.loads(dst.read_text(encoding='utf-8'))
+                  except Exception: base={}
+              base.update(vals)
+              if ns=='sophisticatedbackpacks':
+                  base.update({
+                      'item.sophisticatedbackpacks.mob_catcher_upgrade':'몹 포획 기능',
+                      'item.sophisticatedbackpacks.mob_catcher_upgrade.tooltip':'웅크린 채 우클릭하면 수동적 몹을 배낭 보관 슬롯에 포획합니다.',
+                      'item.sophisticatedbackpacks.advanced_mob_catcher_upgrade':'고급 몹 포획 기능',
+                      'item.sophisticatedbackpacks.advanced_mob_catcher_upgrade.tooltip':'웅크린 채 우클릭하면 수동적 몹과 적대적 몹을 배낭 보관 슬롯에 포획합니다.',
+                  })
+              dst.write_text(json.dumps(base,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+              generated[ns]=len(vals)
+
+          missing=[]; untranslated=[]
+          for ns in sorted(target):
+              en=langs[ns]['en']
+              dst=(ROOT/'projects/survival-ascension/src/main/resources/assets/tbos/lang/ko_kr.json') if ns=='tbos' else (ROOT/f'projects/frontier-settlement/src/main/resources/assets/{ns}/lang/ko_kr.json')
+              ours=json.loads(dst.read_text(encoding='utf-8')) if dst.exists() else {}
+              covered=dict(langs[ns]['ko']); covered.update(ours)
+              m=sorted(set(en)-set(covered))
+              if m: missing.append(f'{ns}:{len(m)}')
+              for k in todos[ns]:
+                  v=ours.get(k,''); src=en[k]
+                  literal=TOKEN_RE.sub('',src)
+                  if v==src and src not in manual and re.search(r'[A-Za-z]{2,}',literal): untranslated.append(f'{ns}:{k}={v}')
+          if missing: raise SystemExit('missing localization keys: '+', '.join(missing))
+          if untranslated: raise SystemExit('byte-identical untranslated values remain:\n'+'\n'.join(untranslated[:60]))
+          print('KOREAN COVERAGE PASS',generated)
+          PY
+
+      - name: Commit Korean overlays to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/src/main/resources/assets projects/survival-ascension/src/main/resources/assets
+          if ! git diff --cached --quiet; then
+            git commit -m 'Complete Korean localization overlays for full pack'
+            git push origin HEAD:main
+          fi
+
+      - name: Build project JARs with Survival K key compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java')
+          s=p.read_text(encoding='utf-8')
+          old='"key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);'
+          new='"key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);'
+          if old in s: s=s.replace(old,new,1)
+          elif new not in s: raise SystemExit('unexpected Survival menu key source')
+          p.write_text(s,encoding='utf-8')
+          PY
+          (cd projects/survival-ascension && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          python3 projects/survival-ascension/tools/verify_jar.py projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+          python3 projects/frontier-settlement/tools/verify_jar.py projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.91.jar
+
+      - name: Build FULL new-world MRPack with JEI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/survival-ascension/tools/build_mrpack.py --survival-jar projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar --output "$GITHUB_WORKSPACE/survival-content.mrpack"
+          python3 - <<'PY'
+          import hashlib,json,urllib.request,zipfile
+          from pathlib import Path
+          root=Path.cwd(); fr=root/'projects/frontier-settlement'; sp=root/'survival-content.mrpack'
+          fj=fr/'build/libs/frontier_settlement-0.1.0-alpha.91.jar'; sj=root/'projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar'
+          resolved=json.loads((fr/'companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          with zipfile.ZipFile(sp) as z: sidx=json.loads(z.read('modrinth.index.json'))
+          files=[]; by={}
+          for f in resolved['files']:
+              e={'path':'mods/'+f['filename'],'hashes':{'sha1':f['sha1'],'sha512':f['sha512']},'env':{'client':'required','server':'unsupported' if f['id']=='xaeros_minimap' else 'required'},'downloads':[f['url']],'fileSize':0}
+              files.append(e); by[f['filename']]=e
+          for e in sidx['files']:
+              n=Path(e['path']).name
+              if n in by:
+                  if by[n]['hashes'].get('sha1')!=e['hashes'].get('sha1') or by[n]['hashes'].get('sha512')!=e['hashes'].get('sha512'): raise SystemExit('duplicate hash mismatch '+n)
+                  continue
+              files.append(e); by[n]=e
+          req=urllib.request.Request('https://api.modrinth.com/v2/version/k8NezZZW',headers={'User-Agent':'Frontier-Full-Pack/2.0'})
+          with urllib.request.urlopen(req,timeout=60) as r: meta=json.load(r)
+          if meta.get('version_number')!='30.13.0.77': raise SystemExit('JEI version pin drift')
+          jf=next((x for x in meta['files'] if x.get('primary')),meta['files'][0])
+          je={'path':'mods/'+jf['filename'],'hashes':{'sha1':jf['hashes']['sha1'],'sha512':jf['hashes']['sha512']},'env':{'client':'required','server':'unsupported'},'downloads':[jf['url']],'fileSize':jf['size']}
+          if jf['filename'] not in by: files.append(je); by[jf['filename']]=je
+          idx={'formatVersion':1,'game':'minecraft','versionId':'frontier-alpha91-survival-0.61-full-ko-jei.1','name':'Frontier Settlement + Survival Ascension FULL KO + JEI','summary':'New-world full stack with complete Korean overlays and JEI recipe viewing.','files':files,'dependencies':{'minecraft':'26.2','neoforge':'26.2.0.38-beta'}}
+          readme='''Frontier Settlement + Survival Ascension FULL — NEW WORLD — KO + JEI\n\nMinecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25\n\n새 월드 전용 완전체입니다. Frontier + Survival Ascension + 양쪽 콘텐츠 스택을 합쳤고, 누락 한국어 오버레이와 JEI 조합법 보기를 포함합니다.\n\n조작: Frontier 메뉴 M / Survival Ascension 메뉴 K. JEI에서 아이템 위 R = 조합법, U = 사용처.\n\n기존 Frontier-only 월드를 이 FULL 프로필로 열지 마세요.\n'''
+          out=root/'Frontier_Settlement_Alpha91_SurvivalAscension_FULL_KO_JEI_NEW_WORLD.mrpack'
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+              z.writestr('modrinth.index.json',json.dumps(idx,ensure_ascii=False,indent=2)+'\n'); z.write(fj,'overrides/mods/'+fj.name); z.write(sj,'overrides/mods/'+sj.name); z.writestr('overrides/FULL_KO_JEI_README.txt',readme)
+          with zipfile.ZipFile(out) as z:
+              p=json.loads(z.read('modrinth.index.json')); names=[Path(x['path']).name for x in p['files']]
+              assert len(names)==len(set(names)); assert any('jei-' in n.lower() for n in names); assert any('Terralith' in n for n in names); assert any('BiomesOPlenty' in n for n in names)
+              assert all(x.get('env',{}).get('server')=='unsupported' for x in p['files'] if 'jei-' in x['path'].lower())
+          sha=hashlib.sha256(out.read_bytes()).hexdigest(); (root/'FULL_KO_JEI_SHA256.txt').write_text(f'{sha}  {out.name}\n',encoding='utf-8'); print('MRPACK',sha,'external_files',len(files))
+          PY
+
+      - name: Dedicated server smoke for full server-side stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,urllib.request,zipfile
+          from pathlib import Path
+          root=Path.cwd(); game=root/'projects/frontier-settlement/run/server'; mods=game/'mods'; mods.mkdir(parents=True,exist_ok=True)
+          for p in mods.glob('*.jar'): p.unlink()
+          server=json.loads((root/'projects/frontier-settlement/companion-testpack/resolved-lock.server.json').read_text(encoding='utf-8'))
+          def get(url,out,sha256=None,sha1=None,sha512=None):
+              req=urllib.request.Request(url,headers={'User-Agent':'Frontier-Full-Smoke/2.0'}); data=urllib.request.urlopen(req,timeout=90).read(); out.write_bytes(data)
+              if sha256 and hashlib.sha256(data).hexdigest()!=sha256: raise SystemExit('sha256 mismatch '+out.name)
+              if sha1 and hashlib.sha1(data).hexdigest()!=sha1: raise SystemExit('sha1 mismatch '+out.name)
+              if sha512 and hashlib.sha512(data).hexdigest()!=sha512: raise SystemExit('sha512 mismatch '+out.name)
+          present=set()
+          for f in server['files']: get(f['url'],mods/f['filename'],sha256=f['sha256']); present.add(f['filename'])
+          with zipfile.ZipFile(root/'survival-content.mrpack') as z: idx=json.loads(z.read('modrinth.index.json'))
+          for f in idx['files']:
+              if f.get('env',{}).get('server')=='unsupported': continue
+              n=Path(f['path']).name
+              if n in present: continue
+              get(f['downloads'][0],mods/n,sha1=f['hashes'].get('sha1'),sha512=f['hashes'].get('sha512')); present.add(n)
+          sj=root/'projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar'; (mods/sj.name).write_bytes(sj.read_bytes())
+          print('server_mod_jars=',len(list(mods.glob('*.jar'))))
+          PY
+          ROOT="$GITHUB_WORKSPACE/projects/frontier-settlement"; GAME="$ROOT/run/server"; rm -rf "$GAME/world_full_ko_jei"; mkdir -p "$GAME"; printf 'eula=true\n' > "$GAME/eula.txt"
+          cat > "$GAME/server.properties" <<'EOF'
+          level-name=world_full_ko_jei
+          online-mode=false
+          view-distance=8
+          simulation-distance=6
+          spawn-protection=0
+          max-tick-time=120000
+          EOF
+          cat > "$GITHUB_WORKSPACE/run_final_server.py" <<'PY'
+          import pathlib,subprocess,sys,time
+          root=pathlib.Path(sys.argv[1]); log=pathlib.Path(sys.argv[2]); p=subprocess.Popen(['./gradlew','--no-daemon','--no-configuration-cache','runServer','--console=plain'],cwd=root,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
+          ready=False; deadline=time.time()+240
+          with log.open('w',encoding='utf-8') as fh:
+              while time.time()<deadline:
+                  line=p.stdout.readline()
+                  if line:
+                      fh.write(line); fh.flush()
+                      if 'Done (' in line and 'For help' in line: ready=True; p.stdin.write('stop\n'); p.stdin.flush(); break
+                  elif p.poll() is not None: break
+              try: tail,_=p.communicate(timeout=45)
+              except subprocess.TimeoutExpired: p.terminate(); tail,_=p.communicate(timeout=15)
+              if tail: fh.write(tail)
+          text=log.read_text(encoding='utf-8',errors='replace')
+          fatal=('Exception in server tick loop','Failed to start the minecraft server','Mod loading error has occurred','Errors in currently selected datapacks prevented the world from loading','Registry loading errors')
+          if not ready: print(text); raise SystemExit('server never reached ready')
+          if any(x.lower() in text.lower() for x in fatal): print(text); raise SystemExit('fatal server error')
+          for token in ('survivalascension','biomesoplenty','terralith'):
+              if token not in text.lower(): print(text); raise SystemExit('missing runtime token '+token)
+          print('FULL SERVER SMOKE PASS')
+          PY
+          python3 "$GITHUB_WORKSPACE/run_final_server.py" "$ROOT" "$GITHUB_WORKSPACE/full-ko-jei-server-smoke.log"
+          test -f "$GAME/world_full_ko_jei/level.dat"
+
+      - name: Package audit report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,zipfile
+          from pathlib import Path
+          root=Path.cwd(); report=[]
+          report.append('Frontier Settlement + Survival Ascension FULL KO + JEI finalization')
+          report.append('Korean overlays: generated and JSON-validated for Better Combat, Dungeons & Taverns, Jade, Sophisticated Backpacks/Core, TBOS, Weapons Expanded, Xaero namespaces.')
+          report.append('Dungeons & Taverns malformed upstream ko_kr replaced by valid overlay generated from en_us.')
+          report.append('JEI: 30.13.0.77, client-only in MRPack.')
+          report.append('Controls: Frontier M / Survival Ascension K / JEI recipe R / usage U.')
+          report.append('Dedicated full server-side stack smoke: PASS if this artifact exists after successful job.')
+          (root/'FULL_KO_JEI_AUDIT.txt').write_text('\n'.join(report)+'\n',encoding='utf-8')
+          PY
+
+      - name: Upload final full pack
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontier-alpha91-survival-061-full-ko-jei
+          path: |
+            Frontier_Settlement_Alpha91_SurvivalAscension_FULL_KO_JEI_NEW_WORLD.mrpack
+            FULL_KO_JEI_SHA256.txt
+            FULL_KO_JEI_AUDIT.txt
+            full-ko-jei-server-smoke.log
+            projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.91.jar
+            projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+          if-no-files-found: warn
