@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** World-first battle screen. It owns only edge HUD/input; the 3D battlefield remains the main visual. */
+/** World-first battle screen. It owns edge HUD/input; the 3D battlefield remains the main visual. */
 public final class BattleScreen extends Screen {
     private static final int DEEP = 0xB810131A;
-    private static final int PANEL = 0xC9171C26;
+    private static final int PANEL = 0xD6171C26;
     private static final int TEXT = 0xFFF4F0E6;
     private static final int SECONDARY = 0xFFAEB7C6;
     private static final int HP = 0xFFE65A5A;
@@ -59,7 +59,7 @@ public final class BattleScreen extends Screen {
 
         var confirm = layout.confirmButton();
         confirmButton = addRenderableWidget(new BattleHudButton(
-                confirm.x(), confirm.y(), confirm.width(), confirm.height(), Component.literal("사용 확정"), HEAL,
+                confirm.x(), confirm.y(), confirm.width(), confirm.height(), Component.literal("사용"), HEAL,
                 ignored -> confirmAction()));
 
         var auto = layout.autoButton();
@@ -103,7 +103,7 @@ public final class BattleScreen extends Screen {
             if (i < snapshot.skills().size() && canAct) {
                 var skill = snapshot.skills().get(i);
                 String prefix = selectedSkill.equals(skill.id()) ? "▶ " : "";
-                String cooldown = skill.remaining() > 0 ? "  " + skill.remaining() : "";
+                String cooldown = skill.remaining() > 0 ? "  CD" + skill.remaining() : "";
                 button.setMessage(Component.literal(prefix + (i + 1) + " " + skill.name() + cooldown));
                 button.active = skill.remaining() == 0;
                 button.visible = true;
@@ -117,9 +117,9 @@ public final class BattleScreen extends Screen {
             selectedTarget = -1;
             setWorldFocus("");
         } else if (BattleActionRules.needsSingleTarget(selected.targetRule())) {
-            if (selectedTarget < 0 || selectedTarget >= snapshot.units().size()
-                    || !BattleTargeting.validTarget(selected.targetRule(), snapshot.units().get(selectedTarget), snapshot.actorId())) {
-                selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), selected.targetRule(), snapshot.actorId());
+            if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
+                    || !BattleTargeting.validTarget(selected.targetRule(), snapshot.units().get(selectedTarget), snapshot.actorId()))) {
+                selectedTarget = -1;
             }
             syncSelectedTarget(snapshot);
         } else if ("SELF".equals(selected.targetRule())) {
@@ -134,7 +134,7 @@ public final class BattleScreen extends Screen {
                 snapshot.units(), selected.targetRule(), snapshot.actorId(), selectedTarget);
         confirmButton.visible = canAct && selected != null;
         confirmButton.active = confirmed != null;
-        confirmButton.setMessage(Component.literal(selected == null ? "사용 확정" : "사용 확정"));
+        confirmButton.setMessage(Component.literal(confirmed == null ? "대상 선택" : "사용"));
 
         autoButton.setMessage(Component.literal(snapshot.auto() ? "AUTO✓" : "AUTO"));
         speedButton.setMessage(Component.literal("×" + snapshot.speed()));
@@ -164,7 +164,9 @@ public final class BattleScreen extends Screen {
         var skill = snapshot.skills().get(index);
         if (skill.remaining() > 0) return;
         selectedSkill = skill.id();
-        selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), skill.targetRule(), snapshot.actorId());
+        selectedTarget = "SELF".equals(skill.targetRule())
+                ? BattleActionRules.defaultTarget(snapshot.units(), skill.targetRule(), snapshot.actorId())
+                : -1;
         syncSelectedTarget(snapshot);
         refresh();
     }
@@ -368,6 +370,7 @@ public final class BattleScreen extends Screen {
         drawUnits(graphics, current, snapshot);
         drawActionHeader(graphics, current, snapshot);
         drawResult(graphics, snapshot);
+        drawSkillTooltip(graphics, current, snapshot, mouseX, mouseY);
         if (settingsOpen) drawSettings(graphics, current);
     }
 
@@ -387,7 +390,7 @@ public final class BattleScreen extends Screen {
             if (id.equals(snapshot.actorId())) graphics.fill(x, panel.y(), x + tokenWidth, panel.bottom(), 0xE0222A38);
             graphics.fill(x, panel.y(), x + 2, panel.bottom(), accent);
             String label = abbreviate(unit.name(), current.compact() ? 1 : 2);
-            graphics.text(font, Component.literal(label), x + 4, panel.y() + 4, TEXT, true);
+            graphics.text(font, Component.literal(label), x + 4, panel.y() + Math.max(3, (panel.height() - 9) / 2), TEXT, true);
             x += tokenWidth + gap;
         }
     }
@@ -408,10 +411,16 @@ public final class BattleScreen extends Screen {
     private void drawUnitLine(GuiGraphicsExtractor graphics, BattleHudLayout.Rect rect, ClientBattleState.Unit unit,
                               boolean selected, boolean actor, boolean compact) {
         String name = unit.downed() ? unit.name() + " DOWN" : unit.name();
-        if (compact && name.length() > 9) name = name.substring(0, 9);
+        if (compact && name.length() > 8) name = name.substring(0, 8);
         if (selected) name = "▼ " + name;
         int textColor = unit.downed() ? MUTED : TEXT;
         graphics.text(font, Component.literal(name), rect.x(), rect.y(), textColor, true);
+
+        String hpText = unit.hp() + "/" + unit.maxHp();
+        int hpX = rect.right() - font.width(hpText);
+        if (hpX > rect.x() + font.width(name) + 5) {
+            graphics.text(font, Component.literal(hpText), hpX, rect.y(), SECONDARY, true);
+        }
 
         int barY = rect.bottom() - 5;
         graphics.fill(rect.x(), barY, rect.right(), rect.bottom(), 0xB0000000);
@@ -434,12 +443,67 @@ public final class BattleScreen extends Screen {
         ClientBattleState.Unit actor = findUnit(snapshot, snapshot.actorId());
         String actorName = actor == null ? "행동" : actor.name();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
-        graphics.text(font, Component.literal(actorName), rect.x() + 5, rect.y() + 3, TEXT, true);
+        graphics.text(font, Component.literal(actorName), rect.x() + 5, rect.y() + 4, TEXT, true);
         String hint;
-        if (selected == null) hint = "행동 선택";
-        else if (BattleActionRules.needsSingleTarget(selected.targetRule())) hint = "대상 클릭 → 확정";
+        if (selected == null) hint = "행동을 선택하십시오";
+        else if (BattleActionRules.needsSingleTarget(selected.targetRule()) && selectedTarget < 0) hint = "대상을 클릭하십시오";
+        else if (BattleActionRules.needsSingleTarget(selected.targetRule())) hint = "대상 선택됨 · 사용 확정";
         else hint = "사용 확정";
-        graphics.text(font, Component.literal(hint), rect.x() + 5, rect.y() + 14, SECONDARY, true);
+        graphics.text(font, Component.literal(hint), rect.x() + 5, rect.y() + 16, SECONDARY, true);
+    }
+
+    private void drawSkillTooltip(
+            GuiGraphicsExtractor graphics,
+            BattleHudLayout.Layout current,
+            ClientBattleState.Snapshot snapshot,
+            int mouseX,
+            int mouseY
+    ) {
+        if (!canChooseSkill(snapshot) || settingsOpen) return;
+        int hovered = -1;
+        for (int i = 0; i < current.skillButtons().size() && i < snapshot.skills().size(); i++) {
+            if (current.skillButtons().get(i).contains(mouseX, mouseY)) {
+                hovered = i;
+                break;
+            }
+        }
+        if (hovered < 0) return;
+
+        ClientBattleState.Skill skill = snapshot.skills().get(hovered);
+        var area = current.tooltipArea();
+        List<String> source = BattleSkillTooltip.lines(skill);
+        List<String> lines = new ArrayList<>();
+        int wrapWidth = Math.max(48, area.width() - 12);
+        for (int i = 0; i < source.size(); i++) {
+            if (i < source.size() - 1 || source.get(i).length() < 18) lines.add(source.get(i));
+            else lines.addAll(wrap(source.get(i), wrapWidth));
+        }
+        int lineHeight = 11;
+        int neededHeight = Math.min(area.height(), 9 + lines.size() * lineHeight);
+        graphics.fill(area.x(), area.y(), area.right(), area.y() + neededHeight, 0xEE10131A);
+        graphics.fill(area.x(), area.y(), area.x() + 3, area.y() + neededHeight, GAUGE);
+        int y = area.y() + 5;
+        for (int i = 0; i < lines.size() && y + 9 <= area.y() + neededHeight; i++) {
+            int color = i == 0 ? TEXT : (i <= 2 ? SECONDARY : TEXT);
+            graphics.text(font, Component.literal(lines.get(i)), area.x() + 7, y, color, true);
+            y += lineHeight;
+        }
+    }
+
+    private List<String> wrap(String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            String candidate = current.toString() + c;
+            if (current.length() > 0 && font.width(candidate) > maxWidth) {
+                lines.add(current.toString());
+                current.setLength(0);
+            }
+            current.append(c);
+        }
+        if (!current.isEmpty()) lines.add(current.toString());
+        return lines;
     }
 
     private void drawResult(GuiGraphicsExtractor graphics, ClientBattleState.Snapshot snapshot) {

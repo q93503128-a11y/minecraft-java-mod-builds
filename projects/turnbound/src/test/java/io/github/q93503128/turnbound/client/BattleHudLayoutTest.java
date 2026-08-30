@@ -28,6 +28,7 @@ class BattleHudLayoutTest {
             all.addAll(layout.skillButtons());
             all.add(layout.actionHeader());
             all.add(layout.confirmButton());
+            all.add(layout.tooltipArea());
             all.add(layout.timeline());
             all.add(layout.autoButton());
             all.add(layout.speedButton());
@@ -43,24 +44,29 @@ class BattleHudLayoutTest {
     }
 
     @Test
-    void standardViewportKeepsBattlefieldCenterOpenAndControlsSeparated() {
+    void standardViewportUsesCompactTwoColumnActionDockAndKeepsCenterOpen() {
         BattleHudLayout.Layout layout = BattleHudLayout.calculate(854, 480);
         int centerLeft = 854 / 4;
         int centerRight = 854 * 3 / 4;
 
         for (BattleHudLayout.Rect rect : layout.enemyBars()) {
             assertTrue(rect.x() >= 854 / 2, "enemy summaries stay in the upper-right half");
-            assertTrue(rect.bottom() < 100, "enemy summaries remain shallow");
+            assertTrue(rect.bottom() < 110, "enemy summaries remain shallow");
         }
         for (BattleHudLayout.Rect rect : layout.skillButtons()) {
             assertTrue(rect.x() >= centerRight, "contextual skills stay on the right edge");
+            assertTrue(rect.height() >= 44, "standard skill buttons keep the planned click height");
             assertFalse(rect.overlaps(layout.autoButton()));
             assertFalse(rect.overlaps(layout.speedButton()));
             assertFalse(rect.overlaps(layout.fleeButton()));
         }
+        assertEquals(layout.skillButtons().get(0).y(), layout.skillButtons().get(1).y());
+        assertTrue(layout.skillButtons().get(2).y() > layout.skillButtons().get(0).y(), "skills form multiple rows");
+
         assertFalse(layout.confirmButton().overlaps(layout.autoButton()));
         assertFalse(layout.confirmButton().overlaps(layout.speedButton()));
         assertFalse(layout.confirmButton().overlaps(layout.fleeButton()));
+        assertTrue(layout.tooltipArea().right() <= layout.actionHeader().x(), "hover tooltip stays left of the action dock");
 
         for (BattleHudLayout.Rect ally : layout.allyBars()) {
             assertTrue(ally.y() >= 450, "party bars stay on the bottom edge");
@@ -68,6 +74,6 @@ class BattleHudLayoutTest {
             assertFalse(ally.overlaps(layout.speedButton()));
             assertFalse(ally.overlaps(layout.fleeButton()));
         }
-        assertTrue(layout.timeline().x() > centerLeft && layout.timeline().right() < centerRight + 50);
+        assertTrue(layout.timeline().x() > centerLeft && layout.timeline().right() < centerRight + 60);
     }
 }

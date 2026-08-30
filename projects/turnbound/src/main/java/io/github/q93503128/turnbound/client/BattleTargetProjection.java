@@ -2,7 +2,7 @@ package io.github.q93503128.turnbound.client;
 
 import java.util.List;
 
-/** Lightweight world-to-screen projection used for mouse target picking while the battle Screen owns the cursor. */
+/** World-to-screen projection and forgiving body-capsule picking for mouse target selection. */
 final class BattleTargetProjection {
     record ScreenPoint(double x, double y, double depth) {}
 
@@ -24,21 +24,35 @@ final class BattleTargetProjection {
         int best = -1;
         double bestDistance = Double.MAX_VALUE;
         double bestDepth = Double.MAX_VALUE;
-        double radius = Math.max(18.0, Math.min(34.0, Math.min(width, height) * 0.075));
+        double radius = Math.max(22.0, Math.min(42.0, Math.min(width, height) * 0.085));
 
         for (int i = 0; i < units.size(); i++) {
             ClientBattleState.Unit unit = units.get(i);
             if (!BattleTargeting.validTarget(rule, unit, actorId)) continue;
-            ScreenPoint point = project(arenaX, arenaY, arenaZ, view, width, height,
-                    unit.x(), unit.y() + 1.15, unit.z());
-            if (point == null) continue;
-            double dx = mouseX - point.x();
-            double dy = mouseY - point.y();
-            double distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance <= radius && (distance < bestDistance || (distance == bestDistance && point.depth() < bestDepth))) {
+
+            ScreenPoint feet = project(arenaX, arenaY, arenaZ, view, width, height,
+                    unit.x(), unit.y() + 0.12, unit.z());
+            ScreenPoint torso = project(arenaX, arenaY, arenaZ, view, width, height,
+                    unit.x(), unit.y() + 1.00, unit.z());
+            ScreenPoint head = project(arenaX, arenaY, arenaZ, view, width, height,
+                    unit.x(), unit.y() + 1.85, unit.z());
+            if (torso == null) continue;
+
+            double distance;
+            if (feet != null && head != null) {
+                distance = distanceToSegment(mouseX, mouseY, feet.x(), feet.y(), head.x(), head.y());
+            } else {
+                double dx = mouseX - torso.x();
+                double dy = mouseY - torso.y();
+                distance = Math.sqrt(dx * dx + dy * dy);
+            }
+
+            double depth = torso.depth();
+            if (distance <= radius && (distance < bestDistance - 0.001
+                    || (Math.abs(distance - bestDistance) <= 0.001 && depth < bestDepth))) {
                 best = i;
                 bestDistance = distance;
-                bestDepth = point.depth();
+                bestDepth = depth;
             }
         }
         return best;
@@ -90,5 +104,27 @@ final class BattleTargetProjection {
                 width * 0.5 + horizontal / depth * focal,
                 height * 0.5 - vertical / depth * focal,
                 depth);
+    }
+
+    private static double distanceToSegment(
+            double px, double py,
+            double ax, double ay,
+            double bx, double by
+    ) {
+        double vx = bx - ax;
+        double vy = by - ay;
+        double lengthSquared = vx * vx + vy * vy;
+        if (lengthSquared <= 0.0001) {
+            double dx = px - ax;
+            double dy = py - ay;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        double t = ((px - ax) * vx + (py - ay) * vy) / lengthSquared;
+        t = Math.max(0.0, Math.min(1.0, t));
+        double cx = ax + vx * t;
+        double cy = ay + vy * t;
+        double dx = px - cx;
+        double dy = py - cy;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }

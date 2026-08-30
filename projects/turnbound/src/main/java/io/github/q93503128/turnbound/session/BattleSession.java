@@ -25,6 +25,7 @@ public final class BattleSession {
     private final float returnYaw;
     private final float returnPitch;
     private final boolean playerWasInvisible;
+    /** Exact camera pivot: average of the spawned combatant anchors. */
     private final Vec3 battleAnchor;
     private final float battleYaw;
     private final BattlePresentation presentation = new BattlePresentation();
@@ -48,14 +49,16 @@ public final class BattleSession {
         playerWasInvisible = player.isInvisible();
 
         BattleArenaLocator.Arena arena = BattleArenaLocator.locate(player);
-        battleAnchor = arena.center();
+        Vec3 formationCenter = arena.center();
         battleYaw = arena.facingYaw();
         player.setInvisible(true);
+        presentation.spawn((ServerLevel) player.level(), formationCenter, battleYaw, engine.state().combatants());
+        Vec3 actualCenter = presentation.center();
+        battleAnchor = actualCenter.lengthSqr() < 0.001 ? formationCenter : actualCenter;
         player.setPos(battleAnchor.x, battleAnchor.y, battleAnchor.z);
         player.setYRot(battleYaw);
-        player.setXRot(0.0F);
+        player.setXRot(18.0F);
         player.setDeltaMovement(Vec3.ZERO);
-        presentation.spawn((ServerLevel) player.level(), battleAnchor, battleYaw, engine.state().combatants());
     }
 
     public BattleState state() { return engine.state(); }

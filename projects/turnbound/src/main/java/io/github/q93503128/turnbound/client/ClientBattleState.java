@@ -16,7 +16,18 @@ public final class ClientBattleState {
         }
     }
 
-    public record Skill(String id, String name, String targetRule, int baseCooldown, int remaining) {}
+    public record Skill(
+            String id,
+            String name,
+            String targetRule,
+            int baseCooldown,
+            int remaining,
+            String description
+    ) {
+        public Skill(String id, String name, String targetRule, int baseCooldown, int remaining) {
+            this(id, name, targetRule, baseCooldown, remaining, "");
+        }
+    }
 
     public record Snapshot(
             boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
@@ -85,7 +96,8 @@ public final class ClientBattleState {
                         if (p.length > 1 && !p[1].isBlank()) timeline.addAll(Arrays.asList(p[1].split(",")));
                     }
                     case "S" -> skills.add(new Skill(
-                            p[1], p[2], p[3], Integer.parseInt(p[4]), Integer.parseInt(p[5])));
+                            p[1], p[2], p[3], Integer.parseInt(p[4]), Integer.parseInt(p[5]),
+                            p.length > 6 ? p[6] : ""));
                     default -> {
                     }
                 }

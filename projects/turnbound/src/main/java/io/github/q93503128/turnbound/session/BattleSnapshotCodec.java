@@ -41,12 +41,16 @@ public final class BattleSnapshotCodec {
         if (state.currentActorId() != null) {
             CombatantState current = state.combatant(state.currentActorId());
             for (SkillDefinition skill : current.definition().skills()) {
-                out.append("S|").append(skill.id()).append('|').append(skill.name()).append('|')
+                out.append("S|").append(skill.id()).append('|').append(safe(skill.name())).append('|')
                         .append(skill.targetRule()).append('|').append(skill.cooldown()).append('|')
-                        .append(current.cooldown(skill.id())).append('\n');
+                        .append(current.cooldown(skill.id())).append('|').append(safe(skill.description())).append('\n');
             }
         }
         return out.toString();
+    }
+
+    private static String safe(String value) {
+        return value.replace('|', '/').replace('\n', ' ').replace('\r', ' ');
     }
 
     private static String number(double value) {

@@ -3,7 +3,7 @@ package io.github.q93503128.turnbound.client;
 import java.util.ArrayList;
 import java.util.List;
 
-/** alpha.7 edge HUD geometry: the battlefield center is intentionally left for the 3D scene. */
+/** alpha.9 world-first HUD: compact 2-column action dock and edge-only persistent state. */
 final class BattleHudLayout {
     static final int SKILL_COUNT = 5;
     static final int ALLY_COUNT = 4;
@@ -31,6 +31,7 @@ final class BattleHudLayout {
             List<Rect> skillButtons,
             Rect actionHeader,
             Rect confirmButton,
+            Rect tooltipArea,
             Rect timeline,
             Rect autoButton,
             Rect speedButton,
@@ -52,8 +53,8 @@ final class BattleHudLayout {
         int margin = clamp(Math.min(width, height) / 70, 4, 7);
         int gap = compact ? 3 : 4;
 
-        int controlHeight = compact ? 16 : 18;
-        int controlWidth = compact ? 32 : 38;
+        int controlHeight = compact ? 16 : 20;
+        int controlWidth = compact ? 32 : 42;
         int controlGap = 3;
         int controlsTotal = controlWidth * 3 + controlGap * 2;
         int controlsX = Math.max(margin, width - margin - controlsTotal);
@@ -64,10 +65,10 @@ final class BattleHudLayout {
 
         int allyColumns = compact ? 2 : 4;
         int allyRows = (ALLY_COUNT + allyColumns - 1) / allyColumns;
-        int allyHeight = compact ? 16 : 18;
+        int allyHeight = compact ? 16 : 20;
         int allyRightLimit = Math.max(margin + allyColumns, controlsX - (compact ? 5 : 18));
         int allyAvailable = Math.max(allyColumns, allyRightLimit - margin - gap * (allyColumns - 1));
-        int allyWidth = Math.max(1, Math.min(compact ? 108 : 136, allyAvailable / allyColumns));
+        int allyWidth = Math.max(1, Math.min(compact ? 108 : 150, allyAvailable / allyColumns));
         int allyTotalH = allyRows * allyHeight + Math.max(0, allyRows - 1) * gap;
         int allyStartY = Math.max(margin, height - margin - allyTotalH);
         List<Rect> allyBars = new ArrayList<>(ALLY_COUNT);
@@ -79,10 +80,10 @@ final class BattleHudLayout {
                     allyStartY + row * (allyHeight + gap), allyWidth, allyHeight));
         }
 
-        int enemyColumns = compact ? 2 : 2;
+        int enemyColumns = 2;
         int enemyRows = (ENEMY_COUNT + enemyColumns - 1) / enemyColumns;
-        int enemyHeight = compact ? 13 : 14;
-        int enemyWidth = compact ? Math.max(56, Math.min(90, (width / 2 - margin * 2 - gap) / 2)) : 98;
+        int enemyHeight = compact ? 13 : 15;
+        int enemyWidth = compact ? Math.max(56, Math.min(90, (width / 2 - margin * 2 - gap) / 2)) : 106;
         int enemyGridW = enemyColumns * enemyWidth + gap;
         int enemyStartX = Math.max(margin, width - margin - enemyGridW);
         int enemyStartY = margin;
@@ -95,28 +96,28 @@ final class BattleHudLayout {
                     enemyStartY + row * (enemyHeight + gap), enemyWidth, enemyHeight));
         }
 
-        int timelineWidth = Math.min(compact ? 156 : 196, Math.max(1, width - margin * 2));
-        int timelineHeight = compact ? 16 : 18;
+        int timelineWidth = Math.min(compact ? 156 : 210, Math.max(1, width - margin * 2));
+        int timelineHeight = compact ? 16 : 20;
         Rect timeline = inside(width, height, Math.max(0, (width - timelineWidth) / 2), margin,
                 timelineWidth, timelineHeight);
 
-        int actionWidth = compact ? Math.min(118, Math.max(86, width / 3)) : 118;
+        int actionWidth = compact ? Math.min(124, Math.max(96, width / 3)) : 148;
         int actionX = Math.max(margin, width - margin - actionWidth);
-        int skillColumns = compact ? 2 : 1;
+        int skillColumns = 2;
         int skillRows = (SKILL_COUNT + skillColumns - 1) / skillColumns;
-        int skillGap = 3;
-        int skillHeight = compact ? 17 : 19;
-        int headerHeight = compact ? 23 : 28;
-        int confirmHeight = compact ? 17 : 19;
+        int skillGap = compact ? 3 : 4;
+        int skillHeight = compact ? 28 : 44;
+        int headerHeight = compact ? 22 : 30;
+        int confirmHeight = compact ? 18 : 26;
         int skillAreaH = skillRows * skillHeight + (skillRows - 1) * skillGap;
-        int totalActionH = headerHeight + skillAreaH + 4 + confirmHeight;
-        int desiredY = Math.max(enemyStartY + enemyRows * (enemyHeight + gap) + 12, height / 2 - totalActionH / 2);
+        int totalActionH = headerHeight + skillAreaH + 5 + confirmHeight;
         int maxY = Math.max(margin, controlsY - 10 - totalActionH);
-        int actionY = Math.min(desiredY, maxY);
-        actionY = Math.max(margin + timelineHeight + 6, actionY);
+        int minY = margin + timelineHeight + 8;
+        int preferredY = Math.max(minY, height / 2 - totalActionH / 2);
+        int actionY = Math.max(minY, Math.min(preferredY, maxY));
         Rect actionHeader = inside(width, height, actionX, actionY, actionWidth, headerHeight);
 
-        int skillWidth = Math.max(1, (actionWidth - (skillColumns - 1) * skillGap) / skillColumns);
+        int skillWidth = Math.max(1, (actionWidth - skillGap) / skillColumns);
         int skillStartY = actionHeader.bottom();
         List<Rect> skillButtons = new ArrayList<>(SKILL_COUNT);
         for (int i = 0; i < SKILL_COUNT; i++) {
@@ -126,8 +127,14 @@ final class BattleHudLayout {
                     actionX + col * (skillWidth + skillGap),
                     skillStartY + row * (skillHeight + skillGap), skillWidth, skillHeight));
         }
-        int confirmY = skillStartY + skillAreaH + 4;
+        int confirmY = skillStartY + skillAreaH + 5;
         Rect confirmButton = inside(width, height, actionX, confirmY, actionWidth, confirmHeight);
+
+        int tooltipWidth = compact ? Math.min(160, Math.max(90, actionX - margin * 2)) : Math.min(220, Math.max(120, actionX - margin * 2));
+        int tooltipHeight = compact ? 76 : 96;
+        int tooltipX = Math.max(margin, actionX - tooltipWidth - 7);
+        int tooltipY = clamp(actionY, margin + timelineHeight + 8, Math.max(margin, height - margin - tooltipHeight));
+        Rect tooltipArea = inside(width, height, tooltipX, tooltipY, tooltipWidth, tooltipHeight);
 
         int settingsWidth = Math.min(246, Math.max(1, width - margin * 2));
         int settingsHeight = Math.min(112, Math.max(1, height - margin * 2));
@@ -136,7 +143,7 @@ final class BattleHudLayout {
                 Math.max(0, (height - settingsHeight) / 2), settingsWidth, settingsHeight);
 
         return new Layout(width, height, allyBars, enemyBars, skillButtons, actionHeader, confirmButton,
-                timeline, autoButton, speedButton, fleeButton, settingsPanel, compact);
+                tooltipArea, timeline, autoButton, speedButton, fleeButton, settingsPanel, compact);
     }
 
     private static Rect inside(int width, int height, int x, int y, int rectWidth, int rectHeight) {
