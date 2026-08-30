@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Owns Southgate Meadow A01 Chapter 1 vertical slice: five visible encounters, quest/reward loop, and B01. */
+/** Owns Southgate Meadow Chapter 1 and its first clear-gated South Road continuation. */
 public final class FieldSessionManager {
     /** Compatibility alias used by older alpha tests and handoff notes. */
     public static final String ENCOUNTER_A01_PATROL = SouthgateEncounterCatalog.ENC_M01;
@@ -38,16 +38,18 @@ public final class FieldSessionManager {
         BattleSessionManager.end(player);
         remove(player);
         ServerLevel level = (ServerLevel) player.level();
-        FieldCellA01.BuiltCell cell = FieldCellA01.build(level);
-        FieldSession session = new FieldSession(cell);
+        FieldCellA01.BuiltCell a01 = FieldCellA01.build(level);
+        FieldCellA02.BuiltCell a02 = FieldCellA02.build(level);
+        FieldSession session = new FieldSession(a01, a02);
         SESSIONS.put(player.getUUID(), session);
-        player.setPos(cell.entry().x, cell.entry().y, cell.entry().z);
+        player.setPos(a01.entry().x, a01.entry().y, a01.entry().z);
         player.setYRot(180.0F);
         player.setXRot(5.0F);
         player.setDeltaMovement(Vec3.ZERO);
         session.spawnAll(level);
         player.sendSystemMessage(Component.literal("남문 초원 · Chapter 1").withStyle(ChatFormatting.GOLD));
-        session.sendStatus(player);
+        player.sendSystemMessage(Component.literal("정찰관을 조사하면 임무 현황을 확인할 수 있습니다.").withStyle(ChatFormatting.GRAY));
+        FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         return true;
     }
 
@@ -58,19 +60,25 @@ public final class FieldSessionManager {
     public static void tick(ServerPlayer player) {
         FieldSession session = SESSIONS.get(player.getUUID());
         if (session == null || player.level().dimension() != Level.OVERWORLD) return;
+        if (BattleSessionManager.exists(player)) return;
         ServerLevel level = (ServerLevel) player.level();
-        if (!FieldCellA01.containsXZ(player.getX(), player.getZ())) {
-            if (!BattleSessionManager.exists(player)) {
-                Vec3 entry = session.cell.entry();
-                player.setPos(entry.x, entry.y, entry.z);
-                player.setDeltaMovement(Vec3.ZERO);
-            }
+
+        if (!session.allowedPosition(player.position())) {
+            Vec3 fallback = player.getZ() >= FieldCellA02.ORIGIN_Z && session.progress.chapterCleared()
+                    ? session.a02.entry()
+                    : session.a01.entry();
+            player.setPos(fallback.x, fallback.y, fallback.z);
+            player.setDeltaMovement(Vec3.ZERO);
             return;
         }
+
         if (player.tickCount % 20 == 0) clearVanillaMobs(level);
-        if (BattleSessionManager.exists(player)) return;
+        if (session.progress.chapterCleared()) {
+            FieldCellA02.unlockNorthGate(level);
+            session.spawnA02Relay(level);
+        }
         session.ensureBoss(level);
-        session.tickEncounters(level, player);
+        if (FieldCellA01.containsXZ(player.getX(), player.getZ())) session.tickEncounters(level, player);
     }
 
     public static void onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
@@ -83,37 +91,45 @@ public final class FieldSessionManager {
             patrol.defeated = true;
             SouthgateChapterProgress.RewardReceipt reward = session.progress.recordVictory(encounterId);
             var spec = SouthgateEncounterCatalog.spec(encounterId);
-            player.sendSystemMessage(Component.literal("승리 · " + spec.label()).withStyle(ChatFormatting.GREEN));
-            player.sendSystemMessage(Component.literal("보상  XP +" + reward.xp() + " · Gold +" + reward.gold())
-                    .withStyle(ChatFormatting.YELLOW));
             if (reward.chapterCleared()) {
-                player.sendSystemMessage(Component.literal("Chapter 1 클리어 — 남문 초원 봉쇄 해제").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+                FieldCellA02.unlockNorthGate(level);
+                session.spawnA02Relay(level);
+                player.sendSystemMessage(Component.literal("Chapter 1 클리어 — 남부 도로가 열렸습니다.")
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
             } else if (reward.bossUnlocked() && !spec.boss()) {
-                player.sendSystemMessage(Component.literal("남문 봉쇄선에서 B01 그라울의 기척이 드러났다.")
+                player.sendSystemMessage(Component.literal("남문 봉쇄선에서 B01 그라울이 출현했습니다.")
                         .withStyle(ChatFormatting.RED));
                 session.ensureBoss(level);
             }
-            session.sendStatus(player);
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.RESULT, reward));
         } else {
             patrol.resetAfterNonVictory(level);
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         }
     }
 
     public static boolean interactEntity(ServerPlayer player, Entity target) {
         FieldSession session = SESSIONS.get(player.getUUID());
-        if (session == null || target == null || session.npc == null || !session.npc.equals(target.getUUID())) return false;
-        session.sendStatus(player);
-        if (session.progress.chapterCleared()) {
-            player.sendSystemMessage(Component.literal("정찰관: 남문 길은 확보됐다. 다음 지역으로 진출할 준비를 해.")
-                    .withStyle(ChatFormatting.AQUA));
-        } else if (session.progress.bossUnlocked()) {
-            player.sendSystemMessage(Component.literal("정찰관: 순찰대는 정리됐다. 남쪽 봉쇄선의 그라울을 처리해.")
-                    .withStyle(ChatFormatting.AQUA));
-        } else {
-            player.sendSystemMessage(Component.literal("정찰관: 초원 곳곳의 적 무리를 정리하고 남문 봉쇄선까지 확보해.")
-                    .withStyle(ChatFormatting.AQUA));
+        if (session == null || target == null) return false;
+        UUID id = target.getUUID();
+        if (id.equals(session.npc)) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+            return true;
         }
-        return true;
+        if (id.equals(session.relayA01)) {
+            boolean newlyActivated = session.progress.activateRelay(FieldTravelCatalog.RELAY_A01);
+            if (newlyActivated) player.sendSystemMessage(Component.literal("남문 초원 계전석이 활성화되었습니다.").withStyle(ChatFormatting.AQUA));
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
+        if (id.equals(session.relayA02)) {
+            if (!session.progress.chapterCleared()) return true;
+            boolean newlyActivated = session.progress.activateRelay(FieldTravelCatalog.RELAY_A02);
+            if (newlyActivated) player.sendSystemMessage(Component.literal("남부 도로 거점 계전석이 활성화되었습니다.").withStyle(ChatFormatting.AQUA));
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
+        return false;
     }
 
     public static void sendStatus(ServerPlayer player) {
@@ -122,12 +138,22 @@ public final class FieldSessionManager {
             player.sendSystemMessage(Component.literal("활성 TURNBOUND 필드 세션이 없습니다."));
             return;
         }
-        session.sendStatus(player);
+        FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+    }
+
+    public static void command(ServerPlayer player, String command) {
+        FieldSession session = SESSIONS.get(player.getUUID());
+        if (session == null || command == null || command.isBlank() || BattleSessionManager.exists(player)) return;
+        String[] parts = command.split("\\|", -1);
+        if (parts.length >= 2 && "TRAVEL".equals(parts[0])) {
+            session.travel(player, parts[1]);
+        }
     }
 
     public static void remove(ServerPlayer player) {
         FieldSession session = SESSIONS.remove(player.getUUID());
         if (session != null && player.level() instanceof ServerLevel level) session.despawnAll(level);
+        FieldNetwork.close(player);
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
@@ -136,44 +162,54 @@ public final class FieldSessionManager {
     }
 
     private static void clearVanillaMobs(ServerLevel level) {
-        AABB cell = new AABB(FieldCellA01.ORIGIN_X, FieldCellA01.BASE_Y - 8, FieldCellA01.ORIGIN_Z,
-                FieldCellA01.ORIGIN_X + FieldCellA01.SIZE, FieldCellA01.BASE_Y + 24, FieldCellA01.ORIGIN_Z + FieldCellA01.SIZE);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, cell)) mob.discard();
+        AABB cells = new AABB(FieldCellA01.ORIGIN_X, FieldCellA01.BASE_Y - 8, FieldCellA01.ORIGIN_Z,
+                FieldCellA01.ORIGIN_X + FieldCellA01.SIZE, FieldCellA02.BASE_Y + 26, FieldCellA02.ORIGIN_Z + FieldCellA02.SIZE);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, cells)) mob.discard();
     }
 
-    private static Vec3 local(double x, double y, double z) {
+    private static Vec3 a01(double x, double y, double z) {
         return new Vec3(FieldCellA01.ORIGIN_X + x, FieldCellA01.BASE_Y + y, FieldCellA01.ORIGIN_Z + z);
     }
 
     private static List<PatrolLayout> normalLayouts() {
         return List.of(
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M01, local(24.5, 1.0, 35.5), local(43.5, 1.0, 39.5)),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M02, local(17.0, 1.0, 22.0), local(10.5, 1.0, 34.0)),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M03, local(47.0, 1.0, 17.5), local(39.0, 1.0, 26.0)),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M04, local(26.0, 1.0, 13.5), local(38.0, 1.0, 18.5)),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M05, local(35.0, 1.0, 48.5), local(24.5, 1.0, 49.5))
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M01, a01(24.5, 1.0, 35.5), a01(43.5, 1.0, 39.5)),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M02, a01(17.0, 1.0, 22.0), a01(10.5, 1.0, 34.0)),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M03, a01(47.0, 1.0, 17.5), a01(39.0, 1.0, 26.0)),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M04, a01(26.0, 1.0, 13.5), a01(38.0, 1.0, 18.5)),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M05, a01(35.0, 1.0, 48.5), a01(24.5, 1.0, 49.5))
         );
     }
 
     private static PatrolLayout bossLayout() {
-        return new PatrolLayout(SouthgateEncounterCatalog.B01_GRAUL, local(32.5, 1.0, 53.0), local(39.0, 1.0, 49.0));
+        return new PatrolLayout(SouthgateEncounterCatalog.B01_GRAUL, a01(32.5, 1.0, 53.0), a01(39.0, 1.0, 49.0));
     }
 
     private record PatrolLayout(String encounterId, Vec3 home, Vec3 patrolEnd) {}
 
     private static final class FieldSession {
-        private final FieldCellA01.BuiltCell cell;
+        private final FieldCellA01.BuiltCell a01;
+        private final FieldCellA02.BuiltCell a02;
         private final SouthgateChapterProgress progress = new SouthgateChapterProgress();
         private final Map<String, Patrol> encounters = new LinkedHashMap<>();
         private UUID npc;
+        private UUID relayA01;
+        private UUID relayA02;
 
-        private FieldSession(FieldCellA01.BuiltCell cell) {
-            this.cell = cell;
+        private FieldSession(FieldCellA01.BuiltCell a01, FieldCellA02.BuiltCell a02) {
+            this.a01 = a01;
+            this.a02 = a02;
             for (PatrolLayout layout : normalLayouts()) encounters.put(layout.encounterId(), new Patrol(layout));
+        }
+
+        private boolean allowedPosition(Vec3 position) {
+            if (FieldCellA01.containsXZ(position.x, position.z)) return true;
+            return progress.chapterCleared() && FieldCellA02.containsXZ(position.x, position.z);
         }
 
         private void spawnAll(ServerLevel level) {
             spawnNpc(level);
+            spawnA01Relay(level);
             for (Patrol patrol : encounters.values()) patrol.spawn(level);
         }
 
@@ -200,7 +236,7 @@ public final class FieldSessionManager {
 
         private void spawnNpc(ServerLevel level) {
             if (npc != null && level.getEntity(npc) != null) return;
-            Vec3 pos = cell.entry().add(-3.0, 0.0, 2.0);
+            Vec3 pos = a01.entry().add(-3.0, 0.0, 2.0);
             ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setInvulnerable(true);
             stand.setNoGravity(true);
@@ -214,22 +250,117 @@ public final class FieldSessionManager {
             npc = stand.getUUID();
         }
 
-        private void sendStatus(ServerPlayer player) {
-            String objective = progress.chapterCleared()
-                    ? "완료"
-                    : progress.bossUnlocked() ? "B01 그라울 처치" : "적 무리 정리 " + progress.patrolsCleared() + "/" + progress.patrolGoal();
-            player.sendSystemMessage(Component.literal("[Chapter 1] " + objective
-                    + " · 누적 XP " + progress.earnedXp() + " · Gold " + progress.earnedGold())
-                    .withStyle(ChatFormatting.GRAY));
+        private void spawnA01Relay(ServerLevel level) {
+            if (relayA01 != null && level.getEntity(relayA01) != null) return;
+            relayA01 = spawnRelay(level, a01(50.0, 1.0, 31.0), "남문 초원 계전석", ChatFormatting.AQUA);
+        }
+
+        private void spawnA02Relay(ServerLevel level) {
+            if (!progress.chapterCleared()) return;
+            if (relayA02 != null && level.getEntity(relayA02) != null) return;
+            relayA02 = spawnRelay(level, a02.relay(), "남부 도로 거점 계전석", ChatFormatting.LIGHT_PURPLE);
+        }
+
+        private UUID spawnRelay(ServerLevel level, Vec3 pos, String name, ChatFormatting color) {
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
+            stand.setInvulnerable(true);
+            stand.setNoGravity(true);
+            stand.setShowArms(true);
+            stand.setCustomName(Component.literal(name).withStyle(color));
+            stand.setCustomNameVisible(true);
+            stand.setItemSlot(EquipmentSlot.HEAD, Items.AMETHYST_SHARD.getDefaultInstance());
+            stand.setItemSlot(EquipmentSlot.CHEST, Items.CHAINMAIL_CHESTPLATE.getDefaultInstance());
+            stand.setItemSlot(EquipmentSlot.MAINHAND, Items.COMPASS.getDefaultInstance());
+            level.addFreshEntity(stand);
+            return stand.getUUID();
+        }
+
+        private void travel(ServerPlayer player, String destinationId) {
+            if (!progress.relayActivated(destinationId)) {
+                player.sendSystemMessage(Component.literal("아직 활성화하지 않은 계전석입니다.").withStyle(ChatFormatting.GRAY));
+                FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+                return;
+            }
+            Vec3 destination;
+            float yaw;
+            if (FieldTravelCatalog.RELAY_A01.equals(destinationId)) {
+                destination = a01(48.0, 1.0, 31.0);
+                yaw = 90.0F;
+            } else if (FieldTravelCatalog.RELAY_A02.equals(destinationId) && progress.chapterCleared()) {
+                destination = a02.relay().add(2.0, 0.0, 0.0);
+                yaw = -90.0F;
+            } else {
+                return;
+            }
+            player.setPos(destination.x, destination.y, destination.z);
+            player.setYRot(yaw);
+            player.setXRot(4.0F);
+            player.setDeltaMovement(Vec3.ZERO);
+            FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.NONE, null));
+        }
+
+        private FieldUiSnapshot snapshot(ServerPlayer player, FieldUiSnapshot.Mode mode, SouthgateChapterProgress.RewardReceipt receipt) {
+            String objective = objective();
+            String dialogue = dialogue();
+            List<FieldUiSnapshot.Encounter> encounterViews = new ArrayList<>();
+            for (String id : SouthgateEncounterCatalog.normalEncounterIds()) {
+                var spec = SouthgateEncounterCatalog.spec(id);
+                encounterViews.add(new FieldUiSnapshot.Encounter(id, spec.label(), progress.cleared(id), true, false));
+            }
+            var boss = SouthgateEncounterCatalog.boss();
+            encounterViews.add(new FieldUiSnapshot.Encounter(boss.id(), boss.label(), progress.cleared(boss.id()), progress.bossUnlocked(), true));
+
+            List<FieldUiSnapshot.Travel> travelViews = new ArrayList<>();
+            for (FieldTravelCatalog.Destination destination : FieldTravelCatalog.destinations()) {
+                Vec3 anchor = destination.id().equals(FieldTravelCatalog.RELAY_A01) ? a01(50.0, 1.0, 31.0) : a02.relay();
+                boolean current = player.position().distanceToSqr(anchor) <= 36.0;
+                travelViews.add(new FieldUiSnapshot.Travel(destination.id(), destination.label(),
+                        progress.relayActivated(destination.id()), current));
+            }
+
+            FieldUiSnapshot.Reward reward = receipt == null
+                    ? FieldUiSnapshot.Reward.none()
+                    : new FieldUiSnapshot.Reward(SouthgateEncounterCatalog.spec(receipt.encounterId()).label(),
+                    receipt.xp(), receipt.gold(), receipt.firstClear(), receipt.chapterCleared());
+            return new FieldUiSnapshot(true, mode, progress.patrolsCleared(), progress.patrolGoal(),
+                    progress.bossUnlocked(), progress.chapterCleared(), progress.earnedXp(), progress.earnedGold(),
+                    objective, dialogue, reward, encounterViews, travelViews);
+        }
+
+        private String objective() {
+            if (progress.chapterCleared()) {
+                return progress.relayActivated(FieldTravelCatalog.RELAY_A02)
+                        ? "Chapter 1 완료 · 남부 도로 거점 확보"
+                        : "남부 도로 거점으로 진출해 계전석을 활성화하십시오.";
+            }
+            if (progress.bossUnlocked()) return "남문 봉쇄선의 B01 그라울을 처치하십시오.";
+            return "남문 초원의 적 무리를 정리하십시오.  " + progress.patrolsCleared() + "/" + progress.patrolGoal();
+        }
+
+        private String dialogue() {
+            if (progress.chapterCleared()) {
+                return "봉쇄선은 무너졌다. 남쪽 길이 열렸어. 다음 거점의 계전석까지 확보하면 이 일대 이동망도 복구된다.";
+            }
+            if (progress.bossUnlocked()) {
+                return "순찰대는 전부 정리됐다. 이제 봉쇄선을 지키는 그라울만 남았어. 남쪽 길에서 끝내자.";
+            }
+            return "초원에 흩어진 적 무리를 먼저 정리해 줘. 보이는 적과 접촉하면 전투가 시작되고, 전부 정리하면 봉쇄선의 주인이 모습을 드러낼 거야.";
         }
 
         private void despawnAll(ServerLevel level) {
             for (Patrol patrol : encounters.values()) patrol.despawn(level);
-            if (npc != null) {
-                Entity entity = level.getEntity(npc);
-                if (entity != null) entity.discard();
-                npc = null;
-            }
+            despawn(level, npc);
+            despawn(level, relayA01);
+            despawn(level, relayA02);
+            npc = null;
+            relayA01 = null;
+            relayA02 = null;
+        }
+
+        private void despawn(ServerLevel level, UUID id) {
+            if (id == null) return;
+            Entity entity = level.getEntity(id);
+            if (entity != null) entity.discard();
         }
     }
 

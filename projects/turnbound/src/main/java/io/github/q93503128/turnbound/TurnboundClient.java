@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound;
 
 import io.github.q93503128.turnbound.client.BattleCameraController;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
+import io.github.q93503128.turnbound.client.ClientFieldNetwork;
 import io.github.q93503128.turnbound.client.VanillaHudPolicy;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -12,6 +13,7 @@ import net.neoforged.neoforge.common.NeoForge;
 public final class TurnboundClient {
     public TurnboundClient(IEventBus modEventBus) {
         modEventBus.addListener(ClientBattleNetwork::register);
+        modEventBus.addListener(ClientFieldNetwork::register);
         NeoForge.EVENT_BUS.addListener(VanillaHudPolicy::onGuiLayer);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);

@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.11`
+- Version: `0.1.0-alpha.12`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -39,11 +39,11 @@
 - Skill actions use a two-column contextual dock and hover detail.
 - Party/enemy state remains edge HUD and must not obscure the center battle scene.
 
-## Southgate Meadow Chapter 1 acceptance — alpha.11
+## Southgate Meadow Chapter 1 acceptance
 - A01: X `-32..31`, Z `128..191`, base Y `64`, 64×64.
 - Five visible normal encounters: `ENC_M01~M05`.
 - E001/E002/E005 retain alpha.8 canonical data.
-- E003/E004 are defined as distinct speed-pressure and defense-anchor roles.
+- E003/E004 remain distinct speed-pressure and defense-anchor roles.
 - All visible encounter compositions use the same definitions as their battle sessions.
 - Field phases: PATROL → ALERT/chase → ENGAGE.
 - Engagement transitions to the same server-authoritative battle session.
@@ -53,8 +53,20 @@
 - First-clear rewards are idempotent.
 - Five normal clears unlock B01 Graul at the south blockade.
 - B01 victory marks Chapter 1 cleared.
-- `남문 정찰관` interaction and `/turnbound status` expose current objective/reward totals.
-- Reward values in alpha.11 are tuning values; P3 persistence/economy may rebalance them.
+
+## alpha.12 field UX / travel acceptance
+- `남문 정찰관` opens a world-first quest panel, not a full-screen opaque menu.
+- Quest UI shows current objective, five normal encounter states, B01 lock/clear state, cumulative XP/Gold.
+- Field UI state is server-authoritative and synchronized with a dedicated payload.
+- Returning from a victorious encounter opens a reward result panel with first-clear XP/Gold and next objective.
+- A01 relay requires physical interaction before it becomes a Fast Travel destination.
+- A02 relay cannot activate before Chapter 1 clear.
+- B01 clear removes the A02 north lock and allows the player into South Road A02.
+- A02 is contiguous with A01: X `-32..31`, Z `192..255`, base Y `64`.
+- Physically reaching and activating A02 relay enables two-way Fast Travel between the two activated relays.
+- Locked relay destinations are visible but cannot be selected.
+- `/turnbound status` opens the same server-backed quest panel.
+- Field block/item/vanilla combat interactions remain suppressed.
 
 ## Minecraft player shell rule
 TURNBOUND is not a survival game.

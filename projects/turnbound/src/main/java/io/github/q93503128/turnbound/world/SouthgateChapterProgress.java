@@ -5,11 +5,12 @@ import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** Session-scoped P2 quest/reward state. P3 will persist the same concepts in saveSchemaVersion 4. */
+/** Session-scoped P2 quest/reward/travel state. P3 will persist the same concepts in saveSchemaVersion 4. */
 public final class SouthgateChapterProgress {
     public record RewardReceipt(String encounterId, int xp, int gold, boolean firstClear, boolean bossUnlocked, boolean chapterCleared) {}
 
     private final Set<String> cleared = new LinkedHashSet<>();
+    private final Set<String> activatedRelays = new LinkedHashSet<>();
     private int earnedXp;
     private int earnedGold;
 
@@ -28,15 +29,30 @@ public final class SouthgateChapterProgress {
     }
 
     public boolean cleared(String encounterId) { return cleared.contains(encounterId); }
+
     public int patrolsCleared() {
         int count = 0;
         for (String id : SouthgateEncounterCatalog.normalEncounterIds()) if (cleared.contains(id)) count++;
         return count;
     }
+
     public int patrolGoal() { return SouthgateEncounterCatalog.normalEncounterIds().size(); }
     public boolean bossUnlocked() { return patrolsCleared() == patrolGoal(); }
     public boolean chapterCleared() { return cleared.contains(SouthgateEncounterCatalog.B01_GRAUL); }
     public int earnedXp() { return earnedXp; }
     public int earnedGold() { return earnedGold; }
     public Set<String> clearedView() { return Set.copyOf(cleared); }
+
+    public boolean activateRelay(String relayId) {
+        if (!FieldTravelCatalog.destinations().stream().anyMatch(destination -> destination.id().equals(relayId))) {
+            throw new IllegalArgumentException("Unknown relay " + relayId);
+        }
+        if (FieldTravelCatalog.RELAY_A02.equals(relayId) && !chapterCleared()) {
+            return false;
+        }
+        return activatedRelays.add(relayId);
+    }
+
+    public boolean relayActivated(String relayId) { return activatedRelays.contains(relayId); }
+    public Set<String> activatedRelaysView() { return Set.copyOf(activatedRelays); }
 }
