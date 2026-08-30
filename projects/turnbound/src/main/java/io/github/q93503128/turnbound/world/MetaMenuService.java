@@ -7,6 +7,7 @@ import io.github.q93503128.turnbound.content.QuestCatalog;
 import io.github.q93503128.turnbound.content.RegionQuestCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
+import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,7 +61,7 @@ public final class MetaMenuService {
                         campaign.quests().completed().contains(q.id()), q.chestRule())).toList();
 
         List<MetaUiSnapshot.ArchiveRow> archive = new ArrayList<>();
-        List<io.github.q93503128.turnbound.progression.PlayerProfile.SummonHistory> source = campaign.profile().summonHistory();
+        List<PlayerProfile.SummonHistory> source = campaign.profile().summonHistory();
         for (int i = source.size() - 1; i >= 0; i--) {
             var row = source.get(i);
             archive.add(new MetaUiSnapshot.ArchiveRow(row.characterId(), CanonicalData.definition(row.characterId()).name(),
@@ -83,7 +84,7 @@ public final class MetaMenuService {
                 campaign.profile().gold(), campaign.profile().summonCrystal(), campaign.profile().starEssence(),
                 campaign.profile().awakeningCore(), partyCp, riftUnlocked,
                 campaign.profile().fiveStarPity(), CampaignProgressStore.starterArchiveAvailable(id),
-                party, characters, endgame, challenges, regionQuests, archive, shop);
+                party, campaign.profile().partyPresets(), characters, endgame, challenges, regionQuests, archive, shop);
     }
 
     public static void command(ServerPlayer player, String raw) {
@@ -102,6 +103,14 @@ public final class MetaMenuService {
                     error(player, "파티 변경 실패", ex);
                 }
                 MetaNetwork.sync(player);
+            }
+            case "PRESET_SAVE" -> {
+                if (parts.length < 2 || BattleSessionManager.exists(player)) return;
+                mutate(player, "프리셋 저장 실패", () -> savePreset(player, Integer.parseInt(parts[1])));
+            }
+            case "PRESET_LOAD" -> {
+                if (parts.length < 2 || BattleSessionManager.exists(player)) return;
+                mutate(player, "프리셋 불러오기 실패", () -> loadPreset(player, Integer.parseInt(parts[1])));
             }
             case "SUMMON1" -> mutate(player, "1회 소환 실패", () -> CampaignProgressStore.summonStandard(player.getUUID(), 1));
             case "SUMMON10" -> mutate(player, "10회 소환 실패", () -> CampaignProgressStore.summonStandard(player.getUUID(), 10));
@@ -129,6 +138,24 @@ public final class MetaMenuService {
             }
             default -> { }
         }
+    }
+
+    private static void savePreset(ServerPlayer player, int slotOneBased) {
+        int index = slotOneBased - 1;
+        var snapshot = CampaignProgressStore.snapshot(player.getUUID());
+        PlayerProfile profile = PlayerProfile.restore(snapshot.profile());
+        profile.savePartyPreset(index, snapshot.activeParty());
+        CampaignProgressStore.restore(player.getUUID(), new CampaignProgressStore.Snapshot(
+                profile.snapshot(), snapshot.characters(), snapshot.growth(), snapshot.equipment(), snapshot.quests(),
+                snapshot.activeParty(), snapshot.clearedEncounters(), snapshot.orphanedCharacterIds(), snapshot.orphanedEquipmentIds()));
+        CampaignProgressStore.markDirty(player.getUUID());
+    }
+
+    private static void loadPreset(ServerPlayer player, int slotOneBased) {
+        int index = slotOneBased - 1;
+        List<String> preset = CampaignProgressStore.snapshot(player.getUUID()).profile().partyPresets().get(index);
+        if (preset.isEmpty()) throw new IllegalStateException("Preset " + slotOneBased + " is empty");
+        CampaignProgressStore.setActiveParty(player.getUUID(), preset);
     }
 
     private static void mutate(ServerPlayer player, String label, Runnable action) {
