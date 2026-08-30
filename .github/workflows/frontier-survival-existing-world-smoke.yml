@@ -1,0 +1,93 @@
+name: Frontier + Survival Existing World Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-survival-existing-world-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Build both mods with compatibility key patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java')
+          s=p.read_text(encoding='utf-8')
+          old='"key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);'
+          new='"key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);'
+          if s.count(old)!=1: raise SystemExit('unexpected Survival menu key source')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+          (cd projects/survival-ascension && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+
+      - name: Create Frontier-only world then reopen with Survival added
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/projects/frontier-settlement"
+          RUN="$ROOT/run"
+          mkdir -p "$RUN/mods"
+          rm -f "$RUN/mods"/*.jar
+          printf 'eula=true\n' > "$RUN/eula.txt"
+
+          run_until_ready() {
+            local log="$1"
+            shift
+            rm -f "$log"
+            (cd "$ROOT" && setsid ./gradlew --no-daemon --no-configuration-cache runServer --console=plain > "$log" 2>&1) &
+            local pid=$!
+            local ready=0
+            for _ in $(seq 1 150); do
+              if grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$log" 2>/dev/null; then ready=1; break; fi
+              if ! kill -0 "$pid" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            if kill -0 "$pid" 2>/dev/null; then
+              kill -INT -- "-$pid" 2>/dev/null || true
+              for _ in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+              kill -KILL -- "-$pid" 2>/dev/null || true
+            fi
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
+            test "$ready" -eq 1
+            ! grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred|Errors in currently selected datapacks prevented the world from loading)' "$log"
+          }
+
+          run_until_ready "$GITHUB_WORKSPACE/frontier-only-first-boot.log"
+          test -f "$RUN/world/level.dat"
+          before="$(sha256sum "$RUN/world/level.dat" | cut -d' ' -f1)"
+          cp "$GITHUB_WORKSPACE/projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar" "$RUN/mods/"
+          run_until_ready "$GITHUB_WORKSPACE/frontier-plus-survival-reopen.log"
+          test -f "$RUN/world/level.dat"
+          after="$(sha256sum "$RUN/world/level.dat" | cut -d' ' -f1)"
+          echo "Frontier-only world reopened successfully after adding Survival Ascension core."
+          echo "level.dat before=$before"
+          echo "level.dat after =$after"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontier-survival-existing-world-smoke-logs
+          path: |
+            frontier-only-first-boot.log
+            frontier-plus-survival-reopen.log
+          if-no-files-found: warn
