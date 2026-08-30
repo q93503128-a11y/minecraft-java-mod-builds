@@ -1,3 +1,4 @@
+# audit-safe retry
 name: Apply Frontier Alpha85 Construction Pacing
 
 on:
