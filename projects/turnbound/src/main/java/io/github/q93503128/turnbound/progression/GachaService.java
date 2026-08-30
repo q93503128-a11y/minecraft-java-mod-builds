@@ -36,48 +36,37 @@ public final class GachaService {
         return new BatchResult(pulls, GachaCatalog.TEN_COST);
     }
 
-    /**
-     * Canonical Starter Archive: one 10-pull after B01, with slot 10 guaranteed to be an unowned P02/P05/P06/P07.
-     * The source defines the eligible set but no separate Starter weights, so the guarantee preserves each candidate's
-     * Standard Archive per-character weight after conditioning on the currently unowned eligible set.
-     */
     public BatchResult summonStarterTen(PlayerProfile profile) {
         if (!profile.starterArchiveAvailable()) throw new IllegalStateException("Starter Archive is not available");
         String reservedGuarantee = rollStarterGuarantee(profile);
         spend(profile, GachaCatalog.TEN_COST);
 
         List<PullResult> pulls = new ArrayList<>(10);
-        for (int slot = 0; slot < 9; slot++) {
-            // Keep the guaranteed character unowned through slot 9 so slot 10 satisfies the canonical rule exactly.
-            pulls.add(pullStandard(profile, false, reservedGuarantee));
-        }
+        for (int slot = 0; slot < 9; slot++) pulls.add(pullStandard(profile, false, reservedGuarantee));
         pulls.add(pullSpecific(profile, reservedGuarantee));
         profile.consumeStarterArchive();
         return new BatchResult(pulls, GachaCatalog.TEN_COST);
     }
 
     public static double effectiveFiveStarRate(int pityBeforePull) {
-        if (pityBeforePull < 0 || pityBeforePull >= GachaCatalog.HARD_PITY) {
-            throw new IllegalArgumentException("Invalid pity " + pityBeforePull);
-        }
+        if (pityBeforePull < 0 || pityBeforePull >= GachaCatalog.HARD_PITY) throw new IllegalArgumentException("Invalid pity " + pityBeforePull);
         int pullOrdinal = pityBeforePull + 1;
         if (pullOrdinal >= GachaCatalog.HARD_PITY) return 1.0;
         if (pullOrdinal < GachaCatalog.SOFT_PITY_START) return GachaCatalog.BASE_FIVE_STAR_RATE;
-        double boosted = GachaCatalog.BASE_FIVE_STAR_RATE
-                + (pullOrdinal - GachaCatalog.SOFT_PITY_START + 1) * GachaCatalog.SOFT_PITY_STEP;
+        double boosted = GachaCatalog.BASE_FIVE_STAR_RATE + (pullOrdinal - GachaCatalog.SOFT_PITY_START + 1) * GachaCatalog.SOFT_PITY_STEP;
         return Math.min(1.0, boosted);
     }
 
     private PullResult pullStandard(PlayerProfile profile, boolean guaranteeFourPlus, String excludedCharacterId) {
         int stars = guaranteeFourPlus ? rollFourPlus(profile.fiveStarPity()) : rollRarity(profile.fiveStarPity());
-        String characterId = pickFromPool(GachaCatalog.standardPool(stars), excludedCharacterId);
-        return pullSpecific(profile, characterId);
+        return pullSpecific(profile, pickFromPool(GachaCatalog.standardPool(stars), excludedCharacterId));
     }
 
     private PullResult pullSpecific(PlayerProfile profile, String characterId) {
         int stars = GachaCatalog.nativeStars(characterId);
         PlayerProfile.Acquisition acquisition = profile.acquireCharacter(characterId);
         profile.recordSummonRarity(stars);
+        profile.recordSummonHistory(acquisition);
         return new PullResult(characterId, stars, acquisition.newlyOwned(), acquisition.starEssenceGranted(), profile.fiveStarPity());
     }
 
@@ -86,8 +75,6 @@ public final class GachaService {
         if (fiveRate >= 1.0) return 5;
         double roll = random.nextDouble();
         if (roll < fiveRate) return 5;
-
-        // As soft pity grows, preserve the canonical ★1~★4 relative weights inside the remaining probability mass.
         double nonFive = (roll - fiveRate) / (1.0 - fiveRate);
         double total = 1.0 - GachaCatalog.BASE_FIVE_STAR_RATE;
         if (nonFive < GachaCatalog.FOUR_STAR_RATE / total) return 4;
@@ -99,8 +86,7 @@ public final class GachaService {
     private int rollFourPlus(int pityBeforePull) {
         double fiveRate = effectiveFiveStarRate(pityBeforePull);
         if (fiveRate >= 1.0) return 5;
-        double fiveWithinGuarantee = fiveRate / (fiveRate + GachaCatalog.FOUR_STAR_RATE);
-        return random.nextDouble() < fiveWithinGuarantee ? 5 : 4;
+        return random.nextDouble() < fiveRate / (fiveRate + GachaCatalog.FOUR_STAR_RATE) ? 5 : 4;
     }
 
     private String rollStarterGuarantee(PlayerProfile profile) {
@@ -117,17 +103,13 @@ public final class GachaService {
     }
 
     private String pickFromPool(List<String> pool, String excludedCharacterId) {
-        if (excludedCharacterId == null || !pool.contains(excludedCharacterId)) {
-            return pool.get(random.nextInt(pool.size()));
-        }
+        if (excludedCharacterId == null || !pool.contains(excludedCharacterId)) return pool.get(random.nextInt(pool.size()));
         List<String> eligible = pool.stream().filter(id -> !id.equals(excludedCharacterId)).toList();
         if (eligible.isEmpty()) throw new IllegalStateException("Starter guarantee reservation exhausted a rarity pool");
         return eligible.get(random.nextInt(eligible.size()));
     }
 
     private static void spend(PlayerProfile profile, int amount) {
-        if (!profile.spend(PlayerProfile.Currency.SUMMON_CRYSTAL, amount)) {
-            throw new IllegalStateException("Not enough Summon Crystal");
-        }
+        if (!profile.spend(PlayerProfile.Currency.SUMMON_CRYSTAL, amount)) throw new IllegalStateException("Not enough Summon Crystal");
     }
 }
