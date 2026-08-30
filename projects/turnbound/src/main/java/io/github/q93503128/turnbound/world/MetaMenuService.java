@@ -3,19 +3,21 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.ChallengeCatalog;
+import io.github.q93503128.turnbound.content.QuestCatalog;
 import io.github.q93503128.turnbound.content.RegionQuestCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
-import io.github.q93503128.turnbound.progression.PlayerProfile;
+import io.github.q93503128.turnbound.progression.EquipmentRules;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-/** Commands and snapshots for party/endgame management. All mutations are validated server-side. */
+/** Commands and snapshots for the v0.4 RPG management menu. All mutations are validated server-side. */
 public final class MetaMenuService {
     private MetaMenuService() {}
 
@@ -57,9 +59,31 @@ public final class MetaMenuService {
                 .map(q -> new MetaUiSnapshot.RegionQuestRow(q.id(), q.region(), q.objectiveSpecified(),
                         campaign.quests().completed().contains(q.id()), q.chestRule())).toList();
 
+        List<MetaUiSnapshot.ArchiveRow> archive = new ArrayList<>();
+        List<io.github.q93503128.turnbound.progression.PlayerProfile.SummonHistory> source = campaign.profile().summonHistory();
+        for (int i = source.size() - 1; i >= 0; i--) {
+            var row = source.get(i);
+            archive.add(new MetaUiSnapshot.ArchiveRow(row.characterId(), CanonicalData.definition(row.characterId()).name(),
+                    row.nativeStars(), row.newlyOwned(), row.starEssenceGranted(), row.pityAfter()));
+        }
+
+        int shopChapter = currentShopChapter(campaign.quests().completed());
+        List<MetaUiSnapshot.ShopRow> shop = V04Catalogs.equipment().stream()
+                .filter(item -> item.tier().equals("T1") || item.tier().equals("T2"))
+                .sorted(Comparator.comparing(V04Catalogs.EquipmentSpec::tier)
+                        .thenComparing(V04Catalogs.EquipmentSpec::slot)
+                        .thenComparing(V04Catalogs.EquipmentSpec::id))
+                .map(item -> {
+                    int unlockChapter = item.tier().equals("T1") ? 1 : 2;
+                    return new MetaUiSnapshot.ShopRow(item.id(), item.name(), item.tier(), item.slot(),
+                            EquipmentRules.shopPrice(item.tier()), shopChapter >= unlockChapter);
+                }).toList();
+
         return new MetaUiSnapshot(
                 campaign.profile().gold(), campaign.profile().summonCrystal(), campaign.profile().starEssence(),
-                campaign.profile().awakeningCore(), partyCp, riftUnlocked, party, characters, endgame, challenges, regionQuests);
+                campaign.profile().awakeningCore(), partyCp, riftUnlocked,
+                campaign.profile().fiveStarPity(), CampaignProgressStore.starterArchiveAvailable(id),
+                party, characters, endgame, challenges, regionQuests, archive, shop);
     }
 
     public static void command(ServerPlayer player, String raw) {
@@ -75,9 +99,17 @@ public final class MetaMenuService {
                     CampaignProgressStore.setActiveParty(player.getUUID(), party);
                     CampaignPersistence.saveIfDirty(player);
                 } catch (RuntimeException ex) {
-                    player.sendSystemMessage(Component.literal("TURNBOUND · 파티 변경 실패: " + ex.getMessage()));
+                    error(player, "파티 변경 실패", ex);
                 }
                 MetaNetwork.sync(player);
+            }
+            case "SUMMON1" -> mutate(player, "1회 소환 실패", () -> CampaignProgressStore.summonStandard(player.getUUID(), 1));
+            case "SUMMON10" -> mutate(player, "10회 소환 실패", () -> CampaignProgressStore.summonStandard(player.getUUID(), 10));
+            case "STARTER" -> mutate(player, "Starter Archive 실패", () -> CampaignProgressStore.summonStarter(player.getUUID()));
+            case "BUY" -> {
+                if (parts.length < 2) return;
+                String itemId = parts[1];
+                mutate(player, "구매 실패", () -> CampaignProgressStore.buyEquipment(player.getUUID(), itemId));
             }
             case "START" -> {
                 if (parts.length < 2 || BattleSessionManager.exists(player)) return;
@@ -97,6 +129,27 @@ public final class MetaMenuService {
             }
             default -> { }
         }
+    }
+
+    private static void mutate(ServerPlayer player, String label, Runnable action) {
+        if (BattleSessionManager.exists(player)) return;
+        try {
+            action.run();
+            CampaignPersistence.saveIfDirty(player);
+        } catch (RuntimeException ex) {
+            error(player, label, ex);
+        }
+        MetaNetwork.sync(player);
+    }
+
+    private static int currentShopChapter(Set<String> completed) {
+        int completedChapter = 0;
+        for (int chapter = 1; chapter <= 5; chapter++) if (QuestCatalog.chapterComplete(chapter, completed)) completedChapter = chapter;
+        return Math.max(1, completedChapter + 1);
+    }
+
+    private static void error(ServerPlayer player, String label, RuntimeException ex) {
+        player.sendSystemMessage(Component.literal("TURNBOUND · " + label + ": " + ex.getMessage()));
     }
 
     private static boolean inRadia(ServerPlayer player) {
