@@ -27,6 +27,7 @@ public final class EquipmentRules {
             default -> throw new IllegalArgumentException("T3/T4 are not normal-shop equipment");
         };
         if (chapter < unlockChapter) throw new IllegalStateException(spec.tier() + " shop inventory is not unlocked");
+        if (!inventory.hasFreeSlot()) throw new IllegalStateException("Equipment inventory is full (300/300)");
         int cost = shopPrice(spec.tier());
         if (!profile.spend(PlayerProfile.Currency.GOLD, cost)) throw new IllegalStateException("Not enough Gold");
         return inventory.grant(itemId);
