@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
+import io.github.q93503128.turnbound.world.ChallengeService;
 import io.github.q93503128.turnbound.world.EndgameProgressService;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -97,6 +98,7 @@ public final class BattleSessionManager {
             if (!encounterId.isBlank()) {
                 if (EndgameEncounterCatalog.contains(encounterId)) EndgameProgressService.commit(player.getUUID(), encounterId, outcome);
                 else CampaignProgressStore.commit(player.getUUID(), encounterId, outcome);
+                ChallengeService.evaluateAndCommit(player.getUUID(), encounterId, old.state(), outcome);
                 CampaignPersistence.saveIfDirty(player);
             }
             old.cleanup(player);
