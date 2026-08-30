@@ -2,15 +2,15 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleStats;
-import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.content.QuestCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.EquipmentRules;
-import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GachaService;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
+import io.github.q93503128.turnbound.progression.QuestProgress;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
 
 import java.util.LinkedHashMap;
@@ -21,18 +21,19 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
-/** Server-side campaign progression authority shared by combat, growth, equipment, gacha and persistence. */
+/** Server-side campaign progression authority shared by combat, growth, equipment, quests, gacha and persistence. */
 public final class CampaignProgressStore {
     public record Snapshot(
             PlayerProfile.Snapshot profile,
             Map<String, CharacterProgression.State> characters,
             Map<String, CharacterGrowthRules.State> growth,
             EquipmentInventory.Snapshot equipment,
+            QuestProgress.Snapshot quests,
             Set<String> clearedEncounters,
             Set<String> orphanedCharacterIds,
             Set<String> orphanedEquipmentIds) {
         public Snapshot {
-            if (profile == null || characters == null || growth == null || equipment == null
+            if (profile == null || characters == null || growth == null || equipment == null || quests == null
                     || clearedEncounters == null || orphanedCharacterIds == null || orphanedEquipmentIds == null) {
                 throw new IllegalArgumentException("Incomplete campaign snapshot");
             }
@@ -55,38 +56,47 @@ public final class CampaignProgressStore {
     private CampaignProgressStore() {}
 
     public static BattleResultSummary previewVictory(UUID playerId, String encounterId) {
-        if (playerId == null || encounterId == null || !SouthgateEncounterCatalog.contains(encounterId)) {
-            return BattleResultSummary.none();
-        }
+        if (playerId == null || encounterId == null) return BattleResultSummary.none();
+        String canonicalId = canonicalEncounterId(encounterId);
+        if (!V04Catalogs.hasEncounter(canonicalId)) return BattleResultSummary.none();
         PlayerProgress progress = player(playerId);
-        boolean firstClear = !progress.clearedEncounters.contains(encounterId);
-        var encounter = SouthgateEncounterCatalog.spec(encounterId);
-        int xp = firstClear ? encounter.rewardXp() : 0;
-        int gold = firstClear ? encounter.rewardGold() : 0;
+        V04Catalogs.Encounter encounter = V04Catalogs.encounter(canonicalId);
+        boolean firstClear = !progress.clearedEncounters.contains(canonicalId);
+        int xp = V04Catalogs.battleXp(encounter);
+        int gold = V04Catalogs.battleGold(encounter);
         List<BattleResultSummary.PartyXp> party = STORY_PARTY.stream().map(spec -> {
-            CharacterProgression.State before = progress.characters.get(spec.id());
-            int cap = CharacterGrowthRules.levelCap(progress.growth.get(spec.id()).currentStar());
-            CharacterProgression.Gain gain = CharacterProgression.gain(before, xp, cap);
-            return new BattleResultSummary.PartyXp(spec.id(), spec.name(),
-                    gain.before().level(), gain.before().xp(), gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
+            CharacterProgression.Gain gain = gain(progress, spec.id(), xp);
+            return new BattleResultSummary.PartyXp(spec.id(), spec.name(), gain.before().level(), gain.before().xp(),
+                    gain.after().level(), gain.after().xp(), gain.xpToNextAfter());
         }).toList();
         return new BattleResultSummary(xp, gold, firstClear, party);
     }
 
     public static BattleResultSummary commit(UUID playerId, String encounterId, BattleOutcome outcome) {
         if (outcome != BattleOutcome.ALLY_VICTORY) return BattleResultSummary.none();
-        BattleResultSummary preview = previewVictory(playerId, encounterId);
-        if (!preview.firstClear()) return preview;
+        String canonicalId = canonicalEncounterId(encounterId);
+        if (!V04Catalogs.hasEncounter(canonicalId)) return BattleResultSummary.none();
         PlayerProgress progress = player(playerId);
-        progress.clearedEncounters.add(encounterId);
+        V04Catalogs.Encounter encounter = V04Catalogs.encounter(canonicalId);
+        BattleResultSummary preview = previewVictory(playerId, canonicalId);
+        boolean firstClear = progress.clearedEncounters.add(canonicalId);
+
         progress.profile.grant(PlayerProfile.Currency.GOLD, preview.gold());
         for (BattleResultSummary.PartyXp member : preview.party()) {
             progress.characters.put(member.characterId(), new CharacterProgression.State(member.levelAfter(), member.xpAfter()));
         }
         grantReserveXp(progress, preview.xp());
-        if (SouthgateEncounterCatalog.B01_GRAUL.equals(encounterId)) applyB01FirstClear(progress);
+
+        if (firstClear && encounter.boss()) {
+            String bossId = encounter.enemies().getFirst();
+            progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, V04Catalogs.bossFirstClearEssence(bossId));
+            if ("B01".equals(bossId)) applyB01FirstClear(progress);
+        }
+
+        recordQuestEvent(progress, QuestProgress.Event.battleWin(canonicalId, Set.copyOf(encounter.enemies())));
+        if (encounter.boss()) recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
         progress.dirty = true;
-        return preview;
+        return new BattleResultSummary(preview.xp(), preview.gold(), firstClear, preview.party());
     }
 
     public static int gold(UUID playerId) { return Math.toIntExact(player(playerId).profile.currency(PlayerProfile.Currency.GOLD)); }
@@ -97,13 +107,14 @@ public final class CampaignProgressStore {
     public static CharacterProgression.State character(UUID playerId, String characterId) { return requireCharacter(player(playerId), characterId); }
     public static CharacterGrowthRules.State growth(UUID playerId, String characterId) { return requireGrowth(player(playerId), characterId); }
     public static EquipmentInventory.Snapshot equipment(UUID playerId) { return player(playerId).equipment.snapshot(); }
+    public static QuestProgress.Snapshot quests(UUID playerId) { return player(playerId).quests.snapshot(); }
 
     public static Snapshot snapshot(UUID playerId) {
         PlayerProgress progress = player(playerId);
         Set<String> equipmentOrphans = new LinkedHashSet<>(progress.orphanedEquipmentIds);
         equipmentOrphans.addAll(progress.equipment.unknownItemIds());
         return new Snapshot(progress.profile.snapshot(), progress.characters, progress.growth, progress.equipment.snapshot(),
-                progress.clearedEncounters, progress.orphanedCharacterIds, equipmentOrphans);
+                progress.quests.snapshot(), progress.clearedEncounters, progress.orphanedCharacterIds, equipmentOrphans);
     }
 
     public static void restore(UUID playerId, Snapshot snapshot) {
@@ -113,7 +124,8 @@ public final class CampaignProgressStore {
         restored.characters.putAll(snapshot.characters());
         restored.growth.putAll(snapshot.growth());
         restored.equipment = EquipmentInventory.restore(snapshot.equipment());
-        restored.clearedEncounters.addAll(snapshot.clearedEncounters());
+        restored.quests = QuestProgress.restore(snapshot.quests());
+        for (String id : snapshot.clearedEncounters()) restored.clearedEncounters.add(canonicalEncounterId(id));
         restored.orphanedCharacterIds.addAll(snapshot.orphanedCharacterIds());
         restored.orphanedEquipmentIds.addAll(snapshot.orphanedEquipmentIds());
         ensureStateForOwned(restored);
@@ -141,6 +153,43 @@ public final class CampaignProgressStore {
         return result;
     }
 
+    public static void trackQuest(UUID playerId, String questId) {
+        PlayerProgress progress = player(playerId);
+        progress.quests.track(questId);
+        progress.dirty = true;
+    }
+
+    public static QuestCatalog.Quest completeQuest(UUID playerId, String questId) {
+        PlayerProgress progress = player(playerId);
+        QuestCatalog.Quest quest = QuestCatalog.quest(questId);
+        validateQuestPrerequisites(progress, quest);
+        if (quest.kind() == QuestCatalog.Kind.MAIN && !progress.quests.satisfied(quest)) {
+            throw new IllegalStateException("Main quest objective is not complete: " + questId);
+        }
+        completeQuestInternal(progress, quest);
+        return quest;
+    }
+
+    public static void questInteract(UUID playerId, String targetId) {
+        recordQuestEvent(player(playerId), QuestProgress.Event.interact(targetId));
+    }
+
+    public static void confirmParty(UUID playerId, Set<String> characterIds) {
+        recordQuestEvent(player(playerId), QuestProgress.Event.partyConfirm(characterIds));
+    }
+
+    public static void inventoryFlag(UUID playerId, String flagId) {
+        recordQuestEvent(player(playerId), QuestProgress.Event.inventoryFlag(flagId));
+    }
+
+    public static void recordKill(UUID playerId, String enemyId, int amount) {
+        recordQuestEvent(player(playerId), QuestProgress.Event.kill(enemyId, amount));
+    }
+
+    public static void recordLoot(UUID playerId, String lootId, int amount) {
+        recordQuestEvent(player(playerId), QuestProgress.Event.loot(lootId, amount));
+    }
+
     public static CharacterGrowthRules.State promote(UUID playerId, String characterId) {
         PlayerProgress progress = player(playerId);
         CharacterGrowthRules.State state = requireGrowth(progress, characterId);
@@ -156,13 +205,11 @@ public final class CampaignProgressStore {
     }
 
     public static void completeCharacterQuest(UUID playerId, String characterId) {
-        PlayerProgress progress = player(playerId);
-        CharacterGrowthRules.State state = requireGrowth(progress, characterId);
-        progress.growth.put(characterId, state.withCharacterQuestComplete());
-        progress.dirty = true;
+        String questId = "CQ_" + characterId;
+        if (QuestCatalog.contains(questId)) completeQuest(playerId, questId);
+        else throw new IllegalArgumentException("No character quest for " + characterId);
     }
 
-    /** Called only after the actual Signature Trial encounter is cleared. Rewards are first-clear only. */
     public static EquipmentInventory.Item completeSignatureTrial(UUID playerId, String characterId) {
         PlayerProgress progress = player(playerId);
         CharacterGrowthRules.State state = requireGrowth(progress, characterId);
@@ -217,8 +264,7 @@ public final class CampaignProgressStore {
 
     public static void equip(UUID playerId, String characterId, String instanceId) {
         PlayerProgress progress = player(playerId);
-        CharacterGrowthRules.State growth = requireGrowth(progress, characterId);
-        progress.equipment.equip(characterId, instanceId, growth.currentStar());
+        progress.equipment.equip(characterId, instanceId, requireGrowth(progress, characterId).currentStar());
         progress.dirty = true;
     }
 
@@ -254,13 +300,90 @@ public final class CampaignProgressStore {
     static void resetForTests(UUID playerId) { PLAYERS.remove(playerId); }
     public static void clearRuntime() { PLAYERS.clear(); }
 
+    public static String canonicalEncounterId(String encounterId) {
+        return switch (encounterId) {
+            case "southgate_enc_m01" -> "ENC_M01";
+            case "southgate_enc_m02" -> "ENC_M02";
+            case "southgate_enc_m03" -> "ENC_M03";
+            case "southgate_enc_m04" -> "ENC_M04";
+            case "southgate_enc_m05" -> "ENC_M05";
+            case "southgate_b01_graul" -> "BATTLE_B01";
+            default -> encounterId;
+        };
+    }
+
     private static void applyB01FirstClear(PlayerProgress progress) {
         progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, 3_000);
-        progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, 60);
         PlayerProfile.Acquisition p08 = progress.profile.acquireCharacter("P08");
         if (p08.newlyOwned()) initializeCharacter(progress, "P08");
         progress.equipment.grantChoiceToken("T2", 1);
         progress.profile.unlockStarterArchive();
+    }
+
+    private static void recordQuestEvent(PlayerProgress progress, QuestProgress.Event event) {
+        boolean changed = false;
+        for (QuestCatalog.Quest quest : QuestCatalog.kind(QuestCatalog.Kind.MAIN)) {
+            if (progress.quests.completed(quest.id()) || !prerequisitesMet(progress, quest)) continue;
+            changed |= progress.quests.apply(quest, event);
+            if (progress.quests.satisfied(quest)) {
+                completeQuestInternal(progress, quest);
+                changed = true;
+            }
+        }
+        if (changed) progress.dirty = true;
+    }
+
+    private static void completeQuestInternal(PlayerProgress progress, QuestCatalog.Quest quest) {
+        validateQuestPrerequisites(progress, quest);
+        QuestCatalog.Reward reward = QuestCatalog.reward(quest);
+        progress.profile.grant(PlayerProfile.Currency.SUMMON_CRYSTAL, reward.crystal());
+        progress.profile.grant(PlayerProfile.Currency.GOLD, reward.gold());
+        if (reward.xp() > 0) grantPartyAndReserveXp(progress, reward.xp());
+        progress.quests.grantRewardToken(reward.rewardToken(), 1);
+        progress.quests.complete(quest);
+        if (quest.kind() == QuestCatalog.Kind.CHARACTER) {
+            CharacterGrowthRules.State state = requireGrowth(progress, quest.owner());
+            progress.growth.put(quest.owner(), state.withCharacterQuestComplete());
+        }
+        progress.dirty = true;
+    }
+
+    private static void validateQuestPrerequisites(PlayerProgress progress, QuestCatalog.Quest quest) {
+        if (progress.quests.completed(quest.id())) throw new IllegalStateException("Quest already completed " + quest.id());
+        for (String prerequisite : quest.prerequisites()) {
+            if (!prerequisiteMet(progress, prerequisite)) throw new IllegalStateException("Quest prerequisite not met: " + prerequisite);
+        }
+        if (quest.kind() == QuestCatalog.Kind.CHARACTER) requireCharacter(progress, quest.owner());
+    }
+
+    private static boolean prerequisitesMet(PlayerProgress progress, QuestCatalog.Quest quest) {
+        for (String prerequisite : quest.prerequisites()) if (!prerequisiteMet(progress, prerequisite)) return false;
+        return quest.kind() != QuestCatalog.Kind.CHARACTER || progress.profile.owns(quest.owner());
+    }
+
+    private static boolean prerequisiteMet(PlayerProgress progress, String prerequisite) {
+        if (prerequisite.startsWith("MQ_")) return progress.quests.completed(prerequisite);
+        if (prerequisite.startsWith("CHAPTER_") && prerequisite.endsWith("_COMPLETE")) {
+            String number = prerequisite.substring("CHAPTER_".length(), prerequisite.length() - "_COMPLETE".length());
+            try { return QuestCatalog.chapterComplete(Integer.parseInt(number), progress.quests.completed()); }
+            catch (NumberFormatException ignored) { return false; }
+        }
+        int levelMarker = prerequisite.indexOf("_LEVEL_");
+        if (levelMarker > 0) {
+            String characterId = prerequisite.substring(0, levelMarker);
+            try {
+                int level = Integer.parseInt(prerequisite.substring(levelMarker + "_LEVEL_".length()));
+                return progress.profile.owns(characterId) && requireCharacter(progress, characterId).level() >= level;
+            } catch (NumberFormatException ignored) { return false; }
+        }
+        return false;
+    }
+
+    private static void grantPartyAndReserveXp(PlayerProgress progress, int fullXp) {
+        for (CharacterSpec spec : STORY_PARTY) {
+            if (progress.profile.owns(spec.id())) progress.characters.put(spec.id(), gain(progress, spec.id(), fullXp).after());
+        }
+        grantReserveXp(progress, fullXp);
     }
 
     private static void grantReserveXp(PlayerProgress progress, int fullXp) {
@@ -269,11 +392,14 @@ public final class CampaignProgressStore {
         Set<String> active = new LinkedHashSet<>();
         for (CharacterSpec spec : STORY_PARTY) active.add(spec.id());
         for (String characterId : progress.profile.ownedCharacters()) {
-            if (active.contains(characterId)) continue;
-            CharacterProgression.State before = requireCharacter(progress, characterId);
-            int cap = CharacterGrowthRules.levelCap(requireGrowth(progress, characterId).currentStar());
-            progress.characters.put(characterId, CharacterProgression.gain(before, reserveXp, cap).after());
+            if (!active.contains(characterId)) progress.characters.put(characterId, gain(progress, characterId, reserveXp).after());
         }
+    }
+
+    private static CharacterProgression.Gain gain(PlayerProgress progress, String characterId, int xp) {
+        CharacterProgression.State before = requireCharacter(progress, characterId);
+        int cap = CharacterGrowthRules.levelCap(requireGrowth(progress, characterId).currentStar());
+        return CharacterProgression.gain(before, xp, cap);
     }
 
     private static void registerNewCharacters(PlayerProgress progress, GachaService.BatchResult result) {
@@ -305,13 +431,15 @@ public final class CampaignProgressStore {
     }
 
     private static boolean b05Cleared(PlayerProgress progress) {
-        return progress.clearedEncounters.contains("BATTLE_B05")
-                || progress.clearedEncounters.contains("B05")
-                || progress.clearedEncounters.contains("relay_b05_serak");
+        return progress.quests.completed("MQ_C05_03_reconnect") || progress.clearedEncounters.contains("BATTLE_B05");
     }
 
     private static int shopChapter(PlayerProgress progress) {
-        return progress.clearedEncounters.contains(SouthgateEncounterCatalog.B01_GRAUL) ? 2 : 1;
+        int completedChapter = 0;
+        for (int chapter = 1; chapter <= 5; chapter++) {
+            if (QuestCatalog.chapterComplete(chapter, progress.quests.completed())) completedChapter = chapter;
+        }
+        return Math.max(1, completedChapter + 1);
     }
 
     private static PlayerProgress player(UUID playerId) {
@@ -329,6 +457,7 @@ public final class CampaignProgressStore {
         private final Set<String> orphanedEquipmentIds = new LinkedHashSet<>();
         private PlayerProfile profile = PlayerProfile.newGame();
         private EquipmentInventory equipment = EquipmentInventory.empty();
+        private QuestProgress quests = QuestProgress.empty();
         private boolean dirty;
 
         private PlayerProgress() { this(true); }

@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
+import io.github.q93503128.turnbound.progression.QuestProgress;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -31,18 +32,25 @@ class CampaignSaveCodecTest {
         characters.put("P01", new CharacterProgression.State(8, 33));
         characters.put("P08", new CharacterProgression.State(3, 77));
         growth.put("P05", new CharacterGrowthRules.State(5, false, true, false));
+        QuestProgress.Snapshot quests = new QuestProgress.Snapshot(
+                Set.of("MQ_P00_01_arrival"),
+                java.util.List.of("MQ_P00_02_first_party"),
+                Set.of("MENU_E", "MENU_P"),
+                Map.of("REGION_TIER_CHEST", 1),
+                Map.of("MQ_C02_02_root_wall", 1),
+                Map.of("MQ_C01_01_patrol", Set.of("ENC_M01")));
 
         CampaignProgressStore.Snapshot snapshot = new CampaignProgressStore.Snapshot(
                 new PlayerProfile.Snapshot(17_000, 2_100, 410, 2, owned, 37, true, true),
-                characters, growth, inventory.snapshot(),
-                Set.of("southgate_enc_m01", "southgate_b01_graul"),
+                characters, growth, inventory.snapshot(), quests,
+                Set.of("ENC_M01", "BATTLE_B01"),
                 Set.of("P99_ORPHAN"), Set.of("OLD_EQUIPMENT"));
 
         assertEquals(snapshot, CampaignSaveCodec.decode(CampaignSaveCodec.encode(snapshot)));
     }
 
     @Test
-    void schemaOneMigratesMissingGrowthAndEquipmentToCanonicalDefaults() {
+    void schemaOneMigratesMissingGrowthEquipmentAndQuestProgressToCanonicalDefaults() {
         String old = """
                 {
                   "schemaVersion": 1,
@@ -66,6 +74,7 @@ class CampaignSaveCodecTest {
         assertEquals(3, migrated.growth().get("P08").currentStar());
         assertEquals(new CharacterProgression.State(1, 0), migrated.characters().get("P08"));
         assertTrue(migrated.equipment().items().isEmpty());
+        assertTrue(migrated.quests().completed().isEmpty());
         assertTrue(migrated.orphanedCharacterIds().contains("REMOVED_CHARACTER"));
     }
 
@@ -74,7 +83,7 @@ class CampaignSaveCodecTest {
         String json = CampaignSaveCodec.encode(new CampaignProgressStore.Snapshot(
                 new PlayerProfile.Snapshot(5_000, 0, 0, 0, Set.of("P01"), 0, false, false),
                 Map.of("P01", new CharacterProgression.State(1, 0)),
-                Map.of("P01", CharacterGrowthRules.initial("P01")), EquipmentInventory.Snapshot.empty(),
+                Map.of("P01", CharacterGrowthRules.initial("P01")), EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
                 Set.of(), Set.of(), Set.of()));
         assertThrows(IllegalStateException.class,
                 () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 4", "\"schemaVersion\": 999")));

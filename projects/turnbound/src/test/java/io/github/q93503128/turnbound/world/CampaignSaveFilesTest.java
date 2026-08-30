@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
+import io.github.q93503128.turnbound.progression.QuestProgress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -69,7 +70,7 @@ class CampaignSaveFilesTest {
         characters.put("P01", new CharacterProgression.State(5, 10));
         return new CampaignProgressStore.Snapshot(
                 new PlayerProfile.Snapshot(gold, 3_000, 60, 0, owned, pity, true, false),
-                characters, growth, EquipmentInventory.Snapshot.empty(),
-                Set.of("southgate_enc_m01", "southgate_b01_graul"), Set.of(), Set.of());
+                characters, growth, EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
+                Set.of("ENC_M01", "BATTLE_B01"), Set.of(), Set.of());
     }
 }
