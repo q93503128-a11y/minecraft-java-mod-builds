@@ -42,7 +42,7 @@ public final class OutpostService {
         ServerLevel level = (ServerLevel) player.level();
         FieldDepotData.DepotEntry depot = nearestOwnedDepot(player, UPGRADE_RADIUS);
         if (depot == null) {
-            player.sendSystemMessage(Component.literal("§2[전초기지] §f4블록 이내에 자신의 등록된 §6배럴 물류 거점§f이 없습니다."));
+            player.sendSystemMessage(Component.literal("§2[전초기지] §f4블록 이내에 자신의 등록된 §6물류 통 거점§f이 없습니다."));
             return;
         }
         BlockPos anchor = depot.pos();
@@ -81,7 +81,7 @@ public final class OutpostService {
         if (FieldDepotService.countMaterial(player, Items.IRON_INGOT) < IRON_COST
                 || FieldDepotService.countMaterial(player, Items.GOLD_INGOT) < GOLD_COST
                 || FieldDepotService.countMaterial(player, Items.COAL) < COAL_COST) {
-            player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 재료 부족: §7철32 · 금8 · 석탄32. 인벤토리와 활성 물류 배럴 재고를 합산합니다."));
+            player.sendSystemMessage(Component.literal("§2[전초기지] §f승격 재료 부족: §7철 주괴 32 · 금 주괴 8 · 석탄 32. 인벤토리와 활성 물류 배럴 재고를 합산합니다."));
             return;
         }
 

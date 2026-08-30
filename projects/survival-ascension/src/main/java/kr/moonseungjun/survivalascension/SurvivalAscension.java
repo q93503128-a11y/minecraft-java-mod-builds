@@ -32,6 +32,7 @@ import kr.moonseungjun.survivalascension.production.FieldRecoveryService;
 import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeBreachService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeSystem;
+import kr.moonseungjun.survivalascension.production.PortableLogisticsBarrelService;
 import kr.moonseungjun.survivalascension.woodcutting.WoodcuttingProgression;
 import kr.moonseungjun.survivalascension.world.WorldAscensionProgression;
 import net.neoforged.bus.api.IEventBus;
@@ -76,6 +77,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(PortableLogisticsBarrelService::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(PortableLogisticsBarrelService::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);

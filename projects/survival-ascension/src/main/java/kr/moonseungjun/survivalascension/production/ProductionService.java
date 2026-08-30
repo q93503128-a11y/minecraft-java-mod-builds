@@ -107,12 +107,12 @@ public final class ProductionService {
             player.sendSystemMessage(Component.literal("  §7- §f" + program.koreanName() + " §b" + data.buffer(player, program)
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
-        player.sendSystemMessage(Component.literal("§7산업 투입: 가까운 사용 가능 거점/창고 통 우선 + 부족분 인벤토리. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
-        player.sendSystemMessage(Component.literal("§7전선 작전은 보급권과 별도로 출발 전초의 실제 통 재고를 소비합니다. 원정=식량32+철8+연료8 / 방어=식량48+철16+통나무32 / 요새=식량96+철32+석재벽돌128."));
-        player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 통 최대8개를 별도 보급권 없이 연결해 같은32/64 물류권에서 사용합니다."));
+        player.sendSystemMessage(Component.literal("§7산업 투입: 같은 차원에서 현재 로딩된 등록 거점/창고 통 전체 + 부족분 인벤토리. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
+        player.sendSystemMessage(Component.literal("§7전선 작전은 보급권과 별도로 출발 전초의 실제 통 재고를 소비합니다. 원정=식량(밀/당근/감자/비트)12+철 주괴3+연료(석탄/숯)3 / 방어=식량16+철 주괴5+아무 종류의 통나무12 / 요새=식량32+철 주괴8+석재 벽돌32."));
+        player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 통 최대8개를 연결하며, 같은 차원에서 로딩된 등록 창고는 플레이어와 거리 제한 없이 공용 재고로 사용합니다."));
         player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 통부터 채웁니다."));
         player.sendSystemMessage(Component.literal("§7물리 화물: 산업+토목 완공 후 양쪽 활성 전초마다 반경6 소형 하역장(레일6+·동력레일·호퍼·제어)을 만들고 실제 상자 광산수레로 창고 재고를 운반합니다."));
-        player.sendSystemMessage(Component.literal("§7실물 출고1회는 금32+자수정16+메아리2이며 플레이어에게 직접 지급됩니다."));
+        player.sendSystemMessage(Component.literal("§7실물 출고 1회는 금 주괴 32 + 자수정 조각 16 + 메아리 조각 2이며 플레이어에게 직접 지급됩니다."));
         FieldDepotService.sendStatus(player);
         OutpostService.sendStatus(player);
         sendLocalSupplyStatus(player);
@@ -152,7 +152,7 @@ public final class ProductionService {
         if (bastion) OutpostSiegeSystem.startBastionOrStatus(player);
         else OutpostSiegeSystem.startOrStatus(player);
         if (OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)) {
-            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f방어전 시작 직후 전초 재고가 예상과 달라졌습니다. §7서버 관리자는 로그/모드 상호작용을 확인하세요."));
+            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f방어전 시작 직후 전초 재고가 바뀌어 시작을 취소했습니다. §7재고를 확인한 뒤 다시 시도하세요."));
         }
     }
 
@@ -176,7 +176,7 @@ public final class ProductionService {
 
         ExpeditionOperationSystem.startOrStatus(player);
         if (ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)) {
-            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f원정 출발 직후 전초 재고가 예상과 달라졌습니다. §7서버 관리자는 로그/모드 상호작용을 확인하세요."));
+            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f원정 출발 직후 전초 재고가 바뀌어 시작을 취소했습니다. §7재고를 확인한 뒤 다시 시도하세요."));
         }
     }
 
@@ -234,24 +234,24 @@ public final class ProductionService {
         int fuel = countInContainers(containers, ProductionService::isFieldFuel);
         int logs = countInContainers(containers, stack -> stack.is(ItemTags.LOGS));
         int bricks = countInContainers(containers, stack -> stack.is(Items.STONE_BRICKS));
-        player.sendSystemMessage(Component.literal("§3[전선 현지 보급] §f전초 " + coords(outpost.pos()) + " §7· 식량 §e" + food
-                + " §7· 철 §e" + iron + " §7· 연료 §e" + fuel + " §7· 통나무 §e" + logs + " §7· 석재벽돌 §e" + bricks));
+        player.sendSystemMessage(Component.literal("§3[전선 현지 보급] §f전초 " + coords(outpost.pos()) + " §7· 식량(밀/당근/감자/비트) §e" + food
+                + " §7· 철 주괴 §e" + iron + " §7· 연료(석탄/숯) §e" + fuel + " §7· 아무 종류의 통나무 §e" + logs + " §7· 석재 벽돌 §e" + bricks));
     }
 
     private static List<LocalRequirement> requirements(LocalLoadout loadout) {
         return switch (loadout) {
             case EXPEDITION -> List.of(
-                    new LocalRequirement("식량", 32, ProductionService::isFieldFood),
-                    new LocalRequirement("철 주괴", 8, stack -> stack.is(Items.IRON_INGOT)),
-                    new LocalRequirement("연료", 8, ProductionService::isFieldFuel));
+                    new LocalRequirement("식량(밀/당근/감자/비트)", 12, ProductionService::isFieldFood),
+                    new LocalRequirement("철 주괴", 3, stack -> stack.is(Items.IRON_INGOT)),
+                    new LocalRequirement("연료(석탄 또는 숯)", 3, ProductionService::isFieldFuel));
             case OUTPOST_DEFENSE -> List.of(
-                    new LocalRequirement("식량", 48, ProductionService::isFieldFood),
-                    new LocalRequirement("철 주괴", 16, stack -> stack.is(Items.IRON_INGOT)),
-                    new LocalRequirement("통나무", 32, stack -> stack.is(ItemTags.LOGS)));
+                    new LocalRequirement("식량(밀/당근/감자/비트)", 16, ProductionService::isFieldFood),
+                    new LocalRequirement("철 주괴", 5, stack -> stack.is(Items.IRON_INGOT)),
+                    new LocalRequirement("아무 종류의 통나무", 12, stack -> stack.is(ItemTags.LOGS)));
             case BASTION_DEFENSE -> List.of(
-                    new LocalRequirement("식량", 96, ProductionService::isFieldFood),
-                    new LocalRequirement("철 주괴", 32, stack -> stack.is(Items.IRON_INGOT)),
-                    new LocalRequirement("석재 벽돌", 128, stack -> stack.is(Items.STONE_BRICKS)));
+                    new LocalRequirement("식량(밀/당근/감자/비트)", 32, ProductionService::isFieldFood),
+                    new LocalRequirement("철 주괴", 8, stack -> stack.is(Items.IRON_INGOT)),
+                    new LocalRequirement("석재 벽돌", 32, stack -> stack.is(Items.STONE_BRICKS)));
         };
     }
 
@@ -321,7 +321,7 @@ public final class ProductionService {
     private static void bulkOffload(ServerPlayer player) {
         int storageBarrels = FieldDepotService.activeStorageBarrelCount(player);
         if (storageBarrels <= 0) {
-            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f현재 범위 안에 사용할 수 있는 거점/창고 통이 없습니다."));
+            player.sendSystemMessage(Component.literal("§3[현장 일괄 적재] §f같은 차원에서 현재 로딩된 사용할 수 있는 등록 물류 통이 없습니다."));
             return;
         }
         int eligible = FieldDepotService.countOffloadableMainInventory(player);
@@ -335,11 +335,11 @@ public final class ProductionService {
             return;
         }
         if (moved < eligible) {
-            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 가까운 실제 통부터 적재했습니다. §7대상 "
+            player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved + "§f개를 사용할 수 있는 등록 물류 통부터 적재했습니다. §7대상 "
                     + eligible + "개 중 일부만 수용됨 · 사용 통 " + storageBarrels + " · 핫바/장비 유지"));
         } else {
             player.sendSystemMessage(Component.literal("§b[현장 일괄 적재] §f대량 자원 §e" + moved
-                    + "§f개를 가까운 실제 통부터 적재했습니다. §7사용 통 " + storageBarrels + " · 핫바/장비 유지"));
+                    + "§f개를 사용할 수 있는 등록 물류 통부터 적재했습니다. §7사용 통 " + storageBarrels + " · 핫바/장비 유지"));
         }
     }
 
@@ -352,7 +352,7 @@ public final class ProductionService {
         giveOrDrop(player, new ItemStack(Items.GOLD_INGOT, 32));
         giveOrDrop(player, new ItemStack(Items.AMETHYST_SHARD, 16));
         giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 2));
-        player.sendSystemMessage(Component.literal("§b[산업 출고] §f현장 보급 물자 지급: §6금32 §7· §d자수정16 §7· §b메아리2"
+        player.sendSystemMessage(Component.literal("§b[산업 출고] §f현장 보급 물자 지급: §6금 주괴 32 §7· §d자수정 조각 16 §7· §b메아리 조각 2"
                 + " §7· 남은 보급권 " + data.supplyCharges(player) + "/" + ProductionData.MAX_SUPPLY_CHARGES));
     }
 

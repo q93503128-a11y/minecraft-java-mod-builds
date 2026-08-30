@@ -138,10 +138,10 @@ public final class InfrastructureService {
         }
 
         if (consumed <= 0) {
-            player.sendSystemMessage(Component.literal("§6[인프라] §f인벤토리와 현재 사용 가능한 물류 배럴들에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
+            player.sendSystemMessage(Component.literal("§6[인프라] §f인벤토리와 현재 사용 가능한 등록 물류 통들에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
         } else {
             player.sendSystemMessage(Component.literal("§6[인프라] §f" + project.koreanName() + "에 자원 §e" + consumed
-                    + "개§f를 투입했습니다. §7인벤토리 우선 → 가까운 실제 물류 배럴 순으로 인출"));
+                    + "개§f를 투입했습니다. §7인벤토리와 같은 차원에서 현재 로딩된 등록 물류 통 재고를 함께 사용"));
         }
         sendStatus(player, project);
 
@@ -203,9 +203,16 @@ public final class InfrastructureService {
             int current = data.contributed(project, i);
             player.sendSystemMessage(Component.literal("  §7- §f" + requirement.label() + " §e" + current + "§7/§f" + requirement.amount()));
         }
+        if (project == InfrastructureProject.COMBAT_ACADEMY) {
+            player.sendSystemMessage(Component.literal("  §7수급 팁: 에메랄드는 주민 거래가 주 수급처 · 메아리 조각은 고대 도시 또는 후반 산업 출고로 보조"));
+        } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
+            player.sendSystemMessage(Component.literal("  §7수급 팁: 드래곤의 숨결은 엔드에서 병으로 채집 · 흑요석은 물+용암/채굴 · 메아리는 고대 도시/산업 보조. 최종 병목 수량은 8/64/8로 축소됨"));
+        } else if (project == InfrastructureProject.QUARRY_NETWORK) {
+            player.sendSystemMessage(Component.literal("  §7채석장은 광물을 생성하지 않고 실제 월드를 대형 터널로 굴착합니다. 광석 수급 속도를 올리는 작업 체급 해금입니다."));
+        }
         InfrastructureSiteService.sendStatus(player, project);
         if (InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
-            player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 현재 사용 가능한 거점 앵커/창고 배럴/전초 재고"));
+            player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 같은 차원에서 현재 로딩된 등록 거점 통/창고 통/전초 재고"));
         }
     }
 

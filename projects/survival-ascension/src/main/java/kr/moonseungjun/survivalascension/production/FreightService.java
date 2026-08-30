@@ -37,14 +37,14 @@ public final class FreightService {
     private static final String FRONTLINE_KEY = "survivalascension_freight_frontline";
     private static final int INTERACTION_RADIUS = 4;
 
-    // 0.48 local-operation costs combined exactly once each:
-    // expedition food32/iron8/fuel8 + defense food48/iron16/logs32
-    // + bastion food96/iron32/stone bricks128.
-    public static final int FRONTLINE_FOOD = 176;
-    public static final int FRONTLINE_IRON = 56;
-    public static final int FRONTLINE_FUEL = 8;
-    public static final int FRONTLINE_LOGS = 32;
-    public static final int FRONTLINE_STONE_BRICKS = 128;
+    // Solo local-operation costs combined exactly once each:
+    // expedition food12/iron3/fuel3 + defense food16/iron5/logs12
+    // + bastion food32/iron8/stone bricks32.
+    public static final int FRONTLINE_FOOD = 60;
+    public static final int FRONTLINE_IRON = 16;
+    public static final int FRONTLINE_FUEL = 3;
+    public static final int FRONTLINE_LOGS = 12;
+    public static final int FRONTLINE_STONE_BRICKS = 32;
 
     private FreightService() {}
 
@@ -111,10 +111,10 @@ public final class FreightService {
                 + " §7· " + (frontline ? "§6전선 보급 묶음" : "§f일반 대량화물") + " §7· 대량 자원 §e" + bulk + "개"));
         if (frontline) {
             player.sendSystemMessage(Component.literal("  §7식량 §e" + countMatching(cart, FreightService::isFieldFood)
-                    + "§7/§f" + FRONTLINE_FOOD + " · 철 §e" + countMatching(cart, stack -> stack.is(Items.IRON_INGOT))
-                    + "§7/§f" + FRONTLINE_IRON + " · 연료 §e" + countMatching(cart, FreightService::isFieldFuel)
-                    + "§7/§f" + FRONTLINE_FUEL + " · 통나무 §e" + countMatching(cart, stack -> stack.is(ItemTags.LOGS))
-                    + "§7/§f" + FRONTLINE_LOGS + " · 석재벽돌 §e" + countMatching(cart, stack -> stack.is(Items.STONE_BRICKS))
+                    + "§7/§f" + FRONTLINE_FOOD + " · 철 주괴 §e" + countMatching(cart, stack -> stack.is(Items.IRON_INGOT))
+                    + "§7/§f" + FRONTLINE_IRON + " · 연료(석탄/숯) §e" + countMatching(cart, FreightService::isFieldFuel)
+                    + "§7/§f" + FRONTLINE_FUEL + " · 아무 종류의 통나무 §e" + countMatching(cart, stack -> stack.is(ItemTags.LOGS))
+                    + "§7/§f" + FRONTLINE_LOGS + " · 석재 벽돌 §e" + countMatching(cart, stack -> stack.is(Items.STONE_BRICKS))
                     + "§7/§f" + FRONTLINE_STONE_BRICKS));
         }
     }

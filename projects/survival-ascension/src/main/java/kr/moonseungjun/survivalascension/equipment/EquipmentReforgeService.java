@@ -27,7 +27,7 @@ public final class EquipmentReforgeService {
     private static void imprint(ServerPlayer player) {
         ItemStack held = player.getMainHandItem();
         if (!AscensionAffixes.canImprint(held)) {
-            player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 affix가 없는 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
+            player.sendSystemMessage(Component.literal("§c[승천 각인] §f주 손에 아직 승천 옵션이 없는 검/스피어/메이스/활/쇠뇌/곡괭이/도끼/삽/괭이/방어구/방패 태그 장비를 들어야 합니다. §7외부 모드 장비도 표준 태그를 쓰면 지원합니다."));
             return;
         }
         // 26.2 ServerPlayer no longer exposes getServer(); semantic contract: WorldAscensionData.get(player.getServer()).stage()
@@ -51,6 +51,7 @@ public final class EquipmentReforgeService {
         player.containerMenu.broadcastChanges();
         player.sendSystemMessage(Component.literal("§b[승천 각인 완료] §f" + AscensionAffixes.imprintCategoryName(held)
                 + " 장비가 §e" + AscensionAffixes.rarityName(held) + "§f 등급으로 편입되었습니다. §7" + AscensionAffixes.affixSummary(held)));
+        player.sendSystemMessage(Component.literal("§7실제 효과: §f" + AscensionAffixes.effectSummary(held)));
     }
 
     private static void reforge(ServerPlayer player) {
@@ -73,6 +74,7 @@ public final class EquipmentReforgeService {
         player.getInventory().setChanged();
         player.containerMenu.broadcastChanges();
         player.sendSystemMessage(Component.literal("§d[재련 완료] §f" + AscensionAffixes.rarityName(held) + " · §e" + AscensionAffixes.affixSummary(held)));
+        player.sendSystemMessage(Component.literal("§7실제 효과: §f" + AscensionAffixes.effectSummary(held)));
     }
 
     private static void awaken(ServerPlayer player) {
@@ -86,7 +88,7 @@ public final class EquipmentReforgeService {
             return;
         }
         if (!AscensionAffixes.canAwaken(held)) {
-            player.sendSystemMessage(Component.literal("§c[신화 각성] §faffix 데이터가 정상적인 3-affix 신화 장비가 아닙니다. 재료는 소비하지 않았습니다."));
+            player.sendSystemMessage(Component.literal("§c[신화 각성] §f승천 옵션 3개가 정상적으로 붙은 신화 장비가 아닙니다. 재료는 소비하지 않았습니다."));
             return;
         }
         MaterialCost[] costs = awakeningCosts();
@@ -104,7 +106,8 @@ public final class EquipmentReforgeService {
         }
         player.getInventory().setChanged();
         player.containerMenu.broadcastChanges();
-        player.sendSystemMessage(Component.literal("§5[신화 각성 완료] §f4번째 affix가 개방되었습니다. §e" + AscensionAffixes.affixSummary(held)));
+        player.sendSystemMessage(Component.literal("§5[신화 각성 완료] §f4번째 승천 옵션이 개방되었습니다. §e" + AscensionAffixes.affixSummary(held)));
+        player.sendSystemMessage(Component.literal("§7실제 효과: §f" + AscensionAffixes.effectSummary(held)));
     }
 
     private static void salvage(ServerPlayer player) {
@@ -149,19 +152,18 @@ public final class EquipmentReforgeService {
     private static MaterialCost[] imprintCosts(int stage) {
         return switch (Math.max(0, Math.min(2, stage))) {
             case 0 -> new MaterialCost[] {
-                    new MaterialCost(Items.AMETHYST_SHARD, 24, "자수정 조각"),
-                    new MaterialCost(Items.IRON_INGOT, 12, "철 주괴")
+                    new MaterialCost(Items.AMETHYST_SHARD, 8, "자수정 조각"),
+                    new MaterialCost(Items.IRON_INGOT, 4, "철 주괴")
             };
             case 1 -> new MaterialCost[] {
-                    new MaterialCost(Items.AMETHYST_SHARD, 48, "자수정 조각"),
-                    new MaterialCost(Items.DIAMOND, 4, "다이아몬드"),
-                    new MaterialCost(Items.GOLD_INGOT, 16, "금 주괴")
+                    new MaterialCost(Items.AMETHYST_SHARD, 12, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 1, "다이아몬드"),
+                    new MaterialCost(Items.GOLD_INGOT, 4, "금 주괴")
             };
             default -> new MaterialCost[] {
-                    new MaterialCost(Items.AMETHYST_SHARD, 96, "자수정 조각"),
-                    new MaterialCost(Items.DIAMOND, 8, "다이아몬드"),
-                    new MaterialCost(Items.NETHERITE_SCRAP, 2, "네더라이트 파편"),
-                    new MaterialCost(Items.ECHO_SHARD, 8, "메아리 조각")
+                    new MaterialCost(Items.AMETHYST_SHARD, 24, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 2, "다이아몬드"),
+                    new MaterialCost(Items.ECHO_SHARD, 2, "메아리 조각")
             };
         };
     }
@@ -169,35 +171,34 @@ public final class EquipmentReforgeService {
     private static MaterialCost[] reforgeCosts(int rarity, boolean awakened) {
         if (rarity == 3 && awakened) {
             return new MaterialCost[] {
-                    new MaterialCost(Items.AMETHYST_SHARD, 128, "자수정 조각"),
-                    new MaterialCost(Items.DIAMOND, 16, "다이아몬드"),
-                    new MaterialCost(Items.NETHERITE_SCRAP, 4, "네더라이트 파편"),
-                    new MaterialCost(Items.ECHO_SHARD, 16, "메아리 조각")
+                    new MaterialCost(Items.AMETHYST_SHARD, 24, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 3, "다이아몬드"),
+                    new MaterialCost(Items.ECHO_SHARD, 2, "메아리 조각")
             };
         }
         return switch (rarity) {
-            case 1 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 16, "자수정 조각"), new MaterialCost(Items.IRON_INGOT, 8, "철 주괴") };
-            case 2 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 32, "자수정 조각"), new MaterialCost(Items.DIAMOND, 6, "다이아몬드") };
-            case 3 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 64, "자수정 조각"), new MaterialCost(Items.DIAMOND, 12, "다이아몬드"), new MaterialCost(Items.NETHERITE_SCRAP, 2, "네더라이트 파편") };
+            case 1 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 4, "자수정 조각"), new MaterialCost(Items.IRON_INGOT, 2, "철 주괴") };
+            case 2 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 8, "자수정 조각"), new MaterialCost(Items.DIAMOND, 1, "다이아몬드") };
+            case 3 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 16, "자수정 조각"), new MaterialCost(Items.DIAMOND, 2, "다이아몬드") };
             default -> new MaterialCost[0];
         };
     }
 
     private static MaterialCost[] awakeningCosts() {
         return new MaterialCost[] {
-                new MaterialCost(Items.AMETHYST_SHARD, 256, "자수정 조각"),
-                new MaterialCost(Items.DIAMOND, 24, "다이아몬드"),
-                new MaterialCost(Items.NETHERITE_SCRAP, 8, "네더라이트 파편"),
-                new MaterialCost(Items.ECHO_SHARD, 64, "메아리 조각"),
-                new MaterialCost(Items.DRAGON_BREATH, 16, "드래곤의 숨결")
+                new MaterialCost(Items.AMETHYST_SHARD, 32, "자수정 조각"),
+                new MaterialCost(Items.DIAMOND, 4, "다이아몬드"),
+                new MaterialCost(Items.NETHERITE_SCRAP, 1, "네더라이트 파편"),
+                new MaterialCost(Items.ECHO_SHARD, 8, "메아리 조각"),
+                new MaterialCost(Items.DRAGON_BREATH, 4, "드래곤의 숨결")
         };
     }
 
     private static MaterialCost[] salvageRewards(int rarity) {
         return switch (rarity) {
-            case 1 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 8, "자수정 조각"), new MaterialCost(Items.IRON_INGOT, 4, "철 주괴") };
-            case 2 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 20, "자수정 조각"), new MaterialCost(Items.DIAMOND, 2, "다이아몬드") };
-            case 3 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 32, "자수정 조각"), new MaterialCost(Items.DIAMOND, 4, "다이아몬드"), new MaterialCost(Items.NETHERITE_SCRAP, 1, "네더라이트 파편") };
+            case 1 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 2, "자수정 조각"), new MaterialCost(Items.IRON_INGOT, 1, "철 주괴") };
+            case 2 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 4, "자수정 조각"), new MaterialCost(Items.DIAMOND, 1, "다이아몬드") };
+            case 3 -> new MaterialCost[] { new MaterialCost(Items.AMETHYST_SHARD, 8, "자수정 조각"), new MaterialCost(Items.DIAMOND, 1, "다이아몬드") };
             default -> new MaterialCost[0];
         };
     }

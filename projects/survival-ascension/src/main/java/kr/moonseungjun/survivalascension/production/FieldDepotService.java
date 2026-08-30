@@ -87,7 +87,7 @@ public final class FieldDepotService {
             return;
         }
         if (result != FieldDepotData.AddResult.ADDED) {
-            player.sendSystemMessage(Component.literal("§3[현장 물류] §f거점을 등록하지 못했습니다. §7(" + result.name() + ")"));
+            player.sendSystemMessage(Component.literal("§3[현장 물류] §f거점을 등록하지 못했습니다. §7현재 다른 연결 상태나 거점 한도를 확인하세요."));
             return;
         }
         if (!production.consumeSupplyCharge(player)) {
@@ -97,7 +97,7 @@ public final class FieldDepotService {
         }
         player.sendSystemMessage(Component.literal("§b[현장 물류 등록] §f통 §e" + barrel.getX() + ", " + barrel.getY() + ", " + barrel.getZ()
                 + "§f을 거점 앵커로 연결했습니다. §7현재 " + depots.count(player) + "/" + depotLimit
-                + " · 같은 차원 반경 " + SUPPLY_RADIUS + "블록에서 사용 · 주변 창고 통 최대 "
+                + " · 같은 차원에서 로딩 중이면 거리 제한 없이 사용 · 주변 창고 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 확장 가능"));
     }
 
@@ -150,7 +150,7 @@ public final class FieldDepotService {
             return;
         }
         if (result != FieldDepotData.LinkResult.ADDED) {
-            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f창고 통을 연결하지 못했습니다. §7(" + result.name() + ")"));
+            player.sendSystemMessage(Component.literal("§3[물류 창고군] §f창고 통을 연결하지 못했습니다. §7거점 거리·창고 한도·기존 연결 상태를 확인하세요."));
             return;
         }
         player.sendSystemMessage(Component.literal("§b[창고 통 연결] §f통 §e" + coords(target) + "§f → 거점 §e" + coords(depot.pos())
@@ -166,11 +166,14 @@ public final class FieldDepotService {
         int depotLimit = FieldDepotData.registrationLimit(player);
         player.sendSystemMessage(Component.literal("§3[현장 물류] §f등록 거점 §e" + depots.size() + "/" + depotLimit
                 + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels
-                + " §7· 일반 반경 " + SUPPLY_RADIUS + " / 전초 " + OutpostService.EXTENDED_SUPPLY_RADIUS));
+                + " §7· 같은 차원 로딩 창고는 거리 제한 없음"));
         player.sendSystemMessage(Component.literal("  §7- 지역 한도: 산업 3 · 토목 6 · 승천 중추 9"));
+        player.sendSystemMessage(Component.literal("  §7- 등록 방법: 산업 가공소 완공 → 등록할 통에서 4블록 이내 → M→인프라→산업 가공소→물류 거점 연결 · 최초 등록 보급권 1"));
+        player.sendSystemMessage(Component.literal("  §7- 확장 방법: 거점 6블록 안의 다른 통에서 창고 통 연결 · 거점당 최대 8개 · 추가 보급권 없음"));
+        player.sendSystemMessage(Component.literal("  §7- 이동 방법: 등록된 일반 거점/창고 통을 파괴하면 내용물이 바닥에 쏟아지지 않고 포장된 물류 통 1개로 보존됩니다. 다시 설치하면 연결을 자동 복구합니다."));
         player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 통 최대 "
                 + FieldDepotData.MAX_LINKED_BARRELS_PER_DEPOT + "개 연결 · 전체 링크 " + data.totalLinkedCount(player)));
-        player.sendSystemMessage(Component.literal("  §7- 재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터, 부족분만 플레이어 인벤토리에서 사용"));
+        player.sendSystemMessage(Component.literal("  §7- 재료 소비: 같은 차원에서 현재 로딩된 등록 창고 전체를 공용 재고로 사용하고, 부족분만 플레이어 인벤토리에서 사용"));
         player.sendSystemMessage(Component.literal("  §7- 현장 일괄 적재: 주 인벤토리 슬롯9~35의 대량 자원만 가까운 사용 가능 통부터 적재 · 핫바/장비 유지"));
         if (depots.isEmpty()) {
             player.sendSystemMessage(Component.literal("  §7- 4블록 내 통에서 '물류 거점 연결'을 선택하면 보급권1로 등록합니다."));
@@ -341,9 +344,9 @@ public final class FieldDepotService {
         List<ResolvedContainer> resolved = new ArrayList<>();
         for (FieldDepotData.DepotEntry depot : new ArrayList<>(data.depots(player))) {
             if (!depot.dimension().equals(dimension)) continue;
-            int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
             BlockPos anchor = depot.pos();
-            if (anchor.distSqr(player.blockPosition()) > radius * radius) continue;
+            // Registered logistics is a same-dimension network. Distance is not a gameplay tax;
+            // unloaded chunks are still skipped so this never force-loads the world.
             if (!level.hasChunkAt(anchor)) continue;
             if (!level.getBlockState(anchor).is(Blocks.BARREL)) {
                 data.remove(player, depot);
@@ -382,9 +385,8 @@ public final class FieldDepotService {
     private static boolean isUsableAnchor(ServerPlayer player, FieldDepotData.DepotEntry depot) {
         ServerLevel level = (ServerLevel) player.level();
         if (!depot.dimension().equals(level.dimension().toString())) return false;
-        int radius = OutpostService.isActiveForLogistics(player, depot) ? OutpostService.EXTENDED_SUPPLY_RADIUS : SUPPLY_RADIUS;
         BlockPos pos = depot.pos();
-        if (pos.distSqr(player.blockPosition()) > radius * radius) return false;
+        // Same-dimension loaded depots are usable at any distance; no chunk tickets are created.
         if (!level.hasChunkAt(pos)) return false;
         if (!level.getBlockState(pos).is(Blocks.BARREL)) {
             FieldDepotData.get(player).remove(player, depot);

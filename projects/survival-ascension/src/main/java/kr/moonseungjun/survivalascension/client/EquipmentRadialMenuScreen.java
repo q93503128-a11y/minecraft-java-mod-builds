@@ -57,7 +57,7 @@ public final class EquipmentRadialMenuScreen extends Screen {
         int detailColor=(rarity>0||entry.action()==Action.IMPRINT&&imprintable||entry.action()==Action.BACK)?0xFFE0E0E0:0xFFFF7777;
         graphics.text(this.font,detail,cx-this.font.width(detail)/2,cy+8,detailColor,false);
         if(entry.action()==Action.AWAKEN&&rarity==3&&!AscensionAffixes.isAwakened(held)){
-            String top="자수정256 · 다이아24 · 파편8",bottom="메아리64 · 드래곤숨결16";
+            String top="자수정32 · 다이아4 · 파편1",bottom="메아리8 · 드래곤숨결4";
             graphics.text(this.font,top,cx-this.font.width(top)/2,cy+20,0xFFD7B4FF,false);
             graphics.text(this.font,bottom,cx-this.font.width(bottom)/2,cy+31,0xFFD7B4FF,false);
         }
@@ -74,7 +74,7 @@ public final class EquipmentRadialMenuScreen extends Screen {
             return EquipmentReforgeService.imprintRangeText();
         }
         if(rarity<=0)return "정예 / 승천 / 신화 장비 필요";
-        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 승천 옵션 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(rarity);case INFO->AscensionAffixes.affixSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
+        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 승천 옵션 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(rarity);case INFO->AscensionAffixes.effectSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){

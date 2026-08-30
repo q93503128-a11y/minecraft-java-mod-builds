@@ -146,10 +146,10 @@ public final class CombatProgression {
     int targetLimit = fieldMastery ? 10 : combatLevel >= 100 ? 8 : combatLevel >= 90 ? 6 : combatLevel >= 60 ? 4 : 2;
     double knockback = fieldMastery ? 1.00D : combatLevel >= 100 ? 0.90D : combatLevel >= 90 ? 0.75D : combatLevel >= 60 ? 0.60D : 0.45D;
     double lift = fieldMastery ? 0.16D : combatLevel >= 100 ? 0.14D : combatLevel >= 90 ? 0.12D : combatLevel >= 60 ? 0.10D : 0.08D;
-    radius = Math.min(8.0D, radius + AscensionAffixes.shieldWaveRadiusBonus(shield));
-    targetLimit = Math.min(14, targetLimit + AscensionAffixes.shieldWaveTargetBonus(shield));
-    knockback = Math.min(1.30D, knockback + AscensionAffixes.shieldWaveKnockbackBonus(shield));
-    lift = Math.min(0.28D, lift + AscensionAffixes.shieldWaveLiftBonus(shield));
+    radius = Math.min(14.0D, radius + AscensionAffixes.shieldWaveRadiusBonus(shield));
+    targetLimit = Math.min(28, targetLimit + AscensionAffixes.shieldWaveTargetBonus(shield));
+    knockback = Math.min(2.00D, knockback + AscensionAffixes.shieldWaveKnockbackBonus(shield));
+    lift = Math.min(0.60D, lift + AscensionAffixes.shieldWaveLiftBonus(shield));
     final double areaRadius = radius;
 
     List<LivingEntity> nearby = level.getEntitiesOfClass(
@@ -189,9 +189,9 @@ public final class CombatProgression {
         double reach = fieldMastery ? 7.5D : combatLevel >= 100 ? 6.5D : combatLevel >= 90 ? 5.5D : combatLevel >= 60 ? 4.5D : 3.5D;
         int targetLimit = fieldMastery ? 5 : combatLevel >= 100 ? 4 : combatLevel >= 90 ? 3 : combatLevel >= 60 ? 2 : 1;
         double basePush = fieldMastery ? 0.55D : combatLevel >= 100 ? 0.48D : combatLevel >= 90 ? 0.40D : combatLevel >= 60 ? 0.32D : 0.25D;
-        reach = Math.min(9.0D, reach + AscensionAffixes.spearLineReachBonus(spear));
-        targetLimit = Math.min(8, targetLimit + AscensionAffixes.spearLineTargetBonus(spear));
-        double pushStrength = Math.min(1.10D, basePush + Math.min(0.35D, forwardSpeed * 0.85D)
+        reach = Math.min(15.0D, reach + AscensionAffixes.spearLineReachBonus(spear));
+        targetLimit = Math.min(20, targetLimit + AscensionAffixes.spearLineTargetBonus(spear));
+        double pushStrength = Math.min(1.75D, basePush + Math.min(0.35D, forwardSpeed * 0.85D)
                 + AscensionAffixes.spearLineKnockbackBonus(spear));
         final Vec3 lineDirection = direction;
         final double lineReach = reach;
@@ -236,10 +236,10 @@ public final class CombatProgression {
         int targetLimit = fieldMastery ? 20 : combatLevel >= 100 ? 14 : combatLevel >= 90 ? 10 : combatLevel >= 60 ? 6 : 3;
         double knockback = fieldMastery ? 1.00D : combatLevel >= 100 ? 0.85D : combatLevel >= 90 ? 0.70D : combatLevel >= 60 ? 0.55D : 0.45D;
         double lift = fieldMastery ? 0.16D : combatLevel >= 100 ? 0.14D : combatLevel >= 90 ? 0.12D : combatLevel >= 60 ? 0.10D : 0.08D;
-        radius = Math.min(10.5D, radius + AscensionAffixes.maceImpactRadiusBonus(mace));
-        targetLimit = Math.min(26, targetLimit + AscensionAffixes.maceImpactTargetBonus(mace));
-        knockback = Math.min(1.30D, knockback + AscensionAffixes.maceImpactKnockbackBonus(mace));
-        lift = Math.min(0.28D, lift + AscensionAffixes.maceImpactLiftBonus(mace));
+        radius = Math.min(16.5D, radius + AscensionAffixes.maceImpactRadiusBonus(mace));
+        targetLimit = Math.min(50, targetLimit + AscensionAffixes.maceImpactTargetBonus(mace));
+        knockback = Math.min(2.00D, knockback + AscensionAffixes.maceImpactKnockbackBonus(mace));
+        lift = Math.min(0.60D, lift + AscensionAffixes.maceImpactLiftBonus(mace));
         final double outerRadius = radius;
 
         List<LivingEntity> nearby = level.getEntitiesOfClass(
@@ -276,7 +276,7 @@ public final class CombatProgression {
         double fraction = combatLevel >= 100 ? 0.40D : combatLevel >= 90 ? 0.35D : combatLevel >= 60 ? 0.30D : 0.25D;
         radius += AscensionAffixes.projectileBurstRadiusBonus(direct);
         targetLimit += AscensionAffixes.projectileBurstTargetBonus(direct);
-        fraction = Math.min(0.65D, fraction + AscensionAffixes.projectileBurstFractionBonus(direct));
+        fraction = Math.min(1.00D, fraction + AscensionAffixes.projectileBurstFractionBonus(direct));
 
         List<LivingEntity> nearby = level.getEntitiesOfClass(
                 LivingEntity.class,

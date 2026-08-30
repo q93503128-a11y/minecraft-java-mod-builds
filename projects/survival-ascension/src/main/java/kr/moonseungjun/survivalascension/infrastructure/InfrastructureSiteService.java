@@ -25,29 +25,29 @@ public final class InfrastructureSiteService {
     public static final int SITE_RADIUS = 6;
 
     private static final SiteProfile CIVIL_SITE = new SiteProfile(true, List.of(
-            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 48),
-            new SiteRequirement(Blocks.SCAFFOLDING, "비계", 16),
-            new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 4),
-            new SiteRequirement(Blocks.STONECUTTER, "석재 절단기", 2),
+            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 16),
+            new SiteRequirement(Blocks.SCAFFOLDING, "비계", 8),
+            new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 2),
+            new SiteRequirement(Blocks.STONECUTTER, "석재 절단기", 1),
             new SiteRequirement(Blocks.CRAFTING_TABLE, "작업대", 1)
     ));
     private static final SiteProfile INDUSTRIAL_SITE = new SiteProfile(false, List.of(
-            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 48),
-            new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 4),
+            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 16),
+            new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 2),
             new SiteRequirement(Blocks.BLAST_FURNACE, "용광로", 2),
             new SiteRequirement(Blocks.STONECUTTER, "석재 절단기", 1),
             new SiteRequirement(Blocks.HOPPER, "호퍼", 2)
     ));
     private static final SiteProfile APEX_SITE = new SiteProfile(true, List.of(
-            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 32),
-            new SiteRequirement(Blocks.GOLD_BLOCK, "금 블록", 4),
+            new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 12),
+            new SiteRequirement(Blocks.GOLD_BLOCK, "금 블록", 2),
             new SiteRequirement(Blocks.LODESTONE, "자석석", 1),
             new SiteRequirement(Blocks.CARTOGRAPHY_TABLE, "지도 제작대", 1),
-            new SiteRequirement(Blocks.TARGET, "과녁", 4)
+            new SiteRequirement(Blocks.TARGET, "과녁", 2)
     ));
     private static final SiteProfile NEXUS_SITE = new SiteProfile(true, List.of(
-            new SiteRequirement(Blocks.OBSIDIAN, "흑요석", 32),
-            new SiteRequirement(Blocks.CRYING_OBSIDIAN, "우는 흑요석", 8),
+            new SiteRequirement(Blocks.OBSIDIAN, "흑요석", 12),
+            new SiteRequirement(Blocks.CRYING_OBSIDIAN, "우는 흑요석", 4),
             new SiteRequirement(Blocks.BEACON, "신호기", 1),
             new SiteRequirement(Blocks.ENCHANTING_TABLE, "마법 부여대", 1),
             new SiteRequirement(Blocks.ENDER_CHEST, "엔더 상자", 1)
