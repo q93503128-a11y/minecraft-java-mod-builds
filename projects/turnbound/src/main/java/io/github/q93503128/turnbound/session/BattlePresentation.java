@@ -18,6 +18,7 @@ import java.util.UUID;
 final class BattlePresentation {
     private final Map<String, UUID> actors = new LinkedHashMap<>();
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
+    private final Map<String, CombatantSide> sides = new LinkedHashMap<>();
     private UUID focusMarker;
     private UUID dangerMarker;
     private String dangerTarget = "";
@@ -27,6 +28,7 @@ final class BattlePresentation {
     void spawn(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
         actors.clear();
         homes.clear();
+        sides.clear();
         spawnMissing(level, center, facingYaw, combatants);
     }
 
@@ -54,24 +56,42 @@ final class BattlePresentation {
             level.addFreshEntity(stand);
             actors.put(combatant.instanceId(), stand.getUUID());
             homes.put(combatant.instanceId(), pos);
+            sides.put(combatant.instanceId(), combatant.side());
         }
     }
 
     Vec3 home(String combatantId) { return homes.get(combatantId); }
 
+    /**
+     * True battlefield center: midpoint of the ally centroid and enemy centroid.
+     * This prevents 4v1/4v2 encounters from dragging the camera toward the larger side.
+     */
     Vec3 center() {
-        if (homes.isEmpty()) return Vec3.ZERO;
+        Vec3 ally = centroid(CombatantSide.ALLY);
+        Vec3 enemy = centroid(CombatantSide.ENEMY);
+        if (ally != null && enemy != null) return ally.add(enemy).scale(0.5);
+        if (ally != null) return ally;
+        if (enemy != null) return enemy;
+        return Vec3.ZERO;
+    }
+
+    private Vec3 centroid(CombatantSide side) {
         double x = 0.0, y = 0.0, z = 0.0;
-        for (Vec3 home : homes.values()) { x += home.x; y += home.y; z += home.z; }
-        double count = homes.size();
-        return new Vec3(x / count, y / count, z / count);
+        int count = 0;
+        for (var entry : homes.entrySet()) {
+            if (sides.get(entry.getKey()) != side) continue;
+            Vec3 home = entry.getValue();
+            x += home.x; y += home.y; z += home.z; count++;
+        }
+        return count == 0 ? null : new Vec3(x / count, y / count, z / count);
     }
 
     void focus(ServerLevel level, String targetId) {
         clearFocus(level);
         Vec3 target = homes.get(targetId);
         if (target == null) return;
-        ArmorStand marker = marker(level, target.add(0, 1.0, 0), "▼", ChatFormatting.RED);
+        ChatFormatting color = sides.get(targetId) == CombatantSide.ALLY ? ChatFormatting.AQUA : ChatFormatting.RED;
+        ArmorStand marker = marker(level, target.add(0, 1.0, 0), "▼", color);
         focusMarker = marker.getUUID();
     }
 
@@ -150,6 +170,7 @@ final class BattlePresentation {
         }
         actors.clear();
         homes.clear();
+        sides.clear();
         moving = null;
     }
 
