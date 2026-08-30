@@ -32,22 +32,50 @@ public final class ClientBattleState {
         }
     }
 
+    public record PartyXp(
+            String characterId,
+            String name,
+            int levelBefore,
+            int xpBefore,
+            int levelAfter,
+            int xpAfter,
+            int xpToNextAfter
+    ) {}
+
+    public record Result(int xp, int gold, boolean firstClear, List<PartyXp> party) {
+        public Result {
+            party = List.copyOf(party == null ? List.of() : party);
+        }
+        public static Result none() { return new Result(0, 0, false, List.of()); }
+    }
+
     public record Snapshot(
             boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
             boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
             List<Unit> units, List<String> timeline, List<Skill> skills, String message,
-            double arenaX, double arenaY, double arenaZ, float arenaYaw
+            double arenaX, double arenaY, double arenaZ, float arenaYaw,
+            Result result
     ) {
+        public Snapshot {
+            result = result == null ? Result.none() : result;
+        }
+        public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
+                        boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
+                        List<Unit> units, List<String> timeline, List<Skill> skills, String message,
+                        double arenaX, double arenaY, double arenaZ, float arenaYaw) {
+            this(active, auto, speed, outcome, actorId, finished, autoAllowed, speedAllowed, fleeAllowed,
+                    units, timeline, skills, message, arenaX, arenaY, arenaZ, arenaYaw, Result.none());
+        }
         public Snapshot(boolean active, boolean auto, int speed, String outcome, String actorId, boolean finished,
                         List<Unit> units, List<String> timeline, List<Skill> skills, String message) {
             this(active, auto, speed, outcome, actorId, finished, true, true, true,
-                    units, timeline, skills, message, 0.0, 0.0, 0.0, 0.0F);
+                    units, timeline, skills, message, 0.0, 0.0, 0.0, 0.0F, Result.none());
         }
     }
 
     private static volatile Snapshot snapshot = new Snapshot(
             false, false, 1, "RUNNING", "", true, true, true, true,
-            List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F);
+            List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F, Result.none());
     private static volatile long revision;
 
     private ClientBattleState() {}
@@ -64,6 +92,9 @@ public final class ClientBattleState {
         List<Unit> units = new ArrayList<>();
         List<String> timeline = new ArrayList<>();
         List<Skill> skills = new ArrayList<>();
+        int resultXp = 0, resultGold = 0;
+        boolean firstClear = false;
+        List<PartyXp> partyXp = new ArrayList<>();
 
         for (String line : raw.split("\n")) {
             if (line.isBlank()) continue;
@@ -95,14 +126,26 @@ public final class ClientBattleState {
                     }
                     case "T" -> { if (p.length > 1 && !p[1].isBlank()) timeline.addAll(Arrays.asList(p[1].split(","))); }
                     case "S" -> skills.add(new Skill(p[1], p[2], p[3], Integer.parseInt(p[4]), Integer.parseInt(p[5]), p.length > 6 ? p[6] : ""));
+                    case "R" -> {
+                        if (p.length >= 4) {
+                            resultXp = Integer.parseInt(p[1]);
+                            resultGold = Integer.parseInt(p[2]);
+                            firstClear = "1".equals(p[3]);
+                        }
+                    }
+                    case "P" -> {
+                        if (p.length >= 8) partyXp.add(new PartyXp(p[1], p[2], Integer.parseInt(p[3]), Integer.parseInt(p[4]),
+                                Integer.parseInt(p[5]), Integer.parseInt(p[6]), Integer.parseInt(p[7])));
+                    }
                     default -> { }
                 }
             } catch (RuntimeException ignored) { }
         }
 
+        Result result = new Result(resultXp, resultGold, firstClear, partyXp);
         snapshot = new Snapshot(active, auto, speed, outcome, actor, finished, autoAllowed, speedAllowed, fleeAllowed,
                 List.copyOf(units), List.copyOf(timeline), List.copyOf(skills), message,
-                arenaX, arenaY, arenaZ, arenaYaw);
+                arenaX, arenaY, arenaZ, arenaYaw, result);
         revision++;
     }
 }
