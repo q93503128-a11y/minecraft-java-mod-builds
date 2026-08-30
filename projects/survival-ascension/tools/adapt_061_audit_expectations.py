@@ -10,6 +10,65 @@ if _final_qol.exists():
     runpy.run_path(str(_final_qol), run_name="__main__")
     _final_qol.unlink()
 
+
+def patch_portable_logistics_api():
+    """Adapt the generated portable-barrel source to the actual Minecraft/NeoForge 26.2 APIs."""
+    path = ROOT / "src/main/java/kr/moonseungjun/survivalascension/production/PortableLogisticsBarrelService.java"
+    text = path.read_text(encoding="utf-8")
+
+    replacements = [
+        (
+            "import net.minecraft.core.component.DataComponents;\n",
+            "import net.minecraft.core.component.DataComponents;\nimport net.minecraft.core.registries.BuiltInRegistries;\n",
+        ),
+        (
+            "import net.neoforged.neoforge.event.level.BlockEvent;",
+            "import net.neoforged.neoforge.event.level.BlockEvent;\nimport net.neoforged.neoforge.event.level.block.BreakBlockEvent;",
+        ),
+        (
+            "public static void onBlockBreak(BlockEvent.BreakEvent event)",
+            "public static void onBlockBreak(BreakBlockEvent event)",
+        ),
+        (
+            "        blockEntity.saveToItem(packed, level.registryAccess());",
+            "        CompoundTag blockEntityData = blockEntity.saveWithoutMetadata(level.registryAccess());\n"
+            "        var blockEntityTypeId = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType());\n"
+            "        if (blockEntityTypeId != null) blockEntityData.putString(\"id\", blockEntityTypeId.toString());\n"
+            "        packed.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(blockEntityData));",
+        ),
+        (
+            "        String owner = persistent.getString(OWNER_KEY);",
+            "        String owner = persistent.getStringOr(OWNER_KEY, \"\");",
+        ),
+        (
+            "        String role = persistent.getString(ROLE_KEY);",
+            "        String role = persistent.getStringOr(ROLE_KEY, \"\");",
+        ),
+    ]
+    for old, new in replacements:
+        if old not in text:
+            raise SystemExit(f"portable logistics 26.2 API token missing: {old}")
+        text = text.replace(old, new, 1)
+
+    # The placed barrel should receive BLOCK_ENTITY_DATA before this event fires, including the
+    # NeoForge persistent-data owner/role/token written before packing. CUSTOM_DATA remains on the
+    # item only as a cheap marker for nested-package rejection.
+    required = [
+        "BreakBlockEvent event",
+        "saveWithoutMetadata(level.registryAccess())",
+        "DataComponents.BLOCK_ENTITY_DATA",
+        "BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey",
+        "getStringOr(OWNER_KEY, \"\")",
+        "getStringOr(ROLE_KEY, \"\")",
+    ]
+    for token in required:
+        if token not in text:
+            raise SystemExit(f"portable logistics 26.2 acceptance missing: {token}")
+    path.write_text(text, encoding="utf-8")
+
+
+patch_portable_logistics_api()
+
 SOURCE_REPLACEMENTS = [
     ("Math.min(13, base + bonus)", "Math.min(21, base + bonus)"),
     ("new MaterialCost(Items.AMETHYST_SHARD, 48", "new MaterialCost(Items.AMETHYST_SHARD, 12"),
