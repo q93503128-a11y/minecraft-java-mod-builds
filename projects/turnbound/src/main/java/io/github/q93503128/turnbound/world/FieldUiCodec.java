@@ -20,6 +20,7 @@ public final class FieldUiCodec {
                 .append('|').append(snapshot.earnedGold()).append('\n');
         out.append("O|").append(text(snapshot.objective())).append('\n');
         out.append("D|").append(text(snapshot.dialogue())).append('\n');
+        out.append("L|").append(text(snapshot.loadingStage())).append('|').append(snapshot.loadingPercent()).append('\n');
         FieldUiSnapshot.Reward reward = snapshot.reward();
         out.append("R|").append(text(reward.encounterLabel()))
                 .append('|').append(reward.xp())
@@ -54,6 +55,8 @@ public final class FieldUiCodec {
         int gold = 0;
         String objective = "";
         String dialogue = "";
+        String loadingStage = "";
+        int loadingPercent = 0;
         FieldUiSnapshot.Reward reward = FieldUiSnapshot.Reward.none();
         List<FieldUiSnapshot.Encounter> encounters = new ArrayList<>();
         List<FieldUiSnapshot.Travel> travels = new ArrayList<>();
@@ -76,6 +79,12 @@ public final class FieldUiCodec {
                     }
                     case "O" -> { if (parts.length >= 2) objective = read(parts[1]); }
                     case "D" -> { if (parts.length >= 2) dialogue = read(parts[1]); }
+                    case "L" -> {
+                        if (parts.length >= 3) {
+                            loadingStage = read(parts[1]);
+                            loadingPercent = Integer.parseInt(parts[2]);
+                        }
+                    }
                     case "R" -> {
                         if (parts.length >= 6) reward = new FieldUiSnapshot.Reward(
                                 read(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
@@ -96,7 +105,7 @@ public final class FieldUiCodec {
             }
         }
         return new FieldUiSnapshot(active, mode, patrols, goal, bossUnlocked, chapterCleared, xp, gold,
-                objective, dialogue, reward, encounters, travels);
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent);
     }
 
     private static int bit(boolean value) { return value ? 1 : 0; }
