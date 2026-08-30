@@ -5,7 +5,7 @@
 - Mod ID: `turnbound`
 - Display name: `TURNBOUND`
 - Package: `io.github.q93503128.turnbound`
-- Version: `0.1.0-alpha.13`
+- Version: `0.1.0-alpha.14`
 
 ## Toolchain
 - Minecraft Java 26.2
@@ -41,6 +41,7 @@ Later explicit user decisions may override these. Alpha delta docs may clarify i
 - Direct 3D click is primary target input; HUD/Tab are fallbacks.
 - Hovering a skill shows detail.
 - Danger telegraphs must be visible in both world association and HUD/timeline data.
+- Locked AUTO/2x/flee controls must visibly communicate their locked state and not send invalid client commands.
 
 ## Southgate Chapter 1 v0.4 contract
 Campaign party: P01 / P03 / P04 / F03.
@@ -53,7 +54,7 @@ Encounter template:
 - M05 Lv5 E005+E001×2
 
 Main quest gate:
-- M01+M02 → MQ_C01_01 complete / forward Meadow route
+- M01+M02 → MQ_C01_01 complete / FT_MEADOW map-travel unlock
 - M04 E003 fight → MQ_C01_02 complete / B01 route
 - B01 → MQ_C01_03 complete
 M03/M05 remain optional to the main boss gate.
@@ -86,12 +87,15 @@ TURNBOUND is not a survival game.
 ## World
 - Fixed authored RPG world, not vanilla infinite progression.
 - v0.1 target Aster March 1024×1024.
-- Current A01/A02 are Southgate Meadow development cells, not separate chapters.
-- Chapter 2 target is Gloamwood.
-- Final major FT and boss anchors follow v0.4 coordinate tables unless the design docs are revised together.
+- `AsterMarchRegionCatalog` is the code-side v0.4 coordinate authority for region bounds, major FT anchors and boss anchors.
+- Current A01/A02 are Southgate Meadow development cells, now connected to the canonical coordinate spine rather than treated as separate chapters.
+- P2 authored route currently connects FT_RADIA `(0,66,20)` → South Gate/A01/A02 → FT_MEADOW `(190,67,230)` → M04/M05 clearings → B01 `(355,68,245)`.
+- Fixed authored battle anchors must not silently relocate to nearby terrain when obstructed.
+- Chapter 2 target is Gloamwood; alpha.14 does not claim Gloamwood implementation.
 
 ## Required validation
 - Java 25 clean test/build green.
 - NeoForge real server boot smoke green.
 - JAR metadata/classes/resources verified.
 - Existing camera/direct-target/explicit-confirm/hover-tooltip regressions remain green.
+- Canonical FT/Boss coordinates and quest-gated Southgate route tests remain green.

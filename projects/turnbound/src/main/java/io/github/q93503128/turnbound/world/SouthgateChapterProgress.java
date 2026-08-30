@@ -48,6 +48,8 @@ public final class SouthgateChapterProgress {
                 p08 = true;
             }
         }
+        // MQ_C01_01's explicit reward is Map FT_MEADOW: once M01+M02 are clear it becomes usable.
+        if (meadowRouteUnlocked()) activatedRelays.add(FieldTravelCatalog.FT_MEADOW);
         return new RewardReceipt(encounterId, first ? spec.rewardXp() : 0, first ? spec.rewardGold() : 0,
                 first, bossUnlocked(), chapterCleared(), crystal, essence, box, p08);
     }
@@ -85,7 +87,7 @@ public final class SouthgateChapterProgress {
         if (!FieldTravelCatalog.destinations().stream().anyMatch(destination -> destination.id().equals(relayId))) {
             throw new IllegalArgumentException("Unknown relay " + relayId);
         }
-        if (FieldTravelCatalog.RELAY_A02.equals(relayId) && !meadowRouteUnlocked()) return false;
+        if (FieldTravelCatalog.FT_MEADOW.equals(relayId) && !meadowRouteUnlocked()) return false;
         return activatedRelays.add(relayId);
     }
 

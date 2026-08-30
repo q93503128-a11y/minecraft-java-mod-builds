@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Southgate Meadow P2 vertical slice aligned to v0.4 MQ_C01 progression. */
+/** Southgate Meadow P2 slice aligned to v0.4 world anchors and MQ_C01 progression. */
 public final class FieldSessionManager {
     public static final String ENCOUNTER_A01_PATROL = SouthgateEncounterCatalog.ENC_M01;
     private static final Map<UUID, FieldSession> SESSIONS = new LinkedHashMap<>();
@@ -39,15 +39,17 @@ public final class FieldSessionManager {
         ServerLevel level = (ServerLevel) player.level();
         FieldCellA01.BuiltCell a01 = FieldCellA01.build(level);
         FieldCellA02.BuiltCell a02 = FieldCellA02.build(level);
+        SouthgateMeadowExpansion.build(level);
         FieldSession session = new FieldSession(a01, a02);
         SESSIONS.put(player.getUUID(), session);
-        player.setPos(a01.entry().x, a01.entry().y, a01.entry().z);
+        Vec3 radia = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA).position();
+        player.setPos(radia.x, radia.y, radia.z);
         player.setYRot(180.0F);
-        player.setXRot(5.0F);
+        player.setXRot(4.0F);
         player.setDeltaMovement(Vec3.ZERO);
         session.spawnAll(level);
-        player.sendSystemMessage(Component.literal("남문 초원 · Chapter 1 — 남문의 소란").withStyle(ChatFormatting.GOLD));
-        player.sendSystemMessage(Component.literal("정찰관을 조사하면 메인 퀘스트 진행을 확인할 수 있습니다.").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(Component.literal("라디아 남문 → 남문 초원 · Chapter 1 — 남문의 소란").withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(Component.literal("FT_RADIA에서 남쪽 길을 따라 정찰관과 첫 순찰대로 이동하십시오.").withStyle(ChatFormatting.GRAY));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         return true;
     }
@@ -61,7 +63,7 @@ public final class FieldSessionManager {
         if (session == null || player.level().dimension() != Level.OVERWORLD || BattleSessionManager.exists(player)) return;
         ServerLevel level = (ServerLevel) player.level();
         if (!session.allowedPosition(player.position())) {
-            Vec3 fallback = session.a01.entry();
+            Vec3 fallback = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA).position();
             player.setPos(fallback.x, fallback.y, fallback.z);
             player.setDeltaMovement(Vec3.ZERO);
             return;
@@ -69,9 +71,10 @@ public final class FieldSessionManager {
         if (player.tickCount % 20 == 0) clearVanillaMobs(level);
         if (session.progress.meadowRouteUnlocked()) {
             FieldCellA02.unlockNorthGate(level);
-            session.spawnA02Relay(level);
+            session.spawnMeadowRelay(level);
             session.spawnUnlockedPatrols(level);
         }
+        if (session.progress.bossUnlocked()) SouthgateMeadowExpansion.unlockBossGate(level);
         session.ensureBoss(level);
         session.tickEncounters(level, player);
     }
@@ -97,13 +100,14 @@ public final class FieldSessionManager {
 
         if (!routeBefore && session.progress.meadowRouteUnlocked()) {
             FieldCellA02.unlockNorthGate(level);
-            session.spawnA02Relay(level);
+            session.spawnMeadowRelay(level);
             session.spawnUnlockedPatrols(level);
-            player.sendSystemMessage(Component.literal("MQ_C01_01 완료 — 남문 초원 전진 경로가 열렸습니다.").withStyle(ChatFormatting.AQUA));
+            player.sendSystemMessage(Component.literal("MQ_C01_01 완료 — FT_MEADOW와 초원 동쪽 경로가 열렸습니다.").withStyle(ChatFormatting.AQUA));
         }
         if (!bossBefore && session.progress.bossUnlocked()) {
+            SouthgateMeadowExpansion.unlockBossGate(level);
             session.ensureBoss(level);
-            player.sendSystemMessage(Component.literal("MQ_C01_02 완료 — 들이받는 왕 그라울의 길이 열렸습니다.").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Component.literal("MQ_C01_02 완료 — B01 그라울 전투장이 개방되었습니다.").withStyle(ChatFormatting.RED));
         }
         if (reward.chapterCleared()) {
             player.sendSystemMessage(Component.literal("MQ_C01_03 완료 — Chapter 1 클리어").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
@@ -122,14 +126,14 @@ public final class FieldSessionManager {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             return true;
         }
-        if (id.equals(session.relayA01)) {
-            session.progress.activateRelay(FieldTravelCatalog.RELAY_A01);
+        if (id.equals(session.relayRadia)) {
+            session.progress.activateRelay(FieldTravelCatalog.FT_RADIA);
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
             return true;
         }
-        if (id.equals(session.relayA02)) {
+        if (id.equals(session.relayMeadow)) {
             if (!session.progress.meadowRouteUnlocked()) return true;
-            session.progress.activateRelay(FieldTravelCatalog.RELAY_A02);
+            session.progress.activateRelay(FieldTravelCatalog.FT_MEADOW);
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
             return true;
         }
@@ -164,9 +168,10 @@ public final class FieldSessionManager {
     }
 
     private static void clearVanillaMobs(ServerLevel level) {
-        AABB cells = new AABB(FieldCellA01.ORIGIN_X, FieldCellA01.BASE_Y - 8, FieldCellA01.ORIGIN_Z,
-                FieldCellA01.ORIGIN_X + FieldCellA01.SIZE, FieldCellA02.BASE_Y + 26, FieldCellA02.ORIGIN_Z + FieldCellA02.SIZE);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, cells)) mob.discard();
+        var meadow = AsterMarchRegionCatalog.SOUTHGATE;
+        AABB playable = new AABB(meadow.minX() - 8, 54, 8,
+                meadow.maxX() + 8, 100, meadow.maxZ() + 8);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, playable)) mob.discard();
     }
 
     private static Vec3 a01(double x, double y, double z) {
@@ -178,19 +183,24 @@ public final class FieldSessionManager {
 
     private static List<PatrolLayout> normalLayouts() {
         return List.of(
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M01, a01(22.5,1,22.5), a01(36.5,1,24.5), false),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M02, a01(18.0,1,39.0), a01(31.0,1,41.0), false),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M03, a01(48.0,1,17.5), a01(40.0,1,27.0), false),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M04, a02(34.0,1,18.0), a02(42.0,1,28.0), true),
-                new PatrolLayout(SouthgateEncounterCatalog.ENC_M05, a02(18.0,1,42.0), a02(30.0,1,45.0), true)
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M01, a01(22.5,1,22.5), a01(36.5,1,24.5), false, null, 0.0F),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M02, a01(18.0,1,39.0), a01(31.0,1,41.0), false, null, 0.0F),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M03, a01(48.0,1,17.5), a01(40.0,1,27.0), false, null, 0.0F),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M04, SouthgateMeadowExpansion.M04_CLEARING.add(-8.0,0,0),
+                        SouthgateMeadowExpansion.M04_CLEARING.add(8.0,0,2.0), true, SouthgateMeadowExpansion.M04_CLEARING, 90.0F),
+                new PatrolLayout(SouthgateEncounterCatalog.ENC_M05, SouthgateMeadowExpansion.M05_CLEARING.add(-7.0,0,-2.0),
+                        SouthgateMeadowExpansion.M05_CLEARING.add(7.0,0,3.0), true, SouthgateMeadowExpansion.M05_CLEARING, 45.0F)
         );
     }
 
     private static PatrolLayout bossLayout() {
-        return new PatrolLayout(SouthgateEncounterCatalog.B01_GRAUL, a02(32.5,1,53.0), a02(38.0,1,50.0), true);
+        var boss = AsterMarchRegionCatalog.boss(AsterMarchRegionCatalog.B01);
+        return new PatrolLayout(SouthgateEncounterCatalog.B01_GRAUL, boss.position().add(-10.0,0,0),
+                boss.position().add(-4.0,0,4.0), true, boss.position(), boss.yaw());
     }
 
-    private record PatrolLayout(String encounterId, Vec3 home, Vec3 patrolEnd, boolean requiresRoute) {}
+    private record PatrolLayout(String encounterId, Vec3 home, Vec3 patrolEnd, boolean requiresRoute,
+                                Vec3 battleAnchor, float battleYaw) {}
 
     private static final class FieldSession {
         private final FieldCellA01.BuiltCell a01;
@@ -198,23 +208,23 @@ public final class FieldSessionManager {
         private final SouthgateChapterProgress progress = new SouthgateChapterProgress();
         private final Map<String, Patrol> encounters = new LinkedHashMap<>();
         private UUID npc;
-        private UUID relayA01;
-        private UUID relayA02;
+        private UUID relayRadia;
+        private UUID relayMeadow;
 
         private FieldSession(FieldCellA01.BuiltCell a01, FieldCellA02.BuiltCell a02) {
             this.a01 = a01;
             this.a02 = a02;
+            progress.activateRelay(FieldTravelCatalog.FT_RADIA);
             for (PatrolLayout layout : normalLayouts()) encounters.put(layout.encounterId(), new Patrol(layout));
         }
 
         private boolean allowedPosition(Vec3 position) {
-            if (FieldCellA01.containsXZ(position.x, position.z)) return true;
-            return progress.meadowRouteUnlocked() && FieldCellA02.containsXZ(position.x, position.z);
+            return SouthgateMeadowExpansion.allowedPosition(position, progress.meadowRouteUnlocked(), progress.bossUnlocked());
         }
 
         private void spawnAll(ServerLevel level) {
             spawnNpc(level);
-            spawnA01Relay(level);
+            spawnRadiaRelay(level);
             spawnUnlockedPatrols(level);
         }
 
@@ -258,14 +268,18 @@ public final class FieldSessionManager {
             level.addFreshEntity(stand); npc = stand.getUUID();
         }
 
-        private void spawnA01Relay(ServerLevel level) {
-            if (relayA01 != null && level.getEntity(relayA01) != null) return;
-            relayA01 = spawnRelay(level, a01(43.5,1,34.5), "남문 초원 입구 계전석", ChatFormatting.AQUA);
+        private void spawnRadiaRelay(ServerLevel level) {
+            if (relayRadia != null && level.getEntity(relayRadia) != null) return;
+            var anchor = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA);
+            relayRadia = spawnRelay(level, anchor.position().add(2.5,0,0), anchor.label(), ChatFormatting.AQUA);
         }
-        private void spawnA02Relay(ServerLevel level) {
-            if (!progress.meadowRouteUnlocked() || (relayA02 != null && level.getEntity(relayA02) != null)) return;
-            relayA02 = spawnRelay(level, a02.relay(), "남문 초원 전진 계전석", ChatFormatting.LIGHT_PURPLE);
+
+        private void spawnMeadowRelay(ServerLevel level) {
+            if (!progress.meadowRouteUnlocked() || (relayMeadow != null && level.getEntity(relayMeadow) != null)) return;
+            var anchor = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_MEADOW);
+            relayMeadow = spawnRelay(level, anchor.position().add(2.5,0,0), anchor.label(), ChatFormatting.LIGHT_PURPLE);
         }
+
         private UUID spawnRelay(ServerLevel level, Vec3 pos, String name, ChatFormatting color) {
             ArmorStand stand = new ArmorStand(level,pos.x,pos.y,pos.z);
             stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
@@ -278,19 +292,15 @@ public final class FieldSessionManager {
 
         private void travel(ServerPlayer player, String destinationId) {
             if (!progress.relayActivated(destinationId)) {
-                player.sendSystemMessage(Component.literal("아직 활성화하지 않은 계전석입니다.").withStyle(ChatFormatting.GRAY));
+                player.sendSystemMessage(Component.literal("아직 해금하지 않은 계전소입니다.").withStyle(ChatFormatting.GRAY));
                 FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
                 return;
             }
-            Vec3 destination;
-            float yaw;
-            if (FieldTravelCatalog.RELAY_A01.equals(destinationId)) {
-                destination = a01(41.5,1,34.5); yaw = 90.0F;
-            } else if (FieldTravelCatalog.RELAY_A02.equals(destinationId) && progress.meadowRouteUnlocked()) {
-                destination = a02.relay().add(2.5,-2.0,0.0); yaw = -90.0F;
-            } else return;
-            player.setPos(destination.x,destination.y,destination.z);
-            player.setYRot(yaw); player.setXRot(4.0F); player.setDeltaMovement(Vec3.ZERO);
+            FieldTravelCatalog.Destination destination;
+            try { destination = FieldTravelCatalog.destination(destinationId); }
+            catch (IllegalArgumentException ignored) { return; }
+            player.setPos(destination.position().x, destination.position().y, destination.position().z);
+            player.setYRot(destination.yaw()); player.setXRot(4.0F); player.setDeltaMovement(Vec3.ZERO);
             FieldNetwork.sync(player, snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         }
 
@@ -307,9 +317,8 @@ public final class FieldSessionManager {
 
             List<FieldUiSnapshot.Travel> travelViews = new ArrayList<>();
             for (FieldTravelCatalog.Destination destination : FieldTravelCatalog.destinations()) {
-                Vec3 anchor = destination.id().equals(FieldTravelCatalog.RELAY_A01) ? a01(43.5,1,34.5) : a02.relay();
                 travelViews.add(new FieldUiSnapshot.Travel(destination.id(),destination.label(),
-                        progress.relayActivated(destination.id()),player.position().distanceToSqr(anchor) <= 36.0));
+                        progress.relayActivated(destination.id()),player.position().distanceToSqr(destination.position()) <= 64.0));
             }
             FieldUiSnapshot.Reward reward = receipt == null ? FieldUiSnapshot.Reward.none()
                     : new FieldUiSnapshot.Reward(SouthgateEncounterCatalog.spec(receipt.encounterId()).label(),
@@ -320,22 +329,22 @@ public final class FieldSessionManager {
 
         private String objective() {
             if (progress.chapterCleared()) return "Chapter 1 완료 · Echo Archive / AUTO / 2.0x / P08 해금";
-            if (progress.bossUnlocked()) return "MQ_C01_03 · 들이받는 왕 그라울을 처치하십시오.";
-            if (progress.meadowRouteUnlocked()) return "MQ_C01_02 · 불안정 폭발체(E003)를 처치하십시오.";
+            if (progress.bossUnlocked()) return "MQ_C01_03 · B01 전투장 (355,68,245)의 그라울을 처치하십시오.";
+            if (progress.meadowRouteUnlocked()) return "MQ_C01_02 · FT_MEADOW 동쪽의 불안정 폭발체(E003)를 처치하십시오.";
             return "MQ_C01_01 · ENC_M01 / ENC_M02를 정리하십시오.  " + progress.patrolsCleared() + "/2";
         }
 
         private String dialogue() {
             if (progress.chapterCleared()) return "그라울이 쓰러졌다. 중계 기록도 다시 열렸어. 라디아로 돌아가면 Echo Archive와 새 전투 기능을 쓸 수 있을 거야.";
-            if (progress.bossUnlocked()) return "불안정 폭발체도 정리됐어. 이제 남쪽 봉쇄선의 그라울에게 갈 수 있다.";
-            if (progress.meadowRouteUnlocked()) return "앞쪽 길이 열렸다. 균열이 심하게 번진 폭발체를 먼저 처리해. 그게 그라울 쪽 길을 막고 있어.";
-            return "가까운 두 순찰 무리부터 정리해 줘. 그 뒤 전진 경로를 열겠다.";
+            if (progress.bossUnlocked()) return "폭발체가 사라지면서 동쪽 봉쇄문이 열렸다. 그라울의 전투장은 바로 앞이다.";
+            if (progress.meadowRouteUnlocked()) return "FT_MEADOW가 지도에 잡혔다. 동쪽 전진로에서 불안정 폭발체를 먼저 처리해.";
+            return "라디아 남문에서 가까운 두 순찰 무리부터 정리해 줘. 그 뒤 초원 계전로를 열겠다.";
         }
 
         private void despawnAll(ServerLevel level) {
             for (Patrol patrol : encounters.values()) patrol.despawn(level);
-            despawn(level,npc); despawn(level,relayA01); despawn(level,relayA02);
-            npc = null; relayA01 = null; relayA02 = null;
+            despawn(level,npc); despawn(level,relayRadia); despawn(level,relayMeadow);
+            npc = null; relayRadia = null; relayMeadow = null;
         }
         private void despawn(ServerLevel level, UUID id) {
             if (id == null) return;
@@ -362,8 +371,19 @@ public final class FieldSessionManager {
             double distance = playerFlat.distanceTo(pivot);
             phase = FieldEncounterRules.nextPhase(phase,distance,graceTicks);
             if (FieldEncounterRules.shouldEngage(distance,graceTicks)) {
-                despawn(level);
-                BattleSessionManager.startEncounter(player,spec.id(),autoUnlocked,speedUnlocked);
+                boolean started;
+                if (layout.battleAnchor() != null) {
+                    started = BattleSessionManager.startEncounterAt(player, spec.id(), autoUnlocked, speedUnlocked,
+                            layout.battleAnchor(), layout.battleYaw());
+                    if (!started) {
+                        graceTicks = 40;
+                        return false;
+                    }
+                    despawn(level);
+                } else {
+                    despawn(level);
+                    BattleSessionManager.startEncounter(player,spec.id(),autoUnlocked,speedUnlocked);
+                }
                 return true;
             }
             Vec3 target;

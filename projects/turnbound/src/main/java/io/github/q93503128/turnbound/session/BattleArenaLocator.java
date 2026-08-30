@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
-/** Finds an open, nearby arena so a field encounter never starts inside a wall/tree. */
+/** Finds or validates an open arena so a field encounter never starts inside a wall/tree. */
 final class BattleArenaLocator {
     record Arena(Vec3 center, float facingYaw) {}
 
@@ -45,6 +45,14 @@ final class BattleArenaLocator {
 
         if (best == null) best = groundCenter(level, preferred.x, preferred.z);
         return new Arena(best, yaw);
+    }
+
+    /** Canonical field anchors are exact. If the authored space is obstructed, the encounter must not silently relocate. */
+    static Arena fixedIfOpen(ServerPlayer player, Vec3 center, float yaw) {
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 forward = forward(yaw);
+        Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
+        return score(level, center, forward, right) == 0 ? new Arena(center, yaw) : null;
     }
 
     static Vec3 forward(float yaw) {

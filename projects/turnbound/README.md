@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 턴제 RPG.
 
-현재 제작 버전: `0.1.0-alpha.13` — v0.4 Southgate Chapter 1 canonical realignment.
+현재 제작 버전: `0.1.0-alpha.14` — Aster March v0.4 canonical coordinate spine.
 
 ## 전투 코어
 - 서버 정본 SPD 누적 Turn Gauge
@@ -26,8 +26,8 @@ Minecraft Java 26.2 / NeoForge 26.2.0.62 기반 3D 캐릭터 수집형 파티 �
 - F03 변경 사냥꾼
 
 메인 퀘스트:
-1. `MQ_C01_01_patrol` — ENC_M01 + ENC_M02
-2. `MQ_C01_02_unstable` — E003 포함 ENC_M04
+1. `MQ_C01_01_patrol` — ENC_M01 + ENC_M02 → FT_MEADOW 해금
+2. `MQ_C01_02_unstable` — E003 포함 ENC_M04 → B01 길 개방
 3. `MQ_C01_03_graul` — B01 들이받는 왕 그라울
 
 M03/M05는 필드에 존재하지만 B01 해금 필수 조건은 아니다.
@@ -49,6 +49,7 @@ M03/M05는 필드에 존재하지만 B01 해금 필수 조건은 아니다.
 
 ## Chapter 1 해금/보상
 B01 전에는 캠페인 AUTO / 2.0x 잠금. 일반 필드전 도주 가능, B01 도주 불가.
+alpha.14에서는 잠긴 상태가 버튼에도 `AUTO 잠금` / `×2 잠금` / `도주 불가`로 표시되고 클라이언트 입력도 차단된다.
 
 B01 첫 클리어:
 - XP 5,000
@@ -63,9 +64,24 @@ B01 첫 클리어:
 
 추가 튜토리얼 Crystal +1,800은 P3 영속 재화/Archive 단계에서 연결한다.
 
-## 필드
-현재 A01/A02는 Southgate Meadow를 검증하는 두 제작 셀이다. alpha.12의 A02를 Chapter 2 지역으로 취급하지 않는다. 실제 Chapter 2는 v0.4 정본의 Gloamwood다.
+## Aster March / Southgate P2
+`AsterMarchRegionCatalog`가 v0.4의 지역 범위와 주요 Fast Travel/Boss Anchor를 코드에서 고정한다.
 
+현재 실제 플레이 동선:
+`FT_RADIA (0,66,20)`
+→ Radia South Gate
+→ Southgate A01/A02 제작 셀
+→ `FT_MEADOW (190,67,230)`
+→ M04/M05 전투 클리어링
+→ B01 봉쇄문
+→ `B01 (355,68,245), yaw 90°`
+
+Southgate 전체를 직사각형 평지로 미는 대신, 정본 지역 범위 안에서 도로·광장·전투장만 authored playable ribbon으로 제작한다.
+A01/A02는 Southgate Meadow 내부 제작 셀이며 별도 Chapter가 아니다.
+
+M04/M05/B01은 authored battle anchor를 사용한다. 특히 B01은 정본 좌표를 정확히 사용하며, formation/camera 공간이 막혔을 경우 주변 임의 위치로 전투장을 옮기지 않고 전투 시작을 취소한다.
+
+## 필드
 - PATROL → ALERT → ENGAGE 가시적 조우
 - 랜덤 인카운터 없음
 - 전투 종료 후 정확한 필드 위치 복귀
@@ -73,13 +89,14 @@ B01 첫 클리어:
 - 바닐라 체력/허기/생존 HUD 및 블록 진행 제거
 
 ## 테스트 명령어
-- `/turnbound field` : Chapter 1 P2 필드 진입
+- `/turnbound field` : Chapter 1 P2 필드 진입. 시작점은 FT_RADIA
 - `/turnbound status` : 메인 퀘스트 UI
-- `/turnbound battle` : P01~P04 4v5 전투 코어 진단. 캠페인 해금과 독립적으로 AUTO/2x 테스트 가능
+- `/turnbound battle` : 4v5 전투 코어 진단. 캠페인 해금과 독립적으로 AUTO/2x 테스트 가능
 - `/turnbound leave` : 현재 전투 강제 종료
 - `/turnbound p0` : 결정론적 자동 전투 진단
 
 ## 정본 델타
 - `DESIGN_DELTA_ALPHA13_CANON_REALIGN.md` : alpha.11~12 임시 분기를 v0.4 정본으로 재정렬
+- `DESIGN_DELTA_ALPHA14_CANON_WORLD.md` : Aster March/Southgate 정본 좌표와 battle anchor를 실제 P2 필드에 연결
 
-다음 P2는 Southgate 전체 공간/Radia/FT_MEADOW 정본 좌표 확장과 Chapter 2 Gloamwood 연결이다. P3에서 saveSchemaVersion 4, 보유/성장/Archive/장비/강화를 영속화한다.
+다음 P2는 Chapter 2 Gloamwood를 정본 범위와 `FT_GLOAM (-40,70,-300)` / B02 Anchor에 맞춰 시작한다. P3에서 saveSchemaVersion 4, 보유/성장/Archive/장비/강화를 영속화한다.

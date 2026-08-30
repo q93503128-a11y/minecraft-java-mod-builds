@@ -4,6 +4,7 @@ import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.SouthgateEncounterCatalog;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,22 @@ public final class BattleSessionManager {
         BattleSession session = new BattleSession(player, encounterId, autoAllowed, speedAllowed, fleeAllowed);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
+    }
+
+    /**
+     * Starts a field encounter at its authored canonical battle anchor. No nearby fallback is allowed.
+     * Returns false when the exact formation/camera footprint is obstructed so the field patrol can remain in place.
+     */
+    public static boolean startEncounterAt(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed,
+                                           Vec3 center, float yaw) {
+        BattleArenaLocator.Arena arena = BattleArenaLocator.fixedIfOpen(player, center, yaw);
+        if (arena == null) return false;
+        end(player);
+        boolean fleeAllowed = !SouthgateEncounterCatalog.spec(encounterId).boss();
+        BattleSession session = new BattleSession(player, encounterId, autoAllowed, speedAllowed, fleeAllowed, arena);
+        SESSIONS.put(player.getUUID(), session);
+        BattleNetwork.sync(player, session);
+        return true;
     }
 
     public static boolean active(ServerPlayer player) {

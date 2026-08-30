@@ -136,15 +136,16 @@ public final class BattleScreen extends Screen {
         confirmButton.active = confirmed != null;
         confirmButton.setMessage(Component.literal(confirmed == null ? "대상 선택" : "사용"));
 
-        autoButton.setMessage(Component.literal(snapshot.auto() ? "AUTO✓" : "AUTO"));
-        speedButton.setMessage(Component.literal("×" + snapshot.speed()));
-        fleeButton.setMessage(Component.literal(snapshot.finished() ? "복귀" : "도주"));
+        BattleControlRules.State controls = BattleControlRules.state(snapshot);
+        autoButton.setMessage(Component.literal(controls.autoLabel()));
+        speedButton.setMessage(Component.literal(controls.speedLabel()));
+        fleeButton.setMessage(Component.literal(controls.fleeLabel()));
         autoButton.visible = !settingsOpen && !snapshot.finished();
         speedButton.visible = !settingsOpen && !snapshot.finished();
         fleeButton.visible = !settingsOpen;
-        autoButton.active = !snapshot.finished();
-        speedButton.active = !snapshot.finished();
-        fleeButton.active = true;
+        autoButton.active = controls.autoActive();
+        speedButton.active = controls.speedActive();
+        fleeButton.active = controls.fleeActive();
     }
 
     private static boolean canChooseSkill(ClientBattleState.Snapshot snapshot) {
@@ -227,17 +228,21 @@ public final class BattleScreen extends Screen {
     }
 
     private void toggleAuto() {
-        if (settingsOpen || ClientBattleState.snapshot().finished()) return;
+        var snapshot = ClientBattleState.snapshot();
+        if (settingsOpen || snapshot.finished() || !snapshot.autoAllowed()) return;
         clearSelection(true);
         send("AUTO");
     }
 
     private void toggleSpeed() {
-        if (!settingsOpen && !ClientBattleState.snapshot().finished()) send("SPEED");
+        var snapshot = ClientBattleState.snapshot();
+        if (!settingsOpen && !snapshot.finished() && snapshot.speedAllowed()) send("SPEED");
     }
 
     private void flee() {
         if (settingsOpen) return;
+        var snapshot = ClientBattleState.snapshot();
+        if (!snapshot.finished() && !snapshot.fleeAllowed()) return;
         clearSelection(true);
         send("FLEE");
     }
@@ -371,7 +376,7 @@ public final class BattleScreen extends Screen {
         drawActionHeader(graphics, current, snapshot);
         drawResult(graphics, snapshot);
         drawSkillTooltip(graphics, current, snapshot, mouseX, mouseY);
-        if (settingsOpen) drawSettings(graphics, current);
+        if (settingsOpen) drawSettings(graphics, current, snapshot);
     }
 
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
@@ -518,7 +523,7 @@ public final class BattleScreen extends Screen {
         graphics.text(font, Component.literal(line), x + 9, y + 7, TEXT, true);
     }
 
-    private void drawSettings(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current) {
+    private void drawSettings(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.settingsPanel();
         graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0xF010131A);
         graphics.fill(panel.x(), panel.y(), panel.x() + 3, panel.bottom(), GAUGE);
@@ -528,7 +533,10 @@ public final class BattleScreen extends Screen {
         graphics.text(font, Component.literal("LMB 드래그  회전   휠  줌"), x, y + 18, SECONDARY, true);
         graphics.text(font, Component.literal("캐릭터 클릭 / Tab  대상 선택"), x, y + 34, SECONDARY, true);
         graphics.text(font, Component.literal("Enter  사용 확정   RMB  취소"), x, y + 50, SECONDARY, true);
-        graphics.text(font, Component.literal("A 자동   X 배속   R 도주"), x, y + 66, SECONDARY, true);
+        String controls = (snapshot.autoAllowed() ? "A 자동" : "A 자동(잠금)")
+                + "   " + (snapshot.speedAllowed() ? "X 배속" : "X 배속(잠금)")
+                + "   " + (snapshot.fleeAllowed() ? "R 도주" : "R 도주 불가");
+        graphics.text(font, Component.literal(controls), x, y + 66, SECONDARY, true);
         graphics.text(font, Component.literal("Esc / RMB  닫기"), x, y + 86, MUTED, true);
     }
 

@@ -7,20 +7,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FieldTravelProgressTest {
     @Test
-    void a01RelayCanActivateImmediatelyButA02RequiresChapterClear() {
+    void radiaIsImmediateAndMqC0101UnlocksCanonicalMeadowFastTravel() {
         SouthgateChapterProgress progress = new SouthgateChapterProgress();
-        assertTrue(progress.activateRelay(FieldTravelCatalog.RELAY_A01));
-        assertTrue(progress.relayActivated(FieldTravelCatalog.RELAY_A01));
-        assertFalse(progress.activateRelay(FieldTravelCatalog.RELAY_A02));
-        assertFalse(progress.relayActivated(FieldTravelCatalog.RELAY_A02));
+        assertTrue(progress.activateRelay(FieldTravelCatalog.FT_RADIA));
+        assertTrue(progress.relayActivated(FieldTravelCatalog.FT_RADIA));
+        assertFalse(progress.activateRelay(FieldTravelCatalog.FT_MEADOW));
+        assertFalse(progress.relayActivated(FieldTravelCatalog.FT_MEADOW));
 
-        for (String id : SouthgateEncounterCatalog.normalEncounterIds()) progress.recordVictory(id);
-        progress.recordVictory(SouthgateEncounterCatalog.B01_GRAUL);
+        progress.recordVictory(SouthgateEncounterCatalog.ENC_M01);
+        assertFalse(progress.relayActivated(FieldTravelCatalog.FT_MEADOW));
+        progress.recordVictory(SouthgateEncounterCatalog.ENC_M02);
 
-        assertTrue(progress.chapterCleared());
-        assertTrue(progress.activateRelay(FieldTravelCatalog.RELAY_A02));
-        assertTrue(progress.relayActivated(FieldTravelCatalog.RELAY_A02));
-        assertFalse(progress.activateRelay(FieldTravelCatalog.RELAY_A02));
+        assertTrue(progress.meadowRouteUnlocked());
+        assertTrue(progress.relayActivated(FieldTravelCatalog.FT_MEADOW));
+        assertFalse(progress.activateRelay(FieldTravelCatalog.FT_MEADOW));
+        assertEquals(190.0, FieldTravelCatalog.destination(FieldTravelCatalog.FT_MEADOW).position().x);
+        assertEquals(230.0, FieldTravelCatalog.destination(FieldTravelCatalog.FT_MEADOW).position().z);
     }
 
     @Test

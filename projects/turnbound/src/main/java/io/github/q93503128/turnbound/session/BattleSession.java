@@ -38,9 +38,16 @@ public final class BattleSession {
     private boolean finished;
     private boolean readyShown;
 
-    BattleSession(ServerPlayer player) { this(player, "", true, true, true); }
+    BattleSession(ServerPlayer player) {
+        this(player, "", true, true, true, BattleArenaLocator.locate(player));
+    }
 
     BattleSession(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed) {
+        this(player, encounterId, autoAllowed, speedAllowed, fleeAllowed, BattleArenaLocator.locate(player));
+    }
+
+    BattleSession(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed, boolean fleeAllowed,
+                  BattleArenaLocator.Arena arena) {
         this.encounterId = encounterId == null ? "" : encounterId;
         this.autoAllowed = autoAllowed;
         this.speedAllowed = speedAllowed;
@@ -54,7 +61,6 @@ public final class BattleSession {
         returnPitch = player.getXRot();
         playerWasInvisible = player.isInvisible();
 
-        BattleArenaLocator.Arena arena = BattleArenaLocator.locate(player);
         presentationCenter = arena.center();
         battleYaw = arena.facingYaw();
         player.setInvisible(true);
