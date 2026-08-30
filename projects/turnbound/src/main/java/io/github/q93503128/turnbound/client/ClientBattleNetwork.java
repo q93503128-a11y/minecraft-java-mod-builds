@@ -21,12 +21,16 @@ public final class ClientBattleNetwork {
 
             if (snapshot.active()) {
                 if (!wasActive) BattleCameraController.enter(snapshot.arenaYaw());
-                if (!(minecraft.gui.screen() instanceof BattleScreen)) {
+                if (snapshot.finished()) {
+                    if (!(minecraft.gui.screen() instanceof BattleResultScreen)) minecraft.gui.setScreen(new BattleResultScreen());
+                } else if (!(minecraft.gui.screen() instanceof BattleScreen)) {
                     minecraft.gui.setScreen(new BattleScreen());
                 }
             } else {
                 if (wasActive) BattleCameraController.exit();
-                if (minecraft.gui.screen() instanceof BattleScreen) minecraft.gui.setScreen(null);
+                if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) {
+                    minecraft.gui.setScreen(null);
+                }
             }
         });
     }
