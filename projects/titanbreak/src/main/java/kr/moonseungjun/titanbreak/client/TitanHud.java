@@ -46,54 +46,66 @@ public final class TitanHud {
         int height = mc.getWindow().getGuiScaledHeight();
         int width = mc.getWindow().getGuiScaledWidth();
         Font font = mc.font;
-        int barWidth = Math.min(158, Math.max(120, width / 4));
-        int x = Math.max(12, width / 2 - 116);
-        int y = height - 68;
 
         double health = Math.max(0.0D, CombatScale.toVisible(mc.player.getHealth()));
         double maxHealth = Math.max(1.0D, CombatScale.toVisible(mc.player.getMaxHealth()));
         double hp = Math.min(1.0D, health / maxHealth);
-        double sanity = Math.max(0.0D, Math.min(100.0D, TitanClientState.decimal("sanity", 100.0D)));
-        double heat = Math.max(0.0D, Math.min(100.0D, TitanClientState.decimal("heat", 0.0D)));
+        double sanity = clamp100(TitanClientState.decimal("sanity", 100.0D));
+        double heat = clamp100(TitanClientState.decimal("heat", 0.0D));
         boolean active = TitanClientState.flag("active");
 
-        drawMechanicalLiquidGauge(g, x, y, barWidth, hp,
-                0xFF0D1014, 0xFF313942, 0xFF9DA8B1,
-                hp < 0.25D ? 0xFFC93243 : 0xFFB92E40,
-                0xFFF27882, mc.player.tickCount, true);
-        drawMechanicalLiquidGauge(g, x, y + 18, barWidth, sanity / 100.0D,
-                0xFF0D1014, 0xFF313942, 0xFF9DA8B1,
-                sanity < 25.0D ? 0xFF654A9C : 0xFF355C91,
-                0xFF8DB7EA, mc.player.tickCount + 11, false);
-
-        g.text(font, Component.translatable("hud.titanbreak.health",
-                        String.format(Locale.ROOT, "%.0f", health), String.format(Locale.ROOT, "%.0f", maxHealth)),
-                x + 8, y - 10, 0xFFE8EDF1);
-        g.text(font, Component.translatable("hud.titanbreak.sanity", String.format(Locale.ROOT, "%.0f", sanity)),
-                x + 8, y + 28, 0xFFD4E2F2);
-
-        int adaptationLevel = TitanClientState.integer("adaptLevel", 1);
-        int rd = TitanClientState.integer("rd", 0);
-        g.text(font, Component.translatable("hud.titanbreak.progress", adaptationLevel, rd), x, y + 42, 0xFF9FAEB7);
-
-        if (active || heat > 1.0D) {
-            int hx = x + barWidth + 14;
-            int top = y - 1;
-            int gaugeHeight = 34;
-            g.fill(hx - 3, top - 2, hx + 8, top + gaugeHeight + 3, 0xFF0A0D10);
-            g.fill(hx - 2, top - 1, hx + 7, top + gaugeHeight + 2, 0xFF4A5158);
-            g.fill(hx, top + 1, hx + 5, top + gaugeHeight, 0xFF171B1F);
-            int filled = (int) Math.round((gaugeHeight - 3) * heat / 100.0D);
-            int color = heat >= 80.0D ? 0xFFFF554D : 0xFFE39443;
-            g.fill(hx + 1, top + gaugeHeight - filled, hx + 4, top + gaugeHeight - 1, color);
-            Component stateText = Component.translatable(active
-                    ? "hud.titanbreak.reflex_active"
-                    : "hud.titanbreak.cooling");
-            g.text(font, stateText, hx + 11, y + 9, active ? 0xFFF2D3AC : 0xFFAEB4B9);
-        }
+        renderVitalsDeck(g, mc, font, width, height, health, maxHealth, hp, sanity, heat, active);
 
         if (TitanKeyMappings.ANALYSIS.isDown()) renderAnalysis(g, mc, font, width);
         if (TitanClientState.hasInstalled("threat_detection")) renderThreatWarning(g, mc, font, width);
+    }
+
+    private static void renderVitalsDeck(GuiGraphicsExtractor g, Minecraft mc, Font font, int width, int height,
+                                         double health, double maxHealth, double hp, double sanity,
+                                         double heat, boolean active) {
+        int deckWidth = Math.min(214, Math.max(176, width / 3));
+        int left = Math.max(8, width / 2 - deckWidth - 104);
+        int bottom = height - 8;
+        int top = bottom - 62;
+        int right = left + deckWidth;
+
+        g.fill(left, top, right, bottom, 0xD90A0E12);
+        g.outline(left, top, deckWidth, bottom - top, TitanInterfaceTheme.LINE_SOFT);
+        g.fill(left + 1, top + 1, right - 1, top + 14, 0xE51C272E);
+        g.fill(left + 1, top + 14, right - 1, top + 15, TitanInterfaceTheme.CYAN);
+        drawHudCorners(g, left, top, right, bottom, active ? TitanInterfaceTheme.ACCENT : TitanInterfaceTheme.CYAN);
+
+        int adaptationLevel = TitanClientState.integer("adaptLevel", 1);
+        int rd = TitanClientState.integer("rd", 0);
+        Component progress = Component.translatable("hud.titanbreak.progress", adaptationLevel, rd);
+        g.text(font, progress, left + 7, top + 4, TitanInterfaceTheme.TEXT_MUTED, false);
+
+        int gaugeX = left + 7;
+        int gaugeWidth = deckWidth - 14;
+        int hpY = top + 24;
+        int sanityY = top + 43;
+
+        Component hpText = Component.translatable("hud.titanbreak.health",
+                String.format(Locale.ROOT, "%.0f", health), String.format(Locale.ROOT, "%.0f", maxHealth));
+        g.text(font, hpText, gaugeX, hpY - 8, TitanInterfaceTheme.TEXT, false);
+        drawSegmentedGauge(g, gaugeX, hpY, gaugeWidth, hp,
+                hp < 0.25D ? 0xFFD84A54 : 0xFFC43A45, 10, mc.player.tickCount, true);
+
+        Component sanityText = Component.translatable("hud.titanbreak.sanity", String.format(Locale.ROOT, "%.0f", sanity));
+        g.text(font, sanityText, gaugeX, sanityY - 8, 0xFFB7CDE0, false);
+        drawSegmentedGauge(g, gaugeX, sanityY, gaugeWidth, sanity / 100.0D,
+                sanity < 25.0D ? 0xFF785AA8 : 0xFF4A78A5, 10, mc.player.tickCount + 7, false);
+
+        if (active || heat > 1.0D) {
+            int heatX = right + 7;
+            int heatTop = top + 5;
+            int heatHeight = 52;
+            drawHeatRail(g, heatX, heatTop, heatHeight, heat, active);
+            Component state = Component.translatable(active ? "hud.titanbreak.reflex_active" : "hud.titanbreak.cooling");
+            int textX = heatX + 12;
+            int textY = top + 23;
+            g.text(font, state, textX, textY, active ? TitanInterfaceTheme.ACCENT : TitanInterfaceTheme.TEXT_MUTED, false);
+        }
     }
 
     private static void renderAnalysis(GuiGraphicsExtractor g, Minecraft mc, Font font, int width) {
@@ -103,61 +115,87 @@ public final class TitanHud {
         boolean targetAssist = TitanClientState.hasInstalled("target_assist");
         if (!tactical && !thermal && !ballistic && !targetAssist) return;
 
-        int left = width - 228;
-        int top = 24;
-        g.fill(left, top, width - 14, top + 112, 0xB810171C);
-        g.fill(left + 2, top + 2, width - 16, top + 22, 0xDD20313B);
-        g.text(font, Component.translatable("hud.titanbreak.analysis"), left + 10, top + 8, 0xFFE7EEF2);
+        int panelWidth = Math.min(224, Math.max(184, width / 3));
+        int right = width - 12;
+        int left = right - panelWidth;
+        int top = 18;
+        int bottom = top + 126;
+
+        g.fill(left, top, right, bottom, 0xD510171C);
+        g.outline(left, top, panelWidth, bottom - top, TitanInterfaceTheme.LINE_SOFT);
+        g.fill(left + 1, top + 1, right - 1, top + 21, 0xE51E2C34);
+        g.fill(left + 1, top + 21, right - 1, top + 22, TitanInterfaceTheme.CYAN);
+        drawHudCorners(g, left, top, right, bottom, TitanInterfaceTheme.CYAN);
+        g.text(font, Component.translatable("hud.titanbreak.analysis"), left + 8, top + 7, TitanInterfaceTheme.TEXT, false);
 
         int jamTicks = TitanClientState.integer("jamTicks", 0);
         if (jamTicks > 0) {
-            int phase = mc.player == null ? 0 : Math.floorMod(mc.player.tickCount, 12);
-            for (int y = top + 30 + phase; y < top + 106; y += 12) {
-                g.fill(left + 8, y, width - 22, y + 2, 0x887A345E);
-            }
-            g.text(font, Component.translatable("hud.titanbreak.analysis_jammed",
-                            String.format(Locale.ROOT, "%.1f", jamTicks / 20.0D)),
-                    left + 10, top + 48, 0xFFE37C9D);
+            renderJammed(g, mc, font, left, top, right, bottom, jamTicks);
             return;
         }
 
         Entity target = mc.crosshairPickEntity;
-        int y = top + 32;
+        int y = top + 31;
         if (target instanceof LivingEntity living) {
             double distance = mc.player.distanceTo(living);
-            g.text(font, living.getType().getDescription(), left + 10, y, 0xFFF1D39A);
-            y += 15;
+            g.text(font, living.getType().getDescription(), left + 9, y, TitanInterfaceTheme.ACCENT, false);
+            g.horizontalLine(left + 9, right - 9, y + 11, TitanInterfaceTheme.LINE_SOFT);
+            y += 18;
+
             if (tactical) {
-                g.text(font, Component.translatable("hud.titanbreak.analysis_range", String.format(Locale.ROOT, "%.1f", distance)),
-                        left + 10, y, 0xFFC6D4DB);
-                y += 15;
-                g.text(font, Component.translatable("hud.titanbreak.analysis_health",
-                                String.format(Locale.ROOT, "%.0f", CombatScale.toVisible(living.getHealth())),
-                                String.format(Locale.ROOT, "%.0f", CombatScale.toVisible(living.getMaxHealth()))),
-                        left + 10, y, 0xFFC6D4DB);
-                y += 15;
+                Component range = Component.translatable("hud.titanbreak.analysis_range", String.format(Locale.ROOT, "%.1f", distance));
+                g.text(font, range, left + 9, y, TitanInterfaceTheme.TEXT_MUTED, false);
+                y += 14;
+                double targetHp = CombatScale.toVisible(living.getHealth());
+                double targetMax = Math.max(1.0D, CombatScale.toVisible(living.getMaxHealth()));
+                Component targetHealth = Component.translatable("hud.titanbreak.analysis_health",
+                        String.format(Locale.ROOT, "%.0f", targetHp), String.format(Locale.ROOT, "%.0f", targetMax));
+                g.text(font, targetHealth, left + 9, y, TitanInterfaceTheme.TEXT_MUTED, false);
+                y += 13;
+                drawSegmentedGauge(g, left + 9, y, panelWidth - 18,
+                        Math.max(0.0D, Math.min(1.0D, targetHp / targetMax)), 0xFFB34A50, 12, living.tickCount, false);
+                y += 11;
             }
+
             if (ballistic) {
                 double flight = Math.max(0.2D, Math.min(0.6D, distance / 60.0D));
                 Vec3 lead = living.getDeltaMovement().scale(flight * 20.0D);
                 g.text(font, Component.translatable("hud.titanbreak.analysis_lead",
                                 String.format(Locale.ROOT, "%.1f", lead.horizontalDistance())),
-                        left + 10, y, 0xFF8CB8E5);
-                y += 15;
+                        left + 9, y, 0xFF8CB8E5, false);
+                y += 14;
             }
             if (targetAssist && distance <= 24.0D) {
-                g.text(font, Component.translatable("hud.titanbreak.target_assist_ready"), left + 10, y, 0xFF8ED0A2);
+                g.text(font, Component.translatable("hud.titanbreak.target_assist_ready"),
+                        left + 9, y, TitanInterfaceTheme.GOOD, false);
             }
         } else {
-            g.text(font, Component.translatable("hud.titanbreak.analysis_no_target"), left + 10, y, 0xFF778994);
+            g.textWithWordWrap(font, Component.translatable("hud.titanbreak.analysis_no_target"),
+                    left + 9, y, panelWidth - 18, TitanInterfaceTheme.TEXT_MUTED, false);
         }
 
         if (thermal && mc.level != null) {
             AABB area = mc.player.getBoundingBox().inflate(24.0D);
             int signatures = mc.level.getEntitiesOfClass(LivingEntity.class, area,
                     entity -> entity != mc.player && entity.isAlive()).size();
-            g.text(font, Component.translatable("hud.titanbreak.thermal_signatures", signatures), left + 10, top + 92, 0xFFE39B71);
+            Component thermalText = Component.translatable("hud.titanbreak.thermal_signatures", signatures);
+            g.text(font, thermalText, left + 9, bottom - 17, 0xFFE39B71, false);
+            drawContactPips(g, right - 66, bottom - 17, Math.min(6, signatures));
         }
+    }
+
+    private static void renderJammed(GuiGraphicsExtractor g, Minecraft mc, Font font,
+                                     int left, int top, int right, int bottom, int jamTicks) {
+        int phase = mc.player == null ? 0 : Math.floorMod(mc.player.tickCount, 14);
+        for (int y = top + 29 + phase; y < bottom - 8; y += 14) {
+            g.fill(left + 8, y, right - 8, y + 2, 0x886A3657);
+        }
+        for (int x = left + 12 + phase; x < right - 12; x += 26) {
+            g.fill(x, top + 28, x + 2, bottom - 9, 0x334A83A0);
+        }
+        Component jammed = Component.translatable("hud.titanbreak.analysis_jammed",
+                String.format(Locale.ROOT, "%.1f", jamTicks / 20.0D));
+        g.centeredText(font, jammed, (left + right) / 2, top + 57, 0xFFE37C9D);
     }
 
     private static void renderThreatWarning(GuiGraphicsExtractor g, Minecraft mc, Font font, int width) {
@@ -165,46 +203,88 @@ public final class TitanHud {
         AABB area = mc.player.getBoundingBox().inflate(10.0D);
         boolean danger = !mc.level.getEntitiesOfClass(LivingEntity.class, area,
                 entity -> entity != mc.player && entity.isAlive() && entity instanceof Enemy).isEmpty();
-        if (danger) {
-            Component text = Component.translatable("hud.titanbreak.threat_warning");
-            int textWidth = font.width(text);
-            g.text(font, text, width / 2 - textWidth / 2, 38, 0xFFF06D66);
+        if (!danger) return;
+
+        Component text = Component.translatable("hud.titanbreak.threat_warning");
+        int textWidth = font.width(text);
+        int cx = width / 2;
+        int left = cx - textWidth / 2 - 13;
+        int right = cx + textWidth / 2 + 13;
+        int top = 31;
+        int bottom = 48;
+        int pulse = Math.floorMod(mc.player.tickCount, 12) < 6 ? 0xFFD95F5B : 0xFFA54848;
+
+        g.fill(left, top, right, bottom, 0xA51B1012);
+        g.fill(left, top, left + 2, bottom, pulse);
+        g.fill(right - 2, top, right, bottom, pulse);
+        g.horizontalLine(left, left + 12, top, pulse);
+        g.horizontalLine(right - 12, right, top, pulse);
+        g.horizontalLine(left, left + 12, bottom, pulse);
+        g.horizontalLine(right - 12, right, bottom, pulse);
+        g.centeredText(font, text, cx, top + 5, 0xFFF08B84);
+    }
+
+    private static void drawSegmentedGauge(GuiGraphicsExtractor g, int x, int y, int width,
+                                           double fraction, int fillColor, int segments,
+                                           int tick, boolean turbulent) {
+        fraction = Math.max(0.0D, Math.min(1.0D, fraction));
+        g.fill(x, y, x + width, y + 7, 0xFF11171B);
+        g.outline(x, y, width, 7, 0xFF47545C);
+
+        int innerX = x + 2;
+        int innerY = y + 2;
+        int innerWidth = Math.max(1, width - 4);
+        int filled = (int) Math.round(innerWidth * fraction);
+        if (filled > 0) g.fill(innerX, innerY, innerX + filled, innerY + 3, fillColor);
+
+        int step = Math.max(4, innerWidth / Math.max(1, segments));
+        for (int sx = innerX + step; sx < innerX + innerWidth; sx += step) {
+            g.fill(sx, innerY, sx + 1, innerY + 3, 0xAA11171B);
+        }
+        if (filled > 8) {
+            int phase = Math.floorMod(tick * (turbulent ? 2 : 1), 12);
+            for (int sx = innerX - phase; sx < innerX + filled; sx += 12) {
+                int start = Math.max(innerX, sx);
+                int end = Math.min(innerX + filled, start + 4);
+                if (end > start) g.fill(start, innerY, end, innerY + 1, 0x66FFFFFF);
+            }
         }
     }
 
-    private static void drawMechanicalLiquidGauge(GuiGraphicsExtractor g, int x, int y, int width,
-                                                   double fraction, int voidColor, int frameColor,
-                                                   int edgeColor, int liquidColor, int highlightColor,
-                                                   int tick, boolean turbulent) {
-        int height = 9;
-        g.fill(x, y, x + width, y + height, voidColor);
-        g.fill(x, y, x + width, y + 2, frameColor);
-        g.fill(x, y + height - 2, x + width, y + height, frameColor);
-        g.fill(x, y, x + 3, y + height, frameColor);
-        g.fill(x + width - 3, y, x + width, y + height, frameColor);
-        g.fill(x + 3, y + 2, x + width - 3, y + 3, 0xFF171C21);
-        g.fill(x, y, x + 7, y + 2, edgeColor);
-        g.fill(x + width - 7, y + height - 2, x + width, y + height, edgeColor);
-
-        int innerX = x + 4;
-        int innerY = y + 3;
-        int innerWidth = width - 8;
-        int innerHeight = 3;
-        int filled = Math.max(0, Math.min(innerWidth, (int) Math.round(innerWidth * fraction)));
-        g.fill(innerX, innerY, innerX + innerWidth, innerY + innerHeight, 0xFF171B20);
-        if (filled <= 0) return;
-
-        g.fill(innerX, innerY, innerX + filled, innerY + innerHeight, liquidColor);
-        int waveStep = turbulent ? 9 : 13;
-        int phase = Math.floorMod(tick * (turbulent ? 2 : 1), waveStep * 2);
-        for (int offset = -phase; offset < filled; offset += waveStep) {
-            int segmentLeft = innerX + Math.max(0, offset);
-            int right = Math.min(innerX + filled, segmentLeft + (turbulent ? 5 : 4));
-            if (right > segmentLeft) g.fill(segmentLeft, innerY, right, innerY + 1, highlightColor);
+    private static void drawHeatRail(GuiGraphicsExtractor g, int x, int y, int height,
+                                     double heat, boolean active) {
+        g.fill(x, y, x + 8, y + height, 0xDD0C1115);
+        g.outline(x, y, 8, height, TitanInterfaceTheme.LINE);
+        g.fill(x + 2, y + 2, x + 6, y + height - 2, 0xFF242B30);
+        int inner = height - 4;
+        int filled = (int) Math.round(inner * heat / 100.0D);
+        int color = heat >= 80.0D ? 0xFFF05A51 : TitanInterfaceTheme.ACCENT;
+        if (filled > 0) g.fill(x + 2, y + height - 2 - filled, x + 6, y + height - 2, color);
+        for (int ty = y + 8; ty < y + height - 4; ty += 8) {
+            g.horizontalLine(x - 2, x + 1, ty, active ? TitanInterfaceTheme.ACCENT : TitanInterfaceTheme.LINE);
         }
-        if (filled > 12) {
-            int bubble = Math.floorMod(tick * 3, filled - 4);
-            g.fill(innerX + 2 + bubble, innerY + 1, innerX + 4 + bubble, innerY + 2, 0x88FFFFFF);
+    }
+
+    private static void drawContactPips(GuiGraphicsExtractor g, int x, int y, int count) {
+        for (int i = 0; i < 6; i++) {
+            int px = x + i * 9;
+            int color = i < count ? 0xFFE39B71 : 0xFF34434A;
+            g.fill(px, y + 2, px + 5, y + 6, color);
         }
+    }
+
+    private static void drawHudCorners(GuiGraphicsExtractor g, int left, int top, int right, int bottom, int color) {
+        g.horizontalLine(left, left + 10, top, color);
+        g.verticalLine(left, top, top + 9, color);
+        g.horizontalLine(right - 10, right, top, color);
+        g.verticalLine(right - 1, top, top + 9, color);
+        g.horizontalLine(left, left + 10, bottom - 1, color);
+        g.verticalLine(left, bottom - 10, bottom - 1, color);
+        g.horizontalLine(right - 10, right, bottom - 1, color);
+        g.verticalLine(right - 1, bottom - 10, bottom - 1, color);
+    }
+
+    private static double clamp100(double value) {
+        return Math.max(0.0D, Math.min(100.0D, value));
     }
 }
