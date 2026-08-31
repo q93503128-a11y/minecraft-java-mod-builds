@@ -19,7 +19,7 @@ public final class SettlementHudOverlay {
 
     public static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui) return;
+        if (minecraft.player == null) return;
         SettlementSnapshotPayload data = ClientSettlementState.snapshot();
         int x = 8;
         int y = ClientCompanionLayout.resourceHudY();
