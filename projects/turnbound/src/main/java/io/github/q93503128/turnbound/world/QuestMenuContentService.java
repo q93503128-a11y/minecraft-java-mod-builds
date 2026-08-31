@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Adds canonical current-main and Character Quest summaries to the existing quest wire rows. */
+/** Adds canonical current-main and Character Quest summaries plus authored investigation routes to the quest menu. */
 public final class QuestMenuContentService {
     private record CharacterQuestText(String owner, String story, String trial) {}
 
@@ -18,7 +18,7 @@ public final class QuestMenuContentService {
 
     /**
      * Q rows deliberately reuse the existing RegionQuestRow wire shape so older UI code can render them.
-     * objectiveSpecified=false on Character Quests means their narrative is canon but a detailed field objective was not specified.
+     * Character quest detailed combat objectives remain unspecified; the physical investigation site is shown separately.
      */
     public static String encode(UUID playerId) {
         var snapshot = CampaignProgressStore.snapshot(playerId);
@@ -40,7 +40,9 @@ public final class QuestMenuContentService {
             out.append("Q|").append(quest.id()).append('|')
                     .append(safe("CHARACTER · " + quest.owner() + " · " + quest.name() + " · " + status)).append("|0|")
                     .append(completed ? 1 : 0).append('|')
-                    .append(safe(text.story() + " / Signature Trial: " + text.trial())).append('\n');
+                    .append(safe(text.story()
+                            + " / 조사 위치: " + CharacterQuestRouteCatalog.route(quest.owner())
+                            + " / Signature Trial: " + text.trial())).append('\n');
         }
         return out.toString();
     }
