@@ -27,12 +27,15 @@ public final class TitanResourceHud {
         double neuralCap = Math.max(1.0D, TitanClientState.decimal("neuralCap", 100.0D));
         double neural = neuralLoad / neuralCap;
         boolean active = TitanClientState.flag("active");
+        int integrityWorst = Math.max(0, Math.min(3, TitanClientState.integer("integrityWorst", 0)));
+        int integrityDamaged = Math.max(0, TitanClientState.integer("integrityDamaged", 0));
 
         double powerFraction = clamp01(power / powerCap);
         boolean showPower = active || powerFraction < 0.995D;
         boolean showHeat = heat > 0.01D;
         boolean showNeural = neural >= 0.70D;
-        if (!showPower && !showHeat && !showNeural) return;
+        boolean showIntegrity = integrityWorst > 0 && integrityDamaged > 0;
+        if (!showPower && !showHeat && !showNeural && !showIntegrity) return;
 
         int x = 13;
         int y = 63;
@@ -52,7 +55,10 @@ public final class TitanResourceHud {
         if (showNeural) {
             int color = neural >= 1.0D ? TitanInterfaceTheme.SIGNAL_RED : 0xFFB46EEA;
             drawNeuralWarning(graphics, x, y, neural, color);
+            y += 10;
         }
+
+        if (showIntegrity) drawIntegrityWarning(graphics, x, y, integrityWorst, integrityDamaged);
     }
 
     private static void drawThinGauge(GuiGraphicsExtractor graphics, int x, int y, int width,
@@ -70,9 +76,24 @@ public final class TitanResourceHud {
             int px = x + i * 7;
             graphics.fill(px, y, px + 4, y + 4, i < lit ? color : 0x55404B50);
         }
-        if (fraction > 1.0D) {
-            graphics.horizontalLine(x, x + 32, y + 6, color);
+        if (fraction > 1.0D) graphics.horizontalLine(x, x + 32, y + 6, color);
+    }
+
+    private static void drawIntegrityWarning(GuiGraphicsExtractor graphics, int x, int y,
+                                             int worst, int damagedCount) {
+        int color = worst >= 3 ? TitanInterfaceTheme.SIGNAL_RED
+                : worst == 2 ? 0xFFFF8A3D : TitanInterfaceTheme.ACCENT;
+        int lit = Math.max(1, Math.min(3, worst));
+        for (int i = 0; i < 3; i++) {
+            int px = x + i * 8;
+            graphics.fill(px, y, px + 5, y + 5, i < lit ? color : 0x44373E41);
         }
+        int countMarks = Math.min(5, damagedCount);
+        for (int i = 0; i < countMarks; i++) {
+            int px = x + 29 + i * 4;
+            graphics.fill(px, y + 1, px + 2, y + 4, color);
+        }
+        if (worst >= 3) graphics.horizontalLine(x, x + 47, y + 7, color);
     }
 
     private static double clamp01(double value) {

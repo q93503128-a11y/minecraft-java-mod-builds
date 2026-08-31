@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak.combat;
 
 import kr.moonseungjun.titanbreak.Titanbreak;
+import kr.moonseungjun.titanbreak.augmentation.AugmentIntegrityService;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
@@ -59,8 +60,12 @@ public final class OverdriveCirculationService {
         runtime.activeUntil = now + (enhancement >= 5 ? PLUS_FIVE_DURATION : BASE_DURATION);
         runtime.readyTick = runtime.activeUntil + REUSE_DELAY_AFTER_END;
 
+        double preActivationHeat = state.heat();
         double activationHeat = enhancement >= 10 ? 10.0D : 7.0D;
         data.setHeat(player, state.heat() + AugmentationResourceService.normalizedHeatGain(state, activationHeat));
+        if (enhancement >= 10 && preActivationHeat >= 60.0D) {
+            AugmentIntegrityService.stress(player, state, overdrive, preActivationHeat >= 80.0D ? 2 : 1);
+        }
         data.addMasteryXp(player, "overdrive_circulation", 4);
         TitanbreakNetwork.sync(player);
     }
@@ -92,6 +97,9 @@ public final class OverdriveCirculationService {
         if (player.level() instanceof ServerLevel level) {
             TitanPlayerData data = TitanPlayerData.get(level.getServer());
             double rawHeat = runtime.enhancement >= 10 ? 0.62D : 0.42D;
+            if (runtime.enhancement >= 10 && state.heat() >= 90.0D && player.tickCount % 40 == 0) {
+                AugmentIntegrityService.stress(player, state, overdrive, 1);
+            }
             data.setHeat(player, state.heat() + AugmentationResourceService.normalizedHeatGain(state, rawHeat));
             if (player.tickCount % 20 == 0) data.addMasteryXp(player, "overdrive_circulation", 2);
         }

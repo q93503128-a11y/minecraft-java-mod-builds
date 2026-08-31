@@ -5,6 +5,7 @@ import kr.moonseungjun.titanbreak.combat.CombatScale;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -168,15 +169,39 @@ public final class AugmentationEffectService {
 
     private static void tickNanoRepair(ServerPlayer player, TitanPlayerData.State state) {
         TitanPlayerData.AugmentInstance nano = state.firstInstalledInstance("nano_repair_organ");
-        if (nano == null || player.getHealth() >= player.getMaxHealth()) return;
+        if (nano == null) return;
+
         int sinceDamage = player.tickCount - LAST_DAMAGE_TICK.getOrDefault(player.getUUID(), Integer.MIN_VALUE / 2);
         boolean combatRepair = nano.enhancement() >= 7 && sinceDamage >= 20;
         boolean safeRepair = sinceDamage >= 100;
-        if (!combatRepair && !safeRepair) return;
-        int interval = nano.enhancement() >= 5 ? 30 : 40;
-        if (player.tickCount % interval != 0) return;
-        double visibleHeal = combatRepair && !safeRepair ? 1.0D : 2.5D;
-        player.heal((float) CombatScale.toInternal(visibleHeal));
+
+        if (player.getHealth() < player.getMaxHealth() && (combatRepair || safeRepair)) {
+            int interval = nano.enhancement() >= 5 ? 30 : 40;
+            if (player.tickCount % interval == 0) {
+                double visibleHeal = combatRepair && !safeRepair ? 1.0D : 2.5D;
+                player.heal((float) CombatScale.toInternal(visibleHeal));
+            }
+        }
+
+        if (nano.enhancement() < 10 || sinceDamage < 60 || player.tickCount % 100 != 0
+                || AugmentIntegrityService.worstRank(state) <= 0) return;
+
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId("nano_repair_organ");
+        if (definition == null) return;
+        double repairPower = Math.max(2.0D, definition.powerLoad() * 0.55D)
+                * state.powerLoadMultiplier("nano_repair_organ");
+        if (!AugmentationResourceService.trySpendBurstPower(player, state, repairPower)) return;
+
+        if (!(player.level() instanceof ServerLevel level)) return;
+        TitanPlayerData data = TitanPlayerData.get(level.getServer());
+        if (!AugmentIntegrityService.repairWorstInstalled(player, state)) return;
+
+        double rawHeat = Math.max(0.0D, definition.heatLoad() * 0.35D)
+                * state.heatLoadMultiplier("nano_repair_organ");
+        if (rawHeat > 0.0D) {
+            data.setHeat(player, state.heat() + AugmentationResourceService.normalizedHeatGain(state, rawHeat));
+        }
+        data.addMasteryXp(player, "nano_repair_organ", 3);
     }
 
     private static void trackDamage(ServerPlayer player) {

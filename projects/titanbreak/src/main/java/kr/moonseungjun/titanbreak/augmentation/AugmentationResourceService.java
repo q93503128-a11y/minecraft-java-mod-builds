@@ -97,10 +97,11 @@ public final class AugmentationResourceService {
             AugmentationCatalog.Definition definition = AugmentationCatalog.byId(instance.id());
             if (definition == null) continue;
 
-            powerLoad += scaledSignedLoad(definition.powerLoad(), state.powerLoadMultiplier(instance.id()));
-            heatLoad += scaledSignedLoad(definition.heatLoad(), state.heatLoadMultiplier(instance.id()));
+            double integrity = AugmentIntegrityService.loadMultiplier(instance);
+            powerLoad += scaledSignedLoad(definition.powerLoad(), state.powerLoadMultiplier(instance.id()) * integrity);
+            heatLoad += scaledSignedLoad(definition.heatLoad(), state.heatLoadMultiplier(instance.id()) * integrity);
 
-            double neural = scaledSignedLoad(definition.neuralLoad(), state.neuralLoadMultiplier(instance.id()));
+            double neural = scaledSignedLoad(definition.neuralLoad(), state.neuralLoadMultiplier(instance.id()) * integrity);
             if (neural > 0.0D && bus != null) {
                 if (busEnhancement >= 7 && AUTO_CONTROL_AUGMENTS.contains(instance.id())) neural *= 0.85D;
                 if (busEnhancement >= 10 && TEMPORAL_AUGMENTS.contains(instance.id())) neural *= 0.80D;
@@ -159,6 +160,7 @@ public final class AugmentationResourceService {
                 ? 0.90D : 1.0D;
         return definition.powerLoad()
                 * state.powerLoadMultiplier(augmentId)
+                * AugmentIntegrityService.worstLoadMultiplier(state, augmentId)
                 * 0.05D
                 * resources.powerCostMultiplier()
                 * stabilityMultiplier;

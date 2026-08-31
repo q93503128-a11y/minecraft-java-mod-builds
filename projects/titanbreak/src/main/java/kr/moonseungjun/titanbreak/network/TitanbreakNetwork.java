@@ -1,5 +1,6 @@
 package kr.moonseungjun.titanbreak.network;
 
+import kr.moonseungjun.titanbreak.augmentation.AugmentIntegrityService;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
@@ -124,6 +125,8 @@ public final class TitanbreakNetwork {
                 + ";heatLoad=" + one(resources.heatLoad())
                 + ";neuralLoad=" + one(resources.neuralLoad())
                 + ";neuralOver=" + (resources.neuralOverloaded() ? 1 : 0)
+                + ";integrityDamaged=" + AugmentIntegrityService.damagedCount(state)
+                + ";integrityWorst=" + AugmentIntegrityService.worstRank(state)
                 + ";assistActive=" + (NeuralCombatAssistService.active(player.getUUID()) ? 1 : 0)
                 + ";autopilotTicks=" + CombatAutopilotService.remainingTicks(player)
                 + ";overdriveTicks=" + OverdriveCirculationService.remainingTicks(player)
