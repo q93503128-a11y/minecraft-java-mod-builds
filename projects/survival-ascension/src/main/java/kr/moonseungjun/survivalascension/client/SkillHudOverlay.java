@@ -25,7 +25,7 @@ public final class SkillHudOverlay {
 
     public static void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui) return;
+        if (minecraft.player == null) return;
 
         List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();
         if (updates.isEmpty()) return;
