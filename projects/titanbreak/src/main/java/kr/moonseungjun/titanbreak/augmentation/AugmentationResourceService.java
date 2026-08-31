@@ -3,6 +3,8 @@ package kr.moonseungjun.titanbreak.augmentation;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +18,9 @@ public final class AugmentationResourceService {
     private static final double BASE_POWER_REGEN_PER_TICK = 0.20D;
     private static final double BASE_COOLING_PER_TICK = 0.45D;
     private static final int POWER_REGEN_DELAY_TICKS = 10;
+    private static final int STABLE_POWER_REGEN_DELAY_TICKS = 5;
+    private static final double HIGH_OUTPUT_BURST_THRESHOLD = 8.0D;
+    private static final double HIGH_HEAT_SPIKE_THRESHOLD = 20.0D;
 
     private static final Set<String> AUTO_CONTROL_AUGMENTS = Set.of(
             "target_assist",
@@ -28,6 +33,9 @@ public final class AugmentationResourceService {
     private static final Set<String> TEMPORAL_AUGMENTS = Set.of(
             "reflex_drive_i",
             "phase_step_spine"
+    );
+    private static final Set<String> HIGH_OUTPUT_CONTINUOUS_AUGMENTS = Set.of(
+            "reflex_drive_i"
     );
 
     private static final ConcurrentMap<UUID, Double> POWER = new ConcurrentHashMap<>();
@@ -67,7 +75,6 @@ public final class AugmentationResourceService {
             powerRegen += 0.12D;
             if (auxiliaryPower.enhancement() >= 5) powerCapacity += 25.0D;
             if (auxiliaryPower.enhancement() >= 7) powerRegen += 0.18D;
-            if (auxiliaryPower.enhancement() >= 10) powerCostMultiplier *= 0.85D;
         }
 
         TitanPlayerData.AugmentInstance heatShunt = state.firstInstalledInstance("heat_shunt_mesh");
@@ -86,7 +93,7 @@ public final class AugmentationResourceService {
         double powerLoad = 0.0D;
         double heatLoad = 0.0D;
         double neuralLoad = 0.0D;
-        for (TitanPlayerData.AugmentInstance instance : state.installedInstanceView().values().stream().distinct().toList()) {
+        for (TitanPlayerData.AugmentInstance instance : uniqueInstalledInstances(state)) {
             AugmentationCatalog.Definition definition = AugmentationCatalog.byId(instance.id());
             if (definition == null) continue;
 
@@ -123,8 +130,12 @@ public final class AugmentationResourceService {
 
         long now = player.level().getGameTime();
         long lastUse = LAST_POWER_USE_TICK.getOrDefault(id, Long.MIN_VALUE / 4L);
-        if (now - lastUse >= POWER_REGEN_DELAY_TICKS) {
-            current = Math.min(resources.powerCapacity(), current + resources.powerRegenPerTick());
+        boolean stableHighOutput = hasHighOutputStability(state);
+        int regenDelay = stableHighOutput ? STABLE_POWER_REGEN_DELAY_TICKS : POWER_REGEN_DELAY_TICKS;
+        if (now - lastUse >= regenDelay) {
+            double regen = resources.powerRegenPerTick();
+            if (stableHighOutput && current <= resources.powerCapacity() * 0.25D) regen *= 1.35D;
+            current = Math.min(resources.powerCapacity(), current + regen);
         }
         POWER.put(id, current);
     }
@@ -144,10 +155,13 @@ public final class AugmentationResourceService {
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
         if (definition == null || definition.powerLoad() <= 0) return 0.0D;
         Snapshot resources = snapshot(state);
+        double stabilityMultiplier = hasHighOutputStability(state) && HIGH_OUTPUT_CONTINUOUS_AUGMENTS.contains(augmentId)
+                ? 0.90D : 1.0D;
         return definition.powerLoad()
                 * state.powerLoadMultiplier(augmentId)
                 * 0.05D
-                * resources.powerCostMultiplier();
+                * resources.powerCostMultiplier()
+                * stabilityMultiplier;
     }
 
     public static boolean trySpendContinuousPower(ServerPlayer player, TitanPlayerData.State state, String augmentId) {
@@ -160,7 +174,10 @@ public final class AugmentationResourceService {
     public static boolean trySpendBurstPower(ServerPlayer player, TitanPlayerData.State state, double baseCost) {
         Snapshot resources = snapshot(state);
         if (resources.neuralOverloaded()) return false;
-        return trySpend(player, state, Math.max(0.0D, baseCost) * resources.powerCostMultiplier());
+        double stabilityMultiplier = hasHighOutputStability(state) && baseCost >= HIGH_OUTPUT_BURST_THRESHOLD
+                ? 0.85D : 1.0D;
+        return trySpend(player, state,
+                Math.max(0.0D, baseCost) * resources.powerCostMultiplier() * stabilityMultiplier);
     }
 
     private static boolean trySpend(ServerPlayer player, TitanPlayerData.State state, double cost) {
@@ -176,12 +193,32 @@ public final class AugmentationResourceService {
     public static double normalizedHeatGain(TitanPlayerData.State state, double rawHeat) {
         Snapshot resources = snapshot(state);
         if (rawHeat <= 0.0D) return rawHeat;
-        return rawHeat * (BASE_HEAT_CAPACITY / resources.heatCapacity()) * resources.heatGenerationMultiplier();
+
+        TitanPlayerData.AugmentInstance heatShunt = state.firstInstalledInstance("heat_shunt_mesh");
+        double spikeMultiplier = heatShunt != null && heatShunt.enhancement() >= 10
+                && rawHeat >= HIGH_HEAT_SPIKE_THRESHOLD ? 0.70D : 1.0D;
+        return rawHeat
+                * spikeMultiplier
+                * (BASE_HEAT_CAPACITY / resources.heatCapacity())
+                * resources.heatGenerationMultiplier();
     }
 
     public static void clearAll() {
         POWER.clear();
         LAST_POWER_USE_TICK.clear();
+    }
+
+    private static boolean hasHighOutputStability(TitanPlayerData.State state) {
+        TitanPlayerData.AugmentInstance auxiliaryPower = state.firstInstalledInstance("auxiliary_power_organ");
+        return auxiliaryPower != null && auxiliaryPower.enhancement() >= 10;
+    }
+
+    private static Iterable<TitanPlayerData.AugmentInstance> uniqueInstalledInstances(TitanPlayerData.State state) {
+        Map<String, TitanPlayerData.AugmentInstance> bySerial = new LinkedHashMap<>();
+        for (TitanPlayerData.AugmentInstance instance : state.installedInstanceView().values()) {
+            bySerial.putIfAbsent(instance.serial(), instance);
+        }
+        return bySerial.values();
     }
 
     private static double scaledSignedLoad(int load, double positiveMultiplier) {

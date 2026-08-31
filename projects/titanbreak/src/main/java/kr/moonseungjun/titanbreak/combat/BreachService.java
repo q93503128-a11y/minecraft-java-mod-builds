@@ -24,6 +24,7 @@ import java.util.Set;
  */
 public final class BreachService {
     private static final int HARD_MAX_BLOCKS_PER_ACTION = 32;
+    private static final int MAX_BREACH_POWER = 5;
 
     private BreachService() {}
 
@@ -36,6 +37,25 @@ public final class BreachService {
                 || state.hasInstalled("photon_emitter_arm");
     }
 
+    /**
+     * Adds body-wide Breach milestones to an attack's own Breach rating.
+     * Powered Spine +5 and Bioalloy Skeleton +7 are global body-output upgrades,
+     * while arm-specific milestones remain in their own attack implementations.
+     */
+    public static int effectiveBreachPower(ServerPlayer player, int attackBreachPower) {
+        if (!(player.level() instanceof ServerLevel level) || attackBreachPower <= 0) return 0;
+        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
+        int bonus = 0;
+
+        TitanPlayerData.AugmentInstance poweredSpine = state.firstInstalledInstance("powered_spine");
+        if (poweredSpine != null && poweredSpine.enhancement() >= 5) bonus++;
+
+        TitanPlayerData.AugmentInstance skeleton = state.firstInstalledInstance("bioalloy_skeleton");
+        if (skeleton != null && skeleton.enhancement() >= 7) bonus++;
+
+        return Math.min(MAX_BREACH_POWER, Math.max(0, attackBreachPower + bonus));
+    }
+
     public static int breachAtLook(ServerPlayer player, double range, int breachPower, double radius, int maxBlocks,
                                    boolean dropBlocks) {
         HitResult hit = player.pick(range, 1.0F, false);
@@ -44,7 +64,9 @@ public final class BreachService {
     }
 
     public static int breachLine(ServerPlayer player, double range, int breachPower, double radius, int maxBlocks) {
-        if (!(player.level() instanceof ServerLevel level) || breachPower <= 0 || range <= 0.0D) return 0;
+        if (!(player.level() instanceof ServerLevel level) || range <= 0.0D) return 0;
+        int effectivePower = effectiveBreachPower(player, breachPower);
+        if (effectivePower <= 0) return 0;
         int limit = Math.max(0, Math.min(HARD_MAX_BLOCKS_PER_ACTION, maxBlocks));
         if (limit == 0) return 0;
 
@@ -60,7 +82,7 @@ public final class BreachService {
                 BlockPos pos = candidate.immutable();
                 if (!visited.add(pos)) continue;
                 if (Vec3.atCenterOf(pos).distanceTo(Vec3.atCenterOf(center)) > radius + 0.75D) continue;
-                if (tryBreak(level, player, pos, breachPower, false)) broken++;
+                if (tryBreak(level, player, pos, effectivePower, false)) broken++;
             }
         }
         return broken;
@@ -68,7 +90,9 @@ public final class BreachService {
 
     public static int breachArea(ServerPlayer player, BlockPos center, int breachPower, double radius, int maxBlocks,
                                  boolean dropBlocks) {
-        if (!(player.level() instanceof ServerLevel level) || breachPower <= 0) return 0;
+        if (!(player.level() instanceof ServerLevel level)) return 0;
+        int effectivePower = effectiveBreachPower(player, breachPower);
+        if (effectivePower <= 0) return 0;
         int limit = Math.max(0, Math.min(HARD_MAX_BLOCKS_PER_ACTION, maxBlocks));
         if (limit == 0) return 0;
 
@@ -83,7 +107,7 @@ public final class BreachService {
         int broken = 0;
         for (BlockPos pos : candidates) {
             if (broken >= limit) break;
-            if (tryBreak(level, player, pos, breachPower, dropBlocks)) broken++;
+            if (tryBreak(level, player, pos, effectivePower, dropBlocks)) broken++;
         }
         return broken;
     }
