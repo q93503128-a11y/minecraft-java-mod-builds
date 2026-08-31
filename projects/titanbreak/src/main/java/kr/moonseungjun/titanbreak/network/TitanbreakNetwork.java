@@ -5,6 +5,7 @@ import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
+import kr.moonseungjun.titanbreak.combat.OverdriveCirculationService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.combat.SpineAugmentationService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
@@ -20,7 +21,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha26";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha29";
 
     private TitanbreakNetwork() {}
 
@@ -51,6 +52,7 @@ public final class TitanbreakNetwork {
                 case AugmentAbilityPayload.ARM_RIGHT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
                 case AugmentAbilityPayload.ARM_LEFT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
                 case AugmentAbilityPayload.LEG_JUMP -> LegAugmentationService.useMobilityJump(player);
+                case AugmentAbilityPayload.OVERDRIVE -> OverdriveCirculationService.activate(player);
                 default -> { }
             }
         });
@@ -114,6 +116,7 @@ public final class TitanbreakNetwork {
                 + ";heatLoad=" + one(resources.heatLoad())
                 + ";neuralLoad=" + one(resources.neuralLoad())
                 + ";neuralOver=" + (resources.neuralOverloaded() ? 1 : 0)
+                + ";overdriveTicks=" + OverdriveCirculationService.remainingTicks(player)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
