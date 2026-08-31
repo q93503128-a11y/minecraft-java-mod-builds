@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
@@ -9,6 +10,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,12 +24,23 @@ import java.util.UUID;
  * Replaces legacy field encounter markers with the same authored actor assets used in battle.
  * The ArmorStand remains as the server-side encounter anchor so chapter progression code does not fork.
  */
+@EventBusSubscriber(modid = Turnbound.MOD_ID)
 public final class FieldEncounterPresentationBridge {
     private static final double SCAN_RADIUS = 176.0;
     private static final double CLEANUP_RADIUS_SQ = 208.0 * 208.0;
     private static final Map<UUID, VisualLink> VISUALS = new LinkedHashMap<>();
 
     private FieldEncounterPresentationBridge() {}
+
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) tick(player);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        clearAll(event.getServer().getPlayerList().getPlayers());
+    }
 
     public static void tick(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
@@ -37,16 +53,6 @@ public final class FieldEncounterPresentationBridge {
             ensureVisual(level, player, marker, actorId);
         }
         cleanupNearbyOrphans(level, player);
-    }
-
-    public static void cleanupOrphans(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level)) return;
-        for (var entry : List.copyOf(VISUALS.entrySet())) {
-            if (level.getEntity(entry.getKey()) != null) continue;
-            Entity visual = level.getEntity(entry.getValue().visualId());
-            if (visual != null) visual.discard();
-            VISUALS.remove(entry.getKey());
-        }
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
