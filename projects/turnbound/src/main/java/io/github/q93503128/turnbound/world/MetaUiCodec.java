@@ -22,7 +22,8 @@ public final class MetaUiCodec {
         for (var row : snapshot.equipment()) out.append("I|").append(row.instanceId()).append('|').append(row.itemId()).append('|')
                 .append(safe(row.name())).append('|').append(row.tier()).append('|').append(row.slot()).append('|').append(row.enhancement()).append('|')
                 .append(row.equippedCharacterId()).append('|').append(row.mainType()).append('|').append(row.mainValue()).append('|')
-                .append(row.subType()).append('|').append(row.subValue()).append('|').append(row.mainAt20()).append('|').append(row.subAt20()).append('\n');
+                .append(row.subType()).append('|').append(row.subValue()).append('|').append(row.mainAt20()).append('|').append(row.subAt20()).append('|')
+                .append(row.salePrice()).append('|').append(row.sellable()?1:0).append('\n');
         for (var row : snapshot.endgame()) out.append("E|").append(row.id()).append('|').append(row.kind()).append('|')
                 .append(safe(row.label())).append('|').append(row.unlocked()?1:0).append('|').append(row.cleared()?1:0)
                 .append('|').append(row.level()).append('|').append(row.hardPattern()?1:0).append('\n');

@@ -8,7 +8,8 @@ public final class ClientMetaState {
     public record CharacterRow(String id,String name,boolean owned,int nativeStar,int level,int star,boolean awakened,int cp,boolean active,
                                String role,String primaryRole,String difficulty,boolean profileUnlocked,int hp,int attack,int defense,int speed) {}
     public record EquipmentRow(String instanceId,String itemId,String name,String tier,String slot,int enhancement,String equippedCharacterId,
-                               String mainType,double mainValue,String subType,double subValue,double mainAt20,double subAt20) {}
+                               String mainType,double mainValue,String subType,double subValue,double mainAt20,double subAt20,
+                               int salePrice,boolean sellable) {}
     public record EndgameRow(String id,String kind,String label,boolean unlocked,boolean cleared,int level,boolean hardPattern) {}
     public record ChallengeRow(String id,int ordinal,String label,boolean completed,boolean autoEvaluable,String unresolvedReason) {}
     public record RegionQuestRow(String id,String region,boolean objectiveSpecified,boolean completed,String chestRule) {}
@@ -52,7 +53,7 @@ public final class ClientMetaState {
                     case "C"->chars.add(new CharacterRow(p[1],p[2],"1".equals(p[3]),Integer.parseInt(p[4]),Integer.parseInt(p[5]),Integer.parseInt(p[6]),
                             "1".equals(p[7]),Integer.parseInt(p[8]),"1".equals(p[9]),p[10],p[11],p[12],"1".equals(p[13]),
                             Integer.parseInt(p[14]),Integer.parseInt(p[15]),Integer.parseInt(p[16]),Integer.parseInt(p[17])));
-                    case "I"->equipment.add(new EquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),p[7],p[8],Double.parseDouble(p[9]),p[10],Double.parseDouble(p[11]),Double.parseDouble(p[12]),Double.parseDouble(p[13])));
+                    case "I"->equipment.add(new EquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),p[7],p[8],Double.parseDouble(p[9]),p[10],Double.parseDouble(p[11]),Double.parseDouble(p[12]),Double.parseDouble(p[13]),p.length>14?Integer.parseInt(p[14]):0,p.length>15&&"1".equals(p[15])));
                     case "E"->endgame.add(new EndgameRow(p[1],p[2],p[3],"1".equals(p[4]),"1".equals(p[5]),Integer.parseInt(p[6]),"1".equals(p[7])));
                     case "X"->challenges.add(new ChallengeRow(p[1],Integer.parseInt(p[2]),p[3],"1".equals(p[4]),"1".equals(p[5]),p.length>6?p[6]:""));
                     case "Q"->regions.add(new RegionQuestRow(p[1],p[2],"1".equals(p[3]),"1".equals(p[4]),p.length>5?p[5]:""));

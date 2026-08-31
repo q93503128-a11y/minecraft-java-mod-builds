@@ -306,6 +306,13 @@ public final class CampaignProgressStore {
         return item;
     }
 
+    public static int sellEquipment(UUID playerId, String instanceId) {
+        PlayerProgress progress = player(playerId);
+        int gold = progress.equipment.sell(instanceId, progress.profile);
+        progress.dirty = true;
+        return gold;
+    }
+
     public static BattleStats finalStats(UUID playerId, String characterId) {
         PlayerProgress progress = player(playerId);
         CharacterProgression.State level = requireCharacter(progress, characterId);

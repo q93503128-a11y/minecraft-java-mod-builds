@@ -248,9 +248,12 @@ public final class MetaMenuScreen extends Screen {
                     Component.literal("장착"), GREEN, ignored -> equipSelected());
             equipButton.active = !equipmentTargetCharacterId.isBlank();
             addRenderableWidget(equipButton);
+            String saleLabel = selected.tier().equals("SIGNATURE") ? "전용 장비 · 판매 불가"
+                    : selected.equippedCharacterId().isBlank() ? "판매 · " + selected.salePrice() + "G"
+                    : "장착 해제 후 판매 · " + selected.salePrice() + "G";
             var sell = new BattleHudButton(rx, actionY + 29, Math.min(230, rw), 22,
-                    Component.literal("판매 · 가격 정본 미정"), MUTED, ignored -> { });
-            sell.active = false;
+                    Component.literal(saleLabel), selected.sellable() ? GOLD : MUTED, ignored -> sellSelected());
+            sell.active = selected.sellable();
             addRenderableWidget(sell);
         }
     }
@@ -386,6 +389,7 @@ public final class MetaMenuScreen extends Screen {
     private void selectEquipment(String id) { selectedEquipmentId=id; if(equipmentTargetCharacterId.isBlank()) equipmentTargetCharacterId=ClientMetaState.snapshot().activeParty().stream().findFirst().orElse(""); clearWidgets();init(); }
     private void selectEquipmentTarget(String id) { equipmentTargetCharacterId=id; clearWidgets();init(); }
     private void equipSelected() { if(!selectedEquipmentId.isBlank()&&!equipmentTargetCharacterId.isBlank()) send("EQUIP|"+equipmentTargetCharacterId+"|"+selectedEquipmentId); }
+    private void sellSelected() { var selected=equipment(selectedEquipmentId); if(selected!=null&&selected.sellable()) send("SELL|"+selected.instanceId()); }
     private void selectCodex(String category) { codexCategory=category;page=0;clearWidgets();init(); }
 
     private static void send(String command) { ClientPacketDistributor.sendToServer(new MetaCommandPayload(command)); }
@@ -519,7 +523,9 @@ public final class MetaMenuScreen extends Screen {
             String compare=current==null?"비교: 해당 슬롯 비어 있음":"비교: "+current.name()+" +"+current.enhancement()+"  →  "+selected.name()+" +"+selected.enhancement();
             graphics.text(font,Component.literal(compare),x,y+82,current==null?GREEN:BLUE,false);
         }
-        graphics.text(font,Component.literal("판매 가격은 v0.4 정본에 수치가 없어 비활성."),x,y+105,MUTED,false);
+        String saleInfo=selected.tier().equals("SIGNATURE")?"판매 · 전용 장비는 정본 판매가 없음"
+                : selected.equippedCharacterId().isBlank()?"판매 · "+selected.salePrice()+" Gold":"판매 · "+selected.salePrice()+" Gold · 장착 해제 필요";
+        graphics.text(font,Component.literal(saleInfo),x,y+105,selected.sellable()?GOLD:MUTED,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor graphics, ClientMetaState.Snapshot s) {

@@ -146,6 +146,10 @@ public final class MetaMenuService {
                 if (parts.length < 2) return;
                 mutate(player, "구매 실패", () -> CampaignProgressStore.buyEquipment(player.getUUID(), parts[1]));
             }
+            case "SELL" -> {
+                if (parts.length < 2) return;
+                mutate(player, "판매 실패", () -> CampaignProgressStore.sellEquipment(player.getUUID(), parts[1]));
+            }
             case "ENHANCE" -> {
                 if (parts.length < 2) return;
                 mutate(player, "강화 실패", () -> CampaignProgressStore.enhanceEquipment(player.getUUID(), parts[1]));
@@ -193,18 +197,21 @@ public final class MetaMenuService {
         return inventory.items().values().stream().sorted(Comparator.comparing(EquipmentInventory.Item::instanceId)).map(item -> {
             try {
                 var spec = V04Catalogs.equipment(item.itemId());
+                String owner = owners.getOrDefault(item.instanceId(), "");
                 return new MetaUiSnapshot.EquipmentRow(item.instanceId(), item.itemId(), spec.name(), spec.tier(), spec.slot(),
-                        item.enhancementLevel(), owners.getOrDefault(item.instanceId(), ""), spec.main().type(),
+                        item.enhancementLevel(), owner, spec.main().type(),
                         EquipmentInventory.scaledMain(spec.main().value(), item.enhancementLevel()), spec.sub().type(),
                         EquipmentInventory.scaledSub(spec.sub().value(), item.enhancementLevel()),
-                        EquipmentInventory.scaledMain(spec.main().value(), 20), EquipmentInventory.scaledSub(spec.sub().value(), 20));
+                        EquipmentInventory.scaledMain(spec.main().value(), 20), EquipmentInventory.scaledSub(spec.sub().value(), 20),
+                        EquipmentRules.salePrice(spec.tier()), owner.isBlank());
             } catch (RuntimeException ignored) {
                 var spec = V04Catalogs.signature(item.itemId());
                 return new MetaUiSnapshot.EquipmentRow(item.instanceId(), item.itemId(), spec.name(), "SIGNATURE", "SIGNATURE",
                         item.enhancementLevel(), owners.getOrDefault(item.instanceId(), ""), spec.main().type(),
                         EquipmentInventory.scaledMain(spec.main().value(), item.enhancementLevel()), spec.sub().type(),
                         EquipmentInventory.scaledSub(spec.sub().value(), item.enhancementLevel()),
-                        EquipmentInventory.scaledMain(spec.main().value(), 20), EquipmentInventory.scaledSub(spec.sub().value(), 20));
+                        EquipmentInventory.scaledMain(spec.main().value(), 20), EquipmentInventory.scaledSub(spec.sub().value(), 20),
+                        0, false);
             }
         }).toList();
     }

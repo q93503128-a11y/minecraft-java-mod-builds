@@ -31,7 +31,7 @@ public record MetaUiSnapshot(
     public record EquipmentRow(
             String instanceId, String itemId, String name, String tier, String slot, int enhancement,
             String equippedCharacterId, String mainType, double mainValue, String subType, double subValue,
-            double mainAt20, double subAt20) {}
+            double mainAt20, double subAt20, int salePrice, boolean sellable) {}
 
     public record EndgameRow(String id, String kind, String label, boolean unlocked, boolean cleared, int level, boolean hardPattern) {}
     public record ChallengeRow(String id, int ordinal, String label, boolean completed, boolean autoEvaluable, String unresolvedReason) {}
