@@ -48,6 +48,22 @@ public final class BattleVfx {
         burst(level, ParticleTypes.SMOKE, center.add(0, 0.4, 0), 14, 0.7, 0.4, 0.7, 0.015);
     }
 
+    public static void phase(ServerLevel level, String combatantId, Vec3 center, int phase) {
+        ParticleOptions primary = switch (combatantId) {
+            case "B01" -> ParticleTypes.CLOUD;
+            case "B02" -> ParticleTypes.ENCHANT;
+            case "B03" -> ParticleTypes.ELECTRIC_SPARK;
+            case "B04" -> ParticleTypes.FLAME;
+            case "B05" -> ParticleTypes.PORTAL;
+            default -> ParticleTypes.END_ROD;
+        };
+        double radius = phase >= 3 ? 1.9 : 1.45;
+        int count = phase >= 3 ? 36 : 26;
+        ring(level, primary, center.add(0, 0.2, 0), radius, count);
+        ring(level, ParticleTypes.END_ROD, center.add(0, 1.15, 0), radius * 0.65, count - 8);
+        burst(level, primary, center.add(0, 1.15, 0), phase >= 3 ? 30 : 20, 0.9, 1.0, 0.9, 0.12);
+    }
+
     public static void revive(ServerLevel level, Vec3 center) {
         ring(level, ParticleTypes.END_ROD, center.add(0, 0.2, 0), 0.9, 20);
         burst(level, ParticleTypes.HEART, center.add(0, 1.0, 0), 8, 0.45, 0.7, 0.45, 0.03);
