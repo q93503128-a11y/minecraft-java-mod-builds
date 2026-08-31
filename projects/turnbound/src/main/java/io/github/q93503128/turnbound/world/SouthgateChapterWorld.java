@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Authored Southgate Chapter 1 route in the canonical Aster March coordinate space.
- * M01/M02 now live directly beyond Radia's South Gate instead of inside the legacy 64x64 starter slice.
+ * M01/M02 live directly beyond Radia's South Gate instead of inside the legacy 64x64 starter slice.
  */
 public final class SouthgateChapterWorld {
     private static final int MARKER_X = 190;
@@ -55,8 +55,12 @@ public final class SouthgateChapterWorld {
         return chapter;
     }
 
+    /** Temporary source-compatibility overload while FieldSession keeps its proven patrol implementation. */
+    public static BuiltChapter build(ServerLevel level, int ignoredLegacyBaseY) { return build(level); }
+
     /** M01+M02 completion opens the authored deep-meadow route. */
     public static void setEntryGateOpen(ServerLevel level, boolean open) { buildDeepGate(level, open); }
+    public static void setEntryGateOpen(ServerLevel level, int ignoredLegacyBaseY, boolean open) { setEntryGateOpen(level, open); }
     public static void setBossGateOpen(ServerLevel level, boolean open) { buildBossGate(level, open); }
 
     public static boolean contains(BuiltChapter chapter, Vec3 pos) {
@@ -88,17 +92,10 @@ public final class SouthgateChapterWorld {
 
     private static List<Node> route() {
         return List.of(
-                new Node(0, 65, 121),
-                new Node(0, 65, 132),
-                new Node(-12, 65, 153),
-                new Node(13, 66, 176),
-                new Node(40, 66, 188),
-                new Node(88, 66, 205),
-                new Node(190, 66, 230),
-                new Node(220, 66, 230),
-                new Node(286, 66, 240),
-                new Node(330, 67, 245),
-                new Node(355, 67, 245));
+                new Node(0, 65, 121), new Node(0, 65, 132), new Node(-12, 65, 153),
+                new Node(13, 66, 176), new Node(40, 66, 188), new Node(88, 66, 205),
+                new Node(190, 66, 230), new Node(220, 66, 230), new Node(286, 66, 240),
+                new Node(330, 67, 245), new Node(355, 67, 245));
     }
 
     private static void buildSouthGateApproach(ServerLevel level) {
@@ -139,14 +136,12 @@ public final class SouthgateChapterWorld {
     }
 
     private static void clearing(ServerLevel level, int cx, int y, int cz, int radius) {
-        for (int x = cx - radius; x <= cx + radius; x++) {
-            for (int z = cz - radius; z <= cz + radius; z++) {
-                int d2 = (x - cx) * (x - cx) + (z - cz) * (z - cz);
-                if (d2 > radius * radius) continue;
-                for (int fy = y - 3; fy < y; fy++) set(level, x, fy, z, Blocks.DIRT);
-                set(level, x, y, z, ((x * 31 + z * 17) & 9) == 0 ? Blocks.COARSE_DIRT : Blocks.GRASS_BLOCK);
-                for (int ay = y + 1; ay <= y + 8; ay++) set(level, x, ay, z, Blocks.AIR);
-            }
+        for (int x = cx - radius; x <= cx + radius; x++) for (int z = cz - radius; z <= cz + radius; z++) {
+            int d2 = (x - cx) * (x - cx) + (z - cz) * (z - cz);
+            if (d2 > radius * radius) continue;
+            for (int fy = y - 3; fy < y; fy++) set(level, x, fy, z, Blocks.DIRT);
+            set(level, x, y, z, ((x * 31 + z * 17) & 9) == 0 ? Blocks.COARSE_DIRT : Blocks.GRASS_BLOCK);
+            for (int ay = y + 1; ay <= y + 8; ay++) set(level, x, ay, z, Blocks.AIR);
         }
     }
 
@@ -171,9 +166,7 @@ public final class SouthgateChapterWorld {
 
     private static void buildDeepGate(ServerLevel level, boolean open) {
         int x = 40, y = 66;
-        for (int z = 180; z <= 196; z++) for (int dy = 1; dy <= 4; dy++) {
-            set(level, x, y + dy, z, open ? Blocks.AIR : Blocks.IRON_BARS);
-        }
+        for (int z = 180; z <= 196; z++) for (int dy = 1; dy <= 4; dy++) set(level, x, y + dy, z, open ? Blocks.AIR : Blocks.IRON_BARS);
         for (int z : new int[]{179, 197}) {
             for (int dy = 1; dy <= 5; dy++) set(level, x, y + dy, z, Blocks.STONE_BRICKS);
             set(level, x, y + 6, z, Blocks.LANTERN);
@@ -182,9 +175,7 @@ public final class SouthgateChapterWorld {
 
     private static void buildBossGate(ServerLevel level, boolean open) {
         int x = 330, y = 67;
-        for (int z = 237; z <= 253; z++) for (int dy = 1; dy <= 5; dy++) {
-            set(level, x, y + dy, z, open ? Blocks.AIR : Blocks.IRON_BARS);
-        }
+        for (int z = 237; z <= 253; z++) for (int dy = 1; dy <= 5; dy++) set(level, x, y + dy, z, open ? Blocks.AIR : Blocks.IRON_BARS);
         for (int z : new int[]{236, 254}) {
             for (int dy = 1; dy <= 7; dy++) set(level, x, y + dy, z, dy >= 6 ? Blocks.CHISELED_STONE_BRICKS : Blocks.STONE_BRICKS);
             set(level, x, y + 8, z, Blocks.SOUL_LANTERN);
@@ -229,7 +220,5 @@ public final class SouthgateChapterWorld {
     }
 
     private static double lerp(double a, double b, double t) { return a + (b - a) * t; }
-    private static void set(ServerLevel level, int x, int y, int z, Block block) {
-        level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2);
-    }
+    private static void set(ServerLevel level, int x, int y, int z, Block block) { level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2); }
 }
