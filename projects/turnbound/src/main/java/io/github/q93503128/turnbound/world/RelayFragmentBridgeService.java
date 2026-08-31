@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Bridges the Chapter 5 three-fragment submission objective to already-authored story clears.
@@ -17,9 +18,10 @@ public final class RelayFragmentBridgeService {
 
     private RelayFragmentBridgeService() {}
 
-    public static Set<String> available(ServerPlayer player) { return available(player.getUUID()); }
+    public static Set<String> available(ServerPlayer player) { return availableForId(player.getUUID()); }
 
-    static Set<String> available(java.util.UUID playerId) {
+    /** Pure campaign-state entrypoint kept distinct from the Minecraft adapter for unit tests. */
+    static Set<String> availableForId(UUID playerId) {
         CampaignProgressStore.Snapshot snapshot = CampaignProgressStore.snapshot(playerId);
         Set<String> flags = new LinkedHashSet<>();
         if (snapshot.clearedEncounters().contains("BATTLE_B01") || snapshot.quests().completed().contains("MQ_C01_03_graul")) flags.add(MEADOW);
@@ -30,13 +32,14 @@ public final class RelayFragmentBridgeService {
     }
 
     public static int submitAvailable(ServerPlayer player) {
-        return submitAvailable(player.getUUID());
+        return submitAvailableForId(player.getUUID());
     }
 
-    static int submitAvailable(java.util.UUID playerId) {
+    /** Pure campaign-state entrypoint kept distinct from the Minecraft adapter for unit tests. */
+    static int submitAvailableForId(UUID playerId) {
         if (!CampaignProgressStore.quests(playerId).completed().contains("MQ_C04_03_kolvak")) return 0;
         int before = CampaignProgressStore.quests(playerId).marks().getOrDefault("MQ_C05_01_relay_key", Set.of()).size();
-        for (String flag : available(playerId)) CampaignProgressStore.inventoryFlag(playerId, flag);
+        for (String flag : availableForId(playerId)) CampaignProgressStore.inventoryFlag(playerId, flag);
         int after = CampaignProgressStore.quests(playerId).completed().contains("MQ_C05_01_relay_key")
                 ? 3 : CampaignProgressStore.quests(playerId).marks().getOrDefault("MQ_C05_01_relay_key", Set.of()).size();
         return Math.max(0, after - before);
