@@ -29,7 +29,7 @@ import java.util.Map;
 public final class TurnboundBattleActors {
     private static final List<String> IDS = List.of(
             "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
-            "F01","F02","F03","F04",
+            "F01","F01_ALT","F02","F03","F04",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
             "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
@@ -38,6 +38,13 @@ public final class TurnboundBattleActors {
             Map.entry("P01", "kyren"), Map.entry("P02", "lumea"), Map.entry("P03", "bram"),
             Map.entry("P04", "elysia"), Map.entry("P05", "lynette"), Map.entry("P06", "morwen"),
             Map.entry("P07", "marion"), Map.entry("P08", "raze"), Map.entry("P07_SUMMON", "toto"));
+
+    private static final Map<String, String> FILLER_PATH = Map.of(
+            "F01", "f01_militia_male",
+            "F01_ALT", "f01_militia_female",
+            "F02", "f02_field_apprentice",
+            "F03", "f03_border_hunter",
+            "F04", "f04_shield_mercenary");
 
     private static final Map<String, String> ENEMY_PATH = Map.ofEntries(
             Map.entry("E001", "e001_rotted_walker"), Map.entry("E002", "e002_bone_marksman"),
@@ -55,7 +62,11 @@ public final class TurnboundBattleActors {
     private static final Map<String, String> BOSS_PATH = Map.of(
             "B01", "graul", "B02", "verna", "B03", "oro7", "B04", "kolvak", "B05", "serak");
 
-    /** Actors whose canonical active pose needs a dedicated animation asset instead of the group common file. */
+    private static final Map<String, String> SPECIAL_FILLER_ANIMATION = Map.of(
+            "F02", "f02_field_apprentice",
+            "F03", "f03_border_hunter",
+            "F04", "f04_shield_mercenary");
+
     private static final Map<String, String> SPECIAL_ENEMY_ANIMATION = Map.of(
             "E003", "e003_unstable_burster", "E006", "e006_moss_boar",
             "E007", "e007_spore_lantern", "E008", "e008_root_guard",
@@ -84,7 +95,8 @@ public final class TurnboundBattleActors {
     public static boolean contains(String combatantId) { return ACTORS.containsKey(combatantId); }
 
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {
-        DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(combatantId);
+        String visualId = "F01".equals(combatantId) && level.random.nextBoolean() ? "F01_ALT" : combatantId;
+        DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(visualId);
         if (holder == null) return null;
         BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
         actor.setPos(pos.x, pos.y, pos.z);
@@ -106,135 +118,83 @@ public final class TurnboundBattleActors {
 
     private static float width(String id) {
         return switch (id) {
-            case "P01" -> 0.66F;
-            case "P02" -> 0.61F;
-            case "P03" -> 0.74F;
-            case "P04" -> 0.63F;
-            case "P05", "P06" -> 0.62F;
-            case "P07" -> 0.60F;
-            case "P08" -> 0.72F;
-            case "P07_SUMMON" -> 0.82F;
-            case "B01" -> 1.80F;
-            case "B02" -> 1.65F;
-            case "B03" -> 1.45F;
-            case "B04" -> 1.70F;
-            case "B05" -> 0.78F;
-            case "E006", "E010", "E012", "EL02" -> 1.10F;
-            case "E003", "E014" -> 0.90F;
-            case "EL01" -> 0.85F;
-            case "EL03" -> 0.90F;
-            case "EL04" -> 1.17F;
-            default -> 0.72F;
+            case "P01" -> 0.66F; case "P02" -> 0.61F; case "P03" -> 0.74F; case "P04" -> 0.63F;
+            case "P05", "P06" -> 0.62F; case "P07" -> 0.60F; case "P08" -> 0.72F; case "P07_SUMMON" -> 0.82F;
+            case "F01", "F01_ALT" -> 0.62F; case "F02" -> 0.59F; case "F03" -> 0.61F; case "F04" -> 0.70F;
+            case "B01" -> 1.80F; case "B02" -> 1.65F; case "B03" -> 1.45F; case "B04" -> 1.70F; case "B05" -> 0.78F;
+            case "E006", "E010", "E012", "EL02" -> 1.10F; case "E003", "E014" -> 0.90F;
+            case "EL01" -> 0.85F; case "EL03" -> 0.90F; case "EL04" -> 1.17F; default -> 0.72F;
         };
     }
 
     private static float height(String id) {
         return switch (id) {
-            case "P01" -> 1.84F;
-            case "P02" -> 1.66F;
-            case "P03" -> 1.93F;
-            case "P04" -> 1.69F;
-            case "P05" -> 1.72F;
-            case "P06" -> 1.77F;
-            case "P07" -> 1.64F;
-            case "P08" -> 1.88F;
-            case "P07_SUMMON" -> 1.15F;
-            case "B01" -> 2.30F;
-            case "B02" -> 2.80F;
-            case "B03" -> 3.10F;
-            case "B04" -> 3.40F;
-            case "B05" -> 2.05F;
-            case "E006", "E010", "E012", "EL02" -> 1.35F;
-            case "E003", "E014" -> 2.15F;
-            case "EL01" -> 2.36F;
-            case "EL03" -> 2.50F;
-            case "EL04" -> 2.80F;
-            default -> 2.0F;
+            case "P01" -> 1.84F; case "P02" -> 1.66F; case "P03" -> 1.93F; case "P04" -> 1.69F;
+            case "P05" -> 1.72F; case "P06" -> 1.77F; case "P07" -> 1.64F; case "P08" -> 1.88F; case "P07_SUMMON" -> 1.15F;
+            case "F01", "F01_ALT" -> 1.76F; case "F02" -> 1.67F; case "F03" -> 1.75F; case "F04" -> 1.82F;
+            case "B01" -> 2.30F; case "B02" -> 2.80F; case "B03" -> 3.10F; case "B04" -> 3.40F; case "B05" -> 2.05F;
+            case "E006", "E010", "E012", "EL02" -> 1.35F; case "E003", "E014" -> 2.15F;
+            case "EL01" -> 2.36F; case "EL03" -> 2.50F; case "EL04" -> 2.80F; default -> 2.0F;
         };
     }
 
     private static float renderScale(String id) {
         return switch (id) {
-            case "P01" -> 1.000F;
-            case "P02" -> 0.902F;
-            case "P03" -> 1.049F;
-            case "P04" -> 0.918F;
-            case "P05" -> 0.935F;
-            case "P06" -> 0.962F;
-            case "P07" -> 0.891F;
-            case "P08" -> 1.022F;
-            case "P07_SUMMON" -> 0.720F;
-            case "B01" -> 1.15F;
-            case "B02" -> 1.20F;
-            case "B03" -> 1.28F;
-            case "B04" -> 1.35F;
-            case "B05" -> 1.08F;
-            case "EL01" -> 1.18F;
-            case "EL03" -> 1.25F;
-            default -> 1.0F;
+            case "P01" -> 1.000F; case "P02" -> 0.902F; case "P03" -> 1.049F; case "P04" -> 0.918F;
+            case "P05" -> 0.935F; case "P06" -> 0.962F; case "P07" -> 0.891F; case "P08" -> 1.022F; case "P07_SUMMON" -> 0.720F;
+            case "F01", "F01_ALT" -> 0.957F; case "F02" -> 0.908F; case "F03" -> 0.951F; case "F04" -> 0.989F;
+            case "B01" -> 1.15F; case "B02" -> 1.20F; case "B03" -> 1.28F; case "B04" -> 1.35F; case "B05" -> 1.08F;
+            case "EL01" -> 1.18F; case "EL03" -> 1.25F; default -> 1.0F;
         };
     }
 
     private static String archetype(String id) {
         return switch (id) {
-            case "P03","F04" -> "shield";
-            case "P05","F03" -> "ranger";
-            case "P02","P04","P06","P07","F02" -> "caster";
-            case "P08" -> "brute";
-            case "P07_SUMMON" -> "beast";
-            default -> "blade";
+            case "P03","F04" -> "shield"; case "P05","F03" -> "ranger";
+            case "P02","P04","P06","P07","F02" -> "caster"; case "P08" -> "brute";
+            case "P07_SUMMON" -> "beast"; default -> "blade";
         };
     }
 
     private static Identifier modelRoot(String id) {
-        String hero = HERO_PATH.get(id);
-        if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
-        String enemy = ENEMY_PATH.get(id);
-        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
-        String elite = ELITE_PATH.get(id);
-        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
-        String boss = BOSS_PATH.get(id);
-        if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
+        String hero = HERO_PATH.get(id); if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String filler = FILLER_PATH.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
+        String enemy = ENEMY_PATH.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String elite = ELITE_PATH.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
+        String boss = BOSS_PATH.get(id); if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/" + archetype(id));
     }
 
     private static Identifier animationRoot(String id) {
         if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
-        String enemy = SPECIAL_ENEMY_ANIMATION.get(id);
-        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String filler = SPECIAL_FILLER_ANIMATION.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
+        if (FILLER_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/common");
+        String enemy = SPECIAL_ENEMY_ANIMATION.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
         if (ENEMY_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/common");
-        String elite = SPECIAL_ELITE_ANIMATION.get(id);
-        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
+        String elite = SPECIAL_ELITE_ANIMATION.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
         if (ELITE_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/common");
         if (BOSS_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/common");
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common");
     }
 
     private static Identifier textureRoot(String id) {
-        String hero = HERO_PATH.get(id);
-        if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
-        String enemy = ENEMY_PATH.get(id);
-        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
-        String elite = ELITE_PATH.get(id);
-        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
-        String boss = BOSS_PATH.get(id);
-        if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
+        String hero = HERO_PATH.get(id); if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String filler = FILLER_PATH.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
+        String enemy = ENEMY_PATH.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String elite = ELITE_PATH.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
+        String boss = BOSS_PATH.get(id); if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/atlas");
     }
 
     @EventBusSubscriber(modid = Turnbound.MOD_ID, value = Dist.CLIENT)
     public static final class ClientEvents {
         private ClientEvents() { }
-
-        @SubscribeEvent
-        public static void renderers(EntityRenderersEvent.RegisterRenderers event) {
+        @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers event) {
             for (var entry : ACTORS.entrySet()) {
-                String id = entry.getKey();
-                var holder = entry.getValue();
+                String id = entry.getKey(); var holder = entry.getValue();
                 event.registerEntityRenderer(holder.get(), context -> {
                     var model = new DefaultedEntityGeoModel<BattleActorEntity>(modelRoot(id))
-                            .withAltAnimations(animationRoot(id))
-                            .withAltTexture(textureRoot(id));
+                            .withAltAnimations(animationRoot(id)).withAltTexture(textureRoot(id));
                     return new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
                 });
             }
