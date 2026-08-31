@@ -36,7 +36,17 @@ public final class FieldEncounterPresentationBridge {
             marker.setCustomNameVisible(false);
             ensureVisual(level, player, marker, actorId);
         }
-        cleanup(level, player);
+        cleanupNearbyOrphans(level, player);
+    }
+
+    public static void cleanupOrphans(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return;
+        for (var entry : List.copyOf(VISUALS.entrySet())) {
+            if (level.getEntity(entry.getKey()) != null) continue;
+            Entity visual = level.getEntity(entry.getValue().visualId());
+            if (visual != null) visual.discard();
+            VISUALS.remove(entry.getKey());
+        }
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
@@ -82,7 +92,7 @@ public final class FieldEncounterPresentationBridge {
         actor.setFieldWalking(false);
     }
 
-    private static void cleanup(ServerLevel level, ServerPlayer player) {
+    private static void cleanupNearbyOrphans(ServerLevel level, ServerPlayer player) {
         for (var entry : List.copyOf(VISUALS.entrySet())) {
             Entity marker = level.getEntity(entry.getKey());
             Entity visual = level.getEntity(entry.getValue().visualId());
