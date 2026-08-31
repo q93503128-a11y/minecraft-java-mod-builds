@@ -4,6 +4,8 @@ import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.V04Catalogs;
+import io.github.q93503128.turnbound.presentation.BattleActorEntity;
+import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -179,7 +181,9 @@ public final class FieldSessionManager {
         AABB area = new AABB(AsterMarchRegionCatalog.SOUTHGATE.minX() - 4, Math.min(slice.baseY(), 56) - 8,
                 AsterMarchRegionCatalog.SOUTHGATE.minZ() - 4, AsterMarchRegionCatalog.SOUTHGATE.maxX() + 4, 96,
                 AsterMarchRegionCatalog.SOUTHGATE.maxZ() + 4);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) mob.discard();
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
+            if (!(mob instanceof BattleActorEntity)) mob.discard();
+        }
     }
 
     private static final class FieldSession {
@@ -392,14 +396,16 @@ public final class FieldSessionManager {
                 case PATROL -> spec.boss() ? 0.0 : 0.035;
             };
             Vec3 delta = target.subtract(pivot);
+            boolean walking = false;
             if (phase == FieldEncounterRules.Phase.PATROL && delta.lengthSqr() < 0.36) {
                 towardEnd = !towardEnd;
             } else if (delta.lengthSqr() > 0.0001 && speed > 0.0) {
                 Vec3 movement = delta.normalize().scale(Math.min(speed, delta.length()));
                 pivot = pivot.add(movement);
                 facing = horizontalDirection(movement, facing);
+                walking = true;
             }
-            updateActors(level, facing);
+            updateActors(level, facing, walking);
             return false;
         }
 
@@ -408,14 +414,22 @@ public final class FieldSessionManager {
             despawn(level);
             for (int i = 0; i < spec.enemies().size(); i++) {
                 Vec3 pos = formation(i, facing);
-                ArmorStand stand = actor(level, pos, spec.enemies().get(i));
-                level.addFreshEntity(stand);
-                actors.add(stand.getUUID());
+                Entity actor = actor(level, pos, spec.enemies().get(i));
+                actors.add(actor.getUUID());
             }
-            updateActors(level, facing);
+            updateActors(level, facing, false);
         }
 
-        private ArmorStand actor(ServerLevel level, Vec3 pos, String defId) {
+        private Entity actor(ServerLevel level, Vec3 pos, String defId) {
+            float yaw = yawFor(facing);
+            BattleActorEntity animated = TurnboundBattleActors.spawn(level, defId, pos, yaw);
+            if (animated != null) {
+                animated.setCustomName(Component.literal(CanonicalData.definition(defId, spec.level(), 0, false).name()));
+                animated.setCustomNameVisible(false);
+                animated.setFieldWalking(false);
+                return animated;
+            }
+
             ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
             stand.setInvulnerable(true); stand.setNoGravity(true); stand.setShowArms(true);
             stand.setCustomName(Component.literal(CanonicalData.definition(defId, spec.level(), 0, false).name()));
@@ -426,23 +440,33 @@ public final class FieldSessionManager {
             else if ("E005".equals(defId)) stand.setItemSlot(EquipmentSlot.MAINHAND, Items.GOLDEN_HOE.getDefaultInstance());
             else if ("B01".equals(defId)) stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_AXE.getDefaultInstance());
             else if (!"E003".equals(defId)) stand.setItemSlot(EquipmentSlot.MAINHAND, Items.IRON_SWORD.getDefaultInstance());
+            level.addFreshEntity(stand);
             return stand;
         }
 
-        private void updateActors(ServerLevel level, Vec3 heading) {
+        private void updateActors(ServerLevel level, Vec3 heading, boolean walking) {
             facing = horizontalDirection(heading, facing);
             float targetYaw = yawFor(facing);
             for (int i = 0; i < actors.size(); i++) {
-                Entity e = level.getEntity(actors.get(i));
-                if (!(e instanceof ArmorStand stand)) continue;
+                Entity entity = level.getEntity(actors.get(i));
+                if (entity == null) continue;
                 Vec3 p = formation(i, facing);
-                stand.setPos(p.x, p.y, p.z);
-                float yaw = smoothYaw(stand.getYRot(), targetYaw, 0.35F);
-                stand.setYRot(yaw);
-                stand.setYHeadRot(yaw);
-                stand.setCustomNameVisible(i == 0 && phase == FieldEncounterRules.Phase.ALERT);
-                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT) stand.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-                else stand.setCustomName(Component.literal(CanonicalData.definition(spec.enemies().get(i), spec.level(), 0, false).name()));
+                entity.setPos(p.x, p.y, p.z);
+                float yaw = smoothYaw(entity.getYRot(), targetYaw, 0.35F);
+                entity.setYRot(yaw);
+                if (entity instanceof BattleActorEntity animated) {
+                    animated.setYHeadRot(yaw);
+                    animated.setYBodyRot(yaw);
+                    animated.setFieldWalking(walking);
+                } else if (entity instanceof ArmorStand stand) {
+                    stand.setYHeadRot(yaw);
+                }
+                entity.setCustomNameVisible(i == 0 && phase == FieldEncounterRules.Phase.ALERT);
+                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT) {
+                    entity.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                } else {
+                    entity.setCustomName(Component.literal(CanonicalData.definition(spec.enemies().get(i), spec.level(), 0, false).name()));
+                }
             }
         }
 
