@@ -1,8 +1,10 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
+import io.github.q93503128.turnbound.presentation.BattleVfx;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -34,14 +36,18 @@ final class BattlePresentation {
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
     private final Map<String, CombatantSide> sides = new LinkedHashMap<>();
     private final Map<String, Boolean> summons = new LinkedHashMap<>();
+    private final Map<String, String> visualIds = new LinkedHashMap<>();
+    private final Map<String, Boolean> downed = new LinkedHashMap<>();
     private UUID focusMarker;
     private UUID dangerMarker;
     private String dangerTarget = "";
     private String moving;
     private int returnTicks;
+    private boolean finishPlayed;
 
     void spawn(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
         cleanupActors(level);
+        finishPlayed = false;
         spawnMissing(level, center, facingYaw, combatants);
     }
 
@@ -78,9 +84,10 @@ final class BattlePresentation {
         boolean ally = combatant.side() == CombatantSide.ALLY;
         float yaw = facingYaw + (ally ? 0.0F : 180.0F);
         Entity actor = null;
+        String visualId = combatant.definition().id();
 
-        if (!combatant.definition().summon() && TurnboundBattleActors.contains(combatant.definition().id())) {
-            BattleActorEntity animated = TurnboundBattleActors.spawn(level, combatant.definition().id(), pos, yaw);
+        if (TurnboundBattleActors.contains(visualId)) {
+            BattleActorEntity animated = TurnboundBattleActors.spawn(level, visualId, pos, yaw);
             if (animated != null) {
                 animated.setCustomName(Component.literal(combatant.definition().name()));
                 animated.setCustomNameVisible(false);
@@ -105,6 +112,8 @@ final class BattlePresentation {
         homes.put(combatant.instanceId(), pos);
         sides.put(combatant.instanceId(), combatant.side());
         summons.put(combatant.instanceId(), combatant.definition().summon());
+        visualIds.put(combatant.instanceId(), visualId);
+        downed.put(combatant.instanceId(), combatant.downed());
     }
 
     private void removeMissing(ServerLevel level, List<CombatantState> units) {
@@ -118,6 +127,8 @@ final class BattlePresentation {
             homes.remove(id);
             sides.remove(id);
             summons.remove(id);
+            visualIds.remove(id);
+            downed.remove(id);
             if (id.equals(moving)) moving = null;
         }
     }
@@ -159,10 +170,12 @@ final class BattlePresentation {
 
     void syncDanger(ServerLevel level, Iterable<CombatantState> combatants) {
         String targetId = "";
+        String warningVisualId = "";
         for (CombatantState unit : combatants) {
             if (!unit.downed() && (unit.hasStatus("e003_armed") || unit.hasStatus("b01_charge_warning")
                     || unit.hasStatus("b04_eruption_warning") || unit.hasStatus("b05_collapse_warning"))) {
                 targetId = unit.instanceId();
+                warningVisualId = unit.definition().id();
                 break;
             }
         }
@@ -174,6 +187,47 @@ final class BattlePresentation {
         if (target == null) return;
         ArmorStand marker = marker(level, target.add(0, 1.35, 0), "!", ChatFormatting.GOLD);
         dangerMarker = marker.getUUID();
+        BattleVfx.warning(level, warningVisualId, target);
+    }
+
+    void syncStates(ServerLevel level, Iterable<CombatantState> combatants) {
+        for (CombatantState unit : combatants) {
+            String id = unit.instanceId();
+            Boolean before = downed.get(id);
+            if (before == null) {
+                downed.put(id, unit.downed());
+                continue;
+            }
+            if (before == unit.downed()) continue;
+            downed.put(id, unit.downed());
+            Entity entity = entity(level, id);
+            Vec3 home = homes.get(id);
+            if (unit.downed()) {
+                if (entity instanceof BattleActorEntity animated) animated.playDeath();
+                if (home != null) BattleVfx.down(level, home);
+            } else {
+                if (entity instanceof BattleActorEntity animated) animated.playRevive();
+                if (home != null) BattleVfx.revive(level, home);
+            }
+        }
+    }
+
+    void turnReady(ServerLevel level, String actorId) {
+        Entity actor = entity(level, actorId);
+        if (actor instanceof BattleActorEntity animated) animated.playReady();
+    }
+
+    void finish(ServerLevel level, BattleOutcome outcome) {
+        if (finishPlayed || outcome == BattleOutcome.RUNNING) return;
+        finishPlayed = true;
+        CombatantSide winningSide = outcome == BattleOutcome.ALLY_VICTORY ? CombatantSide.ALLY : CombatantSide.ENEMY;
+        for (String id : actors.keySet()) {
+            if (sides.get(id) != winningSide || Boolean.TRUE.equals(downed.get(id))) continue;
+            Entity entity = entity(level, id);
+            if (entity instanceof BattleActorEntity animated) animated.playVictory();
+            Vec3 home = homes.get(id);
+            if (home != null) BattleVfx.victory(level, home);
+        }
     }
 
     private ArmorStand marker(ServerLevel level, Vec3 pos, String text, ChatFormatting color) {
@@ -203,21 +257,25 @@ final class BattlePresentation {
         dangerTarget = "";
     }
 
-    void performSkill(ServerLevel level, String actorId, String targetId, boolean damaging) {
+    void performSkill(ServerLevel level, String actorId, String visualId, String skillId, String targetId, boolean damaging) {
         Entity actor = entity(level, actorId);
-        if (actor instanceof BattleActorEntity animated) animated.playStrike();
-        if (!damaging || targetId == null || targetId.isBlank()) return;
-        Vec3 target = homes.get(targetId);
-        Vec3 home = homes.get(actorId);
-        if (actor == null || target == null || home == null) return;
-        Vec3 delta = target.subtract(home);
+        if (actor instanceof BattleActorEntity animated) {
+            if (damaging) animated.playStrike(); else animated.playCast();
+        }
+
+        Vec3 source = homes.get(actorId);
+        Vec3 target = targetId == null || targetId.isBlank() ? source : homes.get(targetId);
+        if (source != null) BattleVfx.skill(level, visualId, skillId, source, target == null ? source : target, damaging);
+
+        if (!damaging || target == null || source == null || actor == null) return;
+        Vec3 delta = target.subtract(source);
         if (delta.lengthSqr() > 0.001) actor.setPos(target.subtract(delta.normalize().scale(1.45)));
         moving = actorId;
         returnTicks = 5;
     }
 
-    void lunge(ServerLevel level, String actorId, String targetId) {
-        performSkill(level, actorId, targetId, true);
+    void lunge(ServerLevel level, String actorId, String visualId, String skillId, String targetId) {
+        performSkill(level, actorId, visualId, skillId, targetId, true);
     }
 
     void tick(ServerLevel level) {
@@ -235,6 +293,7 @@ final class BattlePresentation {
         clearDanger(level);
         cleanupActors(level);
         moving = null;
+        finishPlayed = false;
     }
 
     private void cleanupActors(ServerLevel level) {
@@ -246,6 +305,8 @@ final class BattlePresentation {
         homes.clear();
         sides.clear();
         summons.clear();
+        visualIds.clear();
+        downed.clear();
     }
 
     private Entity entity(ServerLevel level, String id) {
