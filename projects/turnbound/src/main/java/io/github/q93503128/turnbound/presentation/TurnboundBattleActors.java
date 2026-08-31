@@ -39,12 +39,14 @@ public final class TurnboundBattleActors {
             Map.entry("P04", "elysia"), Map.entry("P05", "lynette"), Map.entry("P06", "morwen"),
             Map.entry("P07", "marion"), Map.entry("P08", "raze"), Map.entry("P07_SUMMON", "toto"));
 
+    /** Canon §17.6: filename <character_id>.animation.json and clip animation.<character_id>.<clip>. */
+    private static final Map<String, String> HERO_ANIMATION = Map.of(
+            "P01", "p01_kyren", "P02", "p02_lumea", "P03", "p03_bram", "P04", "p04_elysia",
+            "P05", "p05_lynette", "P06", "p06_morwen", "P07", "p07_marion", "P08", "p08_raze");
+
     private static final Map<String, String> FILLER_PATH = Map.of(
-            "F01", "f01_militia_male",
-            "F01_ALT", "f01_militia_female",
-            "F02", "f02_field_apprentice",
-            "F03", "f03_border_hunter",
-            "F04", "f04_shield_mercenary");
+            "F01", "f01_militia_male", "F01_ALT", "f01_militia_female",
+            "F02", "f02_field_apprentice", "F03", "f03_border_hunter", "F04", "f04_shield_mercenary");
 
     private static final Map<String, String> ENEMY_PATH = Map.ofEntries(
             Map.entry("E001", "e001_rotted_walker"), Map.entry("E002", "e002_bone_marksman"),
@@ -63,17 +65,12 @@ public final class TurnboundBattleActors {
             "B01", "graul", "B02", "verna", "B03", "oro7", "B04", "kolvak", "B05", "serak");
 
     private static final Map<String, String> SPECIAL_FILLER_ANIMATION = Map.of(
-            "F02", "f02_field_apprentice",
-            "F03", "f03_border_hunter",
-            "F04", "f04_shield_mercenary");
-
+            "F02", "f02_field_apprentice", "F03", "f03_border_hunter", "F04", "f04_shield_mercenary");
     private static final Map<String, String> SPECIAL_ENEMY_ANIMATION = Map.of(
             "E003", "e003_unstable_burster", "E006", "e006_moss_boar",
             "E007", "e007_spore_lantern", "E008", "e008_root_guard",
             "E011", "e011_rusted_support", "E014", "e014_lava_driller");
-
-    private static final Map<String, String> SPECIAL_ELITE_ANIMATION = Map.of(
-            "EL04", "el04_magma_drill_king");
+    private static final Map<String, String> SPECIAL_ELITE_ANIMATION = Map.of("EL04", "el04_magma_drill_king");
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
@@ -94,6 +91,15 @@ public final class TurnboundBattleActors {
 
     public static boolean contains(String combatantId) { return ACTORS.containsKey(combatantId); }
 
+    /** Returns canonical hero animation prefix for a concrete registered actor type; non-core actors return null. */
+    public static String heroAnimationPrefix(EntityType<?> type) {
+        if (type == null) return null;
+        for (var entry : ACTORS.entrySet()) {
+            if (entry.getValue().get() == type) return HERO_ANIMATION.get(entry.getKey());
+        }
+        return null;
+    }
+
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {
         String visualId = "F01".equals(combatantId) && level.random.nextBoolean() ? "F01_ALT" : combatantId;
         DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(visualId);
@@ -109,10 +115,8 @@ public final class TurnboundBattleActors {
 
     private static void attributes(EntityAttributeCreationEvent event) {
         AttributeSupplier attributes = Mob.createMobAttributes()
-                .add(Attributes.MAX_HEALTH, 20.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.0)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
-                .build();
+                .add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.0)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0).build();
         for (var holder : ACTORS.values()) event.put(holder.get(), attributes);
     }
 
@@ -166,6 +170,8 @@ public final class TurnboundBattleActors {
     }
 
     private static Identifier animationRoot(String id) {
+        String heroAnimation = HERO_ANIMATION.get(id);
+        if (heroAnimation != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + heroAnimation);
         if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
         String filler = SPECIAL_FILLER_ANIMATION.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
         if (FILLER_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/common");
