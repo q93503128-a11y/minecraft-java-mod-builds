@@ -1,6 +1,7 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
 import kr.moonseungjun.frontiersettlement.compat.ExternalContentTags;
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
@@ -16,8 +17,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public final class SettlementStorageService {
-    private static final int PUBLIC_STOCKPILE_TARGET_BARRELS = 4;
-    private static final int[][] PUBLIC_STOCKPILE_OFFSETS = {
+    // Alpha.91 used these cells as a vanilla-barrel public-storage cluster. Keep the layout
+    // only as a one-way save migration map. New settlements receive one 54-slot shared depot;
+    // extra shared capacity is crafted and placed by the player.
+    private static final int[][] LEGACY_PUBLIC_STOCKPILE_OFFSETS = {
             {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
     };
 
@@ -44,19 +47,9 @@ public final class SettlementStorageService {
         return new ArrayList<>(positions);
     }
 
-    /**
-     * Public storage remains ordinary vanilla barrels. The first barrel is the persisted founding
-     * stockpile; up to three safe neighboring cells are maintained as physical capacity annexes.
-     * One vanilla barrel still has 27 slots, so the cluster provides up to 108 slots without a
-     * custom block entity/menu/network protocol or save migration.
-     */
+    /** The persisted founding stockpile is the dedicated shared supply depot. */
     public static List<BlockPos> publicStockpilePositions(SettlementData data) {
-        List<BlockPos> positions = new ArrayList<>();
-        BlockPos origin = data.stockpilePos();
-        for (int[] offset : PUBLIC_STOCKPILE_OFFSETS) {
-            positions.add(origin.offset(offset[0], 0, offset[1]));
-        }
-        return positions;
+        return List.of(data.stockpilePos());
     }
 
     public static BlockPos worksiteStoragePosition(BuildingRecord building) {
@@ -87,28 +80,73 @@ public final class SettlementStorageService {
     }
 
     /**
-     * Save-compatible backfill. Missing Frontier-owned barrels are created only in loaded, dry,
-     * replaceable cells with solid dry support. Existing block entities and solid player blocks are
-     * never overwritten. A blocked annex is simply skipped and retried on a later maintenance tick.
+     * Save-compatible storage maintenance. The starter public stockpile is a 54-slot dedicated
+     * shared supply depot. Alpha.91 public barrels are upgraded in-place with every ItemStack
+     * preserved; profession worksite barrels remain local physical buffers.
      */
     public static void ensureManagedStorage(ServerLevel level, SettlementData data) {
-        int existingPublic = 0;
-        for (BlockPos pos : publicStockpilePositions(data)) {
-            if (level.hasChunkAt(pos) && level.getBlockState(pos).is(Blocks.BARREL)
-                    && level.getBlockEntity(pos) instanceof Container) existingPublic++;
-        }
-        if (existingPublic < PUBLIC_STOCKPILE_TARGET_BARRELS) {
-            for (BlockPos pos : publicStockpilePositions(data)) {
-                if (existingPublic >= PUBLIC_STOCKPILE_TARGET_BARRELS) break;
-                if (!canSafelyCreateManagedBarrel(level, pos)) continue;
-                if (level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3)
-                        && level.getBlockEntity(pos) instanceof Container) existingPublic++;
-            }
-        }
+        upgradeLegacyPublicBarrels(level, data);
+        ensureStarterSupplyDepot(level, data.stockpilePos());
         for (BlockPos pos : worksiteStoragePositions(data)) {
             if (!canSafelyCreateManagedBarrel(level, pos)) continue;
             level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
         }
+    }
+
+    private static void upgradeLegacyPublicBarrels(ServerLevel level, SettlementData data) {
+        BlockPos origin = data.stockpilePos();
+        for (int[] offset : LEGACY_PUBLIC_STOCKPILE_OFFSETS) {
+            BlockPos pos = origin.offset(offset[0], 0, offset[1]);
+            if (!level.hasChunkAt(pos) || !level.getBlockState(pos).is(Blocks.BARREL)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container oldContainer)) continue;
+            replaceBarrelWithSupplyDepot(level, pos, oldContainer);
+        }
+    }
+
+    private static void ensureStarterSupplyDepot(ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.below())) return;
+        BlockState current = level.getBlockState(pos);
+        if (current.is(FrontierContent.SUPPLY_DEPOT.get()) && level.getBlockEntity(pos) instanceof Container) {
+            SupplyDepotRegistryService.tryRegister(level, pos);
+            return;
+        }
+        if (current.is(Blocks.BARREL) && level.getBlockEntity(pos) instanceof Container oldContainer) {
+            replaceBarrelWithSupplyDepot(level, pos, oldContainer);
+            return;
+        }
+        BlockState below = level.getBlockState(pos.below());
+        if (level.getBlockEntity(pos) != null) return;
+        if (!current.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return;
+        if (!current.isAir() && !current.canBeReplaced()) return;
+        if (below.isAir() || below.canBeReplaced()) return;
+        if (level.setBlock(pos, FrontierContent.SUPPLY_DEPOT.get().defaultBlockState(), 3)
+                && level.getBlockEntity(pos) instanceof Container) {
+            SupplyDepotRegistryService.tryRegister(level, pos);
+        }
+    }
+
+    private static void replaceBarrelWithSupplyDepot(ServerLevel level, BlockPos pos, Container oldContainer) {
+        List<ItemStack> preserved = new ArrayList<>(oldContainer.getContainerSize());
+        for (int slot = 0; slot < oldContainer.getContainerSize(); slot++) {
+            preserved.add(oldContainer.getItem(slot).copy());
+            oldContainer.setItem(slot, ItemStack.EMPTY);
+        }
+        oldContainer.setChanged();
+        BlockState oldState = level.getBlockState(pos);
+        boolean placed = level.setBlock(pos, FrontierContent.SUPPLY_DEPOT.get().defaultBlockState(), 3);
+        if (!placed || !(level.getBlockEntity(pos) instanceof Container replacement)) {
+            level.setBlock(pos, oldState, 3);
+            if (level.getBlockEntity(pos) instanceof Container rollback) restoreItems(rollback, preserved);
+            return;
+        }
+        restoreItems(replacement, preserved);
+        SupplyDepotRegistryService.tryRegister(level, pos);
+    }
+
+    private static void restoreItems(Container target, List<ItemStack> preserved) {
+        int limit = Math.min(target.getContainerSize(), preserved.size());
+        for (int slot = 0; slot < limit; slot++) target.setItem(slot, preserved.get(slot).copy());
+        target.setChanged();
     }
 
     private static boolean canSafelyCreateManagedBarrel(ServerLevel level, BlockPos pos) {

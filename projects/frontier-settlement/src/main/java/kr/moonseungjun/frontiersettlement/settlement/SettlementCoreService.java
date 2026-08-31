@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -154,7 +155,8 @@ public final class SettlementCoreService {
 
         BlockPos pos = event.getPos();
         BlockState current = level.getBlockState(pos);
-        if (SettlementStorageService.isManagedStoragePosition(data, pos) && current.is(Blocks.BARREL)) {
+        if (SettlementStorageService.isManagedStoragePosition(data, pos)
+                && (current.is(Blocks.BARREL) || current.is(FrontierContent.SUPPLY_DEPOT.get()))) {
             event.setCanceled(true);
             event.setNotifyClient(true);
             return;

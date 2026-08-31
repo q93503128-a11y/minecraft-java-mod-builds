@@ -1,5 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
 import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
 import net.minecraft.core.BlockPos;
@@ -85,7 +86,7 @@ public final class SettlementService {
         ServerLevel level = server.overworld();
         if (placeMarker && !isSafeMarkerPosition(level, center)) return new FoundResult(false, "표식을 세울 2블록 높이의 빈 공간과 단단한 지면이 필요합니다.");
         BlockPos stockpile = findStockpilePosition(level, center);
-        if (stockpile == null) return new FoundResult(false, "표식 주변에 공동 창고를 둘 안전한 자리가 없습니다.");
+        if (stockpile == null) return new FoundResult(false, "표식 주변에 공용 보급고를 둘 안전한 자리가 없습니다.");
         BlockState oldCenter = level.getBlockState(center);
         BlockState oldAbove = level.getBlockState(center.above());
         BlockState oldStockpile = level.getBlockState(stockpile);
@@ -102,19 +103,20 @@ public final class SettlementService {
             }
             aboveChanged = true;
         }
-        if (!level.setBlock(stockpile, Blocks.BARREL.defaultBlockState(), 3)
+        if (!level.setBlock(stockpile, FrontierContent.SUPPLY_DEPOT.get().defaultBlockState(), 3)
                 || !(level.getBlockEntity(stockpile) instanceof net.minecraft.world.Container)) {
             if (aboveChanged) level.setBlock(center.above(), oldAbove, 3);
             if (centerChanged) level.setBlock(center, oldCenter, 3);
             if (!level.getBlockState(stockpile).equals(oldStockpile)) level.setBlock(stockpile, oldStockpile, 3);
-            return new FoundResult(false, "공동 창고를 월드에 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
+            return new FoundResult(false, "공용 보급고를 월드에 설치하지 못했습니다. 마을은 생성되지 않았습니다.");
         }
+        SupplyDepotRegistryService.tryRegister(level, stockpile);
         data.found(center, stockpile);
         SettlementStorageService.ensureManagedStorage(level, data);
         SettlementConstructionService.ensureBuilder(level, data);
         refreshResources(server, data);
         broadcast(server, data);
-        return new FoundResult(true, "공동 개척지가 시작되었습니다. 자원을 창고에 넣고 건설 위치를 정해 마을을 키우세요.");
+        return new FoundResult(true, "공동 개척지가 시작되었습니다. 자원을 공용 보급고에 넣고 건설 위치를 정해 마을을 키우세요.");
     }
 
     private static boolean isSafeMarkerPosition(ServerLevel level, BlockPos pos) {
