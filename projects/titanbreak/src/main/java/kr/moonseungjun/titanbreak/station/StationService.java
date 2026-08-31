@@ -50,8 +50,7 @@ public final class StationService {
         }
         if (state.is(ModBlocks.IMPLANT_VAULT.get())) {
             TitanbreakNetwork.sync(player);
-            player.sendSystemMessage(Component.translatable("message.titanbreak.vault_ready",
-                    TitanPlayerData.get(level.getServer()).state(player).vaultView().size()), true);
+            open(player, "vault", pos);
             consumeInteraction(event);
             return;
         }
@@ -143,6 +142,14 @@ public final class StationService {
         return 0;
     }
 
+    private static int maxEnhancementForFabricator(int tier) {
+        return switch (tier) {
+            case 1 -> 3;
+            case 2 -> 7;
+            default -> 10;
+        };
+    }
+
     private static void fabricate(ServerPlayer player, String augmentId, int fabricatorTier) {
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
         if (definition == null || definition.fabricatorTier() > fabricatorTier) return;
@@ -165,13 +172,16 @@ public final class StationService {
         TitanPlayerData data = TitanPlayerData.get(((ServerLevel) player.level()).getServer());
         TitanPlayerData.AugmentInstance instance = data.firstInstance(player, augmentId);
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
+        int stationCap = maxEnhancementForFabricator(fabricatorTier);
         if (instance == null || definition == null || definition.fabricatorTier() > fabricatorTier
-                || instance.enhancement() >= TitanPlayerData.MAX_ENHANCEMENT) return;
+                || instance.enhancement() >= stationCap) return;
 
         int next = instance.enhancement() + 1;
         Item familyMaterial = firstRecipeMaterial(definition);
+        Item commonMaterial = familyMaterial == ModItems.COMPOSITE_ARMOR_PLATE.get()
+                ? ModItems.SERVO_BUNDLE.get() : ModItems.COMPOSITE_ARMOR_PLATE.get();
         Requirement[] requirements = {
-                new Requirement(ModItems.SERVO_BUNDLE.get(), 1 + next / 4),
+                new Requirement(commonMaterial, 1 + next / 4),
                 new Requirement(familyMaterial, 1 + next / 3)
         };
         if (!hasAll(player, requirements)) {
@@ -194,7 +204,7 @@ public final class StationService {
                 || instance.mk() >= TitanPlayerData.MAX_AUGMENT_MK) return;
 
         int nextMk = instance.mk() + 1;
-        int requiredFabricator = nextMk <= 2 ? 1 : nextMk <= 4 ? 2 : 3;
+        int requiredFabricator = nextMk <= 4 ? 2 : 3;
         if (fabricatorTier < requiredFabricator) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.mk_fabricator_locked", requiredFabricator));
             return;
@@ -380,9 +390,7 @@ public final class StationService {
         if (!(player.level() instanceof ServerLevel level)
                 || player.blockPosition().distSqr(process.pos()) > 64.0D
                 || !level.getBlockState(process.pos()).is(ModBlocks.SURGICAL_BAY.get())) {
-            SURGERIES.remove(player.getUUID());
-            player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_cancelled"));
-            TitanbreakNetwork.sync(player);
+            cancel(player);
             return;
         }
         if (level.getGameTime() < process.finishTick()) return;
