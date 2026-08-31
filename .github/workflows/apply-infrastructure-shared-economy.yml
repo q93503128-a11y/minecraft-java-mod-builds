@@ -1,0 +1,65 @@
+name: Apply Infrastructure Shared Economy
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-infrastructure-shared-economy.yml'
+      - 'tools/apply_infrastructure_shared_economy.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Apply infrastructure shared economy migration
+        run: python3 tools/apply_infrastructure_shared_economy.py
+      - name: Validate migration invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/infrastructure')
+          project = (p / 'InfrastructureProject.java').read_text(encoding='utf-8')
+          data = (p / 'InfrastructureData.java').read_text(encoding='utf-8')
+          service = (p / 'InfrastructureService.java').read_text(encoding='utf-8')
+          checks = {
+              'stable funding keys': ':req:' in data,
+              'schema v2': 'CURRENT_SCHEMA = 2' in data,
+              'legacy migration': 'legacyIndices' in project and 'migrateLegacyFundingIfNeeded' in data,
+              'shared stone': 'ResourceCategory.STONE' in project,
+              'shared metal': 'ResourceCategory.METAL' in project,
+              'category consumption': 'requirement::matches' in service,
+              'no old item-only funding': 'requirement.item()' not in service,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('FAILED: ' + ', '.join(failed))
+          print('INFRASTRUCTURE MIGRATION INVARIANTS PASS')
+          PY
+      - name: Build Survival Ascension
+        working-directory: projects/survival-ascension
+        run: ./gradlew clean build --no-daemon
+      - name: Build Frontier Settlement regression
+        working-directory: projects/frontier-settlement
+        run: ./gradlew clean build --no-daemon
+      - name: Commit validated implementation to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/infrastructure
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Migrate infrastructure to shared resource funding'
+          git pull --rebase origin main
+          git push origin HEAD:main
