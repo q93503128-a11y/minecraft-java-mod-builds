@@ -137,7 +137,7 @@ public final class SouthgateChapterWorld {
             set(level, cx + dx, y, cz + dz, ((dx + dz) & 1) == 0 ? Blocks.POLISHED_ANDESITE : Blocks.STONE_BRICKS);
         }
         set(level, cx, y + 1, cz, Blocks.AMETHYST_BLOCK);
-        set(level, cx, y + 2, cz, Blocks.LIGHTNING_ROD);
+        set(level, cx, y + 2, cz, Blocks.BEACON);
         for (int[] p : new int[][]{{-4,-4},{4,-4},{-4,4},{4,4}}) lanternPost(level, cx + p[0], y, cz + p[1]);
     }
 
@@ -182,14 +182,14 @@ public final class SouthgateChapterWorld {
         return level.getBlockState(new BlockPos(MARKER_X, MARKER_Y, MARKER_Z)).is(Blocks.LODESTONE)
                 && level.getBlockState(new BlockPos(MARKER_X + 1, MARKER_Y, MARKER_Z)).is(Blocks.AMETHYST_BLOCK)
                 && level.getBlockState(new BlockPos(MARKER_X + 2, MARKER_Y, MARKER_Z)).is(Blocks.CRYING_OBSIDIAN)
-                && level.getBlockState(new BlockPos(MARKER_X + 3, MARKER_Y, MARKER_Z)).is(Blocks.COPPER_BLOCK);
+                && level.getBlockState(new BlockPos(MARKER_X + 3, MARKER_Y, MARKER_Z)).is(Blocks.GOLD_BLOCK);
     }
 
     private static void writeMarker(ServerLevel level) {
         set(level, MARKER_X, MARKER_Y, MARKER_Z, Blocks.LODESTONE);
         set(level, MARKER_X + 1, MARKER_Y, MARKER_Z, Blocks.AMETHYST_BLOCK);
         set(level, MARKER_X + 2, MARKER_Y, MARKER_Z, Blocks.CRYING_OBSIDIAN);
-        set(level, MARKER_X + 3, MARKER_Y, MARKER_Z, Blocks.COPPER_BLOCK);
+        set(level, MARKER_X + 3, MARKER_Y, MARKER_Z, Blocks.GOLD_BLOCK);
     }
 
     private static boolean near(Vec3 pos, double x, double z, double radius) {
