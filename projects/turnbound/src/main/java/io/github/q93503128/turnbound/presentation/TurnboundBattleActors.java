@@ -30,6 +30,7 @@ public final class TurnboundBattleActors {
     private static final List<String> IDS = List.of(
             "P01","P02","P03","P04","P05","P06","P07","P08","F01","F02","F03","F04",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
+            "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
@@ -74,25 +75,25 @@ public final class TurnboundBattleActors {
 
     private static float width(String id) {
         if (id.startsWith("B")) return 1.15F;
-        if (id.equals("E006") || id.equals("E010") || id.equals("E012")) return 1.10F;
-        if (id.equals("E003") || id.equals("E014") || id.equals("P08")) return 0.90F;
+        if (id.equals("E006") || id.equals("E010") || id.equals("E012") || id.equals("EL02")) return 1.10F;
+        if (id.equals("E003") || id.equals("E014") || id.equals("EL04") || id.equals("P08")) return 0.90F;
         return 0.72F;
     }
 
     private static float height(String id) {
         if (id.startsWith("B")) return 2.55F;
-        if (id.equals("E006") || id.equals("E010") || id.equals("E012")) return 1.35F;
-        if (id.equals("E003") || id.equals("E014") || id.equals("P08")) return 2.15F;
+        if (id.equals("E006") || id.equals("E010") || id.equals("E012") || id.equals("EL02")) return 1.35F;
+        if (id.equals("E003") || id.equals("E014") || id.equals("EL04") || id.equals("P08")) return 2.15F;
         return 2.0F;
     }
 
     private static String archetype(String id) {
         return switch (id) {
-            case "P03","F04","E008" -> "shield";
+            case "P03","F04","E008","EL03" -> "shield";
             case "P05","F03","E002" -> "ranger";
             case "P02","P04","P06","P07","F02","E005","E007","E013" -> "caster";
-            case "P08","E003","E014","B01","B04" -> "brute";
-            case "E006","E010","E012","B02" -> "beast";
+            case "P08","E003","E014","EL04","B01","B04" -> "brute";
+            case "E006","E010","E012","EL02","B02" -> "beast";
             case "E011","B03","B05" -> "machine";
             default -> "blade";
         };
