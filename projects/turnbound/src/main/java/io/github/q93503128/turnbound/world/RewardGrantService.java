@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
@@ -8,6 +9,7 @@ import io.github.q93503128.turnbound.session.BattleResultSummary;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,9 +32,30 @@ public final class RewardGrantService {
         }
     }
 
+    public static final class SettlementException extends IllegalStateException {
+        private final boolean recoverableFromJournal;
+
+        private SettlementException(String message, boolean recoverableFromJournal, Throwable cause) {
+            super(message, cause);
+            this.recoverableFromJournal = recoverableFromJournal;
+        }
+
+        public boolean recoverableFromJournal() { return recoverableFromJournal; }
+    }
+
+    @FunctionalInterface
+    interface JournalStep {
+        void prepare(CampaignProgressStore.Snapshot snapshot) throws IOException;
+    }
+
     @FunctionalInterface
     interface SaveStep {
         void save() throws IOException;
+    }
+
+    @FunctionalInterface
+    interface CleanupStep {
+        void cleanup() throws IOException;
     }
 
     private RewardGrantService() {}
@@ -40,27 +63,38 @@ public final class RewardGrantService {
     public static Result commitAndSave(ServerPlayer player, String transactionId, String encounterId,
                                        BattleState state, BattleOutcome outcome) {
         if (player == null) throw new IllegalArgumentException("Missing player");
+        Path primary = CampaignPersistence.playerFile(player);
         return commit(player.getUUID(), transactionId, encounterId, state, outcome,
-                () -> CampaignPersistence.saveOrThrow(player));
+                snapshot -> RewardTransactionJournal.prepare(primary, transactionId, snapshot),
+                () -> CampaignPersistence.saveOrThrow(player),
+                () -> RewardTransactionJournal.clear(primary));
     }
 
     static Result commit(UUID playerId, String transactionId, String encounterId,
                          BattleState state, BattleOutcome outcome, SaveStep saveStep) {
+        return commit(playerId, transactionId, encounterId, state, outcome, ignored -> { }, saveStep, () -> { });
+    }
+
+    static Result commit(UUID playerId, String transactionId, String encounterId,
+                         BattleState state, BattleOutcome outcome, JournalStep journalStep,
+                         SaveStep saveStep, CleanupStep cleanupStep) {
         if (outcome != BattleOutcome.ALLY_VICTORY || encounterId == null || encounterId.isBlank()) {
             return new Result(BattleResultSummary.none(), List.of(), false);
         }
         if (playerId == null) throw new IllegalArgumentException("Missing player id");
         if (transactionId == null || transactionId.isBlank()) throw new IllegalArgumentException("Missing reward transaction id");
         if (state == null) throw new IllegalArgumentException("Missing battle state");
-        if (saveStep == null) throw new IllegalArgumentException("Missing reward save step");
+        if (journalStep == null || saveStep == null || cleanupStep == null) throw new IllegalArgumentException("Missing reward persistence step");
         if (!ACTIVE_PLAYERS.add(playerId)) {
             throw new IllegalStateException("Reward settlement re-entry for " + playerId);
         }
 
         CampaignProgressStore.Snapshot before = CampaignProgressStore.snapshot(playerId);
         boolean wasDirty = CampaignProgressStore.isDirty(playerId);
+        boolean journalPrepared = false;
+        Result result;
         try {
-            if (committed(before, transactionId)) {
+            if (transactionCommitted(before, transactionId)) {
                 return new Result(BattleResultSummary.none(), List.of(), true);
             }
 
@@ -69,20 +103,30 @@ public final class RewardGrantService {
                     : CampaignProgressStore.commit(playerId, encounterId, outcome);
             List<String> challenges = ChallengeService.evaluateAndCommit(playerId, encounterId, state, outcome);
             markCommitted(playerId, transactionId);
+            CampaignProgressStore.Snapshot after = CampaignProgressStore.snapshot(playerId);
+            journalStep.prepare(after);
+            journalPrepared = true;
             saveStep.save();
-            return new Result(reward, challenges, false);
+            result = new Result(reward, challenges, false);
         } catch (IOException ex) {
             rollback(playerId, before, wasDirty);
-            throw new IllegalStateException("Failed to persist reward transaction " + transactionId, ex);
+            throw new SettlementException("Failed to persist reward transaction " + transactionId, journalPrepared, ex);
         } catch (RuntimeException ex) {
             rollback(playerId, before, wasDirty);
             throw ex;
         } finally {
             ACTIVE_PLAYERS.remove(playerId);
         }
+
+        try {
+            cleanupStep.cleanup();
+        } catch (IOException cleanupFailure) {
+            Turnbound.LOGGER.warn("TURNBOUND left a stale reward journal after committed transaction {}", transactionId, cleanupFailure);
+        }
+        return result;
     }
 
-    private static boolean committed(CampaignProgressStore.Snapshot snapshot, String transactionId) {
+    static boolean transactionCommitted(CampaignProgressStore.Snapshot snapshot, String transactionId) {
         return snapshot.quests().marks().getOrDefault(TX_MARK_KEY, Set.of()).contains(transactionId);
     }
 

@@ -21,7 +21,7 @@ public final class BattleSessionManager {
     private BattleSessionManager() {}
 
     public static void start(ServerPlayer player) {
-        if (!endAndPersist(player)) return;
+        if (!endAndPersist(player, false)) return;
         BattleSession session = new BattleSession(player);
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
@@ -32,7 +32,7 @@ public final class BattleSessionManager {
     }
 
     public static void startEncounter(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed) {
-        if (!endAndPersist(player)) return;
+        if (!endAndPersist(player, false)) return;
         boolean endgame = EndgameEncounterCatalog.contains(encounterId);
         if (endgame && !EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) {
             throw new IllegalStateException("Endgame encounter is locked: " + encounterId);
@@ -48,7 +48,7 @@ public final class BattleSessionManager {
     public static boolean startEncounterAt(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed,
                                            Vec3 center, float yaw) {
         BattleArenaLocator.Arena arena = BattleArenaLocator.fixedIfOpen(player, center, yaw);
-        if (arena == null || !endAndPersist(player)) return false;
+        if (arena == null || !endAndPersist(player, false)) return false;
         boolean endgame = EndgameEncounterCatalog.contains(encounterId);
         if (endgame && !EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) return false;
         boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
@@ -66,6 +66,19 @@ public final class BattleSessionManager {
     }
 
     public static boolean exists(ServerPlayer player) { return SESSIONS.containsKey(player.getUUID()); }
+
+    public static boolean resumeIfPresent(ServerPlayer player) {
+        BattleSession session = SESSIONS.get(player.getUUID());
+        if (session == null) return false;
+        player.setInvisible(true);
+        Vec3 anchor = session.battleAnchor();
+        player.setPos(anchor.x, anchor.y, anchor.z);
+        player.setYRot(session.battleYaw());
+        player.setXRot(18.0F);
+        player.setDeltaMovement(Vec3.ZERO);
+        BattleNetwork.sync(player, session);
+        return true;
+    }
 
     public static void tick(ServerPlayer player) {
         BattleSession session = SESSIONS.get(player.getUUID());
@@ -90,11 +103,16 @@ public final class BattleSessionManager {
     }
 
     public static void end(ServerPlayer player) {
-        endAndPersist(player);
+        endAndPersist(player, false);
     }
 
-    private static boolean endAndPersist(ServerPlayer player) {
+    public static boolean endForLifecycle(ServerPlayer player) {
+        return endAndPersist(player, true);
+    }
+
+    private static boolean endAndPersist(ServerPlayer player, boolean lifecycle) {
         BattleSession old = SESSIONS.get(player.getUUID());
+        boolean deferredReward = false;
         if (old != null) {
             String encounterId = old.encounterId();
             BattleOutcome outcome = old.state().outcome();
@@ -103,13 +121,16 @@ public final class BattleSessionManager {
                     try {
                         RewardGrantService.commitAndSave(player, old.rewardTransactionId(), encounterId, old.state(), outcome);
                         CampaignPersistence.saveIfDirty(player);
+                    } catch (RewardGrantService.SettlementException ex) {
+                        if (lifecycle && ex.recoverableFromJournal()) {
+                            deferredReward = true;
+                            Turnbound.LOGGER.warn("TURNBOUND deferred reward transaction {} for {} to the durable journal",
+                                    old.rewardTransactionId(), player.getUUID());
+                        } else {
+                            return settlementFailed(player, old, ex);
+                        }
                     } catch (RuntimeException ex) {
-                        Turnbound.LOGGER.error("TURNBOUND failed to settle battle reward transaction {} for {}",
-                                old.rewardTransactionId(), player.getUUID(), ex);
-                        player.sendSystemMessage(Component.literal(
-                                "TURNBOUND 전투 보상을 안전하게 저장하지 못했습니다. 잠시 후 다시 나가기를 시도해 주세요."));
-                        BattleNetwork.sync(player, old);
-                        return false;
+                        return settlementFailed(player, old, ex);
                     }
                 } else {
                     CampaignPersistence.saveIfDirty(player);
@@ -117,7 +138,7 @@ public final class BattleSessionManager {
             }
             SESSIONS.remove(player.getUUID());
             old.cleanup(player);
-            if (!encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
+            if (!deferredReward && !encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
                 FieldSessionManager.onBattleEnded(player, encounterId, outcome);
             }
         }
@@ -125,7 +146,22 @@ public final class BattleSessionManager {
         return true;
     }
 
+    private static boolean settlementFailed(ServerPlayer player, BattleSession session, RuntimeException ex) {
+        Turnbound.LOGGER.error("TURNBOUND failed to settle battle reward transaction {} for {}",
+                session.rewardTransactionId(), player.getUUID(), ex);
+        player.sendSystemMessage(Component.literal(
+                "TURNBOUND 전투 보상을 안전하게 저장하지 못했습니다. 잠시 후 다시 나가기를 시도해 주세요."));
+        BattleNetwork.sync(player, session);
+        return false;
+    }
+
     public static void clearAll(Iterable<ServerPlayer> players) {
-        for (ServerPlayer player : players) end(player);
+        for (ServerPlayer player : players) {
+            if (!endForLifecycle(player)) {
+                Turnbound.LOGGER.error("TURNBOUND could not durably settle an in-memory battle while the server was stopping for {}",
+                        player.getUUID());
+            }
+        }
+        SESSIONS.clear();
     }
 }

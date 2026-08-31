@@ -64,26 +64,43 @@ public final class Turnbound {
     }
 
     private void login(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) CampaignPersistence.load(player);
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (CampaignProgressStore.hasRuntime(player.getUUID())) {
+            if (BattleSessionManager.resumeIfPresent(player)) {
+                LOGGER.warn("TURNBOUND resumed retained in-memory battle state for {} after a failed lifecycle flush", player.getUUID());
+            } else {
+                LOGGER.warn("TURNBOUND resumed retained in-memory campaign state for {} after a failed lifecycle flush", player.getUUID());
+            }
+            return;
+        }
+        CampaignPersistence.load(player);
     }
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            if (!CampaignPersistence.blocked(player)) {
-                BattleSessionManager.end(player);
-                CampaignPersistence.saveIfDirty(player);
-            }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        boolean releaseRuntime = true;
+        if (!CampaignPersistence.blocked(player)) {
+            releaseRuntime = BattleSessionManager.endForLifecycle(player);
+            if (releaseRuntime) releaseRuntime = CampaignPersistence.saveIfDirtyForLifecycle(player);
+        }
+        if (releaseRuntime || CampaignPersistence.blocked(player)) {
             CampaignProgressStore.removeRuntime(player.getUUID());
             StarterSliceBootstrap.remove(player);
             FieldSessionManager.remove(player);
-            CampaignPersistence.forget(player);
+        } else {
+            LOGGER.error("TURNBOUND retained unsaved in-memory state for {} so a same-server reconnect can retry persistence", player.getUUID());
         }
+        CampaignPersistence.forget(player);
     }
 
     private void serverStopping(ServerStoppingEvent event) {
         var players = event.getServer().getPlayerList().getPlayers();
         BattleSessionManager.clearAll(players);
-        for (ServerPlayer player : players) CampaignPersistence.saveIfDirty(player);
+        for (ServerPlayer player : players) {
+            if (!CampaignPersistence.saveIfDirtyForLifecycle(player)) {
+                LOGGER.error("TURNBOUND could not flush campaign state for {} before server shutdown", player.getUUID());
+            }
+        }
         StarterSliceBootstrap.clearAll(players);
         FieldSessionManager.clearAll(players);
         CampaignProgressStore.clearRuntime();

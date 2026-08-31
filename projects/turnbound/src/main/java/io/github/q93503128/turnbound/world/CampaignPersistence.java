@@ -40,16 +40,34 @@ public final class CampaignPersistence {
                 CampaignProgressStore.ensureNewGame(playerId);
             }
         } catch (Exception ex) {
-            BLOCKED.add(playerId);
-            Turnbound.LOGGER.error("TURNBOUND campaign save migration/load failed for {}; preserving unreadable data and blocking session entry", playerId, ex);
-            try {
-                CampaignSaveFiles.quarantine(file);
-            } catch (IOException quarantineFailure) {
-                Turnbound.LOGGER.error("TURNBOUND failed to quarantine unreadable campaign save for {}", playerId, quarantineFailure);
-            }
-            player.connection.disconnect(Component.literal(
-                    "TURNBOUND 저장 데이터를 안전하게 불러오지 못했습니다. 원본은 보존되었으며 새 게임으로 덮어쓰지 않았습니다."));
+            blockCampaignLoad(player, file, ex);
+            return;
         }
+
+        try {
+            RewardTransactionJournal.Recovery recovery = RewardTransactionJournal.recover(file, playerId);
+            if (recovery == RewardTransactionJournal.Recovery.APPLIED) {
+                Turnbound.LOGGER.warn("TURNBOUND recovered pending battle rewards for {} from the write-ahead journal", playerId);
+            }
+        } catch (Exception ex) {
+            BLOCKED.add(playerId);
+            Turnbound.LOGGER.error("TURNBOUND pending reward recovery failed for {}; canonical campaign save was left intact", playerId, ex);
+            player.connection.disconnect(Component.literal(
+                    "TURNBOUND 보상 복구 데이터를 안전하게 처리하지 못했습니다. 기존 저장 데이터는 보존되었습니다."));
+        }
+    }
+
+    private static void blockCampaignLoad(ServerPlayer player, Path file, Exception ex) {
+        UUID playerId = player.getUUID();
+        BLOCKED.add(playerId);
+        Turnbound.LOGGER.error("TURNBOUND campaign save migration/load failed for {}; preserving unreadable data and blocking session entry", playerId, ex);
+        try {
+            CampaignSaveFiles.quarantine(file);
+        } catch (IOException quarantineFailure) {
+            Turnbound.LOGGER.error("TURNBOUND failed to quarantine unreadable campaign save for {}", playerId, quarantineFailure);
+        }
+        player.connection.disconnect(Component.literal(
+                "TURNBOUND 저장 데이터를 안전하게 불러오지 못했습니다. 원본은 보존되었으며 새 게임으로 덮어쓰지 않았습니다."));
     }
 
     public static boolean blocked(ServerPlayer player) {
@@ -66,6 +84,18 @@ public final class CampaignPersistence {
 
     public static void saveIfDirty(ServerPlayer player) {
         if (!blocked(player) && CampaignProgressStore.isDirty(player.getUUID())) save(player);
+    }
+
+    public static boolean saveIfDirtyForLifecycle(ServerPlayer player) {
+        if (blocked(player)) return false;
+        if (!CampaignProgressStore.isDirty(player.getUUID())) return true;
+        try {
+            saveOrThrow(player);
+            return true;
+        } catch (IOException ex) {
+            Turnbound.LOGGER.error("TURNBOUND failed to flush campaign profile for {} during lifecycle transition", player.getUUID(), ex);
+            return false;
+        }
     }
 
     public static void save(ServerPlayer player) {
