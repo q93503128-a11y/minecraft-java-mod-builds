@@ -23,6 +23,43 @@ jobs:
           java-version: '25'
       - name: Apply shared economy patch
         run: python3 tools/apply_shared_supply_economy.py
+      - name: Normalize Minecraft 26.2 APIs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              if old not in s and new not in s:
+                  raise RuntimeError(f'patch anchor missing in {path}: {old!r}')
+              p.write_text(s.replace(old, new), encoding='utf-8')
+
+          be = 'projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/content/SupplyDepotBlockEntity.java'
+          replace(be, 'import net.minecraft.util.ValueInput;', 'import net.minecraft.world.level.storage.ValueInput;')
+          replace(be, 'import net.minecraft.util.ValueOutput;', 'import net.minecraft.world.level.storage.ValueOutput;')
+
+          fc = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/content/FrontierContent.java')
+          s = fc.read_text(encoding='utf-8')
+          if 'import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;' not in s:
+              s = s.replace('import net.neoforged.bus.api.IEventBus;\n', 'import net.neoforged.bus.api.IEventBus;\nimport net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;\n')
+          s = s.replace(
+              'BlockEntityType.Builder.of(SupplyDepotBlockEntity::new, SUPPLY_DEPOT.get()).build(null)',
+              'new BlockEntityType<>(SupplyDepotBlockEntity::new, false, SUPPLY_DEPOT.get())')
+          fc.write_text(s, encoding='utf-8')
+
+          script = Path('tools/apply_shared_supply_economy.py')
+          s = script.read_text(encoding='utf-8')
+          s = s.replace('import net.minecraft.util.ValueInput;', 'import net.minecraft.world.level.storage.ValueInput;')
+          s = s.replace('import net.minecraft.util.ValueOutput;', 'import net.minecraft.world.level.storage.ValueOutput;')
+          if 'import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;' not in s:
+              s = s.replace('import net.neoforged.bus.api.IEventBus;\n', 'import net.neoforged.bus.api.IEventBus;\nimport net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;\n')
+          s = s.replace(
+              'BlockEntityType.Builder.of(SupplyDepotBlockEntity::new, SUPPLY_DEPOT.get()).build(null)',
+              'new BlockEntityType<>(SupplyDepotBlockEntity::new, false, SUPPLY_DEPOT.get())')
+          script.write_text(s, encoding='utf-8')
+          print('MINECRAFT 26.2 API NORMALIZATION PASS')
+          PY
       - name: Validate resource JSON
         run: |
           python3 - <<'PY'
@@ -43,7 +80,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/frontier-settlement projects/survival-ascension
+          git add projects/frontier-settlement projects/survival-ascension tools/apply_shared_supply_economy.py
           if git diff --cached --quiet; then
             echo 'No source changes to commit.'
             exit 0
