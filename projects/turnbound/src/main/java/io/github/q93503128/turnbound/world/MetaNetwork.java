@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -17,7 +18,14 @@ public final class MetaNetwork {
         registrar.playToClient(MetaSnapshotPayload.TYPE, MetaSnapshotPayload.STREAM_CODEC);
         registrar.playToServer(MetaCommandPayload.TYPE, MetaCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
-                    if (context.player() instanceof ServerPlayer player) MetaMenuService.command(player, payload.command());
+                    if (!(context.player() instanceof ServerPlayer player)) return;
+                    String denial = MetaActionGate.denial(player.getUUID(), payload.command());
+                    if (!denial.isBlank()) {
+                        player.sendSystemMessage(Component.literal("TURNBOUND · " + denial));
+                        sync(player);
+                        return;
+                    }
+                    MetaMenuService.command(player, payload.command());
                 }));
     }
 
