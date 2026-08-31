@@ -8,6 +8,7 @@ import kr.moonseungjun.titanbreak.combat.ArmorAugmentationService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.CirculatoryAugmentationService;
+import kr.moonseungjun.titanbreak.combat.CombatAutopilotService;
 import kr.moonseungjun.titanbreak.combat.DamageChannelService;
 import kr.moonseungjun.titanbreak.combat.HuntRewardService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.33";
+    public static final String VERSION = "0.1.0-alpha.34";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -90,6 +91,7 @@ public final class Titanbreak {
         NeuralCombatAssistService.clear(player.getUUID());
         ThreatDetectionService.clear(player.getUUID());
         NeuralResponseService.clear(player);
+        CombatAutopilotService.clear(player.getUUID());
         OverdriveCirculationService.clear(player);
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
@@ -112,6 +114,7 @@ public final class Titanbreak {
         NeuralCombatAssistService.clear(player.getUUID());
         ThreatDetectionService.clear(player.getUUID());
         NeuralResponseService.clear(player);
+        CombatAutopilotService.clear(player.getUUID());
         OverdriveCirculationService.clear(player);
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
@@ -133,6 +136,7 @@ public final class Titanbreak {
         NeuralCombatAssistService.clear(player.getUUID());
         ThreatDetectionService.clear(player.getUUID());
         NeuralResponseService.clear(player);
+        CombatAutopilotService.clear(player.getUUID());
         OverdriveCirculationService.clear(player);
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
@@ -159,6 +163,7 @@ public final class Titanbreak {
         NeuralCombatAssistService.tick(player, state);
         ThreatDetectionService.tick(player, state);
         LegAugmentationService.tick(player, state);
+        CombatAutopilotService.tick(player, state);
         MotorSyncService.tick(player, state);
         SpineAugmentationService.tick(player, state);
         AugmentAbilityService.tick(player);
@@ -224,6 +229,7 @@ public final class Titanbreak {
         NeuralCombatAssistService.clearAll();
         ThreatDetectionService.clearAll();
         NeuralResponseService.clearAll();
+        CombatAutopilotService.clearAll();
         OverdriveCirculationService.clearAll();
         ReflexFieldService.clearAll();
         AugmentationResourceService.clearAll();

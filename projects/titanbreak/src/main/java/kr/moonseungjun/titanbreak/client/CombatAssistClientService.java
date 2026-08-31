@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Client camera micro-correction only; this class never attacks or fires for the player. */
+/** Client camera correction only; this class never attacks or fires for the player. */
 public final class CombatAssistClientService {
     private static boolean lastRequested;
     private static int lockedTargetId = -1;
@@ -31,15 +31,19 @@ public final class CombatAssistClientService {
 
         TitanClientState.AugmentMeta assist = TitanClientState.augmentMeta("target_assist");
         TitanClientState.AugmentMeta predictive = TitanClientState.augmentMeta("predictive_combat_core");
-        boolean installed = (assist != null && assist.installed()) || (predictive != null && predictive.installed());
+        TitanClientState.AugmentMeta autopilot = TitanClientState.augmentMeta("combat_autopilot");
+        boolean standardInstalled = (assist != null && assist.installed()) || (predictive != null && predictive.installed());
+        boolean autopilotActive = TitanClientState.integer("autopilotTicks", 0) > 0
+                && autopilot != null && autopilot.installed();
         boolean combatIntent = mc.options.keyAttack.isDown() || mc.options.keyUse.isDown() || TitanKeyMappings.ANALYSIS.isDown();
-        boolean requested = installed && combatIntent;
+        boolean requested = (standardInstalled && combatIntent) || autopilotActive;
         if (requested != lastRequested || mc.player.tickCount % 20 == 0) {
-            ClientPacketDistributor.sendToServer(new CombatAssistIntentPayload(requested));
+            ClientPacketDistributor.sendToServer(new CombatAssistIntentPayload(standardInstalled && combatIntent));
             lastRequested = requested;
         }
 
-        if (!requested || !TitanClientState.flag("assistActive") || TitanClientState.integer("jamTicks", 0) > 0) {
+        boolean normalAssistActive = TitanClientState.flag("assistActive");
+        if (!requested || (!normalAssistActive && !autopilotActive) || TitanClientState.integer("jamTicks", 0) > 0) {
             lockedTargetId = -1;
             smoothedAim = null;
             return;
@@ -47,13 +51,17 @@ public final class CombatAssistClientService {
 
         int assistEnh = assist != null && assist.installed() ? assist.enhancement() : 0;
         int predictiveEnh = predictive != null && predictive.installed() ? predictive.enhancement() : -1;
-        double range = predictiveEnh >= 0 ? 48.0D : 24.0D;
-        double cone = predictiveEnh >= 0 ? 14.0D : (assistEnh >= 3 ? 14.0D : 10.0D);
-        LivingEntity target = chooseTarget(mc, range, cone, predictiveEnh >= 7);
+        int autopilotEnh = autopilotActive ? autopilot.enhancement() : -1;
+        double range = autopilotActive ? 36.0D : predictiveEnh >= 0 ? 48.0D : 24.0D;
+        double cone = autopilotEnh >= 10 ? 63.0D : autopilotActive ? 46.0D
+                : predictiveEnh >= 0 ? 14.0D : (assistEnh >= 3 ? 14.0D : 10.0D);
+        LivingEntity target = chooseTarget(mc, range, cone, predictiveEnh >= 7 || autopilotEnh >= 7);
         if (target == null) return;
 
         int weakpointEnh = OcularAnalysisClientService.enhancement("weakpoint_analysis_eye");
-        double aimHeight = weakpointEnh >= 10
+        boolean autopilotWeakpoint = autopilotEnh >= 7
+                && (weakpointEnh >= 0 || OcularAnalysisClientService.enhancement("structural_section_eye") >= 7);
+        double aimHeight = (weakpointEnh >= 10 || autopilotWeakpoint)
                 ? OcularAnalysisClientService.preferredAimHeight(target)
                 : (assistEnh >= 7 ? 0.68D : 0.55D);
         Vec3 aim = target.position().add(0.0D, target.getBbHeight() * aimHeight, 0.0D);
@@ -61,8 +69,9 @@ public final class CombatAssistClientService {
             double seconds = predictiveEnh >= 5 ? 0.40D : 0.20D;
             aim = aim.add(target.getDeltaMovement().scale(seconds * 20.0D));
         }
-        if (assistEnh >= 10 || weakpointEnh >= 10) {
-            smoothedAim = smoothedAim == null ? aim : smoothedAim.scale(0.68D).add(aim.scale(0.32D));
+        if (assistEnh >= 10 || weakpointEnh >= 10 || autopilotActive) {
+            double retain = autopilotEnh >= 10 ? 0.48D : autopilotActive ? 0.58D : 0.68D;
+            smoothedAim = smoothedAim == null ? aim : smoothedAim.scale(retain).add(aim.scale(1.0D - retain));
             aim = smoothedAim;
         } else {
             smoothedAim = aim;
@@ -77,10 +86,12 @@ public final class CombatAssistClientService {
         float yawError = Mth.wrapDegrees(desiredYaw - mc.player.getYRot());
         float pitchError = Mth.wrapDegrees(desiredPitch - mc.player.getXRot());
 
-        float maxStep = assistEnh >= 5 ? 1.05F : assistEnh > 0 ? 0.72F : 0.42F;
+        float maxStep = autopilotEnh >= 10 ? 3.20F : autopilotActive ? 2.05F
+                : assistEnh >= 5 ? 1.05F : assistEnh > 0 ? 0.72F : 0.42F;
         if (predictiveEnh >= 7) maxStep += 0.12F;
-        float yawStep = Mth.clamp(yawError * 0.20F, -maxStep, maxStep);
-        float pitchStep = Mth.clamp(pitchError * 0.18F, -maxStep * 0.75F, maxStep * 0.75F);
+        float response = autopilotEnh >= 10 ? 0.34F : autopilotActive ? 0.28F : 0.20F;
+        float yawStep = Mth.clamp(yawError * response, -maxStep, maxStep);
+        float pitchStep = Mth.clamp(pitchError * (response * 0.90F), -maxStep * 0.75F, maxStep * 0.75F);
         mc.player.setYRot(mc.player.getYRot() + yawStep);
         mc.player.setXRot(Mth.clamp(mc.player.getXRot() + pitchStep, -90.0F, 90.0F));
     }

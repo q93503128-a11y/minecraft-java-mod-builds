@@ -66,6 +66,9 @@ public final class TitanKeyMappings {
                     ? AugmentAbilityPayload.PHASE_STEP
                     : AugmentAbilityPayload.HOOK;
             ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(ability));
+        } else if (ANALYSIS.matches(event.getKeyEvent()) && mc.player.isShiftKeyDown()
+                && TitanClientState.hasInstalled("combat_autopilot")) {
+            ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(AugmentAbilityPayload.COMBAT_AUTOPILOT));
         }
 
         if (mc.options.keyJump.matches(event.getKeyEvent())

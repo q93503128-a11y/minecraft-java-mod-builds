@@ -4,6 +4,7 @@ import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
+import kr.moonseungjun.titanbreak.combat.CombatAutopilotService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
 import kr.moonseungjun.titanbreak.combat.NeuralCombatAssistService;
 import kr.moonseungjun.titanbreak.combat.OverdriveCirculationService;
@@ -22,7 +23,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha31";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha34";
 
     private TitanbreakNetwork() {}
 
@@ -59,6 +60,7 @@ public final class TitanbreakNetwork {
                 case AugmentAbilityPayload.ARM_LEFT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
                 case AugmentAbilityPayload.LEG_JUMP -> LegAugmentationService.useMobilityJump(player);
                 case AugmentAbilityPayload.OVERDRIVE -> OverdriveCirculationService.activate(player);
+                case AugmentAbilityPayload.COMBAT_AUTOPILOT -> CombatAutopilotService.activate(player);
                 default -> { }
             }
         });
@@ -123,6 +125,7 @@ public final class TitanbreakNetwork {
                 + ";neuralLoad=" + one(resources.neuralLoad())
                 + ";neuralOver=" + (resources.neuralOverloaded() ? 1 : 0)
                 + ";assistActive=" + (NeuralCombatAssistService.active(player.getUUID()) ? 1 : 0)
+                + ";autopilotTicks=" + CombatAutopilotService.remainingTicks(player)
                 + ";overdriveTicks=" + OverdriveCirculationService.remainingTicks(player)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)

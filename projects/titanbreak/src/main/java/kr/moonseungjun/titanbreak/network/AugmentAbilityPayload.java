@@ -14,6 +14,7 @@ public record AugmentAbilityPayload(int ability) implements CustomPacketPayload 
     public static final int ARM_LEFT = 4;
     public static final int LEG_JUMP = 5;
     public static final int OVERDRIVE = 6;
+    public static final int COMBAT_AUTOPILOT = 7;
     public static final Type<AugmentAbilityPayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(Titanbreak.MOD_ID, "augment_ability"));
     public static final StreamCodec<RegistryFriendlyByteBuf, AugmentAbilityPayload> STREAM_CODEC = StreamCodec.composite(
