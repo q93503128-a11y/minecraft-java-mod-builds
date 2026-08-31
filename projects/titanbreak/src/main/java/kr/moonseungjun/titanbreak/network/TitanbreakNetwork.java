@@ -3,6 +3,7 @@ package kr.moonseungjun.titanbreak.network;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
+import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.station.StationService;
@@ -17,7 +18,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha22";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha23";
 
     private TitanbreakNetwork() {}
 
@@ -39,7 +40,8 @@ public final class TitanbreakNetwork {
         });
         registrar.playToServer(AugmentAbilityPayload.TYPE, AugmentAbilityPayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
-            if (payload.ability() == AugmentAbilityPayload.HOOK) StationService.useHook(player);
+            if (payload.ability() == AugmentAbilityPayload.HOOK) AugmentAbilityService.useHook(player);
+            else if (payload.ability() == AugmentAbilityPayload.PHASE_STEP) AugmentAbilityService.usePhaseStep(player);
         });
     }
 

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationEffectService;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
+import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.HuntRewardService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
@@ -29,7 +30,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.22";
+    public static final String VERSION = "0.1.0-alpha.23";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -48,7 +49,7 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(StationService::onRightClickBlock);
-        NeoForge.EVENT_BUS.addListener(StationService::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(AugmentAbilityService::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }
@@ -72,6 +73,7 @@ public final class Titanbreak {
         AugmentedMobilityService.clear(player);
         AugmentationEffectService.clear(player);
         AnalysisJammingService.clear(player.getUUID());
+        AugmentAbilityService.clear(player.getUUID());
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
     }
@@ -83,6 +85,7 @@ public final class Titanbreak {
         AugmentedMobilityService.clear(player);
         AugmentationEffectService.clear(player);
         AnalysisJammingService.clear(player.getUUID());
+        AugmentAbilityService.clear(player.getUUID());
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
         TitanPlayerData.get(((ServerLevel) player.level()).getServer()).ensureProfile(player);
@@ -100,6 +103,7 @@ public final class Titanbreak {
         VanillaArmorLockout.tick(player);
         AugmentationResourceService.tick(player, state);
         AugmentationEffectService.tick(player, state);
+        AugmentAbilityService.tick(player);
         StationService.tick(player);
         EncounterDirector.tick(player, state);
 
@@ -151,6 +155,7 @@ public final class Titanbreak {
     private void onServerStopped(ServerStoppedEvent event) {
         EncounterDirector.clearAll();
         AnalysisJammingService.clearAll();
+        AugmentAbilityService.clearAll();
         ReflexFieldService.clearAll();
         AugmentationResourceService.clearAll();
         ReflexDriveService.restore(event.getServer());

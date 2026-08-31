@@ -52,7 +52,10 @@ public final class TitanKeyMappings {
             boolean nextRequested = !TitanClientState.flag("requested");
             ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
         } else if (HOOK.matches(event.getKeyEvent())) {
-            ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(AugmentAbilityPayload.HOOK));
+            int ability = mc.player.isShiftKeyDown()
+                    ? AugmentAbilityPayload.PHASE_STEP
+                    : AugmentAbilityPayload.HOOK;
+            ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(ability));
         }
     }
 }
