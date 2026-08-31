@@ -28,13 +28,14 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.19";
+    public static final String VERSION = "0.1.0-alpha.20";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
     private static final double OVERHEAT_RESTART = 45.0D;
 
     public Titanbreak(IEventBus modEventBus) {
+        TitanPlayerData.verifyPersistenceContract();
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModEntities.register(modEventBus);

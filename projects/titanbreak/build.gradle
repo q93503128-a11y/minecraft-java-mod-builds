@@ -60,8 +60,27 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
+var verifyLanguageParity = tasks.register('verifyLanguageParity') {
+    var korean = file('src/main/resources/assets/titanbreak/lang/ko_kr.json')
+    var english = file('src/main/resources/assets/titanbreak/lang/en_us.json')
+    inputs.files(korean, english)
+    doLast {
+        var parser = new groovy.json.JsonSlurper()
+        Map ko = (Map) parser.parse(korean)
+        Map en = (Map) parser.parse(english)
+        var missingEnglish = new TreeSet(ko.keySet())
+        missingEnglish.removeAll(en.keySet())
+        var missingKorean = new TreeSet(en.keySet())
+        missingKorean.removeAll(ko.keySet())
+        if (!missingEnglish.isEmpty() || !missingKorean.isEmpty()) {
+            throw new GradleException("TITANBREAK language key mismatch. Missing en_us=${missingEnglish}; missing ko_kr=${missingKorean}")
+        }
+    }
+}
+
 tasks.named('build') {
     dependsOn tasks.named('jarJar')
+    dependsOn verifyLanguageParity
 }
 
 tasks.withType(JavaCompile).configureEach {
