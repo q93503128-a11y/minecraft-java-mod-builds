@@ -85,8 +85,13 @@ public final class SettlementStorageService {
      * preserved; profession worksite barrels remain local physical buffers.
      */
     public static void ensureManagedStorage(ServerLevel level, SettlementData data) {
-        upgradeLegacyPublicBarrels(level, data);
-        ensureStarterSupplyDepot(level, data.stockpilePos());
+        // One-way compatibility gate: only a world whose authoritative saved stockpile is still a
+        // vanilla barrel can be an Alpha.91 public-barrel save. New settlements start with the
+        // dedicated depot, so placing a cheap barrel near it can never mint a free shared depot.
+        BlockPos stockpile = data.stockpilePos();
+        boolean legacyPublicStorage = level.hasChunkAt(stockpile) && level.getBlockState(stockpile).is(Blocks.BARREL);
+        if (legacyPublicStorage) upgradeLegacyPublicBarrels(level, data);
+        ensureStarterSupplyDepot(level, stockpile);
         for (BlockPos pos : worksiteStoragePositions(data)) {
             if (!canSafelyCreateManagedBarrel(level, pos)) continue;
             level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
