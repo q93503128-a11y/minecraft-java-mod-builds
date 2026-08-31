@@ -1,0 +1,92 @@
+name: UIUX patch build
+
+on:
+  push:
+    paths:
+      - '.github/workflows/uiux-patch-build.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Allow soft vegetation on Frontier building sites
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
+          text = path.read_text(encoding='utf-8')
+          pattern = re.compile(
+              r'    private static boolean isSafeAboveGround\(BlockState state\) \{\n.*?\n    \}',
+              re.DOTALL,
+          )
+          replacement = '''    private static boolean isSafeAboveGround(BlockState state) {
+              if (state.isAir()) return true;
+              if (!state.getFluidState().isEmpty()) return false;
+              return state.canBeReplaced()
+                      || state.is(BlockTags.LEAVES)
+                      || state.is(BlockTags.REPLACEABLE_BY_TREES)
+                      || state.getBlock() instanceof net.minecraft.world.level.block.BushBlock
+                      || state.getBlock() instanceof net.minecraft.world.level.block.SnowLayerBlock;
+          }'''
+          patched, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'isSafeAboveGround patch target count={count}')
+          path.write_text(patched, encoding='utf-8')
+          PY
+
+      - name: Commit construction placement fix
+        shell: bash
+        run: |
+          git config user.name 'frontier-uiux-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
+          if ! git diff --cached --quiet; then
+            git commit -m 'Allow soft vegetation on building sites [skip ci]'
+            git push origin HEAD:main
+          fi
+
+      - name: Build Frontier Settlement
+        shell: bash
+        run: |
+          cd projects/frontier-settlement
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Build Survival Ascension
+        shell: bash
+        run: |
+          cd projects/survival-ascension
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Upload Frontier Settlement
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-uiux
+          path: projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Upload Survival Ascension
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-ascension-uiux
+          path: projects/survival-ascension/build/libs/*.jar
+          if-no-files-found: error
