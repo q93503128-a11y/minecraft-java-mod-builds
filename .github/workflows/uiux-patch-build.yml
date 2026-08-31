@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Allow soft vegetation on Frontier building sites
+      - name: Ensure soft vegetation placement patch
         shell: bash
         run: |
           python - <<'PY'
@@ -32,6 +32,8 @@ jobs:
 
           path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           text = path.read_text(encoding='utf-8')
+          if 'private static boolean isSoftVegetation(BlockState state)' in text:
+              raise SystemExit(0)
 
           old_clearance = '            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;'
           new_clearance = '            if (isSoftVegetation(state)) continue;'
@@ -66,17 +68,6 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Commit construction placement fix
-        shell: bash
-        run: |
-          git config user.name 'frontier-uiux-bot'
-          git config user.email 'actions@users.noreply.github.com'
-          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
-          if ! git diff --cached --quiet; then
-            git commit -m 'Allow soft vegetation on building sites [skip ci]'
-            git push origin HEAD:main
-          fi
-
       - name: Build Frontier Settlement
         shell: bash
         run: |
@@ -104,3 +95,5 @@ jobs:
           name: survival-ascension-uiux
           path: projects/survival-ascension/build/libs/*.jar
           if-no-files-found: error
+
+# uiux rerun 4
