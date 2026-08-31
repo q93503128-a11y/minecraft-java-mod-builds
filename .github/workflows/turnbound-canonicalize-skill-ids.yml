@@ -1,0 +1,35 @@
+name: TURNBOUND Canonical Skill Migration
+
+on:
+  push:
+    branches:
+      - turnbound-alpha17-full-v04
+    paths:
+      - '.github/workflows/turnbound-canonicalize-skill-ids.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: turnbound-alpha17-full-v04
+          fetch-depth: 1
+      - name: Apply guarded canonical skill migration
+        run: python3 .github/scripts/turnbound_canonicalize_skill_ids.py
+      - name: Validate patch shape
+        run: |
+          git diff --check
+          git diff --stat
+          test -n "$(git status --porcelain)"
+      - name: Commit migration
+        run: |
+          git config user.name 'turnbound-ci'
+          git config user.email 'turnbound-ci@users.noreply.github.com'
+          git add projects/turnbound/src/main/java projects/turnbound/src/test/java
+          git commit -m 'turnbound: make canonical skill ids internal'
+          git push origin HEAD:turnbound-alpha17-full-v04
