@@ -138,14 +138,14 @@ public final class AugmentationEffectService {
             DUAL_HEART_READY_TICK.remove(player.getUUID());
             return;
         }
-        set(player, DUAL_HEART_HEALTH, true, CombatScale.toInternal(40.0D + (heart.enhancement() >= 5 ? 10.0D : 0.0D)));
+        set(player, DUAL_HEART_HEALTH, true, CombatScale.toInternal(40.0D));
         int lastDamage = LAST_DAMAGE_TICK.getOrDefault(player.getUUID(), Integer.MIN_VALUE / 2);
         int readyTick = DUAL_HEART_READY_TICK.getOrDefault(player.getUUID(), 0);
         boolean damagedRecently = player.tickCount - lastDamage <= 20;
         if (damagedRecently && player.tickCount >= readyTick && player.getHealth() > 0.0F
                 && player.getHealth() <= player.getMaxHealth() * 0.25F) {
-            float burst = (float) CombatScale.toInternal(heart.enhancement() >= 10 ? 45.0D : 30.0D);
-            player.heal(burst);
+            double visibleBurst = heart.enhancement() >= 10 ? 45.0D : heart.enhancement() >= 5 ? 40.0D : 30.0D;
+            player.heal((float) CombatScale.toInternal(visibleBurst));
             int cooldown = heart.enhancement() >= 7 ? 500 : 800;
             DUAL_HEART_READY_TICK.put(player.getUUID(), player.tickCount + cooldown);
         }
