@@ -7,6 +7,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+/** Server-to-client authority for the v0.4 management menu. */
 public final class MetaNetwork {
     public static final String PROTOCOL = "turnbound-meta-v04";
     private MetaNetwork() {}
@@ -21,6 +22,20 @@ public final class MetaNetwork {
     }
 
     public static void sync(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, new MetaSnapshotPayload(MetaUiCodec.encode(MetaMenuService.snapshot(player))));
+        send(player, "");
+    }
+
+    /**
+     * Opens the management menu on the facility-relevant tab without adding a second wire payload.
+     * ClientMetaState safely ignores the O record while ClientMetaNetwork consumes it as transient UI routing.
+     */
+    public static void open(ServerPlayer player, String tabHint) {
+        send(player, tabHint == null ? "" : tabHint.trim());
+    }
+
+    private static void send(ServerPlayer player, String tabHint) {
+        String encoded = MetaUiCodec.encode(MetaMenuService.snapshot(player));
+        if (!tabHint.isBlank()) encoded = "O|" + tabHint + "\n" + encoded;
+        PacketDistributor.sendToPlayer(player, new MetaSnapshotPayload(encoded));
     }
 }
