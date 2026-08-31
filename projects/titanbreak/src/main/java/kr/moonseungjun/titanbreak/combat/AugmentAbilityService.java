@@ -176,9 +176,16 @@ public final class AugmentAbilityService {
                 highFrequency ? 0.55D : 0.30D)) return false;
         int maxTargets = highFrequency && enhancement >= 10 ? 3 : 1;
         double damage = highFrequency ? 72.0D : 46.0D;
-        for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
+        for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) {
+            Entity target = targets.get(i).entity();
+            if (highFrequency && enhancement >= 5) {
+                damage(player, target, damage, DamageChannelService.Channel.ARMOR_BREAK);
+            } else {
+                damage(player, target, damage);
+            }
+        }
 
-        int breachPower = highFrequency ? (enhancement >= 5 ? 4 : 3) : 1;
+        int breachPower = highFrequency ? (enhancement >= 5 ? 4 : 3) : (enhancement >= 10 ? 2 : 1);
         BreachService.breachAtLook(player, range + (enhancement >= 10 ? 1.5D : 0.0D), breachPower,
                 highFrequency ? 0.75D : 0.35D, highFrequency ? 8 : 3, true);
         return true;
@@ -191,13 +198,14 @@ public final class AugmentAbilityService {
         if (!spend(player, state, instance.id(), 0.45D, 0.45D)) return false;
         if (!targets.isEmpty()) {
             Entity target = targets.getFirst().entity();
-            damage(player, target, 58.0D);
+            if (enhancement >= 10) damage(player, target, 58.0D, DamageChannelService.Channel.SHOCKWAVE);
+            else damage(player, target, 58.0D);
             shove(player, target, enhancement >= 3 ? 1.65D : 1.25D);
         }
         if (enhancement >= 10) {
             for (Entity target : nearbyTargets(player, 4.5D)) {
                 if (!targets.isEmpty() && target == targets.getFirst().entity()) continue;
-                damage(player, target, 22.0D);
+                damage(player, target, 22.0D, DamageChannelService.Channel.SHOCKWAVE);
                 shove(player, target, 0.85D);
             }
         }
@@ -263,7 +271,10 @@ public final class AugmentAbilityService {
         double factor = overclock ? 1.15D : 0.72D;
         if (!spend(player, state, instance.id(), factor, factor)) return false;
         List<RayTarget> targets = rayTargets(player, range, width);
-        for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
+        for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) {
+            damage(player, targets.get(i).entity(), damage,
+                    DamageChannelService.Channel.THERMAL, DamageChannelService.Channel.ARMOR_BREAK);
+        }
         BreachService.breachLine(player, range, 4, Math.min(1.35D, width * 0.65D), overclock ? 24 : 12);
         return true;
     }
@@ -278,13 +289,13 @@ public final class AugmentAbilityService {
             if (target instanceof LivingEntity living && enhancement >= 7 && living.getAbsorptionAmount() > 0.0F) {
                 living.setAbsorptionAmount(Math.max(0.0F, living.getAbsorptionAmount() - 6.0F));
             }
-            damage(player, target, 44.0D);
+            damage(player, target, 44.0D, DamageChannelService.Channel.SHOCKWAVE);
             shove(player, target, 1.05D);
         }
         if (enhancement >= 10) {
             for (Entity target : nearbyTargets(player, radius + 4.0D)) {
                 if (firstRing.contains(target)) continue;
-                damage(player, target, 20.0D);
+                damage(player, target, 20.0D, DamageChannelService.Channel.SHOCKWAVE);
                 shove(player, target, 0.55D);
             }
         }
@@ -364,8 +375,10 @@ public final class AugmentAbilityService {
                 target -> target.isAlive() && target.isPickable() && target.distanceToSqr(player) <= radius * radius);
     }
 
-    private static void damage(ServerPlayer player, Entity target, double visibleDamage) {
+    private static void damage(ServerPlayer player, Entity target, double visibleDamage,
+                               DamageChannelService.Channel... channels) {
         if (!(player.level() instanceof ServerLevel level) || visibleDamage <= 0.0D) return;
+        for (DamageChannelService.Channel channel : channels) DamageChannelService.mark(player, target, channel);
         target.hurtServer(level, player.damageSources().playerAttack(player), (float) CombatScale.toInternal(visibleDamage));
     }
 
