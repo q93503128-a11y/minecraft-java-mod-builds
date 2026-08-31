@@ -1,0 +1,54 @@
+name: UIUX hotfix verification build
+
+on:
+  push:
+    paths:
+      - '.github/workflows/uiux-hotfix-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Build Frontier Settlement
+        shell: bash
+        run: |
+          cd projects/frontier-settlement
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Build Survival Ascension
+        shell: bash
+        run: |
+          cd projects/survival-ascension
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Upload Frontier Settlement
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-uiux-hotfix
+          path: projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Upload Survival Ascension
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-ascension-uiux-hotfix
+          path: projects/survival-ascension/build/libs/*.jar
+          if-no-files-found: error
