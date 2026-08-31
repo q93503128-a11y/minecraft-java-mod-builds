@@ -6,12 +6,12 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Compatibility projection for the old FieldSession API.
  *
- * The alpha.16 64x64 village/field generator is retired from live v0.4 gameplay. Radia is now the only hub and
+ * The alpha.16 64x64 village/field generator is retired from live v0.4 gameplay. Radia is the only hub and
  * SouthgateChapterWorld authors M01/M02 directly in the canonical Southgate region. This type remains temporarily
  * so the already-tested patrol/session code can consume the same immutable position bundle without a risky rewrite.
  */
 public final class StarterSliceWorld {
-    public static final int LAYOUT_VERSION = 18;
+    public static final int LAYOUT_VERSION = 19;
 
     public record BuiltSlice(
             int baseY,
@@ -24,10 +24,8 @@ public final class StarterSliceWorld {
             Vec3 m02End
     ) {}
 
-    /** Legacy enum retained for source compatibility; live bootstrap no longer performs staged starter-slice generation. */
     public enum BuildStage { DONE }
 
-    /** Legacy job retained only for API compatibility with old tooling. It performs no world writes. */
     public static final class BuildJob {
         private BuildJob() {}
         public int baseY() { return 65; }
@@ -45,12 +43,14 @@ public final class StarterSliceWorld {
     public static BuiltSlice findExisting(ServerLevel level) { return built(); }
     public static BuiltSlice build(ServerLevel level) { return built(); }
 
-    /** Early Southgate corridor only; the rest of Chapter 1 is owned by SouthgateChapterWorld.contains(). */
+    /** Early Southgate corridor plus the canonical Southgate-to-Quarry transit road. */
     public static boolean contains(BuiltSlice slice, Vec3 position) {
-        return position != null
-                && position.x >= -42 && position.x <= 58
+        if (position == null) return false;
+        boolean early = position.x >= -42 && position.x <= 58
                 && position.z >= 118 && position.z <= 198
                 && position.y >= 54 && position.y <= 90;
+        return early || AsterMarchWorldShell.quarryTransitContains(position)
+                || AsterMarchWorldShell.southgateExplorationContains(position);
     }
 
     private static BuiltSlice built() {

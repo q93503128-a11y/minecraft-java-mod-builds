@@ -202,36 +202,54 @@ public final class AsterMarchWorldShell {
     }
 
     private static void buildNavigationLandmarks(ServerLevel level) {
+        // Southgate: visible roadside relay cairn between FT_MEADOW and the quarry fork.
         stoneBeacon(level, 112, 67, 280, Blocks.MOSSY_STONE_BRICKS, Blocks.AMETHYST_BLOCK);
         ruinedWatch(level, 154, 66, 326);
+
+        // Gloamwood: giant root arch and off-route spore grove silhouettes.
         rootArch(level, 92, 69, -262);
         sporeGrove(level, -142, 69, -332);
+
+        // Broken Aqueduct: high sluice tower and collapsed channel bridge.
         sluiceTower(level, -450, 63, -42);
         brokenArch(level, -302, 65, 158);
+
+        // Ember Quarry: a skyline crane and cooling basin.
         quarryCrane(level, 150, 65, 390);
         coolingBasin(level, -124, 67, 438);
+
+        // Old Relay: distant signal pylons foreshadow the final dungeon from the east road.
         relayPylon(level, 214, 66, -142, 8);
         relayPylon(level, 244, 67, -164, 11);
     }
 
+    /**
+     * Re-composes the existing Chapter 5 actors into the canonical three-branch dungeon silhouette without changing
+     * encounter IDs or quest values. The original rooms remain valid, but the player can now read them as three
+     * deliberate wings around FT_RELAY instead of one long corridor.
+     */
     private static void buildOldRelayBranchWings(ServerLevel level) {
+        // Mid checkpoint around the canonical FT_RELAY anchor.
         relayBranchRoom(level, 365, 67, -305, 12, Blocks.POLISHED_DEEPSLATE, Blocks.AMETHYST_BLOCK);
         relayArch(level, 350, 67, -292, Axis.X);
         relayArch(level, 383, 67, -300, Axis.X);
         relayArch(level, 382, 66, -320, Axis.Z);
 
+        // West / archive wing: R02 and the first two record rooms.
         buildTransitRoad(level, List.of(
                 new Node(365,67,-305), new Node(345,67,-272), new Node(320,67,-245), new Node(305,67,-225)),
                 5, Blocks.DEEPSLATE_TILES, Blocks.CRACKED_DEEPSLATE_BRICKS);
         relayBranchRoom(level, 345, 67, -272, 10, Blocks.DEEPSLATE_BRICKS, Blocks.IRON_BLOCK);
         relayBranchRoom(level, 305, 67, -225, 10, Blocks.DEEPSLATE_BRICKS, Blocks.LECTERN);
 
+        // East / patrol wing: R03, R05 and the third record room.
         buildTransitRoad(level, List.of(
                 new Node(365,67,-305), new Node(395,66,-285), new Node(430,65,-296), new Node(455,65,-310)),
                 5, Blocks.POLISHED_DEEPSLATE, Blocks.CRYING_OBSIDIAN);
         relayBranchRoom(level, 400, 66, -300, 11, Blocks.DEEPSLATE_TILES, Blocks.REDSTONE_LAMP);
         relayBranchRoom(level, 455, 65, -310, 10, Blocks.REINFORCED_DEEPSLATE, Blocks.AMETHYST_BLOCK);
 
+        // South / containment wing: R04, final record room, then the boss seal.
         buildTransitRoad(level, List.of(
                 new Node(365,67,-305), new Node(390,66,-318), new Node(410,65,-330), new Node(418,65,-325), new Node(420,65,-350)),
                 5, Blocks.DEEPSLATE_BRICKS, Blocks.OBSIDIAN);
