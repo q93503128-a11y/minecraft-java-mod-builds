@@ -37,10 +37,11 @@ public final class SurvivalAscensionClient {
             "korean_tbos_5",
             "korean_tbos_6",
             "korean_external_misc");
+    // Keep Survival Ascension defaults disjoint from Frontier Settlement's M/R controls.
     private static final KeyMapping OPEN_MENU = new KeyMapping(
-            "key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);
+            "key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);
     private static final KeyMapping MOBILITY_ACTION = new KeyMapping(
-            "key.survivalascension.mobility_action", InputConstants.KEY_R, KeyMapping.Category.MISC);
+            "key.survivalascension.mobility_action", InputConstants.KEY_V, KeyMapping.Category.MISC);
 
     public SurvivalAscensionClient(IEventBus modBus) {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
