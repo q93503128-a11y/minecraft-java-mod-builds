@@ -27,6 +27,9 @@ public final class BattleVfx {
             case "P07" -> marion(level, source, aim, skillId);
             case "P07_SUMMON" -> toto(level, source, aim);
             case "P08" -> raze(level, source, aim);
+            case "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010",
+                    "E011", "E012", "E013", "E014" -> enemy(level, combatantId, skillId, source, aim, damaging);
+            case "EL01", "EL02", "EL03", "EL04" -> elite(level, combatantId, skillId, source, aim, damaging);
             case "B01" -> bossGraoul(level, source, aim, skillId);
             case "B02" -> bossVerna(level, source, aim, skillId);
             case "B03" -> bossOro(level, source, aim, skillId);
@@ -38,8 +41,8 @@ public final class BattleVfx {
 
     public static void warning(ServerLevel level, String combatantId, Vec3 center) {
         ParticleOptions primary = switch (combatantId) {
+            case "E003", "B04" -> ParticleTypes.FLAME;
             case "B01" -> ParticleTypes.CLOUD;
-            case "B04" -> ParticleTypes.FLAME;
             case "B05" -> ParticleTypes.PORTAL;
             default -> ParticleTypes.CRIT;
         };
@@ -139,6 +142,145 @@ public final class BattleVfx {
         burst(level, ParticleTypes.FLAME, source.add(0, 1.0, 0), 10, 0.45, 0.65, 0.45, 0.025);
         line(level, ParticleTypes.CRIT, source.add(0, 1.25, 0), target.add(0, 1.0, 0), 11);
         slashArc(level, ParticleTypes.FLAME, target.add(0, 1.0, 0), 1.0, 16);
+    }
+
+    /** Normal enemy silhouettes deliberately use different visual grammar per canonical combat role. */
+    private static void enemy(ServerLevel level, String id, String skillId, Vec3 source, Vec3 target, boolean damaging) {
+        switch (id) {
+            case "E001" -> {
+                burst(level, ParticleTypes.SMOKE, source.add(0, 0.8, 0), 7, 0.4, 0.35, 0.4, 0.01);
+                slashArc(level, ParticleTypes.CRIT, target.add(0, 0.9, 0), 0.62, 9);
+            }
+            case "E002" -> {
+                line(level, ParticleTypes.CRIT, source.add(0, 1.55, 0), target.add(0, 1.05, 0), "e002_aimed".equals(skillId) ? 22 : 15);
+                burst(level, ParticleTypes.END_ROD, target.add(0, 1.05, 0), "e002_aimed".equals(skillId) ? 9 : 4, 0.22, 0.22, 0.22, 0.04);
+            }
+            case "E003" -> {
+                if ("e003_arm".equals(skillId)) {
+                    ring(level, ParticleTypes.FLAME, source.add(0, 0.65, 0), 0.82, 18);
+                    burst(level, ParticleTypes.SMOKE, source.add(0, 1.0, 0), 15, 0.55, 0.65, 0.55, 0.03);
+                } else if ("e003_explode".equals(skillId)) {
+                    ring(level, ParticleTypes.FLAME, source.add(0, 0.15, 0), 1.8, 30);
+                    burst(level, ParticleTypes.FLAME, source.add(0, 0.9, 0), 34, 1.2, 0.9, 1.2, 0.12);
+                    burst(level, ParticleTypes.SMOKE, source.add(0, 1.0, 0), 26, 1.35, 0.9, 1.35, 0.08);
+                } else {
+                    line(level, ParticleTypes.SMOKE, source.add(0, 0.9, 0), target.add(0, 0.9, 0), 7);
+                    burst(level, ParticleTypes.CRIT, target.add(0, 0.8, 0), 7, 0.35, 0.25, 0.35, 0.06);
+                }
+            }
+            case "E004" -> {
+                line(level, ParticleTypes.CRIT, source.add(0, 1.1, 0), target.add(0, 1.0, 0), 8);
+                slashArc(level, "e004_stab".equals(skillId) ? ParticleTypes.END_ROD : ParticleTypes.CRIT,
+                        target.add(0, 1.0, 0), "e004_stab".equals(skillId) ? 0.95 : 0.72, 13);
+            }
+            case "E005" -> {
+                ring(level, ParticleTypes.END_ROD, target.add(0, 0.35, 0), "e005_reform".equals(skillId) ? 1.15 : 0.65, 16);
+                burst(level, "e005_reform".equals(skillId) ? ParticleTypes.ENCHANT : ParticleTypes.HEART,
+                        target.add(0, 1.0, 0), "e005_reform".equals(skillId) ? 16 : 7, 0.55, 0.6, 0.55, 0.035);
+            }
+            case "E006" -> {
+                ring(level, ParticleTypes.CLOUD, source.add(0, 0.15, 0), 0.8, 14);
+                line(level, ParticleTypes.CRIT, source.add(0, 0.7, 0), target.add(0, 0.75, 0), "e006_charge".equals(skillId) ? 15 : 8);
+                burst(level, ParticleTypes.CLOUD, target.add(0, 0.35, 0), 10, 0.65, 0.25, 0.65, 0.06);
+            }
+            case "E007" -> {
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.8, 0), 0.72, 15);
+                if ("e007_slow_spores".equals(skillId)) {
+                    ring(level, ParticleTypes.SOUL, target.add(0, 0.35, 0), 1.25, 22);
+                    burst(level, ParticleTypes.ENCHANT, target.add(0, 1.0, 0), 14, 0.85, 0.65, 0.85, 0.025);
+                } else {
+                    line(level, ParticleTypes.ENCHANT, source.add(0, 1.2, 0), target.add(0, 1.0, 0), 10);
+                }
+            }
+            case "E008" -> {
+                if ("e008_barrier".equals(skillId)) {
+                    ring(level, ParticleTypes.END_ROD, target.add(0, 0.45, 0), 0.95, 22);
+                    ring(level, ParticleTypes.ENCHANT, target.add(0, 1.0, 0), 0.72, 16);
+                } else {
+                    burst(level, ParticleTypes.CLOUD, target.add(0, 0.35, 0), 10, 0.55, 0.2, 0.55, 0.025);
+                    slashArc(level, ParticleTypes.CRIT, target.add(0, 0.9, 0), 0.82, 11);
+                }
+            }
+            case "E009" -> {
+                line(level, ParticleTypes.ELECTRIC_SPARK, source.add(0, 1.25, 0), target.add(0, 1.0, 0), damaging ? 10 : 7);
+                ring(level, ParticleTypes.END_ROD, target.add(0, 0.3, 0), "e009_delay".equals(skillId) ? 0.95 : 0.55, 13);
+            }
+            case "E010" -> {
+                line(level, ParticleTypes.SOUL, source.add(0, 0.65, 0), target.add(0, 0.75, 0), 9);
+                burst(level, ParticleTypes.SMOKE, target.add(0, 0.7, 0), "e010_flood_rot".equals(skillId) ? 15 : 7, 0.48, 0.35, 0.48, 0.02);
+            }
+            case "E011" -> {
+                ring(level, ParticleTypes.ELECTRIC_SPARK, source.add(0, 0.85, 0), 0.72, 15);
+                if ("e011_support".equals(skillId)) {
+                    line(level, ParticleTypes.END_ROD, source.add(0, 1.0, 0), target.add(0, 1.0, 0), 8);
+                    burst(level, ParticleTypes.ELECTRIC_SPARK, target.add(0, 1.0, 0), 12, 0.5, 0.55, 0.5, 0.08);
+                } else {
+                    burst(level, ParticleTypes.CRIT, target.add(0, 0.95, 0), 6, 0.3, 0.3, 0.3, 0.05);
+                }
+            }
+            case "E012" -> {
+                burst(level, ParticleTypes.ASH, source.add(0, 0.65, 0), 10, 0.5, 0.25, 0.5, 0.02);
+                line(level, ParticleTypes.CRIT, source.add(0, 0.7, 0), target.add(0, 0.8, 0), "e012_pounce".equals(skillId) ? 14 : 8);
+                slashArc(level, ParticleTypes.ASH, target.add(0, 0.8, 0), 0.75, 10);
+            }
+            case "E013" -> {
+                line(level, ParticleTypes.FLAME, source.add(0, 1.25, 0), target.add(0, 1.0, 0), 11);
+                if ("e013_embers".equals(skillId)) {
+                    ring(level, ParticleTypes.FLAME, target.add(0, 0.3, 0), 1.25, 24);
+                    burst(level, ParticleTypes.ASH, target.add(0, 1.0, 0), 18, 0.85, 0.65, 0.85, 0.04);
+                } else {
+                    burst(level, ParticleTypes.FLAME, target.add(0, 1.0, 0), 8, 0.35, 0.35, 0.35, 0.07);
+                }
+            }
+            case "E014" -> {
+                burst(level, ParticleTypes.SMOKE, source.add(0, 0.8, 0), 9, 0.45, 0.45, 0.45, 0.025);
+                line(level, ParticleTypes.FLAME, source.add(0, 1.0, 0), target.add(0, 0.85, 0), "e014_crush".equals(skillId) ? 13 : 8);
+                burst(level, ParticleTypes.CRIT, target.add(0, 0.55, 0), "e014_crush".equals(skillId) ? 18 : 9, 0.7, 0.35, 0.7, 0.09);
+            }
+            default -> generic(level, source, target, damaging);
+        }
+    }
+
+    /** Elites amplify their base-region language and keep one unmistakable silhouette cue per kit. */
+    private static void elite(ServerLevel level, String id, String skillId, Vec3 source, Vec3 target, boolean damaging) {
+        switch (id) {
+            case "EL01" -> {
+                ring(level, ParticleTypes.SMOKE, source.add(0, 0.35, 0), 1.05, 20);
+                if ("el01_command".equals(skillId)) {
+                    ring(level, ParticleTypes.CRIT, source.add(0, 1.1, 0), 1.35, 26);
+                    burst(level, ParticleTypes.END_ROD, source.add(0, 1.25, 0), 12, 0.8, 0.55, 0.8, 0.05);
+                } else {
+                    line(level, ParticleTypes.CRIT, source.add(0, 1.2, 0), target.add(0, 1.0, 0), 11);
+                    slashArc(level, ParticleTypes.CRIT, target.add(0, 1.0, 0), 1.0, 15);
+                }
+            }
+            case "EL02" -> {
+                ring(level, ParticleTypes.ENCHANT, source.add(0, 0.3, 0), 1.0, 20);
+                line(level, ParticleTypes.CRIT, source.add(0, 0.95, 0), target.add(0, 0.9, 0), "el02_piercing_horn".equals(skillId) ? 18 : 11);
+                burst(level, ParticleTypes.END_ROD, target.add(0, 0.95, 0), "el02_piercing_horn".equals(skillId) ? 13 : 7, 0.45, 0.4, 0.45, 0.08);
+            }
+            case "EL03" -> {
+                ring(level, ParticleTypes.ELECTRIC_SPARK, source.add(0, 0.35, 0), 1.05, 20);
+                if ("el03_barrier".equals(skillId)) {
+                    ring(level, ParticleTypes.END_ROD, source.add(0, 0.85, 0), 1.2, 26);
+                    ring(level, ParticleTypes.ELECTRIC_SPARK, source.add(0, 1.25, 0), 0.82, 18);
+                } else {
+                    slashArc(level, ParticleTypes.CRIT, target.add(0, 1.0, 0), 1.0, 14);
+                }
+            }
+            case "EL04" -> {
+                ring(level, ParticleTypes.FLAME, source.add(0, 0.2, 0), 1.25, 24);
+                burst(level, ParticleTypes.ASH, source.add(0, 1.0, 0), 14, 0.75, 0.75, 0.75, 0.025);
+                if ("el04_collapse".equals(skillId)) {
+                    ring(level, ParticleTypes.FLAME, target.add(0, 0.25, 0), 1.6, 30);
+                    burst(level, ParticleTypes.CRIT, target.add(0, 0.65, 0), 22, 1.0, 0.45, 1.0, 0.12);
+                } else {
+                    line(level, ParticleTypes.FLAME, source.add(0, 1.0, 0), target.add(0, 0.9, 0), 12);
+                    burst(level, ParticleTypes.CRIT, target.add(0, 0.75, 0), 12, 0.55, 0.4, 0.55, 0.08);
+                }
+            }
+            default -> generic(level, source, target, damaging);
+        }
     }
 
     private static void bossGraoul(ServerLevel level, Vec3 source, Vec3 target, String skillId) {
