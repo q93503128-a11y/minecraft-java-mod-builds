@@ -62,7 +62,6 @@ public final class TurnboundBattleActors {
         DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(combatantId);
         if (holder == null) return null;
         BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
-        actor.configureVisualId(combatantId);
         actor.setPos(pos.x, pos.y, pos.z);
         actor.setYRot(yaw);
         actor.setYHeadRot(yaw);
