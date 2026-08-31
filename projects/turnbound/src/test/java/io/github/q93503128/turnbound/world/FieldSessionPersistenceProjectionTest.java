@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FieldSessionPersistenceProjectionTest {
     @Test
     void relogProjectionRestoresOnlyStarterFieldClears() {
-        Set<String> projected = FieldSessionManager.projectStarterClears(Set.of(
+        Set<String> projected = StarterFieldProgress.project(Set.of(
                 SouthgateEncounterCatalog.ENC_M01,
                 SouthgateEncounterCatalog.ENC_M02,
                 "BATTLE_B01",
@@ -22,7 +22,7 @@ class FieldSessionPersistenceProjectionTest {
 
     @Test
     void freshProfileStartsWithNoDefeatedStarterPatrols() {
-        assertTrue(FieldSessionManager.projectStarterClears(Set.of()).isEmpty());
-        assertTrue(FieldSessionManager.projectStarterClears(null).isEmpty());
+        assertTrue(StarterFieldProgress.project(Set.of()).isEmpty());
+        assertTrue(StarterFieldProgress.project(null).isEmpty());
     }
 }
