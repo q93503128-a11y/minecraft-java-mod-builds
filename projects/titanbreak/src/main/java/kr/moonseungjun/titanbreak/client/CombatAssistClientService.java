@@ -52,12 +52,16 @@ public final class CombatAssistClientService {
         LivingEntity target = chooseTarget(mc, range, cone, predictiveEnh >= 7);
         if (target == null) return;
 
-        Vec3 aim = target.position().add(0.0D, target.getBbHeight() * (assistEnh >= 7 ? 0.68D : 0.55D), 0.0D);
+        int weakpointEnh = OcularAnalysisClientService.enhancement("weakpoint_analysis_eye");
+        double aimHeight = weakpointEnh >= 10
+                ? OcularAnalysisClientService.preferredAimHeight(target)
+                : (assistEnh >= 7 ? 0.68D : 0.55D);
+        Vec3 aim = target.position().add(0.0D, target.getBbHeight() * aimHeight, 0.0D);
         if (predictiveEnh >= 0 && (!TitanClientState.flag("active") || predictiveEnh >= 10)) {
             double seconds = predictiveEnh >= 5 ? 0.40D : 0.20D;
             aim = aim.add(target.getDeltaMovement().scale(seconds * 20.0D));
         }
-        if (assistEnh >= 10) {
+        if (assistEnh >= 10 || weakpointEnh >= 10) {
             smoothedAim = smoothedAim == null ? aim : smoothedAim.scale(0.68D).add(aim.scale(0.32D));
             aim = smoothedAim;
         } else {

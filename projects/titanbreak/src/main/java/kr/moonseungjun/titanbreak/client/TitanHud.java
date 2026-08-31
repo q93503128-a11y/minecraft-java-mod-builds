@@ -12,7 +12,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -68,7 +67,6 @@ public final class TitanHud {
         int right = left + railWidth;
         int bottom = top + 51;
 
-        /* Edge-mounted rather than hotbar-mounted: no inventory-slot or chat obstruction. */
         g.fill(left + 5, top, right, bottom, 0x9B060A0C);
         g.fill(left, top + 5, right, bottom - 4, 0x9B060A0C);
         g.horizontalLine(left + 5, right, top, 0x8843D7E8);
@@ -110,15 +108,21 @@ public final class TitanHud {
     private static void renderAnalysis(GuiGraphicsExtractor g, Minecraft mc, Font font, int width, int height) {
         boolean tactical = TitanClientState.hasInstalled("tactical_eye");
         boolean thermal = TitanClientState.hasInstalled("thermal_eye");
+        boolean structural = TitanClientState.hasInstalled("structural_section_eye");
+        boolean motion = TitanClientState.hasInstalled("motion_prediction_eye");
+        boolean weakpoint = TitanClientState.hasInstalled("weakpoint_analysis_eye");
         boolean ballistic = TitanClientState.hasInstalled("ballistic_eye");
+        boolean multispectrum = TitanClientState.hasInstalled("multispectrum_eye");
+        boolean electromagnetic = TitanClientState.hasInstalled("electromagnetic_eye");
         boolean targetAssist = TitanClientState.hasInstalled("target_assist");
-        if (!tactical && !thermal && !ballistic && !targetAssist) return;
+        if (!tactical && !thermal && !structural && !motion && !weakpoint && !ballistic
+                && !multispectrum && !electromagnetic && !targetAssist) return;
 
-        int panelWidth = Math.min(190, Math.max(154, width / 4));
+        int panelWidth = Math.min(210, Math.max(168, width / 4));
         int right = width - 8;
         int left = right - panelWidth;
         int top = Math.min(68, Math.max(8, height / 12));
-        int bottom = Math.min(height - 34, top + 120);
+        int bottom = Math.min(height - 34, top + 174);
 
         g.fill(left + 5, top, right, bottom, 0xB9080C0F);
         g.fill(left, top + 5, right, bottom - 4, 0xB9080C0F);
@@ -131,42 +135,129 @@ public final class TitanHud {
         int jamTicks = TitanClientState.integer("jamTicks", 0);
         if (jamTicks > 0) {
             renderJammed(g, mc, font, left, top, right, bottom, jamTicks);
+            if (OcularAnalysisClientService.nullPatternNearby(mc)) {
+                Component nullPattern = Component.translatable("augmentation.titanbreak.electromagnetic_eye")
+                        .append(Component.literal(" · ◉"));
+                g.text(font, nullPattern, left + 8, bottom - 14, TitanInterfaceTheme.ACCENT, false);
+            }
             return;
         }
 
-        Entity target = mc.crosshairPickEntity;
+        Entity rawTarget = mc.crosshairPickEntity;
+        LivingEntity living = OcularAnalysisClientService.resolveTarget(mc, rawTarget);
         int y = top + 22;
-        if (target instanceof LivingEntity living) {
+        if (living != null) {
             double distance = mc.player.distanceTo(living);
             y = TitanInterfaceTheme.wrapped(g, font, living.getType().getDescription(), left + 8, y,
                     panelWidth - 16, TitanInterfaceTheme.ACCENT, 1) + 2;
             g.horizontalLine(left + 8, right - 8, y, 0x66404B50);
             y += 5;
 
+            double scan = OcularAnalysisClientService.scanProgress(mc, living);
+            if (scan < 1.0D) {
+                Component scanner = tactical
+                        ? Component.translatable("augmentation.titanbreak.tactical_eye")
+                        : Component.translatable("hud.titanbreak.analysis");
+                g.text(font, scanner, left + 8, y, TitanInterfaceTheme.TEXT_MUTED, false);
+                y += 11;
+                drawSegmentedGauge(g, left + 8, y, panelWidth - 16, scan, TitanInterfaceTheme.CYAN, 12);
+                renderSensorFooter(g, mc, font, left, right, bottom, thermal, multispectrum, electromagnetic);
+                return;
+            }
+
             if (tactical) {
                 g.text(font, Component.translatable("hud.titanbreak.analysis_range", String.format(Locale.ROOT, "%.1f", distance)),
                         left + 8, y, TitanInterfaceTheme.TEXT_MUTED, false);
-                y += 12;
+                y += 11;
                 double targetHp = CombatScale.toVisible(living.getHealth());
                 double targetMax = Math.max(1.0D, CombatScale.toVisible(living.getMaxHealth()));
                 g.text(font, Component.translatable("hud.titanbreak.analysis_health",
                                 String.format(Locale.ROOT, "%.0f", targetHp), String.format(Locale.ROOT, "%.0f", targetMax)),
                         left + 8, y, TitanInterfaceTheme.TEXT_MUTED, false);
-                y += 11;
+                y += 10;
                 drawSegmentedGauge(g, left + 8, y, panelWidth - 16,
                         Math.max(0.0D, Math.min(1.0D, targetHp / targetMax)), TitanInterfaceTheme.SIGNAL_RED, 14);
-                y += 9;
+                y += 8;
+
+                int tacticalEnh = OcularAnalysisClientService.enhancement("tactical_eye");
+                if (tacticalEnh >= 5 && y < bottom - 50) {
+                    double armor = OcularAnalysisClientService.armor(living);
+                    Component armorRead = Component.translatable("augmentation.titanbreak.tactical_eye")
+                            .append(Component.literal(String.format(Locale.ROOT, " · ◫ %.0f", armor)));
+                    g.text(font, armorRead, left + 8, y, TitanInterfaceTheme.BLUE, false);
+                    y += 11;
+                }
+                if (tacticalEnh >= 7 && y < bottom - 50) {
+                    Component drop = OcularAnalysisClientService.dropHint(living);
+                    if (drop != null) {
+                        g.text(font, Component.literal("↓ ").append(drop), left + 8, y, TitanInterfaceTheme.GOOD, false);
+                        y += 11;
+                    }
+                }
             }
 
-            if (ballistic && y < bottom - 28) {
-                double flight = Math.max(0.2D, Math.min(0.6D, distance / 60.0D));
-                Vec3 lead = living.getDeltaMovement().scale(flight * 20.0D);
-                g.text(font, Component.translatable("hud.titanbreak.analysis_lead",
-                                String.format(Locale.ROOT, "%.1f", lead.horizontalDistance())),
-                        left + 8, y, TitanInterfaceTheme.BLUE, false);
-                y += 12;
+            if (structural && y < bottom - 48) {
+                int enh = OcularAnalysisClientService.enhancement("structural_section_eye");
+                double armor = OcularAnalysisClientService.armor(living);
+                StringBuilder suffix = new StringBuilder(String.format(Locale.ROOT, " · ◫ %.0f", armor));
+                if (enh >= 5) suffix.append(" · ").append("▮".repeat(OcularAnalysisClientService.armorThicknessPips(living)));
+                if (enh >= 7) suffix.append(String.format(Locale.ROOT, " · C %.0f%%",
+                        OcularAnalysisClientService.preferredAimHeight(living) * 100.0D));
+                if (enh >= 10) {
+                    String outcome = OcularAnalysisClientService.structuralOutcomeGlyph(living);
+                    if (!outcome.isEmpty()) suffix.append(" · ").append(outcome);
+                }
+                Component line = Component.translatable("augmentation.titanbreak.structural_section_eye")
+                        .append(Component.literal(suffix.toString()));
+                g.text(font, line, left + 8, y, TitanInterfaceTheme.BLUE, false);
+                y += 11;
             }
-            if (targetAssist && distance <= 24.0D && y < bottom - 17) {
+
+            if (motion && y < bottom - 48) {
+                double seconds = OcularAnalysisClientService.motionPredictionSeconds();
+                double travel = OcularAnalysisClientService.predictedTravel(living, seconds);
+                Component line = Component.translatable("augmentation.titanbreak.motion_prediction_eye")
+                        .append(Component.literal(String.format(Locale.ROOT, " · +%.2fs · %.1fm", seconds, travel)));
+                g.text(font, line, left + 8, y, TitanInterfaceTheme.CYAN, false);
+                y += 11;
+            }
+
+            if (weakpoint && y < bottom - 48) {
+                int score = OcularAnalysisClientService.weakpointScore(mc, living);
+                Component line = Component.translatable("augmentation.titanbreak.weakpoint_analysis_eye")
+                        .append(Component.literal(" · ◇ " + score + "%"));
+                g.text(font, line, left + 8, y, score >= 85 ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.ACCENT, false);
+                y += 11;
+            }
+
+            if (ballistic && y < bottom - 48) {
+                double lead = OcularAnalysisClientService.ballisticLead(mc, living, distance);
+                g.text(font, Component.translatable("hud.titanbreak.analysis_lead",
+                                String.format(Locale.ROOT, "%.1f", lead)),
+                        left + 8, y, TitanInterfaceTheme.BLUE, false);
+                y += 11;
+            }
+
+            if (thermal && OcularAnalysisClientService.enhancement("thermal_eye") >= 7 && y < bottom - 48) {
+                Component line = Component.translatable("augmentation.titanbreak.thermal_eye")
+                        .append(Component.literal(" · ♨ " + OcularAnalysisClientService.thermalStrength(living) + "%"));
+                g.text(font, line, left + 8, y, TitanInterfaceTheme.ORANGE, false);
+                y += 11;
+            }
+
+            if (electromagnetic && y < bottom - 48) {
+                int strength = OcularAnalysisClientService.electromagneticStrength(living);
+                if (strength > 0) {
+                    Component line = Component.translatable("augmentation.titanbreak.electromagnetic_eye")
+                            .append(Component.literal(" · ◉ " + strength + "%"));
+                    g.text(font, line, left + 8, y, TitanInterfaceTheme.CYAN, false);
+                    y += 11;
+                }
+            }
+
+            int weakEnh = OcularAnalysisClientService.enhancement("weakpoint_analysis_eye");
+            if (targetAssist && distance <= 24.0D && y < bottom - 37
+                    && (weakEnh < 10 || OcularAnalysisClientService.weakpointScore(mc, living) >= 70)) {
                 g.text(font, Component.translatable("hud.titanbreak.target_assist_ready"),
                         left + 8, y, TitanInterfaceTheme.GOOD, false);
             }
@@ -175,13 +266,33 @@ public final class TitanHud {
                     left + 8, y + 4, panelWidth - 16, TitanInterfaceTheme.TEXT_MUTED, 3);
         }
 
-        if (thermal && mc.level != null) {
-            AABB area = mc.player.getBoundingBox().inflate(24.0D);
-            int signatures = mc.level.getEntitiesOfClass(LivingEntity.class, area,
-                    entity -> entity != mc.player && entity.isAlive()).size();
+        renderSensorFooter(g, mc, font, left, right, bottom, thermal, multispectrum, electromagnetic);
+    }
+
+    private static void renderSensorFooter(GuiGraphicsExtractor g, Minecraft mc, Font font,
+                                           int left, int right, int bottom,
+                                           boolean thermal, boolean multispectrum, boolean electromagnetic) {
+        int y = bottom - 14;
+        if (thermal) {
+            int signatures = OcularAnalysisClientService.thermalContacts(mc);
             Component thermalText = Component.translatable("hud.titanbreak.thermal_signatures", signatures);
-            g.text(font, thermalText, left + 8, bottom - 14, TitanInterfaceTheme.ORANGE, false);
-            drawContactPips(g, right - 54, bottom - 13, Math.min(5, signatures));
+            g.text(font, thermalText, left + 8, y, TitanInterfaceTheme.ORANGE, false);
+            drawContactPips(g, right - 54, y + 1, Math.min(5, signatures));
+            y -= 11;
+        }
+        if (multispectrum) {
+            int toxic = OcularAnalysisClientService.toxicContacts(mc);
+            int em = OcularAnalysisClientService.electromagneticContacts(mc);
+            Component line = Component.translatable("augmentation.titanbreak.multispectrum_eye")
+                    .append(Component.literal(" · ☣" + toxic + " · ⌁" + em));
+            g.text(font, line, left + 8, y, TitanInterfaceTheme.BLUE, false);
+            y -= 11;
+        }
+        if (electromagnetic) {
+            int contacts = OcularAnalysisClientService.electromagneticContacts(mc);
+            Component line = Component.translatable("augmentation.titanbreak.electromagnetic_eye")
+                    .append(Component.literal(" · ◉" + contacts));
+            g.text(font, line, left + 8, y, TitanInterfaceTheme.CYAN, false);
         }
     }
 

@@ -14,6 +14,7 @@ import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
 import kr.moonseungjun.titanbreak.combat.MotorSyncService;
 import kr.moonseungjun.titanbreak.combat.NeuralCombatAssistService;
 import kr.moonseungjun.titanbreak.combat.NeuralResponseService;
+import kr.moonseungjun.titanbreak.combat.OcularAugmentationService;
 import kr.moonseungjun.titanbreak.combat.OpticalCamoService;
 import kr.moonseungjun.titanbreak.combat.OverdriveCirculationService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
@@ -42,7 +43,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.32";
+    public static final String VERSION = "0.1.0-alpha.33";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -150,6 +151,7 @@ public final class Titanbreak {
         VanillaArmorLockout.tick(player);
         AugmentationResourceService.tick(player, state);
         AugmentationEffectService.tick(player, state);
+        OcularAugmentationService.tick(player, state);
         NeuralResponseService.tick(player, state);
         CirculatoryAugmentationService.tick(player, state);
         OverdriveCirculationService.tick(player, state);
