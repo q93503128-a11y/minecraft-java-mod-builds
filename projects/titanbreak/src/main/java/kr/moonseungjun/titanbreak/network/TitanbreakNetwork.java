@@ -59,10 +59,15 @@ public final class TitanbreakNetwork {
                 .collect(Collectors.joining(","));
         String installedMeta = state.installedInstanceView().entrySet().stream()
                 .sorted(Comparator.comparing(entry -> entry.getKey().name()))
-                .map(entry -> entry.getKey().name() + ":" + entry.getValue().mk() + ":" + entry.getValue().enhancement())
+                .map(entry -> entry.getKey().name() + ":" + entry.getValue().id() + ":"
+                        + entry.getValue().mk() + ":" + entry.getValue().enhancement())
                 .collect(Collectors.joining(","));
         String vault = state.vaultView().stream()
                 .map(instance -> instance.id() + ":" + instance.mk() + ":" + instance.enhancement())
+                .collect(Collectors.joining(","));
+        String mastery = AugmentationCatalog.DEFINITIONS.stream()
+                .filter(definition -> state.masteryXp(definition.id()) > 0)
+                .map(definition -> definition.id() + ":" + state.masteryLevel(definition.id()))
                 .collect(Collectors.joining(","));
         TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
 
@@ -91,6 +96,7 @@ public final class TitanbreakNetwork {
                 + ";installedMeta=" + installedMeta
                 + ";vault=" + vault
                 + ";vaultCount=" + state.vaultView().size()
+                + ";mastery=" + mastery
                 + ";driveMk=" + (drive == null ? 0 : drive.mk())
                 + ";driveEnh=" + (drive == null ? 0 : drive.enhancement())
                 + ";driveMastery=" + state.masteryLevel("reflex_drive_i")
