@@ -21,6 +21,8 @@ public final class FabricatorScreen extends Screen {
     private final List<AugmentationCatalog.Definition> definitions;
     private int selected;
     private TitanButton fabricate;
+    private TitanButton enhance;
+    private TitanButton mkUpgrade;
     private TitanButton upgrade;
 
     public FabricatorScreen(String stationSpec) {
@@ -43,45 +45,64 @@ public final class FabricatorScreen extends Screen {
         }
     }
 
+    private int enhancementCap() {
+        return switch (fabricatorTier) {
+            case 1 -> 3;
+            case 2 -> 7;
+            default -> 10;
+        };
+    }
+
     @Override
     protected void init() {
         super.init();
         Layout layout = layout();
-        int y = layout.bottom() - 28;
-        int nav = 28;
         int gap = 5;
-        int fabricateWidth = Math.min(112, Math.max(82, layout.width() / 8));
-        int x = layout.left() + 12;
+        int coreY = layout.bottom() - 50;
+        int facilityY = layout.bottom() - 27;
+        int nav = 27;
+        int left = layout.left() + 11;
+        int doneW = 56;
+        int doneX = layout.right() - 11 - doneW;
+        int available = Math.max(162, doneX - left - nav * 2 - gap * 5);
+        int actionW = Math.max(48, Math.min(78, available / 3));
 
-        addRenderableWidget(TitanButton.create(Component.literal("‹"), button -> cycle(-1), x, y, nav, 19));
-        x += nav + gap;
-        addRenderableWidget(TitanButton.create(Component.literal("›"), button -> cycle(1), x, y, nav, 19));
-        x += nav + gap + 4;
+        addRenderableWidget(TitanButton.create(Component.literal("‹"), button -> cycle(-1), left, coreY, nav, 19));
+        left += nav + gap;
+        addRenderableWidget(TitanButton.create(Component.literal("›"), button -> cycle(1), left, coreY, nav, 19));
+        left += nav + gap + 2;
+
         fabricate = addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.fabricate"),
-                button -> fabricate(), x, y, fabricateWidth, 19));
+                button -> fabricate(), left, coreY, actionW, 19));
+        left += actionW + gap;
+        enhance = addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.enhance"),
+                button -> progressSelected("enhance"), left, coreY, actionW, 19));
+        left += actionW + gap;
+        mkUpgrade = addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.upgrade_mk"),
+                button -> progressSelected("upgrade_mk"), left, coreY, actionW, 19));
 
-        int doneWidth = 54;
-        int doneX = layout.right() - 12 - doneWidth;
         addRenderableWidget(TitanButton.create(Component.translatable("gui.done"), button -> onClose(),
-                doneX, y, doneWidth, 19));
+                doneX, coreY, doneW, 19));
 
-        // Low-priority facility actions are deliberately hidden instead of overlapping on narrow GUIs.
-        int rightX = doneX - gap;
-        int actionWidth = Math.min(112, Math.max(82, layout.width() / 8));
-        if (layout.width() >= 460 && fabricatorTier < 3) {
-            rightX -= actionWidth;
+        int facilityLeft = layout.left() + 11;
+        int facilityRight = layout.right() - 11;
+        int facilityGap = 5;
+        int facilityButtons = layout.width() >= 610 ? 3 : layout.width() >= 445 ? 2 : 1;
+        int facilityW = Math.max(70, Math.min(128,
+                (facilityRight - facilityLeft - facilityGap * (facilityButtons - 1)) / facilityButtons));
+        if (fabricatorTier < 3) {
             upgrade = addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.upgrade_fabricator"),
-                    button -> send("upgrade_fabricator", ""), rightX, y, actionWidth, 19));
-            rightX -= gap;
+                    button -> send("upgrade_fabricator", ""), facilityLeft, facilityY, facilityW, 19));
+            facilityLeft += facilityW + facilityGap;
         }
-        if (layout.width() >= 610) {
-            rightX -= actionWidth;
-            addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.assemble_vault"),
-                    button -> send("assemble_vault", ""), rightX, y, actionWidth, 19));
-            rightX -= gap;
-            rightX -= actionWidth;
+        if (layout.width() >= 445 && facilityLeft + facilityW <= facilityRight) {
             addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.assemble_surgery"),
-                    button -> send("assemble_surgery", ""), rightX, y, actionWidth, 19));
+                    button -> send("assemble_surgery", ""), facilityLeft, facilityY, facilityW, 19));
+            facilityLeft += facilityW + facilityGap;
+        }
+        if (layout.width() >= 610 && facilityLeft + facilityW <= facilityRight) {
+            addRenderableWidget(TitanButton.create(Component.translatable("screen.titanbreak.assemble_vault"),
+                    button -> send("assemble_vault", ""), facilityLeft, facilityY, facilityW, 19));
         }
         refreshButtons();
     }
@@ -93,7 +114,16 @@ public final class FabricatorScreen extends Screen {
     }
 
     private void refreshButtons() {
-        if (fabricate != null && !definitions.isEmpty()) fabricate.active = recipeReady(definitions.get(selected));
+        if (definitions.isEmpty()) return;
+        AugmentationCatalog.Definition definition = definitions.get(selected);
+        TitanClientState.AugmentMeta meta = TitanClientState.augmentMeta(definition.id());
+        if (fabricate != null) fabricate.active = recipeReady(definition);
+        if (enhance != null) enhance.active = meta != null && meta.enhancement() < enhancementCap();
+        if (mkUpgrade != null) {
+            boolean stationUnlocked = fabricatorTier >= 2;
+            boolean nextAllowed = meta != null && meta.mk() < 5 && (meta.mk() < 4 || fabricatorTier >= 3);
+            mkUpgrade.active = stationUnlocked && nextAllowed;
+        }
         if (upgrade != null) upgrade.active = fabricatorTier < 3;
     }
 
@@ -106,6 +136,11 @@ public final class FabricatorScreen extends Screen {
     private void fabricate() {
         if (definitions.isEmpty()) return;
         send("fabricate", definitions.get(selected).id());
+    }
+
+    private void progressSelected(String action) {
+        if (definitions.isEmpty()) return;
+        send(action, definitions.get(selected).id());
     }
 
     private void send(String action, String argument) {
@@ -138,7 +173,8 @@ public final class FabricatorScreen extends Screen {
         drawRecipe(graphics, definition, grid.middle());
         drawOutput(graphics, definition, grid.right());
 
-        graphics.horizontalLine(layout.left() + 10, layout.right() - 10, layout.bottom() - 34, TitanInterfaceTheme.LINE_SOFT);
+        graphics.horizontalLine(layout.left() + 10, layout.right() - 10, layout.bottom() - 57, TitanInterfaceTheme.LINE_SOFT);
+        graphics.horizontalLine(layout.left() + 10, layout.right() - 10, layout.bottom() - 34, 0x5543D7E8);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -177,7 +213,6 @@ public final class FabricatorScreen extends Screen {
 
         String index = (selected + 1) + " / " + definitions.size();
         graphics.text(font, Component.literal(index), x, panel.bottom() - 15, TitanInterfaceTheme.TEXT_MUTED, false);
-        graphics.horizontalLine(x + font.width(index) + 7, panel.right() - 10, panel.bottom() - 11, 0x6643D7E8);
     }
 
     private void drawRecipe(GuiGraphicsExtractor graphics, AugmentationCatalog.Definition definition, Panel panel) {
@@ -186,7 +221,7 @@ public final class FabricatorScreen extends Screen {
         int y = panel.top() + 27;
         int count = Math.max(1, definition.recipe().size());
         int available = panel.bottom() - y - 9;
-        int rowHeight = Math.max(31, Math.min(42, available / count - 5));
+        int rowHeight = Math.max(29, Math.min(40, available / count - 5));
 
         for (Map.Entry<String, Integer> requirement : definition.recipe().entrySet()) {
             if (y + 27 > panel.bottom() - 5) break;
@@ -199,57 +234,64 @@ public final class FabricatorScreen extends Screen {
             int edge = ready ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.BAD;
             graphics.fill(panel.left() + 8, y, panel.right() - 8, rowBottom, rowColor);
             graphics.fill(panel.left() + 8, y, panel.left() + 10, rowBottom, edge);
-            graphics.horizontalLine(panel.left() + 10, panel.right() - 8, y, 0x66404B50);
             if (!stack.isEmpty()) {
-                graphics.item(stack, panel.left() + 15, y + 7);
-                graphics.itemDecorations(font, stack, panel.left() + 15, y + 7);
+                graphics.item(stack, panel.left() + 15, y + 6);
+                graphics.itemDecorations(font, stack, panel.left() + 15, y + 6);
             }
             int textX = panel.left() + 38;
             int textW = Math.max(48, panel.right() - 16 - textX);
             TitanInterfaceTheme.wrapped(graphics, font, Component.translatable("item.titanbreak." + requirement.getKey()),
-                    textX, y + 5, textW, TitanInterfaceTheme.TEXT, 1);
-            String countText = owned + " / " + requirement.getValue();
-            graphics.text(font, Component.literal(countText), textX, rowBottom - 12,
+                    textX, y + 4, textW, TitanInterfaceTheme.TEXT, 1);
+            graphics.text(font, Component.literal(owned + " / " + requirement.getValue()), textX, rowBottom - 11,
                     ready ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.BAD, false);
             y = rowBottom + 5;
-        }
-
-        if (definition.recipe().isEmpty()) {
-            graphics.centeredText(font, Component.translatable("screen.titanbreak.empty"), panel.centerX(),
-                    panel.top() + 52, TitanInterfaceTheme.TEXT_MUTED);
         }
     }
 
     private void drawOutput(GuiGraphicsExtractor graphics, AugmentationCatalog.Definition definition, Panel panel) {
-        TitanInterfaceTheme.panelHeader(graphics, font, Component.translatable("screen.titanbreak.fabricate"),
+        TitanInterfaceTheme.panelHeader(graphics, font, Component.translatable("screen.titanbreak.fabrication_status"),
                 panel.left(), panel.top(), panel.right());
         ItemStack stack = outputStack(definition);
-        boolean ready = recipeReady(definition);
+        TitanClientState.AugmentMeta meta = TitanClientState.augmentMeta(definition.id());
         int x = panel.left() + 10;
         int maxWidth = Math.max(70, panel.width() - 20);
-        int y = panel.top() + 31;
+        int y = panel.top() + 29;
 
-        graphics.fill(x, y, panel.right() - 10, y + 54, 0xC80B1114);
-        TitanInterfaceTheme.selectionFrame(graphics, panel.centerX() - 10, y + 10, 20, 20,
-                ready ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.BAD);
-        if (!stack.isEmpty()) graphics.item(stack, panel.centerX() - 8, y + 12);
-        y += 60;
+        graphics.fill(x, y, panel.right() - 10, y + 48, 0xC80B1114);
+        TitanInterfaceTheme.selectionFrame(graphics, panel.centerX() - 10, y + 8, 20, 20,
+                meta == null ? TitanInterfaceTheme.CYAN : TitanInterfaceTheme.ACCENT);
+        if (!stack.isEmpty()) graphics.item(stack, panel.centerX() - 8, y + 10);
+        y += 54;
 
         y = TitanInterfaceTheme.wrapped(graphics, font, Component.translatable(definition.nameKey()),
                 x, y, maxWidth, TitanInterfaceTheme.TEXT, 2) + 4;
-        Component status = ready ? Component.translatable("screen.titanbreak.fabricate")
-                : Component.translatable("message.titanbreak.materials_missing");
-        y = TitanInterfaceTheme.wrapped(graphics, font, status, x, y, maxWidth,
-                ready ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.BAD, 2) + 6;
-        Component station = Component.translatable("screen.titanbreak.fabricator_access",
-                fabricatorTier, definition.maxEnhancement());
-        y = TitanInterfaceTheme.wrapped(graphics, font, station, x, y, maxWidth,
-                TitanInterfaceTheme.CYAN, 2) + 7;
-        graphics.horizontalLine(x, panel.right() - 10, y, TitanInterfaceTheme.LINE_SOFT);
-        y += 8;
-        TitanInterfaceTheme.wrapped(graphics, font, Component.translatable("screen.titanbreak.fabricator_hint"),
-                x, y, maxWidth, TitanInterfaceTheme.TEXT_MUTED,
-                Math.max(1, (panel.bottom() - y - 5) / (font.lineHeight + 2)));
+        if (meta == null) {
+            y = TitanInterfaceTheme.wrapped(graphics, font, Component.translatable("screen.titanbreak.no_owned_instance"),
+                    x, y, maxWidth, TitanInterfaceTheme.TEXT_MUTED, 2) + 5;
+        } else {
+            y = TitanInterfaceTheme.wrapped(graphics, font,
+                    Component.translatable("screen.titanbreak.instance_progress", meta.mk(), meta.enhancement(),
+                            TitanClientState.masteryLevel(definition.id())),
+                    x, y, maxWidth, TitanInterfaceTheme.ACCENT, 2) + 5;
+            Component location = Component.translatable(meta.installed()
+                    ? "screen.titanbreak.instance_installed" : "screen.titanbreak.instance_vault");
+            y = TitanInterfaceTheme.wrapped(graphics, font, location, x, y, maxWidth,
+                    meta.installed() ? TitanInterfaceTheme.GOOD : TitanInterfaceTheme.CYAN, 1) + 5;
+        }
+        y = TitanInterfaceTheme.wrapped(graphics, font,
+                Component.translatable("screen.titanbreak.fabricator_access", fabricatorTier, enhancementCap()),
+                x, y, maxWidth, TitanInterfaceTheme.CYAN, 2) + 6;
+        if (fabricatorTier == 1) {
+            y = TitanInterfaceTheme.wrapped(graphics, font, Component.translatable("screen.titanbreak.mk_requires_two"),
+                    x, y, maxWidth, TitanInterfaceTheme.TEXT_MUTED, 2) + 5;
+        }
+        if (y < panel.bottom() - 15) {
+            graphics.horizontalLine(x, panel.right() - 10, y, TitanInterfaceTheme.LINE_SOFT);
+            y += 7;
+            TitanInterfaceTheme.wrapped(graphics, font, Component.translatable("screen.titanbreak.fabricator_hint"),
+                    x, y, maxWidth, TitanInterfaceTheme.TEXT_MUTED,
+                    Math.max(1, (panel.bottom() - y - 6) / (font.lineHeight + 2)));
+        }
     }
 
     private boolean recipeReady(AugmentationCatalog.Definition definition) {
@@ -291,7 +333,7 @@ public final class FabricatorScreen extends Screen {
 
     private Layout layout() {
         int panelWidth = Math.min(780, Math.max(300, width - 20));
-        int panelHeight = Math.min(348, Math.max(190, height - 18));
+        int panelHeight = Math.min(360, Math.max(210, height - 18));
         int left = width / 2 - panelWidth / 2;
         int top = Math.max(6, height / 2 - panelHeight / 2);
         return new Layout(left, left + panelWidth, top, top + panelHeight);
@@ -302,13 +344,13 @@ public final class FabricatorScreen extends Screen {
         int left = layout.left() + 10;
         int right = layout.right() - 10;
         int top = layout.top() + 39;
-        int bottom = layout.bottom() - 38;
+        int bottom = layout.bottom() - 61;
         int available = right - left - gap * 2;
-        int leftWidth = Math.max(145, Math.min(215, (int) Math.round(available * 0.30D)));
-        int middleWidth = Math.max(145, Math.min(230, (int) Math.round(available * 0.32D)));
-        if (leftWidth + middleWidth + 130 > available) {
-            leftWidth = Math.max(120, available * 30 / 100);
-            middleWidth = Math.max(120, available * 31 / 100);
+        int leftWidth = Math.max(112, Math.min(215, (int) Math.round(available * 0.30D)));
+        int middleWidth = Math.max(112, Math.min(230, (int) Math.round(available * 0.32D)));
+        if (leftWidth + middleWidth + 100 > available) {
+            leftWidth = Math.max(88, available * 30 / 100);
+            middleWidth = Math.max(88, available * 31 / 100);
         }
         Panel a = new Panel(left, left + leftWidth, top, bottom);
         Panel b = new Panel(a.right() + gap, a.right() + gap + middleWidth, top, bottom);
