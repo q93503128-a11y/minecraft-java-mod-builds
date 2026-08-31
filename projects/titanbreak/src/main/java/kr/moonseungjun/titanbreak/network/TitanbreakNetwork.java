@@ -57,14 +57,30 @@ public final class TitanbreakNetwork {
                     SpineAugmentationService.notePhaseIntent(player);
                     AugmentAbilityService.usePhaseStep(player);
                 }
-                case AugmentAbilityPayload.ARM_RIGHT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
-                case AugmentAbilityPayload.ARM_LEFT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
+                case AugmentAbilityPayload.ARM_RIGHT -> useArmWithIntegrity(player, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
+                case AugmentAbilityPayload.ARM_LEFT -> useArmWithIntegrity(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
                 case AugmentAbilityPayload.LEG_JUMP -> LegAugmentationService.useMobilityJump(player);
                 case AugmentAbilityPayload.OVERDRIVE -> OverdriveCirculationService.activate(player);
                 case AugmentAbilityPayload.COMBAT_AUTOPILOT -> CombatAutopilotService.activate(player);
                 default -> { }
             }
         });
+    }
+
+    private static void useArmWithIntegrity(ServerPlayer player, AugmentationCatalog.Slot slot) {
+        if (!(player.level() instanceof ServerLevel level)) return;
+        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
+        TitanPlayerData.AugmentInstance instance = state.installedInstance(slot);
+        double heatBefore = state.heat();
+        int masteryBefore = instance == null ? 0 : state.masteryXp(instance.id());
+
+        AugmentAbilityService.useArm(player, slot);
+
+        if (instance == null || !"photon_emitter_arm".equals(instance.id()) || instance.enhancement() < 10
+                || heatBefore < 55.0D || state.masteryXp(instance.id()) <= masteryBefore) return;
+
+        int stressSteps = heatBefore >= 80.0D ? 2 : 1;
+        if (AugmentIntegrityService.stress(player, state, instance, stressSteps)) sync(player);
     }
 
     public static boolean hasReflexDrive(ServerPlayer player) {
