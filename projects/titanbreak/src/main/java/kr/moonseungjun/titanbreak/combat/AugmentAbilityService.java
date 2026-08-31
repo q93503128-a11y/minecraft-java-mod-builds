@@ -42,8 +42,8 @@ public final class AugmentAbilityService {
         TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
         AugmentationCatalog.Slot slot = event.getHand() == InteractionHand.MAIN_HAND
                 ? AugmentationCatalog.Slot.RIGHT_ARM_MAIN : AugmentationCatalog.Slot.LEFT_ARM_MAIN;
-        String augmentId = state.installed(slot);
-        if (!REPLACEMENT_ARMS.contains(augmentId)) return;
+        TitanPlayerData.AugmentInstance instance = state.installedInstanceView().get(slot);
+        if (instance == null || !REPLACEMENT_ARMS.contains(instance.id())) return;
 
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
@@ -108,29 +108,27 @@ public final class AugmentAbilityService {
         if (!(player.level() instanceof ServerLevel level)) return;
         TitanPlayerData data = TitanPlayerData.get(level.getServer());
         TitanPlayerData.State state = data.state(player);
-        String augmentId = state.installed(slot);
-        if (!REPLACEMENT_ARMS.contains(augmentId)) return;
+        TitanPlayerData.AugmentInstance instance = state.installedInstanceView().get(slot);
+        if (instance == null || !REPLACEMENT_ARMS.contains(instance.id())) return;
+        String augmentId = instance.id();
         String cooldownKey = augmentId + "@" + slot.name();
         long now = level.getGameTime();
         if (!ready(player, cooldownKey, now)) return;
 
         boolean used = switch (augmentId) {
-            case "blade_arm" -> slash(player, state, augmentId, false);
-            case "high_frequency_blade_arm" -> slash(player, state, augmentId, true);
-            case "power_arm" -> powerArm(player, state);
-            case "wire_hook_arm" -> wireHook(player, state);
-            case "rail_projector_arm" -> railShot(player, state);
-            case "photon_emitter_arm" -> photonBeam(player, state);
-            case "shock_palm" -> shockPalm(player, state);
-            case "shield_projector_arm" -> shield(player, state);
+            case "blade_arm" -> slash(player, state, instance, false);
+            case "high_frequency_blade_arm" -> slash(player, state, instance, true);
+            case "power_arm" -> powerArm(player, state, instance);
+            case "wire_hook_arm" -> wireHook(player, state, instance);
+            case "rail_projector_arm" -> railShot(player, state, instance);
+            case "photon_emitter_arm" -> photonBeam(player, state, instance);
+            case "shock_palm" -> shockPalm(player, state, instance);
+            case "shield_projector_arm" -> shield(player, state, instance);
             default -> false;
         };
         if (!used) return;
 
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance(augmentId);
-        int mk = instance == null ? 1 : instance.mk();
-        setCooldown(player, cooldownKey, now + cooldownFor(augmentId, mk,
-                instance == null ? 0 : instance.enhancement()));
+        setCooldown(player, cooldownKey, now + cooldownFor(augmentId, instance.mk(), instance.enhancement()));
         data.addMasteryXp(player, augmentId, switch (augmentId) {
             case "rail_projector_arm", "photon_emitter_arm" -> 4;
             case "high_frequency_blade_arm", "shock_palm", "shield_projector_arm" -> 3;
@@ -139,24 +137,25 @@ public final class AugmentAbilityService {
         TitanbreakNetwork.sync(player);
     }
 
-    private static boolean slash(ServerPlayer player, TitanPlayerData.State state, String augmentId, boolean highFrequency) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance(augmentId);
-        int enhancement = instance == null ? 0 : instance.enhancement();
+    private static boolean slash(ServerPlayer player, TitanPlayerData.State state,
+                                 TitanPlayerData.AugmentInstance instance, boolean highFrequency) {
+        int enhancement = instance.enhancement();
         double range = highFrequency ? 5.5D : 4.2D;
         double width = highFrequency ? 1.25D : 1.0D;
         List<RayTarget> targets = rayTargets(player, range + (enhancement >= 10 ? 1.5D : 0.0D), width);
-        if (!spend(player, state, augmentId, highFrequency ? 0.42D : 0.30D, highFrequency ? 0.55D : 0.30D)) return false;
+        if (!spend(player, state, instance.id(), highFrequency ? 0.42D : 0.30D,
+                highFrequency ? 0.55D : 0.30D)) return false;
         int maxTargets = highFrequency && enhancement >= 10 ? 3 : 1;
         double damage = highFrequency ? 72.0D : 46.0D;
         for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
         return true;
     }
 
-    private static boolean powerArm(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("power_arm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
+    private static boolean powerArm(ServerPlayer player, TitanPlayerData.State state,
+                                    TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
         List<RayTarget> targets = rayTargets(player, 4.2D, 1.35D);
-        if (!spend(player, state, "power_arm", 0.45D, 0.45D)) return false;
+        if (!spend(player, state, instance.id(), 0.45D, 0.45D)) return false;
         if (!targets.isEmpty()) {
             Entity target = targets.getFirst().entity();
             damage(player, target, 58.0D);
@@ -172,15 +171,15 @@ public final class AugmentAbilityService {
         return true;
     }
 
-    private static boolean wireHook(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("wire_hook_arm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
+    private static boolean wireHook(ServerPlayer player, TitanPlayerData.State state,
+                                    TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
         double range = enhancement >= 5 ? 32.0D : 24.0D;
 
         if (enhancement >= 7) {
             List<RayTarget> entities = rayTargets(player, range, 1.2D);
             if (!entities.isEmpty() && entities.getFirst().entity() instanceof LivingEntity target) {
-                if (!spend(player, state, "wire_hook_arm", 0.55D, 0.35D)) return false;
+                if (!spend(player, state, instance.id(), 0.55D, 0.35D)) return false;
                 Vec3 pull = player.position().subtract(target.position());
                 if (pull.lengthSqr() > 1.0E-6D) {
                     pull = pull.normalize().scale(1.15D).add(0.0D, 0.18D, 0.0D);
@@ -193,7 +192,7 @@ public final class AugmentAbilityService {
 
         HitResult hit = player.pick(range, 1.0F, false);
         if (hit.getType() == HitResult.Type.MISS) return false;
-        if (!spend(player, state, "wire_hook_arm", 0.55D, 0.35D)) return false;
+        if (!spend(player, state, instance.id(), 0.55D, 0.35D)) return false;
         Vec3 direction = hit.getLocation().subtract(player.position());
         if (direction.lengthSqr() <= 1.0E-6D) return false;
         player.setDeltaMovement(direction.normalize().scale(enhancement >= 10 ? 1.78D : 1.55D).add(0.0D, 0.18D, 0.0D));
@@ -201,15 +200,14 @@ public final class AugmentAbilityService {
         return true;
     }
 
-    private static boolean railShot(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("rail_projector_arm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
-        int mk = instance == null ? 1 : instance.mk();
-        double range = 46.0D + (mk - 1) * 4.0D;
+    private static boolean railShot(ServerPlayer player, TitanPlayerData.State state,
+                                    TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
+        double range = 46.0D + (instance.mk() - 1) * 4.0D;
         int maxTargets = enhancement >= 5 ? 5 : 2;
         double damage = enhancement >= 7 ? 96.0D : 82.0D;
         if (enhancement >= 10 && ReflexDriveService.active(player.getUUID())) damage *= 1.20D;
-        if (!spend(player, state, "rail_projector_arm", 0.72D, 0.72D)) return false;
+        if (!spend(player, state, instance.id(), 0.72D, 0.72D)) return false;
         List<RayTarget> targets = rayTargets(player, range, 0.75D);
         for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) {
             damage(player, targets.get(i).entity(), damage * Math.max(0.60D, 1.0D - i * 0.10D));
@@ -217,27 +215,26 @@ public final class AugmentAbilityService {
         return true;
     }
 
-    private static boolean photonBeam(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("photon_emitter_arm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
-        int mk = instance == null ? 1 : instance.mk();
+    private static boolean photonBeam(ServerPlayer player, TitanPlayerData.State state,
+                                      TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
         boolean overclock = enhancement >= 10;
-        double range = (enhancement >= 5 ? 52.0D : 38.0D) + (mk - 1) * 3.0D;
+        double range = (enhancement >= 5 ? 52.0D : 38.0D) + (instance.mk() - 1) * 3.0D;
         double width = enhancement >= 5 ? 1.55D : 0.95D;
         int maxTargets = enhancement >= 7 ? 8 : 2;
         double damage = overclock ? 210.0D : 112.0D;
         double factor = overclock ? 1.15D : 0.72D;
-        if (!spend(player, state, "photon_emitter_arm", factor, factor)) return false;
+        if (!spend(player, state, instance.id(), factor, factor)) return false;
         List<RayTarget> targets = rayTargets(player, range, width);
         for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
         return true;
     }
 
-    private static boolean shockPalm(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("shock_palm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
+    private static boolean shockPalm(ServerPlayer player, TitanPlayerData.State state,
+                                     TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
         double radius = enhancement >= 5 ? 6.0D : 4.0D;
-        if (!spend(player, state, "shock_palm", 0.62D, 0.65D)) return false;
+        if (!spend(player, state, instance.id(), 0.62D, 0.65D)) return false;
         List<Entity> firstRing = nearbyTargets(player, radius);
         for (Entity target : firstRing) {
             if (target instanceof LivingEntity living && enhancement >= 7 && living.getAbsorptionAmount() > 0.0F) {
@@ -256,10 +253,10 @@ public final class AugmentAbilityService {
         return true;
     }
 
-    private static boolean shield(ServerPlayer player, TitanPlayerData.State state) {
-        TitanPlayerData.AugmentInstance instance = state.firstInstalledInstance("shield_projector_arm");
-        int enhancement = instance == null ? 0 : instance.enhancement();
-        if (!spend(player, state, "shield_projector_arm", 0.62D, 0.60D)) return false;
+    private static boolean shield(ServerPlayer player, TitanPlayerData.State state,
+                                  TitanPlayerData.AugmentInstance instance) {
+        int enhancement = instance.enhancement();
+        if (!spend(player, state, instance.id(), 0.62D, 0.60D)) return false;
         ServerLevel level = (ServerLevel) player.level();
         ShieldState previous = SHIELDS.remove(player.getUUID());
         float current = player.getAbsorptionAmount();
@@ -274,7 +271,7 @@ public final class AugmentAbilityService {
     private static boolean spend(ServerPlayer player, TitanPlayerData.State state, String augmentId,
                                  double powerFactor, double heatFactor) {
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
-        if (definition == null) return false;
+        if (definition == null || state.heat() >= 99.0D) return false;
         double power = Math.max(0.0D, definition.powerLoad()) * powerFactor * state.powerLoadMultiplier(augmentId);
         if (!AugmentationResourceService.trySpendBurstPower(player, state, power)) return false;
         if (definition.heatLoad() > 0 && heatFactor > 0.0D) {
