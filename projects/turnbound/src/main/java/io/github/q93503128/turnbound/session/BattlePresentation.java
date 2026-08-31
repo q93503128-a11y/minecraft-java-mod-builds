@@ -2,9 +2,12 @@ package io.github.q93503128.turnbound.session;
 
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
+import io.github.q93503128.turnbound.presentation.BattleActorEntity;
+import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
@@ -73,16 +76,32 @@ final class BattlePresentation {
 
     private void spawnActor(ServerLevel level, CombatantState combatant, Vec3 pos, float facingYaw) {
         boolean ally = combatant.side() == CombatantSide.ALLY;
-        ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
-        stand.setCustomName(Component.literal(combatant.definition().name()));
-        stand.setCustomNameVisible(false);
-        stand.setInvulnerable(true);
-        stand.setNoGravity(true);
-        stand.setShowArms(true);
-        stand.setYRot(facingYaw + (ally ? 0.0F : 180.0F));
-        equipStandIn(stand, combatant);
-        level.addFreshEntity(stand);
-        actors.put(combatant.instanceId(), stand.getUUID());
+        float yaw = facingYaw + (ally ? 0.0F : 180.0F);
+        Entity actor = null;
+
+        if (!combatant.definition().summon() && TurnboundBattleActors.contains(combatant.definition().id())) {
+            BattleActorEntity animated = TurnboundBattleActors.spawn(level, combatant.definition().id(), pos, yaw);
+            if (animated != null) {
+                animated.setCustomName(Component.literal(combatant.definition().name()));
+                animated.setCustomNameVisible(false);
+                actor = animated;
+            }
+        }
+
+        if (actor == null) {
+            ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
+            stand.setCustomName(Component.literal(combatant.definition().name()));
+            stand.setCustomNameVisible(false);
+            stand.setInvulnerable(true);
+            stand.setNoGravity(true);
+            stand.setShowArms(true);
+            stand.setYRot(yaw);
+            equipStandIn(stand, combatant);
+            level.addFreshEntity(stand);
+            actor = stand;
+        }
+
+        actors.put(combatant.instanceId(), actor.getUUID());
         homes.put(combatant.instanceId(), pos);
         sides.put(combatant.instanceId(), combatant.side());
         summons.put(combatant.instanceId(), combatant.definition().summon());
@@ -94,7 +113,7 @@ final class BattlePresentation {
         for (String id : List.copyOf(actors.keySet())) {
             if (liveIds.contains(id)) continue;
             UUID uuid = actors.remove(id);
-            var entity = uuid == null ? null : level.getEntity(uuid);
+            Entity entity = uuid == null ? null : level.getEntity(uuid);
             if (entity != null) entity.discard();
             homes.remove(id);
             sides.remove(id);
@@ -170,22 +189,24 @@ final class BattlePresentation {
 
     void clearFocus(ServerLevel level) {
         if (focusMarker == null) return;
-        var entity = level.getEntity(focusMarker);
+        Entity entity = level.getEntity(focusMarker);
         if (entity != null) entity.discard();
         focusMarker = null;
     }
 
     private void clearDanger(ServerLevel level) {
         if (dangerMarker != null) {
-            var entity = level.getEntity(dangerMarker);
+            Entity entity = level.getEntity(dangerMarker);
             if (entity != null) entity.discard();
         }
         dangerMarker = null;
         dangerTarget = "";
     }
 
-    void lunge(ServerLevel level, String actorId, String targetId) {
-        ArmorStand actor = entity(level, actorId);
+    void performSkill(ServerLevel level, String actorId, String targetId, boolean damaging) {
+        Entity actor = entity(level, actorId);
+        if (actor instanceof BattleActorEntity animated) animated.playStrike();
+        if (!damaging || targetId == null || targetId.isBlank()) return;
         Vec3 target = homes.get(targetId);
         Vec3 home = homes.get(actorId);
         if (actor == null || target == null || home == null) return;
@@ -195,10 +216,14 @@ final class BattlePresentation {
         returnTicks = 5;
     }
 
+    void lunge(ServerLevel level, String actorId, String targetId) {
+        performSkill(level, actorId, targetId, true);
+    }
+
     void tick(ServerLevel level) {
         if (moving == null) return;
         if (--returnTicks <= 0) {
-            ArmorStand actor = entity(level, moving);
+            Entity actor = entity(level, moving);
             Vec3 home = homes.get(moving);
             if (actor != null && home != null) actor.setPos(home);
             moving = null;
@@ -214,7 +239,7 @@ final class BattlePresentation {
 
     private void cleanupActors(ServerLevel level) {
         for (UUID id : actors.values()) {
-            var entity = level.getEntity(id);
+            Entity entity = level.getEntity(id);
             if (entity != null) entity.discard();
         }
         actors.clear();
@@ -223,11 +248,9 @@ final class BattlePresentation {
         summons.clear();
     }
 
-    private ArmorStand entity(ServerLevel level, String id) {
+    private Entity entity(ServerLevel level, String id) {
         UUID uuid = actors.get(id);
-        if (uuid == null) return null;
-        var entity = level.getEntity(uuid);
-        return entity instanceof ArmorStand armorStand ? armorStand : null;
+        return uuid == null ? null : level.getEntity(uuid);
     }
 
     private static void equipStandIn(ArmorStand stand, CombatantState combatant) {
