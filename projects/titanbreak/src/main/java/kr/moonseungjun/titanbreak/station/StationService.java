@@ -20,13 +20,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class StationService {
-    private static final int INSTALL_TICKS = 100;
-    private static final int REMOVE_TICKS = 80;
     private static final Map<UUID, SurgeryProcess> SURGERIES = new ConcurrentHashMap<>();
+    private static final Set<String> FULL_REPLACEMENT_ARMS = Set.of(
+            "blade_arm", "high_frequency_blade_arm", "rail_projector_arm", "photon_emitter_arm");
 
     private StationService() {}
 
@@ -36,13 +37,19 @@ public final class StationService {
 
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
-        if (state.is(ModBlocks.FABRICATOR_I.get())) {
-            open(player, "fabricator", pos);
+        int tier = fabricatorTier(state);
+        if (tier > 0) {
+            open(player, "fabricator_" + tier, pos);
             consumeInteraction(event);
             return;
         }
         if (state.is(ModBlocks.SURGICAL_BAY.get())) {
             open(player, "surgery", pos);
+            consumeInteraction(event);
+            return;
+        }
+        if (state.is(ModBlocks.IMPLANT_VAULT.get())) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.vault_ready"), true);
             consumeInteraction(event);
             return;
         }
@@ -58,7 +65,7 @@ public final class StationService {
         AugmentationCatalog.Slot slot = event.getHand() == InteractionHand.MAIN_HAND
                 ? AugmentationCatalog.Slot.RIGHT_ARM_MAIN : AugmentationCatalog.Slot.LEFT_ARM_MAIN;
         String installed = state.installed(slot);
-        if ("blade_arm".equals(installed)) {
+        if (FULL_REPLACEMENT_ARMS.contains(installed)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
         }
@@ -75,10 +82,8 @@ public final class StationService {
 
     private static boolean assembleFabricator(ServerPlayer player, ServerLevel level, BlockPos pos) {
         Requirement[] requirements = {
-                new Requirement(Items.IRON_INGOT, 8),
-                new Requirement(Items.COPPER_INGOT, 8),
-                new Requirement(Items.REDSTONE, 6),
-                new Requirement(Items.QUARTZ, 2)
+                new Requirement(Items.IRON_INGOT, 8), new Requirement(Items.COPPER_INGOT, 8),
+                new Requirement(Items.REDSTONE, 6), new Requirement(Items.QUARTZ, 2)
         };
         if (!hasAll(player, requirements)) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.fabricator_requirements"));
@@ -102,23 +107,41 @@ public final class StationService {
         }
         if (!(player.level() instanceof ServerLevel level) || player.blockPosition().distSqr(pos) > 64.0D) return;
         BlockState block = level.getBlockState(pos);
-        if (station.equals("fabricator") && !block.is(ModBlocks.FABRICATOR_I.get())) return;
+        int tier = station.startsWith("fabricator_") ? parseFabricatorTier(station) : 0;
+        if (tier > 0 && fabricatorTier(block) != tier) return;
         if (station.equals("surgery") && !block.is(ModBlocks.SURGICAL_BAY.get())) return;
 
         String action = parts[4];
         String argument = parts.length >= 6 ? parts[5] : "";
-        if (station.equals("fabricator")) {
-            if (action.equals("fabricate")) fabricate(player, argument);
+        if (tier > 0) {
+            if (action.equals("fabricate")) fabricate(player, argument, tier);
             else if (action.equals("assemble_surgery")) assembleSurgicalBay(player);
+            else if (action.equals("assemble_vault")) assembleImplantVault(player);
+            else if (action.equals("upgrade_fabricator")) upgradeFabricator(player, level, pos, tier);
         } else if (station.equals("surgery")) {
             if (action.equals("install")) beginInstall(player, pos, argument);
             else if (action.equals("remove")) beginRemove(player, pos, argument);
         }
     }
 
-    private static void fabricate(ServerPlayer player, String augmentId) {
+    private static int parseFabricatorTier(String station) {
+        try {
+            return Math.max(1, Math.min(3, Integer.parseInt(station.substring("fabricator_".length()))));
+        } catch (RuntimeException ignored) {
+            return 0;
+        }
+    }
+
+    private static int fabricatorTier(BlockState state) {
+        if (state.is(ModBlocks.FABRICATOR_I.get())) return 1;
+        if (state.is(ModBlocks.FABRICATOR_II.get())) return 2;
+        if (state.is(ModBlocks.FABRICATOR_III.get())) return 3;
+        return 0;
+    }
+
+    private static void fabricate(ServerPlayer player, String augmentId, int fabricatorTier) {
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
-        if (definition == null || !definition.fabricatorOne()) return;
+        if (definition == null || definition.fabricatorTier() > fabricatorTier) return;
         Item output = ModItems.augmentationByPath(definition.itemId());
         if (output == null) return;
         Requirement[] requirements = definition.recipe().entrySet().stream()
@@ -134,12 +157,55 @@ public final class StationService {
         player.sendSystemMessage(Component.translatable("message.titanbreak.fabricated", Component.translatable(definition.nameKey())));
     }
 
+    private static void upgradeFabricator(ServerPlayer player, ServerLevel level, BlockPos pos, int tier) {
+        if (tier == 1) {
+            Requirement[] requirements = {
+                    new Requirement(ModItems.CALCULATION_CORE.get(), 4),
+                    new Requirement(ModItems.SERVO_BUNDLE.get(), 4),
+                    new Requirement(ModItems.TEMPORAL_NEURAL_BUNDLE.get(), 1),
+                    new Requirement(ModItems.THERMAL_OPTIC_CLUSTER.get(), 1)
+            };
+            if (!hasAll(player, requirements)) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.fabricator_ii_requirements"));
+                return;
+            }
+            consumeAll(player, requirements);
+            level.setBlockAndUpdate(pos, ModBlocks.FABRICATOR_II.get().defaultBlockState());
+            player.sendSystemMessage(Component.translatable("message.titanbreak.fabricator_upgraded", 2));
+            return;
+        }
+        if (tier == 2) {
+            Requirement[] fixed = {
+                    new Requirement(ModItems.CAPACITOR_STACK.get(), 6),
+                    new Requirement(ModItems.HEAT_SINK.get(), 4)
+            };
+            Item[] bossCores = {
+                    ModItems.PURSUER_REACTION_ORGAN.get(), ModItems.GRAVEMARCH_IMPACT_HEART.get(),
+                    ModItems.BASTION_ARMOR_CORE.get(), ModItems.REGNANT_REGENERATION_CORE.get(),
+                    ModItems.WATCHER_PREDICTIVE_BRAIN.get(), ModItems.CHRONOPHAGE_TEMPORAL_ORGAN.get(),
+                    ModItems.LEVIATHAN_STORM_ORGAN.get(), ModItems.ASH_RADIANT_HEART.get(),
+                    ModItems.NULL_SUPPRESSION_CORE.get(), ModItems.WORLDBREAKER_CORE.get()
+            };
+            Item[] advanced = {
+                    ModItems.PHASE_COIL.get(), ModItems.TEMPORAL_ORGAN.get(), ModItems.REGENERATIVE_TISSUE.get(),
+                    ModItems.CIRCULATION_CORE.get(), ModItems.NANO_MEDIUM.get()
+            };
+            if (!hasAll(player, fixed) || countAny(player, bossCores) < 1 || countAny(player, advanced) < 2) {
+                player.sendSystemMessage(Component.translatable("message.titanbreak.fabricator_iii_requirements"));
+                return;
+            }
+            consumeAll(player, fixed);
+            consumeAny(player, bossCores, 1);
+            consumeAny(player, advanced, 2);
+            level.setBlockAndUpdate(pos, ModBlocks.FABRICATOR_III.get().defaultBlockState());
+            player.sendSystemMessage(Component.translatable("message.titanbreak.fabricator_upgraded", 3));
+        }
+    }
+
     private static void assembleSurgicalBay(ServerPlayer player) {
         Requirement[] requirements = {
-                new Requirement(Items.IRON_INGOT, 10),
-                new Requirement(Items.COPPER_INGOT, 6),
-                new Requirement(Items.REDSTONE, 4),
-                new Requirement(Items.GLASS, 4)
+                new Requirement(Items.IRON_INGOT, 10), new Requirement(Items.COPPER_INGOT, 6),
+                new Requirement(Items.REDSTONE, 4), new Requirement(Items.GLASS, 4)
         };
         if (!hasAll(player, requirements) || countBeds(player) < 1) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_requirements"));
@@ -151,26 +217,35 @@ public final class StationService {
         player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_assembled"));
     }
 
+    private static void assembleImplantVault(ServerPlayer player) {
+        Requirement[] requirements = {
+                new Requirement(Items.IRON_INGOT, 6), new Requirement(Items.COPPER_INGOT, 4),
+                new Requirement(Items.REDSTONE, 2), new Requirement(Items.CHEST, 1)
+        };
+        if (!hasAll(player, requirements)) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.vault_requirements"));
+            return;
+        }
+        consumeAll(player, requirements);
+        give(player, new ItemStack(ModItems.IMPLANT_VAULT.get()));
+        player.sendSystemMessage(Component.translatable("message.titanbreak.vault_assembled"));
+    }
+
     private static void beginInstall(ServerPlayer player, BlockPos pos, String argument) {
         if (SURGERIES.containsKey(player.getUUID())) return;
         String[] args = argument.split(":", 2);
         if (args.length < 2) return;
-
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(args[0]);
         if (definition == null) return;
         AugmentationCatalog.Slot anchor;
-        try {
-            anchor = AugmentationCatalog.Slot.valueOf(args[1]);
-        } catch (IllegalArgumentException ignored) {
-            return;
-        }
+        try { anchor = AugmentationCatalog.Slot.valueOf(args[1]); }
+        catch (IllegalArgumentException ignored) { return; }
 
         AugmentationCatalog.Placement placement = definition.placementFor(anchor);
         if (placement == null) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.slot_incompatible"));
             return;
         }
-
         TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
         for (AugmentationCatalog.Slot slot : placement.slots()) {
             if (state.installed(slot) != null) {
@@ -178,13 +253,13 @@ public final class StationService {
                 return;
             }
         }
-
         Item module = ModItems.augmentationByPath(definition.itemId());
         if (module == null || count(player, module) < 1) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.module_missing"));
             return;
         }
-        long finish = ((ServerLevel) player.level()).getGameTime() + INSTALL_TICKS;
+        int ticks = surgeryTicks(definition.tier(), true);
+        long finish = ((ServerLevel) player.level()).getGameTime() + ticks;
         SURGERIES.put(player.getUUID(), new SurgeryProcess(pos, true, definition.id(), anchor, finish));
         player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_install_started"));
         TitanbreakNetwork.sync(player);
@@ -193,21 +268,29 @@ public final class StationService {
     private static void beginRemove(ServerPlayer player, BlockPos pos, String argument) {
         if (SURGERIES.containsKey(player.getUUID())) return;
         AugmentationCatalog.Slot slot;
-        try {
-            slot = AugmentationCatalog.Slot.valueOf(argument);
-        } catch (IllegalArgumentException ignored) {
-            return;
-        }
+        try { slot = AugmentationCatalog.Slot.valueOf(argument); }
+        catch (IllegalArgumentException ignored) { return; }
         TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
         String augment = state.installed(slot);
         if (augment == null) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.slot_empty"));
             return;
         }
-        long finish = ((ServerLevel) player.level()).getGameTime() + REMOVE_TICKS;
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augment);
+        int ticks = surgeryTicks(definition == null ? 1 : definition.tier(), false);
+        long finish = ((ServerLevel) player.level()).getGameTime() + ticks;
         SURGERIES.put(player.getUUID(), new SurgeryProcess(pos, false, augment, slot, finish));
         player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_remove_started"));
         TitanbreakNetwork.sync(player);
+    }
+
+    private static int surgeryTicks(int tier, boolean install) {
+        if (install) return switch (tier) {
+            case 0 -> 80; case 1 -> 120; case 2 -> 200; case 3 -> 300; default -> 420;
+        };
+        return switch (tier) {
+            case 0 -> 60; case 1 -> 90; case 2 -> 160; case 3 -> 200; default -> 260;
+        };
     }
 
     public static void tick(ServerPlayer player) {
@@ -254,9 +337,7 @@ public final class StationService {
         return (int) Math.max(0L, process.finishTick() - level.getGameTime());
     }
 
-    public static void clear(UUID playerId) {
-        SURGERIES.remove(playerId);
-    }
+    public static void clear(UUID playerId) { SURGERIES.remove(playerId); }
 
     public static void useHook(ServerPlayer player) {
         TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
@@ -277,6 +358,25 @@ public final class StationService {
 
     private static void consumeAll(ServerPlayer player, Requirement[] requirements) {
         for (Requirement requirement : requirements) consume(player, requirement.item(), requirement.count());
+    }
+
+    private static int countAny(ServerPlayer player, Item[] items) {
+        int total = 0;
+        for (Item item : items) total += count(player, item);
+        return total;
+    }
+
+    private static void consumeAny(ServerPlayer player, Item[] items, int count) {
+        int remaining = count;
+        for (Item item : items) {
+            if (remaining <= 0) return;
+            int available = count(player, item);
+            int consume = Math.min(remaining, available);
+            if (consume > 0) {
+                consume(player, item, consume);
+                remaining -= consume;
+            }
+        }
     }
 
     private static int count(ServerPlayer player, Item item) {

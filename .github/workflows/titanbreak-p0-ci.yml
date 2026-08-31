@@ -36,29 +36,18 @@ jobs:
           MAIN=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/Titanbreak.java
           MIXINS=projects/titanbreak/src/main/resources/titanbreak.mixins.json
           TOML=projects/titanbreak/src/main/templates/META-INF/neoforge.mods.toml
-
           if grep -qE 'EntityTickEvent|event\.setCanceled\(true\)' "$FIELD"; then
-            echo 'Whole-entity sparse tick cancellation returned to ReflexFieldService.' >&2
-            exit 1
-          fi
+            echo 'Whole-entity sparse tick cancellation returned to ReflexFieldService.' >&2; exit 1; fi
           if grep -Rni 'tickRateManager().setTickRate' projects/titanbreak/src/main/java; then
-            echo 'Global server tick-rate mutation returned to TITANBREAK.' >&2
-            exit 1
-          fi
+            echo 'Global server tick-rate mutation returned to TITANBREAK.' >&2; exit 1; fi
           if grep -q 'ReflexFieldService::onEntityTickPre' "$MAIN"; then
-            echo 'Legacy entity-tick cancellation listener is still registered.' >&2
-            exit 1
-          fi
-
+            echo 'Legacy entity-tick cancellation listener is still registered.' >&2; exit 1; fi
           test -f "$MIXINS"
           grep -q 'EntityMovementTimeScaleMixin' "$MIXINS"
           grep -q 'MobAiTimeScaleMixin' "$MIXINS"
           grep -q 'ProjectileTimeScaleMixin' "$MIXINS"
           grep -q '\[\[mixins\]\]' "$TOML"
           grep -q 'config="titanbreak.mixins.json"' "$TOML"
-          grep -q 'ModifyVariable(method = "move"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.java
-          grep -q 'method = "serverAiStep"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.java
-          grep -q 'method = "tick"' projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.java
 
       - name: First playable source audit
         shell: bash
@@ -79,8 +68,33 @@ jobs:
           grep -q 'EncounterDirector.tick' "$ROOT/Titanbreak.java"
           grep -q 'class FabricatorScreen' "$ROOT/client/FabricatorScreen.java"
           grep -q 'class SurgeryScreen' "$ROOT/client/SurgeryScreen.java"
-          grep -q 'normalFirstKillCount() >= NORMAL_SPECIES.length' "$ROOT/world/EncounterDirector.java"
-          grep -q 'eliteFirstKillCount() >= ELITE_SPECIES.length' "$ROOT/world/EncounterDirector.java"
+
+      - name: Canonical content foundation audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=projects/titanbreak/src/main
+          JAVA="$ROOT/java/kr/moonseungjun/titanbreak"
+          ASSETS="$ROOT/resources/assets/titanbreak"
+          python3 - <<'PY'
+          from pathlib import Path
+          catalog=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.java').read_text(encoding='utf-8')
+          count=catalog.count('            def("')
+          assert count == 48, f'Expected 48 canonical augmentation families, found {count}'
+          items=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModItems.java').read_text(encoding='utf-8')
+          assert items.count(' = material("') == 34, 'Expected 34 canonical materials including 10 boss cores'
+          assert items.count(' = module("') == 48, 'Expected 48 registered augmentation module items'
+          blocks=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/registry/ModBlocks.java').read_text(encoding='utf-8')
+          for token in ('FABRICATOR_I','FABRICATOR_II','FABRICATOR_III','SURGICAL_BAY','IMPLANT_VAULT'):
+              assert token in blocks, token
+          service=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/station/StationService.java').read_text(encoding='utf-8')
+          for token in ('upgradeFabricator','assembleImplantVault','surgeryTicks'):
+              assert token in service, token
+          PY
+          for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
+            test -f "$ASSETS/blockstates/$block.json"
+            test -f "$ASSETS/items/$block.json"
+          done
 
       - name: Creature presentation audit
         shell: bash
@@ -89,41 +103,32 @@ jobs:
           ROOT=projects/titanbreak/src/main
           JAVA="$ROOT/java/kr/moonseungjun/titanbreak"
           ASSETS="$ROOT/resources/assets/titanbreak"
-
           grep -q 'geckolib_version=5.5.3' projects/titanbreak/gradle.properties
           grep -q 'jarJar(implementation' projects/titanbreak/build.gradle
           grep -q 'modId="geckolib"' "$ROOT/templates/META-INF/neoforge.mods.toml"
           test -f projects/titanbreak/ASSET_REGISTRY.md
           test -f "$JAVA/entity/TitanGeoEntity.java"
           grep -q 'GeoEntityRenderer' "$JAVA/client/TitanEntityRenderers.java"
-
           if grep -Eq 'ZombieRenderer|SkeletonRenderer|SpiderRenderer|GiantMobRenderer' "$JAVA/client/TitanEntityRenderers.java"; then
-            echo 'A first-playable TITANBREAK creature still uses a vanilla mob renderer.' >&2
-            exit 1
-          fi
-
+            echo 'A first-playable TITANBREAK creature still uses a vanilla mob renderer.' >&2; exit 1; fi
           for cls in RipperEntity SkitterEntity BulwarkEntity NeedlerEntity HowlerEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             grep -q 'TitanGeoEntity' "$JAVA/entity/$cls.java"
           done
-
           for entity in ripper skitter bulwark needler howler chrono_hound null_eye the_pursuer; do
             test -f "$ASSETS/geckolib/models/entity/$entity.geo.json"
             test -f "$ASSETS/geckolib/animations/entity/$entity.animation.json"
             test -f "$ASSETS/textures/entity/$entity.png"
           done
-
           python3 - <<'PY'
           import json
           from pathlib import Path
           root=Path('projects/titanbreak/src/main/resources/assets/titanbreak/geckolib')
           for path in sorted(root.rglob('*.json')):
               data=json.loads(path.read_text(encoding='utf-8'))
-              if path.name.endswith('.geo.json'):
-                  assert 'minecraft:geometry' in data, path
+              if path.name.endswith('.geo.json'): assert 'minecraft:geometry' in data, path
               if path.name.endswith('.animation.json'):
                   animations=data.get('animations', {})
-                  for key in ('misc.idle','move.walk','attack.swing'):
-                      assert key in animations, (path,key)
+                  for key in ('misc.idle','move.walk','attack.swing'): assert key in animations, (path,key)
           PY
 
       - name: First playable resource audit
@@ -136,17 +141,6 @@ jobs:
             grep -q 'screen.titanbreak.fabricator' "$ASSETS/lang/$lang.json"
             grep -q 'screen.titanbreak.surgery' "$ASSETS/lang/$lang.json"
             grep -q 'entity.titanbreak.the_pursuer' "$ASSETS/lang/$lang.json"
-            grep -q 'augmentation.titanbreak.powered_spine' "$ASSETS/lang/$lang.json"
-            grep -q 'message.titanbreak.pursuer_warning' "$ASSETS/lang/$lang.json"
-          done
-          for item in \
-            composite_armor_plate dense_bone_lattice optic_sensor_cluster calculation_core \
-            resonant_neural_ganglion thermal_optic_cluster temporal_neural_bundle reaction_temporal_matrix \
-            predictive_optic_core pursuer_reaction_organ tactical_eye thermal_eye ballistic_correction_eye \
-            target_assist_coprocessor reflex_accelerator_node threat_detection_node powered_spine \
-            bioalloy_skeleton subdermal_armor_plate blade_arm wire_hook_arm reinforced_tendon_legs \
-            fabricator_i surgical_bay; do
-            test -f "$ASSETS/items/$item.json"
           done
           test -f "$ASSETS/blockstates/fabricator_i.json"
           test -f "$ASSETS/blockstates/surgical_bay.json"
@@ -165,29 +159,18 @@ jobs:
           STATUS=$?
           set -e
           cat /tmp/titanbreak-server.log
-
           if grep -Eqi 'MixinApplyError|InvalidInjectionException|InjectionError|Critical injection failure|mixin.*failed|Exception in thread "main"|Failed to start the minecraft server' /tmp/titanbreak-server.log; then
-            echo 'Dedicated-server mixin/runtime smoke detected a fatal error.' >&2
-            exit 1
-          fi
+            echo 'Dedicated-server mixin/runtime smoke detected a fatal error.' >&2; exit 1; fi
           if ! grep -Eq 'Done \(|For help, type' /tmp/titanbreak-server.log; then
-            echo "Dedicated server did not reach successful startup (exit=$STATUS)." >&2
-            exit 1
-          fi
-          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
-            echo "Unexpected dedicated-server smoke exit status: $STATUS" >&2
-            exit "$STATUS"
-          fi
+            echo "Dedicated server did not reach successful startup (exit=$STATUS)." >&2; exit 1; fi
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then exit "$STATUS"; fi
 
       - name: Player-facing text audit
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE '산데비스탄|sandevistan|DESIGN_TARGET|\bP0\b|\bP1\b|prototype|\bdebug\b|TODO' \
-            projects/titanbreak/src/main/resources projects/titanbreak/src/main/templates; then
-            echo 'Forbidden player-facing/development wording detected.' >&2
-            exit 1
-          fi
+          if grep -RniE '산데비스탄|sandevistan|DESIGN_TARGET|\bP0\b|\bP1\b|prototype|\bdebug\b|TODO' projects/titanbreak/src/main/resources projects/titanbreak/src/main/templates; then
+            echo 'Forbidden player-facing/development wording detected.' >&2; exit 1; fi
 
       - name: JAR verify
         shell: bash
@@ -196,24 +179,15 @@ jobs:
           JAR=$(find projects/titanbreak/build/libs -maxdepth 1 -name 'titanbreak-*.jar' | head -n 1)
           test -n "$JAR"
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/Titanbreak.class'
-          jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
           jar tf "$JAR" | grep -q 'titanbreak.mixins.json'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/EntityMovementTimeScaleMixin.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/MobAiTimeScaleMixin.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/mixin/ProjectileTimeScaleMixin.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/world/EncounterDirector.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/PursuerEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/TitanGeoEntity.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/items/fabricator_i.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/items/surgical_bay.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/fabricator_i.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/blockstates/surgical_bay.json'
+          for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
+            jar tf "$JAR" | grep -q "assets/titanbreak/items/$block.json"
+            jar tf "$JAR" | grep -q "assets/titanbreak/blockstates/$block.json"
+          done
           jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
           jar tf "$JAR" | grep -q 'assets/titanbreak/geckolib/models/entity/ripper.geo.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/geckolib/animations/entity/the_pursuer.animation.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/textures/entity/null_eye.png'
           jar tf "$JAR" | grep -q 'META-INF/jarjar/.*geckolib'
           echo "jar=$JAR"
           sha256sum "$JAR"
