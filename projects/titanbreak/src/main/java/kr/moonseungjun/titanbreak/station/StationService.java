@@ -49,7 +49,9 @@ public final class StationService {
             return;
         }
         if (state.is(ModBlocks.IMPLANT_VAULT.get())) {
-            player.sendSystemMessage(Component.translatable("message.titanbreak.vault_ready"), true);
+            TitanbreakNetwork.sync(player);
+            player.sendSystemMessage(Component.translatable("message.titanbreak.vault_ready",
+                    TitanPlayerData.get(level.getServer()).state(player).vaultView().size()), true);
             consumeInteraction(event);
             return;
         }
@@ -118,6 +120,8 @@ public final class StationService {
             else if (action.equals("assemble_surgery")) assembleSurgicalBay(player);
             else if (action.equals("assemble_vault")) assembleImplantVault(player);
             else if (action.equals("upgrade_fabricator")) upgradeFabricator(player, level, pos, tier);
+            else if (action.equals("enhance")) enhanceAugment(player, argument, tier);
+            else if (action.equals("upgrade_mk")) upgradeAugmentMk(player, argument, tier);
         } else if (station.equals("surgery")) {
             if (action.equals("install")) beginInstall(player, pos, argument);
             else if (action.equals("remove")) beginRemove(player, pos, argument);
@@ -155,6 +159,81 @@ public final class StationService {
         consumeAll(player, requirements);
         give(player, new ItemStack(output));
         player.sendSystemMessage(Component.translatable("message.titanbreak.fabricated", Component.translatable(definition.nameKey())));
+    }
+
+    private static void enhanceAugment(ServerPlayer player, String augmentId, int fabricatorTier) {
+        TitanPlayerData data = TitanPlayerData.get(((ServerLevel) player.level()).getServer());
+        TitanPlayerData.AugmentInstance instance = data.firstInstance(player, augmentId);
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
+        if (instance == null || definition == null || definition.fabricatorTier() > fabricatorTier
+                || instance.enhancement() >= TitanPlayerData.MAX_ENHANCEMENT) return;
+
+        int next = instance.enhancement() + 1;
+        Item familyMaterial = firstRecipeMaterial(definition);
+        Requirement[] requirements = {
+                new Requirement(ModItems.SERVO_BUNDLE.get(), 1 + next / 4),
+                new Requirement(familyMaterial, 1 + next / 3)
+        };
+        if (!hasAll(player, requirements)) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.enhance_requirements"));
+            return;
+        }
+        consumeAll(player, requirements);
+        if (data.enhance(player, augmentId)) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.enhance_complete",
+                    Component.translatable(definition.nameKey()), next));
+            TitanbreakNetwork.sync(player);
+        }
+    }
+
+    private static void upgradeAugmentMk(ServerPlayer player, String augmentId, int fabricatorTier) {
+        TitanPlayerData data = TitanPlayerData.get(((ServerLevel) player.level()).getServer());
+        TitanPlayerData.AugmentInstance instance = data.firstInstance(player, augmentId);
+        AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
+        if (instance == null || definition == null || definition.fabricatorTier() > fabricatorTier
+                || instance.mk() >= TitanPlayerData.MAX_AUGMENT_MK) return;
+
+        int nextMk = instance.mk() + 1;
+        int requiredFabricator = nextMk <= 2 ? 1 : nextMk <= 4 ? 2 : 3;
+        if (fabricatorTier < requiredFabricator) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.mk_fabricator_locked", requiredFabricator));
+            return;
+        }
+        Item familyMaterial = firstRecipeMaterial(definition);
+        Item advanced = advancedMaterial(definition);
+        Requirement[] requirements = {
+                new Requirement(familyMaterial, nextMk),
+                new Requirement(advanced, Math.max(1, nextMk - 2))
+        };
+        if (!hasAll(player, requirements)) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.mk_requirements"));
+            return;
+        }
+        consumeAll(player, requirements);
+        if (data.upgradeMk(player, augmentId)) {
+            player.sendSystemMessage(Component.translatable("message.titanbreak.mk_complete",
+                    Component.translatable(definition.nameKey()), nextMk));
+            TitanbreakNetwork.sync(player);
+        }
+    }
+
+    private static Item firstRecipeMaterial(AugmentationCatalog.Definition definition) {
+        for (String key : definition.recipe().keySet()) {
+            Item item = ModItems.byPath(key);
+            if (item != null) return item;
+        }
+        return ModItems.SERVO_BUNDLE.get();
+    }
+
+    private static Item advancedMaterial(AugmentationCatalog.Definition definition) {
+        AugmentationCatalog.Region region = definition.placements().getFirst().anchor().region();
+        return switch (region) {
+            case EYE -> ModItems.PREDICTIVE_OPTIC_CORE.get();
+            case BRAIN, NERVES, SPINE -> ModItems.TEMPORAL_NEURAL_BUNDLE.get();
+            case HEART, AUX_ORGAN -> ModItems.CIRCULATION_CORE.get();
+            case SKELETON, SKIN -> ModItems.IMPACT_CORE.get();
+            case LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG -> ModItems.CAPACITOR_STACK.get();
+        };
     }
 
     private static void upgradeFabricator(ServerPlayer player, ServerLevel level, BlockPos pos, int tier) {
@@ -246,7 +325,8 @@ public final class StationService {
             player.sendSystemMessage(Component.translatable("message.titanbreak.slot_incompatible"));
             return;
         }
-        TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
+        TitanPlayerData data = TitanPlayerData.get(((ServerLevel) player.level()).getServer());
+        TitanPlayerData.State state = data.state(player);
         for (AugmentationCatalog.Slot slot : placement.slots()) {
             if (state.installed(slot) != null) {
                 player.sendSystemMessage(Component.translatable("message.titanbreak.slot_occupied"));
@@ -254,7 +334,8 @@ public final class StationService {
             }
         }
         Item module = ModItems.augmentationByPath(definition.itemId());
-        if (module == null || count(player, module) < 1) {
+        boolean availableInVault = state.vaultView().stream().anyMatch(instance -> instance.id().equals(definition.id()));
+        if (module == null || (!availableInVault && count(player, module) < 1)) {
             player.sendSystemMessage(Component.translatable("message.titanbreak.module_missing"));
             return;
         }
@@ -310,24 +391,40 @@ public final class StationService {
         if (process.install()) {
             AugmentationCatalog.Definition definition = AugmentationCatalog.byId(process.augmentId());
             Item module = definition == null ? null : ModItems.augmentationByPath(definition.itemId());
-            if (definition == null || module == null || count(player, module) < 1
-                    || !data.install(player, process.slot(), process.augmentId())) {
-                SURGERIES.remove(player.getUUID());
-                player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_cancelled"));
-                TitanbreakNetwork.sync(player);
+            if (definition == null || module == null) {
+                cancel(player);
                 return;
             }
-            consume(player, module, 1);
+
+            TitanPlayerData.AugmentInstance instance = data.takeVault(player, process.augmentId());
+            boolean fromVault = instance != null;
+            if (instance == null) {
+                if (count(player, module) < 1) {
+                    cancel(player);
+                    return;
+                }
+                instance = TitanPlayerData.AugmentInstance.fresh(process.augmentId());
+            }
+            if (!data.installInstance(player, process.slot(), instance)) {
+                if (fromVault) data.storeVault(player, instance);
+                cancel(player);
+                return;
+            }
+            if (!fromVault) consume(player, module, 1);
             player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_install_complete",
-                    Component.translatable(definition.nameKey())));
+                    Component.translatable(definition.nameKey()), instance.mk(), instance.enhancement()));
         } else {
-            String removed = data.remove(player, process.slot());
-            AugmentationCatalog.Definition definition = AugmentationCatalog.byId(removed);
-            Item module = definition == null ? null : ModItems.augmentationByPath(definition.itemId());
-            if (module != null) give(player, new ItemStack(module));
+            TitanPlayerData.AugmentInstance removed = data.removeInstance(player, process.slot());
+            if (removed != null) data.storeVault(player, removed);
             player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_remove_complete"));
         }
         SURGERIES.remove(player.getUUID());
+        TitanbreakNetwork.sync(player);
+    }
+
+    private static void cancel(ServerPlayer player) {
+        SURGERIES.remove(player.getUUID());
+        player.sendSystemMessage(Component.translatable("message.titanbreak.surgery_cancelled"));
         TitanbreakNetwork.sync(player);
     }
 
@@ -347,6 +444,7 @@ public final class StationService {
         var direction = hit.getLocation().subtract(player.position()).normalize();
         player.setDeltaMovement(direction.scale(1.55D).add(0.0D, 0.18D, 0.0D));
         player.hurtMarked = true;
+        TitanPlayerData.get(((ServerLevel) player.level()).getServer()).addMasteryXp(player, "wire_hook_arm", 2);
     }
 
     private static boolean hasAll(ServerPlayer player, Requirement[] requirements) {
