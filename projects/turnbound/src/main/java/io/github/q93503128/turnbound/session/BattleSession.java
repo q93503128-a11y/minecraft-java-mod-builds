@@ -140,7 +140,7 @@ public final class BattleSession {
             } else {
                 engine.useSkill(actorId, skillId, targetId);
             }
-            animateDirectDamage(level, actor, skill, targetId);
+            animateSkill(level, actor, skill, targetId);
             syncPresentation(level);
             readyShown = false;
             delayTicks = presentationDelay();
@@ -216,14 +216,14 @@ public final class BattleSession {
                 int comma = targetId.indexOf(',');
                 if (comma >= 0) targetId = targetId.substring(0, comma);
             }
-            animateDirectDamage(level, actor, skill, targetId);
+            animateSkill(level, actor, skill, targetId);
             return;
         }
     }
 
-    private void animateDirectDamage(ServerLevel level, CombatantState actor, SkillDefinition skill, String targetId) {
+    private void animateSkill(ServerLevel level, CombatantState actor, SkillDefinition skill, String targetId) {
         boolean damages = skill.effects().stream().anyMatch(effect -> effect.type() == EffectType.DAMAGE);
-        if (damages && targetId != null && !targetId.isBlank()) presentation.lunge(level, actor.instanceId(), targetId);
+        presentation.performSkill(level, actor.instanceId(), targetId, damages);
     }
 
     private void safeBasicFallback(CombatantState actor) {
