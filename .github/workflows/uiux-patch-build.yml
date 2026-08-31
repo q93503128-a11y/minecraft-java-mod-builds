@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -29,15 +29,27 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
           path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           text = path.read_text(encoding='utf-8')
-          pattern = re.compile(
-              r'    private static boolean isSafeAboveGround\(BlockState state\) \{\n.*?\n    \}',
-              re.DOTALL,
-          )
-          replacement = '''    private static boolean isSafeAboveGround(BlockState state) {
+
+          old_clearance = '''            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;'''
+          new_clearance = '''            if (isSoftVegetation(state)) continue;'''
+          if old_clearance not in text:
+              raise SystemExit('grade clearance target not found')
+          text = text.replace(old_clearance, new_clearance, 1)
+
+          old_method = '''    private static boolean isSafeAboveGround(BlockState state, int relativeY) {
+              if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) return true;
+              return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
+          }
+'''
+          new_method = '''    private static boolean isSafeAboveGround(BlockState state, int relativeY) {
+              if (isSoftVegetation(state)) return true;
+              return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
+          }
+
+          private static boolean isSoftVegetation(BlockState state) {
               if (state.isAir()) return true;
               if (!state.getFluidState().isEmpty()) return false;
               return state.canBeReplaced()
@@ -45,11 +57,12 @@ jobs:
                       || state.is(BlockTags.REPLACEABLE_BY_TREES)
                       || state.getBlock() instanceof net.minecraft.world.level.block.BushBlock
                       || state.getBlock() instanceof net.minecraft.world.level.block.SnowLayerBlock;
-          }'''
-          patched, count = pattern.subn(replacement, text, count=1)
-          if count != 1:
-              raise SystemExit(f'isSafeAboveGround patch target count={count}')
-          path.write_text(patched, encoding='utf-8')
+          }
+'''
+          if old_method not in text:
+              raise SystemExit('site clearance method target not found')
+          text = text.replace(old_method, new_method, 1)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Commit construction placement fix
