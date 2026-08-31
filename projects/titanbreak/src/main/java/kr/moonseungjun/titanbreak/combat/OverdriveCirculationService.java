@@ -76,13 +76,14 @@ public final class OverdriveCirculationService {
 
         long now = player.level().getGameTime();
         if (now >= runtime.activeUntil) {
+            runtime.activeUntil = Long.MIN_VALUE / 4L;
             clearModifiers(player);
             return;
         }
 
         double powerPerTick = runtime.enhancement >= 10 ? 0.30D : 0.22D;
         if (!AugmentationResourceService.trySpendBurstPower(player, state, powerPerTick) || state.heat() >= 98.0D) {
-            runtime.activeUntil = now;
+            runtime.activeUntil = Long.MIN_VALUE / 4L;
             clearModifiers(player);
             return;
         }
