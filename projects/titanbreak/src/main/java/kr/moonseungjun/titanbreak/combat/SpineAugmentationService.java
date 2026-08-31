@@ -22,7 +22,7 @@ public final class SpineAugmentationService {
 
     private static final class RuntimeState {
         Vec3 lastPosition;
-        float lastFallDistance;
+        double lastFallDistance;
         double kineticEnergy;
         double lastSpentEnergy;
         long lastSpentTick = Long.MIN_VALUE / 4L;
@@ -84,8 +84,8 @@ public final class SpineAugmentationService {
         if (horizontalTravel > 0.48D) {
             gain += (horizontalTravel - 0.48D) * 5.0D;
         }
-        float fallDelta = player.fallDistance - runtime.lastFallDistance;
-        if (fallDelta > 0.15F) gain += fallDelta * 1.75D;
+        double fallDelta = player.fallDistance - runtime.lastFallDistance;
+        if (fallDelta > 0.15D) gain += fallDelta * 1.75D;
 
         if (gain > 0.0D) {
             runtime.kineticEnergy = Math.min(kineticCapacity(relay), runtime.kineticEnergy + gain);
