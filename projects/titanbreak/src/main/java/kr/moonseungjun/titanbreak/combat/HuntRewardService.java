@@ -94,6 +94,13 @@ public final class HuntRewardService {
 
         TitanPlayerData data = TitanPlayerData.get(level.getServer());
         int levels = data.addAdaptationXp(player, adaptationXp);
+        int masteryReward = switch (huntClass) {
+            case NORMAL -> 6;
+            case ELITE -> 18;
+            case BOSS -> 60;
+        };
+        data.addMasteryXpToInstalled(player, masteryReward);
+
         if (levels > 0) {
             TitanPlayerData.State state = data.state(player);
             player.sendSystemMessage(Component.translatable("message.titanbreak.adaptation_level",
@@ -135,9 +142,5 @@ public final class HuntRewardService {
         level.addFreshEntity(drop);
     }
 
-    private enum HuntClass {
-        NORMAL,
-        ELITE,
-        BOSS
-    }
+    private enum HuntClass { NORMAL, ELITE, BOSS }
 }
