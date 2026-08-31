@@ -21,8 +21,8 @@ class Chapter5ProgressionTest {
     @Test
     void relayFragmentsRecordsSerakAndConsoleCompleteMainStory(){
         reachAfterKolvak();
-        assertEquals(Set.of(RelayFragmentBridgeService.MEADOW,RelayFragmentBridgeService.AQUEDUCT,RelayFragmentBridgeService.QUARRY),RelayFragmentBridgeService.available(playerId));
-        assertEquals(3,RelayFragmentBridgeService.submitAvailable(playerId));
+        assertEquals(Set.of(RelayFragmentBridgeService.MEADOW,RelayFragmentBridgeService.AQUEDUCT,RelayFragmentBridgeService.QUARRY),RelayFragmentBridgeService.availableForId(playerId));
+        assertEquals(3,RelayFragmentBridgeService.submitAvailableForId(playerId));
         assertTrue(CampaignProgressStore.quests(playerId).completed().contains("MQ_C05_01_relay_key"));
         assertTrue(CampaignProgressStore.quests(playerId).unlockFlags().contains("OLD_RELAY_ENTRANCE"));
 
