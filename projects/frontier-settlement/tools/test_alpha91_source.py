@@ -20,6 +20,7 @@ entity = text(JAVA / "content/FrontierWorkerEntity.java")
 blueprints = text(JAVA / "settlement/BuildingBlueprints.java")
 service = text(JAVA / "settlement/SettlementService.java")
 core = text(JAVA / "settlement/SettlementCoreService.java")
+content = text(JAVA / "content/FrontierContent.java")
 
 must(props, ("mod_version=0.1.0-alpha.91", "Alpha.91 navigation/storage hardening"), "alpha91 props")
 if lock["target"]["frontier_settlement"] != "0.1.0-alpha.91": raise SystemExit("alpha91 lock target")
@@ -32,13 +33,25 @@ must(worker, (
     "resourceRouteMargin(type)", "findTreeForWorker", "findQuarryTargetForWorker"
 ), "worker hardening")
 must(storage, (
-    "PUBLIC_STOCKPILE_TARGET_BARRELS = 4", "publicStockpilePositions", "worksiteStoragePosition",
-    "ensureManagedStorage", "generalStoragePositions", "positions.addAll(worksiteStoragePositions(data))"
-), "storage hardening")
+    "LEGACY_PUBLIC_STOCKPILE_OFFSETS", "return List.of(data.stockpilePos())", "worksiteStoragePosition",
+    "ensureManagedStorage", "generalStoragePositions", "positions.addAll(worksiteStoragePositions(data))",
+    "replaceBarrelWithSupplyDepot", "preserved.add(oldContainer.getItem(slot).copy())",
+    "SupplyDepotRegistryService.tryRegister(level, pos)"
+), "shared storage hardening")
+must(service, (
+    "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
+    "SupplyDepotRegistryService.tryRegister(level, stockpile)",
+    "SettlementStorageService.ensureManagedStorage(server.overworld(), data)",
+    "SettlementStorageService.ensureManagedStorage(level, data)"
+), "starter shared depot")
+must(core, (
+    "SettlementStorageService.isManagedStoragePosition(data, pos)",
+    "current.is(FrontierContent.SUPPLY_DEPOT.get())"
+), "managed storage protection")
+must(content, ("SUPPLY_DEPOT_ITEM", "BuildCreativeModeTabContentsEvent"), "shared depot visibility")
 must(entity, ("PathType.WATER", "setPathfindingMalus(PathType.WATER, -1.0F)"), "water avoidance")
 must(blueprints, ("b.put(5, 1, 6, Blocks.BARREL.defaultBlockState(), Phase.FINISH);",), "lumber barrel")
-must(service, ("SettlementStorageService.ensureManagedStorage(server.overworld(), data)", "SettlementStorageService.ensureManagedStorage(level, data)"), "storage maintenance")
-must(core, ("SettlementStorageService.isManagedStoragePosition(data, pos)",), "managed storage protection")
+forbid(storage, ("PUBLIC_STOCKPILE_TARGET_BARRELS",), "superseded public barrel cluster")
 forbid(worker, ("farm.origin().offset(x, 1, z)",), "rotated farm bug")
 forbid(worker, ("getNavigation().moveTo(\n                    approach.getX() + 0.5D",), "coordinate-only partial path")
 print("Alpha.91 source audit: PASS")
