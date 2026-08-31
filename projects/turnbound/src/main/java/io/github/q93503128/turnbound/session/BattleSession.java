@@ -111,6 +111,7 @@ public final class BattleSession {
                 ? engine.nextReady() : engine.state().combatant(engine.state().currentActorId());
         if (!readyShown) {
             readyShown = true;
+            presentation.turnReady(level, actor.instanceId());
             delayTicks = presentationDelay();
             BattleNetwork.sync(player, this);
             return;
@@ -202,7 +203,9 @@ public final class BattleSession {
 
     private void syncPresentation(ServerLevel level) {
         presentation.spawnMissing(level, presentationCenter, battleYaw, engine.state().combatants());
+        presentation.syncStates(level, engine.state().combatants());
         presentation.syncDanger(level, engine.state().combatants());
+        presentation.finish(level, engine.state().outcome());
     }
 
     private void animateRecordedAction(ServerLevel level, CombatantState actor, int eventStart) {
@@ -223,7 +226,7 @@ public final class BattleSession {
 
     private void animateSkill(ServerLevel level, CombatantState actor, SkillDefinition skill, String targetId) {
         boolean damages = skill.effects().stream().anyMatch(effect -> effect.type() == EffectType.DAMAGE);
-        presentation.performSkill(level, actor.instanceId(), targetId, damages);
+        presentation.performSkill(level, actor.instanceId(), actor.definition().id(), skill.id(), targetId, damages);
     }
 
     private void safeBasicFallback(CombatantState actor) {
