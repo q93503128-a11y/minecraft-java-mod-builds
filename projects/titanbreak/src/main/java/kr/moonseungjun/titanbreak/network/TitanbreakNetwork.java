@@ -4,6 +4,7 @@ import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
 import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
+import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.station.StationService;
@@ -18,7 +19,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha24";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha25";
 
     private TitanbreakNetwork() {}
 
@@ -45,6 +46,7 @@ public final class TitanbreakNetwork {
                 case AugmentAbilityPayload.PHASE_STEP -> AugmentAbilityService.usePhaseStep(player);
                 case AugmentAbilityPayload.ARM_RIGHT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
                 case AugmentAbilityPayload.ARM_LEFT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
+                case AugmentAbilityPayload.LEG_JUMP -> LegAugmentationService.useMobilityJump(player);
                 default -> { }
             }
         });

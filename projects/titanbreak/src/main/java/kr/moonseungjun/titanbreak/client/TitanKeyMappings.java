@@ -63,6 +63,13 @@ public final class TitanKeyMappings {
                     : AugmentAbilityPayload.HOOK;
             ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(ability));
         }
+
+        if (mc.options.keyJump.matches(event.getKeyEvent())
+                && (TitanClientState.hasInstalled("reinforced_legs")
+                || TitanClientState.hasInstalled("jump_booster_legs")
+                || TitanClientState.hasInstalled("propulsion_legs"))) {
+            ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(AugmentAbilityPayload.LEG_JUMP));
+        }
     }
 
     public static void onInteractionInput(InputEvent.InteractionKeyMappingTriggered event) {
