@@ -36,7 +36,10 @@ must(storage, (
     "LEGACY_PUBLIC_STOCKPILE_OFFSETS", "return List.of(data.stockpilePos())", "worksiteStoragePosition",
     "ensureManagedStorage", "generalStoragePositions", "positions.addAll(worksiteStoragePositions(data))",
     "replaceBarrelWithSupplyDepot", "preserved.add(oldContainer.getItem(slot).copy())",
-    "SupplyDepotRegistryService.tryRegister(level, pos)"
+    "SupplyDepotRegistryService.tryRegister(level, pos)",
+    "boolean legacyPublicStorage = level.hasChunkAt(stockpile)",
+    "if (legacyPublicStorage) upgradeLegacyPublicBarrels(level, data);",
+    "ensureStarterSupplyDepot(level, stockpile);"
 ), "shared storage hardening")
 must(service, (
     "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
