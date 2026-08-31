@@ -91,16 +91,18 @@ public final class FieldPanelScreen extends Screen {
 
     private void drawQuest(GuiGraphicsExtractor graphics, Rect p, FieldUiSnapshot s) {
         int x = p.x() + 10, y = p.y() + 9;
-        graphics.text(font, Component.literal("남문 정찰관"), x, y, GOLD, true);
-        String chapter = "CH.1";
-        graphics.text(font, Component.literal(chapter), p.right() - 10 - font.width(chapter), y, SECONDARY, true);
+        graphics.text(font, Component.literal("작전 정보"), x, y, GOLD, true);
+        String progress = s.patrolGoal() > 0 ? s.patrolsCleared() + "/" + s.patrolGoal() : "FIELD";
+        graphics.text(font, Component.literal(progress), p.right() - 10 - font.width(progress), y, SECONDARY, true);
         y += 16;
+
         TurnboundFrameStyle.inset(graphics, x, y, p.width() - 20, 31);
         List<String> dialogue = wrap(s.dialogue(), p.width() - 32);
         for (int i = 0; i < Math.min(2, dialogue.size()); i++) {
             graphics.text(font, Component.literal(dialogue.get(i)), x + 6, y + 5 + i * 10, TEXT, true);
         }
         y += 38;
+
         graphics.text(font, Component.literal("목표"), x, y, GOLD, true);
         y += 11;
         List<String> objective = wrap(s.objective(), p.width() - 20);
@@ -108,17 +110,36 @@ public final class FieldPanelScreen extends Screen {
             graphics.text(font, Component.literal(objective.get(i)), x, y, TEXT, true);
             y += 10;
         }
-        y += 3;
+        y += 4;
+
+        List<FieldUiSnapshot.Encounter> intel = prioritizedEncounters(s.encounters());
         int shown = 0;
-        for (FieldUiSnapshot.Encounter e : s.encounters()) {
-            if (y + 10 > p.bottom() - 34 || shown >= 2) break;
+        for (FieldUiSnapshot.Encounter e : intel) {
+            if (shown >= 2 || y + 29 > p.bottom() - 36) break;
             String mark = e.cleared() ? "✓" : !e.unlocked() ? "·" : e.boss() ? "◆" : "○";
             int color = e.cleared() ? GREEN : !e.unlocked() ? MUTED : e.boss() ? DANGER : SECONDARY;
-            graphics.text(font, Component.literal(mark + " " + e.label()), x, y, color, true);
-            y += 10; shown++;
+            String title = mark + " " + e.label() + "  Lv." + e.level() + " " + e.category();
+            graphics.text(font, Component.literal(fit(title, p.width() - 20)), x, y, color, true);
+            y += 10;
+            String enemy = e.composition() + " · " + e.partySize() + "체 · 권장 CP " + e.recommendedCp();
+            graphics.text(font, Component.literal(fit(enemy, p.width() - 20)), x + 7, y, e.unlocked() ? TEXT : MUTED, true);
+            y += 10;
+            String reward = "보상 XP " + e.rewardXp() + " · Gold " + e.rewardGold();
+            graphics.text(font, Component.literal(reward), x + 7, y, e.unlocked() ? GOLD : MUTED, true);
+            y += 13;
+            shown++;
         }
+
         TurnboundFrameStyle.divider(graphics, x, p.bottom() - 33, p.width() - 20);
         graphics.text(font, Component.literal("누적 XP " + s.earnedXp() + " · Gold " + s.earnedGold()), x, p.bottom() - 27, SECONDARY, true);
+    }
+
+    private static List<FieldUiSnapshot.Encounter> prioritizedEncounters(List<FieldUiSnapshot.Encounter> source) {
+        List<FieldUiSnapshot.Encounter> result = new ArrayList<>();
+        for (FieldUiSnapshot.Encounter e : source) if (e.unlocked() && !e.cleared()) result.add(e);
+        for (FieldUiSnapshot.Encounter e : source) if (!result.contains(e) && !e.cleared()) result.add(e);
+        for (FieldUiSnapshot.Encounter e : source) if (!result.contains(e)) result.add(e);
+        return result;
     }
 
     private void drawResult(GuiGraphicsExtractor graphics, Rect p, FieldUiSnapshot s) {
@@ -154,9 +175,17 @@ public final class FieldPanelScreen extends Screen {
         return lines;
     }
 
+    private String fit(String text, int maxWidth) {
+        if (text == null || font.width(text) <= maxWidth) return text == null ? "" : text;
+        String suffix = "…";
+        StringBuilder out = new StringBuilder(text);
+        while (!out.isEmpty() && font.width(out.toString() + suffix) > maxWidth) out.deleteCharAt(out.length() - 1);
+        return out + suffix;
+    }
+
     private Rect panel(FieldUiSnapshot.Mode mode) {
-        int desiredW = mode == FieldUiSnapshot.Mode.TRAVEL ? 248 : mode == FieldUiSnapshot.Mode.RESULT ? 250 : 258;
-        int desiredH = mode == FieldUiSnapshot.Mode.TRAVEL ? 176 : mode == FieldUiSnapshot.Mode.RESULT ? 132 : 184;
+        int desiredW = mode == FieldUiSnapshot.Mode.TRAVEL ? 248 : mode == FieldUiSnapshot.Mode.RESULT ? 250 : 292;
+        int desiredH = mode == FieldUiSnapshot.Mode.TRAVEL ? 176 : mode == FieldUiSnapshot.Mode.RESULT ? 132 : 226;
         int w = Math.max(190, Math.min(desiredW, width - 20));
         int h = Math.max(120, Math.min(desiredH, height - 20));
         int x = Math.max(10, width - w - 12);
