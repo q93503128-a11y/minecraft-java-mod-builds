@@ -101,6 +101,9 @@ public final class RewardGrantService {
             BattleResultSummary reward = EndgameEncounterCatalog.contains(encounterId)
                     ? EndgameProgressService.commit(playerId, encounterId, outcome)
                     : CampaignProgressStore.commit(playerId, encounterId, outcome);
+            if (!EndgameEncounterCatalog.contains(encounterId)) {
+                CampaignSupplementalRewardService.apply(playerId, encounterId, reward);
+            }
             List<String> challenges = ChallengeService.evaluateAndCommit(playerId, encounterId, state, outcome);
             markCommitted(playerId, transactionId);
             CampaignProgressStore.Snapshot after = CampaignProgressStore.snapshot(playerId);
