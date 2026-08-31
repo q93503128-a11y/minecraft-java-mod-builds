@@ -35,6 +35,15 @@ public final class SettlementStorageService {
         return new ArrayList<>(positions);
     }
 
+    /** Shared depots are opt-in physical storage. Only currently loaded depots join the authoritative
+     * town ledger, so an unloaded optional depot never blocks ordinary settlement costs. */
+    private static List<BlockPos> activeStoragePositions(ServerLevel level, SettlementData data) {
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        positions.addAll(SupplyDepotRegistryService.loadedPositions(level, data));
+        positions.addAll(storagePositions(data));
+        return new ArrayList<>(positions);
+    }
+
     /**
      * Public storage remains ordinary vanilla barrels. The first barrel is the persisted founding
      * stockpile; up to three safe neighboring cells are maintained as physical capacity annexes.
@@ -154,7 +163,7 @@ public final class SettlementStorageService {
     }
 
     public static SettlementResources scan(ServerLevel level, SettlementData data) {
-        List<BlockPos> positions = storagePositions(data);
+        List<BlockPos> positions = activeStoragePositions(level, data);
         // Never overwrite the confirmed ledger with a partial scan while players are exploring far
         // from the town. Costs are likewise blocked until all physical town storage is loaded.
         if (!allStorageChunksLoaded(level, positions)) return data.resources();
@@ -177,11 +186,11 @@ public final class SettlementStorageService {
     }
 
     public static boolean storageAvailable(ServerLevel level, SettlementData data) {
-        return allStorageChunksLoaded(level, storagePositions(data));
+        return allStorageChunksLoaded(level, activeStoragePositions(level, data));
     }
 
     public static boolean consume(ServerLevel level, SettlementData data, long wood, long stone, long food) {
-        List<BlockPos> positions = storagePositions(data);
+        List<BlockPos> positions = activeStoragePositions(level, data);
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.wood() < wood || resources.stone() < stone || resources.food() < food) return false;
@@ -193,7 +202,7 @@ public final class SettlementStorageService {
 
     public static boolean consumeMetal(ServerLevel level, SettlementData data, long amount) {
         if (amount <= 0L) return true;
-        List<BlockPos> positions = storagePositions(data);
+        List<BlockPos> positions = activeStoragePositions(level, data);
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.metal() < amount) return false;
@@ -204,7 +213,7 @@ public final class SettlementStorageService {
     /** Atomic physical recruitment cost: never eat food first and then fail on missing metal. */
     public static boolean consumeMetalAndFood(ServerLevel level, SettlementData data, long metal, long food) {
         if (metal < 0L || food < 0L) return false;
-        List<BlockPos> positions = storagePositions(data);
+        List<BlockPos> positions = activeStoragePositions(level, data);
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.metal() < metal || resources.food() < food) return false;
@@ -216,14 +225,14 @@ public final class SettlementStorageService {
     public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
         ItemStack remaining = stack.copy();
-        for (BlockPos pos : depositPositions(data, stack)) {
+        for (BlockPos pos : depositPositions(level, data, stack)) {
             if (remaining.isEmpty()) break;
             remaining = insertAt(level, pos, remaining);
         }
         return remaining;
     }
 
-    private static List<BlockPos> depositPositions(SettlementData data, ItemStack stack) {
+    private static List<BlockPos> depositPositions(ServerLevel level, SettlementData data, ItemStack stack) {
         // Generic delivery never steals another profession's local barrel. Local production workers
         // explicitly target their own worksite barrel first; shared overflow uses only public/warehouse/
         // cart storage (plus construction-office material bays for wood/stone).
@@ -231,6 +240,7 @@ public final class SettlementStorageService {
         if (SettlementInventory.isWood(stack) || SettlementInventory.isStone(stack)) {
             positions.addAll(constructionOfficeSupplyPositions(data));
         }
+        positions.addAll(SupplyDepotRegistryService.loadedPositions(level, data));
         positions.addAll(generalStoragePositions(data));
         return new ArrayList<>(positions);
     }
@@ -243,7 +253,7 @@ public final class SettlementStorageService {
     }
 
     public static BlockPos findDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
-        for (BlockPos pos : depositPositions(data, stack)) {
+        for (BlockPos pos : depositPositions(level, data, stack)) {
             if (!level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             if (hasRoom(container, stack)) return pos;
@@ -267,7 +277,7 @@ public final class SettlementStorageService {
 
     public static BlockPos findExtractionTargetExcluding(ServerLevel level, SettlementData data,
                                                          Predicate<ItemStack> predicate, Set<BlockPos> excluded) {
-        for (BlockPos pos : storagePositions(data)) {
+        for (BlockPos pos : activeStoragePositions(level, data)) {
             if (excluded.contains(pos) || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             for (int slot = 0; slot < container.getContainerSize(); slot++) {

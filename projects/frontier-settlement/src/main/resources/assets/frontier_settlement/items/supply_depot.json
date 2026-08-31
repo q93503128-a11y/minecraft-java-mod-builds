@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "frontier_settlement:block/supply_depot"
+  }
+}

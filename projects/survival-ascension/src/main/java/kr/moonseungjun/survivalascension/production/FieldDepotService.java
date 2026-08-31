@@ -1,5 +1,6 @@
 package kr.moonseungjun.survivalascension.production;
 
+import kr.moonseungjun.survivalascension.compat.SharedEconomyCompat;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
 import net.minecraft.core.BlockPos;
@@ -348,7 +349,7 @@ public final class FieldDepotService {
             // Registered logistics is a same-dimension network. Distance is not a gameplay tax;
             // unloaded chunks are still skipped so this never force-loads the world.
             if (!level.hasChunkAt(anchor)) continue;
-            if (!level.getBlockState(anchor).is(Blocks.BARREL)) {
+            if (!SharedEconomyCompat.isLogisticsContainerBlock(level.getBlockState(anchor))) {
                 data.remove(player, depot);
                 OutpostService.onDepotRemoved(player, depot.dimension(), anchor);
                 continue;
@@ -365,7 +366,7 @@ public final class FieldDepotService {
             for (FieldDepotData.LinkedBarrel link : new ArrayList<>(data.linkedBarrels(player, depot))) {
                 BlockPos pos = link.pos();
                 if (!level.hasChunkAt(pos)) continue;
-                if (!level.getBlockState(pos).is(Blocks.BARREL)) {
+                if (!SharedEconomyCompat.isLogisticsContainerBlock(level.getBlockState(pos))) {
                     data.removeLink(player, dimension, pos);
                     continue;
                 }
@@ -378,8 +379,32 @@ public final class FieldDepotService {
                 }
             }
         }
+        appendNearbySharedSupplyDepots(player, level, resolved);
         resolved.sort(Comparator.comparingDouble(value -> value.pos().distSqr(player.blockPosition())));
         return resolved.stream().map(ResolvedContainer::container).toList();
+    }
+
+    private static void appendNearbySharedSupplyDepots(ServerPlayer player, ServerLevel level, List<ResolvedContainer> resolved) {
+        final int horizontalRadius = 24;
+        final int verticalRadius = 8;
+        java.util.Set<BlockPos> seen = new java.util.HashSet<>();
+        for (ResolvedContainer value : resolved) seen.add(value.pos());
+        BlockPos origin = player.blockPosition();
+        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {
+            for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {
+                if (dx * dx + dz * dz > horizontalRadius * horizontalRadius) continue;
+                for (int dy = -verticalRadius; dy <= verticalRadius; dy++) {
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (seen.contains(pos) || !level.hasChunkAt(pos)) continue;
+                    if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;
+                    if (!level.mayInteract(player, pos)) continue;
+                    if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+                    BlockPos immutable = pos.immutable();
+                    seen.add(immutable);
+                    resolved.add(new ResolvedContainer(immutable, container));
+                }
+            }
+        }
     }
 
     private static boolean isUsableAnchor(ServerPlayer player, FieldDepotData.DepotEntry depot) {
@@ -388,7 +413,7 @@ public final class FieldDepotService {
         BlockPos pos = depot.pos();
         // Same-dimension loaded depots are usable at any distance; no chunk tickets are created.
         if (!level.hasChunkAt(pos)) return false;
-        if (!level.getBlockState(pos).is(Blocks.BARREL)) {
+        if (!SharedEconomyCompat.isLogisticsContainerBlock(level.getBlockState(pos))) {
             FieldDepotData.get(player).remove(player, depot);
             OutpostService.onDepotRemoved(player, depot.dimension(), pos);
             return false;
@@ -415,7 +440,7 @@ public final class FieldDepotService {
 
     private static boolean isPhysicalAnchor(ServerPlayer player, ServerLevel level, BlockPos pos) {
         if (!level.hasChunkAt(pos)) return false;
-        if (!level.getBlockState(pos).is(Blocks.BARREL)) return false;
+        if (!SharedEconomyCompat.isLogisticsContainerBlock(level.getBlockState(pos))) return false;
         if (!level.mayInteract(player, pos)) return false;
         return level.getBlockEntity(pos) instanceof Container;
     }
@@ -427,7 +452,7 @@ public final class FieldDepotService {
             for (int dy = -REGISTER_RADIUS; dy <= REGISTER_RADIUS; dy++) {
                 for (int dz = -REGISTER_RADIUS; dz <= REGISTER_RADIUS; dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);
-                    if (!level.hasChunkAt(pos) || !level.getBlockState(pos).is(Blocks.BARREL)) continue;
+                    if (!level.hasChunkAt(pos) || !SharedEconomyCompat.isLogisticsContainerBlock(level.getBlockState(pos))) continue;
                     double distance = pos.distSqr(origin);
                     if (distance > REGISTER_RADIUS * REGISTER_RADIUS || distance >= bestDistance) continue;
                     BlockEntity blockEntity = level.getBlockEntity(pos);

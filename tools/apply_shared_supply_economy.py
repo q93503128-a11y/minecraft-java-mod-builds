@@ -39,6 +39,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -60,7 +61,7 @@ public final class FrontierContent {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SupplyDepotBlockEntity>> SUPPLY_DEPOT_BLOCK_ENTITY =
             BLOCK_ENTITIES.register("supply_depot",
-                    () -> BlockEntityType.Builder.of(SupplyDepotBlockEntity::new, SUPPLY_DEPOT.get()).build(null));
+                    () -> new BlockEntityType<>(SupplyDepotBlockEntity::new, false, SUPPLY_DEPOT.get()));
 
     public static final DeferredItem<PioneerMarkerItem> PIONEER_MARKER = ITEMS.registerItem(
             "pioneer_marker",
@@ -106,8 +107,8 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProblemReporter;
-import net.minecraft.util.ValueInput;
-import net.minecraft.util.ValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;

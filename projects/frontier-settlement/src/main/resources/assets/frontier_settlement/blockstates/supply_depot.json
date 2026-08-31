@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "frontier_settlement:block/supply_depot" }
+  }
+}

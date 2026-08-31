@@ -9,5 +9,7 @@
   "key.frontier_settlement.road_reset": "Reset Current Placement Start",
   "key.frontier_settlement.outpost_mode": "Toggle Outpost Placement Mode",
   "key.frontier_settlement.outpost_confirm": "Confirm Outpost Construction",
-  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier settlement status"
+  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier settlement status",
+  "block.frontier_settlement.supply_depot": "Shared Supply Depot",
+  "container.frontier_settlement.supply_depot": "Shared Supply Depot"
 }

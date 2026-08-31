@@ -1,0 +1,14 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "wood": "minecraft:block/dark_oak_planks",
+    "metal": "minecraft:block/exposed_copper",
+    "particle": "minecraft:block/dark_oak_planks"
+  },
+  "elements": [
+    {"from":[1,0,1],"to":[15,15,15],"faces":{"down":{"texture":"#wood"},"up":{"texture":"#wood"},"north":{"texture":"#wood"},"south":{"texture":"#wood"},"west":{"texture":"#wood"},"east":{"texture":"#wood"}}},
+    {"from":[0,1,0],"to":[16,3,16],"faces":{"down":{"texture":"#metal"},"up":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[0,12,0],"to":[16,14,16],"faces":{"down":{"texture":"#metal"},"up":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[6.5,3,0],"to":[9.5,12,1],"faces":{"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"},"up":{"texture":"#metal"},"down":{"texture":"#metal"}}}
+  ]
+}

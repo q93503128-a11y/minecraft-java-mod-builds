@@ -5,5 +5,7 @@
   "key.frontier_settlement.rotate_building": "배치 중 건물 90도 회전",
   "key.frontier_settlement.confirm_building": "배치 중 현재 계획 확정",
   "key.frontier_settlement.road_reset": "배치 중 시작점 다시 선택",
-  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier 정착지 상태"
+  "config.jade.plugin_frontier_settlement.settlement_status": "Frontier 정착지 상태",
+  "block.frontier_settlement.supply_depot": "공용 보급고",
+  "container.frontier_settlement.supply_depot": "공용 보급고"
 }
