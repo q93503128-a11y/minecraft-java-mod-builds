@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha23";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha24";
 
     private TitanbreakNetwork() {}
 

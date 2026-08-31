@@ -6,14 +6,13 @@ import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,29 +32,59 @@ public final class AugmentAbilityService {
     private static final Map<UUID, ShieldState> SHIELDS = new ConcurrentHashMap<>();
 
     private record RayTarget(Entity entity, double distance) {}
-    private record ShieldState(long endTick, float baselineAbsorption) {}
+    private record ShieldState(long endTick, float energy, int enhancement, long activatedTick) {}
 
     private AugmentAbilityService() {}
-
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
-        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
-        AugmentationCatalog.Slot slot = event.getHand() == InteractionHand.MAIN_HAND
-                ? AugmentationCatalog.Slot.RIGHT_ARM_MAIN : AugmentationCatalog.Slot.LEFT_ARM_MAIN;
-        TitanPlayerData.AugmentInstance instance = state.installedInstanceView().get(slot);
-        if (instance == null || !REPLACEMENT_ARMS.contains(instance.id())) return;
-
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        useArm(player, slot);
-    }
 
     public static void tick(ServerPlayer player) {
         ShieldState shield = SHIELDS.get(player.getUUID());
         if (shield == null || !(player.level() instanceof ServerLevel level)) return;
-        if (level.getGameTime() < shield.endTick()) return;
-        player.setAbsorptionAmount(Math.min(player.getAbsorptionAmount(), shield.baselineAbsorption()));
-        SHIELDS.remove(player.getUUID());
+        if (level.getGameTime() >= shield.endTick()) SHIELDS.remove(player.getUUID());
+    }
+
+    public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
+        ShieldState shield = SHIELDS.get(player.getUUID());
+        if (shield == null) return;
+
+        long now = level.getGameTime();
+        if (now >= shield.endTick()) {
+            SHIELDS.remove(player.getUUID());
+            return;
+        }
+        Vec3 sourcePos = event.getSource().getSourcePosition();
+        Entity sourceEntity = event.getSource().getEntity();
+        if (sourcePos == null && sourceEntity != null) sourcePos = sourceEntity.position();
+        if (sourcePos == null || !shieldCovers(player, shield, sourcePos, now)) return;
+
+        float incoming = event.getAmount();
+        if (incoming <= 0.0F) return;
+
+        Entity direct = event.getSource().getDirectEntity();
+        boolean parryWindow = shield.enhancement() >= 7 && now - shield.activatedTick() <= 6L;
+        if (parryWindow && direct instanceof Projectile projectile && projectile.getOwner() != player) {
+            Vec3 velocity = projectile.getDeltaMovement();
+            if (velocity.lengthSqr() > 1.0E-6D) projectile.setDeltaMovement(velocity.scale(-1.20D));
+            projectile.setOwner(player);
+            projectile.hurtMarked = true;
+            float remainingEnergy = Math.max(0.0F, shield.energy() - incoming * 0.25F);
+            event.getContainer().setNewDamage(0.0F);
+            event.getContainer().setShouldCauseSideEffects(false);
+            if (remainingEnergy <= 1.0E-4F) SHIELDS.remove(player.getUUID());
+            else SHIELDS.put(player.getUUID(), new ShieldState(
+                    shield.endTick(), remainingEnergy, shield.enhancement(), shield.activatedTick()));
+            return;
+        }
+
+        float blocked = Math.min(incoming, shield.energy());
+        float remaining = Math.max(0.0F, incoming - blocked);
+        event.getContainer().setNewDamage(remaining);
+        if (remaining <= 1.0E-4F) event.getContainer().setShouldCauseSideEffects(false);
+
+        float remainingEnergy = shield.energy() - blocked;
+        if (remainingEnergy <= 1.0E-4F) SHIELDS.remove(player.getUUID());
+        else SHIELDS.put(player.getUUID(), new ShieldState(
+                shield.endTick(), remainingEnergy, shield.enhancement(), shield.activatedTick()));
     }
 
     public static void usePhaseStep(ServerPlayer player) {
@@ -148,6 +177,10 @@ public final class AugmentAbilityService {
         int maxTargets = highFrequency && enhancement >= 10 ? 3 : 1;
         double damage = highFrequency ? 72.0D : 46.0D;
         for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
+
+        int breachPower = highFrequency ? (enhancement >= 5 ? 4 : 3) : 1;
+        BreachService.breachAtLook(player, range + (enhancement >= 10 ? 1.5D : 0.0D), breachPower,
+                highFrequency ? 0.75D : 0.35D, highFrequency ? 8 : 3, true);
         return true;
     }
 
@@ -168,6 +201,10 @@ public final class AugmentAbilityService {
                 shove(player, target, 0.85D);
             }
         }
+
+        int breachPower = enhancement >= 10 ? 4 : enhancement >= 5 ? 3 : 2;
+        BreachService.breachAtLook(player, 4.5D, breachPower, enhancement >= 10 ? 1.65D : 0.85D,
+                enhancement >= 10 ? 12 : 6, true);
         return true;
     }
 
@@ -227,6 +264,7 @@ public final class AugmentAbilityService {
         if (!spend(player, state, instance.id(), factor, factor)) return false;
         List<RayTarget> targets = rayTargets(player, range, width);
         for (int i = 0; i < Math.min(maxTargets, targets.size()); i++) damage(player, targets.get(i).entity(), damage);
+        BreachService.breachLine(player, range, 4, Math.min(1.35D, width * 0.65D), overclock ? 24 : 12);
         return true;
     }
 
@@ -258,14 +296,23 @@ public final class AugmentAbilityService {
         int enhancement = instance.enhancement();
         if (!spend(player, state, instance.id(), 0.62D, 0.60D)) return false;
         ServerLevel level = (ServerLevel) player.level();
-        ShieldState previous = SHIELDS.remove(player.getUUID());
-        float current = player.getAbsorptionAmount();
-        if (previous != null) current = Math.min(current, previous.baselineAbsorption());
-        float baseline = current;
-        float shieldAmount = (float) CombatScale.toInternal(enhancement >= 10 ? 70.0D : enhancement >= 5 ? 50.0D : 35.0D);
-        player.setAbsorptionAmount(baseline + shieldAmount);
-        SHIELDS.put(player.getUUID(), new ShieldState(level.getGameTime() + (enhancement >= 10 ? 80L : 55L), baseline));
+        float shieldEnergy = (float) CombatScale.toInternal(enhancement >= 10 ? 70.0D : enhancement >= 5 ? 50.0D : 35.0D);
+        long now = level.getGameTime();
+        SHIELDS.put(player.getUUID(), new ShieldState(
+                now + (enhancement >= 10 ? 80L : 55L), shieldEnergy, enhancement, now));
         return true;
+    }
+
+    private static boolean shieldCovers(ServerPlayer player, ShieldState shield, Vec3 sourcePos, long now) {
+        if (shield.enhancement() >= 10 && now - shield.activatedTick() <= 12L) return true;
+        Vec3 facing = player.getLookAngle();
+        facing = new Vec3(facing.x, 0.0D, facing.z);
+        Vec3 incoming = sourcePos.subtract(player.position());
+        incoming = new Vec3(incoming.x, 0.0D, incoming.z);
+        if (facing.lengthSqr() <= 1.0E-6D || incoming.lengthSqr() <= 1.0E-6D) return false;
+        double halfAngle = shield.enhancement() >= 5 ? 75.0D : 55.0D;
+        double threshold = Math.cos(Math.toRadians(halfAngle));
+        return facing.normalize().dot(incoming.normalize()) >= threshold;
     }
 
     private static boolean spend(ServerPlayer player, TitanPlayerData.State state, String augmentId,
