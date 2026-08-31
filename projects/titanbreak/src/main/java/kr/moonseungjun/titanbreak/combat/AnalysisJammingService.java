@@ -1,5 +1,6 @@
 package kr.moonseungjun.titanbreak.combat;
 
+import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -14,7 +15,13 @@ public final class AnalysisJammingService {
 
     public static void apply(ServerPlayer player, int ticks) {
         if (!(player.level() instanceof ServerLevel level)) return;
-        long until = level.getGameTime() + Math.max(1, ticks);
+        int effectiveTicks = Math.max(1, ticks);
+        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
+        TitanPlayerData.AugmentInstance camo = state.firstInstalledInstance("optical_camo_skin");
+        if (camo != null && camo.enhancement() >= 10) {
+            effectiveTicks = Math.max(1, (int) Math.ceil(effectiveTicks * 0.50D));
+        }
+        long until = level.getGameTime() + effectiveTicks;
         JAM_UNTIL.merge(player.getUUID(), until, Math::max);
     }
 
