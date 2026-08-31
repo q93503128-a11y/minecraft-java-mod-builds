@@ -30,13 +30,20 @@ for token in (
     "temporarily blacklisted",
     "Lumber, farm, quarry and mine output first returns",
     "rotation-aware `BuildingRecord.localToWorld`",
-    "four-barrel public cluster",
-    "108 slots",
-    "No virtual resource ledger or item minting",
+    "공용 보급고 / shared supply depot",
+    "54 physical ItemStack slots",
+    "Additional shared depots are player-crafted/placed",
+    "legacy Alpha.91 public vanilla barrels",
+    "preserving their physical ItemStacks",
+    "no virtual resource ledger or item minting",
     "No force-load or teleport",
 ):
     if token not in alpha91:
         raise SystemExit(f"alpha.91 docs missing: {token}")
+
+for obsolete in ("four-barrel public cluster around the original saved stockpile", "up to **108 slots**"):
+    if obsolete in alpha91:
+        raise SystemExit(f"alpha.91 superseded storage contract still active: {obsolete}")
 
 if "mod_version=0.1.0-alpha.91" not in props:
     raise SystemExit("alpha.91 docs/version mismatch")
