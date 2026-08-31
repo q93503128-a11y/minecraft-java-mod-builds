@@ -1,5 +1,6 @@
 package kr.moonseungjun.titanbreak.network;
 
+import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
@@ -15,7 +16,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha18";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha19";
 
     private TitanbreakNetwork() {}
 
@@ -25,8 +26,11 @@ public final class TitanbreakNetwork {
         registrar.playToClient(StationOpenPayload.TYPE, StationOpenPayload.STREAM_CODEC);
         registrar.playToServer(DriveTogglePayload.TYPE, DriveTogglePayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
-            boolean installed = hasReflexDrive(player);
-            ReflexDriveService.setRequested(player, payload.enabled() && installed);
+            TitanPlayerData.State state = TitanPlayerData.get(((ServerLevel) player.level()).getServer()).state(player);
+            TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
+            boolean installed = drive != null;
+            int rating = ReflexDriveService.ratingForMk(drive == null ? 1 : drive.mk());
+            ReflexDriveService.setRequested(player, payload.enabled() && installed, rating);
             sync(player);
         });
         registrar.playToServer(StationActionPayload.TYPE, StationActionPayload.STREAM_CODEC, (payload, context) -> {
@@ -53,6 +57,26 @@ public final class TitanbreakNetwork {
                 .sorted(Comparator.comparing(entry -> entry.getKey().name()))
                 .map(entry -> entry.getKey().name() + ":" + entry.getValue())
                 .collect(Collectors.joining(","));
+        String installedMeta = state.installedInstanceView().entrySet().stream()
+                .sorted(Comparator.comparing(entry -> entry.getKey().name()))
+                .map(entry -> entry.getKey().name() + ":" + entry.getValue().mk() + ":" + entry.getValue().enhancement())
+                .collect(Collectors.joining(","));
+        String vault = state.vaultView().stream()
+                .map(instance -> instance.id() + ":" + instance.mk() + ":" + instance.enhancement())
+                .collect(Collectors.joining(","));
+        TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
+
+        double powerLoad = 0.0D;
+        double heatLoad = 0.0D;
+        double neuralLoad = 0.0D;
+        for (TitanPlayerData.AugmentInstance instance : state.installedInstanceView().values().stream().distinct().toList()) {
+            AugmentationCatalog.Definition definition = AugmentationCatalog.byId(instance.id());
+            if (definition == null) continue;
+            powerLoad += definition.powerLoad() * state.powerLoadMultiplier(instance.id());
+            heatLoad += definition.heatLoad() * state.heatLoadMultiplier(instance.id());
+            neuralLoad += definition.neuralLoad() * state.neuralLoadMultiplier(instance.id());
+        }
+
         String snapshot = "sanity=" + one(state.sanity())
                 + ";heat=" + one(state.heat())
                 + ";rd=" + state.researchData()
@@ -64,13 +88,22 @@ public final class TitanbreakNetwork {
                 + ";eliteSeen=" + state.eliteFirstKillCount()
                 + ";bossSeen=" + (state.hasBossFirstKill("the_pursuer") ? 1 : 0)
                 + ";installed=" + installed
+                + ";installedMeta=" + installedMeta
+                + ";vault=" + vault
+                + ";vaultCount=" + state.vaultView().size()
+                + ";driveMk=" + (drive == null ? 0 : drive.mk())
+                + ";driveEnh=" + (drive == null ? 0 : drive.enhancement())
+                + ";driveMastery=" + state.masteryLevel("reflex_drive_i")
+                + ";powerLoad=" + one(powerLoad)
+                + ";heatLoad=" + one(heatLoad)
+                + ";neuralLoad=" + one(neuralLoad)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
                 + ";active=" + (active ? 1 : 0)
                 + ";rating=" + ReflexDriveService.rating(player.getUUID())
                 + ";worldRate=" + one(ReflexDriveService.currentWorldTickRate())
-                + ";fieldRate=" + one(ReflexDriveService.P0_WORLD_RELATIVE_RATE)
+                + ";fieldRate=" + one(ReflexDriveService.BASE_WORLD_RELATIVE_RATE)
                 + ";schema=" + state.schemaVersion();
         PacketDistributor.sendToPlayer(player, new StatusPayload(snapshot));
     }
