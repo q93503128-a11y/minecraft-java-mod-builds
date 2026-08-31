@@ -45,7 +45,8 @@ public final class FieldSessionManager {
         remove(player);
         ServerLevel level = (ServerLevel) player.level();
         StarterSliceWorld.BuiltSlice slice = StarterSliceWorld.build(level);
-        FieldSession session = new FieldSession(slice);
+        Set<String> persistedClears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+        FieldSession session = new FieldSession(slice, persistedClears);
         SESSIONS.put(player.getUUID(), session);
         player.setPos(slice.spawn().x, slice.spawn().y, slice.spawn().z);
         player.setYRot(180.0F);
@@ -147,6 +148,14 @@ public final class FieldSessionManager {
         SESSIONS.clear();
     }
 
+    static Set<String> projectStarterClears(Set<String> persistedClears) {
+        Set<String> result = new HashSet<>();
+        if (persistedClears == null) return result;
+        if (persistedClears.contains(SouthgateEncounterCatalog.ENC_M01)) result.add(SouthgateEncounterCatalog.ENC_M01);
+        if (persistedClears.contains(SouthgateEncounterCatalog.ENC_M02)) result.add(SouthgateEncounterCatalog.ENC_M02);
+        return result;
+    }
+
     private static void clearVanillaMobs(ServerLevel level, StarterSliceWorld.BuiltSlice slice) {
         AABB area = new AABB(StarterSliceWorld.ORIGIN_X - 4, slice.baseY() - 6, StarterSliceWorld.VILLAGE_Z - 4,
                 StarterSliceWorld.ORIGIN_X + StarterSliceWorld.SIZE + 4, slice.baseY() + 20,
@@ -163,12 +172,17 @@ public final class FieldSessionManager {
         private int earnedXp;
         private int earnedGold;
 
-        private FieldSession(StarterSliceWorld.BuiltSlice slice) {
+        private FieldSession(StarterSliceWorld.BuiltSlice slice, Set<String> persistedClears) {
             this.slice = slice;
             encounters.put(SouthgateEncounterCatalog.ENC_M01,
                     new Patrol(SouthgateEncounterCatalog.ENC_M01, slice.m01Home(), slice.m01End()));
             encounters.put(SouthgateEncounterCatalog.ENC_M02,
                     new Patrol(SouthgateEncounterCatalog.ENC_M02, slice.m02Home(), slice.m02End()));
+            cleared.addAll(projectStarterClears(persistedClears));
+            for (String encounterId : cleared) {
+                Patrol patrol = encounters.get(encounterId);
+                if (patrol != null) patrol.defeated = true;
+            }
         }
 
         private void spawnAll(ServerLevel level) {
