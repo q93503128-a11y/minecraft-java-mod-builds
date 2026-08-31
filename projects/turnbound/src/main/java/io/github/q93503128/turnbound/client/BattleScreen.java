@@ -140,7 +140,7 @@ public final class BattleScreen extends Screen {
     private static String clientTargetRule(ClientBattleState.Skill skill) {
         if (skill == null) return "";
         return switch (skill.id()) {
-            case "p02_time_leap", "p03_guard" -> "ALLY_SINGLE_EXCEPT_SELF";
+            case "p02_time_leap", "p03_guard_transfer" -> "ALLY_SINGLE_EXCEPT_SELF";
             default -> skill.targetRule();
         };
     }

@@ -11,7 +11,7 @@ class BattleSkillTooltipTest {
     @Test
     void tooltipExposesTargetCooldownAndDescription() {
         ClientBattleState.Skill skill = new ClientBattleState.Skill(
-                "p01_shatter", "파쇄 일격", "ENEMY_SINGLE", 2, 1,
+                "p01_breaker_strike", "파쇄 일격", "ENEMY_SINGLE", 2, 1,
                 "적 1명에게 강한 피해를 주고 집중에 따라 위력이 증가합니다.");
         List<String> lines = BattleSkillTooltip.lines(skill);
         assertEquals("파쇄 일격", lines.getFirst());

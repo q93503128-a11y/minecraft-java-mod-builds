@@ -8,16 +8,16 @@ public final class PrototypeRoster {
     private PrototypeRoster() {}
 
     public static CombatantDefinition kyren() {
-        return new CombatantDefinition("P01", "카이렌", new BattleStats(900, 120, 85, 105), "p01_basic", List.of(
-                new SkillDefinition("p01_basic", "추적 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00))),
-                new SkillDefinition("p01_shatter", "파쇄 일격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(2.20))),
+        return new CombatantDefinition("P01", "카이렌", new BattleStats(900, 120, 85, 105), "p01_chase_slash", List.of(
+                new SkillDefinition("p01_chase_slash", "추적 베기", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(1.00))),
+                new SkillDefinition("p01_breaker_strike", "파쇄 일격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(2.20))),
                 new SkillDefinition("p01_duel_lock", "결투 고정", TargetRule.ENEMY_SINGLE, 3, List.of(SkillEffect.selfGaugeAdd(120)))),
                 4, List.of("P01_FOCUS"), Map.of("focusMax", 3.0, "focusDamagePer", 0.15));
     }
 
     public static CombatantDefinition lumea() {
-        return new CombatantDefinition("P02", "루메아", new BattleStats(780, 90, 75, 125), "p02_basic", List.of(
-                new SkillDefinition("p02_basic", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(180))),
+        return new CombatantDefinition("P02", "루메아", new BattleStats(780, 90, 75, 125), "p02_accelerate", List.of(
+                new SkillDefinition("p02_accelerate", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(180))),
                 new SkillDefinition("p02_time_leap", "시간 도약", TargetRule.ALLY_SINGLE, 4, List.of(SkillEffect.gaugeAtLeast(1000)),
                         "자신을 제외한 아군의 Gauge를 최소 1000으로 만듭니다.", List.of("SELF_FORBIDDEN"), Map.of()),
                 new SkillDefinition("p02_delay_field", "지연장", TargetRule.ENEMY_ALL, 3, List.of(SkillEffect.gaugeAdd(-120)))),
@@ -25,25 +25,25 @@ public final class PrototypeRoster {
     }
 
     public static CombatantDefinition bram() {
-        return new CombatantDefinition("P03", "브람", new BattleStats(1250, 88, 130, 75), "p03_basic", List.of(
-                new SkillDefinition("p03_basic", "방진", TargetRule.SELF, 0, List.of(SkillEffect.barrier(0.12))),
-                new SkillDefinition("p03_guard", "보호 전환", TargetRule.ALLY_SINGLE, 3, List.of(SkillEffect.guardRedirect(0.70, 2)),
+        return new CombatantDefinition("P03", "브람", new BattleStats(1250, 88, 130, 75), "p03_guard_stance", List.of(
+                new SkillDefinition("p03_guard_stance", "방진", TargetRule.SELF, 0, List.of(SkillEffect.barrier(0.12))),
+                new SkillDefinition("p03_guard_transfer", "보호 전환", TargetRule.ALLY_SINGLE, 3, List.of(SkillEffect.guardRedirect(0.70, 2)),
                         "다른 아군의 단일 직접 피해 70%를 대신 받습니다.", List.of("SELF_FORBIDDEN"), Map.of()),
-                new SkillDefinition("p03_press", "방패 압박", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(0.90), SkillEffect.gaugeAdd(-120)))),
+                new SkillDefinition("p03_shield_pressure", "방패 압박", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(0.90), SkillEffect.gaugeAdd(-120)))),
                 4, List.of("P03_COUNTER"), Map.of("counterPotency", 0.65));
     }
 
     public static CombatantDefinition elysia() {
-        return new CombatantDefinition("P04", "엘리시아", new BattleStats(820, 105, 70, 95), "p04_basic", List.of(
-                new SkillDefinition("p04_basic", "치유", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.heal(0.70))),
-                new SkillDefinition("p04_revive", "되돌아온 숨", TargetRule.DEAD_ALLY_SINGLE, 5, List.of(SkillEffect.revive(0.30))),
-                new SkillDefinition("p04_rest_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.90)))),
+        return new CombatantDefinition("P04", "엘리시아", new BattleStats(820, 105, 70, 95), "p04_heal", List.of(
+                new SkillDefinition("p04_heal", "치유", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.heal(0.70))),
+                new SkillDefinition("p04_returned_breath", "되돌아온 숨", TargetRule.DEAD_ALLY_SINGLE, 5, List.of(SkillEffect.revive(0.30))),
+                new SkillDefinition("p04_resting_light", "안식의 빛", TargetRule.ALLY_ALL, 3, List.of(SkillEffect.heal(0.90)))),
                 4, List.of("P04_LAST_TOUCH"), Map.of("emergencyHeal", 0.80));
     }
 
     public static CombatantDefinition borderHunter() {
-        return new CombatantDefinition("F03", "변경 사냥꾼", new BattleStats(650, 88, 56, 103), "f03_basic", List.of(
-                new SkillDefinition("f03_basic", "사격", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.90))),
+        return new CombatantDefinition("F03", "변경 사냥꾼", new BattleStats(650, 88, 56, 103), "f03_shot", List.of(
+                new SkillDefinition("f03_shot", "사격", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.90))),
                 new SkillDefinition("f03_focus_shot", "집중 사격", TargetRule.ENEMY_SINGLE, 2, List.of(SkillEffect.damage(1.45)))));
     }
 

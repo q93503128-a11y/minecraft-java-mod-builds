@@ -73,11 +73,10 @@ public final class CanonicalData {
 
         List<SkillDefinition> skills = new ArrayList<>();
         for (JsonElement item : raw.getAsJsonArray("skills")) skills.add(skill(item.getAsJsonObject()));
-        String canonicalBasicId = string(raw, "basicSkillId", "");
-        String runtimeBasicId = CharacterSkillRegistry.runtimeSkillId(canonicalBasicId);
+        String basicSkillId = string(raw, "basicSkillId", "");
         return new CombatantDefinition(
                 string(raw, "id", id), string(raw, "name", id),
-                new BattleStats(hp, attack, defense, speed), runtimeBasicId, skills,
+                new BattleStats(hp, attack, defense, speed), basicSkillId, skills,
                 nativeStars, rules, params);
     }
 
@@ -115,10 +114,9 @@ public final class CanonicalData {
                     EffectType.valueOf(string(e, "type", "NOOP")),
                     number(e, "magnitude", 0.0), integer(e, "flatValue", 0), integer(e, "duration", 0), string(e, "key", "")));
         }
-        String canonicalId = string(raw, "id", "");
-        String runtimeId = CharacterSkillRegistry.runtimeSkillId(canonicalId);
+        String skillId = string(raw, "id", "");
         return new SkillDefinition(
-                runtimeId, string(raw, "name", ""),
+                skillId, string(raw, "name", ""),
                 TargetRule.valueOf(string(raw, "target", "SELF")), integer(raw, "cooldown", 0), effects,
                 string(raw, "description", string(raw, "name", "스킬")),
                 strings(raw.getAsJsonArray("rules")), numbers(raw.getAsJsonObject("params")));

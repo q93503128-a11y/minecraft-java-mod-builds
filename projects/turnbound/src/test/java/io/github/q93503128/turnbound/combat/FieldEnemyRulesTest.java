@@ -17,7 +17,7 @@ class FieldEnemyRulesTest {
         walker.takeDamage(500);
         ally.setGauge(1000);
         engine.nextReady();
-        engine.useSkill("ally", "p01_basic", "walker");
+        engine.useSkill("ally", "p01_chase_slash", "walker");
         assertTrue(walker.hp() > 0 && walker.hp() * 100 <= walker.maxHp() * 30);
         assertEquals(72, walker.barrier());
         assertTrue(walker.flag("e001_tenacity"));

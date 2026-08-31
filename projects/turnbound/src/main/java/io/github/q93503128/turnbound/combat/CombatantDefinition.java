@@ -1,7 +1,5 @@
 package io.github.q93503128.turnbound.combat;
 
-import io.github.q93503128.turnbound.content.CharacterSkillRegistry;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,20 +38,14 @@ public record CombatantDefinition(
     }
 
     public SkillDefinition skill(String skillId) {
-        String runtimeId = CharacterSkillRegistry.runtimeSkillId(skillId);
-        return skills.stream().filter(s -> s.id().equals(runtimeId)).findFirst()
+        return skills.stream().filter(s -> s.id().equals(skillId)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown skill " + skillId));
     }
 
-    /** Canonical v0.4 ID for UI/network/persistence boundaries. */
-    public String canonicalBasicSkillId() {
-        return CharacterSkillRegistry.canonicalSkillId(basicSkillId);
-    }
+    /** Exact data ID; playable definitions use the canonical v0.4 character-wiki ID. */
+    public String canonicalBasicSkillId() { return basicSkillId; }
 
-    public String canonicalSkillId(String runtimeOrCanonicalId) {
-        String runtimeId = CharacterSkillRegistry.runtimeSkillId(runtimeOrCanonicalId);
-        return CharacterSkillRegistry.canonicalSkillId(runtimeId);
-    }
+    public String canonicalSkillId(String skillId) { return skill(skillId).id(); }
 
     public boolean hasRule(String rule) { return rules.contains(rule); }
     public double param(String key, double fallback) { return params.getOrDefault(key, fallback); }

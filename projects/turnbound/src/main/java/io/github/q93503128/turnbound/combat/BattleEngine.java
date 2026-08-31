@@ -134,7 +134,7 @@ public final class BattleEngine {
             case HEAL -> {
                 for (CombatantState target : targets) {
                     double potency = effect.magnitude();
-                    if (actor.definition().id().equals("P04") && skill.id().equals("p04_rest_light") && target == actor) potency = 0.70;
+                    if (actor.definition().id().equals("P04") && skill.id().equals("p04_resting_light") && target == actor) potency = 0.70;
                     int value = target.heal((int)Math.floor(actor.attack() * potency));
                     state.addEvent(new BattleEvent("HEAL", actor.instanceId(), target.instanceId(), value, skill.id()));
                 }
@@ -173,7 +173,7 @@ public final class BattleEngine {
                 }
             }
             case SELF_HP_COST -> {
-                if (actor.definition().id().equals("P08") && skill.id().equals("p08_blood_rush") && actor.flag("p08_next_blood_free")) {
+                if (actor.definition().id().equals("P08") && skill.id().equals("p08_blood_charge") && actor.flag("p08_next_blood_free")) {
                     actor.clearFlag("p08_next_blood_free");
                     state.addEvent(new BattleEvent("HP_COST", actor.instanceId(), actor.instanceId(), 0, "P08_AWAKEN_FREE"));
                 } else {
@@ -242,19 +242,19 @@ public final class BattleEngine {
         String id = actor.definition().id();
         if (id.equals("P01")) {
             potency *= 1.0 + actor.definition().param("focusDamagePer", 0.15) * focusBefore;
-            if (skill.id().equals("p01_shatter")) potency *= 1.0 + skill.param("focusBonusPer", 0.10) * focusBefore;
-        } else if (id.equals("P05") && skill.id().equals("p05_pierce")) {
+            if (skill.id().equals("p01_breaker_strike")) potency *= 1.0 + skill.param("focusBonusPer", 0.10) * focusBefore;
+        } else if (id.equals("P05") && skill.id().equals("p05_piercing_shot")) {
             potency += skill.param("exposureBonus", 0.30) * exposure(target, actor);
         } else if (id.equals("P06")) {
-            if (skill.id().equals("p06_basic")) potency += skill.param("memoryDamagePer", 0.05) * actor.counter("memory");
+            if (skill.id().equals("p06_echo")) potency += skill.param("memoryDamagePer", 0.05) * actor.counter("memory");
             if (skill.id().equals("p06_condolence") && actor.flag("p06_ally_death")) potency = skill.param("allyDeathPotency", 2.50);
             if (skill.id().equals("p06_funeral_order") && target.hp() / (double)target.maxHp() <= skill.param("threshold", 0.25)) potency = skill.param("executePotency", 2.10);
             if (actor.flag("p06_return_first_direct")) potency *= 1.20;
         } else if (id.equals("P07")) {
-            if (skill.id().equals("p07_basic") && livingP07Summon(actor) != null) potency = 0.0;
-            if (skill.id().equals("p07_joint") && livingP07Summon(actor) == null) potency = skill.param("soloPotency", 1.35);
+            if (skill.id().equals("p07_command") && livingP07Summon(actor) != null) potency = 0.0;
+            if (skill.id().equals("p07_joint_attack") && livingP07Summon(actor) == null) potency = skill.param("soloPotency", 1.35);
             if (actor.flag("p07_next_direct_bonus")) potency *= 1.30;
-        } else if (id.equals("P08") && skill.id().equals("p08_basic")) {
+        } else if (id.equals("P08") && skill.id().equals("p08_frenzy")) {
             double ratio = actor.hp() / (double)actor.maxHp();
             if (ratio <= actor.definition().param("lowThreshold", 0.30)) potency = actor.definition().param("lowBasic", 1.35);
             else if (ratio <= actor.definition().param("midThreshold", 0.50)) potency = actor.definition().param("midBasic", 1.15);
@@ -474,13 +474,13 @@ public final class BattleEngine {
             int gauge = skill.intParam("killGauge", 200); actor.addGauge(gauge);
             state.addEvent(new BattleEvent("GAUGE", actor.instanceId(), actor.instanceId(), gauge, "P06_EXECUTE_KILL"));
         } else if (id.equals("P07")) postMarion(actor, skill, targets);
-        else if (id.equals("P08") && skill.id().equals("p08_blood_rush")
+        else if (id.equals("P08") && skill.id().equals("p08_blood_charge")
                 && actor.hp() / (double)actor.maxHp() <= actor.definition().param("lowThreshold", 0.30)) {
             int gauge = actor.definition().intParam("bloodLowGauge", 180); actor.addGauge(gauge);
             state.addEvent(new BattleEvent("GAUGE", actor.instanceId(), actor.instanceId(), gauge, "P08_BLOOD_LOW"));
-        } else if (id.equals("F01") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f01_basic") && !targets.isEmpty()) {
+        } else if (id.equals("F01") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f01_wood_sword") && !targets.isEmpty()) {
             reactions.addLast(new Reaction(actor.instanceId(), targets.getFirst().instanceId(), actor.definition().param("awakenExtraHit", 0.15), "F01_AWAKEN", 1));
-        } else if (id.equals("F02") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f02_basic") && !targets.isEmpty()) {
+        } else if (id.equals("F02") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f02_first_aid") && !targets.isEmpty()) {
             CombatantState target = targets.getFirst(); int healed = target.heal((int)Math.floor(target.maxHp() * actor.definition().param("awakenMaxHpHeal", 0.03)));
             state.addEvent(new BattleEvent("HEAL", actor.instanceId(), target.instanceId(), healed, "F02_AWAKEN"));
         } else if (id.equals("F03") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f03_focus_shot")) {
@@ -505,7 +505,7 @@ public final class BattleEngine {
         CombatantState target = targets.getFirst();
         if (target.instanceId().equals(actor.ref("focusTarget"))) actor.incrementCounter("focus", 1, actor.definition().intParam("focusMax", 3));
         else { actor.setRef("focusTarget", target.instanceId()); actor.setCounter("focus", actor.flag("p01_carry_focus") ? 1 : 0); actor.clearFlag("p01_carry_focus"); }
-        if (actor.definition().hasRule("AWAKENED") && skill.id().equals("p01_basic") && focusBefore >= 3 && !target.downed()) {
+        if (actor.definition().hasRule("AWAKENED") && skill.id().equals("p01_chase_slash") && focusBefore >= 3 && !target.downed()) {
             reactions.addLast(new Reaction(actor.instanceId(), target.instanceId(), actor.definition().param("awakenBasicFollowup", 0.45), "P01_AWAKEN_FOLLOWUP", 1));
         }
         if (target.downed()) {
@@ -515,7 +515,7 @@ public final class BattleEngine {
     }
 
     private void postLumea(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
-        if (!actor.definition().hasRule("AWAKENED") || (!skill.id().equals("p02_basic") && !skill.id().equals("p02_time_leap"))) return;
+        if (!actor.definition().hasRule("AWAKENED") || (!skill.id().equals("p02_accelerate") && !skill.id().equals("p02_time_leap"))) return;
         for (CombatantState target : targets) {
             int turns = target == actor ? 2 : 1;
             target.putStatus(new StatusInstance("time_echo", actor.instanceId(), turns, actor.definition().intParam("awakenEchoGauge", 100)));
@@ -526,8 +526,8 @@ public final class BattleEngine {
     private void postLynette(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         if (targets.isEmpty()) return;
         CombatantState target = targets.getFirst();
-        if (skill.id().equals("p05_basic")) target.addStatusStack("exposed", actor.instanceId(), 999, 0.0, 1, actor.definition().intParam("exposureMax", 2));
-        else if (skill.id().equals("p05_pierce")) target.removeStatus("exposed", actor.instanceId());
+        if (skill.id().equals("p05_suppressive_shot")) target.addStatusStack("exposed", actor.instanceId(), 999, 0.0, 1, actor.definition().intParam("exposureMax", 2));
+        else if (skill.id().equals("p05_piercing_shot")) target.removeStatus("exposed", actor.instanceId());
         else if (skill.id().equals("p05_hunt_signal")) {
             target.removeStatus("exposed", actor.instanceId());
             int max = actor.definition().intParam("exposureMax", 2);
@@ -540,18 +540,18 @@ public final class BattleEngine {
 
     private void postMarion(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         CombatantState summon = livingP07Summon(actor);
-        if (skill.id().equals("p07_basic")) {
+        if (skill.id().equals("p07_command")) {
             if (summon != null && !targets.isEmpty()) reactions.addLast(new Reaction(summon.instanceId(), targets.getFirst().instanceId(), skill.param("summonPotency", 0.70), "P07_COMMAND", 1));
             else {
                 actor.incrementCounter("contract_prep", 1, actor.definition().intParam("prepMax", 2));
-                if (actor.counter("contract_prep") >= actor.definition().intParam("prepMax", 2)) actor.setCooldown("p07_summon", Math.max(0, actor.cooldown("p07_summon") - 1));
+                if (actor.counter("contract_prep") >= actor.definition().intParam("prepMax", 2)) actor.setCooldown("p07_summon_toto", Math.max(0, actor.cooldown("p07_summon_toto") - 1));
             }
-        } else if (skill.id().equals("p07_summon")) {
+        } else if (skill.id().equals("p07_summon_toto")) {
             if (summon != null) throw new IllegalStateException("Contract beast already exists");
             actor.clearFlag("p07_awaken_resummon_pending");
             spawnP07Summon(actor, 1.0);
             actor.setCounter("contract_prep", 0);
-        } else if (skill.id().equals("p07_joint") && summon != null && !targets.isEmpty()) {
+        } else if (skill.id().equals("p07_joint_attack") && summon != null && !targets.isEmpty()) {
             reactions.addLast(new Reaction(summon.instanceId(), targets.getFirst().instanceId(), skill.param("summonPotency", 1.00), "P07_JOINT", 1));
         }
     }
