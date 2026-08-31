@@ -39,6 +39,9 @@ public final class TurnboundBattleActors {
             Map.entry("P04", "elysia"), Map.entry("P05", "lynette"), Map.entry("P06", "morwen"),
             Map.entry("P07", "marion"), Map.entry("P08", "raze"), Map.entry("P07_SUMMON", "toto"));
 
+    private static final Map<String, String> BOSS_PATH = Map.of(
+            "B01", "graul", "B02", "verna", "B03", "oro7", "B04", "kolvak", "B05", "serak");
+
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
 
@@ -89,9 +92,14 @@ public final class TurnboundBattleActors {
             case "P07" -> 0.60F;
             case "P08" -> 0.72F;
             case "P07_SUMMON" -> 0.82F;
+            case "B01" -> 1.80F;
+            case "B02" -> 1.65F;
+            case "B03" -> 1.45F;
+            case "B04" -> 1.70F;
+            case "B05" -> 0.78F;
             case "E006", "E010", "E012", "EL02" -> 1.10F;
             case "E003", "E014", "EL04" -> 0.90F;
-            default -> id.startsWith("B") ? 1.15F : 0.72F;
+            default -> 0.72F;
         };
     }
 
@@ -106,9 +114,14 @@ public final class TurnboundBattleActors {
             case "P07" -> 1.64F;
             case "P08" -> 1.88F;
             case "P07_SUMMON" -> 1.15F;
+            case "B01" -> 2.30F;
+            case "B02" -> 2.80F;
+            case "B03" -> 3.10F;
+            case "B04" -> 3.40F;
+            case "B05" -> 2.05F;
             case "E006", "E010", "E012", "EL02" -> 1.35F;
             case "E003", "E014", "EL04" -> 2.15F;
-            default -> id.startsWith("B") ? 2.55F : 2.0F;
+            default -> 2.0F;
         };
     }
 
@@ -123,7 +136,12 @@ public final class TurnboundBattleActors {
             case "P07" -> 0.891F;
             case "P08" -> 1.022F;
             case "P07_SUMMON" -> 0.720F;
-            default -> id.startsWith("B") ? 1.22F : 1.0F;
+            case "B01" -> 1.15F;
+            case "B02" -> 1.20F;
+            case "B03" -> 1.28F;
+            case "B04" -> 1.35F;
+            case "B05" -> 1.08F;
+            default -> 1.0F;
         };
     }
 
@@ -132,26 +150,33 @@ public final class TurnboundBattleActors {
             case "P03","F04","E008","EL03" -> "shield";
             case "P05","F03","E002" -> "ranger";
             case "P02","P04","P06","P07","F02","E005","E007","E013" -> "caster";
-            case "P08","E003","E014","EL04","B01","B04" -> "brute";
-            case "P07_SUMMON","E006","E010","E012","EL02","B02" -> "beast";
-            case "E011","B03","B05" -> "machine";
+            case "P08","E003","E014","EL04" -> "brute";
+            case "P07_SUMMON","E006","E010","E012","EL02" -> "beast";
+            case "E011" -> "machine";
             default -> "blade";
         };
     }
 
     private static Identifier modelRoot(String id) {
         String hero = HERO_PATH.get(id);
-        String path = hero == null ? "battle/" + archetype(id) : "hero/" + hero;
-        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, path);
+        if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String boss = BOSS_PATH.get(id);
+        if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/" + archetype(id));
     }
 
     private static Identifier animationRoot(String id) {
-        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, HERO_PATH.containsKey(id) ? "hero/common" : "battle/common");
+        if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
+        if (BOSS_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/common");
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common");
     }
 
     private static Identifier textureRoot(String id) {
         String hero = HERO_PATH.get(id);
-        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, hero == null ? "battle/atlas" : "hero/" + hero);
+        if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String boss = BOSS_PATH.get(id);
+        if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/atlas");
     }
 
     @EventBusSubscriber(modid = Turnbound.MOD_ID, value = Dist.CLIENT)
