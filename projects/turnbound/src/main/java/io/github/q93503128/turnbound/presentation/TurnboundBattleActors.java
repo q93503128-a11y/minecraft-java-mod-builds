@@ -39,8 +39,30 @@ public final class TurnboundBattleActors {
             Map.entry("P04", "elysia"), Map.entry("P05", "lynette"), Map.entry("P06", "morwen"),
             Map.entry("P07", "marion"), Map.entry("P08", "raze"), Map.entry("P07_SUMMON", "toto"));
 
+    private static final Map<String, String> ENEMY_PATH = Map.ofEntries(
+            Map.entry("E001", "e001_rotted_walker"), Map.entry("E002", "e002_bone_marksman"),
+            Map.entry("E003", "e003_unstable_burster"), Map.entry("E004", "e004_road_bandit"),
+            Map.entry("E005", "e005_field_medic"), Map.entry("E006", "e006_moss_boar"),
+            Map.entry("E007", "e007_spore_lantern"), Map.entry("E008", "e008_root_guard"),
+            Map.entry("E009", "e009_aqueduct_sentry"), Map.entry("E010", "e010_flood_leech"),
+            Map.entry("E011", "e011_rusted_support"), Map.entry("E012", "e012_ash_hound"),
+            Map.entry("E013", "e013_cinder_adept"), Map.entry("E014", "e014_lava_driller"));
+
+    private static final Map<String, String> ELITE_PATH = Map.of(
+            "EL01", "el01_rot_captain", "EL02", "el02_briar_stag",
+            "EL03", "el03_rusted_centurion", "EL04", "el04_magma_drill_king");
+
     private static final Map<String, String> BOSS_PATH = Map.of(
             "B01", "graul", "B02", "verna", "B03", "oro7", "B04", "kolvak", "B05", "serak");
+
+    /** Actors whose canonical active pose needs a dedicated animation asset instead of the group common file. */
+    private static final Map<String, String> SPECIAL_ENEMY_ANIMATION = Map.of(
+            "E003", "e003_unstable_burster", "E006", "e006_moss_boar",
+            "E007", "e007_spore_lantern", "E008", "e008_root_guard",
+            "E011", "e011_rusted_support", "E014", "e014_lava_driller");
+
+    private static final Map<String, String> SPECIAL_ELITE_ANIMATION = Map.of(
+            "EL04", "el04_magma_drill_king");
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
@@ -98,7 +120,10 @@ public final class TurnboundBattleActors {
             case "B04" -> 1.70F;
             case "B05" -> 0.78F;
             case "E006", "E010", "E012", "EL02" -> 1.10F;
-            case "E003", "E014", "EL04" -> 0.90F;
+            case "E003", "E014" -> 0.90F;
+            case "EL01" -> 0.85F;
+            case "EL03" -> 0.90F;
+            case "EL04" -> 1.17F;
             default -> 0.72F;
         };
     }
@@ -120,7 +145,10 @@ public final class TurnboundBattleActors {
             case "B04" -> 3.40F;
             case "B05" -> 2.05F;
             case "E006", "E010", "E012", "EL02" -> 1.35F;
-            case "E003", "E014", "EL04" -> 2.15F;
+            case "E003", "E014" -> 2.15F;
+            case "EL01" -> 2.36F;
+            case "EL03" -> 2.50F;
+            case "EL04" -> 2.80F;
             default -> 2.0F;
         };
     }
@@ -141,18 +169,19 @@ public final class TurnboundBattleActors {
             case "B03" -> 1.28F;
             case "B04" -> 1.35F;
             case "B05" -> 1.08F;
+            case "EL01" -> 1.18F;
+            case "EL03" -> 1.25F;
             default -> 1.0F;
         };
     }
 
     private static String archetype(String id) {
         return switch (id) {
-            case "P03","F04","E008","EL03" -> "shield";
-            case "P05","F03","E002" -> "ranger";
-            case "P02","P04","P06","P07","F02","E005","E007","E013" -> "caster";
-            case "P08","E003","E014","EL04" -> "brute";
-            case "P07_SUMMON","E006","E010","E012","EL02" -> "beast";
-            case "E011" -> "machine";
+            case "P03","F04" -> "shield";
+            case "P05","F03" -> "ranger";
+            case "P02","P04","P06","P07","F02" -> "caster";
+            case "P08" -> "brute";
+            case "P07_SUMMON" -> "beast";
             default -> "blade";
         };
     }
@@ -160,6 +189,10 @@ public final class TurnboundBattleActors {
     private static Identifier modelRoot(String id) {
         String hero = HERO_PATH.get(id);
         if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String enemy = ENEMY_PATH.get(id);
+        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String elite = ELITE_PATH.get(id);
+        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
         String boss = BOSS_PATH.get(id);
         if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/" + archetype(id));
@@ -167,6 +200,12 @@ public final class TurnboundBattleActors {
 
     private static Identifier animationRoot(String id) {
         if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
+        String enemy = SPECIAL_ENEMY_ANIMATION.get(id);
+        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        if (ENEMY_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/common");
+        String elite = SPECIAL_ELITE_ANIMATION.get(id);
+        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
+        if (ELITE_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/common");
         if (BOSS_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/common");
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common");
     }
@@ -174,6 +213,10 @@ public final class TurnboundBattleActors {
     private static Identifier textureRoot(String id) {
         String hero = HERO_PATH.get(id);
         if (hero != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + hero);
+        String enemy = ENEMY_PATH.get(id);
+        if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String elite = ELITE_PATH.get(id);
+        if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
         String boss = BOSS_PATH.get(id);
         if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/atlas");
