@@ -8,26 +8,9 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class FieldNetwork {
-    public static final String PROTOCOL = "turnbound-field-alpha12";
-
-    private FieldNetwork() {}
-
-    public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(PROTOCOL);
-        registrar.playToClient(FieldSnapshotPayload.TYPE, FieldSnapshotPayload.STREAM_CODEC);
-        registrar.playToServer(FieldCommandPayload.TYPE, FieldCommandPayload.STREAM_CODEC, (payload, context) ->
-                context.enqueueWork(() -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        FieldSessionManager.command(player, payload.command());
-                    }
-                }));
-    }
-
-    public static void sync(ServerPlayer player, FieldUiSnapshot snapshot) {
-        PacketDistributor.sendToPlayer(player, new FieldSnapshotPayload(FieldUiCodec.encode(snapshot)));
-    }
-
-    public static void close(ServerPlayer player) {
-        sync(player, FieldUiSnapshot.inactive());
-    }
+    public static final String PROTOCOL="turnbound-field-alpha12";
+    private FieldNetwork(){}
+    public static void register(RegisterPayloadHandlersEvent event){ PayloadRegistrar r=event.registrar(PROTOCOL); r.playToClient(FieldSnapshotPayload.TYPE,FieldSnapshotPayload.STREAM_CODEC); r.playToServer(FieldCommandPayload.TYPE,FieldCommandPayload.STREAM_CODEC,(payload,context)->context.enqueueWork(()->{if(context.player() instanceof ServerPlayer p)WorldSessionRouter.command(p,payload.command());})); }
+    public static void sync(ServerPlayer p,FieldUiSnapshot s){PacketDistributor.sendToPlayer(p,new FieldSnapshotPayload(FieldUiCodec.encode(s)));}
+    public static void close(ServerPlayer p){sync(p,FieldUiSnapshot.inactive());}
 }
