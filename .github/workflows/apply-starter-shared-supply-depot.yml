@@ -28,11 +28,11 @@ jobs:
       - name: Patch and validate starter shared supply depot
         run: python3 tools/apply_starter_shared_supply_depot.py
 
-      - name: Frontier canonical audits
+      - name: Frontier Alpha.91 canonical audits
         working-directory: projects/frontier-settlement
         run: |
           python3 tools/test_alpha91_docs.py
-          python3 tools/test_latest_cumulative.py
+          python3 tools/test_alpha91_source.py
 
       - name: Build and verify Frontier
         working-directory: projects/frontier-settlement
