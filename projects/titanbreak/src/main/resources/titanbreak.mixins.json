@@ -6,6 +6,9 @@
     "MobAiTimeScaleMixin",
     "ProjectileTimeScaleMixin"
   ],
+  "client": [
+    "KeyboardStartupGuardMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
