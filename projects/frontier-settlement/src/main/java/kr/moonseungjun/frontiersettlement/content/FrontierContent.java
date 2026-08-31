@@ -6,10 +6,12 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -61,10 +63,20 @@ public final class FrontierContent {
         ENTITIES.register(modBus);
         BLOCK_ENTITIES.register(modBus);
         modBus.addListener(FrontierContent::onEntityAttributes);
+        modBus.addListener(FrontierContent::onCreativeTabContents);
     }
 
     private static void onEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(FRONTIER_SOLDIER.get(), IronGolem.createAttributes().build());
         event.put(FRONTIER_WORKER.get(), FrontierWorkerEntity.createAttributes().build());
+    }
+
+    private static void onCreativeTabContents(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
+            event.accept(SUPPLY_DEPOT_ITEM.get());
+        }
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.accept(PIONEER_MARKER.get());
+        }
     }
 }
