@@ -14,7 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
 
 public final class InfrastructureService {
     public static final String ACTION_FUND = "fund";
@@ -130,18 +129,18 @@ public final class InfrastructureService {
             InfrastructureProject.Requirement requirement = project.requirements().get(i);
             int remaining = data.remaining(project, i);
             if (remaining <= 0) continue;
-            int take = Math.min(remaining, countItem(player, requirement.item()));
+            int take = Math.min(remaining, countRequirement(player, requirement));
             if (take <= 0) continue;
-            if (!consumeItem(player, requirement.item(), take)) continue;
+            if (!consumeRequirement(player, requirement, take)) continue;
             data.addContribution(project, i, take);
             consumed += take;
         }
 
         if (consumed <= 0) {
-            player.sendSystemMessage(Component.literal("§6[인프라] §f인벤토리와 현재 사용 가능한 등록 물류 통들에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
+            player.sendSystemMessage(Component.literal("§6[인프라] §f인벤토리·공용 보급고·현재 사용 가능한 등록 물류 통에 이 프로젝트가 더 필요로 하는 재료가 없습니다."));
         } else {
             player.sendSystemMessage(Component.literal("§6[인프라] §f" + project.koreanName() + "에 자원 §e" + consumed
-                    + "개§f를 투입했습니다. §7인벤토리와 같은 차원에서 현재 로딩된 등록 물류 통 재고를 함께 사용"));
+                    + "개§f를 투입했습니다. §7공용 재화는 같은 분류의 실제 아이템을 대체 사용하며, 인벤토리·공용 보급고·사용 가능한 등록 물류 재고를 함께 사용"));
         }
         sendStatus(player, project);
 
@@ -169,7 +168,7 @@ public final class InfrastructureService {
             InfrastructureProject.Requirement requirement = project.requirements().get(i);
             int remaining = data.remaining(project, i);
             if (remaining <= 0) continue;
-            if (countItem(player, requirement.item()) < remaining) return false;
+            if (countRequirement(player, requirement) < remaining) return false;
         }
         return true;
     }
@@ -211,16 +210,15 @@ public final class InfrastructureService {
             player.sendSystemMessage(Component.literal("  §7채석장은 광물을 생성하지 않고 실제 월드를 대형 터널로 굴착합니다. 광석 수급 속도를 올리는 작업 체급 해금입니다."));
         }
         InfrastructureSiteService.sendStatus(player, project);
-        if (InfrastructureData.get(player).isComplete(InfrastructureProject.INDUSTRIAL_WORKS)) {
-            player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 같은 차원에서 현재 로딩된 등록 거점 통/창고 통/전초 재고"));
-        }
+        player.sendSystemMessage(Component.literal("  §7투입원: 인벤토리 + 가까운 공용 보급고 + 현재 사용 가능한 등록 물류 재고"));
+        player.sendSystemMessage(Component.literal("  §7공용 재화: 석재/금속처럼 묶인 항목은 같은 분류의 실제 아이템끼리 서로 대체 가능 · 희귀 촉매는 지정 아이템 그대로 필요"));
     }
 
-    private static int countItem(ServerPlayer player, Item item) {
-        return FieldDepotService.countMaterial(player, item);
+    private static int countRequirement(ServerPlayer player, InfrastructureProject.Requirement requirement) {
+        return FieldDepotService.countMatching(player, requirement::matches);
     }
 
-    private static boolean consumeItem(ServerPlayer player, Item item, int amount) {
-        return FieldDepotService.consume(player, item, amount);
+    private static boolean consumeRequirement(ServerPlayer player, InfrastructureProject.Requirement requirement, int amount) {
+        return FieldDepotService.consumeMatching(player, requirement::matches, amount);
     }
 }
