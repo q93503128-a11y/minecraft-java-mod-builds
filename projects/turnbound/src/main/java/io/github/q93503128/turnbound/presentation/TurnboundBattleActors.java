@@ -28,10 +28,16 @@ import java.util.Map;
 /** Registry for authored v0.4 battle presentation entities. */
 public final class TurnboundBattleActors {
     private static final List<String> IDS = List.of(
-            "P01","P02","P03","P04","P05","P06","P07","P08","F01","F02","F03","F04",
+            "P01","P02","P03","P04","P05","P06","P07","P08","P07_SUMMON",
+            "F01","F02","F03","F04",
             "E001","E002","E003","E004","E005","E006","E007","E008","E009","E010","E011","E012","E013","E014",
             "EL01","EL02","EL03","EL04",
             "B01","B02","B03","B04","B05");
+
+    private static final Map<String, String> HERO_PATH = Map.ofEntries(
+            Map.entry("P01", "kyren"), Map.entry("P02", "lumea"), Map.entry("P03", "bram"),
+            Map.entry("P04", "elysia"), Map.entry("P05", "lynette"), Map.entry("P06", "morwen"),
+            Map.entry("P07", "marion"), Map.entry("P08", "raze"), Map.entry("P07_SUMMON", "toto"));
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
@@ -56,6 +62,7 @@ public final class TurnboundBattleActors {
         DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(combatantId);
         if (holder == null) return null;
         BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
+        actor.configureVisualId(combatantId);
         actor.setPos(pos.x, pos.y, pos.z);
         actor.setYRot(yaw);
         actor.setYHeadRot(yaw);
@@ -74,17 +81,51 @@ public final class TurnboundBattleActors {
     }
 
     private static float width(String id) {
-        if (id.startsWith("B")) return 1.15F;
-        if (id.equals("E006") || id.equals("E010") || id.equals("E012") || id.equals("EL02")) return 1.10F;
-        if (id.equals("E003") || id.equals("E014") || id.equals("EL04") || id.equals("P08")) return 0.90F;
-        return 0.72F;
+        return switch (id) {
+            case "P01" -> 0.66F;
+            case "P02" -> 0.61F;
+            case "P03" -> 0.74F;
+            case "P04" -> 0.63F;
+            case "P05", "P06" -> 0.62F;
+            case "P07" -> 0.60F;
+            case "P08" -> 0.72F;
+            case "P07_SUMMON" -> 0.82F;
+            case "E006", "E010", "E012", "EL02" -> 1.10F;
+            case "E003", "E014", "EL04" -> 0.90F;
+            default -> id.startsWith("B") ? 1.15F : 0.72F;
+        };
     }
 
     private static float height(String id) {
-        if (id.startsWith("B")) return 2.55F;
-        if (id.equals("E006") || id.equals("E010") || id.equals("E012") || id.equals("EL02")) return 1.35F;
-        if (id.equals("E003") || id.equals("E014") || id.equals("EL04") || id.equals("P08")) return 2.15F;
-        return 2.0F;
+        return switch (id) {
+            case "P01" -> 1.84F;
+            case "P02" -> 1.66F;
+            case "P03" -> 1.93F;
+            case "P04" -> 1.69F;
+            case "P05" -> 1.72F;
+            case "P06" -> 1.77F;
+            case "P07" -> 1.64F;
+            case "P08" -> 1.88F;
+            case "P07_SUMMON" -> 1.15F;
+            case "E006", "E010", "E012", "EL02" -> 1.35F;
+            case "E003", "E014", "EL04" -> 2.15F;
+            default -> id.startsWith("B") ? 2.55F : 2.0F;
+        };
+    }
+
+    private static float renderScale(String id) {
+        return switch (id) {
+            case "P01" -> 1.000F;
+            case "P02" -> 0.902F;
+            case "P03" -> 1.049F;
+            case "P04" -> 0.918F;
+            case "P05" -> 0.935F;
+            case "P06" -> 0.962F;
+            case "P07" -> 0.891F;
+            case "P08" -> 1.022F;
+            case "P07_SUMMON" -> 0.720F;
+            default -> id.startsWith("B") ? 1.22F : 1.0F;
+        };
     }
 
     private static String archetype(String id) {
@@ -93,10 +134,25 @@ public final class TurnboundBattleActors {
             case "P05","F03","E002" -> "ranger";
             case "P02","P04","P06","P07","F02","E005","E007","E013" -> "caster";
             case "P08","E003","E014","EL04","B01","B04" -> "brute";
-            case "E006","E010","E012","EL02","B02" -> "beast";
+            case "P07_SUMMON","E006","E010","E012","EL02","B02" -> "beast";
             case "E011","B03","B05" -> "machine";
             default -> "blade";
         };
+    }
+
+    private static Identifier modelRoot(String id) {
+        String hero = HERO_PATH.get(id);
+        String path = hero == null ? "battle/" + archetype(id) : "hero/" + hero;
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, path);
+    }
+
+    private static Identifier animationRoot(String id) {
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, HERO_PATH.containsKey(id) ? "hero/common" : "battle/common");
+    }
+
+    private static Identifier textureRoot(String id) {
+        String hero = HERO_PATH.get(id);
+        return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, hero == null ? "battle/atlas" : "hero/" + hero);
     }
 
     @EventBusSubscriber(modid = Turnbound.MOD_ID, value = Dist.CLIENT)
@@ -109,11 +165,10 @@ public final class TurnboundBattleActors {
                 String id = entry.getKey();
                 var holder = entry.getValue();
                 event.registerEntityRenderer(holder.get(), context -> {
-                    var model = new DefaultedEntityGeoModel<BattleActorEntity>(
-                            Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/" + archetype(id)))
-                            .withAltAnimations(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common"))
-                            .withAltTexture(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/atlas"));
-                    return new GeoEntityRenderer<>(context, model).withScale(id.startsWith("B") ? 1.22F : 1.0F);
+                    var model = new DefaultedEntityGeoModel<BattleActorEntity>(modelRoot(id))
+                            .withAltAnimations(animationRoot(id))
+                            .withAltTexture(textureRoot(id));
+                    return new GeoEntityRenderer<>(context, model).withScale(renderScale(id));
                 });
             }
         }
