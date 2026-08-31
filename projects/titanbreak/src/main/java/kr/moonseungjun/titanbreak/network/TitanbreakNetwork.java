@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak.network;
 
 import kr.moonseungjun.titanbreak.augmentation.AugmentationCatalog;
+import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
@@ -16,7 +17,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha19";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha22";
 
     private TitanbreakNetwork() {}
 
@@ -71,16 +72,8 @@ public final class TitanbreakNetwork {
                 .collect(Collectors.joining(","));
         TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
 
-        double powerLoad = 0.0D;
-        double heatLoad = 0.0D;
-        double neuralLoad = 0.0D;
-        for (TitanPlayerData.AugmentInstance instance : state.installedInstanceView().values().stream().distinct().toList()) {
-            AugmentationCatalog.Definition definition = AugmentationCatalog.byId(instance.id());
-            if (definition == null) continue;
-            powerLoad += definition.powerLoad() * state.powerLoadMultiplier(instance.id());
-            heatLoad += definition.heatLoad() * state.heatLoadMultiplier(instance.id());
-            neuralLoad += definition.neuralLoad() * state.neuralLoadMultiplier(instance.id());
-        }
+        AugmentationResourceService.Snapshot resources = AugmentationResourceService.snapshot(state);
+        double power = AugmentationResourceService.currentPower(player, state);
 
         String snapshot = "sanity=" + one(state.sanity())
                 + ";heat=" + one(state.heat())
@@ -100,9 +93,14 @@ public final class TitanbreakNetwork {
                 + ";driveMk=" + (drive == null ? 0 : drive.mk())
                 + ";driveEnh=" + (drive == null ? 0 : drive.enhancement())
                 + ";driveMastery=" + state.masteryLevel("reflex_drive_i")
-                + ";powerLoad=" + one(powerLoad)
-                + ";heatLoad=" + one(heatLoad)
-                + ";neuralLoad=" + one(neuralLoad)
+                + ";power=" + one(power)
+                + ";powerCap=" + one(resources.powerCapacity())
+                + ";heatCap=" + one(resources.heatCapacity())
+                + ";neuralCap=" + one(resources.neuralCapacity())
+                + ";powerLoad=" + one(resources.powerLoad())
+                + ";heatLoad=" + one(resources.heatLoad())
+                + ";neuralLoad=" + one(resources.neuralLoad())
+                + ";neuralOver=" + (resources.neuralOverloaded() ? 1 : 0)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
