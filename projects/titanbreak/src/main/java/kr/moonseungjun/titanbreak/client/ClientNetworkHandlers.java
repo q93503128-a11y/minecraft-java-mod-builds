@@ -26,6 +26,8 @@ public final class ClientNetworkHandlers {
             minecraft.gui.setScreen(new FabricatorScreen(payload.station()));
         } else if (parts[0].equals("surgery")) {
             minecraft.gui.setScreen(new SurgeryScreen(payload.station()));
+        } else if (parts[0].equals("vault")) {
+            minecraft.gui.setScreen(new ImplantVaultScreen());
         }
     }
 }
