@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.18";
+    public static final String VERSION = "0.1.0-alpha.19";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -99,18 +99,27 @@ public final class Titanbreak {
         StationService.tick(player);
         EncounterDirector.tick(player, state);
 
-        boolean installed = TitanbreakNetwork.hasReflexDrive(player);
-        if (!installed) ReflexDriveService.setRequested(player, false);
+        TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
+        boolean installed = drive != null;
+        int driveMk = drive == null ? 1 : drive.mk();
+        int rating = ReflexDriveService.ratingForMk(driveMk);
+        double radius = ReflexDriveService.radiusForMk(driveMk);
+        if (!installed) ReflexDriveService.setRequested(player, false, rating);
+        else ReflexDriveService.updateRating(player, rating);
 
         boolean requested = installed && ReflexDriveService.requested(player.getUUID());
         boolean wasActive = ReflexDriveService.active(player.getUUID());
         boolean active = requested && (wasActive ? state.heat() < OVERHEAT_LOCK : state.heat() < OVERHEAT_RESTART);
         ReflexDriveService.setActive(player, active);
-        ReflexFieldService.update(player, active, ReflexDriveService.rating(player.getUUID()), ReflexFieldService.P0_RADIUS);
+        ReflexFieldService.update(player, active, rating, radius);
 
         if (active) {
-            data.setHeat(player, state.heat() + 0.65D);
-            data.setSanity(player, state.sanity() - 0.002D);
+            double enhancementEfficiency = 1.0D - Math.min(0.15D, drive.enhancement() * 0.015D);
+            double masteryEfficiency = state.heatLoadMultiplier("reflex_drive_i");
+            double heatPerTick = ReflexDriveService.heatPerTickForMk(driveMk) * enhancementEfficiency * masteryEfficiency;
+            data.setHeat(player, state.heat() + heatPerTick);
+            data.setSanity(player, state.sanity() - (state.masteryLevel("reflex_drive_i") >= 5 ? 0.0015D : 0.002D));
+            if (player.tickCount % 20 == 0) data.addMasteryXp(player, "reflex_drive_i", 2);
         } else {
             data.setHeat(player, state.heat() - 0.45D);
         }
