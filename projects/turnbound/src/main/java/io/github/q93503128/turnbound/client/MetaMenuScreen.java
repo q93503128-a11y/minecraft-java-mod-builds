@@ -224,6 +224,30 @@ public final class MetaMenuScreen extends Screen {
         }
         buildPager(rows.size(), perPage);
 
+        ClientMetaState.PendingEquipmentRow pending = ClientMetaState.snapshot().pendingEquipment().stream().findFirst().orElse(null);
+        if (pending != null) {
+            int rewardX = left + listW + 36;
+            int rewardW = Math.max(210, left + panelWidth - 18 - rewardX);
+            int rewardY = top + 138;
+            String queue = ClientMetaState.snapshot().pendingEquipment().size() > 1
+                    ? " · 대기 " + ClientMetaState.snapshot().pendingEquipment().size() + "개" : "";
+            var label = new BattleHudButton(rewardX, rewardY, rewardW, 23,
+                    Component.literal("미수령 장비 보상" + queue + " · " + pending.tier() + " " + pending.name()), GOLD, ignored -> { });
+            label.active = false;
+            addRenderableWidget(label);
+            var claim = new BattleHudButton(rewardX, rewardY + 28, Math.min(230, rewardW), 22,
+                    Component.literal(pending.claimable() ? "보상 수령" : "300/300 · 기존 장비 판매 필요"),
+                    pending.claimable() ? GREEN : MUTED, ignored -> send("REWARD_CLAIM|" + pending.instanceId()));
+            claim.active = pending.claimable();
+            addRenderableWidget(claim);
+            String sellText = pending.immediateSellable() ? "새 보상 즉시 판매 · " + pending.salePrice() + "G" : "전용 장비 · 즉시 판매 불가";
+            var sellReward = new BattleHudButton(rewardX, rewardY + 55, Math.min(230, rewardW), 22,
+                    Component.literal(sellText), pending.immediateSellable() ? GOLD : MUTED,
+                    ignored -> send("REWARD_SELL|" + pending.instanceId()));
+            sellReward.active = pending.immediateSellable();
+            addRenderableWidget(sellReward);
+        }
+
         ClientMetaState.EquipmentRow selected = equipment(selectedEquipmentId);
         if (selected != null) {
             int rx = left + listW + 36;

@@ -250,7 +250,7 @@ public final class CampaignProgressStore {
         if (state.currentStar() != 6 || level.level() != 60) throw new IllegalStateException("Signature Trial requires Lv60 / ★6");
         if (state.signatureTrialCleared()) throw new IllegalStateException("Signature Trial first-clear reward already claimed");
         String signatureId = V04Catalogs.signatureFor(characterId).id();
-        EquipmentInventory.Item reward = progress.equipment.grant(signatureId);
+        EquipmentInventory.Item reward = progress.equipment.grantReward(signatureId);
         progress.profile.grant(PlayerProfile.Currency.AWAKENING_CORE, 1);
         progress.growth.put(characterId, state.withSignatureTrialCleared());
         progress.dirty = true;
@@ -274,7 +274,7 @@ public final class CampaignProgressStore {
 
     public static EquipmentInventory.Item grantEquipment(UUID playerId, String itemId) {
         PlayerProgress progress = player(playerId);
-        EquipmentInventory.Item item = progress.equipment.grant(itemId);
+        EquipmentInventory.Item item = progress.equipment.grantReward(itemId);
         progress.dirty = true;
         return item;
     }
@@ -309,6 +309,20 @@ public final class CampaignProgressStore {
     public static int sellEquipment(UUID playerId, String instanceId) {
         PlayerProgress progress = player(playerId);
         int gold = progress.equipment.sell(instanceId, progress.profile);
+        progress.dirty = true;
+        return gold;
+    }
+
+    public static EquipmentInventory.Item claimPendingEquipment(UUID playerId, String instanceId) {
+        PlayerProgress progress = player(playerId);
+        EquipmentInventory.Item item = progress.equipment.claimPending(instanceId);
+        progress.dirty = true;
+        return item;
+    }
+
+    public static int sellPendingEquipment(UUID playerId, String instanceId) {
+        PlayerProgress progress = player(playerId);
+        int gold = progress.equipment.sellPending(instanceId, progress.profile);
         progress.dirty = true;
         return gold;
     }

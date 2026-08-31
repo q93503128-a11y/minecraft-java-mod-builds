@@ -10,6 +10,7 @@ public final class ClientMetaState {
     public record EquipmentRow(String instanceId,String itemId,String name,String tier,String slot,int enhancement,String equippedCharacterId,
                                String mainType,double mainValue,String subType,double subValue,double mainAt20,double subAt20,
                                int salePrice,boolean sellable) {}
+    public record PendingEquipmentRow(String instanceId,String itemId,String name,String tier,String slot,int salePrice,boolean claimable,boolean immediateSellable) {}
     public record EndgameRow(String id,String kind,String label,boolean unlocked,boolean cleared,int level,boolean hardPattern) {}
     public record ChallengeRow(String id,int ordinal,String label,boolean completed,boolean autoEvaluable,String unresolvedReason) {}
     public record RegionQuestRow(String id,String region,boolean objectiveSpecified,boolean completed,String chestRule) {}
@@ -22,15 +23,16 @@ public final class ClientMetaState {
                            List<String> activeParty,List<List<String>> partyPresets,
                            List<CharacterRow> characters,List<EquipmentRow> equipment,List<EndgameRow> endgame,
                            List<ChallengeRow> challenges,List<RegionQuestRow> regionQuests,
-                           List<ArchiveRow> archiveHistory,List<ShopRow> shopItems,List<CodexRow> codex) {
+                           List<ArchiveRow> archiveHistory,List<ShopRow> shopItems,List<CodexRow> codex,List<PendingEquipmentRow> pendingEquipment) {
         public Snapshot {
             activeParty=List.copyOf(activeParty); partyPresets=partyPresets.stream().map(List::copyOf).toList();
             characters=List.copyOf(characters); equipment=List.copyOf(equipment); endgame=List.copyOf(endgame);
             challenges=List.copyOf(challenges); regionQuests=List.copyOf(regionQuests);
             archiveHistory=List.copyOf(archiveHistory); shopItems=List.copyOf(shopItems); codex=List.copyOf(codex);
+            pendingEquipment=List.copyOf(pendingEquipment);
         }
         public static Snapshot empty(){return new Snapshot(0,0,0,0,0,false,0,false,List.of(),List.of(List.of(),List.of(),List.of()),
-                List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of());}
+                List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of());}
     }
 
     private static volatile Snapshot snapshot=Snapshot.empty();
@@ -43,6 +45,7 @@ public final class ClientMetaState {
         List<CharacterRow> chars=new ArrayList<>(); List<EquipmentRow> equipment=new ArrayList<>(); List<EndgameRow> endgame=new ArrayList<>();
         List<ChallengeRow> challenges=new ArrayList<>(); List<RegionQuestRow> regions=new ArrayList<>();
         List<ArchiveRow> archive=new ArrayList<>(); List<ShopRow> shop=new ArrayList<>(); List<CodexRow> codex=new ArrayList<>();
+        List<PendingEquipmentRow> pendingEquipment=new ArrayList<>();
         for(String line:raw.split("\n")){
             if(line.isBlank())continue; String[] p=line.split("\\|",-1);
             try{
@@ -54,6 +57,7 @@ public final class ClientMetaState {
                             "1".equals(p[7]),Integer.parseInt(p[8]),"1".equals(p[9]),p[10],p[11],p[12],"1".equals(p[13]),
                             Integer.parseInt(p[14]),Integer.parseInt(p[15]),Integer.parseInt(p[16]),Integer.parseInt(p[17])));
                     case "I"->equipment.add(new EquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),p[7],p[8],Double.parseDouble(p[9]),p[10],Double.parseDouble(p[11]),Double.parseDouble(p[12]),Double.parseDouble(p[13]),p.length>14?Integer.parseInt(p[14]):0,p.length>15&&"1".equals(p[15])));
+                    case "IR"->pendingEquipment.add(new PendingEquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),"1".equals(p[7]),"1".equals(p[8])));
                     case "E"->endgame.add(new EndgameRow(p[1],p[2],p[3],"1".equals(p[4]),"1".equals(p[5]),Integer.parseInt(p[6]),"1".equals(p[7])));
                     case "X"->challenges.add(new ChallengeRow(p[1],Integer.parseInt(p[2]),p[3],"1".equals(p[4]),"1".equals(p[5]),p.length>6?p[6]:""));
                     case "Q"->regions.add(new RegionQuestRow(p[1],p[2],"1".equals(p[3]),"1".equals(p[4]),p.length>5?p[5]:""));
@@ -64,6 +68,6 @@ public final class ClientMetaState {
                 }
             }catch(RuntimeException ignored){}
         }
-        snapshot=new Snapshot(gold,crystal,essence,core,cp,rift,pity,starter,party,presets,chars,equipment,endgame,challenges,regions,archive,shop,codex);
+        snapshot=new Snapshot(gold,crystal,essence,core,cp,rift,pity,starter,party,presets,chars,equipment,endgame,challenges,regions,archive,shop,codex,pendingEquipment);
     }
 }

@@ -9,7 +9,20 @@ public record MetaUiSnapshot(
         List<String> activeParty, List<List<String>> partyPresets,
         List<CharacterRow> characters, List<EquipmentRow> equipment,
         List<EndgameRow> endgame, List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
-        List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex) {
+        List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex,
+        List<PendingEquipmentRow> pendingEquipment) {
+    public MetaUiSnapshot(
+            long gold, long crystal, long starEssence, long awakeningCore, int partyCp, boolean riftUnlocked,
+            int fiveStarPity, boolean starterArchiveAvailable,
+            List<String> activeParty, List<List<String>> partyPresets,
+            List<CharacterRow> characters, List<EquipmentRow> equipment,
+            List<EndgameRow> endgame, List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
+            List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex) {
+        this(gold, crystal, starEssence, awakeningCore, partyCp, riftUnlocked, fiveStarPity, starterArchiveAvailable,
+                activeParty, partyPresets, characters, equipment, endgame, challenges, regionQuests,
+                archiveHistory, shopItems, codex, List.of());
+    }
+
     public MetaUiSnapshot {
         activeParty = List.copyOf(activeParty);
         partyPresets = partyPresets.stream().map(List::copyOf).toList();
@@ -21,6 +34,7 @@ public record MetaUiSnapshot(
         archiveHistory = List.copyOf(archiveHistory);
         shopItems = List.copyOf(shopItems);
         codex = List.copyOf(codex);
+        pendingEquipment = List.copyOf(pendingEquipment == null ? List.of() : pendingEquipment);
     }
 
     public record CharacterRow(
@@ -32,6 +46,10 @@ public record MetaUiSnapshot(
             String instanceId, String itemId, String name, String tier, String slot, int enhancement,
             String equippedCharacterId, String mainType, double mainValue, String subType, double subValue,
             double mainAt20, double subAt20, int salePrice, boolean sellable) {}
+
+    public record PendingEquipmentRow(
+            String instanceId, String itemId, String name, String tier, String slot,
+            int salePrice, boolean claimable, boolean immediateSellable) {}
 
     public record EndgameRow(String id, String kind, String label, boolean unlocked, boolean cleared, int level, boolean hardPattern) {}
     public record ChallengeRow(String id, int ordinal, String label, boolean completed, boolean autoEvaluable, String unresolvedReason) {}

@@ -63,6 +63,7 @@ public final class MetaMenuService {
         }).toList();
 
         List<MetaUiSnapshot.EquipmentRow> equipment = equipmentRows(campaign.equipment());
+        List<MetaUiSnapshot.PendingEquipmentRow> pendingEquipment = pendingEquipmentRows(campaign.equipment());
 
         List<MetaUiSnapshot.EndgameRow> endgame = new ArrayList<>();
         int[] baseLevels = {6, 10, 13, 16, 20};
@@ -113,7 +114,8 @@ public final class MetaMenuService {
                 campaign.profile().gold(), campaign.profile().summonCrystal(), campaign.profile().starEssence(),
                 campaign.profile().awakeningCore(), partyCp, riftUnlocked,
                 campaign.profile().fiveStarPity(), CampaignProgressStore.starterArchiveAvailable(id),
-                party, campaign.profile().partyPresets(), characters, equipment, endgame, challenges, regionQuests, archive, shop, codex);
+                party, campaign.profile().partyPresets(), characters, equipment, endgame, challenges, regionQuests, archive, shop, codex,
+                pendingEquipment);
     }
 
     public static void command(ServerPlayer player, String raw) {
@@ -149,6 +151,14 @@ public final class MetaMenuService {
             case "SELL" -> {
                 if (parts.length < 2) return;
                 mutate(player, "판매 실패", () -> CampaignProgressStore.sellEquipment(player.getUUID(), parts[1]));
+            }
+            case "REWARD_CLAIM" -> {
+                if (parts.length < 2) return;
+                mutate(player, "장비 보상 수령 실패", () -> CampaignProgressStore.claimPendingEquipment(player.getUUID(), parts[1]));
+            }
+            case "REWARD_SELL" -> {
+                if (parts.length < 2) return;
+                mutate(player, "장비 보상 판매 실패", () -> CampaignProgressStore.sellPendingEquipment(player.getUUID(), parts[1]));
             }
             case "ENHANCE" -> {
                 if (parts.length < 2) return;
@@ -216,6 +226,21 @@ public final class MetaMenuService {
         }).toList();
     }
 
+    private static List<MetaUiSnapshot.PendingEquipmentRow> pendingEquipmentRows(EquipmentInventory.Snapshot inventory) {
+        boolean claimable = inventory.items().size() < EquipmentInventory.MAX_INSTANCES;
+        return inventory.pendingRewards().stream().map(item -> {
+            try {
+                var spec = V04Catalogs.equipment(item.itemId());
+                return new MetaUiSnapshot.PendingEquipmentRow(item.instanceId(), item.itemId(), spec.name(), spec.tier(), spec.slot(),
+                        EquipmentRules.salePrice(spec.tier()), claimable, true);
+            } catch (RuntimeException ignored) {
+                var spec = V04Catalogs.signature(item.itemId());
+                return new MetaUiSnapshot.PendingEquipmentRow(item.instanceId(), item.itemId(), spec.name(), "SIGNATURE", "SIGNATURE",
+                        0, claimable, false);
+            }
+        }).toList();
+    }
+
     private static List<MetaUiSnapshot.CodexRow> codexRows(CampaignProgressStore.Snapshot campaign,
                                                             List<MetaUiSnapshot.CharacterRow> characters,
                                                             boolean detailUnlocked) {
@@ -234,8 +259,9 @@ public final class MetaMenuService {
             out.add(new MetaUiSnapshot.CodexRow(category, id, CanonicalData.definition(id).name(), discovered,
                     discovered && detailUnlocked, summary));
         }
-        Set<String> ownedEquipment = campaign.equipment().items().values().stream().map(EquipmentInventory.Item::itemId)
-                .collect(java.util.stream.Collectors.toSet());
+        Set<String> ownedEquipment = new java.util.LinkedHashSet<>();
+        campaign.equipment().items().values().stream().map(EquipmentInventory.Item::itemId).forEach(ownedEquipment::add);
+        campaign.equipment().pendingRewards().stream().map(EquipmentInventory.Item::itemId).forEach(ownedEquipment::add);
         for (var spec : V04Catalogs.equipment()) {
             out.add(new MetaUiSnapshot.CodexRow("EQUIPMENT", spec.id(), spec.name(), ownedEquipment.contains(spec.id()), true,
                     spec.tier() + " / " + spec.slot()));

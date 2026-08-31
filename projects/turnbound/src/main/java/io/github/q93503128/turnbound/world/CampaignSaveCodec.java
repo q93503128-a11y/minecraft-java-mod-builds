@@ -216,6 +216,15 @@ public final class CampaignSaveCodec {
             items.add(row);
         });
         out.add("items", items);
+        JsonArray pendingRewards = new JsonArray();
+        for (EquipmentInventory.Item item : snapshot.pendingRewards()) {
+            JsonObject row = new JsonObject();
+            row.addProperty("instanceId", item.instanceId());
+            row.addProperty("itemId", item.itemId());
+            row.addProperty("enhancementLevel", item.enhancementLevel());
+            pendingRewards.add(row);
+        }
+        out.add("pendingRewards", pendingRewards);
         JsonObject loadouts = new JsonObject();
         snapshot.loadouts().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
             EquipmentInventory.Loadout value = entry.getValue();
@@ -243,6 +252,14 @@ public final class CampaignSaveCodec {
             EquipmentInventory.Item item = new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId, optionalInt(row, "enhancementLevel", 0));
             items.put(item.instanceId(), item);
         }
+        List<EquipmentInventory.Item> pendingRewards = new ArrayList<>();
+        for (JsonElement element : optionalArray(raw, "pendingRewards")) {
+            JsonObject row = element.getAsJsonObject();
+            String itemId = requiredString(row, "itemId");
+            if (!knownEquipment(itemId)) { orphaned.add(itemId); continue; }
+            pendingRewards.add(new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId,
+                    optionalInt(row, "enhancementLevel", 0)));
+        }
         Map<String, EquipmentInventory.Loadout> loadouts = new LinkedHashMap<>();
         for (var entry : optionalObject(raw, "loadouts").entrySet()) {
             JsonObject row = entry.getValue().getAsJsonObject();
@@ -254,7 +271,7 @@ public final class CampaignSaveCodec {
         }
         Map<String, Integer> choices = new LinkedHashMap<>();
         for (var entry : optionalObject(raw, "choiceTokens").entrySet()) choices.put(entry.getKey(), entry.getValue().getAsInt());
-        return new EquipmentInventory.Snapshot(nextSerial, items, loadouts, choices);
+        return new EquipmentInventory.Snapshot(nextSerial, items, loadouts, choices, pendingRewards);
     }
 
     private static JsonObject encodeQuests(QuestProgress.Snapshot snapshot) {

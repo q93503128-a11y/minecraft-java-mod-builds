@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.progression;
 
 import io.github.q93503128.turnbound.content.V04Catalogs;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,18 +50,29 @@ public final class EquipmentInventory {
             long nextSerial,
             Map<String, Item> items,
             Map<String, Loadout> loadouts,
-            Map<String, Integer> choiceTokens) {
+            Map<String, Integer> choiceTokens,
+            List<Item> pendingRewards) {
+        public Snapshot(long nextSerial, Map<String, Item> items, Map<String, Loadout> loadouts, Map<String, Integer> choiceTokens) {
+            this(nextSerial, items, loadouts, choiceTokens, List.of());
+        }
+
         public Snapshot {
             if (nextSerial < 1) throw new IllegalArgumentException("nextSerial must be positive");
             items = Map.copyOf(items);
             loadouts = Map.copyOf(loadouts);
             choiceTokens = Map.copyOf(choiceTokens);
+            pendingRewards = List.copyOf(pendingRewards == null ? List.of() : pendingRewards);
             if (items.size() > MAX_INSTANCES) throw new IllegalArgumentException("Equipment inventory exceeds " + MAX_INSTANCES + " instances");
+            Set<String> identities = new LinkedHashSet<>(items.keySet());
+            for (Item pending : pendingRewards) {
+                if (!identities.add(pending.instanceId())) throw new IllegalArgumentException("Duplicate equipment identity " + pending.instanceId());
+                if (pending.enhancementLevel() != 0) throw new IllegalArgumentException("Pending equipment reward must be unenhanced");
+            }
             choiceTokens.forEach((tier, count) -> {
                 if (count < 0) throw new IllegalArgumentException("Negative equipment choice token");
             });
         }
-        public static Snapshot empty() { return new Snapshot(1, Map.of(), Map.of(), Map.of()); }
+        public static Snapshot empty() { return new Snapshot(1, Map.of(), Map.of(), Map.of(), List.of()); }
     }
 
     public record StatTotals(Map<String, Double> values) {
@@ -72,6 +84,7 @@ public final class EquipmentInventory {
     private final Map<String, Item> items = new LinkedHashMap<>();
     private final Map<String, Loadout> loadouts = new LinkedHashMap<>();
     private final Map<String, Integer> choiceTokens = new LinkedHashMap<>();
+    private final List<Item> pendingRewards = new ArrayList<>();
 
     private EquipmentInventory() {}
 
@@ -83,12 +96,13 @@ public final class EquipmentInventory {
         inventory.items.putAll(snapshot.items());
         inventory.loadouts.putAll(snapshot.loadouts());
         inventory.choiceTokens.putAll(snapshot.choiceTokens());
+        inventory.pendingRewards.addAll(snapshot.pendingRewards());
         inventory.validateReferences();
         return inventory;
     }
 
     public Snapshot snapshot() {
-        return new Snapshot(nextSerial, items, loadouts, choiceTokens);
+        return new Snapshot(nextSerial, items, loadouts, choiceTokens, pendingRewards);
     }
 
     public int size() { return items.size(); }
@@ -98,16 +112,50 @@ public final class EquipmentInventory {
     public Set<String> unknownItemIds() {
         Set<String> out = new LinkedHashSet<>();
         for (Item item : items.values()) if (!isKnownItemId(item.itemId())) out.add(item.itemId());
+        for (Item item : pendingRewards) if (!isKnownItemId(item.itemId())) out.add(item.itemId());
         return Set.copyOf(out);
     }
 
     public Item grant(String itemId) {
         requireKnown(itemId);
         requireFreeSlot();
-        String instanceId = "eq_" + String.format("%08d", nextSerial++);
-        Item item = new Item(instanceId, itemId, 0);
-        items.put(instanceId, item);
+        Item item = newItem(itemId);
+        items.put(item.instanceId(), item);
         return item;
+    }
+
+    /**
+     * Canon §122: a newly earned equipment reward is never lost at 300/300.
+     * It is held outside inventory until the player claims it or, for normal gear,
+     * sells that incoming reward at the canonical tier sale value.
+     */
+    public Item grantReward(String itemId) {
+        requireKnown(itemId);
+        Item item = newItem(itemId);
+        if (hasFreeSlot() && pendingRewards.isEmpty()) items.put(item.instanceId(), item);
+        else pendingRewards.add(item);
+        return item;
+    }
+
+    public List<Item> pendingRewards() { return List.copyOf(pendingRewards); }
+
+    public Item claimPending(String instanceId) {
+        requireFreeSlot();
+        int index = pendingIndex(instanceId);
+        Item item = pendingRewards.remove(index);
+        items.put(item.instanceId(), item);
+        return item;
+    }
+
+    public int sellPending(String instanceId, PlayerProfile profile) {
+        int index = pendingIndex(instanceId);
+        Item item = pendingRewards.get(index);
+        ItemSpec spec = spec(item.itemId());
+        if (spec.signature) throw new IllegalStateException("Signature equipment has no canonical sale price");
+        int price = EquipmentRules.salePrice(spec.tier);
+        profile.grant(PlayerProfile.Currency.GOLD, price);
+        pendingRewards.remove(index);
+        return price;
     }
 
     public void grantChoiceToken(String tier, int amount) {
@@ -123,9 +171,8 @@ public final class EquipmentInventory {
         if (count <= 0) throw new IllegalStateException("No " + tier + " equipment choice token");
         ItemSpec spec = spec(itemId);
         if (spec.signature || !spec.tier.equals(tier)) throw new IllegalArgumentException("Choice token tier mismatch");
-        requireFreeSlot();
         if (count == 1) choiceTokens.remove(tier); else choiceTokens.put(tier, count - 1);
-        return grant(itemId);
+        return grantReward(itemId);
     }
 
     public Item enhance(String instanceId, PlayerProfile profile) {
@@ -224,6 +271,10 @@ public final class EquipmentInventory {
     }
 
     private void validateReferences() {
+        Set<String> identities = new LinkedHashSet<>(items.keySet());
+        for (Item pending : pendingRewards) {
+            if (!identities.add(pending.instanceId())) throw new IllegalStateException("Duplicate equipment identity " + pending.instanceId());
+        }
         Set<String> equipped = new LinkedHashSet<>();
         for (var entry : loadouts.entrySet()) {
             for (Slot slot : Slot.values()) {
@@ -248,6 +299,15 @@ public final class EquipmentInventory {
             for (Slot slot : Slot.values()) if (instanceId.equals(loadout.get(slot))) loadout = loadout.with(slot, "");
             loadouts.put(entry.getKey(), loadout);
         }
+    }
+
+    private Item newItem(String itemId) {
+        return new Item("eq_" + String.format("%08d", nextSerial++), itemId, 0);
+    }
+
+    private int pendingIndex(String instanceId) {
+        for (int i = 0; i < pendingRewards.size(); i++) if (pendingRewards.get(i).instanceId().equals(instanceId)) return i;
+        throw new IllegalArgumentException("Unknown pending equipment reward " + instanceId);
     }
 
     private void requireFreeSlot() {
