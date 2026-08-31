@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.content.ChallengeCatalog;
+import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import io.github.q93503128.turnbound.progression.QuestProgress;
 
@@ -29,6 +30,8 @@ public final class ChallengeService {
 
     public static List<String> evaluateAndCommit(UUID playerId, String encounterId, BattleState state, BattleOutcome outcome) {
         if (playerId == null || state == null || outcome != BattleOutcome.ALLY_VICTORY) return List.of();
+        // Tutorial compositions are an implementation bridge, not challenge-eligible canonical encounters.
+        if (V04Catalogs.tutorialBridge(encounterId)) return List.of();
         Metrics metrics = metrics(state);
         Set<String> already = new LinkedHashSet<>(completed(playerId));
         List<String> earned = new ArrayList<>();

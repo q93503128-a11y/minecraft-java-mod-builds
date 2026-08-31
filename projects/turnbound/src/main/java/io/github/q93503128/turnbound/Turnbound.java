@@ -10,10 +10,10 @@ import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
-import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import io.github.q93503128.turnbound.world.StarterSliceBootstrap;
+import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -57,7 +57,7 @@ public final class Turnbound {
             if (CampaignPersistence.blocked(player)) return;
             PlayerShellRules.maintain(player);
             StarterSliceBootstrap.tick(player);
-            FieldSessionManager.tick(player);
+            WorldSessionRouter.tick(player);
             BattleSessionManager.tick(player);
             CampaignPersistence.autosave(player);
         }
@@ -86,7 +86,7 @@ public final class Turnbound {
         if (releaseRuntime || CampaignPersistence.blocked(player)) {
             CampaignProgressStore.removeRuntime(player.getUUID());
             StarterSliceBootstrap.remove(player);
-            FieldSessionManager.remove(player);
+            WorldSessionRouter.remove(player);
         } else {
             LOGGER.error("TURNBOUND retained unsaved in-memory state for {} so a same-server reconnect can retry persistence", player.getUUID());
         }
@@ -102,7 +102,7 @@ public final class Turnbound {
             }
         }
         StarterSliceBootstrap.clearAll(players);
-        FieldSessionManager.clearAll(players);
+        WorldSessionRouter.clearAll(players);
         CampaignProgressStore.clearRuntime();
     }
 }

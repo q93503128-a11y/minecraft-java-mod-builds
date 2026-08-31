@@ -40,9 +40,9 @@ public final class RadiaHubWorld {
     public static BuiltHub build(ServerLevel level) {
         if (!hasMarker(level)) {
             plaza(level); roads(level);
-            building(level, -12,-20,25,24, Blocks.STONE_BRICKS, Blocks.POLISHED_ANDESITE); // Relay Hall
-            building(level, -69,-2,26,22, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK);  // Echo Archive
-            building(level, 44,-2,25,22, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK);           // Forge Annex
+            building(level, -12,-20,25,24, Blocks.STONE_BRICKS, Blocks.POLISHED_ANDESITE);
+            building(level, -69,-2,26,22, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK);
+            building(level, 44,-2,25,22, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK);
             market(level); training(level); rift(level); memorial(level); clock(level); barracks(level);
             southGate(level, false); relay(level); writeMarker(level);
         }
@@ -67,7 +67,8 @@ public final class RadiaHubWorld {
 
     private static void plaza(ServerLevel l){ pad(l,0,20,23,Blocks.STONE_BRICKS,Blocks.POLISHED_ANDESITE); }
     private static void roads(ServerLevel l){
-        road(l,0,-88,0,120,5); road(l,-88,20,88,20,4); road(l,-58,20,-58,68,3);
+        // North spine reaches the Gloamwood boundary; south spine reaches the canonical South Gate.
+        road(l,0,-116,0,120,5); road(l,-88,20,88,20,4); road(l,-58,20,-58,68,3);
         road(l,58,20,58,78,3); road(l,-88,-26,88,-26,3);
         for(Facility f:FACILITIES) levelCircle(l,(int)f.position().x,(int)f.position().z,
                 f.id().equals("TRAINING_YARD")?20:f.id().equals("MARKET_ROW")?17:13);
@@ -151,7 +152,7 @@ public final class RadiaHubWorld {
     private static void levelCircle(ServerLevel l,int cx,int cz,int r){ for(int x=cx-r;x<=cx+r;x++) for(int z=cz-r;z<=cz+r;z++) if((x-cx)*(x-cx)+(z-cz)*(z-cz)<=r*r) column(l,x,z,Blocks.GRASS_BLOCK); }
     private static void column(ServerLevel l,int x,int z,Block ground){ for(int y=Y-3;y<Y;y++) set(l,x,y,z,Blocks.DIRT); set(l,x,Y,z,ground); for(int y=Y+1;y<=Y+10;y++) set(l,x,y,z,Blocks.AIR); }
     private static void post(ServerLevel l,int x,int y,int z,boolean soul){ set(l,x,y+1,z,Blocks.COBBLESTONE_WALL); set(l,x,y+2,z,soul?Blocks.SOUL_LANTERN:Blocks.LANTERN); }
-    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.GOLD_BLOCK); }
-    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE); set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK); set(l,2,MARKER_Y,20,Blocks.GOLD_BLOCK); }
+    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.EMERALD_BLOCK); }
+    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE); set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK); set(l,2,MARKER_Y,20,Blocks.EMERALD_BLOCK); }
     private static void set(ServerLevel l,int x,int y,int z,Block b){ l.setBlock(new BlockPos(x,y,z),b.defaultBlockState(),2); }
 }

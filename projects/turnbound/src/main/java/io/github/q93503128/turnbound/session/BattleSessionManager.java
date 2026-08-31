@@ -5,8 +5,8 @@ import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
-import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.RewardGrantService;
+import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -102,13 +102,8 @@ public final class BattleSessionManager {
         }
     }
 
-    public static void end(ServerPlayer player) {
-        endAndPersist(player, false);
-    }
-
-    public static boolean endForLifecycle(ServerPlayer player) {
-        return endAndPersist(player, true);
-    }
+    public static void end(ServerPlayer player) { endAndPersist(player, false); }
+    public static boolean endForLifecycle(ServerPlayer player) { return endAndPersist(player, true); }
 
     private static boolean endAndPersist(ServerPlayer player, boolean lifecycle) {
         BattleSession old = SESSIONS.get(player.getUUID());
@@ -139,7 +134,7 @@ public final class BattleSessionManager {
             SESSIONS.remove(player.getUUID());
             old.cleanup(player);
             if (!deferredReward && !encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
-                FieldSessionManager.onBattleEnded(player, encounterId, outcome);
+                WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
             }
         }
         BattleNetwork.close(player);
