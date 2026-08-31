@@ -26,6 +26,7 @@ public final class BattleSession {
     private final BattleEngine engine;
     private final String encounterId;
     private final UUID ownerId;
+    private final String rewardTransactionId = UUID.randomUUID().toString();
     private final Vec3 returnPosition;
     private final float returnYaw;
     private final float returnPitch;
@@ -94,6 +95,7 @@ public final class BattleSession {
     public boolean fleeAllowed() { return fleeAllowed; }
     public BattleResultSummary resultSummary() { return resultSummary; }
     String encounterId() { return encounterId; }
+    String rewardTransactionId() { return rewardTransactionId; }
     Vec3 battleAnchor() { return battleAnchor; }
     float battleYaw() { return battleYaw; }
     Vec3 combatantPosition(String id) { return presentation.home(id); }

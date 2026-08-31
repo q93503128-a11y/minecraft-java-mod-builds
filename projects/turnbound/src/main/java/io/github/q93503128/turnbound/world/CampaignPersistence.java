@@ -72,11 +72,18 @@ public final class CampaignPersistence {
         var playerId = player.getUUID();
         if (blocked(player) || !CampaignProgressStore.hasRuntime(playerId)) return;
         try {
-            CampaignSaveFiles.save(playerFile(player), CampaignProgressStore.snapshot(playerId));
-            CampaignProgressStore.markClean(playerId);
+            saveOrThrow(player);
         } catch (IOException ex) {
             Turnbound.LOGGER.error("TURNBOUND failed to save campaign profile for {}", playerId, ex);
         }
+    }
+
+    static void saveOrThrow(ServerPlayer player) throws IOException {
+        var playerId = player.getUUID();
+        if (blocked(player)) throw new IOException("TURNBOUND campaign persistence is blocked for " + playerId);
+        if (!CampaignProgressStore.hasRuntime(playerId)) throw new IOException("TURNBOUND campaign runtime is missing for " + playerId);
+        CampaignSaveFiles.save(playerFile(player), CampaignProgressStore.snapshot(playerId));
+        CampaignProgressStore.markClean(playerId);
     }
 
     public static Path playerFile(ServerPlayer player) {
