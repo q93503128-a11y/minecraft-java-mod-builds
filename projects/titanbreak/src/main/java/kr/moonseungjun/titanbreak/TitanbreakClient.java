@@ -2,6 +2,7 @@ package kr.moonseungjun.titanbreak;
 
 import kr.moonseungjun.titanbreak.client.ClientNetworkHandlers;
 import kr.moonseungjun.titanbreak.client.ColossusHitboxRenderer;
+import kr.moonseungjun.titanbreak.client.CombatAssistClientService;
 import kr.moonseungjun.titanbreak.client.TitanEntityRenderers;
 import kr.moonseungjun.titanbreak.client.TitanHud;
 import kr.moonseungjun.titanbreak.client.TitanKeyMappings;
@@ -22,6 +23,7 @@ public final class TitanbreakClient {
         NeoForge.EVENT_BUS.addListener(TitanHud::onVanillaLayer);
         NeoForge.EVENT_BUS.addListener(TitanKeyMappings::onKeyInput);
         NeoForge.EVENT_BUS.addListener(TitanKeyMappings::onInteractionInput);
+        NeoForge.EVENT_BUS.addListener(CombatAssistClientService::onClientTick);
         NeoForge.EVENT_BUS.addListener(ColossusHitboxRenderer::onExtract);
         NeoForge.EVENT_BUS.addListener(ColossusHitboxRenderer::onSubmit);
     }

@@ -5,6 +5,7 @@ import kr.moonseungjun.titanbreak.augmentation.AugmentationResourceService;
 import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
+import kr.moonseungjun.titanbreak.combat.NeuralCombatAssistService;
 import kr.moonseungjun.titanbreak.combat.OverdriveCirculationService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.combat.SpineAugmentationService;
@@ -21,7 +22,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class TitanbreakNetwork {
-    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha30";
+    public static final String PROTOCOL_VERSION = "titanbreak-0-1-alpha31";
 
     private TitanbreakNetwork() {}
 
@@ -36,6 +37,11 @@ public final class TitanbreakNetwork {
             boolean installed = drive != null;
             int rating = ReflexDriveService.ratingForMk(drive == null ? 1 : drive.mk());
             ReflexDriveService.setRequested(player, payload.enabled() && installed, rating);
+            sync(player);
+        });
+        registrar.playToServer(CombatAssistIntentPayload.TYPE, CombatAssistIntentPayload.STREAM_CODEC, (payload, context) -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+            NeuralCombatAssistService.setRequested(player, payload.active());
             sync(player);
         });
         registrar.playToServer(StationActionPayload.TYPE, StationActionPayload.STREAM_CODEC, (payload, context) -> {
@@ -116,6 +122,7 @@ public final class TitanbreakNetwork {
                 + ";heatLoad=" + one(resources.heatLoad())
                 + ";neuralLoad=" + one(resources.neuralLoad())
                 + ";neuralOver=" + (resources.neuralOverloaded() ? 1 : 0)
+                + ";assistActive=" + (NeuralCombatAssistService.active(player.getUUID()) ? 1 : 0)
                 + ";overdriveTicks=" + OverdriveCirculationService.remainingTicks(player)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
