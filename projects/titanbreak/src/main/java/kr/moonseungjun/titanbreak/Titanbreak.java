@@ -49,7 +49,6 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(StationService::onRightClickBlock);
-        NeoForge.EVENT_BUS.addListener(AugmentAbilityService::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
     }

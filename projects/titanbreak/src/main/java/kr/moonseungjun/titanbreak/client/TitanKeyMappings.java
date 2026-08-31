@@ -7,14 +7,20 @@ import kr.moonseungjun.titanbreak.network.DriveTogglePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.InteractionHand;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Set;
+
 public final class TitanKeyMappings {
     private static final KeyMapping.Category CATEGORY = new KeyMapping.Category(
             Identifier.fromNamespaceAndPath(Titanbreak.MOD_ID, "controls"));
+    private static final Set<String> REPLACEMENT_ARMS = Set.of(
+            "blade_arm", "high_frequency_blade_arm", "power_arm", "wire_hook_arm",
+            "rail_projector_arm", "photon_emitter_arm", "shock_palm", "shield_projector_arm");
 
     public static final KeyMapping REFLEX_DRIVE = new KeyMapping(
             "key.titanbreak.reflex_drive",
@@ -57,5 +63,25 @@ public final class TitanKeyMappings {
                     : AugmentAbilityPayload.HOOK;
             ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(ability));
         }
+    }
+
+    public static void onInteractionInput(InputEvent.InteractionKeyMappingTriggered event) {
+        if (!event.isUseItem()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null || mc.gui.screen() != null) return;
+
+        String rightArm = TitanClientState.installedIn("RIGHT_ARM_MAIN");
+        String leftArm = TitanClientState.installedIn("LEFT_ARM_MAIN");
+        boolean rightReplacement = REPLACEMENT_ARMS.contains(rightArm);
+        boolean leftReplacement = REPLACEMENT_ARMS.contains(leftArm);
+        if (!rightReplacement && !leftReplacement) return;
+
+        InteractionHand selected = rightReplacement ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+        if (event.getHand() != selected) return;
+
+        event.setCanceled(true);
+        event.setSwingHand(true);
+        ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(
+                selected == InteractionHand.MAIN_HAND ? AugmentAbilityPayload.ARM_RIGHT : AugmentAbilityPayload.ARM_LEFT));
     }
 }

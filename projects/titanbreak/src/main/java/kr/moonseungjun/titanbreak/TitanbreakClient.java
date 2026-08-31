@@ -21,6 +21,7 @@ public final class TitanbreakClient {
         modEventBus.addListener(TitanKeyMappings::register);
         NeoForge.EVENT_BUS.addListener(TitanHud::onVanillaLayer);
         NeoForge.EVENT_BUS.addListener(TitanKeyMappings::onKeyInput);
+        NeoForge.EVENT_BUS.addListener(TitanKeyMappings::onInteractionInput);
         NeoForge.EVENT_BUS.addListener(ColossusHitboxRenderer::onExtract);
         NeoForge.EVENT_BUS.addListener(ColossusHitboxRenderer::onSubmit);
     }

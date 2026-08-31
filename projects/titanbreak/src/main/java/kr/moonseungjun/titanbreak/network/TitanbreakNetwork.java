@@ -40,8 +40,13 @@ public final class TitanbreakNetwork {
         });
         registrar.playToServer(AugmentAbilityPayload.TYPE, AugmentAbilityPayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
-            if (payload.ability() == AugmentAbilityPayload.HOOK) AugmentAbilityService.useHook(player);
-            else if (payload.ability() == AugmentAbilityPayload.PHASE_STEP) AugmentAbilityService.usePhaseStep(player);
+            switch (payload.ability()) {
+                case AugmentAbilityPayload.HOOK -> AugmentAbilityService.useHook(player);
+                case AugmentAbilityPayload.PHASE_STEP -> AugmentAbilityService.usePhaseStep(player);
+                case AugmentAbilityPayload.ARM_RIGHT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
+                case AugmentAbilityPayload.ARM_LEFT -> AugmentAbilityService.useArm(player, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
+                default -> { }
+            }
         });
     }
 
