@@ -19,19 +19,23 @@ Version: `0.1.0-alpha.91`
 
 ## Per-job physical barrels
 - Lumber, farm, quarry and mine output first returns to that completed building's own barrel.
-- Farm/quarry/mine use their existing blueprint barrels. Lumber receives a new barrel at local `(5,1,6)`.
+- Farm/quarry/mine use their existing blueprint barrels. Lumber receives a barrel at local `(5,1,6)`.
 - Old completed work buildings receive a missing managed barrel only if that exact loaded cell is dry, replaceable and has solid support; player blocks and block entities are never overwritten.
 - Full, blocked, missing or unreachable local barrels fall back to shared physical storage. Cargo is never virtualized.
-- Farm crop iteration now uses rotation-aware `BuildingRecord.localToWorld`, fixing rotated farm harvesting/replanting.
+- Farm crop iteration uses rotation-aware `BuildingRecord.localToWorld`, fixing rotated farm harvesting/replanting.
 
-## Public storage capacity
-A vanilla barrel is fixed at 27 slots. Making one barrel genuinely larger would require a custom block entity, menu/screen, inventory synchronization and save migration.
-Alpha.91 instead keeps vanilla containers and manages a protected four-barrel public cluster around the original saved stockpile for up to **108 slots**.
-The persisted original barrel remains authoritative; safe neighboring annex cells are backfilled without deleting solid blocks or block entities.
+## Shared public storage
+The old Alpha.91 public four-barrel cluster has been superseded by the combined Frontier + Survival shared-economy design.
+A newly founded settlement receives exactly one dedicated **공용 보급고 / shared supply depot** as its authoritative starter stockpile.
+The depot has **54 physical ItemStack slots** and is registered with the shared-depot registry so both Frontier settlement spending and Survival Ascension shared-resource spending can consume the same physical inventory.
+Additional shared depots are player-crafted/placed rather than automatically granted; profession worksite barrels remain ordinary local barrels.
+
+For save compatibility, legacy Alpha.91 public vanilla barrels in the former stockpile cluster are upgraded in place to shared supply depots while preserving their physical ItemStacks. This is a one-way compatibility migration, not a reason to create free annex depots in new settlements.
+The authoritative starter depot remains managed/protected like the old founding stockpile; player-crafted shared depots outside managed positions remain normal removable blocks.
 
 ## Authority / safety
-- No custom container protocol.
-- No virtual resource ledger or item minting.
+- Shared resources are still backed by physical Minecraft ItemStacks; no virtual resource ledger or item minting.
 - No force-load or teleport.
 - No second resident/logistics authority.
+- Frontier and Survival share resource categories through the dedicated depot while exact rare/progression catalysts may remain exact items.
 - Companion binary pins are unchanged.
