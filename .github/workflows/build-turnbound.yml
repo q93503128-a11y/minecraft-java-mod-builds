@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -19,6 +19,20 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Apply one-time equipment sale UI migration
+        if: github.ref_name == 'turnbound-alpha17-full-v04'
+        run: |
+          if grep -q '판매 · 가격 정본 미정' projects/turnbound/src/main/java/io/github/q93503128/turnbound/client/MetaMenuScreen.java; then
+            python3 .github/scripts/turnbound_wire_equipment_sale.py
+            git diff --check
+            git config user.name 'turnbound-ci'
+            git config user.email 'turnbound-ci@users.noreply.github.com'
+            git add projects/turnbound/src/main/java projects/turnbound/src/test/java
+            git commit -m 'turnbound: wire canonical equipment sale UI'
+            git push origin HEAD:turnbound-alpha17-full-v04
+          else
+            echo 'Equipment sale UI already wired; migration skipped.'
+          fi
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
