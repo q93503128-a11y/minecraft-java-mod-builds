@@ -33,32 +33,33 @@ jobs:
           path = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           text = path.read_text(encoding='utf-8')
 
-          old_clearance = '''            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;'''
-          new_clearance = '''            if (isSoftVegetation(state)) continue;'''
+          old_clearance = '            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;'
+          new_clearance = '            if (isSoftVegetation(state)) continue;'
           if old_clearance not in text:
               raise SystemExit('grade clearance target not found')
           text = text.replace(old_clearance, new_clearance, 1)
 
-          old_method = '''    private static boolean isSafeAboveGround(BlockState state, int relativeY) {
-              if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) return true;
-              return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
-          }
-'''
-          new_method = '''    private static boolean isSafeAboveGround(BlockState state, int relativeY) {
-              if (isSoftVegetation(state)) return true;
-              return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
-          }
-
-          private static boolean isSoftVegetation(BlockState state) {
-              if (state.isAir()) return true;
-              if (!state.getFluidState().isEmpty()) return false;
-              return state.canBeReplaced()
-                      || state.is(BlockTags.LEAVES)
-                      || state.is(BlockTags.REPLACEABLE_BY_TREES)
-                      || state.getBlock() instanceof net.minecraft.world.level.block.BushBlock
-                      || state.getBlock() instanceof net.minecraft.world.level.block.SnowLayerBlock;
-          }
-'''
+          old_method = (
+              '    private static boolean isSafeAboveGround(BlockState state, int relativeY) {\n'
+              '        if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) return true;\n'
+              '        return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);\n'
+              '    }\n'
+          )
+          new_method = (
+              '    private static boolean isSafeAboveGround(BlockState state, int relativeY) {\n'
+              '        if (isSoftVegetation(state)) return true;\n'
+              '        return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);\n'
+              '    }\n\n'
+              '    private static boolean isSoftVegetation(BlockState state) {\n'
+              '        if (state.isAir()) return true;\n'
+              '        if (!state.getFluidState().isEmpty()) return false;\n'
+              '        return state.canBeReplaced()\n'
+              '                || state.is(BlockTags.LEAVES)\n'
+              '                || state.is(BlockTags.REPLACEABLE_BY_TREES)\n'
+              '                || state.getBlock() instanceof net.minecraft.world.level.block.BushBlock\n'
+              '                || state.getBlock() instanceof net.minecraft.world.level.block.SnowLayerBlock;\n'
+              '    }\n'
+          )
           if old_method not in text:
               raise SystemExit('site clearance method target not found')
           text = text.replace(old_method, new_method, 1)
