@@ -38,6 +38,7 @@ final class BattlePresentation {
     private final Map<String, Boolean> summons = new LinkedHashMap<>();
     private final Map<String, String> visualIds = new LinkedHashMap<>();
     private final Map<String, Boolean> downed = new LinkedHashMap<>();
+    private final Map<String, Integer> bossPhases = new LinkedHashMap<>();
     private UUID focusMarker;
     private UUID dangerMarker;
     private String dangerTarget = "";
@@ -114,6 +115,7 @@ final class BattlePresentation {
         summons.put(combatant.instanceId(), combatant.definition().summon());
         visualIds.put(combatant.instanceId(), visualId);
         downed.put(combatant.instanceId(), combatant.downed());
+        bossPhases.put(combatant.instanceId(), phaseFor(combatant));
     }
 
     private void removeMissing(ServerLevel level, List<CombatantState> units) {
@@ -129,6 +131,7 @@ final class BattlePresentation {
             summons.remove(id);
             visualIds.remove(id);
             downed.remove(id);
+            bossPhases.remove(id);
             if (id.equals(moving)) moving = null;
         }
     }
@@ -187,6 +190,8 @@ final class BattlePresentation {
         if (target == null) return;
         ArmorStand marker = marker(level, target.add(0, 1.35, 0), "!", ChatFormatting.GOLD);
         dangerMarker = marker.getUUID();
+        Entity warningActor = entity(level, targetId);
+        if (warningActor instanceof BattleActorEntity animated) animated.playTelegraph();
         BattleVfx.warning(level, warningVisualId, target);
     }
 
@@ -196,20 +201,41 @@ final class BattlePresentation {
             Boolean before = downed.get(id);
             if (before == null) {
                 downed.put(id, unit.downed());
-                continue;
+            } else if (before != unit.downed()) {
+                downed.put(id, unit.downed());
+                Entity entity = entity(level, id);
+                Vec3 home = homes.get(id);
+                if (unit.downed()) {
+                    if (entity instanceof BattleActorEntity animated) animated.playDeath();
+                    if (home != null) BattleVfx.down(level, home);
+                } else {
+                    if (entity instanceof BattleActorEntity animated) animated.playRevive();
+                    if (home != null) BattleVfx.revive(level, home);
+                }
             }
-            if (before == unit.downed()) continue;
-            downed.put(id, unit.downed());
-            Entity entity = entity(level, id);
-            Vec3 home = homes.get(id);
-            if (unit.downed()) {
-                if (entity instanceof BattleActorEntity animated) animated.playDeath();
-                if (home != null) BattleVfx.down(level, home);
+
+            int phase = phaseFor(unit);
+            int previousPhase = bossPhases.getOrDefault(id, phase);
+            if (!unit.downed() && phase > previousPhase) {
+                bossPhases.put(id, phase);
+                Entity entity = entity(level, id);
+                if (entity instanceof BattleActorEntity animated) animated.playPhase();
+                Vec3 home = homes.get(id);
+                if (home != null) BattleVfx.phase(level, unit.definition().id(), home, phase);
             } else {
-                if (entity instanceof BattleActorEntity animated) animated.playRevive();
-                if (home != null) BattleVfx.revive(level, home);
+                bossPhases.putIfAbsent(id, phase);
             }
         }
+    }
+
+    private static int phaseFor(CombatantState unit) {
+        if (!unit.definition().boss()) return 1;
+        double hpRatio = unit.hp() / (double)Math.max(1, unit.maxHp());
+        double phase2 = unit.definition().param("phase2", -1.0);
+        double phase3 = unit.definition().param("phase3", -1.0);
+        if (phase3 > 0 && hpRatio <= phase3) return 3;
+        if (phase2 > 0 && hpRatio <= phase2) return 2;
+        return 1;
     }
 
     void turnReady(ServerLevel level, String actorId) {
@@ -260,7 +286,12 @@ final class BattlePresentation {
     void performSkill(ServerLevel level, String actorId, String visualId, String skillId, String targetId, boolean damaging) {
         Entity actor = entity(level, actorId);
         if (actor instanceof BattleActorEntity animated) {
-            if (damaging) animated.playStrike(); else animated.playCast();
+            switch (skillId) {
+                case "b01_charge", "b04_eruption" -> animated.playCharge();
+                case "b02_summon" -> animated.playSummon();
+                case "b03_overclock", "b05_relay_collapse" -> animated.playPhase();
+                default -> { if (damaging) animated.playStrike(); else animated.playCast(); }
+            }
         }
 
         Vec3 source = homes.get(actorId);
@@ -307,6 +338,7 @@ final class BattlePresentation {
         summons.clear();
         visualIds.clear();
         downed.clear();
+        bossPhases.clear();
     }
 
     private Entity entity(ServerLevel level, String id) {
