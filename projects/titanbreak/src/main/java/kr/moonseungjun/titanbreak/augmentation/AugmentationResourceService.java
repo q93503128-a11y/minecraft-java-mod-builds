@@ -31,7 +31,7 @@ public final class AugmentationResourceService {
     );
 
     private static final ConcurrentMap<UUID, Double> POWER = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<UUID, Integer> LAST_POWER_USE_TICK = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<UUID, Long> LAST_POWER_USE_TICK = new ConcurrentHashMap<>();
 
     public record Snapshot(double powerCapacity, double heatCapacity, double neuralCapacity,
                            double powerLoad, double heatLoad, double neuralLoad,
@@ -121,8 +121,9 @@ public final class AugmentationResourceService {
         double current = POWER.computeIfAbsent(id, ignored -> resources.powerCapacity());
         current = Math.min(current, resources.powerCapacity());
 
-        int lastUse = LAST_POWER_USE_TICK.getOrDefault(id, Integer.MIN_VALUE / 2);
-        if (player.tickCount - lastUse >= POWER_REGEN_DELAY_TICKS) {
+        long now = player.level().getGameTime();
+        long lastUse = LAST_POWER_USE_TICK.getOrDefault(id, Long.MIN_VALUE / 4L);
+        if (now - lastUse >= POWER_REGEN_DELAY_TICKS) {
             current = Math.min(resources.powerCapacity(), current + resources.powerRegenPerTick());
         }
         POWER.put(id, current);
@@ -168,7 +169,7 @@ public final class AugmentationResourceService {
         double current = currentPower(player, state);
         if (current + 1.0E-6D < cost) return false;
         POWER.put(id, Math.max(0.0D, current - cost));
-        LAST_POWER_USE_TICK.put(id, player.tickCount);
+        LAST_POWER_USE_TICK.put(id, player.level().getGameTime());
         return true;
     }
 
