@@ -55,8 +55,12 @@ public final class TitanKeyMappings {
         if (mc.player == null || mc.getConnection() == null || mc.gui.screen() != null) return;
 
         if (REFLEX_DRIVE.matches(event.getKeyEvent())) {
-            boolean nextRequested = !TitanClientState.flag("requested");
-            ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
+            if (mc.player.isShiftKeyDown() && TitanClientState.hasInstalled("overdrive_circulation")) {
+                ClientPacketDistributor.sendToServer(new AugmentAbilityPayload(AugmentAbilityPayload.OVERDRIVE));
+            } else {
+                boolean nextRequested = !TitanClientState.flag("requested");
+                ClientPacketDistributor.sendToServer(new DriveTogglePayload(nextRequested));
+            }
         } else if (HOOK.matches(event.getKeyEvent())) {
             int ability = mc.player.isShiftKeyDown()
                     ? AugmentAbilityPayload.PHASE_STEP
