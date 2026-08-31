@@ -9,10 +9,11 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Directional and projectile mitigation for skin / armor augmentations. */
+/** Directional, projectile, and semantic-channel mitigation for skin / skeletal augmentations. */
 public final class ArmorAugmentationService {
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
 
@@ -31,16 +32,27 @@ public final class ArmorAugmentationService {
         if (damage <= 0.0F) return;
 
         TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
+        Entity source = event.getSource().getEntity();
+        Set<DamageChannelService.Channel> channels = source == null
+                ? Set.of() : DamageChannelService.consume(player, source);
 
         TitanPlayerData.AugmentInstance subdermal = state.firstInstalledInstance("subdermal_armor");
         Entity direct = event.getSource().getDirectEntity();
-        if (subdermal != null && subdermal.enhancement() >= 7 && direct instanceof Projectile) {
-            damage *= 0.80F;
+        if (subdermal != null) {
+            if (subdermal.enhancement() >= 7 && direct instanceof Projectile) damage *= 0.80F;
+            if (subdermal.enhancement() >= 10
+                    && channels.contains(DamageChannelService.Channel.ARMOR_BREAK)) damage *= 0.72F;
+        }
+
+        TitanPlayerData.AugmentInstance impact = state.firstInstalledInstance("impact_dispersal_frame");
+        if (impact != null && impact.enhancement() >= 10
+                && channels.contains(DamageChannelService.Channel.SHOCKWAVE)) {
+            damage *= 0.68F;
         }
 
         TitanPlayerData.AugmentInstance reactive = state.firstInstalledInstance("reactive_dermis");
         if (reactive != null) {
-            damage = applyReactiveDermis(player, event, damage, reactive);
+            damage = applyReactiveDermis(player, event, damage, reactive, channels);
         } else {
             RUNTIME.remove(player.getUUID());
         }
@@ -49,7 +61,8 @@ public final class ArmorAugmentationService {
     }
 
     private static float applyReactiveDermis(ServerPlayer player, LivingDamageEvent.Pre event, float damage,
-                                             TitanPlayerData.AugmentInstance reactive) {
+                                             TitanPlayerData.AugmentInstance reactive,
+                                             Set<DamageChannelService.Channel> channels) {
         Vec3 sourcePosition = event.getSource().getSourcePosition();
         if (sourcePosition == null && event.getSource().getEntity() != null) {
             sourcePosition = event.getSource().getEntity().position();
@@ -86,7 +99,9 @@ public final class ArmorAugmentationService {
 
         if (enhancement >= 7 && sameDamageFamily) damage *= 0.88F;
 
-        if (enhancement >= 10 && runtime.focusStacks >= 2
+        if (enhancement >= 10 && channels.contains(DamageChannelService.Channel.WEAKPOINT)) {
+            damage *= 0.65F;
+        } else if (enhancement >= 10 && runtime.focusStacks >= 2
                 && damage >= player.getMaxHealth() * 0.18F) {
             damage *= 0.82F;
         }
