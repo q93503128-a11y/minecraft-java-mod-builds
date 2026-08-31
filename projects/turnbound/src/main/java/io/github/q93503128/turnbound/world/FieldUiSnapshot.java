@@ -34,8 +34,9 @@ public record FieldUiSnapshot(
     }
 
     /**
-     * Canonical field encounter preview. The legacy five-argument constructor remains the call-site API;
-     * all preview details are projected from the same encounter/definition data used by BattleEngine.
+     * Field encounter preview projected from the same canonical combat data used by BattleEngine.
+     * v0.4 does not author a separate recommended-CP table, so recommendedCp is the summed enemy CP reference
+     * under the existing canonical CP formula rather than a guaranteed win/loss threshold.
      */
     public record Encounter(
             String id,
@@ -52,9 +53,13 @@ public record FieldUiSnapshot(
             int rewardGold
     ) {
         public Encounter(String id, String label, boolean cleared, boolean unlocked, boolean boss) {
+            this(id, label, cleared, unlocked, boss, preview(id));
+        }
+
+        private Encounter(String id, String label, boolean cleared, boolean unlocked, boolean boss, Preview preview) {
             this(id, label, cleared, unlocked, boss,
-                    preview(id).level(), preview(id).category(), preview(id).partySize(), preview(id).composition(),
-                    preview(id).recommendedCp(), preview(id).rewardXp(), preview(id).rewardGold());
+                    preview.level(), preview.category(), preview.partySize(), preview.composition(),
+                    preview.recommendedCp(), preview.rewardXp(), preview.rewardGold());
         }
 
         private static Preview preview(String encounterId) {
