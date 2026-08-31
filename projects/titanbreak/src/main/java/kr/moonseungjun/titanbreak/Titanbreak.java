@@ -24,6 +24,7 @@ import kr.moonseungjun.titanbreak.station.StationService;
 import kr.moonseungjun.titanbreak.world.EncounterDirector;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -57,8 +58,8 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(AugmentAbilityService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(LegAugmentationService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(SpineAugmentationService::onIncomingDamage);
-        NeoForge.EVENT_BUS.addListener(ArmorAugmentationService::onDamagePre);
-        NeoForge.EVENT_BUS.addListener(CirculatoryAugmentationService::onDamagePre);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, ArmorAugmentationService::onDamagePre);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOW, CirculatoryAugmentationService::onDamagePre);
         NeoForge.EVENT_BUS.addListener(StationService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         LOGGER.info("TITANBREAK {} loaded", VERSION);
