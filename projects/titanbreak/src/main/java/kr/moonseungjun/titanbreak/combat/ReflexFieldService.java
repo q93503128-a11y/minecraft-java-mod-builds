@@ -13,9 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflexFieldService {
-    public static final double P0_RADIUS = 64.0D;
+    public static final double BASE_RADIUS = 64.0D;
 
-    private static final double MIN_RELATIVE_RATE = ReflexDriveService.P0_WORLD_RELATIVE_RATE;
+    private static final double MIN_RELATIVE_RATE = ReflexDriveService.BASE_WORLD_RELATIVE_RATE;
     private static final double EPSILON = 1.0E-6D;
     private static final Map<UUID, Field> FIELDS = new ConcurrentHashMap<>();
     private static final Map<UUID, Double> MOB_AI_BUDGET = new ConcurrentHashMap<>();
@@ -32,9 +32,7 @@ public final class ReflexFieldService {
                 player.position(), Math.max(1, rating), Math.max(8.0D, radius)));
     }
 
-    public static void clear(UUID owner) {
-        FIELDS.remove(owner);
-    }
+    public static void clear(UUID owner) { FIELDS.remove(owner); }
 
     public static void clearAll() {
         FIELDS.clear();
@@ -42,9 +40,7 @@ public final class ReflexFieldService {
         PROJECTILE_SCALE.clear();
     }
 
-    public static boolean active(UUID owner) {
-        return FIELDS.containsKey(owner);
-    }
+    public static boolean active(UUID owner) { return FIELDS.containsKey(owner); }
 
     public static int rating(UUID owner) {
         Field field = FIELDS.get(owner);
@@ -127,15 +123,11 @@ public final class ReflexFieldService {
     }
 
     private static int localRating(Entity entity, ResourceKey<Level> dimension) {
-        if (entity instanceof Player player) {
-            return ratingForOwner(player.getUUID(), dimension);
-        }
+        if (entity instanceof Player player) return ratingForOwner(player.getUUID(), dimension);
         if (entity instanceof Projectile projectile && projectile.getOwner() instanceof Player owner) {
             return ratingForOwner(owner.getUUID(), dimension);
         }
-        if (entity instanceof TemporalRated temporalRated) {
-            return Math.max(0, temporalRated.temporalRating());
-        }
+        if (entity instanceof TemporalRated temporalRated) return Math.max(0, temporalRated.temporalRating());
         return 0;
     }
 
