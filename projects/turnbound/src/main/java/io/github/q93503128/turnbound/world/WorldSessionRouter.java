@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/** Routes the persistent Aster March shell between Radia and all authored main-story chapter sessions. */
+/** Routes the persistent Aster March shell between Radia and all authored campaign/content sessions. */
 public final class WorldSessionRouter {
     private static final Set<UUID> RELAY_APPROACH = new LinkedHashSet<>();
 
@@ -32,6 +32,7 @@ public final class WorldSessionRouter {
     public static void enterInitial(ServerPlayer p) {
         if (!(p.level() instanceof ServerLevel level)) return;
         AsterMarchWorldShell.build(level);
+        AsterMarchContentOrchestrator.build(level);
         AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
         RadiaHubSessionManager.enter(p);
     }
@@ -39,7 +40,9 @@ public final class WorldSessionRouter {
     public static void tick(ServerPlayer p) {
         if (!(p.level() instanceof ServerLevel level)) return;
         AsterMarchWorldShell.build(level);
+        AsterMarchContentOrchestrator.build(level);
         AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
+        AsterMarchContentOrchestrator.tick(level, p);
 
         if (RELAY_APPROACH.contains(p.getUUID())) {
             tickRelayApproach(level, p);
@@ -164,6 +167,7 @@ public final class WorldSessionRouter {
     }
 
     public static boolean interactEntity(ServerPlayer p, Entity e) {
+        if (AsterMarchContentOrchestrator.interact(p, e)) return true;
         if (RELAY_APPROACH.contains(p.getUUID())) return false;
         if (RadiaHubSessionManager.active(p)) return RadiaHubSessionManager.interactEntity(p, e);
         if (GloamwoodSessionManager.active(p)) return GloamwoodSessionManager.interactEntity(p, e);
@@ -205,6 +209,7 @@ public final class WorldSessionRouter {
 
     public static void remove(ServerPlayer p) {
         RELAY_APPROACH.remove(p.getUUID());
+        AsterMarchContentOrchestrator.remove(p);
         AsterMarchWorldShell.forget(p.getUUID());
         RadiaHubSessionManager.remove(p);
         GloamwoodSessionManager.remove(p);
