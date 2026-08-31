@@ -399,7 +399,7 @@ public final class SettlementConstructionService {
             BlockPos pos = column.above(y);
             BlockState state = level.getBlockState(pos);
             if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
-            if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) continue;
+            if (isSoftVegetation(state)) continue;
             if (y <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state)) continue;
             return false;
         }
@@ -1326,8 +1326,18 @@ public final class SettlementConstructionService {
     }
 
     private static boolean isSafeAboveGround(BlockState state, int relativeY) {
-        if (state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES)) return true;
+        if (isSoftVegetation(state)) return true;
         return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
+    }
+
+    private static boolean isSoftVegetation(BlockState state) {
+        if (state.isAir()) return true;
+        if (!state.getFluidState().isEmpty()) return false;
+        return state.canBeReplaced()
+                || state.is(BlockTags.LEAVES)
+                || state.is(BlockTags.REPLACEABLE_BY_TREES)
+                || state.getBlock() instanceof net.minecraft.world.level.block.BushBlock
+                || state.getBlock() instanceof net.minecraft.world.level.block.SnowLayerBlock;
     }
 
     private static boolean isNaturalGround(BlockState state) {
