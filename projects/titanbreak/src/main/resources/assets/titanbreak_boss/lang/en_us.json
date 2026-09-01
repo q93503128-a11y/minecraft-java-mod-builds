@@ -24,5 +24,9 @@
   "entity.titanbreak.storm_leviathan": "Storm Leviathan",
   "message.titanbreak.storm_leviathan_warning": "The wind locks into one direction and blue discharge crawls across exposed metal. A vast shadow overhead has changed course.",
   "message.titanbreak.storm_leviathan_arrival": "The Storm Leviathan has taken the sky. Break its electric sacs and wing membranes to weaken the storm.",
-  "message.titanbreak.storm_leviathan_defeated": "The Leviathan's deep storm organ has gone silent. Its high-output energy materials can be recovered."
+  "message.titanbreak.storm_leviathan_defeated": "The Leviathan's deep storm organ has gone silent. Its high-output energy materials can be recovered.",
+  "entity.titanbreak.ash_titan": "Ash Titan",
+  "message.titanbreak.ash_titan_warning": "The far horizon shimmers as soil and stone blacken with heat. A colossal thermal source has begun moving beyond its nest.",
+  "message.titanbreak.ash_titan_arrival": "The Ash Titan has sealed the area. Breaking its cooling plates exposes the radiant heart, but also raises its thermal output.",
+  "message.titanbreak.ash_titan_defeated": "The Ash Titan's radiant heart has gone cold. Concentrated radiation and thermal-processing materials can be recovered."
 }

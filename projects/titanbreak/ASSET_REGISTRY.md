@@ -38,5 +38,6 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Hundred-Eyed Watcher model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original model and analysis-counter palette | B05 boss presentation |
 | Chronophage model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original temporal-organ model and palette | B06 boss presentation |
 | Storm Leviathan model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original flying multipart geometry and animation; project-owned boss palette baseline | B07 boss presentation |
+| Ash Titan model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original thermal guardian multipart geometry and animation; project-owned volcanic palette | B08 boss presentation |
 
 GeckoLib remains the only external presentation-engine dependency in the current alpha. Creature art is a project-owned implementation baseline rather than a vanilla mob renderer fallback. Some elite and boss textures intentionally reuse project-owned palette baselines while their geometry and gameplay silhouettes remain distinct; future replacement art must update this registry before merge.

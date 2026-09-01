@@ -2,6 +2,7 @@ package kr.moonseungjun.titanbreak.registry;
 
 import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
+import kr.moonseungjun.titanbreak.entity.AshTitanEntity;
 import kr.moonseungjun.titanbreak.entity.BastionWalkerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronophageEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
@@ -61,6 +62,12 @@ public final class ModBossEntities {
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(128)
                     .build(key("storm_leviathan")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<AshTitanEntity>> ASH_TITAN =
+            ENTITIES.register("ash_titan", () -> EntityType.Builder
+                    .<AshTitanEntity>of(AshTitanEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(112)
+                    .build(key("ash_titan")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -99,6 +106,11 @@ public final class ModBossEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.14D).add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 16.0D).add(Attributes.ARMOR_TOUGHNESS, 8.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.92D).build());
+        event.put(ASH_TITAN.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(AshTitanEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.08D).add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 24.0D).add(Attributes.ARMOR_TOUGHNESS, 12.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D).build());
     }
 
     private static ResourceKey<EntityType<?>> key(String path) {

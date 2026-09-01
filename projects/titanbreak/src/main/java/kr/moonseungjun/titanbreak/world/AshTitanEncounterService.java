@@ -1,6 +1,6 @@
 package kr.moonseungjun.titanbreak.world;
 
-import kr.moonseungjun.titanbreak.entity.StormLeviathanEntity;
+import kr.moonseungjun.titanbreak.entity.AshTitanEntity;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModBossEntities;
 import net.minecraft.core.BlockPos;
@@ -17,24 +17,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class StormLeviathanEncounterService {
-    private static final long FIRST_WARNING_DELAY = 680L;
-    private static final long WARNING_TO_ARRIVAL = 340L;
-    private static final long RESPAWN_DELAY = 11_600L;
+public final class AshTitanEncounterService {
+    private static final long FIRST_WARNING_DELAY = 720L;
+    private static final long WARNING_TO_ARRIVAL = 360L;
+    private static final long RESPAWN_DELAY = 12_800L;
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
 
-    private StormLeviathanEncounterService() {}
+    private AshTitanEncounterService() {}
 
     public static void tick(ServerPlayer player, TitanPlayerData.State progression) {
         if (!(player.level() instanceof ServerLevel level) || player.isCreative() || player.isSpectator()
                 || level.getDifficulty() == Difficulty.PEACEFUL) return;
-        if (!progression.hasBossFirstKill("chronophage")) {
+        if (!progression.hasBossFirstKill("storm_leviathan") || progression.hasBossFirstKill("ash_titan")) {
             RUNTIME.remove(player.getUUID());
-            return;
-        }
-        if (progression.hasBossFirstKill("storm_leviathan")) {
-            RUNTIME.remove(player.getUUID());
-            AshTitanEncounterService.tick(player, progression);
             return;
         }
 
@@ -46,33 +41,32 @@ public final class StormLeviathanEncounterService {
         if (!runtime.warningSent && now >= runtime.warningTick) {
             runtime.warningSent = true;
             runtime.spawnTick = now + WARNING_TO_ARRIVAL;
-            player.sendSystemMessage(Component.translatable("message.titanbreak.storm_leviathan_warning"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.ash_titan_warning"));
             return;
         }
         if (!runtime.warningSent || now < runtime.spawnTick) return;
 
         if (spawnBoss(level, player)) {
-            player.sendSystemMessage(Component.translatable("message.titanbreak.storm_leviathan_arrival"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.ash_titan_arrival"));
             runtime.warningSent = false;
             runtime.warningTick = now + RESPAWN_DELAY;
             runtime.spawnTick = Long.MAX_VALUE;
         } else {
-            runtime.spawnTick = now + 140L;
+            runtime.spawnTick = now + 160L;
         }
     }
 
     private static boolean spawnBoss(ServerLevel level, ServerPlayer player) {
         for (int attempt = 0; attempt < 18; attempt++) {
             double angle = player.getRandom().nextDouble() * Math.PI * 2.0D;
-            int range = 168 + player.getRandom().nextInt(61);
+            int range = 150 + player.getRandom().nextInt(71);
             int x = player.getBlockX() + (int) Math.round(Math.cos(angle) * range);
             int z = player.getBlockZ() + (int) Math.round(Math.sin(angle) * range);
-            int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            int y = groundY + 48 + player.getRandom().nextInt(18);
-            BlockPos pos = new BlockPos(x, groundY, z);
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos pos = new BlockPos(x, y, z);
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
 
-            StormLeviathanEntity boss = ModBossEntities.STORM_LEVIATHAN.get().create(level, EntitySpawnReason.EVENT);
+            AshTitanEntity boss = ModBossEntities.ASH_TITAN.get().create(level, EntitySpawnReason.EVENT);
             if (boss == null) return false;
             boss.setPos(x + 0.5D, y, z + 0.5D);
             boss.setYRot(player.getRandom().nextFloat() * 360.0F);
@@ -85,18 +79,11 @@ public final class StormLeviathanEncounterService {
 
     private static boolean hasNearbyBoss(ServerLevel level, ServerPlayer player) {
         AABB area = player.getBoundingBox().inflate(560.0D);
-        return !level.getEntitiesOfClass(StormLeviathanEntity.class, area, Entity::isAlive).isEmpty();
+        return !level.getEntitiesOfClass(AshTitanEntity.class, area, Entity::isAlive).isEmpty();
     }
 
-    public static void clear(UUID playerId) {
-        RUNTIME.remove(playerId);
-        AshTitanEncounterService.clear(playerId);
-    }
-
-    public static void clearAll() {
-        RUNTIME.clear();
-        AshTitanEncounterService.clearAll();
-    }
+    public static void clear(UUID playerId) { RUNTIME.remove(playerId); }
+    public static void clearAll() { RUNTIME.clear(); }
 
     private static final class RuntimeState {
         private long warningTick;

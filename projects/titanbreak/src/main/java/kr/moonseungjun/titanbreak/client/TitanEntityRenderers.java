@@ -43,5 +43,6 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModBossEntities.HUNDRED_EYED_WATCHER.get(), HundredEyedWatcherRenderer::new);
         event.registerEntityRenderer(ModBossEntities.CHRONOPHAGE.get(), ChronophageRenderer::new);
         event.registerEntityRenderer(ModBossEntities.STORM_LEVIATHAN.get(), StormLeviathanRenderer::new);
+        event.registerEntityRenderer(ModBossEntities.ASH_TITAN.get(), AshTitanRenderer::new);
     }
 }

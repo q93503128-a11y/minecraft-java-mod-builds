@@ -24,5 +24,9 @@
   "entity.titanbreak.storm_leviathan": "폭풍거수",
   "message.titanbreak.storm_leviathan_warning": "바람이 한 방향으로 눕고 금속 표면에 푸른 방전이 번진다. 상공에서 거대한 그림자가 경로를 바꿨다.",
   "message.titanbreak.storm_leviathan_arrival": "폭풍거수가 상공을 점유했다. 전기주머니와 날개막을 끊어 폭풍을 약화시켜야 한다.",
-  "message.titanbreak.storm_leviathan_defeated": "폭풍거수의 심부 폭풍기관이 멎었다. 고출력 에너지 재료를 회수할 수 있다."
+  "message.titanbreak.storm_leviathan_defeated": "폭풍거수의 심부 폭풍기관이 멎었다. 고출력 에너지 재료를 회수할 수 있다.",
+  "entity.titanbreak.ash_titan": "잿빛 태양",
+  "message.titanbreak.ash_titan_warning": "먼 지평선 위 공기가 흔들리고 흙과 돌이 검게 달아오른다. 거대한 열원이 둥지 밖을 향해 움직이기 시작했다.",
+  "message.titanbreak.ash_titan_arrival": "잿빛 태양이 영역을 봉쇄했다. 냉각판을 파괴하면 방사심장이 열리지만 열출력도 함께 상승한다.",
+  "message.titanbreak.ash_titan_defeated": "잿빛 태양의 방사심장이 식었다. 고농도 방사·열처리 재료를 회수할 수 있다."
 }
