@@ -19,6 +19,7 @@ public final class BattleSnapshotCodec {
                 .append(state.outcome()).append('|').append(actor).append('|').append(session.finished() ? 1 : 0).append('|')
                 .append(session.autoAllowed() ? 1 : 0).append('|').append(session.speedAllowed() ? 1 : 0).append('|')
                 .append(session.fleeAllowed() ? 1 : 0).append('\n');
+        out.append("C|").append(safe(session.encounterId())).append('\n');
 
         Vec3 arena = session.battleAnchor();
         out.append("A|").append(number(arena.x)).append('|').append(number(arena.y)).append('|')
@@ -50,11 +51,13 @@ public final class BattleSnapshotCodec {
             }
         }
 
-        BattleResultSummary result = session.resultSummary();
+        BattleResultPreview.View preview = BattleResultPreview.enrich(session.encounterId(), session.resultSummary());
+        BattleResultSummary result = preview.summary();
         out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|')
                 .append(result.firstClear() ? 1 : 0).append('|').append(result.crystal()).append('|')
                 .append(result.starEssence()).append('|')
                 .append(safe(String.join(",", result.equipmentRewards()))).append('\n');
+        for (String notice : preview.notices()) out.append("N|").append(safe(notice)).append('\n');
         for (BattleResultSummary.PartyXp member : result.party()) {
             out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
                     .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
