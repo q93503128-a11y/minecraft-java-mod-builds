@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound;
 
 import io.github.q93503128.turnbound.client.BattleCameraController;
 import io.github.q93503128.turnbound.client.ClientAudioNetwork;
+import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
 import io.github.q93503128.turnbound.client.ClientFieldNetwork;
 import io.github.q93503128.turnbound.client.ClientMetaNetwork;
@@ -24,5 +25,6 @@ public final class TurnboundClient {
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onFov);
         NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
+        NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
 }
