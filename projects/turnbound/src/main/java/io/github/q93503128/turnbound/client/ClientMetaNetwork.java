@@ -1,16 +1,18 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** Applies server-authored meta state and transient facility tab routing. */
+/** Applies server-authored meta state and transient facility/briefing routing. */
 public final class ClientMetaNetwork {
     private ClientMetaNetwork() {}
 
     public static void register(RegisterClientPayloadHandlersEvent event) {
         event.register(MetaSnapshotPayload.TYPE, ClientMetaNetwork::handle);
+        event.register(EndgameBriefingPayload.TYPE, ClientMetaNetwork::handleBriefing);
     }
 
     private static void handle(MetaSnapshotPayload payload, IPayloadContext context) {
@@ -26,9 +28,17 @@ public final class ClientMetaNetwork {
             }
             if (minecraft.gui.screen() instanceof MetaMenuScreen screen) {
                 screen.refreshSnapshot();
-            } else {
+            } else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
                 minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.PARTY));
             }
+        });
+    }
+
+    private static void handleBriefing(EndgameBriefingPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
+            minecraft.gui.setScreen(new EndgameBriefingScreen(EndgameBriefingScreen.decode(payload.briefing())));
         });
     }
 
