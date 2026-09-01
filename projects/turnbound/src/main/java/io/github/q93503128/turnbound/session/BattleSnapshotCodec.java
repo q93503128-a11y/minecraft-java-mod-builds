@@ -62,7 +62,9 @@ public final class BattleSnapshotCodec {
                 .append(result.firstClear() ? 1 : 0).append('|').append(result.crystal()).append('|')
                 .append(result.starEssence()).append('|')
                 .append(safe(String.join(",", result.equipmentRewards()))).append('\n');
-        for (String notice : preview.notices()) out.append("N|").append(safe(notice)).append('\n');
+        for (BattleResultPreview.Notice notice : preview.notices()) {
+            out.append("N|").append(safe(notice.code())).append('|').append(safe(notice.text())).append('\n');
+        }
         for (BattleResultSummary.PartyXp member : result.party()) {
             out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
                     .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
