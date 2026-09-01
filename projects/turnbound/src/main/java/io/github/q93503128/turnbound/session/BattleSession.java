@@ -90,7 +90,7 @@ public final class BattleSession {
         if(finished||auto||engine.state().outcome()!=BattleOutcome.RUNNING)return;if(!actorId.equals(engine.state().currentActorId()))return;CombatantState actor=engine.state().combatant(actorId);if(actor.side()!=CombatantSide.ALLY)return;
         ServerLevel level=(ServerLevel)player.level();try{SkillDefinition skill=actor.definition().skill(skillId);presentation.clearFocus(level);int eventStart=engine.state().events().size();
             if(skill.targetRule()==TargetRule.SELF||skill.targetRule()==TargetRule.ALLY_ALL||skill.targetRule()==TargetRule.ENEMY_ALL)engine.useSkill(actorId,skillId);else engine.useSkill(actorId,skillId,targetId);
-            barkSkill(player,actor.definition().id(),skill.id());animateSkill(level,actor,skill,targetId);presentation.presentEvents(level,engine.state(),eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=presentationDelay();markFinished();barkOutcome(player);BattleNetwork.sync(player,this);
+            barkSkill(player,actor.definition().id(),skill.id());animateSkill(level,actor,skill,targetId);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=presentationDelay();markFinished();barkOutcome(player);BattleNetwork.sync(player,this);
         }catch(RuntimeException ignored){BattleNetwork.sync(player,this);}
     }
 
@@ -99,7 +99,7 @@ public final class BattleSession {
     void toggleSpeed(ServerPlayer player){if(finished||!speedAllowed)return;speed=speed==1?2:1;BattleNetwork.sync(player,this);}
     void cleanup(ServerPlayer player){presentation.cleanup((ServerLevel)player.level());player.setInvisible(playerWasInvisible);player.setPos(returnPosition.x,returnPosition.y,returnPosition.z);player.setYRot(returnYaw);player.setXRot(returnPitch);player.setDeltaMovement(Vec3.ZERO);}
 
-    private void autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{P0Scenario.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);}
+    private void autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{P0Scenario.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);}
 
     private void markFinished(){if(finished||engine.state().outcome()==BattleOutcome.RUNNING)return;finished=true;if(engine.state().outcome()==BattleOutcome.ALLY_VICTORY&&!encounterId.isBlank()){if(EndgameEncounterCatalog.contains(encounterId))resultSummary=EndgameProgressService.previewVictory(ownerId,encounterId);else resultSummary=CampaignProgressStore.previewVictory(ownerId,encounterId);}}
 
@@ -124,7 +124,18 @@ public final class BattleSession {
 
     private void barkSkill(ServerPlayer player,String heroId,String skillId){
         if(!HeroBattleBarks.contains(heroId))return;
-        if(skillId.equals("p02_time_leap")||skillId.equals("p03_guard_transfer")||skillId.equals("p04_returned_breath")||skillId.equals("p07_summon_toto"))HeroBattleBarks.say(player,heroId,HeroBattleBarks.Event.SPECIAL,skillId);
+        if(skillId.equals("p01_breaker_strike")||skillId.equals("p02_time_leap")||skillId.equals("p03_guard_transfer")||skillId.equals("p04_returned_breath")||skillId.equals("p07_summon_toto"))HeroBattleBarks.say(player,heroId,HeroBattleBarks.Event.SPECIAL,skillId);
+    }
+
+    private void barkReactionEvents(ServerPlayer player,int eventStart){
+        List<BattleEvent> events=engine.state().events();
+        for(int i=Math.max(0,eventStart);i<events.size();i++){
+            BattleEvent event=events.get(i);if(!"REACTION_DAMAGE".equals(event.type()))continue;
+            CombatantState source=engine.state().find(event.sourceId());
+            if(source!=null&&source.side()==CombatantSide.ALLY&&"P05".equals(source.definition().id())){
+                HeroBattleBarks.say(player,"P05",HeroBattleBarks.Event.SPECIAL,"REACTION");return;
+            }
+        }
     }
 
     private void barkOutcome(ServerPlayer player){if(outcomeBarked||engine.state().outcome()!=BattleOutcome.ALLY_VICTORY)return;outcomeBarked=true;firstLivingHero().ifPresent(hero->HeroBattleBarks.say(player,hero.definition().id(),HeroBattleBarks.Event.VICTORY));}
