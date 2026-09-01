@@ -57,6 +57,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         RawAnimation death = prefix == null ? DEATH : play(prefix, "death");
         RawAnimation revive = prefix == null ? REVIVE : play(prefix, "revive");
         RawAnimation victory = prefix == null ? VICTORY : play(prefix, "victory");
+        RawAnimation buff = prefix == null ? ready : play(prefix, "buff");
+        RawAnimation debuff = prefix == null ? ready : play(prefix, "debuff");
         RawAnimation fieldWalk = prefix == null ? FIELD_WALK : loop(prefix, "field_walk");
         RawAnimation fieldIdle = prefix == null ? FIELD_IDLE : loop(prefix, "field_idle");
 
@@ -73,6 +75,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("death", death)
                 .triggerableAnim("revive", revive)
                 .triggerableAnim("victory", victory)
+                .triggerableAnim("buff", buff)
+                .triggerableAnim("debuff", debuff)
                 .triggerableAnim("telegraph", TELEGRAPH)
                 .triggerableAnim("charge", CHARGE)
                 .triggerableAnim("summon", SUMMON)
@@ -100,6 +104,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playDeath() { triggerAnim("combat", "death"); }
     public void playRevive() { triggerAnim("combat", "revive"); }
     public void playVictory() { triggerAnim("combat", "victory"); }
+    public void playBuff() { triggerAnim("combat", "buff"); }
+    public void playDebuff() { triggerAnim("combat", "debuff"); }
     public void playTelegraph() { triggerAnim("combat", "telegraph"); }
     public void playCharge() { triggerAnim("combat", "charge"); }
     public void playSummon() { triggerAnim("combat", "summon"); }
