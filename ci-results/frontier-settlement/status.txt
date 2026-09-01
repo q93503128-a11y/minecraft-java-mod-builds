@@ -1,11 +1,11 @@
 status=success
-source_sha=b9e58ab66667f1236d93575be5fc3ef0e9622866
-docs_sha=b9e58ab66667f1236d93575be5fc3ef0e9622866
-source_docs_sha=b9e58ab66667f1236d93575be5fc3ef0e9622866
-run_id=33474562217
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/33474562217
+source_sha=32b1235875bb5e0a8fb9570da4e1e3e5e526987d
+docs_sha=32b1235875bb5e0a8fb9570da4e1e3e5e526987d
+source_docs_sha=32b1235875bb5e0a8fb9570da4e1e3e5e526987d
+run_id=33474614683
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/33474614683
 version=0.1.0-alpha.91
-jar_sha256=9ad6c30c7219b3e7c1982ea5c9eed511882942425783b516c9805e233827d485
+jar_sha256=33d1c9556a1cfdd3356f80603b211c91cacb0125067e166e64f0a42a0f4f605f
 minecraft=26.2
 neoforge=26.2.0.38-beta
 java=25
