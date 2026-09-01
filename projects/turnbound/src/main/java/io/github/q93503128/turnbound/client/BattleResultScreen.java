@@ -167,8 +167,10 @@ public final class BattleResultScreen extends Screen {
 
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-        if (!resultVisible()) return;
+        if (!resultVisible()) {
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+            return;
+        }
 
         ClientBattleState.Snapshot snapshot = ClientBattleState.snapshot();
         Rect panel = panel();
@@ -189,6 +191,7 @@ public final class BattleResultScreen extends Screen {
             graphics.text(font, Component.literal("보상 없음"), x, y + 42, DANGER, true);
             graphics.text(font, Component.literal("패배 시 XP와 전투 보상은 지급되지 않습니다."), x, y + 59, TEXT, false);
             graphics.text(font, Component.literal("파티를 정비한 뒤 다시 도전할 수 있습니다."), x, y + 76, SECONDARY, false);
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
             return;
         }
 
@@ -233,6 +236,7 @@ public final class BattleResultScreen extends Screen {
         }
 
         if (cleanupOpen) drawCleanupDialog(graphics, panel);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     private void drawCleanupDialog(GuiGraphicsExtractor graphics, Rect panel) {
