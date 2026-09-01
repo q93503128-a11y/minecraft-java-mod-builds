@@ -58,6 +58,46 @@ jobs:
               raise SystemExit(f'exact endpoint anchor count={s.count(old)}')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
+      - name: Instrument sealed path diagnostics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/ConstructionRuntimeScenarioQa.java')
+          s = p.read_text(encoding='utf-8')
+          old = '''        worker = spawnWorker(level, base.offset(-10, 0, 0));
+                  boolean sealed = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
+                  check("sealed_container_rejected", !sealed);
+          '''
+          new = '''        worker = spawnWorker(level, base.offset(-10, 0, 0));
+                  if (worker != null) {
+                      Method approaches = SettlementConstructionService.class.getDeclaredMethod(
+                              "interactionApproachPositions", ServerLevel.class, FrontierWorkerEntity.class, BlockPos.class);
+                      approaches.setAccessible(true);
+                      Method createPath = SettlementConstructionService.class.getDeclaredMethod(
+                              "createReachablePath", FrontierWorkerEntity.class, BlockPos.class);
+                      createPath.setAccessible(true);
+                      for (Object candidateObject : (java.util.List<?>) approaches.invoke(null, level, worker, barrel)) {
+                          BlockPos candidate = (BlockPos) candidateObject;
+                          Object pathObject = createPath.invoke(null, worker, candidate);
+                          if (pathObject instanceof net.minecraft.world.level.pathfinder.Path path) {
+                              StringBuilder nodes = new StringBuilder();
+                              for (int i = 0; i < path.getNodeCount(); i++) {
+                                  if (i > 0) nodes.append(" -> ");
+                                  nodes.append(path.getNode(i).asBlockPos());
+                              }
+                              System.out.printf("SEALED_PATH candidate=%s end=%s canReach=%s nodes=%s%n",
+                                      candidate, path.getEndNode().asBlockPos(), path.canReach(), nodes);
+                          }
+                      }
+                  }
+                  boolean sealed = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
+                  check("sealed_container_rejected", !sealed);
+          '''
+          if s.count(old) != 1:
+              raise SystemExit(f'sealed diagnostic anchor count={s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Static navigation assertions
         shell: bash
         run: |
