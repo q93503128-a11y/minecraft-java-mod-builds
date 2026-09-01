@@ -1,6 +1,8 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.world.AsterMarchRegionCatalog;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
+import net.minecraft.client.Minecraft;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -52,7 +54,9 @@ public final class ClientAudioDirector {
     public static void onFieldSnapshot(FieldUiSnapshot snapshot) {
         if (ClientBattleState.snapshot().active()) return;
         if (snapshot == null || !snapshot.active()) { requestMusic(MusicSlot.NONE); return; }
-        boolean radia = snapshot.travels().stream().anyMatch(travel -> travel.current() && "FT_RADIA".equals(travel.id()));
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean radia = minecraft.player != null && AsterMarchRegionCatalog.RADIA.contains(minecraft.player.getX(), minecraft.player.getZ());
+        if (!radia) radia = snapshot.travels().stream().anyMatch(travel -> travel.current() && AsterMarchRegionCatalog.FT_RADIA.equals(travel.id()));
         requestMusic(radia ? MusicSlot.HUB : MusicSlot.REGION_EXPLORE);
     }
 
