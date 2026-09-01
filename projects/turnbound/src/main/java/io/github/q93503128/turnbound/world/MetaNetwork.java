@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
 import net.minecraft.network.chat.Component;
@@ -8,7 +9,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/** Server-to-client authority for the v0.4 management menu. */
+/** Server-to-client authority for the v0.4 management menu and post-story briefing surfaces. */
 public final class MetaNetwork {
     public static final String PROTOCOL = "turnbound-meta-v04";
     private MetaNetwork() {}
@@ -16,6 +17,7 @@ public final class MetaNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(MetaSnapshotPayload.TYPE, MetaSnapshotPayload.STREAM_CODEC);
+        registrar.playToClient(EndgameBriefingPayload.TYPE, EndgameBriefingPayload.STREAM_CODEC);
         registrar.playToServer(MetaCommandPayload.TYPE, MetaCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (!(context.player() instanceof ServerPlayer player)) return;
