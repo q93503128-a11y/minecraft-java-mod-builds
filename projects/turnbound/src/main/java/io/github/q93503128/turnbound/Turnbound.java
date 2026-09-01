@@ -13,6 +13,7 @@ import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.MetaNetwork;
+import io.github.q93503128.turnbound.world.OpeningReadabilityService;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import io.github.q93503128.turnbound.world.StarterSliceBootstrap;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
@@ -63,6 +64,7 @@ public final class Turnbound {
             PlayerShellRules.maintain(player);
             StarterSliceBootstrap.tick(player);
             WorldSessionRouter.tick(player);
+            OpeningReadabilityService.tick(player);
             BattleSessionManager.tick(player);
             CampaignPersistence.autosave(player);
         }
@@ -91,6 +93,7 @@ public final class Turnbound {
         if (releaseRuntime || CampaignPersistence.blocked(player)) {
             CampaignProgressStore.removeRuntime(player.getUUID());
             StarterSliceBootstrap.remove(player);
+            OpeningReadabilityService.remove(player);
             WorldSessionRouter.remove(player);
         } else {
             LOGGER.error("TURNBOUND retained unsaved in-memory state for {} so a same-server reconnect can retry persistence", player.getUUID());
@@ -107,6 +110,7 @@ public final class Turnbound {
             }
         }
         StarterSliceBootstrap.clearAll(players);
+        OpeningReadabilityService.clear();
         WorldSessionRouter.clearAll(players);
         CampaignProgressStore.clearRuntime();
     }
