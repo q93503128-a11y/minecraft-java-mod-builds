@@ -51,19 +51,11 @@ jobs:
           from pathlib import Path
           p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           s = p.read_text(encoding='utf-8')
-          old = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
-              Path path = builder.getNavigation().createPath(target, 0);
-              return path != null && path.canReach() ? path : null;
-          }
-          '''
-          new = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
-              Path path = builder.getNavigation().createPath(target, 0);
-              if (path == null || !path.canReach() || path.getEndNode() == null) return null;
-              return path.getEndNode().asBlockPos().equals(target) ? path : null;
-          }
-          '''
+          old = '        return path != null && path.canReach() ? path : null;'
+          new = '''        if (path == null || !path.canReach() || path.getEndNode() == null) return null;
+                  return path.getEndNode().asBlockPos().equals(target) ? path : null;'''
           if s.count(old) != 1:
-              raise SystemExit(f'createReachablePath anchor count={s.count(old)}')
+              raise SystemExit(f'exact endpoint anchor count={s.count(old)}')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
       - name: Static navigation assertions
