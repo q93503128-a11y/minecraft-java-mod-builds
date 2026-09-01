@@ -11,7 +11,8 @@ final class BattleSkillTooltip {
         lines.add(skill.name());
         lines.add(targetLabel(skill.targetRule()) + "  ·  " + cooldownLabel(skill));
         if (skill.remaining() > 0) lines.add("남은 쿨타임 " + skill.remaining() + "회");
-        if (!skill.description().isBlank()) lines.add(skill.description());
+        String description = BattlePresentationText.skillDescription(skill.description());
+        if (!description.isBlank()) lines.add(description);
         return List.copyOf(lines);
     }
 
@@ -28,6 +29,6 @@ final class BattleSkillTooltip {
     }
 
     private static String cooldownLabel(ClientBattleState.Skill skill) {
-        return skill.baseCooldown() == 0 ? "Basic · 쿨타임 없음" : "쿨타임 " + skill.baseCooldown() + "회";
+        return BattlePresentationText.cooldownType(skill.baseCooldown());
     }
 }
