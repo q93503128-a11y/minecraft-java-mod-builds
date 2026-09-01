@@ -4,12 +4,9 @@ import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
-import io.github.q93503128.turnbound.content.ChallengeCatalog;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
-import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.RewardGrantService;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -117,10 +114,8 @@ public final class BattleSessionManager {
             if (!encounterId.isBlank()) {
                 if (outcome == BattleOutcome.ALLY_VICTORY) {
                     try {
-                        RewardGrantService.Result settlement = RewardGrantService.commitAndSave(
-                                player, old.rewardTransactionId(), encounterId, old.state(), outcome);
+                        RewardGrantService.commitAndSave(player, old.rewardTransactionId(), encounterId, old.state(), outcome);
                         CampaignPersistence.saveIfDirty(player);
-                        if (!settlement.duplicate()) notifyChallenges(player, settlement);
                     } catch (RewardGrantService.SettlementException ex) {
                         if (lifecycle && ex.recoverableFromJournal()) {
                             deferredReward = true;
@@ -144,19 +139,6 @@ public final class BattleSessionManager {
         }
         BattleNetwork.close(player);
         return true;
-    }
-
-    private static void notifyChallenges(ServerPlayer player, RewardGrantService.Result settlement) {
-        if (settlement.challengeIds().isEmpty()) return;
-        player.sendSystemMessage(Component.literal("Challenge 달성 · " + settlement.challengeIds().size() + "개")
-                .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-        for (String challengeId : settlement.challengeIds()) {
-            ChallengeCatalog.Challenge challenge = ChallengeCatalog.get(challengeId);
-            player.sendSystemMessage(Component.literal("✓ " + challenge.ordinal() + ". " + challenge.label()
-                    + " · Crystal +" + challenge.crystal() + " · Gold +" + challenge.gold())
-                    .withStyle(ChatFormatting.GOLD));
-        }
-        MetaNetwork.sync(player);
     }
 
     private static boolean settlementFailed(ServerPlayer player, BattleSession session, RuntimeException ex) {
