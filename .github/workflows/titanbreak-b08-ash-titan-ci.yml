@@ -123,17 +123,24 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import re
           from pathlib import Path
-          jars = [p for p in Path('projects/titanbreak/build/libs').glob('*.jar')
+
+          project = Path('projects/titanbreak')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+          match = re.search(r'^mod_version=(\S+)$', gradle, re.MULTILINE)
+          assert match, 'mod_version missing'
+          expected = f'titanbreak-{match.group(1)}.jar'
+          jars = [p for p in (project / 'build/libs').glob('*.jar')
                   if '-sources' not in p.name and '-javadoc' not in p.name]
           assert jars, 'runtime JAR missing'
-          assert any('alpha.49' in p.name for p in jars), [p.name for p in jars]
+          assert any(p.name == expected for p in jars), (expected, [p.name for p in jars])
           print('\n'.join(str(p) for p in jars))
           PY
 
-      - name: Upload alpha.49 test JAR
+      - name: Upload current B08 regression JAR
         uses: actions/upload-artifact@v4
         with:
-          name: titanbreak-alpha49-test
+          name: titanbreak-b08-regression-jar
           path: projects/titanbreak/build/libs/*.jar
           if-no-files-found: error
