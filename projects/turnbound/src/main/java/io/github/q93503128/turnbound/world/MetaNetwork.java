@@ -1,8 +1,10 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
+import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -21,13 +23,25 @@ public final class MetaNetwork {
         registrar.playToServer(MetaCommandPayload.TYPE, MetaCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (!(context.player() instanceof ServerPlayer player)) return;
-                    String denial = MetaActionGate.denial(player.getUUID(), payload.command());
+                    String raw = payload.command();
+                    String effective = raw;
+                    if (raw != null && raw.startsWith("DEPLOY|")) effective = "START|" + raw.substring("DEPLOY|".length());
+
+                    String denial = MetaActionGate.denial(player.getUUID(), effective);
                     if (!denial.isBlank()) {
                         player.sendSystemMessage(Component.literal("TURNBOUND · " + denial));
                         sync(player);
                         return;
                     }
-                    MetaMenuService.command(player, payload.command());
+
+                    if (raw != null && raw.startsWith("START|") && !BattleSessionManager.exists(player)) {
+                        String encounterId = raw.substring("START|".length());
+                        if (EndgameEncounterCatalog.contains(encounterId) && EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) {
+                            EndgameBriefing.send(player, EndgameBriefing.build(player.getUUID(), encounterId));
+                            return;
+                        }
+                    }
+                    MetaMenuService.command(player, effective);
                 }));
     }
 
