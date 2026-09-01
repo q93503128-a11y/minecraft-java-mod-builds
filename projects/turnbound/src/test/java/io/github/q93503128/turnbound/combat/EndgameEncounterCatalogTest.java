@@ -57,7 +57,8 @@ class EndgameEncounterCatalogTest {
         BattleStats normal = CanonicalData.definition("B05", 20, 0, false).stats();
         double floorAdjustment = 1.0 + 0.02 * (60 - 20);
         assertEquals((int)Math.floor(normal.maxHp() * 1.65 * floorAdjustment), boss.maxHp());
-        assertEquals(65, boss.definition().intParam("level", -1));
+        // Canon §132: the Rift table level overrides the enemy level; HardPattern does not add Hard-rematch +5.
+        assertEquals(60, boss.definition().intParam("level", -1));
         assertTrue(boss.definition().param("hardBoss", 0.0) > 0.0);
     }
 
