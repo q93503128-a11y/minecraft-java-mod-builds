@@ -38,7 +38,7 @@ public final class BattleResultScreen extends Screen {
     private boolean lastOverflow;
     private long seenMetaRevision = -1;
 
-    public BattleResultScreen() { super(Component.literal("TURNBOUND Result")); }
+    public BattleResultScreen() { super(Component.literal("TURNBOUND 결과")); }
 
     @Override
     protected void init() {
@@ -52,7 +52,7 @@ public final class BattleResultScreen extends Screen {
         }
         continueButton = addRenderableWidget(new BattleHudButton(
                 panel.right() - 116, panel.bottom() - 31, 102, 22,
-                Component.literal(lastOverflow ? "장비 정리" : "Continue  R"), lastOverflow ? GOLD : GREEN,
+                Component.literal(lastOverflow ? "장비 정리" : "현장 복귀  R"), lastOverflow ? GOLD : GREEN,
                 ignored -> continueField()));
         updateContinueVisibility();
     }
@@ -183,13 +183,13 @@ public final class BattleResultScreen extends Screen {
 
         int x = panel.x() + 16;
         int y = panel.y() + 13;
-        graphics.text(font, Component.literal(victory ? "VICTORY" : "DEFEAT"), x, y, accent, true);
+        graphics.text(font, Component.literal(victory ? "승리" : "패배"), x, y, accent, true);
         String encounter = encounterLabel(ClientBattleState.encounterId());
         if (!encounter.isBlank()) graphics.text(font, Component.literal(encounter), x, y + 15, SECONDARY, false);
 
         if (!victory) {
             graphics.text(font, Component.literal("보상 없음"), x, y + 42, DANGER, true);
-            graphics.text(font, Component.literal("패배 시 XP와 전투 보상은 지급되지 않습니다."), x, y + 59, TEXT, false);
+            graphics.text(font, Component.literal("패배 시 경험치와 전투 보상은 지급되지 않습니다."), x, y + 59, TEXT, false);
             graphics.text(font, Component.literal("파티를 정비한 뒤 다시 도전할 수 있습니다."), x, y + 76, SECONDARY, false);
             super.extractRenderState(graphics, mouseX, mouseY, partialTick);
             return;
@@ -197,18 +197,18 @@ public final class BattleResultScreen extends Screen {
 
         ClientBattleState.Result result = snapshot.result();
         if (result.firstClear()) {
-            graphics.text(font, Component.literal("FIRST CLEAR"), panel.right() - 91, y, GOLD, true);
+            graphics.text(font, Component.literal("첫 클리어"), panel.right() - 72, y, GOLD, true);
         }
 
         int rewardTop = y + (encounter.isBlank() ? 28 : 38);
-        graphics.text(font, Component.literal("REWARDS"), x, rewardTop, SECONDARY, true);
+        graphics.text(font, Component.literal("보상"), x, rewardTop, SECONDARY, true);
         int cardY = rewardTop + 14;
         int cardGap = 5;
         int cardW = Math.max(72, (panel.width() - 32 - cardGap * 3) / 4);
-        rewardCard(graphics, x, cardY, cardW, "Gold", result.gold(), GOLD);
-        rewardCard(graphics, x + (cardW + cardGap), cardY, cardW, "XP", result.xp(), GAUGE);
-        rewardCard(graphics, x + (cardW + cardGap) * 2, cardY, cardW, "Crystal", result.crystal(), result.crystal() > 0 ? GAUGE : MUTED);
-        rewardCard(graphics, x + (cardW + cardGap) * 3, cardY, cardW, "Essence", result.starEssence(), result.starEssence() > 0 ? GOLD : MUTED);
+        rewardCard(graphics, x, cardY, cardW, "골드", result.gold(), GOLD);
+        rewardCard(graphics, x + (cardW + cardGap), cardY, cardW, "경험치", result.xp(), GAUGE);
+        rewardCard(graphics, x + (cardW + cardGap) * 2, cardY, cardW, "크리스탈", result.crystal(), result.crystal() > 0 ? GAUGE : MUTED);
+        rewardCard(graphics, x + (cardW + cardGap) * 3, cardY, cardW, "정수", result.starEssence(), result.starEssence() > 0 ? GOLD : MUTED);
 
         int extraY = cardY + 34;
         for (String item : result.equipmentRewards()) {
@@ -226,7 +226,7 @@ public final class BattleResultScreen extends Screen {
 
         int sectionY = Math.max(extraY + 3, cardY + 39);
         graphics.fill(x, sectionY, panel.right() - 16, sectionY + 1, 0x55707987);
-        graphics.text(font, Component.literal("PARTY GROWTH"), x, sectionY + 8, SECONDARY, true);
+        graphics.text(font, Component.literal("파티 성장"), x, sectionY + 8, SECONDARY, true);
         int rowY = sectionY + 24;
         int rowW = panel.width() - 32;
         for (int i = 0; i < result.party().size() && i < 4; i++) {
@@ -250,9 +250,9 @@ public final class BattleResultScreen extends Screen {
         TurnboundFrameStyle.frame(graphics, dx, dy, dialogW, dialogH, GOLD);
         graphics.fill(dx, dy, dx + 4, dy + dialogH, GOLD);
         graphics.text(font, Component.literal("장비 인벤토리 정리"), dx + 16, dy + 14, GOLD, true);
-        graphics.text(font, Component.literal("획득 장비를 넣을 공간이 없습니다. Continue 전에 공간을 확보하세요."),
+        graphics.text(font, Component.literal("획득 장비를 넣을 공간이 없습니다. 복귀 전에 공간을 확보하세요."),
                 dx + 16, dy + 31, TEXT, false);
-        graphics.text(font, Component.literal("Inventory  " + meta.equipment().size() + " / " + EquipmentInventory.MAX_INSTANCES
+        graphics.text(font, Component.literal("인벤토리  " + meta.equipment().size() + " / " + EquipmentInventory.MAX_INSTANCES
                 + "    ·    대기 보상 " + meta.pendingEquipment().size()), dx + 16, dy + 49, SECONDARY, false);
 
         int yy = dy + 67;
@@ -270,7 +270,7 @@ public final class BattleResultScreen extends Screen {
             graphics.text(font, Component.literal("장비 목록을 불러오는 중…"), dx + 16, yy, MUTED, false);
         } else {
             long sellable = meta.equipment().stream().filter(ClientMetaState.EquipmentRow::sellable).count();
-            graphics.text(font, Component.literal("판매 가능 장비 " + sellable + "개 · 낮은 Tier/+강화부터 표시"),
+            graphics.text(font, Component.literal("판매 가능 장비 " + sellable + "개 · 낮은 등급/+강화부터 표시"),
                     dx + 16, Math.min(dy + dialogH - 48, yy), SECONDARY, false);
         }
     }
@@ -288,14 +288,14 @@ public final class BattleResultScreen extends Screen {
         String level = levelUp ? "Lv." + member.levelBefore() + " → " + member.levelAfter() : "Lv." + member.levelAfter();
         graphics.text(font, Component.literal(member.name()), x, y, TEXT, true);
         graphics.text(font, Component.literal(level), x + 96, y, levelUp ? GOLD : SECONDARY, true);
-        if (levelUp) graphics.text(font, Component.literal("LEVEL UP"), x + width - 56, y, GOLD, true);
-        else if (cap) graphics.text(font, Component.literal("STAR CAP"), x + width - 52, y, GAUGE, true);
+        if (levelUp) graphics.text(font, Component.literal("레벨 상승"), x + width - 56, y, GOLD, true);
+        else if (cap) graphics.text(font, Component.literal("성급 한계"), x + width - 52, y, GAUGE, true);
 
         int barX = x, barY = y + 13, barW = Math.max(90, width - 105);
         graphics.fill(barX, barY, barX + barW, barY + 4, 0xE0080A0E);
         int fill = cap ? barW : (int)Math.round(barW * Math.min(1.0, member.xpAfter() / (double)Math.max(1, member.xpToNextAfter())));
         if (fill > 0) graphics.fill(barX, barY, barX + fill, barY + 4, GAUGE);
-        String xp = cap ? "CAP" : member.xpAfter() + " / " + member.xpToNextAfter();
+        String xp = cap ? "한계" : member.xpAfter() + " / " + member.xpToNextAfter();
         graphics.text(font, Component.literal(xp), barX + barW + 8, y + 9, cap ? GAUGE : SECONDARY, false);
     }
 
@@ -304,11 +304,11 @@ public final class BattleResultScreen extends Screen {
         try {
             if (rawId.matches("HARD_B0[1-5]")) {
                 String bossId = rawId.substring("HARD_".length());
-                return CanonicalData.definition(bossId).name() + " · HARD";
+                return CanonicalData.definition(bossId).name() + " · 하드";
             }
             if (rawId.matches("RIFT_F\\d{2}")) {
                 int floor = Integer.parseInt(rawId.substring("RIFT_F".length()));
-                return "Rift Gate · F" + floor + " · Lv." + V04Catalogs.riftFloor(floor).level();
+                return "균열 관문 · F" + floor + " · Lv." + V04Catalogs.riftFloor(floor).level();
             }
             String canonical = CampaignProgressStore.canonicalEncounterId(rawId);
             if (V04Catalogs.hasEncounter(canonical)) return V04Catalogs.encounter(canonical).label();
