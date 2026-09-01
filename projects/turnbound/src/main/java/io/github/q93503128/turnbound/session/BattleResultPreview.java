@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ChallengeService;
 import io.github.q93503128.turnbound.world.CharacterProgression;
+import io.github.q93503128.turnbound.world.EquipmentDropService;
 import io.github.q93503128.turnbound.world.QuestResultPreview;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public final class BattleResultPreview {
 
     private BattleResultPreview() {}
 
-    public static View enrich(UUID playerId, String encounterId, BattleState state, BattleResultSummary base) {
+    public static View enrich(UUID playerId, String transactionId, String encounterId, BattleState state, BattleResultSummary base) {
         if (base == null) base = BattleResultSummary.none();
         if (playerId == null || state == null || state.outcome() != BattleOutcome.ALLY_VICTORY) {
             return new View(base, List.of());
@@ -68,6 +69,13 @@ public final class BattleResultPreview {
             notices.add("MAIN QUEST CLEAR · " + completion.name()
                     + " · Crystal +" + completion.crystal() + " · Gold +" + completion.gold()
                     + (completion.xp() > 0 ? " · XP +" + completion.xp() : ""));
+        }
+
+        // Canonical T3 chance drops use the same transaction-derived roll as settlement.
+        EquipmentDropService.Drop drop = EquipmentDropService.preview(playerId, transactionId, canonical, base);
+        if (drop.present()) {
+            equipment.add(drop.tier() + " · " + drop.name());
+            if (drop.queued()) notices.add("INVENTORY FULL · 새 장비가 보상 대기함에 보관됩니다.");
         }
 
         // Challenge settlement happens in the same durable reward transaction.
