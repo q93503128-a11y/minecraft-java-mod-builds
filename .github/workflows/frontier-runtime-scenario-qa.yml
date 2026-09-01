@@ -41,67 +41,52 @@ jobs:
           block = block[:-len(suffix)] + ', 1)'
           p.write_text(s[:start] + block + s[end:], encoding='utf-8')
           PY
-      - name: Apply exact-path construction hardening
+      - name: Apply construction navigation hardening
         shell: bash
         run: python projects/frontier-settlement/tools/apply_construction_navigation_hardening.py
-      - name: Require exact path endpoint
+      - name: Reject stale collision paths
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           s = p.read_text(encoding='utf-8')
-          old = '        return path != null && path.canReach() ? path : null;'
-          new = '''        if (path == null || !path.canReach() || path.getEndNode() == null) return null;
-                  return path.getEndNode().asBlockPos().equals(target) ? path : null;'''
-          if s.count(old) != 1:
-              raise SystemExit(f'exact endpoint anchor count={s.count(old)}')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
-          PY
-      - name: Instrument sealed path diagnostics
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/ConstructionRuntimeScenarioQa.java')
-          s = p.read_text(encoding='utf-8')
-          old = '''        worker = spawnWorker(level, base.offset(-10, 0, 0));
-                  boolean sealed = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
-                  check("sealed_container_rejected", !sealed);
+          old = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
+              Path path = builder.getNavigation().createPath(target, 0);
+              return path != null && path.canReach() ? path : null;
+          }
           '''
-          new = '''        worker = spawnWorker(level, base.offset(-10, 0, 0));
-                  BlockPos westWall = barrel.offset(-2, 0, 0);
-                  BlockState westWallState = level.getBlockState(westWall);
-                  System.out.printf("SEALED_BLOCK pos=%s block=%s air=%s replaceable=%s collisionEmpty=%s nav=%s%n",
-                          westWall, westWallState.getBlock().getName().getString(), westWallState.isAir(),
-                          westWallState.canBeReplaced(), westWallState.getCollisionShape(level, westWall).isEmpty(),
-                          worker == null ? "null" : worker.getNavigation().getClass().getName());
-                  if (worker != null) {
-                      Method approaches = SettlementConstructionService.class.getDeclaredMethod(
-                              "interactionApproachPositions", ServerLevel.class, FrontierWorkerEntity.class, BlockPos.class);
-                      approaches.setAccessible(true);
-                      Method createPath = SettlementConstructionService.class.getDeclaredMethod(
-                              "createReachablePath", FrontierWorkerEntity.class, BlockPos.class);
-                      createPath.setAccessible(true);
-                      for (Object candidateObject : (java.util.List<?>) approaches.invoke(null, level, worker, barrel)) {
-                          BlockPos candidate = (BlockPos) candidateObject;
-                          Object pathObject = createPath.invoke(null, worker, candidate);
-                          if (pathObject instanceof net.minecraft.world.level.pathfinder.Path path) {
-                              StringBuilder nodes = new StringBuilder();
-                              for (int i = 0; i < path.getNodeCount(); i++) {
-                                  if (i > 0) nodes.append(" -> ");
-                                  nodes.append(path.getNode(i).asBlockPos());
-                              }
-                              System.out.printf("SEALED_PATH candidate=%s end=%s canReach=%s nodes=%s%n",
-                                      candidate, path.getEndNode().asBlockPos(), path.canReach(), nodes);
-                          }
-                      }
+          new = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
+              Path path = builder.getNavigation().createPath(target, 0);
+              if (path == null || !path.canReach() || path.getEndNode() == null
+                      || !path.getEndNode().asBlockPos().equals(target)) return null;
+              if (!(builder.level() instanceof ServerLevel level) || !pathNodesCurrentlyClear(level, path)) return null;
+              return path;
+          }
+
+          private static boolean pathNodesCurrentlyClear(ServerLevel level, Path path) {
+              for (int i = 0; i < path.getNodeCount(); i++) {
+                  BlockPos feet = path.getNode(i).asBlockPos();
+                  BlockPos head = feet.above();
+                  if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return false;
+                  if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
+                  BlockState feetState = level.getBlockState(feet);
+                  BlockState headState = level.getBlockState(head);
+                  if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()) return false;
+                  if (blocksCurrentPathCell(level, feet, feetState) || blocksCurrentPathCell(level, head, headState)) {
+                      return false;
                   }
-                  boolean sealed = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
-                  check("sealed_container_rejected", !sealed);
+              }
+              return true;
+          }
+
+          private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, BlockState state) {
+              if (state.isAir() || state.canBeReplaced()) return false;
+              return !state.getCollisionShape(level, pos).isEmpty();
+          }
           '''
           if s.count(old) != 1:
-              raise SystemExit(f'sealed diagnostic anchor count={s.count(old)}')
+              raise SystemExit(f'createReachablePath anchor count={s.count(old)}')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
       - name: Static navigation assertions
@@ -112,6 +97,8 @@ jobs:
           s = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
           assert 'path.canReach()' in s
           assert 'path.getEndNode().asBlockPos().equals(target)' in s
+          assert 'pathNodesCurrentlyClear' in s
+          assert 'blocksCurrentPathCell' in s
           assert 'moveTowardInteraction' in s
           assert 'findReachableExtractionTarget' in s
           assert 'findReachableDepositTarget' in s
@@ -120,11 +107,11 @@ jobs:
           st = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.java').read_text(encoding='utf-8')
           assert 'findDepositTargetExcluding' in st
           PY
-      - name: Java 25 build
+      - name: Java 25 clean build
         shell: bash
         run: |
           cd projects/frontier-settlement
-          ./gradlew build --no-daemon
+          ./gradlew clean build --no-daemon
       - name: Prepare headless server
         shell: bash
         run: |
@@ -158,6 +145,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: frontier-runtime-construction-qa-v2
+          name: frontier-runtime-construction-qa-v3
           path: frontier-runtime-scenario-qa.log
           if-no-files-found: warn
