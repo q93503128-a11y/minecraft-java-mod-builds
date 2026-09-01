@@ -81,4 +81,9 @@ public final class AsterMarchFoundationBuilder {
         // The loading screen hides this holding point; Y=250 keeps the player clear of ordinary generated terrain.
         player.setPos(0.5, 250.0, 20.5);
     }
+
+    private static final class State {
+        private int index;
+        private int lastPercent = -4;
+    }
 }
