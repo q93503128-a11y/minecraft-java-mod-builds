@@ -44,6 +44,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         String prefix = TurnboundBattleActors.heroAnimationPrefix(getType());
+        if (prefix == null) prefix = SignatureBattleActors.heroAnimationPrefix(getType());
         RawAnimation idle = prefix == null ? DefaultAnimations.IDLE : loop(prefix, "idle");
         RawAnimation ready = prefix == null ? READY : play(prefix, "turn_ready");
         RawAnimation basic = prefix == null ? DefaultAnimations.ATTACK_STRIKE : play(prefix, "basic");
