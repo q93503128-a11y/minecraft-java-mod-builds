@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.content.ChallengePresentationText;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public final class ClientMetaState {
                     case "I"->equipment.add(new EquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),p[7],p[8],Double.parseDouble(p[9]),p[10],Double.parseDouble(p[11]),Double.parseDouble(p[12]),Double.parseDouble(p[13]),p.length>14?Integer.parseInt(p[14]):0,p.length>15&&"1".equals(p[15])));
                     case "IR"->pendingEquipment.add(new PendingEquipmentRow(p[1],p[2],p[3],p[4],p[5],Integer.parseInt(p[6]),"1".equals(p[7]),"1".equals(p[8])));
                     case "E"->endgame.add(new EndgameRow(p[1],p[2],playerEndgameLabel(p[1],p[2],p[3]),"1".equals(p[4]),"1".equals(p[5]),Integer.parseInt(p[6]),"1".equals(p[7])));
-                    case "X"->challenges.add(new ChallengeRow(p[1],Integer.parseInt(p[2]),playerChallengeLabel(p[1],Integer.parseInt(p[2]),p[3]),"1".equals(p[4]),"1".equals(p[5]),p.length>6?p[6]:""));
+                    case "X"->{int ordinal=Integer.parseInt(p[2]);challenges.add(new ChallengeRow(p[1],ordinal,ChallengePresentationText.label(ordinal,p[3]),"1".equals(p[4]),"1".equals(p[5]),p.length>6?p[6]:""));}
                     case "Q"->regions.add(new RegionQuestRow(p[1],playerRegionLabel(p[2]),"1".equals(p[3]),"1".equals(p[4]),p.length>5?p[5]:""));
                     case "A"->archive.add(new ArchiveRow(p[1],p[2],Integer.parseInt(p[3]),"1".equals(p[4]),Integer.parseInt(p[5]),Integer.parseInt(p[6])));
                     case "S"->shop.add(new ShopRow(p[1],p[2],p[3],p[4],Integer.parseInt(p[5]),"1".equals(p[6])));
@@ -98,36 +99,6 @@ public final class ClientMetaState {
             return fallback == null ? "하드 보스" : fallback.replace(" Hard", " · 하드");
         }
         return fallback == null ? "" : fallback;
-    }
-
-    private static String playerChallengeLabel(String id, int ordinal, String fallback) {
-        return switch (ordinal) {
-            case 1 -> "전투불능 없이 승리 1";
-            case 2 -> "전투불능 없이 승리 2";
-            case 3 -> "아군 행동 12회 미만으로 승리";
-            case 4 -> "아군 행동 20회 미만으로 승리";
-            case 5 -> "1회 부활 후 승리";
-            case 6 -> "반격 5회";
-            case 7 -> "추격 6회";
-            case 8 -> "행동 게이지 지연 합계 800";
-            case 9 -> "보호막으로 피해 1500 흡수";
-            case 10 -> "한 전투에서 2000 회복";
-            case 11 -> "아군 HP 10% 미만 상태로 승리";
-            case 12 -> canonicalName("E003", "특수 적") + " 폭발 전에 처치";
-            case 13 -> canonicalName("E003", "특수 적") + " 폭발에서 생존";
-            case 14 -> "엘리트 적을 부활 없이 격파";
-            case 15 -> canonicalName("B01", "보스 1") + " 하드 격파";
-            case 16 -> canonicalName("B02", "보스 2") + " 하드 격파";
-            case 17 -> canonicalName("B03", "보스 3") + " 하드 격파";
-            case 18 -> canonicalName("B04", "보스 4") + " 하드 격파";
-            case 19 -> canonicalName("B05", "보스 5") + " 하드 격파";
-            case 20 -> "균열 관문 30층 클리어";
-            default -> fallback == null || fallback.isBlank() ? "도전 " + ordinal : fallback;
-        };
-    }
-
-    private static String canonicalName(String id, String fallback) {
-        return CanonicalData.contains(id) ? CanonicalData.definition(id).name() : fallback;
     }
 
     private static int trailingNumber(String id) {
