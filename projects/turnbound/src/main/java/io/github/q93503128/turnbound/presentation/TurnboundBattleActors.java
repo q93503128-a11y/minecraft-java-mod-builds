@@ -101,7 +101,7 @@ public final class TurnboundBattleActors {
     }
 
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {
-        String visualId = "F01".equals(combatantId) && level.random.nextBoolean() ? "F01_ALT" : combatantId;
+        String visualId = "F01".equals(combatantId) && level.getRandom().nextBoolean() ? "F01_ALT" : combatantId;
         DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(visualId);
         if (holder == null) return null;
         BattleActorEntity actor = new BattleActorEntity(holder.get(), level);
