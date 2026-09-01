@@ -17,7 +17,7 @@ public final class SouthgateOpeningReadabilityWorld {
 
     public static void build(ServerLevel level) {
         if (level.getBlockState(MARKER_A).is(Blocks.GOLD_BLOCK)
-                && level.getBlockState(MARKER_B).is(Blocks.COPPER_BLOCK)) return;
+                && level.getBlockState(MARKER_B).is(Blocks.IRON_BLOCK)) return;
 
         // Breadcrumbs follow the authored M01/M02 curve instead of drawing a second arbitrary road.
         mark(level, 0, 127);
@@ -39,7 +39,7 @@ public final class SouthgateOpeningReadabilityWorld {
         mark(level, 2, 133);
 
         level.setBlock(MARKER_A, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
-        level.setBlock(MARKER_B, Blocks.COPPER_BLOCK.defaultBlockState(), 2);
+        level.setBlock(MARKER_B, Blocks.IRON_BLOCK.defaultBlockState(), 2);
     }
 
     private static void mark(ServerLevel level, int x, int z) {
@@ -47,7 +47,7 @@ public final class SouthgateOpeningReadabilityWorld {
         if (y < 58 || y > 76) return;
         level.setBlock(new BlockPos(x, y, z), ((x + z) & 1) == 0
                 ? Blocks.GOLD_BLOCK.defaultBlockState()
-                : Blocks.CUT_COPPER.defaultBlockState(), 2);
+                : Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
     }
 
     private static void lantern(ServerLevel level, int x, int z) {
