@@ -1,26 +1,6 @@
 package kr.moonseungjun.titanbreak.client;
 
-import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
-import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
-import kr.moonseungjun.titanbreak.entity.BurstlingEntity;
-import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
-import kr.moonseungjun.titanbreak.entity.CinderEntity;
-import kr.moonseungjun.titanbreak.entity.CrusherEntity;
-import kr.moonseungjun.titanbreak.entity.GliderEntity;
-import kr.moonseungjun.titanbreak.entity.HollowColossusEntity;
-import kr.moonseungjun.titanbreak.entity.HowlerEntity;
-import kr.moonseungjun.titanbreak.entity.JammerEntity;
-import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
-import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
-import kr.moonseungjun.titanbreak.entity.PursuerEntity;
-import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
-import kr.moonseungjun.titanbreak.entity.RipperEntity;
-import kr.moonseungjun.titanbreak.entity.SiphonEntity;
-import kr.moonseungjun.titanbreak.entity.SkitterEntity;
-import kr.moonseungjun.titanbreak.entity.SpitterEntity;
-import kr.moonseungjun.titanbreak.entity.StalkerEntity;
-import kr.moonseungjun.titanbreak.entity.TitanGeoEntity;
-import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
+import kr.moonseungjun.titanbreak.entity.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -52,7 +32,6 @@ public final class OcularAnalysisClientService {
         LivingEntity direct = asLiving(raw);
         if (direct != null && direct.isAlive()) return direct;
         if (mc.player == null || mc.level == null) return null;
-
         int thermal = enhancement("thermal_eye");
         if (thermal >= 0) {
             AABB area = mc.player.getBoundingBox().inflate(24.0D);
@@ -62,7 +41,6 @@ public final class OcularAnalysisClientService {
                     .stream().min(Comparator.comparingDouble(mc.player::distanceToSqr)).orElse(null);
             if (hidden != null) return hidden;
         }
-
         int electromagnetic = enhancement("electromagnetic_eye");
         if (electromagnetic >= 5) {
             AABB area = mc.player.getBoundingBox().inflate(18.0D);
@@ -127,7 +105,6 @@ public final class OcularAnalysisClientService {
         int enhancement = enhancement("weakpoint_analysis_eye");
         int tactical = enhancement("tactical_eye");
         if (enhancement < 0 && tactical < 10) return 0;
-
         double ratio = preferredAimHeight(target);
         if (mc.hitResult instanceof EntityHitResult hit && asLiving(hit.getEntity()) == target && target.getBbHeight() > 0.01F) {
             ratio = Mth.clamp((hit.getLocation().y - target.getY()) / target.getBbHeight(), 0.0D, 1.0D);
@@ -136,6 +113,7 @@ public final class OcularAnalysisClientService {
         if (enhancement >= 5 && armor(target) >= 12.0D) score = Math.max(score, 74);
         if (enhancement >= 7 && armor(target) > 0.0D) score += 8;
         if (enhancement >= 10 && TitanClientState.hasInstalled("target_assist")) score += 7;
+        if (target instanceof RevenantEntity revenant && revenant.disabledCoreCount() < 2) score = Math.max(score, 84);
         if (target instanceof PursuerEntity pursuer) {
             int mask = pursuer.brokenPartsMask();
             if ((mask & PursuerEntity.PART_CHEST_CORE) == 0) score = Math.max(score, 92);
@@ -169,26 +147,36 @@ public final class OcularAnalysisClientService {
     }
 
     public static Component dropHint(LivingEntity target) {
-        if (target instanceof RipperEntity) return Component.translatable("item.titanbreak.high_density_muscle_fiber");
-        if (target instanceof SkitterEntity) return Component.translatable("item.titanbreak.servo_bundle");
-        if (target instanceof BulwarkEntity) return Component.translatable("item.titanbreak.composite_armor_plate");
-        if (target instanceof SpitterEntity) return Component.translatable("item.titanbreak.suture_polymer");
-        if (target instanceof NeedlerEntity) return Component.translatable("item.titanbreak.optic_sensor_cluster");
-        if (target instanceof GliderEntity) return Component.translatable("item.titanbreak.thermal_optic_cluster");
-        if (target instanceof HowlerEntity) return Component.translatable("item.titanbreak.resonant_neural_ganglion");
-        if (target instanceof JammerEntity) return Component.translatable("item.titanbreak.calculation_core");
-        if (target instanceof VoltaicEntity) return Component.translatable("item.titanbreak.capacitor_stack");
-        if (target instanceof CinderEntity) return Component.translatable("item.titanbreak.heat_sink");
-        if (target instanceof RegrowerEntity) return Component.translatable("item.titanbreak.regenerative_tissue");
-        if (target instanceof BurrowerEntity) return Component.translatable("item.titanbreak.dense_bone_lattice");
-        if (target instanceof CrusherEntity) return Component.translatable("item.titanbreak.impact_core");
-        if (target instanceof StalkerEntity) return Component.translatable("item.titanbreak.resonant_neural_ganglion");
-        if (target instanceof BurstlingEntity) return Component.translatable("item.titanbreak.cooling_cell");
-        if (target instanceof SiphonEntity) return Component.translatable("item.titanbreak.circulation_core");
-        if (target instanceof ChronoHoundEntity) return Component.translatable("item.titanbreak.reaction_temporal_matrix");
-        if (target instanceof NullEyeEntity) return Component.translatable("item.titanbreak.thermal_optic_cluster");
-        if (target instanceof PursuerEntity) return Component.translatable("item.titanbreak.pursuer_reaction_organ");
+        if (target instanceof RipperEntity) return item("high_density_muscle_fiber");
+        if (target instanceof SkitterEntity) return item("servo_bundle");
+        if (target instanceof BulwarkEntity) return item("composite_armor_plate");
+        if (target instanceof SpitterEntity) return item("suture_polymer");
+        if (target instanceof NeedlerEntity) return item("optic_sensor_cluster");
+        if (target instanceof GliderEntity) return item("thermal_optic_cluster");
+        if (target instanceof HowlerEntity) return item("resonant_neural_ganglion");
+        if (target instanceof JammerEntity) return item("calculation_core");
+        if (target instanceof VoltaicEntity) return item("capacitor_stack");
+        if (target instanceof CinderEntity) return item("heat_sink");
+        if (target instanceof RegrowerEntity) return item("regenerative_tissue");
+        if (target instanceof BurrowerEntity) return item("dense_bone_lattice");
+        if (target instanceof CrusherEntity || target instanceof IronMawEntity) return item("impact_core");
+        if (target instanceof StalkerEntity) return item("resonant_neural_ganglion");
+        if (target instanceof BurstlingEntity) return item("cooling_cell");
+        if (target instanceof SiphonEntity || target instanceof RevenantEntity) return item("circulation_core");
+        if (target instanceof ChronoHoundEntity) return item("reaction_temporal_matrix");
+        if (target instanceof NullEyeEntity) return item("thermal_optic_cluster");
+        if (target instanceof ApexStalkerEntity) return item("predictive_optic_core");
+        if (target instanceof ShockChoirEntity) return item("capacitor_stack");
+        if (target instanceof SiegebackEntity) return item("dense_bone_lattice");
+        if (target instanceof PhaseLurkerEntity) return item("phase_coil");
+        if (target instanceof WardenNodeEntity) return item("calculation_core");
+        if (target instanceof HarvesterEntity) return item("nano_medium");
+        if (target instanceof PursuerEntity) return item("pursuer_reaction_organ");
         return null;
+    }
+
+    private static Component item(String path) {
+        return Component.translatable("item.titanbreak." + path);
     }
 
     public static int thermalContacts(Minecraft mc) {
@@ -230,16 +218,22 @@ public final class OcularAnalysisClientService {
     public static int electromagneticStrength(LivingEntity target) {
         if (!(target instanceof TitanGeoEntity)) return 0;
         if (target instanceof NullEyeEntity) return 100;
+        if (target instanceof ShockChoirEntity) return 94;
         if (target instanceof PursuerEntity || target instanceof HollowColossusEntity) return 92;
         if (target instanceof VoltaicEntity) return 90;
+        if (target instanceof WardenNodeEntity) return 88;
+        if (target instanceof SiegebackEntity) return 86;
+        if (target instanceof PhaseLurkerEntity) return 82;
         if (target instanceof JammerEntity) return 82;
         if (target instanceof ChronoHoundEntity) return 78;
+        if (target instanceof IronMawEntity) return 76;
         if (target instanceof CrusherEntity) return 74;
-        if (target instanceof CinderEntity) return 72;
+        if (target instanceof ApexStalkerEntity || target instanceof CinderEntity) return 72;
         if (target instanceof SiphonEntity) return 70;
         if (target instanceof NeedlerEntity) return 68;
         if (target instanceof GliderEntity || target instanceof BurrowerEntity || target instanceof StalkerEntity) return 64;
         if (target instanceof BurstlingEntity) return 62;
+        if (target instanceof RevenantEntity || target instanceof HarvesterEntity) return 58;
         if (target instanceof RegrowerEntity) return 55;
         return 58;
     }

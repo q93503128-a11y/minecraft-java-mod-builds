@@ -1,28 +1,6 @@
 package kr.moonseungjun.titanbreak.combat;
 
-import kr.moonseungjun.titanbreak.entity.ApexStalkerEntity;
-import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
-import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
-import kr.moonseungjun.titanbreak.entity.BurstlingEntity;
-import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
-import kr.moonseungjun.titanbreak.entity.CinderEntity;
-import kr.moonseungjun.titanbreak.entity.CrusherEntity;
-import kr.moonseungjun.titanbreak.entity.GliderEntity;
-import kr.moonseungjun.titanbreak.entity.HowlerEntity;
-import kr.moonseungjun.titanbreak.entity.IronMawEntity;
-import kr.moonseungjun.titanbreak.entity.JammerEntity;
-import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
-import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
-import kr.moonseungjun.titanbreak.entity.PursuerEntity;
-import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
-import kr.moonseungjun.titanbreak.entity.RevenantEntity;
-import kr.moonseungjun.titanbreak.entity.RipperEntity;
-import kr.moonseungjun.titanbreak.entity.ShockChoirEntity;
-import kr.moonseungjun.titanbreak.entity.SiphonEntity;
-import kr.moonseungjun.titanbreak.entity.SkitterEntity;
-import kr.moonseungjun.titanbreak.entity.SpitterEntity;
-import kr.moonseungjun.titanbreak.entity.StalkerEntity;
-import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
+import kr.moonseungjun.titanbreak.entity.*;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModItems;
@@ -72,6 +50,10 @@ public final class HuntRewardService {
         } else if (victim instanceof RevenantEntity) { huntClass=HuntClass.ELITE; speciesKey="revenant"; adaptationXp=110; drop(level,victim,ModItems.CIRCULATION_CORE.get(),1); drop(level,victim,ModItems.REGENERATIVE_TISSUE.get(),3);
         } else if (victim instanceof ApexStalkerEntity) { huntClass=HuntClass.ELITE; speciesKey="apex_stalker"; adaptationXp=105; drop(level,victim,ModItems.PREDICTIVE_OPTIC_CORE.get(),1); drop(level,victim,ModItems.RESONANT_NEURAL_GANGLION.get(),2);
         } else if (victim instanceof ShockChoirEntity) { huntClass=HuntClass.ELITE; speciesKey="shock_choir"; adaptationXp=105; drop(level,victim,ModItems.CAPACITOR_STACK.get(),2); chanceDrop(level,victim,ModItems.RADIATION_CORE.get(),1,0.20F);
+        } else if (victim instanceof SiegebackEntity) { huntClass=HuntClass.ELITE; speciesKey="siegeback"; adaptationXp=130; drop(level,victim,ModItems.DENSE_BONE_LATTICE.get(),2); drop(level,victim,ModItems.COMPOSITE_ARMOR_PLATE.get(),3);
+        } else if (victim instanceof PhaseLurkerEntity) { huntClass=HuntClass.ELITE; speciesKey="phase_lurker"; adaptationXp=115; drop(level,victim,ModItems.PHASE_COIL.get(),1); drop(level,victim,ModItems.REACTION_TEMPORAL_MATRIX.get(),2);
+        } else if (victim instanceof WardenNodeEntity) { huntClass=HuntClass.ELITE; speciesKey="warden_node"; adaptationXp=115; drop(level,victim,ModItems.CALCULATION_CORE.get(),3); drop(level,victim,ModItems.THERMAL_OPTIC_CLUSTER.get(),2);
+        } else if (victim instanceof HarvesterEntity) { huntClass=HuntClass.ELITE; speciesKey="harvester"; adaptationXp=125; drop(level,victim,ModItems.NANO_MEDIUM.get(),1); drop(level,victim,ModItems.SUTURE_POLYMER.get(),2);
         } else if (victim instanceof PursuerEntity) { huntClass=HuntClass.BOSS; speciesKey="the_pursuer"; adaptationXp=350; drop(level,victim,ModItems.PURSUER_REACTION_ORGAN.get(),1); drop(level,victim,ModItems.TEMPORAL_NEURAL_BUNDLE.get(),1+victim.getRandom().nextInt(2)); drop(level,victim,ModItems.REACTION_TEMPORAL_MATRIX.get(),2+victim.getRandom().nextInt(3));
         } else return;
 

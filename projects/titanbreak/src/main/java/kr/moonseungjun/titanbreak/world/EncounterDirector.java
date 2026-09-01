@@ -1,28 +1,6 @@
 package kr.moonseungjun.titanbreak.world;
 
-import kr.moonseungjun.titanbreak.entity.ApexStalkerEntity;
-import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
-import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
-import kr.moonseungjun.titanbreak.entity.BurstlingEntity;
-import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
-import kr.moonseungjun.titanbreak.entity.CinderEntity;
-import kr.moonseungjun.titanbreak.entity.CrusherEntity;
-import kr.moonseungjun.titanbreak.entity.GliderEntity;
-import kr.moonseungjun.titanbreak.entity.HowlerEntity;
-import kr.moonseungjun.titanbreak.entity.IronMawEntity;
-import kr.moonseungjun.titanbreak.entity.JammerEntity;
-import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
-import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
-import kr.moonseungjun.titanbreak.entity.PursuerEntity;
-import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
-import kr.moonseungjun.titanbreak.entity.RevenantEntity;
-import kr.moonseungjun.titanbreak.entity.RipperEntity;
-import kr.moonseungjun.titanbreak.entity.ShockChoirEntity;
-import kr.moonseungjun.titanbreak.entity.SiphonEntity;
-import kr.moonseungjun.titanbreak.entity.SkitterEntity;
-import kr.moonseungjun.titanbreak.entity.SpitterEntity;
-import kr.moonseungjun.titanbreak.entity.StalkerEntity;
-import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
+import kr.moonseungjun.titanbreak.entity.*;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import net.minecraft.core.BlockPos;
@@ -59,7 +37,8 @@ public final class EncounterDirector {
             "voltaic", "cinder", "regrower", "burrower", "crusher", "stalker", "burstling", "siphon"
     };
     private static final String[] ELITE_SPECIES = {
-            "chrono_hound", "null_eye", "iron_maw", "revenant", "apex_stalker", "shock_choir"
+            "chrono_hound", "null_eye", "iron_maw", "revenant", "apex_stalker", "shock_choir",
+            "siegeback", "phase_lurker", "warden_node", "harvester"
     };
 
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
@@ -168,6 +147,8 @@ public final class EncounterDirector {
             case "chrono_hound" -> ModEntities.CHRONO_HOUND.get(); case "null_eye" -> ModEntities.NULL_EYE.get();
             case "iron_maw" -> ModEntities.IRON_MAW.get(); case "revenant" -> ModEntities.REVENANT.get();
             case "apex_stalker" -> ModEntities.APEX_STALKER.get(); case "shock_choir" -> ModEntities.SHOCK_CHOIR.get();
+            case "siegeback" -> ModEntities.SIEGEBACK.get(); case "phase_lurker" -> ModEntities.PHASE_LURKER.get();
+            case "warden_node" -> ModEntities.WARDEN_NODE.get(); case "harvester" -> ModEntities.HARVESTER.get();
             case "the_pursuer" -> ModEntities.THE_PURSUER.get(); default -> null;
         };
         if (type == null) return false;
@@ -212,7 +193,9 @@ public final class EncounterDirector {
 
     private static boolean isElite(LivingEntity entity) {
         return entity instanceof ChronoHoundEntity || entity instanceof NullEyeEntity || entity instanceof IronMawEntity
-                || entity instanceof RevenantEntity || entity instanceof ApexStalkerEntity || entity instanceof ShockChoirEntity;
+                || entity instanceof RevenantEntity || entity instanceof ApexStalkerEntity || entity instanceof ShockChoirEntity
+                || entity instanceof SiegebackEntity || entity instanceof PhaseLurkerEntity || entity instanceof WardenNodeEntity
+                || entity instanceof HarvesterEntity;
     }
 
     public static void clear(UUID playerId) { RUNTIME.remove(playerId); }

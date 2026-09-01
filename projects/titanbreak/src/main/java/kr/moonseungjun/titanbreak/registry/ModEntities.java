@@ -10,22 +10,26 @@ import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
 import kr.moonseungjun.titanbreak.entity.CinderEntity;
 import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
+import kr.moonseungjun.titanbreak.entity.HarvesterEntity;
 import kr.moonseungjun.titanbreak.entity.HollowColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
 import kr.moonseungjun.titanbreak.entity.IronMawEntity;
 import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
+import kr.moonseungjun.titanbreak.entity.PhaseLurkerEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RevenantEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.ShockChoirEntity;
+import kr.moonseungjun.titanbreak.entity.SiegebackEntity;
 import kr.moonseungjun.titanbreak.entity.SiphonEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
 import kr.moonseungjun.titanbreak.entity.StalkerEntity;
 import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
+import kr.moonseungjun.titanbreak.entity.WardenNodeEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -72,6 +76,10 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<RevenantEntity>> REVENANT = entity("revenant", RevenantEntity::new, 0.86F, 2.20F, 1.90F, 16);
     public static final DeferredHolder<EntityType<?>, EntityType<ApexStalkerEntity>> APEX_STALKER = entity("apex_stalker", ApexStalkerEntity::new, 0.72F, 2.02F, 1.78F, 18);
     public static final DeferredHolder<EntityType<?>, EntityType<ShockChoirEntity>> SHOCK_CHOIR = entity("shock_choir", ShockChoirEntity::new, 0.92F, 2.28F, 1.96F, 18);
+    public static final DeferredHolder<EntityType<?>, EntityType<SiegebackEntity>> SIEGEBACK = entity("siegeback", SiegebackEntity::new, 1.32F, 2.72F, 2.20F, 18);
+    public static final DeferredHolder<EntityType<?>, EntityType<PhaseLurkerEntity>> PHASE_LURKER = entity("phase_lurker", PhaseLurkerEntity::new, 0.70F, 2.02F, 1.78F, 20);
+    public static final DeferredHolder<EntityType<?>, EntityType<WardenNodeEntity>> WARDEN_NODE = entity("warden_node", WardenNodeEntity::new, 0.90F, 2.30F, 2.00F, 20);
+    public static final DeferredHolder<EntityType<?>, EntityType<HarvesterEntity>> HARVESTER = entity("harvester", HarvesterEntity::new, 1.00F, 2.42F, 2.04F, 18);
 
     public static final DeferredHolder<EntityType<?>, EntityType<PursuerEntity>> THE_PURSUER =
             ENTITIES.register("the_pursuer", () -> EntityType.Builder.<PursuerEntity>of(PursuerEntity::new, MobCategory.MONSTER)
@@ -108,6 +116,10 @@ public final class ModEntities {
         event.put(REVENANT.get(), attrs(650, 26, 0.21D));
         event.put(APEX_STALKER.get(), attrs(480, 32, 0.33D));
         event.put(SHOCK_CHOIR.get(), attrs(550, 20, 0.20D));
+        event.put(SIEGEBACK.get(), Zombie.createAttributes().add(Attributes.MAX_HEALTH, CombatScale.toInternal(980.0D)).add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(38.0D)).add(Attributes.MOVEMENT_SPEED, 0.14D).add(Attributes.KNOCKBACK_RESISTANCE, 0.92D).build());
+        event.put(PHASE_LURKER.get(), attrs(460, 30, 0.31D));
+        event.put(WARDEN_NODE.get(), attrs(620, 22, 0.20D));
+        event.put(HARVESTER.get(), Zombie.createAttributes().add(Attributes.MAX_HEALTH, CombatScale.toInternal(700.0D)).add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(26.0D)).add(Attributes.MOVEMENT_SPEED, 0.18D).add(Attributes.KNOCKBACK_RESISTANCE, 0.35D).build());
         event.put(THE_PURSUER.get(), Giant.createAttributes().add(Attributes.MAX_HEALTH, 900.0D).add(Attributes.MOVEMENT_SPEED, 0.42D).add(Attributes.ATTACK_DAMAGE, 0.0D).add(Attributes.KNOCKBACK_RESISTANCE, 1.0D).build());
     }
 
