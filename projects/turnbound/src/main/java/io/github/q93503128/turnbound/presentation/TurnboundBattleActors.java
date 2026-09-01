@@ -179,7 +179,7 @@ public final class TurnboundBattleActors {
         if (ENEMY_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/common");
         String elite = SPECIAL_ELITE_ANIMATION.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
         if (ELITE_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/common");
-        if (BOSS_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/common");
+        String boss = BOSS_PATH.get(id); if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common");
     }
 
