@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.BattleVfx;
+import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -56,27 +57,37 @@ final class BattlePresentation {
             if (actors.containsKey(combatant.instanceId())) continue;
             double[][] formation=ally?ALLY_FORMATION:ENEMY_FORMATION; if(index>=formation.length) continue;
             Vec3 raw=localToWorld(center,right,forward,formation[index][0],formation[index][1]);
-            spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw);
+            spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw,combatant.definition().rules());
         }
         for (CombatantState combatant : units) {
             if (!combatant.definition().summon() || actors.containsKey(combatant.instanceId())) continue;
-            Vec3 ownerHome=homes.get(combatant.ref("ownerId")); if(ownerHome==null) ownerHome=center;
+            String ownerId=combatant.ref("ownerId");
+            Vec3 ownerHome=homes.get(ownerId); if(ownerHome==null) ownerHome=center;
+            Iterable<String> visualRules=combatant.definition().rules();
+            if(ownerId!=null){
+                for(CombatantState unit:units){if(ownerId.equals(unit.instanceId())){visualRules=unit.definition().rules();break;}}
+            }
             Vec3 raw=ownerHome.add(right.scale(.8)).subtract(forward.scale(1.0));
-            spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw);
+            spawnActor(level,combatant,BattleArenaLocator.groundPosition(level,raw),facingYaw,visualRules);
         }
     }
 
-    private void spawnActor(ServerLevel level, CombatantState combatant, Vec3 pos, float facingYaw) {
+    private void spawnActor(ServerLevel level, CombatantState combatant, Vec3 pos, float facingYaw, Iterable<String> visualRules) {
         boolean ally=combatant.side()==CombatantSide.ALLY; float yaw=facingYaw+(ally?0F:180F); Entity actor=null;
-        String visualId=combatant.definition().id();
-        if (TurnboundBattleActors.contains(visualId)) {
-            BattleActorEntity animated=TurnboundBattleActors.spawn(level,visualId,pos,yaw);
+        String baseVisualId=combatant.definition().id();
+        String visualId=SignatureBattleActors.visualId(baseVisualId,visualRules);
+        if(SignatureBattleActors.contains(visualId)){
+            BattleActorEntity animated=SignatureBattleActors.spawn(level,visualId,pos,yaw);
             if(animated!=null){animated.setCustomName(Component.literal(combatant.definition().name()));animated.setCustomNameVisible(false);actor=animated;}
+        } else if (TurnboundBattleActors.contains(baseVisualId)) {
+            BattleActorEntity animated=TurnboundBattleActors.spawn(level,baseVisualId,pos,yaw);
+            if(animated!=null){animated.setCustomName(Component.literal(combatant.definition().name()));animated.setCustomNameVisible(false);actor=animated;}
+            visualId=baseVisualId;
         }
         if(actor==null){
             ArmorStand stand=new ArmorStand(level,pos.x,pos.y,pos.z);stand.setCustomName(Component.literal(combatant.definition().name()));
             stand.setCustomNameVisible(false);stand.setInvulnerable(true);stand.setNoGravity(true);stand.setShowArms(true);stand.setYRot(yaw);
-            equipStandIn(stand,combatant);level.addFreshEntity(stand);actor=stand;
+            equipStandIn(stand,combatant);level.addFreshEntity(stand);actor=stand;visualId=baseVisualId;
         }
         actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); sides.put(combatant.instanceId(),combatant.side());
         summons.put(combatant.instanceId(),combatant.definition().summon()); visualIds.put(combatant.instanceId(),visualId);
