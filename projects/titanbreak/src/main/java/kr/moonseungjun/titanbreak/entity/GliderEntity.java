@@ -3,18 +3,19 @@ package kr.moonseungjun.titanbreak.entity;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.zombie.Zombie;
-import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 public final class GliderEntity extends Zombie implements TitanGeoEntity {
-    private int harassCooldown = 25;
-    private int diveCooldown = 70;
+    private int diveCooldown = 45;
     private int diveTicks;
+    private int shotCooldown = 30;
     private boolean diveHit;
 
     public GliderEntity(EntityType<? extends Zombie> type, Level level) {
@@ -31,77 +32,72 @@ public final class GliderEntity extends Zombie implements TitanGeoEntity {
     @Override
     protected void customServerAiStep(ServerLevel level) {
         super.customServerAiStep(level);
-        setNoGravity(true);
-        fallDistance = 0.0F;
-
         LivingEntity target = getTarget();
         if (target == null || !target.isAlive()) {
-            setDeltaMovement(getDeltaMovement().scale(0.82D));
+            setDeltaMovement(getDeltaMovement().scale(0.84D).add(0.0D, 0.015D, 0.0D));
             return;
         }
-        getNavigation().stop();
 
-        double distance = distanceTo(target);
         if (diveTicks > 0) {
-            Vec3 toTarget = target.getEyePosition().subtract(position());
-            if (toTarget.lengthSqr() > 0.01D) {
-                Vec3 thrust = toTarget.normalize().scale(0.30D);
-                setDeltaMovement(getDeltaMovement().scale(0.56D).add(thrust));
-            }
-            if (!diveHit && distance <= 2.35D) {
-                swing(InteractionHand.MAIN_HAND);
-                doHurtTarget(level, target);
-                diveHit = true;
-            }
-            if (--diveTicks <= 0) {
-                diveCooldown = 75 + getRandom().nextInt(35);
-            }
+            tickDive(level, target);
         } else {
-            if (diveCooldown > 0) diveCooldown--;
-
-            double orbit = (tickCount * 0.075D) + (getId() * 0.37D);
-            Vec3 hoverPoint = target.position().add(
-                    Math.cos(orbit) * 5.5D,
-                    4.5D + Math.sin(orbit * 0.55D) * 1.2D,
-                    Math.sin(orbit) * 5.5D);
-            Vec3 correction = hoverPoint.subtract(position());
-            if (correction.lengthSqr() > 0.01D) {
-                double strength = Math.min(0.16D, 0.045D + correction.length() * 0.008D);
-                setDeltaMovement(getDeltaMovement().scale(0.78D).add(correction.normalize().scale(strength)));
-            }
-
-            if (diveCooldown <= 0 && distance >= 4.0D && distance <= 13.0D) {
+            tickOrbit(target);
+            if (--diveCooldown <= 0 && distanceTo(target) > 5.0F && distanceTo(target) < 18.0F) {
+                diveCooldown = 65 + getRandom().nextInt(45);
                 diveTicks = 22;
                 diveHit = false;
             }
         }
 
-        if (harassCooldown > 0) harassCooldown--;
-        if (harassCooldown <= 0 && distance >= 7.0D && distance <= 24.0D && hasLineOfSight(target)) {
-            swing(InteractionHand.MAIN_HAND);
-            fireHarassBolt(level, target);
-            harassCooldown = 52 + getRandom().nextInt(25);
+        if (--shotCooldown <= 0 && distanceTo(target) >= 7.0F && distanceTo(target) <= 24.0F && hasLineOfSight(target)) {
+            shotCooldown = 46 + getRandom().nextInt(30);
+            fireDart(level, target);
         }
 
-        setDeltaMovement(clampVelocity(getDeltaMovement(), 1.05D));
+        Vec3 motion = getDeltaMovement();
+        if (motion.length() > 1.05D) setDeltaMovement(motion.normalize().scale(1.05D));
         hurtMarked = true;
     }
 
-    private void fireHarassBolt(ServerLevel level, LivingEntity target) {
-        Arrow arrow = EntityType.ARROW.create(level, EntitySpawnReason.EVENT);
-        if (arrow == null) return;
-        arrow.setOwner(this);
-        arrow.setPos(getX(), getEyeY() - 0.05D, getZ());
+    private void tickOrbit(LivingEntity target) {
+        double angle = (tickCount * 0.055D) + (getId() * 0.37D);
+        double radius = 5.5D;
+        Vec3 desired = target.position().add(Math.cos(angle) * radius, 4.5D, Math.sin(angle) * radius);
+        Vec3 correction = desired.subtract(position());
+        if (correction.lengthSqr() > 0.01D) {
+            correction = correction.normalize().scale(0.085D);
+            setDeltaMovement(getDeltaMovement().scale(0.88D).add(correction));
+        }
+    }
 
-        Vec3 aim = target.getEyePosition().subtract(arrow.position())
-                .add(target.getDeltaMovement().scale(5.0D));
-        arrow.shoot(aim.x, aim.y, aim.z, 1.65F, 1.5F);
+    private void tickDive(ServerLevel level, LivingEntity target) {
+        diveTicks--;
+        Vec3 aim = target.getEyePosition().subtract(position());
+        if (aim.lengthSqr() > 1.0E-6D) {
+            setDeltaMovement(getDeltaMovement().scale(0.72D).add(aim.normalize().scale(0.18D)));
+        }
+        if (!diveHit && distanceToSqr(target) <= 2.8D * 2.8D) {
+            diveHit = doHurtTarget(level, target);
+        }
+        if (diveTicks == 0) setDeltaMovement(getDeltaMovement().add(0.0D, 0.42D, 0.0D));
+    }
+
+    private void fireDart(ServerLevel level, LivingEntity target) {
+        swing(InteractionHand.MAIN_HAND);
+        double sx = getX();
+        double sy = getEyeY() - 0.10D;
+        double sz = getZ();
+        Arrow arrow = new Arrow(level, sx, sy, sz, Items.ARROW.getDefaultInstance(), null);
+        arrow.setOwner(this);
         arrow.setBaseDamage(CombatScale.toInternal(16.0D));
+        Vec3 aim = target.getEyePosition().add(target.getDeltaMovement().scale(2.8D))
+                .subtract(sx, sy, sz);
+        arrow.shoot(aim.x, aim.y, aim.z, 1.65F, 3.5F);
         level.addFreshEntity(arrow);
     }
 
-    private static Vec3 clampVelocity(Vec3 velocity, double max) {
-        double length = velocity.length();
-        return length > max && length > 1.0E-6D ? velocity.scale(max / length) : velocity;
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity target) {
+        return super.doHurtTarget(level, target);
     }
 }
