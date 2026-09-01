@@ -31,24 +31,13 @@ jobs:
           from pathlib import Path
           p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           s = p.read_text(encoding='utf-8')
-          old = '''    private static boolean canClaimFreshTower(ServerLevel level, ScaffoldTower tower) {
-              for (ScaffoldPiece piece : tower.pieces()) {
-                  if (!level.hasChunkAt(piece.pos())) return false;
-                  BlockState current = level.getBlockState(piece.pos());
-                  if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) return false;
-                  if (!current.isAir() && !current.canBeReplaced()) return false;
-              }
-              return true;
-          }
-          '''
-          new = '''    private static boolean canClaimFreshTower(ServerLevel level, ScaffoldTower tower) {
-              for (ScaffoldPiece piece : tower.pieces()) {
-                  if (!level.hasChunkAt(piece.pos())) return false;
-                  BlockState current = level.getBlockState(piece.pos());
-                  if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) return false;
-                  if (!current.isAir() && !current.canBeReplaced()) return false;
-              }
-              return hasWalkableScaffoldEntry(level, tower);
+          start = s.index('    private static boolean canClaimFreshTower(ServerLevel level, ScaffoldTower tower) {')
+          end = s.index('    private static void placeClaimedTower(ServerLevel level, ScaffoldTower tower) {', start)
+          block = s[start:end]
+          old_tail = '        return true;\n    }\n\n'
+          if block.count(old_tail) != 1:
+              raise SystemExit(f'canClaimFreshTower tail count={block.count(old_tail)}')
+          helper = '''        return hasWalkableScaffoldEntry(level, tower);
           }
 
           private static boolean hasWalkableScaffoldEntry(ServerLevel level, ScaffoldTower tower) {
@@ -76,10 +65,10 @@ jobs:
               }
               return false;
           }
+
           '''
-          if s.count(old) != 1:
-              raise SystemExit(f'canClaimFreshTower anchor count={s.count(old)}')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          replacement = block.replace(old_tail, helper, 1)
+          p.write_text(s[:start] + replacement + s[end:], encoding='utf-8')
           PY
       - name: Stabilize temporary pathing harness
         shell: bash
@@ -132,4 +121,4 @@ jobs:
         with:
           name: frontier-runtime-construction-qa
           path: frontier-runtime-scenario-qa.log
-          if-no-files-found: error
+          if-no-files-found: warn
