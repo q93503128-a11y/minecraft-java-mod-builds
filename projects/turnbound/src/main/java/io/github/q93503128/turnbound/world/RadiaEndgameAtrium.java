@@ -2,9 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.content.CanonicalData;
-import io.github.q93503128.turnbound.content.ChallengeCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
-import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -38,7 +36,6 @@ public final class RadiaEndgameAtrium {
     private static final List<Selector> SELECTORS = selectors();
     private static final Map<UUID, Map<UUID, Selector>> ACTORS = new ConcurrentHashMap<>();
     private static final Map<UUID, UUID> CHALLENGE_BOARDS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> CHALLENGE_PAGE = new ConcurrentHashMap<>();
     private static final Map<UUID, String> SELECTED = new ConcurrentHashMap<>();
 
     private RadiaEndgameAtrium() {}
@@ -55,7 +52,7 @@ public final class RadiaEndgameAtrium {
         Map<UUID,Selector> actors=ACTORS.computeIfAbsent(pid, ignored->new LinkedHashMap<>());
         boolean active=CampaignContentUnlocks.endgame(pid) && RadiaHubSessionManager.active(p)
                 && p.position().distanceToSqr(CENTER)<=ACTIVE_RADIUS_SQ;
-        if(!active){ despawn(l,actors); despawnChallengeBoard(l,pid); SELECTED.remove(pid); CHALLENGE_PAGE.remove(pid); return; }
+        if(!active){ despawn(l,actors); despawnChallengeBoard(l,pid); SELECTED.remove(pid); return; }
         for(var entry:List.copyOf(actors.entrySet())) if(l.getEntity(entry.getKey())==null) actors.remove(entry.getKey());
         for(Selector s:SELECTORS){
             if(actors.containsValue(s)) continue;
@@ -73,7 +70,7 @@ public final class RadiaEndgameAtrium {
         if(p==null||target==null) return false;
         UUID pid=p.getUUID();
         UUID board=CHALLENGE_BOARDS.get(pid);
-        if(board!=null&&board.equals(target.getUUID())){showChallengePage(p);return true;}
+        if(board!=null&&board.equals(target.getUUID())){MetaNetwork.open(p,"QUESTS");return true;}
 
         Map<UUID,Selector> actors=ACTORS.get(pid); if(actors==null) return false;
         Selector s=actors.get(target.getUUID()); if(s==null) return false;
@@ -85,19 +82,9 @@ public final class RadiaEndgameAtrium {
         }else unlocked=EndgameEncounterCatalog.unlocked(pid,s.encounterId());
         if(!unlocked){p.sendSystemMessage(Component.literal("TURNBOUND · 아직 잠긴 재도전입니다.").withStyle(ChatFormatting.GRAY));return true;}
 
-        String selected=SELECTED.getOrDefault(pid,"");
-        if(!s.encounterId().equals(selected)){
-            SELECTED.put(pid,s.encounterId());
-            refreshSelectorNames((ServerLevel)p.level(),pid,actors);
-            EndgameBriefing.send(p,EndgameBriefing.build(pid,s.encounterId(),s.type(),s.level()));
-            return true;
-        }
-
-        SELECTED.remove(pid);
+        SELECTED.put(pid,s.encounterId());
         refreshSelectorNames((ServerLevel)p.level(),pid,actors);
-        ChatFormatting color=s.type().equals("HARD")?ChatFormatting.RED:s.type().equals("NORMAL")?ChatFormatting.GOLD:ChatFormatting.AQUA;
-        p.sendSystemMessage(Component.literal("출전 · "+s.label()).withStyle(color,ChatFormatting.BOLD));
-        BattleSessionManager.startEncounter(p,s.encounterId());
+        EndgameBriefing.send(p,EndgameBriefing.build(pid,s.encounterId(),s.type(),s.level()));
         return true;
     }
 
@@ -105,7 +92,7 @@ public final class RadiaEndgameAtrium {
         if(p==null||!(p.level() instanceof ServerLevel l)) return;
         UUID pid=p.getUUID();
         Map<UUID,Selector> actors=ACTORS.remove(pid); if(actors!=null) despawn(l,actors);
-        despawnChallengeBoard(l,pid); SELECTED.remove(pid); CHALLENGE_PAGE.remove(pid);
+        despawnChallengeBoard(l,pid); SELECTED.remove(pid);
     }
 
     private static List<Selector> selectors(){
@@ -127,7 +114,7 @@ public final class RadiaEndgameAtrium {
 
     private static void applySelectorName(ArmorStand a,Selector s,boolean selected){
         ChatFormatting c=s.type().equals("HARD")?ChatFormatting.RED:s.type().equals("NORMAL")?ChatFormatting.GOLD:(s.milestone()?ChatFormatting.LIGHT_PURPLE:ChatFormatting.AQUA);
-        String prefix=selected?"▶ ":"";String suffix=selected?" · 다시 상호작용해 입장":"";
+        String prefix=selected?"▶ ":"";String suffix=selected?" · 선택됨":"";
         a.setCustomName(Component.literal(prefix+s.label()+suffix).withStyle(c,selected?ChatFormatting.BOLD:ChatFormatting.RESET));
         a.setCustomNameVisible(true);
     }
@@ -152,25 +139,8 @@ public final class RadiaEndgameAtrium {
     private static void updateChallengeBoardName(ServerLevel l,UUID pid){
         UUID id=CHALLENGE_BOARDS.get(pid);Entity e=id==null?null:l.getEntity(id);if(!(e instanceof ArmorStand board))return;
         int done=ChallengeService.completed(pid).size();
-        int page=CHALLENGE_PAGE.getOrDefault(pid,0)+1;
-        board.setCustomName(Component.literal("Challenge Board · "+done+"/20 · Page "+page+"/4").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD));
+        board.setCustomName(Component.literal("Challenge Board · "+done+"/20").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD));
         board.setCustomNameVisible(true);
-    }
-
-    private static void showChallengePage(ServerPlayer p){
-        UUID pid=p.getUUID();int page=CHALLENGE_PAGE.getOrDefault(pid,0);int start=page*5,end=Math.min(ChallengeCatalog.all().size(),start+5);
-        Set<String> completed=ChallengeService.completed(pid);
-        p.sendSystemMessage(Component.literal("Challenge Board · "+(page+1)+"/4 · 완료 "+completed.size()+"/20").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD));
-        for(int i=start;i<end;i++){
-            ChallengeCatalog.Challenge c=ChallengeCatalog.all().get(i);
-            String mark=completed.contains(c.id())?"[✓] ":c.autoEvaluable()?"[○] ":"[?] ";
-            ChatFormatting color=completed.contains(c.id())?ChatFormatting.GREEN:c.autoEvaluable()?ChatFormatting.WHITE:ChatFormatting.GOLD;
-            p.sendSystemMessage(Component.literal(mark+c.ordinal()+". "+c.label()+" · Crystal "+c.crystal()+" · Gold "+c.gold()).withStyle(color));
-            if(!c.autoEvaluable()&&!c.unresolvedReason().isBlank()){
-                p.sendSystemMessage(Component.literal("  정본 미지정 · "+c.unresolvedReason()).withStyle(ChatFormatting.DARK_GRAY));
-            }
-        }
-        CHALLENGE_PAGE.put(pid,(page+1)%4);updateChallengeBoardName((ServerLevel)p.level(),pid);
     }
 
     private static void despawnChallengeBoard(ServerLevel l,UUID pid){
