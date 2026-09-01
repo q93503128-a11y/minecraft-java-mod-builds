@@ -1,0 +1,47 @@
+name: Frontier Runtime Construction Scenario QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-runtime-scenario-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Prepare headless server
+        shell: bash
+        run: |
+          mkdir -p projects/frontier-settlement/run/server
+          printf 'eula=true\n' > projects/frontier-settlement/run/server/eula.txt
+      - name: Run runtime construction scenarios
+        shell: bash
+        env:
+          FRONTIER_RUNTIME_QA: '1'
+        run: |
+          set -o pipefail
+          cd projects/frontier-settlement
+          timeout 240 ./gradlew runServer --no-daemon 2>&1 | tee ../../frontier-runtime-scenario-qa.log
+          grep -q 'FRONTIER_CONSTRUCTION_RUNTIME_QA_V1' ../../frontier-runtime-scenario-qa.log
+          grep -q 'RUNTIME_QA_TOTAL' ../../frontier-runtime-scenario-qa.log
+          grep -q 'RUNTIME_QA_TOTAL checks=.* failures=0' ../../frontier-runtime-scenario-qa.log
+      - name: Upload runtime report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-runtime-construction-qa
+          path: frontier-runtime-scenario-qa.log
+          if-no-files-found: error
