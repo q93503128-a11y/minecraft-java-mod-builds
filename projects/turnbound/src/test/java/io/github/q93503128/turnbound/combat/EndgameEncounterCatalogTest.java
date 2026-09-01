@@ -62,6 +62,22 @@ class EndgameEncounterCatalogTest {
         assertTrue(boss.definition().param("hardBoss", 0.0) > 0.0);
     }
 
+    @Test
+    void endgameControlPermissionsAreServerCanonical() {
+        for (int boss = 1; boss <= 5; boss++) {
+            String id = EndgameEncounterCatalog.hardId("B0" + boss);
+            assertFalse(EndgameEncounterCatalog.autoAllowed(id), id + " must reject Auto");
+            assertFalse(EndgameEncounterCatalog.speedAllowed(id), id + " must reject x2");
+            assertFalse(EndgameEncounterCatalog.fleeAllowed(id), id + " must reject flee");
+        }
+        for (int floor = 1; floor <= 30; floor++) {
+            String id = EndgameEncounterCatalog.riftId(floor);
+            assertTrue(EndgameEncounterCatalog.autoAllowed(id), id + " must allow Auto");
+            assertTrue(EndgameEncounterCatalog.speedAllowed(id), id + " must allow x2");
+            assertFalse(EndgameEncounterCatalog.fleeAllowed(id), id + " must reject flee");
+        }
+    }
+
     private void addClear(String clearId) {
         CampaignProgressStore.Snapshot old = CampaignProgressStore.snapshot(playerId);
         Set<String> clears = new LinkedHashSet<>(old.clearedEncounters());
