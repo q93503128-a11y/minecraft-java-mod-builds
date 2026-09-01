@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
+import io.github.q93503128.turnbound.network.GachaPresentationPayload;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
@@ -20,6 +21,7 @@ public final class MetaNetwork {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(MetaSnapshotPayload.TYPE, MetaSnapshotPayload.STREAM_CODEC);
         registrar.playToClient(EndgameBriefingPayload.TYPE, EndgameBriefingPayload.STREAM_CODEC);
+        registrar.playToClient(GachaPresentationPayload.TYPE, GachaPresentationPayload.STREAM_CODEC);
         registrar.playToServer(MetaCommandPayload.TYPE, MetaCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (!(context.player() instanceof ServerPlayer player)) return;
