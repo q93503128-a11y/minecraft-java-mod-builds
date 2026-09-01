@@ -28,9 +28,9 @@ public final class ChallengeService {
         return Set.copyOf(CampaignProgressStore.snapshot(playerId).quests().marks().getOrDefault(MARK_KEY, Set.of()));
     }
 
-    public static List<String> evaluateAndCommit(UUID playerId, String encounterId, BattleState state, BattleOutcome outcome) {
+    /** Returns the exact challenges this victory would newly complete without mutating campaign state. */
+    public static List<String> preview(UUID playerId, String encounterId, BattleState state, BattleOutcome outcome) {
         if (playerId == null || state == null || outcome != BattleOutcome.ALLY_VICTORY) return List.of();
-        // Tutorial compositions are an implementation bridge, not challenge-eligible canonical encounters.
         if (V04Catalogs.tutorialBridge(encounterId)) return List.of();
         Metrics metrics = metrics(state);
         Set<String> already = new LinkedHashSet<>(completed(playerId));
@@ -50,10 +50,16 @@ public final class ChallengeService {
         awardIf(earned, already, "CH18_HARD_B04", "HARD_B04".equals(encounterId));
         awardIf(earned, already, "CH19_HARD_B05", "HARD_B05".equals(encounterId));
         awardIf(earned, already, "CH20_RIFT_F30", "RIFT_F30".equals(encounterId));
-
-        if (earned.isEmpty()) return List.of();
-        applyRewards(playerId, already, earned);
         return List.copyOf(earned);
+    }
+
+    public static List<String> evaluateAndCommit(UUID playerId, String encounterId, BattleState state, BattleOutcome outcome) {
+        List<String> earned = preview(playerId, encounterId, state, outcome);
+        if (earned.isEmpty()) return List.of();
+        Set<String> completed = new LinkedHashSet<>(completed(playerId));
+        completed.addAll(earned);
+        applyRewards(playerId, completed, earned);
+        return earned;
     }
 
     private static void awardIf(List<String> earned, Set<String> already, String id, boolean condition) {
