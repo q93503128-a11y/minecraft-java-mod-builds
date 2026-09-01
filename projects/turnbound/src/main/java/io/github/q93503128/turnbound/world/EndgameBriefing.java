@@ -52,9 +52,9 @@ public final class EndgameBriefing {
 
         if ("NORMAL".equals(kind) && encounterId.startsWith("BATTLE_B")) {
             V04Catalogs.Encounter spec = V04Catalogs.encounter(encounterId);
-            return new Briefing(encounterId, spec.label() + " · Normal 재도전", kind, spec.level(), composition(spec.enemies()),
+            return new Briefing(encounterId, spec.label() + " · 일반 재도전", kind, spec.level(), composition(spec.enemies()),
                     partyCp, NORMAL_CP.get(encounterId), "Lv." + spec.level(), V04Catalogs.battleGold(spec),
-                    0, 0, "", "Gold " + V04Catalogs.battleGold(spec), false, false);
+                    0, 0, "", "골드 " + V04Catalogs.battleGold(spec), false, false);
         }
 
         if (EndgameEncounterCatalog.hardBoss(encounterId)) {
@@ -62,9 +62,9 @@ public final class EndgameBriefing {
             String bossName = CanonicalData.definition(bossId).name();
             // Canon fixes the first-clear T4 choice token. Repeat T3/T4 distribution is intentionally not surfaced
             // until its missing distribution rule is authored; player UI must not expose development-gap text.
-            return new Briefing(encounterId, bossName + " · Hard", "HARD", level, bossName + " [Hard]",
-                    partyCp, null, "Boss +5 Lv", V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
-                    600, 0, "T4 장비 선택권 ×1", "Gold " + V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
+            return new Briefing(encounterId, bossName + " · 하드", "HARD", level, bossName + " [하드]",
+                    partyCp, null, "보스 레벨 +5", V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
+                    600, 0, "T4 장비 선택권 ×1", "골드 " + V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
                     firstClear, true);
         }
 
@@ -74,9 +74,9 @@ public final class EndgameBriefing {
             String band = floor <= 10 ? "Lv.20~30" : floor <= 20 ? "Lv.30~45" : "Lv.45~60";
             // F10/F20/F30 have a canonical extra choice reward, but v0.4 does not assign the exact T3/T4 tier.
             // Do not promise an unresolved concrete item in player-facing text.
-            return new Briefing(encounterId, "Rift Gate F" + floor, "RIFT", spec.level(), composition(spec.enemies()),
+            return new Briefing(encounterId, "균열 관문 F" + floor, "RIFT", spec.level(), composition(spec.enemies()),
                     partyCp, RIFT_MILESTONE_CP.get(floor), band, V04Catalogs.riftGold(floor),
-                    60, 25, "", "Gold " + V04Catalogs.riftGold(floor), firstClear, spec.hardBossPattern());
+                    60, 25, "", "골드 " + V04Catalogs.riftGold(floor), firstClear, spec.hardBossPattern());
         }
         throw new IllegalArgumentException("Unsupported endgame briefing " + encounterId);
     }
