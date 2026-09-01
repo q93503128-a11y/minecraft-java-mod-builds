@@ -3,9 +3,9 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.V04Catalogs;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
+import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public final class EndgameBriefing {
             String encounterId, String title, String kind, int level, String composition,
             int partyCp, Integer recommendedCp, String recommendedLevel,
             int gold, int firstCrystal, int firstEssence, String firstExtra, String repeatExtra,
-            boolean firstClear, boolean hardPattern, String implementationGap
+            boolean firstClear, boolean hardPattern
     ) {}
 
     private static final Map<String, Integer> NORMAL_CP = Map.of(
@@ -36,75 +36,52 @@ public final class EndgameBriefing {
 
         if ("NORMAL".equals(kind) && encounterId.startsWith("BATTLE_B")) {
             V04Catalogs.Encounter spec = V04Catalogs.encounter(encounterId);
-            String composition = composition(spec.enemies());
-            return new Briefing(encounterId, spec.label() + " · Normal 재도전", kind, spec.level(), composition,
+            return new Briefing(encounterId, spec.label() + " · Normal 재도전", kind, spec.level(), composition(spec.enemies()),
                     partyCp, NORMAL_CP.get(encounterId), "Lv." + spec.level(), V04Catalogs.battleGold(spec),
-                    0, 0, "캠페인 첫 클리어 보상은 이미 스토리 진행에서 처리", "재도전 Boss 드랍 규칙 적용",
-                    firstClear, false, "");
+                    0, 0, "", "Gold " + V04Catalogs.battleGold(spec), false, false);
         }
 
         if (EndgameEncounterCatalog.hardBoss(encounterId)) {
             String bossId = EndgameEncounterCatalog.bossId(encounterId);
             String bossName = CanonicalData.definition(bossId).name();
+            // Canon fixes the first-clear T4 choice token. Repeat T3/T4 distribution is intentionally not surfaced
+            // until its missing distribution rule is authored; player UI must not expose development-gap text.
             return new Briefing(encounterId, bossName + " · Hard", "HARD", level, bossName + " [Hard]",
-                    partyCp, null, "스토리 Boss +5 Lv", V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
-                    600, 0, "T4 장비 선택 토큰 ×1",
-                    "정본상 T3/T4 Drop · 세부 확률 미지정으로 현재 자동지급 보류",
-                    firstClear, true, "Hard 반복 T3/T4 Drop의 세부 분배율은 v0.4에 별도 지정 없음");
+                    partyCp, null, "Boss +5 Lv", V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
+                    600, 0, "T4 장비 선택권 ×1", "Gold " + V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
+                    firstClear, true);
         }
 
         if (EndgameEncounterCatalog.rift(encounterId)) {
             int floor = EndgameEncounterCatalog.riftFloorNumber(encounterId);
             V04Catalogs.RiftFloor spec = V04Catalogs.riftFloor(floor);
             String band = floor <= 10 ? "Lv.20~30" : floor <= 20 ? "Lv.30~45" : "Lv.45~60";
-            String extra = floor % 10 == 0
-                    ? "정본 추가: T3/T4 선택 보상 · 정확 티어 미지정으로 현재 지급 보류" : "";
-            String gap = floor % 10 == 0
-                    ? "F10/F20/F30 선택 보상의 정확한 T3/T4 티어 배정은 v0.4에 별도 지정 없음"
-                    : "";
+            // F10/F20/F30 have a canonical extra choice reward, but v0.4 does not assign the exact T3/T4 tier.
+            // Do not promise an unresolved concrete item in player-facing text.
             return new Briefing(encounterId, "Rift Gate F" + floor, "RIFT", spec.level(), composition(spec.enemies()),
                     partyCp, RIFT_MILESTONE_CP.get(floor), band, V04Catalogs.riftGold(floor),
-                    60, 25, extra, "Gold 공식 적용", firstClear, spec.hardBossPattern(), gap);
+                    60, 25, "", "Gold " + V04Catalogs.riftGold(floor), firstClear, spec.hardBossPattern());
         }
         throw new IllegalArgumentException("Unsupported endgame briefing " + encounterId);
     }
 
-    public static void send(ServerPlayer player, Briefing b) {
-        ChatFormatting accent = "HARD".equals(b.kind()) ? ChatFormatting.RED
-                : "RIFT".equals(b.kind()) ? ChatFormatting.AQUA : ChatFormatting.GOLD;
-        player.sendSystemMessage(Component.literal("TURNBOUND · " + b.title()).withStyle(accent, ChatFormatting.BOLD));
-        player.sendSystemMessage(Component.literal("적 · " + b.composition() + "   /   Lv " + b.level()).withStyle(ChatFormatting.WHITE));
-        String guide = b.recommendedCp() == null
-                ? "Party CP " + b.partyCp() + "   /   권장 " + b.recommendedLevel()
-                : "Party CP " + b.partyCp() + "   /   권장 CP " + b.recommendedCp();
-        player.sendSystemMessage(Component.literal(guide).withStyle(
-                b.recommendedCp() != null && b.partyCp() < b.recommendedCp() ? ChatFormatting.YELLOW : ChatFormatting.GREEN));
-        if (b.firstClear()) {
-            String reward = "첫 클리어 · Gold " + b.gold()
-                    + (b.firstCrystal() > 0 ? " · Crystal " + b.firstCrystal() : "")
-                    + (b.firstEssence() > 0 ? " · Star Essence " + b.firstEssence() : "")
-                    + (b.firstExtra().isBlank() ? "" : " · " + b.firstExtra());
-            player.sendSystemMessage(Component.literal(reward).withStyle(ChatFormatting.LIGHT_PURPLE));
-        } else {
-            player.sendSystemMessage(Component.literal("재도전 · Gold " + b.gold()
-                    + (b.repeatExtra().isBlank() ? "" : " · " + b.repeatExtra())).withStyle(ChatFormatting.GRAY));
-        }
-        if ("HARD".equals(b.kind())) {
-            player.sendSystemMessage(Component.literal("Hard · HP×1.65 / ATK×1.25 / DEF×1.15 / SPD+8 / 소환 적 Lv+5")
-                    .withStyle(ChatFormatting.RED));
-        } else if ("RIFT".equals(b.kind()) && b.hardPattern()) {
-            player.sendSystemMessage(Component.literal("Rift HardPattern · 표 Floor Lv override + Hard 계수 + 문서 지정 HP 추가 보정")
-                    .withStyle(ChatFormatting.LIGHT_PURPLE));
-            player.sendSystemMessage(Component.literal("Rift · 전투 사이 전회복 / 입장 전 파티 변경 가능 / Auto·2x 허용")
-                    .withStyle(ChatFormatting.AQUA));
-        } else if ("RIFT".equals(b.kind())) {
-            player.sendSystemMessage(Component.literal("Rift · 전투 사이 전회복 / 입장 전 파티 변경 가능 / Auto·2x 허용")
-                    .withStyle(ChatFormatting.AQUA));
-        }
-        if (!b.implementationGap().isBlank()) {
-            player.sendSystemMessage(Component.literal("정본 미지정 · " + b.implementationGap()).withStyle(ChatFormatting.DARK_GRAY));
-        }
-        player.sendSystemMessage(Component.literal("같은 표식을 다시 상호작용하면 출전합니다.").withStyle(ChatFormatting.YELLOW));
+    public static void send(ServerPlayer player, Briefing briefing) {
+        PacketDistributor.sendToPlayer(player, new EndgameBriefingPayload(encode(briefing)));
+    }
+
+    private static String encode(Briefing b) {
+        StringBuilder out = new StringBuilder();
+        out.append("H|").append(safe(b.encounterId())).append('|').append(safe(b.title())).append('|').append(b.kind()).append('|')
+                .append(b.level()).append('|').append(b.partyCp()).append('|').append(b.recommendedCp() == null ? -1 : b.recommendedCp()).append('|')
+                .append(safe(b.recommendedLevel())).append('|').append(b.firstClear() ? 1 : 0).append('|').append(b.hardPattern() ? 1 : 0).append('\n');
+        out.append("E|").append(safe(b.composition())).append('\n');
+        out.append("R|").append(b.gold()).append('|').append(b.firstCrystal()).append('|').append(b.firstEssence()).append('|')
+                .append(safe(b.firstExtra())).append('|').append(safe(b.repeatExtra())).append('\n');
+        return out.toString();
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value.replace('|', '/').replace('\n', ' ').replace('\r', ' ');
     }
 
     private static String composition(Iterable<String> ids) {
