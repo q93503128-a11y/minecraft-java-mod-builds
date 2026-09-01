@@ -27,11 +27,17 @@ public final class EndgameBriefingScreen extends Screen {
     ) {}
 
     private final Briefing briefing;
+    private final boolean returnToSystemMenu;
     private int left, top, panelWidth, panelHeight;
 
     public EndgameBriefingScreen(Briefing briefing) {
-        super(Component.literal("TURNBOUND Endgame Briefing"));
+        this(briefing, false);
+    }
+
+    public EndgameBriefingScreen(Briefing briefing, boolean returnToSystemMenu) {
+        super(Component.literal("TURNBOUND 도전 브리핑"));
         this.briefing = briefing;
+        this.returnToSystemMenu = returnToSystemMenu;
     }
 
     public static Briefing decode(String raw) {
@@ -82,7 +88,8 @@ public final class EndgameBriefingScreen extends Screen {
     }
 
     private void closeBriefing() {
-        if (minecraft != null) minecraft.gui.setScreen(null);
+        if (minecraft == null) return;
+        minecraft.gui.setScreen(returnToSystemMenu ? new MetaMenuScreen(MetaMenuScreen.Tab.SYSTEM) : null);
     }
 
     @Override public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) { }
@@ -100,12 +107,12 @@ public final class EndgameBriefingScreen extends Screen {
         graphics.text(font, Component.literal("Lv." + briefing.level() + "   ·   " + briefing.composition()), x, y + 37, SECONDARY, false);
 
         int guideY = y + 65;
-        graphics.text(font, Component.literal("PARTY READINESS"), x, guideY, SECONDARY, true);
+        graphics.text(font, Component.literal("파티 준비도"), x, guideY, SECONDARY, true);
         boolean cpKnown = briefing.recommendedCp() > 0;
         boolean under = cpKnown && briefing.partyCp() < briefing.recommendedCp();
         String guide = cpKnown
-                ? "Party CP  " + briefing.partyCp() + "    /    권장 CP  " + briefing.recommendedCp()
-                : "Party CP  " + briefing.partyCp() + "    /    권장  " + briefing.recommendedLevel();
+                ? "파티 CP  " + briefing.partyCp() + "    /    권장 CP  " + briefing.recommendedCp()
+                : "파티 CP  " + briefing.partyCp() + "    /    권장  " + briefing.recommendedLevel();
         graphics.text(font, Component.literal(guide), x, guideY + 16, under ? GOLD : GREEN, true);
         if (cpKnown) {
             int barW = panelWidth - 40;
@@ -118,24 +125,24 @@ public final class EndgameBriefingScreen extends Screen {
 
         int rewardY = guideY + (cpKnown ? 69 : 51);
         graphics.fill(x, rewardY, left + panelWidth - 20, rewardY + 1, 0x55707987);
-        graphics.text(font, Component.literal(briefing.firstClear() ? "FIRST CLEAR REWARD" : "REPEAT REWARD"),
+        graphics.text(font, Component.literal(briefing.firstClear() ? "첫 클리어 보상" : "반복 보상"),
                 x, rewardY + 10, briefing.firstClear() ? GOLD : SECONDARY, true);
         int ry = rewardY + 29;
-        graphics.text(font, Component.literal("Gold  +" + briefing.gold()), x, ry, GOLD, true);
+        graphics.text(font, Component.literal("골드  +" + briefing.gold()), x, ry, GOLD, true);
         if (briefing.firstClear() && briefing.crystal() > 0) {
-            graphics.text(font, Component.literal("Crystal  +" + briefing.crystal()), x + 118, ry, BLUE, true);
+            graphics.text(font, Component.literal("크리스탈  +" + briefing.crystal()), x + 118, ry, BLUE, true);
         }
         if (briefing.firstClear() && briefing.essence() > 0) {
-            graphics.text(font, Component.literal("Star Essence  +" + briefing.essence()), x + 250, ry, GOLD, true);
+            graphics.text(font, Component.literal("별의 정수  +" + briefing.essence()), x + 250, ry, GOLD, true);
         }
         String extra = briefing.firstClear() ? briefing.firstExtra() : briefing.repeatExtra();
         if (!extra.isBlank()) graphics.text(font, Component.literal(extra), x, ry + 18, GREEN, true);
 
         int ruleY = Math.min(top + panelHeight - 83, ry + (extra.isBlank() ? 35 : 50));
-        graphics.text(font, Component.literal("BATTLE RULE"), x, ruleY, SECONDARY, true);
+        graphics.text(font, Component.literal("전투 규칙"), x, ruleY, SECONDARY, true);
         graphics.text(font, Component.literal(ruleLine()), x, ruleY + 16, ruleColor(), false);
         if ("RIFT".equals(briefing.kind())) {
-            graphics.text(font, Component.literal("전투 사이 전회복 · 층 입장 전 파티 변경 · Auto / ×2 허용"),
+            graphics.text(font, Component.literal("전투 사이 전회복 · 층 입장 전 파티 변경 · 자동 / ×2 허용"),
                     x, ruleY + 31, BLUE, false);
         }
 
@@ -144,17 +151,17 @@ public final class EndgameBriefingScreen extends Screen {
 
     private String kindLabel() {
         return switch (briefing.kind()) {
-            case "HARD" -> "BOSS REMATCH · HARD";
-            case "RIFT" -> briefing.hardPattern() ? "RIFT GATE · BOSS FLOOR" : "RIFT GATE";
-            default -> "BOSS REMATCH · NORMAL";
+            case "HARD" -> "보스 재전 · 하드";
+            case "RIFT" -> briefing.hardPattern() ? "균열 관문 · 보스층" : "균열 관문";
+            default -> "보스 재전 · 일반";
         };
     }
 
     private String ruleLine() {
         if ("HARD".equals(briefing.kind())) return "HP ×1.65 · ATK ×1.25 · DEF ×1.15 · SPD +8 · 소환 적 Lv +5";
-        if ("RIFT".equals(briefing.kind()) && briefing.hardPattern()) return "보스 강화 패턴 · Floor 표기 Lv 기준";
-        if ("RIFT".equals(briefing.kind())) return "Rift 층별 편성 · 도주 불가";
-        return "Normal 보스 재도전 · 도주 불가";
+        if ("RIFT".equals(briefing.kind()) && briefing.hardPattern()) return "보스 강화 패턴 · 층 표기 Lv 기준";
+        if ("RIFT".equals(briefing.kind())) return "균열 층별 편성 · 도주 불가";
+        return "일반 보스 재도전 · 도주 불가";
     }
     private int ruleColor() { return "HARD".equals(briefing.kind()) ? DANGER : briefing.hardPattern() ? GOLD : SECONDARY; }
     private int accent() { return "HARD".equals(briefing.kind()) ? DANGER : "RIFT".equals(briefing.kind()) ? BLUE : GOLD; }
