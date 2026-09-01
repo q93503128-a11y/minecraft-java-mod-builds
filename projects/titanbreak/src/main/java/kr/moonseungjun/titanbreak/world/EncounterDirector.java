@@ -2,12 +2,16 @@ package kr.moonseungjun.titanbreak.world;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
+import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
+import kr.moonseungjun.titanbreak.entity.SpitterEntity;
+import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import net.minecraft.core.BlockPos;
@@ -29,12 +33,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Server-authoritative encounter pacing for the first playable hunt loop.
- * It deliberately uses the player's actual hunt/augmentation progression instead of a fixed wave script,
- * so the world starts with discoverable normal prey, escalates to elites, and only exposes the Pursuer
- * after the player has actually fabricated and installed augmentations.
- */
 public final class EncounterDirector {
     private static final int NORMAL_CAP = 5;
     private static final int ELITE_CAP = 2;
@@ -45,7 +43,10 @@ public final class EncounterDirector {
     private static final long ELITE_DELAY_JITTER = 1_000L;
     private static final long BOSS_WARNING_DELAY = 220L;
 
-    private static final String[] NORMAL_SPECIES = {"ripper", "skitter", "bulwark", "needler", "howler"};
+    private static final String[] NORMAL_SPECIES = {
+            "ripper", "skitter", "bulwark", "spitter", "needler",
+            "glider", "howler", "jammer", "voltaic"
+    };
     private static final String[] ELITE_SPECIES = {"chrono_hound", "null_eye"};
 
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
@@ -169,8 +170,12 @@ public final class EncounterDirector {
             case "ripper" -> ModEntities.RIPPER.get();
             case "skitter" -> ModEntities.SKITTER.get();
             case "bulwark" -> ModEntities.BULWARK.get();
+            case "spitter" -> ModEntities.SPITTER.get();
             case "needler" -> ModEntities.NEEDLER.get();
+            case "glider" -> ModEntities.GLIDER.get();
             case "howler" -> ModEntities.HOWLER.get();
+            case "jammer" -> ModEntities.JAMMER.get();
+            case "voltaic" -> ModEntities.VOLTAIC.get();
             case "chrono_hound" -> ModEntities.CHRONO_HOUND.get();
             case "null_eye" -> ModEntities.NULL_EYE.get();
             case "the_pursuer" -> ModEntities.THE_PURSUER.get();
@@ -184,6 +189,7 @@ public final class EncounterDirector {
             int x = player.getBlockX() + (int) Math.round(Math.cos(angle) * range);
             int z = player.getBlockZ() + (int) Math.round(Math.sin(angle) * range);
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            if ("glider".equals(species)) y += 5 + player.getRandom().nextInt(4);
             BlockPos pos = new BlockPos(x, y, z);
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
 
@@ -211,8 +217,10 @@ public final class EncounterDirector {
 
     private static boolean isNormal(LivingEntity entity) {
         return entity instanceof RipperEntity || entity instanceof SkitterEntity
-                || entity instanceof BulwarkEntity || entity instanceof NeedlerEntity
-                || entity instanceof HowlerEntity;
+                || entity instanceof BulwarkEntity || entity instanceof SpitterEntity
+                || entity instanceof NeedlerEntity || entity instanceof GliderEntity
+                || entity instanceof HowlerEntity || entity instanceof JammerEntity
+                || entity instanceof VoltaicEntity;
     }
 
     private static boolean isElite(LivingEntity entity) {

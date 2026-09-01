@@ -4,13 +4,17 @@ import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HollowColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
+import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
+import kr.moonseungjun.titanbreak.entity.SpitterEntity;
+import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -43,11 +47,23 @@ public final class ModEntities {
                     .sized(0.6F, 1.95F).eyeHeight(1.74F).clientTrackingRange(10)
                     .build(key("ripper")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<SpitterEntity>> SPITTER =
+            ENTITIES.register("spitter", () -> EntityType.Builder.<SpitterEntity>of(
+                            SpitterEntity::new, MobCategory.MONSTER)
+                    .sized(0.72F, 1.65F).eyeHeight(1.38F).clientTrackingRange(12)
+                    .build(key("spitter")));
+
     public static final DeferredHolder<EntityType<?>, EntityType<SkitterEntity>> SKITTER =
             ENTITIES.register("skitter", () -> EntityType.Builder.<SkitterEntity>of(
                             SkitterEntity::new, MobCategory.MONSTER)
                     .sized(1.4F, 0.9F).eyeHeight(0.65F).clientTrackingRange(10)
                     .build(key("skitter")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GliderEntity>> GLIDER =
+            ENTITIES.register("glider", () -> EntityType.Builder.<GliderEntity>of(
+                            GliderEntity::new, MobCategory.MONSTER)
+                    .sized(1.35F, 0.82F).eyeHeight(0.58F).clientTrackingRange(16)
+                    .build(key("glider")));
 
     public static final DeferredHolder<EntityType<?>, EntityType<BulwarkEntity>> BULWARK =
             ENTITIES.register("bulwark", () -> EntityType.Builder.<BulwarkEntity>of(
@@ -66,6 +82,18 @@ public final class ModEntities {
                             HowlerEntity::new, MobCategory.MONSTER)
                     .sized(0.72F, 2.05F).eyeHeight(1.8F).clientTrackingRange(12)
                     .build(key("howler")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<JammerEntity>> JAMMER =
+            ENTITIES.register("jammer", () -> EntityType.Builder.<JammerEntity>of(
+                            JammerEntity::new, MobCategory.MONSTER)
+                    .sized(0.70F, 2.10F).eyeHeight(1.84F).clientTrackingRange(14)
+                    .build(key("jammer")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<VoltaicEntity>> VOLTAIC =
+            ENTITIES.register("voltaic", () -> EntityType.Builder.<VoltaicEntity>of(
+                            VoltaicEntity::new, MobCategory.MONSTER)
+                    .sized(0.82F, 2.00F).eyeHeight(1.74F).clientTrackingRange(14)
+                    .build(key("voltaic")));
 
     public static final DeferredHolder<EntityType<?>, EntityType<ChronoHoundEntity>> CHRONO_HOUND =
             ENTITIES.register("chrono_hound", () -> EntityType.Builder.<ChronoHoundEntity>of(
@@ -105,10 +133,22 @@ public final class ModEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.31D)
                 .build());
 
+        event.put(SPITTER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(110.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(18.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.20D)
+                .build());
+
         event.put(SKITTER.get(), Spider.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(100.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(12.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.43D)
+                .build());
+
+        event.put(GLIDER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(130.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(16.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.28D)
                 .build());
 
         event.put(BULWARK.get(), Zombie.createAttributes()
@@ -130,6 +170,18 @@ public final class ModEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.21D)
                 .build());
 
+        event.put(JAMMER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(140.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(14.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.18D)
+                .build());
+
+        event.put(VOLTAIC.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(160.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(20.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.23D)
+                .build());
+
         event.put(CHRONO_HOUND.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(520.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(36.0D))
@@ -142,8 +194,6 @@ public final class ModEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.20D)
                 .build());
 
-        // Pursuer uses a denser boss-only internal health scale to keep its canonical 9,000-point
-        // health pool inside the vanilla MAX_HEALTH attribute's practical range.
         event.put(THE_PURSUER.get(), Giant.createAttributes()
                 .add(Attributes.MAX_HEALTH, 900.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.42D)

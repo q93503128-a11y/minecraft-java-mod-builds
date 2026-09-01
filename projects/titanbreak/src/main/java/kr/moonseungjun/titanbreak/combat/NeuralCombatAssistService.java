@@ -28,6 +28,10 @@ public final class NeuralCombatAssistService {
             ACTIVE.put(id, false);
             return;
         }
+        if (AnalysisJammingService.remainingTicks(player) > 0) {
+            ACTIVE.put(id, false);
+            return;
+        }
 
         TitanPlayerData.AugmentInstance targetAssist = state.firstInstalledInstance("target_assist");
         TitanPlayerData.AugmentInstance predictive = state.firstInstalledInstance("predictive_combat_core");

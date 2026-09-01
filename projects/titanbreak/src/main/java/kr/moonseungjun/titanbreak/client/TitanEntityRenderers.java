@@ -10,10 +10,14 @@ public final class TitanEntityRenderers {
     public static void register(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.HOLLOW_COLOSSUS.get(), HollowColossusRenderer::new);
         event.registerEntityRenderer(ModEntities.RIPPER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.RIPPER.get()).withScale(1.05F));
+        event.registerEntityRenderer(ModEntities.SPITTER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.SPITTER.get()).withScale(1.04F));
         event.registerEntityRenderer(ModEntities.SKITTER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.SKITTER.get()).withScale(1.15F));
+        event.registerEntityRenderer(ModEntities.GLIDER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.GLIDER.get()).withScale(1.10F));
         event.registerEntityRenderer(ModEntities.BULWARK.get(), context -> new GeoEntityRenderer<>(context, ModEntities.BULWARK.get()).withScale(1.12F));
         event.registerEntityRenderer(ModEntities.NEEDLER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.NEEDLER.get()).withScale(1.06F));
         event.registerEntityRenderer(ModEntities.HOWLER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.HOWLER.get()).withScale(1.08F));
+        event.registerEntityRenderer(ModEntities.JAMMER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.JAMMER.get()).withScale(1.08F));
+        event.registerEntityRenderer(ModEntities.VOLTAIC.get(), context -> new GeoEntityRenderer<>(context, ModEntities.VOLTAIC.get()).withScale(1.08F));
         event.registerEntityRenderer(ModEntities.CHRONO_HOUND.get(), context -> new GeoEntityRenderer<>(context, ModEntities.CHRONO_HOUND.get()).withScale(1.12F));
         event.registerEntityRenderer(ModEntities.NULL_EYE.get(), context -> new GeoEntityRenderer<>(context, ModEntities.NULL_EYE.get()).withScale(1.10F));
         event.registerEntityRenderer(ModEntities.THE_PURSUER.get(), PursuerRenderer::new);

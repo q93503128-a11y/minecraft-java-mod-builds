@@ -10,6 +10,7 @@ import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
 import kr.moonseungjun.titanbreak.combat.CirculatoryAugmentationService;
 import kr.moonseungjun.titanbreak.combat.CombatAutopilotService;
 import kr.moonseungjun.titanbreak.combat.DamageChannelService;
+import kr.moonseungjun.titanbreak.combat.EnemyAttackEffectService;
 import kr.moonseungjun.titanbreak.combat.HuntRewardService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
 import kr.moonseungjun.titanbreak.combat.MotorSyncService;
@@ -45,7 +46,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.37";
+    public static final String VERSION = "0.1.0-alpha.38";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -64,6 +65,7 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(SpineAugmentationService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(EnemyAttackEffectService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(AugmentAbilityService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(LegAugmentationService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(SpineAugmentationService::onIncomingDamage);
@@ -157,6 +159,7 @@ public final class Titanbreak {
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0F);
         VanillaArmorLockout.tick(player);
+        EnemyAttackEffectService.tick(player);
         AugmentationResourceService.tick(player, state);
         AugmentationEffectService.tick(player, state);
         OcularAugmentationService.tick(player, state);
@@ -224,6 +227,7 @@ public final class Titanbreak {
 
     private void onServerStopped(ServerStoppedEvent event) {
         EncounterDirector.clearAll();
+        EnemyAttackEffectService.clearAll();
         AnalysisJammingService.clearAll();
         AugmentAbilityService.clearAll();
         LegAugmentationService.clearAll();

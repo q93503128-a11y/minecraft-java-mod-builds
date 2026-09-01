@@ -2,12 +2,16 @@ package kr.moonseungjun.titanbreak.combat;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
+import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
+import kr.moonseungjun.titanbreak.entity.SpitterEntity;
+import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
 import kr.moonseungjun.titanbreak.network.TitanbreakNetwork;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModItems;
@@ -23,8 +27,10 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 public final class HuntRewardService {
     private static final int NORMAL_FIRST_KILL_RD = 10;
-    private static final int ELITE_FIRST_KILL_RD = 40;
-    private static final int BOSS_FIRST_KILL_RD = 150;
+    private static final int ELITE_FIRST_KILL_RD = 50;
+    private static final int BOSS_FIRST_KILL_RD = 400;
+    private static final int CANONICAL_NORMAL_CATALOG_SIZE = 16;
+    private static final int CANONICAL_ELITE_CATALOG_SIZE = 10;
 
     private HuntRewardService() {}
 
@@ -54,18 +60,41 @@ public final class HuntRewardService {
             adaptationXp = 25;
             drop(level, victim, ModItems.COMPOSITE_ARMOR_PLATE.get(), 1 + victim.getRandom().nextInt(3));
             chanceDrop(level, victim, ModItems.DENSE_BONE_LATTICE.get(), 1, 0.30F);
+        } else if (victim instanceof SpitterEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "spitter";
+            adaptationXp = 20;
+            drop(level, victim, ModItems.SUTURE_POLYMER.get(), 1);
         } else if (victim instanceof NeedlerEntity) {
             huntClass = HuntClass.NORMAL;
             speciesKey = "needler";
             adaptationXp = 25;
             drop(level, victim, ModItems.OPTIC_SENSOR_CLUSTER.get(), 1 + victim.getRandom().nextInt(2));
             drop(level, victim, ModItems.CALCULATION_CORE.get(), 1);
+        } else if (victim instanceof GliderEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "glider";
+            adaptationXp = 25;
+            drop(level, victim, ModItems.THERMAL_OPTIC_CLUSTER.get(), 1);
+            drop(level, victim, ModItems.SERVO_BUNDLE.get(), 1);
         } else if (victim instanceof HowlerEntity) {
             huntClass = HuntClass.NORMAL;
             speciesKey = "howler";
             adaptationXp = 25;
             drop(level, victim, ModItems.RESONANT_NEURAL_GANGLION.get(), 1 + victim.getRandom().nextInt(2));
             chanceDrop(level, victim, ModItems.THERMAL_OPTIC_CLUSTER.get(), 1, 0.25F);
+        } else if (victim instanceof JammerEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "jammer";
+            adaptationXp = 25;
+            drop(level, victim, ModItems.CALCULATION_CORE.get(), 2);
+            chanceDrop(level, victim, ModItems.THERMAL_OPTIC_CLUSTER.get(), 1, 0.20F);
+        } else if (victim instanceof VoltaicEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "voltaic";
+            adaptationXp = 25;
+            drop(level, victim, ModItems.CAPACITOR_STACK.get(), 1 + victim.getRandom().nextInt(2));
+            drop(level, victim, ModItems.COOLING_CELL.get(), 1);
         } else if (victim instanceof ChronoHoundEntity) {
             huntClass = HuntClass.ELITE;
             speciesKey = "chrono_hound";
@@ -120,9 +149,9 @@ public final class HuntRewardService {
             };
             player.sendSystemMessage(Component.translatable("message.titanbreak.first_hunt_rd", reward), true);
             TitanPlayerData.State state = data.state(player);
-            if (huntClass == HuntClass.NORMAL && state.normalFirstKillCount() == 5) {
+            if (huntClass == HuntClass.NORMAL && state.normalFirstKillCount() == CANONICAL_NORMAL_CATALOG_SIZE) {
                 player.sendSystemMessage(Component.translatable("message.titanbreak.normal_catalog_complete"));
-            } else if (huntClass == HuntClass.ELITE && state.eliteFirstKillCount() == 2) {
+            } else if (huntClass == HuntClass.ELITE && state.eliteFirstKillCount() == CANONICAL_ELITE_CATALOG_SIZE) {
                 player.sendSystemMessage(Component.translatable("message.titanbreak.elite_catalog_complete"));
             } else if (huntClass == HuntClass.BOSS) {
                 player.sendSystemMessage(Component.translatable("message.titanbreak.pursuer_defeated"));

@@ -152,6 +152,17 @@ public final class AugmentationResourceService {
         return Math.max(0.0D, current);
     }
 
+    public static double drainPower(ServerPlayer player, TitanPlayerData.State state, double amount) {
+        if (amount <= 0.0D) return 0.0D;
+        UUID id = player.getUUID();
+        double current = currentPower(player, state);
+        double drained = Math.min(current, amount);
+        if (drained <= 0.0D) return 0.0D;
+        POWER.put(id, Math.max(0.0D, current - drained));
+        LAST_POWER_USE_TICK.put(id, player.level().getGameTime());
+        return drained;
+    }
+
     public static double continuousPowerCostPerTick(TitanPlayerData.State state, String augmentId) {
         AugmentationCatalog.Definition definition = AugmentationCatalog.byId(augmentId);
         if (definition == null || definition.powerLoad() <= 0) return 0.0D;

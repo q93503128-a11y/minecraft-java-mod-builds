@@ -33,6 +33,7 @@ public final class CombatAutopilotService {
 
     public static void activate(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
+        if (AnalysisJammingService.remainingTicks(player) > 0) return;
         TitanPlayerData data = TitanPlayerData.get(level.getServer());
         TitanPlayerData.State state = data.state(player);
         TitanPlayerData.AugmentInstance autopilot = state.firstInstalledInstance("combat_autopilot");
@@ -61,7 +62,7 @@ public final class CombatAutopilotService {
         }
 
         TitanPlayerData.AugmentInstance autopilot = state.firstInstalledInstance("combat_autopilot");
-        if (autopilot == null || state.heat() >= 98.0D
+        if (autopilot == null || AnalysisJammingService.remainingTicks(player) > 0 || state.heat() >= 98.0D
                 || AugmentationResourceService.snapshot(state).neuralOverloaded()
                 || !AugmentationResourceService.trySpendContinuousPower(player, state, "combat_autopilot")) {
             RUNTIME.remove(player.getUUID());

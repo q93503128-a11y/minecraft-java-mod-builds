@@ -54,9 +54,10 @@ jobs:
         run: |
           set -euo pipefail
           ROOT=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak
-          for cls in RipperEntity SkitterEntity BulwarkEntity NeedlerEntity HowlerEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             test -f "$ROOT/entity/$cls.java"
           done
+          test -f "$ROOT/combat/EnemyAttackEffectService.java"
           test -f "$ROOT/world/EncounterDirector.java"
           test -f "$ROOT/augmentation/AugmentationCatalog.java"
           test -f "$ROOT/augmentation/AugmentationEffectService.java"
@@ -68,6 +69,9 @@ jobs:
           grep -q 'EncounterDirector.tick' "$ROOT/Titanbreak.java"
           grep -q 'class FabricatorScreen' "$ROOT/client/FabricatorScreen.java"
           grep -q 'class SurgeryScreen' "$ROOT/client/SurgeryScreen.java"
+          grep -q 'drainPower' "$ROOT/augmentation/AugmentationResourceService.java"
+          grep -q 'AnalysisJammingService.remainingTicks' "$ROOT/combat/NeuralCombatAssistService.java"
+          grep -q 'AnalysisJammingService.remainingTicks' "$ROOT/combat/CombatAutopilotService.java"
 
       - name: Canonical content foundation audit
         shell: bash
@@ -90,6 +94,12 @@ jobs:
           service=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/station/StationService.java').read_text(encoding='utf-8')
           for token in ('upgradeFabricator','assembleImplantVault','surgeryTicks'):
               assert token in service, token
+          rewards=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/combat/HuntRewardService.java').read_text(encoding='utf-8')
+          assert 'NORMAL_FIRST_KILL_RD = 10' in rewards
+          assert 'ELITE_FIRST_KILL_RD = 50' in rewards
+          assert 'BOSS_FIRST_KILL_RD = 400' in rewards
+          assert 'CANONICAL_NORMAL_CATALOG_SIZE = 16' in rewards
+          assert 'CANONICAL_ELITE_CATALOG_SIZE = 10' in rewards
           PY
           for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
             test -f "$ASSETS/blockstates/$block.json"
@@ -110,11 +120,11 @@ jobs:
           test -f "$JAVA/entity/TitanGeoEntity.java"
           grep -q 'GeoEntityRenderer' "$JAVA/client/TitanEntityRenderers.java"
           if grep -Eq 'ZombieRenderer|SkeletonRenderer|SpiderRenderer|GiantMobRenderer' "$JAVA/client/TitanEntityRenderers.java"; then
-            echo 'A first-playable TITANBREAK creature still uses a vanilla mob renderer.' >&2; exit 1; fi
-          for cls in RipperEntity SkitterEntity BulwarkEntity NeedlerEntity HowlerEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+            echo 'A TITANBREAK creature still uses a vanilla mob renderer.' >&2; exit 1; fi
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             grep -q 'TitanGeoEntity' "$JAVA/entity/$cls.java"
           done
-          for entity in ripper skitter bulwark needler howler chrono_hound null_eye the_pursuer; do
+          for entity in ripper skitter bulwark spitter needler glider howler jammer voltaic chrono_hound null_eye the_pursuer; do
             test -f "$ASSETS/geckolib/models/entity/$entity.geo.json"
             test -f "$ASSETS/geckolib/animations/entity/$entity.animation.json"
             test -f "$ASSETS/textures/entity/$entity.png"
@@ -141,7 +151,17 @@ jobs:
             grep -q 'screen.titanbreak.fabricator' "$ASSETS/lang/$lang.json"
             grep -q 'screen.titanbreak.surgery' "$ASSETS/lang/$lang.json"
             grep -q 'entity.titanbreak.the_pursuer' "$ASSETS/lang/$lang.json"
+            for entity in spitter glider jammer voltaic; do
+              grep -q "entity.titanbreak.$entity" "$ASSETS/lang/$lang.json"
+            done
           done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for lang in ('ko_kr','en_us'):
+              path=Path(f'projects/titanbreak/src/main/resources/assets/titanbreak/lang/{lang}.json')
+              json.loads(path.read_text(encoding='utf-8'))
+          PY
           test -f "$ASSETS/blockstates/fabricator_i.json"
           test -f "$ASSETS/blockstates/surgical_bay.json"
 
@@ -182,12 +202,20 @@ jobs:
           jar tf "$JAR" | grep -q 'titanbreak.mixins.json'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/SpitterEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/GliderEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/JammerEntity.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/VoltaicEntity.class'
           for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
             jar tf "$JAR" | grep -q "assets/titanbreak/items/$block.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/blockstates/$block.json"
           done
           jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
-          jar tf "$JAR" | grep -q 'assets/titanbreak/geckolib/models/entity/ripper.geo.json'
+          for entity in ripper spitter glider jammer voltaic; do
+            jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/models/entity/$entity.geo.json"
+            jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/animations/entity/$entity.animation.json"
+            jar tf "$JAR" | grep -q "assets/titanbreak/textures/entity/$entity.png"
+          done
           jar tf "$JAR" | grep -q 'META-INF/jarjar/.*geckolib'
           echo "jar=$JAR"
           sha256sum "$JAR"
