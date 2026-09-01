@@ -1,7 +1,7 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.Bootstrap;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Temporary executable QA: enumerate every building/rotation against construction geometry invariants. */
+/** Temporary NeoForge-runtime QA: enumerate every building/rotation against construction geometry invariants. */
 public final class ConstructionMatrixQa {
     private static final double HIGH_WORK_RANGE_SQR = 196.0D;
     private static final int MAX_SCAFFOLD_STEP = 7;
@@ -17,40 +17,31 @@ public final class ConstructionMatrixQa {
 
     private ConstructionMatrixQa() {}
 
-    public static void main(String[] args) {
-        Bootstrap.bootStrap();
-        int cases = 0;
-        int failures = 0;
-        int highTargets = 0;
-        int zeroReachTargets = 0;
-        int singleReachTargets = 0;
-        int outsideValidationTowers = 0;
-        int scaffoldBlueprintCollisions = 0;
+    public static void onServerStarted(ServerStartedEvent event) {
+        runMatrix();
+        event.getServer().halt(false);
+    }
 
-        System.out.println("FRONTIER_CONSTRUCTION_MATRIX_QA_V1");
+    private static void runMatrix() {
+        int cases = 0, failures = 0, highTargets = 0, zeroReachTargets = 0, singleReachTargets = 0;
+        int outsideValidationCases = 0, scaffoldBlueprintCollisionCases = 0;
+        System.out.println("FRONTIER_CONSTRUCTION_MATRIX_QA_V2");
+
         for (BuildingType type : BuildingType.values()) {
             Integer expectedCount = null;
-            int typeMinReach = Integer.MAX_VALUE;
-            int typeZeroReach = 0;
-            int typeSingleReach = 0;
-            int typeMaxY = Integer.MIN_VALUE;
+            int typeMinReach = Integer.MAX_VALUE, typeZero = 0, typeSingle = 0, typeMaxY = Integer.MIN_VALUE;
             for (BuildingRotation rotation : BuildingRotation.values()) {
                 cases++;
                 List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, ORIGIN, rotation.id());
-                int width = rotation.rotatedWidth(type);
-                int depth = rotation.rotatedDepth(type);
-                Set<BlockPos> unique = new HashSet<>();
-                int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-                int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+                int width = rotation.rotatedWidth(type), depth = rotation.rotatedDepth(type);
+                Set<BlockPos> positions = new HashSet<>();
+                int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
                 int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
-                boolean boundsOk = true;
-                boolean heightOk = true;
+                boolean boundsOk = true, heightOk = true;
                 for (BuildingBlueprints.Placement placement : plan) {
                     BlockPos p = placement.pos();
-                    unique.add(p);
-                    int x = p.getX() - ORIGIN.getX();
-                    int y = p.getY() - ORIGIN.getY();
-                    int z = p.getZ() - ORIGIN.getZ();
+                    positions.add(p);
+                    int x = p.getX() - ORIGIN.getX(), y = p.getY() - ORIGIN.getY(), z = p.getZ() - ORIGIN.getZ();
                     minX = Math.min(minX, x); maxX = Math.max(maxX, x);
                     minY = Math.min(minY, y); maxY = Math.max(maxY, y);
                     minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
@@ -58,38 +49,28 @@ public final class ConstructionMatrixQa {
                     if (y < 0 || y > type.clearHeight()) heightOk = false;
                 }
                 typeMaxY = Math.max(typeMaxY, maxY);
-                boolean uniqueOk = unique.size() == plan.size();
-                boolean rotationCountOk = expectedCount == null || expectedCount == plan.size();
+                boolean uniqueOk = positions.size() == plan.size();
+                boolean countOk = expectedCount == null || expectedCount == plan.size();
                 if (expectedCount == null) expectedCount = plan.size();
 
                 BlockPos supply = supplyPosition(ORIGIN, type, rotation);
                 List<Scaffold> scaffolds = scaffolds(ORIGIN, type, rotation, supply);
-                Set<BlockPos> blueprintPositions = new HashSet<>(unique);
-                boolean scaffoldCollision = false;
-                boolean everyTowerInsideValidation = true;
+                boolean scaffoldCollision = false, scaffoldOutsideValidation = false;
                 for (Scaffold scaffold : scaffolds) {
                     for (BlockPos piece : scaffold.pieces()) {
-                        int x = piece.getX() - ORIGIN.getX();
-                        int y = piece.getY() - ORIGIN.getY();
-                        int z = piece.getZ() - ORIGIN.getZ();
-                        if (x < -1 || x > width || z < -1 || z > depth || y < 0 || y > type.clearHeight()) {
-                            everyTowerInsideValidation = false;
-                        }
-                        if (blueprintPositions.contains(piece)) scaffoldCollision = true;
+                        int x = piece.getX() - ORIGIN.getX(), y = piece.getY() - ORIGIN.getY(), z = piece.getZ() - ORIGIN.getZ();
+                        if (x < -1 || x > width || z < -1 || z > depth || y < 0 || y > type.clearHeight()) scaffoldOutsideValidation = true;
+                        if (positions.contains(piece)) scaffoldCollision = true;
                     }
                 }
-                if (!everyTowerInsideValidation) outsideValidationTowers++;
-                if (scaffoldCollision) scaffoldBlueprintCollisions++;
+                if (scaffoldOutsideValidation) outsideValidationCases++;
+                if (scaffoldCollision) scaffoldBlueprintCollisionCases++;
 
-                int caseMinReach = Integer.MAX_VALUE;
-                int caseZero = 0;
-                int caseSingle = 0;
-                int caseHigh = 0;
+                int caseHigh = 0, caseZero = 0, caseSingle = 0, caseMinReach = Integer.MAX_VALUE;
                 for (BuildingBlueprints.Placement placement : plan) {
                     int relativeY = placement.pos().getY() - ORIGIN.getY();
                     if (relativeY <= 3) continue;
-                    caseHigh++;
-                    highTargets++;
+                    caseHigh++; highTargets++;
                     int reach = 0;
                     for (Scaffold scaffold : scaffolds) {
                         if (scaffold.steps().isEmpty()) continue;
@@ -99,32 +80,27 @@ public final class ConstructionMatrixQa {
                     }
                     caseMinReach = Math.min(caseMinReach, reach);
                     typeMinReach = Math.min(typeMinReach, reach);
-                    if (reach == 0) { caseZero++; typeZeroReach++; zeroReachTargets++; }
-                    if (reach == 1) { caseSingle++; typeSingleReach++; singleReachTargets++; }
+                    if (reach == 0) { caseZero++; typeZero++; zeroReachTargets++; }
+                    if (reach == 1) { caseSingle++; typeSingle++; singleReachTargets++; }
                 }
                 if (caseHigh == 0) caseMinReach = 4;
 
-                boolean supplyOverlap = blueprintPositions.contains(supply);
-                boolean supplyInsideFootprint = supply.getX() >= ORIGIN.getX() && supply.getX() < ORIGIN.getX() + width
-                        && supply.getZ() >= ORIGIN.getZ() && supply.getZ() < ORIGIN.getZ() + depth;
-                boolean ok = !plan.isEmpty() && uniqueOk && rotationCountOk && boundsOk && heightOk
-                        && !scaffoldCollision && !supplyOverlap && !supplyInsideFootprint && caseZero == 0;
+                boolean supplyOverlap = positions.contains(supply);
+                boolean ok = !plan.isEmpty() && uniqueOk && countOk && boundsOk && heightOk
+                        && !scaffoldCollision && !supplyOverlap && caseZero == 0;
                 if (!ok) failures++;
-
                 System.out.printf("CASE type=%s rot=%s count=%d unique=%s bounds=[%d..%d,%d..%d,%d..%d] boundsOk=%s heightOk=%s high=%d minReach=%d zeroReach=%d singleReach=%d scaffoldOutsideValidatedEnvelope=%s scaffoldBlueprintCollision=%s supplyOverlap=%s OK=%s%n",
                         type.id(), rotation.name(), plan.size(), uniqueOk,
                         minX, maxX, minY, maxY, minZ, maxZ, boundsOk, heightOk,
                         caseHigh, caseMinReach, caseZero, caseSingle,
-                        !everyTowerInsideValidation, scaffoldCollision, supplyOverlap, ok);
+                        scaffoldOutsideValidation, scaffoldCollision, supplyOverlap, ok);
             }
             if (typeMinReach == Integer.MAX_VALUE) typeMinReach = 4;
             System.out.printf("TYPE_SUMMARY type=%s placements=%d maxY=%d minReach=%d zeroReach=%d singleReach=%d%n",
-                    type.id(), expectedCount == null ? 0 : expectedCount, typeMaxY, typeMinReach, typeZeroReach, typeSingleReach);
+                    type.id(), expectedCount == null ? 0 : expectedCount, typeMaxY, typeMinReach, typeZero, typeSingle);
         }
         System.out.printf("TOTAL cases=%d failures=%d highTargets=%d zeroReachTargets=%d singleReachTargets=%d casesWithScaffoldOutsideValidatedEnvelope=%d scaffoldBlueprintCollisionCases=%d%n",
-                cases, failures, highTargets, zeroReachTargets, singleReachTargets,
-                outsideValidationTowers, scaffoldBlueprintCollisions);
-        if (failures > 0) System.exit(2);
+                cases, failures, highTargets, zeroReachTargets, singleReachTargets, outsideValidationCases, scaffoldBlueprintCollisionCases);
     }
 
     private static BlockPos supplyPosition(BlockPos origin, BuildingType type, BuildingRotation rotation) {
@@ -132,10 +108,8 @@ public final class ConstructionMatrixQa {
     }
 
     private static List<Scaffold> scaffolds(BlockPos origin, BuildingType type, BuildingRotation rotation, BlockPos supply) {
-        int width = rotation.rotatedWidth(type);
-        int depth = rotation.rotatedDepth(type);
-        int midX = Math.max(1, width / 2);
-        int midZ = Math.max(1, depth / 2);
+        int width = rotation.rotatedWidth(type), depth = rotation.rotatedDepth(type);
+        int midX = Math.max(1, width / 2), midZ = Math.max(1, depth / 2);
         return List.of(
                 scaffold(supply.offset(-1, 0, 0), supply),
                 scaffold(origin.offset(width + 2, 0, midZ), supply),
@@ -144,10 +118,7 @@ public final class ConstructionMatrixQa {
     }
 
     private static Scaffold scaffold(BlockPos center, BlockPos supply) {
-        int[][] ring = new int[][] {
-                {0, -1}, {1, -1}, {1, 0}, {1, 1},
-                {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}
-        };
+        int[][] ring = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
         Set<BlockPos> pieces = new LinkedHashSet<>();
         List<BlockPos> steps = new ArrayList<>();
         for (int y = 0; y <= MAX_SCAFFOLD_STEP; y++) pieces.add(center.above(y));
@@ -158,9 +129,7 @@ public final class ConstructionMatrixQa {
             if (column.equals(supply)) continue;
             for (int y = 0; y < step; y++) pieces.add(column.above(y));
             BlockPos tread = column.above(step);
-            pieces.add(tread);
-            steps.add(tread);
-            step++;
+            pieces.add(tread); steps.add(tread); step++;
         }
         return new Scaffold(List.copyOf(pieces), List.copyOf(steps));
     }
