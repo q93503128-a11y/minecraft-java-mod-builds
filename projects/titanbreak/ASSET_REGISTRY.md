@@ -18,6 +18,9 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Regrower model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Regrower presentation |
 | Burrower model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Burrower presentation |
 | Crusher model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Crusher presentation |
+| Stalker model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Stalker presentation |
+| Burstling model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Burstling presentation |
+| Siphon model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Siphon presentation |
 | Chrono Hound model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Chrono Hound presentation |
 | Null Eye model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Null Eye presentation |
 | The Pursuer model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | first boss presentation |

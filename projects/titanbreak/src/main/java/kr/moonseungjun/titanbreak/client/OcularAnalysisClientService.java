@@ -2,6 +2,7 @@ package kr.moonseungjun.titanbreak.client;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
 import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
+import kr.moonseungjun.titanbreak.entity.BurstlingEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
 import kr.moonseungjun.titanbreak.entity.CinderEntity;
 import kr.moonseungjun.titanbreak.entity.CrusherEntity;
@@ -14,8 +15,10 @@ import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
+import kr.moonseungjun.titanbreak.entity.SiphonEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
+import kr.moonseungjun.titanbreak.entity.StalkerEntity;
 import kr.moonseungjun.titanbreak.entity.TitanGeoEntity;
 import kr.moonseungjun.titanbreak.entity.VoltaicEntity;
 import net.minecraft.client.Minecraft;
@@ -179,6 +182,9 @@ public final class OcularAnalysisClientService {
         if (target instanceof RegrowerEntity) return Component.translatable("item.titanbreak.regenerative_tissue");
         if (target instanceof BurrowerEntity) return Component.translatable("item.titanbreak.dense_bone_lattice");
         if (target instanceof CrusherEntity) return Component.translatable("item.titanbreak.impact_core");
+        if (target instanceof StalkerEntity) return Component.translatable("item.titanbreak.resonant_neural_ganglion");
+        if (target instanceof BurstlingEntity) return Component.translatable("item.titanbreak.cooling_cell");
+        if (target instanceof SiphonEntity) return Component.translatable("item.titanbreak.circulation_core");
         if (target instanceof ChronoHoundEntity) return Component.translatable("item.titanbreak.reaction_temporal_matrix");
         if (target instanceof NullEyeEntity) return Component.translatable("item.titanbreak.thermal_optic_cluster");
         if (target instanceof PursuerEntity) return Component.translatable("item.titanbreak.pursuer_reaction_organ");
@@ -230,8 +236,10 @@ public final class OcularAnalysisClientService {
         if (target instanceof ChronoHoundEntity) return 78;
         if (target instanceof CrusherEntity) return 74;
         if (target instanceof CinderEntity) return 72;
+        if (target instanceof SiphonEntity) return 70;
         if (target instanceof NeedlerEntity) return 68;
-        if (target instanceof GliderEntity || target instanceof BurrowerEntity) return 64;
+        if (target instanceof GliderEntity || target instanceof BurrowerEntity || target instanceof StalkerEntity) return 64;
+        if (target instanceof BurstlingEntity) return 62;
         if (target instanceof RegrowerEntity) return 55;
         return 58;
     }

@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           ROOT=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak
-          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity StalkerEntity BurstlingEntity SiphonEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             test -f "$ROOT/entity/$cls.java"
           done
           test -f "$ROOT/combat/EnemyAttackEffectService.java"
@@ -81,6 +81,7 @@ jobs:
           JAVA="$ROOT/java/kr/moonseungjun/titanbreak"
           ASSETS="$ROOT/resources/assets/titanbreak"
           python3 - <<'PY'
+          import re
           from pathlib import Path
           catalog=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.java').read_text(encoding='utf-8')
           count=catalog.count('            def("')
@@ -100,6 +101,14 @@ jobs:
           assert 'BOSS_FIRST_KILL_RD = 400' in rewards
           assert 'CANONICAL_NORMAL_CATALOG_SIZE = 16' in rewards
           assert 'CANONICAL_ELITE_CATALOG_SIZE = 10' in rewards
+          director=Path('projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak/world/EncounterDirector.java').read_text(encoding='utf-8')
+          block=re.search(r'NORMAL_SPECIES\s*=\s*\{(.*?)\};', director, re.S)
+          assert block, 'NORMAL_SPECIES array missing'
+          species=re.findall(r'"([a-z_]+)"', block.group(1))
+          assert len(species) == 16, f'Expected 16 normal species, found {len(species)}: {species}'
+          assert len(set(species)) == 16, f'Duplicate normal species: {species}'
+          for expected in ('stalker','burstling','siphon'):
+              assert expected in species, expected
           PY
           for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
             test -f "$ASSETS/blockstates/$block.json"
@@ -121,10 +130,10 @@ jobs:
           grep -q 'GeoEntityRenderer' "$JAVA/client/TitanEntityRenderers.java"
           if grep -Eq 'ZombieRenderer|SkeletonRenderer|SpiderRenderer|GiantMobRenderer' "$JAVA/client/TitanEntityRenderers.java"; then
             echo 'A TITANBREAK creature still uses a vanilla mob renderer.' >&2; exit 1; fi
-          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity StalkerEntity BurstlingEntity SiphonEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             grep -q 'TitanGeoEntity' "$JAVA/entity/$cls.java"
           done
-          for entity in ripper skitter bulwark spitter needler glider howler jammer voltaic cinder regrower burrower crusher chrono_hound null_eye the_pursuer; do
+          for entity in ripper skitter bulwark spitter needler glider howler jammer voltaic cinder regrower burrower crusher stalker burstling siphon chrono_hound null_eye the_pursuer; do
             test -f "$ASSETS/geckolib/models/entity/$entity.geo.json"
             test -f "$ASSETS/geckolib/animations/entity/$entity.animation.json"
             test -f "$ASSETS/textures/entity/$entity.png"
@@ -139,6 +148,9 @@ jobs:
               if path.name.endswith('.animation.json'):
                   animations=data.get('animations', {})
                   for key in ('misc.idle','move.walk','attack.swing'): assert key in animations, (path,key)
+          registry=Path('projects/titanbreak/ASSET_REGISTRY.md').read_text(encoding='utf-8')
+          for name in ('Stalker','Burstling','Siphon'):
+              assert f'| {name} model / animation / texture |' in registry, name
           PY
 
       - name: First playable resource audit
@@ -151,7 +163,7 @@ jobs:
             grep -q 'screen.titanbreak.fabricator' "$ASSETS/lang/$lang.json"
             grep -q 'screen.titanbreak.surgery' "$ASSETS/lang/$lang.json"
             grep -q 'entity.titanbreak.the_pursuer' "$ASSETS/lang/$lang.json"
-            for entity in spitter glider jammer voltaic cinder regrower burrower crusher; do
+            for entity in spitter glider jammer voltaic cinder regrower burrower crusher stalker burstling siphon; do
               grep -q "entity.titanbreak.$entity" "$ASSETS/lang/$lang.json"
             done
           done
@@ -202,7 +214,7 @@ jobs:
           jar tf "$JAR" | grep -q 'titanbreak.mixins.json'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
-          for cls in SpitterEntity GliderEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity; do
+          for cls in SpitterEntity GliderEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity StalkerEntity BurstlingEntity SiphonEntity; do
             jar tf "$JAR" | grep -q "kr/moonseungjun/titanbreak/entity/$cls.class"
           done
           for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
@@ -210,7 +222,8 @@ jobs:
             jar tf "$JAR" | grep -q "assets/titanbreak/blockstates/$block.json"
           done
           jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
-          for entity in ripper spitter glider jammer voltaic cinder regrower burrower crusher; do
+          jar tf "$JAR" | grep -q 'assets/titanbreak/lang/en_us.json'
+          for entity in ripper spitter glider jammer voltaic cinder regrower burrower crusher stalker burstling siphon; do
             jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/models/entity/$entity.geo.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/animations/entity/$entity.animation.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/textures/entity/$entity.png"
