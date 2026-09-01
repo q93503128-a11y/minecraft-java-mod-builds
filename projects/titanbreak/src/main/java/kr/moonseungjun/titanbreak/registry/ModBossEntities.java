@@ -7,6 +7,7 @@ import kr.moonseungjun.titanbreak.entity.ChronophageEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HundredEyedWatcherEntity;
 import kr.moonseungjun.titanbreak.entity.RegnantFleshEntity;
+import kr.moonseungjun.titanbreak.entity.StormLeviathanEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -54,6 +55,12 @@ public final class ModBossEntities {
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(96)
                     .build(key("chronophage")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<StormLeviathanEntity>> STORM_LEVIATHAN =
+            ENTITIES.register("storm_leviathan", () -> EntityType.Builder
+                    .<StormLeviathanEntity>of(StormLeviathanEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(128)
+                    .build(key("storm_leviathan")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -87,6 +94,11 @@ public final class ModBossEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.125D).add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 19.0D).add(Attributes.ARMOR_TOUGHNESS, 9.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.94D).build());
+        event.put(STORM_LEVIATHAN.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(StormLeviathanEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.14D).add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 16.0D).add(Attributes.ARMOR_TOUGHNESS, 8.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.92D).build());
     }
 
     private static ResourceKey<EntityType<?>> key(String path) {
