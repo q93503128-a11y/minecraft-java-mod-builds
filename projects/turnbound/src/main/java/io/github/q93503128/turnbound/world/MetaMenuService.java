@@ -150,15 +150,15 @@ public final class MetaMenuService {
             }
             case "SELL" -> {
                 if (parts.length < 2) return;
-                mutate(player, "판매 실패", () -> CampaignProgressStore.sellEquipment(player.getUUID(), parts[1]));
+                cleanupMutate(player, "판매 실패", () -> CampaignProgressStore.sellEquipment(player.getUUID(), parts[1]));
             }
             case "REWARD_CLAIM" -> {
                 if (parts.length < 2) return;
-                mutate(player, "장비 보상 수령 실패", () -> CampaignProgressStore.claimPendingEquipment(player.getUUID(), parts[1]));
+                cleanupMutate(player, "장비 보상 수령 실패", () -> CampaignProgressStore.claimPendingEquipment(player.getUUID(), parts[1]));
             }
             case "REWARD_SELL" -> {
                 if (parts.length < 2) return;
-                mutate(player, "장비 보상 판매 실패", () -> CampaignProgressStore.sellPendingEquipment(player.getUUID(), parts[1]));
+                cleanupMutate(player, "장비 보상 판매 실패", () -> CampaignProgressStore.sellPendingEquipment(player.getUUID(), parts[1]));
             }
             case "ENHANCE" -> {
                 if (parts.length < 2) return;
@@ -318,6 +318,16 @@ public final class MetaMenuService {
 
     private static void mutate(ServerPlayer player, String label, Runnable action) {
         if (BattleSessionManager.exists(player)) return;
+        persistMutation(player, label, action);
+    }
+
+    /** Only sale/claim cleanup is allowed while a finished battle is waiting on the Result page. */
+    private static void cleanupMutate(ServerPlayer player, String label, Runnable action) {
+        if (BattleSessionManager.exists(player) && !BattleSessionManager.finished(player)) return;
+        persistMutation(player, label, action);
+    }
+
+    private static void persistMutation(ServerPlayer player, String label, Runnable action) {
         try {
             action.run();
             CampaignPersistence.saveIfDirty(player);
