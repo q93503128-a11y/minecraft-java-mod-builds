@@ -3,7 +3,6 @@ package kr.moonseungjun.frontiersettlement;
 import kr.moonseungjun.frontiersettlement.command.SettlementCommands;
 import kr.moonseungjun.frontiersettlement.content.FrontierContent;
 import kr.moonseungjun.frontiersettlement.network.SettlementNetwork;
-import kr.moonseungjun.frontiersettlement.settlement.ConstructionMatrixQa;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementAdvancedWorkshopService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBenefitService;
@@ -56,8 +55,5 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementMilitaryOutpostService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementOutpostLogisticsService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementWorkerService::onLivingDrops);
-        if ("1".equals(System.getenv("FRONTIER_MATRIX_QA"))) {
-            NeoForge.EVENT_BUS.addListener(ConstructionMatrixQa::onServerStarted);
-        }
     }
 }
