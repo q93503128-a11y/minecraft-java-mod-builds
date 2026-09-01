@@ -1,0 +1,148 @@
+name: TITANBREAK B09 Null Seraph CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-b09-null-seraph-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  null-seraph-b09:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Verify canonical B09 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          project = Path('projects/titanbreak')
+          root = project / 'src/main'
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+
+          entity = (java / 'entity/NullSeraphEntity.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModBossEntities.java').read_text(encoding='utf-8')
+          suppression = (java / 'combat/NullSuppressionService.java').read_text(encoding='utf-8')
+          reward = (java / 'combat/NullSeraphRewardService.java').read_text(encoding='utf-8')
+          encounter = (java / 'world/NullSeraphEncounterService.java').read_text(encoding='utf-8')
+          ash_encounter = (java / 'world/AshTitanEncounterService.java').read_text(encoding='utf-8')
+          network = (java / 'network/TitanbreakNetwork.java').read_text(encoding='utf-8')
+          reflex = (java / 'combat/ReflexDriveService.java').read_text(encoding='utf-8')
+          renderers = (java / 'client/TitanEntityRenderers.java').read_text(encoding='utf-8')
+          renderer = (java / 'client/NullSeraphRenderer.java').read_text(encoding='utf-8')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+          asset_registry = (project / 'ASSET_REGISTRY.md').read_text(encoding='utf-8')
+
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 50, 'B09 requires alpha.50 or newer'
+          assert 'CANONICAL_VISIBLE_MAX_HEALTH = 14_000.0D' in entity
+          assert 'return 70;' in entity
+          for token in (
+              'SUPPRESSION_WING_0','SUPPRESSION_WING_1','SUPPRESSION_WING_2','SUPPRESSION_WING_3',
+              'NULL_CORE_LEFT','NULL_CORE_RIGHT','HEAD_RESONATOR',
+              'selectiveSuppression(','mentalResonance(','powerCutWave(','lanceAssault(',
+              'retargetHighestAugmentationThreat(','brokenWings >= 4'
+          ):
+              assert token in entity, token
+
+          for token in (
+              '"reflex_drive_i"','"phase_step_spine"','"combat_autopilot"',
+              '"photon_emitter_arm"','"overdrive_circulation"',
+              'ReflexDriveService.setActive(player, false)',
+              'CombatAutopilotService.clear(player.getUUID())'
+          ):
+              assert token in suppression, token
+
+          assert 'abilitySuppressed(player, payload.ability())' in network
+          assert 'NullSuppressionService.isSuppressed(player, "phase_step_spine")' in network
+          assert 'slotSuppressed(player, state, AugmentationCatalog.Slot.RIGHT_ARM_MAIN)' in network
+          assert 'NullSuppressionService.isSuppressed(player, "reflex_drive_i")' in reflex
+
+          assert 'NULL_SERAPH' in registry
+          assert 'CombatScale.toInternal(NullSeraphEntity.CANONICAL_VISIBLE_MAX_HEALTH)' in registry
+          assert 'NULL_SUPPRESSION_CORE.get(), 1' in reward
+          assert 'RESONANT_NEURAL_GANGLION.get(), 3' in reward
+          assert 'CALCULATION_CORE.get(), 4' in reward
+          assert 'recordBossFirstKill(player, "null_seraph", FIRST_KILL_RD, 8)' in reward
+          assert 'hasBossFirstKill("ash_titan")' in encounter
+          assert 'hasBossFirstKill("null_seraph")' in encounter
+          assert 'ModBossEntities.NULL_SERAPH.get()' in encounter
+          assert 'NullSeraphEncounterService.tick(player, progression)' in ash_encounter
+          assert 'ModBossEntities.NULL_SERAPH.get(), NullSeraphRenderer::new' in renderers
+          assert 'withScale(16.0F)' in renderer
+
+          geo = assets / 'geckolib/models/entity/null_seraph.geo.json'
+          anim = assets / 'geckolib/animations/entity/null_seraph.animation.json'
+          texture = assets / 'textures/entity/null_seraph.png'
+          for path in (geo, anim, texture):
+              assert path.is_file(), path
+          geo_data = json.loads(geo.read_text(encoding='utf-8'))
+          bone_names = {bone['name'] for bone in geo_data['minecraft:geometry'][0]['bones']}
+          for bone in (
+              'suppression_wing_0','suppression_wing_1','suppression_wing_2','suppression_wing_3',
+              'null_core_left','null_core_right','head_resonator','suppression_halo','lance_crown'
+          ):
+              assert bone in bone_names, bone
+          animations = json.loads(anim.read_text(encoding='utf-8')).get('animations', {})
+          for key in ('misc.idle','move.walk','attack.swing'):
+              assert key in animations, key
+
+          overlay = root / 'resources/assets/titanbreak_boss/lang'
+          for lang in ('en_us','ko_kr'):
+              data = json.loads((overlay / f'{lang}.json').read_text(encoding='utf-8'))
+              for key in (
+                  'entity.titanbreak.null_seraph',
+                  'message.titanbreak.null_seraph_warning',
+                  'message.titanbreak.null_seraph_arrival',
+                  'message.titanbreak.null_seraph_defeated'
+              ):
+                  assert key in data, (lang, key)
+
+          assert '| Null Seraph model / animation / texture |' in asset_registry
+          PY
+
+      - name: Build TITANBREAK
+        run: gradle --no-daemon --project-dir projects/titanbreak clean build
+
+      - name: Verify built JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          jars = [p for p in Path('projects/titanbreak/build/libs').glob('*.jar')
+                  if '-sources' not in p.name and '-javadoc' not in p.name]
+          assert jars, 'runtime JAR missing'
+          assert any('alpha.50' in p.name for p in jars), [p.name for p in jars]
+          print('\n'.join(str(p) for p in jars))
+          PY
+
+      - name: Upload alpha.50 test JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanbreak-alpha50-test
+          path: projects/titanbreak/build/libs/*.jar
+          if-no-files-found: error

@@ -7,6 +7,7 @@ import kr.moonseungjun.titanbreak.entity.BastionWalkerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronophageEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HundredEyedWatcherEntity;
+import kr.moonseungjun.titanbreak.entity.NullSeraphEntity;
 import kr.moonseungjun.titanbreak.entity.RegnantFleshEntity;
 import kr.moonseungjun.titanbreak.entity.StormLeviathanEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -68,6 +69,12 @@ public final class ModBossEntities {
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(112)
                     .build(key("ash_titan")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<NullSeraphEntity>> NULL_SERAPH =
+            ENTITIES.register("null_seraph", () -> EntityType.Builder
+                    .<NullSeraphEntity>of(NullSeraphEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(104)
+                    .build(key("null_seraph")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -111,6 +118,11 @@ public final class ModBossEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.08D).add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 24.0D).add(Attributes.ARMOR_TOUGHNESS, 12.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D).build());
+        event.put(NULL_SERAPH.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(NullSeraphEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.155D).add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 18.0D).add(Attributes.ARMOR_TOUGHNESS, 10.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.96D).build());
     }
 
     private static ResourceKey<EntityType<?>> key(String path) {

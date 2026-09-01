@@ -26,6 +26,10 @@ public final class ReflexDriveService {
     public static void setRequested(ServerPlayer player, boolean requested, int rating) {
         DriveState previous = STATES.get(player.getUUID());
         int safeRating = Math.max(1, rating);
+        if (requested && NullSuppressionService.isSuppressed(player, "reflex_drive_i")) {
+            STATES.put(player.getUUID(), new DriveState(false, false, safeRating));
+            return;
+        }
         if (!requested) {
             if (previous != null) STATES.put(player.getUUID(), new DriveState(false, previous.active(), safeRating));
             return;
@@ -55,6 +59,7 @@ public final class ReflexDriveService {
     }
 
     public static void setActive(ServerPlayer player, boolean active) {
+        if (active && NullSuppressionService.isSuppressed(player, "reflex_drive_i")) active = false;
         DriveState previous = STATES.get(player.getUUID());
         if (previous == null) {
             STATES.put(player.getUUID(), new DriveState(active, active, ratingForMk(1)));

@@ -44,5 +44,6 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModBossEntities.CHRONOPHAGE.get(), ChronophageRenderer::new);
         event.registerEntityRenderer(ModBossEntities.STORM_LEVIATHAN.get(), StormLeviathanRenderer::new);
         event.registerEntityRenderer(ModBossEntities.ASH_TITAN.get(), AshTitanRenderer::new);
+        event.registerEntityRenderer(ModBossEntities.NULL_SERAPH.get(), NullSeraphRenderer::new);
     }
 }

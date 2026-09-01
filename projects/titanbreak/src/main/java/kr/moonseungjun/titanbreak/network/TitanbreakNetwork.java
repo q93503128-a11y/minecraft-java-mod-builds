@@ -8,6 +8,7 @@ import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.CombatAutopilotService;
 import kr.moonseungjun.titanbreak.combat.LegAugmentationService;
 import kr.moonseungjun.titanbreak.combat.NeuralCombatAssistService;
+import kr.moonseungjun.titanbreak.combat.NullSuppressionService;
 import kr.moonseungjun.titanbreak.combat.OverdriveCirculationService;
 import kr.moonseungjun.titanbreak.combat.ReflexDriveService;
 import kr.moonseungjun.titanbreak.combat.SpineAugmentationService;
@@ -51,6 +52,10 @@ public final class TitanbreakNetwork {
         });
         registrar.playToServer(AugmentAbilityPayload.TYPE, AugmentAbilityPayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
+            if (abilitySuppressed(player, payload.ability())) {
+                sync(player);
+                return;
+            }
             switch (payload.ability()) {
                 case AugmentAbilityPayload.HOOK -> AugmentAbilityService.useHook(player);
                 case AugmentAbilityPayload.PHASE_STEP -> {
@@ -65,6 +70,34 @@ public final class TitanbreakNetwork {
                 default -> { }
             }
         });
+    }
+
+    private static boolean abilitySuppressed(ServerPlayer player, int ability) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        TitanPlayerData.State state = TitanPlayerData.get(level.getServer()).state(player);
+        return switch (ability) {
+            case AugmentAbilityPayload.HOOK ->
+                    NullSuppressionService.isSuppressed(player, "wire_hook_arm");
+            case AugmentAbilityPayload.PHASE_STEP ->
+                    NullSuppressionService.isSuppressed(player, "phase_step_spine");
+            case AugmentAbilityPayload.ARM_RIGHT ->
+                    slotSuppressed(player, state, AugmentationCatalog.Slot.RIGHT_ARM_MAIN);
+            case AugmentAbilityPayload.ARM_LEFT ->
+                    slotSuppressed(player, state, AugmentationCatalog.Slot.LEFT_ARM_MAIN);
+            case AugmentAbilityPayload.LEG_JUMP ->
+                    NullSuppressionService.isSuppressed(player, "jump_booster_legs")
+                            || NullSuppressionService.isSuppressed(player, "propulsion_legs");
+            case AugmentAbilityPayload.OVERDRIVE ->
+                    NullSuppressionService.isSuppressed(player, "overdrive_circulation");
+            case AugmentAbilityPayload.COMBAT_AUTOPILOT ->
+                    NullSuppressionService.isSuppressed(player, "combat_autopilot");
+            default -> false;
+        };
+    }
+
+    private static boolean slotSuppressed(ServerPlayer player, TitanPlayerData.State state, AugmentationCatalog.Slot slot) {
+        String augmentId = state.installed(slot);
+        return augmentId != null && NullSuppressionService.isSuppressed(player, augmentId);
     }
 
     private static void useArmWithIntegrity(ServerPlayer player, AugmentationCatalog.Slot slot) {
@@ -148,6 +181,7 @@ public final class TitanbreakNetwork {
                 + ";overdriveTicks=" + OverdriveCirculationService.remainingTicks(player)
                 + ";surgeryTicks=" + StationService.remainingTicks(player)
                 + ";jamTicks=" + AnalysisJammingService.remainingTicks(player)
+                + ";nullSuppressionTicks=" + NullSuppressionService.remainingTicks(player)
                 + ";requested=" + (ReflexDriveService.requested(player.getUUID()) ? 1 : 0)
                 + ";active=" + (active ? 1 : 0)
                 + ";rating=" + ReflexDriveService.rating(player.getUUID())
