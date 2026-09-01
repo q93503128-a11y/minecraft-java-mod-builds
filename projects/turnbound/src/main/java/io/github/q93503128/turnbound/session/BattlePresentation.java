@@ -128,10 +128,11 @@ final class BattlePresentation {
         }
     }
 
-    /** Replays authoritative damage/reaction events as authored hit/reaction/death clips. */
+    /** Replays authoritative combat events as authored hit/reaction/status clips without changing results. */
     void presentEvents(ServerLevel level, BattleState state, int eventStart) {
         List<BattleEvent> events=state.events();
         if(eventStart<0||eventStart>=events.size())return;
+        Set<String> buffPlayed=new HashSet<>(),debuffPlayed=new HashSet<>();
         for(int i=eventStart;i<events.size();i++){
             BattleEvent event=events.get(i);
             switch(event.type()){
@@ -144,10 +145,38 @@ final class BattlePresentation {
                     Entity guardian=entity(level,event.targetId());if(guardian instanceof BattleActorEntity a)a.playReaction();
                     playHitFor(level,state,event.targetId(),event.value());
                 }
+                case "HEAL","BARRIER","STATUS_CLEAR" -> playBuffFor(level,state,event.targetId(),buffPlayed);
+                case "STATUS" -> playStatusFor(level,state,event,buffPlayed,debuffPlayed);
+                case "GAUGE" -> {
+                    if(event.value()>0)playBuffFor(level,state,event.targetId(),buffPlayed);
+                    else if(event.value()<0)playDebuffFor(level,state,event.targetId(),debuffPlayed);
+                }
                 case "SUMMON_DOWN" -> presentSummonDown(level,state,event.sourceId());
                 default -> { }
             }
         }
+    }
+
+    private void playStatusFor(ServerLevel level,BattleState state,BattleEvent event,Set<String> buffPlayed,Set<String> debuffPlayed){
+        CombatantState source=state.find(event.sourceId()),target=state.find(event.targetId());
+        if(!isCoreHero(target))return;
+        if(source!=null&&source.side()==target.side())playBuffFor(level,state,event.targetId(),buffPlayed);
+        else playDebuffFor(level,state,event.targetId(),debuffPlayed);
+    }
+
+    private void playBuffFor(ServerLevel level,BattleState state,String targetId,Set<String> played){
+        CombatantState target=state.find(targetId);if(!isCoreHero(target)||target.downed()||!played.add(targetId))return;
+        Entity targetActor=entity(level,targetId);if(targetActor instanceof BattleActorEntity animated)animated.playBuff();
+    }
+
+    private void playDebuffFor(ServerLevel level,BattleState state,String targetId,Set<String> played){
+        CombatantState target=state.find(targetId);if(!isCoreHero(target)||target.downed()||!played.add(targetId))return;
+        Entity targetActor=entity(level,targetId);if(targetActor instanceof BattleActorEntity animated)animated.playDebuff();
+    }
+
+    private static boolean isCoreHero(CombatantState target){
+        if(target==null)return false;
+        return switch(target.definition().id()){case "P01","P02","P03","P04","P05","P06","P07","P08"->true;default->false;};
     }
 
     private void presentSummonDown(ServerLevel level,BattleState state,String summonId){
