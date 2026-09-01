@@ -48,7 +48,8 @@ public final class EndgameBriefing {
             String bossName = CanonicalData.definition(bossId).name();
             return new Briefing(encounterId, bossName + " · Hard", "HARD", level, bossName + " [Hard]",
                     partyCp, null, "스토리 Boss +5 Lv", V04Catalogs.battleGold(V04Catalogs.encounter("BATTLE_" + bossId)),
-                    600, 0, "T4 장비 선택 토큰 ×1", "Gold + T3/T4 Drop",
+                    600, 0, "T4 장비 선택 토큰 ×1",
+                    "정본상 T3/T4 Drop · 세부 확률 미지정으로 현재 자동지급 보류",
                     firstClear, true, "Hard 반복 T3/T4 Drop의 세부 분배율은 v0.4에 별도 지정 없음");
         }
 
@@ -56,7 +57,8 @@ public final class EndgameBriefing {
             int floor = EndgameEncounterCatalog.riftFloorNumber(encounterId);
             V04Catalogs.RiftFloor spec = V04Catalogs.riftFloor(floor);
             String band = floor <= 10 ? "Lv.20~30" : floor <= 20 ? "Lv.30~45" : "Lv.45~60";
-            String extra = floor % 10 == 0 ? "T3/T4 선택 보상 추가" : "";
+            String extra = floor % 10 == 0
+                    ? "정본 추가: T3/T4 선택 보상 · 정확 티어 미지정으로 현재 지급 보류" : "";
             String gap = floor % 10 == 0
                     ? "F10/F20/F30 선택 보상의 정확한 T3/T4 티어 배정은 v0.4에 별도 지정 없음"
                     : "";
@@ -87,9 +89,14 @@ public final class EndgameBriefing {
             player.sendSystemMessage(Component.literal("재도전 · Gold " + b.gold()
                     + (b.repeatExtra().isBlank() ? "" : " · " + b.repeatExtra())).withStyle(ChatFormatting.GRAY));
         }
-        if (b.hardPattern()) {
+        if ("HARD".equals(b.kind())) {
             player.sendSystemMessage(Component.literal("Hard · HP×1.65 / ATK×1.25 / DEF×1.15 / SPD+8 / 소환 적 Lv+5")
                     .withStyle(ChatFormatting.RED));
+        } else if ("RIFT".equals(b.kind()) && b.hardPattern()) {
+            player.sendSystemMessage(Component.literal("Rift HardPattern · 표 Floor Lv override + Hard 계수 + 문서 지정 HP 추가 보정")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+            player.sendSystemMessage(Component.literal("Rift · 전투 사이 전회복 / 입장 전 파티 변경 가능 / Auto·2x 허용")
+                    .withStyle(ChatFormatting.AQUA));
         } else if ("RIFT".equals(b.kind())) {
             player.sendSystemMessage(Component.literal("Rift · 전투 사이 전회복 / 입장 전 파티 변경 가능 / Auto·2x 허용")
                     .withStyle(ChatFormatting.AQUA));
