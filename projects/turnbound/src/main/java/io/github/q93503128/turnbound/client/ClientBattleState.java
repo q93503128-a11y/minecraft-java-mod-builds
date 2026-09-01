@@ -83,17 +83,21 @@ public final class ClientBattleState {
     private static volatile Snapshot snapshot = new Snapshot(
             false, false, 1, "RUNNING", "", true, true, true, true,
             List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F, Result.none());
+    private static volatile String encounterId = "";
+    private static volatile List<String> resultNotices = List.of();
     private static volatile long revision;
 
     private ClientBattleState() {}
     public static Snapshot snapshot() { return snapshot; }
+    public static String encounterId() { return encounterId; }
+    public static List<String> resultNotices() { return resultNotices; }
     public static long revision() { return revision; }
 
     public static void update(String raw) {
         boolean active = false, auto = false, finished = false;
         boolean autoAllowed = true, speedAllowed = true, fleeAllowed = true;
         int speed = 1;
-        String outcome = "RUNNING", actor = "", message = "";
+        String outcome = "RUNNING", actor = "", message = "", encounter = "";
         double arenaX = 0.0, arenaY = 0.0, arenaZ = 0.0;
         float arenaYaw = 0.0F;
         List<Unit> units = new ArrayList<>();
@@ -102,6 +106,7 @@ public final class ClientBattleState {
         int resultXp = 0, resultGold = 0, resultCrystal = 0, resultEssence = 0;
         boolean firstClear = false;
         List<String> equipmentRewards = new ArrayList<>();
+        List<String> notices = new ArrayList<>();
         List<PartyXp> partyXp = new ArrayList<>();
 
         for (String line : raw.split("\n")) {
@@ -120,6 +125,7 @@ public final class ClientBattleState {
                             fleeAllowed = "1".equals(p[9]);
                         }
                     }
+                    case "C" -> encounter = p.length > 1 ? p[1] : "";
                     case "A" -> {
                         arenaX = Double.parseDouble(p[1]); arenaY = Double.parseDouble(p[2]);
                         arenaZ = Double.parseDouble(p[3]); arenaYaw = Float.parseFloat(p[4]);
@@ -146,6 +152,7 @@ public final class ClientBattleState {
                         }
                         if (p.length >= 7 && !p[6].isBlank()) equipmentRewards.addAll(Arrays.asList(p[6].split(",")));
                     }
+                    case "N" -> { if (p.length > 1 && !p[1].isBlank()) notices.add(p[1]); }
                     case "P" -> {
                         if (p.length >= 8) partyXp.add(new PartyXp(p[1], p[2], Integer.parseInt(p[3]), Integer.parseInt(p[4]),
                                 Integer.parseInt(p[5]), Integer.parseInt(p[6]), Integer.parseInt(p[7])));
@@ -160,6 +167,8 @@ public final class ClientBattleState {
         snapshot = new Snapshot(active, auto, speed, outcome, actor, finished, autoAllowed, speedAllowed, fleeAllowed,
                 List.copyOf(units), List.copyOf(timeline), List.copyOf(skills), message,
                 arenaX, arenaY, arenaZ, arenaYaw, result);
+        encounterId = encounter;
+        resultNotices = List.copyOf(notices);
         revision++;
     }
 }
