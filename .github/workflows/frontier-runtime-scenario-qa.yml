@@ -70,6 +70,12 @@ jobs:
                   check("sealed_container_rejected", !sealed);
           '''
           new = '''        worker = spawnWorker(level, base.offset(-10, 0, 0));
+                  BlockPos westWall = barrel.offset(-2, 0, 0);
+                  BlockState westWallState = level.getBlockState(westWall);
+                  System.out.printf("SEALED_BLOCK pos=%s block=%s air=%s replaceable=%s collisionEmpty=%s nav=%s%n",
+                          westWall, westWallState.getBlock().getName().getString(), westWallState.isAir(),
+                          westWallState.canBeReplaced(), westWallState.getCollisionShape(level, westWall).isEmpty(),
+                          worker == null ? "null" : worker.getNavigation().getClass().getName());
                   if (worker != null) {
                       Method approaches = SettlementConstructionService.class.getDeclaredMethod(
                               "interactionApproachPositions", ServerLevel.class, FrontierWorkerEntity.class, BlockPos.class);
@@ -114,11 +120,11 @@ jobs:
           st = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.java').read_text(encoding='utf-8')
           assert 'findDepositTargetExcluding' in st
           PY
-      - name: Java 25 clean build
+      - name: Java 25 build
         shell: bash
         run: |
           cd projects/frontier-settlement
-          ./gradlew clean build --no-daemon
+          ./gradlew build --no-daemon
       - name: Prepare headless server
         shell: bash
         run: |
