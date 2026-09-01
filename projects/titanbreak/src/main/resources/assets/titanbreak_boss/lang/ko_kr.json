@@ -1,0 +1,6 @@
+{
+  "entity.titanbreak.gravemarch_colossus": "묘행 거상",
+  "message.titanbreak.gravemarch_warning": "지면이 느리고 무거운 간격으로 진동한다. 거대한 무언가가 접근하고 있다.",
+  "message.titanbreak.gravemarch_arrival": "묘행 거상이 영역에 진입했다.",
+  "message.titanbreak.gravemarch_defeated": "묘행 거상이 쓰러졌다. 충격심장과 고밀도 운동계 재료를 회수했다."
+}

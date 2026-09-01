@@ -1,6 +1,7 @@
 package kr.moonseungjun.titanbreak.client;
 
 import com.geckolib.renderer.GeoEntityRenderer;
+import kr.moonseungjun.titanbreak.registry.ModBossEntities;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
@@ -36,5 +37,6 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModEntities.WARDEN_NODE.get(), context -> new GeoEntityRenderer<>(context, ModEntities.WARDEN_NODE.get()).withScale(1.12F));
         event.registerEntityRenderer(ModEntities.HARVESTER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.HARVESTER.get()).withScale(1.16F));
         event.registerEntityRenderer(ModEntities.THE_PURSUER.get(), PursuerRenderer::new);
+        event.registerEntityRenderer(ModBossEntities.GRAVEMARCH_COLOSSUS.get(), GravemarchRenderer::new);
     }
 }
