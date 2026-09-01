@@ -66,6 +66,10 @@ public final class BattleSessionManager {
     }
 
     public static boolean exists(ServerPlayer player) { return SESSIONS.containsKey(player.getUUID()); }
+    public static boolean finished(ServerPlayer player) {
+        BattleSession session = player == null ? null : SESSIONS.get(player.getUUID());
+        return session != null && session.finished();
+    }
 
     public static boolean resumeIfPresent(ServerPlayer player) {
         BattleSession session = SESSIONS.get(player.getUUID());
