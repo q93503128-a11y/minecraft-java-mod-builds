@@ -53,7 +53,8 @@ jobs:
           declared = re.findall(r'"([a-z0-9_]+)"', match.group('body'))
           expected = [row[0] for row in elites]
           assert declared == expected, f'Elite catalog mismatch: {declared}'
-          assert 'mod_version=0.1.0-alpha.42' in gradle
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 42, 'Elite catalog requires alpha.42 or newer'
 
           for entity_id, cls, holder in elites:
               source = java / 'entity' / f'{cls}.java'

@@ -1,0 +1,84 @@
+name: TITANBREAK B02 Gravemarch CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-b02-gravemarch-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gravemarch-b02:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical B02 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          project = Path('projects/titanbreak')
+          root = project / 'src/main'
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+          entity = (java / 'entity/GravemarchColossusEntity.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModBossEntities.java').read_text(encoding='utf-8')
+          reward = (java / 'combat/GravemarchRewardService.java').read_text(encoding='utf-8')
+          encounter = (java / 'world/GravemarchEncounterService.java').read_text(encoding='utf-8')
+          renderers = (java / 'client/TitanEntityRenderers.java').read_text(encoding='utf-8')
+          renderer = (java / 'client/GravemarchRenderer.java').read_text(encoding='utf-8')
+          asset_registry = (project / 'ASSET_REGISTRY.md').read_text(encoding='utf-8')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 43, 'B02 requires alpha.43 or newer'
+          assert 'CANONICAL_VISIBLE_MAX_HEALTH = 18_000.0D' in entity
+          assert re.search(r'int temporalRating\(\)\s*\{\s*return 10;', entity), 'TR10 missing'
+          for token in (
+              'PART_LEFT_ANKLE','PART_RIGHT_ANKLE','PART_LEFT_KNEE','PART_RIGHT_KNEE',
+              'PART_LEFT_ELBOW','PART_RIGHT_ELBOW','PART_CHEST_HEART','PART_SKULL_ARMOR',
+              'chestExposed()','groundSlam(','mountainPush(','grabThrow(',
+              'scheduleDebrisThrow(','startOverloadShockwaves(','BreachService.requiredPower'
+          ):
+              assert token in entity, token
+          assert 'brokenLegPartCount()>0?2:1' in entity or 'brokenLegPartCount() > 0 ? 2 : 1' in entity
+          assert 'chestExposed()?1.10F:.04F' in entity or 'chestExposed() ? 1.10F : .04F' in entity
+
+          assert 'GRAVEMARCH_COLOSSUS' in registry
+          assert 'CombatScale.toInternal(GravemarchColossusEntity.CANONICAL_VISIBLE_MAX_HEALTH)' in registry
+          assert 'GRAVEMARCH_IMPACT_HEART.get(), 1' in reward
+          assert 'IMPACT_CORE.get(), 3 + victim.getRandom().nextInt(3)' in reward
+          assert 'DENSE_BONE_LATTICE.get(), 2 + victim.getRandom().nextInt(3)' in reward
+          assert 'recordBossFirstKill(player, "gravemarch_colossus", FIRST_KILL_RD, 3)' in reward
+          assert 'hasBossFirstKill("the_pursuer")' in encounter
+          assert 'hasBossFirstKill("gravemarch_colossus")' in encounter
+          assert 'ModBossEntities.GRAVEMARCH_COLOSSUS.get()' in encounter
+          assert 'ModBossEntities.GRAVEMARCH_COLOSSUS.get(), GravemarchRenderer::new' in renderers
+          assert 'withScale(50.0F)' in renderer
+
+          geo = assets / 'geckolib/models/entity/gravemarch_colossus.geo.json'
+          anim = assets / 'geckolib/animations/entity/gravemarch_colossus.animation.json'
+          texture = assets / 'textures/entity/gravemarch_colossus.png'
+          for path in (geo, anim, texture): assert path.is_file(), path
+          assert 'minecraft:geometry' in json.loads(geo.read_text(encoding='utf-8'))
+          animations = json.loads(anim.read_text(encoding='utf-8')).get('animations', {})
+          for key in ('misc.idle','move.walk','attack.swing'): assert key in animations, key
+
+          overlay = root / 'resources/assets/titanbreak_boss/lang'
+          for lang in ('en_us','ko_kr'):
+              data = json.loads((overlay / f'{lang}.json').read_text(encoding='utf-8'))
+              for key in ('entity.titanbreak.gravemarch_colossus','message.titanbreak.gravemarch_warning',
+                          'message.titanbreak.gravemarch_arrival','message.titanbreak.gravemarch_defeated'):
+                  assert key in data, (lang,key)
+          assert '| Gravemarch Colossus model / animation / texture |' in asset_registry
+          PY
