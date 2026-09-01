@@ -4,6 +4,7 @@ import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
 import kr.moonseungjun.titanbreak.entity.BastionWalkerEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
+import kr.moonseungjun.titanbreak.entity.RegnantFleshEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -37,6 +38,14 @@ public final class ModBossEntities {
                     .clientTrackingRange(96)
                     .build(key("bastion_walker")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<RegnantFleshEntity>> REGNANT_FLESH =
+            ENTITIES.register("regnant_flesh", () -> EntityType.Builder
+                    .<RegnantFleshEntity>of(RegnantFleshEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F)
+                    .eyeHeight(0.9F)
+                    .clientTrackingRange(80)
+                    .build(key("regnant_flesh")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -60,6 +69,14 @@ public final class ModBossEntities {
                 .add(Attributes.ARMOR, 30.0D)
                 .add(Attributes.ARMOR_TOUGHNESS, 14.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D)
+                .build());
+        event.put(REGNANT_FLESH.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(RegnantFleshEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.095D)
+                .add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 18.0D)
+                .add(Attributes.ARMOR_TOUGHNESS, 8.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.90D)
                 .build());
     }
 

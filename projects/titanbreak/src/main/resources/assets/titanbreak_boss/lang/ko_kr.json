@@ -6,5 +6,11 @@
   "entity.titanbreak.bastion_walker": "보행요새",
   "message.titanbreak.bastion_warning": "낮은 엔진음이 지면을 타고 이어진다. 지평선의 구조물이 움직이고 있다.",
   "message.titanbreak.bastion_arrival": "보행요새가 영역을 횡단하기 시작했다.",
-  "message.titanbreak.bastion_defeated": "보행요새의 동력핵이 정지했다. 초고밀도 장갑핵을 회수했다."
+  "message.titanbreak.bastion_defeated": "보행요새의 동력핵이 정지했다. 초고밀도 장갑핵을 회수했다.",
+  "entity.titanbreak.regnant_flesh": "왕성육괴",
+  "message.titanbreak.regnant_warning": "붉어진 지면 아래에서 축축한 맥동이 번진다. 잘린 조직이 다시 움직이기 시작한다.",
+  "message.titanbreak.regnant_arrival": "왕성육괴가 재생 조직을 끌어모으며 영역에 모습을 드러냈다.",
+  "message.titanbreak.regnant_defeated": "왕성육괴의 중앙 뇌조직이 붕괴했다. 재생핵과 고농도 재생 재료를 회수했다.",
+  "message.titanbreak.regnant_active_core": "분석 결과: 활성 재생핵 %s",
+  "message.titanbreak.regnant_burst_window": "재생핵 동시 붕괴 창: %s초"
 }

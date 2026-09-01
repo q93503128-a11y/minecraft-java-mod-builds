@@ -6,5 +6,11 @@
   "entity.titanbreak.bastion_walker": "Bastion Walker",
   "message.titanbreak.bastion_warning": "A low engine pulse travels through the ground. A structure on the horizon is moving.",
   "message.titanbreak.bastion_arrival": "The Bastion Walker has begun crossing the territory.",
-  "message.titanbreak.bastion_defeated": "The Bastion Walker's power core has stopped. Its ultra-dense armor core can be recovered."
+  "message.titanbreak.bastion_defeated": "The Bastion Walker's power core has stopped. Its ultra-dense armor core can be recovered.",
+  "entity.titanbreak.regnant_flesh": "The Regnant Flesh",
+  "message.titanbreak.regnant_warning": "A wet pulse spreads beneath the reddened ground. Severed tissue has begun moving again.",
+  "message.titanbreak.regnant_arrival": "The Regnant Flesh has emerged, drawing regenerative tissue into its body.",
+  "message.titanbreak.regnant_defeated": "The Regnant Flesh's central brain tissue has collapsed. Its regeneration core and concentrated regenerative materials can be recovered.",
+  "message.titanbreak.regnant_active_core": "Analysis: active regeneration core %s",
+  "message.titanbreak.regnant_burst_window": "Simultaneous core-collapse window: %ss"
 }

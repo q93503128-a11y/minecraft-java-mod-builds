@@ -34,5 +34,6 @@ This registry tracks external runtime libraries and presentation assets that shi
 | The Pursuer model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | first boss presentation |
 | Gravemarch Colossus model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | B02 boss presentation |
 | Bastion Walker model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | B03 boss presentation |
+| The Regnant Flesh model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original model; project-owned regenerative palette baseline | B04 boss presentation |
 
-GeckoLib remains the only external presentation-engine dependency in the current alpha. Creature art is a project-owned implementation baseline rather than a vanilla mob renderer fallback. Some alpha.42 elite textures intentionally reuse project-owned palette baselines while their geometry and gameplay silhouettes remain distinct; future replacement art must update this registry before merge.
+GeckoLib remains the only external presentation-engine dependency in the current alpha. Creature art is a project-owned implementation baseline rather than a vanilla mob renderer fallback. Some elite and boss textures intentionally reuse project-owned palette baselines while their geometry and gameplay silhouettes remain distinct; future replacement art must update this registry before merge.
