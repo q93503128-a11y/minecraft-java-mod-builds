@@ -50,7 +50,7 @@ class BossPresentationAssetContractTest {
                 if (bone.has("cubes") && !bone.getAsJsonArray("cubes").isEmpty()) visibleBones++;
             }
             assertTrue(visibleBones >= 35,
-                    () -> bossId + " only has " + visibleBones + " visible geometry bones; empty padding bones do not count");
+                    bossId + " only has " + visibleBones + " visible geometry bones; empty padding bones do not count");
 
             JsonObject animationRoot = load("assets/turnbound/geckolib/animations/entity/boss/" + path + ".animation.json");
             JsonObject animations = animationRoot.getAsJsonObject("animations");
