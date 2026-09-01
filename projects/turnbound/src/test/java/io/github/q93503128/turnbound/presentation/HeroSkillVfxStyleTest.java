@@ -22,12 +22,16 @@ class HeroSkillVfxStyleTest {
     }
 
     @Test
-    void staleLynetteSkillIdDoesNotMasqueradeAsCurrentCanon() {
-        assertEquals(HeroSkillVfxStyle.Style.GENERIC,
+    void supersededLynetteIdsDoNotMasqueradeAsRuntimeCanon() {
+        assertEquals(HeroSkillVfxStyle.Style.P05_SUPPRESSIVE_SHOT,
+                HeroSkillVfxStyle.resolve("P05", "p05_suppressive_shot"));
+        assertEquals(HeroSkillVfxStyle.Style.P05_PIERCING_SHOT,
                 HeroSkillVfxStyle.resolve("P05", "p05_piercing_shot"));
-        assertEquals(HeroSkillVfxStyle.Style.P05_PURSUIT_MARK,
+        assertEquals(HeroSkillVfxStyle.Style.P05_HUNT_SIGNAL,
+                HeroSkillVfxStyle.resolve("P05", "p05_hunt_signal"));
+        assertEquals(HeroSkillVfxStyle.Style.GENERIC,
                 HeroSkillVfxStyle.resolve("P05", "p05_pursuit_mark"));
-        assertEquals(HeroSkillVfxStyle.Style.P05_FINISHER,
+        assertEquals(HeroSkillVfxStyle.Style.GENERIC,
                 HeroSkillVfxStyle.resolve("P05", "p05_finisher"));
     }
 }
