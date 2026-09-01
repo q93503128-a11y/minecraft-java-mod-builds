@@ -51,20 +51,16 @@ jobs:
           from pathlib import Path
           p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
           s = p.read_text(encoding='utf-8')
-          old = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
-              Path path = builder.getNavigation().createPath(target, 0);
-              return path != null && path.canReach() ? path : null;
-          }
-          '''
-          new = '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
-              Path path = builder.getNavigation().createPath(target, 0);
-              if (path == null || !path.canReach() || path.getEndNode() == null
-                      || !path.getEndNode().asBlockPos().equals(target)) return null;
-              if (!(builder.level() instanceof ServerLevel level) || !pathNodesCurrentlyClear(level, path)) return null;
-              return path;
-          }
-
-          private static boolean pathNodesCurrentlyClear(ServerLevel level, Path path) {
+          old = '        return path != null && path.canReach() ? path : null;'
+          new = '''        if (path == null || !path.canReach() || path.getEndNode() == null
+                          || !path.getEndNode().asBlockPos().equals(target)) return null;
+                  if (!(builder.level() instanceof ServerLevel level) || !pathNodesCurrentlyClear(level, path)) return null;
+                  return path;'''
+          if s.count(old) != 1:
+              raise SystemExit(f'createReachablePath return count={s.count(old)}')
+          s = s.replace(old, new, 1)
+          anchor = '    private static boolean canReachInteraction(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {'
+          helper = '''    private static boolean pathNodesCurrentlyClear(ServerLevel level, Path path) {
               for (int i = 0; i < path.getNodeCount(); i++) {
                   BlockPos feet = path.getNode(i).asBlockPos();
                   BlockPos head = feet.above();
@@ -73,9 +69,7 @@ jobs:
                   BlockState feetState = level.getBlockState(feet);
                   BlockState headState = level.getBlockState(head);
                   if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()) return false;
-                  if (blocksCurrentPathCell(level, feet, feetState) || blocksCurrentPathCell(level, head, headState)) {
-                      return false;
-                  }
+                  if (blocksCurrentPathCell(level, feet, feetState) || blocksCurrentPathCell(level, head, headState)) return false;
               }
               return true;
           }
@@ -84,10 +78,12 @@ jobs:
               if (state.isAir() || state.canBeReplaced()) return false;
               return !state.getCollisionShape(level, pos).isEmpty();
           }
+
           '''
-          if s.count(old) != 1:
-              raise SystemExit(f'createReachablePath anchor count={s.count(old)}')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          if s.count(anchor) != 1:
+              raise SystemExit(f'helper anchor count={s.count(anchor)}')
+          s = s.replace(anchor, helper + anchor, 1)
+          p.write_text(s, encoding='utf-8')
           PY
       - name: Static navigation assertions
         shell: bash
