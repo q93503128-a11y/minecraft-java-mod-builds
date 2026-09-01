@@ -12,5 +12,9 @@
   "message.titanbreak.regnant_arrival": "The Regnant Flesh has emerged, drawing regenerative tissue into its body.",
   "message.titanbreak.regnant_defeated": "The Regnant Flesh's central brain tissue has collapsed. Its regeneration core and concentrated regenerative materials can be recovered.",
   "message.titanbreak.regnant_active_core": "Analysis: active regeneration core %s",
-  "message.titanbreak.regnant_burst_window": "Simultaneous core-collapse window: %ss"
+  "message.titanbreak.regnant_burst_window": "Simultaneous core-collapse window: %ss",
+  "entity.titanbreak.hundred_eyed_watcher": "Hundred-Eyed Watcher",
+  "message.titanbreak.watcher_warning": "Cold points of light begin turning in unison. Your movement is being measured.",
+  "message.titanbreak.watcher_arrival": "The Hundred-Eyed Watcher has established a prediction field across the territory.",
+  "message.titanbreak.watcher_defeated": "The Watcher's central visual core has gone dark. Its predictive brain can be recovered."
 }

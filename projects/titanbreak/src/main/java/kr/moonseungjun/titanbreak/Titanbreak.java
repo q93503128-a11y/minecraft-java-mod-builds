@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.45";
+    public static final String VERSION = "0.1.0-alpha.46";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -217,9 +217,7 @@ public final class Titanbreak {
         boolean resourceReady = !resources.neuralOverloaded() && currentPower + 1.0E-6D >= requiredPower;
         boolean active = requested && heatReady && resourceReady;
 
-        if (active && !AugmentationResourceService.trySpendContinuousPower(player, state, "reflex_drive_i")) {
-            active = false;
-        }
+        if (active && !AugmentationResourceService.trySpendContinuousPower(player, state, "reflex_drive_i")) active = false;
 
         ReflexDriveService.setActive(player, active);
         ReflexFieldService.update(player, active, rating, radius);
@@ -227,8 +225,7 @@ public final class Titanbreak {
         if (active) {
             double enhancementEfficiency = 1.0D - Math.min(0.15D, drive.enhancement() * 0.015D);
             double masteryEfficiency = state.heatLoadMultiplier("reflex_drive_i");
-            double rawHeatPerTick = ReflexDriveService.heatPerTickForMk(driveMk)
-                    * enhancementEfficiency * masteryEfficiency;
+            double rawHeatPerTick = ReflexDriveService.heatPerTickForMk(driveMk) * enhancementEfficiency * masteryEfficiency;
             double normalizedHeat = AugmentationResourceService.normalizedHeatGain(state, rawHeatPerTick);
             data.setHeat(player, state.heat() + normalizedHeat);
             double sanityDrain = (state.masteryLevel("reflex_drive_i") >= 5 ? 0.0015D : 0.002D)

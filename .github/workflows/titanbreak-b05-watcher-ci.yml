@@ -1,0 +1,90 @@
+name: TITANBREAK B05 Watcher CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-b05-watcher-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watcher-b05:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical B05 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          project = Path('projects/titanbreak')
+          root = project / 'src/main'
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+          entity = (java / 'entity/HundredEyedWatcherEntity.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModBossEntities.java').read_text(encoding='utf-8')
+          reward = (java / 'combat/WatcherRewardService.java').read_text(encoding='utf-8')
+          encounter = (java / 'world/WatcherEncounterService.java').read_text(encoding='utf-8')
+          regnant_encounter = (java / 'world/RegnantEncounterService.java').read_text(encoding='utf-8')
+          renderers = (java / 'client/TitanEntityRenderers.java').read_text(encoding='utf-8')
+          renderer = (java / 'client/HundredEyedWatcherRenderer.java').read_text(encoding='utf-8')
+          asset_registry = (project / 'ASSET_REGISTRY.md').read_text(encoding='utf-8')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 46, 'B05 requires alpha.46 or newer'
+          assert 'CANONICAL_VISIBLE_MAX_HEALTH = 11_500.0D' in entity
+          assert re.search(r'int temporalRating\(\)\s*\{\s*return 42;', entity), 'TR42 missing'
+          assert 'EYE_COUNT = 24' in entity
+          assert 'BRAIN_COUNT = 3' in entity
+          for token in (
+              'P2_EYES_BROKEN = 8','P3_EYES_BROKEN = 16','CENTRAL_CORE',
+              'updatePatternModel(','schedulePredictiveBlast(','schedulePredictionField(',
+              'gazeLaser(','lockOnReflection(','deployTrackingEyes(','rotateDecoy(',
+              'optical_camo_skin','patternConfidence','predictionQuality()'
+          ):
+              assert token in entity, token
+
+          assert 'HUNDRED_EYED_WATCHER' in registry
+          assert 'CombatScale.toInternal(HundredEyedWatcherEntity.CANONICAL_VISIBLE_MAX_HEALTH)' in registry
+          assert 'WATCHER_PREDICTIVE_BRAIN.get(), 1' in reward
+          assert 'PREDICTIVE_OPTIC_CORE.get(), 2 + victim.getRandom().nextInt(2)' in reward
+          assert 'OPTIC_SENSOR_CLUSTER.get(), 4' in reward
+          assert 'recordBossFirstKill(player, "hundred_eyed_watcher", FIRST_KILL_RD, 4)' in reward
+          assert 'hasBossFirstKill("regnant_flesh")' in encounter
+          assert 'hasBossFirstKill("hundred_eyed_watcher")' in encounter
+          assert 'ModBossEntities.HUNDRED_EYED_WATCHER.get()' in encounter
+          assert 'WatcherEncounterService.tick(player, progression)' in regnant_encounter
+          assert 'ModBossEntities.HUNDRED_EYED_WATCHER.get(), HundredEyedWatcherRenderer::new' in renderers
+          assert 'withScale(26.0F)' in renderer
+
+          geo = assets / 'geckolib/models/entity/hundred_eyed_watcher.geo.json'
+          anim = assets / 'geckolib/animations/entity/hundred_eyed_watcher.animation.json'
+          texture = assets / 'textures/entity/hundred_eyed_watcher.png'
+          for path in (geo, anim, texture): assert path.is_file(), path
+          geo_data = json.loads(geo.read_text(encoding='utf-8'))
+          bone_names = {bone['name'] for bone in geo_data['minecraft:geometry'][0]['bones']}
+          for i in range(24): assert f'eye_{i}' in bone_names
+          for bone in ('brain_0','brain_1','brain_2','central_core','core_shell','prediction_field','false_core_0','false_core_1','false_core_2'):
+              assert bone in bone_names, bone
+          animations = json.loads(anim.read_text(encoding='utf-8')).get('animations', {})
+          for key in ('misc.idle','move.walk','attack.swing'): assert key in animations, key
+
+          overlay = root / 'resources/assets/titanbreak_boss/lang'
+          for lang in ('en_us','ko_kr'):
+              data = json.loads((overlay / f'{lang}.json').read_text(encoding='utf-8'))
+              for key in ('entity.titanbreak.hundred_eyed_watcher','message.titanbreak.watcher_warning',
+                          'message.titanbreak.watcher_arrival','message.titanbreak.watcher_defeated'):
+                  assert key in data, (lang,key)
+          assert '| Hundred-Eyed Watcher model / animation / texture |' in asset_registry
+          PY
