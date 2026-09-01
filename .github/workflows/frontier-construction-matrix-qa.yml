@@ -22,12 +22,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - name: Enumerate all building rotations
+      - name: Prepare headless server EULA
         shell: bash
+        run: |
+          mkdir -p projects/frontier-settlement/run/server
+          printf 'eula=true\n' > projects/frontier-settlement/run/server/eula.txt
+      - name: Enumerate all building rotations in NeoForge runtime
+        shell: bash
+        env:
+          FRONTIER_MATRIX_QA: '1'
         run: |
           set -o pipefail
           cd projects/frontier-settlement
-          ./gradlew -I tools/construction_matrix_qa.init.gradle constructionMatrixQa --no-daemon 2>&1 | tee ../../frontier-construction-matrix-qa.log
+          timeout 240 ./gradlew runServer --no-daemon 2>&1 | tee ../../frontier-construction-matrix-qa.log
+          grep -q 'FRONTIER_CONSTRUCTION_MATRIX_QA_V2' ../../frontier-construction-matrix-qa.log
+          grep -q 'TOTAL cases=72 failures=0' ../../frontier-construction-matrix-qa.log
       - name: Upload matrix report
         if: always()
         uses: actions/upload-artifact@v4
