@@ -12,6 +12,8 @@ import java.util.UUID;
 
 /** v0.4 campaign encounter factory for every authored field/boss encounter. */
 public final class CampaignEncounterCatalog {
+    private static final String VISUAL_SIGNATURE_PREFIX = "VISUAL_SIGNATURE:";
+
     private CampaignEncounterCatalog() {}
 
     public static String canonicalId(String id) { return CampaignProgressStore.canonicalEncounterId(id); }
@@ -47,8 +49,20 @@ public final class CampaignEncounterCatalog {
         CombatantDefinition base = CanonicalData.definition(characterId, level.level(), growth.currentStar(), growth.awakened());
         Set<String> rules = new LinkedHashSet<>(base.rules());
         rules.addAll(CampaignProgressStore.equipmentRules(playerId, characterId));
+        String visualRule = signatureVisualRule(playerId, characterId);
+        if (!visualRule.isBlank()) rules.add(visualRule);
         return new CombatantDefinition(
                 base.id(), base.name(), CampaignProgressStore.finalStats(playerId, characterId), base.basicSkillId(), base.skills(),
                 base.nativeStars(), List.copyOf(rules), base.params());
+    }
+
+    /** Presentation-only tag; equipment gameplay remains in EquipmentInventory.fixedRules(). */
+    private static String signatureVisualRule(UUID playerId, String characterId) {
+        var equipment = CampaignProgressStore.equipment(playerId);
+        var loadout = equipment.loadouts().get(characterId);
+        if (loadout == null || loadout.signature().isBlank()) return "";
+        var item = equipment.items().get(loadout.signature());
+        if (item == null || !item.itemId().startsWith("sig_")) return "";
+        return VISUAL_SIGNATURE_PREFIX + item.itemId();
     }
 }
