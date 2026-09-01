@@ -1,9 +1,10 @@
 package io.github.q93503128.turnbound.client;
 
+import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-/** Removes the vanilla survival/player shell HUD and keeps battle presentation free of hotbar/crosshair overlap. */
+/** Removes the vanilla survival/player shell so TURNBOUND reads as its own RPG rather than survival Minecraft. */
 public final class VanillaHudPolicy {
     private VanillaHudPolicy() {}
 
@@ -17,8 +18,11 @@ public final class VanillaHudPolicy {
                 || name.equals(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND)
                 || name.equals(VanillaGuiLayers.CONTEXTUAL_INFO_BAR)
                 || name.equals(VanillaGuiLayers.SELECTED_ITEM_NAME);
-        boolean battleOnly = ClientBattleState.snapshot().active()
-                && (name.equals(VanillaGuiLayers.HOTBAR) || name.equals(VanillaGuiLayers.CROSSHAIR));
-        if (survivalShell || battleOnly) event.setCanceled(true);
+
+        boolean rpgSession = ClientFieldState.snapshot().active() || ClientBattleState.snapshot().active();
+        boolean hotbar = rpgSession && name.equals(VanillaGuiLayers.HOTBAR);
+        // Field exploration keeps a crosshair for entity/facility interaction. Battle targeting owns its own cursor.
+        boolean battleCrosshair = ClientBattleState.snapshot().active() && name.equals(VanillaGuiLayers.CROSSHAIR);
+        if (survivalShell || hotbar || battleCrosshair) event.setCanceled(true);
     }
 }
