@@ -30,11 +30,14 @@ public final class ClientFieldNetwork {
                 return;
             }
             if (minecraft.gui.screen() instanceof WorldLoadingScreen) minecraft.gui.setScreen(null);
-            if (snapshot.mode() == FieldUiSnapshot.Mode.NONE) return;
-            // Battle rewards now stay in BattleResultScreen; the legacy field RESULT packet only updates field state.
-            if (snapshot.mode() == FieldUiSnapshot.Mode.RESULT) return;
+
+            // QUEST/NONE/RESULT are passive state: QuestGuideLayer shows the current objective without stealing input.
+            if (snapshot.mode() != FieldUiSnapshot.Mode.TRAVEL) {
+                if (minecraft.gui.screen() instanceof FieldPanelScreen) minecraft.gui.setScreen(null);
+                return;
+            }
             if (!(minecraft.gui.screen() instanceof BattleScreen) && !(minecraft.gui.screen() instanceof BattleResultScreen)) {
-                minecraft.gui.setScreen(new FieldPanelScreen(snapshot.mode()));
+                minecraft.gui.setScreen(new FieldPanelScreen(FieldUiSnapshot.Mode.TRAVEL));
             }
         });
     }
