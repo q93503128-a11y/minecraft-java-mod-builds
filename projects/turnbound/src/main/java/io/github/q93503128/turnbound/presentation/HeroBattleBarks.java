@@ -34,7 +34,7 @@ public final class HeroBattleBarks {
             case ALLY_DEATH->lines.allyDeath;case REVIVE->lines.revive;case VICTORY->lines.victory;
             case SPECIAL->lines.special.getOrDefault(key,"");};
         if(text==null||text.isBlank())return;
-        player.displayClientMessage(Component.literal(lines.name+" · ").withStyle(ChatFormatting.GRAY)
+        player.sendSystemMessage(Component.literal(lines.name+" · ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(text).withStyle(ChatFormatting.WHITE)),true);
     }
 }
