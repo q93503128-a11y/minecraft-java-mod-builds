@@ -1,0 +1,102 @@
+name: TITANBREAK B07 Storm Leviathan CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-b07-storm-leviathan-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storm-leviathan-b07:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical B07 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          project = Path('projects/titanbreak')
+          root = project / 'src/main'
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+
+          entity = (java / 'entity/StormLeviathanEntity.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModBossEntities.java').read_text(encoding='utf-8')
+          reward = (java / 'combat/StormLeviathanRewardService.java').read_text(encoding='utf-8')
+          encounter = (java / 'world/StormLeviathanEncounterService.java').read_text(encoding='utf-8')
+          chrono_encounter = (java / 'world/ChronophageEncounterService.java').read_text(encoding='utf-8')
+          renderers = (java / 'client/TitanEntityRenderers.java').read_text(encoding='utf-8')
+          renderer = (java / 'client/StormLeviathanRenderer.java').read_text(encoding='utf-8')
+          catalog = (java / 'augmentation/AugmentationCatalog.java').read_text(encoding='utf-8')
+          asset_registry = (project / 'ASSET_REGISTRY.md').read_text(encoding='utf-8')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 48, 'B07 requires alpha.48 or newer'
+          assert 'CANONICAL_VISIBLE_MAX_HEALTH = 17_000.0D' in entity
+          assert 'return 55;' in entity
+          for token in (
+              'WING_0','WING_1','WING_2','WING_3',
+              'ELECTRIC_SAC_0','ELECTRIC_SAC_1','ELECTRIC_SAC_2','ELECTRIC_SAC_3','ELECTRIC_SAC_4','ELECTRIC_SAC_5',
+              'HEAD_SENSOR','STORM_ORGAN','stormOrganExposed()',
+              'chainLightning(','windPressure(','startDive(','scheduleElectricOrbs(','scheduleGuidedLightning(','stormFieldPulse('
+          ):
+              assert token in entity, token
+          assert 'brokenElectricSacCount() * 8' in entity
+          assert 'brokenWingCount() * 0.18D' in entity
+          assert 'headSensorBroken()' in entity
+
+          assert 'STORM_LEVIATHAN' in registry
+          assert 'CombatScale.toInternal(StormLeviathanEntity.CANONICAL_VISIBLE_MAX_HEALTH)' in registry
+          assert 'LEVIATHAN_STORM_ORGAN.get(), 1' in reward
+          assert 'CAPACITOR_STACK.get(), 4 + victim.getRandom().nextInt(3)' in reward
+          assert 'RADIATION_CORE.get(), 1' in reward
+          assert 'recordBossFirstKill(player, "storm_leviathan", FIRST_KILL_RD, 6)' in reward
+          assert 'hasBossFirstKill("chronophage")' in encounter
+          assert 'hasBossFirstKill("storm_leviathan")' in encounter
+          assert 'StormLeviathanEncounterService.tick(player, progression)' in chrono_encounter
+          assert 'ModBossEntities.STORM_LEVIATHAN.get(), StormLeviathanRenderer::new' in renderers
+          assert 'withScale(32.0F)' in renderer
+          assert 'recipe("capacitor_stack", 2, "servo_bundle", 3, "leviathan_storm_organ", 1)' in catalog
+
+          geo = assets / 'geckolib/models/entity/storm_leviathan.geo.json'
+          anim = assets / 'geckolib/animations/entity/storm_leviathan.animation.json'
+          texture = assets / 'textures/entity/storm_leviathan.png'
+          for path in (geo, anim, texture):
+              assert path.is_file(), path
+          geo_data = json.loads(geo.read_text(encoding='utf-8'))
+          bone_names = {bone['name'] for bone in geo_data['minecraft:geometry'][0]['bones']}
+          for bone in (
+              'wing_0','wing_1','wing_2','wing_3',
+              'electric_sac_0','electric_sac_1','electric_sac_2','electric_sac_3','electric_sac_4','electric_sac_5',
+              'head_sensor','storm_organ_shell','storm_organ','storm_ring','low_field'
+          ):
+              assert bone in bone_names, bone
+          animations = json.loads(anim.read_text(encoding='utf-8')).get('animations', {})
+          for key in ('misc.idle','move.walk','attack.swing'):
+              assert key in animations, key
+
+          overlay = root / 'resources/assets/titanbreak_boss/lang'
+          for lang in ('en_us','ko_kr'):
+              data = json.loads((overlay / f'{lang}.json').read_text(encoding='utf-8'))
+              for key in (
+                  'entity.titanbreak.storm_leviathan',
+                  'message.titanbreak.storm_leviathan_warning',
+                  'message.titanbreak.storm_leviathan_arrival',
+                  'message.titanbreak.storm_leviathan_defeated'
+              ):
+                  assert key in data, (lang, key)
+          assert '| Storm Leviathan model / animation / texture |' in asset_registry
+          PY
