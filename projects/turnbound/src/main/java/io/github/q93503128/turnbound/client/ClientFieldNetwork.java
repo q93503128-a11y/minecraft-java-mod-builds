@@ -18,6 +18,7 @@ public final class ClientFieldNetwork {
             ClientFieldState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             FieldUiSnapshot snapshot = ClientFieldState.snapshot();
+            ClientAudioDirector.onFieldSnapshot(snapshot);
             if (!snapshot.active()) {
                 if (minecraft.gui.screen() instanceof FieldPanelScreen || minecraft.gui.screen() instanceof WorldLoadingScreen) {
                     minecraft.gui.setScreen(null);
