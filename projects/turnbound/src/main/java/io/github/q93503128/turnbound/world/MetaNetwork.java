@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/** Server-to-client authority for the v0.4 management menu and post-story briefing surfaces. */
+/** Server-to-client authority for the v0.4 management menu and presentation surfaces. */
 public final class MetaNetwork {
     public static final String PROTOCOL = "turnbound-meta-v04";
     private MetaNetwork() {}
@@ -35,6 +35,8 @@ public final class MetaNetwork {
                         sync(player);
                         return;
                     }
+
+                    if (GachaPresentationService.handle(player, effective)) return;
 
                     if (raw != null && raw.startsWith("START|") && !BattleSessionManager.exists(player)) {
                         String encounterId = raw.substring("START|".length());
