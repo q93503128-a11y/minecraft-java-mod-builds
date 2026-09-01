@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.session;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.content.ChallengeCatalog;
+import io.github.q93503128.turnbound.content.ChallengePresentationText;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
@@ -91,7 +92,8 @@ public final class BattleResultPreview {
             ChallengeCatalog.Challenge challenge = ChallengeCatalog.get(challengeId);
             crystal += challenge.crystal();
             gold += challenge.gold();
-            notices.add(new Notice("CHALLENGE_CLEAR", "도전 완료 · " + challenge.ordinal() + ". " + challenge.label()
+            String displayLabel = ChallengePresentationText.label(challenge.ordinal(), challenge.label());
+            notices.add(new Notice("CHALLENGE_CLEAR", "도전 완료 · " + challenge.ordinal() + ". " + displayLabel
                     + " · 크리스탈 +" + challenge.crystal() + " · 골드 +" + challenge.gold()));
         }
 
