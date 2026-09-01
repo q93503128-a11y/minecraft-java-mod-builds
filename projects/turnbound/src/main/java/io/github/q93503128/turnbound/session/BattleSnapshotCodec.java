@@ -56,7 +56,7 @@ public final class BattleSnapshotCodec {
 
         BattleResultPreview.View preview = playerId == null
                 ? new BattleResultPreview.View(session.resultSummary(), java.util.List.of())
-                : BattleResultPreview.enrich(playerId, session.encounterId(), state, session.resultSummary());
+                : BattleResultPreview.enrich(playerId, session.rewardTransactionId(), session.encounterId(), state, session.resultSummary());
         BattleResultSummary result = preview.summary();
         out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|')
                 .append(result.firstClear() ? 1 : 0).append('|').append(result.crystal()).append('|')
