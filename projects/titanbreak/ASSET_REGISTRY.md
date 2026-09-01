@@ -40,5 +40,6 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Storm Leviathan model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original flying multipart geometry and animation; project-owned boss palette baseline | B07 boss presentation |
 | Ash Titan model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original thermal guardian multipart geometry and animation; project-owned volcanic palette | B08 boss presentation |
 | Null Seraph model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original suppression-wing multipart geometry and animation; project-owned null palette | B09 boss presentation |
+| Worldbreaker model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original four-leg catastrophe multipart geometry, animation, and industrial core palette | B10 final boss presentation |
 
 GeckoLib remains the only external presentation-engine dependency in the current alpha. Creature art is a project-owned implementation baseline rather than a vanilla mob renderer fallback. Some elite and boss textures intentionally reuse project-owned palette baselines while their geometry and gameplay silhouettes remain distinct; future replacement art must update this registry before merge.

@@ -1,0 +1,142 @@
+name: TITANBREAK B10 Worldbreaker CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-b10-worldbreaker-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worldbreaker-b10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Verify canonical B10 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          project = Path('projects/titanbreak')
+          root = project / 'src/main'
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+
+          entity = (java / 'entity/WorldbreakerEntity.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModBossEntities.java').read_text(encoding='utf-8')
+          reward = (java / 'combat/WorldbreakerRewardService.java').read_text(encoding='utf-8')
+          encounter = (java / 'world/WorldbreakerEncounterService.java').read_text(encoding='utf-8')
+          null_encounter = (java / 'world/NullSeraphEncounterService.java').read_text(encoding='utf-8')
+          renderers = (java / 'client/TitanEntityRenderers.java').read_text(encoding='utf-8')
+          renderer = (java / 'client/WorldbreakerRenderer.java').read_text(encoding='utf-8')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+          asset_registry = (project / 'ASSET_REGISTRY.md').read_text(encoding='utf-8')
+
+          version = re.search(r'mod_version=0\.1\.0-alpha\.(\d+)', gradle)
+          assert version and int(version.group(1)) >= 51, 'B10 requires alpha.51 or newer'
+          assert 'CANONICAL_VISIBLE_MAX_HEALTH = 45_000.0D' in entity
+          assert 'return 88;' in entity
+          for token in (
+              'LEG_AXIS_0','LEG_AXIS_1','LEG_AXIS_2','LEG_AXIS_3',
+              'ARM_LEFT','ARM_RIGHT',
+              'OUTER_CORE_0','OUTER_CORE_1','OUTER_CORE_2','OUTER_CORE_3','OUTER_CORE_4','OUTER_CORE_5',
+              'TEMPORAL_AUX','ENERGY_AUX','CENTRAL_CORE',
+              'brokenLegAxisCount() < 4', 'brokenOuterCoreCount() < 6 || brokenAuxCount() < 2',
+              'coreHealthFraction() <= 0.25D',
+              'terrainPiercingStep(', 'BreachService.requiredPower(',
+              'seismicImpact(', 'energyBeam(', 'debrisStorm(', 'releaseParasites('
+          ):
+              assert token in entity, token
+          assert 'NearestAttackableTargetGoal' not in entity, 'Worldbreaker must not hunt players via target AI'
+          assert 'setMarchDestination(' in encounter
+          assert '* 1_800.0D' in encounter
+          assert 'hasBossFirstKill("null_seraph")' in encounter
+          assert 'hasBossFirstKill("worldbreaker")' in encounter
+          assert 'WorldbreakerEncounterService.tick(player, progression)' in null_encounter
+
+          assert 'WORLDBREAKER' in registry
+          assert 'CombatScale.toInternal(WorldbreakerEntity.CANONICAL_VISIBLE_MAX_HEALTH)' in registry
+          assert 'WORLDBREAKER_CORE.get(), 1' in reward
+          for material in (
+              'TEMPORAL_NEURAL_BUNDLE','PREDICTIVE_OPTIC_CORE','IMPACT_CORE','DENSE_BONE_LATTICE',
+              'RADIATION_CORE','NANO_MEDIUM','TEMPORAL_ORGAN'
+          ):
+              assert f'ModItems.{material}.get()' in reward, material
+          assert 'recordBossFirstKill(player, "worldbreaker", FIRST_KILL_RD, 10)' in reward
+
+          assert 'ModBossEntities.WORLDBREAKER.get(), WorldbreakerRenderer::new' in renderers
+          assert 'withScale(48.0F)' in renderer
+          geo = assets / 'geckolib/models/entity/worldbreaker.geo.json'
+          anim = assets / 'geckolib/animations/entity/worldbreaker.animation.json'
+          texture = assets / 'textures/entity/worldbreaker.png'
+          for path in (geo, anim, texture):
+              assert path.is_file(), path
+          geo_data = json.loads(geo.read_text(encoding='utf-8'))
+          bone_names = {bone['name'] for bone in geo_data['minecraft:geometry'][0]['bones']}
+          for bone in (
+              'leg_axis_0','leg_axis_1','leg_axis_2','leg_axis_3',
+              'arm_left_weapon','arm_right_weapon',
+              'outer_core_0','outer_core_1','outer_core_2','outer_core_3','outer_core_4','outer_core_5',
+              'temporal_aux','energy_aux','central_core','central_core_shell','frenzy_crown'
+          ):
+              assert bone in bone_names, bone
+          animations = json.loads(anim.read_text(encoding='utf-8')).get('animations', {})
+          for key in ('misc.idle','move.walk','attack.swing'):
+              assert key in animations, key
+
+          overlay = root / 'resources/assets/titanbreak_boss/lang'
+          for lang in ('en_us','ko_kr'):
+              data = json.loads((overlay / f'{lang}.json').read_text(encoding='utf-8'))
+              for key in (
+                  'entity.titanbreak.worldbreaker',
+                  'message.titanbreak.worldbreaker_warning',
+                  'message.titanbreak.worldbreaker_arrival',
+                  'message.titanbreak.worldbreaker_defeated'
+              ):
+                  assert key in data, (lang, key)
+          assert '| Worldbreaker model / animation / texture |' in asset_registry
+          PY
+
+      - name: Build TITANBREAK
+        run: gradle --no-daemon --project-dir projects/titanbreak clean build
+
+      - name: Verify built JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          jars = [p for p in Path('projects/titanbreak/build/libs').glob('*.jar')
+                  if '-sources' not in p.name and '-javadoc' not in p.name]
+          assert jars, 'runtime JAR missing'
+          assert any('alpha.51' in p.name for p in jars), [p.name for p in jars]
+          print('\n'.join(str(p) for p in jars))
+          PY
+
+      - name: Upload alpha.51 integration JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanbreak-alpha51-integration
+          path: projects/titanbreak/build/libs/*.jar
+          if-no-files-found: error

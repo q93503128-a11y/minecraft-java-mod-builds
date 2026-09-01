@@ -10,6 +10,7 @@ import kr.moonseungjun.titanbreak.entity.HundredEyedWatcherEntity;
 import kr.moonseungjun.titanbreak.entity.NullSeraphEntity;
 import kr.moonseungjun.titanbreak.entity.RegnantFleshEntity;
 import kr.moonseungjun.titanbreak.entity.StormLeviathanEntity;
+import kr.moonseungjun.titanbreak.entity.WorldbreakerEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -32,48 +33,46 @@ public final class ModBossEntities {
                     .<GravemarchColossusEntity>of(GravemarchColossusEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(64)
                     .build(key("gravemarch_colossus")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<BastionWalkerEntity>> BASTION_WALKER =
             ENTITIES.register("bastion_walker", () -> EntityType.Builder
                     .<BastionWalkerEntity>of(BastionWalkerEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(96)
                     .build(key("bastion_walker")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<RegnantFleshEntity>> REGNANT_FLESH =
             ENTITIES.register("regnant_flesh", () -> EntityType.Builder
                     .<RegnantFleshEntity>of(RegnantFleshEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(80)
                     .build(key("regnant_flesh")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<HundredEyedWatcherEntity>> HUNDRED_EYED_WATCHER =
             ENTITIES.register("hundred_eyed_watcher", () -> EntityType.Builder
                     .<HundredEyedWatcherEntity>of(HundredEyedWatcherEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(88)
                     .build(key("hundred_eyed_watcher")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<ChronophageEntity>> CHRONOPHAGE =
             ENTITIES.register("chronophage", () -> EntityType.Builder
                     .<ChronophageEntity>of(ChronophageEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(96)
                     .build(key("chronophage")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<StormLeviathanEntity>> STORM_LEVIATHAN =
             ENTITIES.register("storm_leviathan", () -> EntityType.Builder
                     .<StormLeviathanEntity>of(StormLeviathanEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(128)
                     .build(key("storm_leviathan")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<AshTitanEntity>> ASH_TITAN =
             ENTITIES.register("ash_titan", () -> EntityType.Builder
                     .<AshTitanEntity>of(AshTitanEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(112)
                     .build(key("ash_titan")));
-
     public static final DeferredHolder<EntityType<?>, EntityType<NullSeraphEntity>> NULL_SERAPH =
             ENTITIES.register("null_seraph", () -> EntityType.Builder
                     .<NullSeraphEntity>of(NullSeraphEntity::new, MobCategory.MONSTER)
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(104)
                     .build(key("null_seraph")));
+    public static final DeferredHolder<EntityType<?>, EntityType<WorldbreakerEntity>> WORLDBREAKER =
+            ENTITIES.register("worldbreaker", () -> EntityType.Builder
+                    .<WorldbreakerEntity>of(WorldbreakerEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(160)
+                    .build(key("worldbreaker")));
 
     private ModBossEntities() {}
 
@@ -123,6 +122,11 @@ public final class ModBossEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.155D).add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 18.0D).add(Attributes.ARMOR_TOUGHNESS, 10.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.96D).build());
+        event.put(WORLDBREAKER.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(WorldbreakerEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.075D).add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 32.0D).add(Attributes.ARMOR_TOUGHNESS, 18.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D).build());
     }
 
     private static ResourceKey<EntityType<?>> key(String path) {

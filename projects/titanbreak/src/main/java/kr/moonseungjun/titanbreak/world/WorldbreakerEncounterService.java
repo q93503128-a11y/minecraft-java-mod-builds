@@ -1,6 +1,6 @@
 package kr.moonseungjun.titanbreak.world;
 
-import kr.moonseungjun.titanbreak.entity.NullSeraphEntity;
+import kr.moonseungjun.titanbreak.entity.WorldbreakerEntity;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModBossEntities;
 import net.minecraft.core.BlockPos;
@@ -17,19 +17,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class NullSeraphEncounterService {
-    private static final long FIRST_WARNING_DELAY = 760L;
-    private static final long WARNING_TO_ARRIVAL = 300L;
-    private static final long RESPAWN_DELAY = 13_600L;
+public final class WorldbreakerEncounterService {
+    private static final long FIRST_WARNING_DELAY = 1_000L;
+    private static final long WARNING_TO_ARRIVAL = 420L;
+    private static final long RESPAWN_DELAY = 18_000L;
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
 
-    private NullSeraphEncounterService() {}
+    private WorldbreakerEncounterService() {}
 
     public static void tick(ServerPlayer player, TitanPlayerData.State progression) {
-        WorldbreakerEncounterService.tick(player, progression);
         if (!(player.level() instanceof ServerLevel level) || player.isCreative() || player.isSpectator()
                 || level.getDifficulty() == Difficulty.PEACEFUL) return;
-        if (!progression.hasBossFirstKill("ash_titan") || progression.hasBossFirstKill("null_seraph")) {
+        if (!progression.hasBossFirstKill("null_seraph") || progression.hasBossFirstKill("worldbreaker")) {
             RUNTIME.remove(player.getUUID());
             return;
         }
@@ -42,45 +41,57 @@ public final class NullSeraphEncounterService {
         if (!runtime.warningSent && now >= runtime.warningTick) {
             runtime.warningSent = true;
             runtime.spawnTick = now + WARNING_TO_ARRIVAL;
-            player.sendSystemMessage(Component.translatable("message.titanbreak.null_seraph_warning"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.worldbreaker_warning"));
             return;
         }
         if (!runtime.warningSent || now < runtime.spawnTick) return;
 
         if (spawnBoss(level, player)) {
-            player.sendSystemMessage(Component.translatable("message.titanbreak.null_seraph_arrival"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.worldbreaker_arrival"));
             runtime.warningSent = false;
             runtime.warningTick = now + RESPAWN_DELAY;
             runtime.spawnTick = Long.MAX_VALUE;
         } else {
-            runtime.spawnTick = now + 160L;
+            runtime.spawnTick = now + 200L;
         }
     }
 
     private static boolean spawnBoss(ServerLevel level, ServerPlayer player) {
-        for (int attempt = 0; attempt < 18; attempt++) {
+        for (int attempt = 0; attempt < 24; attempt++) {
             double angle = player.getRandom().nextDouble() * Math.PI * 2.0D;
-            int range = 120 + player.getRandom().nextInt(81);
+            int range = 230 + player.getRandom().nextInt(111);
             int x = player.getBlockX() + (int) Math.round(Math.cos(angle) * range);
             int z = player.getBlockZ() + (int) Math.round(Math.sin(angle) * range);
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos pos = new BlockPos(x, y, z);
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
 
-            NullSeraphEntity boss = ModBossEntities.NULL_SERAPH.get().create(level, EntitySpawnReason.EVENT);
+            WorldbreakerEntity boss = ModBossEntities.WORLDBREAKER.get().create(level, EntitySpawnReason.EVENT);
             if (boss == null) return false;
             boss.setPos(x + 0.5D, y, z + 0.5D);
-            boss.setYRot(player.getRandom().nextFloat() * 360.0F);
+
+            double throughX = player.getX() - (x + 0.5D);
+            double throughZ = player.getZ() - (z + 0.5D);
+            double length = Math.sqrt(throughX * throughX + throughZ * throughZ);
+            if (length < 1.0D) {
+                throughX = Math.cos(angle + Math.PI);
+                throughZ = Math.sin(angle + Math.PI);
+                length = 1.0D;
+            }
+            throughX /= length;
+            throughZ /= length;
+            boss.setYRot((float) Math.toDegrees(Math.atan2(-throughX, throughZ)));
+            boss.setMarchDestination(player.getX() + throughX * 1_800.0D,
+                    player.getZ() + throughZ * 1_800.0D);
             if (!level.noCollision(boss)) continue;
-            boss.setTarget(player);
             return level.addFreshEntity(boss);
         }
         return false;
     }
 
     private static boolean hasNearbyBoss(ServerLevel level, ServerPlayer player) {
-        AABB area = player.getBoundingBox().inflate(520.0D);
-        return !level.getEntitiesOfClass(NullSeraphEntity.class, area, Entity::isAlive).isEmpty();
+        AABB area = player.getBoundingBox().inflate(900.0D);
+        return !level.getEntitiesOfClass(WorldbreakerEntity.class, area, Entity::isAlive).isEmpty();
     }
 
     public static void clear(UUID playerId) { RUNTIME.remove(playerId); }

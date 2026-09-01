@@ -32,5 +32,9 @@
   "entity.titanbreak.null_seraph": "Null Seraph",
   "message.titanbreak.null_seraph_warning": "Powered systems stutter and targeting traces vanish. A pale silhouette is descending without a sound.",
   "message.titanbreak.null_seraph_arrival": "The Null Seraph has entered the territory. Its suppression wings are selecting the systems you rely on most.",
-  "message.titanbreak.null_seraph_defeated": "The Null Seraph's suppression field has collapsed. Its null core and high-grade neural materials can be recovered."
+  "message.titanbreak.null_seraph_defeated": "The Null Seraph's suppression field has collapsed. Its null core and high-grade neural materials can be recovered.",
+  "entity.titanbreak.worldbreaker": "Worldbreaker",
+  "message.titanbreak.worldbreaker_warning": "The horizon is disappearing behind a moving wall of dust. Each tremor arrives closer than the last.",
+  "message.titanbreak.worldbreaker_arrival": "The Worldbreaker is crossing the territory. Break all four leg axes before it advances beyond reach, then climb and destroy its exposed organs.",
+  "message.titanbreak.worldbreaker_defeated": "The Worldbreaker's central core has stopped. The catastrophe has fallen silent, leaving its core and concentrated high-grade materials behind."
 }
