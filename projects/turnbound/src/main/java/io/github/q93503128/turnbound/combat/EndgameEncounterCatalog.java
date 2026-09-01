@@ -16,6 +16,7 @@ import java.util.UUID;
 public final class EndgameEncounterCatalog {
     private static final Map<String, Integer> BOSS_BASE_LEVEL = Map.of(
             "B01", 6, "B02", 10, "B03", 13, "B04", 16, "B05", 20);
+    private static final String VISUAL_SIGNATURE_PREFIX = "VISUAL_SIGNATURE:";
 
     private EndgameEncounterCatalog() {}
 
@@ -106,8 +107,20 @@ public final class EndgameEncounterCatalog {
         CombatantDefinition base = CanonicalData.definition(characterId, level.level(), growth.currentStar(), growth.awakened());
         Set<String> rules = new LinkedHashSet<>(base.rules());
         rules.addAll(CampaignProgressStore.equipmentRules(playerId, characterId));
+        String visualRule = signatureVisualRule(playerId, characterId);
+        if (!visualRule.isBlank()) rules.add(visualRule);
         return new CombatantDefinition(base.id(), base.name(), CampaignProgressStore.finalStats(playerId, characterId),
                 base.basicSkillId(), base.skills(), base.nativeStars(), List.copyOf(rules), base.params());
+    }
+
+    /** Presentation-only tag; Signature gameplay rules are already merged above. */
+    private static String signatureVisualRule(UUID playerId, String characterId) {
+        var equipment = CampaignProgressStore.equipment(playerId);
+        var loadout = equipment.loadouts().get(characterId);
+        if (loadout == null || loadout.signature().isBlank()) return "";
+        var item = equipment.items().get(loadout.signature());
+        if (item == null || !item.itemId().startsWith("sig_")) return "";
+        return VISUAL_SIGNATURE_PREFIX + item.itemId();
     }
 
     private static CombatantDefinition hardBossDefinition(String bossId, int encounterLevel, double extraHpFactor) {
