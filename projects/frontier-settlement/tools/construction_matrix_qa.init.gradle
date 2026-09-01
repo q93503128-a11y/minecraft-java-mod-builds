@@ -1,0 +1,11 @@
+allprojects {
+    afterEvaluate { p ->
+        if (p == rootProject) {
+            p.tasks.register('constructionMatrixQa', JavaExec) {
+                dependsOn p.tasks.named('classes')
+                classpath = p.sourceSets.main.runtimeClasspath
+                mainClass = 'kr.moonseungjun.frontiersettlement.settlement.ConstructionMatrixQa'
+            }
+        }
+    }
+}
