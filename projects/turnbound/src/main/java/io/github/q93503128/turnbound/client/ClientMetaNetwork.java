@@ -1,18 +1,20 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
+import io.github.q93503128.turnbound.network.GachaPresentationPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** Applies server-authored meta state and transient facility/briefing routing. */
+/** Applies server-authored meta state and transient facility/presentation routing. */
 public final class ClientMetaNetwork {
     private ClientMetaNetwork() {}
 
     public static void register(RegisterClientPayloadHandlersEvent event) {
         event.register(MetaSnapshotPayload.TYPE, ClientMetaNetwork::handle);
         event.register(EndgameBriefingPayload.TYPE, ClientMetaNetwork::handleBriefing);
+        event.register(GachaPresentationPayload.TYPE, ClientMetaNetwork::handleGacha);
     }
 
     private static void handle(MetaSnapshotPayload payload, IPayloadContext context) {
@@ -20,7 +22,8 @@ public final class ClientMetaNetwork {
             String hint = openHint(payload.snapshot());
             ClientMetaState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
+            if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen
+                    || minecraft.gui.screen() instanceof GachaPresentationScreen) return;
 
             if (!hint.isBlank()) {
                 minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
@@ -39,6 +42,14 @@ public final class ClientMetaNetwork {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
             minecraft.gui.setScreen(new EndgameBriefingScreen(EndgameBriefingScreen.decode(payload.briefing())));
+        });
+    }
+
+    private static void handleGacha(GachaPresentationPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
+            minecraft.gui.setScreen(new GachaPresentationScreen(GachaPresentationScreen.decode(payload.result())));
         });
     }
 
