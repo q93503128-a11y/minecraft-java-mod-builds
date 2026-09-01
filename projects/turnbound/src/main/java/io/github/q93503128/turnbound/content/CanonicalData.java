@@ -118,7 +118,7 @@ public final class CanonicalData {
         return new SkillDefinition(
                 skillId, string(raw, "name", ""),
                 TargetRule.valueOf(string(raw, "target", "SELF")), integer(raw, "cooldown", 0), effects,
-                string(raw, "description", string(raw, "name", "스킬")),
+                PlayerFacingTerminology.mechanics(string(raw, "description", string(raw, "name", "스킬"))),
                 strings(raw.getAsJsonArray("rules")), numbers(raw.getAsJsonObject("params")));
     }
 
