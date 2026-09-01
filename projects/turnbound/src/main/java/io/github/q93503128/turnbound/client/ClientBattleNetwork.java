@@ -18,6 +18,7 @@ public final class ClientBattleNetwork {
             ClientBattleState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             var snapshot = ClientBattleState.snapshot();
+            ClientAudioDirector.onBattleSnapshot(snapshot);
 
             if (snapshot.active()) {
                 if (!wasActive) BattleCameraController.enter(snapshot.arenaYaw());
