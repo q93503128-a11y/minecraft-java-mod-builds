@@ -57,6 +57,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         RawAnimation death = prefix == null ? DEATH : play(prefix, "death");
         RawAnimation revive = prefix == null ? REVIVE : play(prefix, "revive");
         RawAnimation victory = prefix == null ? VICTORY : play(prefix, "victory");
+        RawAnimation fieldWalk = prefix == null ? FIELD_WALK : loop(prefix, "field_walk");
+        RawAnimation fieldIdle = prefix == null ? FIELD_IDLE : loop(prefix, "field_idle");
 
         controllers.add(new AnimationController<BattleActorEntity>("combat", 3, test -> test.setAndContinue(idle))
                 .triggerableAnim("strike", DefaultAnimations.ATTACK_STRIKE)
@@ -75,8 +77,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("charge", CHARGE)
                 .triggerableAnim("summon", SUMMON)
                 .triggerableAnim("phase", PHASE)
-                .triggerableAnim("field_walk", FIELD_WALK)
-                .triggerableAnim("field_idle", FIELD_IDLE));
+                .triggerableAnim("field_walk", fieldWalk)
+                .triggerableAnim("field_idle", fieldIdle));
     }
 
     private static RawAnimation play(String prefix, String clip) {
