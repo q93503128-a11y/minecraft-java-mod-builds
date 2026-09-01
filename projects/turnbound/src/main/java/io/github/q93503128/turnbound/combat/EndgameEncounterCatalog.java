@@ -55,7 +55,7 @@ public final class EndgameEncounterCatalog {
             String bossId = id.substring("HARD_".length());
             int baseLevel = BOSS_BASE_LEVEL.get(bossId);
             units.add(new CombatantState("boss_" + bossId.toLowerCase() + "_hard",
-                    hardBossDefinition(bossId, baseLevel, 1.0), CombatantSide.ENEMY, 4));
+                    hardRematchDefinition(bossId, baseLevel), CombatantSide.ENEMY, 4));
             return new BattleState(units);
         }
 
@@ -65,7 +65,7 @@ public final class EndgameEncounterCatalog {
             int baseLevel = BOSS_BASE_LEVEL.get(bossId);
             double extraHp = 1.0 + 0.02 * Math.max(0, floor.level() - baseLevel);
             units.add(new CombatantState("rift_f" + floor.floor() + "_" + bossId.toLowerCase(),
-                    hardBossDefinition(bossId, floor.level(), extraHp), CombatantSide.ENEMY, 4));
+                    riftHardPatternDefinition(bossId, floor.level(), extraHp), CombatantSide.ENEMY, 4));
         } else {
             for (int index = 0; index < floor.enemies().size(); index++) {
                 String enemyId = floor.enemies().get(index);
@@ -123,9 +123,19 @@ public final class EndgameEncounterCatalog {
         return VISUAL_SIGNATURE_PREFIX + item.itemId();
     }
 
-    private static CombatantDefinition hardBossDefinition(String bossId, int encounterLevel, double extraHpFactor) {
-        int baseLevel = BOSS_BASE_LEVEL.get(bossId);
-        CombatantDefinition base = CanonicalData.definition(bossId, encounterLevel + 5, 0, false);
+    /** #109 Hard rematch: the story boss enemy level is explicitly +5 before the Hard coefficients. */
+    private static CombatantDefinition hardRematchDefinition(String bossId, int storyLevel) {
+        return hardPatternDefinition(bossId, storyLevel + 5, storyLevel, 1.0, " [Hard]");
+    }
+
+    /** #132 Rift: table Level overrides enemy level; HardPattern coefficients apply without another +5 level. */
+    private static CombatantDefinition riftHardPatternDefinition(String bossId, int floorLevel, double extraHpFactor) {
+        return hardPatternDefinition(bossId, floorLevel, BOSS_BASE_LEVEL.get(bossId), extraHpFactor, " [HardPattern]");
+    }
+
+    private static CombatantDefinition hardPatternDefinition(String bossId, int combatLevel, int bossBaseLevel,
+                                                               double extraHpFactor, String suffix) {
+        CombatantDefinition base = CanonicalData.definition(bossId, combatLevel, 0, false);
         BattleStats stats = base.stats();
         int hp = Math.max(1, (int)Math.floor(stats.maxHp() * 1.65 * extraHpFactor));
         int atk = Math.max(1, (int)Math.floor(stats.attack() * 1.25));
@@ -133,10 +143,10 @@ public final class EndgameEncounterCatalog {
         int spd = stats.speed() + 8;
         Map<String, Double> params = new LinkedHashMap<>(base.params());
         params.put("hardBoss", 1.0);
-        params.put("bossBaseLevel", (double)baseLevel);
-        params.put("encounterLevel", (double)encounterLevel);
-        params.put("level", (double)(encounterLevel + 5));
-        return new CombatantDefinition(base.id(), base.name() + " [Hard]", new BattleStats(hp, atk, def, spd),
+        params.put("bossBaseLevel", (double)bossBaseLevel);
+        params.put("encounterLevel", (double)combatLevel);
+        params.put("level", (double)combatLevel);
+        return new CombatantDefinition(base.id(), base.name() + suffix, new BattleStats(hp, atk, def, spd),
                 base.basicSkillId(), base.skills(), base.nativeStars(), base.rules(), Map.copyOf(params));
     }
 }
