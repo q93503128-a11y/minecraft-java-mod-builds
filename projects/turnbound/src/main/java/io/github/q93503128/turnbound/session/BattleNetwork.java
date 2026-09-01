@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.network.AudioCuePayload;
 import io.github.q93503128.turnbound.network.BattleCommandPayload;
 import io.github.q93503128.turnbound.network.BattleSnapshotPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +16,7 @@ public final class BattleNetwork {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(BattleSnapshotPayload.TYPE, BattleSnapshotPayload.STREAM_CODEC);
+        registrar.playToClient(AudioCuePayload.TYPE, AudioCuePayload.STREAM_CODEC);
         registrar.playToServer(BattleCommandPayload.TYPE, BattleCommandPayload.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) BattleSessionManager.command(player, payload.command());
