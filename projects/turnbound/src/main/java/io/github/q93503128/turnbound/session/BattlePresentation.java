@@ -1,6 +1,8 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.combat.BattleEvent;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
+import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
@@ -117,6 +119,33 @@ final class BattlePresentation {
             downed.put(id,unit.downed());Entity entity=entity(level,id);Vec3 home=homes.get(id);if(unit.downed()){if(entity instanceof BattleActorEntity a)a.playDeath();if(home!=null)BattleVfx.down(level,home);}else{if(entity instanceof BattleActorEntity a)a.playRevive();if(home!=null)BattleVfx.revive(level,home);}}
             int phase=phaseFor(unit),previous=bossPhases.getOrDefault(id,phase);if(!unit.downed()&&phase>previous){bossPhases.put(id,phase);Entity entity=entity(level,id);if(entity instanceof BattleActorEntity a)a.playPhase();Vec3 home=homes.get(id);if(home!=null)BattleVfx.phase(level,unit.definition().id(),home,phase);}else bossPhases.putIfAbsent(id,phase);
         }
+    }
+
+    /** Replays authoritative damage/reaction events as authored hit and reaction clips. */
+    void presentEvents(ServerLevel level, BattleState state, int eventStart) {
+        List<BattleEvent> events=state.events();
+        if(eventStart<0||eventStart>=events.size())return;
+        for(int i=eventStart;i<events.size();i++){
+            BattleEvent event=events.get(i);
+            switch(event.type()){
+                case "REACTION_DAMAGE" -> {
+                    Entity source=entity(level,event.sourceId());if(source instanceof BattleActorEntity a)a.playReaction();
+                    playHitFor(level,state,event.targetId(),event.value());
+                }
+                case "DAMAGE","DOT" -> playHitFor(level,state,event.targetId(),event.value());
+                case "DAMAGE_REDIRECT" -> {
+                    Entity guardian=entity(level,event.targetId());if(guardian instanceof BattleActorEntity a)a.playReaction();
+                    playHitFor(level,state,event.targetId(),event.value());
+                }
+                default -> { }
+            }
+        }
+    }
+
+    private void playHitFor(ServerLevel level,BattleState state,String targetId,int damage){
+        CombatantState target=state.find(targetId);if(target==null||target.downed())return;
+        Entity targetActor=entity(level,targetId);if(!(targetActor instanceof BattleActorEntity animated))return;
+        boolean heavy=damage>=Math.max(1,(int)Math.floor(target.maxHp()*.18));animated.playHit(heavy);
     }
 
     private static int phaseFor(CombatantState unit){if(!unit.definition().boss())return 1;double hp=unit.hp()/(double)Math.max(1,unit.maxHp());double p2=unit.definition().param("phase2",-1),p3=unit.definition().param("phase3",-1);if(p3>0&&hp<=p3)return 3;if(p2>0&&hp<=p2)return 2;return 1;}
