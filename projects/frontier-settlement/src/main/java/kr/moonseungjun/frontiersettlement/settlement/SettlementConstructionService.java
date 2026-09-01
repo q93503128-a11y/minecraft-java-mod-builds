@@ -17,13 +17,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public final class SettlementConstructionService {
@@ -357,20 +360,15 @@ public final class SettlementConstructionService {
     }
 
     private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-        if (builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 1.05D)) return true;
+        if (moveToReachable(builder, target, 1.05D)) return true;
         int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
         for (int[] offset : offsets) {
             int x = target.getX() + offset[0];
             int z = target.getZ() + offset[1];
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos candidate = new BlockPos(x, y, z);
-            if (!level.hasChunkAt(candidate) || !level.hasChunkAt(candidate.above()) || !level.hasChunkAt(candidate.below())) continue;
-            BlockState feet = level.getBlockState(candidate);
-            BlockState head = level.getBlockState(candidate.above());
-            BlockState below = level.getBlockState(candidate.below());
-            if ((!feet.isAir() && !feet.canBeReplaced()) || (!head.isAir() && !head.canBeReplaced())) continue;
-            if (below.isAir() || !below.getFluidState().isEmpty()) continue;
-            if (builder.getNavigation().moveTo(x + 0.5D, y, z + 0.5D, 1.05D)) return true;
+            if (!isWalkableApproachCell(level, candidate)) continue;
+            if (moveToReachable(builder, candidate, 1.05D)) return true;
         }
         builder.getNavigation().stop();
         return false;
@@ -491,11 +489,12 @@ public final class SettlementConstructionService {
                                              Container crate, BlockPos supply, int requiredStone) {
         long missing = Math.max(0L, requiredStone - SettlementInventory.countStone(crate));
         if (missing <= 0L) return true;
+        ServerLevel level = server.overworld();
         ItemStack carried = builder.getMainHandItem();
         if (!carried.isEmpty()) {
             if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                     > SUPPLY_INTERACTION_RANGE_SQR) {
-                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
+                moveTowardInteraction(level, builder, supply, 1.10D);
                 return false;
             }
             int before = carried.getCount();
@@ -508,12 +507,11 @@ public final class SettlementConstructionService {
             return false;
         }
 
-        ServerLevel level = server.overworld();
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+        BlockPos source = findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone);
         if (source == null) return false;
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 1.10D);
+            moveTowardInteraction(level, builder, source, 1.10D);
             return false;
         }
         int amount = (int) Math.min((long) HAUL_BATCH_SIZE, missing);
@@ -528,6 +526,7 @@ public final class SettlementConstructionService {
     private static boolean stageRemainingMaterials(MinecraftServer server, SettlementData data, BuildingType type,
                                                    int totalSteps, FrontierWorkerEntity builder, Container crate, BlockPos supply) {
         int step = data.construction().buildStep();
+        ServerLevel level = server.overworld();
         long spentWood = costAtStep(type.woodCost(), step, totalSteps);
         long spentStone = costAtStep(type.stoneCost(), step, totalSteps);
         long remainingWood = Math.max(0L, type.woodCost() - spentWood);
@@ -562,7 +561,7 @@ public final class SettlementConstructionService {
             }
             if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                     > SUPPLY_INTERACTION_RANGE_SQR) {
-                builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
+                moveTowardInteraction(level, builder, supply, 1.10D);
                 return false;
             }
             int before = carried.getCount();
@@ -580,12 +579,11 @@ public final class SettlementConstructionService {
         Predicate<ItemStack> wanted = needsWood ? SettlementInventory::isWood : SettlementInventory::isStone;
         long missing = needsWood ? missingWood : missingStone;
         if (missing <= 0L) return true;
-        ServerLevel level = server.overworld();
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, wanted);
+        BlockPos source = findReachableExtractionTarget(level, data, builder, wanted);
         if (source == null) return false;
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 1.10D);
+            moveTowardInteraction(level, builder, source, 1.10D);
             return false;
         }
 
@@ -602,14 +600,14 @@ public final class SettlementConstructionService {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+        BlockPos target = findReachableDepositTarget(level, data, builder, carried);
+        if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
             builder.getNavigation().stop();
             return false;
         }
         if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 1.10D);
+            moveTowardInteraction(level, builder, target, 1.10D);
             return false;
         }
         ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
@@ -705,18 +703,30 @@ public final class SettlementConstructionService {
             }
             Container crate = level.getBlockState(supply).is(Blocks.BARREL)
                     && level.getBlockEntity(supply) instanceof Container existing ? existing : null;
+            if (!builder.getMainHandItem().isEmpty()
+                    && builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
+                    > SUPPLY_INTERACTION_RANGE_SQR
+                    && !canReachInteraction(level, builder, supply)) {
+                return "현장 자재통 접근 불가 · 주변 통로 또는 발판을 확인하세요";
+            }
             if (crate != null && builder.getMainHandItem().isEmpty()) {
                 long woodDelta = costAtStep(type.woodCost(), step + 1, plan.size())
                         - costAtStep(type.woodCost(), step, plan.size());
                 long stoneDelta = costAtStep(type.stoneCost(), step + 1, plan.size())
                         - costAtStep(type.stoneCost(), step, plan.size());
-                if (SettlementInventory.countWood(crate) < woodDelta
-                        && SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood) == null) {
-                    return "건설 목재 대기 · 공동 저장소에 목재를 보충하세요";
+                if (SettlementInventory.countWood(crate) < woodDelta) {
+                    BlockPos woodSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood);
+                    if (woodSource == null) return "건설 목재 대기 · 공동 저장소에 목재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isWood) == null) {
+                        return "건설 목재 접근 불가 · 자재가 든 저장소까지 통로를 확보하세요";
+                    }
                 }
-                if (SettlementInventory.countStone(crate) < stoneDelta
-                        && SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone) == null) {
-                    return "건설 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                if (SettlementInventory.countStone(crate) < stoneDelta) {
+                    BlockPos stoneSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+                    if (stoneSource == null) return "건설 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone) == null) {
+                        return "건설 석재 접근 불가 · 자재가 든 저장소까지 통로를 확보하세요";
+                    }
                 }
             }
             return "";
@@ -869,6 +879,7 @@ public final class SettlementConstructionService {
     private static boolean returnCrateExtrasPhysically(MinecraftServer server, SettlementData data,
                                                        FrontierWorkerEntity builder, Container crate, BlockPos supply) {
         if (!builder.getMainHandItem().isEmpty()) return returnCarriedToTownStorage(server, data, builder);
+        ServerLevel level = server.overworld();
         int sourceSlot = -1;
         for (int slot = 0; slot < crate.getContainerSize(); slot++) {
             if (!crate.getItem(slot).isEmpty()) { sourceSlot = slot; break; }
@@ -876,7 +887,7 @@ public final class SettlementConstructionService {
         if (sourceSlot < 0) return true;
         if (builder.distanceToSqr(supply.getX() + 0.5D, supply.getY() + 0.5D, supply.getZ() + 0.5D)
                 > SUPPLY_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(supply.getX() + 0.5D, supply.getY(), supply.getZ() + 0.5D, 1.10D);
+            moveTowardInteraction(level, builder, supply, 1.10D);
             return false;
         }
         ItemStack moving = crate.getItem(sourceSlot).copy();
@@ -917,8 +928,8 @@ public final class SettlementConstructionService {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
             // Ground work retains the historical wide local envelope as the final compatibility fallback.
             if (work.getY() <= construction.originY() && workDistance <= WORK_POSITION_REACHED_SQR) return true;
-            // For a high scaffold, keep walking to the actual work point until the target itself is in range.
-            if (builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D)) return false;
+            // A partial path is not authority: try the next scaffold if this exact work point cannot be reached.
+            if (moveToReachable(builder, work, 1.05D)) return false;
         }
         builder.getNavigation().stop();
         return false;
@@ -947,6 +958,110 @@ public final class SettlementConstructionService {
         // existing save is never made stricter by this hotfix.
         result.add(ground);
         return List.copyOf(result);
+    }
+
+    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
+        Path path = builder.getNavigation().createPath(target, 0);
+        if (path == null || !path.canReach() || path.getEndNode() == null
+                || !path.getEndNode().asBlockPos().equals(target)) return null;
+        if (!(builder.level() instanceof ServerLevel level) || !pathNodesCurrentlyClear(level, path)) return null;
+        return path;
+    }
+
+    private static boolean moveToReachable(FrontierWorkerEntity builder, BlockPos target, double speed) {
+        Path path = createReachablePath(builder, target);
+        return path != null && builder.getNavigation().moveTo(path, speed);
+    }
+
+    private static boolean isWalkableApproachCell(ServerLevel level, BlockPos feet) {
+        BlockPos head = feet.above();
+        BlockPos below = feet.below();
+        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head) || !level.hasChunkAt(below)) return false;
+        if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
+        BlockState feetState = level.getBlockState(feet);
+        BlockState headState = level.getBlockState(head);
+        BlockState belowState = level.getBlockState(below);
+        if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()
+                || !belowState.getFluidState().isEmpty()) return false;
+        if ((!feetState.isAir() && !feetState.canBeReplaced())
+                || (!headState.isAir() && !headState.canBeReplaced())) return false;
+        return !belowState.isAir() && !belowState.canBeReplaced();
+    }
+
+    private static List<BlockPos> interactionApproachPositions(ServerLevel level, FrontierWorkerEntity builder,
+                                                               BlockPos target) {
+        int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
+        List<BlockPos> candidates = new ArrayList<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int[] offset : offsets) {
+                BlockPos candidate = target.offset(offset[0], dy, offset[1]);
+                if (isWalkableApproachCell(level, candidate)) candidates.add(candidate);
+            }
+        }
+        candidates.sort(Comparator.comparingDouble(pos -> builder.distanceToSqr(
+                pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
+        return List.copyOf(candidates);
+    }
+
+    private static boolean pathNodesCurrentlyClear(ServerLevel level, Path path) {
+    for (int i = 0; i < path.getNodeCount(); i++) {
+        BlockPos feet = path.getNode(i).asBlockPos();
+        BlockPos head = feet.above();
+        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return false;
+        if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
+        BlockState feetState = level.getBlockState(feet);
+        BlockState headState = level.getBlockState(head);
+        if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()) return false;
+        if (blocksCurrentPathCell(level, feet, feetState) || blocksCurrentPathCell(level, head, headState)) return false;
+    }
+    return true;
+}
+
+private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, BlockState state) {
+    if (state.isAir() || state.canBeReplaced()) return false;
+    return !state.getCollisionShape(level, pos).isEmpty();
+}
+
+    private static boolean canReachInteraction(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= SUPPLY_INTERACTION_RANGE_SQR) return true;
+        for (BlockPos candidate : interactionApproachPositions(level, builder, target)) {
+            if (createReachablePath(builder, candidate) != null) return true;
+        }
+        return false;
+    }
+
+    private static boolean moveTowardInteraction(ServerLevel level, FrontierWorkerEntity builder,
+                                                 BlockPos target, double speed) {
+        if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= SUPPLY_INTERACTION_RANGE_SQR) return true;
+        for (BlockPos candidate : interactionApproachPositions(level, builder, target)) {
+            if (moveToReachable(builder, candidate, speed)) return true;
+        }
+        builder.getNavigation().stop();
+        return false;
+    }
+
+    private static BlockPos findReachableExtractionTarget(ServerLevel level, SettlementData data,
+                                                          FrontierWorkerEntity builder, Predicate<ItemStack> predicate) {
+        Set<BlockPos> excluded = new HashSet<>();
+        while (true) {
+            BlockPos source = SettlementStorageService.findExtractionTargetExcluding(level, data, predicate, excluded);
+            if (source == null) return null;
+            if (canReachInteraction(level, builder, source)) return source;
+            excluded.add(source);
+        }
+    }
+
+    private static BlockPos findReachableDepositTarget(ServerLevel level, SettlementData data,
+                                                       FrontierWorkerEntity builder, ItemStack stack) {
+        Set<BlockPos> excluded = new HashSet<>();
+        while (true) {
+            BlockPos target = SettlementStorageService.findDepositTargetExcluding(level, data, stack, excluded);
+            if (target == null) return null;
+            if (canReachInteraction(level, builder, target)) return target;
+            excluded.add(target);
+        }
     }
 
     private static double targetDistanceSqr(BlockPos work, BlockPos target) {
@@ -1059,7 +1174,17 @@ public final class SettlementConstructionService {
             if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) return false;
             if (!current.isAir() && !current.canBeReplaced()) return false;
         }
-        return true;
+        return hasWalkableScaffoldEntry(level, tower);
+    }
+
+    private static boolean hasWalkableScaffoldEntry(ServerLevel level, ScaffoldTower tower) {
+        if (tower.steps().isEmpty()) return false;
+        BlockPos firstTread = tower.steps().getFirst();
+        int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
+        for (int[] offset : offsets) {
+            if (isWalkableApproachCell(level, firstTread.offset(offset[0], 0, offset[1]))) return true;
+        }
+        return false;
     }
 
     private static void placeClaimedTower(ServerLevel level, ScaffoldTower tower) {
@@ -1281,7 +1406,7 @@ public final class SettlementConstructionService {
             builder.getNavigation().stop();
             return true;
         }
-        builder.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 1.10D);
+        if (!moveToReachable(builder, home, 1.10D)) builder.getNavigation().stop();
         return false;
     }
 

@@ -296,12 +296,20 @@ public final class SettlementStorageService {
     }
 
     public static BlockPos findDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
+        BlockPos target = findDepositTargetExcluding(level, data, stack, Set.of());
+        return target == null ? data.stockpilePos() : target;
+    }
+
+    public static BlockPos findDepositTargetExcluding(ServerLevel level, SettlementData data,
+                                                      ItemStack stack, Set<BlockPos> excluded) {
         for (BlockPos pos : depositPositions(level, data, stack)) {
-            if (!level.hasChunkAt(pos)) continue;
+            if (excluded.contains(pos) || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             if (hasRoom(container, stack)) return pos;
         }
-        return data.stockpilePos();
+        BlockPos stockpile = data.stockpilePos();
+        if (!excluded.contains(stockpile) && hasRoomAt(level, stockpile, stack)) return stockpile;
+        return null;
     }
 
     /** Outpost deliveries prefer a visible cart-station freight bay before ordinary town storage. */
