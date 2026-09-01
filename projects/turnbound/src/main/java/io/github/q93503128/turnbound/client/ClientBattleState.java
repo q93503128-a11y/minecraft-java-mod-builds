@@ -39,6 +39,14 @@ public final class ClientBattleState {
             int xpToNextAfter
     ) {}
 
+    public record ResultNotice(String code, String text) {
+        public ResultNotice {
+            code = code == null || code.isBlank() ? "INFO" : code;
+            text = text == null ? "" : text;
+        }
+        public boolean is(String wanted) { return code.equals(wanted); }
+    }
+
     public record Result(
             int xp,
             int gold,
@@ -84,13 +92,14 @@ public final class ClientBattleState {
             false, false, 1, "RUNNING", "", true, true, true, true,
             List.of(), List.of(), List.of(), "", 0.0, 0.0, 0.0, 0.0F, Result.none());
     private static volatile String encounterId = "";
-    private static volatile List<String> resultNotices = List.of();
+    private static volatile List<ResultNotice> resultNotices = List.of();
     private static volatile long revision;
 
     private ClientBattleState() {}
     public static Snapshot snapshot() { return snapshot; }
     public static String encounterId() { return encounterId; }
-    public static List<String> resultNotices() { return resultNotices; }
+    public static List<ResultNotice> resultNotices() { return resultNotices; }
+    public static boolean hasResultNotice(String code) { return resultNotices.stream().anyMatch(notice -> notice.is(code)); }
     public static long revision() { return revision; }
 
     public static void update(String raw) {
@@ -106,7 +115,7 @@ public final class ClientBattleState {
         int resultXp = 0, resultGold = 0, resultCrystal = 0, resultEssence = 0;
         boolean firstClear = false;
         List<String> equipmentRewards = new ArrayList<>();
-        List<String> notices = new ArrayList<>();
+        List<ResultNotice> notices = new ArrayList<>();
         List<PartyXp> partyXp = new ArrayList<>();
 
         for (String line : raw.split("\n")) {
@@ -152,7 +161,10 @@ public final class ClientBattleState {
                         }
                         if (p.length >= 7 && !p[6].isBlank()) equipmentRewards.addAll(Arrays.asList(p[6].split(",")));
                     }
-                    case "N" -> { if (p.length > 1 && !p[1].isBlank()) notices.add(p[1]); }
+                    case "N" -> {
+                        if (p.length >= 3 && !p[1].isBlank()) notices.add(new ResultNotice(p[1], p[2]));
+                        else if (p.length > 1 && !p[1].isBlank()) notices.add(legacyNotice(p[1]));
+                    }
                     case "P" -> {
                         if (p.length >= 8) partyXp.add(new PartyXp(p[1], p[2], Integer.parseInt(p[3]), Integer.parseInt(p[4]),
                                 Integer.parseInt(p[5]), Integer.parseInt(p[6]), Integer.parseInt(p[7])));
@@ -170,5 +182,18 @@ public final class ClientBattleState {
         encounterId = encounter;
         resultNotices = List.copyOf(notices);
         revision++;
+    }
+
+    /** Compatibility for snapshots produced by the earlier display-string-only result protocol. */
+    private static ResultNotice legacyNotice(String raw) {
+        if (raw.startsWith("INVENTORY FULL")) return new ResultNotice("INVENTORY_FULL",
+                "장비 인벤토리가 가득 찼습니다. 새 장비는 보상 대기함에 보관됩니다.");
+        if (raw.startsWith("NEW ·")) return new ResultNotice("CHARACTER_RECRUITED", raw.replaceFirst("NEW ·\\s*(P\\d+\\s*)?", "신규 영입 · "));
+        if (raw.startsWith("UNLOCK ·")) return new ResultNotice("CONTENT_UNLOCKED", "콘텐츠 개방 · " + raw.substring("UNLOCK ·".length()).trim());
+        if (raw.startsWith("MAIN QUEST CLEAR ·")) return new ResultNotice("MAIN_QUEST_CLEAR",
+                raw.replace("MAIN QUEST CLEAR", "메인 퀘스트 완료").replace("Crystal", "크리스탈").replace("Gold", "골드").replace("XP", "경험치"));
+        if (raw.startsWith("CHALLENGE CLEAR ·")) return new ResultNotice("CHALLENGE_CLEAR",
+                raw.replace("CHALLENGE CLEAR", "도전 완료").replace("Crystal", "크리스탈").replace("Gold", "골드"));
+        return new ResultNotice("INFO", raw);
     }
 }
