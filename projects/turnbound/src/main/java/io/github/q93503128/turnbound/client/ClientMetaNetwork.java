@@ -41,7 +41,8 @@ public final class ClientMetaNetwork {
         context.enqueueWork(() -> {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen) return;
-            minecraft.gui.setScreen(new EndgameBriefingScreen(EndgameBriefingScreen.decode(payload.briefing())));
+            boolean returnToSystemMenu = minecraft.gui.screen() instanceof MetaMenuScreen;
+            minecraft.gui.setScreen(new EndgameBriefingScreen(EndgameBriefingScreen.decode(payload.briefing()), returnToSystemMenu));
         });
     }
 
