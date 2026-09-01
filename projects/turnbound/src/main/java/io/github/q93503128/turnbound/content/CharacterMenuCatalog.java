@@ -43,7 +43,8 @@ public final class CharacterMenuCatalog {
                 Profile profile = new Profile(
                         text(row,"id"), text(row,"role"), text(row,"primaryRole"), text(row,"difficulty"),
                         text(row,"weapon"), text(row,"reason"), text(row,"personality"),
-                        row.has("profileQuest") && row.get("profileQuest").getAsBoolean(), text(row,"awakening"));
+                        row.has("profileQuest") && row.get("profileQuest").getAsBoolean(),
+                        PlayerFacingTerminology.mechanics(text(row,"awakening")));
                 if (!CanonicalData.contains(profile.id()) || out.put(profile.id(), profile) != null) {
                     throw new IllegalStateException("Invalid/duplicate character menu profile " + profile.id());
                 }
