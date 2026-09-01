@@ -1,0 +1,20 @@
+{
+  "music.hub": {"sounds":[{"name":"turnbound:music/hub","stream":true}]},
+  "music.region_explore": {"sounds":[{"name":"turnbound:music/region_explore","stream":true}]},
+  "music.battle_normal": {"sounds":[{"name":"turnbound:music/battle_normal","stream":true}]},
+  "music.battle_elite": {"sounds":[{"name":"turnbound:music/battle_elite","stream":true}]},
+  "music.battle_boss": {"sounds":[{"name":"turnbound:music/battle_boss","stream":true}]},
+  "music.battle_final": {"sounds":[{"name":"turnbound:music/battle_final","stream":true}]},
+
+  "sfx.skill": {"sounds":["turnbound:sfx/skill"]},
+  "sfx.hit_light": {"sounds":["turnbound:sfx/hit_light"]},
+  "sfx.hit_heavy": {"sounds":["turnbound:sfx/hit_heavy"]},
+  "sfx.reaction_hit": {"sounds":["turnbound:sfx/reaction_hit"]},
+  "sfx.dot_tick": {"sounds":["turnbound:sfx/dot_tick"]},
+  "sfx.heal": {"sounds":["turnbound:sfx/heal"]},
+  "sfx.barrier": {"sounds":["turnbound:sfx/barrier"]},
+  "sfx.revive": {"sounds":["turnbound:sfx/revive"]},
+  "sfx.down": {"sounds":["turnbound:sfx/down"]},
+  "sfx.boss_phase": {"sounds":["turnbound:sfx/boss_phase"]},
+  "sfx.spawn": {"sounds":["turnbound:sfx/spawn"]}
+}
