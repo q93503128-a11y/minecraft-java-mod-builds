@@ -28,6 +28,22 @@ public final class EndgameBriefing {
 
     private EndgameBriefing() {}
 
+    public static Briefing build(UUID playerId, String encounterId) {
+        if (EndgameEncounterCatalog.hardBoss(encounterId)) {
+            String bossId = EndgameEncounterCatalog.bossId(encounterId);
+            int level = V04Catalogs.encounter("BATTLE_" + bossId).level() + 5;
+            return build(playerId, encounterId, "HARD", level);
+        }
+        if (EndgameEncounterCatalog.rift(encounterId)) {
+            int floor = EndgameEncounterCatalog.riftFloorNumber(encounterId);
+            return build(playerId, encounterId, "RIFT", V04Catalogs.riftFloor(floor).level());
+        }
+        if (encounterId != null && encounterId.matches("BATTLE_B0[1-5]")) {
+            return build(playerId, encounterId, "NORMAL", V04Catalogs.encounter(encounterId).level());
+        }
+        throw new IllegalArgumentException("Unsupported endgame briefing " + encounterId);
+    }
+
     public static Briefing build(UUID playerId, String encounterId, String kind, int level) {
         Set<String> clears = CampaignProgressStore.snapshot(playerId).clearedEncounters();
         int partyCp = CampaignProgressStore.activeParty(playerId).stream()
