@@ -36,8 +36,10 @@ public final class ClientMetaState {
     }
 
     private static volatile Snapshot snapshot=Snapshot.empty();
+    private static volatile long revision;
     private ClientMetaState(){}
     public static Snapshot snapshot(){return snapshot;}
+    public static long revision(){return revision;}
 
     public static void update(String raw){
         long gold=0,crystal=0,essence=0,core=0; int cp=0,pity=0; boolean rift=false,starter=false;
@@ -69,5 +71,6 @@ public final class ClientMetaState {
             }catch(RuntimeException ignored){}
         }
         snapshot=new Snapshot(gold,crystal,essence,core,cp,rift,pity,starter,party,presets,chars,equipment,endgame,challenges,regions,archive,shop,codex,pendingEquipment);
+        revision++;
     }
 }
