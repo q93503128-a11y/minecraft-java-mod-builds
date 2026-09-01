@@ -3,8 +3,6 @@ package io.github.q93503128.turnbound.session;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
-import io.github.q93503128.turnbound.content.ChallengeCatalog;
-import io.github.q93503128.turnbound.world.ChallengeService;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Locale;
@@ -56,20 +54,15 @@ public final class BattleSnapshotCodec {
             }
         }
 
-        BattleResultPreview.View preview = BattleResultPreview.enrich(session.encounterId(), session.resultSummary());
+        BattleResultPreview.View preview = playerId == null
+                ? new BattleResultPreview.View(session.resultSummary(), java.util.List.of())
+                : BattleResultPreview.enrich(playerId, session.encounterId(), state, session.resultSummary());
         BattleResultSummary result = preview.summary();
         out.append("R|").append(result.xp()).append('|').append(result.gold()).append('|')
                 .append(result.firstClear() ? 1 : 0).append('|').append(result.crystal()).append('|')
                 .append(result.starEssence()).append('|')
                 .append(safe(String.join(",", result.equipmentRewards()))).append('\n');
         for (String notice : preview.notices()) out.append("N|").append(safe(notice)).append('\n');
-        if (playerId != null && state.outcome() == io.github.q93503128.turnbound.combat.BattleOutcome.ALLY_VICTORY) {
-            for (String challengeId : ChallengeService.preview(playerId, session.encounterId(), state, state.outcome())) {
-                ChallengeCatalog.Challenge challenge = ChallengeCatalog.get(challengeId);
-                out.append("N|").append(safe("CHALLENGE CLEAR · " + challenge.ordinal() + ". " + challenge.label()
-                        + " · Crystal +" + challenge.crystal() + " · Gold +" + challenge.gold())).append('\n');
-            }
-        }
         for (BattleResultSummary.PartyXp member : result.party()) {
             out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
                     .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
