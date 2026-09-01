@@ -20,5 +20,9 @@
   "entity.titanbreak.chronophage": "Chronophage",
   "message.titanbreak.chronophage_warning": "The air loses its rhythm. Sound arrives late, and the ground seems to age beneath your feet.",
   "message.titanbreak.chronophage_arrival": "The Chronophage has entered the territory. Your time field is no longer uncontested.",
-  "message.titanbreak.chronophage_defeated": "The Chronophage's central ring has collapsed. Its temporal organ can be recovered."
+  "message.titanbreak.chronophage_defeated": "The Chronophage's central ring has collapsed. Its temporal organ can be recovered.",
+  "entity.titanbreak.storm_leviathan": "Storm Leviathan",
+  "message.titanbreak.storm_leviathan_warning": "The wind locks into one direction and blue discharge crawls across exposed metal. A vast shadow overhead has changed course.",
+  "message.titanbreak.storm_leviathan_arrival": "The Storm Leviathan has taken the sky. Break its electric sacs and wing membranes to weaken the storm.",
+  "message.titanbreak.storm_leviathan_defeated": "The Leviathan's deep storm organ has gone silent. Its high-output energy materials can be recovered."
 }
