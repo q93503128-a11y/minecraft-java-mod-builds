@@ -1,0 +1,178 @@
+name: Frontier construction 96 percent hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-construction-96-hotfix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Patch construction worker reach deadlock
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''    private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                     BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+        BlockPos work = workPositionFor(level, construction, type, placement, supply);
+        double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+        if (workDistance > WORK_POSITION_REACHED_SQR) {
+            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
+            return false;
+        }
+        if (work.getY() <= construction.originY()) return true;
+        return builder.distanceToSqr(placement.pos().getX() + 0.5D, placement.pos().getY() + 0.5D,
+                placement.pos().getZ() + 0.5D) <= HIGH_WORK_RANGE_SQR;
+    }
+
+    private static BlockPos workPositionFor(ServerLevel level, ConstructionState construction, BuildingType type,
+                                            BuildingBlueprints.Placement placement, BlockPos supply) {
+'''
+          new = '''    private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                     BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+        BlockPos work = workPositionFor(level, construction, type, placement, builder, supply);
+        double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+        if (workDistance > WORK_POSITION_REACHED_SQR) {
+            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
+            return false;
+        }
+        if (work.getY() <= construction.originY()) return true;
+
+        double targetDistance = builder.distanceToSqr(
+                placement.pos().getX() + 0.5D, placement.pos().getY() + 0.5D,
+                placement.pos().getZ() + 0.5D);
+        if (targetDistance <= HIGH_WORK_RANGE_SQR) return true;
+
+        // Do not enter a silent reach deadlock. The old code returned false here without issuing
+        // movement whenever the builder was within the broad work-position radius but still just
+        // outside the high-block reach radius. This showed up on the final house roof row at 96%.
+        builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
+        return false;
+    }
+
+    private static BlockPos workPositionFor(ServerLevel level, ConstructionState construction, BuildingType type,
+                                            BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+'''
+          if old not in s:
+              raise SystemExit('move/work-position anchor no longer matches expected Alpha.91 source')
+          s = s.replace(old, new, 1)
+
+          old2 = '''        BlockPos bestWork = null;
+        double bestTargetDistance = Double.MAX_VALUE;
+        for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
+            if (!construction.ownsScaffold(towerIndex)) continue;
+            ScaffoldTower tower = towers.get(towerIndex);
+            if (!towerUsable(level, tower) || tower.steps().isEmpty()) continue;
+            int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
+            BlockPos candidate = tower.steps().get(index).above();
+            double dx = (double) candidate.getX() + 0.5D - ((double) target.getX() + 0.5D);
+            double dy = (double) candidate.getY() - ((double) target.getY() + 0.5D);
+            double dz = (double) candidate.getZ() + 0.5D - ((double) target.getZ() + 0.5D);
+            double distance = dx * dx + dy * dy + dz * dz;
+            if (distance <= HIGH_WORK_RANGE_SQR && distance < bestTargetDistance) {
+                bestTargetDistance = distance;
+                bestWork = candidate;
+            }
+        }
+'''
+          new2 = '''        BlockPos bestWork = null;
+        double bestBuilderDistance = Double.MAX_VALUE;
+        for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
+            if (!construction.ownsScaffold(towerIndex)) continue;
+            ScaffoldTower tower = towers.get(towerIndex);
+            if (!towerUsable(level, tower) || tower.steps().isEmpty()) continue;
+            int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
+            BlockPos candidate = tower.steps().get(index).above();
+            double dx = (double) candidate.getX() + 0.5D - ((double) target.getX() + 0.5D);
+            double dy = (double) candidate.getY() - ((double) target.getY() + 0.5D);
+            double dz = (double) candidate.getZ() + 0.5D - ((double) target.getZ() + 0.5D);
+            double targetDistance = dx * dx + dy * dy + dz * dz;
+            if (targetDistance > HIGH_WORK_RANGE_SQR) continue;
+
+            // Several scaffolds can legitimately reach the same roof block. Prefer the one the
+            // builder is already nearest to instead of making it cross the finished structure just
+            // because another tower is a little closer to the target block.
+            double builderDistance = builder.distanceToSqr(
+                    candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
+            if (builderDistance < bestBuilderDistance) {
+                bestBuilderDistance = builderDistance;
+                bestWork = candidate;
+            }
+        }
+'''
+          if old2 not in s:
+              raise SystemExit('scaffold-selection anchor no longer matches expected Alpha.91 source')
+          s = s.replace(old2, new2, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Static regression assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java').read_text(encoding='utf-8')
+          assert 'workPositionFor(level, construction, type, placement, builder, supply)' in s
+          assert 'double bestBuilderDistance = Double.MAX_VALUE;' in s
+          assert 'if (targetDistance <= HIGH_WORK_RANGE_SQR) return true;' in s
+          assert 'Do not enter a silent reach deadlock' in s
+          print('construction 96% regression source assertions PASS')
+          PY
+
+      - name: Clean build Frontier Settlement
+        shell: bash
+        run: |
+          set -o pipefail
+          cd projects/frontier-settlement
+          ./gradlew clean build --no-daemon --stacktrace 2>&1 | tee ../../frontier-construction96-build.log
+
+      - name: Upload hotfix JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-construction96-hotfix
+          path: |
+            frontier-construction96-build.log
+            projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Commit hotfix
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
+          if git diff --cached --quiet; then
+            echo 'No construction hotfix changes to commit'
+            exit 0
+          fi
+          git commit -m "Fix Frontier roof construction reach deadlock"
+          git pull --rebase origin main
+          git push origin HEAD:main
