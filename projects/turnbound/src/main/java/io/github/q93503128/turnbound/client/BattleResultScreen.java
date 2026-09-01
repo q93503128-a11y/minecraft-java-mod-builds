@@ -104,7 +104,7 @@ public final class BattleResultScreen extends Screen {
     }
 
     private boolean overflowPredicted() {
-        return ClientBattleState.resultNotices().stream().anyMatch(notice -> notice.startsWith("INVENTORY FULL"));
+        return ClientBattleState.hasResultNotice("INVENTORY_FULL");
     }
 
     private void continueField() {
@@ -215,8 +215,8 @@ public final class BattleResultScreen extends Screen {
             graphics.text(font, Component.literal("획득 · " + item), x, extraY, GREEN, true);
             extraY += 14;
         }
-        for (String notice : ClientBattleState.resultNotices()) {
-            graphics.text(font, Component.literal(notice), x, extraY, notice.startsWith("INVENTORY FULL") ? DANGER : GAUGE, true);
+        for (ClientBattleState.ResultNotice notice : ClientBattleState.resultNotices()) {
+            graphics.text(font, Component.literal(notice.text()), x, extraY, notice.is("INVENTORY_FULL") ? DANGER : GAUGE, true);
             extraY += 14;
         }
         if (!result.firstClear() && result.equipmentRewards().isEmpty() && ClientBattleState.resultNotices().isEmpty()) {
