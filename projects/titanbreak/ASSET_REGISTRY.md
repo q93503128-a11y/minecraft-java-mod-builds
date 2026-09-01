@@ -36,5 +36,6 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Bastion Walker model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | B03 boss presentation |
 | The Regnant Flesh model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original model; project-owned regenerative palette baseline | B04 boss presentation |
 | Hundred-Eyed Watcher model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original model and analysis-counter palette | B05 boss presentation |
+| Chronophage model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original temporal-organ model and palette | B06 boss presentation |
 
 GeckoLib remains the only external presentation-engine dependency in the current alpha. Creature art is a project-owned implementation baseline rather than a vanilla mob renderer fallback. Some elite and boss textures intentionally reuse project-owned palette baselines while their geometry and gameplay silhouettes remain distinct; future replacement art must update this registry before merge.

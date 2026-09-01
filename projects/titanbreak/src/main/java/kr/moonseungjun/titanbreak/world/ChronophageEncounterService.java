@@ -1,6 +1,6 @@
 package kr.moonseungjun.titanbreak.world;
 
-import kr.moonseungjun.titanbreak.entity.HundredEyedWatcherEntity;
+import kr.moonseungjun.titanbreak.entity.ChronophageEntity;
 import kr.moonseungjun.titanbreak.player.TitanPlayerData;
 import kr.moonseungjun.titanbreak.registry.ModBossEntities;
 import net.minecraft.core.BlockPos;
@@ -17,23 +17,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class WatcherEncounterService {
-    private static final long FIRST_WARNING_DELAY = 560L;
-    private static final long WARNING_TO_ARRIVAL = 280L;
-    private static final long RESPAWN_DELAY = 9_200L;
+public final class ChronophageEncounterService {
+    private static final long FIRST_WARNING_DELAY = 620L;
+    private static final long WARNING_TO_ARRIVAL = 300L;
+    private static final long RESPAWN_DELAY = 10_400L;
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
 
-    private WatcherEncounterService() {}
+    private ChronophageEncounterService() {}
 
     public static void tick(ServerPlayer player, TitanPlayerData.State progression) {
         if (!(player.level() instanceof ServerLevel level) || player.isCreative() || player.isSpectator()
                 || level.getDifficulty() == Difficulty.PEACEFUL) return;
-        if (progression.hasBossFirstKill("hundred_eyed_watcher")) {
-            RUNTIME.remove(player.getUUID());
-            ChronophageEncounterService.tick(player, progression);
-            return;
-        }
-        if (!progression.hasBossFirstKill("regnant_flesh")) {
+        if (!progression.hasBossFirstKill("hundred_eyed_watcher") || progression.hasBossFirstKill("chronophage")) {
             RUNTIME.remove(player.getUUID());
             return;
         }
@@ -45,32 +40,32 @@ public final class WatcherEncounterService {
         if (!runtime.warningSent && now >= runtime.warningTick) {
             runtime.warningSent = true;
             runtime.spawnTick = now + WARNING_TO_ARRIVAL;
-            player.sendSystemMessage(Component.translatable("message.titanbreak.watcher_warning"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.chronophage_warning"));
             return;
         }
         if (!runtime.warningSent || now < runtime.spawnTick) return;
 
         if (spawnBoss(level, player)) {
-            player.sendSystemMessage(Component.translatable("message.titanbreak.watcher_arrival"));
+            player.sendSystemMessage(Component.translatable("message.titanbreak.chronophage_arrival"));
             runtime.warningSent = false;
             runtime.warningTick = now + RESPAWN_DELAY;
             runtime.spawnTick = Long.MAX_VALUE;
         } else {
-            runtime.spawnTick = now + 100L;
+            runtime.spawnTick = now + 120L;
         }
     }
 
     private static boolean spawnBoss(ServerLevel level, ServerPlayer player) {
-        for (int attempt = 0; attempt < 14; attempt++) {
+        for (int attempt = 0; attempt < 16; attempt++) {
             double angle = player.getRandom().nextDouble() * Math.PI * 2.0D;
-            int range = 120 + player.getRandom().nextInt(41);
+            int range = 132 + player.getRandom().nextInt(45);
             int x = player.getBlockX() + (int) Math.round(Math.cos(angle) * range);
             int z = player.getBlockZ() + (int) Math.round(Math.sin(angle) * range);
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos pos = new BlockPos(x, y, z);
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
 
-            HundredEyedWatcherEntity boss = ModBossEntities.HUNDRED_EYED_WATCHER.get().create(level, EntitySpawnReason.EVENT);
+            ChronophageEntity boss = ModBossEntities.CHRONOPHAGE.get().create(level, EntitySpawnReason.EVENT);
             if (boss == null) return false;
             boss.setPos(x + 0.5D, y, z + 0.5D);
             boss.setYRot(player.getRandom().nextFloat() * 360.0F);
@@ -82,19 +77,12 @@ public final class WatcherEncounterService {
     }
 
     private static boolean hasNearbyBoss(ServerLevel level, ServerPlayer player) {
-        AABB area = player.getBoundingBox().inflate(420.0D);
-        return !level.getEntitiesOfClass(HundredEyedWatcherEntity.class, area, Entity::isAlive).isEmpty();
+        AABB area = player.getBoundingBox().inflate(460.0D);
+        return !level.getEntitiesOfClass(ChronophageEntity.class, area, Entity::isAlive).isEmpty();
     }
 
-    public static void clear(UUID playerId) {
-        RUNTIME.remove(playerId);
-        ChronophageEncounterService.clear(playerId);
-    }
-
-    public static void clearAll() {
-        RUNTIME.clear();
-        ChronophageEncounterService.clearAll();
-    }
+    public static void clear(UUID playerId) { RUNTIME.remove(playerId); }
+    public static void clearAll() { RUNTIME.clear(); }
 
     private static final class RuntimeState {
         private long warningTick;

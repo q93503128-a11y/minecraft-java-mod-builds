@@ -3,6 +3,7 @@ package kr.moonseungjun.titanbreak.registry;
 import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
 import kr.moonseungjun.titanbreak.entity.BastionWalkerEntity;
+import kr.moonseungjun.titanbreak.entity.ChronophageEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HundredEyedWatcherEntity;
 import kr.moonseungjun.titanbreak.entity.RegnantFleshEntity;
@@ -47,6 +48,12 @@ public final class ModBossEntities {
                     .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(88)
                     .build(key("hundred_eyed_watcher")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<ChronophageEntity>> CHRONOPHAGE =
+            ENTITIES.register("chronophage", () -> EntityType.Builder
+                    .<ChronophageEntity>of(ChronophageEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F).eyeHeight(0.9F).clientTrackingRange(96)
+                    .build(key("chronophage")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -75,6 +82,11 @@ public final class ModBossEntities {
                 .add(Attributes.MOVEMENT_SPEED, 0.115D).add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 15.0D).add(Attributes.ARMOR_TOUGHNESS, 7.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.86D).build());
+        event.put(CHRONOPHAGE.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(ChronophageEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.125D).add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 19.0D).add(Attributes.ARMOR_TOUGHNESS, 9.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.94D).build());
     }
 
     private static ResourceKey<EntityType<?>> key(String path) {

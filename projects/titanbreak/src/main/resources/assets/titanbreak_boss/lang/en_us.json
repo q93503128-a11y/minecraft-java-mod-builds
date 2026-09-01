@@ -16,5 +16,9 @@
   "entity.titanbreak.hundred_eyed_watcher": "Hundred-Eyed Watcher",
   "message.titanbreak.watcher_warning": "Cold points of light begin turning in unison. Your movement is being measured.",
   "message.titanbreak.watcher_arrival": "The Hundred-Eyed Watcher has established a prediction field across the territory.",
-  "message.titanbreak.watcher_defeated": "The Watcher's central visual core has gone dark. Its predictive brain can be recovered."
+  "message.titanbreak.watcher_defeated": "The Watcher's central visual core has gone dark. Its predictive brain can be recovered.",
+  "entity.titanbreak.chronophage": "Chronophage",
+  "message.titanbreak.chronophage_warning": "The air loses its rhythm. Sound arrives late, and the ground seems to age beneath your feet.",
+  "message.titanbreak.chronophage_arrival": "The Chronophage has entered the territory. Your time field is no longer uncontested.",
+  "message.titanbreak.chronophage_defeated": "The Chronophage's central ring has collapsed. Its temporal organ can be recovered."
 }

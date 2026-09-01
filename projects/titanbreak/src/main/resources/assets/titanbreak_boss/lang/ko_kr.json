@@ -16,5 +16,9 @@
   "entity.titanbreak.hundred_eyed_watcher": "백안관측자",
   "message.titanbreak.watcher_warning": "차가운 빛점들이 일제히 방향을 튼다. 움직임이 측정되고 있다.",
   "message.titanbreak.watcher_arrival": "백안관측자가 영역 전체에 예측장을 전개했다.",
-  "message.titanbreak.watcher_defeated": "백안관측자의 중앙 시각핵이 꺼졌다. 예측두뇌를 회수할 수 있다."
+  "message.titanbreak.watcher_defeated": "백안관측자의 중앙 시각핵이 꺼졌다. 예측두뇌를 회수할 수 있다.",
+  "entity.titanbreak.chronophage": "시간포식자",
+  "message.titanbreak.chronophage_warning": "공기의 리듬이 무너진다. 소리가 늦게 도착하고, 발밑의 지면이 순식간에 늙어간다.",
+  "message.titanbreak.chronophage_arrival": "시간포식자가 영역에 진입했다. 이제 시간장은 일방적인 우위가 아니다.",
+  "message.titanbreak.chronophage_defeated": "시간포식자의 중심 고리가 붕괴했다. 시간기관을 회수할 수 있다."
 }
