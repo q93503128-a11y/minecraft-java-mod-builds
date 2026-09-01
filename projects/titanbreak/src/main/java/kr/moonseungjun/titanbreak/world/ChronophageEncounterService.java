@@ -28,8 +28,13 @@ public final class ChronophageEncounterService {
     public static void tick(ServerPlayer player, TitanPlayerData.State progression) {
         if (!(player.level() instanceof ServerLevel level) || player.isCreative() || player.isSpectator()
                 || level.getDifficulty() == Difficulty.PEACEFUL) return;
-        if (!progression.hasBossFirstKill("hundred_eyed_watcher") || progression.hasBossFirstKill("chronophage")) {
+        if (!progression.hasBossFirstKill("hundred_eyed_watcher")) {
             RUNTIME.remove(player.getUUID());
+            return;
+        }
+        if (progression.hasBossFirstKill("chronophage")) {
+            RUNTIME.remove(player.getUUID());
+            StormLeviathanEncounterService.tick(player, progression);
             return;
         }
 
@@ -81,8 +86,15 @@ public final class ChronophageEncounterService {
         return !level.getEntitiesOfClass(ChronophageEntity.class, area, Entity::isAlive).isEmpty();
     }
 
-    public static void clear(UUID playerId) { RUNTIME.remove(playerId); }
-    public static void clearAll() { RUNTIME.clear(); }
+    public static void clear(UUID playerId) {
+        RUNTIME.remove(playerId);
+        StormLeviathanEncounterService.clear(playerId);
+    }
+
+    public static void clearAll() {
+        RUNTIME.clear();
+        StormLeviathanEncounterService.clearAll();
+    }
 
     private static final class RuntimeState {
         private long warningTick;
