@@ -32,6 +32,7 @@ public final class Turnbound {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
+        TurnboundSounds.SOUND_EVENTS.register(modEventBus);
         TurnboundBattleActors.register(modEventBus);
         SignatureBattleActors.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);
