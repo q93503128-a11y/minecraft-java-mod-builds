@@ -26,6 +26,13 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
+modId="geckolib"
+type="required"
+versionRange="[5.5.3,5.6)"
+ordering="BEFORE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
 modId="uilib"
 type="optional"
 versionRange="[21.1.1,)"
