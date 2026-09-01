@@ -35,7 +35,7 @@ final class TurnboundUiSkin {
         stretch(graphics, texture, x, y, width, height);
         if (highlighted) {
             graphics.fill(x + 5, y + height - 5, x + width - 5, y + height - 3, active ? accent : 0xFF777777);
-            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 5, 0x241FFFFFF);
+            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 5, 0x24FFFFFF);
         }
     }
 
