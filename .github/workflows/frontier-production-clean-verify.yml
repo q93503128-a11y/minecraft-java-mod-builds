@@ -1,0 +1,40 @@
+name: Frontier Production Clean Verify
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-production-clean-verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Verify production-only source
+        shell: bash
+        run: |
+          test ! -e projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/ConstructionRuntimeScenarioQa.java
+          test ! -e projects/frontier-settlement/tools/apply_construction_navigation_hardening.py
+          ! grep -R -n 'FRONTIER_RUNTIME_QA\|ConstructionRuntimeScenarioQa' projects/frontier-settlement/src/main/java
+          grep -q 'pathNodesCurrentlyClear' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
+          grep -q 'findReachableExtractionTarget' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
+          grep -q 'findDepositTargetExcluding' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.java
+      - name: Java 25 production clean build
+        shell: bash
+        run: |
+          cd projects/frontier-settlement
+          ./gradlew clean build --no-daemon
