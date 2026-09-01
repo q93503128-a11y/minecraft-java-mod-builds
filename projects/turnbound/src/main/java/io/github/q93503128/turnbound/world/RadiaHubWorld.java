@@ -39,7 +39,7 @@ public final class RadiaHubWorld {
 
     public static BuiltHub build(ServerLevel level) {
         if (!hasMarker(level)) {
-            plaza(level); roads(level);
+            plaza(level); roads(level); starterGuidance(level);
             building(level, -12,-20,25,24, Blocks.STONE_BRICKS, Blocks.POLISHED_ANDESITE);
             building(level, -69,-2,26,22, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK);
             building(level, 44,-2,25,22, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK);
@@ -56,10 +56,10 @@ public final class RadiaHubWorld {
     public static void setSouthGateOpen(ServerLevel level, boolean open) { southGate(level, open); }
 
     private static BuiltHub built() {
-        var a = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RADIA);
-        return new BuiltHub(new Vec3(a.x(),a.y(),a.z()), new Vec3(0.5,66,-1.5), new Vec3(7.5,66,2.5),
+        // Opening spawn is deliberately not the fast-travel relay. The player starts facing Director Iven.
+        return new BuiltHub(new Vec3(0.5,66,12.5), new Vec3(0.5,66,-1.5), new Vec3(7.5,66,2.5),
                 new Vec3(0,66,24), new Vec3(0,66,110),
-                List.of(new Vec3(43,66,49),new Vec3(43,66,59),new Vec3(43,66,69)),
+                List.of(new Vec3(50,66,49),new Vec3(50,66,59),new Vec3(50,66,69)),
                 List.of(new Vec3(62,66,48),new Vec3(62,66,59),new Vec3(62,66,70)), FACILITIES);
     }
 
@@ -67,11 +67,22 @@ public final class RadiaHubWorld {
 
     private static void plaza(ServerLevel l){ pad(l,0,20,23,Blocks.STONE_BRICKS,Blocks.POLISHED_ANDESITE); }
     private static void roads(ServerLevel l){
-        // North spine reaches the Gloamwood boundary; south spine reaches the canonical South Gate.
         road(l,0,-116,0,120,5); road(l,-88,20,88,20,4); road(l,-58,20,-58,68,3);
         road(l,58,20,58,78,3); road(l,-88,-26,88,-26,3);
         for(Facility f:FACILITIES) levelCircle(l,(int)f.position().x,(int)f.position().z,
                 f.id().equals("TRAINING_YARD")?20:f.id().equals("MARKET_ROW")?17:13);
+    }
+
+    /** Embedded gold route marks communicate the opening flow without floating debug text. */
+    private static void starterGuidance(ServerLevel l){
+        for(int z=8;z>=0;z-=4) set(l,0,Y,z,Blocks.GOLD_BLOCK);
+        for(int x=12;x<=56;x+=11) set(l,x,Y,20,Blocks.GOLD_BLOCK);
+        for(int z=28;z<=40;z+=6) set(l,58,Y,z,Blocks.GOLD_BLOCK);
+        for(int z=36;z<=100;z+=16) set(l,0,Y,z,Blocks.GOLD_BLOCK);
+        // Training entrance arch at the end of the east guide road.
+        for(int y=Y+1;y<=Y+4;y++){ set(l,53,y,40,Blocks.STONE_BRICKS); set(l,63,y,40,Blocks.STONE_BRICKS); }
+        for(int x=53;x<=63;x++) set(l,x,Y+5,40,Blocks.POLISHED_ANDESITE);
+        set(l,53,Y+5,40,Blocks.LANTERN); set(l,63,Y+5,40,Blocks.LANTERN);
     }
 
     private static void market(ServerLevel l){
@@ -84,7 +95,12 @@ public final class RadiaHubWorld {
         pad(l,57,59,21,Blocks.COARSE_DIRT,Blocks.SMOOTH_STONE);
         for(int z:new int[]{48,59,70}) for(int dx=-7;dx<=7;dx++) set(l,62+dx,Y,z,Blocks.SMOOTH_STONE);
         for(int z=42;z<=76;z+=4){ set(l,38,Y+1,z,Blocks.OAK_FENCE); set(l,78,Y+1,z,Blocks.OAK_FENCE); }
-        for(int x=38;x<=78;x+=4){ set(l,x,Y+1,40,Blocks.OAK_FENCE); set(l,x,Y+1,78,Blocks.OAK_FENCE); }
+        for(int x=38;x<=78;x+=4){
+            // The old build fenced the tutorial actors in completely. Keep a wide north entrance aligned to the road.
+            if(x<52||x>64) set(l,x,Y+1,40,Blocks.OAK_FENCE);
+            set(l,x,Y+1,78,Blocks.OAK_FENCE);
+        }
+        for(int x=52;x<=64;x++) set(l,x,Y+1,40,Blocks.AIR);
     }
 
     private static void rift(ServerLevel l){
@@ -152,7 +168,7 @@ public final class RadiaHubWorld {
     private static void levelCircle(ServerLevel l,int cx,int cz,int r){ for(int x=cx-r;x<=cx+r;x++) for(int z=cz-r;z<=cz+r;z++) if((x-cx)*(x-cx)+(z-cz)*(z-cz)<=r*r) column(l,x,z,Blocks.GRASS_BLOCK); }
     private static void column(ServerLevel l,int x,int z,Block ground){ for(int y=Y-3;y<Y;y++) set(l,x,y,z,Blocks.DIRT); set(l,x,Y,z,ground); for(int y=Y+1;y<=Y+10;y++) set(l,x,y,z,Blocks.AIR); }
     private static void post(ServerLevel l,int x,int y,int z,boolean soul){ set(l,x,y+1,z,Blocks.COBBLESTONE_WALL); set(l,x,y+2,z,soul?Blocks.SOUL_LANTERN:Blocks.LANTERN); }
-    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.EMERALD_BLOCK); }
-    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE); set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK); set(l,2,MARKER_Y,20,Blocks.EMERALD_BLOCK); }
+    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.EMERALD_BLOCK)&&l.getBlockState(new BlockPos(3,MARKER_Y,20)).is(Blocks.GOLD_BLOCK); }
+    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE);set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK);set(l,2,MARKER_Y,20,Blocks.EMERALD_BLOCK);set(l,3,MARKER_Y,20,Blocks.GOLD_BLOCK); }
     private static void set(ServerLevel l,int x,int y,int z,Block b){ l.setBlock(new BlockPos(x,y,z),b.defaultBlockState(),2); }
 }
