@@ -1,0 +1,9 @@
+Kenney UI Adventure Pack (1.0)
+Created/distributed by Kenney (www.kenney.nl)
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The pack is free to use in personal, educational, and commercial projects. Attribution is not required.
+TURNBOUND uses selected panel, inset, button and icon sprites as UI skin primitives.
+Source mirror used for reproducible asset import:
+https://github.com/eturner58/game-assets/tree/main/kenney/UI%20assets/UI%20Adventure%20Pack
