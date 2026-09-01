@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound;
 import com.mojang.logging.LogUtils;
 import io.github.q93503128.turnbound.command.TurnboundCommands;
 import io.github.q93503128.turnbound.combat.P0Scenario;
+import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
@@ -32,6 +33,7 @@ public final class Turnbound {
 
     public Turnbound(IEventBus modEventBus) {
         TurnboundBattleActors.register(modEventBus);
+        SignatureBattleActors.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);
