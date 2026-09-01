@@ -190,7 +190,7 @@ public final class RadiaEndgameAtrium {
             int index=f-1,col=index%5,row=index/5,x=-116+col*8,z=-92+row*4;
             boolean mark=V04Catalogs.riftFloor(f).hardBossPattern()||f%10==0;
             Block base=f<=10?Blocks.POLISHED_DEEPSLATE:f<=20?Blocks.POLISHED_BLACKSTONE:Blocks.CRYING_OBSIDIAN;
-            Block core=mark?Blocks.AMETHYST_BLOCK:f<=10?Blocks.OBSIDIAN:f<=20?Blocks.EXPOSED_COPPER:Blocks.RESPAWN_ANCHOR;
+            Block core=mark?Blocks.AMETHYST_BLOCK:f<=10?Blocks.OBSIDIAN:f<=20?Blocks.IRON_BLOCK:Blocks.RESPAWN_ANCHOR;
             pedestal(l,x,65,z,base,core);
         }
     }
