@@ -17,10 +17,6 @@ final class BattlePresentationText {
         return text;
     }
 
-    static String unitState(boolean downed) {
-        return downed ? "전투불능" : "";
-    }
-
     static String cooldownType(int baseCooldown) {
         return baseCooldown == 0 ? "기본 행동 · 쿨타임 없음" : "쿨타임 " + baseCooldown + "회";
     }
