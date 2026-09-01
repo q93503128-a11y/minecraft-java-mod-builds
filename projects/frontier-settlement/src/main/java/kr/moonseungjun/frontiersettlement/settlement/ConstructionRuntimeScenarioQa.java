@@ -12,7 +12,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 import java.lang.reflect.Method;
 
-/** Temporary headless-server QA for pathing and construction-world edge cases. */
+/** Temporary headless-server QA for construction pathing and physical-world edge cases. */
 public final class ConstructionRuntimeScenarioQa {
     private static final int UPDATE = 2;
     private static int checks;
@@ -21,7 +21,7 @@ public final class ConstructionRuntimeScenarioQa {
     private ConstructionRuntimeScenarioQa() {}
 
     public static void onServerStarted(ServerStartedEvent event) {
-        System.out.println("FRONTIER_CONSTRUCTION_RUNTIME_QA_V1");
+        System.out.println("FRONTIER_CONSTRUCTION_RUNTIME_QA_V2");
         try {
             run(event.getServer().overworld());
         } catch (Throwable t) {
@@ -37,53 +37,81 @@ public final class ConstructionRuntimeScenarioQa {
         int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
         BlockPos base = new BlockPos(0, Math.max(80, surface + 8), 0);
 
-        testBasicNavigation(level, base);
-        testExactScaffoldNavigation(level, base.offset(48, 0, 0));
-        testBlockedDestinationFallback(level, base.offset(96, 0, 0));
-        testSafeConstructionReplacement(level, base.offset(144, 0, 0));
-        testForeignContainerRejected(level, base.offset(176, 0, 0));
-        testScaffoldCoverageRequiresUsableGround(level, base.offset(224, 0, 0));
+        Method exactMove = SettlementConstructionService.class.getDeclaredMethod(
+                "moveToReachable", FrontierWorkerEntity.class, BlockPos.class, double.class);
+        exactMove.setAccessible(true);
+        Method interactionMove = SettlementConstructionService.class.getDeclaredMethod(
+                "moveTowardInteraction", ServerLevel.class, FrontierWorkerEntity.class, BlockPos.class, double.class);
+        interactionMove.setAccessible(true);
+
+        testBasicNavigation(level, base, exactMove);
+        testExactScaffoldNavigation(level, base.offset(48, 0, 0), exactMove);
+        testPartialPathRejected(level, base.offset(96, 0, 0), exactMove);
+        testContainerApproachPathing(level, base.offset(144, 0, 0), interactionMove);
+        testSafeConstructionReplacement(level, base.offset(192, 0, 0));
+        testForeignContainerRejected(level, base.offset(224, 0, 0));
+        testScaffoldCoverageRequiresEntry(level, base.offset(272, 0, 0));
     }
 
-    private static void testBasicNavigation(ServerLevel level, BlockPos base) {
+    private static void testBasicNavigation(ServerLevel level, BlockPos base, Method exactMove) throws Exception {
         resetFlatArena(level, base, 18, 8);
         FrontierWorkerEntity worker = spawnWorker(level, base.offset(-10, 0, 0));
-        boolean path = worker != null && worker.getNavigation().moveTo(
-                base.getX() + 10.5D, base.getY(), base.getZ() + 0.5D, 1.05D);
-        check("flat_navigation", path);
+        boolean path = worker != null && invokeBoolean(exactMove, worker, base.offset(10, 0, 0), 1.05D);
+        check("exact_flat_path", path);
         if (worker != null) worker.discard();
     }
 
-    private static void testExactScaffoldNavigation(ServerLevel level, BlockPos base) {
+    private static void testExactScaffoldNavigation(ServerLevel level, BlockPos base, Method exactMove) throws Exception {
         int[][] starts = {{0, -10}, {10, 0}, {0, 10}, {-10, 0}};
         for (int i = 0; i < starts.length; i++) {
             resetFlatArena(level, base, 18, 12);
             BlockPos topWork = buildExactScaffold(level, base);
             FrontierWorkerEntity worker = spawnWorker(level, base.offset(starts[i][0], 0, starts[i][1]));
-            boolean path = worker != null && worker.getNavigation().moveTo(
-                    topWork.getX() + 0.5D, topWork.getY(), topWork.getZ() + 0.5D, 1.05D);
-            check("scaffold_navigation_cardinal_" + i, path);
+            boolean path = worker != null && invokeBoolean(exactMove, worker, topWork, 1.05D);
+            check("exact_scaffold_path_cardinal_" + i, path);
             if (worker != null) worker.discard();
         }
     }
 
-    private static void testBlockedDestinationFallback(ServerLevel level, BlockPos base) {
+    /** The old moveTo(double,double,double) accepted this as a partial path. Exact-path authority must reject it. */
+    private static void testPartialPathRejected(ServerLevel level, BlockPos base, Method exactMove) throws Exception {
         resetFlatArena(level, base, 24, 8);
         BlockPos blocked = base.offset(-7, 0, 0);
-        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
-            if (dx == 0 && dz == 0) continue;
-            level.setBlock(blocked.offset(dx, 0, dz), Blocks.COBBLESTONE.defaultBlockState(), UPDATE);
-            level.setBlock(blocked.offset(dx, 1, dz), Blocks.COBBLESTONE.defaultBlockState(), UPDATE);
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            if (Math.abs(dx) != 2 && Math.abs(dz) != 2) continue;
+            for (int y = 0; y <= 2; y++) {
+                level.setBlock(blocked.offset(dx, y, dz), Blocks.COBBLESTONE.defaultBlockState(), UPDATE);
+            }
         }
         FrontierWorkerEntity worker = spawnWorker(level, base.offset(0, 0, -10));
-        boolean blockedPath = worker != null && worker.getNavigation().moveTo(
-                blocked.getX() + 0.5D, blocked.getY(), blocked.getZ() + 0.5D, 1.05D);
+        boolean blockedExact = worker != null && invokeBoolean(exactMove, worker, blocked, 1.05D);
         if (worker != null) worker.getNavigation().stop();
-        BlockPos alternate = base.offset(7, 0, 0);
-        boolean alternatePath = worker != null && worker.getNavigation().moveTo(
-                alternate.getX() + 0.5D, alternate.getY(), alternate.getZ() + 0.5D, 1.05D);
-        check("blocked_destination_rejected", !blockedPath);
-        check("alternate_destination_pathable", alternatePath);
+        boolean alternate = worker != null && invokeBoolean(exactMove, worker, base.offset(8, 0, 0), 1.05D);
+        check("partial_path_rejected", !blockedExact);
+        check("alternate_exact_path_selected", alternate);
+        if (worker != null) worker.discard();
+    }
+
+    private static void testContainerApproachPathing(ServerLevel level, BlockPos base, Method interactionMove) throws Exception {
+        resetFlatArena(level, base, 24, 8);
+        BlockPos barrel = base.offset(8, 0, 0);
+        level.setBlock(barrel, Blocks.BARREL.defaultBlockState(), UPDATE);
+        FrontierWorkerEntity worker = spawnWorker(level, base.offset(-10, 0, 0));
+        boolean accessible = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
+        check("container_uses_reachable_adjacent_cell", accessible);
+        if (worker != null) worker.discard();
+
+        resetFlatArena(level, base, 24, 8);
+        level.setBlock(barrel, Blocks.BARREL.defaultBlockState(), UPDATE);
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            if (Math.abs(dx) != 2 && Math.abs(dz) != 2) continue;
+            for (int y = 0; y <= 3; y++) {
+                level.setBlock(barrel.offset(dx, y, dz), Blocks.COBBLESTONE.defaultBlockState(), UPDATE);
+            }
+        }
+        worker = spawnWorker(level, base.offset(-10, 0, 0));
+        boolean sealed = worker != null && invokeBoolean(interactionMove, level, worker, barrel, 1.10D);
+        check("sealed_container_rejected", !sealed);
         if (worker != null) worker.discard();
     }
 
@@ -95,19 +123,15 @@ public final class ConstructionRuntimeScenarioQa {
 
         BlockPos air = base;
         check("replace_air", invokeBoolean(replace, level, air, level.getBlockState(air)));
-
         BlockPos snow = base.offset(2, 0, 0);
         level.setBlock(snow, Blocks.SNOW.defaultBlockState(), UPDATE);
         check("replace_snow", invokeBoolean(replace, level, snow, level.getBlockState(snow)));
-
         BlockPos stone = base.offset(4, 0, 0);
         level.setBlock(stone, Blocks.STONE.defaultBlockState(), UPDATE);
         check("protect_solid", !invokeBoolean(replace, level, stone, level.getBlockState(stone)));
-
         BlockPos water = base.offset(0, 0, 3);
         level.setBlock(water, Blocks.WATER.defaultBlockState(), UPDATE);
         check("protect_fluid", !invokeBoolean(replace, level, water, level.getBlockState(water)));
-
         BlockPos chest = base.offset(3, 0, 3);
         level.setBlock(chest, Blocks.CHEST.defaultBlockState(), UPDATE);
         check("protect_block_entity", !invokeBoolean(replace, level, chest, level.getBlockState(chest)));
@@ -123,13 +147,12 @@ public final class ConstructionRuntimeScenarioQa {
         level.setBlock(foreign, Blocks.CHEST.defaultBlockState(), UPDATE);
         Object result = ensure.invoke(null, level, foreign);
         check("foreign_container_not_adopted", result == null && level.getBlockState(foreign).is(Blocks.CHEST));
-
         BlockPos empty = base.offset(3, 0, 0);
         Object created = ensure.invoke(null, level, empty);
         check("empty_site_creates_barrel", created instanceof Container && level.getBlockState(empty).is(Blocks.BARREL));
     }
 
-    private static void testScaffoldCoverageRequiresUsableGround(ServerLevel level, BlockPos base) throws Exception {
+    private static void testScaffoldCoverageRequiresEntry(ServerLevel level, BlockPos base) throws Exception {
         Method coverage = SettlementConstructionService.class.getDeclaredMethod(
                 "hasFreshScaffoldCoverage", ServerLevel.class, BuildingType.class, BlockPos.class, BuildingRotation.class);
         coverage.setAccessible(true);
@@ -138,20 +161,20 @@ public final class ConstructionRuntimeScenarioQa {
             for (BuildingRotation rotation : BuildingRotation.values()) {
                 int width = rotation.rotatedWidth(type);
                 int depth = rotation.rotatedDepth(type);
-                BlockPos origin = base.offset(0, 0, 0);
+                BlockPos origin = base;
+                int radius = Math.max(28, Math.max(width, depth) + 12);
 
-                resetFlatArena(level, origin.offset(width / 2, 0, depth / 2), Math.max(24, Math.max(width, depth) + 10), 18);
+                resetFlatArena(level, origin.offset(width / 2, 0, depth / 2), radius, 18);
                 boolean flat = invokeBoolean(coverage, level, type, origin, rotation);
                 check("coverage_flat_" + type.id() + "_" + rotation.id(), flat);
 
-                clearArena(level, origin.offset(width / 2, 0, depth / 2), Math.max(24, Math.max(width, depth) + 10), 18);
-                // Keep only the already-validated building/grading footprint supported. Scaffold towers
-                // remain physically placeable in air, but have no walkable ground approach.
-                for (int x = -1; x <= width; x++) for (int z = -1; z <= depth; z++) {
-                    level.setBlock(origin.offset(x, -1, z), Blocks.STONE.defaultBlockState(), UPDATE);
+                clearArena(level, origin.offset(width / 2, 0, depth / 2), radius, 18);
+                boolean hasHigh = false;
+                for (BuildingBlueprints.Placement placement : RotatedBlueprints.create(type, origin, rotation.id())) {
+                    if (placement.pos().getY() - origin.getY() > 3) { hasHigh = true; break; }
                 }
-                boolean cliff = invokeBoolean(coverage, level, type, origin, rotation);
-                check("coverage_cliff_rejected_" + type.id() + "_" + rotation.id(), !cliff);
+                boolean unsupported = invokeBoolean(coverage, level, type, origin, rotation);
+                check("coverage_void_semantics_" + type.id() + "_" + rotation.id(), hasHigh ? !unsupported : unsupported);
             }
         }
     }
@@ -164,6 +187,7 @@ public final class ConstructionRuntimeScenarioQa {
         FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         worker.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
         worker.setNoAi(false);
+        worker.setOnGround(true);
         return level.addFreshEntity(worker) ? worker : null;
     }
 
