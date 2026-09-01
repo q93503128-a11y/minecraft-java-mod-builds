@@ -33,13 +33,18 @@ public final class SettlementContextService {
                         : gradeTotal + Math.max(0, construction.buildStep());
                 projectProgress = percent(worked, gradeTotal + buildTotal);
                 projectLabel = type.displayName() + " 공사";
+                String constructionDetail = construction.grading()
+                        ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반"
+                        : "자재 운반·시공 중";
+                String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
+                if (!constructionIssue.isBlank()) constructionDetail += " · " + constructionIssue;
                 targets.add(new SettlementContextTarget(
                         "construction", "construction",
                         construction.originX(), construction.originY() - 2, construction.originZ(),
                         construction.originX() + width - 1, construction.originY() + type.clearHeight() + 2,
                         construction.originZ() + depth - 1,
                         construction.originX() + width / 2, construction.originY() + 1, construction.originZ() + depth / 2,
-                        type.displayName(), construction.grading() ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반" : "자재 운반·시공 중", projectProgress));
+                        type.displayName(), constructionDetail, projectProgress));
             }
         } else if (data.roadConstruction().active()) {
             RoadConstructionState road = data.roadConstruction();

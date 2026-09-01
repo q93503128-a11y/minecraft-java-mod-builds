@@ -109,7 +109,20 @@ public final class SettlementCommands {
         player.sendSystemMessage(Component.literal("개척 지식 | 정찰 "+SettlementExplorationBenefitService.surveyLevel(data)+" / 3 | 정복 "+SettlementExplorationBenefitService.conquestLevel(data)+" / 2 | 새 전초 실물 비용 목재 "+SettlementExplorationBenefitService.outpostWoodCost(data)+" · 석재 "+SettlementExplorationBenefitService.outpostStoneCost(data)+" | 반복 발견/정복 보너스 없음"));
         if(!data.roads().isEmpty()){RoadSegment last=data.roads().getLast();player.sendSystemMessage(Component.literal("최근 도로 끝점 | "+last.end().getX()+", "+last.end().getY()+", "+last.end().getZ()));}
         if(!data.outposts().isEmpty()){OutpostRecord last=data.outposts().getLast();player.sendSystemMessage(Component.literal("최근 전초기지 | "+last.centerX()+", "+last.centerY()+", "+last.centerZ()+" | 특화 "+SettlementFishingOutpostService.specializationDisplayName(server.overworld(),last)));}
-        ConstructionState c=data.construction(); if(c.active()){BuildingType t=BuildingType.fromId(c.type()); if(t!=null){int total=SettlementConstructionService.totalSteps(t,c.origin());player.sendSystemMessage(Component.literal("공사 중 | "+t.displayName()+" "+(total<=0?0:Math.min(100,c.step()*100/total))+"%"));}}
+        ConstructionState c=data.construction();
+        if(c.active()){
+            BuildingType t=BuildingType.fromId(c.type());
+            if(t!=null){
+                int buildTotal=SettlementConstructionService.totalSteps(t,c.origin(),c.rotation());
+                int gradeTotal=SettlementConstructionService.gradingSteps(server.overworld(),c,t);
+                int worked=c.grading()?Math.min(gradeTotal,Math.max(0,c.gradeStep())):gradeTotal+Math.max(0,c.buildStep());
+                int total=gradeTotal+buildTotal;
+                int progress=total<=0?0:Math.max(0,Math.min(100,worked*100/total));
+                String issue=SettlementConstructionService.constructionIssue(server,data);
+                player.sendSystemMessage(Component.literal("공사 중 | "+t.displayName()+" "+progress+"% | "+SettlementConstructionService.phaseLabel(c)
+                        +(issue.isBlank()?"":" | "+issue)));
+            }
+        }
         RoadConstructionState road=data.roadConstruction(); if(road.active()){int total=SettlementRoadService.totalSteps(road);player.sendSystemMessage(Component.literal("도로 공사 중 | "+(total<=0?0:Math.min(100,road.step()*100/total))+"%"));}
         OutpostConstructionState o=data.outpostConstruction(); if(o.active()){int total=SettlementOutpostService.totalSteps(o);player.sendSystemMessage(Component.literal("전초기지 공사 중 | "+(total<=0?0:Math.min(100,o.step()*100/total))+"%"));}
         return 1;

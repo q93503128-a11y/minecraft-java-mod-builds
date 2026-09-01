@@ -158,6 +158,9 @@ public final class SettlementConstructionService {
                 return invalidPlacement("건물 주변 1블록까지 부지 정리가 가능한 공간이 필요합니다. 물·보호된 블록·깊은 절벽·미로드 경계를 피해 다시 지정해 주세요.");
             }
         }
+        if (!hasFreshScaffoldCoverage(level, type, site.origin(), rotation)) {
+            return invalidPlacement("고층 시공용 작업 발판을 확보할 공간이 부족합니다. 건물 바깥 3~4블록의 나무·바위·기존 구조물을 비우거나 위치를 옮겨 주세요.");
+        }
         String message = "배치 가능";
         if (site.terrainWork()) {
             message += " · 지형 공사 포함";
@@ -269,7 +272,7 @@ public final class SettlementConstructionService {
         BlockPos target = placement.pos();
         if (!level.hasChunkAt(target)) return false;
         BlockState current = level.getBlockState(target);
-        if (!current.isAir() && !current.is(placement.state().getBlock())) {
+        if (!current.is(placement.state().getBlock()) && !canReplaceConstructionTarget(level, target, current)) {
             builder.getNavigation().stop();
             return false;
         }
@@ -283,7 +286,7 @@ public final class SettlementConstructionService {
         }
 
         boolean placedNow = false;
-        if (current.isAir()) {
+        if (!current.is(placement.state().getBlock())) {
             if (!level.setBlock(target, placement.state(), NORMAL_BLOCK_UPDATE)) return false;
             placedNow = true;
         }
@@ -655,6 +658,82 @@ public final class SettlementConstructionService {
         };
     }
 
+    public static String constructionIssue(MinecraftServer server, SettlementData data) {
+        ConstructionState construction = data.construction();
+        if (!construction.active()) return "";
+        BuildingType type = BuildingType.fromId(construction.type());
+        if (type == null) return "알 수 없는 건물 공사 상태";
+        ServerLevel level = server.overworld();
+        FrontierWorkerEntity builder = findBuilder(level, data);
+        if (builder == null) return "건설 주민 확인 대기 · 마을·창고·현장 주변 청크를 로드하세요";
+
+        if (construction.grading()) {
+            List<GradeCell> gradePlan = createGradePlan(level, construction, type);
+            int gradeStep = construction.gradeStep();
+            if (gradeStep < gradePlan.size() && !canGradeCell(level, construction, type, gradePlan.get(gradeStep))) {
+                BlockPos pos = gradePlan.get(gradeStep).floor();
+                return "부지 정리 막힘 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
+                        + " 주변의 물·보호 블록·깊은 지형을 확인하세요";
+            }
+            return "";
+        }
+
+        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(
+                type, construction.origin(), construction.rotation());
+        BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+        if (!level.hasChunkAt(supply)) {
+            return "현장 자재통 청크 미로드 · " + supply.getX() + ", " + supply.getY() + ", " + supply.getZ();
+        }
+        BlockState supplyState = level.getBlockState(supply);
+        if (!(supplyState.is(Blocks.BARREL) && level.getBlockEntity(supply) instanceof Container)
+                && (level.getBlockEntity(supply) != null || !supplyState.getFluidState().isEmpty()
+                || (!supplyState.isAir() && !supplyState.canBeReplaced()))) {
+            return "현장 자재통 위치 막힘 · " + supply.getX() + ", " + supply.getY() + ", " + supply.getZ();
+        }
+
+        int step = construction.buildStep();
+        if (step < plan.size()) {
+            BuildingBlueprints.Placement placement = plan.get(step);
+            BlockPos pos = placement.pos();
+            if (!level.hasChunkAt(pos)) {
+                return "다음 시공 위치 청크 미로드 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            }
+            BlockState current = level.getBlockState(pos);
+            if (!current.is(placement.state().getBlock()) && !canReplaceConstructionTarget(level, pos, current)) {
+                return "다음 시공 위치 막힘 · " + current.getBlock().getName().getString() + " · "
+                        + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            }
+            Container crate = level.getBlockState(supply).is(Blocks.BARREL)
+                    && level.getBlockEntity(supply) instanceof Container existing ? existing : null;
+            if (crate != null && builder.getMainHandItem().isEmpty()) {
+                long woodDelta = costAtStep(type.woodCost(), step + 1, plan.size())
+                        - costAtStep(type.woodCost(), step, plan.size());
+                long stoneDelta = costAtStep(type.stoneCost(), step + 1, plan.size())
+                        - costAtStep(type.stoneCost(), step, plan.size());
+                if (SettlementInventory.countWood(crate) < woodDelta
+                        && SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood) == null) {
+                    return "건설 목재 대기 · 공동 저장소에 목재를 보충하세요";
+                }
+                if (SettlementInventory.countStone(crate) < stoneDelta
+                        && SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone) == null) {
+                    return "건설 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                }
+            }
+            return "";
+        }
+
+        for (BuildingBlueprints.Placement placement : plan) {
+            BlockPos pos = placement.pos();
+            if (!level.hasChunkAt(pos)) return "마감 위치 청크 미로드 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            BlockState current = level.getBlockState(pos);
+            if (current.is(placement.state().getBlock()) || isRecoverableBlueprintDrift(current, placement.state())
+                    || canReplaceConstructionTarget(level, pos, current)) continue;
+            return "마감 위치 막힘 · " + current.getBlock().getName().getString() + " · "
+                    + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+        }
+        return "";
+    }
+
     /**
      * Explicit safe repair for /frontier normalize. Only a construction that has already consumed
      * every blueprint step is eligible. Air gaps and known self-changing farm/path blocks are repaired;
@@ -691,9 +770,10 @@ public final class SettlementConstructionService {
                 return new NormalizeConstructionResult(true, false, repaired,
                         "예상치 못한 보관/블록 엔티티 보호: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ());
             }
-            if (!current.isAir() && !isRecoverableBlueprintDrift(current, placement.state())) {
+            if (!isRecoverableBlueprintDrift(current, placement.state())
+                    && !canReplaceConstructionTarget(level, pos, current)) {
                 return new NormalizeConstructionResult(true, false, repaired,
-                        "예상치 못한 고체 블록 보호: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
+                        "예상치 못한 고체/유체 블록 보호: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
                                 + " · 직접 확인 후 다시 실행");
             }
             if (!level.setBlock(pos, placement.state(), NORMAL_BLOCK_UPDATE)) {
@@ -742,7 +822,7 @@ public final class SettlementConstructionService {
                 builder.swing(InteractionHand.MAIN_HAND);
                 return false;
             }
-            if (!current.isAir()) {
+            if (!canReplaceConstructionTarget(level, placement.pos(), current)) {
                 builder.getNavigation().stop();
                 return false;
             }
@@ -815,66 +895,99 @@ public final class SettlementConstructionService {
 
     private static Container ensureSupplyCrate(ServerLevel level, BlockPos supply) {
         if (!level.hasChunkAt(supply)) return null;
-        if (level.getBlockEntity(supply) instanceof Container crate) return crate;
         BlockState current = level.getBlockState(supply);
+        if (current.is(Blocks.BARREL) && level.getBlockEntity(supply) instanceof Container crate) return crate;
+        if (level.getBlockEntity(supply) != null || !current.getFluidState().isEmpty()) return null;
         if (!current.isAir() && !current.canBeReplaced()) return null;
         if (!level.setBlock(supply, Blocks.BARREL.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return null;
-        return level.getBlockEntity(supply) instanceof Container crate ? crate : null;
+        return level.getBlockState(supply).is(Blocks.BARREL)
+                && level.getBlockEntity(supply) instanceof Container crate ? crate : null;
     }
 
     private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
                                                      BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
-        BlockPos work = workPositionFor(level, construction, type, placement, builder, supply);
-        double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
-        if (workDistance > WORK_POSITION_REACHED_SQR) {
-            builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
-            return false;
+        BlockPos target = placement.pos();
+        int relativeY = target.getY() - construction.originY();
+        if (relativeY > 3 && builder.distanceToSqr(
+                target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) <= HIGH_WORK_RANGE_SQR) {
+            return true;
         }
-        if (work.getY() <= construction.originY()) return true;
 
-        double targetDistance = builder.distanceToSqr(
-                placement.pos().getX() + 0.5D, placement.pos().getY() + 0.5D,
-                placement.pos().getZ() + 0.5D);
-        if (targetDistance <= HIGH_WORK_RANGE_SQR) return true;
-
-        // A broad work-position radius must not become a no-navigation dead zone when the
-        // actual high target is still out of reach. Keep moving toward the chosen scaffold.
-        builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D);
+        for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
+            double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+            // Ground work retains the historical wide local envelope as the final compatibility fallback.
+            if (work.getY() <= construction.originY() && workDistance <= WORK_POSITION_REACHED_SQR) return true;
+            // For a high scaffold, keep walking to the actual work point until the target itself is in range.
+            if (builder.getNavigation().moveTo(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D, 1.05D)) return false;
+        }
+        builder.getNavigation().stop();
         return false;
     }
 
-    private static BlockPos workPositionFor(ServerLevel level, ConstructionState construction, BuildingType type,
-                                            BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+    private static List<BlockPos> workPositionsFor(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                   BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
         BlockPos target = placement.pos();
         int relativeY = target.getY() - construction.originY();
         BlockPos ground = new BlockPos(target.getX(), construction.originY(), target.getZ());
-        if (relativeY <= 3) return ground;
+        if (relativeY <= 3) return List.of(ground);
 
+        List<BlockPos> result = new ArrayList<>();
         List<ScaffoldTower> towers = scaffoldTowers(construction.origin(), type, construction.buildingRotation(), supply);
-        BlockPos bestWork = null;
-        double bestBuilderDistance = Double.MAX_VALUE;
         for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
             if (!construction.ownsScaffold(towerIndex)) continue;
             ScaffoldTower tower = towers.get(towerIndex);
             if (!towerUsable(level, tower) || tower.steps().isEmpty()) continue;
             int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
             BlockPos candidate = tower.steps().get(index).above();
-            double dx = (double) candidate.getX() + 0.5D - ((double) target.getX() + 0.5D);
-            double dy = (double) candidate.getY() - ((double) target.getY() + 0.5D);
-            double dz = (double) candidate.getZ() + 0.5D - ((double) target.getZ() + 0.5D);
-            double targetDistance = dx * dx + dy * dy + dz * dz;
-            if (targetDistance > HIGH_WORK_RANGE_SQR) continue;
-
-            // If several claimed towers can reach this block, stay near the builder instead of
-            // forcing a cross-building scaffold transfer for every alternating roof placement.
-            double builderDistance = builder.distanceToSqr(
-                    candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
-            if (builderDistance < bestBuilderDistance) {
-                bestBuilderDistance = builderDistance;
-                bestWork = candidate;
-            }
+            if (targetDistanceSqr(candidate, target) <= HIGH_WORK_RANGE_SQR) result.add(candidate);
         }
-        return bestWork == null ? ground : bestWork;
+        result.sort(Comparator.comparingDouble(pos -> builder.distanceToSqr(
+                pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
+        // If every scaffold route is temporarily unavailable, preserve the old ground fallback so an
+        // existing save is never made stricter by this hotfix.
+        result.add(ground);
+        return List.copyOf(result);
+    }
+
+    private static double targetDistanceSqr(BlockPos work, BlockPos target) {
+        double dx = (double) work.getX() + 0.5D - ((double) target.getX() + 0.5D);
+        double dy = (double) work.getY() - ((double) target.getY() + 0.5D);
+        double dz = (double) work.getZ() + 0.5D - ((double) target.getZ() + 0.5D);
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private static boolean hasFreshScaffoldCoverage(ServerLevel level, BuildingType type,
+                                                     BlockPos origin, BuildingRotation rotation) {
+        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, origin, rotation.id());
+        BlockPos supply = supplyPosition(origin, type, rotation);
+        List<ScaffoldTower> towers = scaffoldTowers(origin, type, rotation, supply);
+        boolean[] available = new boolean[towers.size()];
+        for (int i = 0; i < towers.size(); i++) available[i] = canClaimFreshTower(level, towers.get(i));
+
+        for (BuildingBlueprints.Placement placement : plan) {
+            int relativeY = placement.pos().getY() - origin.getY();
+            if (relativeY <= 3) continue;
+            boolean covered = false;
+            for (int i = 0; i < towers.size(); i++) {
+                if (!available[i]) continue;
+                ScaffoldTower tower = towers.get(i);
+                if (tower.steps().isEmpty()) continue;
+                int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
+                BlockPos candidate = tower.steps().get(index).above();
+                if (targetDistanceSqr(candidate, placement.pos()) <= HIGH_WORK_RANGE_SQR) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) return false;
+        }
+        return true;
+    }
+
+    private static boolean canReplaceConstructionTarget(ServerLevel level, BlockPos pos, BlockState state) {
+        return level.getBlockEntity(pos) == null
+                && state.getFluidState().isEmpty()
+                && (state.isAir() || state.canBeReplaced());
     }
 
     private static void ensureConstructionScaffolds(ServerLevel level, SettlementData data,
