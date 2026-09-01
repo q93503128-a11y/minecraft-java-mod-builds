@@ -19,7 +19,8 @@ import java.util.UUID;
 
 /**
  * Atomic authority for settling a completed battle into campaign progression.
- * Rewards, challenge grants and the durable transaction marker either all save together or the runtime rolls back.
+ * Rewards, equipment drops, challenge grants and the durable transaction marker either all save together
+ * or the runtime rolls back.
  */
 public final class RewardGrantService {
     private static final String TX_MARK_KEY = "__turnbound_reward_tx";
@@ -103,6 +104,7 @@ public final class RewardGrantService {
                     : CampaignProgressStore.commit(playerId, encounterId, outcome);
             if (!EndgameEncounterCatalog.contains(encounterId)) {
                 CampaignSupplementalRewardService.apply(playerId, encounterId, reward);
+                EquipmentDropService.commit(playerId, transactionId, CampaignProgressStore.canonicalEncounterId(encounterId), reward);
             }
             List<String> challenges = ChallengeService.evaluateAndCommit(playerId, encounterId, state, outcome);
             markCommitted(playerId, transactionId);
