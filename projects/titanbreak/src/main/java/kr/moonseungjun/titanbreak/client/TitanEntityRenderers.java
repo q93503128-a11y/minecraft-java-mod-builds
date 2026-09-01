@@ -27,6 +27,10 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModEntities.SIPHON.get(), context -> new GeoEntityRenderer<>(context, ModEntities.SIPHON.get()).withScale(1.09F));
         event.registerEntityRenderer(ModEntities.CHRONO_HOUND.get(), context -> new GeoEntityRenderer<>(context, ModEntities.CHRONO_HOUND.get()).withScale(1.12F));
         event.registerEntityRenderer(ModEntities.NULL_EYE.get(), context -> new GeoEntityRenderer<>(context, ModEntities.NULL_EYE.get()).withScale(1.10F));
+        event.registerEntityRenderer(ModEntities.IRON_MAW.get(), context -> new GeoEntityRenderer<>(context, ModEntities.IRON_MAW.get()).withScale(1.24F));
+        event.registerEntityRenderer(ModEntities.REVENANT.get(), context -> new GeoEntityRenderer<>(context, ModEntities.REVENANT.get()).withScale(1.14F));
+        event.registerEntityRenderer(ModEntities.APEX_STALKER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.APEX_STALKER.get()).withScale(1.10F));
+        event.registerEntityRenderer(ModEntities.SHOCK_CHOIR.get(), context -> new GeoEntityRenderer<>(context, ModEntities.SHOCK_CHOIR.get()).withScale(1.16F));
         event.registerEntityRenderer(ModEntities.THE_PURSUER.get(), PursuerRenderer::new);
     }
 }

@@ -1,5 +1,6 @@
 package kr.moonseungjun.titanbreak.world;
 
+import kr.moonseungjun.titanbreak.entity.ApexStalkerEntity;
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
 import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
 import kr.moonseungjun.titanbreak.entity.BurstlingEntity;
@@ -8,12 +9,15 @@ import kr.moonseungjun.titanbreak.entity.CinderEntity;
 import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
+import kr.moonseungjun.titanbreak.entity.IronMawEntity;
 import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
 import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
+import kr.moonseungjun.titanbreak.entity.RevenantEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
+import kr.moonseungjun.titanbreak.entity.ShockChoirEntity;
 import kr.moonseungjun.titanbreak.entity.SiphonEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
@@ -54,35 +58,30 @@ public final class EncounterDirector {
             "ripper", "skitter", "bulwark", "spitter", "needler", "glider", "howler", "jammer",
             "voltaic", "cinder", "regrower", "burrower", "crusher", "stalker", "burstling", "siphon"
     };
-    private static final String[] ELITE_SPECIES = {"chrono_hound", "null_eye"};
+    private static final String[] ELITE_SPECIES = {
+            "chrono_hound", "null_eye", "iron_maw", "revenant", "apex_stalker", "shock_choir"
+    };
 
     private static final Map<UUID, RuntimeState> RUNTIME = new ConcurrentHashMap<>();
-
     private EncounterDirector() {}
 
     public static void tick(ServerPlayer player, TitanPlayerData.State progression) {
-        if (!(player.level() instanceof ServerLevel level)
-                || player.isCreative() || player.isSpectator()
+        if (!(player.level() instanceof ServerLevel level) || player.isCreative() || player.isSpectator()
                 || level.getDifficulty() == Difficulty.PEACEFUL) return;
-
         long now = level.getGameTime();
-        RuntimeState runtime = RUNTIME.computeIfAbsent(player.getUUID(), ignored ->
-                new RuntimeState(now + INTRO_DELAY,
-                        now + 240L + player.getRandom().nextInt(180),
-                        now + ELITE_MIN_DELAY + player.getRandom().nextInt(500)));
-
+        RuntimeState runtime = RUNTIME.computeIfAbsent(player.getUUID(), ignored -> new RuntimeState(
+                now + INTRO_DELAY, now + 240L + player.getRandom().nextInt(180),
+                now + ELITE_MIN_DELAY + player.getRandom().nextInt(500)));
         if (!runtime.introSent && now >= runtime.introTick) {
             runtime.introSent = true;
             player.sendSystemMessage(Component.translatable("message.titanbreak.hunt_intro"));
         }
-
         if (bossReady(progression) && !progression.hasBossFirstKill("the_pursuer")) tickBoss(player, level, runtime, now);
         if (player.getHealth() <= player.getMaxHealth() * 0.35F || now < runtime.nextNormalTick) return;
 
         int nearbyNormal = countNearby(level, player, false, 72.0D);
         int nearbyElite = countNearby(level, player, true, 88.0D);
-        boolean elitesUnlocked = progression.normalFirstKillCount() >= NORMAL_SPECIES.length
-                && !progression.installedView().isEmpty();
+        boolean elitesUnlocked = progression.normalFirstKillCount() >= NORMAL_SPECIES.length && !progression.installedView().isEmpty();
         if (elitesUnlocked && progression.eliteFirstKillCount() < ELITE_SPECIES.length
                 && now >= runtime.nextEliteTick && nearbyElite < ELITE_CAP) {
             String species = chooseUndiscoveredElite(player, progression);
@@ -99,10 +98,9 @@ public final class EncounterDirector {
             runtime.nextNormalTick = now + 180L;
             return;
         }
-
         int room = NORMAL_CAP - nearbyNormal;
-        int desired = progression.normalFirstKillCount() < NORMAL_SPECIES.length
-                ? 1 : Math.min(room, 1 + player.getRandom().nextInt(progression.adaptationLevel() >= 4 ? 3 : 2));
+        int desired = progression.normalFirstKillCount() < NORMAL_SPECIES.length ? 1
+                : Math.min(room, 1 + player.getRandom().nextInt(progression.adaptationLevel() >= 4 ? 3 : 2));
         int spawned = 0;
         String firstSpecies = null;
         for (int i = 0; i < desired; i++) {
@@ -120,10 +118,7 @@ public final class EncounterDirector {
     }
 
     private static void tickBoss(ServerPlayer player, ServerLevel level, RuntimeState runtime, long now) {
-        if (hasNearbyPursuer(level, player)) {
-            runtime.bossSpawnTick = -1L;
-            return;
-        }
+        if (hasNearbyPursuer(level, player)) { runtime.bossSpawnTick = -1L; return; }
         if (runtime.bossSpawnTick == 0L) {
             runtime.bossSpawnTick = now + BOSS_WARNING_DELAY;
             player.sendSystemMessage(Component.translatable("message.titanbreak.pursuer_warning"));
@@ -141,8 +136,7 @@ public final class EncounterDirector {
     private static boolean bossReady(TitanPlayerData.State progression) {
         return progression.normalFirstKillCount() >= NORMAL_SPECIES.length
                 && progression.eliteFirstKillCount() >= ELITE_SPECIES.length
-                && progression.installedView().size() >= 2
-                && progression.adaptationLevel() >= 4;
+                && progression.installedView().size() >= 2 && progression.adaptationLevel() >= 4;
     }
 
     private static String chooseNormal(ServerPlayer player, TitanPlayerData.State progression, boolean preferUndiscovered) {
@@ -163,29 +157,20 @@ public final class EncounterDirector {
 
     private static boolean spawnSpecies(ServerLevel level, ServerPlayer player, String species, int minRange, int maxRange) {
         EntityType<?> type = switch (species) {
-            case "ripper" -> ModEntities.RIPPER.get();
-            case "skitter" -> ModEntities.SKITTER.get();
-            case "bulwark" -> ModEntities.BULWARK.get();
-            case "spitter" -> ModEntities.SPITTER.get();
-            case "needler" -> ModEntities.NEEDLER.get();
-            case "glider" -> ModEntities.GLIDER.get();
-            case "howler" -> ModEntities.HOWLER.get();
-            case "jammer" -> ModEntities.JAMMER.get();
-            case "voltaic" -> ModEntities.VOLTAIC.get();
-            case "cinder" -> ModEntities.CINDER.get();
-            case "regrower" -> ModEntities.REGROWER.get();
-            case "burrower" -> ModEntities.BURROWER.get();
-            case "crusher" -> ModEntities.CRUSHER.get();
-            case "stalker" -> ModEntities.STALKER.get();
-            case "burstling" -> ModEntities.BURSTLING.get();
-            case "siphon" -> ModEntities.SIPHON.get();
-            case "chrono_hound" -> ModEntities.CHRONO_HOUND.get();
-            case "null_eye" -> ModEntities.NULL_EYE.get();
-            case "the_pursuer" -> ModEntities.THE_PURSUER.get();
-            default -> null;
+            case "ripper" -> ModEntities.RIPPER.get(); case "skitter" -> ModEntities.SKITTER.get();
+            case "bulwark" -> ModEntities.BULWARK.get(); case "spitter" -> ModEntities.SPITTER.get();
+            case "needler" -> ModEntities.NEEDLER.get(); case "glider" -> ModEntities.GLIDER.get();
+            case "howler" -> ModEntities.HOWLER.get(); case "jammer" -> ModEntities.JAMMER.get();
+            case "voltaic" -> ModEntities.VOLTAIC.get(); case "cinder" -> ModEntities.CINDER.get();
+            case "regrower" -> ModEntities.REGROWER.get(); case "burrower" -> ModEntities.BURROWER.get();
+            case "crusher" -> ModEntities.CRUSHER.get(); case "stalker" -> ModEntities.STALKER.get();
+            case "burstling" -> ModEntities.BURSTLING.get(); case "siphon" -> ModEntities.SIPHON.get();
+            case "chrono_hound" -> ModEntities.CHRONO_HOUND.get(); case "null_eye" -> ModEntities.NULL_EYE.get();
+            case "iron_maw" -> ModEntities.IRON_MAW.get(); case "revenant" -> ModEntities.REVENANT.get();
+            case "apex_stalker" -> ModEntities.APEX_STALKER.get(); case "shock_choir" -> ModEntities.SHOCK_CHOIR.get();
+            case "the_pursuer" -> ModEntities.THE_PURSUER.get(); default -> null;
         };
         if (type == null) return false;
-
         for (int attempt = 0; attempt < 10; attempt++) {
             double angle = player.getRandom().nextDouble() * Math.PI * 2.0D;
             int range = minRange + player.getRandom().nextInt(Math.max(1, maxRange - minRange + 1));
@@ -195,7 +180,6 @@ public final class EncounterDirector {
             if ("glider".equals(species)) y += 5 + player.getRandom().nextInt(4);
             BlockPos pos = new BlockPos(x, y, z);
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
-
             Entity entity = type.create(level, EntitySpawnReason.EVENT);
             if (!(entity instanceof Mob mob)) return false;
             mob.setPos(x + 0.5D, y, z + 0.5D);
@@ -218,34 +202,26 @@ public final class EncounterDirector {
     }
 
     private static boolean isNormal(LivingEntity entity) {
-        return entity instanceof RipperEntity || entity instanceof SkitterEntity
-                || entity instanceof BulwarkEntity || entity instanceof SpitterEntity
-                || entity instanceof NeedlerEntity || entity instanceof GliderEntity
-                || entity instanceof HowlerEntity || entity instanceof JammerEntity
-                || entity instanceof VoltaicEntity || entity instanceof CinderEntity
-                || entity instanceof RegrowerEntity || entity instanceof BurrowerEntity
-                || entity instanceof CrusherEntity || entity instanceof StalkerEntity
-                || entity instanceof BurstlingEntity || entity instanceof SiphonEntity;
+        return entity instanceof RipperEntity || entity instanceof SkitterEntity || entity instanceof BulwarkEntity
+                || entity instanceof SpitterEntity || entity instanceof NeedlerEntity || entity instanceof GliderEntity
+                || entity instanceof HowlerEntity || entity instanceof JammerEntity || entity instanceof VoltaicEntity
+                || entity instanceof CinderEntity || entity instanceof RegrowerEntity || entity instanceof BurrowerEntity
+                || entity instanceof CrusherEntity || entity instanceof StalkerEntity || entity instanceof BurstlingEntity
+                || entity instanceof SiphonEntity;
     }
 
     private static boolean isElite(LivingEntity entity) {
-        return entity instanceof ChronoHoundEntity || entity instanceof NullEyeEntity;
+        return entity instanceof ChronoHoundEntity || entity instanceof NullEyeEntity || entity instanceof IronMawEntity
+                || entity instanceof RevenantEntity || entity instanceof ApexStalkerEntity || entity instanceof ShockChoirEntity;
     }
 
     public static void clear(UUID playerId) { RUNTIME.remove(playerId); }
     public static void clearAll() { RUNTIME.clear(); }
 
     private static final class RuntimeState {
-        private final long introTick;
-        private boolean introSent;
-        private long nextNormalTick;
-        private long nextEliteTick;
-        private long bossSpawnTick;
-
+        private final long introTick; private boolean introSent; private long nextNormalTick; private long nextEliteTick; private long bossSpawnTick;
         private RuntimeState(long introTick, long nextNormalTick, long nextEliteTick) {
-            this.introTick = introTick;
-            this.nextNormalTick = nextNormalTick;
-            this.nextEliteTick = nextEliteTick;
+            this.introTick = introTick; this.nextNormalTick = nextNormalTick; this.nextEliteTick = nextEliteTick;
         }
     }
 }

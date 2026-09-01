@@ -23,6 +23,10 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Siphon model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Siphon presentation |
 | Chrono Hound model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Chrono Hound presentation |
 | Null Eye model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Null Eye presentation |
+| Iron Maw model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Iron Maw presentation |
+| Revenant model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Revenant presentation |
+| Apex Stalker model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Apex Stalker presentation |
+| Shock Choir model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Shock Choir presentation |
 | The Pursuer model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | first boss presentation |
 
 GeckoLib remains an external engine dependency; creature art in the current alpha is an original implementation baseline so the game does not fall back to vanilla zombie/skeleton/spider models. Later asset replacement must update this registry before it is merged.
