@@ -78,7 +78,7 @@ public final class EndgameBriefingScreen extends Screen {
 
     private void deploy() {
         if (briefing.encounterId().isBlank()) return;
-        ClientPacketDistributor.sendToServer(new MetaCommandPayload("START|" + briefing.encounterId()));
+        ClientPacketDistributor.sendToServer(new MetaCommandPayload("DEPLOY|" + briefing.encounterId()));
     }
 
     private void closeBriefing() {
@@ -132,7 +132,7 @@ public final class EndgameBriefingScreen extends Screen {
         if (!extra.isBlank()) graphics.text(font, Component.literal(extra), x, ry + 18, GREEN, true);
 
         int ruleY = Math.min(top + panelHeight - 83, ry + (extra.isBlank() ? 35 : 50));
-        graphics.text(font, Component.literal(ruleTitle()), x, ruleY, SECONDARY, true);
+        graphics.text(font, Component.literal("BATTLE RULE"), x, ruleY, SECONDARY, true);
         graphics.text(font, Component.literal(ruleLine()), x, ruleY + 16, ruleColor(), false);
         if ("RIFT".equals(briefing.kind())) {
             graphics.text(font, Component.literal("전투 사이 전회복 · 층 입장 전 파티 변경 · Auto / ×2 허용"),
@@ -150,7 +150,6 @@ public final class EndgameBriefingScreen extends Screen {
         };
     }
 
-    private String ruleTitle() { return "BATTLE RULE"; }
     private String ruleLine() {
         if ("HARD".equals(briefing.kind())) return "HP ×1.65 · ATK ×1.25 · DEF ×1.15 · SPD +8 · 소환 적 Lv +5";
         if ("RIFT".equals(briefing.kind()) && briefing.hardPattern()) return "보스 강화 패턴 · Floor 표기 Lv 기준";
