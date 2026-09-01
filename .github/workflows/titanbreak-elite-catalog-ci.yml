@@ -1,0 +1,93 @@
+name: TITANBREAK Elite Catalog CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-elite-catalog-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  elite-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical elite catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          root = Path('projects/titanbreak/src/main')
+          java = root / 'java/kr/moonseungjun/titanbreak'
+          assets = root / 'resources/assets/titanbreak'
+          director = (java / 'world/EncounterDirector.java').read_text(encoding='utf-8')
+          registry = (java / 'registry/ModEntities.java').read_text(encoding='utf-8')
+          rewards = (java / 'combat/HuntRewardService.java').read_text(encoding='utf-8')
+          ocular = (java / 'client/OcularAnalysisClientService.java').read_text(encoding='utf-8')
+          gradle = Path('projects/titanbreak/gradle.properties').read_text(encoding='utf-8')
+
+          elites = [
+              ('chrono_hound', 'ChronoHoundEntity', 'CHRONO_HOUND'),
+              ('null_eye', 'NullEyeEntity', 'NULL_EYE'),
+              ('iron_maw', 'IronMawEntity', 'IRON_MAW'),
+              ('revenant', 'RevenantEntity', 'REVENANT'),
+              ('apex_stalker', 'ApexStalkerEntity', 'APEX_STALKER'),
+              ('shock_choir', 'ShockChoirEntity', 'SHOCK_CHOIR'),
+              ('siegeback', 'SiegebackEntity', 'SIEGEBACK'),
+              ('phase_lurker', 'PhaseLurkerEntity', 'PHASE_LURKER'),
+              ('warden_node', 'WardenNodeEntity', 'WARDEN_NODE'),
+              ('harvester', 'HarvesterEntity', 'HARVESTER'),
+          ]
+          match = re.search(r'ELITE_SPECIES\s*=\s*\{(?P<body>.*?)\};', director, re.S)
+          assert match, 'ELITE_SPECIES declaration missing'
+          declared = re.findall(r'"([a-z0-9_]+)"', match.group('body'))
+          expected = [row[0] for row in elites]
+          assert declared == expected, f'Elite catalog mismatch: {declared}'
+          assert 'mod_version=0.1.0-alpha.42' in gradle
+
+          for entity_id, cls, holder in elites:
+              source = java / 'entity' / f'{cls}.java'
+              assert source.is_file(), source
+              text = source.read_text(encoding='utf-8')
+              assert 'TitanGeoEntity' in text, cls
+              assert holder in registry, holder
+              assert f'"{entity_id}"' in director, entity_id
+              assert f'speciesKey="{entity_id}"' in rewards or f'speciesKey = "{entity_id}"' in rewards, entity_id
+              assert f'instanceof {cls}' in ocular, f'Ocular analysis missing {cls}'
+              for path in (
+                  assets / 'geckolib/models/entity' / f'{entity_id}.geo.json',
+                  assets / 'geckolib/animations/entity' / f'{entity_id}.animation.json',
+                  assets / 'textures/entity' / f'{entity_id}.png',
+              ):
+                  assert path.is_file(), path
+
+          for path in sorted((assets / 'geckolib/models/entity').glob('*.geo.json')):
+              data = json.loads(path.read_text(encoding='utf-8'))
+              assert 'minecraft:geometry' in data, path
+          for entity_id, _, _ in elites:
+              path = assets / 'geckolib/animations/entity' / f'{entity_id}.animation.json'
+              data = json.loads(path.read_text(encoding='utf-8'))
+              animations = data.get('animations', {})
+              for key in ('misc.idle', 'move.walk', 'attack.swing'):
+                  assert key in animations, (path, key)
+
+          main_en = json.loads((assets / 'lang/en_us.json').read_text(encoding='utf-8'))
+          main_ko = json.loads((assets / 'lang/ko_kr.json').read_text(encoding='utf-8'))
+          overlay_root = root / 'resources/assets/titanbreak_elite/lang'
+          overlay_en = json.loads((overlay_root / 'en_us.json').read_text(encoding='utf-8'))
+          overlay_ko = json.loads((overlay_root / 'ko_kr.json').read_text(encoding='utf-8'))
+          for entity_id, _, _ in elites:
+              key = f'entity.titanbreak.{entity_id}'
+              assert key in main_en or key in overlay_en, ('en', key)
+              assert key in main_ko or key in overlay_ko, ('ko', key)
+          PY
