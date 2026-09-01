@@ -3,15 +3,20 @@ package io.github.q93503128.turnbound.session;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
+import io.github.q93503128.turnbound.content.ChallengeCatalog;
+import io.github.q93503128.turnbound.world.ChallengeService;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class BattleSnapshotCodec {
     private BattleSnapshotCodec() {}
 
-    public static String encode(BattleSession session) {
+    public static String encode(BattleSession session) { return encode(null, session); }
+
+    public static String encode(UUID playerId, BattleSession session) {
         BattleState state = session.state();
         String actor = state.currentActorId() == null ? "" : state.currentActorId();
         StringBuilder out = new StringBuilder();
@@ -58,6 +63,13 @@ public final class BattleSnapshotCodec {
                 .append(result.starEssence()).append('|')
                 .append(safe(String.join(",", result.equipmentRewards()))).append('\n');
         for (String notice : preview.notices()) out.append("N|").append(safe(notice)).append('\n');
+        if (playerId != null && state.outcome() == io.github.q93503128.turnbound.combat.BattleOutcome.ALLY_VICTORY) {
+            for (String challengeId : ChallengeService.preview(playerId, session.encounterId(), state, state.outcome())) {
+                ChallengeCatalog.Challenge challenge = ChallengeCatalog.get(challengeId);
+                out.append("N|").append(safe("CHALLENGE CLEAR · " + challenge.ordinal() + ". " + challenge.label()
+                        + " · Crystal +" + challenge.crystal() + " · Gold +" + challenge.gold())).append('\n');
+            }
+        }
         for (BattleResultSummary.PartyXp member : result.party()) {
             out.append("P|").append(safe(member.characterId())).append('|').append(safe(member.name())).append('|')
                     .append(member.levelBefore()).append('|').append(member.xpBefore()).append('|')
