@@ -20,7 +20,14 @@ import java.util.UUID;
  * This never mutates progression; it makes the pre-close Result page match the authoritative settlement.
  */
 public final class BattleResultPreview {
-    public record View(BattleResultSummary summary, List<String> notices) {
+    public record Notice(String code, String text) {
+        public Notice {
+            code = code == null || code.isBlank() ? "INFO" : code;
+            text = text == null ? "" : text;
+        }
+    }
+
+    public record View(BattleResultSummary summary, List<Notice> notices) {
         public View {
             summary = summary == null ? BattleResultSummary.none() : summary;
             notices = List.copyOf(notices == null ? List.of() : notices);
@@ -41,7 +48,7 @@ public final class BattleResultPreview {
         int crystal = base.crystal();
         int essence = base.starEssence();
         ArrayList<String> equipment = new ArrayList<>(base.equipmentRewards());
-        ArrayList<String> notices = new ArrayList<>();
+        ArrayList<Notice> notices = new ArrayList<>();
 
         // Campaign boss supplemental rewards are committed after CampaignProgressStore.commit().
         if (base.firstClear() && canonical.matches("BATTLE_B0[1-5]")) {
@@ -51,8 +58,8 @@ public final class BattleResultPreview {
             switch (bossId) {
                 case "B01" -> {
                     equipment.add("T2 장비 선택권 ×1");
-                    notices.add("NEW · P08 라제 영입");
-                    notices.add("UNLOCK · Echo Archive");
+                    notices.add(new Notice("CHARACTER_RECRUITED", "신규 영입 · 라제"));
+                    notices.add(new Notice("CONTENT_UNLOCKED", "콘텐츠 개방 · 소환"));
                 }
                 case "B03", "B04" -> equipment.add("T3 장비 선택권 ×1");
                 case "B05" -> equipment.add("T4 장비 선택권 ×1");
@@ -66,16 +73,17 @@ public final class BattleResultPreview {
         gold += quest.gold();
         crystal += quest.crystal();
         for (QuestResultPreview.Completion completion : quest.completions()) {
-            notices.add("MAIN QUEST CLEAR · " + completion.name()
-                    + " · Crystal +" + completion.crystal() + " · Gold +" + completion.gold()
-                    + (completion.xp() > 0 ? " · XP +" + completion.xp() : ""));
+            notices.add(new Notice("MAIN_QUEST_CLEAR", "메인 퀘스트 완료 · " + completion.name()
+                    + " · 크리스탈 +" + completion.crystal() + " · 골드 +" + completion.gold()
+                    + (completion.xp() > 0 ? " · 경험치 +" + completion.xp() : "")));
         }
 
         // Canonical T3 chance drops use the same transaction-derived roll as settlement.
         EquipmentDropService.Drop drop = EquipmentDropService.preview(playerId, transactionId, canonical, base);
         if (drop.present()) {
             equipment.add(drop.tier() + " · " + drop.name());
-            if (drop.queued()) notices.add("INVENTORY FULL · 새 장비가 보상 대기함에 보관됩니다.");
+            if (drop.queued()) notices.add(new Notice("INVENTORY_FULL",
+                    "장비 인벤토리가 가득 찼습니다. 새 장비는 보상 대기함에 보관됩니다."));
         }
 
         // Challenge settlement happens in the same durable reward transaction.
@@ -83,8 +91,8 @@ public final class BattleResultPreview {
             ChallengeCatalog.Challenge challenge = ChallengeCatalog.get(challengeId);
             crystal += challenge.crystal();
             gold += challenge.gold();
-            notices.add("CHALLENGE CLEAR · " + challenge.ordinal() + ". " + challenge.label()
-                    + " · Crystal +" + challenge.crystal() + " · Gold +" + challenge.gold());
+            notices.add(new Notice("CHALLENGE_CLEAR", "도전 완료 · " + challenge.ordinal() + ". " + challenge.label()
+                    + " · 크리스탈 +" + challenge.crystal() + " · 골드 +" + challenge.gold()));
         }
 
         List<BattleResultSummary.PartyXp> party = recomputeParty(playerId, base.party(), xp);
