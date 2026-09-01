@@ -3,7 +3,6 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.TurnboundSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -75,13 +74,9 @@ public final class ClientAudioPlayback {
             Map.Entry<ClientAudioDirector.MusicSlot, MusicLoop> entry = it.next();
             MusicLoop instance = entry.getValue();
             boolean stillRelevant = entry.getKey() == desired || (mix.transitioning() && entry.getKey() == mix.outgoing());
-            if (!stillRelevant) {
+            if (!stillRelevant || instance.isStopped()) {
                 manager.stop(instance);
                 it.remove();
-            } else if (!manager.isActive(instance) && !instance.isStopped()) {
-                // Streaming loops can be recreated if the sound engine was reloaded underneath us.
-                it.remove();
-                ensurePlaying(manager, entry.getKey());
             }
         }
     }
