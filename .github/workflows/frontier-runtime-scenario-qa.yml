@@ -24,6 +24,23 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      - name: Fix temporary patch sequencing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/apply_construction_navigation_hardening.py')
+          s = p.read_text(encoding='utf-8')
+          start = s.index("s = once(s,\n'''            builder.getNavigation().moveTo(source")
+          end = s.index('\n\n# Build-material staging', start)
+          block = s[start:end]
+          block = block.replace('s = once(s,', 's = s.replace(', 1)
+          suffix = ", 'terrain source movement')"
+          if not block.endswith(suffix):
+              raise SystemExit('terrain source movement block shape changed')
+          block = block[:-len(suffix)] + ', 1)'
+          p.write_text(s[:start] + block + s[end:], encoding='utf-8')
+          PY
       - name: Apply exact-path construction hardening
         shell: bash
         run: python projects/frontier-settlement/tools/apply_construction_navigation_hardening.py
