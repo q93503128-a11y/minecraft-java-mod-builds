@@ -125,12 +125,12 @@ public final class EndgameEncounterCatalog {
 
     /** #109 Hard rematch: the story boss enemy level is explicitly +5 before the Hard coefficients. */
     private static CombatantDefinition hardRematchDefinition(String bossId, int storyLevel) {
-        return hardPatternDefinition(bossId, storyLevel + 5, storyLevel, 1.0, " [Hard]");
+        return hardPatternDefinition(bossId, storyLevel + 5, storyLevel, 1.0, " [하드]");
     }
 
     /** #132 Rift: table Level overrides enemy level; HardPattern coefficients apply without another +5 level. */
     private static CombatantDefinition riftHardPatternDefinition(String bossId, int floorLevel, double extraHpFactor) {
-        return hardPatternDefinition(bossId, floorLevel, BOSS_BASE_LEVEL.get(bossId), extraHpFactor, " [HardPattern]");
+        return hardPatternDefinition(bossId, floorLevel, BOSS_BASE_LEVEL.get(bossId), extraHpFactor, " [강화 패턴]");
     }
 
     private static CombatantDefinition hardPatternDefinition(String bossId, int combatLevel, int bossBaseLevel,
