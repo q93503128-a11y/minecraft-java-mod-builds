@@ -1,13 +1,17 @@
 package kr.moonseungjun.titanbreak.combat;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
+import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.CinderEntity;
+import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
 import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
+import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
@@ -95,6 +99,30 @@ public final class HuntRewardService {
             adaptationXp = 25;
             drop(level, victim, ModItems.CAPACITOR_STACK.get(), 1 + victim.getRandom().nextInt(2));
             drop(level, victim, ModItems.COOLING_CELL.get(), 1);
+        } else if (victim instanceof CinderEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "cinder";
+            adaptationXp = 30;
+            drop(level, victim, ModItems.HEAT_SINK.get(), 1 + victim.getRandom().nextInt(2));
+            chanceDrop(level, victim, ModItems.RADIATION_CORE.get(), 1, 0.22F);
+        } else if (victim instanceof RegrowerEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "regrower";
+            adaptationXp = 30;
+            drop(level, victim, ModItems.REGENERATIVE_TISSUE.get(), 1 + victim.getRandom().nextInt(2));
+            chanceDrop(level, victim, ModItems.NANO_MEDIUM.get(), 1, 0.28F);
+        } else if (victim instanceof BurrowerEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "burrower";
+            adaptationXp = 30;
+            drop(level, victim, ModItems.DENSE_BONE_LATTICE.get(), 1);
+            drop(level, victim, ModItems.SYNTHETIC_TENDON.get(), 1 + victim.getRandom().nextInt(2));
+        } else if (victim instanceof CrusherEntity) {
+            huntClass = HuntClass.NORMAL;
+            speciesKey = "crusher";
+            adaptationXp = 35;
+            drop(level, victim, ModItems.IMPACT_CORE.get(), 1 + victim.getRandom().nextInt(2));
+            drop(level, victim, ModItems.COMPOSITE_ARMOR_PLATE.get(), 1 + victim.getRandom().nextInt(2));
         } else if (victim instanceof ChronoHoundEntity) {
             huntClass = HuntClass.ELITE;
             speciesKey = "chrono_hound";

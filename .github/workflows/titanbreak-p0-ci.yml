@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           ROOT=projects/titanbreak/src/main/java/kr/moonseungjun/titanbreak
-          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             test -f "$ROOT/entity/$cls.java"
           done
           test -f "$ROOT/combat/EnemyAttackEffectService.java"
@@ -121,10 +121,10 @@ jobs:
           grep -q 'GeoEntityRenderer' "$JAVA/client/TitanEntityRenderers.java"
           if grep -Eq 'ZombieRenderer|SkeletonRenderer|SpiderRenderer|GiantMobRenderer' "$JAVA/client/TitanEntityRenderers.java"; then
             echo 'A TITANBREAK creature still uses a vanilla mob renderer.' >&2; exit 1; fi
-          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
+          for cls in RipperEntity SkitterEntity BulwarkEntity SpitterEntity NeedlerEntity GliderEntity HowlerEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity ChronoHoundEntity NullEyeEntity PursuerEntity; do
             grep -q 'TitanGeoEntity' "$JAVA/entity/$cls.java"
           done
-          for entity in ripper skitter bulwark spitter needler glider howler jammer voltaic chrono_hound null_eye the_pursuer; do
+          for entity in ripper skitter bulwark spitter needler glider howler jammer voltaic cinder regrower burrower crusher chrono_hound null_eye the_pursuer; do
             test -f "$ASSETS/geckolib/models/entity/$entity.geo.json"
             test -f "$ASSETS/geckolib/animations/entity/$entity.animation.json"
             test -f "$ASSETS/textures/entity/$entity.png"
@@ -151,7 +151,7 @@ jobs:
             grep -q 'screen.titanbreak.fabricator' "$ASSETS/lang/$lang.json"
             grep -q 'screen.titanbreak.surgery' "$ASSETS/lang/$lang.json"
             grep -q 'entity.titanbreak.the_pursuer' "$ASSETS/lang/$lang.json"
-            for entity in spitter glider jammer voltaic; do
+            for entity in spitter glider jammer voltaic cinder regrower burrower crusher; do
               grep -q "entity.titanbreak.$entity" "$ASSETS/lang/$lang.json"
             done
           done
@@ -202,16 +202,15 @@ jobs:
           jar tf "$JAR" | grep -q 'titanbreak.mixins.json'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/augmentation/AugmentationCatalog.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/station/StationService.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/SpitterEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/GliderEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/JammerEntity.class'
-          jar tf "$JAR" | grep -q 'kr/moonseungjun/titanbreak/entity/VoltaicEntity.class'
+          for cls in SpitterEntity GliderEntity JammerEntity VoltaicEntity CinderEntity RegrowerEntity BurrowerEntity CrusherEntity; do
+            jar tf "$JAR" | grep -q "kr/moonseungjun/titanbreak/entity/$cls.class"
+          done
           for block in fabricator_i fabricator_ii fabricator_iii surgical_bay implant_vault; do
             jar tf "$JAR" | grep -q "assets/titanbreak/items/$block.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/blockstates/$block.json"
           done
           jar tf "$JAR" | grep -q 'assets/titanbreak/lang/ko_kr.json'
-          for entity in ripper spitter glider jammer voltaic; do
+          for entity in ripper spitter glider jammer voltaic cinder regrower burrower crusher; do
             jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/models/entity/$entity.geo.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/geckolib/animations/entity/$entity.animation.json"
             jar tf "$JAR" | grep -q "assets/titanbreak/textures/entity/$entity.png"

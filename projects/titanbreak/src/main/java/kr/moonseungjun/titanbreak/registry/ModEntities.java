@@ -3,7 +3,10 @@ package kr.moonseungjun.titanbreak.registry;
 import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
+import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.CinderEntity;
+import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HollowColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
@@ -11,6 +14,7 @@ import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
+import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
@@ -95,6 +99,30 @@ public final class ModEntities {
                     .sized(0.82F, 2.00F).eyeHeight(1.74F).clientTrackingRange(14)
                     .build(key("voltaic")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<CinderEntity>> CINDER =
+            ENTITIES.register("cinder", () -> EntityType.Builder.<CinderEntity>of(
+                            CinderEntity::new, MobCategory.MONSTER)
+                    .sized(0.78F, 1.95F).eyeHeight(1.70F).clientTrackingRange(14)
+                    .build(key("cinder")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<RegrowerEntity>> REGROWER =
+            ENTITIES.register("regrower", () -> EntityType.Builder.<RegrowerEntity>of(
+                            RegrowerEntity::new, MobCategory.MONSTER)
+                    .sized(0.80F, 2.10F).eyeHeight(1.82F).clientTrackingRange(12)
+                    .build(key("regrower")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<BurrowerEntity>> BURROWER =
+            ENTITIES.register("burrower", () -> EntityType.Builder.<BurrowerEntity>of(
+                            BurrowerEntity::new, MobCategory.MONSTER)
+                    .sized(0.84F, 1.55F).eyeHeight(1.25F).clientTrackingRange(14)
+                    .build(key("burrower")));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<CrusherEntity>> CRUSHER =
+            ENTITIES.register("crusher", () -> EntityType.Builder.<CrusherEntity>of(
+                            CrusherEntity::new, MobCategory.MONSTER)
+                    .sized(1.08F, 2.45F).eyeHeight(2.05F).clientTrackingRange(14)
+                    .build(key("crusher")));
+
     public static final DeferredHolder<EntityType<?>, EntityType<ChronoHoundEntity>> CHRONO_HOUND =
             ENTITIES.register("chrono_hound", () -> EntityType.Builder.<ChronoHoundEntity>of(
                             ChronoHoundEntity::new, MobCategory.MONSTER)
@@ -132,68 +160,78 @@ public final class ModEntities {
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(14.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.31D)
                 .build());
-
         event.put(SPITTER.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(110.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(18.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.20D)
                 .build());
-
         event.put(SKITTER.get(), Spider.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(100.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(12.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.43D)
                 .build());
-
         event.put(GLIDER.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(130.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(16.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.28D)
                 .build());
-
         event.put(BULWARK.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(260.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(24.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.15D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.45D)
                 .build());
-
         event.put(NEEDLER.get(), Skeleton.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(90.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(32.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.23D)
                 .build());
-
         event.put(HOWLER.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(150.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(10.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.21D)
                 .build());
-
         event.put(JAMMER.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(140.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(14.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.18D)
                 .build());
-
         event.put(VOLTAIC.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(160.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(20.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.23D)
                 .build());
-
+        event.put(CINDER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(170.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(22.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.21D)
+                .build());
+        event.put(REGROWER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(190.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(16.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.18D)
+                .build());
+        event.put(BURROWER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(180.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(28.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.26D)
+                .build());
+        event.put(CRUSHER.get(), Zombie.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(340.0D))
+                .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(42.0D))
+                .add(Attributes.MOVEMENT_SPEED, 0.17D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.65D)
+                .build());
         event.put(CHRONO_HOUND.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(520.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(36.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.38D)
                 .build());
-
         event.put(NULL_EYE.get(), Zombie.createAttributes()
                 .add(Attributes.MAX_HEALTH, CombatScale.toInternal(430.0D))
                 .add(Attributes.ATTACK_DAMAGE, CombatScale.toInternal(22.0D))
                 .add(Attributes.MOVEMENT_SPEED, 0.20D)
                 .build());
-
         event.put(THE_PURSUER.get(), Giant.createAttributes()
                 .add(Attributes.MAX_HEALTH, 900.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.42D)

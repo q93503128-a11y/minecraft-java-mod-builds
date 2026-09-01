@@ -1,13 +1,17 @@
 package kr.moonseungjun.titanbreak.world;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
+import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.CinderEntity;
+import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
 import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
+import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
@@ -44,8 +48,8 @@ public final class EncounterDirector {
     private static final long BOSS_WARNING_DELAY = 220L;
 
     private static final String[] NORMAL_SPECIES = {
-            "ripper", "skitter", "bulwark", "spitter", "needler",
-            "glider", "howler", "jammer", "voltaic"
+            "ripper", "skitter", "bulwark", "spitter", "needler", "glider", "howler", "jammer",
+            "voltaic", "cinder", "regrower", "burrower", "crusher"
     };
     private static final String[] ELITE_SPECIES = {"chrono_hound", "null_eye"};
 
@@ -176,6 +180,10 @@ public final class EncounterDirector {
             case "howler" -> ModEntities.HOWLER.get();
             case "jammer" -> ModEntities.JAMMER.get();
             case "voltaic" -> ModEntities.VOLTAIC.get();
+            case "cinder" -> ModEntities.CINDER.get();
+            case "regrower" -> ModEntities.REGROWER.get();
+            case "burrower" -> ModEntities.BURROWER.get();
+            case "crusher" -> ModEntities.CRUSHER.get();
             case "chrono_hound" -> ModEntities.CHRONO_HOUND.get();
             case "null_eye" -> ModEntities.NULL_EYE.get();
             case "the_pursuer" -> ModEntities.THE_PURSUER.get();
@@ -220,7 +228,9 @@ public final class EncounterDirector {
                 || entity instanceof BulwarkEntity || entity instanceof SpitterEntity
                 || entity instanceof NeedlerEntity || entity instanceof GliderEntity
                 || entity instanceof HowlerEntity || entity instanceof JammerEntity
-                || entity instanceof VoltaicEntity;
+                || entity instanceof VoltaicEntity || entity instanceof CinderEntity
+                || entity instanceof RegrowerEntity || entity instanceof BurrowerEntity
+                || entity instanceof CrusherEntity;
     }
 
     private static boolean isElite(LivingEntity entity) {

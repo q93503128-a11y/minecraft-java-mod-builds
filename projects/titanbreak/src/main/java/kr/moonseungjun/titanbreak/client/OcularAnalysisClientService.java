@@ -1,7 +1,10 @@
 package kr.moonseungjun.titanbreak.client;
 
 import kr.moonseungjun.titanbreak.entity.BulwarkEntity;
+import kr.moonseungjun.titanbreak.entity.BurrowerEntity;
 import kr.moonseungjun.titanbreak.entity.ChronoHoundEntity;
+import kr.moonseungjun.titanbreak.entity.CinderEntity;
+import kr.moonseungjun.titanbreak.entity.CrusherEntity;
 import kr.moonseungjun.titanbreak.entity.GliderEntity;
 import kr.moonseungjun.titanbreak.entity.HollowColossusEntity;
 import kr.moonseungjun.titanbreak.entity.HowlerEntity;
@@ -9,6 +12,7 @@ import kr.moonseungjun.titanbreak.entity.JammerEntity;
 import kr.moonseungjun.titanbreak.entity.NeedlerEntity;
 import kr.moonseungjun.titanbreak.entity.NullEyeEntity;
 import kr.moonseungjun.titanbreak.entity.PursuerEntity;
+import kr.moonseungjun.titanbreak.entity.RegrowerEntity;
 import kr.moonseungjun.titanbreak.entity.RipperEntity;
 import kr.moonseungjun.titanbreak.entity.SkitterEntity;
 import kr.moonseungjun.titanbreak.entity.SpitterEntity;
@@ -171,6 +175,10 @@ public final class OcularAnalysisClientService {
         if (target instanceof HowlerEntity) return Component.translatable("item.titanbreak.resonant_neural_ganglion");
         if (target instanceof JammerEntity) return Component.translatable("item.titanbreak.calculation_core");
         if (target instanceof VoltaicEntity) return Component.translatable("item.titanbreak.capacitor_stack");
+        if (target instanceof CinderEntity) return Component.translatable("item.titanbreak.heat_sink");
+        if (target instanceof RegrowerEntity) return Component.translatable("item.titanbreak.regenerative_tissue");
+        if (target instanceof BurrowerEntity) return Component.translatable("item.titanbreak.dense_bone_lattice");
+        if (target instanceof CrusherEntity) return Component.translatable("item.titanbreak.impact_core");
         if (target instanceof ChronoHoundEntity) return Component.translatable("item.titanbreak.reaction_temporal_matrix");
         if (target instanceof NullEyeEntity) return Component.translatable("item.titanbreak.thermal_optic_cluster");
         if (target instanceof PursuerEntity) return Component.translatable("item.titanbreak.pursuer_reaction_organ");
@@ -187,6 +195,7 @@ public final class OcularAnalysisClientService {
     public static int thermalStrength(LivingEntity target) {
         if (target == null) return 0;
         int strength = 42;
+        if (target instanceof CinderEntity) strength += 38;
         if (target.isOnFire()) strength += 45;
         strength += (int) Math.min(25.0D, target.getDeltaMovement().length() * 30.0D);
         if (target.getHealth() <= target.getMaxHealth() * 0.35F) strength += 8;
@@ -219,8 +228,11 @@ public final class OcularAnalysisClientService {
         if (target instanceof VoltaicEntity) return 90;
         if (target instanceof JammerEntity) return 82;
         if (target instanceof ChronoHoundEntity) return 78;
+        if (target instanceof CrusherEntity) return 74;
+        if (target instanceof CinderEntity) return 72;
         if (target instanceof NeedlerEntity) return 68;
-        if (target instanceof GliderEntity) return 64;
+        if (target instanceof GliderEntity || target instanceof BurrowerEntity) return 64;
+        if (target instanceof RegrowerEntity) return 55;
         return 58;
     }
 

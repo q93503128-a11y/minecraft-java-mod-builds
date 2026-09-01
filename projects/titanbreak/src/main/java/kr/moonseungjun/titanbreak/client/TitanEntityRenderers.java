@@ -18,6 +18,10 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModEntities.HOWLER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.HOWLER.get()).withScale(1.08F));
         event.registerEntityRenderer(ModEntities.JAMMER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.JAMMER.get()).withScale(1.08F));
         event.registerEntityRenderer(ModEntities.VOLTAIC.get(), context -> new GeoEntityRenderer<>(context, ModEntities.VOLTAIC.get()).withScale(1.08F));
+        event.registerEntityRenderer(ModEntities.CINDER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.CINDER.get()).withScale(1.08F));
+        event.registerEntityRenderer(ModEntities.REGROWER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.REGROWER.get()).withScale(1.10F));
+        event.registerEntityRenderer(ModEntities.BURROWER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.BURROWER.get()).withScale(1.10F));
+        event.registerEntityRenderer(ModEntities.CRUSHER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.CRUSHER.get()).withScale(1.18F));
         event.registerEntityRenderer(ModEntities.CHRONO_HOUND.get(), context -> new GeoEntityRenderer<>(context, ModEntities.CHRONO_HOUND.get()).withScale(1.12F));
         event.registerEntityRenderer(ModEntities.NULL_EYE.get(), context -> new GeoEntityRenderer<>(context, ModEntities.NULL_EYE.get()).withScale(1.10F));
         event.registerEntityRenderer(ModEntities.THE_PURSUER.get(), PursuerRenderer::new);

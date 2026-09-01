@@ -14,6 +14,10 @@ This registry tracks external runtime libraries and presentation assets that shi
 | Glider model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Glider presentation |
 | Jammer model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Jammer presentation |
 | Voltaic model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Voltaic presentation |
+| Cinder model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Cinder presentation |
+| Regrower model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Regrower presentation |
+| Burrower model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Burrower presentation |
+| Crusher model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Crusher presentation |
 | Chrono Hound model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Chrono Hound presentation |
 | Null Eye model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | Null Eye presentation |
 | The Pursuer model / animation / texture | TITANBREAK source | project-owned | TITANBREAK | original | first boss presentation |
