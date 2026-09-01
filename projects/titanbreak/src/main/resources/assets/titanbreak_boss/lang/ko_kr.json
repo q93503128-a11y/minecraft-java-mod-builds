@@ -20,5 +20,9 @@
   "entity.titanbreak.chronophage": "시간포식자",
   "message.titanbreak.chronophage_warning": "공기의 리듬이 무너진다. 소리가 늦게 도착하고, 발밑의 지면이 순식간에 늙어간다.",
   "message.titanbreak.chronophage_arrival": "시간포식자가 영역에 진입했다. 이제 시간장은 일방적인 우위가 아니다.",
-  "message.titanbreak.chronophage_defeated": "시간포식자의 중심 고리가 붕괴했다. 시간기관을 회수할 수 있다."
+  "message.titanbreak.chronophage_defeated": "시간포식자의 중심 고리가 붕괴했다. 시간기관을 회수할 수 있다.",
+  "entity.titanbreak.storm_leviathan": "폭풍거수",
+  "message.titanbreak.storm_leviathan_warning": "바람이 한 방향으로 눕고 금속 표면에 푸른 방전이 번진다. 상공에서 거대한 그림자가 경로를 바꿨다.",
+  "message.titanbreak.storm_leviathan_arrival": "폭풍거수가 상공을 점유했다. 전기주머니와 날개막을 끊어 폭풍을 약화시켜야 한다.",
+  "message.titanbreak.storm_leviathan_defeated": "폭풍거수의 심부 폭풍기관이 멎었다. 고출력 에너지 재료를 회수할 수 있다."
 }
