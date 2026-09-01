@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.CharacterMenuCatalog;
+import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -54,6 +55,7 @@ public final class MetaMenuScreen extends Screen {
     private String equipmentTargetCharacterId = "";
 
     private String codexCategory = "CHARACTERS";
+    private String selectedEndgameId = "";
 
     public MetaMenuScreen(Tab tab) {
         super(Component.literal("TURNBOUND"));
@@ -70,6 +72,7 @@ public final class MetaMenuScreen extends Screen {
         }
         if (!selectedCharacterId.isBlank() && character(selectedCharacterId) == null) selectedCharacterId = "";
         if (!selectedEquipmentId.isBlank() && equipment(selectedEquipmentId) == null) selectedEquipmentId = "";
+        if (!selectedEndgameId.isBlank() && endgame(selectedEndgameId) == null) selectedEndgameId = "";
         clearWidgets();
         init();
     }
@@ -330,24 +333,40 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildEndgame() {
         var rows = ClientMetaState.snapshot().endgame();
-        int hardX = left + 18, y = top + 112;
-        for (var row : rows.stream().filter(r -> "HARD".equals(r.kind())).toList()) {
-            String status = row.cleared() ? "✓" : row.unlocked() ? "" : "LOCK";
-            var button = new BattleHudButton(hardX, y, Math.min(250, panelWidth / 3), 25,
-                    Component.literal(status + " " + row.label()), row.cleared() ? GREEN : row.unlocked() ? DANGER : MUTED,
-                    ignored -> start(row));
-            button.active = row.unlocked(); addRenderableWidget(button); y += 30;
+        if (selectedEndgameId.isBlank() || endgame(selectedEndgameId) == null) {
+            selectedEndgameId = rows.stream().filter(r -> r.unlocked() && !r.cleared()).map(ClientMetaState.EndgameRow::id).findFirst()
+                    .orElse(rows.stream().filter(ClientMetaState.EndgameRow::unlocked).map(ClientMetaState.EndgameRow::id).findFirst().orElse(""));
         }
-        int gridLeft = left + Math.min(290, panelWidth / 3 + 38), gridTop = top + 112;
+
+        int hardX = left + 18, y = top + 120;
+        int hardW = Math.min(252, Math.max(180, panelWidth / 3));
+        for (var row : rows.stream().filter(r -> "HARD".equals(r.kind())).toList()) {
+            boolean selected = row.id().equals(selectedEndgameId);
+            String status = row.cleared() ? "✓ " : row.unlocked() ? "" : "LOCK · ";
+            int color = selected ? BLUE : row.cleared() ? GREEN : row.unlocked() ? DANGER : MUTED;
+            var button = new BattleHudButton(hardX, y, hardW, 27,
+                    Component.literal(status + row.label()), color, ignored -> selectEndgame(row.id()));
+            button.active = row.unlocked(); addRenderableWidget(button); y += 32;
+        }
+
+        int gridLeft = left + hardW + 38, gridTop = top + 120;
         int available = left + panelWidth - 18 - gridLeft;
         int cols = available >= 500 ? 6 : available >= 360 ? 5 : 4;
         int cellW = Math.max(54, (available - (cols - 1) * 5) / cols), index = 0;
         for (var row : rows.stream().filter(r -> "RIFT".equals(r.kind())).toList()) {
             int xx = gridLeft + (index % cols) * (cellW + 5), yy = gridTop + (index / cols) * 31;
-            String text = (row.cleared() ? "✓ " : "") + "F" + row.id().substring(row.id().length() - 2) + " Lv" + row.level();
-            var button = new BattleHudButton(xx, yy, cellW, 25, Component.literal(text),
-                    row.cleared() ? GREEN : row.hardPattern() ? GOLD : row.unlocked() ? BLUE : MUTED, ignored -> start(row));
+            boolean selected = row.id().equals(selectedEndgameId);
+            String text = (row.cleared() ? "✓ " : "") + "F" + row.id().substring(row.id().length() - 2) + " · " + row.level();
+            int color = selected ? BLUE : row.cleared() ? GREEN : row.hardPattern() ? GOLD : row.unlocked() ? SECONDARY : MUTED;
+            var button = new BattleHudButton(xx, yy, cellW, 25, Component.literal(text), color, ignored -> selectEndgame(row.id()));
             button.active = row.unlocked(); addRenderableWidget(button); index++;
+        }
+
+        ClientMetaState.EndgameRow selected = endgame(selectedEndgameId);
+        if (selected != null && selected.unlocked()) {
+            int by = top + panelHeight - 42;
+            addRenderableWidget(new BattleHudButton(left + panelWidth - 176, by, 158, 24,
+                    Component.literal("브리핑 / 출전"), "HARD".equals(selected.kind()) ? DANGER : BLUE, ignored -> start(selected)));
         }
     }
 
@@ -397,6 +416,7 @@ public final class MetaMenuScreen extends Screen {
     private void loadPreset(int slot) { send("PRESET_LOAD|" + slot); }
     private void buy(ClientMetaState.ShopRow row) { if (row.unlocked()) send("BUY|" + row.itemId()); }
     private void start(ClientMetaState.EndgameRow row) { if (row.unlocked()) send("START|" + row.id()); }
+    private void selectEndgame(String id) { selectedEndgameId=id; clearWidgets(); init(); }
 
     private void openCharacter(String id) { selectedCharacterId = id; detailTab = DetailTab.STATUS; page = 0; clearWidgets(); init(); }
     private void closeCharacter() { selectedCharacterId = ""; page = 0; clearWidgets(); init(); }
@@ -516,7 +536,7 @@ public final class MetaMenuScreen extends Screen {
         graphics.text(font,Component.literal("현재 성급  "+(row.awakened()?"◆6":"★"+row.star())+"   /   Lv."+row.level()),x,y,TEXT,false);
         graphics.text(font,Component.literal("Awakening Package"),x,y+28,GOLD,true);
         graphics.text(font,Component.literal(shorten(menu.awakening(),115)),x+12,y+45,row.awakened()?GREEN:MUTED,false);
-        if(!row.awakened()) graphics.text(font,Component.literal("🔒 Lv.60 / ★6 / Signature Trial / Awakening Core 조건을 서버가 검증"),x,y+70,MUTED,false);
+        if(!row.awakened()) graphics.text(font,Component.literal("🔒 Lv.60 / ★6 / Signature Trial / Awakening Core 필요"),x,y+70,MUTED,false);
     }
 
     private void drawCharacterProfile(GuiGraphicsExtractor graphics, ClientMetaState.CharacterRow row,int x,int y){
@@ -536,7 +556,7 @@ public final class MetaMenuScreen extends Screen {
         }
         graphics.text(font,Component.literal("Inventory  "+snapshot.equipment().size()+" / 300"),left+480,top+108,SECONDARY,false);
         var selected=equipment(selectedEquipmentId);
-        if(selected==null){graphics.text(font,Component.literal("장비를 선택하면 Compare / +20 Preview / 강화 / 장착을 표시합니다."),left+500,top+150,MUTED,false);return;}
+        if(selected==null){graphics.text(font,Component.literal("장비를 선택하면 비교 / +20 미리보기 / 강화 / 장착 정보를 볼 수 있습니다."),left+500,top+150,MUTED,false);return;}
         int x=left+Math.min(480,panelWidth/2+18),y=top+150;
         graphics.text(font,Component.literal(selected.tier()+"  "+selected.name()+"  +"+selected.enhancement()),x,y,tierColor(selected.tier()),true);
         graphics.text(font,Component.literal(selected.mainType()+"  "+stat(selected.mainValue())+"    "+selected.subType()+"  "+stat(selected.subValue())),x,y+20,TEXT,false);
@@ -547,7 +567,7 @@ public final class MetaMenuScreen extends Screen {
             String compare=current==null?"비교: 해당 슬롯 비어 있음":"비교: "+current.name()+" +"+current.enhancement()+"  →  "+selected.name()+" +"+selected.enhancement();
             graphics.text(font,Component.literal(compare),x,y+82,current==null?GREEN:BLUE,false);
         }
-        String saleInfo=selected.tier().equals("SIGNATURE")?"판매 · 전용 장비는 정본 판매가 없음"
+        String saleInfo=selected.tier().equals("SIGNATURE")?"전용 장비 · 판매 불가"
                 : selected.equippedCharacterId().isBlank()?"판매 · "+selected.salePrice()+" Gold":"판매 · "+selected.salePrice()+" Gold · 장착 해제 필요";
         graphics.text(font,Component.literal(saleInfo),x,y+105,selected.sellable()?GOLD:MUTED,false);
     }
@@ -575,7 +595,8 @@ public final class MetaMenuScreen extends Screen {
         }
         int x=left+panelWidth/2+8,yy=top+136;
         for(var c:snapshot.challenges()){
-            graphics.text(font,Component.literal((c.completed()?"✓ ":"○ ")+c.ordinal()+". "+c.label()),x,yy,c.completed()?GREEN:c.autoEvaluable()?TEXT:GOLD,false);yy+=16;
+            String mark=c.completed()?"✓ ":c.autoEvaluable()?"○ ":"◇ ";
+            graphics.text(font,Component.literal(mark+c.ordinal()+". "+c.label()),x,yy,c.completed()?GREEN:c.autoEvaluable()?TEXT:GOLD,false);yy+=16;
             if(yy>top+panelHeight-60)break;
         }
     }
@@ -585,7 +606,7 @@ public final class MetaMenuScreen extends Screen {
         int perPage=18,start=page*perPage,end=Math.min(rows.size(),start+perPage),cols=panelWidth>=760?3:2;
         int gap=8,cardW=(panelWidth-36-gap*(cols-1))/cols,gridTop=top+140;
         if(codexCategory.equals("TUTORIAL")&&rows.isEmpty()){
-            graphics.text(font,Component.literal("튜토리얼 도감 카테고리는 정본에 있으나 v0.4에는 개별 Entry ID/내용이 정의되지 않음."),left+18,gridTop,MUTED,false);return;
+            graphics.text(font,Component.literal("아직 기록되지 않은 튜토리얼 항목입니다."),left+18,gridTop,MUTED,false);return;
         }
         for(int i=start;i<end;i++){
             var row=rows.get(i);int local=i-start,x=left+18+(local%cols)*(cardW+gap),y=gridTop+(local/cols)*52;
@@ -599,18 +620,42 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawSystem(GuiGraphicsExtractor graphics, ClientMetaState.Snapshot snapshot) {
-        graphics.text(font,Component.literal(snapshot.riftUnlocked()?"Rift Gate 개방":"B05 클리어 후 Rift Gate 개방"),left+300,top+88,snapshot.riftUnlocked()?GREEN:MUTED,false);
-        graphics.text(font,Component.literal("Hard/Rift 임시 관리면 · 최종 필드에서는 라디아 시설과 연결"),left+18,top+panelHeight-24,SECONDARY,false);
+        graphics.text(font,Component.literal(snapshot.riftUnlocked()?"Rift Gate · OPEN":"Rift Gate · B05 클리어 후 개방"),left+300,top+88,snapshot.riftUnlocked()?GREEN:MUTED,false);
+        ClientMetaState.EndgameRow row=endgame(selectedEndgameId);
+        if(row==null){graphics.text(font,Component.literal("도전할 콘텐츠를 선택하세요."),left+18,top+330,MUTED,false);return;}
+        int x=left+18,y=Math.min(top+335,top+panelHeight-190);
+        graphics.fill(x,y,left+panelWidth-18,y+92,0x77141922);
+        int accent="HARD".equals(row.kind())?DANGER:row.hardPattern()?GOLD:BLUE;
+        graphics.fill(x,y,x+3,y+92,accent);
+        graphics.text(font,Component.literal(row.label()),x+12,y+10,TEXT,true);
+        graphics.text(font,Component.literal((row.cleared()?"CLEAR · ":"")+row.kind()+" · Lv."+row.level()+" · Party CP "+snapshot.partyCp()),x+12,y+27,row.cleared()?GREEN:SECONDARY,false);
+        if("HARD".equals(row.kind())){
+            graphics.text(font,Component.literal("Hard · HP ×1.65 · ATK ×1.25 · DEF ×1.15 · SPD +8"),x+12,y+46,DANGER,false);
+            graphics.text(font,Component.literal(row.cleared()?"반복 보상 · Gold":"첫 클리어 · Crystal 600 · T4 장비 선택권 ×1"),x+12,y+64,row.cleared()?SECONDARY:GOLD,false);
+        }else{
+            int floor=Integer.parseInt(row.id().substring(row.id().length()-2));
+            var spec=V04Catalogs.riftFloor(floor);
+            String enemies=spec.enemies().stream().map(id->CanonicalData.definition(id).name()).reduce((a,b)->a+" · "+b).orElse("-");
+            graphics.text(font,Component.literal(shorten("적 · "+enemies,100)),x+12,y+46,row.hardPattern()?GOLD:SECONDARY,false);
+            String reward=row.cleared()?"반복 보상 · Gold "+V04Catalogs.riftGold(floor)
+                    :"첫 클리어 · Gold "+V04Catalogs.riftGold(floor)+" · Crystal 60 · Essence 25";
+            graphics.text(font,Component.literal(reward),x+12,y+64,row.cleared()?SECONDARY:GOLD,false);
+            int rec=riftRecommendedCp(floor);
+            if(rec>0) graphics.text(font,Component.literal("권장 CP "+rec+" · 미달이어도 입장 가능"),left+panelWidth-226,y+27,snapshot.partyCp()<rec?GOLD:GREEN,false);
+        }
+        graphics.text(font,Component.literal("라디아 Endgame Atrium에서도 같은 콘텐츠를 선택할 수 있습니다."),left+18,top+panelHeight-24,SECONDARY,false);
     }
 
     private ClientMetaState.CharacterRow character(String id){return ClientMetaState.snapshot().characters().stream().filter(row->row.id().equals(id)).findFirst().orElse(null);}
     private ClientMetaState.EquipmentRow equipment(String id){return ClientMetaState.snapshot().equipment().stream().filter(row->row.instanceId().equals(id)).findFirst().orElse(null);}
+    private ClientMetaState.EndgameRow endgame(String id){return ClientMetaState.snapshot().endgame().stream().filter(row->row.id().equals(id)).findFirst().orElse(null);}
 
+    private static int riftRecommendedCp(int floor){return switch(floor){case 10->18_000;case 20->27_000;case 30->38_000;default->0;};}
     private static int tierRank(String tier){return switch(tier){case "SIGNATURE"->5;case "T4"->4;case "T3"->3;case "T2"->2;case "T1"->1;default->0;};}
     private static int tierColor(String tier){return switch(tier){case "SIGNATURE"->0xFFC794FF;case "T4"->0xFFFFC857;case "T3"->0xFFB68CFF;case "T2"->0xFF6DC6FF;default->0xFFAEB7C6;};}
     private static String stat(double value){double abs=Math.abs(value);if(abs<=1.0)return String.format(Locale.ROOT,"%.1f%%",value*100.0);return String.format(Locale.ROOT,"%.1f",value);}
     private static String shorten(String value,int max){return value.length()<=max?value:value.substring(0,max-1)+"…";}
     private static String detailLabel(DetailTab tab){return switch(tab){case STATUS->"Status";case SKILLS->"Skills";case EQUIPMENT->"Equipment";case AWAKENING->"Awakening";case PROFILE->"Profile";};}
     private static String label(Tab tab){return switch(tab){case PARTY->"PARTY";case CHARACTERS->"CHARACTERS";case EQUIPMENT->"EQUIPMENT";case ARCHIVE->"ARCHIVE";case QUESTS->"QUESTS";case CODEX->"CODEX";case SYSTEM->"SYSTEM";};}
-    private static String title(Tab tab){return switch(tab){case PARTY->"파티 편성";case CHARACTERS->"Characters";case EQUIPMENT->"Equipment / Market Row";case ARCHIVE->"Echo Archive";case QUESTS->"Quests";case CODEX->"Codex";case SYSTEM->"System / Endgame";};}
+    private static String title(Tab tab){return switch(tab){case PARTY->"파티 편성";case CHARACTERS->"Characters";case EQUIPMENT->"Equipment / Market Row";case ARCHIVE->"Echo Archive";case QUESTS->"Quests";case CODEX->"Codex";case SYSTEM->"Endgame";};}
 }
