@@ -2,5 +2,9 @@
   "entity.titanbreak.gravemarch_colossus": "묘행 거상",
   "message.titanbreak.gravemarch_warning": "지면이 느리고 무거운 간격으로 진동한다. 거대한 무언가가 접근하고 있다.",
   "message.titanbreak.gravemarch_arrival": "묘행 거상이 영역에 진입했다.",
-  "message.titanbreak.gravemarch_defeated": "묘행 거상이 쓰러졌다. 충격심장과 고밀도 운동계 재료를 회수했다."
+  "message.titanbreak.gravemarch_defeated": "묘행 거상이 쓰러졌다. 충격심장과 고밀도 운동계 재료를 회수했다.",
+  "entity.titanbreak.bastion_walker": "보행요새",
+  "message.titanbreak.bastion_warning": "낮은 엔진음이 지면을 타고 이어진다. 지평선의 구조물이 움직이고 있다.",
+  "message.titanbreak.bastion_arrival": "보행요새가 영역을 횡단하기 시작했다.",
+  "message.titanbreak.bastion_defeated": "보행요새의 동력핵이 정지했다. 초고밀도 장갑핵을 회수했다."
 }

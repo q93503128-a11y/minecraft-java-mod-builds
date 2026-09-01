@@ -7,6 +7,7 @@ import kr.moonseungjun.titanbreak.combat.AnalysisJammingService;
 import kr.moonseungjun.titanbreak.combat.ArmorAugmentationService;
 import kr.moonseungjun.titanbreak.combat.AugmentAbilityService;
 import kr.moonseungjun.titanbreak.combat.AugmentedMobilityService;
+import kr.moonseungjun.titanbreak.combat.BastionRewardService;
 import kr.moonseungjun.titanbreak.combat.CirculatoryAugmentationService;
 import kr.moonseungjun.titanbreak.combat.CombatAutopilotService;
 import kr.moonseungjun.titanbreak.combat.DamageChannelService;
@@ -33,6 +34,8 @@ import kr.moonseungjun.titanbreak.registry.ModBossEntities;
 import kr.moonseungjun.titanbreak.registry.ModEntities;
 import kr.moonseungjun.titanbreak.registry.ModItems;
 import kr.moonseungjun.titanbreak.station.StationService;
+import kr.moonseungjun.titanbreak.world.BastionEncounterService;
+import kr.moonseungjun.titanbreak.world.BastionTraversalService;
 import kr.moonseungjun.titanbreak.world.EncounterDirector;
 import kr.moonseungjun.titanbreak.world.GravemarchEncounterService;
 import net.minecraft.server.level.ServerLevel;
@@ -49,7 +52,7 @@ import org.slf4j.Logger;
 @Mod(Titanbreak.MOD_ID)
 public final class Titanbreak {
     public static final String MOD_ID = "titanbreak";
-    public static final String VERSION = "0.1.0-alpha.43";
+    public static final String VERSION = "0.1.0-alpha.44";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double OVERHEAT_LOCK = 95.0D;
@@ -69,6 +72,7 @@ public final class Titanbreak {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(HuntRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(GravemarchRewardService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(BastionRewardService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(SpineAugmentationService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(EnemyAttackEffectService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(AugmentAbilityService::onIncomingDamage);
@@ -105,6 +109,7 @@ public final class Titanbreak {
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
         GravemarchEncounterService.clear(player.getUUID());
+        BastionEncounterService.clear(player.getUUID());
         TitanbreakNetwork.sync(player);
     }
 
@@ -130,6 +135,7 @@ public final class Titanbreak {
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
         GravemarchEncounterService.clear(player.getUUID());
+        BastionEncounterService.clear(player.getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -154,6 +160,7 @@ public final class Titanbreak {
         StationService.clear(player.getUUID());
         EncounterDirector.clear(player.getUUID());
         GravemarchEncounterService.clear(player.getUUID());
+        BastionEncounterService.clear(player.getUUID());
         TitanPlayerData.get(((ServerLevel) player.level()).getServer()).ensureProfile(player);
         TitanbreakNetwork.sync(player);
     }
@@ -186,6 +193,8 @@ public final class Titanbreak {
         StationService.tick(player);
         EncounterDirector.tick(player, state);
         GravemarchEncounterService.tick(player, state);
+        BastionEncounterService.tick(player, state);
+        BastionTraversalService.tick(player, state);
 
         TitanPlayerData.AugmentInstance drive = state.firstInstalledInstance("reflex_drive_i");
         boolean installed = drive != null;
@@ -237,6 +246,7 @@ public final class Titanbreak {
     private void onServerStopped(ServerStoppedEvent event) {
         EncounterDirector.clearAll();
         GravemarchEncounterService.clearAll();
+        BastionEncounterService.clearAll();
         EnemyAttackEffectService.clearAll();
         AnalysisJammingService.clearAll();
         AugmentAbilityService.clearAll();

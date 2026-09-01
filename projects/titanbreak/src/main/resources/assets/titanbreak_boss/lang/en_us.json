@@ -1,6 +1,10 @@
 {
   "entity.titanbreak.gravemarch_colossus": "Gravemarch Colossus",
-  "message.titanbreak.gravemarch_warning": "The ground is pulsing in slow, heavy intervals. Something enormous is approaching.",
-  "message.titanbreak.gravemarch_arrival": "Gravemarch Colossus has entered the area.",
-  "message.titanbreak.gravemarch_defeated": "The Gravemarch Colossus has fallen. Its Impact Heart and dense kinetic materials were recovered."
+  "message.titanbreak.gravemarch_warning": "The ground trembles in slow, heavy intervals. Something immense is approaching.",
+  "message.titanbreak.gravemarch_arrival": "The Gravemarch Colossus has entered the territory.",
+  "message.titanbreak.gravemarch_defeated": "The Gravemarch Colossus has fallen. Its impact heart and dense kinetic materials can be recovered.",
+  "entity.titanbreak.bastion_walker": "Bastion Walker",
+  "message.titanbreak.bastion_warning": "A low engine pulse travels through the ground. A structure on the horizon is moving.",
+  "message.titanbreak.bastion_arrival": "The Bastion Walker has begun crossing the territory.",
+  "message.titanbreak.bastion_defeated": "The Bastion Walker's power core has stopped. Its ultra-dense armor core can be recovered."
 }

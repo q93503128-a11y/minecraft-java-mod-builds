@@ -38,5 +38,6 @@ public final class TitanEntityRenderers {
         event.registerEntityRenderer(ModEntities.HARVESTER.get(), context -> new GeoEntityRenderer<>(context, ModEntities.HARVESTER.get()).withScale(1.16F));
         event.registerEntityRenderer(ModEntities.THE_PURSUER.get(), PursuerRenderer::new);
         event.registerEntityRenderer(ModBossEntities.GRAVEMARCH_COLOSSUS.get(), GravemarchRenderer::new);
+        event.registerEntityRenderer(ModBossEntities.BASTION_WALKER.get(), BastionWalkerRenderer::new);
     }
 }

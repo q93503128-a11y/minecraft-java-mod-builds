@@ -2,6 +2,7 @@ package kr.moonseungjun.titanbreak.registry;
 
 import kr.moonseungjun.titanbreak.Titanbreak;
 import kr.moonseungjun.titanbreak.combat.CombatScale;
+import kr.moonseungjun.titanbreak.entity.BastionWalkerEntity;
 import kr.moonseungjun.titanbreak.entity.GravemarchColossusEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -28,6 +29,14 @@ public final class ModBossEntities {
                     .clientTrackingRange(64)
                     .build(key("gravemarch_colossus")));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<BastionWalkerEntity>> BASTION_WALKER =
+            ENTITIES.register("bastion_walker", () -> EntityType.Builder
+                    .<BastionWalkerEntity>of(BastionWalkerEntity::new, MobCategory.MONSTER)
+                    .sized(1.0F, 1.0F)
+                    .eyeHeight(0.9F)
+                    .clientTrackingRange(96)
+                    .build(key("bastion_walker")));
+
     private ModBossEntities() {}
 
     public static void register(IEventBus bus) {
@@ -42,6 +51,14 @@ public final class ModBossEntities {
                 .add(Attributes.ATTACK_DAMAGE, 0.0D)
                 .add(Attributes.ARMOR, 24.0D)
                 .add(Attributes.ARMOR_TOUGHNESS, 10.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D)
+                .build());
+        event.put(BASTION_WALKER.get(), Giant.createAttributes()
+                .add(Attributes.MAX_HEALTH, CombatScale.toInternal(BastionWalkerEntity.CANONICAL_VISIBLE_MAX_HEALTH))
+                .add(Attributes.MOVEMENT_SPEED, 0.055D)
+                .add(Attributes.ATTACK_DAMAGE, 0.0D)
+                .add(Attributes.ARMOR, 30.0D)
+                .add(Attributes.ARMOR_TOUGHNESS, 14.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D)
                 .build());
     }
