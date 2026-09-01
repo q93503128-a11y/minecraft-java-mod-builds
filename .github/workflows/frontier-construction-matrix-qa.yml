@@ -1,0 +1,37 @@
+name: Frontier Construction Matrix QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-construction-matrix-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Enumerate all building rotations
+        shell: bash
+        run: |
+          set -o pipefail
+          cd projects/frontier-settlement
+          ./gradlew -I tools/construction_matrix_qa.init.gradle constructionMatrixQa --no-daemon 2>&1 | tee ../../frontier-construction-matrix-qa.log
+      - name: Upload matrix report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-construction-matrix-qa
+          path: frontier-construction-matrix-qa.log
+          if-no-files-found: error
