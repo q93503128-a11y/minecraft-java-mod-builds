@@ -3,6 +3,8 @@ package io.github.q93503128.turnbound.client;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.network.BattleCommandPayload;
+import io.github.q93503128.turnbound.network.MetaCommandPayload;
+import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -11,6 +13,9 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.Comparator;
+import java.util.List;
 
 /** Canon §131 post-battle Result page. The 3D victory presentation remains visible before the panel appears. */
 public final class BattleResultScreen extends Screen {
@@ -22,22 +27,33 @@ public final class BattleResultScreen extends Screen {
     private static final int DANGER = 0xFFFF7A59;
     private static final int GAUGE = 0xFF6DC6FF;
     private static final int PANEL_DARK = 0xD90A0D13;
+    private static final int CLEANUP_DARK = 0xF20A0D13;
     /** Current authored victory clips peak around 1.7s; add the canonical 0.4s Result pause. */
     private static final int VICTORY_REVEAL_TICKS = 42;
     private static final int DEFEAT_REVEAL_TICKS = 12;
 
     private BattleHudButton continueButton;
     private int elapsedTicks;
+    private boolean cleanupOpen;
+    private boolean lastOverflow;
+    private long seenMetaRevision = -1;
 
     public BattleResultScreen() { super(Component.literal("TURNBOUND Result")); }
 
     @Override
     protected void init() {
         super.init();
+        lastOverflow = overflowPredicted();
+        seenMetaRevision = ClientMetaState.revision();
         Rect panel = panel();
+        if (cleanupOpen) {
+            buildCleanupWidgets(panel);
+            return;
+        }
         continueButton = addRenderableWidget(new BattleHudButton(
-                panel.right() - 96, panel.bottom() - 31, 82, 22,
-                Component.literal("Continue  R"), GREEN, ignored -> continueField()));
+                panel.right() - 116, panel.bottom() - 31, 102, 22,
+                Component.literal(lastOverflow ? "장비 정리" : "Continue  R"), lastOverflow ? GOLD : GREEN,
+                ignored -> continueField()));
         updateContinueVisibility();
     }
 
@@ -54,7 +70,25 @@ public final class BattleResultScreen extends Screen {
             return;
         }
         elapsedTicks++;
+
+        boolean overflowNow = overflowPredicted();
+        if (overflowNow != lastOverflow) {
+            lastOverflow = overflowNow;
+            if (!overflowNow) cleanupOpen = false;
+            rebuild();
+            return;
+        }
+        if (cleanupOpen && ClientMetaState.revision() != seenMetaRevision) {
+            seenMetaRevision = ClientMetaState.revision();
+            rebuild();
+            return;
+        }
         updateContinueVisibility();
+    }
+
+    private void rebuild() {
+        clearWidgets();
+        init();
     }
 
     private void updateContinueVisibility() {
@@ -69,9 +103,64 @@ public final class BattleResultScreen extends Screen {
         return elapsedTicks >= (victory ? VICTORY_REVEAL_TICKS : DEFEAT_REVEAL_TICKS);
     }
 
+    private boolean overflowPredicted() {
+        return ClientBattleState.resultNotices().stream().anyMatch(notice -> notice.startsWith("INVENTORY FULL"));
+    }
+
     private void continueField() {
         if (!resultVisible()) return;
+        if (overflowPredicted()) {
+            cleanupOpen = true;
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("SYNC"));
+            rebuild();
+            return;
+        }
         ClientPacketDistributor.sendToServer(new BattleCommandPayload("FLEE"));
+    }
+
+    private void buildCleanupWidgets(Rect panel) {
+        int dialogW = Math.min(430, panel.width() - 28);
+        int dialogH = Math.min(244, panel.height() - 36);
+        int dx = panel.x() + (panel.width() - dialogW) / 2;
+        int dy = panel.y() + (panel.height() - dialogH) / 2;
+        var meta = ClientMetaState.snapshot();
+
+        int buttonY = dy + 86;
+        if (!meta.pendingEquipment().isEmpty()) {
+            ClientMetaState.PendingEquipmentRow pending = meta.pendingEquipment().getFirst();
+            if (pending.claimable()) {
+                addRenderableWidget(new BattleHudButton(dx + 16, buttonY, 152, 22,
+                        Component.literal("대기 보상 수령"), GREEN,
+                        ignored -> meta("REWARD_CLAIM|" + pending.instanceId())));
+            }
+            if (pending.immediateSellable()) {
+                addRenderableWidget(new BattleHudButton(dx + 176, buttonY, 190, 22,
+                        Component.literal("대기 보상 판매 · " + pending.salePrice() + "G"), GOLD,
+                        ignored -> meta("REWARD_SELL|" + pending.instanceId())));
+            }
+            buttonY += 34;
+        }
+
+        List<ClientMetaState.EquipmentRow> sellable = meta.equipment().stream()
+                .filter(ClientMetaState.EquipmentRow::sellable)
+                .sorted(Comparator.comparingInt((ClientMetaState.EquipmentRow row) -> tierRank(row.tier()))
+                        .thenComparingInt(ClientMetaState.EquipmentRow::enhancement)
+                        .thenComparing(ClientMetaState.EquipmentRow::instanceId))
+                .limit(4).toList();
+        for (ClientMetaState.EquipmentRow row : sellable) {
+            if (buttonY + 22 > dy + dialogH - 37) break;
+            String text = "판매 · " + row.tier() + " " + row.name() + " +" + row.enhancement() + " · " + row.salePrice() + "G";
+            addRenderableWidget(new BattleHudButton(dx + 16, buttonY, dialogW - 32, 22,
+                    Component.literal(text), GOLD, ignored -> meta("SELL|" + row.instanceId())));
+            buttonY += 27;
+        }
+
+        addRenderableWidget(new BattleHudButton(dx + dialogW - 92, dy + dialogH - 30, 76, 20,
+                Component.literal("결과로"), MUTED, ignored -> { cleanupOpen = false; rebuild(); }));
+    }
+
+    private void meta(String command) {
+        ClientPacketDistributor.sendToServer(new MetaCommandPayload(command));
     }
 
     @Override public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) { }
@@ -124,7 +213,7 @@ public final class BattleResultScreen extends Screen {
             extraY += 14;
         }
         for (String notice : ClientBattleState.resultNotices()) {
-            graphics.text(font, Component.literal(notice), x, extraY, GAUGE, true);
+            graphics.text(font, Component.literal(notice), x, extraY, notice.startsWith("INVENTORY FULL") ? DANGER : GAUGE, true);
             extraY += 14;
         }
         if (!result.firstClear() && result.equipmentRewards().isEmpty() && ClientBattleState.resultNotices().isEmpty()) {
@@ -141,6 +230,44 @@ public final class BattleResultScreen extends Screen {
             if (rowY + 24 > panel.bottom() - 37) break;
             drawPartyXp(graphics, x, rowY, rowW, result.party().get(i));
             rowY += 28;
+        }
+
+        if (cleanupOpen) drawCleanupDialog(graphics, panel);
+    }
+
+    private void drawCleanupDialog(GuiGraphicsExtractor graphics, Rect panel) {
+        int dialogW = Math.min(430, panel.width() - 28);
+        int dialogH = Math.min(244, panel.height() - 36);
+        int dx = panel.x() + (panel.width() - dialogW) / 2;
+        int dy = panel.y() + (panel.height() - dialogH) / 2;
+        var meta = ClientMetaState.snapshot();
+
+        graphics.fill(dx, dy, dx + dialogW, dy + dialogH, CLEANUP_DARK);
+        TurnboundFrameStyle.frame(graphics, dx, dy, dialogW, dialogH, GOLD);
+        graphics.fill(dx, dy, dx + 4, dy + dialogH, GOLD);
+        graphics.text(font, Component.literal("장비 인벤토리 정리"), dx + 16, dy + 14, GOLD, true);
+        graphics.text(font, Component.literal("획득 장비를 넣을 공간이 없습니다. Continue 전에 공간을 확보하세요."),
+                dx + 16, dy + 31, TEXT, false);
+        graphics.text(font, Component.literal("Inventory  " + meta.equipment().size() + " / " + EquipmentInventory.MAX_INSTANCES
+                + "    ·    대기 보상 " + meta.pendingEquipment().size()), dx + 16, dy + 49, SECONDARY, false);
+
+        int yy = dy + 67;
+        if (!meta.pendingEquipment().isEmpty()) {
+            var pending = meta.pendingEquipment().getFirst();
+            graphics.text(font, Component.literal("대기 중 · " + pending.tier() + " " + pending.name()), dx + 16, yy, GAUGE, true);
+            yy += 51;
+        } else {
+            graphics.text(font, Component.literal("판매 가능한 기존 장비 중 하나를 정리하면 새 보상을 바로 수령할 수 있습니다."),
+                    dx + 16, yy, SECONDARY, false);
+            yy += 34;
+        }
+
+        if (meta.equipment().isEmpty() && meta.pendingEquipment().isEmpty()) {
+            graphics.text(font, Component.literal("장비 목록을 불러오는 중…"), dx + 16, yy, MUTED, false);
+        } else {
+            long sellable = meta.equipment().stream().filter(ClientMetaState.EquipmentRow::sellable).count();
+            graphics.text(font, Component.literal("판매 가능 장비 " + sellable + "개 · 낮은 Tier/+강화부터 표시"),
+                    dx + 16, Math.min(dy + dialogH - 48, yy), SECONDARY, false);
         }
     }
 
@@ -197,8 +324,17 @@ public final class BattleResultScreen extends Screen {
         return new Rect((width - w) / 2, Math.max(12, height / 2 - h / 2), w, h);
     }
 
+    private static int tierRank(String tier) {
+        return switch (tier) { case "T1" -> 1; case "T2" -> 2; case "T3" -> 3; case "T4" -> 4; default -> 5; };
+    }
+
     @Override
     public boolean keyPressed(KeyEvent event) {
+        if (cleanupOpen && event.key() == GLFW.GLFW_KEY_ESCAPE) {
+            cleanupOpen = false;
+            rebuild();
+            return true;
+        }
         if (resultVisible() && (event.key() == GLFW.GLFW_KEY_R || event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER)) {
             continueField();
         }
