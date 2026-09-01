@@ -11,7 +11,7 @@ class BattleControlRulesTest {
     void lockedCampaignControlsAreVisibleAsLockedAndInactive() {
         var snapshot = snapshot(false, 1, false, false, false, false);
         var state = BattleControlRules.state(snapshot);
-        assertEquals("AUTO 잠금", state.autoLabel());
+        assertEquals("자동 잠금", state.autoLabel());
         assertFalse(state.autoActive());
         assertEquals("×2 잠금", state.speedLabel());
         assertFalse(state.speedActive());
@@ -22,7 +22,7 @@ class BattleControlRulesTest {
     @Test
     void unlockedFieldControlsAndFinishedReturnAreDistinct() {
         var running = BattleControlRules.state(snapshot(true, 2, true, true, true, false));
-        assertEquals("AUTO✓", running.autoLabel());
+        assertEquals("자동✓", running.autoLabel());
         assertTrue(running.autoActive());
         assertEquals("×2", running.speedLabel());
         assertTrue(running.speedActive());
@@ -31,6 +31,7 @@ class BattleControlRulesTest {
 
         var finished = BattleControlRules.state(snapshot(false, 1, false, false, false, true));
         assertEquals("복귀", finished.fleeLabel());
+        assertEquals("자동", finished.autoLabel());
         assertTrue(finished.fleeActive());
         assertFalse(finished.autoActive());
         assertFalse(finished.speedActive());
