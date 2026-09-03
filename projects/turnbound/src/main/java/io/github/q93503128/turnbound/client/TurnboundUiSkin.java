@@ -30,12 +30,24 @@ final class TurnboundUiSkin {
     }
 
     static void button(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
-                       boolean active, boolean highlighted, int accent) {
+                       boolean active, boolean hovered, boolean selected, int accent) {
         Identifier texture = !active ? BUTTON_GREY : warm(accent) ? BUTTON_BROWN : BUTTON_BLUE;
         stretch(graphics, texture, x, y, width, height);
-        if (highlighted) {
-            graphics.fill(x + 5, y + height - 5, x + width - 5, y + height - 3, active ? accent : 0xFF777777);
-            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 5, 0x24FFFFFF);
+
+        // Hover is intentionally transient and soft. It must not look like a committed selection.
+        if (active && hovered) {
+            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x22FFFFFF);
+        }
+
+        // Selection uses both colour and shape/icon so state is not communicated by colour alone.
+        if (selected) {
+            int stateColor = active ? accent : 0xFF777777;
+            graphics.fill(x + 4, y + 3, x + 6, y + height - 3, stateColor);
+            graphics.fill(x + 6, y + height - 5, x + width - 5, y + height - 3, stateColor);
+            if (width >= 36 && height >= 16) {
+                int mark = Math.min(8, height - 8);
+                check(graphics, x + width - mark - 4, y + 4, mark);
+            }
         }
     }
 
