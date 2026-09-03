@@ -18,6 +18,7 @@ worker = text(JAVA / "settlement/SettlementWorkerService.java")
 storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
+advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 entity = text(JAVA / "content/FrontierWorkerEntity.java")
 blueprints = text(JAVA / "settlement/BuildingBlueprints.java")
 service = text(JAVA / "settlement/SettlementService.java")
@@ -60,6 +61,16 @@ forbid(office, (
     "duplicate.setNoAi(true);",
     "runner.getNavigation().moveTo(source.getX() + 0.5D",
 ), "construction office legacy runner freeze/source pathing")
+must(advanced_workshop, (
+    "private static boolean isForgeMetal(ItemStack stack)",
+    "SettlementStorageService.isMetalStack(stack)",
+    "!stack.is(ExternalContentTags.EXPEDITION_RELICS)",
+    "SettlementAdvancedWorkshopService::isForgeMetal"
+), "advanced workshop disjoint costs")
+forbid(advanced_workshop, (
+    "SettlementStorageService::isMetalStack",
+    "SettlementStorageService.isMetalStack(carried)"
+), "advanced workshop overlapping metal predicate")
 must(service, (
     "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
     "SupplyDepotRegistryService.tryRegister(level, stockpile)",

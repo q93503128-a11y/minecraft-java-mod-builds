@@ -183,7 +183,7 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         if (!carried.isEmpty()) {
-            if (!SettlementStorageService.isMetalStack(carried)) {
+            if (!isForgeMetal(carried)) {
                 returnCarriedItem(level, data, worker, carried);
                 return;
             }
@@ -200,7 +200,7 @@ public final class SettlementAdvancedWorkshopService {
             return;
         }
 
-        int metal = countMatching(crate, SettlementStorageService::isMetalStack);
+        int metal = countMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal);
         if (metal >= metalRequired) {
             if (!workDue(server, workshop)) return;
             boolean completed = reforge
@@ -215,14 +215,14 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         if (!SettlementStorageService.storageAvailable(level, data)) return;
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementStorageService::isMetalStack);
+        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementAdvancedWorkshopService::isForgeMetal);
         if (source == null) return;
         if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
             worker.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.82D);
             return;
         }
-        ItemStack metalStack = SettlementStorageService.extract(level, source, SettlementStorageService::isMetalStack,
+        ItemStack metalStack = SettlementStorageService.extract(level, source, SettlementAdvancedWorkshopService::isForgeMetal,
                 Math.min(metalRequired - metal, METAL_HAUL_BATCH));
         if (metalStack.isEmpty()) return;
         worker.setItemSlot(EquipmentSlot.MAINHAND, metalStack);
@@ -235,7 +235,7 @@ public final class SettlementAdvancedWorkshopService {
         ItemStack weapon = crate.getItem(weaponSlot);
         ItemStack relic = crate.getItem(relicSlot);
         if (!isForgeableWeapon(weapon) || relic.isEmpty() || !relic.is(ExternalContentTags.EXPEDITION_RELICS)) return false;
-        if (countMatching(crate, SettlementStorageService::isMetalStack) < METAL_COST) return false;
+        if (countMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal) < METAL_COST) return false;
 
         ItemStack forged = weapon.copy();
         var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
@@ -247,7 +247,7 @@ public final class SettlementAdvancedWorkshopService {
         if (EnchantmentHelper.getEnchantmentsForCrafting(enchanted).isEmpty()) return false;
 
         enchanted.setDamageValue(0);
-        if (!consumeMatching(crate, SettlementStorageService::isMetalStack, METAL_COST)) return false;
+        if (!consumeMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal, METAL_COST)) return false;
         relic.shrink(RELIC_COST);
         if (relic.isEmpty()) crate.setItem(relicSlot, ItemStack.EMPTY);
         crate.setItem(weaponSlot, enchanted);
@@ -265,7 +265,7 @@ public final class SettlementAdvancedWorkshopService {
         ItemStack weapon = crate.getItem(weaponSlot);
         if (!isReforgeableWeapon(weapon)) return false;
         if (countRelics(crate) < REFORGE_RELIC_COST) return false;
-        if (countMatching(crate, SettlementStorageService::isMetalStack) < REFORGE_METAL_COST) return false;
+        if (countMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal) < REFORGE_METAL_COST) return false;
 
         ItemStack reforged = weapon.copy();
         var existing = EnchantmentHelper.getEnchantmentsForCrafting(reforged);
@@ -288,7 +288,7 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         reforged.setDamageValue(0);
-        if (!consumeMatching(crate, SettlementStorageService::isMetalStack, REFORGE_METAL_COST)) return false;
+        if (!consumeMatching(crate, SettlementAdvancedWorkshopService::isForgeMetal, REFORGE_METAL_COST)) return false;
         if (!consumeMatching(crate, stack -> stack.is(ExternalContentTags.EXPEDITION_RELICS), REFORGE_RELIC_COST)) return false;
         crate.setItem(weaponSlot, reforged);
         crate.setChanged();
@@ -317,6 +317,17 @@ public final class SettlementAdvancedWorkshopService {
     private static boolean isReforgeableWeapon(ItemStack stack) {
         return SettlementExternalContentService.isExternalWeapon(stack)
                 && !EnchantmentHelper.getEnchantmentsForCrafting(stack).isEmpty();
+    }
+
+    /**
+     * Forge metal and expedition relics are intentionally disjoint cost domains. A companion
+     * datapack may accidentally tag the same item as both; treating that stack as a relic only
+     * prevents one sequential consume from invalidating the next after resources already changed.
+     */
+    private static boolean isForgeMetal(ItemStack stack) {
+        return !stack.isEmpty()
+                && SettlementStorageService.isMetalStack(stack)
+                && !stack.is(ExternalContentTags.EXPEDITION_RELICS);
     }
 
     private static int findRelicSlot(Container crate) {
