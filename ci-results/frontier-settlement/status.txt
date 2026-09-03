@@ -1,9 +1,9 @@
 status=success
-source_sha=cfb5828d626e44e302294852a3aa8167453be1f9
-docs_sha=cfb5828d626e44e302294852a3aa8167453be1f9
-source_docs_sha=cfb5828d626e44e302294852a3aa8167453be1f9
-run_id=33819281387
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/33819281387
+source_sha=ee2e4d5638e982f2d39d43df0768b357196c277e
+docs_sha=ee2e4d5638e982f2d39d43df0768b357196c277e
+source_docs_sha=ee2e4d5638e982f2d39d43df0768b357196c277e
+run_id=33819413350
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/33819413350
 version=0.1.0-alpha.91
 jar_sha256=5e62cfbd92aae7a2c648df5d672fb6881aebac5b4ed6376e858a5d85c1e1aa74
 minecraft=26.2
