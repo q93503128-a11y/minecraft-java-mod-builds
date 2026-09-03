@@ -175,7 +175,7 @@ public final class AsterMarchAmbientDressing {
         set(level, cx + 1, groundY + 1, cz, Blocks.DEEPSLATE_TILES);
         set(level, cx - 1, groundY + 1, cz + 1, Blocks.IRON_BARS);
         set(level, cx + 2, groundY + 1, cz - 1, Blocks.REDSTONE_LAMP);
-        set(level, cx, groundY + 2, cz + 2, Blocks.CHAIN);
+        set(level, cx, groundY + 2, cz + 2, Blocks.IRON_BARS);
     }
 
     private static void slagPile(ServerLevel level, int cx, int groundY, int cz, int radius) {
