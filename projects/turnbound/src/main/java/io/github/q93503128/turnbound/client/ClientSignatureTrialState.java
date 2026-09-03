@@ -1,5 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.content.AwakeningRouteRules;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,10 +26,13 @@ public final class ClientSignatureTrialState {
             String blockReason
     ) {
         public boolean progressionReady() {
+            if (AwakeningRouteRules.canonGap(characterId)) return true;
             return owned && endgameUnlocked && level == 60 && currentStar == 6 && characterQuestComplete && !firstClearClaimed;
         }
 
-        public boolean canEnter() { return progressionReady() && encounterCanonReady; }
+        public boolean canEnter() {
+            return !AwakeningRouteRules.canonGap(characterId) && progressionReady() && encounterCanonReady;
+        }
     }
 
     private static volatile Map<String, TrialRow> rows = Map.of();
@@ -36,7 +41,33 @@ public final class ClientSignatureTrialState {
     private ClientSignatureTrialState() { }
 
     public static TrialRow forCharacter(String characterId) {
-        return rows.get(characterId);
+        TrialRow row = rows.get(characterId);
+        if (row != null) return row;
+        if (!AwakeningRouteRules.canonGap(characterId)) return null;
+
+        var snapshot = ClientMetaState.snapshot();
+        var character = snapshot.characters().stream()
+                .filter(value -> value.id().equals(characterId))
+                .findFirst().orElse(null);
+        if (character == null) return null;
+
+        return new TrialRow(
+                characterId,
+                "없음 · 소재형 각성 경로 미정",
+                character.owned(),
+                snapshot.riftUnlocked(),
+                character.level(),
+                character.star(),
+                true,
+                false,
+                false,
+                false,
+                false,
+                snapshot.core(),
+                character.awakened(),
+                false,
+                "전용 장비/Signature Trial 없음 · 별도 각성 조건 확정 필요",
+                AwakeningRouteRules.blockReason(characterId));
     }
 
     public static Map<String, TrialRow> rows() { return rows; }
