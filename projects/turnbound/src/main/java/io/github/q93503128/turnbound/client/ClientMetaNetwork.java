@@ -20,6 +20,7 @@ public final class ClientMetaNetwork {
     private static void handle(MetaSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             String hint = openHint(payload.snapshot());
+            ClientSignatureTrialState.update(payload.snapshot());
             ClientMetaState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen
