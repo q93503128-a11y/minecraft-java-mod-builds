@@ -8,7 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class SignatureTrialEvaluatorTest {
     private static CombatantState unit(String instanceId, String definitionId, CombatantSide side) {
-        CombatantDefinition definition = PrototypeRoster.trainingEnemy(definitionId, definitionId, 1000, 100, 80, 100);
+        return unit(instanceId, definitionId, side, 100);
+    }
+
+    private static CombatantState unit(String instanceId, String definitionId, CombatantSide side, int speed) {
+        CombatantDefinition definition = PrototypeRoster.trainingEnemy(definitionId, definitionId, 1000, 100, 80, speed);
         return new CombatantState(instanceId, definition, side, 0);
     }
 
@@ -20,6 +24,57 @@ final class SignatureTrialEvaluatorTest {
         state.addEvent(new BattleEvent("DOWN", allies[0].instanceId(), enemy.instanceId(), 0, "fixture"));
         assertEquals(BattleOutcome.ALLY_VICTORY, state.outcome());
         return state;
+    }
+
+    @Test
+    void p01RejectsKnownPartyConstraintBeforeUnresolvedEliteIdentity() {
+        CombatantState p01 = unit("p01", "P01", CombatantSide.ALLY);
+        BattleState validKnownShape = victory(p01, unit("ally", "P04", CombatantSide.ALLY));
+        var unresolved = SignatureTrialEvaluator.evaluate("P01", validKnownShape);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE, unresolved.objectiveState());
+        assertTrue(unresolved.detail().contains("partySize=2"));
+        assertTrue(unresolved.detail().contains("canonical identity"));
+
+        BattleState tooLarge = victory(p01,
+                unit("ally1", "P03", CombatantSide.ALLY),
+                unit("ally2", "P04", CombatantSide.ALLY));
+        var failed = SignatureTrialEvaluator.evaluate("P01", tooLarge);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_MET, failed.objectiveState());
+        assertTrue(failed.detail().contains("partySize=3/<=2"));
+    }
+
+    @Test
+    void p02RejectsKnownSpeedAndActionConstraintsBeforeUnresolvedBossIdentity() {
+        CombatantState p02 = unit("p02", "P02", CombatantSide.ALLY, 125);
+        BattleState state = victory(p02,
+                unit("slow1", "P03", CombatantSide.ALLY, 75),
+                unit("slow2", "P04", CombatantSide.ALLY, 80));
+        for (int i = 0; i < 22; i++) state.addEvent(new BattleEvent("ACTION", p02.instanceId(), "enemy", 0, "fixture"));
+
+        var unresolved = SignatureTrialEvaluator.evaluate("P02", state);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE, unresolved.objectiveState());
+        assertTrue(unresolved.detail().contains("finalSpd80OrLessAllies=2"));
+        assertTrue(unresolved.detail().contains("actions=22"));
+
+        state.addEvent(new BattleEvent("ACTION", p02.instanceId(), "enemy", 0, "fixture"));
+        var tooManyActions = SignatureTrialEvaluator.evaluate("P02", state);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_MET, tooManyActions.objectiveState());
+        assertTrue(tooManyActions.detail().contains("actions=23/<=22"));
+    }
+
+    @Test
+    void p03RequiresTenEnemyActionsBeforeProtectedNpcIdentityCanBeResolved() {
+        CombatantState p03 = unit("p03", "P03", CombatantSide.ALLY);
+        BattleState state = victory(p03);
+        for (int i = 0; i < 9; i++) state.addEvent(new BattleEvent("ACTION", "enemy", p03.instanceId(), 0, "fixture"));
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_MET,
+                SignatureTrialEvaluator.evaluate("P03", state).objectiveState());
+
+        state.addEvent(new BattleEvent("ACTION", "enemy", p03.instanceId(), 0, "fixture"));
+        var unresolved = SignatureTrialEvaluator.evaluate("P03", state);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE, unresolved.objectiveState());
+        assertTrue(unresolved.detail().contains("enemyActions=10"));
+        assertTrue(unresolved.detail().contains("protected NPC"));
     }
 
     @Test
@@ -79,19 +134,6 @@ final class SignatureTrialEvaluatorTest {
         state.addEvent(new BattleEvent("ACTION", p07.instanceId(), p07.instanceId(), 0, "p07_summon_toto"));
         assertEquals(SignatureTrialEvaluator.ObjectiveState.MET,
                 SignatureTrialEvaluator.evaluate("P07", state).objectiveState());
-    }
-
-    @Test
-    void unresolvedIdentityTrialsStayNotEvaluable() {
-        BattleState p01State = victory(unit("p01", "P01", CombatantSide.ALLY));
-        BattleState p02State = victory(unit("p02", "P02", CombatantSide.ALLY));
-        BattleState p03State = victory(unit("p03", "P03", CombatantSide.ALLY));
-        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
-                SignatureTrialEvaluator.evaluate("P01", p01State).objectiveState());
-        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
-                SignatureTrialEvaluator.evaluate("P02", p02State).objectiveState());
-        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
-                SignatureTrialEvaluator.evaluate("P03", p03State).objectiveState());
     }
 
     @Test
