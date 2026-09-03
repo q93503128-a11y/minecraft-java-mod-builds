@@ -18,6 +18,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Predicate;
 
 public final class FieldDepotService {
@@ -25,6 +27,9 @@ public final class FieldDepotService {
     public static final int SUPPLY_RADIUS = 32;
     public static final int MAIN_INVENTORY_FIRST_SLOT = 9;
     public static final int MAIN_INVENTORY_END_EXCLUSIVE = 36;
+    private static final int SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS = 24;
+    private static final int SHARED_DEPOT_SCAN_VERTICAL_RADIUS = 8;
+    private static final Map<ServerPlayer, NearbySharedDepotCache> NEARBY_SHARED_DEPOT_CACHE = new WeakHashMap<>();
 
     private FieldDepotService() {}
 
@@ -278,19 +283,17 @@ public final class FieldDepotService {
 
     public static boolean isBulkMaterial(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
-        return stack.is(ItemTags.LOGS)
-                || stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)
-                || stack.is(Items.IRON_INGOT) || stack.is(Items.COPPER_INGOT) || stack.is(Items.GOLD_INGOT)
-                || stack.is(Items.COAL) || stack.is(Items.CHARCOAL) || stack.is(Items.REDSTONE)
+        if (SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.WOOD, stack)
+                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.STONE, stack)
+                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.METAL, stack)
+                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.FOOD, stack)) return true;
+        return stack.is(Items.COAL) || stack.is(Items.CHARCOAL) || stack.is(Items.REDSTONE)
                 || stack.is(Items.LAPIS_LAZULI) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)
                 || stack.is(Items.AMETHYST_SHARD) || stack.is(Items.QUARTZ) || stack.is(Items.ECHO_SHARD)
                 || stack.is(Items.NETHERITE_SCRAP) || stack.is(Items.NETHER_STAR) || stack.is(Items.DRAGON_BREATH)
-                || stack.is(Items.COBBLESTONE) || stack.is(Items.COBBLED_DEEPSLATE) || stack.is(Items.STONE)
-                || stack.is(Items.DEEPSLATE) || stack.is(Items.STONE_BRICKS) || stack.is(Items.NETHERRACK)
-                || stack.is(Items.END_STONE) || stack.is(Items.OBSIDIAN) || stack.is(Items.SAND)
-                || stack.is(Items.RED_SAND) || stack.is(Items.GRAVEL) || stack.is(Items.DIRT)
-                || stack.is(Items.GLASS) || stack.is(Items.SLIME_BALL)
-                || stack.is(Items.WHEAT) || stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)
+                || stack.is(Items.STONE_BRICKS) || stack.is(Items.NETHERRACK) || stack.is(Items.END_STONE)
+                || stack.is(Items.OBSIDIAN) || stack.is(Items.SAND) || stack.is(Items.RED_SAND)
+                || stack.is(Items.GRAVEL) || stack.is(Items.DIRT) || stack.is(Items.GLASS) || stack.is(Items.SLIME_BALL)
                 || stack.is(Items.WHEAT_SEEDS) || stack.is(Items.BEETROOT_SEEDS)
                 || stack.is(Items.MELON_SEEDS) || stack.is(Items.PUMPKIN_SEEDS);
     }
@@ -385,26 +388,43 @@ public final class FieldDepotService {
     }
 
     private static void appendNearbySharedSupplyDepots(ServerPlayer player, ServerLevel level, List<ResolvedContainer> resolved) {
-        final int horizontalRadius = 24;
-        final int verticalRadius = 8;
         java.util.Set<BlockPos> seen = new java.util.HashSet<>();
         for (ResolvedContainer value : resolved) seen.add(value.pos());
+        for (BlockPos pos : nearbySharedSupplyDepotPositions(player, level)) {
+            if (seen.contains(pos) || !level.hasChunkAt(pos)) continue;
+            if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;
+            if (!level.mayInteract(player, pos)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            seen.add(pos);
+            resolved.add(new ResolvedContainer(pos, container));
+        }
+    }
+
+    private static List<BlockPos> nearbySharedSupplyDepotPositions(ServerPlayer player, ServerLevel level) {
+        String dimension = level.dimension().toString();
         BlockPos origin = player.blockPosition();
-        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {
-            for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {
-                if (dx * dx + dz * dz > horizontalRadius * horizontalRadius) continue;
-                for (int dy = -verticalRadius; dy <= verticalRadius; dy++) {
+        long gameTime = level.getGameTime();
+        NearbySharedDepotCache cached = NEARBY_SHARED_DEPOT_CACHE.get(player);
+        if (cached != null && cached.gameTime() == gameTime
+                && cached.dimension().equals(dimension) && cached.origin().equals(origin)) {
+            return cached.positions();
+        }
+
+        List<BlockPos> found = new ArrayList<>();
+        for (int dx = -SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dx <= SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dx++) {
+            for (int dz = -SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dz <= SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dz++) {
+                if (dx * dx + dz * dz > SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS * SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS) continue;
+                for (int dy = -SHARED_DEPOT_SCAN_VERTICAL_RADIUS; dy <= SHARED_DEPOT_SCAN_VERTICAL_RADIUS; dy++) {
                     BlockPos pos = origin.offset(dx, dy, dz);
-                    if (seen.contains(pos) || !level.hasChunkAt(pos)) continue;
+                    if (!level.hasChunkAt(pos)) continue;
                     if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;
-                    if (!level.mayInteract(player, pos)) continue;
-                    if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
-                    BlockPos immutable = pos.immutable();
-                    seen.add(immutable);
-                    resolved.add(new ResolvedContainer(immutable, container));
+                    found.add(pos.immutable());
                 }
             }
         }
+        List<BlockPos> immutable = List.copyOf(found);
+        NEARBY_SHARED_DEPOT_CACHE.put(player, new NearbySharedDepotCache(dimension, origin.immutable(), gameTime, immutable));
+        return immutable;
     }
 
     private static boolean isUsableAnchor(ServerPlayer player, FieldDepotData.DepotEntry depot) {
@@ -467,4 +487,5 @@ public final class FieldDepotService {
 
     private static String coords(BlockPos pos) { return pos.getX() + ", " + pos.getY() + ", " + pos.getZ(); }
     private record ResolvedContainer(BlockPos pos, Container container) {}
+    private record NearbySharedDepotCache(String dimension, BlockPos origin, long gameTime, List<BlockPos> positions) {}
 }
