@@ -1,11 +1,9 @@
 package io.github.q93503128.turnbound.world;
 
-import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import io.github.q93503128.turnbound.network.GachaPresentationPayload;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
-import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -26,26 +24,29 @@ public final class MetaNetwork {
                 context.enqueueWork(() -> {
                     if (!(context.player() instanceof ServerPlayer player)) return;
                     String raw = payload.command();
-                    String effective = raw;
-                    if (raw != null && raw.startsWith("DEPLOY|")) effective = "START|" + raw.substring("DEPLOY|".length());
+                    if (raw == null || raw.isBlank()) return;
 
-                    String denial = MetaActionGate.denial(player.getUUID(), effective);
+                    // A briefing never grants authority to deploy by itself. DEPLOY is revalidated from scratch.
+                    if (raw.startsWith("DEPLOY|")) {
+                        EndgameDeploymentService.deploy(player, raw.substring("DEPLOY|".length()));
+                        return;
+                    }
+
+                    String denial = MetaActionGate.denial(player.getUUID(), raw);
                     if (!denial.isBlank()) {
                         player.sendSystemMessage(Component.literal("TURNBOUND · " + denial));
                         sync(player);
                         return;
                     }
 
-                    if (GachaPresentationService.handle(player, effective)) return;
+                    if (GachaPresentationService.handle(player, raw)) return;
 
-                    if (raw != null && raw.startsWith("START|") && !BattleSessionManager.exists(player)) {
-                        String encounterId = raw.substring("START|".length());
-                        if (EndgameEncounterCatalog.contains(encounterId) && EndgameEncounterCatalog.unlocked(player.getUUID(), encounterId)) {
-                            EndgameBriefing.send(player, EndgameBriefing.build(player.getUUID(), encounterId));
-                            return;
-                        }
+                    // SYSTEM/physical selectors use START only to request the server-authored confirmation surface.
+                    if (raw.startsWith("START|")) {
+                        EndgameDeploymentService.brief(player, raw.substring("START|".length()));
+                        return;
                     }
-                    MetaMenuService.command(player, effective);
+                    MetaMenuService.command(player, raw);
                 }));
     }
 
