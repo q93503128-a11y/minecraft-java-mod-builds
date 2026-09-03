@@ -12,16 +12,24 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Canonical v0.4 world-common progress. Player collection/growth stays in a Player Data Attachment;
  * physical world unlocks and one-time world claims live here so future multiplayer does not fork the authored map.
  */
 public final class TurnboundWorldSavedData extends SavedData {
+    public static final String REGION_RADIA = "RADIA";
+    public static final String REGION_GLOAMWOOD = "GLOAMWOOD";
+    public static final String REGION_BROKEN_AQUEDUCT = "BROKEN_AQUEDUCT";
+    public static final String REGION_EMBER_QUARRY = "EMBER_QUARRY";
+    public static final String REGION_OLD_RELAY_APPROACH = "OLD_RELAY_APPROACH";
+    public static final String REGION_ENDGAME = "ENDGAME";
+
     private static final Codec<TurnboundWorldSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.listOf().optionalFieldOf("clearedBosses", List.of())
                     .forGetter(data -> List.copyOf(data.clearedBosses)),
-            Codec.STRING.listOf().optionalFieldOf("unlockedRegions", List.of("RADIA"))
+            Codec.STRING.listOf().optionalFieldOf("unlockedRegions", List.of(REGION_RADIA))
                     .forGetter(data -> List.copyOf(data.unlockedRegions)),
             Codec.STRING.listOf().optionalFieldOf("claimedWorldRewards", List.of())
                     .forGetter(data -> List.copyOf(data.claimedWorldRewards))
@@ -38,13 +46,13 @@ public final class TurnboundWorldSavedData extends SavedData {
     private final Set<String> claimedWorldRewards = new LinkedHashSet<>();
 
     public TurnboundWorldSavedData() {
-        unlockedRegions.add("RADIA");
+        unlockedRegions.add(REGION_RADIA);
     }
 
     private TurnboundWorldSavedData(List<String> bosses, List<String> regions, List<String> claims) {
         clearedBosses.addAll(bosses);
         unlockedRegions.addAll(regions);
-        unlockedRegions.add("RADIA");
+        unlockedRegions.add(REGION_RADIA);
         claimedWorldRewards.addAll(claims);
     }
 
@@ -66,14 +74,34 @@ public final class TurnboundWorldSavedData extends SavedData {
         String boss = encounter.enemies().getFirst();
         boolean changed = clearedBosses.add(boss);
         changed |= switch (boss) {
-            case "B01" -> unlockedRegions.add("GLOAMWOOD");
-            case "B02" -> unlockedRegions.add("BROKEN_AQUEDUCT");
-            case "B03" -> unlockedRegions.add("EMBER_QUARRY");
-            case "B04" -> unlockedRegions.add("OLD_RELAY_APPROACH");
-            case "B05" -> unlockedRegions.add("ENDGAME");
+            case "B01" -> unlockedRegions.add(REGION_GLOAMWOOD);
+            case "B02" -> unlockedRegions.add(REGION_BROKEN_AQUEDUCT);
+            case "B03" -> unlockedRegions.add(REGION_EMBER_QUARRY);
+            // B04 only enables the Chapter 5 relay-fragment phase. The physical east road opens after MQ_C05_01.
+            // B05 alone also does not open endgame; MQ_C05_03 / ENDGAME is the canonical boundary.
             default -> false;
         };
         if (changed) setDirty();
+    }
+
+    /**
+     * Backfills shared world state from an already-existing player profile and promotes world-level quest gates.
+     * This is migration/reconciliation, not a second progression authority.
+     */
+    public void reconcilePlayerProgress(UUID playerId) {
+        if (playerId == null || !CampaignProgressStore.hasRuntime(playerId)) return;
+        var snapshot = CampaignProgressStore.snapshot(playerId);
+        for (String encounterId : List.of("BATTLE_B01", "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05")) {
+            if (snapshot.clearedEncounters().contains(encounterId)) recordEncounterClear(encounterId);
+        }
+        if (snapshot.quests().completed().contains("MQ_C05_01_relay_key")
+                || snapshot.quests().unlockFlags().contains("OLD_RELAY_ENTRANCE")) {
+            unlockRegion(REGION_OLD_RELAY_APPROACH);
+        }
+        if (snapshot.quests().completed().contains("MQ_C05_03_reconnect")
+                || snapshot.quests().unlockFlags().contains("ENDGAME")) {
+            unlockRegion(REGION_ENDGAME);
+        }
     }
 
     /** Idempotent one-time world claim gate for authored chests/landmarks. */
