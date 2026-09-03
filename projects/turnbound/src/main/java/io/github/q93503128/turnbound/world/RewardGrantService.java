@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
+import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.progression.QuestProgress;
 import io.github.q93503128.turnbound.session.BattleResultSummary;
@@ -65,10 +66,17 @@ public final class RewardGrantService {
                                        BattleState state, BattleOutcome outcome) {
         if (player == null) throw new IllegalArgumentException("Missing player");
         Path primary = CampaignPersistence.playerFile(player);
-        return commit(player.getUUID(), transactionId, encounterId, state, outcome,
+        Result result = commit(player.getUUID(), transactionId, encounterId, state, outcome,
                 snapshot -> RewardTransactionJournal.prepare(primary, transactionId, snapshot),
                 () -> CampaignPersistence.saveOrThrow(player),
                 () -> RewardTransactionJournal.clear(primary));
+
+        // Player rewards are committed first. The authored world's shared progression is a separate Minecraft SavedData
+        // concern, so future co-op sees one B01-B05/world-unlock history instead of per-player copies of physical state.
+        if (!result.duplicate() && outcome == BattleOutcome.ALLY_VICTORY && CampaignEncounterCatalog.contains(encounterId)) {
+            TurnboundWorldSavedData.get(player.level().getServer()).recordEncounterClear(encounterId);
+        }
+        return result;
     }
 
     static Result commit(UUID playerId, String transactionId, String encounterId,
