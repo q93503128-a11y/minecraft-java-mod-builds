@@ -1,0 +1,102 @@
+name: Manual Audit Worksite Export To Shared Depot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-audit-worksite-export-to-shared-depot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Add physical worksite-to-shared-depot export
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.java')
+          s = p.read_text(encoding='utf-8')
+
+          def once(old, new, label):
+              global s
+              c = s.count(old)
+              if c != 1:
+                  raise SystemExit(f'{label}: expected 1, got {c}')
+              s = s.replace(old, new, 1)
+
+          once('import net.minecraft.world.InteractionHand;\n', 'import net.minecraft.world.InteractionHand;\nimport net.minecraft.world.Container;\n', 'Container import')
+          once(
+              '    public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";\n',
+              '    public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";\n    private static final String WORKSITE_EXPORT_TAG = "frontier_settlement_worksite_export";\n',
+              'export tag')
+
+          # The same helper runs before each profession's ordinary production state machine. A stack
+          # first lands in its visible profession barrel, then the worker physically carries it to
+          # town/shared storage. This makes the custom shared depot a real bridge to Survival rather
+          # than leaving most production permanently stranded in vanilla worksite barrels.
+          for signature in [
+              '''    private static void workLumber(ServerLevel level, SettlementData data,\n                                   FrontierWorkerEntity worker, BuildingRecord camp) {\n        ItemStack carried = worker.getMainHandItem();\n''',
+              '''    private static void workFarm(ServerLevel level, SettlementData data,\n                                 FrontierWorkerEntity worker, BuildingRecord farm) {\n        ItemStack carried = worker.getMainHandItem();\n''',
+              '''    private static void workQuarry(ServerLevel level, SettlementData data,\n                                   FrontierWorkerEntity worker, BuildingRecord quarry) {\n        ItemStack carried = worker.getMainHandItem();\n''',
+              '''    private static void workMine(ServerLevel level, SettlementData data,\n                                 FrontierWorkerEntity worker, BuildingRecord mine) {\n        ItemStack carried = worker.getMainHandItem();\n'''
+          ]:
+              replacement = signature.rsplit('        ItemStack carried = worker.getMainHandItem();\n', 1)[0] + \
+                  '        if (tryExportWorksiteBuffer(level, data, worker, ' + \
+                  ('camp' if 'workLumber' in signature else 'farm' if 'workFarm' in signature else 'quarry' if 'workQuarry' in signature else 'mine') + \
+                  ')) return;\n        ItemStack carried = worker.getMainHandItem();\n'
+              c = s.count(signature)
+              if c != 1:
+                  raise SystemExit(f'work method anchor mismatch: {signature[:50]!r} count={c}')
+              s = s.replace(signature, replacement, 1)
+
+          anchor = '''    private static int cargoLimit(ItemStack stack) {\n        return Math.min(PRODUCTION_HAUL_STACK, stack.getMaxStackSize());\n    }\n'''
+          addition = '''    /**\n     * Profession barrels remain visible local buffers, but they are not dead-end economy silos.\n     * Once ordinary harvesting has staged a stack there, that same worker takes the physical stack\n     * and walks it to shared/general town storage. The export tag distinguishes this cargo from a\n     * freshly harvested stack so it cannot accidentally resume harvesting on the trip to town.\n     */\n    private static boolean tryExportWorksiteBuffer(ServerLevel level, SettlementData data,\n                                                   FrontierWorkerEntity worker, BuildingRecord building) {\n        if (worker.entityTags().contains(WORKSITE_EXPORT_TAG)) {\n            ItemStack exporting = worker.getMainHandItem();\n            if (exporting.isEmpty()) {\n                worker.removeTag(WORKSITE_EXPORT_TAG);\n                return false;\n            }\n            deliverToTownStorage(level, data, worker, exporting);\n            if (worker.getMainHandItem().isEmpty()) worker.removeTag(WORKSITE_EXPORT_TAG);\n            return true;\n        }\n        if (!worker.getMainHandItem().isEmpty()) return false;\n\n        BlockPos local = SettlementStorageService.worksiteStoragePosition(building);\n        if (local == null || !level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)) return false;\n        if (!(level.getBlockEntity(local) instanceof Container container)) return false;\n        if (!hasExportableWorksiteOutput(building.buildingType(), container)) return false;\n\n        if (worker.distanceToSqr(local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D) > 9.0D) {\n            moveNear(level, worker, local, 0.86D);\n            return true;\n        }\n\n        ItemStack staged = SettlementStorageService.extract(\n                level, local, stack -> isExportableWorksiteOutput(building.buildingType(), stack), PRODUCTION_HAUL_STACK);\n        if (staged.isEmpty()) return false;\n        worker.setItemSlot(EquipmentSlot.MAINHAND, staged);\n        worker.addTag(WORKSITE_EXPORT_TAG);\n        worker.getNavigation().stop();\n        return true;\n    }\n\n    private static boolean hasExportableWorksiteOutput(BuildingType type, Container container) {\n        for (int slot = 0; slot < container.getContainerSize(); slot++) {\n            if (isExportableWorksiteOutput(type, container.getItem(slot))) return true;\n        }\n        return false;\n    }\n\n    private static boolean isExportableWorksiteOutput(BuildingType type, ItemStack stack) {\n        if (stack == null || stack.isEmpty() || type == null) return false;\n        return switch (type) {\n            case LUMBER_CAMP -> SettlementInventory.isWood(stack);\n            case FARM -> SettlementInventory.isFood(stack);\n            case QUARRY -> SettlementInventory.isStone(stack);\n            // Mine output includes fuels, gems and other exact catalysts as well as metal-category\n            // stacks. Its managed barrel is an output buffer, not a personal chest, so export all.\n            case MINE -> true;\n            default -> false;\n        };\n    }\n\n''' + anchor
+          if s.count(anchor) != 1:
+              raise SystemExit('cargoLimit insertion anchor mismatch')
+          s = s.replace(anchor, addition, 1)
+
+          p.write_text(s, encoding='utf-8')
+          out = p.read_text(encoding='utf-8')
+          assert out.count('tryExportWorksiteBuffer(level, data, worker,') == 4
+          assert 'WORKSITE_EXPORT_TAG' in out
+          assert 'SettlementStorageService.extract(' in out
+          assert 'deliverToTownStorage(level, data, worker, exporting);' in out
+          print('WORKSITE SHARED-ECONOMY EXPORT INVARIANTS PASS')
+          PY
+
+      - name: Frontier canonical audits and build
+        working-directory: projects/frontier-settlement
+        run: |
+          python3 tools/test_alpha91_docs.py
+          python3 tools/test_alpha91_source.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.91.jar
+
+      - name: Survival compatibility regression build
+        working-directory: projects/survival-ascension
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+
+      - name: Commit validated worksite export
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.java
+          git commit -m 'Route worksite output into shared town storage'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
