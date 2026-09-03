@@ -20,6 +20,8 @@ outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
 military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
 barracks = text(JAVA / "settlement/SettlementBarracksService.java")
+waterfront = text(JAVA / "settlement/SettlementWaterfrontService.java")
+market = text(JAVA / "settlement/SettlementMarketService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -126,6 +128,31 @@ forbid(barracks, (
     "duplicate.setNoAi(true);",
     "return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());"
 ), "legacy barracks duplicate containment")
+must(waterfront, (
+    "active.setInvulnerable(false);",
+    "trader.setInvulnerable(false);",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, traders.get(i))",
+    "level, worker, placement.pos(), 0.78D, INTERACTION_RANGE_SQR",
+    "level, worker, stock, 0.8D, INTERACTION_RANGE_SQR"
+), "waterfront trader/build path hardening")
+forbid(waterfront, (
+    "duplicate.setNoAi(true);",
+    "duplicate.setInvulnerable(true);",
+    "trader.setInvulnerable(true);",
+    "worker.getNavigation().moveTo(placement.pos().getX() + 0.5D",
+    "worker.getNavigation().moveTo(stock.getX() + 0.5D"
+), "legacy waterfront lifecycle/pathing")
+must(market, (
+    "active.setInvulnerable(false);",
+    "trader.setInvulnerable(false);",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))",
+    "level, trader, crate, 0.7D, CRATE_REACHED_SQR"
+), "market trader/path hardening")
+forbid(market, (
+    "duplicate.setNoAi(true);",
+    "duplicate.setInvulnerable(true);",
+    "trader.getNavigation().moveTo(crate.getX() + 0.5D"
+), "legacy market lifecycle/pathing")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"

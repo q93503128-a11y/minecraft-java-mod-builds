@@ -46,7 +46,8 @@ public final class SettlementMarketService {
             FrontierWorkerEntity trader = ensureTrader(level, market);
             if (trader == null) continue;
             if (trader.distanceToSqr(crate.getX() + 0.5D, crate.getY() + 0.5D, crate.getZ() + 0.5D) > CRATE_REACHED_SQR) {
-                trader.getNavigation().moveTo(crate.getX() + 0.5D, crate.getY(), crate.getZ() + 0.5D, 0.7D);
+                SettlementWorkerStorageNavigation.moveToInteraction(
+                        level, trader, crate, 0.7D, CRATE_REACHED_SQR);
                 continue;
             }
             if (!workDue(server, market)) continue;
@@ -132,11 +133,9 @@ public final class SettlementMarketService {
         if (!assigned.isEmpty()) {
             FrontierWorkerEntity active = assigned.getFirst();
             active.setNoAi(false);
+            active.setInvulnerable(false);
             for (int i = 1; i < assigned.size(); i++) {
-                FrontierWorkerEntity duplicate = assigned.get(i);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
-                duplicate.setInvulnerable(true);
+                SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i));
             }
             return active;
         }
@@ -149,6 +148,7 @@ public final class SettlementMarketService {
         trader.setCustomNameVisible(true);
         trader.setPersistenceRequired();
         trader.setNoAi(false);
+        trader.setInvulnerable(false);
         trader.addTag(MARKET_TRADER_TAG);
         trader.addTag(assignment);
         return level.addFreshEntity(trader) ? trader : null;

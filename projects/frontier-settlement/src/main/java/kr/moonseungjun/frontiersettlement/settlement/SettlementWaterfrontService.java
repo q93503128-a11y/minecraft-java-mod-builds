@@ -194,7 +194,8 @@ public final class SettlementWaterfrontService {
 
         if (worker.distanceToSqr(placement.pos().getX() + 0.5D, placement.pos().getY(), placement.pos().getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            worker.getNavigation().moveTo(placement.pos().getX() + 0.5D, placement.pos().getY(), placement.pos().getZ() + 0.5D, 0.78D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, worker, placement.pos(), 0.78D, INTERACTION_RANGE_SQR);
             return;
         }
 
@@ -215,7 +216,8 @@ public final class SettlementWaterfrontService {
         }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            worker.getNavigation().moveTo(stock.getX() + 0.5D, stock.getY(), stock.getZ() + 0.5D, 0.8D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, worker, stock, 0.8D, INTERACTION_RANGE_SQR);
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
@@ -283,11 +285,12 @@ public final class SettlementWaterfrontService {
         if (!traders.isEmpty()) {
             FrontierWorkerEntity active = traders.getFirst();
             active.setNoAi(false);
+            active.setInvulnerable(false);
+            // One completed waterfront owns one visible trader. Extra loaded bodies with the exact
+            // assignment tag are definitive duplicates; preserve any unexpected MAINHAND cargo and
+            // discard them instead of retaining immortal NoAI statues in historical saves.
             for (int i = 1; i < traders.size(); i++) {
-                FrontierWorkerEntity duplicate = traders.get(i);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
-                duplicate.setInvulnerable(true);
+                SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, traders.get(i));
             }
             return active;
         }
@@ -299,7 +302,7 @@ public final class SettlementWaterfrontService {
         trader.setCustomNameVisible(true);
         trader.setPersistenceRequired();
         trader.setNoAi(false);
-        trader.setInvulnerable(true);
+        trader.setInvulnerable(false);
         trader.addTag(WATER_TRADER_TAG);
         trader.addTag(assignment);
         return level.addFreshEntity(trader) ? trader : null;
