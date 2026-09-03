@@ -10,6 +10,7 @@ public final class AsterMarchContentOrchestrator {
     private AsterMarchContentOrchestrator() {}
 
     public static void build(ServerLevel level) {
+        AsterMarchAmbientDressing.build(level);
         CharacterQuestWorldSites.build(level);
         RegionQuestWorldSites.build(level);
         ExplorationCodexSites.build(level);
