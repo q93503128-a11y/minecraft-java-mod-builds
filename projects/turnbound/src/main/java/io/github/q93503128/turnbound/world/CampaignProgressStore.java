@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleStats;
+import io.github.q93503128.turnbound.content.AwakeningRouteRules;
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.QuestCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
@@ -258,6 +259,9 @@ public final class CampaignProgressStore {
     }
 
     public static CharacterGrowthRules.State awaken(UUID playerId, String characterId) {
+        if (AwakeningRouteRules.canonGap(characterId)) {
+            throw new IllegalStateException(AwakeningRouteRules.blockReason(characterId));
+        }
         PlayerProgress progress = player(playerId);
         CharacterGrowthRules.State state = requireGrowth(progress, characterId);
         CharacterProgression.State level = requireCharacter(progress, characterId);
