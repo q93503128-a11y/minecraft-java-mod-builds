@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 public final class SettlementWorkerService {
     public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";
+    private static final String WORKSITE_EXPORT_TAG = "frontier_settlement_worksite_export";
     private static final String LUMBER_WORKER_NAME = "벌목 주민";
     private static final String FARM_WORKER_NAME = "농사 주민";
     private static final String QUARRY_WORKER_NAME = "채석 주민";
@@ -455,6 +457,7 @@ public final class SettlementWorkerService {
 
     private static void workLumber(ServerLevel level, SettlementData data,
                                    FrontierWorkerEntity worker, BuildingRecord camp) {
+        if (tryExportWorksiteBuffer(level, data, worker, camp)) return;
         ItemStack carried = worker.getMainHandItem();
         Item expected = carried.isEmpty() ? null : carried.getItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
@@ -484,6 +487,7 @@ public final class SettlementWorkerService {
 
     private static void workFarm(ServerLevel level, SettlementData data,
                                  FrontierWorkerEntity worker, BuildingRecord farm) {
+        if (tryExportWorksiteBuffer(level, data, worker, farm)) return;
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty() && !carried.is(Items.WHEAT)) {
             deliverToWorksiteStorage(level, data, worker, farm, carried);
@@ -530,6 +534,7 @@ public final class SettlementWorkerService {
 
     private static void workQuarry(ServerLevel level, SettlementData data,
                                    FrontierWorkerEntity worker, BuildingRecord quarry) {
+        if (tryExportWorksiteBuffer(level, data, worker, quarry)) return;
         ItemStack carried = worker.getMainHandItem();
         Item expected = carried.isEmpty() ? null : carried.getItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
@@ -559,6 +564,7 @@ public final class SettlementWorkerService {
 
     private static void workMine(ServerLevel level, SettlementData data,
                                  FrontierWorkerEntity worker, BuildingRecord mine) {
+        if (tryExportWorksiteBuffer(level, data, worker, mine)) return;
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
             deliverToWorksiteStorage(level, data, worker, mine, carried);
@@ -585,6 +591,65 @@ public final class SettlementWorkerService {
         }
         ItemStack mined = mineOre(level, ore, room);
         if (!mined.isEmpty() && appendCargo(worker, mined)) worker.swing(InteractionHand.MAIN_HAND);
+    }
+
+    /**
+     * Profession barrels remain visible local buffers, but they are not dead-end economy silos.
+     * Once ordinary harvesting has staged a stack there, that same worker takes the physical stack
+     * and walks it to shared/general town storage. The export tag distinguishes this cargo from a
+     * freshly harvested stack so it cannot accidentally resume harvesting on the trip to town.
+     */
+    private static boolean tryExportWorksiteBuffer(ServerLevel level, SettlementData data,
+                                                   FrontierWorkerEntity worker, BuildingRecord building) {
+        if (worker.entityTags().contains(WORKSITE_EXPORT_TAG)) {
+            ItemStack exporting = worker.getMainHandItem();
+            if (exporting.isEmpty()) {
+                worker.removeTag(WORKSITE_EXPORT_TAG);
+                return false;
+            }
+            deliverToTownStorage(level, data, worker, exporting);
+            if (worker.getMainHandItem().isEmpty()) worker.removeTag(WORKSITE_EXPORT_TAG);
+            return true;
+        }
+        if (!worker.getMainHandItem().isEmpty()) return false;
+
+        BlockPos local = SettlementStorageService.worksiteStoragePosition(building);
+        if (local == null || !level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)) return false;
+        if (!(level.getBlockEntity(local) instanceof Container container)) return false;
+        if (!hasExportableWorksiteOutput(building.buildingType(), container)) return false;
+
+        if (worker.distanceToSqr(local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D) > 9.0D) {
+            moveNear(level, worker, local, 0.86D);
+            return true;
+        }
+
+        ItemStack staged = SettlementStorageService.extract(
+                level, local, stack -> isExportableWorksiteOutput(building.buildingType(), stack), PRODUCTION_HAUL_STACK);
+        if (staged.isEmpty()) return false;
+        worker.setItemSlot(EquipmentSlot.MAINHAND, staged);
+        worker.addTag(WORKSITE_EXPORT_TAG);
+        worker.getNavigation().stop();
+        return true;
+    }
+
+    private static boolean hasExportableWorksiteOutput(BuildingType type, Container container) {
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            if (isExportableWorksiteOutput(type, container.getItem(slot))) return true;
+        }
+        return false;
+    }
+
+    private static boolean isExportableWorksiteOutput(BuildingType type, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || type == null) return false;
+        return switch (type) {
+            case LUMBER_CAMP -> SettlementInventory.isWood(stack);
+            case FARM -> SettlementInventory.isFood(stack);
+            case QUARRY -> SettlementInventory.isStone(stack);
+            // Mine output includes fuels, gems and other exact catalysts as well as metal-category
+            // stacks. Its managed barrel is an output buffer, not a personal chest, so export all.
+            case MINE -> true;
+            default -> false;
+        };
     }
 
     private static int cargoLimit(ItemStack stack) {
