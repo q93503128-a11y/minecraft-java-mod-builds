@@ -17,6 +17,7 @@ lock = json.loads(text(ROOT / "COMPANION_LOCK.json"))
 worker = text(JAVA / "settlement/SettlementWorkerService.java")
 storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
+fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -84,6 +85,16 @@ must(advanced_workshop, (
 forbid(outpost, (
     "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",
 ), "outpost forced storage fallback")
+must(fishing, (
+    "active.setInvulnerable(false);",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, workers.get(i))",
+    "SettlementWorkerStorageNavigation.moveToInteraction(level, worker, stock, 0.82D, WORK_RANGE_SQR)"
+), "fishing worker lifecycle/storage reachability")
+forbid(fishing, (
+    "duplicate.setNoAi(true);",
+    "duplicate.setInvulnerable(true);",
+    "worker.getNavigation().moveTo(stock.getX() + 0.5D"
+), "legacy fishing duplicate/storage pathing")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"

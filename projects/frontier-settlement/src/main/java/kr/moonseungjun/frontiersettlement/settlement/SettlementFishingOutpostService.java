@@ -133,11 +133,12 @@ public final class SettlementFishingOutpostService {
         if (workers.isEmpty()) return null;
         FrontierWorkerEntity active = workers.getFirst();
         active.setNoAi(false);
+        active.setInvulnerable(false);
+        // One fishing overlay owns one physical worker. More than one loaded body with the exact
+        // assignment tag is conclusive duplicate evidence; preserve any real caught fish in MAINHAND
+        // and discard the excess body instead of leaving immortal NoAI statues in old saves.
         for (int i = 1; i < workers.size(); i++) {
-            FrontierWorkerEntity duplicate = workers.get(i);
-            duplicate.getNavigation().stop();
-            duplicate.setNoAi(true);
-            duplicate.setInvulnerable(true);
+            SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, workers.get(i));
         }
         return active;
     }
@@ -203,7 +204,7 @@ public final class SettlementFishingOutpostService {
             return;
         }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D) > WORK_RANGE_SQR) {
-            worker.getNavigation().moveTo(stock.getX() + 0.5D, stock.getY(), stock.getZ() + 0.5D, 0.82D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, stock, 0.82D, WORK_RANGE_SQR);
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
