@@ -1,0 +1,65 @@
+name: Sync Shared Economy Generator Current Runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-shared-economy-generator-current.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-validate-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Synchronize legacy generator templates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_shared_supply_economy.py')
+          s = p.read_text(encoding='utf-8')
+
+          def once(old, new, label):
+              global s
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1, got {count}')
+              s = s.replace(old, new, 1)
+
+          once(
+              'import net.minecraft.world.item.BlockItem;\nimport net.minecraft.world.level.block.SoundType;',
+              'import net.minecraft.world.item.BlockItem;\nimport net.minecraft.world.item.CreativeModeTabs;\nimport net.minecraft.world.level.block.SoundType;',
+              'FrontierContent creative tabs import')
+          once(
+              'import net.neoforged.bus.api.IEventBus;\nimport net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;',
+              'import net.neoforged.bus.api.IEventBus;\nimport net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;\nimport net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;',
+              'FrontierContent creative event import')
+          once(
+              '        BLOCK_ENTITIES.register(modBus);\n        modBus.addListener(FrontierContent::onEntityAttributes);\n    }\n\n    private static void onEntityAttributes(EntityAttributeCreationEvent event) {\n        event.put(FRONTIER_SOLDIER.get(), IronGolem.createAttributes().build());\n        event.put(FRONTIER_WORKER.get(), FrontierWorkerEntity.createAttributes().build());\n    }\n}',
+              '        BLOCK_ENTITIES.register(modBus);\n        modBus.addListener(FrontierContent::onEntityAttributes);\n        modBus.addListener(FrontierContent::onCreativeTabContents);\n    }\n\n    private static void onEntityAttributes(EntityAttributeCreationEvent event) {\n        event.put(FRONTIER_SOLDIER.get(), IronGolem.createAttributes().build());\n        event.put(FRONTIER_WORKER.get(), FrontierWorkerEntity.createAttributes().build());\n    }\n\n    private static void onCreativeTabContents(BuildCreativeModeTabContentsEvent event) {\n        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {\n            event.accept(SUPPLY_DEPOT_ITEM.get());\n        }\n        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {\n            event.accept(PIONEER_MARKER.get());\n        }\n    }\n}',
+              'FrontierContent creative tab body')
+          once(
+              '    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {\n        if (level.getBlockEntity(pos) instanceof SupplyDepotBlockEntity depot) {\n            Containers.dropContents(level, pos, depot);\n        }\n        SupplyDepotRegistryService.unregister(level, pos);\n        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);\n    }',
+              '    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {\n        // Container contents are exported by BlockEntity#preRemoveSideEffects before this hook.\n        SupplyDepotRegistryService.unregister(level, pos);\n        Containers.updateNeighboursAfterDestroy(state, level, pos);\n        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);\n    }',
+              'SupplyDepot removal lifecycle')
+
+          p.write_text(s, encoding='utf-8')
+          assert 'BuildCreativeModeTabContentsEvent' in s
+          assert 'Containers.updateNeighboursAfterDestroy' in s
+          assert 'Containers.dropContents(level, pos, depot)' not in s
+          print('SHARED ECONOMY GENERATOR SYNC PASS')
+          PY
+          python3 -m py_compile tools/apply_shared_supply_economy.py
+      - name: Commit synchronized generator
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/apply_shared_supply_economy.py
+          git commit -m 'Keep shared economy generator aligned with hardened runtime'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
