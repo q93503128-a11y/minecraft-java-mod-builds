@@ -1,0 +1,20 @@
+name: Run FULL Pack After Alternate Depot Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/run-full-after-alternate-depot.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch canonical FULL workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run frontier-survival-full-new-world.yml --repo "${{ github.repository }}" --ref main
