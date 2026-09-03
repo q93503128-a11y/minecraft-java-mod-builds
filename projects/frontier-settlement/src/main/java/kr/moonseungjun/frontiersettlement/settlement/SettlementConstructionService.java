@@ -930,8 +930,10 @@ public final class SettlementConstructionService {
 
         for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
-            // Ground work retains the historical wide local envelope as the final compatibility fallback.
-            if (work.getY() <= construction.originY() && workDistance <= WORK_POSITION_REACHED_SQR) return true;
+            // Ground authority is legal only for genuinely low work. Never let a ground fallback
+            // authorize roof/tower placement merely because the footprint is nearby.
+            if (relativeY <= 3 && work.getY() <= construction.originY()
+                    && workDistance <= WORK_POSITION_REACHED_SQR) return true;
             // High work only becomes authoritative after the builder has physically reached the
             // elevated scaffold work cell. Scaffold coverage may be wide across a large roof, but
             // standing on the ground inside that same coverage radius is no longer sufficient.
@@ -963,9 +965,8 @@ public final class SettlementConstructionService {
         }
         result.sort(Comparator.comparingDouble(pos -> builder.distanceToSqr(
                 pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
-        // If every scaffold route is temporarily unavailable, preserve the old ground fallback so an
-        // existing save is never made stricter by this hotfix.
-        result.add(ground);
+        // High work has no ground-authority fallback. If no claimed, usable scaffold can cover this
+        // placement, construction pauses safely instead of remotely placing from the footprint.
         return List.copyOf(result);
     }
 
