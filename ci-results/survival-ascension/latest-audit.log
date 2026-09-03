@@ -1,6 +1,3 @@
-SOURCE AUDIT FAIL
-- civil project missing: new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)
-- civil project missing: new Requirement(Items.COBBLESTONE, "조약돌", 256)
-- civil project missing: new Requirement(Items.GRAVEL, "자갈", 256)
-RELEASE SOURCE AUDIT FAIL: baseline regression contract failed
+RELEASE SOURCE AUDIT FAIL
+- 0.49/0.50 production UI missing: 산업 가공소 완공 → 통 4블록 이내
 RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.61 runtime identity
