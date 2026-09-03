@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.SignatureTrialEvaluator;
 import io.github.q93503128.turnbound.content.SignatureTrialCatalog;
+import io.github.q93503128.turnbound.content.SignatureTrialEncounterAuthoring;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
 
@@ -48,9 +49,10 @@ public final class SignatureTrialProgressService {
 
         CharacterProgression.State level = CampaignProgressStore.character(playerId, characterId);
         CharacterGrowthRules.State growth = CampaignProgressStore.growth(playerId, characterId);
-        boolean canonReady = false; // v0.4 currently has identity/roster gaps or the P08 prerequisite contradiction.
+        SignatureTrialEncounterAuthoring.Validation encounter = SignatureTrialEncounterAuthoring.readiness(characterId);
+        boolean canonReady = encounter.ready();
         String reason = progressionBlock(endgame, level, growth);
-        if (reason.isBlank() && !canonReady) reason = spec.authoringBlockReason();
+        if (reason.isBlank() && !canonReady) reason = encounter.blockReason();
         return new Status(characterId, spec.title(), true, endgame, level.level(), growth.currentStar(),
                 growth.characterQuestComplete(), growth.signatureTrialCleared(), canonReady,
                 spec.objective(), reason);
