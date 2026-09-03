@@ -841,6 +841,12 @@ public final class SettlementConstructionService {
                 return false;
             }
             if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
+            // Completion itself never depends on scaffold cleanup. But if an already-paid blueprint
+            // block has drifted/missing at height, the repair pass needs the same physical scaffold
+            // authority as ordinary construction. Rebuild only in that exceptional repair path.
+            if (placement.pos().getY() - data.construction().originY() > 3) {
+                ensureConstructionScaffolds(level, data, type, supply);
+            }
             if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;
             if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
             builder.swing(InteractionHand.MAIN_HAND);
