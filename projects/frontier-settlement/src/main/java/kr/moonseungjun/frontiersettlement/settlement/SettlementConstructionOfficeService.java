@@ -7,9 +7,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
@@ -103,7 +106,7 @@ public final class SettlementConstructionOfficeService {
         boolean wantWood = missingWood >= missingStone;
         Predicate<ItemStack> wanted = wantWood ? SettlementInventory::isWood : SettlementInventory::isStone;
         int missing = wantWood ? missingWood : missingStone;
-        BlockPos source = nearestOrdinarySource(level, data, office.workCenter(), wanted);
+        BlockPos source = nearestOrdinarySource(level, data, office.workCenter(), runner, wanted);
         if (source == null) {
             wantWood = !wantWood;
             wanted = wantWood ? SettlementInventory::isWood : SettlementInventory::isStone;
@@ -112,7 +115,7 @@ public final class SettlementConstructionOfficeService {
                 moveOrStop(runner, home, 0.72D);
                 return;
             }
-            source = nearestOrdinarySource(level, data, office.workCenter(), wanted);
+            source = nearestOrdinarySource(level, data, office.workCenter(), runner, wanted);
             if (source == null) {
                 moveOrStop(runner, home, 0.72D);
                 return;
@@ -121,7 +124,7 @@ public final class SettlementConstructionOfficeService {
 
         if (runner.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            runner.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.86D);
+            moveToInteraction(level, runner, source, 0.86D);
             return;
         }
         ItemStack extracted = SettlementStorageService.extract(level, source, wanted,
@@ -131,15 +134,17 @@ public final class SettlementConstructionOfficeService {
 
     private static boolean deliverCarried(ServerLevel level, SettlementData data, BuildingRecord office, FrontierWorkerEntity runner) {
         ItemStack carried = runner.getMainHandItem();
-        BlockPos target = nearestOfficeRoom(level, office, carried, runner.blockPosition());
-        if (target == null) target = nearestOrdinaryDeposit(level, data, office, carried, runner.blockPosition());
+        BlockPos target = nearestOfficeRoom(level, office, runner, carried, runner.blockPosition());
+        if (target == null) target = nearestOrdinaryDeposit(level, data, office, runner, carried, runner.blockPosition());
         if (target == null) {
+            // No reachable destination: keep the exact physical cargo in MAINHAND instead of freezing
+            // it inside a failed navigation order or discarding it.
             runner.getNavigation().stop();
             return true;
         }
         if (runner.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            runner.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.88D);
+            moveToInteraction(level, runner, target, 0.88D);
             return true;
         }
         ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);
@@ -147,15 +152,17 @@ public final class SettlementConstructionOfficeService {
         return true;
     }
 
-    private static BlockPos nearestOfficeRoom(ServerLevel level, BuildingRecord office, ItemStack carried, BlockPos from) {
+    private static BlockPos nearestOfficeRoom(ServerLevel level, BuildingRecord office, FrontierWorkerEntity runner,
+                                              ItemStack carried, BlockPos from) {
         return ConstructionOfficeLayout.materialPositions(office).stream()
                 .filter(pos -> SettlementStorageService.hasRoomAt(level, pos, carried))
+                .filter(pos -> canReachInteraction(level, runner, pos))
                 .min(Comparator.comparingDouble(pos -> pos.distSqr(from)))
                 .orElse(null);
     }
 
     private static BlockPos nearestOrdinarySource(ServerLevel level, SettlementData data, BlockPos office,
-                                                   Predicate<ItemStack> wanted) {
+                                                   FrontierWorkerEntity runner, Predicate<ItemStack> wanted) {
         double maxDistance = (double) SOURCE_RADIUS * SOURCE_RADIUS;
         BlockPos best = null;
         double bestDistance = Double.MAX_VALUE;
@@ -169,18 +176,20 @@ public final class SettlementConstructionOfficeService {
                 ItemStack stack = container.getItem(slot);
                 if (!stack.isEmpty() && wanted.test(stack)) { found = true; break; }
             }
-            if (found) { best = pos; bestDistance = distance; }
+            if (found && canReachInteraction(level, runner, pos)) { best = pos; bestDistance = distance; }
         }
         return best;
     }
 
-    private static BlockPos nearestOrdinaryDeposit(ServerLevel level, SettlementData data, BuildingRecord officeRecord, ItemStack carried, BlockPos from) {
+    private static BlockPos nearestOrdinaryDeposit(ServerLevel level, SettlementData data, BuildingRecord officeRecord,
+                                                   FrontierWorkerEntity runner, ItemStack carried, BlockPos from) {
         BlockPos office = officeRecord.workCenter();
         double maxDistance = (double) SOURCE_RADIUS * SOURCE_RADIUS;
         return SettlementStorageService.ordinaryStoragePositions(data).stream()
                 .filter(pos -> office == null || pos.distSqr(office) <= maxDistance)
                 .filter(pos -> corridorLoaded(level, from, pos))
                 .filter(pos -> SettlementStorageService.hasRoomAt(level, pos, carried))
+                .filter(pos -> canReachInteraction(level, runner, pos))
                 .min(Comparator.comparingDouble(pos -> pos.distSqr(from)))
                 .orElse(null);
     }
@@ -203,11 +212,11 @@ public final class SettlementConstructionOfficeService {
             FrontierWorkerEntity keep = existing.getFirst();
             keep.setNoAi(false);
             keep.setInvulnerable(true);
+            // More than one loaded body for one office is definitive duplicate evidence even if a
+            // wider route chunk is unloaded. Preserve each duplicate's physical cargo, then discard
+            // the excess entity instead of leaving immortal NoAI statues in old saves forever.
             for (int i = 1; i < existing.size(); i++) {
-                FrontierWorkerEntity duplicate = existing.get(i);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
-                duplicate.setInvulnerable(true);
+                removeDuplicateRunnerPreservingCargo(level, existing.get(i));
             }
             return keep;
         }
@@ -295,6 +304,77 @@ public final class SettlementConstructionOfficeService {
         if (runner.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 4.0D) {
             runner.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
         } else runner.getNavigation().stop();
+    }
+
+    private static boolean removeDuplicateRunnerPreservingCargo(ServerLevel level, FrontierWorkerEntity duplicate) {
+        duplicate.getNavigation().stop();
+        ItemStack carried = duplicate.getMainHandItem();
+        if (!carried.isEmpty()) {
+            ItemEntity physical = new ItemEntity(level, duplicate.getX(), duplicate.getY(), duplicate.getZ(), carried.copy());
+            if (!level.addFreshEntity(physical)) return false;
+            duplicate.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        duplicate.setNoAi(false);
+        duplicate.setInvulnerable(false);
+        duplicate.discard();
+        return true;
+    }
+
+    private static boolean canReachInteraction(ServerLevel level, FrontierWorkerEntity runner, BlockPos target) {
+        if (runner.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= INTERACTION_RANGE_SQR) return true;
+        for (BlockPos approach : interactionApproaches(level, runner, target)) {
+            if (createInteractionPath(runner, approach) != null) return true;
+        }
+        return false;
+    }
+
+    private static boolean moveToInteraction(ServerLevel level, FrontierWorkerEntity runner,
+                                             BlockPos target, double speed) {
+        if (runner.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= INTERACTION_RANGE_SQR) return true;
+        for (BlockPos approach : interactionApproaches(level, runner, target)) {
+            Path path = createInteractionPath(runner, approach);
+            if (path != null && runner.getNavigation().moveTo(path, speed)) return true;
+        }
+        runner.getNavigation().stop();
+        return false;
+    }
+
+    private static List<BlockPos> interactionApproaches(ServerLevel level, FrontierWorkerEntity runner, BlockPos target) {
+        int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
+        java.util.ArrayList<BlockPos> result = new java.util.ArrayList<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int[] offset : offsets) {
+                BlockPos approach = target.offset(offset[0], dy, offset[1]);
+                if (isWalkableInteractionCell(level, approach)) result.add(approach);
+            }
+        }
+        result.sort(Comparator.comparingDouble(pos -> runner.distanceToSqr(
+                pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
+        return List.copyOf(result);
+    }
+
+    private static Path createInteractionPath(FrontierWorkerEntity runner, BlockPos target) {
+        Path path = runner.getNavigation().createPath(target, 0);
+        if (path == null || !path.canReach() || path.getEndNode() == null
+                || !path.getEndNode().asBlockPos().equals(target)) return null;
+        return path;
+    }
+
+    private static boolean isWalkableInteractionCell(ServerLevel level, BlockPos feet) {
+        BlockPos head = feet.above();
+        BlockPos below = feet.below();
+        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head) || !level.hasChunkAt(below)) return false;
+        if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
+        BlockState feetState = level.getBlockState(feet);
+        BlockState headState = level.getBlockState(head);
+        BlockState belowState = level.getBlockState(below);
+        if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()
+                || !belowState.getFluidState().isEmpty()) return false;
+        if ((!feetState.isAir() && !feetState.canBeReplaced())
+                || (!headState.isAir() && !headState.canBeReplaced())) return false;
+        return !belowState.isAir() && !belowState.canBeReplaced();
     }
 
     private static String assignmentTag(BuildingRecord office) {

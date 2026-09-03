@@ -17,6 +17,7 @@ lock = json.loads(text(ROOT / "COMPANION_LOCK.json"))
 worker = text(JAVA / "settlement/SettlementWorkerService.java")
 storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
+office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 entity = text(JAVA / "content/FrontierWorkerEntity.java")
 blueprints = text(JAVA / "settlement/BuildingBlueprints.java")
 service = text(JAVA / "settlement/SettlementService.java")
@@ -51,6 +52,14 @@ must(outpost, (
 forbid(outpost, (
     "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",
 ), "outpost forced storage fallback")
+must(office, (
+    "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
+    "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"
+), "construction office runner hardening")
+forbid(office, (
+    "duplicate.setNoAi(true);",
+    "runner.getNavigation().moveTo(source.getX() + 0.5D",
+), "construction office legacy runner freeze/source pathing")
 must(service, (
     "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
     "SupplyDepotRegistryService.tryRegister(level, stockpile)",
