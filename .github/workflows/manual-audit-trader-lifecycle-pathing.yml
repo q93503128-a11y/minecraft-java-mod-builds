@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/manual-audit-trader-lifecycle-pathing.yml'
-      - 'projects/frontier-settlement/tools/patch_trader_lifecycle_pathing.py'
+      - 'projects/frontier-settlement/tools/patch_trader_lifecycle_pathing_v2.py'
 
 permissions:
   contents: write
@@ -28,7 +28,7 @@ jobs:
           java-version: '25'
 
       - name: Apply trader lifecycle/pathing hardening
-        run: python3 projects/frontier-settlement/tools/patch_trader_lifecycle_pathing.py
+        run: python3 projects/frontier-settlement/tools/patch_trader_lifecycle_pathing_v2.py
 
       - name: Frontier source audit
         working-directory: projects/frontier-settlement
