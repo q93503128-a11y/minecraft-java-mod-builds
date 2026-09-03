@@ -18,65 +18,89 @@ Generic head/torso/two-arm/two-leg construction is a fallback, not a house style
 
 ## 2. Shape language
 
-- **Pursuit / kinetic threats:** forward-biased mass, narrow front sensor profile, long contact limbs, rearward reactor/keel shapes. Motion should look committed.
-- **Regeneration / flesh:** asymmetry, overlapping masses, visible circulation and replacement tissue. Mirrored clean anatomy is discouraged.
-- **Analysis / optical:** radial or orbital composition, repeated sensors, nested rings, intentionally ordered geometry.
-- **Temporal:** offset rings, segmented joints, discontinuous/arthropod-like body plan, visibly separate time organs.
-- **Suppression / null:** thin monolithic mass, blade arrays, void gaps, suspended stabilizers. Avoid conventional angel-person anatomy.
-- **Catastrophe / fortress:** broad load-bearing hull, architecture-like superstructure, redundant support legs, weapon pylons. The body is terrain.
+- **Pursuit / kinetic threats:** forward-biased mass, narrow front sensor profile, long contact limbs, rearward reactor/keel shapes.
+- **Regeneration / flesh:** asymmetry, overlapping masses, visible circulation and replacement tissue.
+- **Analysis / optical:** radial or orbital composition, repeated sensors, nested rings.
+- **Temporal:** offset rings, segmented joints, discontinuous/arthropod-like body plan.
+- **Suppression / null:** thin monolithic mass, blade arrays, void gaps, suspended stabilizers.
+- **Catastrophe / fortress:** broad load-bearing hull, architecture-like superstructure, redundant supports and weapon pylons.
+- **Impact / power:** oversized joint armor, dense upper-body mass, short load paths and visibly protected shock organs; weight should read before decoration.
+- **Storm / aerial:** horizontal movement axis, fins and dorsal charge organs; avoid standing-animal posture.
+- **Thermal / ash:** kiln, furnace, vent, cooling plate and slag masses; heat source must have structural housing.
+- **Resonance / sonic:** horn, throat, bellows and ring forms; sound-producing anatomy must dominate.
 
 ## 3. Weakpoint readability
 
 Destructible parts are gameplay UI rendered in world space.
 
-- A required weakpoint gets its own named GeckoLib bone.
+- A required weakpoint gets its own named GeckoLib bone when renderer/part logic depends on it.
 - Renderer-controlled weakpoints must never be merged into decorative parent bones that disappear for unrelated reasons.
 - Exposed-core transitions use shell/core separation.
 - A destroyed part must visibly reduce the silhouette or remove a recognisable organ.
 - Decorative detail may surround a weakpoint but must not hide its approximate location.
-- Phase-only field geometry must remain visually subordinate to the physical weakpoints.
+- Phase-only field geometry must remain visually subordinate to physical weakpoints.
 
 ## 4. Scale hierarchy
 
 The renderer scale and encounter dimensions are part of the design contract, not cosmetic multipliers. The player should read:
 normal enemy < elite < early boss < regional giant < world-scale boss.
 
-B10 Worldbreaker is an encounter space as much as an entity. Its four legs, hull, ramparts, auxiliary organs, weapon pylons, and central core must form climbable/legible vertical layers rather than a single enlarged humanoid torso.
+B10 Worldbreaker is an encounter space as much as an entity. Its legs, hull, ramparts, auxiliary organs, weapon pylons and central core must form legible vertical layers rather than a single enlarged humanoid torso.
 
 ## 5. Materials and palette
 
 Textures may reuse project-owned palette baselines, but silhouettes must remain unique. Color should reinforce function:
-- hot/energy organs: concentrated emissive-looking accents against darker housing,
+- hot/energy organs: concentrated accents against darker housing,
 - neural/optical organs: precise high-contrast points,
 - regenerative tissue: uneven warm biological values,
-- null/suppression structures: low-saturation body with sharp high-value signal accents,
-- fortress/catastrophe armor: large dark industrial masses with localized core accents.
+- null/suppression structures: low-saturation body with sharp signal accents,
+- fortress armor: large dark industrial masses with localized core accents.
 
 Do not compensate for weak geometry by adding random glow everywhere.
 
 ## 6. Boss identity contracts
 
 ### B01 The Pursuer
-Forward-hunched pursuit engine. Long forelimbs, digitigrade rear legs, wedge sensor head, chest core, exposed dorsal reactor and pursuit keel. It should look built to close distance, not stand upright.
+Forward-hunched pursuit engine. Long forelimbs, digitigrade rear legs, wedge sensor head, chest core, exposed dorsal reactor and pursuit keel.
+
+### B02 Gravemarch Colossus
+A power/berserker giant whose weight is communicated by a broad upper body, oversized forearms, reinforced elbow/knee/ankle masses and dorsal impact armor. The shock-heart and skull armor remain readable, and the silhouette must not collapse back into a merely scaled humanoid.
+
+### B03 Bastion Walker
+A squat mobile fortress. Four load-bearing legs and eight external armor plates support a readable outside-climb route toward the upper defense node and internal power core. Asymmetric turret masses, side buttresses and a frontal ram make it read as fortification before creature.
 
 ### B04 The Regnant Flesh
-Asymmetric mobile flesh colony. Tumor masses, ribs, circulation nodes, multiple regeneration cores, brain sac/stalk and mismatched limbs. Its body should look replaceable and rearrangeable.
+Asymmetric mobile flesh colony. Tumor masses, ribs, circulation nodes, multiple regeneration cores, brain sac/stalk and mismatched limbs.
 
 ### B05 Hundred-Eyed Watcher
-Floating ocular observatory. The body is a nested sensor cluster with three orbital eye bands, 24 independently destructible eyes, three predictive brains, false cores, central visual core and prediction field. No humanoid silhouette.
+Floating ocular observatory. Nested sensor clusters, orbital eye bands, predictive brains, false cores and a central visual core; no humanoid silhouette.
 
 ### B06 Chronophage
-Temporal arthropod/engine. Horizontal carapace, forward mandibles, scythe-like forelimbs, rear pylons, four phase joints, three time organs and concentric temporal structures. The center ring is the visual anchor.
+Temporal arthropod/engine. Horizontal carapace, forward mandibles, scythe-like forelimbs, rear pylons, phase joints and concentric temporal structures.
+
+### B07 Storm Leviathan
+Long horizontal wandering organism. Four wing membranes, six electric sacs, a head sensor, deep storm organ, organic dorsal charge spine and tail control surfaces keep it unmistakably alive rather than a flying machine.
+
+### B08 Ash Titan
+Thermal/radiant guardian. Six back cooling plates, both radiation-arm organs, the chest radiant heart and head sensor remain the combat anchors. Added heart framing, heat vents and dense thermal body mass communicate heat management without inventing new weakpoints.
 
 ### B09 Null Seraph
-Floating suppression monolith. Coffin-like central body, four blade wings, dual null cores, head resonator, dangling stabilizers, suppression halo and lance crown. “Seraph” is expressed by ordered arrays and ritual geometry rather than a person with wings.
+Floating suppression monolith. Coffin-like central body, blade wings, null cores, head resonator, stabilizers, halo and lance crown. “Seraph” is ordered ritual geometry rather than a person with wings.
 
 ### B10 Worldbreaker
-Mobile fortress quadruped. Four cathedral-scale legs support a broad siege hull, belly keel, upper citadel, twin ramparts, weapon pylons, six outer cores, temporal/energy auxiliary organs and central core. It must read as architecture in motion.
+Mobile fortress quadruped. Cathedral-scale supports carry a broad siege hull, belly keel, upper citadel, ramparts, weapon pylons, outer cores, auxiliary organs and central core.
 
-## 7. Anti-regression rules
+## 7. Normal enemy identity contracts
 
-A boss presentation change fails review if:
+### Bulwark
+A moving section of defensive wall. Front shield/rampart mass must be wider and visually heavier than the body; head and limbs are secondary support structures. The shield boss and asymmetrical side cover prevent a plain “armored zombie” read.
+
+### Howler
+A resonance organism. The head/jaw/horn assembly, throat bellows and acoustic rings are intentionally oversized; torso and rear mass stay subordinate. It should read as a living sound weapon even when idle.
+
+## 8. Anti-regression rules
+
+A presentation change fails review if:
 - all major masses can be reduced to a vanilla humanoid skeleton without losing identity,
 - a renderer-required weakpoint bone is removed or renamed,
 - an animation references a bone absent from geometry,
@@ -84,6 +108,6 @@ A boss presentation change fails review if:
 - a phase mechanic becomes harder to understand because geometry hides its weakpoint,
 - internal developer labels appear in player-facing text.
 
-## 8. Ownership and sourcing
+## 9. Ownership and sourcing
 
-Current boss geometry in the alpha.52 remaster is project-owned original work. External references may inform quality targets, but copied geometry/textures are not a production shortcut. Any future external asset included at runtime must be recorded in `ASSET_REGISTRY.md` with source, author, license, modification, and usage before merge.
+Current remastered geometry is project-owned original work. External references may inform quality targets, but copied geometry/textures are not a production shortcut. Any future external runtime asset must be recorded in `ASSET_REGISTRY.md` with source, author, license, modification and usage before merge.

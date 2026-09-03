@@ -1,8 +1,8 @@
 # TITANBREAK Development Status
 
-Last normalized at: **0.1.0-alpha.52 visual remaster line**
+Last normalized at: **0.1.0-alpha.53 visual completion line**
 
-This is the current status index. `ALPHA*_IMPLEMENTATION_NOTES.md` files are historical change records. They are useful for archaeology but are not authoritative for the current game state. When they disagree with current source, current source + the v0.3 content bible + this status index win.
+This is the current status index. Historical `ALPHA*_IMPLEMENTATION_NOTES.md` files remain decision/regression records, but current source + the v0.3 content bible + this status index are authoritative when old notes disagree.
 
 ## Current production state
 
@@ -10,34 +10,60 @@ This is the current status index. `ALPHA*_IMPLEMENTATION_NOTES.md` files are his
 - Reflex Drive time-acceleration line: implemented; suppression interaction is integrated.
 - Main boss progression through B10: implemented baseline.
 - B08 Ash Titan, B09 Null Seraph and B10 Worldbreaker: dedicated multipart encounters implemented.
-- B01/B04/B05/B06/B09/B10 presentation: alpha.52 silhouette remaster in progress/current line.
-- Visual governance: `VISUAL_BIBLE.md` and `CHARACTER_DESIGN_PIPELINE.md`.
-- Runtime art engine: GeckoLib 5.5.3.
-- Target environment: Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25.
+- Visual governance: `VISUAL_BIBLE.md` + `CHARACTER_DESIGN_PIPELINE.md`.
+- Integrated asset validation: `tools/verify_visual_assets.py`.
+- Runtime target from current build files: Minecraft **26.2**, NeoForge **26.2.0.38-beta**, GeckoLib **5.5.3**, Java **25**.
 
-## Alpha.52 purpose
+## Alpha.52 completed presentation line
 
-Alpha.52 is a presentation quality gate before the first bundled real-play pass. It does not redesign boss balance or progression. It replaces overly humanoid geometry while preserving renderer, multipart, phase and animation contracts.
+Alpha.52 established the non-generic silhouette standard for:
+- B01 The Pursuer
+- B04 The Regnant Flesh
+- B05 Hundred-Eyed Watcher
+- B06 Chronophage
+- B09 Null Seraph
+- B10 Worldbreaker
 
-Remastered bosses:
-- B01 The Pursuer — pursuit-predator silhouette.
-- B04 The Regnant Flesh — asymmetric flesh colony.
-- B05 Hundred-Eyed Watcher — floating ocular observatory.
-- B06 Chronophage — temporal arthropod engine.
-- B09 Null Seraph — suppression monolith/seraph array.
-- B10 Worldbreaker — mobile fortress quadruped.
+Those assets remain part of the visual regression surface.
 
-## Definition of done for alpha.52
+## Alpha.53 scope
 
-1. six remastered geometries are on `main`;
-2. all renderer- and animation-required bones survive structural lint;
-3. Visual Bible and design pipeline are source-controlled;
-4. version is `0.1.0-alpha.52`;
-5. Java 25 clean build succeeds;
-6. runtime JAR is verified and uploaded by CI.
+Alpha.53 closes the remaining first-pass silhouette debt before integrated real-play review.
 
-After this gate, the correct next phase is integrated in-game testing rather than another blind content alpha. Visual scale, multipart alignment, terrain interaction, boss phases, rewards and cross-system interactions must be inspected in the real client.
+Remodeled in this line:
+- **B02 Gravemarch Colossus** — power/berserker giant with heavier upper body, reinforced elbows/knees/ankles, dorsal impact mass and a clearly exposed shock-heart.
+- **B03 Bastion Walker** — low mobile fortress with layered closure plates, layered closure armor, readable upper defense node/power-core route, asymmetric turret masses, buttresses and frontal ram.
+- **B07 Storm Leviathan** — horizontal wandering storm organism with expanded wing membranes, six electric sacs, a stronger sensor crest, dorsal charge spine, storm organ and tail control surfaces.
+- **B08 Ash Titan** — thermal/radiant guardian with six cooling plates preserved, heavier radiation-arm masses, exposed radiant-heart framing, heat vents and a protected head sensor.
+- **Bulwark** — compact moving rampart whose shield/front wall dominates the silhouette.
+- **Howler** — top-heavy resonator organism whose horn-mouth, throat bellows and acoustic rings dominate the body.
 
-## Historical-note policy
+Gameplay, balance, encounter sequencing and reward contracts are intentionally unchanged by this visual batch.
 
-Do not delete old alpha notes solely because they are old. They document decisions and regressions. Do not use them as a live checklist either. New work should update this status file and use version-tolerant CI where possible so a later alpha does not fail because an older workflow hard-coded an exact JAR version.
+## Alpha.53 automated gate
+
+The old alpha.52-only visual workflow is retired. `titanbreak-visual-regression-ci.yml` now:
+1. parses all GeckoLib entity geometry;
+2. rejects duplicate bones, broken parents, parent cycles and malformed cubes;
+3. verifies animation bone references against matching geometry;
+4. verifies ordinary model/texture stem mapping, with only documented renderer exceptions;
+5. enforces persistent alpha.53 silhouette/signature contracts for the six remodeled targets;
+6. runs a Java 25 clean build;
+7. verifies and uploads the runtime JAR.
+
+The regression gate is deliberately version-tolerant so it does not become a stale exact-alpha blocker during later development.
+
+## Next phase
+
+Do **integrated in-game presentation testing**, not another blind geometry pass. Check:
+- spawn/culling distance and scale;
+- ground contact and movement;
+- attack animation pivots;
+- multipart/weakpoint alignment;
+- phase visibility;
+- terrain clipping/traversal;
+- texture stretching introduced by the new blockout;
+- B02/B03/B07/B08 mechanic readability;
+- Bulwark/Howler combat readability at ordinary encounter distance.
+
+A clean CI build means structurally ready for playtest, not visually approved in-game.

@@ -1,0 +1,64 @@
+name: TITANBREAK Visual Regression CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/titanbreak/**'
+      - '.github/workflows/titanbreak-visual-regression-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Verify visual and asset contracts
+        run: python3 projects/titanbreak/tools/verify_visual_assets.py
+
+      - name: Clean build
+        run: gradle --no-daemon --project-dir projects/titanbreak clean build
+
+      - name: Verify runtime JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          project = Path('projects/titanbreak')
+          gradle = (project / 'gradle.properties').read_text(encoding='utf-8')
+          match = re.search(r'^mod_version=(\S+)$', gradle, re.MULTILINE)
+          assert match, 'mod_version missing'
+          expected = f'titanbreak-{match.group(1)}.jar'
+          jars = [
+              p for p in (project / 'build/libs').glob('*.jar')
+              if '-sources' not in p.name and '-javadoc' not in p.name
+          ]
+          assert any(p.name == expected for p in jars), (expected, [p.name for p in jars])
+          print(expected)
+          PY
+
+      - name: Upload verified runtime JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanbreak-visual-regression-${{ github.sha }}
+          path: projects/titanbreak/build/libs/*.jar
+          if-no-files-found: error
