@@ -48,6 +48,7 @@ public final class ClientAudioPlayback {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             stopAll(minecraft.getSoundManager());
+            ClientAudioDirector.resetSession();
             return;
         }
         syncMusic(minecraft);
