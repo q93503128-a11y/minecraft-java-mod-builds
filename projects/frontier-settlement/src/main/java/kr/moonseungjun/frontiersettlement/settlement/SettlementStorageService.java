@@ -343,12 +343,23 @@ public final class SettlementStorageService {
 
     /** Outpost deliveries prefer a visible cart-station freight bay before ordinary town storage. */
     public static BlockPos findLogisticsDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
+        BlockPos target = findLogisticsDepositTargetExcluding(level, data, stack, Set.of());
+        return target == null ? data.stockpilePos() : target;
+    }
+
+    /**
+     * Reachability-aware transport callers need to exclude a freight/storage target already proved
+     * unusable by this worker. Unlike the legacy convenience wrapper, this method returns null when
+     * no real loaded container with room remains; it never fabricates the stockpile as a fallback.
+     */
+    public static BlockPos findLogisticsDepositTargetExcluding(ServerLevel level, SettlementData data,
+                                                               ItemStack stack, Set<BlockPos> excluded) {
         for (BlockPos pos : cartStationFreightPositions(data)) {
-            if (!level.hasChunkAt(pos)) continue;
+            if (excluded.contains(pos) || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             if (hasRoom(container, stack)) return pos;
         }
-        return findDepositTarget(level, data, stack);
+        return findDepositTargetExcluding(level, data, stack, excluded);
     }
 
     public static BlockPos findExtractionTarget(ServerLevel level, SettlementData data, Predicate<ItemStack> predicate) {

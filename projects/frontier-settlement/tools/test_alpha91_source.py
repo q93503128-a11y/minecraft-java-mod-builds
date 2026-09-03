@@ -16,6 +16,7 @@ props = text(ROOT / "gradle.properties")
 lock = json.loads(text(ROOT / "COMPANION_LOCK.json"))
 worker = text(JAVA / "settlement/SettlementWorkerService.java")
 storage = text(JAVA / "settlement/SettlementStorageService.java")
+outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 entity = text(JAVA / "content/FrontierWorkerEntity.java")
 blueprints = text(JAVA / "settlement/BuildingBlueprints.java")
 service = text(JAVA / "settlement/SettlementService.java")
@@ -39,8 +40,17 @@ must(storage, (
     "SupplyDepotRegistryService.tryRegister(level, pos)",
     "boolean legacyPublicStorage = level.hasChunkAt(stockpile)",
     "if (legacyPublicStorage) upgradeLegacyPublicBarrels(level, data);",
-    "ensureStarterSupplyDepot(level, stockpile);"
+    "ensureStarterSupplyDepot(level, stockpile);",
+    "findLogisticsDepositTargetExcluding"
 ), "shared storage hardening")
+must(outpost, (
+    "findReachableExtractionTarget", "findReachableLogisticsDepositTarget",
+    "findLogisticsDepositTargetExcluding", "canReachStorageInteraction",
+    "moveToStorageInteraction", "createStoragePath", "path.canReach()"
+), "outpost storage reachability")
+forbid(outpost, (
+    "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",
+), "outpost forced storage fallback")
 must(service, (
     "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
     "SupplyDepotRegistryService.tryRegister(level, stockpile)",

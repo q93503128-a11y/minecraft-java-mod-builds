@@ -10,6 +10,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
@@ -332,7 +334,7 @@ public final class SettlementOutpostLogisticsService {
             }
             if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
                     > STORAGE_INTERACTION_RANGE_SQR) {
-                move(worker, stock, 0.82D);
+                moveToStorageInteraction(level, worker, stock, 0.82D);
                 return;
             }
             if (!(level.getBlockEntity(stock) instanceof Container container)) return;
@@ -379,14 +381,14 @@ public final class SettlementOutpostLogisticsService {
             return;
         }
 
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, predicate);
+        BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);
         if (source == null) {
             worker.getNavigation().stop();
             return;
         }
         if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            move(worker, source, 0.84D);
+            moveToStorageInteraction(level, worker, source, 0.84D);
             return;
         }
         ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);
@@ -407,7 +409,7 @@ public final class SettlementOutpostLogisticsService {
         }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            move(worker, stock, 0.84D);
+            moveToStorageInteraction(level, worker, stock, 0.84D);
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
@@ -439,14 +441,14 @@ public final class SettlementOutpostLogisticsService {
             worker.removeTag(WATERFRONT_RETURN_TRIP_TAG);
             return;
         }
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isWood);
+        BlockPos source = findReachableExtractionTarget(level, data, worker, SettlementInventory::isWood);
         if (source == null) {
             worker.getNavigation().stop();
             return;
         }
         if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            move(worker, source, 0.84D);
+            moveToStorageInteraction(level, worker, source, 0.84D);
             return;
         }
         int amount = Math.min(shortage, transportBatchSize(data));
@@ -468,7 +470,7 @@ public final class SettlementOutpostLogisticsService {
         }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            move(worker, stock, 0.84D);
+            moveToStorageInteraction(level, worker, stock, 0.84D);
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
@@ -509,17 +511,99 @@ public final class SettlementOutpostLogisticsService {
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              FrontierWorkerEntity worker, ItemStack carried) {
-        BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target)) {
+        BlockPos target = findReachableLogisticsDepositTarget(level, data, worker, carried);
+        if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+            // The exact physical cargo remains in MAINHAND until a real reachable container has room.
             worker.getNavigation().stop();
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            move(worker, target, 0.85D);
+            moveToStorageInteraction(level, worker, target, 0.85D);
             return;
         }
         worker.setItemSlot(EquipmentSlot.MAINHAND, SettlementStorageService.insertAt(level, target, carried));
+    }
+
+    private static BlockPos findReachableExtractionTarget(ServerLevel level, SettlementData data,
+                                                          FrontierWorkerEntity worker, Predicate<ItemStack> predicate) {
+        Set<BlockPos> excluded = new HashSet<>();
+        while (true) {
+            BlockPos source = SettlementStorageService.findExtractionTargetExcluding(level, data, predicate, excluded);
+            if (source == null) return null;
+            if (canReachStorageInteraction(level, worker, source)) return source;
+            excluded.add(source);
+        }
+    }
+
+    private static BlockPos findReachableLogisticsDepositTarget(ServerLevel level, SettlementData data,
+                                                                FrontierWorkerEntity worker, ItemStack stack) {
+        Set<BlockPos> excluded = new HashSet<>();
+        while (true) {
+            BlockPos target = SettlementStorageService.findLogisticsDepositTargetExcluding(
+                    level, data, stack, excluded);
+            if (target == null) return null;
+            if (canReachStorageInteraction(level, worker, target)) return target;
+            excluded.add(target);
+        }
+    }
+
+    private static boolean canReachStorageInteraction(ServerLevel level, FrontierWorkerEntity worker, BlockPos target) {
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= STORAGE_INTERACTION_RANGE_SQR) return true;
+        for (BlockPos approach : storageApproachPositions(level, worker, target)) {
+            if (createStoragePath(worker, approach) != null) return true;
+        }
+        return false;
+    }
+
+    private static boolean moveToStorageInteraction(ServerLevel level, FrontierWorkerEntity worker,
+                                                    BlockPos target, double speed) {
+        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
+                <= STORAGE_INTERACTION_RANGE_SQR) return true;
+        for (BlockPos approach : storageApproachPositions(level, worker, target)) {
+            Path path = createStoragePath(worker, approach);
+            if (path != null && worker.getNavigation().moveTo(path, speed)) return true;
+        }
+        worker.getNavigation().stop();
+        return false;
+    }
+
+    private static List<BlockPos> storageApproachPositions(ServerLevel level, FrontierWorkerEntity worker,
+                                                           BlockPos target) {
+        int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
+        List<BlockPos> result = new ArrayList<>();
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int[] offset : offsets) {
+                BlockPos approach = target.offset(offset[0], dy, offset[1]);
+                if (isWalkableStorageApproach(level, approach)) result.add(approach);
+            }
+        }
+        result.sort(Comparator.comparingDouble(pos -> worker.distanceToSqr(
+                pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
+        return List.copyOf(result);
+    }
+
+    private static Path createStoragePath(FrontierWorkerEntity worker, BlockPos target) {
+        Path path = worker.getNavigation().createPath(target, 0);
+        if (path == null || !path.canReach() || path.getEndNode() == null
+                || !path.getEndNode().asBlockPos().equals(target)) return null;
+        return path;
+    }
+
+    private static boolean isWalkableStorageApproach(ServerLevel level, BlockPos feet) {
+        BlockPos head = feet.above();
+        BlockPos below = feet.below();
+        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head) || !level.hasChunkAt(below)) return false;
+        if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
+        BlockState feetState = level.getBlockState(feet);
+        BlockState headState = level.getBlockState(head);
+        BlockState belowState = level.getBlockState(below);
+        if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()
+                || !belowState.getFluidState().isEmpty()) return false;
+        if ((!feetState.isAir() && !feetState.canBeReplaced())
+                || (!headState.isAir() && !headState.canBeReplaced())) return false;
+        return !belowState.isAir() && !belowState.canBeReplaced();
     }
 
     private static boolean moveAlongRoute(ServerLevel level, FrontierWorkerEntity worker,
