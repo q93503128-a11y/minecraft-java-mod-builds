@@ -100,6 +100,23 @@ public final class SettlementOutpostLogisticsService {
                 + networkLevel * TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL);
     }
 
+    /**
+     * One outpost assignment owns exactly one physical transporter. Two loaded bodies carrying the
+     * same assignment tag are conclusive duplicate evidence even when some other route chunk is not
+     * loaded. Keep the deterministic lowest-UUID body and preserve every excess MAINHAND cargo stack
+     * as a physical item before discarding the duplicate.
+     */
+    public static int reconcileLoadedAssignmentDuplicates(ServerLevel level, SettlementData data) {
+        int removed = 0;
+        for (OutpostRecord outpost : data.outposts()) {
+            List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, outpost);
+            for (int i = 1; i < assigned.size(); i++) {
+                if (SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))) removed++;
+            }
+        }
+        return removed;
+    }
+
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
         Set<java.util.UUID> ids = new HashSet<>();
         for (OutpostRecord outpost : data.outposts()) {

@@ -52,6 +52,28 @@ must(outpost, (
     "findLogisticsDepositTargetExcluding", "canReachStorageInteraction",
     "moveToStorageInteraction", "createStoragePath", "path.canReach()"
 ), "outpost storage reachability")
+must(worker, (
+    "SettlementOutpostLogisticsService.reconcileLoadedAssignmentDuplicates(level, data)",
+    "SettlementWorkshopService.reconcileLoadedAssignmentDuplicates(level, data)",
+    "SettlementAdvancedWorkshopService.reconcileLoadedAssignmentDuplicates(level, data)",
+    "static boolean removeDuplicateWorkerPreservingCargo"
+), "assignment duplicate orchestration")
+forbid(worker, (
+    "private static boolean removeDuplicateWorkerPreservingCargo",
+    "reconcileProductionDuplicates(server, level, data)"
+), "legacy duplicate orchestration")
+must(outpost, (
+    "public static int reconcileLoadedAssignmentDuplicates",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))"
+), "transport assignment duplicate cleanup")
+must(workshop, (
+    "public static int reconcileLoadedAssignmentDuplicates",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))"
+), "workshop assignment duplicate cleanup")
+must(advanced_workshop, (
+    "public static int reconcileLoadedAssignmentDuplicates",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))"
+), "advanced workshop assignment duplicate cleanup")
 forbid(outpost, (
     "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",
 ), "outpost forced storage fallback")

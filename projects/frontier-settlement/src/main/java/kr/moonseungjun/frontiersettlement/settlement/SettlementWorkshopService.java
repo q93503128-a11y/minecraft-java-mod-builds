@@ -73,6 +73,19 @@ public final class SettlementWorkshopService {
         return true;
     }
 
+    /** One completed workshop owns exactly one assigned artisan. */
+    public static int reconcileLoadedAssignmentDuplicates(ServerLevel level, SettlementData data) {
+        int removed = 0;
+        for (BuildingRecord workshop : data.buildings()) {
+            if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
+            List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, workshop);
+            for (int i = 1; i < assigned.size(); i++) {
+                if (SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))) removed++;
+            }
+        }
+        return removed;
+    }
+
     public static int loadedAssignedWorkerCount(ServerLevel level, SettlementData data) {
         Set<java.util.UUID> ids = new HashSet<>();
         for (BuildingRecord workshop : data.buildings()) {

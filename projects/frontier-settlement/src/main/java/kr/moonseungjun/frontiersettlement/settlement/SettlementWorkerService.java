@@ -79,7 +79,18 @@ public final class SettlementWorkerService {
         if (server.getTickCount() % 10 == 0) {
             SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data);
             SettlementConstructionService.reconcileBuilderDuplicates(level, data);
-            reconcileProductionDuplicates(server, level, data);
+            int removedDuplicates = reconcileProductionDuplicates(level, data);
+            removedDuplicates += SettlementOutpostLogisticsService.reconcileLoadedAssignmentDuplicates(level, data);
+            removedDuplicates += SettlementWorkshopService.reconcileLoadedAssignmentDuplicates(level, data);
+            removedDuplicates += SettlementAdvancedWorkshopService.reconcileLoadedAssignmentDuplicates(level, data);
+            if (removedDuplicates > 0) {
+                // Recompute only after every civilian duplicate authority has been normalized.
+                // If some assignment evidence is unloaded, repairPopulationAfterDuplicateCleanup()
+                // deliberately keeps the saved count conservative until a complete view is available.
+                repairPopulationAfterDuplicateCleanup(level, data);
+                SettlementService.refreshResources(server, data);
+                SettlementService.broadcast(server, data);
+            }
         }
         // Duplicate reconciliation must run first on the same 600-tick boundary so an excess
         // historical worker can never be removed and immediately replaced from stale population state.
@@ -100,7 +111,7 @@ public final class SettlementWorkerService {
      * loaded. UUID order is already deterministic in workersByName(), so exactly one physical worker
      * per completed production building remains authoritative. No unloaded resident is treated as dead.
      */
-    private static int reconcileProductionDuplicates(MinecraftServer server, ServerLevel level, SettlementData data) {
+    private static int reconcileProductionDuplicates(ServerLevel level, SettlementData data) {
         // Seeing more loaded physical workers than completed jobs is already sufficient proof of an
         // excess entity. No unloaded resident can make N+1 loaded bodies legal for N completed jobs,
         // so duplicate removal itself must not be blocked by the much wider recruitment evidence gate.
@@ -109,11 +120,6 @@ public final class SettlementWorkerService {
         removed += trimExcessProductionWorkers(level, data, BuildingType.FARM, FARM_WORKER_NAME);
         removed += trimExcessProductionWorkers(level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME);
         removed += trimExcessProductionWorkers(level, data, BuildingType.MINE, MINE_WORKER_NAME);
-        if (removed > 0) {
-            repairPopulationAfterDuplicateCleanup(level, data);
-            SettlementService.refreshResources(server, data);
-            SettlementService.broadcast(server, data);
-        }
         return removed;
     }
 
@@ -192,7 +198,7 @@ public final class SettlementWorkerService {
         return removed;
     }
 
-    private static boolean removeDuplicateWorkerPreservingCargo(ServerLevel level, FrontierWorkerEntity worker) {
+    static boolean removeDuplicateWorkerPreservingCargo(ServerLevel level, FrontierWorkerEntity worker) {
         worker.getNavigation().stop();
         worker.setNoAi(false);
         worker.setInvulnerable(false);
