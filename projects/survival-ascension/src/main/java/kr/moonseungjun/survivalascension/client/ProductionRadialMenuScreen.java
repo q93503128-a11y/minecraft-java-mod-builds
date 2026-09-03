@@ -21,6 +21,9 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.joml.Matrix3x2f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class ProductionRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("시설 투자", "산업 가공소 투자 · 마지막 투입은 실제 통 준공 현장 필요", new ItemStack(Items.SMITHING_TABLE), "", Action.FUND),
@@ -54,11 +57,74 @@ public final class ProductionRadialMenuScreen extends Screen {
         int cx=this.width/2,cy=this.height/2,selected=RadialMenuGeometry.selectedIndex(ITEM_COUNT);Matrix3x2f pose=new Matrix3x2f(graphics.pose());ScreenRectangle scissor=graphics.peekScissorStack();
         graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI,TextureSetup.noTexture(),pose,cx,cy,selected,scissor));
         for(int i=0;i<ITEM_COUNT;i++){double a=RadialMenuGeometry.iconRadians(i,ITEM_COUNT);graphics.item(ENTRIES[i].icon(),(int)Math.round(cx+ICON_RADIUS*Math.cos(a))-8,(int)Math.round(cy+ICON_RADIUS*Math.sin(a))-8);}
-        Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,entry.detail(),cx-this.font.width(entry.detail())/2,cy+8,0xFFB8B8B8,false);
+        Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-10,0xFFFFFFFF,true);renderDetailLines(graphics,entry.detail(),cx,cy+3);
         String caption="등록 물류 통은 같은 차원 로딩 중이면 원격 사용 · 등록 통 파괴 시 내용물째 포장 이동";graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){if(event.button()!=0)return false;Entry entry=ENTRIES[RadialMenuGeometry.selectedIndex(ITEM_COUNT)];if(entry.action()==Action.BACK){this.minecraft.gui.setScreen(new InfrastructureRadialMenuScreen());return true;}String action=switch(entry.action()){case FUND->InfrastructureService.ACTION_FUND;case STATUS->ProductionService.ACTION_STATUS;case DISPATCH->ProductionService.ACTION_DISPATCH;case DEPOT->ProductionService.ACTION_DEPOT_TOGGLE;case WAREHOUSE->ProductionService.ACTION_WAREHOUSE_TOGGLE;case OFFLOAD->ProductionService.ACTION_BULK_OFFLOAD;case FREIGHT->ProductionService.ACTION_FREIGHT;case OUTPOST->ProductionService.ACTION_OUTPOST_UPGRADE;case SIEGE->ProductionService.ACTION_OUTPOST_SIEGE;case BASTION->ProductionService.ACTION_BASTION_SIEGE;case OPERATION->ProductionService.ACTION_FIELD_OPERATION;case RECOVERY->ProductionService.ACTION_FIELD_RECOVERY;case PRODUCE->ProductionService.ACTION_PREFIX+entry.programId();case BACK->"";};ClientPacketDistributor.sendToServer(new InfrastructureActionPayload(InfrastructureProject.INDUSTRIAL_WORKS.id(),action));this.minecraft.gui.setScreen(null);return true;}
+
+    private void renderDetailLines(GuiGraphicsExtractor graphics, String detail, int cx, int startY) {
+        int maxWidth = Math.min(420, Math.max(120, this.width - 24));
+        List<String> lines = wrapDetail(detail, maxWidth, 3);
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            graphics.text(this.font, line, cx - this.font.width(line) / 2, startY + i * 10, 0xFFB8B8B8, false);
+        }
+    }
+
+    private List<String> wrapDetail(String text, int maxWidth, int maxLines) {
+        if (text == null || text.isBlank()) return List.of("");
+        String remaining = text.trim();
+        List<String> lines = new ArrayList<>();
+        while (!remaining.isEmpty() && lines.size() < maxLines) {
+            int fit = fitPrefix(remaining, maxWidth);
+            if (fit >= remaining.length()) {
+                lines.add(remaining);
+                remaining = "";
+                break;
+            }
+            int preferred = remaining.lastIndexOf(" · ", fit);
+            int split = preferred > 0 ? preferred : fit;
+            if (split <= 0) split = Math.min(remaining.length(), Math.max(1, fit));
+            String line = remaining.substring(0, split).trim();
+            if (line.isEmpty()) {
+                line = remaining.substring(0, Math.min(remaining.length(), Math.max(1, fit))).trim();
+                split = Math.max(1, fit);
+            }
+            lines.add(line);
+            remaining = remaining.substring(Math.min(split, remaining.length())).trim();
+            if (remaining.startsWith("·")) remaining = remaining.substring(1).trim();
+        }
+        if (!remaining.isEmpty() && !lines.isEmpty()) {
+            int last = lines.size() - 1;
+            lines.set(last, ellipsize(lines.get(last) + " · " + remaining, maxWidth));
+        }
+        return lines.isEmpty() ? List.of(ellipsize(text, maxWidth)) : List.copyOf(lines);
+    }
+
+    private int fitPrefix(String text, int maxWidth) {
+        if (text.isEmpty()) return 0;
+        int low = 1;
+        int high = text.length();
+        int best = 1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            if (this.font.width(text.substring(0, mid)) <= maxWidth) {
+                best = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return best;
+    }
+
+    private String ellipsize(String text, int maxWidth) {
+        if (this.font.width(text) <= maxWidth) return text;
+        String suffix = "…";
+        int fit = fitPrefix(text, Math.max(1, maxWidth - this.font.width(suffix)));
+        return text.substring(0, Math.max(1, fit)).trim() + suffix;
+    }
 
     private enum Action{FUND,PRODUCE,DEPOT,WAREHOUSE,OFFLOAD,FREIGHT,OUTPOST,SIEGE,BASTION,OPERATION,RECOVERY,DISPATCH,STATUS,BACK}
     private record Entry(String title,String detail,ItemStack icon,String programId,Action action){}
