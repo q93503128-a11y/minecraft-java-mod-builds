@@ -6,6 +6,12 @@ on:
       - turnbound-alpha17-full-v04
     paths:
       - '.github/workflows/turnbound-package-cc0-audio.yml'
+      - 'projects/turnbound/AUDIO_ASSETS.md'
+      - 'projects/turnbound/src/main/java/io/github/q93503128/turnbound/TurnboundSounds.java'
+      - 'projects/turnbound/src/main/java/io/github/q93503128/turnbound/client/ClientAudioDirector.java'
+      - 'projects/turnbound/src/main/java/io/github/q93503128/turnbound/client/ClientAudioPlayback.java'
+      - 'projects/turnbound/src/main/resources/assets/turnbound/sounds.json'
+      - 'projects/turnbound/src/main/resources/assets/turnbound/sounds/**'
   workflow_dispatch:
 
 permissions:
