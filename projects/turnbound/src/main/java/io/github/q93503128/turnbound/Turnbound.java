@@ -16,6 +16,7 @@ import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.OpeningReadabilityService;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import io.github.q93503128.turnbound.world.StarterSliceBootstrap;
+import io.github.q93503128.turnbound.world.TurnboundAttachments;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -33,6 +34,7 @@ public final class Turnbound {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
+        TurnboundAttachments.register(modEventBus);
         TurnboundSounds.SOUND_EVENTS.register(modEventBus);
         TurnboundBattleActors.register(modEventBus);
         SignatureBattleActors.register(modEventBus);
