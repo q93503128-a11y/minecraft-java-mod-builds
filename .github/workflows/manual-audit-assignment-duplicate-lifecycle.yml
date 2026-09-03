@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/manual-audit-assignment-duplicate-lifecycle.yml'
       - 'projects/frontier-settlement/tools/patch_assignment_duplicate_lifecycle.py'
+      - 'projects/frontier-settlement/tools/patch_assignment_survivor_state.py'
 
 permissions:
   contents: write
@@ -29,6 +30,9 @@ jobs:
 
       - name: Apply assignment duplicate lifecycle hardening
         run: python3 projects/frontier-settlement/tools/patch_assignment_duplicate_lifecycle.py
+
+      - name: Apply assigned survivor runtime hardening
+        run: python3 projects/frontier-settlement/tools/patch_assignment_survivor_state.py
 
       - name: Frontier source audit
         working-directory: projects/frontier-settlement
@@ -60,7 +64,7 @@ jobs:
             echo 'No assignment lifecycle source changes to commit.'
             exit 0
           fi
-          git commit -m 'Harden assigned worker duplicate lifecycle'
+          git commit -m 'Normalize assigned worker runtime state'
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
