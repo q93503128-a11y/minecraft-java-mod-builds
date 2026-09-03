@@ -66,11 +66,6 @@ public final class TurnboundBattleActors {
 
     private static final Map<String, String> SPECIAL_FILLER_ANIMATION = Map.of(
             "F02", "f02_field_apprentice", "F03", "f03_border_hunter", "F04", "f04_shield_mercenary");
-    private static final Map<String, String> SPECIAL_ENEMY_ANIMATION = Map.of(
-            "E003", "e003_unstable_burster", "E006", "e006_moss_boar",
-            "E007", "e007_spore_lantern", "E008", "e008_root_guard",
-            "E011", "e011_rusted_support", "E014", "e014_lava_driller");
-    private static final Map<String, String> SPECIAL_ELITE_ANIMATION = Map.of("EL04", "el04_magma_drill_king");
 
     public static final DeferredRegister.Entities ENTITIES = DeferredRegister.createEntities(Turnbound.MOD_ID);
     private static final Map<String, DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>>> ACTORS = new LinkedHashMap<>();
@@ -175,10 +170,8 @@ public final class TurnboundBattleActors {
         if (HERO_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/common");
         String filler = SPECIAL_FILLER_ANIMATION.get(id); if (filler != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/" + filler);
         if (FILLER_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "filler/common");
-        String enemy = SPECIAL_ENEMY_ANIMATION.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
-        if (ENEMY_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/common");
-        String elite = SPECIAL_ELITE_ANIMATION.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
-        if (ELITE_PATH.containsKey(id)) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/common");
+        String enemy = ENEMY_PATH.get(id); if (enemy != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "enemy/" + enemy);
+        String elite = ELITE_PATH.get(id); if (elite != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "elite/" + elite);
         String boss = BOSS_PATH.get(id); if (boss != null) return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "boss/" + boss);
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle/common");
     }
