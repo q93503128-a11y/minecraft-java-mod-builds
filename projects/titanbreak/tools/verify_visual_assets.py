@@ -125,10 +125,48 @@ TARGETS = {
         "min_cubes": 37,
         "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","harvest_vat","left_claw","right_claw","feeder_tube","brood_pod","spawn_cradle"},
     },
+    "jammer": {
+        "identifier": "geometry.titanbreak.jammer",
+        "min_cubes": 30,
+        "required": {"root","body","head","antenna_left","antenna_right","left_arm","right_arm","left_leg","right_leg","signal_ring","jammer_core","array_left","array_right","relay_spine"},
+    },
+    "voltaic": {
+        "identifier": "geometry.titanbreak.voltaic",
+        "min_cubes": 32,
+        "required": {"root","body","head","left_coil","right_coil","left_arm","right_arm","left_leg","right_leg","capacitor_core","arc_cage","spine_capacitor","fork_left","fork_right"},
+    },
+    "cinder": {
+        "identifier": "geometry.titanbreak.cinder",
+        "min_cubes": 28,
+        "required": {"root","body","core","head","left_arm","right_arm","left_leg","right_leg","heat_fin","furnace_shell","vent_left","vent_right","thermal_ring"},
+    },
+    "regrower": {
+        "identifier": "geometry.titanbreak.regrower",
+        "min_cubes": 31,
+        "required": {"root","body","regen_sac","head","left_arm","right_arm","left_leg","right_leg","tendrils","bud_left","bud_right","replacement_mass","organ_stalk"},
+    },
+    "crusher": {
+        "identifier": "geometry.titanbreak.crusher",
+        "min_cubes": 30,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","left_ram","right_ram","back_core","chest_wedge","breach_keel","brace_left","brace_right"},
+    },
+    "stalker": {
+        "identifier": "geometry.titanbreak.stalker",
+        "min_cubes": 30,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","cloak_spine","left_blade","right_blade","sensor_crest","optic_left","optic_right","veil_left","veil_right"},
+    },
+    "burstling": {
+        "identifier": "geometry.titanbreak.burstling",
+        "min_cubes": 28,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","volatile_core","pressure_lobe_left","pressure_lobe_right","fuse_stalk","warning_ring","blast_vent_rear"},
+    },
+    "siphon": {
+        "identifier": "geometry.titanbreak.siphon",
+        "min_cubes": 32,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","siphon_core","left_tube","right_tube","intake_maw","reservoir_left","reservoir_right","recovery_ring"},
+    },
 }
 
-# This model intentionally uses a renderer-specific material path and is not
-# required to follow the ordinary stem-based texture contract.
 TEXTURE_MAPPING_EXCEPTIONS = {"hollow_colossus"}
 
 
@@ -145,11 +183,7 @@ def load_json(path: Path, errors: list[str]):
 
 
 def finite_vector(value, length: int) -> bool:
-    return (
-        isinstance(value, list)
-        and len(value) == length
-        and all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in value)
-    )
+    return isinstance(value, list) and len(value) == length and all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in value)
 
 
 def validate_geometry(path: Path, errors: list[str]) -> set[str]:
@@ -236,11 +270,7 @@ def validate_geometry(path: Path, errors: list[str]) -> set[str]:
             if not finite_vector(uv, 2):
                 fail(errors, f"{path.name}:{name}: cube #{cindex} invalid uv")
             inflate = cube.get("inflate")
-            if inflate is not None and (
-                not isinstance(inflate, (int, float))
-                or isinstance(inflate, bool)
-                or not math.isfinite(inflate)
-            ):
+            if inflate is not None and (not isinstance(inflate, (int, float)) or isinstance(inflate, bool) or not math.isfinite(inflate)):
                 fail(errors, f"{path.name}:{name}: cube #{cindex} invalid inflate")
 
     for start in name_set:
@@ -287,7 +317,6 @@ def animation_bone_references(doc) -> set[str]:
 
 def main() -> int:
     errors: list[str] = []
-
     gradle = (PROJECT / "gradle.properties").read_text(encoding="utf-8")
     match = re.search(r"^mod_version=(\S+)$", gradle, re.MULTILINE)
     if not match:
