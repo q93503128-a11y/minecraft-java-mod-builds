@@ -14,9 +14,8 @@ import java.util.List;
  * </ol>
  *
  * <p>The current v0.4 documents leave every Trial encounter roster unresolved, and P08 has a
- * prerequisite contradiction. Therefore an objective can be {@link ObjectiveState#MET} while
- * {@link Evaluation#settlementEligible()} remains false. That is intentional: runtime code must not
- * fabricate a Trial roster merely to unlock Signature Equipment.</p>
+ * prerequisite contradiction. Known objective constraints are still evaluated when they are decisive;
+ * unresolved actor identities remain NOT_EVALUABLE instead of being fabricated.</p>
  */
 public final class SignatureTrialEvaluator {
     public enum ObjectiveState { MET, NOT_MET, NOT_EVALUABLE }
@@ -51,12 +50,9 @@ public final class SignatureTrialEvaluator {
         }
 
         return switch (characterId) {
-            case "P01" -> blocked(spec, ObjectiveState.NOT_EVALUABLE,
-                    "Party-size telemetry is available, but the special Elite canonical identity is unresolved");
-            case "P02" -> blocked(spec, ObjectiveState.NOT_EVALUABLE,
-                    "SPD/action telemetry is available, but the Trial Boss canonical identity is unresolved");
-            case "P03" -> blocked(spec, ObjectiveState.NOT_EVALUABLE,
-                    "Enemy-action telemetry is available, but the protected NPC canonical identity is unresolved");
+            case "P01" -> evaluateP01KnownConstraints(spec, state);
+            case "P02" -> evaluateP02KnownConstraints(spec, state);
+            case "P03" -> evaluateP03KnownConstraints(spec, state);
             case "P04" -> evaluateP04(spec, state);
             case "P05" -> evaluateP05(spec, state);
             case "P06" -> evaluateP06(spec, state);
@@ -64,6 +60,44 @@ public final class SignatureTrialEvaluator {
             case "P08" -> blocked(spec, ObjectiveState.NOT_EVALUABLE, spec.unresolvedReason());
             default -> throw new IllegalArgumentException("No Signature Trial evaluator for " + characterId);
         };
+    }
+
+    private static Evaluation evaluateP01KnownConstraints(SignatureTrialCatalog.Spec spec, BattleState state) {
+        List<CombatantState> party = regularAllies(state);
+        boolean p01Present = hero(state, "P01") != null;
+        int partySize = party.size();
+        if (!p01Present || partySize > 2) {
+            return blocked(spec, ObjectiveState.NOT_MET,
+                    "knownCriteria: p01Present=" + p01Present + ", partySize=" + partySize + "/<=2");
+        }
+        return blocked(spec, ObjectiveState.NOT_EVALUABLE,
+                "knownCriteria met: P01 present, partySize=" + partySize
+                        + "; special Elite canonical identity remains unresolved");
+    }
+
+    private static Evaluation evaluateP02KnownConstraints(SignatureTrialCatalog.Spec spec, BattleState state) {
+        long slowAllies = regularAllies(state).stream()
+                .filter(unit -> unit.definition().stats().speed() <= 80)
+                .count();
+        long actions = state.events().stream().filter(event -> "ACTION".equals(event.type())).count();
+        if (slowAllies < 2 || actions > 22) {
+            return blocked(spec, ObjectiveState.NOT_MET,
+                    "knownCriteria: finalSpd80OrLessAllies=" + slowAllies + "/>=2, actions=" + actions + "/<=22");
+        }
+        return blocked(spec, ObjectiveState.NOT_EVALUABLE,
+                "knownCriteria met: finalSpd80OrLessAllies=" + slowAllies + ", actions=" + actions
+                        + "; Trial Boss canonical identity remains unresolved");
+    }
+
+    private static Evaluation evaluateP03KnownConstraints(SignatureTrialCatalog.Spec spec, BattleState state) {
+        long enemyActions = enemyActionCount(state);
+        if (enemyActions < 10) {
+            return blocked(spec, ObjectiveState.NOT_MET,
+                    "knownCriteria: enemyActions=" + enemyActions + "/>=10");
+        }
+        return blocked(spec, ObjectiveState.NOT_EVALUABLE,
+                "knownCriteria met: enemyActions=" + enemyActions
+                        + "; protected NPC canonical identity remains unresolved");
     }
 
     private static Evaluation evaluateP04(SignatureTrialCatalog.Spec spec, BattleState state) {
@@ -149,6 +183,14 @@ public final class SignatureTrialEvaluator {
         return state.combatants().stream()
                 .filter(unit -> unit.side() == CombatantSide.ALLY && !unit.definition().summon())
                 .toList();
+    }
+
+    private static long enemyActionCount(BattleState state) {
+        return state.events().stream()
+                .filter(event -> "ACTION".equals(event.type()))
+                .filter(event -> state.combatants().stream().anyMatch(unit ->
+                        unit.side() == CombatantSide.ENEMY && unit.instanceId().equals(event.sourceId())))
+                .count();
     }
 
     private static CombatantState hero(BattleState state, String definitionId) {
