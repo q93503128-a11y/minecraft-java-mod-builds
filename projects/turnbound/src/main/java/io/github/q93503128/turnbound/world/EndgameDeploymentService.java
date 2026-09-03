@@ -16,12 +16,13 @@ public final class EndgameDeploymentService {
     private EndgameDeploymentService() {}
 
     static boolean normalBossRematch(String encounterId) {
-        if (encounterId == null || !encounterId.matches("BATTLE_B0[1-5]")) return false;
+        if (!EndgameDeploymentIdRules.normalBossRematch(encounterId)) return false;
         if (!CampaignEncounterCatalog.contains(encounterId)) return false;
         return CampaignEncounterCatalog.spec(encounterId).boss();
     }
 
     static boolean supported(String encounterId) {
+        if (!EndgameDeploymentIdRules.supported(encounterId)) return false;
         return normalBossRematch(encounterId) || EndgameEncounterCatalog.contains(encounterId);
     }
 
