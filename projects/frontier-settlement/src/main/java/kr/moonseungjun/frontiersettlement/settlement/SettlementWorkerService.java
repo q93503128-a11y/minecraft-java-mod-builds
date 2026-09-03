@@ -6,11 +6,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -642,14 +644,30 @@ public final class SettlementWorkerService {
     private static boolean isExportableWorksiteOutput(BuildingType type, ItemStack stack) {
         if (stack == null || stack.isEmpty() || type == null) return false;
         return switch (type) {
-            case LUMBER_CAMP -> SettlementInventory.isWood(stack);
-            case FARM -> SettlementInventory.isFood(stack);
-            case QUARRY -> SettlementInventory.isStone(stack);
-            // Mine output includes fuels, gems and other exact catalysts as well as metal-category
-            // stacks. Its managed barrel is an output buffer, not a personal chest, so export all.
-            case MINE -> true;
+            // Managed worksite barrels are visible physical buffers and players can interact with them.
+            // Export only items that this profession can actually create; never vacuum arbitrary player
+            // storage merely because it happens to sit in a managed barrel.
+            case LUMBER_CAMP -> stack.is(ItemTags.LOGS);
+            case FARM -> stack.is(Items.WHEAT);
+            case QUARRY -> isQuarryOutputItem(stack);
+            case MINE -> isMineOutputItem(stack);
             default -> false;
         };
+    }
+
+    private static boolean isQuarryOutputItem(ItemStack stack) {
+        return stack.is(Items.STONE) || stack.is(Items.DEEPSLATE) || stack.is(Items.ANDESITE)
+                || stack.is(Items.DIORITE) || stack.is(Items.GRANITE) || stack.is(Items.TUFF);
+    }
+
+    private static boolean isMineOutputItem(ItemStack stack) {
+        if (stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)
+                || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)
+                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI)) return true;
+        // Unknown companion ores are mined as their ore-block item by previewMineDrop(). Preserve that
+        // compatibility without treating unrelated blocks, tools, food or equipment as mine output.
+        return stack.getItem() instanceof BlockItem blockItem
+                && blockItem.getBlock().defaultBlockState().is(Tags.Blocks.ORES);
     }
 
     private static int cargoLimit(ItemStack stack) {
