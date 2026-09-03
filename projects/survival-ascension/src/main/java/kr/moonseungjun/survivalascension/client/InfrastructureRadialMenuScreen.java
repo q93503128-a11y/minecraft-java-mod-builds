@@ -51,7 +51,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
         graphics.submitGuiElementRenderState(new WheelElement(RenderPipelines.GUI,TextureSetup.noTexture(),pose,cx,cy,selected,scissor));
         for(int i=0;i<ITEM_COUNT;i++){double a=RadialMenuGeometry.iconRadians(i,ITEM_COUNT);graphics.item(ENTRIES[i].icon(),(int)Math.round(cx+ICON_RADIUS*Math.cos(a))-8,(int)Math.round(cy+ICON_RADIUS*Math.sin(a))-8);}
         Entry entry=ENTRIES[selected];String detail=detailFor(entry);graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-10,0xFFFFFFFF,true);renderDetailLines(graphics,detail,cx,cy+3);
-        String caption="기능을 먼저 보고 선택하세요 · 비용은 싱글플레이 체급으로 조정됨";graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
+        String caption=ellipsize("기능을 먼저 보고 선택하세요 · 비용은 싱글플레이 체급으로 조정됨",Math.min(420,Math.max(120,this.width-24)));graphics.text(this.font,caption,cx-this.font.width(caption)/2,cy-102,0xFFE0E0E0,true);
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
