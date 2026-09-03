@@ -53,10 +53,11 @@ public final class SupplyDepotBlock extends BaseEntityBlock {
 
     @Override
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
-        if (level.getBlockEntity(pos) instanceof SupplyDepotBlockEntity depot) {
-            Containers.dropContents(level, pos, depot);
-        }
+        // Container block entities export/drop their inventory from BlockEntity#preRemoveSideEffects
+        // before this hook runs. At this point the block entity has already been removed, so only
+        // unregister the shared-economy position and notify neighboring comparator/redstone logic.
         SupplyDepotRegistryService.unregister(level, pos);
+        Containers.updateNeighboursAfterDestroy(state, level, pos);
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 }
