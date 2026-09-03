@@ -1,6 +1,7 @@
 name: Manual Audit Workshop Storage Reachability
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
