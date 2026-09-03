@@ -1,10 +1,7 @@
-name: Apply Shared Supply Economy
+name: Apply Shared Supply Economy (Manual Legacy Tool)
 
 on:
-  push:
-    paths:
-      - '.github/workflows/apply-shared-supply-economy.yml'
-      - 'tools/apply_shared_supply_economy.py'
+  workflow_dispatch:
 
 permissions:
   contents: write
