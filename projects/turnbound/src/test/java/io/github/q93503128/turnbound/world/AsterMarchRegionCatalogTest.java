@@ -2,6 +2,8 @@ package io.github.q93503128.turnbound.world;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AsterMarchRegionCatalogTest {
@@ -38,11 +40,37 @@ class AsterMarchRegionCatalogTest {
     }
 
     @Test
-    void futureRegionAnchorsAreAlreadyPinnedWithoutClaimingTheirRuntimeImplementation() {
+    void allSixCanonicalFastTravelAnchorsArePinnedForRuntimeRouting() {
+        assertEquals(6, AsterMarchRegionCatalog.fastTravelAnchors().size());
+        assertEquals(Set.of(
+                        AsterMarchRegionCatalog.FT_RADIA,
+                        AsterMarchRegionCatalog.FT_MEADOW,
+                        AsterMarchRegionCatalog.FT_GLOAM,
+                        AsterMarchRegionCatalog.FT_AQUEDUCT,
+                        AsterMarchRegionCatalog.FT_QUARRY,
+                        AsterMarchRegionCatalog.FT_RELAY),
+                AsterMarchRegionCatalog.fastTravelAnchors().stream().map(AsterMarchRegionCatalog.Anchor::id).collect(java.util.stream.Collectors.toSet()));
+
         var gloam = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_GLOAM);
         assertEquals(-40.0, gloam.x());
         assertEquals(70.0, gloam.y());
         assertEquals(-300.0, gloam.z());
+
+        var aqueduct = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_AQUEDUCT);
+        assertEquals(-320.0, aqueduct.x());
+        assertEquals(67.0, aqueduct.y());
+        assertEquals(20.0, aqueduct.z());
+
+        var quarry = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_QUARRY);
+        assertEquals(20.0, quarry.x());
+        assertEquals(70.0, quarry.y());
+        assertEquals(405.0, quarry.z());
+
+        var relay = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_RELAY);
+        assertEquals(365.0, relay.x());
+        assertEquals(68.0, relay.y());
+        assertEquals(-305.0, relay.z());
+
         var b02 = AsterMarchRegionCatalog.bossPoint(AsterMarchRegionCatalog.B02);
         assertEquals(-35.0, b02.x());
         assertEquals(72.0, b02.y());
