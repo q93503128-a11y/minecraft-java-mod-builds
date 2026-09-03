@@ -15,6 +15,10 @@ public final class AwakeningRouteRules {
 
     private AwakeningRouteRules() { }
 
+    public static boolean defined(String characterId) {
+        return SignatureTrialCatalog.contains(characterId) || materialCharacter(characterId);
+    }
+
     public static Route route(String characterId) {
         if (SignatureTrialCatalog.contains(characterId)) return Route.SIGNATURE_TRIAL;
         if (materialCharacter(characterId)) return Route.CANON_GAP;
@@ -26,7 +30,7 @@ public final class AwakeningRouteRules {
     }
 
     public static boolean canonGap(String characterId) {
-        return route(characterId) == Route.CANON_GAP;
+        return defined(characterId) && route(characterId) == Route.CANON_GAP;
     }
 
     public static String blockReason(String characterId) {
