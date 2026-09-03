@@ -66,6 +66,13 @@ must(outpost, (
     "public static int reconcileLoadedAssignmentDuplicates",
     "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))"
 ), "transport assignment duplicate cleanup")
+must(outpost, ("survivor.setNoAi(false);", "survivor.setInvulnerable(false);"), "transport survivor normalization")
+must(workshop, ("survivor.setNoAi(false);", "survivor.setInvulnerable(false);"), "workshop survivor normalization")
+must(advanced_workshop, ("survivor.setNoAi(false);", "survivor.setInvulnerable(false);"), "advanced survivor normalization")
+forbid(advanced_workshop, (
+    "SettlementResidentRoutineService.isRestTime(level)",
+    "if (rest) {"
+), "orphan advanced workshop night pause")
 must(workshop, (
     "public static int reconcileLoadedAssignmentDuplicates",
     "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))"

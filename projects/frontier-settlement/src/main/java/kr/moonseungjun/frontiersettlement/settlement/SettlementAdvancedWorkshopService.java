@@ -74,7 +74,6 @@ public final class SettlementAdvancedWorkshopService {
     public static void tick(MinecraftServer server, SettlementData data) {
         if (server.getTickCount() % 10 != 0) return;
         ServerLevel level = server.overworld();
-        boolean rest = SettlementResidentRoutineService.isRestTime(level);
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
             BlockPos cratePos = AdvancedWorkshopLayout.commissionCrate(workshop);
@@ -84,12 +83,6 @@ public final class SettlementAdvancedWorkshopService {
 
             FrontierWorkerEntity worker = findAssignedWorker(level, data, workshop);
             if (worker == null) continue;
-            ItemStack carried = worker.getMainHandItem();
-            if (rest) {
-                if (!carried.isEmpty()) returnCarriedItem(level, data, worker, carried);
-                else moveOrStop(worker, home, 0.68D);
-                continue;
-            }
             runService(server, level, data, workshop, cratePos, crate, worker);
         }
     }
@@ -111,6 +104,11 @@ public final class SettlementAdvancedWorkshopService {
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.ADVANCED_WORKSHOP) continue;
             List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, workshop);
+            if (!assigned.isEmpty()) {
+                FrontierWorkerEntity survivor = assigned.getFirst();
+                survivor.setNoAi(false);
+                survivor.setInvulnerable(false);
+            }
             for (int i = 1; i < assigned.size(); i++) {
                 if (SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))) removed++;
             }

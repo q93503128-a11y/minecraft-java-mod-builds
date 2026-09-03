@@ -110,6 +110,11 @@ public final class SettlementOutpostLogisticsService {
         int removed = 0;
         for (OutpostRecord outpost : data.outposts()) {
             List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, outpost);
+            if (!assigned.isEmpty()) {
+                FrontierWorkerEntity survivor = assigned.getFirst();
+                survivor.setNoAi(false);
+                survivor.setInvulnerable(false);
+            }
             for (int i = 1; i < assigned.size(); i++) {
                 if (SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))) removed++;
             }

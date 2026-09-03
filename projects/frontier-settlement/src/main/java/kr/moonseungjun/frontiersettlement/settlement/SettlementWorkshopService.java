@@ -79,6 +79,11 @@ public final class SettlementWorkshopService {
         for (BuildingRecord workshop : data.buildings()) {
             if (workshop.buildingType() != BuildingType.WORKSHOP) continue;
             List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, data, workshop);
+            if (!assigned.isEmpty()) {
+                FrontierWorkerEntity survivor = assigned.getFirst();
+                survivor.setNoAi(false);
+                survivor.setInvulnerable(false);
+            }
             for (int i = 1; i < assigned.size(); i++) {
                 if (SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))) removed++;
             }
