@@ -1,0 +1,165 @@
+name: Manual Audit Shared Economy Runtime Fixes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-audit-shared-economy-runtime-fixes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Apply manual audit fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str, label: str):
+              s = path.read_text(encoding='utf-8')
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 anchor, got {count}')
+              path.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          root = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension')
+          radial = root / 'client/InfrastructureRadialMenuScreen.java'
+          production = root / 'client/ProductionRadialMenuScreen.java'
+          guide = root / 'client/GuideScreen.java'
+          field = root / 'production/FieldDepotService.java'
+
+          # Root-cause fix: infrastructure costs are rendered from the authoritative Requirement list.
+          # This prevents UI copy from drifting when exact ingredients are merged into shared categories.
+          s = radial.read_text(encoding='utf-8')
+          old_entries = '''    private static final Entry[] ENTRIES = {\n            new Entry("채석장 네트워크", "터널 5×5×8→7×7×10 · 조약돌 192 · 철 주괴 48 · 레드스톤 24 · 다이아몬드 6", new ItemStack(Items.RAIL), InfrastructureProject.QUARRY_NETWORK, Action.FUND),\n            new Entry("관개 시설", "Lv.30 자동 재파종 · 구리 주괴 96 · 철 주괴 24 · 레드스톤 24 · 유리 32 · 슬라임볼 8", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),\n            new Entry("건축 공방", "입체 5³→7³ · 석재 벽돌 192 · 철 주괴 48 · 구리 주괴 48 · 레드스톤 24 · 흑요석 12", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),\n            new Entry("전투 훈련장", "질주 전방 균열선 · 철 주괴 96 · 금 주괴 48 · 에메랄드 16 · 레드스톤 24 · 메아리 조각 4", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),\n            new Entry("토목 공사소", "3폭 도로/교량 · 석재 벽돌 384 · 조약돌 256 · 자갈 256 · 철 주괴 48 · 구리 주괴 48", new ItemStack(Items.SCAFFOLDING), InfrastructureProject.CIVIL_WORKS, Action.FUND),\n            new Entry("산업 가공소", "생산·창고·전초·화물 · 석재 벽돌 192 · 철 주괴 96 · 구리 주괴 96 · 레드스톤 48 · 자수정 조각 24", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),\n            new Entry("정점 추적소", "원정권 정점 사냥 · 철 주괴 96 · 금 주괴 48 · 자수정 조각 48 · 메아리 조각 4 · 네더의 별 1", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),\n            new Entry("승천 중추", "공중 돌진·승천 시련 · 네더의 별 1 · 드래곤의 숨결 8 · 흑요석 64 · 자수정 조각 64 · 메아리 조각 8", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),\n'''
+          new_entries = '''    private static final Entry[] ENTRIES = {\n            new Entry("채석장 네트워크", "터널 5×5×8→7×7×10", new ItemStack(Items.RAIL), InfrastructureProject.QUARRY_NETWORK, Action.FUND),\n            new Entry("관개 시설", "Lv.30 자동 재파종", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),\n            new Entry("건축 공방", "입체 5³→7³", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),\n            new Entry("전투 훈련장", "질주 전방 균열선", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),\n            new Entry("토목 공사소", "3폭 도로/교량", new ItemStack(Items.SCAFFOLDING), InfrastructureProject.CIVIL_WORKS, Action.FUND),\n            new Entry("산업 가공소", "생산·창고·전초·화물", new ItemStack(Items.BLAST_FURNACE), InfrastructureProject.INDUSTRIAL_WORKS, Action.OPEN_PRODUCTION),\n            new Entry("정점 추적소", "원정권 정점 사냥", new ItemStack(Items.SPYGLASS), InfrastructureProject.APEX_TRACKING_POST, Action.FUND),\n            new Entry("승천 중추", "공중 돌진·승천 시련", new ItemStack(Items.END_CRYSTAL), InfrastructureProject.ASCENSION_NEXUS, Action.FUND),\n'''
+          if s.count(old_entries) != 1:
+              raise SystemExit('Infrastructure radial stale-cost anchor mismatch')
+          s = s.replace(old_entries, new_entries, 1)
+          old_render = 'Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,entry.detail(),cx-this.font.width(entry.detail())/2,cy+8,0xFFB8B8B8,false);'
+          new_render = 'Entry entry=ENTRIES[selected];String detail=detailFor(entry);graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,detail,cx-this.font.width(detail)/2,cy+8,0xFFB8B8B8,false);'
+          if s.count(old_render) != 1:
+              raise SystemExit('Infrastructure radial render anchor mismatch')
+          s = s.replace(old_render, new_render, 1)
+          old_tail = '    private enum Action{FUND,OPEN_PRODUCTION,FINAL_ASCENSION,STATUS,BACK}\n    private record Entry(String title,String detail,ItemStack icon,InfrastructureProject project,Action action){}\n'
+          new_tail = '''    private static String detailFor(Entry entry){\n        if(entry.project()==null || entry.action()==Action.FINAL_ASCENSION)return entry.detail();\n        StringBuilder out=new StringBuilder(entry.detail());\n        for(InfrastructureProject.Requirement requirement:entry.project().requirements()){\n            if(!out.isEmpty())out.append(" · ");\n            out.append(requirement.label()).append(' ').append(requirement.amount());\n        }\n        return out.toString();\n    }\n\n    private enum Action{FUND,OPEN_PRODUCTION,FINAL_ASCENSION,STATUS,BACK}\n    private record Entry(String title,String detail,ItemStack icon,InfrastructureProject project,Action action){}\n'''
+          if s.count(old_tail) != 1:
+              raise SystemExit('Infrastructure radial tail anchor mismatch')
+          radial.write_text(s.replace(old_tail, new_tail, 1), encoding='utf-8')
+
+          # Clarify that shared depots join nearby common stock automatically, while registration is
+          # the explicit long-range logistics upgrade. This avoids charging a supply ticket by accident.
+          replace_once(
+              production,
+              'new Entry("물류 거점 연결", "산업 가공소 완공 → 통 4블록 이내 → 선택 · 등록 보급권 1 · 다시 선택하면 해제",',
+              'new Entry("물류 거점 연결", "산업 가공소 완공 → 통/공용 보급고 4블록 이내 → 원격 물류 등록 · 보급권 1 · 다시 선택하면 해제",',
+              'production depot wording')
+          replace_once(
+              production,
+              'new Entry("창고 통 연결", "통 4블록 이내에서 선택 · 자신의 거점 6블록 안에 연결 · 거점당 최대 8 · 추가 보급권 없음",',
+              'new Entry("창고 통 연결", "통/공용 보급고 4블록 이내에서 선택 · 자신의 거점 6블록 안에 연결 · 거점당 최대 8 · 추가 보급권 없음",',
+              'production warehouse wording')
+
+          gs = guide.read_text(encoding='utf-8')
+          guide_old = 'p("산업 가공소 완공 후 기본 통을 물류 거점으로 등록합니다. 거점 주변 실제 통을 창고군으로 연결하며, 같은 차원에서 현재 로딩된 등록 창고는 플레이어와 거리가 멀어도 제작·건축·인프라·재련의 공용 재고로 사용됩니다. 단, 청크를 강제로 로드하지 않으므로 미'
+          guide_new = 'p("공용 보급고는 가까이 있을 때 별도 등록 없이 공용 재고에 합류합니다. 산업 가공소 완공 후 통 또는 공용 보급고를 물류 거점으로 등록하면 원격 물류가 열리고, 거점 주변 실제 통을 창고군으로 연결할 수 있습니다. 같은 차원에서 현재 로딩된 등록 창고는 플레이어와 거리가 멀어도 제작·건축·인프라·재련의 공용 재고로 사용됩니다. 단, 청크를 강제로 로드하지 않으므로 미'
+          if gs.count(guide_old) != 1:
+              raise SystemExit(f'guide logistics anchor count={gs.count(guide_old)}')
+          guide.write_text(gs.replace(guide_old, guide_new, 1), encoding='utf-8')
+
+          # Performance: funding/status used to scan ~40k nearby block positions once for every
+          # count/consume call. Cache only the discovered positions for the current player position
+          # and server tick; block entities/permissions are still resolved fresh on every use.
+          fs = field.read_text(encoding='utf-8')
+          old_imports = '''import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\nimport java.util.function.Predicate;\n'''
+          new_imports = '''import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.WeakHashMap;\nimport java.util.function.Predicate;\n'''
+          if fs.count(old_imports) != 1:
+              raise SystemExit('FieldDepot imports anchor mismatch')
+          fs = fs.replace(old_imports, new_imports, 1)
+
+          old_constants = '''    public static final int MAIN_INVENTORY_FIRST_SLOT = 9;\n    public static final int MAIN_INVENTORY_END_EXCLUSIVE = 36;\n\n    private FieldDepotService() {}\n'''
+          new_constants = '''    public static final int MAIN_INVENTORY_FIRST_SLOT = 9;\n    public static final int MAIN_INVENTORY_END_EXCLUSIVE = 36;\n    private static final int SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS = 24;\n    private static final int SHARED_DEPOT_SCAN_VERTICAL_RADIUS = 8;\n    private static final Map<ServerPlayer, NearbySharedDepotCache> NEARBY_SHARED_DEPOT_CACHE = new WeakHashMap<>();\n\n    private FieldDepotService() {}\n'''
+          if fs.count(old_constants) != 1:
+              raise SystemExit('FieldDepot constants anchor mismatch')
+          fs = fs.replace(old_constants, new_constants, 1)
+
+          old_bulk = '''    public static boolean isBulkMaterial(ItemStack stack) {\n        if (stack == null || stack.isEmpty()) return false;\n        return stack.is(ItemTags.LOGS)\n                || stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.IRON_INGOT) || stack.is(Items.COPPER_INGOT) || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.COAL) || stack.is(Items.CHARCOAL) || stack.is(Items.REDSTONE)\n                || stack.is(Items.LAPIS_LAZULI) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.AMETHYST_SHARD) || stack.is(Items.QUARTZ) || stack.is(Items.ECHO_SHARD)\n                || stack.is(Items.NETHERITE_SCRAP) || stack.is(Items.NETHER_STAR) || stack.is(Items.DRAGON_BREATH)\n                || stack.is(Items.COBBLESTONE) || stack.is(Items.COBBLED_DEEPSLATE) || stack.is(Items.STONE)\n                || stack.is(Items.DEEPSLATE) || stack.is(Items.STONE_BRICKS) || stack.is(Items.NETHERRACK)\n                || stack.is(Items.END_STONE) || stack.is(Items.OBSIDIAN) || stack.is(Items.SAND)\n                || stack.is(Items.RED_SAND) || stack.is(Items.GRAVEL) || stack.is(Items.DIRT)\n                || stack.is(Items.GLASS) || stack.is(Items.SLIME_BALL)\n                || stack.is(Items.WHEAT) || stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)\n                || stack.is(Items.WHEAT_SEEDS) || stack.is(Items.BEETROOT_SEEDS)\n                || stack.is(Items.MELON_SEEDS) || stack.is(Items.PUMPKIN_SEEDS);\n    }\n'''
+          new_bulk = '''    public static boolean isBulkMaterial(ItemStack stack) {\n        if (stack == null || stack.isEmpty()) return false;\n        if (SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.WOOD, stack)\n                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.STONE, stack)\n                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.METAL, stack)\n                || SharedEconomyCompat.matches(SharedEconomyCompat.ResourceCategory.FOOD, stack)) return true;\n        return stack.is(Items.COAL) || stack.is(Items.CHARCOAL) || stack.is(Items.REDSTONE)\n                || stack.is(Items.LAPIS_LAZULI) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.AMETHYST_SHARD) || stack.is(Items.QUARTZ) || stack.is(Items.ECHO_SHARD)\n                || stack.is(Items.NETHERITE_SCRAP) || stack.is(Items.NETHER_STAR) || stack.is(Items.DRAGON_BREATH)\n                || stack.is(Items.STONE_BRICKS) || stack.is(Items.NETHERRACK) || stack.is(Items.END_STONE)\n                || stack.is(Items.OBSIDIAN) || stack.is(Items.SAND) || stack.is(Items.RED_SAND)\n                || stack.is(Items.GRAVEL) || stack.is(Items.DIRT) || stack.is(Items.GLASS) || stack.is(Items.SLIME_BALL)\n                || stack.is(Items.WHEAT_SEEDS) || stack.is(Items.BEETROOT_SEEDS)\n                || stack.is(Items.MELON_SEEDS) || stack.is(Items.PUMPKIN_SEEDS);\n    }\n'''
+          if fs.count(old_bulk) != 1:
+              raise SystemExit('FieldDepot bulk anchor mismatch')
+          fs = fs.replace(old_bulk, new_bulk, 1)
+
+          old_append = '''    private static void appendNearbySharedSupplyDepots(ServerPlayer player, ServerLevel level, List<ResolvedContainer> resolved) {\n        final int horizontalRadius = 24;\n        final int verticalRadius = 8;\n        java.util.Set<BlockPos> seen = new java.util.HashSet<>();\n        for (ResolvedContainer value : resolved) seen.add(value.pos());\n        BlockPos origin = player.blockPosition();\n        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {\n            for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {\n                if (dx * dx + dz * dz > horizontalRadius * horizontalRadius) continue;\n                for (int dy = -verticalRadius; dy <= verticalRadius; dy++) {\n                    BlockPos pos = origin.offset(dx, dy, dz);\n                    if (seen.contains(pos) || !level.hasChunkAt(pos)) continue;\n                    if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;\n                    if (!level.mayInteract(player, pos)) continue;\n                    if (!(level.getBlockEntity(pos) instanceof Container container)) continue;\n                    BlockPos immutable = pos.immutable();\n                    seen.add(immutable);\n                    resolved.add(new ResolvedContainer(immutable, container));\n                }\n            }\n        }\n    }\n'''
+          new_append = '''    private static void appendNearbySharedSupplyDepots(ServerPlayer player, ServerLevel level, List<ResolvedContainer> resolved) {\n        java.util.Set<BlockPos> seen = new java.util.HashSet<>();\n        for (ResolvedContainer value : resolved) seen.add(value.pos());\n        for (BlockPos pos : nearbySharedSupplyDepotPositions(player, level)) {\n            if (seen.contains(pos) || !level.hasChunkAt(pos)) continue;\n            if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;\n            if (!level.mayInteract(player, pos)) continue;\n            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;\n            seen.add(pos);\n            resolved.add(new ResolvedContainer(pos, container));\n        }\n    }\n\n    private static List<BlockPos> nearbySharedSupplyDepotPositions(ServerPlayer player, ServerLevel level) {\n        String dimension = level.dimension().toString();\n        BlockPos origin = player.blockPosition();\n        long gameTime = level.getGameTime();\n        NearbySharedDepotCache cached = NEARBY_SHARED_DEPOT_CACHE.get(player);\n        if (cached != null && cached.gameTime() == gameTime\n                && cached.dimension().equals(dimension) && cached.origin().equals(origin)) {\n            return cached.positions();\n        }\n\n        List<BlockPos> found = new ArrayList<>();\n        for (int dx = -SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dx <= SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dx++) {\n            for (int dz = -SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dz <= SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS; dz++) {\n                if (dx * dx + dz * dz > SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS * SHARED_DEPOT_SCAN_HORIZONTAL_RADIUS) continue;\n                for (int dy = -SHARED_DEPOT_SCAN_VERTICAL_RADIUS; dy <= SHARED_DEPOT_SCAN_VERTICAL_RADIUS; dy++) {\n                    BlockPos pos = origin.offset(dx, dy, dz);\n                    if (!level.hasChunkAt(pos)) continue;\n                    if (!SharedEconomyCompat.isSharedSupplyDepot(level.getBlockState(pos))) continue;\n                    found.add(pos.immutable());\n                }\n            }\n        }\n        List<BlockPos> immutable = List.copyOf(found);\n        NEARBY_SHARED_DEPOT_CACHE.put(player, new NearbySharedDepotCache(dimension, origin.immutable(), gameTime, immutable));\n        return immutable;\n    }\n'''
+          if fs.count(old_append) != 1:
+              raise SystemExit('FieldDepot shared scan anchor mismatch')
+          fs = fs.replace(old_append, new_append, 1)
+
+          old_record = '    private record ResolvedContainer(BlockPos pos, Container container) {}\n}'
+          new_record = '''    private record ResolvedContainer(BlockPos pos, Container container) {}\n    private record NearbySharedDepotCache(String dimension, BlockPos origin, long gameTime, List<BlockPos> positions) {}\n}'''
+          if fs.count(old_record) != 1:
+              raise SystemExit('FieldDepot record anchor mismatch')
+          field.write_text(fs.replace(old_record, new_record, 1), encoding='utf-8')
+
+          # Static invariants for the exact manual-audit findings.
+          r = radial.read_text(encoding='utf-8')
+          f = field.read_text(encoding='utf-8')
+          p = production.read_text(encoding='utf-8')
+          g = guide.read_text(encoding='utf-8')
+          stale = [
+              '조약돌 192 · 철 주괴 48', '구리 주괴 96 · 철 주괴 24',
+              '석재 벽돌 384 · 조약돌 256 · 자갈 256', '철 주괴 96 · 금 주괴 48'
+          ]
+          if any(x in r for x in stale): raise SystemExit('stale infrastructure cost copy remains')
+          assert 'for(InfrastructureProject.Requirement requirement:entry.project().requirements())' in r
+          assert 'NearbySharedDepotCache' in f and 'gameTime() == gameTime' in f
+          assert 'SharedEconomyCompat.ResourceCategory.WOOD' in f
+          assert '통/공용 보급고 4블록' in p
+          assert '공용 보급고는 가까이 있을 때 별도 등록 없이 공용 재고에 합류합니다.' in g
+          print('MANUAL AUDIT PATCH INVARIANTS PASS')
+          PY
+
+      - name: Build Survival Ascension
+        working-directory: projects/survival-ascension
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+
+      - name: Build Frontier regression
+        working-directory: projects/frontier-settlement
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.91.jar
+
+      - name: Commit validated fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production/FieldDepotService.java
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Fix shared economy UI drift and depot scan cost'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
