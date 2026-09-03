@@ -2,6 +2,8 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -143,7 +145,7 @@ public final class WorldSessionRouter {
         p.setYRot(-45.0F);
         p.setXRot(3.0F);
         p.setDeltaMovement(Vec3.ZERO);
-        p.sendSystemMessage(net.minecraft.network.chat.Component.literal("TURNBOUND · 복원된 동쪽 Relay 접근로"));
+        p.sendSystemMessage(Component.literal("TURNBOUND · 복원된 동쪽 Relay 접근로"));
     }
 
     private static void tickRelayApproach(ServerLevel level, ServerPlayer p) {
@@ -184,24 +186,61 @@ public final class WorldSessionRouter {
     }
 
     public static void command(ServerPlayer p, String c) {
-        if (RELAY_APPROACH.contains(p.getUUID())) {
-            if (c != null && c.equals("TRAVEL|" + AsterMarchRegionCatalog.FT_RADIA)) {
-                RELAY_APPROACH.remove(p.getUUID());
-                RadiaHubSessionManager.enter(p);
-            }
-            return;
-        }
+        if (handleCanonicalFastTravel(p, c)) return;
+        if (RELAY_APPROACH.contains(p.getUUID())) return;
         if (RadiaHubSessionManager.active(p)) { RadiaHubSessionManager.command(p, c); return; }
         if (GloamwoodSessionManager.active(p)) { GloamwoodSessionManager.command(p, c); return; }
         if (BrokenAqueductSessionManager.active(p)) { BrokenAqueductSessionManager.command(p, c); return; }
         if (EmberQuarrySessionManager.active(p)) { EmberQuarrySessionManager.command(p, c); return; }
         if (OldRelayStationSessionManager.active(p)) { OldRelayStationSessionManager.command(p, c); return; }
-        if (FieldSessionManager.active(p) && c != null && c.equals("TRAVEL|" + AsterMarchRegionCatalog.FT_RADIA)) {
-            FieldSessionManager.remove(p);
-            RadiaHubSessionManager.enter(p);
-            return;
-        }
         FieldSessionManager.command(p, c);
+    }
+
+    private static boolean handleCanonicalFastTravel(ServerPlayer p, String command) {
+        if (command == null) return false;
+        String[] parts = command.split("\\|", -1);
+        if (parts.length != 2 || !"TRAVEL".equals(parts[0])
+                || !AsterMarchFastTravelService.canonicalDestination(parts[1])) return false;
+
+        String destinationId = parts[1];
+        if (BattleSessionManager.exists(p)) return true;
+        if (!AsterMarchFastTravelService.unlocked(p, destinationId)) {
+            p.sendSystemMessage(Component.literal(AsterMarchFastTravelService.lockedReason(destinationId))
+                    .withStyle(ChatFormatting.GRAY));
+            return true;
+        }
+
+        leaveTravelSession(p);
+        boolean entered = switch (destinationId) {
+            case AsterMarchRegionCatalog.FT_RADIA -> RadiaHubSessionManager.enter(p);
+            case AsterMarchRegionCatalog.FT_MEADOW -> FieldSessionManager.enter(p);
+            case AsterMarchRegionCatalog.FT_GLOAM -> GloamwoodSessionManager.enter(p);
+            case AsterMarchRegionCatalog.FT_AQUEDUCT -> BrokenAqueductSessionManager.enter(p);
+            case AsterMarchRegionCatalog.FT_QUARRY -> EmberQuarrySessionManager.enter(p);
+            case AsterMarchRegionCatalog.FT_RELAY -> OldRelayStationSessionManager.enter(p);
+            default -> false;
+        };
+        if (!entered) {
+            p.sendSystemMessage(Component.literal("계전소 이동을 시작할 수 없습니다.").withStyle(ChatFormatting.RED));
+            return true;
+        }
+
+        FieldTravelCatalog.Destination destination = FieldTravelCatalog.destination(destinationId);
+        p.setPos(destination.x(), destination.y(), destination.z());
+        p.setYRot(destination.yaw());
+        p.setXRot(3.0F);
+        p.setDeltaMovement(Vec3.ZERO);
+        return true;
+    }
+
+    private static void leaveTravelSession(ServerPlayer p) {
+        RELAY_APPROACH.remove(p.getUUID());
+        if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.remove(p);
+        else if (FieldSessionManager.active(p)) FieldSessionManager.remove(p);
+        else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.remove(p);
+        else if (BrokenAqueductSessionManager.active(p)) BrokenAqueductSessionManager.remove(p);
+        else if (EmberQuarrySessionManager.active(p)) EmberQuarrySessionManager.remove(p);
+        else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.remove(p);
     }
 
     public static void onBattleEnded(ServerPlayer p, String id, BattleOutcome o) {
