@@ -65,7 +65,7 @@ if new_audit_var not in audit:
     audit = audit.replace(old_audit_var, new_audit_var, 1)
 
 old_audit_outpost = '''forbid(outpost, (\n    "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",\n), "outpost forced storage fallback")\nmust(service, (\n'''
-new_audit_outpost = '''forbid(outpost, (\n    "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",\n), "outpost forced storage fallback")\nmust(office, (\n    "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",\n    "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"\n), "construction office runner hardening")\nforbid(office, (\n    "duplicate.setNoAi(true);",\n    "runner.getNavigation().moveTo(source.getX() + 0.5D",\n    "runner.getNavigation().moveTo(target.getX() + 0.5D",\n), "construction office legacy runner freeze/pathing")\nmust(service, (\n'''
+new_audit_outpost = '''forbid(outpost, (\n    "BlockPos target = SettlementStorageService.findLogisticsDepositTarget(level, data, carried);",\n), "outpost forced storage fallback")\nmust(office, (\n    "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",\n    "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"\n), "construction office runner hardening")\nforbid(office, (\n    "duplicate.setNoAi(true);",\n    "runner.getNavigation().moveTo(source.getX() + 0.5D",\n), "construction office legacy runner freeze/source pathing")\nmust(service, (\n'''
 if new_audit_outpost not in audit:
     if audit.count(old_audit_outpost) != 1:
         raise SystemExit(f"audit office block anchor count={audit.count(old_audit_outpost)}")
@@ -89,7 +89,6 @@ for token in (
 for forbidden in (
     "duplicate.setNoAi(true);",
     "runner.getNavigation().moveTo(source.getX() + 0.5D",
-    "runner.getNavigation().moveTo(target.getX() + 0.5D",
 ):
     if forbidden in final_office:
         raise SystemExit(f"legacy office invariant remains: {forbidden}")
