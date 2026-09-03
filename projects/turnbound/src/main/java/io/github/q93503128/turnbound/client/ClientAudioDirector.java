@@ -14,9 +14,8 @@ import java.util.Map;
 /**
  * Canonical v0.4 audio routing state.
  *
- * The design docs define six music roles but do not provide authored audio files. This class therefore owns
- * routing, cross-fade state and SFX concurrency budgets without inventing substitute tracks. A resource-backed
- * audio backend can consume musicMix()/drainAcceptedCues() without changing combat or world logic.
+ * Owns the six production music roles, cross-fade state, and SFX concurrency budgets consumed by
+ * {@link ClientAudioPlayback}. Resource filenames and license provenance are recorded in AUDIO_ASSETS.md.
  */
 public final class ClientAudioDirector {
     public enum MusicSlot { NONE, HUB, REGION_EXPLORE, BATTLE_NORMAL, BATTLE_ELITE, BATTLE_BOSS, BATTLE_FINAL }
@@ -81,11 +80,25 @@ public final class ClientAudioDirector {
         }
     }
 
-    /** Drained by the future resource-backed audio backend. Routing/budgeting is already live. */
+    /** Drained once per client tick by the resource-backed playback backend. */
     public static List<Cue> drainAcceptedCues() {
         List<Cue> out = new ArrayList<>(ACCEPTED);
         ACCEPTED.clear();
         return List.copyOf(out);
+    }
+
+    /**
+     * Clears session-local audio routing and throttling state.
+     *
+     * Called when the client has no active player/level so stale field or battle music cannot briefly resume
+     * on the next world connection before fresh snapshots arrive.
+     */
+    public static void resetSession() {
+        outgoing = MusicSlot.NONE;
+        incoming = MusicSlot.NONE;
+        transitionStarted = 0L;
+        ACCEPTED.clear();
+        for (Deque<Long> recent : RECENT.values()) recent.clear();
     }
 
     public static String debugState() {
