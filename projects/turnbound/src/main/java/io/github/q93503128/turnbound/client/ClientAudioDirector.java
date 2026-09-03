@@ -23,7 +23,11 @@ public final class ClientAudioDirector {
     public record Cue(String id, CueGroup group, int priority, String sourceId, String targetId, String detail, int value) {}
     public record MusicMix(MusicSlot outgoing, MusicSlot incoming, float outgoingGain, float incomingGain, boolean transitioning) {}
 
-    private static final long CROSS_FADE_NANOS = 800_000_000L;
+    // Field ambience can breathe; battle entry should respond immediately, while battle exit should feel less abrupt.
+    private static final long FIELD_CROSS_FADE_NANOS = 1_200_000_000L;
+    private static final long BATTLE_ENTER_CROSS_FADE_NANOS = 450_000_000L;
+    private static final long BATTLE_EXIT_CROSS_FADE_NANOS = 950_000_000L;
+    private static final long BATTLE_TIER_CROSS_FADE_NANOS = 650_000_000L;
     private static final long CUE_WINDOW_NANOS = 70_000_000L;
     private static final int QUEUE_CAP = 24;
     private static final Map<CueGroup, Integer> GROUP_LIMITS = new EnumMap<>(CueGroup.class);
@@ -42,6 +46,7 @@ public final class ClientAudioDirector {
     private static MusicSlot outgoing = MusicSlot.NONE;
     private static MusicSlot incoming = MusicSlot.NONE;
     private static long transitionStarted;
+    private static long transitionDurationNanos = FIELD_CROSS_FADE_NANOS;
 
     private ClientAudioDirector() {}
 
@@ -63,7 +68,8 @@ public final class ClientAudioDirector {
 
     public static MusicMix musicMix() {
         if (outgoing == incoming || transitionStarted == 0L) return new MusicMix(incoming, incoming, 0.0F, 1.0F, false);
-        double t = Math.min(1.0, Math.max(0.0, (System.nanoTime() - transitionStarted) / (double) CROSS_FADE_NANOS));
+        double t = Math.min(1.0, Math.max(0.0,
+                (System.nanoTime() - transitionStarted) / (double) Math.max(1L, transitionDurationNanos)));
         if (t >= 1.0) {
             outgoing = incoming;
             transitionStarted = 0L;
@@ -97,6 +103,7 @@ public final class ClientAudioDirector {
         outgoing = MusicSlot.NONE;
         incoming = MusicSlot.NONE;
         transitionStarted = 0L;
+        transitionDurationNanos = FIELD_CROSS_FADE_NANOS;
         ACCEPTED.clear();
         for (Deque<Long> recent : RECENT.values()) recent.clear();
     }
@@ -123,9 +130,25 @@ public final class ClientAudioDirector {
         MusicSlot requested = slot == null ? MusicSlot.NONE : slot;
         if (requested == incoming) return;
         MusicMix current = musicMix();
-        outgoing = current.incomingGain() >= current.outgoingGain() ? current.incoming() : current.outgoing();
+        MusicSlot dominant = current.incomingGain() >= current.outgoingGain() ? current.incoming() : current.outgoing();
+        outgoing = dominant;
         incoming = requested;
+        transitionDurationNanos = transitionDuration(dominant, requested);
         transitionStarted = System.nanoTime();
+    }
+
+    private static long transitionDuration(MusicSlot from, MusicSlot to) {
+        boolean fromBattle = isBattle(from);
+        boolean toBattle = isBattle(to);
+        if (!fromBattle && toBattle) return BATTLE_ENTER_CROSS_FADE_NANOS;
+        if (fromBattle && !toBattle) return BATTLE_EXIT_CROSS_FADE_NANOS;
+        if (fromBattle) return BATTLE_TIER_CROSS_FADE_NANOS;
+        return FIELD_CROSS_FADE_NANOS;
+    }
+
+    private static boolean isBattle(MusicSlot slot) {
+        return slot == MusicSlot.BATTLE_NORMAL || slot == MusicSlot.BATTLE_ELITE
+                || slot == MusicSlot.BATTLE_BOSS || slot == MusicSlot.BATTLE_FINAL;
     }
 
     private static void accept(Cue cue) {
