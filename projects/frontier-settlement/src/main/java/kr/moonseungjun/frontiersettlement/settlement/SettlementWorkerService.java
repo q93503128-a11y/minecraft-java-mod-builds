@@ -711,8 +711,8 @@ public final class SettlementWorkerService {
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              FrontierWorkerEntity worker, ItemStack carried) {
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+        BlockPos target = SettlementStorageService.findProductionDepositTarget(level, data, carried);
+        if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
             worker.getNavigation().stop();
             return;
         }

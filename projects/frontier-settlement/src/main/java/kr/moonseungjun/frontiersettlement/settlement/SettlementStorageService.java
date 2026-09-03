@@ -312,6 +312,25 @@ public final class SettlementStorageService {
         return null;
     }
 
+    /**
+     * Ordinary profession output must enter the shared/public economy before construction staging.
+     * Construction-office bays are intentionally excluded here: otherwise lumber/quarry output can
+     * disappear into a builder-only staging buffer and never become visible to Survival Ascension's
+     * shared-depot bridge until that buffer fills. No chunk is force-loaded and a full network simply
+     * returns null so the worker keeps the physical cargo.
+     */
+    public static BlockPos findProductionDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        positions.addAll(SupplyDepotRegistryService.loadedPositions(level, data));
+        positions.addAll(generalStoragePositions(data));
+        for (BlockPos pos : positions) {
+            if (!level.hasChunkAt(pos)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            if (hasRoom(container, stack)) return pos;
+        }
+        return null;
+    }
+
     /** Outpost deliveries prefer a visible cart-station freight bay before ordinary town storage. */
     public static BlockPos findLogisticsDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
         for (BlockPos pos : cartStationFreightPositions(data)) {
