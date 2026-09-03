@@ -35,7 +35,11 @@ public final class SettlementConstructionService {
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double WORK_POSITION_REACHED_SQR = 110.25D;
+    // Direct hand reach is deliberately much smaller than scaffold coverage. Reusing the 14-block
+    // scaffold coverage radius here let a builder stand on the ground and place an entire tower roof.
+    private static final double DIRECT_HIGH_WORK_RANGE_SQR = 25.0D;
     private static final double HIGH_WORK_RANGE_SQR = 196.0D;
+    private static final double SCAFFOLD_POSITION_REACHED_SQR = 2.25D;
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 64;
     private static final long SITE_RESERVE_TARGET_PER_CATEGORY = 64L;
@@ -920,7 +924,7 @@ public final class SettlementConstructionService {
         BlockPos target = placement.pos();
         int relativeY = target.getY() - construction.originY();
         if (relativeY > 3 && builder.distanceToSqr(
-                target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) <= HIGH_WORK_RANGE_SQR) {
+                target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) <= DIRECT_HIGH_WORK_RANGE_SQR) {
             return true;
         }
 
@@ -928,6 +932,11 @@ public final class SettlementConstructionService {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
             // Ground work retains the historical wide local envelope as the final compatibility fallback.
             if (work.getY() <= construction.originY() && workDistance <= WORK_POSITION_REACHED_SQR) return true;
+            // High work only becomes authoritative after the builder has physically reached the
+            // elevated scaffold work cell. Scaffold coverage may be wide across a large roof, but
+            // standing on the ground inside that same coverage radius is no longer sufficient.
+            if (relativeY > 3 && work.getY() > construction.originY()
+                    && workDistance <= SCAFFOLD_POSITION_REACHED_SQR) return true;
             // A partial path is not authority: try the next scaffold if this exact work point cannot be reached.
             if (moveToReachable(builder, work, 1.05D)) return false;
         }
