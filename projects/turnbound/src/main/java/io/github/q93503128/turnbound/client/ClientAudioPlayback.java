@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 /** Resource-backed playback backend for the semantic routing owned by {@link ClientAudioDirector}. */
 public final class ClientAudioPlayback {
-    private static final float MUSIC_GAIN = 0.68F;
+    private static final float BASE_MUSIC_GAIN = 0.68F;
     private static final Map<ClientAudioDirector.MusicSlot, Supplier<SoundEvent>> MUSIC = new EnumMap<>(ClientAudioDirector.MusicSlot.class);
     private static final Map<String, Supplier<SoundEvent>> SFX = Map.ofEntries(
             Map.entry("skill", () -> TurnboundSounds.SFX_SKILL.get()),
@@ -94,6 +94,7 @@ public final class ClientAudioPlayback {
 
     private static void playCues(Minecraft minecraft, List<ClientAudioDirector.Cue> cues) {
         if (cues.isEmpty()) return;
+        ClientBattleState.Snapshot snapshot = ClientBattleState.snapshot();
         for (ClientAudioDirector.Cue cue : cues) {
             Supplier<SoundEvent> supplier = SFX.get(cue.id());
             if (supplier == null) continue;
@@ -101,14 +102,46 @@ public final class ClientAudioPlayback {
                 case IMPACT -> cue.priority() >= 3 ? 0.92F : 0.72F;
                 case REACTION -> 0.88F;
                 case SUPPORT -> 0.68F;
-                case SYSTEM -> 0.82F;
+                case SYSTEM -> cue.priority() >= 3 ? 0.94F : 0.82F;
                 case SKILL -> 0.62F;
             };
             float pitch = 0.96F + Math.min(3, Math.max(0, cue.priority())) * 0.025F;
-            minecraft.level.playLocalSound(
-                    minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ(),
-                    supplier.get(), SoundSource.PLAYERS, volume, pitch, false);
+            ClientBattleState.Unit unit = cueUnit(snapshot, cue);
+            double x = unit != null ? unit.x() : minecraft.player.getX();
+            double y = unit != null ? unit.y() : minecraft.player.getY();
+            double z = unit != null ? unit.z() : minecraft.player.getZ();
+            minecraft.level.playLocalSound(x, y, z, supplier.get(), SoundSource.PLAYERS, volume, pitch, false);
         }
+    }
+
+    private static ClientBattleState.Unit cueUnit(ClientBattleState.Snapshot snapshot, ClientAudioDirector.Cue cue) {
+        if (snapshot == null || snapshot.units().isEmpty()) return null;
+        boolean sourceCentric = "skill".equals(cue.id()) || "boss_phase".equals(cue.id());
+        String preferred = sourceCentric ? cue.sourceId() : cue.targetId();
+        String fallback = sourceCentric ? cue.targetId() : cue.sourceId();
+        ClientBattleState.Unit unit = findUnit(snapshot, preferred);
+        return unit != null ? unit : findUnit(snapshot, fallback);
+    }
+
+    private static ClientBattleState.Unit findUnit(ClientBattleState.Snapshot snapshot, String id) {
+        if (id == null || id.isBlank()) return null;
+        for (ClientBattleState.Unit unit : snapshot.units()) {
+            if (id.equals(unit.id())) return unit;
+        }
+        return null;
+    }
+
+    private static float musicGain(ClientAudioDirector.MusicSlot slot) {
+        float roleMultiplier = switch (slot) {
+            case HUB -> 0.84F;
+            case REGION_EXPLORE -> 0.88F;
+            case BATTLE_NORMAL -> 0.94F;
+            case BATTLE_ELITE -> 0.97F;
+            case BATTLE_BOSS -> 1.00F;
+            case BATTLE_FINAL -> 1.04F;
+            case NONE -> 0.0F;
+        };
+        return BASE_MUSIC_GAIN * roleMultiplier;
     }
 
     private static void stopAll(SoundManager manager) {
@@ -117,7 +150,7 @@ public final class ClientAudioPlayback {
         ClientAudioDirector.drainAcceptedCues();
     }
 
-    /** A relative stereo loop whose volume follows the director's canonical 800 ms cross-fade envelope. */
+    /** A relative stereo loop whose volume follows the director's context-sensitive cross-fade envelope. */
     private static final class MusicLoop extends AbstractTickableSoundInstance {
         private final ClientAudioDirector.MusicSlot slot;
 
@@ -143,7 +176,7 @@ public final class ClientAudioPlayback {
                 stop();
                 return;
             }
-            this.volume = Math.max(0.0F, Math.min(1.0F, gain)) * MUSIC_GAIN;
+            this.volume = Math.max(0.0F, Math.min(1.0F, gain)) * musicGain(slot);
         }
     }
 }
