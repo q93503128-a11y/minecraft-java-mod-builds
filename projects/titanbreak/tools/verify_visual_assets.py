@@ -75,6 +75,56 @@ TARGETS = {
             "resonance_ring_outer", "resonance_ring_inner",
         },
     },
+    "chrono_hound": {
+        "identifier": "geometry.titanbreak.chrono_hound",
+        "min_cubes": 36,
+        "required": {"root","body","head","jaw","spine_fins","temporal_core","chrono_ring","leg_fl","leg_fr","leg_bl","leg_br","tail_base","tail_tip"},
+    },
+    "null_eye": {
+        "identifier": "geometry.titanbreak.null_eye",
+        "min_cubes": 34,
+        "required": {"root","core","eye","halo_left","halo_right","antenna","tendril_left","tendril_right","tendril_back","jammer_ring_outer","jammer_ring_inner","jammer_coil"},
+    },
+    "iron_maw": {
+        "identifier": "geometry.titanbreak.iron_maw",
+        "min_cubes": 36,
+        "required": {"root","body","head","jaw","left_arm","right_arm","left_leg","right_leg","clamp_left","clamp_right","impact_chest","spine_brace"},
+    },
+    "revenant": {
+        "identifier": "geometry.titanbreak.revenant",
+        "min_cubes": 32,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","core_a","core_b","core_c","regen_bridge_ab","regen_bridge_c","tumor_left","tumor_right"},
+    },
+    "apex_stalker": {
+        "identifier": "geometry.titanbreak.apex_stalker",
+        "min_cubes": 33,
+        "required": {"root","body","head","cloak_left","cloak_right","left_arm","right_arm","left_leg","right_leg","left_blade","right_blade","sensor_crest","optic_node_left","optic_node_right"},
+    },
+    "shock_choir": {
+        "identifier": "geometry.titanbreak.shock_choir",
+        "min_cubes": 33,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","chest_coil","spire_left","spire_right","overload_ring","rear_capacitor"},
+    },
+    "siegeback": {
+        "identifier": "geometry.titanbreak.siegeback",
+        "min_cubes": 40,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","dorsal_cannon","front_plate","bunker_shell","ram_keel"},
+    },
+    "phase_lurker": {
+        "identifier": "geometry.titanbreak.phase_lurker",
+        "min_cubes": 35,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","phase_ring","phase_spines","distortion_core","phase_anchor_left","phase_anchor_right"},
+    },
+    "warden_node": {
+        "identifier": "geometry.titanbreak.warden_node",
+        "min_cubes": 36,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","command_node","left_antenna","right_antenna","halo","signal_mast","formation_emitter_left","formation_emitter_right"},
+    },
+    "harvester": {
+        "identifier": "geometry.titanbreak.harvester",
+        "min_cubes": 37,
+        "required": {"root","body","head","left_arm","right_arm","left_leg","right_leg","harvest_vat","left_claw","right_claw","feeder_tube","brood_pod","spawn_cradle"},
+    },
 }
 
 # This model intentionally uses a renderer-specific material path and is not
@@ -212,9 +262,9 @@ def validate_geometry(path: Path, errors: list[str]) -> set[str]:
             fail(errors, f"{path.name}: expected identifier {expected_identifier!r}, got {actual_identifier!r}")
         missing = sorted(contract["required"] - name_set)
         if missing:
-            fail(errors, f"{path.name}: missing alpha.53 contract bones: {missing}")
+            fail(errors, f"{path.name}: missing protected visual contract bones: {missing}")
         if cube_count < contract["min_cubes"]:
-            fail(errors, f"{path.name}: alpha.53 cube count {cube_count} < {contract['min_cubes']}")
+            fail(errors, f"{path.name}: protected cube count {cube_count} < {contract['min_cubes']}")
 
     return name_set
 
@@ -253,7 +303,7 @@ def main() -> int:
 
     for target in TARGETS:
         if target not in model_bones:
-            fail(errors, f"alpha.53 target model missing: {target}")
+            fail(errors, f"protected target model missing: {target}")
 
     for animation_path in sorted(ANIMATIONS.glob("*.animation.json")):
         stem = animation_path.name.removesuffix(".animation.json")
@@ -282,7 +332,7 @@ def main() -> int:
         f"{name}:{sum(len(b.get('cubes', [])) for b in json.loads((MODELS / f'{name}.geo.json').read_text())['minecraft:geometry'][0]['bones'])}c"
         for name in TARGETS
     )
-    print(f"TITANBREAK visual verifier PASS ({len(model_files)} models; alpha.53 {target_summary})")
+    print(f"TITANBREAK visual verifier PASS ({len(model_files)} models; protected {target_summary})")
     return 0
 
 

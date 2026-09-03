@@ -1,69 +1,59 @@
 # TITANBREAK Development Status
 
-Last normalized at: **0.1.0-alpha.53 visual completion line**
+Last normalized at: **0.1.0-alpha.54 elite visual completion line**
 
-This is the current status index. Historical `ALPHA*_IMPLEMENTATION_NOTES.md` files remain decision/regression records, but current source + the v0.3 content bible + this status index are authoritative when old notes disagree.
+This is the current live status index. Historical `ALPHA*_IMPLEMENTATION_NOTES.md` files are archaeology/regression records; current source + the v0.3 content bible + this status index win when old notes disagree.
 
 ## Current production state
 
 - Core augmentation/HUD/resource systems: implemented baseline.
-- Reflex Drive time-acceleration line: implemented; suppression interaction is integrated.
+- Reflex Drive time-acceleration line: implemented; suppression interaction integrated.
 - Main boss progression through B10: implemented baseline.
 - B08 Ash Titan, B09 Null Seraph and B10 Worldbreaker: dedicated multipart encounters implemented.
+- Canonical elite roster: 10/10 implemented and connected to hunt/reward systems.
 - Visual governance: `VISUAL_BIBLE.md` + `CHARACTER_DESIGN_PIPELINE.md`.
 - Integrated asset validation: `tools/verify_visual_assets.py`.
-- Runtime target from current build files: Minecraft **26.2**, NeoForge **26.2.0.38-beta**, GeckoLib **5.5.3**, Java **25**.
+- Runtime target: Minecraft **26.2**, NeoForge **26.2.0.38-beta**, GeckoLib **5.5.3**, Java **25**.
 
-## Alpha.52 completed presentation line
+## Presentation completion lines
 
-Alpha.52 established the non-generic silhouette standard for:
-- B01 The Pursuer
-- B04 The Regnant Flesh
-- B05 Hundred-Eyed Watcher
-- B06 Chronophage
-- B09 Null Seraph
-- B10 Worldbreaker
+### Alpha.52
+Established the non-generic boss silhouette standard for B01 The Pursuer, B04 The Regnant Flesh, B05 Hundred-Eyed Watcher, B06 Chronophage, B09 Null Seraph and B10 Worldbreaker.
 
-Those assets remain part of the visual regression surface.
+### Alpha.53
+Closed the remaining first-pass boss/normal-threat presentation debt for B02 Gravemarch Colossus, B03 Bastion Walker, B07 Storm Leviathan, B08 Ash Titan, Bulwark and Howler. It also replaced the obsolete alpha.52-only visual CI with the reusable `titanbreak-visual-regression-ci.yml` gate and introduced `tools/verify_visual_assets.py`.
 
-## Alpha.53 scope
+### Alpha.54
+The post-alpha.53 repository audit identified the ten elites as the largest remaining presentation-quality gap. Alpha.54 remasters all ten while preserving gameplay, AI, stats, drops and animation/runtime bone contracts:
 
-Alpha.53 closes the remaining first-pass silhouette debt before integrated real-play review.
+- **Chrono Hound** — low temporal pursuit quadruped; sensor head, chrono core/ring, dorsal fins, phase rails and tail mass communicate high relative speed inside temporal fields.
+- **Null Eye** — floating optic-jammer organism; central eye, jammer rings/coils, relays and tendrils replace any humanoid read.
+- **Iron Maw** — dense impact/grab brute dominated by jaw, clamp forearms, hooks, chest impact mass and bracing.
+- **Revenant** — asymmetric regenerative colony with three simultaneously readable canonical regeneration cores and replacement tissue.
+- **Apex Stalker** — lean optical pursuit predator with cloak masses, blades, sensor crest, optic nodes and route-control fins.
+- **Shock Choir** — electrical conductor organism built around chest coil, spires, conductor/link structures, overload ring and rear capacitor.
+- **Siegeback** — low moving bunker with four supports, hard frontal wall, dorsal armored cannon, side armor and recoil bracing.
+- **Phase Lurker** — spatially discontinuous predator with offset shells, phase rings, anchors, veil fins and distortion core.
+- **Warden Node** — battlefield command hub dominated by command node, mast, halo, relays and formation emitters.
+- **Harvester** — salvage recycler/brood carrier dominated by harvest vat, intake, feeder, claws, brood pod, spawn cradle and repair spine.
 
-Remodeled in this line:
-- **B02 Gravemarch Colossus** — power/berserker giant with heavier upper body, reinforced elbows/knees/ankles, dorsal impact mass and a clearly exposed shock-heart.
-- **B03 Bastion Walker** — low mobile fortress with layered closure plates, layered closure armor, readable upper defense node/power-core route, asymmetric turret masses, buttresses and frontal ram.
-- **B07 Storm Leviathan** — horizontal wandering storm organism with expanded wing membranes, six electric sacs, a stronger sensor crest, dorsal charge spine, storm organ and tail control surfaces.
-- **B08 Ash Titan** — thermal/radiant guardian with six cooling plates preserved, heavier radiation-arm masses, exposed radiant-heart framing, heat vents and a protected head sensor.
-- **Bulwark** — compact moving rampart whose shield/front wall dominates the silhouette.
-- **Howler** — top-heavy resonator organism whose horn-mouth, throat bellows and acoustic rings dominate the body.
+No new elite mechanic or weakpoint is introduced by the geometry.
 
-Gameplay, balance, encounter sequencing and reward contracts are intentionally unchanged by this visual batch.
+## Automated visual gate
 
-## Alpha.53 automated gate
-
-The old alpha.52-only visual workflow is retired. `titanbreak-visual-regression-ci.yml` now:
+The reusable verifier protects **16 remastered targets**: the six alpha.53 targets plus all ten elites. It:
 1. parses all GeckoLib entity geometry;
-2. rejects duplicate bones, broken parents, parent cycles and malformed cubes;
-3. verifies animation bone references against matching geometry;
-4. verifies ordinary model/texture stem mapping, with only documented renderer exceptions;
-5. enforces persistent alpha.53 silhouette/signature contracts for the six remodeled targets;
-6. runs a Java 25 clean build;
-7. verifies and uploads the runtime JAR.
+2. rejects duplicate bones, broken parents, parent cycles and malformed cube vectors;
+3. checks animation bone references against matching geometry;
+4. checks ordinary model/texture stem mapping, with documented renderer exceptions only;
+5. enforces signature/runtime bones and minimum-density floors for protected remasters;
+6. runs through the version-tolerant Visual Regression CI;
+7. requires Java 25 clean build, runtime JAR-name verification and artifact upload.
 
-The regression gate is deliberately version-tolerant so it does not become a stale exact-alpha blocker during later development.
+`Elite Catalog CI` remains the separate source-of-truth gate for the 10-entry elite roster and its gameplay/catalog wiring.
 
-## Next phase
+## Next phase after alpha.54
 
-Do **integrated in-game presentation testing**, not another blind geometry pass. Check:
-- spawn/culling distance and scale;
-- ground contact and movement;
-- attack animation pivots;
-- multipart/weakpoint alignment;
-- phase visibility;
-- terrain clipping/traversal;
-- texture stretching introduced by the new blockout;
-- B02/B03/B07/B08 mechanic readability;
-- Bulwark/Howler combat readability at ordinary encounter distance.
+Do **not** jump directly to broad content expansion. Finish the remaining normal-enemy art/resource audit first so the first integrated playtest is not polluted by obvious placeholder presentation debt.
 
-A clean CI build means structurally ready for playtest, not visually approved in-game.
+Audit the 16 normal enemies for generic humanoid/blockout silhouettes, duplicated geometry/animation patterns, renderer-scale vs hitbox mismatch, obsolete/unreachable assets, role readability, animation pivots and asset-registry consistency. Then move to integrated in-game presentation testing covering bosses, elites and normal threats together. A clean CI build means structurally ready for playtest, not visually approved in-game.
