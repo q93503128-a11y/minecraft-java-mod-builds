@@ -1,0 +1,106 @@
+package io.github.q93503128.turnbound.combat;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+final class SignatureTrialEvaluatorTest {
+    private static CombatantState unit(String instanceId, String definitionId, CombatantSide side) {
+        CombatantDefinition definition = PrototypeRoster.trainingEnemy(definitionId, definitionId, 1000, 100, 80, 100);
+        return new CombatantState(instanceId, definition, side, 0);
+    }
+
+    private static BattleState victory(CombatantState... allies) {
+        CombatantState enemy = unit("enemy", "TRIAL_ENEMY", CombatantSide.ENEMY);
+        BattleState state = new BattleState(java.util.stream.Stream.concat(
+                java.util.Arrays.stream(allies), java.util.stream.Stream.of(enemy)).toList());
+        enemy.forceDown();
+        state.addEvent(new BattleEvent("DOWN", allies[0].instanceId(), enemy.instanceId(), 0, "fixture"));
+        assertEquals(BattleOutcome.ALLY_VICTORY, state.outcome());
+        return state;
+    }
+
+    @Test
+    void p04DetectsDeathThenFinalFullSurvivalButKeepsCanonSettlementBlocked() {
+        CombatantState p04 = unit("p04", "P04", CombatantSide.ALLY);
+        CombatantState ally = unit("ally", "P01", CombatantSide.ALLY);
+        BattleState state = victory(p04, ally);
+        ally.forceDown();
+        state.addEvent(new BattleEvent("DOWN", "enemy", ally.instanceId(), 0, "fixture"));
+        ally.revive(0.30);
+        state.addEvent(new BattleEvent("REVIVE", p04.instanceId(), ally.instanceId(), ally.hp(), "fixture"));
+
+        SignatureTrialEvaluator.Evaluation result = SignatureTrialEvaluator.evaluate("P04", state);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.MET, result.objectiveState());
+        assertTrue(result.objectiveMet());
+        assertTrue(result.canonBlocked());
+        assertFalse(result.settlementEligible());
+    }
+
+    @Test
+    void p05RequiresTenFollowupsWithinTwentyFiveTotalActions() {
+        CombatantState p05 = unit("p05", "P05", CombatantSide.ALLY);
+        BattleState state = victory(p05);
+        for (int i = 0; i < 10; i++) {
+            state.addEvent(new BattleEvent("REACTION_DAMAGE", p05.instanceId(), "enemy", 1, "P05_FOLLOW_UP"));
+        }
+        for (int i = 0; i < 25; i++) {
+            state.addEvent(new BattleEvent("ACTION", p05.instanceId(), "enemy", 0, "fixture"));
+        }
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.MET,
+                SignatureTrialEvaluator.evaluate("P05", state).objectiveState());
+
+        state.addEvent(new BattleEvent("ACTION", p05.instanceId(), "enemy", 0, "fixture"));
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_MET,
+                SignatureTrialEvaluator.evaluate("P05", state).objectiveState());
+    }
+
+    @Test
+    void p06RequiresSelfReviveAndFiveMemory() {
+        CombatantState p06 = unit("p06", "P06", CombatantSide.ALLY);
+        BattleState state = victory(p06);
+        p06.setCounter("memory", 5);
+        state.addEvent(new BattleEvent("SELF_REVIVE", p06.instanceId(), p06.instanceId(), 350, "P06_LAST_PAGE"));
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.MET,
+                SignatureTrialEvaluator.evaluate("P06", state).objectiveState());
+
+        p06.setCounter("memory", 4);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_MET,
+                SignatureTrialEvaluator.evaluate("P06", state).objectiveState());
+    }
+
+    @Test
+    void p07RequiresContractDeathThenManualResummonAndLivingMarion() {
+        CombatantState p07 = unit("p07", "P07", CombatantSide.ALLY);
+        BattleState state = victory(p07);
+        state.addEvent(new BattleEvent("SUMMON_DOWN", "summon_p07", p07.instanceId(), 300, "P07_CONTRACT"));
+        state.addEvent(new BattleEvent("ACTION", p07.instanceId(), p07.instanceId(), 0, "p07_summon_toto"));
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.MET,
+                SignatureTrialEvaluator.evaluate("P07", state).objectiveState());
+    }
+
+    @Test
+    void unresolvedIdentityTrialsStayNotEvaluable() {
+        BattleState p01State = victory(unit("p01", "P01", CombatantSide.ALLY));
+        BattleState p02State = victory(unit("p02", "P02", CombatantSide.ALLY));
+        BattleState p03State = victory(unit("p03", "P03", CombatantSide.ALLY));
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
+                SignatureTrialEvaluator.evaluate("P01", p01State).objectiveState());
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
+                SignatureTrialEvaluator.evaluate("P02", p02State).objectiveState());
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE,
+                SignatureTrialEvaluator.evaluate("P03", p03State).objectiveState());
+    }
+
+    @Test
+    void p08CanonContradictionCanNeverSettle() {
+        BattleState state = victory(unit("p08", "P08", CombatantSide.ALLY));
+        SignatureTrialEvaluator.Evaluation result = SignatureTrialEvaluator.evaluate("P08", state);
+        assertEquals(SignatureTrialEvaluator.ObjectiveState.NOT_EVALUABLE, result.objectiveState());
+        assertTrue(result.canonBlocked());
+        assertFalse(result.settlementEligible());
+        assertTrue(result.detail().contains("Awakening"));
+    }
+}
