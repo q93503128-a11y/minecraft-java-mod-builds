@@ -63,7 +63,9 @@ public final class MetaNetwork {
     }
 
     private static void send(ServerPlayer player, String tabHint) {
-        String encoded = QuestMenuContentService.encode(player.getUUID()) + MetaUiCodec.encode(MetaMenuService.snapshot(player));
+        String encoded = QuestMenuContentService.encode(player.getUUID())
+                + SignatureTrialMenuContentService.encode(player.getUUID())
+                + MetaUiCodec.encode(MetaMenuService.snapshot(player));
         if (!tabHint.isBlank()) encoded = "O|" + tabHint + "\n" + encoded;
         PacketDistributor.sendToPlayer(player, new MetaSnapshotPayload(encoded));
     }
