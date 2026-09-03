@@ -19,6 +19,8 @@ storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
+workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
+storage_nav = text(JAVA / "settlement/SettlementWorkerStorageNavigation.java")
 entity = text(JAVA / "content/FrontierWorkerEntity.java")
 blueprints = text(JAVA / "settlement/BuildingBlueprints.java")
 service = text(JAVA / "settlement/SettlementService.java")
@@ -71,6 +73,27 @@ forbid(advanced_workshop, (
     "SettlementStorageService::isMetalStack",
     "SettlementStorageService.isMetalStack(carried)"
 ), "advanced workshop overlapping metal predicate")
+must(storage_nav, (
+    "findReachableExtractionTarget", "findReachableDepositTarget",
+    "moveToInteraction", "createExactPath", "path.canReach()"
+), "workshop storage navigation")
+must(workshop, (
+    "SettlementWorkerStorageNavigation.findReachableExtractionTarget",
+    "SettlementWorkerStorageNavigation.findReachableDepositTarget",
+    "SettlementWorkerStorageNavigation.moveToInteraction"
+), "basic workshop storage reachability")
+must(advanced_workshop, (
+    "SettlementWorkerStorageNavigation.findReachableExtractionTarget",
+    "SettlementWorkerStorageNavigation.findReachableDepositTarget",
+    "SettlementWorkerStorageNavigation.moveToInteraction"
+), "advanced workshop storage reachability")
+forbid(workshop, (
+    "SettlementStorageService.findExtractionTarget(level, data, SettlementStorageService::isMetalStack)",
+    "BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);"
+), "basic workshop forced storage target")
+forbid(advanced_workshop, (
+    "BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);",
+), "advanced workshop forced storage target")
 must(service, (
     "FrontierContent.SUPPLY_DEPOT.get().defaultBlockState()",
     "SupplyDepotRegistryService.tryRegister(level, stockpile)",

@@ -189,7 +189,8 @@ public final class SettlementAdvancedWorkshopService {
             }
             if (worker.distanceToSqr(cratePos.getX() + 0.5D, cratePos.getY() + 0.5D, cratePos.getZ() + 0.5D)
                     > INTERACTION_RANGE_SQR) {
-                worker.getNavigation().moveTo(cratePos.getX() + 0.5D, cratePos.getY(), cratePos.getZ() + 0.5D, 0.78D);
+                SettlementWorkerStorageNavigation.moveToInteraction(
+                        level, worker, cratePos, 0.78D, INTERACTION_RANGE_SQR);
                 return;
             }
             ItemStack remaining = SettlementInventory.insert(crate, carried);
@@ -215,11 +216,16 @@ public final class SettlementAdvancedWorkshopService {
         }
 
         if (!SettlementStorageService.storageAvailable(level, data)) return;
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementAdvancedWorkshopService::isForgeMetal);
-        if (source == null) return;
+        BlockPos source = SettlementWorkerStorageNavigation.findReachableExtractionTarget(
+                level, data, worker, SettlementAdvancedWorkshopService::isForgeMetal, INTERACTION_RANGE_SQR);
+        if (source == null) {
+            worker.getNavigation().stop();
+            return;
+        }
         if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            worker.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.82D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, worker, source, 0.82D, INTERACTION_RANGE_SQR);
             return;
         }
         ItemStack metalStack = SettlementStorageService.extract(level, source, SettlementAdvancedWorkshopService::isForgeMetal,
@@ -372,11 +378,13 @@ public final class SettlementAdvancedWorkshopService {
     }
 
     private static void returnCarriedItem(ServerLevel level, SettlementData data, FrontierWorkerEntity worker, ItemStack carried) {
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target)) { worker.getNavigation().stop(); return; }
+        BlockPos target = SettlementWorkerStorageNavigation.findReachableDepositTarget(
+                level, data, worker, carried, INTERACTION_RANGE_SQR);
+        if (target == null) { worker.getNavigation().stop(); return; }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > INTERACTION_RANGE_SQR) {
-            worker.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.8D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, worker, target, 0.8D, INTERACTION_RANGE_SQR);
             return;
         }
         if (!(level.getBlockEntity(target) instanceof Container container)) { worker.getNavigation().stop(); return; }
