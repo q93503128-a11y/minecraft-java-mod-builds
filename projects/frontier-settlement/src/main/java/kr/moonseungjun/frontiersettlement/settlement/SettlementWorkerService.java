@@ -729,7 +729,15 @@ public final class SettlementWorkerService {
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
                                              FrontierWorkerEntity worker, ItemStack carried) {
-        BlockPos target = SettlementStorageService.findProductionDepositTarget(level, data, carried);
+        Set<BlockPos> excluded = new HashSet<>();
+        Map<BlockPos, Long> blocked = BLOCKED_TARGETS.get(worker.getUUID());
+        if (blocked != null) {
+            long now = level.getGameTime();
+            for (Map.Entry<BlockPos, Long> entry : blocked.entrySet()) {
+                if (entry.getValue() > now) excluded.add(entry.getKey());
+            }
+        }
+        BlockPos target = SettlementStorageService.findProductionDepositTargetExcluding(level, data, carried, excluded);
         if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
             worker.getNavigation().stop();
             return;

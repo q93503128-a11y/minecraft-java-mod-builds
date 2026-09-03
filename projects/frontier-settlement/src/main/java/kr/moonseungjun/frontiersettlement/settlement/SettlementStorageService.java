@@ -320,11 +320,21 @@ public final class SettlementStorageService {
      * returns null so the worker keeps the physical cargo.
      */
     public static BlockPos findProductionDepositTarget(ServerLevel level, SettlementData data, ItemStack stack) {
+        return findProductionDepositTargetExcluding(level, data, stack, Set.of());
+    }
+
+    /**
+     * Production hauling must be able to skip a depot that this worker has already proved unreachable.
+     * Otherwise the deterministic shared-depot-first ordering can make a worker retry the same blocked
+     * container forever even while another loaded shared/general container has free space.
+     */
+    public static BlockPos findProductionDepositTargetExcluding(ServerLevel level, SettlementData data,
+                                                                ItemStack stack, Set<BlockPos> excluded) {
         Set<BlockPos> positions = new LinkedHashSet<>();
         positions.addAll(SupplyDepotRegistryService.loadedPositions(level, data));
         positions.addAll(generalStoragePositions(data));
         for (BlockPos pos : positions) {
-            if (!level.hasChunkAt(pos)) continue;
+            if (excluded.contains(pos) || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
             if (hasRoom(container, stack)) return pos;
         }
