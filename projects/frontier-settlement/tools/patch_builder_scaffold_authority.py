@@ -38,6 +38,13 @@ if new_high_ground_fallback not in text:
         raise SystemExit(f"high ground fallback anchor count={text.count(old_high_ground_fallback)}")
     text = text.replace(old_high_ground_fallback, new_high_ground_fallback, 1)
 
+old_finish_repair = '''            if (!canReplaceConstructionTarget(level, placement.pos(), current)) {\n                builder.getNavigation().stop();\n                return false;\n            }\n            if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;\n            if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;\n            if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;\n'''
+new_finish_repair = '''            if (!canReplaceConstructionTarget(level, placement.pos(), current)) {\n                builder.getNavigation().stop();\n                return false;\n            }\n            if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;\n            // Completion itself never depends on scaffold cleanup. But if an already-paid blueprint\n            // block has drifted/missing at height, the repair pass needs the same physical scaffold\n            // authority as ordinary construction. Rebuild only in that exceptional repair path.\n            if (placement.pos().getY() - data.construction().originY() > 3) {\n                ensureConstructionScaffolds(level, data, type, supply);\n            }\n            if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;\n            if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;\n'''
+if new_finish_repair not in text:
+    if text.count(old_finish_repair) != 1:
+        raise SystemExit(f"finish repair anchor count={text.count(old_finish_repair)}")
+    text = text.replace(old_finish_repair, new_finish_repair, 1)
+
 PATH.write_text(text, encoding="utf-8")
 current = PATH.read_text(encoding="utf-8")
 required = [
@@ -48,6 +55,8 @@ required = [
     "workDistance <= SCAFFOLD_POSITION_REACHED_SQR",
     "targetDistanceSqr(candidate, target) <= HIGH_WORK_RANGE_SQR",
     "High work has no ground-authority fallback",
+    "already-paid blueprint",
+    "ensureConstructionScaffolds(level, data, type, supply);",
 ]
 for token in required:
     if token not in current:
