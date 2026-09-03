@@ -1,0 +1,224 @@
+name: Turnbound package CC0 production audio
+
+on:
+  push:
+    branches:
+      - turnbound-alpha17-full-v04
+    paths:
+      - '.github/workflows/turnbound-package-cc0-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-build-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Turnbound production branch
+        uses: actions/checkout@v4
+        with:
+          ref: turnbound-alpha17-full-v04
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Ensure ffprobe is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+
+      - name: Package verified CC0 music and SFX
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='projects/turnbound/src/main/resources/assets/turnbound/sounds'
+          MUSIC="$ROOT/music"
+          SFX="$ROOT/sfx"
+          mkdir -p "$MUSIC" "$SFX"
+
+          fetch() {
+            local url="$1"
+            local out="$2"
+            echo "Fetching $out"
+            curl --fail --location --retry 4 --retry-delay 2 --silent --show-error "$url" --output "$out"
+            test -s "$out"
+          }
+
+          W='https://raw.githubusercontent.com/GabrielGLevine/wandering-inn-rpg/main/wandering_inn_game/assets/audio/music'
+          J='https://raw.githubusercontent.com/jarlah/dungeon-haskell/master/assets/music'
+          S='https://raw.githubusercontent.com/lavenderdotpet/CC0-Public-Domain-Sounds/main/80-CC0-RPG-SFX'
+
+          fetch "$W/junkala_home_town.ogg" "$MUSIC/hub.ogg"
+          fetch "$W/junkala_sunshine_coast.ogg" "$MUSIC/region_explore.ogg"
+          fetch "$W/junkala_preparing_battle.ogg" "$MUSIC/battle_normal.ogg"
+          fetch "$W/junkala_encounter_witches.ogg" "$MUSIC/battle_elite.ogg"
+          fetch "$W/junkala_army_approaching.ogg" "$MUSIC/battle_boss.ogg"
+          fetch "$J/boss.ogg" "$MUSIC/battle_final.ogg"
+
+          fetch "$S/spell_01.ogg" "$SFX/skill.ogg"
+          fetch "$S/blade_01.ogg" "$SFX/hit_light.ogg"
+          fetch "$S/metal_01.ogg" "$SFX/hit_heavy.ogg"
+          fetch "$S/creature_hurt_01.ogg" "$SFX/reaction_hit.ogg"
+          fetch "$S/spell_fire_07.ogg" "$SFX/dot_tick.ogg"
+          fetch "$S/item_gem_01.ogg" "$SFX/heal.ogg"
+          fetch "$S/item_gem_04.ogg" "$SFX/barrier.ogg"
+          fetch "$S/spell_02.ogg" "$SFX/revive.ogg"
+          fetch "$S/creature_die_01.ogg" "$SFX/down.ogg"
+          fetch "$S/creature_roar_02.ogg" "$SFX/boss_phase.ogg"
+          fetch "$S/spell_fire_03.ogg" "$SFX/spawn.ogg"
+
+      - name: Validate all 17 audio files
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='projects/turnbound/src/main/resources/assets/turnbound/sounds'
+          expected=(
+            music/hub.ogg
+            music/region_explore.ogg
+            music/battle_normal.ogg
+            music/battle_elite.ogg
+            music/battle_boss.ogg
+            music/battle_final.ogg
+            sfx/skill.ogg
+            sfx/hit_light.ogg
+            sfx/hit_heavy.ogg
+            sfx/reaction_hit.ogg
+            sfx/dot_tick.ogg
+            sfx/heal.ogg
+            sfx/barrier.ogg
+            sfx/revive.ogg
+            sfx/down.ogg
+            sfx/boss_phase.ogg
+            sfx/spawn.ogg
+          )
+
+          test "${#expected[@]}" -eq 17
+          for rel in "${expected[@]}"; do
+            path="$ROOT/$rel"
+            test -s "$path"
+            magic="$(head -c 4 "$path")"
+            test "$magic" = 'OggS'
+            codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$path")"
+            test "$codec" = 'vorbis'
+            duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$path")"
+            python3 - "$duration" <<'PY'
+          import sys
+          duration = float(sys.argv[1])
+          if not duration > 0.02:
+              raise SystemExit(f'invalid duration: {duration}')
+          PY
+            printf '%-32s codec=%s duration=%ss size=%s\n' "$rel" "$codec" "$duration" "$(stat -c%s "$path")"
+          done
+
+          count="$(find "$ROOT/music" "$ROOT/sfx" -maxdepth 1 -type f -name '*.ogg' | wc -l)"
+          test "$count" -eq 17
+
+      - name: Validate sounds.json contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('projects/turnbound/src/main/resources/assets/turnbound')
+          data = json.loads((root / 'sounds.json').read_text(encoding='utf-8'))
+          expected = {
+              'music.hub': 'music/hub',
+              'music.region_explore': 'music/region_explore',
+              'music.battle_normal': 'music/battle_normal',
+              'music.battle_elite': 'music/battle_elite',
+              'music.battle_boss': 'music/battle_boss',
+              'music.battle_final': 'music/battle_final',
+              'sfx.skill': 'sfx/skill',
+              'sfx.hit_light': 'sfx/hit_light',
+              'sfx.hit_heavy': 'sfx/hit_heavy',
+              'sfx.reaction_hit': 'sfx/reaction_hit',
+              'sfx.dot_tick': 'sfx/dot_tick',
+              'sfx.heal': 'sfx/heal',
+              'sfx.barrier': 'sfx/barrier',
+              'sfx.revive': 'sfx/revive',
+              'sfx.down': 'sfx/down',
+              'sfx.boss_phase': 'sfx/boss_phase',
+              'sfx.spawn': 'sfx/spawn',
+          }
+          for event, suffix in expected.items():
+              assert event in data, f'missing event: {event}'
+              sounds = data[event]['sounds']
+              entry = sounds[0]
+              name = entry['name'] if isinstance(entry, dict) else entry
+              assert name == f'turnbound:{suffix}', (event, name)
+              assert (root / 'sounds' / f'{suffix}.ogg').is_file(), suffix
+          print('sounds.json contract: OK (17/17)')
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Verify packaged JAR contains all audio
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*sources*' ! -name '*javadoc*' | head -n 1)"
+          test -n "$JAR"
+          echo "Verifying $JAR"
+          expected=(
+            assets/turnbound/sounds/music/hub.ogg
+            assets/turnbound/sounds/music/region_explore.ogg
+            assets/turnbound/sounds/music/battle_normal.ogg
+            assets/turnbound/sounds/music/battle_elite.ogg
+            assets/turnbound/sounds/music/battle_boss.ogg
+            assets/turnbound/sounds/music/battle_final.ogg
+            assets/turnbound/sounds/sfx/skill.ogg
+            assets/turnbound/sounds/sfx/hit_light.ogg
+            assets/turnbound/sounds/sfx/hit_heavy.ogg
+            assets/turnbound/sounds/sfx/reaction_hit.ogg
+            assets/turnbound/sounds/sfx/dot_tick.ogg
+            assets/turnbound/sounds/sfx/heal.ogg
+            assets/turnbound/sounds/sfx/barrier.ogg
+            assets/turnbound/sounds/sfx/revive.ogg
+            assets/turnbound/sounds/sfx/down.ogg
+            assets/turnbound/sounds/sfx/boss_phase.ogg
+            assets/turnbound/sounds/sfx/spawn.ogg
+          )
+          jar tf "$JAR" > /tmp/turnbound-jar.txt
+          for rel in "${expected[@]}"; do
+            grep -Fxq "$rel" /tmp/turnbound-jar.txt
+          done
+          test "$(grep -Ec '^assets/turnbound/sounds/(music|sfx)/.*\.ogg$' /tmp/turnbound-jar.txt)" -eq 17
+          echo 'JAR audio contract: OK (17/17)'
+
+      - name: Diff sanity
+        run: git diff --check
+
+      - name: Commit verified production audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/turnbound/src/main/resources/assets/turnbound/sounds/music \
+                  projects/turnbound/src/main/resources/assets/turnbound/sounds/sfx
+          if git diff --cached --quiet; then
+            echo 'Audio files already match the verified source set.'
+            exit 0
+          fi
+          git commit -m 'assets(turnbound): package verified CC0 production audio [skip ci]'
+          git pull --rebase origin turnbound-alpha17-full-v04
+          git push origin HEAD:turnbound-alpha17-full-v04
