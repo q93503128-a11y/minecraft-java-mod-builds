@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/frontier-survival-full-new-world.yml'
+      - 'projects/frontier-settlement/src/main/java/**'
+      - 'projects/survival-ascension/src/main/java/**'
       - 'projects/frontier-settlement/src/main/resources/assets/**/lang/ko_kr.json'
       - 'projects/survival-ascension/src/main/resources/assets/**/lang/ko_kr.json'
   workflow_dispatch:
@@ -42,9 +44,13 @@ jobs:
           s=p.read_text(encoding='utf-8')
           old='"key.survivalascension.menu", InputConstants.KEY_M, KeyMapping.Category.MISC);'
           new='"key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);'
-          if s.count(old) != 1:
+          if s.count(old) == 1 and s.count(new) == 0:
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+              print('patched Survival menu key M -> K for combined pack')
+          elif s.count(old) == 0 and s.count(new) == 1:
+              print('Survival menu key already K; no compatibility patch needed')
+          else:
               raise SystemExit('unexpected Survival menu key source')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
           (cd projects/survival-ascension && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
           (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
