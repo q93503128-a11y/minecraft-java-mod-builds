@@ -56,19 +56,19 @@ public final class SettlementConstructionOfficeService {
         if (server.getTickCount() % SERVICE_INTERVAL_TICKS != 0) return;
         ServerLevel level = server.overworld();
         boolean activeProject = data.construction().active();
-        boolean rest = SettlementResidentRoutineService.isRestTime(level);
 
         for (BuildingRecord office : offices(data)) {
             BlockPos home = office.localToWorld(6, 1, 5);
             if (!localServiceAreaLoaded(level, office)) continue;
             FrontierWorkerEntity runner = ensureSingleRunner(level, data, office, home);
             if (runner == null) continue;
-            runner.setInvulnerable(true);
+            runner.setNoAi(false);
+            runner.setInvulnerable(false);
 
             if (!runner.getMainHandItem().isEmpty()) {
                 if (deliverCarried(level, data, office, runner)) continue;
             }
-            if (rest || !activeProject) {
+            if (!activeProject) {
                 moveOrStop(runner, home, 0.72D);
                 continue;
             }
@@ -211,7 +211,7 @@ public final class SettlementConstructionOfficeService {
         if (!existing.isEmpty()) {
             FrontierWorkerEntity keep = existing.getFirst();
             keep.setNoAi(false);
-            keep.setInvulnerable(true);
+            keep.setInvulnerable(false);
             // More than one loaded body for one office is definitive duplicate evidence even if a
             // wider route chunk is unloaded. Preserve each duplicate's physical cargo, then discard
             // the excess entity instead of leaving immortal NoAI statues in old saves forever.
@@ -226,7 +226,8 @@ public final class SettlementConstructionOfficeService {
         runner.setCustomName(Component.literal(RUNNER_NAME));
         runner.setCustomNameVisible(true);
         runner.setPersistenceRequired();
-        runner.setInvulnerable(true);
+        runner.setNoAi(false);
+        runner.setInvulnerable(false);
         runner.addTag(SUPPLY_RUNNER_TAG);
         runner.addTag(assignmentTag(office));
         return level.addFreshEntity(runner) ? runner : null;

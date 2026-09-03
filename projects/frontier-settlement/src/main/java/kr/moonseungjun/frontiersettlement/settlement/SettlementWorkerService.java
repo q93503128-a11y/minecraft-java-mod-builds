@@ -447,6 +447,7 @@ public final class SettlementWorkerService {
         if (worker.entityTags().contains(RESOURCE_WORKER_TAG)
                 || worker.entityTags().contains(SettlementConstructionService.BUILDER_TAG)
                 || worker.entityTags().contains(SettlementFishingOutpostService.FISHING_WORKER_TAG)
+                || worker.entityTags().contains(SettlementConstructionOfficeService.SUPPLY_RUNNER_TAG)
                 || worker.entityTags().contains(SettlementWorkshopService.WORKSHOP_WORKER_TAG)
                 || worker.entityTags().contains(SettlementAdvancedWorkshopService.ADVANCED_WORKER_TAG)
                 || worker.entityTags().contains(SettlementOutpostProductionService.PRODUCTION_WORKER_TAG)

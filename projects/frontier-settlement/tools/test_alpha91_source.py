@@ -88,6 +88,19 @@ must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"
 ), "construction office runner hardening")
+must(office, (
+    "runner.setNoAi(false);", "runner.setInvulnerable(false);",
+    "keep.setInvulnerable(false);"
+), "construction office runner runtime state")
+forbid(office, (
+    "SettlementResidentRoutineService.isRestTime(level)",
+    "runner.setInvulnerable(true);",
+    "keep.setInvulnerable(true);",
+    "if (rest || !activeProject)"
+), "construction office orphan rest/invulnerability")
+must(worker, (
+    "SettlementConstructionOfficeService.SUPPLY_RUNNER_TAG",
+), "construction office death cargo preservation")
 forbid(office, (
     "duplicate.setNoAi(true);",
     "runner.getNavigation().moveTo(source.getX() + 0.5D",
