@@ -18,6 +18,7 @@ worker = text(JAVA / "settlement/SettlementWorkerService.java")
 storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
+military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -95,6 +96,20 @@ forbid(fishing, (
     "duplicate.setInvulnerable(true);",
     "worker.getNavigation().moveTo(stock.getX() + 0.5D"
 ), "legacy fishing duplicate/storage pathing")
+must(military, (
+    "active.setInvulnerable(false);",
+    "removeDuplicateSentryPreservingWeapon(level, sentries.get(i))",
+    "for (IronGolem duplicate : legacy)",
+    "removeDuplicateSentryPreservingWeapon(level, duplicate)",
+    "ItemStack carried = legacy.getMainHandItem().copy();",
+    "replacement.setItemSlot(EquipmentSlot.MAINHAND, carried);",
+    "legacy.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);",
+    "removeDuplicateSentryPreservingWeapon(ServerLevel level, IronGolem duplicate)"
+), "military sentry lifecycle/migration")
+forbid(military, (
+    "duplicate.setNoAi(true);",
+    "Historical duplicate bodies are contained rather than deleted"
+), "legacy military duplicate containment")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"

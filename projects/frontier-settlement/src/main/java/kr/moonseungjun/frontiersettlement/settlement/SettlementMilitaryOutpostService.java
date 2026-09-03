@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
@@ -240,35 +241,45 @@ public final class SettlementMilitaryOutpostService {
         AABB search = new AABB(outpost.center()).inflate(SENTRY_SEARCH_RADIUS, 16.0D, SENTRY_SEARCH_RADIUS);
         List<FrontierSoldierEntity> sentries = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
                 sentry -> sentry.entityTags().contains(MILITARY_SENTRY_TAG) && sentry.entityTags().contains(assignment));
-        sentries.sort(Comparator.comparing(sentry -> sentry.getUUID().toString()));
-        if (!sentries.isEmpty()) {
-            FrontierSoldierEntity active = sentries.getFirst();
-            active.setNoAi(false);
-            for (int i = 1; i < sentries.size(); i++) {
-                FrontierSoldierEntity duplicate = sentries.get(i);
-                duplicate.setTarget(null);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
-            }
-            return active;
-        }
+        // Prefer an already armed body as authority so a legitimate physically supplied weapon stays
+        // attached to the surviving sentry. UUID remains the deterministic tie-breaker.
+        sentries.sort(Comparator
+                .comparingInt((FrontierSoldierEntity sentry) ->
+                        SettlementExternalContentService.isExternalWeapon(sentry.getMainHandItem()) ? 0 : 1)
+                .thenComparing(sentry -> sentry.getUUID().toString()));
 
-        // Alpha.41 save migration: presentation/body replacement is 1:1 and never charges recruitment again.
-        // Historical duplicate bodies are contained rather than deleted because a body may own a
-        // physically supplied MAINHAND weapon.
         List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
                 sentry -> !(sentry instanceof FrontierSoldierEntity)
                         && sentry.entityTags().contains(MILITARY_SENTRY_TAG)
                         && sentry.entityTags().contains(assignment));
-        legacy.sort(Comparator.comparing(sentry -> sentry.getUUID().toString()));
+        legacy.sort(Comparator
+                .comparingInt((IronGolem sentry) ->
+                        SettlementExternalContentService.isExternalWeapon(sentry.getMainHandItem()) ? 0 : 1)
+                .thenComparing(sentry -> sentry.getUUID().toString()));
+
+        if (!sentries.isEmpty()) {
+            FrontierSoldierEntity active = sentries.getFirst();
+            active.setNoAi(false);
+            active.setInvulnerable(false);
+            for (int i = 1; i < sentries.size(); i++) {
+                removeDuplicateSentryPreservingWeapon(level, sentries.get(i));
+            }
+            // A partially migrated old save can contain both the new Frontier body and historical
+            // Iron Golem bodies with the same assignment. The new body is authoritative; preserve
+            // every real MAINHAND item before removing the obsolete legacy bodies.
+            for (IronGolem duplicate : legacy) {
+                removeDuplicateSentryPreservingWeapon(level, duplicate);
+            }
+            return active;
+        }
+
         if (legacy.isEmpty()) return null;
         FrontierSoldierEntity migrated = migrateLegacySentry(level, legacy.getFirst());
         if (migrated == null) return null;
+        migrated.setNoAi(false);
+        migrated.setInvulnerable(false);
         for (int i = 1; i < legacy.size(); i++) {
-            IronGolem duplicate = legacy.get(i);
-            duplicate.setTarget(null);
-            duplicate.getNavigation().stop();
-            duplicate.setNoAi(true);
+            removeDuplicateSentryPreservingWeapon(level, legacy.get(i));
         }
         return migrated;
     }
@@ -284,9 +295,29 @@ public final class SettlementMilitaryOutpostService {
         replacement.setPlayerCreated(true);
         for (String tag : legacy.entityTags()) replacement.addTag(tag);
         replacement.setHealth(Math.min(replacement.getMaxHealth(), legacy.getHealth()));
+        ItemStack carried = legacy.getMainHandItem().copy();
+        if (!carried.isEmpty()) replacement.setItemSlot(EquipmentSlot.MAINHAND, carried);
+        // Do not mutate the old body until the replacement is accepted by the world. A failed add
+        // therefore leaves the complete legacy sentry and its real equipment untouched for retry.
         if (!level.addFreshEntity(replacement)) return null;
+        legacy.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         legacy.discard();
         return replacement;
+    }
+
+    private static boolean removeDuplicateSentryPreservingWeapon(ServerLevel level, IronGolem duplicate) {
+        duplicate.setTarget(null);
+        duplicate.getNavigation().stop();
+        ItemStack carried = duplicate.getMainHandItem();
+        if (!carried.isEmpty()) {
+            ItemEntity physical = new ItemEntity(level, duplicate.getX(), duplicate.getY(), duplicate.getZ(), carried.copy());
+            if (!level.addFreshEntity(physical)) return false;
+            duplicate.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        duplicate.setNoAi(false);
+        duplicate.setInvulnerable(false);
+        duplicate.discard();
+        return true;
     }
 
     private static String assignmentTag(OutpostRecord outpost) {
