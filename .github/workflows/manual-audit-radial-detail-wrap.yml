@@ -1,0 +1,114 @@
+name: Manual Audit Radial Detail Wrap
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-audit-radial-detail-wrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Wrap long radial detail text
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client')
+          for name in ['InfrastructureRadialMenuScreen.java', 'ProductionRadialMenuScreen.java']:
+              p = root / name
+              s = p.read_text(encoding='utf-8')
+              if 'import java.util.ArrayList;' not in s:
+                  marker = 'import org.joml.Matrix3x2f;\n'
+                  if marker not in s: raise SystemExit(f'{name}: import anchor')
+                  s = s.replace(marker, marker + '\nimport java.util.ArrayList;\nimport java.util.List;\n', 1)
+
+              if name == 'InfrastructureRadialMenuScreen.java':
+                  old = 'Entry entry=ENTRIES[selected];String detail=detailFor(entry);graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,detail,cx-this.font.width(detail)/2,cy+8,0xFFB8B8B8,false);'
+                  new = 'Entry entry=ENTRIES[selected];String detail=detailFor(entry);graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-10,0xFFFFFFFF,true);renderDetailLines(graphics,detail,cx,cy+3);'
+              else:
+                  old = 'Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-5,0xFFFFFFFF,true);graphics.text(this.font,entry.detail(),cx-this.font.width(entry.detail())/2,cy+8,0xFFB8B8B8,false);'
+                  new = 'Entry entry=ENTRIES[selected];graphics.text(this.font,entry.title(),cx-this.font.width(entry.title())/2,cy-10,0xFFFFFFFF,true);renderDetailLines(graphics,entry.detail(),cx,cy+3);'
+              if s.count(old) != 1:
+                  raise SystemExit(f'{name}: render anchor count={s.count(old)}')
+              s = s.replace(old, new, 1)
+
+              enum_anchor = '    private enum Action'
+              helper = '''    private void renderDetailLines(GuiGraphicsExtractor graphics,String detail,int cx,int startY){
+        int maxWidth=Math.min(420,Math.max(150,this.width-24));
+        List<String> lines=wrapDetail(detail,maxWidth,3);
+        for(int i=0;i<lines.size();i++){
+            String line=lines.get(i);
+            graphics.text(this.font,line,cx-this.font.width(line)/2,startY+i*10,0xFFB8B8B8,false);
+        }
+    }
+
+    private List<String> wrapDetail(String text,int maxWidth,int maxLines){
+        if(text==null || text.isBlank())return List.of("");
+        if(this.font.width(text)<=maxWidth)return List.of(text);
+        String[] parts=text.split(" · ");
+        List<String> out=new ArrayList<>();
+        String current="";
+        for(String part:parts){
+            String candidate=current.isEmpty()?part:current+" · "+part;
+            if(this.font.width(candidate)<=maxWidth){current=candidate;continue;}
+            if(!current.isEmpty())out.add(current);
+            current=part;
+            if(out.size()>=maxLines-1)break;
+        }
+        if(out.size()<maxLines && !current.isEmpty())out.add(current);
+        if(out.isEmpty())out.add(text);
+        if(out.size()==maxLines){
+            int consumed=String.join(" · ",out).length();
+            if(consumed<text.length()){
+                String last=out.get(maxLines-1);
+                String ellipsis="…";
+                while(!last.isEmpty() && this.font.width(last+ellipsis)>maxWidth)last=last.substring(0,last.length()-1);
+                out.set(maxLines-1,last+ellipsis);
+            }
+        }
+        return out;
+    }
+
+'''
+              if helper.strip() not in s:
+                  idx = s.find(enum_anchor)
+                  if idx < 0: raise SystemExit(f'{name}: enum anchor')
+                  s = s[:idx] + helper + s[idx:]
+              p.write_text(s, encoding='utf-8')
+
+          for name in ['InfrastructureRadialMenuScreen.java', 'ProductionRadialMenuScreen.java']:
+              s=(root/name).read_text(encoding='utf-8')
+              assert 'renderDetailLines' in s and 'wrapDetail' in s
+              assert 'this.width-24' in s
+          print('RADIAL DETAIL WRAP INVARIANTS PASS')
+          PY
+
+      - name: Build Survival Ascension
+        working-directory: projects/survival-ascension
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+
+      - name: Commit validated UI fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/InfrastructureRadialMenuScreen.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/ProductionRadialMenuScreen.java
+          git commit -m 'Wrap long shared economy radial details'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
