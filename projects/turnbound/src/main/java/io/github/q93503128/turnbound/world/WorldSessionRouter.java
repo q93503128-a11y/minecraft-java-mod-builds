@@ -33,7 +33,9 @@ public final class WorldSessionRouter {
         if (!(p.level() instanceof ServerLevel level)) return;
         AsterMarchWorldShell.build(level);
         AsterMarchContentOrchestrator.build(level);
+        // Legacy per-player sync remains as a compatibility input; SavedData is the final physical-world authority.
         AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
+        AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         RadiaHubSessionManager.enter(p);
     }
 
@@ -42,6 +44,7 @@ public final class WorldSessionRouter {
         AsterMarchWorldShell.build(level);
         AsterMarchContentOrchestrator.build(level);
         AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
+        AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         AsterMarchContentOrchestrator.tick(level, p);
 
         if (RELAY_APPROACH.contains(p.getUUID())) {
@@ -49,7 +52,7 @@ public final class WorldSessionRouter {
             return;
         }
 
-        if (!BattleSessionManager.exists(p) && transitionAtWorldSeam(p)) return;
+        if (!BattleSessionManager.exists(p) && transitionAtWorldSeam(level, p)) return;
 
         if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.tick(p);
         else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.tick(p);
@@ -59,7 +62,7 @@ public final class WorldSessionRouter {
         else FieldSessionManager.tick(p);
     }
 
-    private static boolean transitionAtWorldSeam(ServerPlayer p) {
+    private static boolean transitionAtWorldSeam(ServerLevel level, ServerPlayer p) {
         UUID id = p.getUUID();
         Vec3 pos = p.position();
 
@@ -69,17 +72,20 @@ public final class WorldSessionRouter {
                 FieldSessionManager.enter(p);
                 return true;
             }
-            if (CampaignContentUnlocks.chapter1Complete(id) && pos.z <= -108.0 && Math.abs(pos.x) <= 12.0) {
+            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_GLOAMWOOD)
+                    && pos.z <= -108.0 && Math.abs(pos.x) <= 12.0) {
                 RadiaHubSessionManager.remove(p);
                 GloamwoodSessionManager.enter(p);
                 return true;
             }
-            if (CampaignContentUnlocks.chapter2Complete(id) && pos.x <= -124.0 && Math.abs(pos.z - 20.0) <= 12.0) {
+            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_BROKEN_AQUEDUCT)
+                    && pos.x <= -124.0 && Math.abs(pos.z - 20.0) <= 12.0) {
                 RadiaHubSessionManager.remove(p);
                 BrokenAqueductSessionManager.enter(p);
                 return true;
             }
-            if (CampaignContentUnlocks.oldRelayEntrance(id) && pos.x >= 124.0 && Math.abs(pos.z + 80.0) <= 13.0) {
+            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_OLD_RELAY_APPROACH)
+                    && pos.x >= 124.0 && Math.abs(pos.z + 80.0) <= 13.0) {
                 beginRelayApproach(p);
                 return true;
             }
@@ -94,7 +100,7 @@ public final class WorldSessionRouter {
                 p.setYRot(180.0F);
                 return true;
             }
-            if (CampaignContentUnlocks.chapter3Complete(id)
+            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_EMBER_QUARRY)
                     && AsterMarchWorldShell.nearGate(pos, AsterMarchWorldShell.Gate.QUARRY_PASS, 11.0)) {
                 FieldSessionManager.remove(p);
                 EmberQuarrySessionManager.enter(p);
