@@ -192,10 +192,13 @@ public final class MetaMenuScreen extends Screen {
                 addRenderableWidget(new BattleHudButton(left + panelWidth - 272, actionY, 122, 23,
                         Component.literal("★ 승급"), GOLD, ignored -> send("PROMOTE|" + row.id())));
             }
+            var trial = ClientSignatureTrialState.forCharacter(row.id());
+            boolean awakeningReady = trial != null && trial.awakeningReady();
+            String awakenLabel = row.awakened() ? "각성 완료" : awakeningReady ? "각성" : "각성 잠김";
             var awaken = new BattleHudButton(left + panelWidth - 140, actionY, 122, 23,
-                    Component.literal(row.awakened() ? "각성 완료" : "각성"), row.awakened() ? GREEN : BLUE,
+                    Component.literal(awakenLabel), row.awakened() ? GREEN : awakeningReady ? BLUE : MUTED,
                     ignored -> send("AWAKEN|" + row.id()));
-            awaken.active = !row.awakened();
+            awaken.active = !row.awakened() && awakeningReady;
             addRenderableWidget(awaken);
         }
     }
@@ -535,7 +538,51 @@ public final class MetaMenuScreen extends Screen {
         graphics.text(font,Component.literal("현재 성급  "+(row.awakened()?"◆6":"★"+row.star())+"   /   Lv."+row.level()),x,y,TEXT,false);
         graphics.text(font,Component.literal("각성 패키지"),x,y+28,GOLD,true);
         graphics.text(font,Component.literal(shorten(menu.awakening(),115)),x+12,y+45,row.awakened()?GREEN:MUTED,false);
-        if(!row.awakened()) graphics.text(font,Component.literal("🔒 Lv.60 / ★6 / 전용 장비 시련 / 각성 코어 필요"),x,y+70,MUTED,false);
+
+        var trial=ClientSignatureTrialState.forCharacter(row.id());
+        int yy=y+72;
+        if(trial==null){
+            graphics.text(font,Component.literal("전용 장비 시련 상태를 동기화하는 중입니다."),x,yy,MUTED,false);
+            return;
+        }
+
+        String trialState;
+        int trialColor;
+        if(trial.firstClearClaimed()){
+            trialState="클리어"; trialColor=GREEN;
+        }else if(trial.canEnter()){
+            trialState="입장 가능"; trialColor=BLUE;
+        }else if(trial.progressionReady()&&!trial.encounterCanonReady()){
+            trialState="CANON GAP"; trialColor=GOLD;
+        }else{
+            trialState="잠김"; trialColor=MUTED;
+        }
+        graphics.text(font,Component.literal("전용 장비 시련 · "+trial.title()+" · "+trialState),x,yy,trialColor,true);
+        graphics.text(font,Component.literal("목표 · "+shorten(trial.objective(),110)),x+12,yy+18,TEXT,false);
+        String prerequisites=(trial.endgameUnlocked()?"✓":"○")+" B05   "+(trial.characterQuestComplete()?"✓":"○")+" 개인 퀘스트   "
+                +(trial.level()==60?"✓":"○")+" Lv60   "+(trial.currentStar()==6?"✓":"○")+" ★6";
+        graphics.text(font,Component.literal("선행 · "+prerequisites),x+12,yy+36,SECONDARY,false);
+
+        int statusY=yy+58;
+        if(trial.firstClearClaimed()){
+            String equipmentState=trial.signaturePending()?"전용 장비 수령 대기":trial.signatureGranted()?"전용 장비 획득 완료":"전용 장비 보상 기록 확인 필요";
+            graphics.text(font,Component.literal("✓ 첫 클리어 · "+equipmentState),x,statusY,trial.signatureGranted()?GREEN:GOLD,false);
+        }else if(trial.canEnter()){
+            graphics.text(font,Component.literal("입장 가능 · 라디아 Signature Trial Hall에서 시련을 시작할 수 있습니다."),x,statusY,BLUE,false);
+        }else if(trial.progressionReady()&&!trial.encounterCanonReady()){
+            graphics.text(font,Component.literal("◇ CANON GAP · "+shorten(trial.blockReason(),100)),x,statusY,GOLD,false);
+        }else{
+            graphics.text(font,Component.literal("잠김 · "+shorten(trial.blockReason(),100)),x,statusY,MUTED,false);
+        }
+
+        int awakeningY=statusY+22;
+        if(row.awakened()){
+            graphics.text(font,Component.literal("◆ 각성 완료 · 전용 장비 시련 및 각성 코어 소비 완료"),x,awakeningY,GREEN,true);
+        }else if(trial.awakeningReady()){
+            graphics.text(font,Component.literal("◆ 각성 가능 · 각성 코어 "+trial.awakeningCore()+"개 보유"),x,awakeningY,BLUE,true);
+        }else{
+            graphics.text(font,Component.literal("각성 잠김 · 시련 첫 클리어 + 각성 코어 필요 · 현재 코어 "+trial.awakeningCore()),x,awakeningY,MUTED,false);
+        }
     }
 
     private void drawCharacterProfile(GuiGraphicsExtractor graphics, ClientMetaState.CharacterRow row,int x,int y){
