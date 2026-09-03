@@ -22,6 +22,7 @@ military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
 barracks = text(JAVA / "settlement/SettlementBarracksService.java")
 waterfront = text(JAVA / "settlement/SettlementWaterfrontService.java")
 market = text(JAVA / "settlement/SettlementMarketService.java")
+outpost_production = text(JAVA / "settlement/SettlementOutpostProductionService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -153,6 +154,26 @@ forbid(market, (
     "duplicate.setInvulnerable(true);",
     "trader.getNavigation().moveTo(crate.getX() + 0.5D"
 ), "legacy market lifecycle/pathing")
+must(outpost_production, (
+    "active.setInvulnerable(false);",
+    "findLegacyWorkers(level, outpost, name, assignmentTag)",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i))",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, duplicate)",
+    "SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, legacy.get(i))",
+    "if (!assignmentEvidenceLoaded(level, outpost)) return null;",
+    "level, worker, stock, 0.82D, 9.0D",
+    "level, worker, target, 0.8D, 8.0D",
+    "level, worker, target, 0.78D, 9.0D"
+), "outpost production lifecycle/pathing")
+forbid(outpost_production, (
+    "if (!assigned.isEmpty()) return assigned.getFirst();",
+    "move(worker, stock, 0.82D);",
+    "move(worker, target, 0.8D);",
+    "move(worker, target, 0.78D);"
+), "legacy outpost production duplicate/direct target")
+must(worker, (
+    "SettlementOutpostProductionService.PRODUCTION_WORKER_TAG",
+), "outpost production death cargo preservation")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"

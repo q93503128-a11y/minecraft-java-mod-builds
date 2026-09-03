@@ -75,22 +75,42 @@ public final class SettlementOutpostProductionService {
 
     private static FrontierWorkerEntity ensureWorker(ServerLevel level, OutpostRecord outpost) {
         if (!outpostLoaded(level, outpost)) return null;
+        String assignmentTag = productionTag(outpost.id());
+        String name = workerName(outpost);
         List<FrontierWorkerEntity> assigned = findAssignedWorkers(level, outpost);
-        if (!assigned.isEmpty()) return assigned.getFirst();
+        List<FrontierWorkerEntity> legacy = findLegacyWorkers(level, outpost, name, assignmentTag);
+
+        if (!assigned.isEmpty()) {
+            FrontierWorkerEntity active = assigned.getFirst();
+            active.setNoAi(false);
+            active.setInvulnerable(false);
+            // One specialized outpost owns one local production authority. More than one loaded body
+            // with the same assignment is conclusive duplicate evidence even when the wider envelope
+            // is not fully loaded. Preserve physical cargo, then discard every excess body.
+            for (int i = 1; i < assigned.size(); i++) {
+                SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, assigned.get(i));
+            }
+            // Pre-tag migration remnants use a unique name containing this outpost id. Once a tagged
+            // authority is visible, any loaded same-name unassigned body is also definitively excess.
+            for (FrontierWorkerEntity duplicate : legacy) {
+                SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, duplicate);
+            }
+            return active;
+        }
 
         // Missing is authority. Do not migrate or spawn from a partial entity view.
         if (!assignmentEvidenceLoaded(level, outpost)) return null;
 
-        String assignmentTag = productionTag(outpost.id());
-        String name = workerName(outpost);
-        List<FrontierWorkerEntity> legacy = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentBounds(outpost),
-                villager -> villager.getCustomName() != null && name.equals(villager.getCustomName().getString()));
-        legacy.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
         if (!legacy.isEmpty()) {
-            FrontierWorkerEntity worker = legacy.getFirst();
-            worker.addTag(PRODUCTION_WORKER_TAG);
-            worker.addTag(assignmentTag);
-            return worker;
+            FrontierWorkerEntity active = legacy.getFirst();
+            active.setNoAi(false);
+            active.setInvulnerable(false);
+            active.addTag(PRODUCTION_WORKER_TAG);
+            active.addTag(assignmentTag);
+            for (int i = 1; i < legacy.size(); i++) {
+                SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, legacy.get(i));
+            }
+            return active;
         }
 
         FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
@@ -100,10 +120,23 @@ public final class SettlementOutpostProductionService {
         worker.setCustomNameVisible(true);
         worker.setPersistenceRequired();
         worker.setNoAi(false);
+        worker.setInvulnerable(false);
         worker.addTag(PRODUCTION_WORKER_TAG);
         worker.addTag(assignmentTag);
         if (!level.addFreshEntity(worker)) return null;
         return worker;
+    }
+
+    private static List<FrontierWorkerEntity> findLegacyWorkers(ServerLevel level, OutpostRecord outpost,
+                                                                 String name, String assignmentTag) {
+        List<FrontierWorkerEntity> legacy = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentBounds(outpost),
+                villager -> villager.getCustomName() != null
+                        && name.equals(villager.getCustomName().getString())
+                        && !villager.entityTags().contains(assignmentTag));
+        legacy.sort(Comparator
+                .comparingInt((FrontierWorkerEntity worker) -> worker.getMainHandItem().isEmpty() ? 1 : 0)
+                .thenComparing(worker -> worker.getUUID().toString()));
+        return legacy;
     }
 
     private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
@@ -111,7 +144,9 @@ public final class SettlementOutpostProductionService {
         List<FrontierWorkerEntity> assigned = level.getEntitiesOfClass(FrontierWorkerEntity.class, assignmentBounds(outpost),
                 villager -> villager.entityTags().contains(PRODUCTION_WORKER_TAG)
                         && villager.entityTags().contains(assignmentTag));
-        assigned.sort(Comparator.comparing(villager -> villager.getUUID().toString()));
+        assigned.sort(Comparator
+                .comparingInt((FrontierWorkerEntity worker) -> worker.getMainHandItem().isEmpty() ? 1 : 0)
+                .thenComparing(worker -> worker.getUUID().toString()));
         return assigned;
     }
 
@@ -176,7 +211,7 @@ public final class SettlementOutpostProductionService {
             return;
         }
         if (worker.distanceToSqr(stock.getX() + 0.5D, stock.getY() + 0.5D, stock.getZ() + 0.5D) > 9.0D) {
-            move(worker, stock, 0.82D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, stock, 0.82D, 9.0D);
             return;
         }
         if (!(level.getBlockEntity(stock) instanceof Container container)) return;
@@ -190,7 +225,7 @@ public final class SettlementOutpostProductionService {
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
-            move(worker, target, 0.8D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.8D, 8.0D);
             return;
         }
         if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
@@ -209,7 +244,7 @@ public final class SettlementOutpostProductionService {
             return;
         }
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
-            move(worker, target, 0.78D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.78D, 9.0D);
             return;
         }
         if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
