@@ -25,12 +25,10 @@ public final class AsterMarchAmbientDressing {
         aqueduct(level);
         quarry(level);
         relay(level);
-        radiaOutskirts(level);
         writeMarker(level);
     }
 
     private static void southgate(ServerLevel level) {
-        // Roadside supply stop and abandoned grazing plots away from the encounter anchors.
         timberShelter(level, 132, 67, 300, Blocks.OAK_LOG, Blocks.SPRUCE_PLANKS);
         set(level, 128, 68, 298, Blocks.BARREL);
         set(level, 130, 68, 298, Blocks.CRAFTING_TABLE);
@@ -86,22 +84,6 @@ public final class AsterMarchAmbientDressing {
         }
     }
 
-    private static void radiaOutskirts(ServerLevel level) {
-        // Small everyday props keep the hub edge from reading as ten empty pads in a test arena.
-        set(level, -46, 66, 58, Blocks.BARREL);
-        set(level, -44, 66, 58, Blocks.BARREL);
-        set(level, -42, 66, 58, Blocks.COMPOSTER);
-        set(level, 48, 66, 12, Blocks.ANVIL);
-        set(level, 51, 66, 12, Blocks.SMITHING_TABLE);
-        set(level, 69, 66, -18, Blocks.TARGET);
-        set(level, 73, 66, -18, Blocks.TARGET);
-        set(level, 76, 66, -18, Blocks.ARMOR_STAND);
-        for (int x = -16; x <= 16; x += 8) {
-            set(level, x, 66, 88, Blocks.DIRT_PATH);
-            set(level, x, 67, 91, Blocks.LANTERN);
-        }
-    }
-
     private static void timberShelter(ServerLevel level, int cx, int groundY, int cz, Block log, Block plank) {
         for (int dx : new int[]{-4, 4}) for (int dz : new int[]{-3, 3}) {
             for (int dy = 1; dy <= 4; dy++) set(level, cx + dx, groundY + dy, cz + dz, log);
@@ -134,7 +116,7 @@ public final class AsterMarchAmbientDressing {
             int x = cx + (int)Math.round(Math.cos(angle) * radius);
             int z = cz + (int)Math.round(Math.sin(angle) * radius);
             set(level, x, groundY + 1, z, i % 3 == 0 ? Blocks.DARK_OAK_LOG : Blocks.MOSS_BLOCK);
-            if (i % 4 == 0) set(level, x, groundY + 2, z, Blocks.VINE);
+            if (i % 4 == 0) set(level, x, groundY + 2, z, Blocks.MOSS_CARPET);
         }
         set(level, cx, groundY + 1, cz, Blocks.MOSS_BLOCK);
         set(level, cx, groundY + 2, cz, Blocks.SOUL_LANTERN);
