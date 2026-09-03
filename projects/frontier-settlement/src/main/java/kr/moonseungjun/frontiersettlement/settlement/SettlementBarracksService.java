@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
@@ -187,28 +188,47 @@ public final class SettlementBarracksService {
         AABB search = soldierRouteBounds(data, barracks);
         List<FrontierSoldierEntity> soldiers = level.getEntitiesOfClass(FrontierSoldierEntity.class, search,
                 soldier -> soldier.entityTags().contains(SOLDIER_TAG) && soldier.entityTags().contains(assignment) && soldier.entityTags().contains(slotTag));
-        soldiers.sort(Comparator.comparing(soldier -> soldier.getUUID().toString()));
+        soldiers.sort(Comparator
+                .comparingInt((FrontierSoldierEntity soldier) ->
+                        SettlementExternalContentService.isExternalWeapon(soldier.getMainHandItem()) ? 0 : 1)
+                .thenComparing(soldier -> soldier.getUUID().toString()));
+
+        // Loaded legacy bodies are still useful duplicate evidence when a new authoritative body exists.
+        // If no new body exists, the full route evidence gate below remains mandatory before migration.
+        List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
+                soldier -> !(soldier instanceof FrontierSoldierEntity)
+                        && soldier.entityTags().contains(SOLDIER_TAG)
+                        && soldier.entityTags().contains(assignment)
+                        && soldier.entityTags().contains(slotTag));
+        legacy.sort(Comparator
+                .comparingInt((IronGolem soldier) ->
+                        SettlementExternalContentService.isExternalWeapon(soldier.getMainHandItem()) ? 0 : 1)
+                .thenComparing(soldier -> soldier.getUUID().toString()));
+
         if (!soldiers.isEmpty()) {
             FrontierSoldierEntity active = soldiers.getFirst();
             active.setNoAi(false);
+            active.setInvulnerable(false);
             for (int i = 1; i < soldiers.size(); i++) {
-                FrontierSoldierEntity duplicate = soldiers.get(i);
-                if (duplicate.getTarget() != null) duplicate.setTarget(null);
-                duplicate.getNavigation().stop();
-                duplicate.setNoAi(true);
+                removeDuplicateBarracksSoldierPreservingWeapon(level, soldiers.get(i));
+            }
+            for (IronGolem duplicate : legacy) {
+                removeDuplicateBarracksSoldierPreservingWeapon(level, duplicate);
             }
             return active;
         }
 
         // Missing/migration is authority: a partial route view never converts or recruits.
         if (!soldierAssignmentEvidenceLoaded(level, data, barracks)) return null;
-        List<IronGolem> legacy = level.getEntitiesOfClass(IronGolem.class, search,
-                soldier -> !(soldier instanceof FrontierSoldierEntity)
-                        && soldier.entityTags().contains(SOLDIER_TAG)
-                        && soldier.entityTags().contains(assignment)
-                        && soldier.entityTags().contains(slotTag));
-        legacy.sort(Comparator.comparing(soldier -> soldier.getUUID().toString()));
-        return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());
+        if (legacy.isEmpty()) return null;
+        FrontierSoldierEntity migrated = migrateLegacySoldier(level, legacy.getFirst());
+        if (migrated == null) return null;
+        migrated.setNoAi(false);
+        migrated.setInvulnerable(false);
+        for (int i = 1; i < legacy.size(); i++) {
+            removeDuplicateBarracksSoldierPreservingWeapon(level, legacy.get(i));
+        }
+        return migrated;
     }
 
     private static AABB soldierRouteBounds(SettlementData data, BuildingRecord barracks) {
@@ -251,9 +271,27 @@ public final class SettlementBarracksService {
         replacement.setPlayerCreated(true);
         for (String tag : legacy.entityTags()) replacement.addTag(tag);
         replacement.setHealth(Math.min(replacement.getMaxHealth(), legacy.getHealth()));
+        ItemStack carried = legacy.getMainHandItem().copy();
+        if (!carried.isEmpty()) replacement.setItemSlot(EquipmentSlot.MAINHAND, carried);
         if (!level.addFreshEntity(replacement)) return null;
+        legacy.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         legacy.discard();
         return replacement;
+    }
+
+    private static boolean removeDuplicateBarracksSoldierPreservingWeapon(ServerLevel level, IronGolem duplicate) {
+        if (duplicate.getTarget() != null) duplicate.setTarget(null);
+        duplicate.getNavigation().stop();
+        ItemStack carried = duplicate.getMainHandItem();
+        if (!carried.isEmpty()) {
+            ItemEntity physical = new ItemEntity(level, duplicate.getX(), duplicate.getY(), duplicate.getZ(), carried.copy());
+            if (!level.addFreshEntity(physical)) return false;
+            duplicate.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        duplicate.setNoAi(false);
+        duplicate.setInvulnerable(false);
+        duplicate.discard();
+        return true;
     }
 
     /** Remove loaded pre-Alpha37 free reinforcement golems so old saves do not bypass barracks economics. */

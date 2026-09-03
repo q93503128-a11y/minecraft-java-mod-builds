@@ -19,6 +19,7 @@ storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
 military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
+barracks = text(JAVA / "settlement/SettlementBarracksService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -110,6 +111,21 @@ forbid(military, (
     "duplicate.setNoAi(true);",
     "Historical duplicate bodies are contained rather than deleted"
 ), "legacy military duplicate containment")
+must(barracks, (
+    "active.setInvulnerable(false);",
+    "removeDuplicateBarracksSoldierPreservingWeapon(level, soldiers.get(i))",
+    "for (IronGolem duplicate : legacy)",
+    "removeDuplicateBarracksSoldierPreservingWeapon(level, duplicate)",
+    "if (!soldierAssignmentEvidenceLoaded(level, data, barracks)) return null;",
+    "ItemStack carried = legacy.getMainHandItem().copy();",
+    "replacement.setItemSlot(EquipmentSlot.MAINHAND, carried);",
+    "legacy.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);",
+    "removeDuplicateBarracksSoldierPreservingWeapon(ServerLevel level, IronGolem duplicate)"
+), "barracks soldier lifecycle/migration")
+forbid(barracks, (
+    "duplicate.setNoAi(true);",
+    "return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());"
+), "legacy barracks duplicate containment")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"
