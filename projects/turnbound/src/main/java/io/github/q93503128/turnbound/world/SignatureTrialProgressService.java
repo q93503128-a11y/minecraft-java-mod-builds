@@ -8,7 +8,7 @@ import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import java.util.UUID;
 
 /**
- * Server-authoritative Signature Trial progression facade for the future Hall/menu/world entry flow.
+ * Server-authoritative Signature Trial progression facade for the Hall/menu/world entry flow.
  *
  * <p>The service intentionally reports canon-blocked Trials instead of inventing encounter rosters.
  * Reward settlement accepts only an evaluator result that is both objectively clear and canon-ready.</p>
@@ -48,9 +48,9 @@ public final class SignatureTrialProgressService {
 
         CharacterProgression.State level = CampaignProgressStore.character(playerId, characterId);
         CharacterGrowthRules.State growth = CampaignProgressStore.growth(playerId, characterId);
-        boolean canonReady = false; // v0.4 currently has only roster gaps or the P08 contradiction.
+        boolean canonReady = false; // v0.4 currently has identity/roster gaps or the P08 prerequisite contradiction.
         String reason = progressionBlock(endgame, level, growth);
-        if (reason.isBlank() && !canonReady) reason = spec.unresolvedReason();
+        if (reason.isBlank() && !canonReady) reason = spec.authoringBlockReason();
         return new Status(characterId, spec.title(), true, endgame, level.level(), growth.currentStar(),
                 growth.characterQuestComplete(), growth.signatureTrialCleared(), canonReady,
                 spec.objective(), reason);
