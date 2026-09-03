@@ -8,6 +8,10 @@ import java.util.List;
 public final class FieldTravelCatalog {
     public static final String FT_RADIA = AsterMarchRegionCatalog.FT_RADIA;
     public static final String FT_MEADOW = AsterMarchRegionCatalog.FT_MEADOW;
+    public static final String FT_GLOAM = AsterMarchRegionCatalog.FT_GLOAM;
+    public static final String FT_AQUEDUCT = AsterMarchRegionCatalog.FT_AQUEDUCT;
+    public static final String FT_QUARRY = AsterMarchRegionCatalog.FT_QUARRY;
+    public static final String FT_RELAY = AsterMarchRegionCatalog.FT_RELAY;
 
     /** @deprecated alpha.12 local relay id now maps to canonical FT_RADIA. */
     @Deprecated public static final String RELAY_A01 = FT_RADIA;
@@ -21,12 +25,20 @@ public final class FieldTravelCatalog {
 
     private static final List<Destination> DESTINATIONS = List.of(
             fromAnchor(FT_RADIA),
-            fromAnchor(FT_MEADOW)
+            fromAnchor(FT_MEADOW),
+            fromAnchor(FT_GLOAM),
+            fromAnchor(FT_AQUEDUCT),
+            fromAnchor(FT_QUARRY),
+            fromAnchor(FT_RELAY)
     );
 
     private FieldTravelCatalog() {}
 
     public static List<Destination> destinations() { return DESTINATIONS; }
+
+    public static boolean contains(String id) {
+        return id != null && DESTINATIONS.stream().anyMatch(destination -> destination.id().equals(id));
+    }
 
     public static Destination destination(String id) {
         return DESTINATIONS.stream().filter(destination -> destination.id().equals(id)).findFirst()
