@@ -1,0 +1,82 @@
+name: Manual Survival Audit 4 Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-audit4-scan.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Scan player lifecycle persistence and state transitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension')
+          files = sorted(root.rglob('*.java'))
+
+          print('=== PLAYER_PERSISTENT_DATA_USAGE ===')
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              if 'getPersistentData()' not in s:
+                  continue
+              print(f'FILE {p}')
+              lines = s.splitlines()
+              for i, line in enumerate(lines, 1):
+                  if ('getPersistentData()' in line or
+                      ('survivalascension_' in line and ('static final String' in line or 'put' in line or 'getLongOr' in line or 'getStringOr' in line or 'getIntOr' in line or 'getBooleanOr' in line))):
+                      print(f'  {i}: {line.strip()}')
+
+          print('=== PLAYER_CLONE_HANDLERS ===')
+          hits = 0
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              if 'PlayerEvent.Clone' in s or 'PlayerClone' in s or 'PERSISTED_NBT_TAG' in s:
+                  hits += 1
+                  print(f'FILE {p}')
+                  for i, line in enumerate(s.splitlines(), 1):
+                      if 'PlayerEvent.Clone' in line or 'PlayerClone' in line or 'PERSISTED_NBT_TAG' in line:
+                          print(f'  {i}: {line.strip()}')
+          print('CLONE_HANDLER_FILES', hits)
+
+          print('=== STATE_TRANSITION_EVENT_HANDLERS ===')
+          terms = ('PlayerLoggedInEvent', 'PlayerLoggedOutEvent', 'PlayerRespawnEvent', 'PlayerChangedDimensionEvent', 'ServerStoppingEvent')
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              matched = []
+              for i, line in enumerate(s.splitlines(), 1):
+                  if any(t in line for t in terms):
+                      matched.append((i, line.strip()))
+              if matched:
+                  print(f'FILE {p}')
+                  for i, line in matched:
+                      print(f'  {i}: {line}')
+
+          print('=== RAW_SURVIVALASCENSION_PLAYER_KEYS ===')
+          key_re = re.compile(r'"(survivalascension_[a-z0-9_]+)"')
+          seen = {}
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              if 'getPersistentData()' not in s:
+                  continue
+              for m in key_re.finditer(s):
+                  seen.setdefault(m.group(1), []).append(str(p))
+          for key, owners in sorted(seen.items()):
+              print(key, '::', ', '.join(sorted(set(owners))))
+          print('PLAYER_KEY_COUNT', len(seen))
+          PY
