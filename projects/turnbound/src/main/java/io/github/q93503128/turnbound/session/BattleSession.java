@@ -84,15 +84,15 @@ public final class BattleSession {
         if(engine.state().outcome()!=BattleOutcome.RUNNING){tickOutcomePresentation(player);return;}
         if(delayTicks>0){delayTicks--;return;}
         CombatantState actor=engine.state().currentActorId()==null?engine.nextReady():engine.state().combatant(engine.state().currentActorId());
-        if(!readyShown){readyShown=true;presentation.turnReady(level,actor.instanceId());if(actor.side()==CombatantSide.ALLY&&HeroBattleBarks.contains(actor.definition().id()))HeroBattleBarks.say(player,actor.definition().id(),HeroBattleBarks.Event.TURN);delayTicks=presentationDelay();BattleNetwork.sync(player,this);return;}
-        if(actor.side()==CombatantSide.ENEMY||auto){presentation.clearFocus(level);autoAct(player,level,actor);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=presentationDelay();syncAfterResolution(player);}
+        if(!readyShown){readyShown=true;presentation.turnReady(level,actor.instanceId());if(actor.side()==CombatantSide.ALLY&&HeroBattleBarks.contains(actor.definition().id()))HeroBattleBarks.say(player,actor.definition().id(),HeroBattleBarks.Event.TURN);delayTicks=readyPresentationDelay();BattleNetwork.sync(player,this);return;}
+        if(actor.side()==CombatantSide.ENEMY||auto){presentation.clearFocus(level);int visualTicks=autoAct(player,level,actor);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=scaledPresentationDelay(visualTicks);syncAfterResolution(player);}
     }
 
     void action(ServerPlayer player,String actorId,String skillId,String targetId){
         if(finished||auto||engine.state().outcome()!=BattleOutcome.RUNNING)return;if(!actorId.equals(engine.state().currentActorId()))return;CombatantState actor=engine.state().combatant(actorId);if(actor.side()!=CombatantSide.ALLY)return;
         ServerLevel level=(ServerLevel)player.level();try{SkillDefinition skill=actor.definition().skill(skillId);presentation.clearFocus(level);int eventStart=engine.state().events().size();
             if(skill.targetRule()==TargetRule.SELF||skill.targetRule()==TargetRule.ALLY_ALL||skill.targetRule()==TargetRule.ENEMY_ALL)engine.useSkill(actorId,skillId);else engine.useSkill(actorId,skillId,targetId);
-            barkSkill(player,actor.definition().id(),skill.id());animateSkill(level,actor,skill,targetId);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=presentationDelay();syncAfterResolution(player);
+            barkSkill(player,actor.definition().id(),skill.id());int visualTicks=animateSkill(level,actor,skill,targetId);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);syncPresentation(level);syncBarks(player);readyShown=false;delayTicks=scaledPresentationDelay(visualTicks);syncAfterResolution(player);
         }catch(RuntimeException ignored){BattleNetwork.sync(player,this);}
     }
 
@@ -101,7 +101,7 @@ public final class BattleSession {
     void toggleSpeed(ServerPlayer player){if(finished||engine.state().outcome()!=BattleOutcome.RUNNING||!speedAllowed)return;speed=speed==1?2:1;BattleNetwork.sync(player,this);}
     void cleanup(ServerPlayer player){presentation.cleanup((ServerLevel)player.level());player.setInvisible(playerWasInvisible);player.setPos(returnPosition.x,returnPosition.y,returnPosition.z);player.setYRot(returnYaw);player.setXRot(returnPitch);player.setDeltaMovement(Vec3.ZERO);}
 
-    private void autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{P0Scenario.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);}
+    private int autoAct(ServerPlayer player,ServerLevel level,CombatantState actor){int eventStart=engine.state().events().size();try{P0Scenario.chooseAutoAction(engine,engine.state(),actor);}catch(RuntimeException ex){safeBasicFallback(actor);}int visualTicks=animateRecordedAction(player,level,actor,eventStart);presentation.presentEvents(level,engine.state(),eventStart);barkReactionEvents(player,eventStart);BattleAudioEmitter.emit(player,engine.state(),eventStart);return visualTicks;}
 
     /** Sends the resolved HP/down state immediately, but keeps the client on the 3D battlefield until the outro finishes. */
     private void syncAfterResolution(ServerPlayer player){
@@ -124,18 +124,18 @@ public final class BattleSession {
         BattleNetwork.sync(player,this);
     }
 
-    /** Boss victory waits for the longest authored 3.8s collapse; defeat/non-boss clears keep a shorter readable outro. */
+    /** B04 owns the longest current authored boss collapse at 4.3s; keep the post-hit beat readable too. */
     private int outcomePresentationDelay(){
         boolean bossClear=engine.state().outcome()==BattleOutcome.ALLY_VICTORY&&engine.state().combatants().stream().anyMatch(unit->unit.definition().boss());
-        return bossClear?80:32;
+        return scaledPresentationDelay(bossClear?102:32);
     }
 
     private void markFinished(){if(finished||engine.state().outcome()==BattleOutcome.RUNNING)return;finished=true;if(engine.state().outcome()==BattleOutcome.ALLY_VICTORY&&!encounterId.isBlank()){if(EndgameEncounterCatalog.contains(encounterId))resultSummary=EndgameProgressService.previewVictory(ownerId,encounterId);else resultSummary=CampaignProgressStore.previewVictory(ownerId,encounterId);}}
 
     private void syncPresentation(ServerLevel level){presentation.spawnMissing(level,presentationCenter,battleYaw,engine.state().combatants());presentation.syncStates(level,engine.state().combatants());presentation.syncDanger(level,engine.state().combatants());presentation.finish(level,engine.state().outcome());}
 
-    private void animateRecordedAction(ServerPlayer player,ServerLevel level,CombatantState actor,int eventStart){List<BattleEvent> events=engine.state().events();for(int index=events.size()-1;index>=eventStart;index--){BattleEvent event=events.get(index);if(!"ACTION".equals(event.type())||!actor.instanceId().equals(event.sourceId()))continue;SkillDefinition skill=actor.definition().skill(event.detail());String targetId=event.targetId();if(targetId!=null&&!targetId.isBlank()){int comma=targetId.indexOf(',');if(comma>=0)targetId=targetId.substring(0,comma);}if(actor.side()==CombatantSide.ALLY)barkSkill(player,actor.definition().id(),skill.id());animateSkill(level,actor,skill,targetId);return;}}
-    private void animateSkill(ServerLevel level,CombatantState actor,SkillDefinition skill,String targetId){boolean damages=skill.effects().stream().anyMatch(effect->effect.type()==EffectType.DAMAGE);presentation.performSkill(level,actor.instanceId(),actor.definition().id(),skill.id(),targetId,damages);}
+    private int animateRecordedAction(ServerPlayer player,ServerLevel level,CombatantState actor,int eventStart){List<BattleEvent> events=engine.state().events();for(int index=events.size()-1;index>=eventStart;index--){BattleEvent event=events.get(index);if(!"ACTION".equals(event.type())||!actor.instanceId().equals(event.sourceId()))continue;SkillDefinition skill=actor.definition().skill(event.detail());String targetId=event.targetId();if(targetId!=null&&!targetId.isBlank()){int comma=targetId.indexOf(',');if(comma>=0)targetId=targetId.substring(0,comma);}if(actor.side()==CombatantSide.ALLY)barkSkill(player,actor.definition().id(),skill.id());return animateSkill(level,actor,skill,targetId);}return 8;}
+    private int animateSkill(ServerLevel level,CombatantState actor,SkillDefinition skill,String targetId){boolean damages=skill.effects().stream().anyMatch(effect->effect.type()==EffectType.DAMAGE);presentation.performSkill(level,actor.instanceId(),actor.definition().id(),skill.id(),targetId,damages);return BattlePresentation.actionPresentationTicks(actor.definition().id(),skill.id());}
 
     private void syncBarks(ServerPlayer player){
         boolean newDeath=false;String deadAlly="";
@@ -174,5 +174,6 @@ public final class BattleSession {
 
     private void safeBasicFallback(CombatantState actor){SkillDefinition basic=actor.definition().skill(actor.definition().basicSkillId());switch(basic.targetRule()){case SELF,ALLY_ALL,ENEMY_ALL->engine.useSkill(actor.instanceId(),basic.id());case ENEMY_SINGLE->{List<CombatantState> targets=engine.state().living(actor.side().opposite());if(!targets.isEmpty())engine.useSkill(actor.instanceId(),basic.id(),targets.getFirst().instanceId());}case ALLY_SINGLE->{CombatantState target=engine.state().living(actor.side()).stream().min(Comparator.comparingDouble(unit->unit.hp()/(double)unit.maxHp())).orElse(actor);engine.useSkill(actor.instanceId(),basic.id(),target.instanceId());}case DEAD_ALLY_SINGLE->{List<CombatantState> targets=engine.state().downed(actor.side());if(!targets.isEmpty())engine.useSkill(actor.instanceId(),basic.id(),targets.getFirst().instanceId());}}}
     private void lock(ServerPlayer player){if(player.position().distanceToSqr(battleAnchor)>.0025)player.setPos(battleAnchor.x,battleAnchor.y,battleAnchor.z);player.setDeltaMovement(Vec3.ZERO);}
-    private int presentationDelay(){return speed==2?4:8;}
+    private int readyPresentationDelay(){return speed==2?4:8;}
+    private int scaledPresentationDelay(int oneX){return speed==2?Math.max(1,(oneX+1)/2):Math.max(1,oneX);}
 }
