@@ -1,0 +1,88 @@
+name: Manual Survival Coop Runtime Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-coop-runtime-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Clean build and JAR verify
+        working-directory: projects/survival-ascension
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+          python3 tools/verify_jar.py build/libs/survivalascension-0.61.0-alpha.1.jar
+
+      - name: Stage exact locked runtime content
+        working-directory: projects/survival-ascension
+        run: |
+          rm -rf run/mods
+          python3 tools/stage_locked_content.py --output-dir run/mods
+          test "$(find run/mods -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 7
+
+      - name: Dedicated server fresh boot smoke
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/world_coop_smoke
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=world_coop_smoke
+          online-mode=false
+          view-distance=6
+          simulation-distance=4
+          spawn-protection=0
+          max-tick-time=120000
+          EOF
+          log="$GITHUB_WORKSPACE/survival-coop-runtime-smoke.log"
+          setsid ./gradlew --no-daemon --no-configuration-cache runServer --console=plain > "$log" 2>&1 &
+          pid=$!
+          ready=0
+          for _ in $(seq 1 180); do
+            if grep -Eq 'Done \([0-9.]+s\)! For help, type "help"' "$log" 2>/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if kill -0 "$pid" 2>/dev/null; then
+            kill -INT -- "-$pid" 2>/dev/null || true
+            for _ in $(seq 1 15); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+            kill -KILL -- "-$pid" 2>/dev/null || true
+          fi
+          wait "$pid" 2>/dev/null || true
+          cat "$log"
+          test "$ready" -eq 1
+          ! grep -Eiq '(NoClassDefFoundError|ClassNotFoundException|Exception in server tick loop|Failed to start the minecraft server|Mod loading error has occurred|Registry loading errors)' "$log"
+          test -f run/world_coop_smoke/level.dat
+          grep -Eiq '(survivalascension|Survival Ascension)' "$log"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survival-061-coop-runtime-smoke
+          path: |
+            projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+            survival-coop-runtime-smoke.log
+          if-no-files-found: error
