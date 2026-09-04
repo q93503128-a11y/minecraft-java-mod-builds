@@ -20,7 +20,6 @@ final class TurnboundUiSkin {
 
     static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         stretch(graphics, PANEL_BROWN, x, y, width, height);
-        // Kenney supplies the silhouette and border language; this veil keeps small Minecraft font legible.
         graphics.fill(x + 7, y + 7, x + width - 7, y + height - 7, 0xB80A0C10);
     }
 
@@ -33,13 +32,7 @@ final class TurnboundUiSkin {
                        boolean active, boolean hovered, boolean selected, int accent) {
         Identifier texture = !active ? BUTTON_GREY : warm(accent) ? BUTTON_BROWN : BUTTON_BLUE;
         stretch(graphics, texture, x, y, width, height);
-
-        // Hover is intentionally transient and soft. It must not look like a committed selection.
-        if (active && hovered) {
-            graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x22FFFFFF);
-        }
-
-        // Selection uses both colour and shape/icon so state is not communicated by colour alone.
+        if (active && hovered) graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x22FFFFFF);
         if (selected) {
             int stateColor = active ? accent : 0xFF777777;
             graphics.fill(x + 4, y + 3, x + 6, y + height - 3, stateColor);
@@ -56,9 +49,8 @@ final class TurnboundUiSkin {
     }
 
     private static void stretch(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int width, int height) {
-        // 26.2 blit uses x/y plus width/height. Passing x+width/y+height made every later widget grow
-        // with its screen position and is what caused the visible right-edge spill in the E menu.
-        graphics.blit(texture, x, y, width, height, 0.0F, 1.0F, 0.0F, 1.0F);
+        // This normalized-UV overload takes x0/y0/x1/y1, not width/height.
+        graphics.blit(texture, x, y, x + width, y + height, 0.0F, 1.0F, 0.0F, 1.0F);
     }
 
     private static boolean warm(int accent) {

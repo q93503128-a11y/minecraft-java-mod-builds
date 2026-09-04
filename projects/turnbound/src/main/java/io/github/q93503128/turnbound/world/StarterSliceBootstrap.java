@@ -17,7 +17,6 @@ public final class StarterSliceBootstrap {
 
         if (!AsterMarchFoundationBuilder.ready(level)) {
             holdDuringStartup(player);
-            // Give the integrated server a short settle window without letting the player fall through vanilla terrain.
             if (player.tickCount < 40) return;
             if (!AsterMarchFoundationBuilder.step(level, player)) return;
         }
@@ -25,6 +24,7 @@ public final class StarterSliceBootstrap {
         player.setNoGravity(false);
         player.setDeltaMovement(Vec3.ZERO);
         WorldSessionRouter.enterInitial(player);
+        RadiaSafeSpawn.place(level, player);
     }
 
     public static boolean building(ServerPlayer player) {

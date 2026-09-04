@@ -12,6 +12,7 @@ public final class AsterMarchContentOrchestrator {
     public static void build(ServerLevel level) {
         AsterMarchAmbientDressing.build(level);
         AsterMarchRouteDensity.build(level);
+        AsterMarchWorldPolish.build(level);
         CharacterQuestWorldSites.build(level);
         RegionQuestWorldSites.build(level);
         ExplorationCodexSites.build(level);
@@ -26,7 +27,6 @@ public final class AsterMarchContentOrchestrator {
             AsterMarchFieldIncidents.cancelForBattle(level, player);
             return;
         }
-        // Story actors need normal tick cadence for readable speaker changes; the rest stays on the existing light cadence.
         AsterMarchStoryScenes.tick(level, player);
         if (player.tickCount % 10 != 0) return;
         AsterMarchBossAftermath.sync(level);

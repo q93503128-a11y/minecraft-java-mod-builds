@@ -15,6 +15,12 @@ public final class MetaMenuKeyHandler {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) return;
 
+        if (event.getKey() == GLFW.GLFW_KEY_N) {
+            if (minecraft.gui.screen() != null || ClientBattleState.snapshot().active() || !ClientFieldState.snapshot().active()) return;
+            AsterMarchMinimapLayer.toggleVisible();
+            return;
+        }
+
         if (event.getKey() == GLFW.GLFW_KEY_M) {
             if (minecraft.gui.screen() instanceof AsterMarchMapScreen screen) {
                 screen.onClose();
