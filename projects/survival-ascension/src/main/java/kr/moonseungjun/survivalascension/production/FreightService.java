@@ -170,7 +170,9 @@ public final class FreightService {
 
         if (frontlineManifest) {
             player.sendSystemMessage(Component.literal("§6[전선 화물 적재] §f원정1 + 전초방어1 + 요새방어1회분을 선별해 §e" + moved
-                    + "개§f 적재했습니다. §7식량176 · 철56 · 연료8 · 통나무32 · 석재벽돌128"));
+                    + "개§f 적재했습니다. §7식량" + FRONTLINE_FOOD + " · 철" + FRONTLINE_IRON
+                    + " · 연료" + FRONTLINE_FUEL + " · 통나무" + FRONTLINE_LOGS
+                    + " · 석재벽돌" + FRONTLINE_STONE_BRICKS));
         } else {
             player.sendSystemMessage(Component.literal("§b[물리 화물 적재] §f전초 창고군 → 상자 광산수레 §e" + moved
                     + "개§f 적재. §7Shift를 누른 채 선택하면 다음 빈 수레에는 전선 보급 묶음만 선별 적재합니다."));
