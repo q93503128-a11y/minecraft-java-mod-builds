@@ -7,6 +7,7 @@ import io.github.q93503128.turnbound.combat.CombatantSide;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.BattleVfx;
+import io.github.q93503128.turnbound.presentation.BossBattleVfx;
 import io.github.q93503128.turnbound.presentation.EliteVfxTelegraphs;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
@@ -39,6 +40,7 @@ final class BattlePresentation {
     private final Map<String, Boolean> summons = new LinkedHashMap<>();
     private final Map<String, String> visualIds = new LinkedHashMap<>();
     private final Map<String, Boolean> downed = new LinkedHashMap<>();
+    private final Map<String, Integer> barriers = new LinkedHashMap<>();
     private final Map<String, Integer> bossPhases = new LinkedHashMap<>();
     private final Map<String, Integer> pendingRemovalTicks = new LinkedHashMap<>();
     /** Multiple actors may still be returning at 2x speed; never strand the previous attacker. */
@@ -96,7 +98,7 @@ final class BattlePresentation {
         }
         actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); homeYaws.put(combatant.instanceId(),yaw);
         sides.put(combatant.instanceId(),combatant.side()); summons.put(combatant.instanceId(),combatant.definition().summon());
-        visualIds.put(combatant.instanceId(),visualId); downed.put(combatant.instanceId(),combatant.downed());
+        visualIds.put(combatant.instanceId(),visualId); downed.put(combatant.instanceId(),combatant.downed()); barriers.put(combatant.instanceId(),combatant.barrier());
         bossPhases.put(combatant.instanceId(),phaseFor(combatant)); pendingRemovalTicks.remove(combatant.instanceId()); returnTimers.remove(combatant.instanceId());
     }
 
@@ -107,7 +109,7 @@ final class BattlePresentation {
 
     private void removeActor(ServerLevel level,String id){
         UUID uuid=actors.remove(id);Entity entity=uuid==null?null:level.getEntity(uuid);if(entity!=null)entity.discard();
-        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);bossPhases.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
+        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);barriers.remove(id);bossPhases.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
     }
 
     private static Vec3 localToWorld(Vec3 center,Vec3 right,Vec3 forward,double x,double z){return center.add(right.scale(x)).subtract(forward.scale(z));}
@@ -124,10 +126,36 @@ final class BattlePresentation {
     }
 
     void syncStates(ServerLevel level,Iterable<CombatantState> combatants){
-        for(CombatantState unit:combatants){String id=unit.instanceId();Boolean before=downed.get(id);if(before==null)downed.put(id,unit.downed());else if(before!=unit.downed()){
-            downed.put(id,unit.downed());Entity entity=entity(level,id);Vec3 home=homes.get(id);if(unit.downed()){if(entity instanceof BattleActorEntity a)a.playDeath();if(home!=null)BattleVfx.down(level,home);}else{if(entity instanceof BattleActorEntity a)a.playRevive();if(home!=null)BattleVfx.revive(level,home);}}
-            int phase=phaseFor(unit),previous=bossPhases.getOrDefault(id,phase);if(!unit.downed()&&phase>previous){bossPhases.put(id,phase);Entity entity=entity(level,id);if(entity instanceof BattleActorEntity a)a.playPhase();Vec3 home=homes.get(id);if(home!=null)BattleVfx.phase(level,unit.definition().id(),home,phase);}else bossPhases.putIfAbsent(id,phase);
+        for(CombatantState unit:combatants){
+            String id=unit.instanceId();Boolean before=downed.get(id);
+            if(before==null)downed.put(id,unit.downed());else if(before!=unit.downed()){
+                downed.put(id,unit.downed());Entity entity=entity(level,id);Vec3 home=homes.get(id);
+                if(unit.downed()){if(entity instanceof BattleActorEntity a)a.playDeath();if(home!=null)BattleVfx.down(level,home);}else{if(entity instanceof BattleActorEntity a)a.playRevive();if(home!=null)BattleVfx.revive(level,home);}
+            }
+
+            int oldBarrier=barriers.getOrDefault(id,unit.barrier()),newBarrier=unit.barrier();
+            if(!unit.downed()&&"B03".equals(unit.definition().id())&&oldBarrier>0&&newBarrier==0){
+                Entity entity=entity(level,id);if(entity instanceof BattleActorEntity a)a.playBossStagger();Vec3 home=homes.get(id);if(home!=null)BossBattleVfx.oroBarrierBreak(level,home);
+            }
+            barriers.put(id,newBarrier);
+
+            int phase=phaseFor(unit),previous=bossPhases.getOrDefault(id,phase);
+            if(!unit.downed()&&phase>previous){
+                bossPhases.put(id,phase);Entity entity=entity(level,id);if(entity instanceof BattleActorEntity a)playBossPhaseAnimation(a,unit.definition().id(),phase);
+                Vec3 home=homes.get(id);if(home!=null){BattleVfx.phase(level,unit.definition().id(),home,phase);BossBattleVfx.phaseAccent(level,unit.definition().id(),home,phase);}
+            }else bossPhases.putIfAbsent(id,phase);
         }
+    }
+
+    private static void playBossPhaseAnimation(BattleActorEntity actor,String visualId,int phase){
+        if(phase==2){
+            switch(visualId){
+                case "B01","B02","B03","B04","B05" -> actor.playSummon();
+                default -> actor.playPhase();
+            }
+            return;
+        }
+        actor.playPhase();
     }
 
     /** Replays authoritative combat events as authored hit/reaction/status clips without changing results. */
@@ -216,24 +244,47 @@ final class BattlePresentation {
                 Vec3 delta=target.subtract(source);
                 if(delta.lengthSqr()>.001)actor.setPos(target.subtract(delta.normalize().scale(1.45)));
             }
-            // Even anchored ranged/caster actors briefly face their resolved target, then recover formation facing.
-            returnTimers.put(actorId,actionHoldTicks(skillId,closesDistance));
+            returnTimers.put(actorId,actionPresentationTicks(visualId,skillId));
         }
 
         if(actor instanceof BattleActorEntity animated) playSkillAnimation(animated,visualId,skillId,damaging,closesDistance);
         if(source!=null){
             if("EL04".equals(visualId)&&"el04_collapse".equals(skillId)&&target!=null)EliteVfxTelegraphs.el04CollapseCracks(level,target);
-            BattleVfx.skill(level,visualId,skillId,source,target==null?source:target,damaging);
+            Vec3 resolvedTarget=target==null?source:target;
+            if(BossBattleVfx.handles(visualId))BossBattleVfx.skill(level,visualId,skillId,source,resolvedTarget);
+            else BattleVfx.skill(level,visualId,skillId,source,resolvedTarget,damaging);
         }
     }
 
-    /** Canonical Skill IDs choose the authored per-character Basic/Active clip instead of damage/cast guessing. */
+    /** Canonical Skill IDs choose authored clips instead of damage/cast guessing. */
     private static void playSkillAnimation(BattleActorEntity actor,String visualId,String skillId,boolean damaging,boolean moving){
         switch(skillId){
             case "p01_chase_slash","p02_accelerate","p03_guard_stance","p04_heal","p05_suppressive_shot","p06_echo","p07_command","p08_frenzy" -> playBasic(actor,moving);
             case "p01_breaker_strike","p02_time_leap","p03_guard_transfer","p04_returned_breath","p05_piercing_shot","p06_condolence","p07_summon_toto","p08_blood_charge" -> playActive1(actor,moving);
             case "p01_duel_lock","p02_delay_field","p03_shield_pressure","p04_resting_light","p05_hunt_signal","p06_funeral_order","p07_joint_attack","p08_battle_mania" -> playActive2(actor,moving);
-            case "b01_charge","b04_eruption" -> actor.playCharge();case "b02_summon" -> actor.playSummon();case "b03_overclock","b05_relay_collapse" -> actor.playPhase();
+
+            case "b01_basic" -> actor.playStrike();
+            case "b01_scratch" -> actor.playCast();
+            case "b01_warn" -> actor.playCast();
+            case "b01_charge" -> actor.playCharge();
+
+            case "b02_basic" -> actor.playStrike();
+            case "b02_root_prison","b02_thorn_wave" -> actor.playCast();
+            case "b02_summon" -> actor.playSummon();
+
+            case "b03_basic" -> actor.playStrike();
+            case "b03_drain","b03_barrier" -> actor.playCast();
+            case "b03_overclock" -> actor.playPhase();
+
+            case "b04_basic" -> actor.playStrike();
+            case "b04_collapse" -> actor.playCharge();
+            case "b04_fury","b04_warn","b04_eruption" -> actor.playCast();
+
+            case "b05_basic" -> actor.playStrike();
+            case "b05_time_cut" -> actor.playCharge();
+            case "b05_mark","b05_order_collapse","b05_rift_wave","b05_warn" -> actor.playCast();
+            case "b05_relay_collapse" -> actor.playPhase();
+
             default -> {if(damaging)actor.playStrike();else actor.playCast();}
         }
     }
@@ -255,18 +306,34 @@ final class BattlePresentation {
             case "P07_SUMMON","F01" -> true;
             case "F04" -> !"f04_endure".equals(skillId);
             case "E001","E004","E006","E008","E012","E014" -> true;
-            case "B01" -> true;
-            case "B04" -> !"b04_eruption".equals(skillId);
-            case "B05" -> !"b05_relay_collapse".equals(skillId);
+            case "B01" -> "b01_basic".equals(skillId)||"b01_charge".equals(skillId);
+            case "B04" -> "b04_basic".equals(skillId);
+            case "B05" -> "b05_basic".equals(skillId)||"b05_time_cut".equals(skillId);
             default -> false;
         };
     }
 
-    private static int actionHoldTicks(String skillId,boolean moving){
-        if(!moving)return 4;
+    /**
+     * Visual pacing in ticks at 1x. These values follow the authored clip lengths closely enough that
+     * the next turn does not overwrite the current action before its readable hit/recovery beat.
+     */
+    static int actionPresentationTicks(String visualId,String skillId){
         return switch(skillId){
-            case "p01_breaker_strike","p08_blood_charge","b01_charge" -> 12;
-            default -> 8;
+            case "p01_chase_slash" -> 28; case "p01_breaker_strike" -> 41; case "p01_duel_lock" -> 18;
+            case "p02_accelerate" -> 16; case "p02_time_leap" -> 28; case "p02_delay_field" -> 34;
+            case "p03_guard_stance" -> 17; case "p03_guard_transfer" -> 23; case "p03_shield_pressure" -> 35;
+            case "p04_heal" -> 22; case "p04_returned_breath" -> 46; case "p04_resting_light" -> 36;
+            case "p05_suppressive_shot" -> 16; case "p05_piercing_shot" -> 24; case "p05_hunt_signal" -> 19;
+            case "p06_echo" -> 19; case "p06_condolence" -> 28; case "p06_funeral_order" -> 32;
+            case "p07_command" -> 18; case "p07_summon_toto" -> 34; case "p07_joint_attack" -> 26;
+            case "p08_frenzy" -> 27; case "p08_blood_charge" -> 34; case "p08_battle_mania" -> 21;
+
+            case "b01_basic" -> 18; case "b01_scratch" -> 23; case "b01_warn" -> 20; case "b01_charge" -> 24;
+            case "b02_basic" -> 18; case "b02_root_prison" -> 24; case "b02_summon" -> 28; case "b02_thorn_wave" -> 26;
+            case "b03_basic" -> 18; case "b03_drain","b03_barrier" -> 24; case "b03_overclock" -> 31;
+            case "b04_basic" -> 20; case "b04_collapse" -> 24; case "b04_fury" -> 24; case "b04_warn" -> 20; case "b04_eruption" -> 28;
+            case "b05_basic" -> 17; case "b05_time_cut" -> 20; case "b05_mark" -> 21; case "b05_order_collapse" -> 27; case "b05_rift_wave" -> 26; case "b05_warn" -> 19; case "b05_relay_collapse" -> 31;
+            default -> BossBattleVfx.handles(visualId)?20:8;
         };
     }
 
@@ -298,7 +365,7 @@ final class BattlePresentation {
     }
 
     void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);finishPlayed=false;}
-    private void cleanupActors(ServerLevel level){for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();bossPhases.clear();pendingRemovalTicks.clear();returnTimers.clear();}
+    private void cleanupActors(ServerLevel level){for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();barriers.clear();bossPhases.clear();pendingRemovalTicks.clear();returnTimers.clear();}
     private Entity entity(ServerLevel level,String id){UUID uuid=actors.get(id);return uuid==null?null:level.getEntity(uuid);}
 
     private static void equipStandIn(ArmorStand stand,CombatantState combatant){
