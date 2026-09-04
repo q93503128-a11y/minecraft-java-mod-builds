@@ -143,6 +143,14 @@ public final class AscensionTrialSystem {
         return false;
     }
 
+    public static boolean hasActiveNear(ServerPlayer player) {
+        for (Trial trial : ACTIVE.values()) {
+            if (player.level() == trial.level
+                    && distanceToCenterSqr(player, trial.center) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) return true;
+        }
+        return false;
+    }
+
     public static void onServerTick(ServerTickEvent.Pre event) {
         removeStaleServerTrials(event.getServer());
         if (++ticker < 5) return;

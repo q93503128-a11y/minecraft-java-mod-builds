@@ -68,6 +68,19 @@ public final class ExpeditionIncidentSystem {
         return false;
     }
 
+    public static boolean hasActiveNear(ServerPlayer player) {
+        double clearanceSqr = INCIDENT_CENTER_CLEARANCE * INCIDENT_CENTER_CLEARANCE;
+        for (PendingIncident pending : PENDING.values()) {
+            if (player.level() == pending.level
+                    && distanceToCenterSqr(player, pending.center) < clearanceSqr) return true;
+        }
+        for (ActiveIncident active : ACTIVE.values()) {
+            if (player.level() == active.level
+                    && distanceToCenterSqr(player, active.center) < clearanceSqr) return true;
+        }
+        return false;
+    }
+
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
         if (player.tickCount % 5 != 0) return;

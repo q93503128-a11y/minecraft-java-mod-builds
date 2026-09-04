@@ -85,6 +85,14 @@ public final class ApexHuntSystem {
         return false;
     }
 
+    public static boolean hasActiveNear(ServerPlayer player) {
+        for (Hunt hunt : ACTIVE.values()) {
+            if (player.level() == hunt.level
+                    && distanceToCenterSqr(player, hunt.center) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) return true;
+        }
+        return false;
+    }
+
     public static void tryStart(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
         if (player.isCreative() || player.isSpectator()) {

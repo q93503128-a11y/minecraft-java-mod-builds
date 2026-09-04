@@ -151,16 +151,25 @@ public final class FinalAscensionSystem {
         return ACTIVE.containsKey(player.getUUID());
     }
 
+    public static boolean hasActiveNear(ServerPlayer player) {
+        for (Run run : ACTIVE.values()) {
+            if (player.level() == run.level
+                    && distanceToCenterSqr(player, run.center) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) return true;
+        }
+        return false;
+    }
+
     public static boolean isFinalSequenceActive(ServerPlayer player) {
-        return isActive(player) || FinalAscensionBossSystem.isActive(player);
+        return isActive(player) || hasActiveNear(player)
+                || FinalAscensionBossSystem.isActive(player) || FinalAscensionBossSystem.hasActiveNear(player);
     }
 
     public static boolean hasOtherMajorActivity(ServerPlayer player) {
-        return AscensionTrialSystem.isActive(player)
-                || ApexHuntSystem.isActive(player)
-                || ExpeditionIncidentSystem.isActive(player)
+        return AscensionTrialSystem.isActive(player) || AscensionTrialSystem.hasActiveNear(player)
+                || ApexHuntSystem.isActive(player) || ApexHuntSystem.hasActiveNear(player)
+                || ExpeditionIncidentSystem.isActive(player) || ExpeditionIncidentSystem.hasActiveNear(player)
                 || ExpeditionOperationSystem.isActive(player)
-                || OutpostSiegeSystem.isActive(player);
+                || OutpostSiegeSystem.isActive(player) || OutpostSiegeSystem.hasActiveNear(player);
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -675,7 +684,8 @@ public final class FinalAscensionSystem {
     }
 
     private static boolean hasConflictingActivity(ServerPlayer player) {
-        return hasOtherMajorActivity(player) || FinalAscensionBossSystem.isActive(player);
+        return hasOtherMajorActivity(player)
+                || FinalAscensionBossSystem.isActive(player) || FinalAscensionBossSystem.hasActiveNear(player);
     }
 
     private static void clearTransient(Run run) {

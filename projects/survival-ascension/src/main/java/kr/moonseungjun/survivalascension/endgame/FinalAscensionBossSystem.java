@@ -54,6 +54,7 @@ public final class FinalAscensionBossSystem {
     private static final int TELEGRAPH_TICKS = 30;
     private static final int WARDEN_AGGRO_REFRESH_TICKS = 80;
     private static final double PLAYER_RADIUS = 72.0D;
+    private static final double EXCLUSION_RADIUS = 128.0D;
     private static final double RECALL_RADIUS = 44.0D;
     private static final double ATTACK_VERTICAL_TOLERANCE = 3.0D;
 
@@ -85,6 +86,15 @@ public final class FinalAscensionBossSystem {
     }
 
     public static boolean isActive(ServerPlayer player) { return ACTIVE.containsKey(player.getUUID()); }
+
+    public static boolean hasActiveNear(ServerPlayer player) {
+        for (Run run : ACTIVE.values()) {
+            if (player.level() == run.level
+                    && distanceToCenterSqr(player, run.center) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) return true;
+        }
+        return false;
+    }
+
     public static boolean isInternalSpawn() { return internalSpawn; }
 
     public static boolean isFinalBoss(Entity entity) {

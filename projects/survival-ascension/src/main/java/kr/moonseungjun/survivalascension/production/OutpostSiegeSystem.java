@@ -80,6 +80,14 @@ public final class OutpostSiegeSystem {
         }
         return false;
     }
+
+    public static boolean hasActiveNear(ServerPlayer player) {
+        for (Siege siege : ACTIVE.values()) {
+            if (player.level() == siege.level
+                    && distanceToCenterSqr(player, siege.anchor) < EXCLUSION_RADIUS * EXCLUSION_RADIUS) return true;
+        }
+        return false;
+    }
     public static void startOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.OUTPOST, () -> true); }
     public static void startBastionOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.BASTION, () -> true); }
     public static void startOrStatus(ServerPlayer player, BooleanSupplier localSupplyCommit) {
@@ -102,9 +110,8 @@ public final class OutpostSiegeSystem {
             player.sendSystemMessage(Component.literal("§c[" + label + "] §f최후의 승천 진행 중에는 방어전을 시작할 수 없습니다."));
             return;
         }
-        if (ApexHuntSystem.isActive(player) || AscensionTrialSystem.isActive(player)
-                || ExpeditionOperationSystem.isActive(player) || ExpeditionIncidentSystem.isActive(player)) {
-            player.sendSystemMessage(Component.literal("§c[" + label + "] §f현장 사건·원정 작전·정점 사냥·승천 시련 중에는 시작할 수 없습니다."));
+        if (FinalAscensionSystem.hasOtherMajorActivity(player)) {
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f근처 또는 현재 진행 중인 현장 사건·원정 작전·정점 사냥·승천 시련·방어전을 먼저 끝내세요."));
             return;
         }
 
