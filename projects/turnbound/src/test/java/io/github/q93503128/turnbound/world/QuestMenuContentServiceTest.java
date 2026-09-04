@@ -30,8 +30,8 @@ class QuestMenuContentServiceTest {
         assertTrue(QuestMenuContentService.available(playerId, "P08"));
 
         String wire = QuestMenuContentService.encode(playerId);
-        assertTrue(wire.contains("CQ_P01|CHARACTER · P01 · 끝까지 남은 길"));
-        assertTrue(wire.contains("CQ_P08|CHARACTER · P08 · 불길 속에서 웃는 법"));
+        assertTrue(wire.contains("CQ_P01|CHARACTER · 카이렌 · 끝까지 남은 길"));
+        assertTrue(wire.contains("CQ_P08|CHARACTER · 라제 · 불길 속에서 웃는 법"));
         assertTrue(wire.contains("Signature Trial"));
     }
 }
