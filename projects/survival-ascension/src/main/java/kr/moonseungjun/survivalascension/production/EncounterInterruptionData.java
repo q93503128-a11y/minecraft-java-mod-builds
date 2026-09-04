@@ -1,17 +1,11 @@
-from pathlib import Path
-
-root = Path('projects/survival-ascension')
-pkg = root / 'src/main/java/kr/moonseungjun/survivalascension'
-
-# 1) Persistent compensation ledger for paid runtime encounters interrupted by a server shutdown.
-interrupt = pkg / 'production/EncounterInterruptionData.java'
-interrupt.write_text('''package kr.moonseungjun.survivalascension.production;
+package kr.moonseungjun.survivalascension.production;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -116,7 +110,7 @@ public final class EncounterInterruptionData extends SavedData {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) get(player.getServer()).claim(player);
+        if (event.getEntity() instanceof ServerPlayer player) get(((ServerLevel) player.level()).getServer()).claim(player);
     }
 
     public void queueApex(UUID owner) {
@@ -234,125 +228,3 @@ public final class EncounterInterruptionData extends SavedData {
     private static int sanitize(int value) { return Math.max(0, Math.min(4096, value)); }
     private static int add(int current, int amount) { return sanitize(current + Math.max(0, amount)); }
 }
-''', encoding='utf-8')
-
-# 2) Production tickets can be restored without reversing completed production cycles.
-production = pkg / 'production/ProductionData.java'
-text = production.read_text(encoding='utf-8')
-marker = '    public int supplyCharges(ServerPlayer player) { return state(player).supplyCharges; }\n\n'
-assert marker in text and 'restoreSupplyCharges' not in text
-text = text.replace(marker, marker + '''    public int restoreSupplyCharges(ServerPlayer player, int amount) {
-        if (amount <= 0) return 0;
-        State state = state(player);
-        int restored = Math.min(amount, Math.max(0, MAX_SUPPLY_CHARGES - state.supplyCharges));
-        if (restored <= 0) return 0;
-        state.supplyCharges += restored;
-        setDirty();
-        return restored;
-    }
-
-''', 1)
-old = '''        normalizeCycles(state);
-        setDirty();
-        return true;
-    }
-'''
-new = '''        normalizeCycles(state);
-        setDirty();
-        EncounterInterruptionData.get(((ServerLevel) player.level()).getServer()).retrySupplyRefund(player);
-        return true;
-    }
-'''
-assert old in text
-text = text.replace(old, new, 1)
-production.write_text(text, encoding='utf-8')
-
-# 3) Apex / Trial / Siege queue their consumed admission costs before runtime cleanup.
-def patch_import_and_stop(path, import_marker, import_line, stop_old, stop_new):
-    p = pkg / path
-    s = p.read_text(encoding='utf-8')
-    if import_line not in s:
-        assert import_marker in s
-        s = s.replace(import_marker, import_marker + import_line, 1)
-    assert stop_old in s
-    s = s.replace(stop_old, stop_new, 1)
-    p.write_text(s, encoding='utf-8')
-
-patch_import_and_stop(
-    'apex/ApexHuntSystem.java',
-    'import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;\n',
-    'import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;\n',
-    '''            if (hunt.level.getServer() != event.getServer()) continue;
-            cleanupMobs(hunt);
-''',
-    '''            if (hunt.level.getServer() != event.getServer()) continue;
-            EncounterInterruptionData.get(event.getServer()).queueApex(hunt.owner);
-            cleanupMobs(hunt);
-''')
-
-patch_import_and_stop(
-    'endgame/AscensionTrialSystem.java',
-    'import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;\n',
-    'import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;\n',
-    '''            if (trial.level.getServer() != event.getServer()) continue;
-            cleanupMobs(trial);
-''',
-    '''            if (trial.level.getServer() != event.getServer()) continue;
-            EncounterInterruptionData.get(event.getServer()).queueTrial(trial.owner);
-            cleanupMobs(trial);
-''')
-
-siege = pkg / 'production/OutpostSiegeSystem.java'
-s = siege.read_text(encoding='utf-8')
-old = '''            if (siege.level.getServer() != event.getServer()) continue;
-            cleanupMobs(siege);
-'''
-new = '''            if (siege.level.getServer() != event.getServer()) continue;
-            EncounterInterruptionData.get(event.getServer()).queueSiege(siege.owner, siege.mode == SiegeMode.BASTION);
-            cleanupMobs(siege);
-'''
-assert old in s
-s = s.replace(old, new, 1)
-old = '''    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Siege siege = ACTIVE.remove(event.getEntity().getUUID());
-        if (siege != null) { cleanupMobs(siege); closeBossBar(siege); }
-    }
-'''
-new = '''    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Siege siege = ACTIVE.remove(event.getEntity().getUUID());
-        if (siege != null) {
-            // Normal disconnects remain a failed defense. During an actual server shutdown the
-            // stopping event normally queues this first; this fallback covers alternate shutdown order.
-            if (!siege.level.getServer().isRunning()) {
-                EncounterInterruptionData.get(siege.level.getServer()).queueSiege(
-                        siege.owner, siege.mode == SiegeMode.BASTION);
-            }
-            cleanupMobs(siege);
-            closeBossBar(siege);
-        }
-    }
-'''
-assert old in s
-s = s.replace(old, new, 1)
-siege.write_text(s, encoding='utf-8')
-
-# 4) Login claim registration and version bump.
-main = pkg / 'SurvivalAscension.java'
-s = main.read_text(encoding='utf-8')
-assert 'public static final String VERSION = "0.61.3-alpha.1";' in s
-s = s.replace('public static final String VERSION = "0.61.3-alpha.1";',
-              'public static final String VERSION = "0.61.4-alpha.1";', 1)
-marker = 'import kr.moonseungjun.survivalascension.production.FieldRecoveryService;\n'
-assert marker in s and 'import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;' not in s
-s = s.replace(marker, 'import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;\n' + marker, 1)
-marker = '        NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onPlayerRespawn);\n'
-assert marker in s and 'EncounterInterruptionData::onPlayerLoggedIn' not in s
-s = s.replace(marker, marker + '        NeoForge.EVENT_BUS.addListener(EncounterInterruptionData::onPlayerLoggedIn);\n', 1)
-main.write_text(s, encoding='utf-8')
-
-props = root / 'gradle.properties'
-s = props.read_text(encoding='utf-8')
-assert 'mod_version=0.61.3-alpha.1' in s
-props.write_text(s.replace('mod_version=0.61.3-alpha.1', 'mod_version=0.61.4-alpha.1', 1), encoding='utf-8')
-
-print('SURVIVAL_AUDIT5_FIX_APPLIED')

@@ -122,6 +122,16 @@ public final class ProductionData extends SavedData {
     public int cycles(ServerPlayer player) { return state(player).cycles; }
     public int supplyCharges(ServerPlayer player) { return state(player).supplyCharges; }
 
+    public int restoreSupplyCharges(ServerPlayer player, int amount) {
+        if (amount <= 0) return 0;
+        State state = state(player);
+        int restored = Math.min(amount, Math.max(0, MAX_SUPPLY_CHARGES - state.supplyCharges));
+        if (restored <= 0) return 0;
+        state.supplyCharges += restored;
+        setDirty();
+        return restored;
+    }
+
     public boolean consumeSupplyCharge(ServerPlayer player) { return consumeSupplyCharges(player, 1); }
 
     public boolean consumeSupplyCharges(ServerPlayer player, int amount) {
@@ -132,6 +142,7 @@ public final class ProductionData extends SavedData {
         // Freeing supply slots immediately drains any already-complete four-line sets into those slots.
         normalizeCycles(state);
         setDirty();
+        EncounterInterruptionData.get(((ServerLevel) player.level()).getServer()).retrySupplyRefund(player);
         return true;
     }
 

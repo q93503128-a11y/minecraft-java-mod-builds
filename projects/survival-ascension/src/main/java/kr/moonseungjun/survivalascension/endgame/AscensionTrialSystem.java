@@ -10,6 +10,7 @@ package kr.moonseungjun.survivalascension.endgame;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -474,6 +475,7 @@ public final class AscensionTrialSystem {
         for (Map.Entry<UUID, Trial> entry : ACTIVE.entrySet()) {
             Trial trial = entry.getValue();
             if (trial.level.getServer() != event.getServer()) continue;
+            EncounterInterruptionData.get(event.getServer()).queueTrial(trial.owner);
             cleanupMobs(trial);
             closeBossBar(trial);
             stopped.add(entry.getKey());

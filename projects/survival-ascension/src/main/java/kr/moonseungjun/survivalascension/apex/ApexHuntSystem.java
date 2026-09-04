@@ -9,6 +9,7 @@ import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.production.EncounterInterruptionData;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -623,6 +624,7 @@ public final class ApexHuntSystem {
         for (Map.Entry<UUID, Hunt> entry : ACTIVE.entrySet()) {
             Hunt hunt = entry.getValue();
             if (hunt.level.getServer() != event.getServer()) continue;
+            EncounterInterruptionData.get(event.getServer()).queueApex(hunt.owner);
             cleanupMobs(hunt);
             closeBossBar(hunt);
             stopped.add(entry.getKey());

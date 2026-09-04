@@ -186,6 +186,7 @@ public final class OutpostSiegeSystem {
         for (Map.Entry<UUID, Siege> entry : ACTIVE.entrySet()) {
             Siege siege = entry.getValue();
             if (siege.level.getServer() != event.getServer()) continue;
+            EncounterInterruptionData.get(event.getServer()).queueSiege(siege.owner, siege.mode == SiegeMode.BASTION);
             cleanupMobs(siege);
             closeBossBar(siege);
             stopped.add(entry.getKey());
@@ -212,8 +213,10 @@ public final class OutpostSiegeSystem {
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Siege siege = ACTIVE.remove(event.getEntity().getUUID());
-        if (siege != null) { cleanupMobs(siege); closeBossBar(siege); }
+        Siege siege = ACTIVE.get(event.getEntity().getUUID());
+        if (siege != null && event.getEntity() instanceof ServerPlayer player) {
+            siege.bossBar.removePlayer(player);
+        }
     }
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
