@@ -23,6 +23,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private static final RawAnimation CHARGE = RawAnimation.begin().thenPlay("boss.charge");
     private static final RawAnimation SUMMON = RawAnimation.begin().thenPlay("boss.summon");
     private static final RawAnimation PHASE = RawAnimation.begin().thenPlay("boss.phase_enter");
+    private static final RawAnimation BOSS_HIT_LIGHT = RawAnimation.begin().thenPlay("boss.hit_light");
+    private static final RawAnimation BOSS_HIT_HEAVY = RawAnimation.begin().thenPlay("boss.hit_heavy");
     private static final RawAnimation FIELD_WALK = RawAnimation.begin().thenLoop("field.walk");
     private static final RawAnimation FIELD_IDLE = RawAnimation.begin().thenLoop("field.idle");
 
@@ -45,6 +47,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         String prefix = TurnboundBattleActors.heroAnimationPrefix(getType());
         if (prefix == null) prefix = SignatureBattleActors.heroAnimationPrefix(getType());
+        boolean bossAnimations = prefix == null && TurnboundBattleActors.bossAnimationType(getType());
         RawAnimation idle = prefix == null ? DefaultAnimations.IDLE : loop(prefix, "idle");
         RawAnimation ready = prefix == null ? READY : play(prefix, "turn_ready");
         RawAnimation basic = prefix == null ? DefaultAnimations.ATTACK_STRIKE : play(prefix, "basic");
@@ -55,8 +58,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         RawAnimation movingActive2 = prefix == null ? DefaultAnimations.ATTACK_STRIKE : moveThen(prefix, "active_2");
         RawAnimation reaction = prefix == null ? DefaultAnimations.ATTACK_STRIKE
                 : play(prefix, (prefix.equals("p03_bram") || prefix.equals("p05_lynette")) ? "reaction" : "basic");
-        RawAnimation hitLight = prefix == null ? ready : play(prefix, "hit_light");
-        RawAnimation hitHeavy = prefix == null ? ready : play(prefix, "hit_heavy");
+        RawAnimation hitLight = prefix == null ? (bossAnimations ? BOSS_HIT_LIGHT : ready) : play(prefix, "hit_light");
+        RawAnimation hitHeavy = prefix == null ? (bossAnimations ? BOSS_HIT_HEAVY : ready) : play(prefix, "hit_heavy");
         RawAnimation death = prefix == null ? DEATH : play(prefix, "death");
         RawAnimation revive = prefix == null ? REVIVE : play(prefix, "revive");
         RawAnimation victory = prefix == null ? VICTORY : play(prefix, "victory");
