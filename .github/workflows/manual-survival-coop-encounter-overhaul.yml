@@ -159,6 +159,7 @@ jobs:
             projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/apex/ApexHuntSystem.java \
             projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/endgame/AscensionTrialSystem.java
           git commit -m 'Make Survival encounters meaningfully cooperative'
+          git restore projects/survival-ascension/tools/patch_coop_encounters.py
           git pull --rebase origin main
           git push origin HEAD:main
 
