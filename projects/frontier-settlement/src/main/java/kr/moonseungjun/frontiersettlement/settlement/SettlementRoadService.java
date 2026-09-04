@@ -198,7 +198,7 @@ public final class SettlementRoadService {
         FrontierWorkerEntity builder = findRoadBuilder(level, data, data.centerPos(), road, plan);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
-        builder.setInvulnerable(true);
+        builder.setInvulnerable(false);
 
         if (road.grading()) return tickGrading(server, data, road, plan, builder);
         if (road.tunneling()) return tickTunneling(server, data, road, builder);
@@ -368,11 +368,16 @@ public final class SettlementRoadService {
         if (!carried.isEmpty()) return returnCarriedToStorage(server, data, builder);
 
         ServerLevel level = server.overworld();
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
-        if (source == null) return false;
+        BlockPos source = SettlementWorkerStorageNavigation.findReachableExtractionTarget(
+                level, data, builder, SettlementInventory::isStone, STORAGE_INTERACTION_RANGE_SQR);
+        if (source == null) {
+            builder.getNavigation().stop();
+            return false;
+        }
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.9D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, builder, source, 0.9D, STORAGE_INTERACTION_RANGE_SQR);
             return false;
         }
 
@@ -398,14 +403,16 @@ public final class SettlementRoadService {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
         ServerLevel level = server.overworld();
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+        BlockPos target = SettlementWorkerStorageNavigation.findReachableDepositTarget(
+                level, data, builder, carried, STORAGE_INTERACTION_RANGE_SQR);
+        if (target == null) {
             builder.getNavigation().stop();
             return false;
         }
         if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > STORAGE_INTERACTION_RANGE_SQR) {
-            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 0.9D);
+            SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, builder, target, 0.9D, STORAGE_INTERACTION_RANGE_SQR);
             return false;
         }
         int before = carried.getCount();

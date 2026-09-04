@@ -27,6 +27,8 @@ outpost_production = text(JAVA / "settlement/SettlementOutpostProductionService.
 civil = text(JAVA / "settlement/SettlementCivilWorkService.java")
 civil_fill = text(JAVA / "settlement/SettlementCivilFillSupplyService.java")
 civil_retain = text(JAVA / "settlement/SettlementCivilRetainingService.java")
+road_build = text(JAVA / "settlement/SettlementRoadService.java")
+outpost_build = text(JAVA / "settlement/SettlementOutpostService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -219,6 +221,21 @@ forbid(civil_retain, (
 must(worker, (
     "SettlementConstructionService.BUILDER_TAG",
 ), "civil builder death cargo preservation")
+for construction_src, construction_label in ((road_build, "road construction"), (outpost_build, "outpost construction")):
+    must(construction_src, (
+        "builder.setInvulnerable(false);",
+        "SettlementWorkerStorageNavigation.findReachableExtractionTarget(",
+        "SettlementWorkerStorageNavigation.findReachableDepositTarget(",
+        "SettlementWorkerStorageNavigation.moveToInteraction(",
+        "if (target == null) {",
+        "builder.getNavigation().stop();"
+    ), construction_label + " runtime/storage hardening")
+    forbid(construction_src, (
+        "builder.setInvulnerable(true);",
+        "SettlementStorageService.findDepositTarget(level, data, carried);",
+        "builder.getNavigation().moveTo(source.getX() + 0.5D",
+        "builder.getNavigation().moveTo(target.getX() + 0.5D"
+    ), "legacy " + construction_label + " runtime/storage pathing")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"
