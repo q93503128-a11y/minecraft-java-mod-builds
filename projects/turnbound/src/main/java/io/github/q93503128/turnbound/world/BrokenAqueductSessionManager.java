@@ -121,7 +121,7 @@ public final class BrokenAqueductSessionManager {
         EncounterActor actor = session.encounters.get(encounterId);
         if (actor == null) return;
         actor.engaged = false;
-        actor.entity = null;
+        actor.group = null;
         actor.graceTicks = outcome == BattleOutcome.ALLY_VICTORY ? 0 : 40;
         ServerLevel level = (ServerLevel) player.level();
         session.refresh(level, player);
@@ -243,15 +243,14 @@ public final class BrokenAqueductSessionManager {
                 if (!unlocked(player, actor.point.id()) || cleared(player, actor.point.id())) continue;
                 if (actor.graceTicks > 0) { actor.graceTicks--; continue; }
                 actor.spawn(level);
-                if (actor.entity == null || actor.engaged) continue;
-                Entity entity = level.getEntity(actor.entity);
-                if (entity == null) { actor.entity = null; continue; }
-                if (player.position().distanceToSqr(entity.position()) <= 12.25) {
+                if (actor.group == null || actor.engaged) continue;
+                Entity lead = actor.group.lead(level);
+                if (lead == null) { actor.group = null; continue; }
+                if (player.position().distanceToSqr(actor.group.center()) <= 12.25) {
                     boolean started = BattleSessionManager.startEncounterAt(player, actor.point.id(), true, true,
                             actor.point.battleAnchor(), actor.point.battleYaw());
                     if (started) {
-                        entity.discard();
-                        actor.entity = null;
+                        actor.despawn(level);
                         actor.engaged = true;
                         return;
                     }
@@ -307,27 +306,21 @@ public final class BrokenAqueductSessionManager {
 
     private static final class EncounterActor {
         private final BrokenAqueductChapterWorld.EncounterPoint point;
-        private UUID entity;
+        private FieldEncounterPresentation.Group group;
         private boolean engaged;
         private int graceTicks;
 
         private EncounterActor(BrokenAqueductChapterWorld.EncounterPoint point) { this.point = point; }
 
         private void spawn(ServerLevel level) {
-            if (entity != null && level.getEntity(entity) != null) return;
-            V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(point.id());
-            Item item = itemFor(spec.enemies().getFirst());
-            ChatFormatting color = spec.boss() ? ChatFormatting.DARK_RED : spec.enemies().getFirst().startsWith("EL") ? ChatFormatting.GOLD : ChatFormatting.GRAY;
-            ArmorStand stand = actor(level, point.fieldPosition(), spec.label(), item, color);
-            level.addFreshEntity(stand);
-            entity = stand.getUUID();
+            if (group != null && group.alive(level)) return;
+            if (group != null) group.despawn(level);
+            group = FieldEncounterPresentation.spawn(level, point.id(), point.fieldPosition(), point.battleYaw());
         }
 
         private void despawn(ServerLevel level) {
-            if (entity == null) return;
-            Entity e = level.getEntity(entity);
-            if (e != null) e.discard();
-            entity = null;
+            if (group != null) group.despawn(level);
+            group = null;
         }
     }
 
@@ -341,15 +334,5 @@ public final class BrokenAqueductSessionManager {
         stand.setItemSlot(EquipmentSlot.MAINHAND, item.getDefaultInstance());
         stand.setItemSlot(EquipmentSlot.HEAD, Items.IRON_HELMET.getDefaultInstance());
         return stand;
-    }
-
-    private static Item itemFor(String enemyId) {
-        return switch (enemyId) {
-            case "E010" -> Items.CROSSBOW;
-            case "E011" -> Items.SHIELD;
-            case "EL03" -> Items.IRON_AXE;
-            case "B03" -> Items.CLOCK;
-            default -> Items.IRON_SWORD;
-        };
     }
 }
