@@ -95,6 +95,15 @@ public final class TurnboundBattleActors {
         return null;
     }
 
+    /** True only for the five authored boss actor types that provide boss.hit_light / boss.hit_heavy clips. */
+    public static boolean bossAnimationType(EntityType<?> type) {
+        if (type == null) return false;
+        for (var entry : ACTORS.entrySet()) {
+            if (entry.getValue().get() == type) return BOSS_PATH.containsKey(entry.getKey());
+        }
+        return false;
+    }
+
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {
         String visualId = "F01".equals(combatantId) && level.getRandom().nextBoolean() ? "F01_ALT" : combatantId;
         DeferredHolder<EntityType<?>, EntityType<BattleActorEntity>> holder = ACTORS.get(visualId);
