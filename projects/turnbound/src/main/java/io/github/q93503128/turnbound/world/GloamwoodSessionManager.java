@@ -122,7 +122,7 @@ public final class GloamwoodSessionManager {
         EncounterActor actor = session.encounters.get(encounterId);
         if (actor == null) return;
         actor.engaged = false;
-        actor.entity = null;
+        actor.group = null;
         actor.graceTicks = outcome == BattleOutcome.ALLY_VICTORY ? 0 : 40;
         ServerLevel level = (ServerLevel)player.level();
         session.refresh(level, player);
@@ -247,15 +247,14 @@ public final class GloamwoodSessionManager {
                 if (!unlocked(player, actor.point.id()) || cleared(player, actor.point.id())) continue;
                 if (actor.graceTicks > 0) { actor.graceTicks--; continue; }
                 actor.spawn(level);
-                if (actor.entity == null || actor.engaged) continue;
-                Entity entity = level.getEntity(actor.entity);
-                if (entity == null) { actor.entity = null; continue; }
-                if (player.position().distanceToSqr(entity.position()) <= 12.25) {
+                if (actor.group == null || actor.engaged) continue;
+                Entity lead = actor.group.lead(level);
+                if (lead == null) { actor.group = null; continue; }
+                if (player.position().distanceToSqr(actor.group.center()) <= 12.25) {
                     boolean started = BattleSessionManager.startEncounterAt(player, actor.point.id(), true, true,
                             actor.point.battleAnchor(), actor.point.battleYaw());
                     if (started) {
-                        entity.discard();
-                        actor.entity = null;
+                        actor.despawn(level);
                         actor.engaged = true;
                         return;
                     }
@@ -314,27 +313,21 @@ public final class GloamwoodSessionManager {
 
     private static final class EncounterActor {
         private final GloamwoodChapterWorld.EncounterPoint point;
-        private UUID entity;
+        private FieldEncounterPresentation.Group group;
         private boolean engaged;
         private int graceTicks;
 
         private EncounterActor(GloamwoodChapterWorld.EncounterPoint point) { this.point = point; }
 
         private void spawn(ServerLevel level) {
-            if (entity != null && level.getEntity(entity) != null) return;
-            V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(point.id());
-            Item item = itemFor(spec.enemies().getFirst());
-            ChatFormatting color = spec.boss() ? ChatFormatting.DARK_RED : spec.enemies().getFirst().startsWith("EL") ? ChatFormatting.GOLD : ChatFormatting.DARK_GREEN;
-            ArmorStand stand = actor(level, point.fieldPosition(), spec.label(), item, color);
-            level.addFreshEntity(stand);
-            entity = stand.getUUID();
+            if (group != null && group.alive(level)) return;
+            if (group != null) group.despawn(level);
+            group = FieldEncounterPresentation.spawn(level, point.id(), point.fieldPosition(), point.battleYaw());
         }
 
         private void despawn(ServerLevel level) {
-            if (entity == null) return;
-            Entity e = level.getEntity(entity);
-            if (e != null) e.discard();
-            entity = null;
+            if (group != null) group.despawn(level);
+            group = null;
         }
     }
 
@@ -348,16 +341,5 @@ public final class GloamwoodSessionManager {
         stand.setItemSlot(EquipmentSlot.MAINHAND, item.getDefaultInstance());
         stand.setItemSlot(EquipmentSlot.HEAD, Items.LEATHER_HELMET.getDefaultInstance());
         return stand;
-    }
-
-    private static Item itemFor(String enemyId) {
-        return switch (enemyId) {
-            case "E007" -> Items.GLOW_BERRIES;
-            case "E008" -> Items.SHIELD;
-            case "E002" -> Items.BOW;
-            case "EL02" -> Items.GOLDEN_SWORD;
-            case "B02" -> Items.NETHERITE_SWORD;
-            default -> Items.IRON_AXE;
-        };
     }
 }
