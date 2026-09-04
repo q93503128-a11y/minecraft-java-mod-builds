@@ -1,0 +1,28 @@
+name: Manual Survival Risk Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-risk-scan.yml'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan gameplay-risk patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension'
+          echo '=== STALE KEY LABELS ==='
+          grep -RInE 'M ?→|M 메뉴|M · 통합|R ·| R |R을|R =|/ R ' "$ROOT" || true
+          echo '=== DIRECT AUTOMATIC DESTROY CALLS ==='
+          grep -RIn 'gameMode.destroyBlock' "$ROOT" || true
+          echo '=== BULK/ASYNC JOB MAPS ==='
+          grep -RInE 'static final Map<UUID|static final Set<UUID|static final Deque<' "$ROOT" || true
+          echo '=== EXPEDITION SNAPSHOT REQUESTS ==='
+          grep -RIn 'ExpeditionSnapshotRequestPayload' "$ROOT" || true
+          echo '=== HARVEST WEAR PATH ==='
+          grep -RInE 'HarvestingProgression|destroyWithReducedWear' "$ROOT/harvesting" "$ROOT/progress/AutomatedToolBreak.java" || true
