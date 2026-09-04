@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.QuestCatalog;
 
 import java.util.LinkedHashMap;
@@ -37,8 +38,9 @@ public final class QuestMenuContentService {
             boolean completed = snapshot.quests().completed().contains(quest.id());
             boolean available = available(playerId, quest.owner());
             String status = completed ? "완료" : available ? "해금" : "잠금";
+            String ownerName = characterName(quest.owner());
             out.append("Q|").append(quest.id()).append('|')
-                    .append(safe("CHARACTER · " + quest.owner() + " · " + quest.name() + " · " + status)).append("|0|")
+                    .append(safe("CHARACTER · " + ownerName + " · " + quest.name() + " · " + status)).append("|0|")
                     .append(completed ? 1 : 0).append('|')
                     .append(safe(text.story()
                             + " / 조사 위치: " + CharacterQuestRouteCatalog.route(quest.owner())
@@ -70,7 +72,8 @@ public final class QuestMenuContentService {
     }
 
     private static String mainObjective(QuestCatalog.Quest quest) {
-        String targets = String.join(", ", quest.targetIds());
+        String targets = quest.targetIds().stream().map(QuestMenuContentService::targetLabel)
+                .reduce((left, right) -> left + ", " + right).orElse("-");
         return switch (quest.objectiveType()) {
             case "INTERACT" -> "상호작용 · " + targets;
             case "PARTY_CONFIRM" -> "파티 확인 · " + targets;
@@ -86,24 +89,56 @@ public final class QuestMenuContentService {
         };
     }
 
+    private static String targetLabel(String id) {
+        if (id == null || id.isBlank()) return "-";
+        String authored = switch (id) {
+            case "TUTORIAL_1" -> "전투 훈련 1";
+            case "TUTORIAL_2" -> "전투 훈련 2";
+            case "TUTORIAL_3" -> "전투 훈련 3";
+            case "SPORE_LANTERN" -> "포자등불";
+            case "AQUEDUCT_VALVE" -> "수로 압력 밸브";
+            case "CORE_FRAGMENT" -> "Relay 핵 파편";
+            case "RELAY_FRAGMENT_MEADOW" -> "남문 초원 Relay 조각";
+            case "RELAY_FRAGMENT_AQUEDUCT" -> "붕괴 수로 Relay 조각";
+            case "RELAY_FRAGMENT_QUARRY" -> "잿불 채석장 Relay 조각";
+            case "SERAK_RECORD" -> "세라크 기록";
+            case "RELAY_CONSOLE" -> "Relay 재연결 콘솔";
+            default -> null;
+        };
+        if (authored != null) return authored;
+        try {
+            return CanonicalData.definition(id).name();
+        } catch (RuntimeException ignored) {
+            return id;
+        }
+    }
+
+    private static String characterName(String id) {
+        try {
+            return CanonicalData.definition(id).name();
+        } catch (RuntimeException ignored) {
+            return id;
+        }
+    }
+
     private static Map<String, CharacterQuestText> characterRows() {
         Map<String, CharacterQuestText> out = new LinkedHashMap<>();
         out.put("CQ_P01", new CharacterQuestText("P01", "과거 카이렌이 지키지 못한 북문 초소의 기록을 찾는다.",
-                "B05 / P01 ★6 Lv60 / P01 포함 2인 이하 / 특수 엘리트 격파"));
+                "B05 격파 / 카이렌 ★6 Lv60 / 카이렌 포함 2인 이하 / 특수 엘리트 격파"));
         out.put("CQ_P02", new CharacterQuestText("P02", "시계탑이 20년 전 대단절 순간의 시간을 반복하는 문제를 해결한다.",
-                "P02 ★6 Lv60 / SPD 80 이하 아군 2명 이상 / 아군 행동 22 이하 / Trial Boss"));
+                "루메아 ★6 Lv60 / SPD 80 이하 아군 2명 이상 / 아군 행동 22 이하 / Trial Boss"));
         out.put("CQ_P03", new CharacterQuestText("P03", "남문 대피 기록을 조사한다.",
-                "P03 ★6 Lv60 / 지정 NPC를 적 행동 10회 동안 생존"));
+                "브람 ★6 Lv60 / 지정 NPC를 적 행동 10회 동안 생존"));
         out.put("CQ_P04", new CharacterQuestText("P04", "대단절 생존자 명단을 복원한다.",
-                "P04 ★6 Lv60 / 아군 사망 1회 이상 / 승리 시 전원 생존"));
+                "엘리시아 ★6 Lv60 / 아군 사망 1회 이상 / 승리 시 전원 생존"));
         out.put("CQ_P05", new CharacterQuestText("P05", "잘못된 사냥 정보로 민간인이 위험해졌던 과거 사건을 조사한다.",
-                "P05 ★6 Lv60 / Follow-up 10회 이상 / 아군 행동 25 이하 / 승리"));
+                "리네트 ★6 Lv60 / Follow-up 10회 이상 / 아군 행동 25 이하 / 승리"));
         out.put("CQ_P06", new CharacterQuestText("P06", "대단절 당시 이름 없이 사망 처리된 사람의 신원을 확인한다.",
-                "P06 ★6 Lv60 / 자가부활 1회 / 기억 5 이상 / 승리"));
+                "모르웬 ★6 Lv60 / 자가부활 1회 / 기억 5 이상 / 승리"));
         out.put("CQ_P07", new CharacterQuestText("P07", "계약수 토토가 단순 도구가 아니라 자기 의지를 가진 존재인지 확인한다.",
-                "P07 ★6 Lv60 / Toto 사망 후 재소환 / Marion 생존 / 승리"));
+                "마리온 ★6 Lv60 / 토토 사망 후 재소환 / 마리온 생존 / 승리"));
         out.put("CQ_P08", new CharacterQuestText("P08", "채석장 사고 당시 사람들을 두고 도망쳤다는 라제의 소문을 조사한다.",
-                "P08 ★6 Lv60 / 종료 HP 30% 이하 / HP 1 생존 패시브 발동 / 승리"));
+                "라제 ★6 Lv60 / 종료 HP 30% 이하 / HP 1 생존 패시브 발동 / 승리"));
         return Map.copyOf(out);
     }
 
