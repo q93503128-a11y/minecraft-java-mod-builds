@@ -2,12 +2,14 @@ package kr.moonseungjun.livingkingdoms.world;
 
 import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
+import kr.moonseungjun.livingkingdoms.network.RealmBuildProgressPayload;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Set;
 
@@ -17,6 +19,21 @@ public final class LivingRealmWorldManager {
     }
 
     public static void requestPlacement(ServerPlayer player, OriginProfile profile) {
+        ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        if (realm != null && RealmSitePlanner.isBuilt(realm, profile.homelandId())) {
+            if (finishPlacement(player, profile)) {
+                StarterNpcManager.ensureForPlayer(player, profile);
+                PacketDistributor.sendToPlayer(player, new RealmBuildProgressPayload(
+                        profile.homelandId(), "complete", 100,
+                        "실제 시민구 거주지 확인을 마쳤습니다. 왕국 생활을 시작합니다.", true, false));
+            } else {
+                SelectionStagingManager.ensure(player);
+                PacketDistributor.sendToPlayer(player, new RealmBuildProgressPayload(
+                        profile.homelandId(), "residence", 99,
+                        "시민구의 실제 주거 내부와 진입 동선을 확인하고 있습니다.", false, false));
+            }
+            return;
+        }
         RealmBuildCoordinator.requestPlayer(player, profile);
     }
 
@@ -38,8 +55,9 @@ public final class LivingRealmWorldManager {
 
         ConstructionDebrisCleaner.schedule(realm, profile.homelandId(), site);
         BlockPos feet = SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
+        if (feet == null) return false;
         if (!SafeResidenceLocator.isWalkable(realm, feet)) {
-            LivingKingdoms.LOGGER.error("Rejected unsafe final residence spawn {} for {}", feet, player.getUUID());
+            LivingKingdoms.LOGGER.error("Rejected unsafe authored final residence spawn {} for {}", feet, player.getUUID());
             return false;
         }
         float yaw = SafeResidenceLocator.yaw(profile.homelandId(), profile.residenceId());
@@ -50,13 +68,14 @@ public final class LivingRealmWorldManager {
             player.setDeltaMovement(0.0D, 0.0D, 0.0D);
             player.fallDistance = 0.0F;
             player.sendSystemMessage(Component.literal(
-                    "§6[살아있는 왕국] §f" + residence.displayName() + "에서 에르덴 왕국 시민으로 삶을 시작합니다."
+                    "§6[살아있는 왕국] §f" + residence.displayName() + "의 실제 주거 내부에서 에르덴 왕국 시민으로 삶을 시작합니다."
             ));
         }
         return moved;
     }
 
     public static BlockPos homePosition(ServerLevel realm, OriginProfile profile) {
+        if (realm == null || !RealmSitePlanner.isBuilt(realm, profile.homelandId())) return null;
         return SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
     }
 }

@@ -37,6 +37,7 @@ import kr.moonseungjun.livingkingdoms.world.ErdenLandmarkInteriorManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenLivingEconomyManager;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationCiChunkRetainer;
 import kr.moonseungjun.livingkingdoms.world.ErdenPopulationManager;
+import kr.moonseungjun.livingkingdoms.world.ErdenRealPlayRegressionDiagnostics;
 import kr.moonseungjun.livingkingdoms.world.ErdenTransportManager;
 import kr.moonseungjun.livingkingdoms.world.ExternalUrbanFabricBuilder;
 import kr.moonseungjun.livingkingdoms.world.ErdenUrbanAuthoredGroundPlanCatalog;
@@ -180,6 +181,7 @@ public final class LivingKingdoms {
         ErdenDiagnosticDebrisSettler.onServerTick(event);
         ErdenAuthoredRoadNormalizer.onServerTick(event);
         StarterRealmDiagnostics.onServerTick(event);
+        ErdenRealPlayRegressionDiagnostics.onServerTick(event);
         ErdenFantasyEcologyManager.onServerTick(event);
         RegionalEcologyManager.onServerTick(event);
     }

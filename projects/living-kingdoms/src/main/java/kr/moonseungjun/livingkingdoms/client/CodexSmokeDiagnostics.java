@@ -9,6 +9,7 @@ final class CodexSmokeDiagnostics {
     private static final boolean ENABLED = "1".equals(System.getenv("LIVING_KINGDOMS_CI_CLIENT_TEST"));
     private static int ticks;
     private static RealmCodexScreenV5 active;
+    private static boolean notebookHitboxesPassed;
 
     private CodexSmokeDiagnostics() {
     }
@@ -19,6 +20,7 @@ final class CodexSmokeDiagnostics {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (ticks == 82) open(minecraft, "map");
+        if (ticks == 83) verifyNotebookHitboxes();
         if (ticks == 101) verifyAtlasInteraction();
         if (ticks == 102) verify("map");
         if (ticks == 106) open(minecraft, "overview");
@@ -32,8 +34,11 @@ final class CodexSmokeDiagnostics {
         }
         if (ticks == 194) {
             verify("growth_tree");
+            if (!notebookHitboxesPassed) {
+                throw new IllegalStateException("Inventory kingdom notebook hitboxes were not verified");
+            }
             LivingKingdoms.LOGGER.info(
-                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true",
+                    "LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills growth_views=mastery,tree rendered_window=true responsive=true viewport={}x{} controls_fit=true overlap_free=true atlas_drag=true atlas_zoom=true mastery_first=true split_growth_views=true inventory_notebook_hitboxes=true direct_mouse_dispatch=true",
                     active.width, active.height
             );
         }
@@ -43,6 +48,18 @@ final class CodexSmokeDiagnostics {
         active = new RealmCodexScreenV5(page, sampleSnapshot());
         minecraft.gui.setScreen(active);
         LivingKingdoms.LOGGER.info("LK_CLIENT_CODEX_SCREEN_OPENED page={}", page);
+    }
+
+    private static void verifyNotebookHitboxes() {
+        if (active == null) throw new IllegalStateException("Codex viewport is unavailable for notebook hitbox audit");
+        if (!RealmCodexClient.notebookHitboxesPassForTest(active.width, active.height)) {
+            throw new IllegalStateException("Inventory kingdom notebook hitboxes do not match rendered controls");
+        }
+        notebookHitboxesPassed = true;
+        LivingKingdoms.LOGGER.info(
+                "LK_CLIENT_NOTEBOOK_INPUT_PASS viewport={}x{} overview=true map=true skills=true outside_rejected=true direct_mouse_dispatch=true transparent_widget=false",
+                active.width, active.height
+        );
     }
 
     private static void verifyAtlasInteraction() {
