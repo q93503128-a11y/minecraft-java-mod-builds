@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 
+// Catch-driven skill entry point; kept isolated from unrelated expedition action counters.
 public final class FishingProgression {
     private FishingProgression() {}
 
