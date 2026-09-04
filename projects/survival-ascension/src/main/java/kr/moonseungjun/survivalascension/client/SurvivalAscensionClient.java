@@ -52,6 +52,7 @@ public final class SurvivalAscensionClient {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
         SkillNetwork.installExpeditionReceiver(ClientExpeditionState::onSnapshot);
         SkillNetwork.installMythicReceiver(ClientMythicState::onTarget);
+        SkillNetwork.installMobilityReceiver(ClientMobilityState::onCooldown);
         SkillClientBridge.install(ClientSkillState::level);
         modBus.addListener(RegisterGuiLayersEvent.class, SurvivalAscensionClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, SurvivalAscensionClient::onRegisterKeyMappings);

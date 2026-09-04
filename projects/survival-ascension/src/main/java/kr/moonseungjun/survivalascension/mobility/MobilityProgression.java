@@ -11,6 +11,8 @@ import kr.moonseungjun.survivalascension.expedition.ExpeditionAction;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.network.MobilityCooldownPayload;
+import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
@@ -90,6 +92,7 @@ public final class MobilityProgression {
         int cooldown = SkillTuning.mobilityDashCooldownTicks(level);
         if (finalMastery) cooldown = Math.max(12, cooldown - 4);
         DASH_READY_TICK.put(uuid, now + cooldown);
+        SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(cooldown));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
         ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1);
     }

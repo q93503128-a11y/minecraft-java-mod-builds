@@ -362,11 +362,11 @@ public final class ProductionService {
     }
 
     private static int count(ServerPlayer player, ProductionProgram.Input input) {
-        return FieldDepotService.countMatching(player, input::matches);
+        return FieldDepotService.countValue(player, input::value);
     }
 
     private static boolean consume(ServerPlayer player, ProductionProgram.Input input, int amount) {
-        return FieldDepotService.consumeMatching(player, input::matches, amount);
+        return FieldDepotService.consumeValue(player, input::value, amount);
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {

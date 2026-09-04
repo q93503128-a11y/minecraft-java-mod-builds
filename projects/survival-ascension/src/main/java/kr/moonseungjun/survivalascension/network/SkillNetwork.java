@@ -17,11 +17,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "11";
+    private static final String PROTOCOL = "12";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private static volatile Consumer<ExpeditionSnapshotPayload> expeditionSink = payload -> {};
     private static volatile Consumer<MythicTargetPayload> mythicSink = payload -> {};
+    private static volatile Consumer<MobilityCooldownPayload> mobilitySink = payload -> {};
     private SkillNetwork() {}
 
     public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
@@ -30,6 +31,7 @@ public final class SkillNetwork {
         registrar.playToClient(SkillSnapshotPayload.TYPE, SkillSnapshotPayload.CODEC, (payload, context) -> snapshotSink.accept(payload));
         registrar.playToClient(ExpeditionSnapshotPayload.TYPE, ExpeditionSnapshotPayload.CODEC, (payload, context) -> expeditionSink.accept(payload));
         registrar.playToClient(MythicTargetPayload.TYPE, MythicTargetPayload.CODEC, (payload, context) -> mythicSink.accept(payload));
+        registrar.playToClient(MobilityCooldownPayload.TYPE, MobilityCooldownPayload.CODEC, (payload, context) -> mobilitySink.accept(payload));
         registrar.playToServer(ExpeditionSnapshotRequestPayload.TYPE, ExpeditionSnapshotRequestPayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) {
@@ -74,7 +76,12 @@ public final class SkillNetwork {
     public static void installMythicReceiver(Consumer<MythicTargetPayload> targets) {
         mythicSink = Objects.requireNonNull(targets);
     }
+
+    public static void installMobilityReceiver(Consumer<MobilityCooldownPayload> cooldowns) {
+        mobilitySink = Objects.requireNonNull(cooldowns);
+    }
     public static void sendUpdate(ServerPlayer player, SkillUpdatePayload payload) { PacketDistributor.sendToPlayer(player, payload); }
     public static void sendSnapshot(ServerPlayer player, SkillSnapshotPayload payload) { PacketDistributor.sendToPlayer(player, payload); }
     public static void sendMythicTarget(ServerPlayer player, MythicTargetPayload payload) { PacketDistributor.sendToPlayer(player, payload); }
+    public static void sendMobilityCooldown(ServerPlayer player, MobilityCooldownPayload payload) { PacketDistributor.sendToPlayer(player, payload); }
 }

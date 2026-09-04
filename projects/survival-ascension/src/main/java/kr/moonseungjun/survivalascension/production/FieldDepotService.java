@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 public final class FieldDepotService {
     public static final int REGISTER_RADIUS = 4;
@@ -217,6 +218,56 @@ public final class FieldDepotService {
             }
         }
         return found;
+    }
+
+    public static int countValue(ServerPlayer player, ToIntFunction<ItemStack> valuation) {
+        if (valuation == null) return 0;
+        long found = 0L;
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            int unit = Math.max(0, valuation.applyAsInt(stack));
+            found += (long)unit * stack.getCount();
+        }
+        for (Container container : usableContainers(player)) {
+            for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                ItemStack stack = container.getItem(slot);
+                int unit = Math.max(0, valuation.applyAsInt(stack));
+                found += (long)unit * stack.getCount();
+            }
+        }
+        return (int)Math.min(Integer.MAX_VALUE, found);
+    }
+
+    public static boolean consumeValue(ServerPlayer player, ToIntFunction<ItemStack> valuation, int amount) {
+        if (valuation == null || amount <= 0 || countValue(player, valuation) < amount) return false;
+        int remaining = amount;
+        List<Container> containers = usableContainers(player);
+        // Consume lower-value resources first so gold or rare food is not burned while staples exist.
+        for (int unit = 1; unit <= 24 && remaining > 0; unit++) {
+            for (Container container : containers) {
+                boolean changed = false;
+                for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {
+                    ItemStack stack = container.getItem(slot);
+                    if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;
+                    int take = Math.min(stack.getCount(), (remaining + unit - 1) / unit);
+                    stack.shrink(take);
+                    remaining -= take * unit;
+                    changed = true;
+                }
+                if (changed) container.setChanged();
+                if (remaining <= 0) break;
+            }
+            for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {
+                ItemStack stack = player.getInventory().getItem(slot);
+                if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;
+                int take = Math.min(stack.getCount(), (remaining + unit - 1) / unit);
+                stack.shrink(take);
+                remaining -= take * unit;
+            }
+        }
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
+        return remaining <= 0;
     }
 
     public static boolean consumeOne(ServerPlayer player, Item item) { return consume(player, item, 1); }

@@ -50,8 +50,13 @@ public enum ProductionProgram {
 
     public record Input(SharedEconomyCompat.ResourceCategory category, String label, int amount) {
         public static Input resource(SharedEconomyCompat.ResourceCategory category, int amount) {
-            return new Input(category, category.koreanName(), amount);
+            String label = switch (category) {
+                case METAL, FOOD -> category.koreanName() + " 가치";
+                default -> category.koreanName();
+            };
+            return new Input(category, label, amount);
         }
         public boolean matches(ItemStack stack) { return SharedEconomyCompat.matches(category, stack); }
+        public int value(ItemStack stack) { return SharedEconomyCompat.resourceValue(category, stack); }
     }
 }

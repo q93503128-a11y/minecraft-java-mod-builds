@@ -29,6 +29,7 @@ public final class SkillHudOverlay {
         if (minecraft.player == null) return;
 
         renderMythicTracker(graphics, minecraft);
+        renderMobilityCooldown(graphics, minecraft);
         List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();
         if (updates.isEmpty()) return;
 
@@ -47,6 +48,24 @@ public final class SkillHudOverlay {
             int top = bottomTop - i * (ROW_HEIGHT + ROW_GAP);
             drawRow(graphics, minecraft, recent, left, top);
         }
+    }
+
+    private static void renderMobilityCooldown(GuiGraphicsExtractor graphics, Minecraft minecraft) {
+        int remaining = ClientMobilityState.remainingTicks();
+        if (remaining <= 0) return;
+        final int width = 104;
+        final int height = 13;
+        int preferredLeft = graphics.guiWidth() / 2 + 98;
+        int left = Math.max(6, Math.min(graphics.guiWidth() - width - 6, preferredLeft));
+        int top = Math.max(6, graphics.guiHeight() - 43);
+        float progress = ClientMobilityState.readyProgress();
+        graphics.fill(left - 1, top - 1, left + width + 1, top + height + 1, 0xB05C5570);
+        graphics.fill(left, top, left + width, top + height, 0xD414171B);
+        int fill = Math.round(width * progress);
+        if (fill > 0) graphics.fill(left, top + height - 2, left + fill, top + height, 0xFFD8B4FF);
+        String label = String.format(java.util.Locale.ROOT, "V 돌진  %.1fs", remaining / 20.0F);
+        int textX = left + (width - minecraft.font.width(label)) / 2;
+        graphics.text(minecraft.font, label, textX, top + 2, 0xFFF0E6FF, true);
     }
 
     private static void renderMythicTracker(GuiGraphicsExtractor graphics, Minecraft minecraft) {

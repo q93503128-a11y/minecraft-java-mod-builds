@@ -55,6 +55,31 @@ public final class SharedEconomyCompat {
         return mask == expected;
     }
 
+    public static int resourceValue(ResourceCategory category, ItemStack stack) {
+        if (!matches(category, stack)) return 0;
+        return switch (category) {
+            case WOOD, STONE -> 1;
+            case METAL -> metalValue(stack);
+            case FOOD -> foodValue(stack);
+        };
+    }
+
+    private static int metalValue(ItemStack stack) {
+        if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;
+        if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;
+        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;
+        return 2;
+    }
+
+    private static int foodValue(ItemStack stack) {
+        if (stack.is(Items.WHEAT)) return 1;
+        if (stack.is(Items.GOLDEN_APPLE)) return 12;
+        if (stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 24;
+        var food = stack.get(DataComponents.FOOD);
+        if (food != null) return Math.max(1, Math.min(12, food.nutrition()));
+        return 1;
+    }
+
     public static boolean isLogisticsContainerBlock(BlockState state) {
         return state.is(Blocks.BARREL) || isSharedSupplyDepot(state);
     }

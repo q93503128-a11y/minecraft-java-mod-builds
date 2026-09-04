@@ -19,12 +19,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.EventHooks;
@@ -212,7 +214,9 @@ public final class ConstructionProgression {
     private static PlaceResult tryPlace(ServerPlayer player, ServerLevel level, BlockState state, BlockPos target) {
         if (!level.hasChunkAt(target)) return PlaceResult.SKIPPED;
         if (!level.mayInteract(player, target)) return PlaceResult.SKIPPED;
-        if (!level.getBlockState(target).canBeReplaced()) return PlaceResult.SKIPPED;
+        BlockState existing = level.getBlockState(target);
+        boolean clearVegetation = isConstructionClearableVegetation(existing);
+        if (!existing.canBeReplaced() && !clearVegetation) return PlaceResult.SKIPPED;
         if (!state.canSurvive(level, target)) return PlaceResult.SKIPPED;
 
         Item item = state.getBlock().asItem();
@@ -228,12 +232,22 @@ public final class ConstructionProgression {
             INTERNAL_PLACE_GUARD.remove(uuid);
         }
         if (denied) return PlaceResult.SKIPPED;
+        if (clearVegetation && !existing.isAir()) level.destroyBlock(target, false, player);
         if (!level.setBlockAndUpdate(target, state)) return PlaceResult.SKIPPED;
         if (!player.isCreative() && !FieldDepotService.consumeOne(player, item)) {
             level.removeBlock(target, false);
             return PlaceResult.OUT_OF_MATERIAL;
         }
         return PlaceResult.PLACED;
+    }
+
+    private static boolean isConstructionClearableVegetation(BlockState state) {
+        return state.is(BlockTags.FLOWERS)
+                || state.is(Blocks.SHORT_GRASS)
+                || state.is(Blocks.TALL_GRASS)
+                || state.is(Blocks.FERN)
+                || state.is(Blocks.LARGE_FERN)
+                || state.is(Blocks.DEAD_BUSH);
     }
 
     private static List<BlockPos> computeTargets(ServerPlayer player, BlockPos center, ConstructionMode mode, int level) {
