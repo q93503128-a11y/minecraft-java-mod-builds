@@ -42,7 +42,8 @@ public final class TurnboundBattleActors {
     /** Canon §17.6: filename <character_id>.animation.json and clip animation.<character_id>.<clip>. */
     private static final Map<String, String> HERO_ANIMATION = Map.of(
             "P01", "p01_kyren", "P02", "p02_lumea", "P03", "p03_bram", "P04", "p04_elysia",
-            "P05", "p05_lynette", "P06", "p06_morwen", "P07", "p07_marion", "P08", "p08_raze");
+            "P05", "p05_lynette", "P06", "p06_morwen", "P07", "p07_marion", "P08", "p08_raze",
+            "P07_SUMMON", "toto");
 
     private static final Map<String, String> FILLER_PATH = Map.of(
             "F01", "f01_militia_male", "F01_ALT", "f01_militia_female",
