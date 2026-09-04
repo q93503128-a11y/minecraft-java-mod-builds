@@ -1,5 +1,5 @@
 name: Manual Survival Gameplay QoL Pass
-# registered gameplay-qol validation trigger v2
+# registered gameplay-qol validation trigger v3
 
 on:
   push:
