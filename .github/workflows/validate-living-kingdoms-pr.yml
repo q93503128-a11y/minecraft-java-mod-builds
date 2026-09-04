@@ -123,7 +123,8 @@ jobs:
           outcome=timeout
           for attempt in $(seq 1 240); do
             if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
-              && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
+              && grep -Fq 'LK_CLIENT_NOTEBOOK_INPUT_PASS routing=mouse_pressed_pre overview=true map=true skills=true gap_passthrough=true' "$log" \
+              && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true placement_confirmation_required=true' "$log" \
               && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; break; fi
             if grep -Eqi 'Caught exception from Living Kingdoms|Error during client initialization|Exception in client tick loop|Rendering screen|Missing textures in model livingkingdoms|Could not initialize GLFW|Failed to create window' "$log"; then outcome=fatal; break; fi
             if ! kill -0 "$launcher" 2>/dev/null; then outcome=client_exit; break; fi
@@ -133,9 +134,10 @@ jobs:
           sleep 3
           kill -KILL -- "-$pgid" 2>/dev/null || true
           wait "$launcher" 2>/dev/null || true
-          if grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" \
-            && grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true' "$log" \
-            && grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log"; then outcome=pass; fi
+          grep -Fq 'LK_CLIENT_DIAGNOSTIC_PASS screen=origin_selection fixed_erden_origin=true' "$log" || outcome=missing_origin
+          grep -Fq 'LK_CLIENT_NOTEBOOK_INPUT_PASS routing=mouse_pressed_pre overview=true map=true skills=true gap_passthrough=true' "$log" || outcome=missing_notebook_input
+          grep -Fq 'LK_CLIENT_LOADING_DIAGNOSTIC_PASS screen=realm_loading non_pausing=true placement_confirmation_required=true' "$log" || outcome=missing_loading
+          grep -Fq 'LK_CLIENT_CODEX_DIAGNOSTIC_PASS screens=overview,equipment,map,skills' "$log" || outcome=missing_codex
           cat "$log"
           test "$outcome" = pass
 
@@ -158,6 +160,8 @@ jobs:
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalEconomyManager.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalEconomySavedData.class' "$entries"
           grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenRegionalSupplyBridge.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/world/ErdenPlayerResidenceChunkRetainer.class' "$entries"
+          grep -Fx 'kr/moonseungjun/livingkingdoms/network/PlacementConfirmedPayload.class' "$entries"
           unzip -p "${jars[0]}" META-INF/neoforge.mods.toml | grep -F 'version="0.1.0-alpha.12"'
 
       - name: Upload PR logs
