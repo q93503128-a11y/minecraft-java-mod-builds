@@ -70,10 +70,32 @@ s = s.replace('"광석=같은 종류 광맥 / 일반=굴착"', '"광석=동종�
 s = s.replace('"Lv.10 · 일반=평면 / 광석=같은 종류 광맥 보호"', '"Lv.10 · 일반=평면 / 광석=동종만"')
 mining_ui.write_text(s, encoding='utf-8')
 
+# Seven skill rows must still fit common GUI-scale heights without overlapping the Done button.
+skills_ui = java / 'client/SkillsScreen.java'
+s = skills_ui.read_text(encoding='utf-8')
+s = s.replace('private static final int ROW_HEIGHT = 27;', 'private static final int ROW_HEIGHT = 24;', 1)
+s = s.replace('private static final int LIST_TOP = 44;', 'private static final int LIST_TOP = 38;', 1)
+s = s.replace('int barLeft = left + 9, barRight = left + ROW_WIDTH - 9, barTop = top + 23;', 'int barLeft = left + 9, barRight = left + ROW_WIDTH - 9, barTop = top + 20;', 1)
+skills_ui.write_text(s, encoding='utf-8')
+
+# Guide's exhaustive skill switch also exposes the fishing perk in the normal stats page.
+guide = java / 'client/GuideScreen.java'
+s = guide.read_text(encoding='utf-8')
+old = '''            case HARVESTING -> SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level) + " 수확";
+            case COMBAT -> String.format(Locale.ROOT, "피해 %.2f× / 파급 %d체", SkillTuning.combatDamageMultiplier(level), SkillTuning.combatCleaveTargetLimit(level));
+'''
+new = '''            case HARVESTING -> SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level) + " 수확";
+            case FISHING -> "낚싯대 마모 방지 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D) + "%";
+            case COMBAT -> String.format(Locale.ROOT, "피해 %.2f× / 파급 %d체", SkillTuning.combatDamageMultiplier(level), SkillTuning.combatCleaveTargetLimit(level));
+'''
+if s.count(old) != 1:
+    raise SystemExit('GuideScreen fishing effect anchor drift')
+guide.write_text(s.replace(old, new, 1), encoding='utf-8')
+
 audit = root / 'tools/test_gameplay_qol_061.py'
 s = audit.read_text(encoding='utf-8')
 anchor = 'mining_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java")\n'
-insert = anchor + 'expedition_action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")\nexpedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")\n'
+insert = anchor + 'expedition_action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")\nexpedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")\nguide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")\n'
 if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition read anchor drift')
 s = s.replace(anchor, insert, 1)
@@ -82,11 +104,12 @@ checks = anchor + '''need(expedition_action, ["case FISHING -> null;"], "fishing
 need(expedition_progression, ["ExpeditionAction action = ExpeditionAction.fromSkill(skill);", "if (action != null) recordAction(player, action, amount);"], "nullable skill action guard")
 need(mining, ["if (centerState.is(VALUABLE_ORES)) {", "if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);"], "unconditional ore-origin protection")
 need(mining_ui, ["광석=동종만 / 일반=굴착", "광석=동종만"], "ore-safe mining UI")
+need(ui, ["ROW_HEIGHT = 24", "LIST_TOP = 38", "barTop = top + 20"], "seven-skill compact layout")
+need(guide, ["case FISHING", "fishingRodPreservationChance"], "fishing guide stats")
 '''
 if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition check anchor drift')
-# Replace the first script's older UI expectation before adding the stricter checks.
 s = s.replace('need(mining_ui, ["광석=같은 종류 광맥", "광석=같은 종류 광맥 보호"], "ore-safe mining UI")\n', '')
 audit.write_text(s.replace(anchor, checks, 1), encoding='utf-8')
 
-print('FISHING EXPEDITION + STRICT ORE-SAFETY HOTFIX APPLIED')
+print('FISHING UI + EXPEDITION + STRICT ORE-SAFETY HOTFIX APPLIED')
