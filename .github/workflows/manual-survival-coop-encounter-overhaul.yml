@@ -35,16 +35,24 @@ jobs:
           from pathlib import Path
           p = Path('projects/survival-ascension/tools/patch_coop_encounters.py')
           s = p.read_text(encoding='utf-8')
-          old = '''t = replace_once(t,\n''' + "'''            this.rare = rare;\\n            this.bossBar = new ServerBossEvent''',\n'''            this.rare = rare;\\n            this.participantCountSnapshot = Math.max(1, participantCountSnapshot);\\n            this.bossBar = new ServerBossEvent''', \"active party snapshot\")"
-          new = '''anchor = "            this.rare = rare;\\n            this.bossBar = new ServerBossEvent"\npos = t.rfind(anchor)\nif pos < 0:\n    raise SystemExit("active party snapshot anchor missing")\nt = t[:pos] + anchor.replace("            this.bossBar", "            this.participantCountSnapshot = Math.max(1, participantCountSnapshot);\\n            this.bossBar") + t[pos + len(anchor):]'''
-          if old not in s:
-              raise SystemExit('temporary active snapshot patcher anchor missing')
-          s = s.replace(old, new, 1)
-          old_tail = ''''''        int spawnTarget() {\n            int base = incident.spawnCount();\n            if (rare && base > 0) base = Math.max(base + 2, (base * 3 + 1) / 2);\n            double coop = 1.0D + Math.min(4, participantCountSnapshot - 1) * 0.65D;\n            return base <= 0 ? base : Math.max(base, (int)Math.ceil(base * coop));\n        }\n    }\n}'''', "incident scaled spawn target")'''
-          new_tail = ''''''        int spawnTarget() {\n            int base = incident.spawnCount();\n            if (rare && base > 0) base = Math.max(base + 2, (base * 3 + 1) / 2);\n            double coop = 1.0D + Math.min(4, participantCountSnapshot - 1) * 0.65D;\n            return base <= 0 ? base : Math.max(base, (int)Math.ceil(base * coop));\n        }'''', "incident scaled spawn target")'''
-          if old_tail not in s:
-              raise SystemExit('temporary incident tail patcher anchor missing')
-          s = s.replace(old_tail, new_tail, 1)
+
+          label = '"active party snapshot")'
+          pos = s.find(label)
+          if pos < 0:
+              raise SystemExit('active party snapshot label missing')
+          start = s.rfind('t = replace_once(t,', 0, pos)
+          end = s.find('\n', pos) + 1
+          replacement = """anchor = \"            this.rare = rare;\\n            this.bossBar = new ServerBossEvent\"\npos = t.rfind(anchor)\nif pos < 0:\n    raise SystemExit(\"active party snapshot anchor missing\")\nt = t[:pos] + anchor.replace(\"            this.bossBar\", \"            this.participantCountSnapshot = Math.max(1, participantCountSnapshot);\\n            this.bossBar\") + t[pos + len(anchor):]\n"""
+          s = s[:start] + replacement + s[end:]
+
+          label = '"incident scaled spawn target")'
+          pos = s.find(label)
+          if pos < 0:
+              raise SystemExit('incident scaled spawn target label missing')
+          start = s.rfind('t = replace_section(t,', 0, pos)
+          end = s.find('\n', pos) + 1
+          replacement = """t = replace_section(t,\n\"        int spawnTarget() {\",\n\"    }\\n}\",\n'''        int spawnTarget() {\n            int base = incident.spawnCount();\n            if (rare && base > 0) base = Math.max(base + 2, (base * 3 + 1) / 2);\n            double coop = 1.0D + Math.min(4, participantCountSnapshot - 1) * 0.65D;\n            return base <= 0 ? base : Math.max(base, (int)Math.ceil(base * coop));\n        }''', \"incident scaled spawn target\")\n"""
+          s = s[:start] + replacement + s[end:]
           p.write_text(s, encoding='utf-8')
           PY
 
