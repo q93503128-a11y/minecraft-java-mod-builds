@@ -1,0 +1,44 @@
+name: Manual Audit Frontier Runtime Pattern Scan
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/manual-audit-frontier-runtime-pattern-scan.yml'
+      - 'projects/frontier-settlement/src/main/java/**'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Scan risky runtime patterns
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement')
+          patterns = {
+              'INVULNERABLE_TRUE': 'setInvulnerable(true)',
+              'NOAI_TRUE': 'setNoAi(true)',
+              'DIRECT_STORAGE_EXTRACT': 'SettlementStorageService.findExtractionTarget(',
+              'DIRECT_STORAGE_DEPOSIT': 'SettlementStorageService.findDepositTarget(',
+              'DIRECT_MOVE_SOURCE': 'getNavigation().moveTo(source.getX()',
+              'DIRECT_MOVE_TARGET': 'getNavigation().moveTo(target.getX()',
+              'DIRECT_MOVE_STOCK': 'getNavigation().moveTo(stock.getX()',
+              'DISCARD_ENTITY': '.discard();',
+          }
+          totals = {key: 0 for key in patterns}
+          for path in sorted(root.rglob('*.java')):
+              lines = path.read_text(encoding='utf-8').splitlines()
+              for lineno, line in enumerate(lines, 1):
+                  for key, token in patterns.items():
+                      if token in line:
+                          totals[key] += 1
+                          print(f'{key}|{path.relative_to(root)}:{lineno}|{line.strip()}')
+          print('SUMMARY|' + '|'.join(f'{key}={value}' for key, value in totals.items()))
+          PY
