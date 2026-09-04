@@ -12,13 +12,14 @@ public final class SettlementInventory {
 
     public static long countWood(Container container) { return count(container, SettlementInventory::isWood); }
     public static long countStone(Container container) { return count(container, SettlementInventory::isStone); }
-    public static long countFood(Container container) { return count(container, SettlementInventory::isFood); }
+    public static long countMetal(Container container) { return countValue(container, SettlementInventory::metalValue); }
+    public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }
 
     public static boolean consume(Container container, long wood, long stone, long food) {
         if (countWood(container) < wood || countStone(container) < stone || countFood(container) < food) return false;
         consumeMatching(container, wood, SettlementInventory::isWood);
         consumeMatching(container, stone, SettlementInventory::isStone);
-        consumeMatching(container, food, SettlementInventory::isFood);
+        consumeValue(container, food, SettlementInventory::foodValue);
         container.setChanged();
         return true;
     }
@@ -65,6 +66,25 @@ public final class SettlementInventory {
     /** Metal participates in the same exclusive physical-resource classification as wood/stone/food. */
     public static boolean isMetalResource(ItemStack stack) {
         return exclusiveResource(stack, RESOURCE_METAL);
+    }
+
+    /** Physical-resource unit values shared with Survival Ascension. */
+    public static int metalValue(ItemStack stack) {
+        if (!isMetalResource(stack)) return 0;
+        if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;
+        if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;
+        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;
+        return 2;
+    }
+
+    public static int foodValue(ItemStack stack) {
+        if (!isFood(stack)) return 0;
+        if (stack.is(Items.WHEAT)) return 1;
+        if (stack.is(Items.GOLDEN_APPLE)) return 12;
+        if (stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 24;
+        var food = stack.get(DataComponents.FOOD);
+        if (food != null) return Math.max(1, Math.min(12, food.nutrition()));
+        return 1;
     }
 
     /**
@@ -136,6 +156,30 @@ public final class SettlementInventory {
             if (!stack.isEmpty() && predicate.test(stack)) total += stack.getCount();
         }
         return total;
+    }
+
+    private static long countValue(Container container, java.util.function.ToIntFunction<ItemStack> valuation) {
+        long total = 0L;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (stack.isEmpty()) continue;
+            total += (long)Math.max(0, valuation.applyAsInt(stack)) * stack.getCount();
+        }
+        return total;
+    }
+
+    private static void consumeValue(Container container, long amount,
+                                     java.util.function.ToIntFunction<ItemStack> valuation) {
+        long left = amount;
+        for (int unit = 1; unit <= 24 && left > 0L; unit++) {
+            for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;
+                int take = (int)Math.min(stack.getCount(), (left + unit - 1L) / unit);
+                stack.shrink(take);
+                left -= (long)take * unit;
+            }
+        }
     }
 
     private static void consumeMatching(Container container, long amount,

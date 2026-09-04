@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 public final class SettlementStorageService {
     // Alpha.91 used these cells as a vanilla-barrel public-storage cluster. Keep the layout
@@ -220,10 +221,7 @@ public final class SettlementStorageService {
             wood += SettlementInventory.countWood(container);
             stone += SettlementInventory.countStone(container);
             food += SettlementInventory.countFood(container);
-            for (int slot = 0; slot < container.getContainerSize(); slot++) {
-                ItemStack stack = container.getItem(slot);
-                if (!stack.isEmpty() && isMetalStack(stack)) metal += stack.getCount();
-            }
+            metal += SettlementInventory.countMetal(container);
         }
         return new SettlementResources(wood, stone, metal, food);
     }
@@ -239,7 +237,7 @@ public final class SettlementStorageService {
         if (resources.wood() < wood || resources.stone() < stone || resources.food() < food) return false;
         remove(level, positions, wood, SettlementInventory::isWood);
         remove(level, positions, stone, SettlementInventory::isStone);
-        remove(level, positions, food, SettlementInventory::isFood);
+        removeValue(level, positions, food, SettlementInventory::foodValue);
         return true;
     }
 
@@ -249,7 +247,7 @@ public final class SettlementStorageService {
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.metal() < amount) return false;
-        remove(level, positions, amount, SettlementStorageService::isMetalStack);
+        removeValue(level, positions, amount, SettlementInventory::metalValue);
         return true;
     }
 
@@ -260,8 +258,8 @@ public final class SettlementStorageService {
         if (!allStorageChunksLoaded(level, positions)) return false;
         SettlementResources resources = scan(level, data);
         if (resources.metal() < metal || resources.food() < food) return false;
-        remove(level, positions, metal, SettlementStorageService::isMetalStack);
-        remove(level, positions, food, SettlementInventory::isFood);
+        removeValue(level, positions, metal, SettlementInventory::metalValue);
+        removeValue(level, positions, food, SettlementInventory::foodValue);
         return true;
     }
 
@@ -427,6 +425,28 @@ public final class SettlementStorageService {
             if (ItemStack.isSameItemSameComponents(current, incoming) && current.getCount() < current.getMaxStackSize()) return true;
         }
         return false;
+    }
+
+    private static void removeValue(ServerLevel level, List<BlockPos> positions,
+                                    long amount, ToIntFunction<ItemStack> valuation) {
+        long left = amount;
+        // Lower-value stock is consumed first; scarce gold or rare food remains a last resort.
+        for (int unit = 1; unit <= 24 && left > 0L; unit++) {
+            for (BlockPos pos : positions) {
+                if (left <= 0L) break;
+                if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+                boolean changed = false;
+                for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
+                    ItemStack stack = container.getItem(slot);
+                    if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;
+                    int take = (int)Math.min(stack.getCount(), (left + unit - 1L) / unit);
+                    stack.shrink(take);
+                    left -= (long)take * unit;
+                    changed = true;
+                }
+                if (changed) container.setChanged();
+            }
+        }
     }
 
     private static void remove(ServerLevel level, List<BlockPos> positions,
