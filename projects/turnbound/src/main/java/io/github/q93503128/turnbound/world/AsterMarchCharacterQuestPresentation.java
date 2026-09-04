@@ -107,10 +107,16 @@ public final class AsterMarchCharacterQuestPresentation {
         return false;
     }
 
-    public static void remove(ServerPlayer player) {
-        if (player == null || !(player.level() instanceof ServerLevel level)) return;
+    /** Despawns only visual companions during combat while preserving completion baselines for the current session. */
+    public static void cancelForBattle(ServerLevel level, ServerPlayer player) {
+        if (level == null || player == null) return;
         Map<String, Bundle> bundles = BUNDLES.remove(player.getUUID());
         if (bundles != null) for (Bundle bundle : bundles.values()) despawn(level, bundle);
+    }
+
+    public static void remove(ServerPlayer player) {
+        if (player == null || !(player.level() instanceof ServerLevel level)) return;
+        cancelForBattle(level, player);
         SEEN_COMPLETED.remove(player.getUUID());
     }
 
