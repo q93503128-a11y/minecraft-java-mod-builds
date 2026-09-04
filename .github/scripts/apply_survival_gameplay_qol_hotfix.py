@@ -92,10 +92,26 @@ if s.count(old) != 1:
     raise SystemExit('GuideScreen fishing effect anchor drift')
 guide.write_text(s.replace(old, new, 1), encoding='utf-8')
 
+# Command/status output must remain exhaustive after adding the skill.
+commands = java / 'command/AscensionCommands.java'
+s = commands.read_text(encoding='utf-8')
+old = '''            case HARVESTING -> "범위 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level)
+                    + " | 속도 " + fmt(SkillTuning.harvestingSpeedMultiplier(level));
+            case COMBAT -> "피해 " + fmt(SkillTuning.combatDamageMultiplier(level))
+'''
+new = '''            case HARVESTING -> "범위 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level)
+                    + " | 속도 " + fmt(SkillTuning.harvestingSpeedMultiplier(level));
+            case FISHING -> "낚싯대 마모 방지 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D) + "%";
+            case COMBAT -> "피해 " + fmt(SkillTuning.combatDamageMultiplier(level))
+'''
+if s.count(old) != 1:
+    raise SystemExit('AscensionCommands fishing status anchor drift')
+commands.write_text(s.replace(old, new, 1), encoding='utf-8')
+
 audit = root / 'tools/test_gameplay_qol_061.py'
 s = audit.read_text(encoding='utf-8')
 anchor = 'mining_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java")\n'
-insert = anchor + 'expedition_action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")\nexpedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")\nguide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")\n'
+insert = anchor + 'expedition_action = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionAction.java")\nexpedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")\nguide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")\ncommands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")\n'
 if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition read anchor drift')
 s = s.replace(anchor, insert, 1)
@@ -106,10 +122,11 @@ need(mining, ["if (centerState.is(VALUABLE_ORES)) {", "if (veinLimit > 1) breakC
 need(mining_ui, ["광석=동종만 / 일반=굴착", "광석=동종만"], "ore-safe mining UI")
 need(ui, ["ROW_HEIGHT = 24", "LIST_TOP = 38", "barTop = top + 20"], "seven-skill compact layout")
 need(guide, ["case FISHING", "fishingRodPreservationChance"], "fishing guide stats")
+need(commands, ["case FISHING", "낚싯대 마모 방지"], "fishing command status")
 '''
 if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition check anchor drift')
 s = s.replace('need(mining_ui, ["광석=같은 종류 광맥", "광석=같은 종류 광맥 보호"], "ore-safe mining UI")\n', '')
 audit.write_text(s.replace(anchor, checks, 1), encoding='utf-8')
 
-print('FISHING UI + EXPEDITION + STRICT ORE-SAFETY HOTFIX APPLIED')
+print('FISHING COMMAND/UI + EXPEDITION + STRICT ORE-SAFETY HOTFIX APPLIED')
