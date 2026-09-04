@@ -83,22 +83,26 @@ final class CoreHeroVfx {
             }
 
             case P04_HEAL -> {
+                // Canon: no hearts. Thin ivory/green-ish light gathers inward toward the wound.
                 line(level, ParticleTypes.END_ROD, source.add(0, 1.15, 0), target.add(0, 1.05, 0), 8);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 0.30, 0), 0.56, 13);
-                burst(level, ParticleTypes.HEART, target.add(0, 1.02, 0), 5, 0.28, 0.42, 0.28, 0.02);
+                ring(level, ParticleTypes.ENCHANT, target.add(0, 0.82, 0), 0.34, 10);
+                inwardStrands(level, target.add(0, 1.02, 0), 0.54, 8);
             }
             case P04_RETURNED_BREATH -> {
                 line(level, ParticleTypes.END_ROD, source.add(0, 1.20, 0), target.add(0, 1.05, 0), 10);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 0.28, 0), 0.82, 18);
                 ring(level, ParticleTypes.ENCHANT, target.add(0, 1.12, 0), 0.94, 22);
                 ring(level, ParticleTypes.END_ROD, target.add(0, 1.58, 0), 0.50, 13);
+                inwardStrands(level, target.add(0, 1.05, 0), 0.86, 12);
                 burst(level, ParticleTypes.END_ROD, target.add(0, 1.0, 0), 18, 0.38, 0.62, 0.38, 0.025);
             }
             case P04_RESTING_LIGHT -> {
-                // Canon: party-wide heal. Each resolved ally receives the same warm grammar.
+                // Canon: party-wide heal, same thin-light grammar for every resolved ally; never heart particles.
                 ring(level, ParticleTypes.END_ROD, target.add(0, 0.22, 0), 0.76, 18);
                 ring(level, ParticleTypes.ENCHANT, target.add(0, 0.92, 0), 0.58, 14);
-                burst(level, ParticleTypes.HEART, target.add(0, 1.02, 0), 6, 0.34, 0.48, 0.34, 0.02);
+                inwardStrands(level, target.add(0, 1.02, 0), 0.66, 10);
+                burst(level, ParticleTypes.END_ROD, target.add(0, 1.08, 0), 8, 0.28, 0.48, 0.28, 0.018);
             }
 
             case P05_SUPPRESSIVE_SHOT -> {
@@ -186,6 +190,15 @@ final class CoreHeroVfx {
     private static void generic(ServerLevel level, Vec3 source, Vec3 target, boolean damaging) {
         ParticleOptions type = damaging ? ParticleTypes.CRIT : ParticleTypes.ENCHANT;
         line(level, type, source.add(0, 1.0, 0), target.add(0, 1.0, 0), damaging ? 8 : 5);
+    }
+
+    /** Radial thin strands converge toward Elysia's heal target; avoids icon-like heart feedback. */
+    private static void inwardStrands(ServerLevel level, Vec3 center, double radius, int spokes) {
+        for (int i = 0; i < spokes; i++) {
+            double angle = Math.PI * 2 * i / spokes;
+            Vec3 outer = center.add(Math.cos(angle) * radius, (i % 2 == 0 ? 0.34 : -0.22), Math.sin(angle) * radius);
+            line(level, i % 2 == 0 ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT, outer, center, 4);
+        }
     }
 
     private static void line(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 to, int steps) {
