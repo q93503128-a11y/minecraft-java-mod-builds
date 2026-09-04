@@ -1,0 +1,213 @@
+name: Manual Frontier Survival Final Audit
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/manual-frontier-survival-final-audit.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  final-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Final source and lifecycle audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+
+          roots = [
+              Path('projects/frontier-settlement/src/main/java'),
+              Path('projects/survival-ascension/src/main/java'),
+          ]
+          files = [p for r in roots for p in r.rglob('*.java')]
+          lines = sum(len(p.read_text(encoding='utf-8').splitlines()) for p in files)
+          print(f'FINAL_JAVA_AUDIT {len(files)} files {lines} lines')
+
+          hard = []
+          soft = []
+          static_runtime = []
+          saved = []
+          client_link = []
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              rel = p.as_posix()
+              if re.search(r'\b(TODO|FIXME|XXX)\b', s):
+                  hard.append(f'marker:{rel}')
+              if re.search(r'catch\s*\(\s*(?:Exception|Throwable)\b', s):
+                  hard.append(f'broad-catch:{rel}')
+              if re.search(r'static\s+final\s+ItemStack\b', s):
+                  hard.append(f'static-itemstack:{rel}')
+              if ('System.currentTimeMillis(' in s or 'System.nanoTime(' in s) and '/client/' not in rel:
+                  hard.append(f'wall-clock-gameplay:{rel}')
+              if re.search(r'\b(new\s+Thread|Thread\.sleep|CompletableFuture\.(?:runAsync|supplyAsync))\b', s):
+                  hard.append(f'async-gameplay:{rel}')
+              if 'net.minecraft.client.' in s and '/client/' not in rel:
+                  client_link.append(rel)
+              if re.search(r'private\s+static\s+final\s+(?:Map|Set|List)<', s):
+                  static_runtime.append((rel, 'onServerStopping' in s))
+              if 'SavedData' in s:
+                  saved.append((rel, s.count('setDirty('), s.count('.setDirty(')))
+              if re.search(r'\bsetChunkForced\s*\(|\bforceChunk\s*\(', s):
+                  soft.append(f'force-chunk-review:{rel}')
+
+          if client_link:
+              hard += [f'common-client-link:{x}' for x in client_link]
+
+          print('STATIC_RUNTIME_STATE')
+          for rel, stop in static_runtime:
+              print(f'  {rel} serverStopHook={stop}')
+          print('SAVED_DATA_SURVEY')
+          for row in saved:
+              print(' ', row)
+          if soft:
+              print('SOFT_FINDINGS')
+              for x in soft: print(' ', x)
+          if hard:
+              print('HARD_FINDINGS')
+              for x in hard: print(' ', x)
+              sys.exit(1)
+          print('FINAL_STATIC_CONTRACT_OK')
+          PY
+          git diff --check
+
+      - name: Mutation and persistence callsite audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== SavedData/data access classes ==='
+          grep -R -n -E 'SavedData|computeIfAbsent|setDirty\(' \
+            projects/frontier-settlement/src/main/java \
+            projects/survival-ascension/src/main/java | head -n 700 || true
+          echo '=== Runtime world mutation callsites ==='
+          grep -R -n -E 'setBlockAndUpdate\(|destroyBlock\(|removeBlock\(|discard\(\)|shrink\(|consume[A-Z]' \
+            projects/frontier-settlement/src/main/java \
+            projects/survival-ascension/src/main/java | head -n 900 || true
+          echo '=== Entity scan callsites ==='
+          grep -R -n -E 'getEntitiesOfClass\(|getEntities\(' \
+            projects/frontier-settlement/src/main/java \
+            projects/survival-ascension/src/main/java | head -n 500 || true
+          echo '=== Static mutable runtime holders ==='
+          grep -R -n -E 'private static final (Map|Set|List)<' \
+            projects/frontier-settlement/src/main/java \
+            projects/survival-ascension/src/main/java | head -n 500 || true
+
+      - name: Resource JSON audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' f; do
+            python3 -m json.tool "$f" >/dev/null
+            count=$((count+1))
+          done < <(find projects/frontier-settlement/src/main/resources projects/survival-ascension/src/main/resources -type f -name '*.json' -print0)
+          echo "FINAL_JSON_OK $count files"
+
+      - name: Frontier Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+
+      - name: Frontier dedicated server boot smoke
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          set +e
+          timeout --signal=INT --kill-after=15s 120s ./gradlew --no-daemon runServer > /tmp/frontier-server.log 2>&1
+          code=$?
+          set -e
+          tail -n 180 /tmp/frontier-server.log
+          if grep -Eq 'Done \([0-9.]+s\)!|For help, type "help"' /tmp/frontier-server.log; then
+            echo FRONTIER_SERVER_BOOT_OK
+          else
+            echo "Frontier server did not reach ready state (exit=$code)"
+            exit 1
+          fi
+
+      - name: Survival dedicated server boot smoke
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          set +e
+          timeout --signal=INT --kill-after=15s 150s ./gradlew --no-daemon runServer > /tmp/survival-server.log 2>&1
+          code=$?
+          set -e
+          tail -n 220 /tmp/survival-server.log
+          if grep -Eq 'Done \([0-9.]+s\)!|For help, type "help"' /tmp/survival-server.log; then
+            echo SURVIVAL_SERVER_BOOT_OK
+          else
+            echo "Survival server did not reach ready state (exit=$code)"
+            exit 1
+          fi
+
+      - name: JAR and metadata final audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          F=$(find projects/frontier-settlement/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*sources*' ! -name '*javadoc*' | head -n1)
+          S=$(find projects/survival-ascension/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*sources*' ! -name '*javadoc*' | head -n1)
+          for jarfile in "$F" "$S"; do
+            test -s "$jarfile"
+            dup=$(jar tf "$jarfile" | sort | uniq -d | head -n1 || true)
+            test -z "$dup"
+            unzip -p "$jarfile" META-INF/neoforge.mods.toml >/tmp/modmeta.toml 2>/dev/null || true
+            echo "FINAL_JAR_OK $jarfile $(stat -c%s "$jarfile") bytes"
+            sha256sum "$jarfile"
+          done
+          jar tf "$F" | grep -Fq 'kr/moonseungjun/frontiersettlement/FrontierSettlement.class'
+          jar tf "$S" | grep -Fq 'kr/moonseungjun/survivalascension/SurvivalAscension.class'
+
+      - name: Package final validated JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p final-artifacts
+          cp projects/frontier-settlement/build/libs/frontier_settlement-*.jar final-artifacts/
+          cp projects/survival-ascension/build/libs/survivalascension-*.jar final-artifacts/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-survival-final-validated-jars
+          path: final-artifacts/*.jar
+          retention-days: 7
+
+      - name: Remove temporary final-audit workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-frontier-survival-final-audit.yml
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add .github/workflows/manual-frontier-survival-final-audit.yml
+          git commit -m 'Complete final Frontier and Survival audit'
+          git pull --rebase origin main
+          git push origin HEAD:main
