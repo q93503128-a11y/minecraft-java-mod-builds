@@ -22,12 +22,12 @@ public final class EnemyPresentationProfile {
     }
 
     private static final Map<String, Skill> SKILLS = Map.ofEntries(
-            // Story fillers.
-            Map.entry("f01_basic", skill(Motion.STRIKE, 13, true)),
-            Map.entry("f02_basic", skill(Motion.CAST, 16, false)),
-            Map.entry("f03_basic", skill(Motion.STRIKE, 13, false)),
+            // Story fillers. These IDs come from the authoritative character definitions, not the loose skill index.
+            Map.entry("f01_wood_sword", skill(Motion.STRIKE, 13, true)),
+            Map.entry("f02_first_aid", skill(Motion.CAST, 16, false)),
+            Map.entry("f03_shot", skill(Motion.STRIKE, 13, false)),
             Map.entry("f03_focus_shot", skill(Motion.CAST, 18, false)),
-            Map.entry("f04_basic", skill(Motion.STRIKE, 14, true)),
+            Map.entry("f04_shield_push", skill(Motion.STRIKE, 14, true)),
             Map.entry("f04_endure", skill(Motion.CAST, 18, false)),
 
             // Southgate / early-route enemies.
