@@ -36,23 +36,65 @@ jobs:
           p = Path('projects/survival-ascension/tools/patch_coop_encounters.py')
           s = p.read_text(encoding='utf-8')
 
-          label = '"active party snapshot")'
-          pos = s.find(label)
-          if pos < 0:
-              raise SystemExit('active party snapshot label missing')
-          start = s.rfind('t = replace_once(t,', 0, pos)
-          end = s.find('\n', pos) + 1
-          replacement = """anchor = \"            this.rare = rare;\\n            this.bossBar = new ServerBossEvent\"\npos = t.rfind(anchor)\nif pos < 0:\n    raise SystemExit(\"active party snapshot anchor missing\")\nt = t[:pos] + anchor.replace(\"            this.bossBar\", \"            this.participantCountSnapshot = Math.max(1, participantCountSnapshot);\\n            this.bossBar\") + t[pos + len(anchor):]\n"""
-          s = s[:start] + replacement + s[end:]
+          def replace_call(label, call_prefix, replacement):
+              global s
+              needle = f'"{label}")'
+              pos = s.find(needle)
+              if pos < 0:
+                  raise SystemExit(f'{label}: label missing')
+              start = s.rfind(call_prefix, 0, pos)
+              if start < 0:
+                  raise SystemExit(f'{label}: call start missing')
+              end = s.find('\n', pos)
+              if end < 0:
+                  end = len(s)
+              else:
+                  end += 1
+              s = s[:start] + replacement.rstrip() + '\n' + s[end:]
 
-          label = '"incident scaled spawn target")'
-          pos = s.find(label)
+          replace_call('active party snapshot', 't = replace_once(t,', '''
+          anchor = "            this.rare = rare;\\n            this.bossBar = new ServerBossEvent"
+          pos = t.rfind(anchor)
           if pos < 0:
-              raise SystemExit('incident scaled spawn target label missing')
-          start = s.rfind('t = replace_section(t,', 0, pos)
-          end = s.find('\n', pos) + 1
-          replacement = """t = replace_section(t,\n\"        int spawnTarget() {\",\n\"    }\\n}\",\n'''        int spawnTarget() {\n            int base = incident.spawnCount();\n            if (rare && base > 0) base = Math.max(base + 2, (base * 3 + 1) / 2);\n            double coop = 1.0D + Math.min(4, participantCountSnapshot - 1) * 0.65D;\n            return base <= 0 ? base : Math.max(base, (int)Math.ceil(base * coop));\n        }''', \"incident scaled spawn target\")\n"""
-          s = s[:start] + replacement + s[end:]
+              raise SystemExit("active party snapshot anchor missing")
+          t = t[:pos] + anchor.replace("            this.bossBar", "            this.participantCountSnapshot = Math.max(1, participantCountSnapshot);\\n            this.bossBar") + t[pos + len(anchor):]
+          ''')
+
+          replace_call('incident scaled spawn target', 't = replace_section(t,', '''
+          t = replace_section(t,
+          "        int spawnTarget() {",
+          "    }\\n}",
+          \'''        int spawnTarget() {
+              int base = incident.spawnCount();
+              if (rare && base > 0) base = Math.max(base + 2, (base * 3 + 1) / 2);
+              double coop = 1.0D + Math.min(4, participantCountSnapshot - 1) * 0.65D;
+              return base <= 0 ? base : Math.max(base, (int)Math.ceil(base * coop));
+          }\''', "incident scaled spawn target")
+          ''')
+
+          replace_call('pending mutable owner', 't = replace_once(t,', '''
+          pending_start = t.index("    private static final class PendingIncident {")
+          active_start = t.index("    private static final class ActiveIncident {", pending_start)
+          segment = t[pending_start:active_start]
+          old = "        final UUID owner;\\n        final ServerLevel level;"
+          if segment.count(old) != 1:
+              raise SystemExit(f"pending mutable owner context count {segment.count(old)}")
+          segment = segment.replace(old, "        UUID owner;\\n        final ServerLevel level;", 1)
+          t = t[:pending_start] + segment + t[active_start:]
+          ''')
+
+          replace_call('pending participants', 't = replace_once(t,', '''
+          pending_start = t.index("    private static final class PendingIncident {")
+          active_start = t.index("    private static final class ActiveIncident {", pending_start)
+          segment = t[pending_start:active_start]
+          old = "        final boolean rare;\\n        final ServerBossEvent bossBar;"
+          new = "        final boolean rare;\\n        final ServerBossEvent bossBar;\\n        final Set<UUID> participants = new HashSet<>();"
+          if segment.count(old) != 1:
+              raise SystemExit(f"pending participants context count {segment.count(old)}")
+          segment = segment.replace(old, new, 1)
+          t = t[:pending_start] + segment + t[active_start:]
+          ''')
+
           p.write_text(s, encoding='utf-8')
           PY
 
