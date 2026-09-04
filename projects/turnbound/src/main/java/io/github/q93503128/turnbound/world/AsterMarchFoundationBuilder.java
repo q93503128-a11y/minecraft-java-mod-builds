@@ -9,9 +9,10 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/** Staged Radia foundation build for a normal generated world. */
 public final class AsterMarchFoundationBuilder {
-    private static final int MIN_X=AsterMarchRegionCatalog.RADIA.minX(), MAX_X=AsterMarchRegionCatalog.RADIA.maxX(), MIN_Z=AsterMarchRegionCatalog.RADIA.minZ(), MAX_Z=AsterMarchRegionCatalog.RADIA.maxZ(), GROUND_Y=65, COLUMNS_PER_TICK=600;
-    private static final BlockPos MARKER_A=new BlockPos(-127,58,-111), MARKER_B=new BlockPos(-126,58,-111), MARKER_C=new BlockPos(-125,58,-111);
+    private static final int MIN_X=AsterMarchRegionCatalog.RADIA.minX(),MAX_X=AsterMarchRegionCatalog.RADIA.maxX(),MIN_Z=AsterMarchRegionCatalog.RADIA.minZ(),MAX_Z=AsterMarchRegionCatalog.RADIA.maxZ(),GROUND_Y=65,COLUMNS_PER_TICK=600;
+    private static final BlockPos MARKER_A=new BlockPos(-127,58,-111),MARKER_B=new BlockPos(-126,58,-111),MARKER_C=new BlockPos(-125,58,-111);
     private static final Map<ServerLevel,State> STATES=new WeakHashMap<>();
     private AsterMarchFoundationBuilder(){}
     public static boolean ready(ServerLevel l){return l.getBlockState(MARKER_A).is(Blocks.LODESTONE)&&l.getBlockState(MARKER_B).is(Blocks.EMERALD_BLOCK)&&l.getBlockState(MARKER_C).is(Blocks.GOLD_BLOCK);}
