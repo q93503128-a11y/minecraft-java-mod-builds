@@ -1,0 +1,71 @@
+name: Manual Survival Single Mining Expedition UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-single-mining-expedition-ui.yml'
+      - 'projects/survival-ascension/tools/patch_single_mining_expedition_ui.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply patch
+        run: python3 projects/survival-ascension/tools/patch_single_mining_expedition_ui.py
+
+      - name: Current source regression
+        working-directory: projects/survival-ascension
+        run: python3 tools/test_current_source.py
+
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+
+      - name: Verify JAR
+        run: python3 projects/survival-ascension/tools/verify_jar.py projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+
+      - name: Commit validated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mining/MiningMode.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/ClientExpeditionState.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/ExpeditionScreen.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/ExpeditionSnapshotPayload.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/ExpeditionSnapshotRequestPayload.java \
+            projects/survival-ascension/src/main/resources/assets/survivalascension/lang/ko_kr.json
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit'
+            exit 0
+          fi
+          git commit -m 'Add single mining mode and expedition journal UI'
+          git pull --rebase origin main
+          git push origin HEAD:main
