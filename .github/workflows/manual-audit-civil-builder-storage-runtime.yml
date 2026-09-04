@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/manual-audit-civil-builder-storage-runtime.yml'
       - 'projects/frontier-settlement/tools/patch_civil_builder_storage_runtime.py'
+      - 'projects/frontier-settlement/tools/patch_civil_builder_storage_runtime_v2.py'
 
 permissions:
   contents: write
@@ -28,7 +29,7 @@ jobs:
           java-version: '25'
 
       - name: Apply civil builder storage/runtime hardening
-        run: python3 projects/frontier-settlement/tools/patch_civil_builder_storage_runtime.py
+        run: python3 projects/frontier-settlement/tools/patch_civil_builder_storage_runtime_v2.py
 
       - name: Frontier source audit
         working-directory: projects/frontier-settlement
