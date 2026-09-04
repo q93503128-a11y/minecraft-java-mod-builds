@@ -28,10 +28,10 @@ public final class ExpeditionProgression {
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.isCreative() || player.isSpectator()) return;
-        if (player.tickCount % 20 != 0 || !(player.level() instanceof ServerLevel)) return;
+        if (player.tickCount % 5 != 0 || !(player.level() instanceof ServerLevel)) return;
 
         ExpeditionRegion current = currentRegion(player);
-        if (current != null) ensureDiscovered(player, current);
+        if (player.tickCount % 20 == 0 && current != null) ensureDiscovered(player, current);
         trackOceanVoyage(player, current);
     }
 
@@ -100,18 +100,28 @@ public final class ExpeditionProgression {
         Vec3 pos = player.position();
         ResourceKey<Level> dimension = player.level().dimension();
         VoyageState old = OCEAN_VOYAGE.get(uuid);
-        OCEAN_VOYAGE.put(uuid, new VoyageState(dimension, pos.x, pos.z));
-        if (current != ExpeditionRegion.OCEAN) return;
-        if (!(player.isPassenger() || player.isSwimming() || player.isInWater())) return;
-        if (old == null || !old.dimension.equals(dimension)) return;
+        if (old == null || !old.dimension.equals(dimension)) {
+            OCEAN_VOYAGE.put(uuid, new VoyageState(dimension, pos.x, pos.y, pos.z, 0.0D));
+            return;
+        }
+
         double dx = pos.x - old.x;
+        double dy = pos.y - old.y;
         double dz = pos.z - old.z;
-        double distance = Math.sqrt(dx * dx + dz * dz);
-        if (distance < 0.25D || distance > 24.0D) return;
-        int amount = Math.max(1, (int) Math.floor(distance));
-        addObjectiveProgress(player, ExpeditionRegion.OCEAN, ExpeditionAction.OCEAN_VOYAGE, amount);
-        ExpeditionIncidentSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
-        ExpeditionOperationSystem.recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
+        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        boolean voyageMovement = current == ExpeditionRegion.OCEAN
+                && (player.isPassenger() || player.isSwimming() || player.isInWater())
+                && distance >= 0.01D
+                && distance <= 8.0D;
+        double bank = current == ExpeditionRegion.OCEAN ? old.bank : 0.0D;
+        if (voyageMovement) bank += distance;
+
+        int amount = (int) Math.floor(bank);
+        if (amount > 0) {
+            bank -= amount;
+            recordAction(player, ExpeditionAction.OCEAN_VOYAGE, amount);
+        }
+        OCEAN_VOYAGE.put(uuid, new VoyageState(dimension, pos.x, pos.y, pos.z, bank));
     }
 
     private static ExpeditionRegion matchingRegion(Holder<Biome> biome, int worldStage) {
@@ -202,5 +212,5 @@ public final class ExpeditionProgression {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
-    private record VoyageState(ResourceKey<Level> dimension, double x, double z) {}
+    private record VoyageState(ResourceKey<Level> dimension, double x, double y, double z, double bank) {}
 }

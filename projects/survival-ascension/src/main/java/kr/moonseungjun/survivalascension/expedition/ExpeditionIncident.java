@@ -35,9 +35,9 @@ public enum ExpeditionIncident {
             "minecraft:pillager", "minecraft:skeleton", "minecraft:spider"),
 
     OCEAN_AMBUSH(ExpeditionRegion.OCEAN, "익사자 습격", 1200, 6, "minecraft:drowned"),
-    OCEAN_RUSH(ExpeditionRegion.OCEAN, "폭풍 항해", 900, ExpeditionAction.OCEAN_VOYAGE, 180),
+    OCEAN_RUSH(ExpeditionRegion.OCEAN, "폭풍 항해", 900, ExpeditionAction.OCEAN_VOYAGE, 80),
     OCEAN_FRONTIER_AMBUSH(ExpeditionRegion.OCEAN, "난류 익사자 떼", 1200, 7, "minecraft:drowned"),
-    OCEAN_FRONTIER_RUSH(ExpeditionRegion.OCEAN, "외해 돌파", 900, ExpeditionAction.OCEAN_VOYAGE, 240),
+    OCEAN_FRONTIER_RUSH(ExpeditionRegion.OCEAN, "외해 돌파", 900, ExpeditionAction.OCEAN_VOYAGE, 110),
 
     DEEP_AMBUSH(ExpeditionRegion.DEEP, "심층 군집", 1200, 7, "minecraft:zombie", "minecraft:skeleton", "minecraft:spider"),
     DEEP_RUSH(ExpeditionRegion.DEEP, "붕괴 전 채굴", 900, ExpeditionAction.BLOCKS_MINED, 48),
@@ -46,8 +46,8 @@ public enum ExpeditionIncident {
     DEEP_FRONTIER_RUSH(ExpeditionRegion.DEEP, "공명 광맥 긴급 굴착", 900, ExpeditionAction.BLOCKS_MINED, 64),
 
     FROZEN_AMBUSH(ExpeditionRegion.FROZEN, "설원 습격", 1200, 6, "minecraft:stray", "minecraft:skeleton"),
-    FROZEN_RUSH(ExpeditionRegion.FROZEN, "빙설 강행군", 900, ExpeditionAction.TRAVEL_DISTANCE, 180),
-    FROZEN_FRONTIER_RUSH(ExpeditionRegion.FROZEN, "눈보라 강행군", 900, ExpeditionAction.TRAVEL_DISTANCE, 220),
+    FROZEN_RUSH(ExpeditionRegion.FROZEN, "빙설 강행군", 900, ExpeditionAction.TRAVEL_DISTANCE, 120),
+    FROZEN_FRONTIER_RUSH(ExpeditionRegion.FROZEN, "눈보라 강행군", 900, ExpeditionAction.TRAVEL_DISTANCE, 150),
     FROZEN_FRONTIER_AMBUSH(ExpeditionRegion.FROZEN, "설맹 포위", 1200, 6,
             "minecraft:stray", "minecraft:skeleton", "minecraft:spider"),
 
@@ -58,7 +58,7 @@ public enum ExpeditionIncident {
     NETHER_FRONTIER_RUSH(ExpeditionRegion.NETHER, "화산맥 긴급 굴착", 900, ExpeditionAction.BLOCKS_MINED, 64),
 
     END_AMBUSH(ExpeditionRegion.END, "공허 습격", 1200, 7, "minecraft:endermite", "minecraft:shulker"),
-    END_RUSH(ExpeditionRegion.END, "공허 추적", 900, ExpeditionAction.TRAVEL_DISTANCE, 180),
+    END_RUSH(ExpeditionRegion.END, "공허 추적", 900, ExpeditionAction.TRAVEL_DISTANCE, 120),
     END_FRONTIER_RUSH(ExpeditionRegion.END, "공허 균열 사냥", 900, ExpeditionAction.HOSTILES_KILLED, 10),
     END_FRONTIER_AMBUSH(ExpeditionRegion.END, "균열 포위", 1200, 7,
             "minecraft:endermite", "minecraft:shulker");
