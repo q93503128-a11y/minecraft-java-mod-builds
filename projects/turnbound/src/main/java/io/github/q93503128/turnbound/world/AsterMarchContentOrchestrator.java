@@ -33,6 +33,7 @@ public final class AsterMarchContentOrchestrator {
         AsterMarchApproachAtmosphere.tick(level, player);
         AsterMarchProgressStaging.tick(level, player);
         AsterMarchFieldIncidents.sync(level, player);
+        AsterMarchFieldSequences.tick(level, player);
         AsterMarchPartyFieldBarks.tick(level, player);
         AsterMarchCharacterMilestones.tick(level, player);
         CharacterQuestWorldSites.sync(level, player);
@@ -58,6 +59,7 @@ public final class AsterMarchContentOrchestrator {
         AsterMarchStoryScenes.remove(player);
         AsterMarchProgressStaging.remove(player);
         AsterMarchFieldIncidents.remove(player);
+        AsterMarchFieldSequences.remove(player);
         AsterMarchPartyFieldBarks.remove(player);
         AsterMarchCharacterMilestones.remove(player);
         AsterMarchCharacterQuestPresentation.remove(player);
