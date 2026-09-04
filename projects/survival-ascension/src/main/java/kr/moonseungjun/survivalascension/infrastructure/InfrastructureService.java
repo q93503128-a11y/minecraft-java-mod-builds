@@ -152,13 +152,13 @@ public final class InfrastructureService {
                 player.sendSystemMessage(Component.literal("§a[물리 준공] §f실제 월드의 준공 현장을 확인한 뒤 마지막 자원 투입까지 완료했습니다."));
             }
             if (project == InfrastructureProject.CIVIL_WORKS) {
-                player.sendSystemMessage(Component.literal("§6[토목 시공] §f건축 Lv.60부터 M → 건축 → 도로/교량. 바라보는 방향으로 같은 실제 블록을 3폭 장거리 바닥으로 시공합니다."));
+                player.sendSystemMessage(Component.literal("§6[토목 시공] §f건축 Lv.60부터 K → 건축 → 도로/교량. 바라보는 방향으로 같은 실제 블록을 3폭 장거리 바닥으로 시공합니다."));
             } else if (project == InfrastructureProject.INDUSTRIAL_WORKS) {
                 player.sendSystemMessage(Component.literal("§3[산업 생산망] §f이제 4계통 생산 → 물류 거점/창고군 → 물리 전초기지 → 물리 화물 수레 → 전초/요새 방어 → 원정 작전/현장 복귀까지 확장할 수 있습니다."));
             } else if (project == InfrastructureProject.APEX_TRACKING_POST) {
-                player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 M → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
+                player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이제 완수한 원정권 안에서 K → 인프라 → 정점 추적소를 다시 선택하면 그 지역의 정점 강적을 추적합니다."));
             } else if (project == InfrastructureProject.ASCENSION_NEXUS) {
-                player.sendSystemMessage(Component.literal("§5[승천 중추] §f이제 M → 인프라 → 승천 중추를 다시 선택하면 반복 승천 시련을 열 수 있습니다. §7최후의 승천 준비 현황은 인프라 → 진행도에서 확인합니다."));
+                player.sendSystemMessage(Component.literal("§5[승천 중추] §f이제 K → 인프라 → 승천 중추를 다시 선택하면 반복 승천 시련을 열 수 있습니다. §7최후의 승천 준비 현황은 인프라 → 진행도에서 확인합니다."));
             }
         }
     }

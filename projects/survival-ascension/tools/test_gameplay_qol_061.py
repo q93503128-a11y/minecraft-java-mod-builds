@@ -30,6 +30,10 @@ expedition_action = read("src/main/java/kr/moonseungjun/survivalascension/expedi
 expedition_progression = read("src/main/java/kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.java")
 guide = read("src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java")
 commands = read("src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java")
+harvesting = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.java")
+expedition_screen = read("src/main/java/kr/moonseungjun/survivalascension/client/ExpeditionScreen.java")
+elite = read("src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java")
+client = read("src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java")
 
 need(skill, ['FISHING("fishing", "낚시"'], "fishing skill enum")
 need(tuning, ["if (level < 30) return 430L + 15L * (level - 20);", "fishingRodPreservationChance", "case FISHING"], "post20 XP/fishing tuning")
@@ -51,6 +55,12 @@ need(mining_ui, ["광석=동종만 / 일반=굴착", "광석=동종만"], "ore-s
 need(ui, ["ROW_HEIGHT = 24", "LIST_TOP = 38", "barTop = top + 20"], "seven-skill compact layout")
 need(guide, ["case FISHING", "fishingRodPreservationChance"], "fishing guide stats")
 need(commands, ["case FISHING", "낚싯대 마모 방지"], "fishing command status")
+need(harvesting, ["AutomatedToolBreak.destroyWithReducedWear(player, target)"], "reduced-wear area harvesting")
+need(helper, ["WEAR_TOOL_KEY", "BuiltInRegistries.ITEM.getKey(tool.getItem())", "if (!toolId.equals(bankToolId))"], "per-tool-type bulk wear bank")
+need(expedition_screen, ["public void tick()", "refreshTicker < 20", "new ExpeditionSnapshotRequestPayload()"], "live expedition screen refresh")
+need(elite, ["onServerStopping(ServerStoppingEvent event)", "remove.add(entry.getKey())"], "mythic runtime server lifecycle")
+need(main, ["EliteMobSystem::onServerStopping"], "mythic stop listener wiring")
+need(client, ["InputConstants.KEY_K", "InputConstants.KEY_J", "InputConstants.KEY_V"], "canonical client keys")
 if "destroyWithoutAdditionalWear" in helper + mining + bore + wood:
     errors.append("obsolete zero-wear bulk helper remains")
 

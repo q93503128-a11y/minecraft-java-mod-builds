@@ -52,7 +52,7 @@ public final class MiningProgression {
             player.sendSystemMessage(Component.literal("§6[Survival Ascension] §f행동으로 숙련을 올리면 작업 규모 자체가 커집니다."));
             player.sendSystemMessage(Component.literal("§b채굴 §fLv.10 3×3 · Lv.30 광맥 · Lv.60 7×7 · Lv.90 9×9+추출"));
             player.sendSystemMessage(Component.literal("§6인프라 §f공동 자원을 투입해 채석장 네트워크·관개 시설 같은 후반 행동을 해금합니다."));
-            player.sendSystemMessage(Component.literal("§7M 메뉴에서 모드/인프라를 고를 수 있고, 웅크리면 항상 정밀 작업합니다."));
+            player.sendSystemMessage(Component.literal("§7K 메뉴에서 모드/인프라를 고를 수 있고, 웅크리면 항상 정밀 작업합니다."));
         }
     }
 
@@ -143,7 +143,7 @@ public final class MiningProgression {
             return;
         }
         if (mode == MiningMode.BORE && !InfrastructureData.get(player).isComplete(InfrastructureProject.QUARRY_NETWORK)) {
-            player.sendSystemMessage(Component.literal("§c[채굴] §f터널 모드는 §eM→인프라→채석장 네트워크§f 완공이 필요합니다."));
+            player.sendSystemMessage(Component.literal("§c[채굴] §f터널 모드는 §eK→인프라→채석장 네트워크§f 완공이 필요합니다."));
             return;
         }
         player.getPersistentData().putString(MODE_KEY, mode.id());
@@ -226,7 +226,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {
         if (!result.leveledUp()) return;
         int oldLevel = result.oldLevel(), newLevel = result.newLevel();
-        if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f3×3 굴착 + M→채굴→굴착 모드"));
+        if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f3×3 굴착 + K→채굴→굴착 모드"));
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f5×5 + 연결 광맥 24 + 광맥 전용 모드"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f7×7 + 연결 광맥 64"));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f9×9 + 광맥128 + 추출. 채석장 네트워크 완공 시 5×5×8 터널 모드 추가."));

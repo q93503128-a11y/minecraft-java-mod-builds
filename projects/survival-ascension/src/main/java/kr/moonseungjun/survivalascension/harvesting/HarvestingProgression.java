@@ -4,6 +4,7 @@ package kr.moonseungjun.survivalascension.harvesting;
 
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
+import kr.moonseungjun.survivalascension.progress.AutomatedToolBreak;
 import kr.moonseungjun.survivalascension.progress.SkillClientBridge;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillProgressionService;
@@ -101,7 +102,7 @@ public final class HarvestingProgression {
                     if (!level.hasChunkAt(target) || level.getBlockEntity(target) != null) continue;
                     BlockState targetState = level.getBlockState(target);
                     if (!isMatureHarvest(targetState) || targetState.getDestroySpeed(level, target) < 0.0F || !targetState.canHarvestBlock(level, target, player)) continue;
-                    player.gameMode.destroyBlock(target);
+                    AutomatedToolBreak.destroyWithReducedWear(player, target);
                     if (!player.getMainHandItem().is(ItemTags.HOES)) break;
                 }
             } finally {

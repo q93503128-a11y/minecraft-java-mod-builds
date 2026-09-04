@@ -62,7 +62,7 @@ public final class AscensionRadialMenuScreen extends Screen {
         Entry entry = ENTRIES[selected];
         graphics.text(this.font, entry.title(), centerX - this.font.width(entry.title()) / 2, centerY - 5, 0xFFFFFFFF, true);
         graphics.text(this.font, entry.detail(), centerX - this.font.width(entry.detail()) / 2, centerY + 8, 0xFFB8B8B8, false);
-        String caption = "M · 통합 메뉴";
+        String caption = "K · 통합 메뉴";
         graphics.text(this.font, caption, centerX - this.font.width(caption) / 2, centerY - 102, 0xFFE0E0E0, true);
     }
 

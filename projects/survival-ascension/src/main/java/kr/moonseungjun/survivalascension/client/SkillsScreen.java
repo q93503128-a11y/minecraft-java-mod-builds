@@ -30,7 +30,7 @@ public final class SkillsScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, 14, 0xFFFFFFFF, true);
-        String subtitle = "M 메뉴 · Shift 정밀 작업 · R 기동 액션";
+        String subtitle = "K 메뉴 · Shift 정밀 작업 · V 기동 액션";
         graphics.text(this.font, subtitle, (this.width - this.font.width(subtitle)) / 2, 27, 0xFFAAAAAA, false);
         int left = (this.width - ROW_WIDTH) / 2;
         int y = LIST_TOP;
@@ -66,7 +66,7 @@ public final class SkillsScreen extends Screen {
             case COMBAT -> "피해 " + format(SkillTuning.combatDamageMultiplier(level)) + " · 파급 " + cleaveText(level);
             case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level) + "블록 · 면 " + SkillTuning.constructionPlaneSize(level) + "×" + SkillTuning.constructionPlaneSize(level);
             case MOBILITY -> "이속 " + format(SkillTuning.mobilitySpeedMultiplier(level)) + " · 단차 "
-                    + String.format(Locale.ROOT, "%.2f", SkillTuning.mobilityStepHeight(level)) + " · R " + (level < 30 ? "잠김" : "돌진");
+                    + String.format(Locale.ROOT, "%.2f", SkillTuning.mobilityStepHeight(level)) + " · V " + (level < 30 ? "잠김" : "돌진");
         };
     }
 

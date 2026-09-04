@@ -159,8 +159,8 @@ public final class MobilityProgression {
         if (!result.leveledUp()) return;
         int oldLevel = result.oldLevel(), newLevel = result.newLevel();
         if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1블록 단차 자동 넘기기 + 낙하 안전 강화"));
-        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §fR · 지상 돌진"));
-        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f공중에서 R을 한 번 더 사용할 수 있습니다."));
+        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §fV · 지상 돌진"));
+        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f공중에서 V를 한 번 더 사용할 수 있습니다."));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f극한 돌진 · 종말 단계 승천 중추 완공 시 공중 돌진 2회"));
         if (oldLevel < 100 && newLevel >= 100) {
             String dashes = ExpeditionProgression.hasFieldMastery(player) ? "4회" : "3회";

@@ -59,11 +59,11 @@ public final class ConstructionProgression {
         ConstructionMode resolved = requested.requiredLevel() <= level ? requested : ConstructionMode.SINGLE;
         if (resolved == ConstructionMode.VOLUME && !InfrastructureData.get(player).isComplete(InfrastructureProject.BUILDER_FOUNDRY)) {
             resolved = ConstructionMode.SINGLE;
-            player.sendSystemMessage(Component.literal("§6[건축] §f입체 모드는 §eM→인프라→건축 공방§f 완공이 필요합니다."));
+            player.sendSystemMessage(Component.literal("§6[건축] §f입체 모드는 §eK→인프라→건축 공방§f 완공이 필요합니다."));
         }
         if (resolved == ConstructionMode.CAUSEWAY && !InfrastructureData.get(player).isComplete(InfrastructureProject.CIVIL_WORKS)) {
             resolved = ConstructionMode.SINGLE;
-            player.sendSystemMessage(Component.literal("§6[건축] §f도로/교량 모드는 §e월드 승천 1단계 + M→인프라→토목 공사소§f 완공이 필요합니다."));
+            player.sendSystemMessage(Component.literal("§6[건축] §f도로/교량 모드는 §e월드 승천 1단계 + K→인프라→토목 공사소§f 완공이 필요합니다."));
         }
         MODES.put(player.getUUID(), resolved);
         if (resolved != requested) {

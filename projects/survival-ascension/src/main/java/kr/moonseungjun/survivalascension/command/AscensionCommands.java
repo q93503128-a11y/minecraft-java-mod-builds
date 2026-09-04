@@ -127,7 +127,7 @@ public final class AscensionCommands {
             case MOBILITY -> "이속 " + fmt(SkillTuning.mobilitySpeedMultiplier(level))
                     + " | 단차 " + String.format(java.util.Locale.ROOT, "%.2f", SkillTuning.mobilityStepHeight(level))
                     + " | 안전낙하 " + String.format(java.util.Locale.ROOT, "%.0f", SkillTuning.mobilitySafeFallDistance(level))
-                    + " | R " + (level < 30 ? "잠김" : SkillTuning.mobilityDashCooldownTicks(level) / 20.0D + "초");
+                    + " | V " + (level < 30 ? "잠김" : SkillTuning.mobilityDashCooldownTicks(level) / 20.0D + "초");
         };
         player.sendSystemMessage(Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra));
     }

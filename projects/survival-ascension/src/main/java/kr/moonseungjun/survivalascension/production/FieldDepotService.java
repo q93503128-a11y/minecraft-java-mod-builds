@@ -174,7 +174,7 @@ public final class FieldDepotService {
                 + " §7· 사용 가능 거점 §a" + activeDepots + " §7· 사용 가능 저장 통 §b" + activeBarrels
                 + " §7· 같은 차원 로딩 창고는 거리 제한 없음"));
         player.sendSystemMessage(Component.literal("  §7- 지역 한도: 산업 3 · 토목 6 · 승천 중추 9"));
-        player.sendSystemMessage(Component.literal("  §7- 등록 방법: 산업 가공소 완공 → 등록할 통에서 4블록 이내 → M→인프라→산업 가공소→물류 거점 연결 · 최초 등록 보급권 1"));
+        player.sendSystemMessage(Component.literal("  §7- 등록 방법: 산업 가공소 완공 → 등록할 통에서 4블록 이내 → K→인프라→산업 가공소→물류 거점 연결 · 최초 등록 보급권 1"));
         player.sendSystemMessage(Component.literal("  §7- 확장 방법: 거점 6블록 안의 다른 통에서 창고 통 연결 · 거점당 최대 8개 · 추가 보급권 없음"));
         player.sendSystemMessage(Component.literal("  §7- 이동 방법: 등록된 일반 거점/창고 통을 파괴하면 내용물이 바닥에 쏟아지지 않고 포장된 물류 통 1개로 보존됩니다. 다시 설치하면 연결을 자동 복구합니다."));
         player.sendSystemMessage(Component.literal("  §7- 창고군: 거점 앵커 반경 " + FieldDepotData.MAX_LINK_RADIUS + " 안 실제 통 최대 "

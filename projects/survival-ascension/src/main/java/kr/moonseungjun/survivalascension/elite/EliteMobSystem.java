@@ -39,6 +39,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -121,7 +122,11 @@ public final class EliteMobSystem {
         List<UUID> remove = new ArrayList<>();
         for (Map.Entry<UUID, MythicRuntime> entry : new ArrayList<>(MYTHICS.entrySet())) {
             MythicRuntime runtime = entry.getValue();
-            if (runtime.level.getServer() != event.getServer()) continue;
+            if (runtime.level.getServer() != event.getServer()) {
+                closeMythicBar(runtime);
+                remove.add(entry.getKey());
+                continue;
+            }
             Entity entity = runtime.level.getEntity(entry.getKey());
             if (!(entity instanceof Mob mob) || !mob.isAlive() || rank(mob) != Rank.MYTHIC_III) {
                 closeMythicBar(runtime);
@@ -144,6 +149,14 @@ public final class EliteMobSystem {
             }
         }
         for (UUID id : remove) MYTHICS.remove(id);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        for (MythicRuntime runtime : new ArrayList<>(MYTHICS.values())) {
+            if (runtime.level.getServer() == event.getServer()) closeMythicBar(runtime);
+        }
+        MYTHICS.entrySet().removeIf(entry -> entry.getValue().level.getServer() == event.getServer());
+        mythicTicker = 0;
     }
 
     public static void onDamagePre(LivingDamageEvent.Pre event) {

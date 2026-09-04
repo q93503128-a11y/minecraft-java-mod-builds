@@ -1,11 +1,13 @@
 package kr.moonseungjun.survivalascension.client;
 
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
+import kr.moonseungjun.survivalascension.network.ExpeditionSnapshotRequestPayload;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public final class ExpeditionScreen extends Screen {
     private static final int PANEL_MAX_WIDTH = 700;
@@ -16,6 +18,7 @@ public final class ExpeditionScreen extends Screen {
 
     private double scrollOffset;
     private int maxScroll;
+    private int refreshTicker;
 
     public ExpeditionScreen() {
         super(Component.literal("원정 기록"));
@@ -33,6 +36,16 @@ public final class ExpeditionScreen extends Screen {
     @Override
     public void onClose() {
         this.minecraft.gui.setScreen(null);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (++refreshTicker < 20) return;
+        refreshTicker = 0;
+        if (this.minecraft != null && this.minecraft.player != null && this.minecraft.level != null) {
+            ClientPacketDistributor.sendToServer(new ExpeditionSnapshotRequestPayload());
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.progress;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -11,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class AutomatedToolBreak {
     private static final String WEAR_BANK_KEY = "survivalascension_bulk_tool_wear_bank";
+    private static final String WEAR_TOOL_KEY = "survivalascension_bulk_tool_wear_tool";
     private static final int AUTOMATIC_BLOCKS_PER_WEAR = 4;
 
     private AutomatedToolBreak() {}
@@ -21,6 +23,12 @@ public final class AutomatedToolBreak {
             return player.gameMode.destroyBlock(target);
         }
 
+        String toolId = BuiltInRegistries.ITEM.getKey(tool.getItem()).toString();
+        String bankToolId = player.getPersistentData().getStringOr(WEAR_TOOL_KEY, "");
+        if (!toolId.equals(bankToolId)) {
+            player.getPersistentData().putString(WEAR_TOOL_KEY, toolId);
+            player.getPersistentData().putInt(WEAR_BANK_KEY, 0);
+        }
         int bank = Math.max(0, player.getPersistentData().getIntOr(WEAR_BANK_KEY, 0));
         if (bank >= AUTOMATIC_BLOCKS_PER_WEAR - 1) {
             boolean broken = player.gameMode.destroyBlock(target);
