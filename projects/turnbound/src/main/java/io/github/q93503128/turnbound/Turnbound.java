@@ -65,6 +65,8 @@ public final class Turnbound {
             if (CampaignPersistence.blocked(player)) return;
             PlayerShellRules.maintain(player);
             StarterSliceBootstrap.tick(player);
+            // Do not build/sync authored world content until the destructive foundation pass is complete.
+            if (StarterSliceBootstrap.building(player)) return;
             WorldSessionRouter.tick(player);
             OpeningReadabilityService.tick(player);
             BattleSessionManager.tick(player);
