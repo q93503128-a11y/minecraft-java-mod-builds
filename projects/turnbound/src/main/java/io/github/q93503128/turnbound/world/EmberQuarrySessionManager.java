@@ -123,7 +123,7 @@ public final class EmberQuarrySessionManager {
         EncounterActor actor = session.encounters.get(encounterId);
         if (actor == null) return;
         actor.engaged = false;
-        actor.entity = null;
+        actor.group = null;
         actor.graceTicks = outcome == BattleOutcome.ALLY_VICTORY ? 0 : 40;
         V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(encounterId);
         boolean victory = outcome == BattleOutcome.ALLY_VICTORY;
@@ -232,12 +232,12 @@ public final class EmberQuarrySessionManager {
                 if (!unlocked(player, actor.point.id()) || cleared(player, actor.point.id())) continue;
                 if (actor.graceTicks > 0) { actor.graceTicks--; continue; }
                 actor.spawn(level);
-                if (actor.entity == null || actor.engaged) continue;
-                Entity entity = level.getEntity(actor.entity);
-                if (entity == null) { actor.entity = null; continue; }
-                if (player.position().distanceToSqr(entity.position()) <= 12.25) {
+                if (actor.group == null || actor.engaged) continue;
+                Entity lead = actor.group.lead(level);
+                if (lead == null) { actor.group = null; continue; }
+                if (player.position().distanceToSqr(actor.group.center()) <= 12.25) {
                     boolean started = BattleSessionManager.startEncounterAt(player, actor.point.id(), true, true, actor.point.battleAnchor(), actor.point.battleYaw());
-                    if (started) { entity.discard(); actor.entity = null; actor.engaged = true; return; }
+                    if (started) { actor.despawn(level); actor.engaged = true; return; }
                     actor.graceTicks = 40;
                 }
             }
@@ -293,18 +293,16 @@ public final class EmberQuarrySessionManager {
 
     private static final class EncounterActor {
         private final EmberQuarryChapterWorld.EncounterPoint point;
-        private UUID entity;
+        private FieldEncounterPresentation.Group group;
         private boolean engaged;
         private int graceTicks;
         private EncounterActor(EmberQuarryChapterWorld.EncounterPoint point) { this.point = point; }
         private void spawn(ServerLevel level) {
-            if (entity != null && level.getEntity(entity) != null) return;
-            V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(point.id());
-            ChatFormatting color = spec.boss() ? ChatFormatting.DARK_RED : spec.enemies().getFirst().startsWith("EL") ? ChatFormatting.GOLD : ChatFormatting.RED;
-            ArmorStand stand = actor(level, point.fieldPosition(), spec.label(), itemFor(spec.enemies().getFirst()), color);
-            level.addFreshEntity(stand); entity = stand.getUUID();
+            if (group != null && group.alive(level)) return;
+            if (group != null) group.despawn(level);
+            group = FieldEncounterPresentation.spawn(level, point.id(), point.fieldPosition(), point.battleYaw());
         }
-        private void despawn(ServerLevel level) { if(entity!=null){Entity e=level.getEntity(entity);if(e!=null)e.discard();entity=null;} }
+        private void despawn(ServerLevel level) { if(group!=null){group.despawn(level);group=null;} }
     }
 
     private static ArmorStand actor(ServerLevel level, Vec3 pos, String name, Item item, ChatFormatting color) {
@@ -313,15 +311,5 @@ public final class EmberQuarrySessionManager {
         stand.setCustomName(Component.literal(name).withStyle(color)); stand.setCustomNameVisible(true);
         stand.setItemSlot(EquipmentSlot.MAINHAND, item.getDefaultInstance()); stand.setItemSlot(EquipmentSlot.HEAD, Items.CHAINMAIL_HELMET.getDefaultInstance());
         return stand;
-    }
-
-    private static Item itemFor(String enemyId) {
-        return switch (enemyId) {
-            case "E013" -> Items.FIRE_CHARGE;
-            case "E014" -> Items.IRON_PICKAXE;
-            case "EL04" -> Items.DIAMOND_PICKAXE;
-            case "B04" -> Items.NETHERITE_PICKAXE;
-            default -> Items.IRON_SWORD;
-        };
     }
 }
