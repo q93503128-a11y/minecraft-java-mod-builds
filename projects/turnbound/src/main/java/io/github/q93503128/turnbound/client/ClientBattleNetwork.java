@@ -14,7 +14,8 @@ public final class ClientBattleNetwork {
 
     private static void handle(BattleSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            boolean wasActive = ClientBattleState.snapshot().active();
+            var previousSnapshot = ClientBattleState.snapshot();
+            boolean wasActive = previousSnapshot.active();
             ClientBattleState.update(payload.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             var snapshot = ClientBattleState.snapshot();
@@ -22,6 +23,7 @@ public final class ClientBattleNetwork {
 
             if (snapshot.active()) {
                 if (!wasActive) BattleCameraController.enter(snapshot.arenaYaw());
+                else BattleCameraController.onSnapshotTransition(previousSnapshot, snapshot);
                 if (snapshot.finished()) {
                     if (!(minecraft.gui.screen() instanceof BattleResultScreen)) minecraft.gui.setScreen(new BattleResultScreen());
                 } else if (!(minecraft.gui.screen() instanceof BattleScreen)) {
