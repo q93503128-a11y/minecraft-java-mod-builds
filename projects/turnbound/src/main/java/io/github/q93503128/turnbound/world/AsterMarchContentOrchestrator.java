@@ -11,6 +11,7 @@ public final class AsterMarchContentOrchestrator {
 
     public static void build(ServerLevel level) {
         AsterMarchAmbientDressing.build(level);
+        AsterMarchRouteDensity.build(level);
         CharacterQuestWorldSites.build(level);
         RegionQuestWorldSites.build(level);
         ExplorationCodexSites.build(level);
