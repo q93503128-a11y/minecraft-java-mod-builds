@@ -21,6 +21,7 @@ fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
 military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
 armory = text(JAVA / "settlement/SettlementMilitaryArmoryService.java")
 barracks = text(JAVA / "settlement/SettlementBarracksService.java")
+benefit = text(JAVA / "settlement/SettlementBenefitService.java")
 waterfront = text(JAVA / "settlement/SettlementWaterfrontService.java")
 market = text(JAVA / "settlement/SettlementMarketService.java")
 outpost_production = text(JAVA / "settlement/SettlementOutpostProductionService.java")
@@ -143,6 +144,18 @@ forbid(barracks, (
     "duplicate.setNoAi(true);",
     "return legacy.isEmpty() ? null : migrateLegacySoldier(level, legacy.getFirst());"
 ), "legacy barracks duplicate containment")
+must(benefit, (
+    "active.setInvulnerable(false);",
+    "removeDuplicateCivicGuard(existing.get(i))",
+    "removeDuplicateCivicGuard(guards.get(i))",
+    "private static void removeDuplicateCivicGuard(IronGolem duplicate)",
+    "duplicate.setNoAi(false);",
+    "duplicate.setInvulnerable(false);",
+    "duplicate.discard();"
+), "civic guard lifecycle cleanup")
+forbid(benefit, (
+    "duplicate.setNoAi(true);",
+), "legacy civic guard duplicate freeze")
 must(waterfront, (
     "active.setInvulnerable(false);",
     "trader.setInvulnerable(false);",

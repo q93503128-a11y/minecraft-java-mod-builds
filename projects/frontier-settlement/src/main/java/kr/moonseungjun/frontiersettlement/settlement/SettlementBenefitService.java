@@ -100,18 +100,14 @@ public final class SettlementBenefitService {
                 active.addTag(GUARD_POST_GUARD_TAG);
                 active.addTag(assignment);
                 active.setNoAi(false);
+                active.setInvulnerable(false);
                 double homeDistance = active.distanceToSqr(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D);
                 if (homeDistance > GUARD_POST_HOME_RADIUS_SQR) {
                     active.setTarget(null);
                     active.getNavigation().moveTo(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D, 0.9D);
                 }
                 for (int i = 1; i < existing.size(); i++) {
-                    IronGolem duplicate = existing.get(i);
-                    duplicate.addTag(GUARD_POST_GUARD_TAG);
-                    duplicate.addTag(assignment);
-                    duplicate.setTarget(null);
-                    duplicate.getNavigation().stop();
-                    duplicate.setNoAi(true);
+                    removeDuplicateCivicGuard(existing.get(i));
                 }
                 continue;
             }
@@ -163,11 +159,9 @@ public final class SettlementBenefitService {
         if (guards.isEmpty()) return null;
         IronGolem active = guards.getFirst();
         active.setNoAi(false);
+        active.setInvulnerable(false);
         for (int i = 1; i < guards.size(); i++) {
-            IronGolem duplicate = guards.get(i);
-            duplicate.setTarget(null);
-            duplicate.getNavigation().stop();
-            duplicate.setNoAi(true);
+            removeDuplicateCivicGuard(guards.get(i));
         }
         return active;
     }
@@ -184,6 +178,14 @@ public final class SettlementBenefitService {
         guard.addTag(WATCH_GUARD_TAG);
         guard.addTag(watchAssignment(tower));
         return level.addFreshEntity(guard) ? guard : null;
+    }
+
+    private static void removeDuplicateCivicGuard(IronGolem duplicate) {
+        duplicate.setTarget(null);
+        duplicate.getNavigation().stop();
+        duplicate.setNoAi(false);
+        duplicate.setInvulnerable(false);
+        duplicate.discard();
     }
 
     private static AABB watchGuardArea(BlockPos home) {
