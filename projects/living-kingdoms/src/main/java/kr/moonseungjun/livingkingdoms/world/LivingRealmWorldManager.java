@@ -20,6 +20,15 @@ public final class LivingRealmWorldManager {
         RealmBuildCoordinator.requestPlayer(player, profile);
     }
 
+    static void prepareResidence(ServerLevel realm, OriginProfile profile) {
+        SafeResidenceLocator.prepareResidence(realm, profile.homelandId(), profile.residenceId());
+    }
+
+    /**
+     * Attempts final placement only into the same authored tenement topology used by capital
+     * households. Returning false means construction is still pending; callers must never announce
+     * completion or invent a synthetic fallback.
+     */
     static boolean finishPlacement(ServerPlayer player, OriginProfile profile) {
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
         if (realm == null) {
@@ -37,11 +46,13 @@ public final class LivingRealmWorldManager {
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
 
         ConstructionDebrisCleaner.schedule(realm, profile.homelandId(), site);
-        BlockPos feet = SafeResidenceLocator.residence(realm, profile.homelandId(), profile.residenceId());
+        BlockPos feet = SafeResidenceLocator.tryResidence(realm, profile.homelandId(), profile.residenceId());
+        if (feet == null) return false;
         if (!SafeResidenceLocator.isWalkable(realm, feet)) {
-            LivingKingdoms.LOGGER.error("Rejected unsafe final residence spawn {} for {}", feet, player.getUUID());
+            LivingKingdoms.LOGGER.error("Rejected unsafe authored residence spawn {} for {}", feet, player.getUUID());
             return false;
         }
+
         float yaw = SafeResidenceLocator.yaw(profile.homelandId(), profile.residenceId());
         boolean moved = player.teleportTo(realm,
                 feet.getX() + 0.5D, feet.getY(), feet.getZ() + 0.5D,
@@ -49,6 +60,11 @@ public final class LivingRealmWorldManager {
         if (moved) {
             player.setDeltaMovement(0.0D, 0.0D, 0.0D);
             player.fallDistance = 0.0F;
+            ExternalUrbanFabricBuilder.UrbanEntrance entrance =
+                    SafeResidenceLocator.residenceEntrance(realm, profile.homelandId(), profile.residenceId());
+            LivingKingdoms.LOGGER.info(
+                    "LK_ERDEN_PLAYER_RESIDENCE player={} role={} entrance={},{} feet={} authored_tenement=true upper_route=true synthetic_fallback=false staging_exit=true",
+                    player.getUUID(), entrance.role(), entrance.x(), entrance.z(), feet);
             player.sendSystemMessage(Component.literal(
                     "§6[살아있는 왕국] §f" + residence.displayName() + "에서 에르덴 왕국 시민으로 삶을 시작합니다."
             ));
