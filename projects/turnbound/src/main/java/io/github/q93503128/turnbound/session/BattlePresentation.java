@@ -8,7 +8,8 @@ import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.BattleVfx;
 import io.github.q93503128.turnbound.presentation.BossBattleVfx;
-import io.github.q93503128.turnbound.presentation.EliteVfxTelegraphs;
+import io.github.q93503128.turnbound.presentation.EnemyBattleTelegraphs;
+import io.github.q93503128.turnbound.presentation.EnemyPresentationProfile;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
@@ -249,8 +250,8 @@ final class BattlePresentation {
 
         if(actor instanceof BattleActorEntity animated) playSkillAnimation(animated,visualId,skillId,damaging,closesDistance);
         if(source!=null){
-            if("EL04".equals(visualId)&&"el04_collapse".equals(skillId)&&target!=null)EliteVfxTelegraphs.el04CollapseCracks(level,target);
             Vec3 resolvedTarget=target==null?source:target;
+            EnemyBattleTelegraphs.present(level,visualId,skillId,source,resolvedTarget);
             if(BossBattleVfx.handles(visualId))BossBattleVfx.skill(level,visualId,skillId,source,resolvedTarget);
             else BattleVfx.skill(level,visualId,skillId,source,resolvedTarget,damaging);
         }
@@ -258,6 +259,10 @@ final class BattlePresentation {
 
     /** Canonical Skill IDs choose authored clips instead of damage/cast guessing. */
     private static void playSkillAnimation(BattleActorEntity actor,String visualId,String skillId,boolean damaging,boolean moving){
+        if(EnemyPresentationProfile.handles(skillId)){
+            EnemyPresentationProfile.play(actor,skillId);
+            return;
+        }
         switch(skillId){
             case "p01_chase_slash","p02_accelerate","p03_guard_stance","p04_heal","p05_suppressive_shot","p06_echo","p07_command","p08_frenzy" -> playBasic(actor,moving);
             case "p01_breaker_strike","p02_time_leap","p03_guard_transfer","p04_returned_breath","p05_piercing_shot","p06_condolence","p07_summon_toto","p08_blood_charge" -> playActive1(actor,moving);
@@ -299,13 +304,12 @@ final class BattlePresentation {
      */
     private static boolean shouldCloseDistance(String visualId,String skillId,boolean damaging){
         if(!damaging)return false;
+        if(EnemyPresentationProfile.handles(skillId))return EnemyPresentationProfile.closeDistance(skillId);
         return switch(visualId){
             case "P01" -> "p01_chase_slash".equals(skillId)||"p01_breaker_strike".equals(skillId);
             case "P03" -> "p03_shield_pressure".equals(skillId);
             case "P08" -> "p08_frenzy".equals(skillId)||"p08_blood_charge".equals(skillId);
-            case "P07_SUMMON","F01" -> true;
-            case "F04" -> !"f04_endure".equals(skillId);
-            case "E001","E004","E006","E008","E012","E014" -> true;
+            case "P07_SUMMON" -> true;
             case "B01" -> "b01_basic".equals(skillId)||"b01_charge".equals(skillId);
             case "B04" -> "b04_basic".equals(skillId);
             case "B05" -> "b05_basic".equals(skillId)||"b05_time_cut".equals(skillId);
@@ -318,6 +322,7 @@ final class BattlePresentation {
      * the next turn does not overwrite the current action before its readable hit/recovery beat.
      */
     static int actionPresentationTicks(String visualId,String skillId){
+        if(EnemyPresentationProfile.handles(skillId))return EnemyPresentationProfile.oneXticks(skillId);
         return switch(skillId){
             case "p01_chase_slash" -> 28; case "p01_breaker_strike" -> 41; case "p01_duel_lock" -> 18;
             case "p02_accelerate" -> 16; case "p02_time_leap" -> 28; case "p02_delay_field" -> 34;
