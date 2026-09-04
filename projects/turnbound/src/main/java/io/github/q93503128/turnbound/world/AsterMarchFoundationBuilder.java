@@ -65,8 +65,6 @@ public final class AsterMarchFoundationBuilder {
     }
 
     private static void prepareColumn(ServerLevel level, int x, int z) {
-        // The old fixed Y=96 ceiling left tall vanilla mountains and leaf canopies floating above Radia.
-        // Read the generated column first and clear to its actual surface height instead.
         int clearTop = Math.max(GROUND_Y, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z));
         level.setBlock(new BlockPos(x, GROUND_Y - 3, z), Blocks.DIRT.defaultBlockState(), 2);
         level.setBlock(new BlockPos(x, GROUND_Y - 2, z), Blocks.DIRT.defaultBlockState(), 2);
@@ -82,7 +80,6 @@ public final class AsterMarchFoundationBuilder {
         player.setNoGravity(true);
         player.setDeltaMovement(Vec3.ZERO);
         player.fallDistance = 0.0F;
-        // The loading screen hides this holding point; Y=250 keeps the player clear of ordinary generated terrain.
         player.setPos(0.5, 250.0, 20.5);
     }
 
