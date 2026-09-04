@@ -1,0 +1,126 @@
+name: Manual Frontier Survival Audit 6
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-frontier-survival-audit6.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Inventory and lifecycle audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [Path('projects/survival-ascension/src/main/java'), Path('projects/frontier-settlement/src/main/java')]
+          for root in roots:
+              files = list(root.rglob('*.java'))
+              lines = sum(len(p.read_text(encoding='utf-8').splitlines()) for p in files)
+              print(f'AUDIT_ROOT {root} JAVA_FILES={len(files)} JAVA_LINES={lines}')
+
+          terms = re.compile(r'MinecartChest|freight|packed_logistics|BLOCK_ENTITY_DATA|MAINHAND|cargo|transporter|haul|hauler|recovery|onServerStopping|PlayerLoggedOut|EntityJoinLevelEvent|LivingDeathEvent', re.I)
+          for root in roots:
+              print(f'\n=== RELEVANT_FILES {root} ===')
+              for p in sorted(root.rglob('*.java')):
+                  text = p.read_text(encoding='utf-8')
+                  hits = len(terms.findall(text))
+                  if hits:
+                      print(f'{hits:4d} {p}')
+
+          print('\n=== STATIC_RUNTIME_COLLECTIONS ===')
+          runtime = re.compile(r'\bstatic\s+final\s+(?:Map|Set|List|WeakHashMap|ConcurrentHashMap)<')
+          for root in roots:
+              for p in sorted(root.rglob('*.java')):
+                  text = p.read_text(encoding='utf-8')
+                  if runtime.search(text):
+                      stop = 'ServerStoppingEvent' in text or 'onServerStopping' in text
+                      logout = 'PlayerLoggedOut' in text or 'onPlayerLoggedOut' in text
+                      print(f'{p} STOP={stop} LOGOUT={logout}')
+
+          print('\n=== FRONTIER_CARGO_CONTEXTS ===')
+          for p in sorted(Path('projects/frontier-settlement/src/main/java').rglob('*.java')):
+              lines = p.read_text(encoding='utf-8').splitlines()
+              selected=[]
+              for i,line in enumerate(lines):
+                  if re.search(r'cargo|transporter|MAINHAND|haul|hauler', line, re.I):
+                      selected.append(i)
+              if not selected: continue
+              print(f'--- {p} ---')
+              shown=set()
+              for i in selected:
+                  for j in range(max(0,i-2), min(len(lines),i+3)):
+                      if j in shown: continue
+                      shown.add(j)
+                      print(f'{j+1:4d}: {lines[j]}')
+
+          print('\n=== SURVIVAL_FREIGHT_CONTEXTS ===')
+          for name in ['FreightService.java','PortableLogisticsBarrelService.java','FieldDepotService.java','FieldDepotData.java']:
+              p=Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production')/name
+              lines=p.read_text(encoding='utf-8').splitlines()
+              print(f'--- {p} ---')
+              for i,line in enumerate(lines):
+                  if re.search(r'freight|frontline|packed|removeBlock|clearContent|hasChunkAt|remove\(|setChanged|PersistentData|BLOCK_ENTITY_DATA|moveBulk|moveMatching|isUsableAnchor', line, re.I):
+                      print(f'{i+1:4d}: {line}')
+
+          print('\n=== VERSION ===')
+          for prop in [Path('projects/survival-ascension/gradle.properties'),Path('projects/frontier-settlement/gradle.properties')]:
+              for line in prop.read_text(encoding='utf-8').splitlines():
+                  if line.startswith('mod_version='): print(prop, line)
+          PY
+
+      - name: Source invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          S=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production/FreightService.java
+          P=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production/PortableLogisticsBarrelService.java
+          grep -Fq 'cart.getPersistentData()' "$S"
+          grep -Fq 'cart.setChanged()' "$S"
+          grep -Fq 'BLOCK_ENTITY_DATA' "$P"
+          grep -Fq 'container.clearContent()' "$P"
+          grep -Fq 'level.removeBlock(pos, false)' "$P"
+          git diff --check
+          echo SOURCE_INVARIANTS_OK
+
+      - name: Resource JSON audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' f; do
+            python3 -m json.tool "$f" >/dev/null
+            count=$((count+1))
+          done < <(find projects/frontier-settlement/src/main/resources projects/survival-ascension/src/main/resources -type f -name '*.json' -print0)
+          echo "JSON_OK $count files"
+
+      - name: Frontier Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
