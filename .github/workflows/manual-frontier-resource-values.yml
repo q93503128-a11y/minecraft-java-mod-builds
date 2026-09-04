@@ -1,0 +1,108 @@
+name: Manual Frontier Resource Values
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-frontier-resource-values.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Apply Frontier physical resource values
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement')
+
+          def replace_once(path, old, new, label):
+              text = path.read_text(encoding='utf-8')
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected 1 match, got {n}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          inv = root / 'SettlementInventory.java'
+          replace_once(inv,
+              '    public static long countWood(Container container) { return count(container, SettlementInventory::isWood); }\n    public static long countStone(Container container) { return count(container, SettlementInventory::isStone); }\n    public static long countFood(Container container) { return count(container, SettlementInventory::isFood); }\n',
+              '    public static long countWood(Container container) { return count(container, SettlementInventory::isWood); }\n    public static long countStone(Container container) { return count(container, SettlementInventory::isStone); }\n    public static long countMetal(Container container) { return countValue(container, SettlementInventory::metalValue); }\n    public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }\n',
+              'weighted count accessors')
+          replace_once(inv,
+              '        consumeMatching(container, wood, SettlementInventory::isWood);\n        consumeMatching(container, stone, SettlementInventory::isStone);\n        consumeMatching(container, food, SettlementInventory::isFood);\n',
+              '        consumeMatching(container, wood, SettlementInventory::isWood);\n        consumeMatching(container, stone, SettlementInventory::isStone);\n        consumeValue(container, food, SettlementInventory::foodValue);\n',
+              'weighted food consumption')
+          marker = '    /**\n     * A physical stack may fund exactly one settlement resource ledger. Mis-tagged companion/datapack\n'
+          methods = '''    /** Physical-resource unit values shared with Survival Ascension. */\n    public static int metalValue(ItemStack stack) {\n        if (!isMetalResource(stack)) return 0;\n        if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;\n        if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;\n        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;\n        return 2;\n    }\n\n    public static int foodValue(ItemStack stack) {\n        if (!isFood(stack)) return 0;\n        if (stack.is(Items.WHEAT)) return 1;\n        if (stack.is(Items.GOLDEN_APPLE)) return 12;\n        if (stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 24;\n        var food = stack.get(DataComponents.FOOD);\n        if (food != null) return Math.max(1, Math.min(12, food.nutrition()));\n        return 1;\n    }\n\n'''
+          replace_once(inv, marker, methods + marker, 'value methods')
+          marker = '    private static void consumeMatching(Container container, long amount,\n'
+          helpers = '''    private static long countValue(Container container, java.util.function.ToIntFunction<ItemStack> valuation) {\n        long total = 0L;\n        for (int slot = 0; slot < container.getContainerSize(); slot++) {\n            ItemStack stack = container.getItem(slot);\n            if (stack.isEmpty()) continue;\n            total += (long)Math.max(0, valuation.applyAsInt(stack)) * stack.getCount();\n        }\n        return total;\n    }\n\n    private static void consumeValue(Container container, long amount,\n                                     java.util.function.ToIntFunction<ItemStack> valuation) {\n        long left = amount;\n        for (int unit = 1; unit <= 24 && left > 0L; unit++) {\n            for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {\n                ItemStack stack = container.getItem(slot);\n                if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;\n                int take = (int)Math.min(stack.getCount(), (left + unit - 1L) / unit);\n                stack.shrink(take);\n                left -= (long)take * unit;\n            }\n        }\n    }\n\n'''
+          replace_once(inv, marker, helpers + marker, 'weighted helpers')
+
+          storage = root / 'SettlementStorageService.java'
+          replace_once(storage,
+              'import java.util.function.Predicate;\n',
+              'import java.util.function.Predicate;\nimport java.util.function.ToIntFunction;\n',
+              'storage value function import')
+          old = '''            food += SettlementInventory.countFood(container);\n            for (int slot = 0; slot < container.getContainerSize(); slot++) {\n                ItemStack stack = container.getItem(slot);\n                if (!stack.isEmpty() && isMetalStack(stack)) metal += stack.getCount();\n            }\n'''
+          new = '''            food += SettlementInventory.countFood(container);\n            metal += SettlementInventory.countMetal(container);\n'''
+          replace_once(storage, old, new, 'weighted scan')
+          replace_once(storage,
+              '        remove(level, positions, food, SettlementInventory::isFood);\n',
+              '        removeValue(level, positions, food, SettlementInventory::foodValue);\n',
+              'weighted general food removal')
+          replace_once(storage,
+              '        remove(level, positions, amount, SettlementStorageService::isMetalStack);\n',
+              '        removeValue(level, positions, amount, SettlementInventory::metalValue);\n',
+              'weighted metal removal')
+          old = '''        remove(level, positions, metal, SettlementStorageService::isMetalStack);\n        remove(level, positions, food, SettlementInventory::isFood);\n'''
+          new = '''        removeValue(level, positions, metal, SettlementInventory::metalValue);\n        removeValue(level, positions, food, SettlementInventory::foodValue);\n'''
+          replace_once(storage, old, new, 'weighted atomic metal food removal')
+          marker = '    private static void remove(ServerLevel level, List<BlockPos> positions,\n'
+          helper = '''    private static void removeValue(ServerLevel level, List<BlockPos> positions,\n                                    long amount, ToIntFunction<ItemStack> valuation) {\n        long left = amount;\n        // Lower-value stock is consumed first; scarce gold or rare food remains a last resort.\n        for (int unit = 1; unit <= 24 && left > 0L; unit++) {\n            for (BlockPos pos : positions) {\n                if (left <= 0L) break;\n                if (!(level.getBlockEntity(pos) instanceof Container container)) continue;\n                boolean changed = false;\n                for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {\n                    ItemStack stack = container.getItem(slot);\n                    if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;\n                    int take = (int)Math.min(stack.getCount(), (left + unit - 1L) / unit);\n                    stack.shrink(take);\n                    left -= (long)take * unit;\n                    changed = true;\n                }\n                if (changed) container.setChanged();\n            }\n        }\n    }\n\n'''
+          replace_once(storage, marker, helper + marker, 'weighted storage removal helper')
+
+          print('Frontier resource value patch complete')
+          PY
+      - name: Source contract audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement
+          grep -q 'countMetal(Container container)' "$ROOT/SettlementInventory.java"
+          grep -q 'metalValue(ItemStack stack)' "$ROOT/SettlementInventory.java"
+          grep -q 'foodValue(ItemStack stack)' "$ROOT/SettlementInventory.java"
+          grep -q 'removeValue' "$ROOT/SettlementStorageService.java"
+      - name: Java 25 clean build
+        shell: bash
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+      - name: Commit validated patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-frontier-resource-values.yml
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/frontier-settlement .github/workflows/manual-frontier-resource-values.yml
+          git commit -m "Apply weighted metal and food resource values"
+          git pull --rebase origin main
+          git push origin HEAD:main
