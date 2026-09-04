@@ -1,0 +1,128 @@
+name: Manual Survival Audit 7 Fix
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/manual-survival-audit7-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit-fix-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply multiplayer authority fix
+        run: |
+          python3 .github/scripts/survival_audit7_fix.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production/OutpostSiegeSystem.java')
+          s = p.read_text(encoding='utf-8')
+          old = '''        if (ApexHuntSystem.isActive(player) || AscensionTrialSystem.isActive(player)\n                || ExpeditionOperationSystem.isActive(player) || ExpeditionIncidentSystem.isActive(player)) {\n            player.sendSystemMessage(Component.literal("§c[" + label + "] §f현장 사건·원정 작전·정점 사냥·승천 시련 중에는 시작할 수 없습니다."));\n            return;\n        }'''
+          new = '''        if (FinalAscensionSystem.hasOtherMajorActivity(player)) {\n            player.sendSystemMessage(Component.literal("§c[" + label + "] §f근처 또는 현재 진행 중인 현장 사건·원정 작전·정점 사냥·승천 시련·방어전을 먼저 끝내세요."));\n            return;\n        }'''
+          if old not in s:
+              raise SystemExit('missing expected siege conflict block')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Multiplayer authority contract audit
+        run: |
+          set -euo pipefail
+          BASE=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension
+          grep -Fq 'mod_version=0.61.6-alpha.1' projects/survival-ascension/gradle.properties
+          grep -Fq 'VERSION = "0.61.6-alpha.1"' "$BASE/SurvivalAscension.java"
+          for f in \
+            "$BASE/apex/ApexHuntSystem.java" \
+            "$BASE/endgame/AscensionTrialSystem.java" \
+            "$BASE/expedition/ExpeditionIncidentSystem.java" \
+            "$BASE/production/OutpostSiegeSystem.java" \
+            "$BASE/endgame/FinalAscensionSystem.java" \
+            "$BASE/endgame/FinalAscensionBossSystem.java"; do
+            grep -Fq 'public static boolean hasActiveNear(ServerPlayer player)' "$f"
+          done
+          grep -Fq 'AscensionTrialSystem.hasActiveNear(player)' "$BASE/endgame/FinalAscensionSystem.java"
+          grep -Fq 'ApexHuntSystem.hasActiveNear(player)' "$BASE/endgame/FinalAscensionSystem.java"
+          grep -Fq 'ExpeditionIncidentSystem.hasActiveNear(player)' "$BASE/endgame/FinalAscensionSystem.java"
+          grep -Fq 'OutpostSiegeSystem.hasActiveNear(player)' "$BASE/endgame/FinalAscensionSystem.java"
+          grep -Fq 'FinalAscensionBossSystem.hasActiveNear(player)' "$BASE/endgame/FinalAscensionSystem.java"
+          grep -Fq 'if (FinalAscensionSystem.hasOtherMajorActivity(player))' "$BASE/production/OutpostSiegeSystem.java"
+          grep -Fq 'context.player() instanceof ServerPlayer player' "$BASE/network/SkillNetwork.java"
+          ! grep -R -n -E 'playToServer.*UUID|ServerPlayer.*payload\..*(uuid|player|owner)' "$BASE/network" || {
+            echo 'Review client-supplied identity pattern above'; exit 1;
+          }
+          git diff --check
+          python3 - <<'PY'
+          from pathlib import Path
+          roots = [Path('projects/frontier-settlement/src/main/java'), Path('projects/survival-ascension/src/main/java')]
+          files = [p for r in roots for p in r.rglob('*.java')]
+          lines = sum(sum(1 for _ in p.open(encoding='utf-8')) for p in files)
+          print(f'JAVA_AUDIT {len(files)} files {lines} lines')
+          PY
+          echo MULTIPLAYER_AUTHORITY_CONTRACT_OK
+
+      - name: Resource JSON audit
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' f; do
+            python3 -m json.tool "$f" >/dev/null
+            count=$((count+1))
+          done < <(find projects/frontier-settlement/src/main/resources projects/survival-ascension/src/main/resources -type f -name '*.json' -print0)
+          echo "JSON_OK $count files"
+
+      - name: Frontier Java 25 regression build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+
+      - name: JAR audit
+        run: |
+          set -euo pipefail
+          F=projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.92.jar
+          S=projects/survival-ascension/build/libs/survivalascension-0.61.6-alpha.1.jar
+          for jarfile in "$F" "$S"; do
+            test -s "$jarfile"
+            test -z "$(jar tf "$jarfile" | sort | uniq -d | head -n1 || true)"
+            echo "JAR_OK $jarfile $(stat -c%s "$jarfile") bytes"
+          done
+          jar tf "$S" | grep -Fq 'kr/moonseungjun/survivalascension/endgame/FinalAscensionSystem.class'
+          jar tf "$S" | grep -Fq 'kr/moonseungjun/survivalascension/production/OutpostSiegeSystem.class'
+
+      - name: Upload Survival replacement
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-audit7-replacement
+          path: projects/survival-ascension/build/libs/survivalascension-0.61.6-alpha.1.jar
+          retention-days: 7
+
+      - name: Commit validated fix and cleanup audit files
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-survival-audit7-fix.yml
+          rm -f .github/scripts/survival_audit7_fix.py
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/survival-ascension .github/workflows/manual-survival-audit7-fix.yml .github/scripts/survival_audit7_fix.py
+          git commit -m "Harden multiplayer major encounter admission"
+          git pull --rebase origin main
+          git push origin HEAD:main
