@@ -43,7 +43,14 @@ public final class PortableLogisticsBarrelService {
         FieldDepotData data = FieldDepotData.get(player);
         boolean anchor = data.owns(player, dimension, pos);
         boolean linked = data.isLinkedByOwner(player, dimension, pos);
-        if (!anchor && !linked) return;
+        if (!anchor && !linked) {
+            if (data.isPositionClaimed(dimension, pos)) {
+                event.setCanceled(true);
+                event.setNotifyClient(true);
+                player.sendSystemMessage(Component.literal("§3[물류 소유권] §f다른 플레이어가 등록한 물류 거점/창고 통은 파괴할 수 없습니다. §7내용물 직접 이용 여부와 물류 등록 소유권은 별개입니다."));
+            }
+            return;
+        }
         if (!level.mayInteract(player, pos)) return;
 
         FieldDepotData.DepotEntry depot = null;
