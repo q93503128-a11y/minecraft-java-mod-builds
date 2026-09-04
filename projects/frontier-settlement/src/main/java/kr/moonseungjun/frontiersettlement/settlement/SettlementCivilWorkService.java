@@ -157,7 +157,8 @@ public final class SettlementCivilWorkService {
                 CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks(), check.retainingBlocks()));
         FrontierWorkerEntity builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement);
         if (builder != null) {
-            builder.setInvulnerable(true);
+            builder.setNoAi(false);
+            builder.setInvulnerable(false);
             builder.setCustomName(Component.literal("건설 주민 · 토목"));
         }
         SettlementService.broadcast(server, settlement);
@@ -175,7 +176,7 @@ public final class SettlementCivilWorkService {
         FrontierWorkerEntity builder = SettlementConstructionService.ensureBuilder(level, settlement);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
-        builder.setInvulnerable(true);
+        builder.setInvulnerable(false);
         builder.setCustomName(Component.literal("건설 주민 · 토목"));
 
         if (project.phase() == CivilWorkState.PHASE_RETURN) {

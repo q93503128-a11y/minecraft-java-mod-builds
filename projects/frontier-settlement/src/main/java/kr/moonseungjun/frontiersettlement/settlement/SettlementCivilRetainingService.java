@@ -131,12 +131,15 @@ public final class SettlementCivilRetainingService {
         if (!carried.isEmpty()) return false;
         int remaining = remainingRetaining(level, project);
         if (remaining <= 0) return false;
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data,
-                SettlementCivilRetainingService::isRetainingStack);
-        if (source == null) return false;
+        BlockPos source = SettlementWorkerStorageNavigation.findReachableExtractionTarget(
+                level, data, builder, SettlementCivilRetainingService::isRetainingStack, STORAGE_REACHED_SQR);
+        if (source == null) {
+            builder.getNavigation().stop();
+            return false;
+        }
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > STORAGE_REACHED_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, 0.86D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, builder, source, 0.86D, STORAGE_REACHED_SQR);
             return false;
         }
         ItemStack picked = SettlementStorageService.extract(level, source,

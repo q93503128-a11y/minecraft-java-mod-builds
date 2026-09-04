@@ -74,12 +74,15 @@ public final class SettlementCivilFillSupplyService {
 
         int remaining = remainingImportedFill(level, project);
         if (remaining <= 0) return false;
-        BlockPos source = SettlementStorageService.findExtractionTarget(level, data,
-                SettlementCivilFillSupplyService::isFillStack);
-        if (source == null) return false;
+        BlockPos source = SettlementWorkerStorageNavigation.findReachableExtractionTarget(
+                level, data, builder, SettlementCivilFillSupplyService::isFillStack, STORAGE_REACHED_SQR);
+        if (source == null) {
+            builder.getNavigation().stop();
+            return false;
+        }
         if (builder.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
                 > STORAGE_REACHED_SQR) {
-            builder.getNavigation().moveTo(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D, 0.86D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, builder, source, 0.86D, STORAGE_REACHED_SQR);
             return false;
         }
 
@@ -99,11 +102,15 @@ public final class SettlementCivilFillSupplyService {
     public static boolean returnCarriedToStorage(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
         ItemStack carried = builder.getMainHandItem();
         if (carried.isEmpty()) return true;
-        BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);
-        if (!level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) return false;
+        BlockPos target = SettlementWorkerStorageNavigation.findReachableDepositTarget(
+                level, data, builder, carried, STORAGE_REACHED_SQR);
+        if (target == null) {
+            builder.getNavigation().stop();
+            return false;
+        }
         if (builder.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
                 > STORAGE_REACHED_SQR) {
-            builder.getNavigation().moveTo(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D, 0.86D);
+            SettlementWorkerStorageNavigation.moveToInteraction(level, builder, target, 0.86D, STORAGE_REACHED_SQR);
             return false;
         }
         ItemStack remaining = SettlementStorageService.insertAt(level, target, carried);

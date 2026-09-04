@@ -23,6 +23,9 @@ barracks = text(JAVA / "settlement/SettlementBarracksService.java")
 waterfront = text(JAVA / "settlement/SettlementWaterfrontService.java")
 market = text(JAVA / "settlement/SettlementMarketService.java")
 outpost_production = text(JAVA / "settlement/SettlementOutpostProductionService.java")
+civil = text(JAVA / "settlement/SettlementCivilWorkService.java")
+civil_fill = text(JAVA / "settlement/SettlementCivilFillSupplyService.java")
+civil_retain = text(JAVA / "settlement/SettlementCivilRetainingService.java")
 office = text(JAVA / "settlement/SettlementConstructionOfficeService.java")
 advanced_workshop = text(JAVA / "settlement/SettlementAdvancedWorkshopService.java")
 workshop = text(JAVA / "settlement/SettlementWorkshopService.java")
@@ -174,6 +177,39 @@ forbid(outpost_production, (
 must(worker, (
     "SettlementOutpostProductionService.PRODUCTION_WORKER_TAG",
 ), "outpost production death cargo preservation")
+must(civil, (
+    "builder.setInvulnerable(false);",
+    "SettlementConstructionService.ensureBuilder(level, settlement)",
+    "SettlementCivilFillSupplyService.returnCarriedToStorage(level, settlement, builder)"
+), "civil builder runtime normalization")
+forbid(civil, (
+    "builder.setInvulnerable(true);",
+), "civil builder orphan invulnerability")
+must(civil_fill, (
+    "SettlementWorkerStorageNavigation.findReachableExtractionTarget(",
+    "SettlementWorkerStorageNavigation.findReachableDepositTarget(",
+    "SettlementWorkerStorageNavigation.moveToInteraction(level, builder, source, 0.86D, STORAGE_REACHED_SQR)",
+    "SettlementWorkerStorageNavigation.moveToInteraction(level, builder, target, 0.86D, STORAGE_REACHED_SQR)",
+    "if (target == null) {",
+    "builder.getNavigation().stop();"
+), "civil fill storage reachability/null safety")
+forbid(civil_fill, (
+    "BlockPos target = SettlementStorageService.findDepositTarget(level, data, carried);",
+    "builder.getNavigation().moveTo(source.getX() + 0.5D",
+    "builder.getNavigation().moveTo(target.getX() + 0.5D"
+), "legacy civil fill direct storage pathing")
+must(civil_retain, (
+    "SettlementWorkerStorageNavigation.findReachableExtractionTarget(",
+    "SettlementWorkerStorageNavigation.moveToInteraction(level, builder, source, 0.86D, STORAGE_REACHED_SQR)",
+    "builder.getNavigation().stop();"
+), "civil retaining storage reachability")
+forbid(civil_retain, (
+    "SettlementStorageService.findExtractionTarget(level, data,",
+    "builder.getNavigation().moveTo(source.getX() + 0.5D"
+), "legacy civil retaining direct storage pathing")
+must(worker, (
+    "SettlementConstructionService.BUILDER_TAG",
+), "civil builder death cargo preservation")
 must(office, (
     "removeDuplicateRunnerPreservingCargo", "canReachInteraction", "moveToInteraction",
     "createInteractionPath", "path.canReach()", "canReachInteraction(level, runner, pos)"
