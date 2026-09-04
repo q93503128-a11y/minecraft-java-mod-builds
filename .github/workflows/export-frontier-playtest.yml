@@ -1,0 +1,132 @@
+name: Export Frontier Playtest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/export-frontier-playtest.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Build Frontier Settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/frontier-settlement
+          chmod +x gradlew
+          python3 tools/test_alpha91_source.py
+          ./gradlew clean build --no-daemon --stacktrace
+
+      - name: Create playtest exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, urllib.request, zipfile
+
+          root = Path('projects/frontier-settlement')
+          dist = Path('dist')
+          dist.mkdir(exist_ok=True)
+          props = {}
+          for raw in (root / 'gradle.properties').read_text(encoding='utf-8').splitlines():
+              if '=' in raw and not raw.lstrip().startswith('#'):
+                  k, v = raw.split('=', 1)
+                  props[k.strip()] = v.strip()
+          version = props['mod_version']
+          mc = props['minecraft_version']
+          neo = props['neo_version']
+
+          jars = [p for p in (root / 'build/libs').glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
+          if len(jars) != 1:
+              raise SystemExit(f'expected exactly one runtime jar, got {[p.name for p in jars]}')
+          jar = jars[0]
+          jar_out = dist / jar.name
+          jar_out.write_bytes(jar.read_bytes())
+
+          lock = json.loads((root / 'COMPANION_LOCK.json').read_text(encoding='utf-8'))
+          if lock['target']['frontier_settlement'] != version:
+              raise SystemExit(f'COMPANION_LOCK target {lock["target"]["frontier_settlement"]} != {version}')
+          resolved = json.loads((root / 'companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          files = []
+          opener = urllib.request.build_opener()
+          opener.addheaders = [('User-Agent', 'FrontierSettlementPlaytestExporter/1.0')]
+          for entry in resolved['files']:
+              url = entry['url']
+              with opener.open(url, timeout=120) as response:
+                  data = response.read()
+              sha1 = hashlib.sha1(data).hexdigest()
+              sha512 = hashlib.sha512(data).hexdigest()
+              if sha1.lower() != entry['sha1'].lower() or sha512.lower() != entry['sha512'].lower():
+                  raise SystemExit(f'hash mismatch for {entry["filename"]}')
+              side = entry.get('side', '')
+              env = {'client': 'required', 'server': 'unsupported' if side == 'client_preferred' else 'required'}
+              files.append({
+                  'path': 'mods/' + entry['filename'],
+                  'hashes': {'sha1': sha1, 'sha512': sha512},
+                  'env': env,
+                  'downloads': [url],
+                  'fileSize': len(data),
+              })
+              print(f'LOCK OK {entry["filename"]} {len(data)} bytes')
+
+          index = {
+              'formatVersion': 1,
+              'game': 'minecraft',
+              'versionId': version + '-companion-playtest',
+              'name': 'Frontier Settlement Companion Playtest',
+              'summary': 'Frontier Settlement alpha.91 playtest pack with the locked companion stack.',
+              'files': files,
+              'dependencies': {'minecraft': mc, 'neoforge': neo},
+          }
+          readme = f'''Frontier Settlement Companion Playtest\n\nFrontier: {version}\nMinecraft: {mc}\nNeoForge: {neo}\nJava: 25\n\nImport this .mrpack into Modrinth App.\nCreate a NEW WORLD for the first test because the pack contains world-generation companions.\nThe Frontier JAR is included in overrides/mods. Third-party mods are downloaded from their locked official URLs and verified by hash.\n'''
+          pack = dist / f'Frontier_Settlement_Companion_Testpack_{version}.mrpack'
+          with zipfile.ZipFile(pack, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              z.writestr('modrinth.index.json', json.dumps(index, ensure_ascii=False, indent=2) + '\n')
+              z.write(jar, 'overrides/mods/' + jar.name)
+              z.writestr('overrides/FRONTIER_PLAYTEST_README.txt', readme)
+
+          manifest = {
+              'source_commit': __import__('subprocess').check_output(['git','rev-parse','HEAD'], text=True).strip(),
+              'version': version,
+              'minecraft': mc,
+              'neoforge': neo,
+              'jar': {'name': jar_out.name, 'sha256': hashlib.sha256(jar_out.read_bytes()).hexdigest()},
+              'pack': {'name': pack.name, 'sha256': hashlib.sha256(pack.read_bytes()).hexdigest(), 'companion_files': len(files)},
+          }
+          (dist / 'EXPORT_MANIFEST.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-alpha91-jar
+          path: |
+            dist/frontier_settlement-0.1.0-alpha.91.jar
+            dist/EXPORT_MANIFEST.json
+          if-no-files-found: error
+
+      - name: Upload Modrinth pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-alpha91-pack
+          path: |
+            dist/Frontier_Settlement_Companion_Testpack_0.1.0-alpha.91.mrpack
+            dist/EXPORT_MANIFEST.json
+          if-no-files-found: error
