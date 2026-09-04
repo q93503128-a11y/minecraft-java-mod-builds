@@ -118,7 +118,7 @@ public final class ExplorationCodexSites {
 
     private static void quarryScene(ServerLevel l,int x,int y,int z){
         disc(l,x,y,z,3,Blocks.TUFF,Blocks.BASALT);
-        set(l,x,y+1,z,Blocks.CHAIN);set(l,x,y+2,z,Blocks.LANTERN);
+        set(l,x,y+1,z,Blocks.IRON_CHAIN);set(l,x,y+2,z,Blocks.LANTERN);
         set(l,x-2,y+1,z,Blocks.MAGMA_BLOCK);set(l,x+2,y+1,z,Blocks.BLACKSTONE);
     }
 

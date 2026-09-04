@@ -108,7 +108,7 @@ public final class AsterMarchRouteDensity {
         for (int i = -5; i <= 5; i++) {
             if (Math.abs(i) <= 1) continue;
             set(l, cx + i, y + 1, cz - 4, Blocks.OAK_FENCE);
-            if ((i & 1) == 0) set(l, cx + i, y + 2, cz - 4, Blocks.CHAIN);
+            if ((i & 1) == 0) set(l, cx + i, y + 2, cz - 4, Blocks.IRON_CHAIN);
         }
         for (int dz = -3; dz <= 3; dz++) {
             int height = 1 + Math.abs(dz) % 3;
@@ -198,7 +198,7 @@ public final class AsterMarchRouteDensity {
             set(l, cx + dx, y + 1, cz + 5, Blocks.IRON_BARS);
             if (dx % 5 == 0) set(l, cx + dx, y + 2, cz + 5, Blocks.LANTERN);
         }
-        for (int dz = -2; dz <= 2; dz++) set(l, cx - 4, y + 1, cz + dz, Blocks.CHAIN);
+        for (int dz = -2; dz <= 2; dz++) set(l, cx - 4, y + 1, cz + dz, Blocks.IRON_CHAIN);
         set(l, cx + 3, y + 1, cz - 2, Blocks.BARREL);
     }
 
@@ -234,7 +234,7 @@ public final class AsterMarchRouteDensity {
             for (int dy = 1; dy <= 7; dy++) set(l, cx + side, y + dy, cz, Blocks.IRON_BARS);
         }
         for (int dx = -6; dx <= 6; dx++) set(l, cx + dx, y + 7, cz, Blocks.IRON_BLOCK);
-        for (int dx = -4; dx <= 4; dx++) set(l, cx + dx, y + 5, cz, Blocks.CHAIN);
+        for (int dx = -4; dx <= 4; dx++) set(l, cx + dx, y + 5, cz, Blocks.IRON_CHAIN);
         set(l, cx, y + 6, cz, Blocks.WATER);
         set(l, cx - 2, y + 6, cz, Blocks.WATER);
         set(l, cx + 2, y + 6, cz, Blocks.WATER);

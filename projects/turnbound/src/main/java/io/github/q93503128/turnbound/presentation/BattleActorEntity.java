@@ -4,7 +4,7 @@ import com.geckolib.animatable.GeoEntity;
 import com.geckolib.animatable.instance.AnimatableInstanceCache;
 import com.geckolib.animatable.manager.AnimatableManager;
 import com.geckolib.animation.AnimationController;
-import com.geckolib.animation.PlayState;
+import com.geckolib.animation.object.PlayState;
 import com.geckolib.animation.RawAnimation;
 import com.geckolib.constant.DefaultAnimations;
 import com.geckolib.util.GeckoLibUtil;
