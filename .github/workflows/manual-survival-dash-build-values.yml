@@ -1,0 +1,183 @@
+name: Manual Survival Dash Build Values
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-dash-build-values.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply dash HUD, vegetation clearing, and resource values
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension')
+
+          def replace_once(path: Path, old: str, new: str, label: str):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, got {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # 1) Server-authoritative dash cooldown sync.
+          payload = root / 'network/MobilityCooldownPayload.java'
+          if payload.exists():
+              raise SystemExit('MobilityCooldownPayload already exists')
+          payload.write_text('''package kr.moonseungjun.survivalascension.network;\n\nimport kr.moonseungjun.survivalascension.SurvivalAscension;\nimport net.minecraft.network.RegistryFriendlyByteBuf;\nimport net.minecraft.network.codec.StreamCodec;\nimport net.minecraft.network.protocol.common.custom.CustomPacketPayload;\nimport net.minecraft.resources.Identifier;\n\npublic record MobilityCooldownPayload(int cooldownTicks) implements CustomPacketPayload {\n    public static final Type<MobilityCooldownPayload> TYPE = new Type<>(\n            Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "mobility_cooldown"));\n\n    public static final StreamCodec<RegistryFriendlyByteBuf, MobilityCooldownPayload> CODEC = StreamCodec.of(\n            (buf, payload) -> buf.writeVarInt(payload.cooldownTicks()),\n            buf -> new MobilityCooldownPayload(buf.readVarInt()));\n\n    @Override\n    public Type<? extends CustomPacketPayload> type() { return TYPE; }\n}\n''', encoding='utf-8')
+
+          state = root / 'client/ClientMobilityState.java'
+          if state.exists():
+              raise SystemExit('ClientMobilityState already exists')
+          state.write_text('''package kr.moonseungjun.survivalascension.client;\n\nimport kr.moonseungjun.survivalascension.network.MobilityCooldownPayload;\n\npublic final class ClientMobilityState {\n    private static volatile int cooldownTicks;\n    private static volatile long startedAtMillis;\n\n    private ClientMobilityState() {}\n\n    public static void onCooldown(MobilityCooldownPayload payload) {\n        cooldownTicks = Math.max(0, payload.cooldownTicks());\n        startedAtMillis = System.currentTimeMillis();\n    }\n\n    public static int remainingTicks() {\n        int total = cooldownTicks;\n        if (total <= 0) return 0;\n        long remainingMillis = total * 50L - Math.max(0L, System.currentTimeMillis() - startedAtMillis);\n        if (remainingMillis <= 0L) return 0;\n        return (int)Math.min(total, (remainingMillis + 49L) / 50L);\n    }\n\n    public static float readyProgress() {\n        int total = cooldownTicks;\n        if (total <= 0) return 1.0F;\n        return Math.max(0.0F, Math.min(1.0F, 1.0F - remainingTicks() / (float)total));\n    }\n}\n''', encoding='utf-8')
+
+          network = root / 'network/SkillNetwork.java'
+          replace_once(network,
+              '    private static final String PROTOCOL = "11";\n',
+              '    private static final String PROTOCOL = "12";\n',
+              'network protocol')
+          replace_once(network,
+              '    private static volatile Consumer<MythicTargetPayload> mythicSink = payload -> {};\n',
+              '    private static volatile Consumer<MythicTargetPayload> mythicSink = payload -> {};\n    private static volatile Consumer<MobilityCooldownPayload> mobilitySink = payload -> {};\n',
+              'mobility sink')
+          replace_once(network,
+              '        registrar.playToClient(MythicTargetPayload.TYPE, MythicTargetPayload.CODEC, (payload, context) -> mythicSink.accept(payload));\n',
+              '        registrar.playToClient(MythicTargetPayload.TYPE, MythicTargetPayload.CODEC, (payload, context) -> mythicSink.accept(payload));\n        registrar.playToClient(MobilityCooldownPayload.TYPE, MobilityCooldownPayload.CODEC, (payload, context) -> mobilitySink.accept(payload));\n',
+              'mobility packet registration')
+          replace_once(network,
+              '    public static void installMythicReceiver(Consumer<MythicTargetPayload> targets) {\n        mythicSink = Objects.requireNonNull(targets);\n    }\n',
+              '    public static void installMythicReceiver(Consumer<MythicTargetPayload> targets) {\n        mythicSink = Objects.requireNonNull(targets);\n    }\n\n    public static void installMobilityReceiver(Consumer<MobilityCooldownPayload> cooldowns) {\n        mobilitySink = Objects.requireNonNull(cooldowns);\n    }\n',
+              'mobility receiver installer')
+          replace_once(network,
+              '    public static void sendMythicTarget(ServerPlayer player, MythicTargetPayload payload) { PacketDistributor.sendToPlayer(player, payload); }\n',
+              '    public static void sendMythicTarget(ServerPlayer player, MythicTargetPayload payload) { PacketDistributor.sendToPlayer(player, payload); }\n    public static void sendMobilityCooldown(ServerPlayer player, MobilityCooldownPayload payload) { PacketDistributor.sendToPlayer(player, payload); }\n',
+              'mobility sender')
+
+          client = root / 'client/SurvivalAscensionClient.java'
+          replace_once(client,
+              '        SkillNetwork.installMythicReceiver(ClientMythicState::onTarget);\n',
+              '        SkillNetwork.installMythicReceiver(ClientMythicState::onTarget);\n        SkillNetwork.installMobilityReceiver(ClientMobilityState::onCooldown);\n',
+              'client mobility receiver')
+
+          mobility = root / 'mobility/MobilityProgression.java'
+          replace_once(mobility,
+              'import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;\n',
+              'import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;\nimport kr.moonseungjun.survivalascension.network.MobilityCooldownPayload;\nimport kr.moonseungjun.survivalascension.network.SkillNetwork;\n',
+              'mobility network imports')
+          replace_once(mobility,
+              '        DASH_READY_TICK.put(uuid, now + cooldown);\n',
+              '        DASH_READY_TICK.put(uuid, now + cooldown);\n        SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(cooldown));\n',
+              'dash cooldown sync')
+
+          hud = root / 'client/SkillHudOverlay.java'
+          replace_once(hud,
+              '        renderMythicTracker(graphics, minecraft);\n        List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();\n',
+              '        renderMythicTracker(graphics, minecraft);\n        renderMobilityCooldown(graphics, minecraft);\n        List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();\n',
+              'dash HUD render call')
+          marker = '    private static void renderMythicTracker(GuiGraphicsExtractor graphics, Minecraft minecraft) {\n'
+          method = '''    private static void renderMobilityCooldown(GuiGraphicsExtractor graphics, Minecraft minecraft) {\n        int remaining = ClientMobilityState.remainingTicks();\n        if (remaining <= 0) return;\n        final int width = 104;\n        final int height = 13;\n        int preferredLeft = graphics.guiWidth() / 2 + 98;\n        int left = Math.max(6, Math.min(graphics.guiWidth() - width - 6, preferredLeft));\n        int top = Math.max(6, graphics.guiHeight() - 43);\n        float progress = ClientMobilityState.readyProgress();\n        graphics.fill(left - 1, top - 1, left + width + 1, top + height + 1, 0xB05C5570);\n        graphics.fill(left, top, left + width, top + height, 0xD414171B);\n        int fill = Math.round(width * progress);\n        if (fill > 0) graphics.fill(left, top + height - 2, left + fill, top + height, 0xFFD8B4FF);\n        String label = String.format(java.util.Locale.ROOT, "V 돌진  %.1fs", remaining / 20.0F);\n        int textX = left + (width - minecraft.font.width(label)) / 2;\n        graphics.text(minecraft.font, label, textX, top + 2, 0xFFF0E6FF, true);\n    }\n\n'''
+          replace_once(hud, marker, method + marker, 'dash HUD method')
+
+          # 2) Deliberately clear nuisance vegetation during bulk construction, never solid terrain.
+          construction = root / 'construction/ConstructionProgression.java'
+          replace_once(construction,
+              'import net.minecraft.resources.ResourceKey;\n',
+              'import net.minecraft.resources.ResourceKey;\nimport net.minecraft.tags.BlockTags;\n',
+              'construction block tag import')
+          replace_once(construction,
+              'import net.minecraft.world.level.Level;\n',
+              'import net.minecraft.world.level.Level;\nimport net.minecraft.world.level.block.Blocks;\n',
+              'construction blocks import')
+          replace_once(construction,
+              '        if (!level.getBlockState(target).canBeReplaced()) return PlaceResult.SKIPPED;\n        if (!state.canSurvive(level, target)) return PlaceResult.SKIPPED;\n',
+              '        BlockState existing = level.getBlockState(target);\n        boolean clearVegetation = isConstructionClearableVegetation(existing);\n        if (!existing.canBeReplaced() && !clearVegetation) return PlaceResult.SKIPPED;\n        if (!state.canSurvive(level, target)) return PlaceResult.SKIPPED;\n',
+              'vegetation admission')
+          replace_once(construction,
+              '        if (denied) return PlaceResult.SKIPPED;\n        if (!level.setBlockAndUpdate(target, state)) return PlaceResult.SKIPPED;\n',
+              '        if (denied) return PlaceResult.SKIPPED;\n        if (clearVegetation && !existing.isAir()) level.destroyBlock(target, false, player);\n        if (!level.setBlockAndUpdate(target, state)) return PlaceResult.SKIPPED;\n',
+              'vegetation clear before place')
+          marker = '    private static List<BlockPos> computeTargets(ServerPlayer player, BlockPos center, ConstructionMode mode, int level) {\n'
+          method = '''    private static boolean isConstructionClearableVegetation(BlockState state) {\n        return state.is(BlockTags.FLOWERS)\n                || state.is(Blocks.SHORT_GRASS)\n                || state.is(Blocks.TALL_GRASS)\n                || state.is(Blocks.FERN)\n                || state.is(Blocks.LARGE_FERN)\n                || state.is(Blocks.DEAD_BUSH);\n    }\n\n'''
+          replace_once(construction, marker, method + marker, 'vegetation classifier')
+
+          # 3) Resource-category values: copper < iron < gold; food follows nutrition.
+          compat = root / 'compat/SharedEconomyCompat.java'
+          marker = '    public static boolean isLogisticsContainerBlock(BlockState state) {\n'
+          method = '''    public static int resourceValue(ResourceCategory category, ItemStack stack) {\n        if (!matches(category, stack)) return 0;\n        return switch (category) {\n            case WOOD, STONE -> 1;\n            case METAL -> metalValue(stack);\n            case FOOD -> foodValue(stack);\n        };\n    }\n\n    private static int metalValue(ItemStack stack) {\n        if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;\n        if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;\n        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;\n        return 2;\n    }\n\n    private static int foodValue(ItemStack stack) {\n        if (stack.is(Items.WHEAT)) return 1;\n        if (stack.is(Items.GOLDEN_APPLE)) return 12;\n        if (stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 24;\n        var food = stack.get(DataComponents.FOOD);\n        if (food != null) return Math.max(1, Math.min(12, food.nutrition()));\n        return 1;\n    }\n\n'''
+          replace_once(compat, marker, method + marker, 'resource value methods')
+
+          program = root / 'production/ProductionProgram.java'
+          replace_once(program,
+              '        public static Input resource(SharedEconomyCompat.ResourceCategory category, int amount) {\n            return new Input(category, category.koreanName(), amount);\n        }\n        public boolean matches(ItemStack stack) { return SharedEconomyCompat.matches(category, stack); }\n',
+              '        public static Input resource(SharedEconomyCompat.ResourceCategory category, int amount) {\n            String label = switch (category) {\n                case METAL, FOOD -> category.koreanName() + " 가치";\n                default -> category.koreanName();\n            };\n            return new Input(category, label, amount);\n        }\n        public boolean matches(ItemStack stack) { return SharedEconomyCompat.matches(category, stack); }\n        public int value(ItemStack stack) { return SharedEconomyCompat.resourceValue(category, stack); }\n',
+              'production input values')
+
+          depot = root / 'production/FieldDepotService.java'
+          replace_once(depot,
+              'import java.util.function.Predicate;\n',
+              'import java.util.function.Predicate;\nimport java.util.function.ToIntFunction;\n',
+              'depot value function import')
+          marker = '    public static boolean consumeOne(ServerPlayer player, Item item) { return consume(player, item, 1); }\n'
+          methods = '''    public static int countValue(ServerPlayer player, ToIntFunction<ItemStack> valuation) {\n        if (valuation == null) return 0;\n        long found = 0L;\n        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {\n            ItemStack stack = player.getInventory().getItem(slot);\n            int unit = Math.max(0, valuation.applyAsInt(stack));\n            found += (long)unit * stack.getCount();\n        }\n        for (Container container : usableContainers(player)) {\n            for (int slot = 0; slot < container.getContainerSize(); slot++) {\n                ItemStack stack = container.getItem(slot);\n                int unit = Math.max(0, valuation.applyAsInt(stack));\n                found += (long)unit * stack.getCount();\n            }\n        }\n        return (int)Math.min(Integer.MAX_VALUE, found);\n    }\n\n    public static boolean consumeValue(ServerPlayer player, ToIntFunction<ItemStack> valuation, int amount) {\n        if (valuation == null || amount <= 0 || countValue(player, valuation) < amount) return false;\n        int remaining = amount;\n        List<Container> containers = usableContainers(player);\n        // Consume lower-value resources first so gold or rare food is not burned while staples exist.\n        for (int unit = 1; unit <= 24 && remaining > 0; unit++) {\n            for (Container container : containers) {\n                boolean changed = false;\n                for (int slot = 0; slot < container.getContainerSize() && remaining > 0; slot++) {\n                    ItemStack stack = container.getItem(slot);\n                    if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;\n                    int take = Math.min(stack.getCount(), (remaining + unit - 1) / unit);\n                    stack.shrink(take);\n                    remaining -= take * unit;\n                    changed = true;\n                }\n                if (changed) container.setChanged();\n                if (remaining <= 0) break;\n            }\n            for (int slot = 0; slot < player.getInventory().getContainerSize() && remaining > 0; slot++) {\n                ItemStack stack = player.getInventory().getItem(slot);\n                if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;\n                int take = Math.min(stack.getCount(), (remaining + unit - 1) / unit);\n                stack.shrink(take);\n                remaining -= take * unit;\n            }\n        }\n        player.getInventory().setChanged();\n        player.containerMenu.broadcastChanges();\n        return remaining <= 0;\n    }\n\n'''
+          replace_once(depot, marker, methods + marker, 'weighted depot methods')
+
+          production = root / 'production/ProductionService.java'
+          replace_once(production,
+              '    private static int count(ServerPlayer player, ProductionProgram.Input input) {\n        return FieldDepotService.countMatching(player, input::matches);\n    }\n\n    private static boolean consume(ServerPlayer player, ProductionProgram.Input input, int amount) {\n        return FieldDepotService.consumeMatching(player, input::matches, amount);\n    }\n',
+              '    private static int count(ServerPlayer player, ProductionProgram.Input input) {\n        return FieldDepotService.countValue(player, input::value);\n    }\n\n    private static boolean consume(ServerPlayer player, ProductionProgram.Input input, int amount) {\n        return FieldDepotService.consumeValue(player, input::value, amount);\n    }\n',
+              'production weighted count/consume')
+
+          print('Patch complete')
+          PY
+
+      - name: Source contract audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension
+          grep -q 'PROTOCOL = "12"' "$ROOT/network/SkillNetwork.java"
+          grep -q 'MobilityCooldownPayload' "$ROOT/mobility/MobilityProgression.java"
+          grep -q 'renderMobilityCooldown' "$ROOT/client/SkillHudOverlay.java"
+          grep -q 'isConstructionClearableVegetation' "$ROOT/construction/ConstructionProgression.java"
+          grep -q 'resourceValue' "$ROOT/compat/SharedEconomyCompat.java"
+          grep -q 'countValue' "$ROOT/production/FieldDepotService.java"
+          grep -q 'consumeValue' "$ROOT/production/ProductionService.java"
+
+      - name: Java 25 clean build
+        shell: bash
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+
+      - name: Commit validated patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-survival-dash-build-values.yml
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/survival-ascension .github/workflows/manual-survival-dash-build-values.yml
+          git commit -m "Add dash HUD vegetation clearing and resource values"
+          git pull --rebase origin main
+          git push origin HEAD:main
