@@ -65,6 +65,9 @@ jobs:
           old = '''            food += SettlementInventory.countFood(container);\n            for (int slot = 0; slot < container.getContainerSize(); slot++) {\n                ItemStack stack = container.getItem(slot);\n                if (!stack.isEmpty() && isMetalStack(stack)) metal += stack.getCount();\n            }\n'''
           new = '''            food += SettlementInventory.countFood(container);\n            metal += SettlementInventory.countMetal(container);\n'''
           replace_once(storage, old, new, 'weighted scan')
+          old = '''        remove(level, positions, metal, SettlementStorageService::isMetalStack);\n        remove(level, positions, food, SettlementInventory::isFood);\n'''
+          new = '''        removeValue(level, positions, metal, SettlementInventory::metalValue);\n        removeValue(level, positions, food, SettlementInventory::foodValue);\n'''
+          replace_once(storage, old, new, 'weighted atomic metal food removal')
           replace_once(storage,
               '        remove(level, positions, food, SettlementInventory::isFood);\n',
               '        removeValue(level, positions, food, SettlementInventory::foodValue);\n',
@@ -73,9 +76,6 @@ jobs:
               '        remove(level, positions, amount, SettlementStorageService::isMetalStack);\n',
               '        removeValue(level, positions, amount, SettlementInventory::metalValue);\n',
               'weighted metal removal')
-          old = '''        remove(level, positions, metal, SettlementStorageService::isMetalStack);\n        remove(level, positions, food, SettlementInventory::isFood);\n'''
-          new = '''        removeValue(level, positions, metal, SettlementInventory::metalValue);\n        removeValue(level, positions, food, SettlementInventory::foodValue);\n'''
-          replace_once(storage, old, new, 'weighted atomic metal food removal')
           marker = '    private static void remove(ServerLevel level, List<BlockPos> positions,\n'
           helper = '''    private static void removeValue(ServerLevel level, List<BlockPos> positions,\n                                    long amount, ToIntFunction<ItemStack> valuation) {\n        long left = amount;\n        // Lower-value stock is consumed first; scarce gold or rare food remains a last resort.\n        for (int unit = 1; unit <= 24 && left > 0L; unit++) {\n            for (BlockPos pos : positions) {\n                if (left <= 0L) break;\n                if (!(level.getBlockEntity(pos) instanceof Container container)) continue;\n                boolean changed = false;\n                for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {\n                    ItemStack stack = container.getItem(slot);\n                    if (stack.isEmpty() || Math.max(0, valuation.applyAsInt(stack)) != unit) continue;\n                    int take = (int)Math.min(stack.getCount(), (left + unit - 1L) / unit);\n                    stack.shrink(take);\n                    left -= (long)take * unit;\n                    changed = true;\n                }\n                if (changed) container.setChanged();\n            }\n        }\n    }\n\n'''
           replace_once(storage, marker, helper + marker, 'weighted storage removal helper')
