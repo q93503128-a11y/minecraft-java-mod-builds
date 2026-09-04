@@ -1,6 +1,6 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
-import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -26,7 +26,7 @@ final class SettlementWorkerStorageNavigation {
     private SettlementWorkerStorageNavigation() {}
 
     static BlockPos findReachableExtractionTarget(ServerLevel level, SettlementData data,
-                                                  FrontierWorkerEntity worker,
+                                                  PathfinderMob worker,
                                                   Predicate<ItemStack> predicate,
                                                   double interactionRangeSqr) {
         Set<BlockPos> excluded = new HashSet<>();
@@ -39,7 +39,7 @@ final class SettlementWorkerStorageNavigation {
     }
 
     static BlockPos findReachableDepositTarget(ServerLevel level, SettlementData data,
-                                               FrontierWorkerEntity worker, ItemStack stack,
+                                               PathfinderMob worker, ItemStack stack,
                                                double interactionRangeSqr) {
         Set<BlockPos> excluded = new HashSet<>();
         while (true) {
@@ -50,7 +50,7 @@ final class SettlementWorkerStorageNavigation {
         }
     }
 
-    static boolean canReachInteraction(ServerLevel level, FrontierWorkerEntity worker,
+    static boolean canReachInteraction(ServerLevel level, PathfinderMob worker,
                                        BlockPos target, double interactionRangeSqr) {
         if (!level.hasChunkAt(target)) return false;
         if (worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D)
@@ -61,7 +61,7 @@ final class SettlementWorkerStorageNavigation {
         return false;
     }
 
-    static boolean moveToInteraction(ServerLevel level, FrontierWorkerEntity worker,
+    static boolean moveToInteraction(ServerLevel level, PathfinderMob worker,
                                      BlockPos target, double speed, double interactionRangeSqr) {
         if (!level.hasChunkAt(target)) {
             worker.getNavigation().stop();
@@ -77,7 +77,7 @@ final class SettlementWorkerStorageNavigation {
         return false;
     }
 
-    private static List<BlockPos> approachPositions(ServerLevel level, FrontierWorkerEntity worker, BlockPos target) {
+    private static List<BlockPos> approachPositions(ServerLevel level, PathfinderMob worker, BlockPos target) {
         int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
         List<BlockPos> result = new ArrayList<>();
         for (int dy = -1; dy <= 1; dy++) {
@@ -91,7 +91,7 @@ final class SettlementWorkerStorageNavigation {
         return List.copyOf(result);
     }
 
-    private static Path createExactPath(FrontierWorkerEntity worker, BlockPos target) {
+    private static Path createExactPath(PathfinderMob worker, BlockPos target) {
         Path path = worker.getNavigation().createPath(target, 0);
         if (path == null || !path.canReach() || path.getEndNode() == null
                 || !path.getEndNode().asBlockPos().equals(target)) return null;

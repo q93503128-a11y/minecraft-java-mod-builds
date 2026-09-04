@@ -19,6 +19,7 @@ storage = text(JAVA / "settlement/SettlementStorageService.java")
 outpost = text(JAVA / "settlement/SettlementOutpostLogisticsService.java")
 fishing = text(JAVA / "settlement/SettlementFishingOutpostService.java")
 military = text(JAVA / "settlement/SettlementMilitaryOutpostService.java")
+armory = text(JAVA / "settlement/SettlementMilitaryArmoryService.java")
 barracks = text(JAVA / "settlement/SettlementBarracksService.java")
 waterfront = text(JAVA / "settlement/SettlementWaterfrontService.java")
 market = text(JAVA / "settlement/SettlementMarketService.java")
@@ -117,6 +118,14 @@ forbid(military, (
     "duplicate.setNoAi(true);",
     "Historical duplicate bodies are contained rather than deleted"
 ), "legacy military duplicate containment")
+must(armory, (
+    "SettlementWorkerStorageNavigation.canReachInteraction(",
+    "SettlementWorkerStorageNavigation.moveToInteraction(",
+    "soldier.getNavigation().stop();"
+), "military armory reachable storage pathing")
+forbid(armory, (
+    "soldier.getNavigation().moveTo(source.getX() + 0.5D",
+), "legacy military armory solid-container pathing")
 must(barracks, (
     "active.setInvulnerable(false);",
     "removeDuplicateBarracksSoldierPreservingWeapon(level, soldiers.get(i))",
@@ -242,9 +251,9 @@ forbid(advanced_workshop, (
     "SettlementStorageService.isMetalStack(carried)"
 ), "advanced workshop overlapping metal predicate")
 must(storage_nav, (
-    "findReachableExtractionTarget", "findReachableDepositTarget",
+    "PathfinderMob worker", "findReachableExtractionTarget", "findReachableDepositTarget",
     "moveToInteraction", "createExactPath", "path.canReach()"
-), "workshop storage navigation")
+), "shared worker/soldier storage navigation")
 must(workshop, (
     "SettlementWorkerStorageNavigation.findReachableExtractionTarget",
     "SettlementWorkerStorageNavigation.findReachableDepositTarget",

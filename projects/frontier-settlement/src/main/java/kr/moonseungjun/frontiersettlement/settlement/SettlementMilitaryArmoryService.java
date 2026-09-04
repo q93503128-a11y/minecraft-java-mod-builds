@@ -33,8 +33,8 @@ public final class SettlementMilitaryArmoryService {
         if (source == null) return false;
         double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
         if (distance > STORAGE_INTERACTION_RANGE_SQR) {
-            soldier.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, ARMORY_WALK_SPEED);
-            return true;
+            return SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, soldier, source, ARMORY_WALK_SPEED, STORAGE_INTERACTION_RANGE_SQR);
         }
 
         ItemStack extracted = SettlementStorageService.extract(
@@ -62,10 +62,15 @@ public final class SettlementMilitaryArmoryService {
         if (!(level.getBlockEntity(source) instanceof Container container) || !containsExternalWeapon(container)) {
             return false;
         }
+        if (!SettlementWorkerStorageNavigation.canReachInteraction(
+                level, soldier, source, STORAGE_INTERACTION_RANGE_SQR)) {
+            soldier.getNavigation().stop();
+            return false;
+        }
         double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
         if (distance > STORAGE_INTERACTION_RANGE_SQR) {
-            soldier.getNavigation().moveTo(source.getX() + 0.5D, source.getY(), source.getZ() + 0.5D, ARMORY_WALK_SPEED);
-            return true;
+            return SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, soldier, source, ARMORY_WALK_SPEED, STORAGE_INTERACTION_RANGE_SQR);
         }
 
         ItemStack extracted = SettlementStorageService.extract(
@@ -82,6 +87,8 @@ public final class SettlementMilitaryArmoryService {
         for (BlockPos pos : SettlementStorageService.storagePositions(data)) {
             if (pos.distSqr(routeAnchor) > MAX_ARMORY_ROUTE_SQR || !level.hasChunkAt(pos)) continue;
             if (!(level.getBlockEntity(pos) instanceof Container container) || !containsExternalWeapon(container)) continue;
+            if (!SettlementWorkerStorageNavigation.canReachInteraction(
+                    level, soldier, pos, STORAGE_INTERACTION_RANGE_SQR)) continue;
             double distance = soldier.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
             if (distance <= MAX_ARMORY_ROUTE_SQR && distance < bestDistance) {
                 bestDistance = distance;
