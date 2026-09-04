@@ -1,4 +1,5 @@
 name: Manual Fix Expedition Movement Rush
+# trigger: registered workflow validation
 
 on:
   push:
