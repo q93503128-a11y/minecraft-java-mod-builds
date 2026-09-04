@@ -97,13 +97,42 @@ public record FieldUiSnapshot(
 
     public FieldUiSnapshot {
         mode = mode == null ? Mode.NONE : mode;
-        objective = objective == null ? "" : objective;
-        dialogue = dialogue == null ? "" : dialogue;
+        objective = playerFacingText(objective);
+        dialogue = playerFacingText(dialogue);
         reward = reward == null ? Reward.none() : reward;
         encounters = List.copyOf(encounters == null ? List.of() : encounters);
         travels = List.copyOf(travels == null ? List.of() : travels);
         loadingStage = loadingStage == null ? "" : loadingStage;
         loadingPercent = Math.max(0, Math.min(100, loadingPercent));
+    }
+
+    /**
+     * Internal quest/enemy IDs are useful in code and save data, but they should never leak into the authored RPG
+     * objective copy. Keep the translation at the final field-UI boundary so progression code can stay canonical.
+     */
+    private static String playerFacingText(String value) {
+        if (value == null || value.isBlank()) return "";
+        String text = value;
+        for (String token : List.of(
+                "MQ_C01_01 ", "MQ_C01_02 ", "MQ_C01_03 ",
+                "MQ_C02_01 ", "MQ_C02_02 ", "MQ_C02_03 ",
+                "MQ_C03_01 ", "MQ_C03_02 ", "MQ_C03_03 ",
+                "MQ_C04_01 ", "MQ_C04_02 ", "MQ_C04_03 ",
+                "MQ_C05_01 ", "MQ_C05_02 ", "MQ_C05_03 ")) {
+            text = text.replace(token, "");
+        }
+        return text
+                .replace("B01", "그라울")
+                .replace("B02", "베르나")
+                .replace("B03", "ORO-7")
+                .replace("B04", "콜바크")
+                .replace("B05", "세라크")
+                .replace("EL03", "녹슨 백부장")
+                .replace("E008", "뿌리수호병")
+                .replace("E012/E013", "잿빛 사냥개/잉걸술사")
+                .replace("E014", "용암굴착수")
+                .replace("Relay console", "Relay 제어 콘솔")
+                .replace("Rift Gate / Hard Boss / Signature Trial", "균열문 / 고난도 재도전 / 전용 장비 시험");
     }
 
     /** Compatibility constructor for normal field snapshots. */
