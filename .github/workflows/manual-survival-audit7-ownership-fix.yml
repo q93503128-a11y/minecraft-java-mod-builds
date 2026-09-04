@@ -1,0 +1,121 @@
+name: Manual Survival Audit 7 Ownership Fix
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/manual-survival-audit7-ownership-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  ownership-fix-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Protect claimed logistics barrels from cross-player destruction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('.')
+          gp = root/'projects/survival-ascension/gradle.properties'
+          s = gp.read_text(encoding='utf-8')
+          if 'mod_version=0.61.6-alpha.1' not in s: raise SystemExit('unexpected Survival version')
+          gp.write_text(s.replace('mod_version=0.61.6-alpha.1','mod_version=0.61.7-alpha.1',1),encoding='utf-8')
+
+          main = root/'projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java'
+          s = main.read_text(encoding='utf-8')
+          old='public static final String VERSION = "0.61.6-alpha.1";'
+          if old not in s: raise SystemExit('unexpected VERSION constant')
+          main.write_text(s.replace(old,'public static final String VERSION = "0.61.7-alpha.1";',1),encoding='utf-8')
+
+          p = root/'projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/production/PortableLogisticsBarrelService.java'
+          s = p.read_text(encoding='utf-8')
+          old='''        FieldDepotData data = FieldDepotData.get(player);\n        boolean anchor = data.owns(player, dimension, pos);\n        boolean linked = data.isLinkedByOwner(player, dimension, pos);\n        if (!anchor && !linked) return;\n        if (!level.mayInteract(player, pos)) return;'''
+          new='''        FieldDepotData data = FieldDepotData.get(player);\n        boolean anchor = data.owns(player, dimension, pos);\n        boolean linked = data.isLinkedByOwner(player, dimension, pos);\n        if (!anchor && !linked) {\n            if (data.isPositionClaimed(dimension, pos)) {\n                event.setCanceled(true);\n                event.setNotifyClient(true);\n                player.sendSystemMessage(Component.literal("§3[물류 소유권] §f다른 플레이어가 등록한 물류 거점/창고 통은 파괴할 수 없습니다. §7내용물 직접 이용 여부와 물류 등록 소유권은 별개입니다."));\n            }\n            return;\n        }\n        if (!level.mayInteract(player, pos)) return;'''
+          if old not in s: raise SystemExit('missing portable barrel ownership block')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          print('OWNERSHIP_FIX_APPLIED')
+          PY
+
+      - name: Ownership authority contract audit
+        run: |
+          set -euo pipefail
+          BASE=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension
+          P="$BASE/production/PortableLogisticsBarrelService.java"
+          D="$BASE/production/FieldDepotData.java"
+          grep -Fq 'mod_version=0.61.7-alpha.1' projects/survival-ascension/gradle.properties
+          grep -Fq 'VERSION = "0.61.7-alpha.1"' "$BASE/SurvivalAscension.java"
+          grep -Fq 'data.isPositionClaimed(dimension, pos)' "$P"
+          grep -Fq 'event.setCanceled(true);' "$P"
+          grep -Fq 'event.setNotifyClient(true);' "$P"
+          grep -Fq 'public boolean isRegisteredAnchor(String dimension, BlockPos pos)' "$D"
+          grep -Fq 'public boolean isLinkedByAny(String dimension, BlockPos pos)' "$D"
+          grep -Fq 'public boolean isPositionClaimed(String dimension, BlockPos pos)' "$D"
+          grep -Fq 'CLAIMED_BY_OTHER' "$D"
+          grep -Fq 'if (isPositionClaimed(depot.dimension(), pos)) return LinkResult.CLAIMED;' "$D"
+          git diff --check
+          echo OWNERSHIP_AUTHORITY_CONTRACT_OK
+
+      - name: Resource JSON audit
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' f; do
+            python3 -m json.tool "$f" >/dev/null
+            count=$((count+1))
+          done < <(find projects/frontier-settlement/src/main/resources projects/survival-ascension/src/main/resources -type f -name '*.json' -print0)
+          echo "JSON_OK $count files"
+
+      - name: Frontier Java 25 regression build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+
+      - name: JAR audit
+        run: |
+          set -euo pipefail
+          F=projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.92.jar
+          S=projects/survival-ascension/build/libs/survivalascension-0.61.7-alpha.1.jar
+          for jarfile in "$F" "$S"; do
+            test -s "$jarfile"
+            test -z "$(jar tf "$jarfile" | sort | uniq -d | head -n1 || true)"
+            echo "JAR_OK $jarfile $(stat -c%s "$jarfile") bytes"
+          done
+          jar tf "$S" | grep -Fq 'kr/moonseungjun/survivalascension/production/PortableLogisticsBarrelService.class'
+
+      - name: Upload final audit 7 Survival replacement
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-audit7-final-replacement
+          path: projects/survival-ascension/build/libs/survivalascension-0.61.7-alpha.1.jar
+          retention-days: 7
+
+      - name: Commit validated ownership fix and cleanup
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-survival-audit7-ownership-fix.yml
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/survival-ascension .github/workflows/manual-survival-audit7-ownership-fix.yml
+          git commit -m "Protect multiplayer logistics ownership"
+          git pull --rebase origin main
+          git push origin HEAD:main
