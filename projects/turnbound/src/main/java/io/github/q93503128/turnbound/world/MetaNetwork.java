@@ -32,7 +32,8 @@ public final class MetaNetwork {
                         return;
                     }
 
-                    String denial = MetaActionGate.denial(player, raw);
+                    String denial = MetaActionGate.denial(player.getUUID(), raw);
+                    if (denial.isBlank()) denial = MetaFacilityActionGate.denial(player, raw);
                     if (!denial.isBlank()) {
                         player.sendSystemMessage(Component.literal("TURNBOUND · " + denial));
                         sync(player);
