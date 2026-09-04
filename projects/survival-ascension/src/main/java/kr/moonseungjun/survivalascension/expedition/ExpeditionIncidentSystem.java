@@ -83,6 +83,8 @@ public final class ExpeditionIncidentSystem {
             return;
         }
         if (isActive(player)) return;
+        // Auto incidents must respect the same one-major-encounter rule as manual activities.
+        if (FinalAscensionSystem.hasOtherMajorActivity(player)) return;
 
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0 || player.isCreative() || player.isSpectator() || !player.isAlive()) return;
         if (FinalAscensionSystem.isFinalSequenceActive(player)) return;

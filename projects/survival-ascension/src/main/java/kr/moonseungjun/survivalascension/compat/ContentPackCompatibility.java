@@ -278,6 +278,9 @@ public final class ContentPackCompatibility {
         return true;
     }
 
+    /** Equipment must never be consumed as a physical economy resource even if an external datapack mis-tags it. */
+    public static boolean isProtectedEquipment(ItemStack stack) { return isStandardAffixGear(stack); }
+
     private static boolean isStandardAffixGear(ItemStack stack) {
         return !stack.isEmpty() && stack.getMaxStackSize() == 1 && (
                 stack.is(ItemTags.SPEARS)

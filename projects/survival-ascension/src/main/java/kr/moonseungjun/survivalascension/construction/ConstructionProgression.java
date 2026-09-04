@@ -232,10 +232,11 @@ public final class ConstructionProgression {
             INTERNAL_PLACE_GUARD.remove(uuid);
         }
         if (denied) return PlaceResult.SKIPPED;
-        if (clearVegetation && !existing.isAir()) level.destroyBlock(target, false, player);
+        // Replace soft vegetation directly. Destroying it first made a failed placement permanently
+        // erase the plant even though no construction block or material transaction committed.
         if (!level.setBlockAndUpdate(target, state)) return PlaceResult.SKIPPED;
         if (!player.isCreative() && !FieldDepotService.consumeOne(player, item)) {
-            level.removeBlock(target, false);
+            level.setBlockAndUpdate(target, existing);
             return PlaceResult.OUT_OF_MATERIAL;
         }
         return PlaceResult.PLACED;

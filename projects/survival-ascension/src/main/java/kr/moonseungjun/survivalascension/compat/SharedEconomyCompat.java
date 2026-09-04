@@ -40,7 +40,7 @@ public final class SharedEconomyCompat {
     private SharedEconomyCompat() {}
 
     public static boolean matches(ResourceCategory category, ItemStack stack) {
-        if (stack.isEmpty() || stack.is(EXPEDITION_RELICS)) return false;
+        if (stack.isEmpty() || stack.is(EXPEDITION_RELICS) || ContentPackCompatibility.isProtectedEquipment(stack)) return false;
         int mask = 0;
         if (rawWood(stack)) mask |= WOOD;
         if (rawStone(stack)) mask |= STONE;

@@ -84,6 +84,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onBlockPlaced);
         NeoForge.EVENT_BUS.addListener(ConstructionProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionProgression::onPlayerLoggedIn);

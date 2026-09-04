@@ -5,7 +5,6 @@ import kr.moonseungjun.survivalascension.compat.ApexContentPackBridge;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
-import kr.moonseungjun.survivalascension.expedition.ExpeditionIncidentSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
@@ -105,8 +104,8 @@ public final class ApexHuntSystem {
             player.sendSystemMessage(Component.literal("§4[정점 사냥] §f이미 진행 중인 사냥이 있습니다."));
             return;
         }
-        if (ExpeditionIncidentSystem.isActive(player)) {
-            player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 현장 사건을 먼저 끝내세요."));
+        if (FinalAscensionSystem.hasOtherMajorActivity(player)) {
+            player.sendSystemMessage(Component.literal("§4[정점 사냥] §f진행 중인 현장 사건·원정 작전·방어전·승천 시련·다른 정점 사냥을 먼저 끝내세요."));
             return;
         }
         if (FinalAscensionSystem.isFinalSequenceActive(player)) {

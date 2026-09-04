@@ -51,6 +51,14 @@ public final class MobilityProgression {
         UUID uuid = player.getUUID();
         if (player.onGround()) AIR_DASH_COUNT.put(uuid, 0);
         trackTraversal(player);
+        syncDashCooldown(player);
+    }
+
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            // Client state can survive an integrated-server/world switch; explicitly clear it on join.
+            SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
+        }
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -95,6 +103,18 @@ public final class MobilityProgression {
         SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(cooldown));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MOBILITY, airborne ? 5L : 3L));
         ExpeditionProgression.recordAction(player, ExpeditionAction.DASHES_USED, 1);
+    }
+
+    private static void syncDashCooldown(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        Long ready = DASH_READY_TICK.get(uuid);
+        if (ready == null) return;
+        long rawRemaining = Math.max(0L, ready - player.level().getGameTime());
+        int remaining = (int)Math.min(Integer.MAX_VALUE, rawRemaining);
+        // The HUD follows authoritative server game ticks instead of wall-clock time. This keeps it
+        // correct through low TPS, pause, and short server stalls. Packets exist only while cooling down.
+        SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(remaining));
+        if (remaining <= 0) DASH_READY_TICK.remove(uuid);
     }
 
     private static int maxAirDashes(ServerPlayer player, int level) {

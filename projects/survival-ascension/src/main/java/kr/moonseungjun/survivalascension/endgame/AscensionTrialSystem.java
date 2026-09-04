@@ -85,6 +85,10 @@ public final class AscensionTrialSystem {
             player.sendSystemMessage(Component.literal("§5[승천 시련] §f이미 진행 중인 시련이 있습니다."));
             return;
         }
+        if (FinalAscensionSystem.hasOtherMajorActivity(player)) {
+            player.sendSystemMessage(Component.literal("§5[승천 시련] §f진행 중인 현장 사건·원정 작전·정점 사냥·방어전·다른 승천 시련을 먼저 끝내세요."));
+            return;
+        }
         if (FinalAscensionSystem.isFinalSequenceActive(player)) {
             player.sendSystemMessage(Component.literal("§5[승천 시련] §f최후의 승천 진행 중에는 반복 시련을 열 수 없습니다."));
             return;

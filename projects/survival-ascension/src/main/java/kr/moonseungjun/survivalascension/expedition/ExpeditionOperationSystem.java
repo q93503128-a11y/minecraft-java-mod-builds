@@ -36,7 +36,7 @@ public final class ExpeditionOperationSystem {
         ExpeditionOperationData data = ExpeditionOperationData.get(player);
         if (data.active(player) != null) { sendStatus(player); return; }
         if (FinalAscensionSystem.isFinalSequenceActive(player)) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f최후의 승천 진행 중에는 새 원정 작전을 시작할 수 없습니다.")); return; }
-        if (ApexHuntSystem.isActive(player) || AscensionTrialSystem.isActive(player)) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f정점 사냥이나 승천 시련 진행 중에는 새 작전을 시작할 수 없습니다.")); return; }
+        if (FinalAscensionSystem.hasOtherMajorActivity(player)) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f진행 중인 현장 사건·방어전·정점 사냥·승천 시련을 먼저 끝내세요.")); return; }
 
         OutpostData.OutpostEntry outpost = OutpostService.nearestActiveOutpost(player, START_RADIUS);
         if (outpost == null) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f활성 전초기지 4블록 안에서 시작해야 합니다.")); return; }
@@ -46,12 +46,17 @@ public final class ExpeditionOperationSystem {
         ExpeditionData expedition = ExpeditionData.get(player);
         if (!expedition.isComplete(player, region)) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f먼저 이 전초의 §e" + region.koreanName() + " 현장 지령§f을 완수해야 합니다.")); return; }
         ProductionData production = ProductionData.get(player);
-        if (!production.consumeSupplyCharge(player)) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f출발 준비에는 §e현장 보급권 1개§f가 필요합니다.")); return; }
+        if (production.supplyCharges(player) < SUPPLY_CHARGE_COST) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f출발 준비에는 §e현장 보급권 1개§f가 필요합니다.")); return; }
 
         ExpeditionOperation operation = ExpeditionOperation.forRegion(region);
         ExpeditionComplication complication = chooseComplication(player, level, data);
         long deadline = level.getGameTime() + operation.durationTicks();
         if (!data.start(player, operation, outpost.dimension(), outpost.pos(), deadline, complication)) { player.sendSystemMessage(Component.literal("§c[원정 작전] §f작전 상태가 바뀌어 출발하지 못했습니다.")); return; }
+        if (!production.consumeSupplyCharge(player)) {
+            data.fail(player);
+            player.sendSystemMessage(Component.literal("§c[원정 작전] §f보급권 상태가 바뀌어 출발을 취소했습니다. 보급권은 소비되지 않았습니다."));
+            return;
+        }
         player.sendSystemMessage(Component.literal("§6[원정 작전 출발] §f" + operation.koreanName() + " §7· 보급권1 소비"));
         player.sendSystemMessage(Component.literal("§c[작전 변수] §f" + complication.koreanName() + " §7· " + complication.description()));
         if (region == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) player.sendSystemMessage(Component.literal("§d[공명 회수 계약] §f심층 작전 귀환 성공 시 외부 공명 장비 1개를 확보합니다. §7귀환 순간 주손/보조손 장비 종류로 목표를 좁힐 수 있습니다. 현재: §d" + TargetedResonanceRecovery.describeFocus(player.getMainHandItem(), player.getOffhandItem())));
