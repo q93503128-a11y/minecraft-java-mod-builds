@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound;
 
+import io.github.q93503128.turnbound.client.AsterMarchMinimapLayer;
 import io.github.q93503128.turnbound.client.BattleCameraController;
 import io.github.q93503128.turnbound.client.ClientAudioNetwork;
 import io.github.q93503128.turnbound.client.ClientAudioPlayback;
@@ -23,8 +24,10 @@ public final class TurnboundClient {
         modEventBus.addListener(ClientFieldNetwork::register);
         modEventBus.addListener(ClientMetaNetwork::register);
         modEventBus.addListener(ClientAudioNetwork::register);
-        modEventBus.addListener((RegisterGuiLayersEvent event) -> event.registerAboveAll(
-                Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer()));
+        modEventBus.addListener((RegisterGuiLayersEvent event) -> {
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "aster_minimap"), new AsterMarchMinimapLayer());
+        });
         NeoForge.EVENT_BUS.addListener(VanillaHudPolicy::onGuiLayer);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);

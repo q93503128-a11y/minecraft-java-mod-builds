@@ -13,6 +13,14 @@ final class BattleHudButton extends Button {
     BattleHudButton(int x, int y, int width, int height, Component message, int accent, OnPress onPress) {
         super(x, y, width, height, TurnboundUiText.playerFacingLabel(message), onPress, DEFAULT_NARRATION);
         this.accent = accent;
+        String raw = message == null ? "" : message.getString();
+        boolean hiddenService = ("소환".equals(raw) && !FacilityUiAccess.archive())
+                || (("INVENTORY".equals(raw) || "MARKET".equals(raw)) && !FacilityUiAccess.market())
+                || (("강화 +1".equals(raw) || "+20 완료".equals(raw)) && !FacilityUiAccess.forge());
+        if (hiddenService) {
+            visible = false;
+            active = false;
+        }
     }
 
     void setSelected(boolean selected) { this.selected = selected; }

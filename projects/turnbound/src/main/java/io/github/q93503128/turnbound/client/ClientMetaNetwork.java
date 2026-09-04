@@ -27,12 +27,20 @@ public final class ClientMetaNetwork {
                     || minecraft.gui.screen() instanceof GachaPresentationScreen) return;
 
             if (!hint.isBlank()) {
-                minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
+                FacilityUiAccess.applyHint(hint);
+                if ("MARKET".equals(hint)) {
+                    minecraft.gui.setScreen(new FacilityMarketScreen());
+                } else {
+                    minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
+                }
                 return;
             }
-            if (minecraft.gui.screen() instanceof MetaMenuScreen screen) {
+            if (minecraft.gui.screen() instanceof FacilityMarketScreen market) {
+                market.refreshSnapshot();
+            } else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) {
                 screen.refreshSnapshot();
             } else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
+                FacilityUiAccess.clear();
                 minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.PARTY));
             }
         });
@@ -66,7 +74,7 @@ public final class ClientMetaNetwork {
         return switch (hint) {
             case "PARTY", "RELAY" -> MetaMenuScreen.Tab.PARTY;
             case "CHARACTERS", "MEMORIAL", "CLOCK", "BARRACKS" -> MetaMenuScreen.Tab.CHARACTERS;
-            case "EQUIPMENT", "MARKET", "FORGE" -> MetaMenuScreen.Tab.EQUIPMENT;
+            case "EQUIPMENT", "FORGE" -> MetaMenuScreen.Tab.EQUIPMENT;
             case "ARCHIVE" -> MetaMenuScreen.Tab.ARCHIVE;
             case "QUESTS" -> MetaMenuScreen.Tab.QUESTS;
             case "CODEX" -> MetaMenuScreen.Tab.CODEX;

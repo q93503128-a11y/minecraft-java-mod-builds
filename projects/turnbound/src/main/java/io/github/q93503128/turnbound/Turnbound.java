@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.world.AsterMarchWorldSanitizer;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
@@ -68,6 +69,7 @@ public final class Turnbound {
             // Do not build/sync authored world content until the destructive foundation pass is complete.
             if (StarterSliceBootstrap.building(player)) return;
             WorldSessionRouter.tick(player);
+            AsterMarchWorldSanitizer.tick(player);
             OpeningReadabilityService.tick(player);
             BattleSessionManager.tick(player);
             CampaignPersistence.autosave(player);

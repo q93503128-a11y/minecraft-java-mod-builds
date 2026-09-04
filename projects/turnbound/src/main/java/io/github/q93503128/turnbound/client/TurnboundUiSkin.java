@@ -56,7 +56,9 @@ final class TurnboundUiSkin {
     }
 
     private static void stretch(GuiGraphicsExtractor graphics, Identifier texture, int x, int y, int width, int height) {
-        graphics.blit(texture, x, y, x + width, y + height, 0.0F, 1.0F, 0.0F, 1.0F);
+        // 26.2 blit uses x/y plus width/height. Passing x+width/y+height made every later widget grow
+        // with its screen position and is what caused the visible right-edge spill in the E menu.
+        graphics.blit(texture, x, y, width, height, 0.0F, 1.0F, 0.0F, 1.0F);
     }
 
     private static boolean warm(int accent) {

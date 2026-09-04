@@ -41,8 +41,11 @@ public final class RadiaHubWorld {
         if (!hasMarker(level)) {
             plaza(level); roads(level); starterGuidance(level);
             building(level, -12,-20,25,24, Blocks.STONE_BRICKS, Blocks.POLISHED_ANDESITE);
+            interiorLights(level, -12,-20,25,24);
+            // Echo Archive deliberately stays dark and amethyst-lit as part of its archive/rift atmosphere.
             building(level, -69,-2,26,22, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK);
             building(level, 44,-2,25,22, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK);
+            interiorLights(level, 44,-2,25,22);
             market(level); training(level); rift(level); memorial(level); clock(level); barracks(level);
             southGate(level, false); relay(level); writeMarker(level);
         }
@@ -117,12 +120,14 @@ public final class RadiaHubWorld {
 
     private static void clock(ServerLevel l){
         building(l,14,-70,17,18,Blocks.STONE_BRICKS,Blocks.QUARTZ_BLOCK);
+        interiorLights(l,14,-70,17,18);
         for(int y=Y+5;y<=Y+18;y++) set(l,22,y,-62,y%4==0?Blocks.QUARTZ_BLOCK:Blocks.STONE_BRICKS);
         set(l,22,Y+19,-62,Blocks.GLOWSTONE);
     }
 
     private static void barracks(ServerLevel l){
         building(l,60,-38,25,25,Blocks.STONE_BRICKS,Blocks.SPRUCE_PLANKS);
+        interiorLights(l,60,-38,25,25);
         for(int z=-33;z<=-19;z+=4){ set(l,66,Y+1,z,Blocks.IRON_BARS); set(l,78,Y+1,z,Blocks.TARGET); }
     }
 
@@ -147,6 +152,13 @@ public final class RadiaHubWorld {
             set(l,x,Y+6,z,Blocks.DEEPSLATE_TILE_SLAB);
         }
         int door=x0+w/2; for(int y=Y+1;y<=Y+3;y++) set(l,door,y,z0+d-1,Blocks.AIR);
+    }
+
+    /** Ceiling-integrated light grid for ordinary civic interiors; atmospheric facilities opt out. */
+    private static void interiorLights(ServerLevel l,int x0,int z0,int w,int d){
+        for(int x=x0+4;x<x0+w-3;x+=6){
+            for(int z=z0+4;z<z0+d-3;z+=6) set(l,x,Y+6,z,Blocks.SEA_LANTERN);
+        }
     }
 
     private static void stall(ServerLevel l,int x,int z,Block wood){
