@@ -32,13 +32,26 @@ jobs:
               'DIRECT_MOVE_STOCK': 'getNavigation().moveTo(stock.getX()',
               'DISCARD_ENTITY': '.discard();',
           }
-          totals = {key: 0 for key in patterns}
+          hits = {key: [] for key in patterns}
           for path in sorted(root.rglob('*.java')):
-              lines = path.read_text(encoding='utf-8').splitlines()
-              for lineno, line in enumerate(lines, 1):
+              rel = str(path.relative_to(root))
+              for lineno, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                   for key, token in patterns.items():
                       if token in line:
-                          totals[key] += 1
-                          print(f'{key}|{path.relative_to(root)}:{lineno}|{line.strip()}')
-          print('SUMMARY|' + '|'.join(f'{key}={value}' for key, value in totals.items()))
+                          hits[key].append((rel, lineno, line.strip()))
+                          print(f'{key}|{rel}:{lineno}|{line.strip()}')
+          print('SUMMARY|' + '|'.join(f'{key}={len(value)}' for key, value in hits.items()))
+
+          for key in ('INVULNERABLE_TRUE', 'NOAI_TRUE', 'DIRECT_STORAGE_DEPOSIT', 'DIRECT_MOVE_SOURCE', 'DIRECT_MOVE_STOCK'):
+              if hits[key]:
+                  raise SystemExit(f'unexpected unsafe runtime pattern remains: {key}={hits[key]}')
+
+          # The only remaining direct findExtractionTarget calls are read-only construction status
+          # probes. Actual extraction movement then uses the separate exact reachable-target helper.
+          unexpected_extract = [hit for hit in hits['DIRECT_STORAGE_EXTRACT']
+                                if hit[0] != 'settlement/SettlementConstructionService.java']
+          if unexpected_extract or len(hits['DIRECT_STORAGE_EXTRACT']) != 2:
+              raise SystemExit(f'unexpected direct storage extraction sites: {hits["DIRECT_STORAGE_EXTRACT"]}')
+
+          print('FRONTIER RUNTIME PATTERN SCAN PASS')
           PY
