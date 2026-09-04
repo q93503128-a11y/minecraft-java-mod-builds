@@ -4,6 +4,7 @@ import com.geckolib.animatable.GeoEntity;
 import com.geckolib.animatable.instance.AnimatableInstanceCache;
 import com.geckolib.animatable.manager.AnimatableManager;
 import com.geckolib.animation.AnimationController;
+import com.geckolib.animation.PlayState;
 import com.geckolib.animation.RawAnimation;
 import com.geckolib.constant.DefaultAnimations;
 import com.geckolib.util.GeckoLibUtil;
@@ -23,6 +24,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private static final RawAnimation CHARGE = RawAnimation.begin().thenPlay("boss.charge");
     private static final RawAnimation SUMMON = RawAnimation.begin().thenPlay("boss.summon");
     private static final RawAnimation PHASE = RawAnimation.begin().thenPlay("boss.phase_enter");
+    private static final RawAnimation BOSS_ARMOR_BREAK_HOLD = RawAnimation.begin().thenPlay("boss.armor_broken_hold");
     private static final RawAnimation BOSS_STAGGER = RawAnimation.begin().thenPlay("boss.stagger");
     private static final RawAnimation BOSS_HIT_LIGHT = RawAnimation.begin().thenPlay("boss.hit_light");
     private static final RawAnimation BOSS_HIT_HEAVY = RawAnimation.begin().thenPlay("boss.hit_heavy");
@@ -94,6 +96,17 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("stagger", BOSS_STAGGER)
                 .triggerableAnim("field_walk", fieldWalk)
                 .triggerableAnim("field_idle", fieldIdle));
+
+        if (bossAnimations) {
+            // Persistent boss mutations live on their own additive controllers so ordinary attacks/hits can
+            // keep animating on the combat controller without snapping the evolved silhouette back to phase 1.
+            controllers.add(new AnimationController<BattleActorEntity>("boss_phase", 3, test -> PlayState.STOP)
+                    .additiveAnimations()
+                    .triggerableAnim("phase", PHASE));
+            controllers.add(new AnimationController<BattleActorEntity>("boss_damage", 2, test -> PlayState.STOP)
+                    .additiveAnimations()
+                    .triggerableAnim("armor_break", BOSS_ARMOR_BREAK_HOLD));
+        }
     }
 
     private static RawAnimation play(String prefix, String clip) {
@@ -130,8 +143,16 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playTelegraph() { triggerAnim("combat", "telegraph"); }
     public void playCharge() { triggerAnim("combat", "charge"); }
     public void playSummon() { triggerAnim("combat", "summon"); }
-    public void playPhase() { triggerAnim("combat", "phase"); }
-    public void playBossStagger() { triggerAnim("combat", "stagger"); }
+    public void playPhase() {
+        if (TurnboundBattleActors.bossAnimationType(getType())) triggerAnim("boss_phase", "phase");
+        else triggerAnim("combat", "phase");
+    }
+    public void playBossStagger() {
+        triggerAnim("combat", "stagger");
+        // At present this is used by ORO-7's barrier shear. Keeping the damage pose separate means
+        // later overclock/phase animations cannot restore the already-broken external armor.
+        if (TurnboundBattleActors.bossAnimationType(getType())) triggerAnim("boss_damage", "armor_break");
+    }
 
     /** Switches authored field actors between locomotion clips without per-tick retrigger spam. */
     public void setFieldWalking(boolean walking) {
