@@ -114,6 +114,7 @@ public record FieldUiSnapshot(
         if (value == null || value.isBlank()) return "";
         String text = value;
         for (String token : List.of(
+                "MQ_P00_01 ", "MQ_P00_02 ", "MQ_P00_03 ",
                 "MQ_C01_01 ", "MQ_C01_02 ", "MQ_C01_03 ",
                 "MQ_C02_01 ", "MQ_C02_02 ", "MQ_C02_03 ",
                 "MQ_C03_01 ", "MQ_C03_02 ", "MQ_C03_03 ",
@@ -122,6 +123,16 @@ public record FieldUiSnapshot(
             text = text.replace(token, "");
         }
         return text
+                .replace("P01/P03/P04/F03", "카이렌/브람/엘리시아/변경 사냥꾼")
+                .replace("P01", "카이렌")
+                .replace("P02", "루메아")
+                .replace("P03", "브람")
+                .replace("P04", "엘리시아")
+                .replace("P05", "리네트")
+                .replace("P06", "모르웬")
+                .replace("P07", "마리온")
+                .replace("P08", "라제")
+                .replace("F03", "변경 사냥꾼")
                 .replace("B01", "그라울")
                 .replace("B02", "베르나")
                 .replace("B03", "ORO-7")
@@ -131,8 +142,12 @@ public record FieldUiSnapshot(
                 .replace("E008", "뿌리수호병")
                 .replace("E012/E013", "잿빛 사냥개/잉걸술사")
                 .replace("E014", "용암굴착수")
+                .replace("CORE_FRAGMENT", "Relay 핵 파편")
+                .replace("Relay fragment", "Relay 조각")
                 .replace("Relay console", "Relay 제어 콘솔")
-                .replace("Rift Gate / Hard Boss / Signature Trial", "균열문 / 고난도 재도전 / 전용 장비 시험");
+                .replace("Rift Gate / Hard Boss / Signature Trial", "균열문 / 고난도 재도전 / 전용 장비 시험")
+                .replace("Signature Trial", "전용 장비 시험")
+                .replace("Hard Boss", "고난도 재도전");
     }
 
     /** Compatibility constructor for normal field snapshots. */
