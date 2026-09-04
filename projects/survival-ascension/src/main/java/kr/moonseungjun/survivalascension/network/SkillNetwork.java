@@ -17,15 +17,23 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "9";
+    private static final String PROTOCOL = "10";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
+    private static volatile Consumer<ExpeditionSnapshotPayload> expeditionSink = payload -> {};
     private SkillNetwork() {}
 
     public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(SkillUpdatePayload.TYPE, SkillUpdatePayload.CODEC, (payload, context) -> updateSink.accept(payload));
         registrar.playToClient(SkillSnapshotPayload.TYPE, SkillSnapshotPayload.CODEC, (payload, context) -> snapshotSink.accept(payload));
+        registrar.playToClient(ExpeditionSnapshotPayload.TYPE, ExpeditionSnapshotPayload.CODEC, (payload, context) -> expeditionSink.accept(payload));
+        registrar.playToServer(ExpeditionSnapshotRequestPayload.TYPE, ExpeditionSnapshotRequestPayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        PacketDistributor.sendToPlayer(player, ExpeditionSnapshotPayload.from(player));
+                    }
+                }));
         registrar.playToServer(ConstructionModePayload.TYPE, ConstructionModePayload.CODEC, (payload, context) ->
                 context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) ConstructionProgression.setMode(player, ConstructionMode.fromId(payload.modeId()));
@@ -55,6 +63,10 @@ public final class SkillNetwork {
     public static void installClientReceivers(Consumer<SkillUpdatePayload> updates, Consumer<SkillSnapshotPayload> snapshots) {
         updateSink = Objects.requireNonNull(updates);
         snapshotSink = Objects.requireNonNull(snapshots);
+    }
+
+    public static void installExpeditionReceiver(Consumer<ExpeditionSnapshotPayload> snapshots) {
+        expeditionSink = Objects.requireNonNull(snapshots);
     }
     public static void sendUpdate(ServerPlayer player, SkillUpdatePayload payload) { PacketDistributor.sendToPlayer(player, payload); }
     public static void sendSnapshot(ServerPlayer player, SkillSnapshotPayload payload) { PacketDistributor.sendToPlayer(player, payload); }

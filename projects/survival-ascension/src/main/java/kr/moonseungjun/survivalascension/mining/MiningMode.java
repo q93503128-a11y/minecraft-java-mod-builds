@@ -1,6 +1,7 @@
 package kr.moonseungjun.survivalascension.mining;
 
 public enum MiningMode {
+    SINGLE("single", "단일", 0),
     AUTO("auto", "자동", 0),
     PLANE("plane", "굴착", 10),
     VEIN("vein", "광맥", 30),

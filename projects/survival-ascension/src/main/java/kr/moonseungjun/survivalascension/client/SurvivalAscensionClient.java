@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.network.ExpeditionSnapshotRequestPayload;
 import kr.moonseungjun.survivalascension.network.MobilityActionPayload;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.progress.SkillClientBridge;
@@ -40,11 +41,14 @@ public final class SurvivalAscensionClient {
     // Keep Survival Ascension defaults disjoint from Frontier Settlement's M/R controls.
     private static final KeyMapping OPEN_MENU = new KeyMapping(
             "key.survivalascension.menu", InputConstants.KEY_K, KeyMapping.Category.MISC);
+    private static final KeyMapping OPEN_EXPEDITION = new KeyMapping(
+            "key.survivalascension.expedition", InputConstants.KEY_J, KeyMapping.Category.MISC);
     private static final KeyMapping MOBILITY_ACTION = new KeyMapping(
             "key.survivalascension.mobility_action", InputConstants.KEY_V, KeyMapping.Category.MISC);
 
     public SurvivalAscensionClient(IEventBus modBus) {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
+        SkillNetwork.installExpeditionReceiver(ClientExpeditionState::onSnapshot);
         SkillClientBridge.install(ClientSkillState::level);
         modBus.addListener(RegisterGuiLayersEvent.class, SurvivalAscensionClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, SurvivalAscensionClient::onRegisterKeyMappings);
@@ -74,6 +78,7 @@ public final class SurvivalAscensionClient {
 
     private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_MENU);
+        event.register(OPEN_EXPEDITION);
         event.register(MOBILITY_ACTION);
     }
 
@@ -91,6 +96,17 @@ public final class SurvivalAscensionClient {
                 minecraft.gui.setScreen(null);
             } else if (current == null || current instanceof SkillsScreen || current instanceof GuideScreen) {
                 minecraft.gui.setScreen(new AscensionRadialMenuScreen());
+            }
+        }
+        while (OPEN_EXPEDITION.consumeClick()) {
+            if (minecraft.player == null || minecraft.level == null) continue;
+            Screen current = minecraft.gui.screen();
+            if (current instanceof ExpeditionScreen) {
+                minecraft.gui.setScreen(null);
+            } else if (current == null) {
+                ClientExpeditionState.reset();
+                ClientPacketDistributor.sendToServer(new ExpeditionSnapshotRequestPayload());
+                minecraft.gui.setScreen(new ExpeditionScreen());
             }
         }
         while (MOBILITY_ACTION.consumeClick()) {

@@ -106,6 +106,9 @@ public final class MiningProgression {
         AREA_BREAK_GUARD.add(player.getUUID());
         try {
             switch (mode) {
+                case SINGLE -> {
+                    // Explicit precision mode: the vanilla center block is the only block broken.
+                }
                 case AUTO -> {
                     if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
                     else if (areaSize > 1) breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
@@ -159,6 +162,7 @@ public final class MiningProgression {
     }
     if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
     int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
+    if (effectiveMode(player, miningLevel) == MiningMode.SINGLE) return;
     int areaSize = AscensionAffixes.adjustShovelArea(tool, SkillTuning.miningAreaSize(miningLevel));
     if (areaSize <= 1) return;
     AREA_BREAK_GUARD.add(player.getUUID());
