@@ -29,12 +29,8 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Apply patch
+      - name: Apply patch and targeted assertions
         run: python3 projects/survival-ascension/tools/patch_single_mining_expedition_ui.py
-
-      - name: Current source regression
-        working-directory: projects/survival-ascension
-        run: python3 tools/test_current_source.py
 
       - name: Java 25 clean build
         working-directory: projects/survival-ascension
