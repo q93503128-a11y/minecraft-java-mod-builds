@@ -3,6 +3,8 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.content.SignatureTrialCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,9 +24,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Physical Signature/Awakening hall. Exact trial enemy rosters are Canon Gaps, so this hall exposes readiness,
- * requirements and locked seals without fabricating battles. Once a trial roster becomes canonical the seal is the
- * stable physical entry point that can be wired to it.
+ * Physical Signature/Awakening hall. Exact trial enemy rosters remain governed by the existing canon-safe authoring
+ * layer; this class only presents player readiness and sealed/cleared states without exposing authoring diagnostics.
  */
 public final class SignatureTrialHall {
     public record Seal(String characterId, Vec3 pos, Item item, ChatFormatting color) { }
@@ -67,17 +68,22 @@ public final class SignatureTrialHall {
             if (level.getEntity(entry.getKey()) == null) actors.remove(entry.getKey());
         }
         for (Seal seal : SEALS) {
-            if (actors.containsValue(seal)) continue;
-            SignatureTrialCatalog.Spec spec = SignatureTrialCatalog.forCharacter(seal.characterId());
-            ArmorStand stand = new ArmorStand(level, seal.pos().x, seal.pos().y, seal.pos().z);
-            stand.setInvulnerable(true);
-            stand.setNoGravity(true);
-            stand.setShowArms(true);
-            stand.setCustomName(Component.literal(spec.title()).withStyle(seal.color(), ChatFormatting.BOLD));
-            stand.setCustomNameVisible(true);
-            stand.setItemSlot(EquipmentSlot.MAINHAND, seal.item().getDefaultInstance());
-            level.addFreshEntity(stand);
-            actors.put(stand.getUUID(), seal);
+            UUID existing = actorFor(actors, seal);
+            ArmorStand stand = existing == null ? null : armor(level.getEntity(existing));
+            if (stand == null) {
+                stand = new ArmorStand(level, seal.pos().x, seal.pos().y, seal.pos().z);
+                stand.setInvulnerable(true);
+                stand.setNoGravity(true);
+                stand.setShowArms(true);
+                stand.setItemSlot(EquipmentSlot.MAINHAND, seal.item().getDefaultInstance());
+                level.addFreshEntity(stand);
+                actors.put(stand.getUUID(), seal);
+            }
+            SignatureTrialProgressService.Status status = SignatureTrialProgressService.status(player.getUUID(), seal.characterId());
+            applyName(stand, seal, status);
+            if (player.tickCount % 20 == 0 && player.position().distanceToSqr(seal.pos()) <= 24.0 * 24.0) {
+                pulse(level, seal, status);
+            }
         }
     }
 
@@ -90,19 +96,20 @@ public final class SignatureTrialHall {
         SignatureTrialProgressService.Status status = SignatureTrialProgressService.status(
                 player.getUUID(), seal.characterId());
         player.sendSystemMessage(Component.literal(status.title()).withStyle(seal.color(), ChatFormatting.BOLD));
-        player.sendSystemMessage(Component.literal("목표 · " + status.objective()).withStyle(ChatFormatting.WHITE));
+        player.sendSystemMessage(Component.literal("목표 · " + playerObjective(status.objective())).withStyle(ChatFormatting.WHITE));
 
         if (status.firstClearClaimed()) {
-            player.sendSystemMessage(Component.literal("첫 클리어 완료 · 전용 장비/각성 Core 획득 기록 있음")
+            player.sendSystemMessage(Component.literal("첫 클리어 완료 · 전용 장비와 각성 Core를 획득했습니다.")
                     .withStyle(ChatFormatting.GREEN));
         } else if (!status.progressionReady()) {
             player.sendSystemMessage(Component.literal(status.blockReason()).withStyle(ChatFormatting.GRAY));
         } else if (!status.encounterCanonReady()) {
-            player.sendSystemMessage(Component.literal("CANON GAP · " + status.blockReason())
-                    .withStyle(ChatFormatting.YELLOW));
+            // Keep internal authoring diagnostics out of the game surface. The sealed door can remain as a stable future entry point.
+            player.sendSystemMessage(Component.literal("시련의 봉인이 아직 열리지 않는다.")
+                    .withStyle(ChatFormatting.DARK_PURPLE));
         } else if (status.canEnter()) {
-            player.sendSystemMessage(Component.literal("입장 가능 · Signature Trial 전투를 시작할 수 있습니다.")
-                    .withStyle(ChatFormatting.GREEN));
+            player.sendSystemMessage(Component.literal("입장 가능 · 시련을 시작할 수 있습니다.")
+                    .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
         }
         return true;
     }
@@ -111,6 +118,56 @@ public final class SignatureTrialHall {
         if (player == null || !(player.level() instanceof ServerLevel level)) return;
         Map<UUID, Seal> actors = ACTORS.remove(player.getUUID());
         if (actors != null) despawn(level, actors);
+    }
+
+    private static String playerObjective(String objective) {
+        if (objective == null) return "-";
+        return objective
+                .replace("P01", "카이렌")
+                .replace("P06", "모르웬")
+                .replace("P07", "마리온")
+                .replace("Toto", "토토")
+                .replace("Marion", "마리온")
+                .replace("Trial Boss", "시련 보스");
+    }
+
+    private static void applyName(ArmorStand stand, Seal seal, SignatureTrialProgressService.Status status) {
+        String suffix;
+        ChatFormatting stateColor;
+        if (status.firstClearClaimed()) {
+            suffix = " · 완료";
+            stateColor = ChatFormatting.GREEN;
+        } else if (status.canEnter()) {
+            suffix = " · 입장 가능";
+            stateColor = ChatFormatting.GREEN;
+        } else if (status.progressionReady()) {
+            suffix = " · 봉인됨";
+            stateColor = ChatFormatting.DARK_PURPLE;
+        } else {
+            suffix = " · 조건 미충족";
+            stateColor = ChatFormatting.GRAY;
+        }
+        stand.setCustomName(Component.literal(status.title() + suffix).withStyle(stateColor, ChatFormatting.BOLD));
+        stand.setCustomNameVisible(true);
+    }
+
+    private static void pulse(ServerLevel level, Seal seal, SignatureTrialProgressService.Status status) {
+        Vec3 p = seal.pos().add(0, 1.1, 0);
+        ParticleOptions particle = status.firstClearClaimed() ? ParticleTypes.END_ROD
+                : status.canEnter() ? ParticleTypes.ENCHANT
+                : status.progressionReady() ? ParticleTypes.REVERSE_PORTAL
+                : ParticleTypes.SMOKE;
+        int count = status.firstClearClaimed() ? 4 : status.canEnter() ? 5 : 2;
+        level.sendParticles(particle, p.x, p.y, p.z, count, 0.55, 0.65, 0.55, 0.01);
+    }
+
+    private static UUID actorFor(Map<UUID, Seal> actors, Seal seal) {
+        for (var entry : actors.entrySet()) if (entry.getValue().equals(seal)) return entry.getKey();
+        return null;
+    }
+
+    private static ArmorStand armor(Entity entity) {
+        return entity instanceof ArmorStand stand ? stand : null;
     }
 
     private static void hall(ServerLevel level) {
