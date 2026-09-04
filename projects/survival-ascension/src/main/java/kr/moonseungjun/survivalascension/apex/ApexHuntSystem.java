@@ -37,6 +37,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -615,6 +616,19 @@ public final class ApexHuntSystem {
             ServerPlayer player = hunt.level.getServer().getPlayerList().getPlayer(id);
             if (player != null && player.level() == hunt.level) player.sendSystemMessage(message, actionbar);
         }
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        List<UUID> stopped = new ArrayList<>();
+        for (Map.Entry<UUID, Hunt> entry : ACTIVE.entrySet()) {
+            Hunt hunt = entry.getValue();
+            if (hunt.level.getServer() != event.getServer()) continue;
+            cleanupMobs(hunt);
+            closeBossBar(hunt);
+            stopped.add(entry.getKey());
+        }
+        for (UUID owner : stopped) ACTIVE.remove(owner);
+        ticker = 0;
     }
 
     private static void removeStaleServerHunts(MinecraftServer server) {

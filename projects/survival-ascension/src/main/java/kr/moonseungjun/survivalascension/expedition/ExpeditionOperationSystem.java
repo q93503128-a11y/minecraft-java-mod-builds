@@ -20,6 +20,8 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.function.BooleanSupplier;
+
 public final class ExpeditionOperationSystem {
     public static final int START_RADIUS = 4;
     public static final int WORK_RADIUS = 48;
@@ -31,7 +33,9 @@ public final class ExpeditionOperationSystem {
 
     public static boolean isActive(ServerPlayer player) { return ExpeditionOperationData.get(player).active(player) != null; }
 
-    public static void startOrStatus(ServerPlayer player) {
+    public static void startOrStatus(ServerPlayer player) { startOrStatus(player, () -> true); }
+
+    public static void startOrStatus(ServerPlayer player, BooleanSupplier localSupplyCommit) {
         if (player.isCreative() || player.isSpectator()) { player.sendSystemMessage(Component.literal("§6[원정 작전] §f크리에이티브/관전자 상태에서는 원정 작전을 시작할 수 없습니다.")); return; }
         ExpeditionOperationData data = ExpeditionOperationData.get(player);
         if (data.active(player) != null) { sendStatus(player); return; }
@@ -52,6 +56,11 @@ public final class ExpeditionOperationSystem {
         ExpeditionComplication complication = chooseComplication(player, level, data);
         long deadline = level.getGameTime() + operation.durationTicks();
         if (!data.start(player, operation, outpost.dimension(), outpost.pos(), deadline, complication)) { player.sendSystemMessage(Component.literal("§c[원정 작전] §f작전 상태가 바뀌어 출발하지 못했습니다.")); return; }
+        if (!localSupplyCommit.getAsBoolean()) {
+            data.fail(player);
+            player.sendSystemMessage(Component.literal("§c[원정 작전] §f전초의 현지 실물 보급 재고가 바뀌어 출발하지 않았습니다. §7보급권은 소비되지 않았습니다."));
+            return;
+        }
         if (!production.consumeSupplyCharge(player)) {
             data.fail(player);
             player.sendSystemMessage(Component.literal("§c[원정 작전] §f보급권 상태가 바뀌어 출발을 취소했습니다. 보급권은 소비되지 않았습니다."));

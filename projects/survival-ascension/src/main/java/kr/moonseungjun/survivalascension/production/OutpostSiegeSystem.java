@@ -26,6 +26,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
 public final class OutpostSiegeSystem {
     public static final int START_RADIUS = 4;
@@ -69,11 +71,25 @@ public final class OutpostSiegeSystem {
 
     private OutpostSiegeSystem() {}
 
-    public static boolean isActive(ServerPlayer player) { return ACTIVE.containsKey(player.getUUID()); }
-    public static void startOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.OUTPOST); }
-    public static void startBastionOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.BASTION); }
+    public static boolean isActive(ServerPlayer player) {
+        if (ACTIVE.containsKey(player.getUUID())) return true;
+        if (!player.isAlive() || player.isSpectator()) return false;
+        for (Siege siege : ACTIVE.values()) {
+            if (player.level() == siege.level
+                    && distanceToCenterSqr(player, siege.anchor) <= DEFENSE_RADIUS * DEFENSE_RADIUS) return true;
+        }
+        return false;
+    }
+    public static void startOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.OUTPOST, () -> true); }
+    public static void startBastionOrStatus(ServerPlayer player) { startOrStatus(player, SiegeMode.BASTION, () -> true); }
+    public static void startOrStatus(ServerPlayer player, BooleanSupplier localSupplyCommit) {
+        startOrStatus(player, SiegeMode.OUTPOST, localSupplyCommit);
+    }
+    public static void startBastionOrStatus(ServerPlayer player, BooleanSupplier localSupplyCommit) {
+        startOrStatus(player, SiegeMode.BASTION, localSupplyCommit);
+    }
 
-    private static void startOrStatus(ServerPlayer player, SiegeMode mode) {
+    private static void startOrStatus(ServerPlayer player, SiegeMode mode, BooleanSupplier localSupplyCommit) {
         Siege current = ACTIVE.get(player.getUUID());
         if (current != null) { sendStatus(player); return; }
         if (!(player.level() instanceof ServerLevel level)) return;
@@ -124,6 +140,11 @@ public final class OutpostSiegeSystem {
             player.sendSystemMessage(Component.literal("§c[" + label + "] §f전초 외곽에 충분한 습격대를 배치할 열린 로딩 지형이 없습니다. §7보급권은 소비하지 않았습니다."));
             return;
         }
+        if (!localSupplyCommit.getAsBoolean()) {
+            cleanupMobs(siege); closeBossBar(siege);
+            player.sendSystemMessage(Component.literal("§c[" + label + "] §f전초의 현지 실물 보급 재고가 바뀌어 시작하지 않았습니다. §7보급권/재사용 대기시간은 소비되지 않았습니다."));
+            return;
+        }
         if (!production.consumeSupplyCharges(player, mode.supplyCost)) {
             cleanupMobs(siege); closeBossBar(siege);
             player.sendSystemMessage(Component.literal("§c[" + label + "] §f보급권 상태가 바뀌어 시작을 취소했습니다."));
@@ -158,6 +179,19 @@ public final class OutpostSiegeSystem {
         removeStaleServerSieges(event.getServer());
         if (++ticker < 5) return; ticker = 0;
         for (Siege siege : new ArrayList<>(ACTIVE.values())) tickSiege(event.getServer(), siege);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        List<UUID> stopped = new ArrayList<>();
+        for (Map.Entry<UUID, Siege> entry : ACTIVE.entrySet()) {
+            Siege siege = entry.getValue();
+            if (siege.level.getServer() != event.getServer()) continue;
+            cleanupMobs(siege);
+            closeBossBar(siege);
+            stopped.add(entry.getKey());
+        }
+        for (UUID owner : stopped) ACTIVE.remove(owner);
+        ticker = 0;
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {

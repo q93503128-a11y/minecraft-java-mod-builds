@@ -44,7 +44,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.61.0-alpha.1";
+    public static final String VERSION = "0.61.1-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -112,6 +112,10 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(ApexHuntSystem::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(AscensionTrialSystem::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onServerStopping);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);

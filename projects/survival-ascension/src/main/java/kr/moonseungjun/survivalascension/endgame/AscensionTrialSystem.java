@@ -31,6 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
@@ -460,11 +461,7 @@ public final class AscensionTrialSystem {
     }
 
     private static void fail(Trial trial, String reason) {
-        for (UUID id : trial.mobIds) {
-            Entity entity = trial.level.getEntity(id);
-            if (entity != null) entity.discard();
-        }
-        trial.mobIds.clear();
+        cleanupMobs(trial);
         notifyTrial(trial, Component.literal("§c[공동 승천 시련 실패] §f" + trial.doctrine.koreanName() + " 교리 · " + reason
                 + " §7· 입장 재료는 반환되지 않습니다."), false);
         closeBossBar(trial);
@@ -472,17 +469,39 @@ public final class AscensionTrialSystem {
 
 
 
+    public static void onServerStopping(ServerStoppingEvent event) {
+        List<UUID> stopped = new ArrayList<>();
+        for (Map.Entry<UUID, Trial> entry : ACTIVE.entrySet()) {
+            Trial trial = entry.getValue();
+            if (trial.level.getServer() != event.getServer()) continue;
+            cleanupMobs(trial);
+            closeBossBar(trial);
+            stopped.add(entry.getKey());
+        }
+        for (UUID owner : stopped) ACTIVE.remove(owner);
+        ticker = 0;
+    }
+
     private static void removeStaleServerTrials(MinecraftServer server) {
         if (ACTIVE.isEmpty()) return;
         List<UUID> stale = new ArrayList<>();
         for (Map.Entry<UUID, Trial> entry : ACTIVE.entrySet()) {
             Trial trial = entry.getValue();
             if (trial.level.getServer() != server) {
+                cleanupMobs(trial);
                 closeBossBar(trial);
                 stale.add(entry.getKey());
             }
         }
         for (UUID owner : stale) ACTIVE.remove(owner);
+    }
+
+    private static void cleanupMobs(Trial trial) {
+        for (UUID id : trial.mobIds) {
+            Entity entity = trial.level.getEntity(id);
+            if (entity != null) entity.discard();
+        }
+        trial.mobIds.clear();
     }
 
     private static void closeBossBar(Trial trial) {

@@ -55,5 +55,6 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementMilitaryOutpostService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementOutpostLogisticsService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementWorkerService::onLivingDrops);
+        NeoForge.EVENT_BUS.addListener(SettlementWorkerService::onServerStopping);
     }
 }

@@ -23,6 +23,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.ArrayList;
@@ -633,6 +634,27 @@ public final class ExpeditionIncidentSystem {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
             if (player != null && player.level() == level) player.sendSystemMessage(message, actionbar);
         }
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        List<UUID> activeOwners = new ArrayList<>();
+        for (Map.Entry<UUID, ActiveIncident> entry : ACTIVE.entrySet()) {
+            ActiveIncident active = entry.getValue();
+            if (active.level.getServer() != event.getServer()) continue;
+            cleanupMobs(active);
+            closeBossBar(active.bossBar);
+            activeOwners.add(entry.getKey());
+        }
+        for (UUID owner : activeOwners) ACTIVE.remove(owner);
+
+        List<UUID> pendingOwners = new ArrayList<>();
+        for (Map.Entry<UUID, PendingIncident> entry : PENDING.entrySet()) {
+            PendingIncident pending = entry.getValue();
+            if (pending.level.getServer() != event.getServer()) continue;
+            closeBossBar(pending.bossBar);
+            pendingOwners.add(entry.getKey());
+        }
+        for (UUID owner : pendingOwners) PENDING.remove(owner);
     }
 
     private static void removeStaleServerIncidents(MinecraftServer server) {

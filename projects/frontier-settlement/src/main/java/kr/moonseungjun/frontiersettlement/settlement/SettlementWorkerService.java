@@ -23,6 +23,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.pathfinder.Path;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -73,6 +74,13 @@ public final class SettlementWorkerService {
     private static final Map<java.util.UUID, Long> RESOURCE_SEARCH_RETRY_AFTER = new HashMap<>();
     private static final Map<java.util.UUID, Map<BlockPos, Long>> BLOCKED_TARGETS = new HashMap<>();
     private static final Map<java.util.UUID, MovementWatch> MOVEMENT_WATCHES = new HashMap<>();
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        RESOURCE_TARGETS.clear();
+        RESOURCE_SEARCH_RETRY_AFTER.clear();
+        BLOCKED_TARGETS.clear();
+        MOVEMENT_WATCHES.clear();
+    }
 
     public static void tick(MinecraftServer server, SettlementData data) {
         ServerLevel level = server.overworld();

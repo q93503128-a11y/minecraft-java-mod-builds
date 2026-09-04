@@ -149,11 +149,8 @@ public final class ProductionService {
         PreparedLocalSupply prepared = prepareLocalOutpostSupply(player, outpost, loadout);
         if (prepared == null) return;
 
-        if (bastion) OutpostSiegeSystem.startBastionOrStatus(player);
-        else OutpostSiegeSystem.startOrStatus(player);
-        if (OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)) {
-            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f방어전 시작 직후 전초 재고가 바뀌어 시작을 취소했습니다. §7재고를 확인한 뒤 다시 시도하세요."));
-        }
+        if (bastion) OutpostSiegeSystem.startBastionOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared));
+        else OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared));
     }
 
     private static void startOperationWithLocalSupply(ServerPlayer player) {
@@ -174,10 +171,7 @@ public final class ProductionService {
         PreparedLocalSupply prepared = prepareLocalOutpostSupply(player, outpost, LocalLoadout.EXPEDITION);
         if (prepared == null) return;
 
-        ExpeditionOperationSystem.startOrStatus(player);
-        if (ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply(player, prepared)) {
-            player.sendSystemMessage(Component.literal("§c[전선 현지 보급] §f원정 출발 직후 전초 재고가 바뀌어 시작을 취소했습니다. §7재고를 확인한 뒤 다시 시도하세요."));
-        }
+        ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared));
     }
 
     private static PreparedLocalSupply prepareLocalOutpostSupply(ServerPlayer player, OutpostData.OutpostEntry outpost, LocalLoadout loadout) {
