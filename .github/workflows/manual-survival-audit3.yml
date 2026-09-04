@@ -1,0 +1,222 @@
+name: Manual Survival Audit 3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-audit3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit-fix-build-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply audit 3 fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/survival-ascension')
+          mobility = root / 'src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java'
+          main = root / 'src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java'
+          tbs = root / 'src/main/java/kr/moonseungjun/survivalascension/compat/TbsJournalRestorationService.java'
+          props = root / 'gradle.properties'
+
+          text = mobility.read_text(encoding='utf-8')
+          old = 'import net.neoforged.neoforge.event.entity.player.PlayerEvent;\nimport net.neoforged.neoforge.event.tick.PlayerTickEvent;'
+          new = 'import net.neoforged.neoforge.event.entity.player.PlayerEvent;\nimport net.neoforged.neoforge.event.server.ServerStoppingEvent;\nimport net.neoforged.neoforge.event.tick.PlayerTickEvent;'
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = '''    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            // Client state can survive an integrated-server/world switch; explicitly clear it on join.
+            SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
+        }
+    }
+
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        UUID uuid = event.getEntity().getUUID();
+        TRAVERSAL.remove(uuid);
+        DASH_READY_TICK.remove(uuid);
+        AIR_DASH_COUNT.remove(uuid);
+    }
+'''
+          new = '''    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // A dedicated-server relog must not reset a live dash cooldown. Client state can survive
+        // world switches, so always send the authoritative server value on join.
+        if (DASH_READY_TICK.containsKey(player.getUUID())) syncDashCooldown(player);
+        else SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
+    }
+
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        UUID uuid = event.getEntity().getUUID();
+        // Traversal distance is session-local, but cooldown and airborne quota are gameplay state.
+        // Keep those two until landing or actual server shutdown so relogging cannot refresh a dash.
+        TRAVERSAL.remove(uuid);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        TRAVERSAL.clear();
+        DASH_READY_TICK.clear();
+        AIR_DASH_COUNT.clear();
+    }
+'''
+          assert old in text
+          text = text.replace(old, new, 1)
+          mobility.write_text(text, encoding='utf-8')
+
+          text = tbs.read_text(encoding='utf-8')
+          old = 'import net.neoforged.neoforge.event.entity.player.PlayerEvent;\nimport net.neoforged.neoforge.event.tick.PlayerTickEvent;'
+          new = 'import net.neoforged.neoforge.event.entity.player.PlayerEvent;\nimport net.neoforged.neoforge.event.server.ServerStoppingEvent;\nimport net.neoforged.neoforge.event.tick.PlayerTickEvent;'
+          assert old in text
+          text = text.replace(old, new, 1)
+          marker = '''    public static void onPlayerTick(PlayerTickEvent.Post event) {
+'''
+          insert = '''    public static void onServerStopping(ServerStoppingEvent event) {
+        READY_AT.clear();
+    }
+
+'''
+          assert marker in text and insert not in text
+          text = text.replace(marker, insert + marker, 1)
+          tbs.write_text(text, encoding='utf-8')
+
+          text = main.read_text(encoding='utf-8')
+          assert 'public static final String VERSION = "0.61.1-alpha.1";' in text
+          text = text.replace('public static final String VERSION = "0.61.1-alpha.1";',
+                              'public static final String VERSION = "0.61.2-alpha.1";', 1)
+          marker = '        NeoForge.EVENT_BUS.addListener(MobilityProgression::onPlayerLoggedOut);\n'
+          assert marker in text
+          text = text.replace(marker, marker + '        NeoForge.EVENT_BUS.addListener(MobilityProgression::onServerStopping);\n', 1)
+          marker = '        NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerTick);\n'
+          assert marker in text
+          text = text.replace(marker, marker + '        NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onServerStopping);\n', 1)
+          main.write_text(text, encoding='utf-8')
+
+          text = props.read_text(encoding='utf-8')
+          assert 'mod_version=0.61.1-alpha.1' in text
+          props.write_text(text.replace('mod_version=0.61.1-alpha.1', 'mod_version=0.61.2-alpha.1', 1), encoding='utf-8')
+
+          print('audit3 fixes applied')
+          PY
+
+      - name: Runtime mutable-state inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          roots = [Path('projects/survival-ascension/src/main/java'), Path('projects/frontier-settlement/src/main/java')]
+          pat = re.compile(r'private\s+static\s+final\s+(?:Map|Set|List)<')
+          print('MUTABLE_RUNTIME_STATE_INVENTORY')
+          for root in roots:
+              for p in sorted(root.rglob('*.java')):
+                  s = p.read_text(encoding='utf-8')
+                  hits = len(pat.findall(s))
+                  if not hits:
+                      continue
+                  lifecycle = ('onServerStopping' in s) or ('onPlayerLoggedOut' in s)
+                  print(f'{p}: containers={hits} lifecycle_cleanup={lifecycle}')
+          PY
+
+      - name: Source contract audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          M=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java
+          S=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java
+          T=projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/compat/TbsJournalRestorationService.java
+          grep -q 'MobilityProgression::onServerStopping' "$S"
+          grep -q 'TbsJournalRestorationService::onServerStopping' "$S"
+          grep -q 'DASH_READY_TICK.clear()' "$M"
+          grep -q 'AIR_DASH_COUNT.clear()' "$M"
+          grep -q 'if (DASH_READY_TICK.containsKey(player.getUUID())) syncDashCooldown(player);' "$M"
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mobility/MobilityProgression.java').read_text(encoding='utf-8')
+          block = s[s.index('public static void onPlayerLoggedOut'):s.index('public static void onServerStopping')]
+          assert 'DASH_READY_TICK.remove' not in block
+          assert 'AIR_DASH_COUNT.remove' not in block
+          assert 'TRAVERSAL.remove' in block
+          print('RELOG_DASH_STATE_CONTRACT_OK')
+          PY
+          grep -q 'READY_AT.clear()' "$T"
+          grep -q 'mod_version=0.61.2-alpha.1' projects/survival-ascension/gradle.properties
+          grep -q 'VERSION = "0.61.2-alpha.1"' "$S"
+          git diff --check
+
+      - name: Resource JSON audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          for project in ('projects/frontier-settlement', 'projects/survival-ascension'):
+              files = list((Path(project) / 'src/main/resources').rglob('*.json'))
+              for p in files:
+                  json.loads(p.read_text(encoding='utf-8'))
+              print(project, 'JSON_OK', len(files))
+          PY
+
+      - name: Frontier Java 25 regression build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+
+      - name: JAR audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          F=projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.92.jar
+          S=projects/survival-ascension/build/libs/survivalascension-0.61.2-alpha.1.jar
+          for jarfile in "$F" "$S"; do
+            test -s "$jarfile"
+            test -z "$(jar tf "$jarfile" | sort | uniq -d | head -n1 || true)"
+            echo "JAR_OK $jarfile $(stat -c%s "$jarfile") bytes"
+          done
+
+      - name: Upload Survival replacement
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-audit3-replacement
+          path: projects/survival-ascension/build/libs/survivalascension-0.61.2-alpha.1.jar
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Commit validated fixes and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-survival-audit3.yml
+          git config user.name "coworkaccount"
+          git config user.email "cyp1jhh2@gmail.com"
+          git add projects/survival-ascension .github/workflows/manual-survival-audit3.yml
+          git commit -m "Preserve mobility cooldown across relogs"
+          git pull --rebase origin main
+          git push origin HEAD:main
