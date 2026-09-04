@@ -29,6 +29,7 @@ import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
+import kr.moonseungjun.survivalascension.progress.PlayerLifecycleState;
 import kr.moonseungjun.survivalascension.production.FieldRecoveryService;
 import kr.moonseungjun.survivalascension.production.OutpostService;
 import kr.moonseungjun.survivalascension.production.OutpostSiegeBreachService;
@@ -44,7 +45,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.61.2-alpha.1";
+    public static final String VERSION = "0.61.3-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -52,6 +53,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onPlayerRespawn);
+        NeoForge.EVENT_BUS.addListener(PlayerLifecycleState::onClone);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(MiningProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(BoreMiningService::onServerTick);

@@ -1,12 +1,4 @@
-from pathlib import Path
-
-root = Path('projects/survival-ascension')
-pkg = root / 'src/main/java/kr/moonseungjun/survivalascension'
-lifecycle = pkg / 'progress/PlayerLifecycleState.java'
-main = pkg / 'SurvivalAscension.java'
-props = root / 'gradle.properties'
-
-lifecycle.write_text('''package kr.moonseungjun.survivalascension.progress;
+package kr.moonseungjun.survivalascension.progress;
 
 import net.minecraft.nbt.CompoundTag;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -61,24 +53,3 @@ public final class PlayerLifecycleState {
         if (source.contains(key)) target.putString(key, source.getStringOr(key, ""));
     }
 }
-''', encoding='utf-8')
-
-text = main.read_text(encoding='utf-8')
-assert 'public static final String VERSION = "0.61.2-alpha.1";' in text
-text = text.replace('public static final String VERSION = "0.61.2-alpha.1";',
-                    'public static final String VERSION = "0.61.3-alpha.1";', 1)
-marker = 'import kr.moonseungjun.survivalascension.network.SkillNetwork;\n'
-assert marker in text
-assert 'import kr.moonseungjun.survivalascension.progress.PlayerLifecycleState;' not in text
-text = text.replace(marker, marker + 'import kr.moonseungjun.survivalascension.progress.PlayerLifecycleState;\n', 1)
-marker = '        NeoForge.EVENT_BUS.addListener(FieldRecoveryService::onPlayerRespawn);\n'
-assert marker in text
-assert 'PlayerLifecycleState::onClone' not in text
-text = text.replace(marker, marker + '        NeoForge.EVENT_BUS.addListener(PlayerLifecycleState::onClone);\n', 1)
-main.write_text(text, encoding='utf-8')
-
-text = props.read_text(encoding='utf-8')
-assert 'mod_version=0.61.2-alpha.1' in text
-props.write_text(text.replace('mod_version=0.61.2-alpha.1', 'mod_version=0.61.3-alpha.1', 1), encoding='utf-8')
-
-print('SURVIVAL_AUDIT4_FIX_APPLIED')
