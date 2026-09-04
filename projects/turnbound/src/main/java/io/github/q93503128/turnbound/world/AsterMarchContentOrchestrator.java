@@ -22,6 +22,7 @@ public final class AsterMarchContentOrchestrator {
     public static void tick(ServerLevel level, ServerPlayer player) {
         if (BattleSessionManager.exists(player) || player.tickCount % 10 != 0) return;
         AsterMarchBossAftermath.sync(level);
+        AsterMarchApproachAtmosphere.tick(level, player);
         CharacterQuestWorldSites.sync(level, player);
         RegionQuestWorldSites.sync(level, player);
         ExplorationCodexSites.sync(level, player);
