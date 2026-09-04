@@ -23,6 +23,7 @@ public final class AsterMarchContentOrchestrator {
         if (BattleSessionManager.exists(player) || player.tickCount % 10 != 0) return;
         AsterMarchBossAftermath.sync(level);
         AsterMarchApproachAtmosphere.tick(level, player);
+        AsterMarchProgressStaging.tick(level, player);
         CharacterQuestWorldSites.sync(level, player);
         RegionQuestWorldSites.sync(level, player);
         ExplorationCodexSites.sync(level, player);
@@ -39,6 +40,7 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static void remove(ServerPlayer player) {
+        AsterMarchProgressStaging.remove(player);
         CharacterQuestWorldSites.remove(player);
         RegionQuestWorldSites.remove(player);
         ExplorationCodexSites.remove(player);
