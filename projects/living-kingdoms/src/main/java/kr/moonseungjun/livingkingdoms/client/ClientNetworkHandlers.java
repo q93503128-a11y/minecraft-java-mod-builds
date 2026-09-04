@@ -13,8 +13,9 @@ public final class ClientNetworkHandlers {
     private static ResponsiveOriginSelectionScreen activeOriginScreen;
     private static RealmLoadingScreen activeLoadingScreen;
     private static RealmBuildProgressPayload latestBuildProgress;
+    private static boolean residenceBarrierActive;
     private static FantasyHudStatePayload latestHudState = new FantasyHudStatePayload(
-            0L, 0, 0, "미등록", 100, 100, 100, 100
+            0L, 0L, 0, 0, "미등록", 100, 100, 100, 100
     );
 
     private ClientNetworkHandlers() {
@@ -39,6 +40,7 @@ public final class ClientNetworkHandlers {
                 activeOriginScreen = new ResponsiveOriginSelectionScreen(payload.schemaVersion());
                 activeLoadingScreen = null;
                 latestBuildProgress = null;
+                residenceBarrierActive = false;
             }
             minecraft.gui.setScreen(activeOriginScreen);
         });
@@ -61,6 +63,14 @@ public final class ClientNetworkHandlers {
     private static void handleBuildProgress(RealmBuildProgressPayload payload, IPayloadContext context) {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
+            if ("residence".equals(payload.phase())) residenceBarrierActive = true;
+            if (payload.complete() && residenceBarrierActive
+                    && !"residence_complete".equals(payload.phase())) {
+                return;
+            }
+            if ("residence_complete".equals(payload.phase()) || payload.failed()) {
+                residenceBarrierActive = false;
+            }
             latestBuildProgress = payload;
             if (activeLoadingScreen == null) activeLoadingScreen = new RealmLoadingScreen(payload.message());
             activeLoadingScreen.update(payload);
