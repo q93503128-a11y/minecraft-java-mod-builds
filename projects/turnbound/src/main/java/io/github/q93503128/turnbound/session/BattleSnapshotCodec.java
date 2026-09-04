@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.session;
 
+import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleState;
 import io.github.q93503128.turnbound.combat.CombatantState;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
@@ -16,12 +17,15 @@ public final class BattleSnapshotCodec {
 
     public static String encode(UUID playerId, BattleSession session) {
         BattleState state = session.state();
-        String actor = state.currentActorId() == null ? "" : state.currentActorId();
+        boolean running = state.outcome() == BattleOutcome.RUNNING;
+        String actor = running && state.currentActorId() != null ? state.currentActorId() : "";
+        boolean controlsAllowed = running && !session.finished();
         StringBuilder out = new StringBuilder();
         out.append("H|1|").append(session.auto() ? 1 : 0).append('|').append(session.speed()).append('|')
                 .append(state.outcome()).append('|').append(actor).append('|').append(session.finished() ? 1 : 0).append('|')
-                .append(session.autoAllowed() ? 1 : 0).append('|').append(session.speedAllowed() ? 1 : 0).append('|')
-                .append(session.fleeAllowed() ? 1 : 0).append('\n');
+                .append(controlsAllowed && session.autoAllowed() ? 1 : 0).append('|')
+                .append(controlsAllowed && session.speedAllowed() ? 1 : 0).append('|')
+                .append(controlsAllowed && session.fleeAllowed() ? 1 : 0).append('\n');
         out.append("C|").append(safe(session.encounterId())).append('\n');
 
         Vec3 arena = session.battleAnchor();
@@ -44,7 +48,7 @@ public final class BattleSnapshotCodec {
         out.append("T|").append(state.timelinePreview(8).stream().map(CombatantState::instanceId)
                 .collect(Collectors.joining(","))).append('\n');
 
-        if (state.currentActorId() != null) {
+        if (running && state.currentActorId() != null) {
             CombatantState current = state.combatant(state.currentActorId());
             for (SkillDefinition skill : current.definition().skills()) {
                 String canonicalSkillId = current.definition().canonicalSkillId(skill.id());
