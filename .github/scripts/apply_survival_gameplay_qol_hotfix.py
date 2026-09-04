@@ -3,6 +3,7 @@ from pathlib import Path
 root = Path('projects/survival-ascension')
 java = root / 'src/main/java/kr/moonseungjun/survivalascension'
 
+# Fishing is a normal skill but is intentionally not reinterpreted as an existing expedition objective.
 action = java / 'expedition/ExpeditionAction.java'
 s = action.read_text(encoding='utf-8')
 old = '''            case MINING -> BLOCKS_MINED;
@@ -31,6 +32,44 @@ if s.count(old) != 1:
     raise SystemExit('ExpeditionProgression nullable skill-action anchor drift')
 progression.write_text(s.replace(old, new, 1), encoding='utf-8')
 
+# Ore safety is unconditional: before vein mining unlock, an ore click stays one block;
+# after unlock it expands only through the same ore family. Never plane-mine surrounding rock from an ore origin.
+mining = java / 'mining/MiningProgression.java'
+s = mining.read_text(encoding='utf-8')
+old = '''                case AUTO -> {
+                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    else if (areaSize > 1) breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                }
+                case PLANE -> {
+                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    else if (areaSize > 1) breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                }
+'''
+new = '''                case AUTO -> {
+                    if (centerState.is(VALUABLE_ORES)) {
+                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    } else if (areaSize > 1) {
+                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    }
+                }
+                case PLANE -> {
+                    if (centerState.is(VALUABLE_ORES)) {
+                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    } else if (areaSize > 1) {
+                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    }
+                }
+'''
+if s.count(old) != 1:
+    raise SystemExit('Mining ore-safe AUTO/PLANE anchor drift')
+mining.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+mining_ui = java / 'client/MiningRadialMenuScreen.java'
+s = mining_ui.read_text(encoding='utf-8')
+s = s.replace('"광석=같은 종류 광맥 / 일반=굴착"', '"광석=동종만 / 일반=굴착"')
+s = s.replace('"Lv.10 · 일반=평면 / 광석=같은 종류 광맥 보호"', '"Lv.10 · 일반=평면 / 광석=동종만"')
+mining_ui.write_text(s, encoding='utf-8')
+
 audit = root / 'tools/test_gameplay_qol_061.py'
 s = audit.read_text(encoding='utf-8')
 anchor = 'mining_ui = read("src/main/java/kr/moonseungjun/survivalascension/client/MiningRadialMenuScreen.java")\n'
@@ -39,9 +78,15 @@ if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition read anchor drift')
 s = s.replace(anchor, insert, 1)
 anchor = 'need(ui, ["case FISHING", "낚싯대 마모 방지"], "fishing skill UI")\n'
-checks = anchor + 'need(expedition_action, ["case FISHING -> null;"], "fishing expedition isolation")\nneed(expedition_progression, ["ExpeditionAction action = ExpeditionAction.fromSkill(skill);", "if (action != null) recordAction(player, action, amount);"], "nullable skill action guard")\n'
+checks = anchor + '''need(expedition_action, ["case FISHING -> null;"], "fishing expedition isolation")
+need(expedition_progression, ["ExpeditionAction action = ExpeditionAction.fromSkill(skill);", "if (action != null) recordAction(player, action, amount);"], "nullable skill action guard")
+need(mining, ["if (centerState.is(VALUABLE_ORES)) {", "if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);"], "unconditional ore-origin protection")
+need(mining_ui, ["광석=동종만 / 일반=굴착", "광석=동종만"], "ore-safe mining UI")
+'''
 if s.count(anchor) != 1:
     raise SystemExit('QoL audit expedition check anchor drift')
+# Replace the first script's older UI expectation before adding the stricter checks.
+s = s.replace('need(mining_ui, ["광석=같은 종류 광맥", "광석=같은 종류 광맥 보호"], "ore-safe mining UI")\n', '')
 audit.write_text(s.replace(anchor, checks, 1), encoding='utf-8')
 
-print('FISHING EXPEDITION ISOLATION HOTFIX APPLIED')
+print('FISHING EXPEDITION + STRICT ORE-SAFETY HOTFIX APPLIED')
