@@ -18,6 +18,7 @@ import net.minecraft.world.level.Level;
 public final class BattleActorEntity extends PathfinderMob implements GeoEntity {
     private static final RawAnimation CAST = RawAnimation.begin().thenPlay("attack.cast");
     private static final RawAnimation READY = RawAnimation.begin().thenPlay("misc.turn_ready");
+    private static final RawAnimation HIT = RawAnimation.begin().thenPlay("combat.hit");
     private static final RawAnimation DEATH = RawAnimation.begin().thenPlay("misc.death");
     private static final RawAnimation REVIVE = RawAnimation.begin().thenPlay("misc.revive");
     private static final RawAnimation VICTORY = RawAnimation.begin().thenPlay("misc.victory");
@@ -64,8 +65,8 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         RawAnimation movingActive2 = prefix == null ? DefaultAnimations.ATTACK_STRIKE : moveThen(prefix, "active_2");
         RawAnimation reaction = prefix == null ? DefaultAnimations.ATTACK_STRIKE
                 : play(prefix, (prefix.equals("p03_bram") || prefix.equals("p05_lynette")) ? "reaction" : "basic");
-        RawAnimation hitLight = prefix == null ? (bossAnimations ? BOSS_HIT_LIGHT : ready) : play(prefix, "hit_light");
-        RawAnimation hitHeavy = prefix == null ? (bossAnimations ? BOSS_HIT_HEAVY : ready) : play(prefix, "hit_heavy");
+        RawAnimation hitLight = prefix == null ? (bossAnimations ? BOSS_HIT_LIGHT : HIT) : play(prefix, "hit_light");
+        RawAnimation hitHeavy = prefix == null ? (bossAnimations ? BOSS_HIT_HEAVY : HIT) : play(prefix, "hit_heavy");
         RawAnimation death = prefix == null ? DEATH : play(prefix, "death");
         RawAnimation revive = prefix == null ? REVIVE : play(prefix, "revive");
         RawAnimation victory = prefix == null ? VICTORY : play(prefix, "victory");
