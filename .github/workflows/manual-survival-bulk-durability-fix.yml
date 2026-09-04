@@ -1,0 +1,190 @@
+name: Manual Survival Bulk Durability Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-bulk-durability-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply bulk durability fix and audit repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/survival-ascension')
+          java = root / 'src/main/java/kr/moonseungjun/survivalascension'
+
+          helper = java / 'progress/AutomatedToolBreak.java'
+          helper.write_text('''package kr.moonseungjun.survivalascension.progress;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+
+/**
+ * Preserves vanilla loot/events for skill-driven bulk breaks without charging one
+ * durability point for every automatically expanded block. The player's original
+ * manual break remains vanilla-authoritative and pays the normal tool wear once.
+ */
+public final class AutomatedToolBreak {
+    private AutomatedToolBreak() {}
+
+    public static boolean destroyWithoutAdditionalWear(ServerPlayer player, BlockPos target) {
+        ItemStack tool = player.getMainHandItem();
+        if (player.isCreative() || tool.isEmpty() || !tool.isDamageableItem()) {
+            return player.gameMode.destroyBlock(target);
+        }
+
+        int damageBefore = tool.getDamageValue();
+        tool.setDamageValue(0);
+        try {
+            return player.gameMode.destroyBlock(target);
+        } finally {
+            ItemStack held = player.getMainHandItem();
+            if (!held.isEmpty() && held.getItem() == tool.getItem() && held.isDamageableItem()) {
+                held.setDamageValue(damageBefore);
+            }
+        }
+    }
+}
+''', encoding='utf-8')
+
+          mining = java / 'mining/MiningProgression.java'
+          s = mining.read_text(encoding='utf-8')
+          old = 'player.gameMode.destroyBlock('
+          count = s.count(old)
+          if count != 4:
+              raise SystemExit(f'MiningProgression expected 4 automated destroyBlock calls, got {count}')
+          s = s.replace(old, 'AutomatedToolBreak.destroyWithoutAdditionalWear(player, ')
+          mining.write_text(s, encoding='utf-8')
+
+          bore = java / 'mining/BoreMiningService.java'
+          s = bore.read_text(encoding='utf-8')
+          anchor = 'import kr.moonseungjun.survivalascension.progress.SkillProgressData;'
+          if 'import kr.moonseungjun.survivalascension.progress.AutomatedToolBreak;' not in s:
+              if anchor not in s: raise SystemExit('Bore import anchor missing')
+              s = s.replace(anchor, 'import kr.moonseungjun.survivalascension.progress.AutomatedToolBreak;\n' + anchor, 1)
+          if s.count('player.gameMode.destroyBlock(target)') != 1:
+              raise SystemExit('Bore destroyBlock anchor drift')
+          s = s.replace('player.gameMode.destroyBlock(target)', 'AutomatedToolBreak.destroyWithoutAdditionalWear(player, target)', 1)
+          bore.write_text(s, encoding='utf-8')
+
+          wood = java / 'woodcutting/WoodcuttingProgression.java'
+          s = wood.read_text(encoding='utf-8')
+          if s.count('player.gameMode.destroyBlock(target)') != 1:
+              raise SystemExit('Woodcutting destroyBlock anchor drift')
+          s = s.replace('player.gameMode.destroyBlock(target)', 'AutomatedToolBreak.destroyWithoutAdditionalWear(player, target)', 1)
+          wood.write_text(s, encoding='utf-8')
+
+          audit = root / 'tools/test_release_source.py'
+          s = audit.read_text(encoding='utf-8')
+          anchor = "legacy = legacy.replace(_baseline_anchor, _baseline_anchor + '\\n' + '\\n'.join(_baseline_lines), 1)"
+          repair = anchor + "\n# 0.61 post-release UI/network growth: translate historical runtime needles only.\nlegacy = legacy.replace('PROTOCOL = \\\"9\\\"', 'PROTOCOL = \\\"10\\\"')\nlegacy = legacy.replace('산업 가공소 완공 → 통 4블록 이내', '산업 가공소 완공 → 통/공용 보급고 4블록 이내')"
+          if 'post-release UI/network growth' not in s:
+              if s.count(anchor) != 1: raise SystemExit('release audit baseline anchor drift')
+              s = s.replace(anchor, repair, 1)
+
+          read_anchor = 'equipment_menu = read("src/main/java/kr/moonseungjun/survivalascension/client/EquipmentRadialMenuScreen.java")'
+          read_insert = read_anchor + '''\nbulk_tool_break = read("src/main/java/kr/moonseungjun/survivalascension/progress/AutomatedToolBreak.java")\nmining_durability = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")\nbore_durability = read("src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java")\nwood_durability = read("src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java")'''
+          if 'bulk_tool_break = read(' not in s:
+              if s.count(read_anchor) != 1: raise SystemExit('release audit read anchor drift')
+              s = s.replace(read_anchor, read_insert, 1)
+
+          check_anchor = 'forbid(guide + equipment_menu, ["방어구 affix", "장비 affix", "4번째 affix 개방"],\n       "0.61 player-facing developer terminology")'
+          checks = check_anchor + '''\n\n# Skill-expanded mining/woodcutting is one player action, so automatic extra blocks must\n# keep vanilla break/drop hooks without multiplying tool wear by the batch size.\nneed(bulk_tool_break, [\n    "destroyWithoutAdditionalWear", "getDamageValue()", "setDamageValue(0)",\n    "player.gameMode.destroyBlock(target)", "finally", "setDamageValue(damageBefore)"\n], "0.61 bulk tool durability preservation")\nif mining_durability.count("AutomatedToolBreak.destroyWithoutAdditionalWear") != 4:\n    errors.append("0.61 mining bulk breaks must route all four automatic paths through durability preservation")\nif bore_durability.count("AutomatedToolBreak.destroyWithoutAdditionalWear") != 1:\n    errors.append("0.61 bore mining must preserve durability for scheduled automatic blocks")\nif wood_durability.count("AutomatedToolBreak.destroyWithoutAdditionalWear") != 1:\n    errors.append("0.61 woodcutting chain must preserve durability for automatic logs")\nforbid(mining_durability + bore_durability + wood_durability, ["player.gameMode.destroyBlock("],\n       "0.61 no direct per-block durability drain in bulk skills")'''
+          if '0.61 bulk tool durability preservation' not in s:
+              if s.count(check_anchor) != 1: raise SystemExit('release audit check anchor drift')
+              s = s.replace(check_anchor, checks, 1)
+
+          s = s.replace('"Network protocol 9"\n], "0.61 release note")', '"Network protocol 10"\n], "0.61 release note")
+          audit.write_text(s, encoding='utf-8')
+
+          release = root / 'RELEASE-0.61.0-alpha.1.md'
+          s = release.read_text(encoding='utf-8')
+          if '- Network protocol 9' in s:
+              s = s.replace('- Network protocol 9', '- Network protocol 10', 1)
+          release.write_text(s, encoding='utf-8')
+
+          # Focused structural assertions before the heavier release audit/build.
+          mining_s = mining.read_text(encoding='utf-8')
+          bore_s = bore.read_text(encoding='utf-8')
+          wood_s = wood.read_text(encoding='utf-8')
+          helper_s = helper.read_text(encoding='utf-8')
+          assert mining_s.count('AutomatedToolBreak.destroyWithoutAdditionalWear') == 4
+          assert bore_s.count('AutomatedToolBreak.destroyWithoutAdditionalWear') == 1
+          assert wood_s.count('AutomatedToolBreak.destroyWithoutAdditionalWear') == 1
+          assert 'setDamageValue(0)' in helper_s and 'setDamageValue(damageBefore)' in helper_s
+          assert 'player.gameMode.destroyBlock(' not in mining_s + bore_s + wood_s
+          print('BULK DURABILITY SOURCE ASSERTIONS PASS')
+          PY
+
+      - name: Release source audits
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+          git diff --check
+
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache clean build --console=plain
+
+      - name: Verify JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 projects/survival-ascension/tools/verify_release_jar.py projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+
+      - name: Commit validated fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/progress/AutomatedToolBreak.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/mining/BoreMiningService.java \
+            projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.java \
+            projects/survival-ascension/tools/test_release_source.py \
+            projects/survival-ascension/RELEASE-0.61.0-alpha.1.md
+          git commit -m 'Stop bulk skills from shredding tool durability'
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Upload fixed JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-061-bulk-durability-fix
+          path: projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+          if-no-files-found: error
