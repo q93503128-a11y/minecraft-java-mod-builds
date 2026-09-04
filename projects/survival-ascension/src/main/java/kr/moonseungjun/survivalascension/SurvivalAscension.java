@@ -106,6 +106,8 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(OutpostSiegeSystem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(OutpostService::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onFinalizeSpawn);
+        NeoForge.EVENT_BUS.addListener(EliteMobSystem::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(EliteMobSystem::onServerTick);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePre);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onDamagePost);
         NeoForge.EVENT_BUS.addListener(EliteMobSystem::onLivingDeath);

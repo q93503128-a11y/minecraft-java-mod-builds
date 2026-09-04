@@ -123,14 +123,18 @@ public final class AscensionTrialSystem {
         AscensionTrialDoctrine doctrine = AscensionTrialDoctrine.random(level.getRandom());
         Trial trial = new Trial(player.getUUID(), level, center, now + SETUP_TICKS, doctrine);
         ACTIVE.put(player.getUUID(), trial);
-        trial.bossBar.addPlayer(player);
+        syncBossBarPlayers(server, trial);
+        trial.partySizeSnapshot = Math.max(1, trial.participants.size());
         trial.bossBar.setVisible(true);
-        player.sendSystemMessage(Component.literal("§5[승천 시련] §f전술 교리 §d" + doctrine.koreanName() + " §7· §f" + doctrine.description()));
-        player.sendSystemMessage(Component.literal("§5[승천 시련] §f4개 웨이브를 제한시간 안에 격파하세요. §7각 웨이브 중반에 교리별 증원이 도착합니다."));
+        notifyTrial(trial, Component.literal("§5[공동 승천 시련] §f전술 교리 §d" + doctrine.koreanName() + " §7· 참가 " + trial.partySizeSnapshot + "명 · §f" + doctrine.description()), false);
+        notifyTrial(trial, Component.literal("§5[공동 승천 시련] §f4개 웨이브를 함께 제한시간 안에 격파하세요."), false);
     }
 
     public static boolean isActive(ServerPlayer player) {
-        return ACTIVE.containsKey(player.getUUID());
+        UUID id = player.getUUID();
+        if (ACTIVE.containsKey(id)) return true;
+        for (Trial trial : ACTIVE.values()) if (trial.participants.contains(id)) return true;
+        return false;
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -179,27 +183,25 @@ public final class AscensionTrialSystem {
 
     private static boolean tickTrial(MinecraftServer server, Trial trial) {
         long now = trial.level.getGameTime();
-        ServerPlayer owner = server.getPlayerList().getPlayer(trial.owner);
-        boolean ownerValid = owner != null && owner.isAlive() && !owner.isSpectator()
-                && owner.level() == trial.level && distanceToCenterSqr(owner, trial.center) <= PLAYER_RADIUS * PLAYER_RADIUS;
-        if (ownerValid) trial.ownerAbsentTicks = 0;
-        else trial.ownerAbsentTicks += 5;
         syncBossBarPlayers(server, trial);
+        ServerPlayer target = chooseTrialTarget(server, trial);
+        if (target != null) trial.partyAbsentTicks = 0;
+        else trial.partyAbsentTicks += 5;
 
-        if (trial.ownerAbsentTicks >= OWNER_GRACE_TICKS) {
-            fail(trial, owner, "소유자가 전장에서 이탈하거나 사망했습니다.");
+        if (trial.partyAbsentTicks >= OWNER_GRACE_TICKS) {
+            fail(trial, "모든 참가자가 전장에서 이탈하거나 사망했습니다.");
             return true;
         }
 
-        pruneAndRecall(trial, owner);
+        pruneAndRecall(trial, target);
         if (!trial.mobIds.isEmpty()) {
-            maybeReinforce(trial, owner);
+            maybeReinforce(trial, target);
             if (now >= trial.waveDeadline) {
-                fail(trial, owner, "웨이브 제한시간을 초과했습니다.");
+                fail(trial, "웨이브 제한시간을 초과했습니다.");
                 return true;
             }
             int seconds = Math.max(0, (int) ((trial.waveDeadline - now + 19L) / 20L));
-            trial.bossBar.setName(Component.literal("§5승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· " + trial.wave + "/" + TOTAL_WAVES + " §7· 적 " + trial.mobIds.size() + "체 · " + seconds + "초"));
+            trial.bossBar.setName(Component.literal("§5공동 승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· " + trial.wave + "/" + TOTAL_WAVES + " §7· 적 " + trial.mobIds.size() + "체 · 참가 " + trial.bossBar.getPlayers().size() + " · " + seconds + "초"));
             float remaining = (trial.waveDeadline - now) / (float) WAVE_TIMEOUT_TICKS;
             trial.bossBar.setProgress(Mth.clamp(remaining, 0.0F, 1.0F));
             return false;
@@ -207,13 +209,13 @@ public final class AscensionTrialSystem {
 
         if (trial.wave > 0 && !trial.waveResolved) {
             trial.waveResolved = true;
-            if (owner != null) {
-                int xp = switch (trial.wave) { case 1 -> 25; case 2 -> 40; case 3 -> 60; default -> 0; };
-                if (xp > 0) owner.giveExperiencePoints(xp);
-                owner.sendSystemMessage(Component.literal("§5[승천 시련] §f" + trial.wave + " 웨이브 격파" + (xp > 0 ? " §7· 경험치 +" + xp : "")));
+            int xp = switch (trial.wave) { case 1 -> 25; case 2 -> 40; case 3 -> 60; default -> 0; };
+            for (ServerPlayer member : trialPlayers(trial)) {
+                if (xp > 0) member.giveExperiencePoints(xp);
+                member.sendSystemMessage(Component.literal("§5[공동 승천 시련] §f" + trial.wave + " 웨이브 격파" + (xp > 0 ? " §7· 경험치 +" + xp : "")));
             }
             if (trial.wave >= TOTAL_WAVES) {
-                complete(trial, owner);
+                complete(trial);
                 return true;
             }
             trial.nextWaveTick = now + SETUP_TICKS;
@@ -221,13 +223,13 @@ public final class AscensionTrialSystem {
 
         if (now < trial.nextWaveTick) {
             int seconds = Math.max(0, (int) ((trial.nextWaveTick - now + 19L) / 20L));
-            trial.bossBar.setName(Component.literal("§5승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· 다음 웨이브까지 §d" + seconds + "초"));
+            trial.bossBar.setName(Component.literal("§5공동 승천 시련 §7[" + trial.doctrine.koreanName() + "] §f· 다음 웨이브까지 §d" + seconds + "초"));
             trial.bossBar.setProgress(Mth.clamp((trial.nextWaveTick - now) / (float) SETUP_TICKS, 0.0F, 1.0F));
             return false;
         }
 
         if (!spawnWave(trial)) {
-            fail(trial, owner, "적을 배치할 공간이 부족합니다. 더 열린 지형에서 다시 시도하세요.");
+            fail(trial, "적을 배치할 공간이 부족합니다. 더 열린 지형에서 다시 시도하세요.");
             return true;
         }
         return false;
@@ -237,7 +239,9 @@ public final class AscensionTrialSystem {
         trial.wave++;
         trial.waveResolved = false;
         trial.reinforcementsTriggered = false;
-        int target = WAVE_COUNTS[trial.wave - 1];
+        int baseTarget = WAVE_COUNTS[trial.wave - 1];
+        int extras = Math.min(4, Math.max(0, trial.partySizeSnapshot - 1));
+        int target = Math.min(32, Math.max(baseTarget, (int)Math.ceil(baseTarget * (1.0D + extras * 0.55D))));
         Set<UUID> spawned = new HashSet<>();
         for (int i = 0; i < target; i++) {
             Mob mob = spawnOne(trial.level, trial.center, waveTypeId(trial.doctrine, trial.wave, i), i, target);
@@ -403,45 +407,66 @@ public final class AscensionTrialSystem {
             if (player.level() == trial.level && player.isAlive() && !player.isSpectator()
                     && distanceToCenterSqr(player, trial.center) <= PLAYER_RADIUS * PLAYER_RADIUS) {
                 shouldSee.add(player);
+                trial.participants.add(player.getUUID());
                 if (!trial.bossBar.getPlayers().contains(player)) trial.bossBar.addPlayer(player);
             }
         }
-        for (ServerPlayer viewer : List.copyOf(trial.bossBar.getPlayers())) {
-            if (!shouldSee.contains(viewer)) trial.bossBar.removePlayer(viewer);
-        }
+        for (ServerPlayer viewer : List.copyOf(trial.bossBar.getPlayers())) if (!shouldSee.contains(viewer)) trial.bossBar.removePlayer(viewer);
     }
 
-    private static void complete(Trial trial, ServerPlayer owner) {
-        if (owner != null) {
-            owner.giveExperiencePoints(200);
-            giveOrDrop(owner, AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3));
-            giveOrDrop(owner, new ItemStack(Items.NETHERITE_SCRAP, 2));
-            giveOrDrop(owner, new ItemStack(Items.DIAMOND, 4));
-            owner.sendSystemMessage(Component.literal("§d[승천 시련 완료] §f" + trial.doctrine.koreanName() + " 교리 돌파 · 신화 III 장비 1개 §7· 네더라이트 파편 2 · 다이아 4 · 경험치 +200"));
-        }
-        for (ServerPlayer player : trial.level.getServer().getPlayerList().getPlayers()) {
-            if (player == owner || player.level() != trial.level || !player.isAlive() || player.isSpectator()) continue;
-            if (distanceToCenterSqr(player, trial.center) <= 48.0D * 48.0D) {
-                player.giveExperiencePoints(80);
-                player.sendSystemMessage(Component.literal("§5[승천 시련] §f협동 완료 보상 경험치 §d+80"));
+    private static ServerPlayer chooseTrialTarget(MinecraftServer server, Trial trial) {
+        ServerPlayer best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != trial.level || !player.isAlive() || player.isSpectator()) continue;
+            double distance = distanceToCenterSqr(player, trial.center);
+            if (distance <= PLAYER_RADIUS * PLAYER_RADIUS && distance < bestDistance) {
+                best = player;
+                bestDistance = distance;
+                trial.participants.add(player.getUUID());
             }
+        }
+        return best;
+    }
+
+    private static List<ServerPlayer> trialPlayers(Trial trial) {
+        List<ServerPlayer> result = new ArrayList<>();
+        for (UUID id : trial.participants) {
+            ServerPlayer player = trial.level.getServer().getPlayerList().getPlayer(id);
+            if (player != null && player.level() == trial.level) result.add(player);
+        }
+        return result;
+    }
+
+    private static void notifyTrial(Trial trial, Component message, boolean actionbar) {
+        for (ServerPlayer player : trialPlayers(trial)) player.sendSystemMessage(message, actionbar);
+    }
+
+    private static void complete(Trial trial) {
+        for (ServerPlayer player : trialPlayers(trial)) {
+            boolean owner = player.getUUID().equals(trial.owner);
+            player.giveExperiencePoints(owner ? 200 : 160);
+            giveOrDrop(player, AscensionAffixes.createEliteDrop(trial.level.getRandom(), 3));
+            giveOrDrop(player, new ItemStack(Items.NETHERITE_SCRAP, owner ? 2 : 1));
+            giveOrDrop(player, new ItemStack(Items.DIAMOND, owner ? 4 : 2));
+            player.sendSystemMessage(Component.literal("§d[공동 승천 시련 완료] §f" + trial.doctrine.koreanName()
+                    + " 교리 돌파 · 신화 III 장비 1개" + (owner ? " §6· 개방자 보너스" : " §7· 협동 보상")));
         }
         closeBossBar(trial);
     }
 
-    private static void fail(Trial trial, ServerPlayer owner, String reason) {
+    private static void fail(Trial trial, String reason) {
         for (UUID id : trial.mobIds) {
             Entity entity = trial.level.getEntity(id);
             if (entity != null) entity.discard();
         }
         trial.mobIds.clear();
-        if (owner != null) playerFailureMessage(owner, trial, reason);
+        notifyTrial(trial, Component.literal("§c[공동 승천 시련 실패] §f" + trial.doctrine.koreanName() + " 교리 · " + reason
+                + " §7· 입장 재료는 반환되지 않습니다."), false);
         closeBossBar(trial);
     }
 
-    private static void playerFailureMessage(ServerPlayer owner, Trial trial, String reason) {
-        owner.sendSystemMessage(Component.literal("§c[승천 시련 실패] §f" + trial.doctrine.koreanName() + " 교리 · " + reason + " §7· 입장 재료는 반환되지 않습니다."));
-    }
+
 
     private static void removeStaleServerTrials(MinecraftServer server) {
         if (ACTIVE.isEmpty()) return;
@@ -506,11 +531,13 @@ public final class AscensionTrialSystem {
         final AscensionTrialDoctrine doctrine;
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
+        final Set<UUID> participants = new HashSet<>();
         int wave;
         int initialWaveCount;
         long waveDeadline;
         long nextWaveTick;
-        int ownerAbsentTicks;
+        int partyAbsentTicks;
+        int partySizeSnapshot = 1;
         boolean waveResolved = true;
         boolean reinforcementsTriggered;
 

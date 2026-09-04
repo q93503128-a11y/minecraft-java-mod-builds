@@ -69,13 +69,20 @@ public final class ApexHuntSystem {
     private static final Identifier HEALTH_ID = id("apex_health");
     private static final Identifier ARMOR_ID = id("apex_armor");
     private static final Identifier ATTACK_ID = id("apex_attack");
+    private static final Identifier COOP_HEALTH_ID = id("apex_coop_health");
+    private static final Identifier COOP_ATTACK_ID = id("apex_coop_attack");
 
     private static final Map<UUID, Hunt> ACTIVE = new HashMap<>();
     private static int ticker;
 
     private ApexHuntSystem() {}
 
-    public static boolean isActive(ServerPlayer player) { return ACTIVE.containsKey(player.getUUID()); }
+    public static boolean isActive(ServerPlayer player) {
+        UUID id = player.getUUID();
+        if (ACTIVE.containsKey(id)) return true;
+        for (Hunt hunt : ACTIVE.values()) if (hunt.participants.contains(id)) return true;
+        return false;
+    }
 
     public static void tryStart(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
@@ -154,11 +161,11 @@ public final class ApexHuntSystem {
                 persistent.getLongOr(INCIDENT_READY_TICK_KEY, 0L), now + HUNT_TIMEOUT_TICKS + 200L));
 
         ACTIVE.put(player.getUUID(), hunt);
-        hunt.bossBar.addPlayer(player);
+        syncBossBarPlayers(server, hunt);
         hunt.bossBar.setVisible(true);
-        player.sendSystemMessage(Component.literal("§4[정점 사냥] §f" + region.koreanName() + " · §e" + archetype.koreanName()
-                + "§f 출현." + (hunt.packEscortCount > 0 ? " §b· 이변 호위 1체 포함" : "")
-                + " §7보스의 행동 전조와 호위 조합을 읽고 90초 안에 격파하세요."));
+        notifyHunt(hunt, Component.literal("§4[공동 정점 사냥] §f" + region.koreanName() + " · §e" + archetype.koreanName()
+                + "§f 출현 §7· 참가 " + hunt.partySizeSnapshot + "명" + (hunt.packEscortCount > 0 ? " §b· 이변 호위 1체 포함" : "")
+                + " §7· 90초 안에 공동 격파하세요."), false);
     }
 
     public static void onServerTick(ServerTickEvent.Pre event) {
@@ -189,15 +196,18 @@ public final class ApexHuntSystem {
         hunt.mobIds.remove(mob.getUUID());
         if (!mob.getUUID().equals(hunt.bossId)) return;
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
-        complete(hunt, owner);
+        complete(hunt);
         ACTIVE.remove(ownerId);
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        Hunt hunt = ACTIVE.remove(event.getEntity().getUUID());
-        if (hunt != null) {
-            cleanupMobs(hunt);
-            closeBossBar(hunt);
+        UUID leaving = event.getEntity().getUUID();
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            for (Hunt hunt : ACTIVE.values()) hunt.bossBar.removePlayer(sp);
+        }
+        // The hunt is server-driven. It remains alive while another participant stays in the arena.
+        for (Hunt hunt : ACTIVE.values()) {
+            if (hunt.owner.equals(leaving)) hunt.ownerDisconnected = true;
         }
     }
 
@@ -219,6 +229,8 @@ public final class ApexHuntSystem {
     private static Hunt spawnHunt(ServerPlayer owner, ServerLevel level, ApexArchetype archetype) {
         BlockPos center = owner.blockPosition();
         Hunt hunt = new Hunt(owner.getUUID(), level, center, archetype, level.getGameTime() + HUNT_TIMEOUT_TICKS);
+        admitNearbyParticipants(hunt);
+        hunt.partySizeSnapshot = Math.max(1, hunt.participants.size());
 
         Mob boss = spawnOne(level, center, archetype.aquatic(), archetype == ApexArchetype.END_HARBINGER,
                 archetype.bossTypeId(), 0, Math.max(1, archetype.escortCount() + 1));
@@ -226,7 +238,7 @@ public final class ApexHuntSystem {
         markMob(boss, hunt);
         hunt.bossId = boss.getUUID();
         hunt.mobIds.add(boss.getUUID());
-        applyBossStats(boss, archetype);
+        applyBossStats(boss, archetype, hunt.partySizeSnapshot);
         boss.setTarget(owner);
 
         String packEscortId = archetype.aquatic() ? null : ApexContentPackBridge.randomEscortId(
@@ -263,50 +275,47 @@ public final class ApexHuntSystem {
 
     private static boolean tickHunt(MinecraftServer server, Hunt hunt) {
         long now = hunt.level.getGameTime();
-        ServerPlayer owner = server.getPlayerList().getPlayer(hunt.owner);
-        boolean ownerValid = owner != null && owner.isAlive() && !owner.isSpectator()
-                && owner.level() == hunt.level && distanceToCenterSqr(owner, hunt.center) <= PLAYER_RADIUS * PLAYER_RADIUS
-                && ExpeditionProgression.currentRegion(owner) == hunt.archetype.region();
-        if (ownerValid) hunt.ownerAbsentTicks = 0;
-        else hunt.ownerAbsentTicks += 5;
         syncBossBarPlayers(server, hunt);
+        ServerPlayer target = chooseHuntTarget(server, hunt);
+        if (target != null) hunt.partyAbsentTicks = 0;
+        else hunt.partyAbsentTicks += 5;
 
-        if (hunt.ownerAbsentTicks >= OWNER_GRACE_TICKS) {
-            fail(hunt, owner, "소유자가 사냥권에서 이탈하거나 사망했습니다.");
+        if (hunt.partyAbsentTicks >= OWNER_GRACE_TICKS) {
+            fail(hunt, "모든 참가자가 사냥권에서 이탈하거나 사망했습니다.");
             return true;
         }
         if (now >= hunt.deadline) {
-            fail(hunt, owner, "90초 제한시간을 초과했습니다.");
+            fail(hunt, "90초 제한시간을 초과했습니다.");
             return true;
         }
 
         Entity bossEntity = hunt.level.getEntity(hunt.bossId);
         if (bossEntity == null) {
             int seconds = Math.max(0, (int) ((hunt.deadline - now + 19L) / 20L));
-            hunt.bossBar.setName(Component.literal("§4정점 사냥 §7[" + hunt.archetype.koreanName() + "] §f대상 재확인 중 §7· " + seconds + "초"));
+            hunt.bossBar.setName(Component.literal("§4공동 정점 사냥 §7[" + hunt.archetype.koreanName() + "] §f대상 재확인 중 §7· " + seconds + "초"));
             return false;
         }
         if (!(bossEntity instanceof Mob boss) || !boss.isAlive()) {
-            complete(hunt, owner);
+            complete(hunt);
             return true;
         }
-        pruneAndRecall(hunt, owner, boss);
-        if (owner != null) runPattern(hunt, boss, owner, now);
+        pruneAndRecall(hunt, target, boss);
+        if (target != null) runPattern(hunt, boss, target, now);
 
         int seconds = Math.max(0, (int) ((hunt.deadline - now + 19L) / 20L));
-        hunt.bossBar.setName(Component.literal("§4정점 사냥 §7[" + hunt.archetype.koreanName() + "] §f"
+        hunt.bossBar.setName(Component.literal("§4공동 정점 사냥 §7[" + hunt.archetype.koreanName() + "] §f"
                 + Math.max(0, (int) Math.ceil(boss.getHealth())) + "/" + (int) Math.ceil(boss.getMaxHealth())
-                + " §7· 호위 " + Math.max(0, hunt.mobIds.size() - 1) + " · " + seconds + "초"));
+                + " §7· 호위 " + Math.max(0, hunt.mobIds.size() - 1) + " · 참가 " + hunt.bossBar.getPlayers().size() + " · " + seconds + "초"));
         hunt.bossBar.setProgress(Mth.clamp(boss.getHealth() / Math.max(1.0F, boss.getMaxHealth()), 0.0F, 1.0F));
         return false;
     }
 
-    private static void runPattern(Hunt hunt, Mob boss, ServerPlayer owner, long now) {
-        double distance = boss.distanceToSqr(owner);
+    private static void runPattern(Hunt hunt, Mob boss, ServerPlayer target, long now) {
+        double distance = boss.distanceToSqr(target);
 
         if (hunt.chargeExecuteTick > 0L && now >= hunt.chargeExecuteTick) {
             hunt.chargeExecuteTick = 0L;
-            Vec3 toward = horizontalToward(boss, owner);
+            Vec3 toward = horizontalToward(boss, target);
             if (toward.lengthSqr() > 0.0D) {
                 boss.setDeltaMovement(toward.x * 1.15D, Math.max(0.12D, boss.getDeltaMovement().y), toward.z * 1.15D);
                 boss.hurtMarked = true;
@@ -314,11 +323,11 @@ public final class ApexHuntSystem {
             }
         }
         if (hunt.chargeImpactUntil > now && distance <= 16.0D) {
-            Vec3 away = owner.position().subtract(boss.position()).multiply(1.0D, 0.0D, 1.0D);
+            Vec3 away = target.position().subtract(boss.position()).multiply(1.0D, 0.0D, 1.0D);
             if (away.lengthSqr() > 1.0E-5D) {
                 away = away.normalize();
-                owner.setDeltaMovement(owner.getDeltaMovement().add(away.x * 1.15D, 0.35D, away.z * 1.15D));
-                owner.hurtMarked = true;
+                target.setDeltaMovement(target.getDeltaMovement().add(away.x * 1.15D, 0.35D, away.z * 1.15D));
+                target.hurtMarked = true;
             }
             hunt.chargeImpactUntil = 0L;
         }
@@ -329,33 +338,33 @@ public final class ApexHuntSystem {
                 if (distance >= 25.0D && distance <= 324.0D) {
                     hunt.chargeExecuteTick = now + 20L;
                     hunt.patternReadyTick = now + 90L;
-                    owner.sendSystemMessage(Component.literal("§c[정점 전조] §f수림 파쇄자가 정면 돌진을 준비합니다."), true);
+                    target.sendSystemMessage(Component.literal("§c[정점 전조] §f수림 파쇄자가 정면 돌진을 준비합니다."), true);
                 }
             }
             case REINFORCE -> {
                 double ratio = boss.getHealth() / Math.max(1.0F, boss.getMaxHealth());
                 if (!hunt.phaseOneTriggered && ratio <= 0.70D) {
                     hunt.phaseOneTriggered = true;
-                    addReinforcements(hunt, owner, 2);
-                    owner.sendSystemMessage(Component.literal("§6[정점 전조] §f황야 지휘관이 1차 증원을 호출했습니다."), true);
+                    addReinforcements(hunt, target, 2);
+                    target.sendSystemMessage(Component.literal("§6[정점 전조] §f황야 지휘관이 1차 증원을 호출했습니다."), true);
                 } else if (!hunt.phaseTwoTriggered && ratio <= 0.35D) {
                     hunt.phaseTwoTriggered = true;
-                    addReinforcements(hunt, owner, 2);
-                    owner.sendSystemMessage(Component.literal("§6[정점 전조] §f황야 지휘관이 최후 증원을 호출했습니다."), true);
+                    addReinforcements(hunt, target, 2);
+                    target.sendSystemMessage(Component.literal("§6[정점 전조] §f황야 지휘관이 최후 증원을 호출했습니다."), true);
                 }
-                boss.getNavigation().moveTo(owner, 1.20D);
+                boss.getNavigation().moveTo(target, 1.20D);
                 hunt.patternReadyTick = now + 25L;
             }
             case PLAGUE -> {
                 if (distance <= 64.0D) {
-                    owner.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0));
+                    target.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0));
                     boss.heal(Math.max(2.0F, boss.getMaxHealth() * 0.04F));
-                    owner.sendSystemMessage(Component.literal("§2[정점 전조] §f역병핵의 독기 안에서 보스가 체력을 흡수합니다."), true);
+                    target.sendSystemMessage(Component.literal("§2[정점 전조] §f역병핵의 독기 안에서 보스가 체력을 흡수합니다."), true);
                 }
                 hunt.patternReadyTick = now + 100L;
             }
             case SKIRMISH -> {
-                Vec3 away = boss.position().subtract(owner.position()).multiply(1.0D, 0.0D, 1.0D);
+                Vec3 away = boss.position().subtract(target.position()).multiply(1.0D, 0.0D, 1.0D);
                 if (away.lengthSqr() > 1.0E-5D) {
                     away = away.normalize();
                     double sign = hunt.level.getRandom().nextBoolean() ? 1.0D : -1.0D;
@@ -369,50 +378,50 @@ public final class ApexHuntSystem {
             }
             case PULL -> {
                 if (distance >= 25.0D && distance <= 256.0D) {
-                    Vec3 toward = boss.position().subtract(owner.position()).multiply(1.0D, 0.0D, 1.0D);
+                    Vec3 toward = boss.position().subtract(target.position()).multiply(1.0D, 0.0D, 1.0D);
                     if (toward.lengthSqr() > 1.0E-5D) {
                         toward = toward.normalize();
-                        owner.setDeltaMovement(owner.getDeltaMovement().add(toward.x * 0.42D, 0.06D, toward.z * 0.42D));
-                        owner.hurtMarked = true;
-                        owner.sendSystemMessage(Component.literal("§3[정점 전조] §f심해 압제자가 사냥감을 사거리 안으로 끌어당깁니다."), true);
+                        target.setDeltaMovement(target.getDeltaMovement().add(toward.x * 0.42D, 0.06D, toward.z * 0.42D));
+                        target.hurtMarked = true;
+                        target.sendSystemMessage(Component.literal("§3[정점 전조] §f심해 압제자가 사냥감을 사거리 안으로 끌어당깁니다."), true);
                     }
                 }
                 hunt.patternReadyTick = now + 80L;
             }
             case LEAP -> {
                 if (distance >= 16.0D && distance <= 196.0D) {
-                    Vec3 toward = horizontalToward(boss, owner);
+                    Vec3 toward = horizontalToward(boss, target);
                     boss.setDeltaMovement(toward.x * 0.85D, 0.42D, toward.z * 0.85D);
                     boss.hurtMarked = true;
-                    owner.sendSystemMessage(Component.literal("§8[정점 전조] §f심층 추적자가 도약합니다."), true);
+                    target.sendSystemMessage(Component.literal("§8[정점 전조] §f심층 추적자가 도약합니다."), true);
                 }
                 hunt.patternReadyTick = now + 60L;
             }
             case FROST -> {
                 if (distance <= 100.0D) {
-                    owner.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 1));
-                    owner.sendSystemMessage(Component.literal("§b[정점 전조] §f빙설 감시자의 냉기장이 기동을 묶습니다."), true);
+                    target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 1));
+                    target.sendSystemMessage(Component.literal("§b[정점 전조] §f빙설 감시자의 냉기장이 기동을 묶습니다."), true);
                 }
                 hunt.patternReadyTick = now + 100L;
             }
             case WITHER -> {
                 if (distance <= 81.0D) {
-                    owner.addEffect(new MobEffectInstance(MobEffects.WITHER, 70, 0));
-                    Vec3 away = owner.position().subtract(boss.position()).multiply(1.0D, 0.0D, 1.0D);
+                    target.addEffect(new MobEffectInstance(MobEffects.WITHER, 70, 0));
+                    Vec3 away = target.position().subtract(boss.position()).multiply(1.0D, 0.0D, 1.0D);
                     if (away.lengthSqr() > 1.0E-5D) {
                         away = away.normalize();
-                        owner.setDeltaMovement(owner.getDeltaMovement().add(away.x * 0.35D, 0.14D, away.z * 0.35D));
-                        owner.hurtMarked = true;
+                        target.setDeltaMovement(target.getDeltaMovement().add(away.x * 0.35D, 0.14D, away.z * 0.35D));
+                        target.hurtMarked = true;
                     }
-                    owner.sendSystemMessage(Component.literal("§5[정점 전조] §f네더 약탈자가 쇠약 파동을 방출합니다."), true);
+                    target.sendSystemMessage(Component.literal("§5[정점 전조] §f네더 약탈자가 쇠약 파동을 방출합니다."), true);
                 }
                 hunt.patternReadyTick = now + 120L;
             }
             case VOID -> {
                 if (distance <= 100.0D) {
-                    owner.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 35, 0));
-                    boss.getNavigation().moveTo(owner, 1.45D);
-                    owner.sendSystemMessage(Component.literal("§5[정점 전조] §f공허 전조자가 발밑의 중력을 끊습니다."), true);
+                    target.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 35, 0));
+                    boss.getNavigation().moveTo(target, 1.45D);
+                    target.sendSystemMessage(Component.literal("§5[정점 전조] §f공허 전조자가 발밑의 중력을 끊습니다."), true);
                 }
                 hunt.patternReadyTick = now + 120L;
             }
@@ -451,54 +460,48 @@ public final class ApexHuntSystem {
         hunt.mobIds.addAll(unresolved);
     }
 
-    private static void complete(Hunt hunt, ServerPlayer owner) {
-        if (owner != null) {
-            int stage = WorldAscensionData.get(hunt.level.getServer()).stage();
-            boolean mythic = stage >= 2 && hunt.level.getRandom().nextDouble() < 0.20D;
-            giveOrDrop(owner, AscensionAffixes.createEliteDrop(hunt.level.getRandom(), mythic ? 3 : 2));
+    private static void complete(Hunt hunt) {
+        int stage = WorldAscensionData.get(hunt.level.getServer()).stage();
+        for (UUID id : new HashSet<>(hunt.participants)) {
+            ServerPlayer player = hunt.level.getServer().getPlayerList().getPlayer(id);
+            if (player == null || player.level() != hunt.level) continue;
+            boolean owner = id.equals(hunt.owner);
+            boolean mythic = stage >= 2 && hunt.level.getRandom().nextDouble() < (owner ? 0.20D : 0.10D);
+            giveOrDrop(player, AscensionAffixes.createEliteDrop(hunt.level.getRandom(), mythic ? 3 : 2));
             if (stage >= 2) {
-                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 3));
-                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 6));
-                giveOrDrop(owner, new ItemStack(Items.NETHERITE_SCRAP, 1));
-                owner.giveExperiencePoints(180);
+                giveOrDrop(player, new ItemStack(Items.DIAMOND, owner ? 3 : 2));
+                giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, owner ? 6 : 4));
+                if (owner) giveOrDrop(player, new ItemStack(Items.NETHERITE_SCRAP, 1));
+                player.giveExperiencePoints(owner ? 180 : 140);
             } else {
-                giveOrDrop(owner, new ItemStack(Items.DIAMOND, 2));
-                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 4));
-                owner.giveExperiencePoints(120);
+                giveOrDrop(player, new ItemStack(Items.DIAMOND, owner ? 2 : 1));
+                giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, owner ? 4 : 3));
+                player.giveExperiencePoints(owner ? 120 : 100);
             }
 
-            ApexHuntData data = ApexHuntData.get(owner);
-            boolean first = data.recordVictory(owner, hunt.archetype);
-            owner.sendSystemMessage(Component.literal("§a[정점 격파] §f" + hunt.archetype.koreanName()
-                    + " §7· 승천 II 장비 이상 1개 · 정점 도감 " + data.uniqueDefeated(owner) + "/9 · 총 " + data.victories(owner) + "승"
-                    + (first ? " §e· 최초 격파" : "")));
-
-            if (data.claimMasteryReward(owner)) {
-                giveOrDrop(owner, AscensionAffixes.createEliteDrop(hunt.level.getRandom(), 3));
-                giveOrDrop(owner, new ItemStack(Items.NETHERITE_SCRAP, 4));
-                giveOrDrop(owner, new ItemStack(Items.ECHO_SHARD, 32));
-                giveOrDrop(owner, new ItemStack(Items.DRAGON_BREATH, 16));
-                owner.giveExperiencePoints(500);
-                owner.sendSystemMessage(Component.literal("§6[정점 사냥 완주] §f9개 원정권의 정점 강적 최초 격파 완료"
-                        + " §7· 신화 III 1개 · 네더라이트 파편4 · 메아리32 · 드래곤의 숨결16 · 경험치500"));
-            }
-        }
-        for (ServerPlayer player : hunt.level.getServer().getPlayerList().getPlayers()) {
-            if (player == owner || player.level() != hunt.level || !player.isAlive() || player.isSpectator()) continue;
-            if (distanceToCenterSqr(player, hunt.center) <= 48.0D * 48.0D) {
-                player.giveExperiencePoints(50);
-                player.sendSystemMessage(Component.literal("§4[정점 사냥] §f협동 격파 보상 경험치 §e+50"));
+            ApexHuntData data = ApexHuntData.get(player);
+            boolean first = data.recordVictory(player, hunt.archetype);
+            player.sendSystemMessage(Component.literal("§a[공동 정점 격파] §f" + hunt.archetype.koreanName()
+                    + " §7· 정점 도감 " + data.uniqueDefeated(player) + "/9 · 총 " + data.victories(player) + "승"
+                    + (first ? " §e· 최초 격파 공유" : "") + (owner ? " §6· 추적자 보너스" : "")));
+            if (data.claimMasteryReward(player)) {
+                giveOrDrop(player, AscensionAffixes.createEliteDrop(hunt.level.getRandom(), 3));
+                giveOrDrop(player, new ItemStack(Items.NETHERITE_SCRAP, 4));
+                giveOrDrop(player, new ItemStack(Items.ECHO_SHARD, 32));
+                giveOrDrop(player, new ItemStack(Items.DRAGON_BREATH, 16));
+                player.giveExperiencePoints(500);
+                player.sendSystemMessage(Component.literal("§6[정점 사냥 완주] §f9개 원정권 정점 최초 격파 완료"));
             }
         }
         cleanupMobs(hunt);
         closeBossBar(hunt);
     }
 
-    private static void fail(Hunt hunt, ServerPlayer owner, String reason) {
+    private static void fail(Hunt hunt, String reason) {
         cleanupMobs(hunt);
         closeBossBar(hunt);
-        if (owner != null) owner.sendSystemMessage(Component.literal("§c[정점 사냥 실패] §f" + hunt.archetype.koreanName()
-                + " · " + reason + " §7· 추적 재료는 반환되지 않습니다."));
+        notifyHunt(hunt, Component.literal("§c[공동 정점 사냥 실패] §f" + hunt.archetype.koreanName()
+                + " · " + reason + " §7· 추적 재료는 반환되지 않습니다."), false);
     }
 
     private static Mob spawnOne(ServerLevel level, BlockPos center, boolean water, boolean tall,
@@ -550,10 +553,13 @@ public final class ApexHuntSystem {
         mob.getPersistentData().putString(APEX_TYPE_KEY, hunt.archetype.name());
     }
 
-    private static void applyBossStats(Mob boss, ApexArchetype archetype) {
+    private static void applyBossStats(Mob boss, ApexArchetype archetype, int partySize) {
         addPermanent(boss.getAttribute(Attributes.MAX_HEALTH), HEALTH_ID, archetype.healthBonus(), AttributeModifier.Operation.ADD_VALUE);
         addPermanent(boss.getAttribute(Attributes.ARMOR), ARMOR_ID, archetype.armorBonus(), AttributeModifier.Operation.ADD_VALUE);
         addPermanent(boss.getAttribute(Attributes.ATTACK_DAMAGE), ATTACK_ID, archetype.attackBonus(), AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        int extras = Math.min(4, Math.max(0, partySize - 1));
+        addPermanent(boss.getAttribute(Attributes.MAX_HEALTH), COOP_HEALTH_ID, extras * 0.65D, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        addPermanent(boss.getAttribute(Attributes.ATTACK_DAMAGE), COOP_ATTACK_ID, extras * 0.12D, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
         boss.setHealth(boss.getMaxHealth());
         boss.setCustomName(Component.literal("§4[정점] §e" + archetype.koreanName()));
         boss.setCustomNameVisible(true);
@@ -568,13 +574,47 @@ public final class ApexHuntSystem {
         Set<ServerPlayer> shouldSee = new HashSet<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.level() == hunt.level && player.isAlive() && !player.isSpectator()
-                    && distanceToCenterSqr(player, hunt.center) <= PLAYER_RADIUS * PLAYER_RADIUS) {
+                    && distanceToCenterSqr(player, hunt.center) <= PLAYER_RADIUS * PLAYER_RADIUS
+                    && ExpeditionProgression.currentRegion(player) == hunt.archetype.region()) {
                 shouldSee.add(player);
+                hunt.participants.add(player.getUUID());
                 if (!hunt.bossBar.getPlayers().contains(player)) hunt.bossBar.addPlayer(player);
             }
         }
-        for (ServerPlayer viewer : List.copyOf(hunt.bossBar.getPlayers())) {
-            if (!shouldSee.contains(viewer)) hunt.bossBar.removePlayer(viewer);
+        for (ServerPlayer viewer : List.copyOf(hunt.bossBar.getPlayers())) if (!shouldSee.contains(viewer)) hunt.bossBar.removePlayer(viewer);
+    }
+
+    private static void admitNearbyParticipants(Hunt hunt) {
+        for (ServerPlayer player : hunt.level.getServer().getPlayerList().getPlayers()) {
+            if (player.level() == hunt.level && player.isAlive() && !player.isSpectator()
+                    && distanceToCenterSqr(player, hunt.center) <= PLAYER_RADIUS * PLAYER_RADIUS
+                    && ExpeditionProgression.currentRegion(player) == hunt.archetype.region()) {
+                hunt.participants.add(player.getUUID());
+            }
+        }
+        hunt.participants.add(hunt.owner);
+    }
+
+    private static ServerPlayer chooseHuntTarget(MinecraftServer server, Hunt hunt) {
+        ServerPlayer best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.level() != hunt.level || !player.isAlive() || player.isSpectator()) continue;
+            if (ExpeditionProgression.currentRegion(player) != hunt.archetype.region()) continue;
+            double distance = distanceToCenterSqr(player, hunt.center);
+            if (distance <= PLAYER_RADIUS * PLAYER_RADIUS && distance < bestDistance) {
+                best = player;
+                bestDistance = distance;
+                hunt.participants.add(player.getUUID());
+            }
+        }
+        return best;
+    }
+
+    private static void notifyHunt(Hunt hunt, Component message, boolean actionbar) {
+        for (UUID id : hunt.participants) {
+            ServerPlayer player = hunt.level.getServer().getPlayerList().getPlayer(id);
+            if (player != null && player.level() == hunt.level) player.sendSystemMessage(message, actionbar);
         }
     }
 
@@ -657,10 +697,13 @@ public final class ApexHuntSystem {
         final long deadline;
         final ServerBossEvent bossBar;
         final Set<UUID> mobIds = new HashSet<>();
+        final Set<UUID> participants = new HashSet<>();
         UUID bossId;
         int initialEscortCount;
         int packEscortCount;
-        int ownerAbsentTicks;
+        int partyAbsentTicks;
+        int partySizeSnapshot = 1;
+        boolean ownerDisconnected;
         long patternReadyTick;
         long chargeExecuteTick;
         long chargeImpactUntil;
