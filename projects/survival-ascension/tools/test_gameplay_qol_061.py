@@ -34,6 +34,9 @@ harvesting = read("src/main/java/kr/moonseungjun/survivalascension/harvesting/Ha
 expedition_screen = read("src/main/java/kr/moonseungjun/survivalascension/client/ExpeditionScreen.java")
 elite = read("src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java")
 client = read("src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java")
+hud = read("src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java")
+network = read("src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java")
+mythic_payload = read("src/main/java/kr/moonseungjun/survivalascension/network/MythicTargetPayload.java")
 
 need(skill, ['FISHING("fishing", "낚시"'], "fishing skill enum")
 need(tuning, ["if (level < 30) return 430L + 15L * (level - 20);", "fishingRodPreservationChance", "case FISHING"], "post20 XP/fishing tuning")
@@ -61,6 +64,13 @@ need(expedition_screen, ["public void tick()", "refreshTicker < 20", "new Expedi
 need(elite, ["onServerStopping(ServerStoppingEvent event)", "remove.add(entry.getKey())"], "mythic runtime server lifecycle")
 need(main, ["EliteMobSystem::onServerStopping"], "mythic stop listener wiring")
 need(client, ["InputConstants.KEY_K", "InputConstants.KEY_J", "InputConstants.KEY_V"], "canonical client keys")
+need(client, ["ItemTooltipEvent", "AscensionAffixes.effectSummary", "방패 파동: 전투 숙련 Lv.30+", "installMythicReceiver"], "affix tooltip/mythic receiver")
+need(hud, ["renderMythicTracker", "relativeArrow", "신화 III", "↑", "↗", "→"], "view-relative mythic HUD")
+need(network, ['PROTOCOL = "11"', "MythicTargetPayload.TYPE", "sendMythicTarget"], "mythic tracker network")
+need(mythic_payload, ["record MythicTargetPayload", "writeDouble", "readDouble"], "mythic target payload")
+need(elite, ["syncMythicTracker", "상단 방향 화살표로 추적됩니다."], "coordinate-free mythic tracking")
+if '§fX " + mob.blockPosition().getX()' in elite:
+    errors.append("mythic spawn alert still exposes raw X/Z coordinates")
 if "destroyWithoutAdditionalWear" in helper + mining + bore + wood:
     errors.append("obsolete zero-wear bulk helper remains")
 

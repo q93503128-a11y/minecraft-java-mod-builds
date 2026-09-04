@@ -8,6 +8,7 @@ import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.util.Mth;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ public final class SkillHudOverlay {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
 
+        renderMythicTracker(graphics, minecraft);
         List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();
         if (updates.isEmpty()) return;
 
@@ -45,6 +47,37 @@ public final class SkillHudOverlay {
             int top = bottomTop - i * (ROW_HEIGHT + ROW_GAP);
             drawRow(graphics, minecraft, recent, left, top);
         }
+    }
+
+    private static void renderMythicTracker(GuiGraphicsExtractor graphics, Minecraft minecraft) {
+        ClientMythicState.Target target = ClientMythicState.current();
+        if (target == null || minecraft.player == null) return;
+        double dx = target.x() - minecraft.player.getX();
+        double dz = target.z() - minecraft.player.getZ();
+        int distance = (int)Math.round(Math.sqrt(dx * dx + dz * dz));
+        double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
+        double relative = Mth.wrapDegrees(targetYaw - minecraft.player.getYRot());
+        String arrow = relativeArrow(relative);
+        String label = "신화 III   " + arrow + "   " + distance + "m";
+        int width = Math.max(118, minecraft.font.width(label) + 16);
+        int left = (graphics.guiWidth() - width) / 2;
+        int top = 28;
+        int border = distance <= 48 ? 0xFFE6A23C : 0xC0906A28;
+        graphics.fill(left - 1, top - 1, left + width + 1, top + 14, border);
+        graphics.fill(left, top, left + width, top + 13, 0xD4141110);
+        int textX = left + (width - minecraft.font.width(label)) / 2;
+        graphics.text(minecraft.font, label, textX, top + 2, 0xFFFFD166, true);
+    }
+
+    private static String relativeArrow(double degrees) {
+        if (degrees >= -22.5D && degrees < 22.5D) return "↑";
+        if (degrees >= 22.5D && degrees < 67.5D) return "↗";
+        if (degrees >= 67.5D && degrees < 112.5D) return "→";
+        if (degrees >= 112.5D && degrees < 157.5D) return "↘";
+        if (degrees >= 157.5D || degrees < -157.5D) return "↓";
+        if (degrees >= -157.5D && degrees < -112.5D) return "↙";
+        if (degrees >= -112.5D && degrees < -67.5D) return "←";
+        return "↖";
     }
 
     private static int priority(ClientSkillState.RecentSkillUpdate recent) {

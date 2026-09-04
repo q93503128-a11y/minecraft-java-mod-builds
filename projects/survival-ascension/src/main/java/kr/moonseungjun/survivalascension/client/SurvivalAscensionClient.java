@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
+import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
 import kr.moonseungjun.survivalascension.network.ExpeditionSnapshotRequestPayload;
 import kr.moonseungjun.survivalascension.network.MobilityActionPayload;
 import kr.moonseungjun.survivalascension.network.SkillNetwork;
@@ -24,6 +25,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import java.util.List;
 
@@ -49,11 +51,26 @@ public final class SurvivalAscensionClient {
     public SurvivalAscensionClient(IEventBus modBus) {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
         SkillNetwork.installExpeditionReceiver(ClientExpeditionState::onSnapshot);
+        SkillNetwork.installMythicReceiver(ClientMythicState::onTarget);
         SkillClientBridge.install(ClientSkillState::level);
         modBus.addListener(RegisterGuiLayersEvent.class, SurvivalAscensionClient::onRegisterGuiLayers);
         modBus.addListener(RegisterKeyMappingsEvent.class, SurvivalAscensionClient::onRegisterKeyMappings);
         modBus.addListener(AddPackFindersEvent.class, SurvivalAscensionClient::onAddPackFinders);
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre.class, SurvivalAscensionClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(SurvivalAscensionClient::onItemTooltip);
+    }
+
+    private static void onItemTooltip(ItemTooltipEvent event) {
+        String summary = AscensionAffixes.effectSummary(event.getItemStack());
+        if ("승천 옵션 없음".equals(summary)) return;
+        int index = Math.min(1, event.getToolTip().size());
+        event.getToolTip().add(index++, Component.literal("§8──────── §6승천 효과 §8────────"));
+        for (String effect : summary.split(" · ")) {
+            event.getToolTip().add(index++, Component.literal("§6◆ §f" + effect));
+        }
+        if (AscensionAffixes.isShield(event.getItemStack())) {
+            event.getToolTip().add(index, Component.literal("§7방패 파동: 전투 숙련 Lv.30+ · 피해 차단 시 발동 · 웅크리기 시 미발동"));
+        }
     }
 
     private static void onAddPackFinders(AddPackFindersEvent event) {

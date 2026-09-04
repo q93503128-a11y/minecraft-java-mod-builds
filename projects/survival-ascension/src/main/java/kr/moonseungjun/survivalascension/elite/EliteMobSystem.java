@@ -9,6 +9,8 @@ package kr.moonseungjun.survivalascension.elite;
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.endgame.FinalAscensionBossSystem;
 import kr.moonseungjun.survivalascension.equipment.AscensionAffixes;
+import kr.moonseungjun.survivalascension.network.MythicTargetPayload;
+import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
@@ -102,7 +104,7 @@ public final class EliteMobSystem {
                 runtime.contributors.add(viewer.getUUID());
                 viewer.sendSystemMessage(Component.literal("§6§l[신화 III 출현] §r§f" + mob.getName().getString()
                         + " §7· §e" + directionLabel(viewer, mob) + " " + (int)Math.round(Math.sqrt(viewer.distanceToSqr(mob))) + "m"
-                        + " §7· §fX " + mob.blockPosition().getX() + " Z " + mob.blockPosition().getZ()));
+                        + " §7· §6상단 방향 화살표로 추적됩니다."));
             }
         }
     }
@@ -136,6 +138,7 @@ public final class EliteMobSystem {
             mob.setGlowingTag(true);
             mob.setPersistenceRequired();
             syncMythicBossBar(runtime, mob);
+            if (runtime.level.getGameTime() % 20L == 0L) syncMythicTracker(runtime, mob);
             int phase = mob.getPersistentData().getIntOr(MYTHIC_PHASE_KEY, 0);
             if (phase >= 1) mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 30, phase >= 2 ? 1 : 0, true, false));
             if (phase >= 2) {
@@ -423,6 +426,13 @@ public final class EliteMobSystem {
             if (player.level() == level && player.isAlive() && !player.isSpectator() && player.distanceToSqr(entity) <= radiusSqr) players.add(player);
         }
         return players;
+    }
+
+    private static void syncMythicTracker(MythicRuntime runtime, Mob mob) {
+        MythicTargetPayload payload = new MythicTargetPayload(mob.getX(), mob.getZ());
+        for (ServerPlayer player : playersNear(runtime.level, mob, MYTHIC_ALERT_RADIUS)) {
+            SkillNetwork.sendMythicTarget(player, payload);
+        }
     }
 
     private static String directionLabel(ServerPlayer player, Entity target) {
