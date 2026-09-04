@@ -34,17 +34,18 @@ final class BattlePresentation {
 
     private final Map<String, UUID> actors = new LinkedHashMap<>();
     private final Map<String, Vec3> homes = new LinkedHashMap<>();
+    private final Map<String, Float> homeYaws = new LinkedHashMap<>();
     private final Map<String, CombatantSide> sides = new LinkedHashMap<>();
     private final Map<String, Boolean> summons = new LinkedHashMap<>();
     private final Map<String, String> visualIds = new LinkedHashMap<>();
     private final Map<String, Boolean> downed = new LinkedHashMap<>();
     private final Map<String, Integer> bossPhases = new LinkedHashMap<>();
     private final Map<String, Integer> pendingRemovalTicks = new LinkedHashMap<>();
+    /** Multiple actors may still be returning at 2x speed; never strand the previous attacker. */
+    private final Map<String, Integer> returnTimers = new LinkedHashMap<>();
     private UUID focusMarker;
     private UUID dangerMarker;
     private String dangerTarget = "";
-    private String moving;
-    private int returnTicks;
     private boolean finishPlayed;
 
     void spawn(ServerLevel level, Vec3 center, float facingYaw, Iterable<CombatantState> combatants) {
@@ -93,9 +94,10 @@ final class BattlePresentation {
             stand.setCustomNameVisible(false);stand.setInvulnerable(true);stand.setNoGravity(true);stand.setShowArms(true);stand.setYRot(yaw);
             equipStandIn(stand,combatant);level.addFreshEntity(stand);actor=stand;visualId=baseVisualId;
         }
-        actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); sides.put(combatant.instanceId(),combatant.side());
-        summons.put(combatant.instanceId(),combatant.definition().summon()); visualIds.put(combatant.instanceId(),visualId);
-        downed.put(combatant.instanceId(),combatant.downed()); bossPhases.put(combatant.instanceId(),phaseFor(combatant)); pendingRemovalTicks.remove(combatant.instanceId());
+        actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); homeYaws.put(combatant.instanceId(),yaw);
+        sides.put(combatant.instanceId(),combatant.side()); summons.put(combatant.instanceId(),combatant.definition().summon());
+        visualIds.put(combatant.instanceId(),visualId); downed.put(combatant.instanceId(),combatant.downed());
+        bossPhases.put(combatant.instanceId(),phaseFor(combatant)); pendingRemovalTicks.remove(combatant.instanceId()); returnTimers.remove(combatant.instanceId());
     }
 
     private void removeMissing(ServerLevel level,List<CombatantState> units){
@@ -105,7 +107,7 @@ final class BattlePresentation {
 
     private void removeActor(ServerLevel level,String id){
         UUID uuid=actors.remove(id);Entity entity=uuid==null?null:level.getEntity(uuid);if(entity!=null)entity.discard();
-        homes.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);bossPhases.remove(id);pendingRemovalTicks.remove(id);if(id.equals(moving))moving=null;
+        homes.remove(id);homeYaws.remove(id);sides.remove(id);summons.remove(id);visualIds.remove(id);downed.remove(id);bossPhases.remove(id);pendingRemovalTicks.remove(id);returnTimers.remove(id);
     }
 
     private static Vec3 localToWorld(Vec3 center,Vec3 right,Vec3 forward,double x,double z){return center.add(right.scale(x)).subtract(forward.scale(z));}
@@ -205,32 +207,87 @@ final class BattlePresentation {
 
     void performSkill(ServerLevel level,String actorId,String visualId,String skillId,String targetId,boolean damaging){
         Entity actor=entity(level,actorId);
-        if(actor instanceof BattleActorEntity animated) playSkillAnimation(animated,visualId,skillId,damaging);
         Vec3 source=homes.get(actorId);Vec3 target=targetId==null||targetId.isBlank()?source:homes.get(targetId);
+        boolean closesDistance=shouldCloseDistance(visualId,skillId,damaging);
+
+        if(actor!=null&&source!=null&&target!=null){
+            faceAt(actor,target);
+            if(closesDistance){
+                Vec3 delta=target.subtract(source);
+                if(delta.lengthSqr()>.001)actor.setPos(target.subtract(delta.normalize().scale(1.45)));
+            }
+            // Even anchored ranged/caster actors briefly face their resolved target, then recover formation facing.
+            returnTimers.put(actorId,actionHoldTicks(skillId,closesDistance));
+        }
+
+        if(actor instanceof BattleActorEntity animated) playSkillAnimation(animated,visualId,skillId,damaging,closesDistance);
         if(source!=null){
             if("EL04".equals(visualId)&&"el04_collapse".equals(skillId)&&target!=null)EliteVfxTelegraphs.el04CollapseCracks(level,target);
             BattleVfx.skill(level,visualId,skillId,source,target==null?source:target,damaging);
         }
-        if(!damaging||target==null||source==null||actor==null)return;Vec3 delta=target.subtract(source);if(delta.lengthSqr()>.001)actor.setPos(target.subtract(delta.normalize().scale(1.45)));moving=actorId;returnTicks=5;
     }
 
     /** Canonical Skill IDs choose the authored per-character Basic/Active clip instead of damage/cast guessing. */
-    private static void playSkillAnimation(BattleActorEntity actor,String visualId,String skillId,boolean damaging){
+    private static void playSkillAnimation(BattleActorEntity actor,String visualId,String skillId,boolean damaging,boolean moving){
         switch(skillId){
-            case "p01_chase_slash","p02_accelerate","p03_guard_stance","p04_heal","p05_suppressive_shot","p06_echo","p07_command","p08_frenzy" -> actor.playBasic();
-            case "p01_breaker_strike","p02_time_leap","p03_guard_transfer","p04_returned_breath","p05_piercing_shot","p06_condolence","p07_summon_toto","p08_blood_charge" -> actor.playActive1();
-            case "p01_duel_lock","p02_delay_field","p03_shield_pressure","p04_resting_light","p05_hunt_signal","p06_funeral_order","p07_joint_attack","p08_battle_mania" -> actor.playActive2();
+            case "p01_chase_slash","p02_accelerate","p03_guard_stance","p04_heal","p05_suppressive_shot","p06_echo","p07_command","p08_frenzy" -> playBasic(actor,moving);
+            case "p01_breaker_strike","p02_time_leap","p03_guard_transfer","p04_returned_breath","p05_piercing_shot","p06_condolence","p07_summon_toto","p08_blood_charge" -> playActive1(actor,moving);
+            case "p01_duel_lock","p02_delay_field","p03_shield_pressure","p04_resting_light","p05_hunt_signal","p06_funeral_order","p07_joint_attack","p08_battle_mania" -> playActive2(actor,moving);
             case "b01_charge","b04_eruption" -> actor.playCharge();case "b02_summon" -> actor.playSummon();case "b03_overclock","b05_relay_collapse" -> actor.playPhase();
             default -> {if(damaging)actor.playStrike();else actor.playCast();}
         }
     }
 
+    private static void playBasic(BattleActorEntity actor,boolean moving){if(moving)actor.playMovingBasic();else actor.playBasic();}
+    private static void playActive1(BattleActorEntity actor,boolean moving){if(moving)actor.playMovingActive1();else actor.playActive1();}
+    private static void playActive2(BattleActorEntity actor,boolean moving){if(moving)actor.playMovingActive2();else actor.playActive2();}
+
+    /**
+     * Closing distance is authored, not inferred from "deals damage". This keeps archers, casters,
+     * time manipulation and ground eruptions on their anchors while melee/dash attacks still read physically.
+     */
+    private static boolean shouldCloseDistance(String visualId,String skillId,boolean damaging){
+        if(!damaging)return false;
+        return switch(visualId){
+            case "P01" -> "p01_chase_slash".equals(skillId)||"p01_breaker_strike".equals(skillId);
+            case "P03" -> "p03_shield_pressure".equals(skillId);
+            case "P08" -> "p08_frenzy".equals(skillId)||"p08_blood_charge".equals(skillId);
+            case "P07_SUMMON","F01" -> true;
+            case "F04" -> !"f04_endure".equals(skillId);
+            case "E001","E004","E006","E008","E012","E014" -> true;
+            case "B01" -> true;
+            case "B04" -> !"b04_eruption".equals(skillId);
+            case "B05" -> !"b05_relay_collapse".equals(skillId);
+            default -> false;
+        };
+    }
+
+    private static int actionHoldTicks(String skillId,boolean moving){
+        if(!moving)return 4;
+        return switch(skillId){
+            case "p01_breaker_strike","p08_blood_charge","b01_charge" -> 12;
+            default -> 8;
+        };
+    }
+
+    private static void faceAt(Entity actor,Vec3 target){
+        Vec3 delta=target.subtract(actor.position());double horizontal=delta.x*delta.x+delta.z*delta.z;if(horizontal<.0001)return;
+        float yaw=(float)Math.toDegrees(Math.atan2(-delta.x,delta.z));actor.setYRot(yaw);actor.setYHeadRot(yaw);
+    }
+
     void lunge(ServerLevel level,String actorId,String visualId,String skillId,String targetId){performSkill(level,actorId,visualId,skillId,targetId,true);}
 
     void tick(ServerLevel level){
-        tickPendingRemovals(level);
-        if(moving==null)return;
-        if(--returnTicks<=0){Entity actor=entity(level,moving);Vec3 home=homes.get(moving);if(actor!=null&&home!=null)actor.setPos(home);moving=null;}
+        tickPendingRemovals(level);tickReturns(level);
+    }
+
+    private void tickReturns(ServerLevel level){
+        for(String id:List.copyOf(returnTimers.keySet())){
+            int left=returnTimers.getOrDefault(id,0)-1;
+            if(left>0){returnTimers.put(id,left);continue;}
+            returnTimers.remove(id);Entity actor=entity(level,id);Vec3 home=homes.get(id);if(actor==null||home==null)continue;
+            actor.setPos(home);Float yaw=homeYaws.get(id);if(yaw!=null){actor.setYRot(yaw);actor.setYHeadRot(yaw);}
+        }
     }
 
     private void tickPendingRemovals(ServerLevel level){
@@ -240,8 +297,8 @@ final class BattlePresentation {
         }
     }
 
-    void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);moving=null;finishPlayed=false;}
-    private void cleanupActors(ServerLevel level){for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}actors.clear();homes.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();bossPhases.clear();pendingRemovalTicks.clear();}
+    void cleanup(ServerLevel level){clearFocus(level);clearDanger(level);cleanupActors(level);finishPlayed=false;}
+    private void cleanupActors(ServerLevel level){for(UUID id:actors.values()){Entity entity=level.getEntity(id);if(entity!=null)entity.discard();}actors.clear();homes.clear();homeYaws.clear();sides.clear();summons.clear();visualIds.clear();downed.clear();bossPhases.clear();pendingRemovalTicks.clear();returnTimers.clear();}
     private Entity entity(ServerLevel level,String id){UUID uuid=actors.get(id);return uuid==null?null:level.getEntity(uuid);}
 
     private static void equipStandIn(ArmorStand stand,CombatantState combatant){
