@@ -87,22 +87,32 @@ public final class TurnboundBattleActors {
 
     public static boolean contains(String combatantId) { return ACTORS.containsKey(combatantId); }
 
+    private static String combatantId(EntityType<?> type) {
+        if (type == null) return null;
+        for (var entry : ACTORS.entrySet()) if (entry.getValue().get() == type) return entry.getKey();
+        return null;
+    }
+
     /** Returns canonical hero animation prefix for a concrete registered actor type; non-core actors return null. */
     public static String heroAnimationPrefix(EntityType<?> type) {
-        if (type == null) return null;
-        for (var entry : ACTORS.entrySet()) {
-            if (entry.getValue().get() == type) return HERO_ANIMATION.get(entry.getKey());
-        }
-        return null;
+        String id = combatantId(type);
+        return id == null ? null : HERO_ANIMATION.get(id);
     }
 
     /** True only for the five authored boss actor types that provide boss.hit_light / boss.hit_heavy clips. */
     public static boolean bossAnimationType(EntityType<?> type) {
-        if (type == null) return false;
-        for (var entry : ACTORS.entrySet()) {
-            if (entry.getValue().get() == type) return BOSS_PATH.containsKey(entry.getKey());
-        }
-        return false;
+        String id = combatantId(type);
+        return id != null && BOSS_PATH.containsKey(id);
+    }
+
+    /** 0 = non-hostile presentation actor, 1 = normal enemy, 2 = elite, 3 = boss. */
+    public static int fieldThreatTier(EntityType<?> type) {
+        String id = combatantId(type);
+        if (id == null) return 0;
+        if (BOSS_PATH.containsKey(id)) return 3;
+        if (ELITE_PATH.containsKey(id)) return 2;
+        if (ENEMY_PATH.containsKey(id)) return 1;
+        return 0;
     }
 
     public static BattleActorEntity spawn(ServerLevel level, String combatantId, Vec3 pos, float yaw) {
