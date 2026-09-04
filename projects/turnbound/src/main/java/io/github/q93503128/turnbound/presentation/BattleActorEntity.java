@@ -36,6 +36,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private boolean fieldModeInitialized;
     private boolean fieldWalking;
     private boolean fieldThreatAlerted;
+    private float fieldHomeYaw;
 
     public BattleActorEntity(EntityType<? extends BattleActorEntity> type, Level level) {
         super(type, level);
@@ -100,8 +101,6 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("field_idle", fieldIdle));
 
         if (bossAnimations) {
-            // Persistent boss mutations live on their own additive controllers so ordinary attacks/hits can
-            // keep animating on the combat controller without snapping the evolved silhouette back to phase 1.
             controllers.add(new AnimationController<BattleActorEntity>("boss_phase", 3, test -> PlayState.STOP)
                     .additiveAnimations()
                     .triggerableAnim("phase", PHASE));
@@ -119,7 +118,6 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         return RawAnimation.begin().thenLoop("animation." + prefix + "." + clip);
     }
 
-    /** Authored dash/step-in clip followed by the actual skill clip; used only for skills that really close distance. */
     private static RawAnimation moveThen(String prefix, String clip) {
         return RawAnimation.begin()
                 .thenPlay("animation." + prefix + ".move_attack")
@@ -151,13 +149,12 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     }
     public void playBossStagger() {
         triggerAnim("combat", "stagger");
-        // At present this is used by ORO-7's barrier shear. Keeping the damage pose separate means
-        // later overclock/phase animations cannot restore the already-broken external armor.
         if (TurnboundBattleActors.bossAnimationType(getType())) triggerAnim("boss_damage", "armor_break");
     }
 
     /** Switches authored field actors between locomotion clips without per-tick retrigger spam. */
     public void setFieldWalking(boolean walking) {
+        if (!fieldModeInitialized) fieldHomeYaw = getYRot();
         if (fieldModeInitialized && fieldWalking == walking) return;
         fieldModeInitialized = true;
         fieldWalking = walking;
@@ -171,10 +168,10 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     }
 
     /**
-     * Field-only pre-combat body language. Battle actors never enter this path because BattlePresentation does not
-     * initialize field locomotion. Ordinary enemies simply acquire/follow the nearby party with their facing;
-     * elites expose their name and ready pose; bosses reveal earlier and play their authored telegraph once per
-     * approach. This is presentation only: aggro radii and BattleSession start rules remain authoritative elsewhere.
+     * Field-only pre-combat body language. Ordinary enemies acquire the party late; elites expose their name and
+     * ready pose; bosses reveal earlier and play their authored telegraph once per approach. When the party backs
+     * away, actors smoothly return to the authored formation facing instead of remaining twisted toward where the
+     * player happened to leave.
      */
     private void tickFieldThreatPrelude() {
         if (!fieldModeInitialized || level().isClientSide()) return;
@@ -189,6 +186,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         if (player == null) {
             fieldThreatAlerted = false;
             if (tier >= 2) setCustomNameVisible(false);
+            returnFieldFacing();
             return;
         }
 
@@ -203,8 +201,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 if (tier >= 3) playTelegraph();
                 else if (tier == 2) playReady();
             }
-        } else if (fieldThreatAlerted && distanceSq > (alertRadius + 4.0) * (alertRadius + 4.0)) {
-            fieldThreatAlerted = false;
+        } else {
+            if (fieldThreatAlerted && distanceSq > (alertRadius + 4.0) * (alertRadius + 4.0)) fieldThreatAlerted = false;
+            if (!fieldThreatAlerted) returnFieldFacing();
         }
     }
 
@@ -212,10 +211,30 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         double dx = player.getX() - getX();
         double dz = player.getZ() - getZ();
         if (dx * dx + dz * dz <= 0.000001) return;
-        float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
+        setFieldYaw((float)Math.toDegrees(Math.atan2(-dx, dz)));
+    }
+
+    private void returnFieldFacing() {
+        float current = getYRot();
+        float delta = wrapDegrees(fieldHomeYaw - current);
+        if (Math.abs(delta) < 0.5F) {
+            setFieldYaw(fieldHomeYaw);
+            return;
+        }
+        setFieldYaw(current + delta * 0.18F);
+    }
+
+    private void setFieldYaw(float yaw) {
         setYRot(yaw);
         setYHeadRot(yaw);
         setYBodyRot(yaw);
+    }
+
+    private static float wrapDegrees(float degrees) {
+        float wrapped = degrees % 360.0F;
+        if (wrapped >= 180.0F) wrapped -= 360.0F;
+        if (wrapped < -180.0F) wrapped += 360.0F;
+        return wrapped;
     }
 
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return geoCache; }
