@@ -1,22 +1,27 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
-/** Shared dynamic boundaries and civic landmarks derived from completed surveyed sites. */
+/** Shared Erden boundaries and civic landmarks derived from the active authored kingdom. */
 public final class RealmJurisdiction {
+    private static final int CAPITAL_BUFFER = 32;
+
     private RealmJurisdiction() {
     }
 
     public static String at(ServerLevel level, BlockPos pos) {
-        if (inside(level, pos, "erden_kingdom", 360)) return "erden_kingdom";
-        if (inside(level, pos, "silvana_forest", 320)) return "silvana_forest";
-        if (inside(level, pos, "kardum_league", 320)) return "kardum_league";
+        if (!RealmSitePlanner.isBuilt(level, PlayableOriginCatalog.DEFAULT_HOMELAND)) return null;
+        if (insideCapital(pos) || ErdenRegionalSettlementCatalog.settlementAt(pos.getX(), pos.getZ()) != null) {
+            return PlayableOriginCatalog.DEFAULT_HOMELAND;
+        }
         return null;
     }
 
     public static boolean inside(ServerLevel level, BlockPos pos, String homelandId, int radius) {
-        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, homelandId);
+        if (!PlayableOriginCatalog.DEFAULT_HOMELAND.equals(homelandId)) return false;
+        RealmSiteLayoutSavedData.RealmSite site = RealmSitePlanner.site(level, PlayableOriginCatalog.DEFAULT_HOMELAND);
         if (site == null || !site.built() || site.revision() < RealmSitePlanner.LAYOUT_REVISION) return false;
         long dx = pos.getX() - site.centerX();
         long dz = pos.getZ() - site.centerZ();
@@ -24,10 +29,25 @@ public final class RealmJurisdiction {
     }
 
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
-        return SafeResidenceLocator.jail(level, jurisdiction);
+        requireErden(jurisdiction, "jurisdiction");
+        return SafeResidenceLocator.jail(level, PlayableOriginCatalog.DEFAULT_HOMELAND);
     }
 
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
-        return SafeResidenceLocator.residence(level, homelandId, residenceId);
+        requireErden(homelandId, "homeland");
+        return SafeResidenceLocator.residence(level, PlayableOriginCatalog.DEFAULT_HOMELAND, residenceId);
+    }
+
+    private static boolean insideCapital(BlockPos pos) {
+        return pos.getX() >= ErdenCapitalStreamingBuilder.WEST_WALL_X - CAPITAL_BUFFER
+                && pos.getX() <= ErdenCapitalStreamingBuilder.EAST_WALL_X + CAPITAL_BUFFER
+                && pos.getZ() >= ErdenCapitalStreamingBuilder.NORTH_WALL_Z - CAPITAL_BUFFER
+                && pos.getZ() <= ErdenCapitalStreamingBuilder.SOUTH_WALL_Z + CAPITAL_BUFFER;
+    }
+
+    private static void requireErden(String id, String type) {
+        if (!PlayableOriginCatalog.DEFAULT_HOMELAND.equals(id)) {
+            throw new IllegalArgumentException("Inactive " + type + ": " + id);
+        }
     }
 }
