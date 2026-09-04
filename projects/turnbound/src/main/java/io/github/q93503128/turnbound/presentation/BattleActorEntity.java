@@ -11,6 +11,7 @@ import com.geckolib.util.GeckoLibUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /** Visual-only GeckoLib combat/field actor. Authoritative gameplay logic remains outside the entity. */
@@ -34,6 +35,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
     private boolean fieldModeInitialized;
     private boolean fieldWalking;
+    private boolean fieldThreatAlerted;
 
     public BattleActorEntity(EntityType<? extends BattleActorEntity> type, Level level) {
         super(type, level);
@@ -160,6 +162,60 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         fieldModeInitialized = true;
         fieldWalking = walking;
         triggerAnim("combat", walking ? "field_walk" : "field_idle");
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        tickFieldThreatPrelude();
+    }
+
+    /**
+     * Field-only pre-combat body language. Battle actors never enter this path because BattlePresentation does not
+     * initialize field locomotion. Ordinary enemies simply acquire/follow the nearby party with their facing;
+     * elites expose their name and ready pose; bosses reveal earlier and play their authored telegraph once per
+     * approach. This is presentation only: aggro radii and BattleSession start rules remain authoritative elsewhere.
+     */
+    private void tickFieldThreatPrelude() {
+        if (!fieldModeInitialized || level().isClientSide()) return;
+        int tier = TurnboundBattleActors.fieldThreatTier(getType());
+        if (tier <= 0) return;
+
+        double searchRadius = tier >= 3 ? 30.0 : tier == 2 ? 20.0 : 12.0;
+        double alertRadius = tier >= 3 ? 16.0 : tier == 2 ? 11.0 : 9.0;
+        double revealRadius = tier >= 3 ? 26.0 : tier == 2 ? 16.0 : 0.0;
+        Player player = level().getNearestPlayer(this, searchRadius);
+
+        if (player == null) {
+            fieldThreatAlerted = false;
+            if (tier >= 2) setCustomNameVisible(false);
+            return;
+        }
+
+        double distanceSq = distanceToSqr(player);
+        if (tier >= 2) setCustomNameVisible(distanceSq <= revealRadius * revealRadius);
+
+        boolean alert = distanceSq <= alertRadius * alertRadius;
+        if (alert) {
+            faceFieldTarget(player);
+            if (!fieldThreatAlerted) {
+                fieldThreatAlerted = true;
+                if (tier >= 3) playTelegraph();
+                else if (tier == 2) playReady();
+            }
+        } else if (fieldThreatAlerted && distanceSq > (alertRadius + 4.0) * (alertRadius + 4.0)) {
+            fieldThreatAlerted = false;
+        }
+    }
+
+    private void faceFieldTarget(Player player) {
+        double dx = player.getX() - getX();
+        double dz = player.getZ() - getZ();
+        if (dx * dx + dz * dz <= 0.000001) return;
+        float yaw = (float)Math.toDegrees(Math.atan2(-dx, dz));
+        setYRot(yaw);
+        setYHeadRot(yaw);
+        setYBodyRot(yaw);
     }
 
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return geoCache; }
