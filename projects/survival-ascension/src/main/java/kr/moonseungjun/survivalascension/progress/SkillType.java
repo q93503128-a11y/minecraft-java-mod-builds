@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.progress;
 
 import java.util.Arrays;
 
+/** Canonical persisted skill ids; keep additions explicit so old saves remain readable. */
 public enum SkillType {
     MINING("mining", "채굴", 0x55D6FF),
     WOODCUTTING("woodcutting", "벌목", 0xA9D45B),
