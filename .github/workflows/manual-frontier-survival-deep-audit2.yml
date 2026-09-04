@@ -1,0 +1,119 @@
+name: Manual Frontier Survival Deep Audit 2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-frontier-survival-deep-audit2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deep-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Static lifecycle transaction audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [
+              Path('projects/frontier-settlement/src/main/java'),
+              Path('projects/survival-ascension/src/main/java'),
+          ]
+          files = [p for root in roots for p in root.rglob('*.java')]
+          print('JAVA_FILES', len(files))
+          print('JAVA_LINES', sum(len(p.read_text(encoding='utf-8').splitlines()) for p in files))
+
+          def hits(title, regex, limit=250):
+              print('\n##', title)
+              rx = re.compile(regex)
+              count = 0
+              for p in files:
+                  lines = p.read_text(encoding='utf-8').splitlines()
+                  for i, line in enumerate(lines, 1):
+                      if rx.search(line):
+                          print(f'{p}:{i}: {line.strip()}')
+                          count += 1
+                          if count >= limit:
+                              print('...TRUNCATED...')
+                              print('COUNT>=', count)
+                              return
+              print('COUNT', count)
+
+          hits('STATIC_MUTABLE_COLLECTIONS', r'\bstatic\s+(?:final\s+)?(?:Map|Set|List|Deque|Queue|HashMap|HashSet|ArrayList|ArrayDeque)<')
+          hits('SERVER_STOPPING_HOOKS', r'onServerStopping|ServerStoppingEvent')
+          hits('LOGIN_LOGOUT_HOOKS', r'onPlayerLogged(?:In|Out)|PlayerLogged(?:In|Out)Event')
+          hits('WALL_CLOCK_USAGE', r'System\.(?:currentTimeMillis|nanoTime)')
+          hits('PERSISTENT_DATA_MUTATION', r'getPersistentData\(\).*\.(?:put|remove)|persistent\.(?:put|remove)')
+          hits('SAVED_DATA_DIRTY', r'\bsetDirty\(\)')
+          hits('CONSUME_OR_REMOVE', r'\b(?:consume|consumeOne|consumeSupplyCharge|consumeSupplyCharges|shrink|removeBlock|destroyBlock|discard)\s*\(')
+          hits('WORLD_MUTATION', r'\b(?:setBlock|setBlockAndUpdate|destroyBlock|removeBlock|addFreshEntity)\s*\(')
+          hits('CHUNK_FORCE_OR_LOAD', r'forceChunk|setChunkForced|addRegionTicket|getChunk\(')
+          hits('FULL_PLAYER_ENTITY_SCANS', r'getAllLevels\(|getPlayerList\(\)\.getPlayers|getEntitiesOfClass|getEntities\(')
+
+          print('\n## SAVED_DATA_CLASSES')
+          for p in files:
+              text = p.read_text(encoding='utf-8')
+              if 'extends SavedData' in text:
+                  dirty = text.count('setDirty()')
+                  state_mut = len(re.findall(r'\bstate\([^\n]+\)\.[A-Za-z_][A-Za-z0-9_]*\s*(?:\+\+|--|[+\-*/]?=)', text))
+                  print(f'{p} setDirty={dirty} directStateMutation={state_mut}')
+
+          print('\n## STATIC_MUTABLE_WITHOUT_OBVIOUS_SERVER_STOP')
+          for p in files:
+              text = p.read_text(encoding='utf-8')
+              if re.search(r'\bstatic\s+(?:final\s+)?(?:Map|Set|List|Deque|Queue|HashMap|HashSet|ArrayList|ArrayDeque)<', text):
+                  if 'ServerStoppingEvent' not in text and 'onServerStopping' not in text:
+                      print(p)
+
+          print('\n## LARGE_TICK_FILES')
+          for p in files:
+              text = p.read_text(encoding='utf-8')
+              if ('PlayerTickEvent' in text or 'ServerTickEvent' in text) and len(text.splitlines()) > 350:
+                  print(p, 'lines=', len(text.splitlines()))
+          PY
+      - name: Resource JSON audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          for project in ('projects/frontier-settlement', 'projects/survival-ascension'):
+              files=list((Path(project)/'src/main/resources').rglob('*.json'))
+              for p in files: json.loads(p.read_text(encoding='utf-8'))
+              print(project, 'JSON_OK', len(files))
+          PY
+      - name: Frontier Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+      - name: Survival Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew --no-daemon clean build
+      - name: JAR audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for project in frontier-settlement survival-ascension; do
+            jarfile=$(find "projects/$project/build/libs" -maxdepth 1 -name '*.jar' ! -name '*sources*' ! -name '*javadoc*' | head -n1)
+            test -n "$jarfile" && test -s "$jarfile"
+            test -z "$(jar tf "$jarfile" | sort | uniq -d | head -n1 || true)"
+            echo "JAR_OK $jarfile $(stat -c%s "$jarfile") bytes"
+          done
