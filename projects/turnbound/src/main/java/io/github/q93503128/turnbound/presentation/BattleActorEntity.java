@@ -23,6 +23,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     private static final RawAnimation CHARGE = RawAnimation.begin().thenPlay("boss.charge");
     private static final RawAnimation SUMMON = RawAnimation.begin().thenPlay("boss.summon");
     private static final RawAnimation PHASE = RawAnimation.begin().thenPlay("boss.phase_enter");
+    private static final RawAnimation BOSS_STAGGER = RawAnimation.begin().thenPlay("boss.stagger");
     private static final RawAnimation BOSS_HIT_LIGHT = RawAnimation.begin().thenPlay("boss.hit_light");
     private static final RawAnimation BOSS_HIT_HEAVY = RawAnimation.begin().thenPlay("boss.hit_heavy");
     private static final RawAnimation FIELD_WALK = RawAnimation.begin().thenLoop("field.walk");
@@ -90,6 +91,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("charge", CHARGE)
                 .triggerableAnim("summon", SUMMON)
                 .triggerableAnim("phase", PHASE)
+                .triggerableAnim("stagger", BOSS_STAGGER)
                 .triggerableAnim("field_walk", fieldWalk)
                 .triggerableAnim("field_idle", fieldIdle));
     }
@@ -129,6 +131,7 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
     public void playCharge() { triggerAnim("combat", "charge"); }
     public void playSummon() { triggerAnim("combat", "summon"); }
     public void playPhase() { triggerAnim("combat", "phase"); }
+    public void playBossStagger() { triggerAnim("combat", "stagger"); }
 
     /** Switches authored field actors between locomotion clips without per-tick retrigger spam. */
     public void setFieldWalking(boolean walking) {
