@@ -6,6 +6,7 @@ public enum SkillType {
     MINING("mining", "채굴", 0x55D6FF),
     WOODCUTTING("woodcutting", "벌목", 0xA9D45B),
     HARVESTING("harvesting", "농사", 0xF4D35E),
+    FISHING("fishing", "낚시", 0x4FC3F7),
     COMBAT("combat", "전투", 0xFF6B6B),
     CONSTRUCTION("construction", "건축", 0xD6B27C),
     MOBILITY("mobility", "기동", 0xB89CFF);

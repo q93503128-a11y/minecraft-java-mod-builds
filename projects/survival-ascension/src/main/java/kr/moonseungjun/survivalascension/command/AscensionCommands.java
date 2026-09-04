@@ -119,6 +119,7 @@ public final class AscensionCommands {
             case WOODCUTTING -> "연결 로그 " + SkillTuning.woodcuttingLogLimit(level) + " | 속도 " + fmt(SkillTuning.woodcuttingSpeedMultiplier(level));
             case HARVESTING -> "범위 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level)
                     + " | 속도 " + fmt(SkillTuning.harvestingSpeedMultiplier(level));
+            case FISHING -> "낚싯대 마모 방지 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D) + "%";
             case COMBAT -> "피해 " + fmt(SkillTuning.combatDamageMultiplier(level))
                     + " | 파급 " + (SkillTuning.combatCleaveTargetLimit(level) <= 0 ? "잠김" : SkillTuning.combatCleaveTargetLimit(level) + "체");
             case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level)

@@ -61,7 +61,8 @@ public final class ExpeditionProgression {
     }
 
     public static void recordSkillAction(ServerPlayer player, SkillType skill, int amount) {
-        recordAction(player, ExpeditionAction.fromSkill(skill), amount);
+        ExpeditionAction action = ExpeditionAction.fromSkill(skill);
+        if (action != null) recordAction(player, action, amount);
     }
 
     public static void recordAction(ServerPlayer player, ExpeditionAction action, int amount) {

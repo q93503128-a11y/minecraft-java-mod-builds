@@ -23,8 +23,8 @@ import org.joml.Matrix3x2f;
 public final class MiningRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("단일", "항상 정확히 1블록만 채굴", new ItemStack(Items.COBBLESTONE), MiningMode.SINGLE, false),
-            new Entry("자동", "광석=광맥 / 일반=굴착", new ItemStack(Items.IRON_PICKAXE), MiningMode.AUTO, false),
-            new Entry("굴착", "Lv.10 · 항상 시선 평면 광역", new ItemStack(Items.STONE), MiningMode.PLANE, false),
+            new Entry("자동", "광석=동종만 / 일반=굴착", new ItemStack(Items.IRON_PICKAXE), MiningMode.AUTO, false),
+            new Entry("굴착", "Lv.10 · 일반=평면 / 광석=동종만", new ItemStack(Items.STONE), MiningMode.PLANE, false),
             new Entry("광맥", "Lv.30 · 연결된 같은 광석만", new ItemStack(Items.DIAMOND_ORE), MiningMode.VEIN, false),
             new Entry("추출", "Lv.90 · 주변 같은 광석 비연결 탐색", new ItemStack(Items.NETHER_STAR), MiningMode.EXTRACT, false),
             new Entry("터널", "Lv.90 + 채석장 네트워크 · 5×5×8", new ItemStack(Items.NETHERITE_PICKAXE), MiningMode.BORE, false),

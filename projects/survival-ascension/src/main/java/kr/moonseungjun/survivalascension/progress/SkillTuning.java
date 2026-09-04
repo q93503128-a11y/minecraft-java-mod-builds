@@ -8,13 +8,23 @@ public final class SkillTuning {
     public static long xpForNextLevel(int currentLevel) {
         if (currentLevel >= MAX_LEVEL) return 0L;
         int level = Math.max(0, currentLevel);
-        long base = 40L + 8L * level + Math.round(1.5D * level * level);
-        double factor;
-        if (level < 10) factor = 0.20D + 0.03D * level;
-        else if (level < 30) factor = 0.50D + 0.015D * (level - 10);
-        else if (level < 60) factor = 0.80D + 0.0065D * (level - 30);
-        else factor = 1.0D;
-        return Math.max(8L, Math.round(base * factor));
+        if (level < 20) {
+            long base = 40L + 8L * level + Math.round(1.5D * level * level);
+            double factor = level < 10
+                    ? 0.20D + 0.03D * level
+                    : 0.50D + 0.015D * (level - 10);
+            return Math.max(8L, Math.round(base * factor));
+        }
+        if (level < 30) return 430L + 15L * (level - 20);
+        if (level < 60) {
+            int x = level - 30;
+            return Math.round(600.0D + 35.0D * x + 0.5D * x * x);
+        }
+        if (level < 90) {
+            int x = level - 60;
+            return Math.round(2100.0D + 70.0D * x + 1.0D * x * x);
+        }
+        return 5100L + 220L * (level - 90);
     }
 
     public static long xpAtLevel(int targetLevel) {
@@ -59,6 +69,7 @@ public final class SkillTuning {
             case MINING -> { early = 1.25D; late = 1.10D; }
             case WOODCUTTING -> { early = 1.60D; late = 1.25D; }
             case HARVESTING -> { early = 1.50D; late = 1.20D; }
+            case FISHING -> { early = 3.00D; late = 2.50D; }
             case COMBAT -> { early = 1.25D; late = 1.15D; }
             case CONSTRUCTION -> { early = 2.75D; late = 1.75D; }
             case MOBILITY -> { early = 2.10D; late = 1.40D; }
@@ -117,6 +128,15 @@ public final class SkillTuning {
         if (level >= 30) return 5;
         if (level >= 10) return 3;
         return 1;
+    }
+
+    public static double fishingRodPreservationChance(int level) {
+        if (level >= 100) return 0.65D;
+        if (level >= 90) return 0.50D;
+        if (level >= 60) return 0.35D;
+        if (level >= 30) return 0.20D;
+        if (level >= 10) return 0.10D;
+        return 0.0D;
     }
 
     public static double combatDamageMultiplier(int level) {

@@ -28,6 +28,7 @@ public enum ExpeditionAction {
             case MOBILITY -> TRAVEL_DISTANCE;
             case MINING -> BLOCKS_MINED;
             case COMBAT -> HOSTILES_KILLED;
+            case FISHING -> null;
         };
     }
 }

@@ -110,11 +110,18 @@ public final class MiningProgression {
                     // Explicit precision mode: the vanilla center block is the only block broken.
                 }
                 case AUTO -> {
-                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
-                    else if (areaSize > 1) breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    if (centerState.is(VALUABLE_ORES)) {
+                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    } else if (areaSize > 1) {
+                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    }
                 }
                 case PLANE -> {
-                    if (areaSize > 1) breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    if (centerState.is(VALUABLE_ORES)) {
+                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    } else if (areaSize > 1) {
+                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                    }
                 }
                 case VEIN -> {
                     if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
@@ -245,7 +252,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
                 if (level.getBlockEntity(next) != null || !isValidPickaxeBreak(player, level, next, state, player.getMainHandItem())) continue;
                 frontier.add(next);
                 if (!player.getMainHandItem().is(ItemTags.PICKAXES)) return;
-                if (AutomatedToolBreak.destroyWithoutAdditionalWear(player, next)) broken++;
+                if (AutomatedToolBreak.destroyWithReducedWear(player, next)) broken++;
             }
         }
     }
@@ -273,7 +280,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
             if (!level.hasChunkAt(target)) continue;
             BlockState state = level.getBlockState(target);
             if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
-            if (AutomatedToolBreak.destroyWithoutAdditionalWear(player, target)) broken++;
+            if (AutomatedToolBreak.destroyWithReducedWear(player, target)) broken++;
         }
     }
 
@@ -298,7 +305,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
         if (level.getBlockEntity(target) != null) continue;
         float targetHardness = targetState.getDestroySpeed(level, target);
         if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-        AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
+        AutomatedToolBreak.destroyWithReducedWear(player, target);
     }
 }
 
@@ -316,7 +323,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
             if (level.getBlockEntity(target) != null) continue;
             float targetHardness = targetState.getDestroySpeed(level, target);
             if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-            AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
+            AutomatedToolBreak.destroyWithReducedWear(player, target);
         }
     }
 

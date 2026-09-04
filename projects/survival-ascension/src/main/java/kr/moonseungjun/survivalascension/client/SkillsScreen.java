@@ -13,8 +13,8 @@ import java.util.Locale;
 
 public final class SkillsScreen extends Screen {
     private static final int ROW_WIDTH = 336;
-    private static final int ROW_HEIGHT = 27;
-    private static final int LIST_TOP = 44;
+    private static final int ROW_HEIGHT = 24;
+    private static final int LIST_TOP = 38;
     private final Screen parent;
 
     public SkillsScreen() { this(null); }
@@ -49,7 +49,7 @@ public final class SkillsScreen extends Screen {
         String heading = skill.koreanName() + "  Lv." + level + "  ·  등급 " + roman(SkillTuning.masteryTier(level));
         graphics.text(this.font, heading, left + 9, top + 4, 0xFFFFFFFF, false);
         graphics.text(this.font, detail(skill, level), left + 9, top + 14, 0xFFCECECE, false);
-        int barLeft = left + 9, barRight = left + ROW_WIDTH - 9, barTop = top + 23;
+        int barLeft = left + 9, barRight = left + ROW_WIDTH - 9, barTop = top + 20;
         graphics.fill(barLeft, barTop, barRight, barTop + 2, 0xFF151515);
         int fill = Math.round((barRight - barLeft) * progress);
         if (fill > 0) graphics.fill(barLeft, barTop, barLeft + fill, barTop + 2, 0xFF000000 | skill.color());
@@ -62,6 +62,7 @@ public final class SkillsScreen extends Screen {
                     + " · 속도 " + format(SkillTuning.miningSpeedMultiplier(level));
             case WOODCUTTING -> "연쇄 " + SkillTuning.woodcuttingLogLimit(level) + "로그 · 속도 " + format(SkillTuning.woodcuttingSpeedMultiplier(level));
             case HARVESTING -> "수확 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level) + " · 속도 " + format(SkillTuning.harvestingSpeedMultiplier(level));
+            case FISHING -> "낚싯대 마모 방지 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D) + "% · 어획 성공으로 숙련";
             case COMBAT -> "피해 " + format(SkillTuning.combatDamageMultiplier(level)) + " · 파급 " + cleaveText(level);
             case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level) + "블록 · 면 " + SkillTuning.constructionPlaneSize(level) + "×" + SkillTuning.constructionPlaneSize(level);
             case MOBILITY -> "이속 " + format(SkillTuning.mobilitySpeedMultiplier(level)) + " · 단차 "

@@ -121,7 +121,7 @@ public final class BoreMiningService {
         UUID uuid = player.getUUID();
         INTERNAL_BREAK_GUARD.add(uuid);
         try {
-            AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
+            AutomatedToolBreak.destroyWithReducedWear(player, target);
         } finally {
             INTERNAL_BREAK_GUARD.remove(uuid);
         }

@@ -24,6 +24,7 @@ import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.harvesting.HarvestingProgression;
 import kr.moonseungjun.survivalascension.harvesting.IrrigationReplantService;
+import kr.moonseungjun.survivalascension.fishing.FishingProgression;
 import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.mining.MiningProgression;
 import kr.moonseungjun.survivalascension.mobility.MobilityProgression;
@@ -60,6 +61,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(HarvestingProgression::onServerTick);
         NeoForge.EVENT_BUS.addListener(IrrigationReplantService::onServerTick);
+        NeoForge.EVENT_BUS.addListener(FishingProgression::onItemFished);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(CombatProgression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ApexPhaseMutationService::onIncomingDamage);
