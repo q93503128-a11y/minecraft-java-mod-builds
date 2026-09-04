@@ -15,18 +15,19 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Shared field representation for authored campaign encounters outside Southgate.
  *
- * The battle catalog already defines the exact enemy composition. The old chapter runtimes reduced that whole
- * composition to one labelled ArmorStand, so a five-enemy room and a solo elite looked almost identical until
- * combat started. This presentation group mirrors the canonical composition with the real enemy/boss actors while
- * remaining completely non-authoritative: proximity still starts the existing BattleSession and combat rules stay
- * untouched.
+ * The battle catalog already defines the exact enemy composition. Field groups mirror that composition with real
+ * actors, but also arrange it with a region-specific silhouette so every area does not look like the same five
+ * mannequins in a generic row. This remains presentation only: BattleSession owns all actual combat truth.
  */
 public final class FieldEncounterPresentation {
+    private static final Set<String> BACKLINE = Set.of("E002", "E005", "E007", "E010", "E011", "E013");
+
     private FieldEncounterPresentation() {}
 
     public static final class Group {
@@ -67,7 +68,7 @@ public final class FieldEncounterPresentation {
 
         for (int i = 0; i < spec.enemies().size(); i++) {
             String defId = spec.enemies().get(i);
-            Vec3 pos = center.add(offset(i, spec.enemies().size(), forward, right));
+            Vec3 pos = center.add(offset(spec.region(), defId, i, spec.enemies().size(), forward, right));
             float yaw = facingYaw(battleYaw);
             Entity actor = spawnActor(level, defId, spec.level(), pos, yaw, spec.boss());
             ids.add(actor.getUUID());
@@ -82,6 +83,9 @@ public final class FieldEncounterPresentation {
             animated.setCustomName(Component.literal(name));
             animated.setCustomNameVisible(false);
             animated.setFieldWalking(false);
+            // Solo elites should read as deliberate gatekeepers rather than ordinary idle mobs even before the
+            // proximity threat prelude takes over. Boss telegraphs are intentionally saved for player approach.
+            if (defId.startsWith("EL")) animated.playReady();
             return animated;
         }
 
@@ -100,9 +104,67 @@ public final class FieldEncounterPresentation {
         return stand;
     }
 
-    /** Wide enough to read the encounter composition before engagement without blocking the authored route. */
-    private static Vec3 offset(int index, int count, Vec3 forward, Vec3 right) {
+    /**
+     * Region silhouettes:
+     * - Gloamwood spreads into a crescent/ambush shape.
+     * - Aqueduct guards hold disciplined lateral lines with support behind them.
+     * - Quarry packs form a forward wedge, making beasts/drillers feel like a push down the route.
+     * - Relay rooms use a staggered chamber formation to sell mixed recovered combat data.
+     */
+    private static Vec3 offset(String region, String defId, int index, int count, Vec3 forward, Vec3 right) {
         if (count <= 1) return Vec3.ZERO;
+        Vec3 base = switch (region) {
+            case "GLOAMWOOD" -> gloamwood(index, forward, right);
+            case "AQUEDUCT" -> aqueduct(index, forward, right);
+            case "QUARRY" -> quarry(index, forward, right);
+            case "RELAY" -> relay(index, forward, right);
+            default -> generic(index, forward, right);
+        };
+        if (BACKLINE.contains(defId)) base = base.add(forward.scale(-0.75));
+        return base;
+    }
+
+    private static Vec3 gloamwood(int index, Vec3 forward, Vec3 right) {
+        return switch (index) {
+            case 0 -> right.scale(-1.35).add(forward.scale(0.15));
+            case 1 -> right.scale(1.35).add(forward.scale(0.15));
+            case 2 -> forward.scale(-1.35);
+            case 3 -> right.scale(-2.15).add(forward.scale(-1.15));
+            default -> right.scale(2.15).add(forward.scale(-1.15));
+        };
+    }
+
+    private static Vec3 aqueduct(int index, Vec3 forward, Vec3 right) {
+        return switch (index) {
+            case 0 -> right.scale(-1.65);
+            case 1 -> right.scale(0.0);
+            case 2 -> right.scale(1.65);
+            case 3 -> right.scale(-0.9).add(forward.scale(-1.35));
+            default -> right.scale(0.9).add(forward.scale(-1.35));
+        };
+    }
+
+    private static Vec3 quarry(int index, Vec3 forward, Vec3 right) {
+        return switch (index) {
+            case 0 -> forward.scale(0.75);
+            case 1 -> right.scale(-1.35).add(forward.scale(-0.45));
+            case 2 -> right.scale(1.35).add(forward.scale(-0.45));
+            case 3 -> right.scale(-2.0).add(forward.scale(-1.55));
+            default -> right.scale(2.0).add(forward.scale(-1.55));
+        };
+    }
+
+    private static Vec3 relay(int index, Vec3 forward, Vec3 right) {
+        return switch (index) {
+            case 0 -> right.scale(-1.1).add(forward.scale(0.45));
+            case 1 -> right.scale(1.1).add(forward.scale(-0.15));
+            case 2 -> right.scale(-1.9).add(forward.scale(-1.2));
+            case 3 -> right.scale(0.1).add(forward.scale(-1.55));
+            default -> right.scale(2.0).add(forward.scale(-1.0));
+        };
+    }
+
+    private static Vec3 generic(int index, Vec3 forward, Vec3 right) {
         return switch (index) {
             case 0 -> right.scale(-0.85);
             case 1 -> right.scale(0.85);
