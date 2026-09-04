@@ -50,6 +50,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         RawAnimation basic = prefix == null ? DefaultAnimations.ATTACK_STRIKE : play(prefix, "basic");
         RawAnimation active1 = prefix == null ? CAST : play(prefix, "active_1");
         RawAnimation active2 = prefix == null ? CAST : play(prefix, "active_2");
+        RawAnimation movingBasic = prefix == null ? DefaultAnimations.ATTACK_STRIKE : moveThen(prefix, "basic");
+        RawAnimation movingActive1 = prefix == null ? DefaultAnimations.ATTACK_STRIKE : moveThen(prefix, "active_1");
+        RawAnimation movingActive2 = prefix == null ? DefaultAnimations.ATTACK_STRIKE : moveThen(prefix, "active_2");
         RawAnimation reaction = prefix == null ? DefaultAnimations.ATTACK_STRIKE
                 : play(prefix, (prefix.equals("p03_bram") || prefix.equals("p05_lynette")) ? "reaction" : "basic");
         RawAnimation hitLight = prefix == null ? ready : play(prefix, "hit_light");
@@ -69,6 +72,9 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
                 .triggerableAnim("basic", basic)
                 .triggerableAnim("active_1", active1)
                 .triggerableAnim("active_2", active2)
+                .triggerableAnim("moving_basic", movingBasic)
+                .triggerableAnim("moving_active_1", movingActive1)
+                .triggerableAnim("moving_active_2", movingActive2)
                 .triggerableAnim("reaction", reaction)
                 .triggerableAnim("hit_light", hitLight)
                 .triggerableAnim("hit_heavy", hitHeavy)
@@ -93,12 +99,22 @@ public final class BattleActorEntity extends PathfinderMob implements GeoEntity 
         return RawAnimation.begin().thenLoop("animation." + prefix + "." + clip);
     }
 
+    /** Authored dash/step-in clip followed by the actual skill clip; used only for skills that really close distance. */
+    private static RawAnimation moveThen(String prefix, String clip) {
+        return RawAnimation.begin()
+                .thenPlay("animation." + prefix + ".move_attack")
+                .thenPlay("animation." + prefix + "." + clip);
+    }
+
     public void playStrike() { triggerAnim("combat", "strike"); }
     public void playCast() { triggerAnim("combat", "cast"); }
     public void playReady() { triggerAnim("combat", "ready"); }
     public void playBasic() { triggerAnim("combat", "basic"); }
     public void playActive1() { triggerAnim("combat", "active_1"); }
     public void playActive2() { triggerAnim("combat", "active_2"); }
+    public void playMovingBasic() { triggerAnim("combat", "moving_basic"); }
+    public void playMovingActive1() { triggerAnim("combat", "moving_active_1"); }
+    public void playMovingActive2() { triggerAnim("combat", "moving_active_2"); }
     public void playReaction() { triggerAnim("combat", "reaction"); }
     public void playHit(boolean heavy) { triggerAnim("combat", heavy ? "hit_heavy" : "hit_light"); }
     public void playDeath() { triggerAnim("combat", "death"); }
