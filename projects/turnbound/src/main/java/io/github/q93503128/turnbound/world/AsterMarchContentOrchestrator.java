@@ -20,7 +20,13 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static void tick(ServerLevel level, ServerPlayer player) {
-        if (BattleSessionManager.exists(player) || player.tickCount % 10 != 0) return;
+        if (BattleSessionManager.exists(player)) {
+            AsterMarchStoryScenes.cancelForBattle(level, player);
+            return;
+        }
+        // Story actors need normal tick cadence for readable speaker changes; the rest stays on the existing light cadence.
+        AsterMarchStoryScenes.tick(level, player);
+        if (player.tickCount % 10 != 0) return;
         AsterMarchBossAftermath.sync(level);
         AsterMarchApproachAtmosphere.tick(level, player);
         AsterMarchProgressStaging.tick(level, player);
@@ -40,6 +46,7 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static void remove(ServerPlayer player) {
+        AsterMarchStoryScenes.remove(player);
         AsterMarchProgressStaging.remove(player);
         CharacterQuestWorldSites.remove(player);
         RegionQuestWorldSites.remove(player);
