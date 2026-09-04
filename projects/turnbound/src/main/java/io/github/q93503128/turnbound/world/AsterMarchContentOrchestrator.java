@@ -38,6 +38,7 @@ public final class AsterMarchContentOrchestrator {
         RegionQuestWorldSites.sync(level, player);
         ExplorationCodexSites.sync(level, player);
         RadiaEndgameAtrium.sync(level, player);
+        RadiaEndgamePresentation.tick(level, player);
         SignatureTrialHall.sync(level, player);
     }
 
@@ -60,6 +61,7 @@ public final class AsterMarchContentOrchestrator {
         RegionQuestWorldSites.remove(player);
         ExplorationCodexSites.remove(player);
         RadiaEndgameAtrium.remove(player);
+        RadiaEndgamePresentation.remove(player);
         SignatureTrialHall.remove(player);
     }
 }
