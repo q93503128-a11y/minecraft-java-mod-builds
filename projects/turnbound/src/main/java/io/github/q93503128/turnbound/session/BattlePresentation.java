@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.BattleVfx;
 import io.github.q93503128.turnbound.presentation.BossBattleVfx;
 import io.github.q93503128.turnbound.presentation.EnemyBattleTelegraphs;
+import io.github.q93503128.turnbound.presentation.EnemyDefeatVfx;
 import io.github.q93503128.turnbound.presentation.EnemyPresentationProfile;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
@@ -131,7 +132,16 @@ final class BattlePresentation {
             String id=unit.instanceId();Boolean before=downed.get(id);
             if(before==null)downed.put(id,unit.downed());else if(before!=unit.downed()){
                 downed.put(id,unit.downed());Entity entity=entity(level,id);Vec3 home=homes.get(id);
-                if(unit.downed()){if(entity instanceof BattleActorEntity a)a.playDeath();if(home!=null)BattleVfx.down(level,home);}else{if(entity instanceof BattleActorEntity a)a.playRevive();if(home!=null)BattleVfx.revive(level,home);}
+                if(unit.downed()){
+                    if(entity instanceof BattleActorEntity a)a.playDeath();
+                    if(home!=null){
+                        BattleVfx.down(level,home);
+                        EnemyDefeatVfx.play(level,visualIds.getOrDefault(id,unit.definition().id()),home);
+                    }
+                }else{
+                    if(entity instanceof BattleActorEntity a)a.playRevive();
+                    if(home!=null)BattleVfx.revive(level,home);
+                }
             }
 
             int oldBarrier=barriers.getOrDefault(id,unit.barrier()),newBarrier=unit.barrier();
