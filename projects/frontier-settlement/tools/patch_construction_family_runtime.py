@@ -134,7 +134,7 @@ for src, label in ((road, "road"), (outpost, "outpost")):
     ):
         if token in src:
             raise SystemExit(f"{label} legacy invariant remains: {token}")
-if "road construction runtime/storage hardening" not in audit:
+if 'for construction_src, construction_label in ((road_build, "road construction"), (outpost_build, "outpost construction")):' not in audit:
     raise SystemExit("construction family persistent audit missing")
 
 print("CONSTRUCTION FAMILY RUNTIME PATCH PASS")
