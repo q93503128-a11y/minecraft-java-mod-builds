@@ -1,4 +1,5 @@
 name: Manual Export Frontier Survival Graphics Pack
+# trigger: registered workflow export
 
 on:
   push:
@@ -86,7 +87,6 @@ jobs:
               resolved.append((project, version, folder, file))
               print(project, version, file['filename'])
 
-          # Verify every new official binary/archive against Modrinth's published hashes before exporting.
           verify_dir = root / 'graphics-verify'
           verify_dir.mkdir(exist_ok=True)
           for project, version, folder, file in resolved:
@@ -153,7 +153,6 @@ jobs:
                   zout.writestr('overrides/config/iris.properties', iris_properties)
                   zout.writestr('overrides/GRAPHICS_README.txt', graphics_readme)
 
-          # Final manifest invariants.
           with zipfile.ZipFile(out, 'r') as z:
               parsed = json.loads(z.read('modrinth.index.json'))
               paths = [x['path'] for x in parsed['files']]
