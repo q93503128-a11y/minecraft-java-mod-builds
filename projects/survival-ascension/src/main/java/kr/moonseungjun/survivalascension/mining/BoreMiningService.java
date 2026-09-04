@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.mining;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureData;
 import kr.moonseungjun.survivalascension.infrastructure.InfrastructureProject;
+import kr.moonseungjun.survivalascension.progress.AutomatedToolBreak;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.core.BlockPos;
@@ -120,7 +121,7 @@ public final class BoreMiningService {
         UUID uuid = player.getUUID();
         INTERNAL_BREAK_GUARD.add(uuid);
         try {
-            player.gameMode.destroyBlock(target);
+            AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
         } finally {
             INTERNAL_BREAK_GUARD.remove(uuid);
         }

@@ -245,7 +245,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
                 if (level.getBlockEntity(next) != null || !isValidPickaxeBreak(player, level, next, state, player.getMainHandItem())) continue;
                 frontier.add(next);
                 if (!player.getMainHandItem().is(ItemTags.PICKAXES)) return;
-                if (player.gameMode.destroyBlock(next)) broken++;
+                if (AutomatedToolBreak.destroyWithoutAdditionalWear(player, next)) broken++;
             }
         }
     }
@@ -273,7 +273,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
             if (!level.hasChunkAt(target)) continue;
             BlockState state = level.getBlockState(target);
             if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
-            if (player.gameMode.destroyBlock(target)) broken++;
+            if (AutomatedToolBreak.destroyWithoutAdditionalWear(player, target)) broken++;
         }
     }
 
@@ -298,7 +298,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
         if (level.getBlockEntity(target) != null) continue;
         float targetHardness = targetState.getDestroySpeed(level, target);
         if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-        player.gameMode.destroyBlock(target);
+        AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
     }
 }
 
@@ -316,7 +316,7 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
             if (level.getBlockEntity(target) != null) continue;
             float targetHardness = targetState.getDestroySpeed(level, target);
             if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-            player.gameMode.destroyBlock(target);
+            AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
         }
     }
 

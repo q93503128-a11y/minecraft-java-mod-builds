@@ -90,7 +90,7 @@ public final class WoodcuttingProgression {
                     BlockState state = level.getBlockState(target);
                     if (!state.is(BlockTags.LOGS) || level.getBlockEntity(target) != null) continue;
                     if (!isValidLogBreak(player, level, target, state, player.getMainHandItem())) continue;
-                    player.gameMode.destroyBlock(target);
+                    AutomatedToolBreak.destroyWithoutAdditionalWear(player, target);
                     if (!player.getMainHandItem().is(ItemTags.AXES)) break;
                 }
             } finally {
