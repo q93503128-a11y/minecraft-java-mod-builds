@@ -23,6 +23,7 @@ public final class AsterMarchContentOrchestrator {
         if (BattleSessionManager.exists(player)) {
             AsterMarchStoryScenes.cancelForBattle(level, player);
             AsterMarchCharacterQuestPresentation.cancelForBattle(level, player);
+            AsterMarchFieldIncidents.cancelForBattle(level, player);
             return;
         }
         // Story actors need normal tick cadence for readable speaker changes; the rest stays on the existing light cadence.
@@ -31,6 +32,7 @@ public final class AsterMarchContentOrchestrator {
         AsterMarchBossAftermath.sync(level);
         AsterMarchApproachAtmosphere.tick(level, player);
         AsterMarchProgressStaging.tick(level, player);
+        AsterMarchFieldIncidents.sync(level, player);
         AsterMarchPartyFieldBarks.tick(level, player);
         AsterMarchCharacterMilestones.tick(level, player);
         CharacterQuestWorldSites.sync(level, player);
@@ -43,7 +45,8 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static boolean interact(ServerPlayer player, Entity entity) {
-        return AsterMarchCharacterQuestPresentation.interact(player, entity)
+        return AsterMarchFieldIncidents.interact(player, entity)
+                || AsterMarchCharacterQuestPresentation.interact(player, entity)
                 || CharacterQuestWorldSites.interact(player, entity)
                 || RegionQuestWorldSites.interact(player, entity)
                 || ExplorationCodexSites.interact(player, entity)
@@ -54,6 +57,7 @@ public final class AsterMarchContentOrchestrator {
     public static void remove(ServerPlayer player) {
         AsterMarchStoryScenes.remove(player);
         AsterMarchProgressStaging.remove(player);
+        AsterMarchFieldIncidents.remove(player);
         AsterMarchPartyFieldBarks.remove(player);
         AsterMarchCharacterMilestones.remove(player);
         AsterMarchCharacterQuestPresentation.remove(player);
