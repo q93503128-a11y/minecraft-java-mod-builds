@@ -1,5 +1,5 @@
 name: Manual Survival Gameplay QoL Pass
-# registered gameplay-qol validation trigger
+# registered gameplay-qol validation trigger v2
 
 on:
   push:
@@ -34,6 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/apply_survival_gameplay_qol.py
+          python3 .github/scripts/apply_survival_gameplay_qol_hotfix.py
           python3 projects/survival-ascension/tools/test_gameplay_qol_061.py
           git diff --check
 
