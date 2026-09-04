@@ -77,7 +77,7 @@ public final class RegionQuestWorldSites {
         if(p==null||target==null)return false;Map<UUID,Site> actors=ACTORS.get(p.getUUID());if(actors==null)return false;Site s=actors.get(target.getUUID());if(s==null)return false;
         p.sendSystemMessage(Component.literal("지역 발견 · "+s.label()).withStyle(s.color(),ChatFormatting.BOLD));
         p.sendSystemMessage(Component.literal(s.lore()).withStyle(ChatFormatting.GRAY));
-        p.sendSystemMessage(Component.literal(s.id()+" · 세부 목표는 v0.4 Canon Gap이므로 발견만 기록합니다.").withStyle(ChatFormatting.DARK_GRAY));
+        p.sendSystemMessage(Component.literal("현장 단서가 지역 기록에 남았습니다.").withStyle(ChatFormatting.DARK_GRAY));
         return true;
     }
 
