@@ -3,6 +3,7 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
+import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -70,7 +71,7 @@ public final class OldRelayStationSessionManager {
     public static void remove(ServerPlayer p){Session s=SESSIONS.remove(p.getUUID());if(s!=null&&p.level() instanceof ServerLevel l)s.despawnAll(l);if(s!=null)FieldNetwork.close(p);}
     public static void clearAll(Iterable<ServerPlayer> ps){for(ServerPlayer p:ps)remove(p);SESSIONS.clear();}
     public static boolean chapterUnlocked(ServerPlayer p){var q=CampaignProgressStore.snapshot(p.getUUID()).quests();return q.completed().contains("MQ_C05_01_relay_key")||q.unlockFlags().contains("OLD_RELAY_ENTRANCE");}
-    private static void clearVanillaMobs(ServerLevel l){AABB a=new AABB(240,46,AsterMarchRegionCatalog.OLD_RELAY.minZ()-12,AsterMarchRegionCatalog.OLD_RELAY.maxX()+12,106,-160);for(Mob m:l.getEntitiesOfClass(Mob.class,a))m.discard();}
+    private static void clearVanillaMobs(ServerLevel l){AABB a=new AABB(240,46,AsterMarchRegionCatalog.OLD_RELAY.minZ()-12,AsterMarchRegionCatalog.OLD_RELAY.maxX()+12,106,-160);for(Mob m:l.getEntitiesOfClass(Mob.class,a))if(!(m instanceof BattleActorEntity))m.discard();}
 
     private static final class Session{
         private final OldRelayStationWorld.BuiltChapter chapter;private final Map<String,EncounterActor> encounters=new LinkedHashMap<>();private final Map<UUID,Integer> recordActors=new LinkedHashMap<>();private UUID relay,finalConsole;
