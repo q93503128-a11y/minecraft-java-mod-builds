@@ -9,6 +9,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.HashMap;
@@ -36,6 +37,10 @@ public final class TbsJournalRestorationService {
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         READY_AT.remove(event.getEntity().getUUID());
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        READY_AT.clear();
     }
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {

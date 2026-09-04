@@ -28,6 +28,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.HashMap;
@@ -55,17 +56,24 @@ public final class MobilityProgression {
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            // Client state can survive an integrated-server/world switch; explicitly clear it on join.
-            SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // A dedicated-server relog must not reset a live dash cooldown. Client state can survive
+        // world switches, so always send the authoritative server value on join.
+        if (DASH_READY_TICK.containsKey(player.getUUID())) syncDashCooldown(player);
+        else SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID uuid = event.getEntity().getUUID();
+        // Traversal distance is session-local, but cooldown and airborne quota are gameplay state.
+        // Keep those two until landing or actual server shutdown so relogging cannot refresh a dash.
         TRAVERSAL.remove(uuid);
-        DASH_READY_TICK.remove(uuid);
-        AIR_DASH_COUNT.remove(uuid);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        TRAVERSAL.clear();
+        DASH_READY_TICK.clear();
+        AIR_DASH_COUNT.clear();
     }
 
     public static void performAction(ServerPlayer player) {
