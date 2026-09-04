@@ -105,20 +105,25 @@ public final class FantasyHudClient {
     private static void drawWorldLine(GuiGraphicsExtractor graphics, Minecraft minecraft,
                                       FantasyHudStatePayload civic, int screenWidth) {
         if (screenWidth < 440) return;
-        long time = minecraft.level.getGameTime();
-        long day = Math.floorDiv(time, 24_000L) + 1L;
-        int hour = (int) Math.floorMod(time / 1_000L + 6L, 24L);
-        int minute = (int) Math.floorMod(time, 1_000L) * 60 / 1_000;
-        String text = "왕국력 " + day + "일  "
-                + String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute)
-                + "  ·  " + shortText(civic.profession(), 18)
-                + "  ·  명망 " + civic.renown();
+        String text = realmClockText(civic.realmGameTime(), civic.profession(), civic.renown());
         int textWidth = minecraft.font.width(text);
         int x = Math.max(170, (screenWidth - textWidth) / 2);
         int y = 7;
         graphics.fill(x - 7, y - 3, x + textWidth + 7, y + 12, 0x9810141B);
         graphics.fill(x - 7, y + 11, x + textWidth + 7, y + 12, 0xAA8C7448);
         graphics.text(minecraft.font, Component.literal(text), x, y, MUTED, false);
+    }
+
+    /** Pure formatter: the visible kingdom clock has exactly one time input, the server HUD payload. */
+    static String realmClockText(long serverRealmGameTime, String profession, int renown) {
+        long time = Math.max(0L, serverRealmGameTime);
+        long day = Math.floorDiv(time, 24_000L) + 1L;
+        int hour = (int) Math.floorMod(time / 1_000L + 6L, 24L);
+        int minute = (int) Math.floorMod(time, 1_000L) * 60 / 1_000;
+        return "왕국력 " + day + "일  "
+                + String.format(java.util.Locale.ROOT, "%02d:%02d", hour, minute)
+                + "  ·  " + shortText(profession, 18)
+                + "  ·  명망 " + Math.max(0, renown);
     }
 
     private static void drawCompass(GuiGraphicsExtractor graphics, Minecraft minecraft, int screenWidth) {
