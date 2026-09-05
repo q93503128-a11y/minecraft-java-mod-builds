@@ -37,7 +37,7 @@ class AsterMarchTerrainPlanTest {
             for (int z = AsterMarchRegionCatalog.RADIA.minZ(); z <= AsterMarchRegionCatalog.RADIA.maxZ(); z += 8) {
                 if (!AsterMarchTerrainPlan.radiaLand(x, z)) continue;
                 int y = AsterMarchTerrainPlan.radiaSurfaceY(x, z);
-                assertTrue(y >= 64 && y <= 76, () -> "out-of-range Radia height at " + x + "," + z + ": " + y);
+                assertTrue(y >= 64 && y <= 76, "out-of-range Radia height at " + x + "," + z + ": " + y);
             }
         }
     }
