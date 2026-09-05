@@ -84,4 +84,35 @@ class RewardGrantServiceTest {
             CampaignProgressStore.resetForTests(playerId);
         }
     }
+
+    @Test
+    void differentPlayersCanSettleRewardsIndependentlyAtTheSameTime() {
+        UUID playerA = UUID.randomUUID();
+        UUID playerB = UUID.randomUUID();
+        try {
+            CampaignProgressStore.ensureNewGame(playerA);
+            CampaignProgressStore.ensureNewGame(playerB);
+            CampaignProgressStore.markClean(playerA);
+            CampaignProgressStore.markClean(playerB);
+            BattleState state = P0Scenario.create();
+            long goldABefore = CampaignProgressStore.currency(playerA, PlayerProfile.Currency.GOLD);
+            long goldBBefore = CampaignProgressStore.currency(playerB, PlayerProfile.Currency.GOLD);
+
+            RewardGrantService.Result outer = RewardGrantService.commit(
+                    playerA, "tx-player-a", "ENC_M01", state, BattleOutcome.ALLY_VICTORY,
+                    () -> {
+                        RewardGrantService.Result inner = RewardGrantService.commit(
+                                playerB, "tx-player-b", "ENC_M01", state, BattleOutcome.ALLY_VICTORY, () -> { });
+                        assertFalse(inner.duplicate());
+                    });
+
+            assertFalse(outer.duplicate());
+            assertTrue(CampaignProgressStore.currency(playerA, PlayerProfile.Currency.GOLD) > goldABefore);
+            assertTrue(CampaignProgressStore.currency(playerB, PlayerProfile.Currency.GOLD) > goldBBefore);
+        } finally {
+            RewardGrantService.resetForTests();
+            CampaignProgressStore.resetForTests(playerA);
+            CampaignProgressStore.resetForTests(playerB);
+        }
+    }
 }
