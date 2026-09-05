@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -39,7 +40,6 @@ public final class AsterMarchFieldSequences {
             String clearLine) {}
 
     private static final List<Beat> BEATS = List.of(
-            // Southgate Meadow: the open grassland starts readable, then pushes the eye toward Graul's impact lane.
             beat("ENC_M02", 13, 67, 173, 13, 67, 173, 58, 67, 200,
                     ParticleTypes.CLOUD, ParticleTypes.END_ROD, ChatFormatting.YELLOW,
                     "바람이 끊기는 지점마다 초원 순찰대의 발자국이 겹친다. 두 번째 경계선이 바로 앞이다.",
@@ -53,7 +53,6 @@ public final class AsterMarchFieldSequences {
                     "초원 전체의 먼지가 같은 박자로 들썩인다. 들이받는 왕의 영역에 들어섰다.",
                     "거대한 돌진 흔적이 멎었다. 남문 전선에 처음으로 고요가 돌아온다."),
 
-            // Gloamwood: spore interference becomes a narrowing root corridor before Verna.
             beat("ENC_G02", -55, 70, -250, -55, 70, -250, -40, 70, -286,
                     ParticleTypes.SPORE_BLOSSOM_AIR, ParticleTypes.ENCHANT, ChatFormatting.DARK_GREEN,
                     "포자가 한쪽으로 빨려 들어가듯 흐른다. 숲길을 누르는 무언가가 가까이 있다.",
@@ -67,7 +66,6 @@ public final class AsterMarchFieldSequences {
                     "닫힌 꽃잎 사이로 빛이 새어 나온다. 베르나의 중심부가 바로 너머다.",
                     "숲을 조이던 맥동이 가라앉았다. 떠다니던 포자도 제각기 흩어지기 시작한다."),
 
-            // Broken Aqueduct: pressure/electric rhythm points toward ORO-7's command room.
             beat("ENC_A02", -240, 66, -18, -240, 66, -18, -292, 66, 61,
                     ParticleTypes.DRIPPING_WATER, ParticleTypes.ELECTRIC_SPARK, ChatFormatting.AQUA,
                     "배관 안쪽에서 압력이 엇박자로 튄다. 전투 구역 뒤의 수로까지 같은 진동이 번진다.",
@@ -81,7 +79,6 @@ public final class AsterMarchFieldSequences {
                     "벽과 바닥의 금속음이 일정한 주기로 맞물린다. ORO-7의 관리 구역이다.",
                     "명령 주기가 끊기며 수로의 기계음이 자연스러운 잡음으로 돌아간다."),
 
-            // Ember Quarry: ash and heat tighten into Kolvak's core-facing route.
             beat("ENC_Q02", -30, 69, 365, -30, 69, 365, 20, 70, 405,
                     ParticleTypes.ASH, ParticleTypes.FLAME, ChatFormatting.YELLOW,
                     "재가 지면을 스치지 못하고 위로 말려 오른다. 앞쪽 채석 설비에서 열압이 밀려온다.",
@@ -95,7 +92,6 @@ public final class AsterMarchFieldSequences {
                     "검은 암반 틈에서 붉은 열이 맥박친다. 거상의 핵이 바로 앞에서 움직인다.",
                     "거상의 열이 빠르게 식는다. 채석장 전체를 덮던 붉은 반사광도 옅어진다."),
 
-            // Old Relay Station: broken signals converge into Serak, then release toward the final console.
             beat("ENC_R02", 320, 68, -245, 320, 68, -245, 365, 68, -305,
                     ParticleTypes.PORTAL, ParticleTypes.SOUL, ChatFormatting.LIGHT_PURPLE,
                     "끊긴 신호 조각들이 전투 구역을 피해 같은 방향으로 휘어진다. 기록 회랑이 가까워졌다.",
@@ -166,29 +162,33 @@ public final class AsterMarchFieldSequences {
 
     private static void pressure(ServerLevel level, ServerPlayer player, Beat beat) {
         Vec3 p = beat.approach().add(0, 0.65, 0);
-        level.sendParticles(beat.pressureParticle(), p.x, p.y, p.z, 7, 1.5, 0.6, 1.5, 0.012);
+        PersonalPresentationIsolation.particles(level, player, beat.pressureParticle(),
+                p.x, p.y, p.z, 7, 1.5, 0.6, 1.5, 0.012);
         Vec3 toPlayer = player.position().subtract(beat.approach());
         if (toPlayer.lengthSqr() > 0.01) {
             Vec3 edge = beat.approach().add(toPlayer.normalize().scale(2.3)).add(0, 0.25, 0);
-            level.sendParticles(beat.pressureParticle(), edge.x, edge.y, edge.z, 3, 0.25, 0.18, 0.25, 0.006);
+            PersonalPresentationIsolation.particles(level, player, beat.pressureParticle(),
+                    edge.x, edge.y, edge.z, 3, 0.25, 0.18, 0.25, 0.006);
         }
     }
 
     private static void presentClear(ServerLevel level, ServerPlayer player, Beat beat) {
         player.sendSystemMessage(Component.literal(beat.clearLine()).withStyle(beat.color(), ChatFormatting.BOLD));
         Vec3 p = beat.settle().add(0, 0.8, 0);
-        level.sendParticles(beat.clearParticle(), p.x, p.y, p.z, 18, 2.0, 0.9, 2.0, 0.018);
-        if (beat.next() != null) trail(level, beat.settle().add(0, 0.7, 0), beat.next(), beat.clearParticle());
+        PersonalPresentationIsolation.particles(level, player, beat.clearParticle(),
+                p.x, p.y, p.z, 18, 2.0, 0.9, 2.0, 0.018);
+        if (beat.next() != null) trail(level, player, beat.settle().add(0, 0.7, 0), beat.next(), beat.clearParticle());
     }
 
-    private static void trail(ServerLevel level, Vec3 origin, Vec3 target, ParticleOptions particle) {
+    private static void trail(ServerLevel level, ServerPlayer player, Vec3 origin, Vec3 target, ParticleOptions particle) {
         Vec3 flat = new Vec3(target.x - origin.x, 0, target.z - origin.z);
         if (flat.lengthSqr() < 0.01) return;
         Vec3 dir = flat.normalize();
         double length = Math.min(16.0, Math.sqrt(flat.lengthSqr()));
         for (double d = 1.6; d <= length; d += 1.6) {
             Vec3 p = origin.add(dir.scale(d));
-            level.sendParticles(particle, p.x, p.y + 0.08 * Math.sin(d), p.z, 2, 0.16, 0.10, 0.16, 0.004);
+            PersonalPresentationIsolation.particles(level, player, particle,
+                    p.x, p.y + 0.08 * Math.sin(d), p.z, 2, 0.16, 0.10, 0.16, 0.004);
         }
     }
 
