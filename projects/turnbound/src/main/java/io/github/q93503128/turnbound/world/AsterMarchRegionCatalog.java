@@ -45,7 +45,7 @@ public final class AsterMarchRegionCatalog {
 
     private static final List<Region> REGIONS = List.of(RADIA, SOUTHGATE, GLOAMWOOD, AQUEDUCT, QUARRY, OLD_RELAY);
     private static final List<Anchor> FAST_TRAVEL = List.of(
-            new Anchor(FT_RADIA, "라디아 계전소", 0.0, 66.0, 20.0, 180.0F),
+            new Anchor(FT_RADIA, "라디아 계전소", 0.0, 76.0, 20.0, 180.0F),
             new Anchor(FT_MEADOW, "남문 초원 계전소", 190.0, 67.0, 230.0, 90.0F),
             new Anchor(FT_GLOAM, "그늘숲 계전소", -40.0, 70.0, -300.0, 180.0F),
             new Anchor(FT_AQUEDUCT, "붕괴 수로 계전소", -320.0, 67.0, 20.0, -90.0F),
