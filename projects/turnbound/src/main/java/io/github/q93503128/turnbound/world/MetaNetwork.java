@@ -49,6 +49,8 @@ public final class MetaNetwork {
                         return;
                     }
                     MetaMenuService.command(player, raw);
+                    // Meta mutations can complete quests (notably the first-party tutorial). Keep the field guide in lockstep.
+                    RadiaHubSessionManager.refreshProgress(player);
                 }));
     }
 
