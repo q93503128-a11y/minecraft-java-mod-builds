@@ -22,8 +22,7 @@ import java.util.Set;
  * so clicking the same shared object can advance different players independently without duplicating entities.
  */
 public final class FieldSharedInteractionActors {
-    static final String COMMON_TAG = "turnbound_field_shared_actor";
-    private static final String ROLE_PREFIX = "turnbound_field_role:";
+    static final String COMMON_TAG = FieldSharedActorCatalog.COMMON_TAG;
     private static final AABB WORLD_AREA = new AABB(-520, 42, -520, 520, 112, 520);
     private static final Set<String> LEGACY_NAMES = Set.of(
             "남문 정찰관", "남문 마을 계전석", "남문 초원 계전소 · FT_MEADOW",
@@ -49,48 +48,30 @@ public final class FieldSharedInteractionActors {
     public static Role role(Entity entity) {
         if (!(entity instanceof ArmorStand)) return null;
         for (String tag : entity.entityTags()) {
-            if (!tag.startsWith(ROLE_PREFIX)) continue;
-            try { return Role.valueOf(tag.substring(ROLE_PREFIX.length())); }
-            catch (IllegalArgumentException ignored) { return null; }
+            FieldSharedActorCatalog.Role catalogRole = FieldSharedActorCatalog.fromTag(tag);
+            if (catalogRole != null) return Role.valueOf(catalogRole.name());
         }
         return null;
     }
 
-    static String roleTag(Role role) { return ROLE_PREFIX + role.name(); }
+    static String roleTag(Role role) {
+        return FieldSharedActorCatalog.roleTag(FieldSharedActorCatalog.Role.valueOf(role.name()));
+    }
 
     public static int gloamSporeIndex(Role role) {
-        return switch (role) {
-            case GLOAM_SPORE_1 -> 0;
-            case GLOAM_SPORE_2 -> 1;
-            case GLOAM_SPORE_3 -> 2;
-            default -> -1;
-        };
+        return FieldSharedActorCatalog.gloamSporeIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int aqueductValveIndex(Role role) {
-        return switch (role) {
-            case AQUEDUCT_VALVE_1 -> 0;
-            case AQUEDUCT_VALVE_2 -> 1;
-            default -> -1;
-        };
+        return FieldSharedActorCatalog.aqueductValveIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int quarryCoreIndex(Role role) {
-        return switch (role) {
-            case QUARRY_CORE_1 -> 0;
-            case QUARRY_CORE_2 -> 1;
-            default -> -1;
-        };
+        return FieldSharedActorCatalog.quarryCoreIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int oldRelayRecordIndex(Role role) {
-        return switch (role) {
-            case OLD_RELAY_RECORD_1 -> 0;
-            case OLD_RELAY_RECORD_2 -> 1;
-            case OLD_RELAY_RECORD_3 -> 2;
-            case OLD_RELAY_RECORD_4 -> 3;
-            default -> -1;
-        };
+        return FieldSharedActorCatalog.oldRelayRecordIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static void ensureSouthgate(ServerLevel level, StarterSliceWorld.BuiltSlice slice, SouthgateChapterWorld.BuiltChapter chapter) {
@@ -154,7 +135,9 @@ public final class FieldSharedInteractionActors {
         }
         if (found == null || found.isRemoved()) {
             found = new ArmorStand(level, spec.pos().x, spec.pos().y, spec.pos().z);
+            configure(found, spec);
             level.addFreshEntity(found);
+            return;
         }
         configure(found, spec);
     }
