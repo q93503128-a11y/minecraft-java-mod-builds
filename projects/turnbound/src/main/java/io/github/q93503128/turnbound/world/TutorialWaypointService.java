@@ -24,7 +24,7 @@ public final class TutorialWaypointService {
             if (!tutorialActor) continue;
             // Legacy single-player implementation wrote a player-specific glow bit onto a world-shared entity.
             // Clear that shared bit permanently; the local waypoint pulse below is sent only to this player.
-            if (stand.isCurrentlyGlowing()) stand.setGlowingTag(false);
+            stand.setGlowingTag(false);
             stand.setCustomNameVisible(true);
             if (!target.isBlank() && name.equals(target)) {
                 PersonalPresentationIsolation.particles(level, player, ParticleTypes.END_ROD,
