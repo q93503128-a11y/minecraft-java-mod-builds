@@ -4,6 +4,7 @@ import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.RewardGrantService;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
@@ -14,6 +15,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 public final class BattleSessionManager {
     private static final Map<UUID, BattleSession> SESSIONS = new HashMap<>();
@@ -22,7 +24,7 @@ public final class BattleSessionManager {
 
     public static void start(ServerPlayer player) {
         if (!endAndPersist(player, false)) return;
-        BattleSession session = new BattleSession(player);
+        BattleSession session = privateSession(player, () -> new BattleSession(player));
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
     }
@@ -40,7 +42,8 @@ public final class BattleSessionManager {
         boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
         boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
         boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
-        BattleSession session = new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed);
+        BattleSession session = privateSession(player,
+                () -> new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed));
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
     }
@@ -54,7 +57,8 @@ public final class BattleSessionManager {
         boolean resolvedAuto = endgame ? EndgameEncounterCatalog.autoAllowed(encounterId) : autoAllowed;
         boolean resolvedSpeed = endgame ? EndgameEncounterCatalog.speedAllowed(encounterId) : speedAllowed;
         boolean fleeAllowed = endgame ? EndgameEncounterCatalog.fleeAllowed(encounterId) : !CampaignEncounterCatalog.spec(encounterId).boss();
-        BattleSession session = new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed, arena);
+        BattleSession session = privateSession(player,
+                () -> new BattleSession(player, encounterId, resolvedAuto, resolvedSpeed, fleeAllowed, arena));
         SESSIONS.put(player.getUUID(), session);
         BattleNetwork.sync(player, session);
         return true;
@@ -87,7 +91,7 @@ public final class BattleSessionManager {
     public static void tick(ServerPlayer player) {
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session != null) {
-            session.tick(player);
+            PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> session.tick(player));
             if (player.tickCount % 5 == 0) BattleNetwork.sync(player, session);
         }
     }
@@ -96,14 +100,16 @@ public final class BattleSessionManager {
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null) return;
         String[] parts = command.split("\\|", -1);
-        switch (parts[0]) {
-            case "ACT" -> { if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]); }
-            case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
-            case "AUTO" -> session.toggleAuto(player);
-            case "SPEED" -> session.toggleSpeed(player);
-            case "FLEE" -> { if (session.finished() || session.fleeAllowed()) end(player); }
-            default -> { }
-        }
+        PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> {
+            switch (parts[0]) {
+                case "ACT" -> { if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]); }
+                case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
+                case "AUTO" -> session.toggleAuto(player);
+                case "SPEED" -> session.toggleSpeed(player);
+                case "FLEE" -> { if (session.finished() || session.fleeAllowed()) end(player); }
+                default -> { }
+            }
+        });
     }
 
     public static void end(ServerPlayer player) { endAndPersist(player, false); }
@@ -136,7 +142,7 @@ public final class BattleSessionManager {
                 }
             }
             SESSIONS.remove(player.getUUID());
-            old.cleanup(player);
+            PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> old.cleanup(player));
             if (!deferredReward && !encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
                 WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
             }
@@ -152,6 +158,12 @@ public final class BattleSessionManager {
                 "TURNBOUND 전투 보상을 안전하게 저장하지 못했습니다. 잠시 후 다시 나가기를 시도해 주세요."));
         BattleNetwork.sync(player, session);
         return false;
+    }
+
+    private static BattleSession privateSession(ServerPlayer player, Supplier<BattleSession> factory) {
+        BattleSession[] box = new BattleSession[1];
+        PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> box[0] = factory.get());
+        return box[0];
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
