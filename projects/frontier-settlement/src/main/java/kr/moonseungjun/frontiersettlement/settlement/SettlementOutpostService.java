@@ -132,7 +132,11 @@ public final class SettlementOutpostService {
 
         data.beginOutpostConstruction(roadIndex, gate, road.directionX(), road.directionZ());
         data.replaceOutpostConstructionStep(OutpostConstructionState.GRADE_STEP_OFFSET);
-        SettlementConstructionService.ensureBuilder(level, data);
+        if (SettlementConstructionService.ensureProjectBuilder(level, data) == null) {
+            data.clearOutpostConstruction();
+            SettlementService.broadcast(server, data);
+            return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 전초기지 착공을 취소했습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
+        }
         SettlementService.broadcast(server, data);
         return new StartResult(true, "전초기지 착공. 건설 주민이 부지를 정리한 뒤 실제 목재·석재를 운반하며 시공합니다."
                 + " (탐험 정복 반영 비용: 목재 " + woodCost + " · 석재 " + stoneCost + ")");

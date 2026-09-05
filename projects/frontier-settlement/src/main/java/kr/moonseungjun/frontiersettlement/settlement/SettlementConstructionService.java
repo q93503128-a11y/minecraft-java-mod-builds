@@ -38,9 +38,6 @@ public final class SettlementConstructionService {
     private static final int SITE_WORK_MARGIN = 12;
     // Direct hand reach is deliberately much smaller than scaffold coverage. Reusing the 14-block
     // scaffold coverage radius here let a builder stand on the ground and place an entire tower roof.
-    private static final double DIRECT_HIGH_WORK_RANGE_SQR = 25.0D;
-    private static final double HIGH_WORK_RANGE_SQR = 196.0D;
-    private static final double SCAFFOLD_POSITION_REACHED_SQR = 2.25D;
     private static final double SUPPLY_INTERACTION_RANGE_SQR = 9.0D;
     private static final int HAUL_BATCH_SIZE = 64;
     private static final long SITE_RESERVE_TARGET_PER_CATEGORY = 64L;
@@ -73,7 +70,7 @@ public final class SettlementConstructionService {
     private record GradeCell(BlockPos floor, boolean foundation, int retainingStone) {}
     private record BlockSnapshot(BlockPos pos, BlockState state) {}
     private record ScaffoldPiece(BlockPos pos, BlockState state) {}
-    private record ScaffoldTower(BlockPos anchor, List<ScaffoldPiece> pieces, List<BlockPos> steps) {}
+    private record ScaffoldTower(List<ScaffoldPiece> pieces) {}
 
     public static StartResult start(ServerPlayer player, BuildingType type) {
         Direction facing = player.getDirection();
@@ -218,13 +215,12 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
         data.beginConstruction(type, check.origin(), rotation);
         data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
-        FrontierWorkerEntity builder = ensureBuilder(level, data);
+        FrontierWorkerEntity builder = ensureProjectBuilder(level, data);
         if (builder == null) {
             data.clearConstruction();
             SettlementService.broadcast(server, data);
             return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 착공하지 않았습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
         }
-        builder.setInvulnerable(false);
         SettlementService.broadcast(server, data);
         String terrain = check.terrainWork()
                 ? " 지형 공사 포함: 건설 주민이 절토·성토와 노출 기초 옹벽을 먼저 시공합니다."
@@ -1163,33 +1159,6 @@ public final class SettlementConstructionService {
         return dx * dx + dy * dy + dz * dz;
     }
 
-    private static boolean hasFreshScaffoldCoverage(ServerLevel level, BuildingType type,
-                                                     BlockPos origin, BuildingRotation rotation) {
-        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, origin, rotation.id());
-        BlockPos supply = supplyPosition(origin, type, rotation);
-        List<ScaffoldTower> towers = scaffoldTowers(origin, type, rotation, supply);
-        boolean[] available = new boolean[towers.size()];
-        for (int i = 0; i < towers.size(); i++) available[i] = canClaimFreshTower(level, towers.get(i));
-
-        for (BuildingBlueprints.Placement placement : plan) {
-            int relativeY = placement.pos().getY() - origin.getY();
-            if (relativeY <= 3) continue;
-            boolean covered = false;
-            for (int i = 0; i < towers.size(); i++) {
-                if (!available[i]) continue;
-                ScaffoldTower tower = towers.get(i);
-                if (tower.steps().isEmpty()) continue;
-                int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
-                BlockPos candidate = tower.steps().get(index).above();
-                if (targetDistanceSqr(candidate, placement.pos()) <= HIGH_WORK_RANGE_SQR) {
-                    covered = true;
-                    break;
-                }
-            }
-            if (!covered) return false;
-        }
-        return true;
-    }
 
     private static boolean canReplaceConstructionTarget(ServerLevel level, BlockPos pos, BlockState state) {
         return level.getBlockEntity(pos) == null
@@ -1197,24 +1166,6 @@ public final class SettlementConstructionService {
                 && (state.isAir() || state.canBeReplaced());
     }
 
-    private static void ensureConstructionScaffolds(ServerLevel level, SettlementData data,
-                                                    BuildingType type, BlockPos supply) {
-        ConstructionState construction = data.construction();
-        List<ScaffoldTower> towers = scaffoldTowers(construction.origin(), type, construction.buildingRotation(), supply);
-        int mask = construction.scaffoldMask();
-        for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
-            ScaffoldTower tower = towers.get(towerIndex);
-            int bit = 1 << towerIndex;
-            if ((mask & bit) != 0) {
-                repairClaimedTower(level, tower);
-                continue;
-            }
-            if (!canClaimFreshTower(level, tower)) continue;
-            mask |= bit;
-            data.setConstructionScaffoldMask(mask);
-            placeClaimedTower(level, tower);
-        }
-    }
 
     private static List<ScaffoldTower> scaffoldTowers(BlockPos origin, BuildingType type,
                                                        BuildingRotation rotation, BlockPos supply) {
@@ -1239,7 +1190,6 @@ public final class SettlementConstructionService {
                 {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}
         };
         List<ScaffoldPiece> pieces = new ArrayList<>();
-        List<BlockPos> steps = new ArrayList<>();
         BlockState support = Blocks.OAK_FENCE.defaultBlockState();
         BlockState tread = Blocks.OAK_PLANKS.defaultBlockState();
         for (int y = 0; y <= MAX_SCAFFOLD_STEP; y++) {
@@ -1253,53 +1203,14 @@ public final class SettlementConstructionService {
             for (int y = 0; y < step; y++) pieces.add(new ScaffoldPiece(column.above(y), support));
             BlockPos treadPos = column.above(step);
             pieces.add(new ScaffoldPiece(treadPos, tread));
-            steps.add(treadPos);
             step++;
         }
-        return new ScaffoldTower(center, List.copyOf(pieces), List.copyOf(steps));
+        return new ScaffoldTower(List.copyOf(pieces));
     }
 
-    private static boolean canClaimFreshTower(ServerLevel level, ScaffoldTower tower) {
-        for (ScaffoldPiece piece : tower.pieces()) {
-            if (!level.hasChunkAt(piece.pos())) return false;
-            BlockState current = level.getBlockState(piece.pos());
-            if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) return false;
-            if (!current.isAir() && !current.canBeReplaced()) return false;
-        }
-        return hasWalkableScaffoldEntry(level, tower);
-    }
 
-    private static boolean hasWalkableScaffoldEntry(ServerLevel level, ScaffoldTower tower) {
-        if (tower.steps().isEmpty()) return false;
-        BlockPos firstTread = tower.steps().getFirst();
-        int[][] offsets = { {0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1} };
-        for (int[] offset : offsets) {
-            if (isWalkableApproachCell(level, firstTread.offset(offset[0], 0, offset[1]))) return true;
-        }
-        return false;
-    }
 
-    private static void placeClaimedTower(ServerLevel level, ScaffoldTower tower) {
-        for (ScaffoldPiece piece : tower.pieces()) {
-            if (!level.hasChunkAt(piece.pos())) continue;
-            BlockState current = level.getBlockState(piece.pos());
-            if (current.isAir() || current.canBeReplaced()) {
-                level.setBlock(piece.pos(), piece.state(), DIRECT_BLOCK_UPDATE);
-            }
-        }
-    }
 
-    private static void repairClaimedTower(ServerLevel level, ScaffoldTower tower) {
-        for (ScaffoldPiece piece : tower.pieces()) {
-            if (!level.hasChunkAt(piece.pos())) continue;
-            BlockState current = level.getBlockState(piece.pos());
-            if (current.is(piece.state().getBlock())) continue;
-            if (level.getBlockEntity(piece.pos()) != null || !current.getFluidState().isEmpty()) continue;
-            if (current.isAir() || current.canBeReplaced()) {
-                level.setBlock(piece.pos(), piece.state(), DIRECT_BLOCK_UPDATE);
-            }
-        }
-    }
 
     private static boolean towerUsable(ServerLevel level, ScaffoldTower tower) {
         for (ScaffoldPiece piece : tower.pieces()) {
@@ -1392,6 +1303,14 @@ public final class SettlementConstructionService {
                 return;
             }
         }
+    }
+
+    public static FrontierWorkerEntity ensureProjectBuilder(ServerLevel level, SettlementData data) {
+        FrontierWorkerEntity builder = ensureBuilder(level, data);
+        if (builder == null) return null;
+        if (builder.isNoAi()) builder.setNoAi(false);
+        builder.setInvulnerable(false);
+        return builder;
     }
 
     public static FrontierWorkerEntity ensureBuilder(ServerLevel level, SettlementData data) {

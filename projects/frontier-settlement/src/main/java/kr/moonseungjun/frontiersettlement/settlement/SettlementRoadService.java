@@ -170,7 +170,11 @@ public final class SettlementRoadService {
         }
 
         data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports());
-        SettlementConstructionService.ensureBuilder(level, data);
+        if (SettlementConstructionService.ensureProjectBuilder(level, data) == null) {
+            data.clearRoadConstruction();
+            SettlementService.broadcast(server, data);
+            return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 도로 착공을 취소했습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
+        }
         SettlementService.broadcast(server, data);
         String bridge = chosen.supports().isEmpty() ? ""
                 : " 장교량/협곡 교각 " + chosen.supports().size() + "블록 포함.";

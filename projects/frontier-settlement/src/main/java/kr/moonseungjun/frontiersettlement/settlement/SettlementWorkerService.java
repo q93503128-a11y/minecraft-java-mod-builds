@@ -65,6 +65,8 @@ public final class SettlementWorkerService {
 
     private SettlementWorkerService() {}
 
+    public static long arrivalFoodCost() { return ARRIVAL_FOOD_COST; }
+
     public record NormalizeResult(int removedProductionWorkers, int loadedProductionWorkers) {}
     private record TreeCandidate(BlockPos base, Item item, double distance, int availableLogs) {}
     private record CachedTarget(BlockPos pos, long expiresAt) {}

@@ -155,12 +155,13 @@ public final class SettlementCivilWorkService {
 
         data.begin(new CivilWorkState(true, check.minX(), check.maxX(), check.minZ(), check.maxZ(), check.gradeY(),
                 CivilWorkState.PHASE_CUT, 0, 0, check.cutBlocks(), check.fillBlocks(), check.retainingBlocks()));
-        FrontierWorkerEntity builder = SettlementConstructionService.ensureBuilder(server.overworld(), settlement);
-        if (builder != null) {
-            builder.setNoAi(false);
-            builder.setInvulnerable(false);
-            builder.setCustomName(Component.literal("건설 주민 · 토목"));
+        FrontierWorkerEntity builder = SettlementConstructionService.ensureProjectBuilder(server.overworld(), settlement);
+        if (builder == null) {
+            data.clear();
+            SettlementService.broadcast(server, settlement);
+            return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 토목 착공을 취소했습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자재는 차감되지 않았습니다.");
         }
+        builder.setCustomName(Component.literal("건설 주민 · 토목"));
         SettlementService.broadcast(server, settlement);
         return new StartResult(true, "선택영역 토목 착공 · 절토 " + check.cutBlocks() + " / 성토 " + check.fillBlocks()
                 + (check.retainingBlocks() > 0 ? " / 옹벽 조약돌 " + check.retainingBlocks() : "")

@@ -24,9 +24,8 @@ public final class SettlementService {
         int tick = server.getTickCount();
         SettlementLegacyWorkerMigrationService.tick(server, data);
         boolean explorationChanged = SettlementExplorationService.tick(server, data);
-        // Building construction is presentation-sensitive and must not be quantized behind the
-        // 5-tick infrastructure scheduler: e.g. an 8-tick grading gate sampled every 5 ticks
-        // only fires every LCM(5, 8)=40 ticks. Roads/outposts/civil work keep their old cadence.
+        // Building construction owns its per-tick presentation cadence. Roads, outposts and civil work
+        // share the bounded 5-tick infrastructure scheduler below.
         if (data.construction().active()) SettlementConstructionService.tick(server, data);
         if (tick % 5 == 0) {
             if (data.roadConstruction().active()) SettlementRoadService.tick(server, data);
@@ -164,7 +163,7 @@ public final class SettlementService {
         SettlementResources r=data.resources();
         SettlementNetwork.sendSnapshot(player,new SettlementSnapshotPayload(
                 data.founded(),r.wood(),r.stone(),r.metal(),r.food(),data.population(),
-                SettlementTier.current(data).displayName(),buildingUnlockMask(data),SettlementGuidanceService.nextGoal(data),
+                SettlementTier.current(data).displayName(),buildingUnlockMask(data),SettlementGuidanceService.nextGoal(player.level().getServer(), data),
                 SettlementContextService.snapshot(player.level().getServer(), data)));
     }
     public static void broadcast(MinecraftServer server, SettlementData data) { for(ServerPlayer player:server.getPlayerList().getPlayers()) sync(player,data); }

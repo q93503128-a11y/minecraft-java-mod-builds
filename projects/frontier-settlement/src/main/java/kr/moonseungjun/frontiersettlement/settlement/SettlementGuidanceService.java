@@ -1,10 +1,12 @@
 package kr.moonseungjun.frontiersettlement.settlement;
 
+import net.minecraft.server.MinecraftServer;
+
 /** A single server-authored next step. This stays lightweight guidance rather than a separate task system. */
 public final class SettlementGuidanceService {
     private SettlementGuidanceService() {}
 
-    public static String nextGoal(SettlementData data) {
+    public static String nextGoal(MinecraftServer server, SettlementData data) {
         if (!data.founded()) return "";
         if (data.construction().active()) {
             BuildingType type = BuildingType.fromId(data.construction().type());
@@ -13,6 +15,7 @@ public final class SettlementGuidanceService {
         }
         if (data.roadConstruction().active()) return "진행 중 · " + SettlementRoadService.phaseLabel(data.roadConstruction());
         if (data.outpostConstruction().active()) return "진행 중 · " + SettlementOutpostService.phaseLabel(data.outpostConstruction());
+        if (SettlementCivilWorkData.get(server).project().active()) return "진행 중 · " + SettlementCivilWorkService.phaseLabel(server);
 
         if (data.houseCount() < 1) return buildingGoal(data, BuildingType.HOUSE);
         if (data.lumberCampCount() < 1) return buildingGoal(data, BuildingType.LUMBER_CAMP);
@@ -74,7 +77,7 @@ public final class SettlementGuidanceService {
 
     private static String populationGoal(SettlementData data, int target) {
         if (data.housingCapacity() <= data.population()) return "다음 목표 · 주택/시민시설을 늘려 인구 " + target + " 준비";
-        if (data.resources().food() < 8L) return "다음 목표 · 공동 창고 식량 확보 → 인구 " + target;
+        if (data.resources().food() < SettlementWorkerService.arrivalFoodCost()) return "다음 목표 · 공동 창고 식량 확보 → 인구 " + target;
         return "다음 목표 · 생산 거점을 늘려 인구 " + target + " 유치";
     }
 }

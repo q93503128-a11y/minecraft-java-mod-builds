@@ -142,13 +142,9 @@ public final class BuildingPaletteScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("전초기지   · 영토와 생산권 확장"),
                 b -> { OutpostPlacementClient.beginPlacement(); this.minecraft.gui.setScreen(null); })
                 .bounds(x, y + 31, width, 23).build());
-        boolean civilUnlocked = data.tier().equals("영지") || data.tier().equals("개척 수도");
-        Button civil = Button.builder(Component.literal(
-                        civilUnlocked ? "토목 평탄화   · 절토/성토" : "토목 평탄화   · 영지에서 해금"),
+        addRenderableWidget(Button.builder(Component.literal("토목 평탄화   · 절토/성토"),
                 b -> { CivilWorkPlacementClient.beginPlacement(); this.minecraft.gui.setScreen(null); })
-                .bounds(x, y + 62, width, 23).build();
-        civil.active = civilUnlocked;
-        addRenderableWidget(civil);
+                .bounds(x, y + 62, width, 23).build());
     }
 
     @Override
