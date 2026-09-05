@@ -6,6 +6,10 @@ package io.github.q93503128.turnbound.client;
  * <p>Keep new screens on this small palette/spacing scale instead of inventing per-screen
  * colors and arbitrary gaps. Screen-specific semantic colors are fine when they describe
  * actual game data, but generic chrome should come from here.</p>
+ *
+ * <p>The management UI intentionally uses a compact PC density: the first playtest showed
+ * that the older 4/8/12/16/24 rhythm made cards and frame chrome read much larger than the
+ * reference RPG UI. The 3/6/9/12/18 rhythm keeps text size intact while reducing dead space.</p>
  */
 final class TurnboundUiTokens {
     static final int BACKGROUND = 0xF00A0D12;
@@ -26,11 +30,11 @@ final class TurnboundUiTokens {
     static final int BORDER = 0xFF8B694A;
     static final int MAP_ROAD = 0xFFD8C79D;
 
-    static final int XS = 4;
-    static final int S = 8;
-    static final int M = 12;
-    static final int L = 16;
-    static final int XL = 24;
+    static final int XS = 3;
+    static final int S = 6;
+    static final int M = 9;
+    static final int L = 12;
+    static final int XL = 18;
 
     private TurnboundUiTokens() {}
 }
