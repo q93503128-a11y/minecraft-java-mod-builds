@@ -50,6 +50,8 @@ public final class SettlementConstructionService {
     private static final int MAX_TERRAIN_WORK_SPAN = 4;
     private static final int MAX_TERRAIN_CUT_HEIGHT = 3;
     private static final int MAX_TERRAIN_RETAINING_STONE = 96;
+    private static final int TREE_CANOPY_SEARCH_HEIGHT = 10;
+    private static final int TREE_CANOPY_SEARCH_RADIUS = 2;
     private static final int COMMAND_PLACEMENT_DISTANCE = 10;
     private static final int MAX_MAIN_SETTLEMENT_RADIUS = 72;
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
@@ -151,7 +153,7 @@ public final class SettlementConstructionService {
         ServerLevel level = server.overworld();
         Site site = assessSite(level, originX, originZ, type, rotation);
         if (site == null) {
-            return invalidPlacement("선택한 부지가 안전하지 않습니다. 높이 차 4블록 이하·최대 3블록 성토 범위의 물·기존 건축물이 없는 곳을 선택해 주세요.");
+            return invalidPlacement("선택한 부지가 안전하지 않습니다. 자연 잔디·꽃·수목은 자동 정리되며, 높이 차 4블록 이하·최대 3블록 성토 범위의 물·보호 블록이 없는 곳을 선택해 주세요.");
         }
         if (overlapsInfrastructure(data, site.origin(), type, rotation)) {
             return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
@@ -423,7 +425,7 @@ public final class SettlementConstructionService {
             BlockPos pos = column.above(y);
             BlockState state = level.getBlockState(pos);
             if (level.getBlockEntity(pos) != null || !state.getFluidState().isEmpty()) return false;
-            if (isSoftVegetation(state)) continue;
+            if (isClearableSiteVegetation(level, pos, state)) continue;
             if (y <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state)) continue;
             return false;
         }
@@ -449,7 +451,7 @@ public final class SettlementConstructionService {
     }
 
     private static BlockPos gradeWorkPosition(ServerLevel level, BlockPos floor) {
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, floor.getX(), floor.getZ());
+        int y = terrainSurfaceHeight(level, floor.getX(), floor.getZ());
         return new BlockPos(floor.getX(), y, floor.getZ());
     }
 
@@ -954,11 +956,24 @@ public final class SettlementConstructionService {
     }
 
     private static Container ensureSupplyCrate(ServerLevel level, BlockPos supply) {
-        if (!level.hasChunkAt(supply)) return null;
+        BlockPos head = supply.above();
+        if (!level.hasChunkAt(supply) || !level.hasChunkAt(head)) return null;
         BlockState current = level.getBlockState(supply);
-        if (current.is(Blocks.BARREL) && level.getBlockEntity(supply) instanceof Container crate) return crate;
-        if (level.getBlockEntity(supply) != null || !current.getFluidState().isEmpty()) return null;
-        if (!current.isAir() && !current.canBeReplaced()) return null;
+        BlockState above = level.getBlockState(head);
+        if (current.is(Blocks.BARREL) && level.getBlockEntity(supply) instanceof Container crate) {
+            if (level.getBlockEntity(head) != null || !above.getFluidState().isEmpty()) return null;
+            if (!above.isAir() && !above.canBeReplaced()
+                    && !isClearableSiteVegetation(level, head, above)) return null;
+            if (!above.isAir() && !level.setBlock(head, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return null;
+            return crate;
+        }
+        if (level.getBlockEntity(supply) != null || level.getBlockEntity(head) != null
+                || !current.getFluidState().isEmpty() || !above.getFluidState().isEmpty()) return null;
+        if (!current.isAir() && !current.canBeReplaced()
+                && !isClearableSiteVegetation(level, supply, current)) return null;
+        if (!above.isAir() && !above.canBeReplaced()
+                && !isClearableSiteVegetation(level, head, above)) return null;
+        if (!above.isAir() && !level.setBlock(head, Blocks.AIR.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return null;
         if (!level.setBlock(supply, Blocks.BARREL.defaultBlockState(), DIRECT_BLOCK_UPDATE)) return null;
         return level.getBlockState(supply).is(Blocks.BARREL)
                 && level.getBlockEntity(supply) instanceof Container crate ? crate : null;
@@ -1594,7 +1609,7 @@ public final class SettlementConstructionService {
                 int worldX = originX + x;
                 int worldZ = originZ + z;
                 if (!level.hasChunkAt(new BlockPos(worldX, 0, worldZ))) return null;
-                int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ);
+                int height = terrainSurfaceHeight(level, worldX, worldZ);
                 BlockPos surfaceBlock = new BlockPos(worldX, height - 1, worldZ);
                 if (!level.getFluidState(surfaceBlock).isEmpty()) return null;
                 heights.add(height);
@@ -1615,7 +1630,7 @@ public final class SettlementConstructionService {
                     if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null) return null;
                     BlockState state = level.getBlockState(pos);
                     if (!state.getFluidState().isEmpty()) return null;
-                    if (y >= 0 && !isSafeAboveGround(state, y)) return null;
+                    if (y >= 0 && !isSafeAboveGround(level, pos, state, y)) return null;
                     if (y == -1 && !state.isAir() && !state.canBeReplaced() && !isNaturalGround(state)) return null;
                 }
             }
@@ -1645,7 +1660,10 @@ public final class SettlementConstructionService {
         BlockState below = level.getBlockState(supply.below());
         if (level.getBlockEntity(supply) != null || level.getBlockEntity(supply.above()) != null) return false;
         if (!current.getFluidState().isEmpty() || !above.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) return false;
-        if ((!current.isAir() && !current.canBeReplaced()) || (!above.isAir() && !above.canBeReplaced())) return false;
+        if ((!current.isAir() && !current.canBeReplaced()
+                && !isClearableSiteVegetation(level, supply, current))
+                || (!above.isAir() && !above.canBeReplaced()
+                && !isClearableSiteVegetation(level, supply.above(), above))) return false;
         return !below.isAir() && isNaturalGround(below);
     }
 
@@ -1681,9 +1699,37 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    private static boolean isSafeAboveGround(BlockState state, int relativeY) {
-        if (isSoftVegetation(state)) return true;
+    private static int terrainSurfaceHeight(ServerLevel level, int x, int z) {
+        int rawHeight = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        for (int scanned = 0, y = rawHeight - 1; scanned < 32; scanned++, y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            BlockState state = level.getBlockState(pos);
+            if (isNaturalGround(state)) return y + 1;
+            if (!isClearableSiteVegetation(level, pos, state)) return rawHeight;
+        }
+        return rawHeight;
+    }
+
+    private static boolean isSafeAboveGround(ServerLevel level, BlockPos pos, BlockState state, int relativeY) {
+        if (isClearableSiteVegetation(level, pos, state)) return true;
         return relativeY <= MAX_TERRAIN_CUT_HEIGHT && isNaturalGround(state);
+    }
+
+    private static boolean isClearableSiteVegetation(ServerLevel level, BlockPos pos, BlockState state) {
+        return isSoftVegetation(state) || isNaturalTreeLog(level, pos, state);
+    }
+
+    private static boolean isNaturalTreeLog(ServerLevel level, BlockPos pos, BlockState state) {
+        if (!state.is(BlockTags.LOGS)) return false;
+        for (int dy = 0; dy <= TREE_CANOPY_SEARCH_HEIGHT; dy++) {
+            for (int dx = -TREE_CANOPY_SEARCH_RADIUS; dx <= TREE_CANOPY_SEARCH_RADIUS; dx++) {
+                for (int dz = -TREE_CANOPY_SEARCH_RADIUS; dz <= TREE_CANOPY_SEARCH_RADIUS; dz++) {
+                    BlockPos probe = pos.offset(dx, dy, dz);
+                    if (level.hasChunkAt(probe) && level.getBlockState(probe).is(BlockTags.LEAVES)) return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean isSoftVegetation(BlockState state) {

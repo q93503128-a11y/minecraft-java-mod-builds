@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.107" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.108" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -44,6 +44,11 @@ require("ensureProjectBuilder(" in construction, "shared project-builder authori
 require("MAX_BUILDER_CREW = 3" in construction, "bounded construction crew cap missing")
 require("ensureProjectBuilders" in construction and "desiredBuilderCount" in construction, "multi-builder crew authority missing")
 require("i == 0" in construction and "tickConstructionBuilder" in construction, "builder crew is not serialized through one scheduler")
+require("terrainSurfaceHeight(level, worldX, worldZ)" in construction, "placement height still treats natural trunks as terrain peaks")
+require("isNaturalTreeLog" in construction and "BlockTags.LOGS" in construction and "BlockTags.LEAVES" in construction, "tree-aware natural vegetation evidence missing")
+require("isClearableSiteVegetation(level, pos, state)" in construction, "grading does not clear verified natural tree vegetation")
+require("isClearableSiteVegetation(level, supply, current)" in construction, "site supply position still rejects natural vegetation")
+require("TREE_CANOPY_SEARCH_HEIGHT = 10" in construction and "TREE_CANOPY_SEARCH_RADIUS = 2" in construction, "bounded tree evidence envelope drifted")
 
 road = text(SETTLEMENT / "SettlementRoadService.java")
 outpost = text(SETTLEMENT / "SettlementOutpostService.java")
@@ -152,4 +157,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha107 worker handoff + physical house repair + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha108 tree-aware placement + alpha107 worker/repair + prior authority invariants")
