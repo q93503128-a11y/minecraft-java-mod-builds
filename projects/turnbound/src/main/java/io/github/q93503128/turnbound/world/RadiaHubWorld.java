@@ -17,7 +17,7 @@ import java.util.List;
  */
 public final class RadiaHubWorld {
     private static final int MARKER_Y = 52;
-    private static final int CLEAR_TOP = 88;
+    private static final int CLEAR_TOP = 96;
 
     private record Node(int x, int y, int z) {}
     private record LegacyBox(int minX, int maxX, int minZ, int maxZ) {}
@@ -208,6 +208,8 @@ public final class RadiaHubWorld {
         route(level, 2, new Node(12,75,-13), new Node(18,74,-29), new Node(22,72,-49));
         route(level, 2, new Node(-28,70,-47), new Node(-47,68,-48), new Node(-65,67,-52), new Node(-82,66,-54));
         route(level, 2, new Node(22,72,-49), new Node(42,71,-35), new Node(60,70,-23), new Node(72,70,-11));
+        route(level, 2, new Node(-28,70,-47), new Node(-18,69,-56), new Node(0,68,-62));
+        route(level, 2, new Node(22,72,-49), new Node(14,70,-56), new Node(0,68,-62));
     }
 
     private static void harbor(ServerLevel level) {
@@ -251,11 +253,13 @@ public final class RadiaHubWorld {
 
     private static void archive(ServerLevel level) {
         house(level, -68, 10, 25, 19, 72, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK, Blocks.DARK_OAK_SLAB);
+        doorAtX(level, -44, 20, 72);
         for (int z = 14; z <= 26; z += 4) set(level, -66, 73, z, Blocks.BOOKSHELF);
     }
 
     private static void forge(ServerLevel level) {
         house(level, 44, 10, 25, 19, 72, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK, Blocks.DEEPSLATE_TILE_SLAB);
+        doorAtX(level, 44, 20, 72);
         for (int z = 15; z <= 25; z += 5) {
             set(level, 47, 73, z, Blocks.BLAST_FURNACE);
             set(level, 65, 73, z, Blocks.ANVIL);
@@ -318,6 +322,7 @@ public final class RadiaHubWorld {
 
     private static void barracks(ServerLevel level) {
         house(level, 61, -21, 23, 21, 70, Blocks.STONE_BRICKS, Blocks.SPRUCE_PLANKS, Blocks.DARK_OAK_SLAB);
+        doorAtZ(level, 63, -21, 70);
         for (int z = -17; z <= -5; z += 4) {
             set(level, 65, 71, z, Blocks.IRON_BARS);
             set(level, 79, 71, z, Blocks.TARGET);
@@ -471,9 +476,23 @@ public final class RadiaHubWorld {
             set(level, x, ground + 6, z, roof);
         }
         int doorX = x0 + w / 2;
-        for (int y = ground + 1; y <= ground + 3; y++) set(level, doorX, y, z0 + d - 1, Blocks.AIR);
+        for (int dx = -1; dx <= 1; dx++) for (int y = ground + 1; y <= ground + 3; y++) {
+            set(level, doorX + dx, y, z0 + d - 1, Blocks.AIR);
+        }
         for (int x = x0 + 4; x < x0 + w - 3; x += 6) for (int z = z0 + 4; z < z0 + d - 3; z += 6) {
             set(level, x, ground + 6, z, Blocks.SEA_LANTERN);
+        }
+    }
+
+    private static void doorAtX(ServerLevel level, int x, int zCenter, int ground) {
+        for (int dz = -1; dz <= 1; dz++) for (int y = ground + 1; y <= ground + 3; y++) {
+            set(level, x, y, zCenter + dz, Blocks.AIR);
+        }
+    }
+
+    private static void doorAtZ(ServerLevel level, int xCenter, int z, int ground) {
+        for (int dx = -1; dx <= 1; dx++) for (int y = ground + 1; y <= ground + 3; y++) {
+            set(level, xCenter + dx, y, z, Blocks.AIR);
         }
     }
 
@@ -515,7 +534,8 @@ public final class RadiaHubWorld {
                 && level.getBlockState(new BlockPos(2, MARKER_Y, 20)).is(Blocks.LAPIS_BLOCK)
                 && level.getBlockState(new BlockPos(3, MARKER_Y, 20)).is(Blocks.EMERALD_BLOCK)
                 && level.getBlockState(new BlockPos(4, MARKER_Y, 20)).is(Blocks.GOLD_BLOCK)
-                && level.getBlockState(new BlockPos(5, MARKER_Y, 20)).is(Blocks.DIAMOND_BLOCK);
+                && level.getBlockState(new BlockPos(5, MARKER_Y, 20)).is(Blocks.DIAMOND_BLOCK)
+                && level.getBlockState(new BlockPos(6, MARKER_Y, 20)).is(Blocks.NETHERITE_BLOCK);
     }
 
     private static void writeMarker(ServerLevel level) {
@@ -525,6 +545,7 @@ public final class RadiaHubWorld {
         set(level, 3, MARKER_Y, 20, Blocks.EMERALD_BLOCK);
         set(level, 4, MARKER_Y, 20, Blocks.GOLD_BLOCK);
         set(level, 5, MARKER_Y, 20, Blocks.DIAMOND_BLOCK);
+        set(level, 6, MARKER_Y, 20, Blocks.NETHERITE_BLOCK);
     }
 
     private static void set(ServerLevel level, int x, int y, int z, Block block) {
