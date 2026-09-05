@@ -34,7 +34,7 @@ jobs:
           grep -q 'PROTOCOL = "13"' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java
           grep -q 'PlayerChangedDimensionEvent' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java
           grep -q 'MythicTargetPayload.clear' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java
-          grep -q 'getMainCamera().getYRot' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java
+          grep -q '약 ' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java
           python3 - <<'PY'
           import json, pathlib
           files=list(pathlib.Path('projects/survival-ascension/src/main/resources').rglob('*.json'))
