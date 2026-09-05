@@ -12,7 +12,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PartyFormationPersistenceTest {
     private final UUID playerId = UUID.randomUUID();
@@ -29,7 +28,8 @@ class PartyFormationPersistenceTest {
         CampaignProgressStore.restore(playerId, CampaignSaveCodec.decode(json));
 
         assertEquals(List.of("P08", "P01", "P03"), CampaignProgressStore.activeParty(playerId));
-        assertEquals(List.of("P08", "P01", "P03"), CampaignEncounterCatalog.createBattle(playerId, "ENC_M01").living(io.github.q93503128.turnbound.combat.CombatantSide.ALLY)
+        assertEquals(List.of("P08", "P01", "P03"), CampaignEncounterCatalog.createBattle(playerId, "ENC_M01")
+                .living(io.github.q93503128.turnbound.combat.CombatantSide.ALLY)
                 .stream().map(unit -> unit.definition().id()).toList());
     }
 
@@ -60,8 +60,12 @@ class PartyFormationPersistenceTest {
         assertEquals(CharacterProgression.gain(p03Before, (int)Math.floor(full * 0.20), 40).after(), CampaignProgressStore.character(playerId, "P03"));
     }
 
+    /** Advance only the zero-reward tutorial recruitment bridge before adding the test-only P08 ownership. */
     private void unlockP08() {
         CampaignProgressStore.ensureNewGame(playerId);
+        CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
+        CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);
+
         CampaignProgressStore.Snapshot old = CampaignProgressStore.snapshot(playerId);
         PlayerProfile profile = PlayerProfile.restore(old.profile());
         profile.acquireCharacter("P08");

@@ -6,23 +6,28 @@ import net.minecraft.util.Mth;
 import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
-/** Battlefield-centered orbit camera with fast, readable control and restrained impact motion. */
+/**
+ * High three-quarter battle camera derived from the reference game's combat composition.
+ * The default view must show both formations at once; manual orbit is a correction tool, not the primary way to read battle.
+ */
 public final class BattleCameraController {
-    private static final float DEFAULT_DISTANCE = 7.0F;
-    private static final float MIN_DISTANCE = 4.5F;
-    private static final float MAX_DISTANCE = 13.0F;
-    private static final float DEFAULT_PITCH = 10.5F;
-    private static final float MIN_PITCH = -14.0F;
-    private static final float MAX_PITCH = 48.0F;
-    private static final float HORIZONTAL_DEGREES_PER_PIXEL = 0.42F;
-    private static final float VERTICAL_DEGREES_PER_PIXEL = 0.34F;
-    private static final float WHEEL_DISTANCE_STEP = 0.95F;
-    private static final float FOV = 59.0F;
+    private static final float DEFAULT_DISTANCE = 10.4F;
+    private static final float MIN_DISTANCE = 6.2F;
+    private static final float MAX_DISTANCE = 16.0F;
+    private static final float DEFAULT_PITCH = 29.0F;
+    private static final float MIN_PITCH = 14.0F;
+    private static final float MAX_PITCH = 53.0F;
+    private static final float DEFAULT_YAW_OFFSET = 18.0F;
+    private static final float HORIZONTAL_DEGREES_PER_PIXEL = 0.46F;
+    private static final float VERTICAL_DEGREES_PER_PIXEL = 0.38F;
+    private static final float WHEEL_DISTANCE_STEP = 1.0F;
+    private static final float FOV = 56.0F;
 
     private static boolean active;
     private static CameraType previousCameraType = CameraType.FIRST_PERSON;
     private static float previousYaw;
     private static float previousPitch;
+    private static float arenaYaw;
     private static float currentYaw;
     private static float currentPitch;
     private static float targetYaw;
@@ -40,7 +45,7 @@ public final class BattleCameraController {
 
     public record View(float yaw, float pitch, float distance, float fov) {}
 
-    public static void enter(float arenaYaw) {
+    public static void enter(float authoredArenaYaw) {
         if (active) return;
         Minecraft minecraft = Minecraft.getInstance();
         previousCameraType = minecraft.options.getCameraType();
@@ -48,8 +53,9 @@ public final class BattleCameraController {
             previousYaw = minecraft.player.getYRot();
             previousPitch = minecraft.player.getXRot();
         }
-        currentYaw = arenaYaw;
-        targetYaw = arenaYaw;
+        arenaYaw = authoredArenaYaw;
+        currentYaw = Mth.wrapDegrees(arenaYaw + DEFAULT_YAW_OFFSET);
+        targetYaw = currentYaw;
         currentPitch = DEFAULT_PITCH;
         targetPitch = DEFAULT_PITCH;
         distance = DEFAULT_DISTANCE;
@@ -75,13 +81,20 @@ public final class BattleCameraController {
 
     static void orbit(double deltaX, double deltaY) {
         if (!active) return;
-        targetYaw = Mth.wrapDegrees(targetYaw - (float) deltaX * HORIZONTAL_DEGREES_PER_PIXEL);
-        targetPitch = Mth.clamp(targetPitch + (float) deltaY * VERTICAL_DEGREES_PER_PIXEL, MIN_PITCH, MAX_PITCH);
+        targetYaw = Mth.wrapDegrees(targetYaw - (float)deltaX * HORIZONTAL_DEGREES_PER_PIXEL);
+        targetPitch = Mth.clamp(targetPitch + (float)deltaY * VERTICAL_DEGREES_PER_PIXEL, MIN_PITCH, MAX_PITCH);
     }
 
     static void zoom(double scrollY) {
         if (!active || scrollY == 0.0D) return;
-        distance = Mth.clamp(distance - (float) scrollY * WHEEL_DISTANCE_STEP, MIN_DISTANCE, MAX_DISTANCE);
+        distance = Mth.clamp(distance - (float)scrollY * WHEEL_DISTANCE_STEP, MIN_DISTANCE, MAX_DISTANCE);
+    }
+
+    static void resetView() {
+        if (!active) return;
+        targetYaw = Mth.wrapDegrees(arenaYaw + DEFAULT_YAW_OFFSET);
+        targetPitch = DEFAULT_PITCH;
+        distance = DEFAULT_DISTANCE;
     }
 
     static void onSnapshotTransition(ClientBattleState.Snapshot before, ClientBattleState.Snapshot after) {
@@ -118,25 +131,25 @@ public final class BattleCameraController {
         if (knockDown) strength += 0.62F;
         if (bossImpact) strength += 0.28F;
         strength = Mth.clamp(strength, 0.50F, 2.9F);
-        impactYaw = Math.max(impactYaw, strength * 0.34F);
-        impactPitch = Math.max(impactPitch, strength * 0.26F);
-        impactRoll = Math.max(impactRoll, strength * 0.16F);
-        impactDistance = Math.max(impactDistance, 0.12F + strength * 0.09F);
-        impactFov = Math.max(impactFov, 0.45F + strength * 0.31F);
-        impactFrames = Math.max(impactFrames, knockDown || bossImpact ? 13 : 9);
+        impactYaw = Math.max(impactYaw, strength * 0.30F);
+        impactPitch = Math.max(impactPitch, strength * 0.22F);
+        impactRoll = Math.max(impactRoll, strength * 0.13F);
+        impactDistance = Math.max(impactDistance, 0.10F + strength * 0.08F);
+        impactFov = Math.max(impactFov, 0.38F + strength * 0.26F);
+        impactFrames = Math.max(impactFrames, knockDown || bossImpact ? 12 : 8);
     }
 
     private static void revivePulse() {
-        impactDistance = Math.min(impactDistance, -0.22F);
-        impactFov = Math.min(impactFov, -0.85F);
-        impactRoll = Math.max(impactRoll, 0.12F);
-        impactFrames = Math.max(impactFrames, 9);
+        impactDistance = Math.min(impactDistance, -0.18F);
+        impactFov = Math.min(impactFov, -0.70F);
+        impactRoll = Math.max(impactRoll, 0.10F);
+        impactFrames = Math.max(impactFrames, 8);
     }
 
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (!active) return;
-        currentYaw = Mth.wrapDegrees(currentYaw + Mth.wrapDegrees(targetYaw - currentYaw) * 0.78F);
-        currentPitch += (targetPitch - currentPitch) * 0.78F;
+        currentYaw = Mth.wrapDegrees(currentYaw + Mth.wrapDegrees(targetYaw - currentYaw) * 0.72F);
+        currentPitch += (targetPitch - currentPitch) * 0.72F;
         applyPlayerView(Minecraft.getInstance());
         float shakeSign = (impactPhase++ & 1) == 0 ? 1.0F : -1.0F;
         float verticalSign = impactFrames % 3 == 0 ? -0.55F : 1.0F;
@@ -151,7 +164,9 @@ public final class BattleCameraController {
     }
 
     public static void onDetachedCameraDistance(CalculateDetachedCameraDistanceEvent event) {
-        if (active && !event.isCameraFlipped()) event.setDistance(Mth.clamp(distance - impactDistance, 2.0F, MAX_DISTANCE));
+        if (active && !event.isCameraFlipped()) {
+            event.setDistance(Mth.clamp(distance - impactDistance, MIN_DISTANCE, MAX_DISTANCE));
+        }
     }
 
     private static void decayImpulse() {

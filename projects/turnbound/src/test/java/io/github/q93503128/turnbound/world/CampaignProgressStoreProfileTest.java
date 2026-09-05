@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.progression.PlayerProfile;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,10 +23,22 @@ class CampaignProgressStoreProfileTest {
     }
 
     @Test
-    void newCampaignUsesCanonicalStartingEconomyAndStoryParty() {
+    void newCampaignUsesCanonicalStartingEconomyAndSmallStarterParty() {
         assertEquals(5_000, CampaignProgressStore.gold(playerId));
         assertEquals(0, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.SUMMON_CRYSTAL));
-        assertEquals(Set.of("P01", "P03", "P04", "F03"), CampaignProgressStore.ownedCharacters(playerId));
+        assertEquals(Set.of("P01", "F03"), CampaignProgressStore.ownedCharacters(playerId));
+        assertEquals(List.of("P01", "F03"), CampaignProgressStore.activeParty(playerId));
+    }
+
+    @Test
+    void tutorialWinsRecruitBramAndElysiaIntoTheParty() {
+        CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
+        assertTrue(CampaignProgressStore.ownedCharacters(playerId).contains("P03"));
+        assertEquals(List.of("P01", "F03", "P03"), CampaignProgressStore.activeParty(playerId));
+
+        CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);
+        assertTrue(CampaignProgressStore.ownedCharacters(playerId).contains("P04"));
+        assertEquals(List.of("P01", "F03", "P03", "P04"), CampaignProgressStore.activeParty(playerId));
     }
 
     @Test

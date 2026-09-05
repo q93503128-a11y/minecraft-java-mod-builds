@@ -17,6 +17,9 @@ class QuestMenuContentServiceTest {
     @Test
     void characterQuestMenuUsesAuthoredChapterAndOwnershipGatesWithoutInventingObjectives() {
         CampaignProgressStore.ensureNewGame(playerId);
+        CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
+        CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);
+        assertTrue(CampaignProgressStore.ownedCharacters(playerId).contains("P03"));
         assertFalse(QuestMenuContentService.available(playerId, "P03"));
 
         CampaignProgressStore.commit(playerId, "BATTLE_B02", BattleOutcome.ALLY_VICTORY);

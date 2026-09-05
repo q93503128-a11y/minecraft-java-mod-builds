@@ -40,7 +40,9 @@ class Chapter5ProgressionTest {
     }
 
     private void reachAfterKolvak(){
-        CampaignProgressStore.ensureNewGame(playerId);CampaignProgressStore.questInteract(playerId,"Director Iven");CampaignProgressStore.setActiveParty(playerId,List.of("P01","P03","P04","F03"));
+        CampaignProgressStore.ensureNewGame(playerId);
+        CampaignProgressStore.questInteract(playerId,"Director Iven");
+        CampaignProgressStore.setActiveParty(playerId,List.of("P01","F03"));
         for(String id:List.of("TUTORIAL_1","TUTORIAL_2","TUTORIAL_3"))CampaignProgressStore.commit(playerId,id,BattleOutcome.ALLY_VICTORY);
         CampaignProgressStore.commit(playerId,"ENC_M01",BattleOutcome.ALLY_VICTORY);CampaignProgressStore.commit(playerId,"ENC_M02",BattleOutcome.ALLY_VICTORY);CampaignProgressStore.commit(playerId,"ENC_M04",BattleOutcome.ALLY_VICTORY);CampaignProgressStore.commit(playerId,"BATTLE_B01",BattleOutcome.ALLY_VICTORY);
         for(int i=0;i<3;i++)CampaignProgressStore.questInteract(playerId,"SPORE_LANTERN");CampaignProgressStore.commit(playerId,"ENC_G02",BattleOutcome.ALLY_VICTORY);CampaignProgressStore.commit(playerId,"ENC_G05",BattleOutcome.ALLY_VICTORY);CampaignProgressStore.commit(playerId,"BATTLE_B02",BattleOutcome.ALLY_VICTORY);

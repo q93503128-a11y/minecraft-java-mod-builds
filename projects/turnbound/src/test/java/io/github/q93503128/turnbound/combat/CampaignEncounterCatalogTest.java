@@ -19,10 +19,12 @@ class CampaignEncounterCatalogTest {
     @Test
     void allV04FieldAndBossEncountersAreRuntimeAddressable() {
         assertEquals(30, CampaignEncounterCatalog.all().size());
+        int activeAllies = CampaignProgressStore.activeParty(playerId).size();
+        assertTrue(activeAllies >= 1 && activeAllies <= 4);
         for (var encounter : CampaignEncounterCatalog.all()) {
             assertTrue(CampaignEncounterCatalog.contains(encounter.id()));
             BattleState state = CampaignEncounterCatalog.createBattle(playerId, encounter.id());
-            assertEquals(4 + encounter.enemies().size(), state.combatants().size());
+            assertEquals(activeAllies + encounter.enemies().size(), state.combatants().size());
             assertTrue(state.combatants().stream().filter(c -> c.side() == CombatantSide.ENEMY).count() <= 5);
         }
     }

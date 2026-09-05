@@ -14,12 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** World-first battle UI. Persistent information stays on the edges; actors remain the primary target surface. */
+/**
+ * World-first battle UI.  Reference-game hierarchy is deliberate:
+ * world actors and target markers first, tiny party state at the bottom, current actions at the lower-right.
+ */
 public final class BattleScreen extends Screen {
     private static final int DEEP = 0xD80A0D12;
     private static final int TEXT = 0xFFF4F0E6;
     private static final int SECONDARY = 0xFFAEB7C6;
-    private static final int HP = 0xFFE65A5A;
+    private static final int HP = 0xFF61E24B;
     private static final int HEAL = 0xFF62D39A;
     private static final int GAUGE = 0xFF6DC6FF;
     private static final int MUTED = 0xFF707987;
@@ -59,7 +62,7 @@ public final class BattleScreen extends Screen {
         }
         var auto = layout.autoButton();
         autoButton = addRenderableWidget(new BattleHudButton(auto.x(), auto.y(), auto.width(), auto.height(),
-                Component.literal("AUTO"), HEAL, ignored -> toggleAuto()));
+                Component.literal("자동"), HEAL, ignored -> toggleAuto()));
         var speed = layout.speedButton();
         speedButton = addRenderableWidget(new BattleHudButton(speed.x(), speed.y(), speed.width(), speed.height(),
                 Component.literal("×1"), GAUGE, ignored -> toggleSpeed()));
@@ -116,7 +119,7 @@ public final class BattleScreen extends Screen {
         }
 
         BattleControlRules.State controls = BattleControlRules.state(snapshot);
-        autoButton.setMessage(Component.literal(controls.autoLabel()));
+        autoButton.setMessage(Component.literal(controls.autoLabel().replace("AUTO", "자동")));
         speedButton.setMessage(Component.literal(controls.speedLabel()));
         fleeButton.setMessage(Component.literal(controls.fleeLabel()));
         autoButton.visible = !settingsOpen && !snapshot.finished();
@@ -238,18 +241,23 @@ public final class BattleScreen extends Screen {
     private void toggleAuto() {
         var snapshot = ClientBattleState.snapshot();
         if (settingsOpen || snapshot.finished() || !snapshot.autoAllowed()) return;
-        clearSelection(true); send("AUTO");
+        clearSelection(true);
+        send("AUTO");
     }
+
     private void toggleSpeed() {
         var snapshot = ClientBattleState.snapshot();
         if (!settingsOpen && !snapshot.finished() && snapshot.speedAllowed()) send("SPEED");
     }
+
     private void flee() {
         if (settingsOpen) return;
         var snapshot = ClientBattleState.snapshot();
         if (!snapshot.finished() && !snapshot.fleeAllowed()) return;
-        clearSelection(true); send("FLEE");
+        clearSelection(true);
+        send("FLEE");
     }
+
     private static void send(String command) { ClientPacketDistributor.sendToServer(new BattleCommandPayload(command)); }
 
     @Override
@@ -258,7 +266,8 @@ public final class BattleScreen extends Screen {
         if (key == GLFW.GLFW_KEY_ESCAPE) {
             settingsOpen = !settingsOpen;
             if (settingsOpen) clearSelection(true);
-            refresh(); return true;
+            refresh();
+            return true;
         }
         if (settingsOpen) return true;
         if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_5) { skill(key - GLFW.GLFW_KEY_1); return true; }
@@ -268,6 +277,7 @@ public final class BattleScreen extends Screen {
             case GLFW.GLFW_KEY_A -> { toggleAuto(); return true; }
             case GLFW.GLFW_KEY_X -> { toggleSpeed(); return true; }
             case GLFW.GLFW_KEY_R -> { flee(); return true; }
+            case GLFW.GLFW_KEY_C -> { BattleCameraController.resetView(); return true; }
             default -> { }
         }
         return super.keyPressed(event);
@@ -278,7 +288,8 @@ public final class BattleScreen extends Screen {
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             if (settingsOpen) settingsOpen = false;
             else if (!selectedSkill.isBlank()) clearSelection(true);
-            refresh(); return true;
+            refresh();
+            return true;
         }
         if (settingsOpen) return true;
         if (super.mouseClicked(event, doubleClick)) return true;
@@ -292,8 +303,11 @@ public final class BattleScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
-        if (!settingsOpen && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && !isOverInteractiveHud(event.x(), event.y())) {
-            BattleCameraController.orbit(deltaX, deltaY); return true;
+        // A selected skill turns left-click into a pure targeting gesture; no accidental camera drift while aiming.
+        if (!settingsOpen && selectedSkill.isBlank() && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                && !isOverInteractiveHud(event.x(), event.y())) {
+            BattleCameraController.orbit(deltaX, deltaY);
+            return true;
         }
         return super.mouseDragged(event, deltaX, deltaY);
     }
@@ -352,20 +366,22 @@ public final class BattleScreen extends Screen {
         if (settingsOpen) drawSettings(graphics, current, snapshot);
     }
 
+    /** Small queue tokens only; the top of the screen must not become a second HUD wall. */
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.timeline();
-        TurnboundFrameStyle.frame(graphics, panel.x(), panel.y(), panel.width(), panel.height(), GAUGE);
-        int count = Math.min(8, snapshot.timeline().size());
+        int count = Math.min(7, snapshot.timeline().size());
         if (count == 0) return;
-        int tokenWidth = Math.max(10, (panel.width() - 4) / count);
-        int x = panel.x() + 3;
+        graphics.fill(panel.x(), panel.y() + 2, panel.right(), panel.bottom() - 1, 0x50080A0E);
+        int tokenWidth = Math.max(10, panel.width() / count);
+        int x = panel.x();
         for (int i = 0; i < count; i++) {
             ClientBattleState.Unit unit = findUnit(snapshot, snapshot.timeline().get(i));
-            if (unit == null) continue;
+            if (unit == null) { x += tokenWidth; continue; }
             int color = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
-            if (unit.id().equals(snapshot.actorId())) graphics.fill(x, panel.y() + 2, x + tokenWidth - 1, panel.bottom() - 2, 0xE02A3442);
-            graphics.fill(x, panel.bottom() - 3, x + tokenWidth - 1, panel.bottom() - 2, color);
-            graphics.text(font, Component.literal(abbreviate(unit.name(), current.compact() ? 1 : 2)), x + 2, panel.y() + 5, TEXT, true);
+            if (unit.id().equals(snapshot.actorId())) graphics.fill(x + 1, panel.y() + 2, x + tokenWidth - 1, panel.bottom() - 1, 0xA02A3442);
+            graphics.fill(x + 1, panel.bottom() - 3, x + tokenWidth - 1, panel.bottom() - 1, color);
+            String name = abbreviate(unit.name(), current.compact() ? 1 : 2);
+            graphics.text(font, Component.literal(name), x + Math.max(2, (tokenWidth - font.width(name)) / 2), panel.y() + 4, TEXT, true);
             x += tokenWidth;
         }
     }
@@ -379,18 +395,29 @@ public final class BattleScreen extends Screen {
         }
     }
 
+    /** Reference-style party status: name/value + thin HP bar, with almost no chrome. */
     private void drawPartyLine(GuiGraphicsExtractor graphics, BattleHudLayout.Rect rect, ClientBattleState.Unit unit, boolean selected, boolean actor) {
-        int accent = selected ? GAUGE : actor ? GOLD : 0xFF4B5668;
-        TurnboundFrameStyle.frame(graphics, rect.x(), rect.y(), rect.width(), rect.height(), accent);
-        String name = unit.downed() ? unit.name() + " DOWN" : unit.name();
-        graphics.text(font, Component.literal(name), rect.x() + 6, rect.y() + 4, unit.downed() ? MUTED : TEXT, true);
-        int barX = rect.x() + 5, barY = rect.bottom() - 5, barW = rect.width() - 10;
-        graphics.fill(barX, barY, barX + barW, barY + 2, 0xFF080A0E);
-        int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * unit.hp() / (double)unit.maxHp());
+        int accent = selected ? GAUGE : actor ? GOLD : 0x884B5668;
+        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x42080A0E);
+        graphics.fill(rect.x(), rect.y(), rect.x() + 2, rect.bottom(), accent);
+
+        String hpText = unit.downed() ? "DOWN" : unit.hp() + "/" + unit.maxHp();
+        int hpTextW = font.width(hpText);
+        int nameMax = Math.max(12, rect.width() - hpTextW - 14);
+        String name = UiTextLayout.fit(unit.name(), nameMax);
+        graphics.text(font, Component.literal(name), rect.x() + 5, rect.y() + 2, unit.downed() ? MUTED : TEXT, true);
+        graphics.text(font, Component.literal(hpText), rect.right() - hpTextW - 4, rect.y() + 2,
+                unit.downed() ? MUTED : SECONDARY, false);
+
+        int barX = rect.x() + 4;
+        int barY = rect.bottom() - 4;
+        int barW = rect.width() - 8;
+        graphics.fill(barX, barY, barX + barW, barY + 2, 0xD0080A0E);
+        int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * Math.max(0, unit.hp()) / (double)unit.maxHp());
         if (hpW > 0) graphics.fill(barX, barY, barX + Math.min(barW, hpW), barY + 2, HP);
     }
 
-    /** Reference-game hierarchy: enemy HP and selection live next to the actual 3D actor, not in a second HUD wall. */
+    /** Enemy name/HP and target selection stay attached to the actual 3D actor. */
     private void drawWorldStatus(GuiGraphicsExtractor graphics, ClientBattleState.Snapshot snapshot) {
         for (int i = 0; i < snapshot.units().size(); i++) {
             var unit = snapshot.units().get(i);
@@ -400,56 +427,71 @@ public final class BattleScreen extends Screen {
             boolean selected = i == selectedTarget;
             boolean actor = unit.id().equals(snapshot.actorId());
             if (!enemy && !selected && !actor) continue;
+
             int cx = (int)Math.round(point.x());
             int y = (int)Math.round(point.y());
-            int barW = enemy ? 46 : 40;
-            int x = cx - barW / 2;
-            if (selected) {
-                int color = enemy ? DANGER : GAUGE;
-                String arrow = "▼";
-                graphics.text(font, Component.literal(arrow), cx - font.width(arrow) / 2, y - 15, color, true);
-            } else if (actor) {
-                graphics.text(font, Component.literal("◆"), cx - 4, y - 13, GOLD, true);
-            }
+            if (selected) drawTargetArrow(graphics, cx, y - 11, enemy ? DANGER : GAUGE);
+            else if (actor) graphics.text(font, Component.literal("◆"), cx - 4, y - 17, GOLD, true);
+
             if (enemy) {
-                String name = abbreviate(unit.name(), 9);
-                graphics.text(font, Component.literal(name), cx - font.width(name) / 2, y - 3, TEXT, true);
-                graphics.fill(x, y + 8, x + barW, y + 11, 0xE0000000);
-                int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * unit.hp() / (double)unit.maxHp());
-                if (hpW > 0) graphics.fill(x, y + 8, x + Math.min(barW, hpW), y + 11, HP);
+                int barW = 56;
+                int x = cx - barW / 2;
+                String name = UiTextLayout.fit(unit.name(), 70);
+                String hpText = unit.hp() + "/" + unit.maxHp();
+                int infoW = font.width(name) + 5 + font.width(hpText);
+                int infoX = cx - infoW / 2;
+                graphics.text(font, Component.literal(name), infoX, y - 2, TEXT, true);
+                graphics.text(font, Component.literal(hpText), infoX + font.width(name) + 5, y - 2, SECONDARY, false);
+                graphics.fill(x, y + 9, x + barW, y + 12, 0xD0000000);
+                int hpW = unit.maxHp() <= 0 ? 0 : (int)Math.round(barW * Math.max(0, unit.hp()) / (double)unit.maxHp());
+                if (hpW > 0) graphics.fill(x, y + 9, x + Math.min(barW, hpW), y + 12, HP);
             }
         }
     }
 
+    /** Large spatial target cue copied as an interaction principle, not as an art asset. */
+    private void drawTargetArrow(GuiGraphicsExtractor graphics, int cx, int tipY, int color) {
+        int shadow = 0x90000000 | (color & 0x00FFFFFF);
+        graphics.fill(cx - 3, tipY - 22, cx + 4, tipY - 9, shadow);
+        graphics.fill(cx - 2, tipY - 21, cx + 3, tipY - 8, color);
+        graphics.fill(cx - 7, tipY - 10, cx + 8, tipY - 7, shadow);
+        graphics.fill(cx - 6, tipY - 9, cx + 7, tipY - 6, color);
+        graphics.fill(cx - 4, tipY - 6, cx + 5, tipY - 3, color);
+        graphics.fill(cx - 2, tipY - 3, cx + 3, tipY, color);
+    }
+
+    /** The reference leaves only a short targeting instruction above the action buttons. */
     private void drawActionHeader(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         if (!canChooseSkill(snapshot) || settingsOpen) return;
         var rect = current.actionHeader();
-        TurnboundFrameStyle.frame(graphics, rect.x(), rect.y(), rect.width(), rect.height(), GAUGE);
-        ClientBattleState.Unit actor = findUnit(snapshot, snapshot.actorId());
-        String actorName = actor == null ? "행동" : actor.name();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        String hint = selected == null ? "스킬 선택" : BattleActionRules.needsSingleTarget(rule) && selectedTarget < 0
-                ? "대상 클릭 · 스킬 재클릭=자동" : "한 번 더 클릭 = 사용";
-        graphics.text(font, Component.literal(actorName), rect.x() + 6, rect.y() + 4, TEXT, true);
-        int hx = rect.right() - 6 - font.width(hint);
-        if (hx > rect.x() + 30) graphics.text(font, Component.literal(hint), hx, rect.y() + 4, SECONDARY, true);
+        String hint = selected == null ? "스킬을 선택하세요"
+                : BattleActionRules.needsSingleTarget(rule) && selectedTarget < 0 ? "대상을 선택하세요"
+                : "한 번 더 클릭해 사용";
+        String fitted = UiTextLayout.fit(hint, Math.max(12, rect.width() - 4));
+        int x = rect.x() + Math.max(2, (rect.width() - font.width(fitted)) / 2);
+        graphics.text(font, Component.literal(fitted), x, rect.y() + 5, selected == null ? SECONDARY : TEXT, true);
     }
 
     private void drawSkillTooltip(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot, int mouseX, int mouseY) {
         if (!canChooseSkill(snapshot) || settingsOpen) return;
         int hovered = -1;
-        for (int i = 0; i < current.skillButtons().size() && i < snapshot.skills().size(); i++) if (current.skillButtons().get(i).contains(mouseX, mouseY)) { hovered = i; break; }
+        for (int i = 0; i < current.skillButtons().size() && i < snapshot.skills().size(); i++) {
+            if (current.skillButtons().get(i).contains(mouseX, mouseY)) { hovered = i; break; }
+        }
         if (hovered < 0) return;
         ClientBattleState.Skill skill = snapshot.skills().get(hovered);
         var area = current.tooltipArea();
         List<String> lines = new ArrayList<>();
         for (String source : BattleSkillTooltip.lines(skill)) lines.addAll(wrap(source, Math.max(48, area.width() - 14)));
         int h = Math.min(area.height(), 10 + lines.size() * 11);
+        graphics.fill(area.x(), area.y(), area.right(), area.y() + h, DEEP);
         TurnboundFrameStyle.frame(graphics, area.x(), area.y(), area.width(), h, GAUGE);
         int y = area.y() + 6;
         for (int i = 0; i < lines.size() && y + 9 <= area.y() + h; i++) {
-            graphics.text(font, Component.literal(lines.get(i)), area.x() + 7, y, i == 0 ? TEXT : SECONDARY, true); y += 11;
+            graphics.text(font, Component.literal(lines.get(i)), area.x() + 7, y, i == 0 ? TEXT : SECONDARY, true);
+            y += 11;
         }
     }
 
@@ -459,7 +501,10 @@ public final class BattleScreen extends Screen {
         StringBuilder current = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (current.length() > 0 && font.width(current.toString() + c) > maxWidth) { lines.add(current.toString()); current.setLength(0); }
+            if (current.length() > 0 && font.width(current.toString() + c) > maxWidth) {
+                lines.add(current.toString());
+                current.setLength(0);
+            }
             current.append(c);
         }
         if (!current.isEmpty()) lines.add(current.toString());
@@ -469,29 +514,44 @@ public final class BattleScreen extends Screen {
     private void drawResult(GuiGraphicsExtractor graphics, ClientBattleState.Snapshot snapshot) {
         if (!snapshot.finished()) return;
         String line = ("ALLY_VICTORY".equals(snapshot.outcome()) ? "승리" : "패배") + "  ·  R 복귀";
-        int w = font.width(line) + 20, x = (width - w) / 2, y = height / 2 - 10;
+        int w = font.width(line) + 20;
+        int x = (width - w) / 2;
+        int y = height / 2 - 10;
         TurnboundFrameStyle.frame(graphics, x, y, w, 22, "ALLY_VICTORY".equals(snapshot.outcome()) ? HEAL : DANGER);
         graphics.text(font, Component.literal(line), x + 10, y + 7, TEXT, true);
     }
 
     private void drawSettings(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.settingsPanel();
+        graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), DEEP);
         TurnboundFrameStyle.frame(graphics, panel.x(), panel.y(), panel.width(), panel.height(), GAUGE);
-        int x = panel.x() + 12, y = panel.y() + 10;
-        graphics.text(font, Component.literal("전투 설정"), x, y, TEXT, true);
-        graphics.text(font, Component.literal("드래그 회전 · 휠 줌"), x, y + 18, SECONDARY, true);
+        int x = panel.x() + 12;
+        int y = panel.y() + 10;
+        graphics.text(font, Component.literal("전투 조작"), x, y, TEXT, true);
+        graphics.text(font, Component.literal("빈 공간 드래그 회전 · 휠 줌 · C 카메라 초기화"), x, y + 18, SECONDARY, true);
         graphics.text(font, Component.literal("캐릭터/Tab 대상 · 같은 대상 2번 = 사용"), x, y + 34, SECONDARY, true);
         graphics.text(font, Component.literal("같은 스킬 2번 = 자동 대상 후 사용 · Enter 확정"), x, y + 50, SECONDARY, true);
         String controls = (snapshot.autoAllowed() ? "A 자동" : "A 자동 잠금") + " · "
                 + (snapshot.speedAllowed() ? "X 배속" : "X 배속 잠금") + " · "
                 + (snapshot.fleeAllowed() ? "R 도주" : "R 도주 불가");
         graphics.text(font, Component.literal(controls), x, y + 68, SECONDARY, true);
-        graphics.text(font, Component.literal("RMB 선택 취소 · Esc 닫기"), x, y + 86, MUTED, true);
+        graphics.text(font, Component.literal("우클릭 선택 취소 · Esc 닫기"), x, y + 86, MUTED, true);
     }
 
-    private BattleHudLayout.Layout currentLayout() { if (layout == null) layout = BattleHudLayout.calculate(width, height); return layout; }
-    private static ClientBattleState.Unit findUnit(ClientBattleState.Snapshot snapshot, String id) { for (var unit : snapshot.units()) if (unit.id().equals(id)) return unit; return null; }
-    private static String abbreviate(String value, int max) { return value.substring(0, Math.min(max, value.length())); }
+    private BattleHudLayout.Layout currentLayout() {
+        if (layout == null) layout = BattleHudLayout.calculate(width, height);
+        return layout;
+    }
+
+    private static ClientBattleState.Unit findUnit(ClientBattleState.Snapshot snapshot, String id) {
+        for (var unit : snapshot.units()) if (unit.id().equals(id)) return unit;
+        return null;
+    }
+
+    private static String abbreviate(String value, int max) {
+        return value.substring(0, Math.min(max, value.length()));
+    }
+
     @Override public boolean shouldCloseOnEsc() { return false; }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() { }
