@@ -60,12 +60,6 @@ public final class SettlementWorkerService {
     // entity/evidence queries every 10 ticks wasted time in healthy saves; 200 still divides the
     // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.
     private static final int DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200;
-    private static final int MAX_LOGS_PER_WORK = 16;
-    private static final int MAX_STONE_PER_WORK = 16;
-    private static final int LUMBER_WORK_PERIOD_TICKS = 100;
-    private static final int FARM_WORK_PERIOD_TICKS = 120;
-    private static final int QUARRY_WORK_PERIOD_TICKS = 80;
-    private static final int MINING_WORK_PERIOD_TICKS = 160;
     // Close-range remote work prevents a valid physical resource from becoming unusable
     // merely because leaves, fencing, or rough terrain blocks the final standing cell.
     // This is deliberately bounded: distant resources still require normal pathfinding.
@@ -506,14 +500,16 @@ public final class SettlementWorkerService {
         // next target cannot inherit movement toward the already-harvested trunk.
         worker.getNavigation().stop();
         MOVEMENT_WATCHES.remove(worker.getUUID());
-        if (!workDue(level, camp, LUMBER_WORK_PERIOD_TICKS)) return;
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        if (!workDue(level, camp, SettlementProductionEfficiencyService.lumberWorkPeriod(efficiencyGrade))) return;
         Item item = level.getBlockState(target).getBlock().asItem();
         int room = cargoRoom(worker, item);
         if (room <= 0) {
             deliverToWorksiteStorage(level, data, worker, camp, carried);
             return;
         }
-        ItemStack harvested = harvestVerticalTrunk(level, data, target, item, Math.min(MAX_LOGS_PER_WORK, room));
+        ItemStack harvested = harvestVerticalTrunk(level, data, target, item,
+                Math.min(SettlementProductionEfficiencyService.lumberBatch(efficiencyGrade), room));
         if (!harvested.isEmpty() && appendCargo(worker, harvested)) worker.swing(InteractionHand.MAIN_HAND);
     }
 
@@ -533,12 +529,17 @@ public final class SettlementWorkerService {
             moveNear(level, worker, farm.workCenter(), 0.88D);
             return;
         }
-        if (!workDue(level, farm, FARM_WORK_PERIOD_TICKS)) return;
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        int farmPeriod = SettlementProductionEfficiencyService.farmWorkPeriod(efficiencyGrade);
+        if (!workDue(level, farm, farmPeriod)) return;
         BuildingType type = farm.buildingType();
         if (type == null) return;
         int room = cargoRoom(worker, Items.WHEAT);
         int harvested = 0;
         int replanted = 0;
+        int grown = 0;
+        int growthModulo = SettlementProductionEfficiencyService.farmGrowthModulo(efficiencyGrade);
+        long tendingCycle = level.getGameTime() / Math.max(10L, farmPeriod);
         for (int x = 0; x < type.width(); x++) {
             for (int z = 0; z < type.depth(); z++) {
                 BlockPos crop = farm.localToWorld(x, 1, z);
@@ -549,9 +550,21 @@ public final class SettlementWorkerService {
                     if (level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3)) replanted++;
                     continue;
                 }
-                if (harvested >= room || !state.is(Blocks.WHEAT)
-                        || !state.hasProperty(BlockStateProperties.AGE_7)
-                        || state.getValue(BlockStateProperties.AGE_7) < 7) continue;
+                if (!state.is(Blocks.WHEAT) || !state.hasProperty(BlockStateProperties.AGE_7)) continue;
+                int age = state.getValue(BlockStateProperties.AGE_7);
+                if (age < 7) {
+                    // A staffed Frontier farm actively tends crops. Vanilla random ticks still help,
+                    // but are no longer the sole production clock. Deterministic cohorts avoid a burst
+                    // of 80+ block updates on early farms while higher settlement tiers tend more rows.
+                    long cohortKey = (long)x * 31L + (long)z * 17L
+                            + (long)farm.originX() * 7L + (long)farm.originZ() * 13L + tendingCycle;
+                    if (Math.floorMod(cohortKey, growthModulo) == 0L
+                            && level.setBlock(crop, state.setValue(BlockStateProperties.AGE_7, Math.min(7, age + 1)), 2)) {
+                        grown++;
+                    }
+                    continue;
+                }
+                if (harvested >= room) continue;
                 if (level.setBlock(crop, Blocks.WHEAT.defaultBlockState(), 3)) harvested++;
             }
         }
@@ -559,6 +572,7 @@ public final class SettlementWorkerService {
             if (appendCargo(worker, new ItemStack(Items.WHEAT, harvested))) worker.swing(InteractionHand.MAIN_HAND);
             return;
         }
+        if (grown > 0) worker.swing(InteractionHand.MAIN_HAND);
         if (!worker.getMainHandItem().isEmpty() && replanted == 0) {
             deliverToWorksiteStorage(level, data, worker, farm, worker.getMainHandItem());
         }
@@ -585,14 +599,16 @@ public final class SettlementWorkerService {
         }
         worker.getNavigation().stop();
         MOVEMENT_WATCHES.remove(worker.getUUID());
-        if (!workDue(level, quarry, QUARRY_WORK_PERIOD_TICKS)) return;
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        if (!workDue(level, quarry, SettlementProductionEfficiencyService.quarryWorkPeriod(efficiencyGrade))) return;
         Item item = level.getBlockState(target).getBlock().asItem();
         int room = cargoRoom(worker, item);
         if (room <= 0) {
             deliverToWorksiteStorage(level, data, worker, quarry, carried);
             return;
         }
-        ItemStack stone = harvestStoneCluster(level, data, target, item, Math.min(MAX_STONE_PER_WORK, room));
+        ItemStack stone = harvestStoneCluster(level, data, target, item,
+                Math.min(SettlementProductionEfficiencyService.quarryBatch(efficiencyGrade), room));
         if (!stone.isEmpty() && appendCargo(worker, stone)) worker.swing(InteractionHand.MAIN_HAND);
     }
 
@@ -609,7 +625,8 @@ public final class SettlementWorkerService {
             moveNear(level, worker, work, 0.86D);
             return;
         }
-        if (!workDue(level, mine, MINING_WORK_PERIOD_TICKS)) return;
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        if (!workDue(level, mine, SettlementProductionEfficiencyService.mineWorkPeriod(efficiencyGrade))) return;
         Item expected = carried.isEmpty() ? null : carried.getItem();
         BlockPos ore = findOreBelow(level, data, work, expected);
         if (ore == null) {

@@ -15,7 +15,7 @@ import java.util.List;
 public final class BuildingPaletteScreen extends Screen {
     private enum Category {
         FOUNDATION("기반", "주거와 저장 기반", List.of(BuildingType.HOUSE, BuildingType.WAREHOUSE)),
-        PRODUCTION("생산", "목재·식량·석재·광물", List.of(BuildingType.LUMBER_CAMP, BuildingType.FARM, BuildingType.QUARRY, BuildingType.MINE)),
+        PRODUCTION("생산", "목재·식량·석재·광물 · 마을 단계에 따라 기존 시설 자동 개량", List.of(BuildingType.LUMBER_CAMP, BuildingType.FARM, BuildingType.QUARRY, BuildingType.MINE)),
         SERVICES("제작·서비스", "제작, 건설 지원, 교역과 운송", List.of(
                 BuildingType.CONSTRUCTION_OFFICE, BuildingType.BLACKSMITH, BuildingType.WORKSHOP,
                 BuildingType.ADVANCED_WORKSHOP, BuildingType.MARKET, BuildingType.CART_STATION)),

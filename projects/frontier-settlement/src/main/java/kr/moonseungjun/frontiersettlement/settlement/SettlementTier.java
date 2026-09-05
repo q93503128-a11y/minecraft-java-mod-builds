@@ -30,14 +30,15 @@ public enum SettlementTier {
                 && data.explorationScore() >= 7;
         if (frontierCapital) return FRONTIER_CAPITAL;
 
+        boolean matureFoodBase = hasMatureFoodBase(data);
         boolean legacyDomain = data.population() >= 16
                 && data.outposts().size() >= 4
                 && data.buildingCount(BuildingType.MINE) >= 1
-                && data.buildingCount(BuildingType.FARM) >= 2;
+                && matureFoodBase;
         boolean explorationDomain = data.population() >= 14
                 && data.outposts().size() >= 3
                 && data.buildingCount(BuildingType.MINE) >= 1
-                && data.buildingCount(BuildingType.FARM) >= 2
+                && matureFoodBase
                 && data.explorationScore() >= 5;
         if (legacyDomain || explorationDomain) return DOMAIN;
 
@@ -66,5 +67,12 @@ public enum SettlementTier {
         }
 
         return CAMP;
+    }
+
+    private static boolean hasMatureFoodBase(SettlementData data) {
+        int farms = data.buildingCount(BuildingType.FARM);
+        // Existing two-farm saves remain valid, but a warehouse-backed upgraded farm now represents
+        // the same mature food-economy milestone without consuming a second 13x11 footprint.
+        return farms >= 2 || (farms >= 1 && data.buildingCount(BuildingType.WAREHOUSE) >= 1);
     }
 }

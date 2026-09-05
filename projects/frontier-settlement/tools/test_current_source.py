@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.105" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.106" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -70,6 +70,14 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
+production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")
+require("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")
+require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")
+require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")
+require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")
+require("state.setValue(BlockStateProperties.AGE_7, Math.min(7, age + 1))" in worker, "staffed farm does not actively tend crop growth")
+for stale in ("FARM_WORK_PERIOD_TICKS", "LUMBER_WORK_PERIOD_TICKS", "QUARRY_WORK_PERIOD_TICKS", "MINING_WORK_PERIOD_TICKS"):
+    require(stale not in worker, f"stale fixed production pacing authority returned: {stale}")
 
 service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementGuidanceService.nextGoal(player.level().getServer(), data)" in service, "guidance is missing server authority")
@@ -79,6 +87,7 @@ require("List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(leve
 
 palette = text(JAVA / "client/BuildingPaletteScreen.java")
 require("civilUnlocked" not in palette, "client still owns partial civil unlock logic")
+require("기존 시설 자동 개량" in palette, "production vertical progression is hidden from the build palette")
 
 commands = text(JAVA / "command/SettlementCommands.java")
 require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in commands, "status shows stale barracks food cost")
@@ -130,4 +139,7 @@ logistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")
 require("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")
 require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")
 
-print("CURRENT SOURCE CHECK PASS: alpha105 runtime optimization + alpha104 full flatten + prior authority invariants")
+tier = text(SETTLEMENT / "SettlementTier.java")
+require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
+
+print("CURRENT SOURCE CHECK PASS: alpha106 production density + active farm tending + prior authority invariants")

@@ -144,10 +144,7 @@ public final class SettlementContextService {
     private static String buildingDetail(BuildingType type, SettlementData data) {
         return switch (type) {
             case HOUSE -> "완공 · 주거 +" + type.housingGain();
-            case LUMBER_CAMP -> "완공 · 자동 벌목";
-            case FARM -> "완공 · 자동 식량 생산";
-            case QUARRY -> "완공 · 자동 채석";
-            case MINE -> "완공 · 유한 광석 생산";
+            case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data);
             case WAREHOUSE -> "완공 · 실물 저장";
             case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
             case BLACKSMITH -> "완공 · 장비 지원";
