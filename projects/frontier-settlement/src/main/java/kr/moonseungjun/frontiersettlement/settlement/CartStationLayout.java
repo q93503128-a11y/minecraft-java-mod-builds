@@ -13,6 +13,8 @@ public final class CartStationLayout {
 
     private CartStationLayout() {}
 
+    public static int freightSlotCount() { return FREIGHT.length; }
+
     public static List<BlockPos> freightPositions(BlockPos origin) {
         List<BlockPos> result = new ArrayList<>(FREIGHT.length);
         for (int[] local : FREIGHT) result.add(origin.offset(local[0], local[1], local[2]));

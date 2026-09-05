@@ -13,13 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
-/**
- * Alpha.49-51 bounded selected-area civil works.
- *
- * Alpha.49 established project-local cut-to-fill earth relocation. Alpha.50 added physical imported
- * dirt/coarse-dirt hauling. Alpha.51 expands the bounded envelope and adds retaining-heavy terraces
- * whose exact cobblestone is physically hauled by the same shared construction worker.
- */
+/** Bounded selected-area civil works using one project state and the shared construction worker. */
 public final class SettlementCivilWorkService {
     public static final int MAX_WIDTH = 17;
     public static final int MAX_DEPTH = 17;
@@ -74,20 +68,20 @@ public final class SettlementCivilWorkService {
         long depthLong = (long) maxZ - minZ + 1L;
         if (widthLong <= 0L || depthLong <= 0L
                 || widthLong > MAX_WIDTH || depthLong > MAX_DEPTH || widthLong * depthLong > MAX_AREA) {
-            return invalid("토목 1회 범위는 최대 17×17입니다.");
+            return invalid("토목 1회 범위는 최대 " + MAX_WIDTH + "×" + MAX_DEPTH + "입니다.");
         }
         int width = (int) widthLong;
         int depth = (int) depthLong;
 
         if (!withinHorizontalDistance(player.blockPosition(), first, MAX_PLAYER_DISTANCE)
                 || !withinHorizontalDistance(player.blockPosition(), second, MAX_PLAYER_DISTANCE)) {
-            return invalid("토목 영역은 플레이어 44블록 안에서 지정해 주세요.");
+            return invalid("토목 영역은 플레이어 " + MAX_PLAYER_DISTANCE + "블록 안에서 지정해 주세요.");
         }
         int centerX = (int) ((long) minX + ((long) maxX - minX) / 2L);
         int centerZ = (int) ((long) minZ + ((long) maxZ - minZ) / 2L);
         BlockPos center = new BlockPos(centerX, first.getY(), centerZ);
         if (!withinHorizontalDistance(settlement.centerPos(), center, MAX_SETTLEMENT_RADIUS)) {
-            return invalid("본진 토목 영역은 마을 중심 112블록 안에서 지정해 주세요.");
+            return invalid("본진 토목 영역은 마을 중심 " + MAX_SETTLEMENT_RADIUS + "블록 안에서 지정해 주세요.");
         }
         if (overlapsInfrastructure(settlement, minX - 1, maxX + 1, minZ - 1, maxZ + 1)) {
             return invalid("선택영역 또는 옹벽 보호 1칸 범위가 기존 건물·도로·전초기지·공동 창고와 겹칩니다.");
@@ -104,7 +98,7 @@ public final class SettlementCivilWorkService {
                 int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
                 long delta = (long) surfaceY - gradeY;
                 if (delta > MAX_CUT_DEPTH || delta < -MAX_FILL_DEPTH) {
-                    return invalid("각 지점의 절토·성토 높이 차는 최대 7블록입니다.");
+                    return invalid("각 지점의 높이 차는 절토 최대 " + MAX_CUT_DEPTH + "블록 · 성토 최대 " + MAX_FILL_DEPTH + "블록입니다.");
                 }
                 String safety = validateColumn(level, x, z, surfaceY, gradeY);
                 if (safety != null) return invalid(safety);

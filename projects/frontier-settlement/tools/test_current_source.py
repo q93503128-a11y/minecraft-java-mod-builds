@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.99" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.100" in gradle, "current verifier/version drift")
 
 construction = text(SETTLEMENT / "SettlementConstructionService.java")
 for retired in (
@@ -60,6 +60,17 @@ require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in
 require("SettlementExplorationBenefitService.forgePower(data)" in commands, "status shows stale forge power")
 require("SettlementExplorationBenefitService.reforgePower(data)" in commands, "status shows stale reforge power")
 
+cart_layout = text(SETTLEMENT / "CartStationLayout.java")
+cart_service = text(SETTLEMENT / "SettlementCartStationService.java")
+require("freightSlotCount()" in cart_layout, "cart freight slot count is not authoritative")
+require("MAX_ROAD_DISTANCE = 12" in cart_service and '" + MAX_ROAD_DISTANCE + "' in cart_service, "cart road range display duplicates its balance")
+require("최대 17×17" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil size display duplicates current constants")
+require("플레이어 44블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil player range display duplicates current constant")
+require("마을 중심 112블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil settlement range display duplicates current constant")
+require("절토·성토 높이 차는 최대 7블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil height display duplicates current constants")
+require("CartStationLayout.freightSlotCount()" in commands, "status duplicates cart-station freight count")
+require("SettlementCivilWorkService.MAX_WIDTH" in commands and "SettlementCivilWorkService.MAX_CUT_DEPTH" in commands, "status duplicates civil-work limits")
+
 require(not (SETTLEMENT / "SettlementResidentRoutineService.java").exists(), "retired night navigation authority still exists")
 require("__pycache__/" in text(ROOT / ".gitignore"), "Python cache ignore missing")
 require(not any((ROOT / "tools").rglob("*.pyc")), "generated pyc committed in tools")
@@ -83,4 +94,4 @@ for retired in retired_mutators:
 integrity = text(SETTLEMENT / "SettlementBuildingIntegrityService.java")
 require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")
 
-print("CURRENT SOURCE CHECK PASS: alpha99 authority cleanup invariants")
+print("CURRENT SOURCE CHECK PASS: alpha100 authority cleanup invariants")

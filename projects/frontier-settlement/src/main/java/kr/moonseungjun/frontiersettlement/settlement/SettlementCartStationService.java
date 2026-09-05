@@ -8,7 +8,8 @@ import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 /** Cart-station rules that deliberately do not become a second transport navigation authority. */
 public final class SettlementCartStationService {
-    private static final long MAX_ROAD_DISTANCE_SQR = 12L * 12L;
+    public static final int MAX_ROAD_DISTANCE = 12;
+    private static final long MAX_ROAD_DISTANCE_SQR = (long) MAX_ROAD_DISTANCE * MAX_ROAD_DISTANCE;
 
     private SettlementCartStationService() {}
 
@@ -32,7 +33,7 @@ public final class SettlementCartStationService {
                 if (best <= MAX_ROAD_DISTANCE_SQR) return null;
             }
         }
-        return "수레 정거장은 기존 도로에서 12블록 안쪽에 배치해 주세요.";
+        return "수레 정거장은 기존 도로에서 " + MAX_ROAD_DISTANCE + "블록 안쪽에 배치해 주세요.";
     }
 
     public static void onBreakBlock(BreakBlockEvent event) {
