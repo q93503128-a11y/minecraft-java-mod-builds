@@ -52,7 +52,7 @@ class BattleHudLayoutTest {
 
     @Test
     void referenceActionDockKeepsOneVerticalScanPathAndLowScreenCoverage() {
-        for (int[] size : new int[][]{{640,360},{854,480},{1280,720},{1920,1080}}) {
+        for (int[] size : new int[][]{{854,480},{1280,720},{1920,1080}}) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
             var skills = layout.skillButtons();
             assertFalse(layout.compact(), size[0] + "x" + size[1]);
@@ -65,6 +65,18 @@ class BattleHudLayoutTest {
             assertEquals(skills.getFirst().x(), layout.actionHeader().x());
             assertEquals(skills.getFirst().width(), layout.actionHeader().width());
             assertTrue(layout.allyBars().getFirst().height() <= size[1] * 0.06);
+        }
+    }
+
+    @Test
+    void smallerGuiViewportUsesCompactDockBeforeItBecomesAUiWall() {
+        BattleHudLayout.Layout layout = BattleHudLayout.calculate(640, 360);
+        assertTrue(layout.compact());
+        assertTrue(layout.skillButtons().getFirst().width() <= 640 * 0.20);
+        for (var skill : layout.skillButtons()) {
+            assertFalse(skill.overlaps(layout.autoButton()));
+            assertFalse(skill.overlaps(layout.speedButton()));
+            assertFalse(skill.overlaps(layout.fleeButton()));
         }
     }
 
