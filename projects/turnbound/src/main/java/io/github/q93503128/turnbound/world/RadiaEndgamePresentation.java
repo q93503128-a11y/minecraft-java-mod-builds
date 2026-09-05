@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -46,8 +47,8 @@ public final class RadiaEndgamePresentation {
                 player.sendSystemMessage(Component.literal("Challenge Board · " + mark + "/20 달성")
                         .withStyle(mark >= 20 ? ChatFormatting.GOLD : ChatFormatting.GREEN, ChatFormatting.BOLD));
                 Vec3 p = new Vec3(-121,67,-86);
-                level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y, p.z, mark >= 20 ? 30 : 14,
-                        1.0, 1.1, 1.0, 0.02);
+                PersonalPresentationIsolation.particles(level, player, ParticleTypes.HAPPY_VILLAGER,
+                        p.x, p.y, p.z, mark >= 20 ? 30 : 14, 1.0, 1.1, 1.0, 0.02);
             }
         }
 
@@ -73,15 +74,18 @@ public final class RadiaEndgamePresentation {
         for (int i = 0; i < 5; i++) {
             Vec3 p = new Vec3(-116 + i * 8, 67.1, -105);
             if (player.position().distanceToSqr(p) <= 30.0 * 30.0)
-                level.sendParticles(ParticleTypes.REVERSE_PORTAL, p.x, p.y, p.z, 2, 0.5, 0.55, 0.5, 0.005);
+                PersonalPresentationIsolation.particles(level, player, ParticleTypes.REVERSE_PORTAL,
+                        p.x, p.y, p.z, 2, 0.5, 0.55, 0.5, 0.005);
         }
         // F10/F20/F30 milestone seals are visually stronger than ordinary Rift floors.
         for (Vec3 p : List.of(new Vec3(-84,67,-88), new Vec3(-84,67,-80), new Vec3(-84,67,-72))) {
             if (player.position().distanceToSqr(p) <= 34.0 * 34.0)
-                level.sendParticles(ParticleTypes.ENCHANT, p.x, p.y, p.z, 3, 0.65, 0.65, 0.65, 0.01);
+                PersonalPresentationIsolation.particles(level, player, ParticleTypes.ENCHANT,
+                        p.x, p.y, p.z, 3, 0.65, 0.65, 0.65, 0.01);
         }
         if (player.position().distanceToSqr(new Vec3(-100,66,-69)) <= 30.0 * 30.0) {
-            level.sendParticles(ParticleTypes.END_ROD, -100, 67.2, -69, 2, 0.5, 0.8, 0.5, 0.006);
+            PersonalPresentationIsolation.particles(level, player, ParticleTypes.END_ROD,
+                    -100, 67.2, -69, 2, 0.5, 0.8, 0.5, 0.006);
         }
     }
 
