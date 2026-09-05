@@ -75,6 +75,11 @@ public final class PersonalPresentationIsolation {
     /** EntityJoinLevelEvent occurs during addFreshEntity, before normal client tracking/pairing begins. */
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
+        // Private story actors are short-lived runtime presentation only. If a crash persisted one, never resurrect it.
+        if (event.loadedFromDisk() && event.getEntity() instanceof BattleActorEntity actor && owner(actor) != null) {
+            event.setCanceled(true);
+            return;
+        }
         UUID owner = SPAWN_OWNER.get();
         if (owner == null || !(event.getEntity() instanceof BattleActorEntity actor)) return;
         markPrivate(actor, owner);
