@@ -1,0 +1,157 @@
+name: Apply Frontier Alpha101 Diamond Metal Support
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/apply-frontier-alpha101-diamond-metal.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+          cache-dependency-path: projects/frontier-settlement/**/*.gradle*
+
+      - name: Apply diamond metal support
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ROOT = Path('projects/frontier-settlement')
+          SET = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+          def one(path, old, new, label):
+              s = path.read_text(encoding='utf-8')
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              path.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          gradle = ROOT / 'gradle.properties'
+          one(gradle,
+              'mod_version=0.1.0-alpha.100',
+              'mod_version=0.1.0-alpha.101',
+              'version')
+          with gradle.open('a', encoding='utf-8') as f:
+              f.write('\n# Alpha.101 economy convenience: vanilla diamonds count as high-value settlement metal while lower-value metal remains the first consumption priority.\n')
+
+          inventory = SET / 'SettlementInventory.java'
+          one(inventory,
+              '        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;\n        return 2;',
+              '        if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;\n        if (stack.is(Items.DIAMOND)) return 6;\n        return 2;',
+              'diamond metal value')
+          one(inventory,
+              '                || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.RAW_GOLD)\n                || stack.is(ExternalContentTags.C_INGOTS)',
+              '                || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.DIAMOND)\n                || stack.is(ExternalContentTags.C_INGOTS)',
+              'diamond raw metal classification')
+
+          storage = SET / 'SettlementStorageService.java'
+          one(storage,
+              '                || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.RAW_GOLD)\n                || stack.is(ExternalContentTags.C_INGOTS)',
+              '                || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.DIAMOND)\n                || stack.is(ExternalContentTags.C_INGOTS)',
+              'diamond physical metal extraction')
+
+          test = ROOT / 'tools/test_current_source.py'
+          s = test.read_text(encoding='utf-8')
+          if s.count('mod_version=0.1.0-alpha.100') != 1:
+              raise SystemExit('current verifier version anchor drift')
+          s = s.replace('mod_version=0.1.0-alpha.100', 'mod_version=0.1.0-alpha.101', 1)
+          marker = '\nconstruction = text(SETTLEMENT / "SettlementConstructionService.java")\n'
+          checks = '''\ninventory = text(SETTLEMENT / "SettlementInventory.java")\nstorage = text(SETTLEMENT / "SettlementStorageService.java")\nrequire("if (stack.is(Items.DIAMOND)) return 6;" in inventory, "diamond metal value missing or drifted")\nrequire(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not included in settlement metal classification")\nrequire("stack.is(Items.DIAMOND)" in storage, "diamond is counted as metal but unavailable to physical metal extraction")\nrequire("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")\n'''
+          if checks.strip() not in s:
+              if s.count(marker) != 1:
+                  raise SystemExit('current verifier insertion marker drift')
+              s = s.replace(marker, checks + marker, 1)
+          s = s.replace('CURRENT SOURCE CHECK PASS: alpha100 authority cleanup invariants',
+                        'CURRENT SOURCE CHECK PASS: alpha101 diamond-metal and authority invariants', 1)
+          test.write_text(s, encoding='utf-8')
+          print('Frontier alpha101 diamond metal support applied')
+          PY
+
+      - name: Current source invariant check
+        run: python3 projects/frontier-settlement/tools/test_current_source.py
+
+      - name: Validate Frontier JSON
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          files = list(Path('projects/frontier-settlement/src/main/resources').rglob('*.json'))
+          for p in files:
+              json.loads(p.read_text(encoding='utf-8'))
+          print('JSON VALIDATION PASS:', len(files), 'JSON files')
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: ./gradlew --no-daemon clean build
+
+      - name: Verify built JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jars = [p for p in Path('projects/frontier-settlement/build/libs').glob('frontier_settlement-0.1.0-alpha.101.jar')]
+          if len(jars) != 1:
+              raise SystemExit(f'expected exactly one alpha101 jar, found {jars}')
+          jar = jars[0]
+          with zipfile.ZipFile(jar) as z:
+              names = z.namelist()
+              if len(names) != len(set(names)):
+                  raise SystemExit('duplicate JAR entries detected')
+              required = [
+                  'META-INF/neoforge.mods.toml',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementInventory.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.class',
+              ]
+              missing = [x for x in required if x not in names]
+              if missing:
+                  raise SystemExit(f'missing required JAR entries: {missing}')
+          print('JAR VERIFY PASS:', jar, jar.stat().st_size, 'bytes')
+          PY
+
+      - name: Commit Alpha101 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/gradle.properties \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementInventory.java \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementStorageService.java \
+                  projects/frontier-settlement/tools/test_current_source.py
+          git diff --cached --check
+          git commit -m 'Treat diamonds as high-value settlement metal'
+          git push origin HEAD:main
+
+      - name: Upload tested Alpha101 JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-0.1.0-alpha.101-tested
+          path: projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.101.jar
+          if-no-files-found: error
+
+      - name: Remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/apply-frontier-alpha101-diamond-metal.yml
+          git commit -m 'Remove Frontier alpha101 apply workflow'
+          git push origin HEAD:main
