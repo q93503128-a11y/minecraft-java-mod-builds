@@ -1306,6 +1306,16 @@ public final class SettlementConstructionService {
         return false;
     }
 
+    private static boolean withinConstructionProtectionEnvelope(ConstructionState construction, BuildingType type,
+                                                               BuildingRotation rotation, BlockPos pos) {
+        int width = rotation.rotatedWidth(type), depth = rotation.rotatedDepth(type);
+        BlockPos origin = construction.origin();
+        if (pos.getX() < origin.getX() - SITE_WORK_MARGIN || pos.getX() > origin.getX() + width + SITE_WORK_MARGIN) return false;
+        if (pos.getZ() < origin.getZ() - SITE_WORK_MARGIN || pos.getZ() > origin.getZ() + depth + SITE_WORK_MARGIN) return false;
+        return pos.getY() >= origin.getY() - MAX_GRADE_FILL_DEPTH - 2
+                && pos.getY() <= origin.getY() + type.clearHeight() + MAX_SCAFFOLD_STEP + 2;
+    }
+
     public static void onBreakBlock(BreakBlockEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
@@ -1319,6 +1329,7 @@ public final class SettlementConstructionService {
         BlockPos pos = event.getPos();
         BlockPos supply = supplyPosition(construction.origin(), type, rotation);
         BlockState current = level.getBlockState(pos);
+        if (!pos.equals(supply) && !withinConstructionProtectionEnvelope(construction, type, rotation, pos)) return;
 
         if ((pos.equals(supply) && current.is(Blocks.BARREL))
                 || isProtectedScaffoldBlock(level, construction, type, supply, pos)) {

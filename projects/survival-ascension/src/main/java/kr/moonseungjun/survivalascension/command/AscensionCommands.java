@@ -7,6 +7,7 @@ import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
+import kr.moonseungjun.survivalascension.mining.BoreMiningService;
 import kr.moonseungjun.survivalascension.production.FieldDepotData;
 import kr.moonseungjun.survivalascension.production.FieldDepotService;
 import kr.moonseungjun.survivalascension.production.FieldRecoveryData;
@@ -32,6 +33,7 @@ public final class AscensionCommands {
         event.getDispatcher().register(Commands.literal("ascension")
                 .then(Commands.literal("stats").executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(Commands.literal("content").executes(context -> showContent(context.getSource().getPlayerOrException())))
+                .then(Commands.literal("borestats").executes(context -> showBoreStats(context.getSource().getPlayerOrException())))
                 .then(Commands.literal("mythic")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("spawn").executes(context -> EliteMobSystem.spawnTestMythic(context.getSource().getPlayerOrException()))))
@@ -50,6 +52,11 @@ public final class AscensionCommands {
                         .then(Commands.argument("level", IntegerArgumentType.integer(0, SkillTuning.MAX_LEVEL))
                                 .executes(context -> setLevel(context.getSource().getPlayerOrException(), skill,
                                         IntegerArgumentType.getInteger(context, "level")))));
+    }
+
+    private static int showBoreStats(ServerPlayer player) {
+        for (String line : BoreMiningService.profileLines(player)) player.sendSystemMessage(Component.literal(line));
+        return 1;
     }
 
     private static int showContent(ServerPlayer player) {

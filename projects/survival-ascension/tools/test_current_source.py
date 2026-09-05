@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.16-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.17-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.16-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.17-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -147,6 +147,17 @@ require("setChunkForced" not in locator and "addRegionTicket" not in locator, "T
 require("FractureShrineTargetPayload.TYPE" in network and "installFractureShrineReceiver" in network, "TBOS locator packet missing")
 require("ClientFractureShrineState" in hud and "균열 성소" in hud and "예상" in hud, "TBOS locator HUD missing")
 
+bore = text(JAVA / "mining/BoreMiningService.java")
+automated_break = text(JAVA / "progress/AutomatedToolBreak.java")
+commands = text(JAVA / "command/AscensionCommands.java")
+require("GLOBAL_SOFT_TIME_BUDGET_NANOS = 6_000_000L" in bore and "LOCAL_SOFT_TIME_BUDGET_NANOS = 4_000_000L" in bore, "bore time budget missing")
+require("LOCAL_HARD_BLOCK_CAP_PER_TICK = 12" in bore and "now + predicted > localDeadline" in bore, "adaptive predictive stop missing")
+require("removePending(job.playerId, removed)" in bore and "removePending(job.playerId, 1)" not in bore, "pending-count batching regressed")
+require("TimedBreakResult" in automated_break and "player.gameMode.destroyBlock(target)" in automated_break, "manual-equivalent destroy path/profiler missing")
+require("setBlock(target" not in bore and "setChunkForced" not in bore and "addRegionTicket" not in bore, "bore bypass/force-load returned")
+require("pipelineP95Nanos" in bore and "sliceP99Nanos" in bore, "bore percentile profiler missing")
+require("borestats" in commands and "BoreMiningService.profileLines" in commands, "bore runtime profile command missing")
+
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
 require("FORMATION_INTERVAL = 200" in warband, "warband formation cadence drift")
@@ -160,4 +171,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.16 soft TBOS shrine locator + protocol15 + prior runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.17 adaptive bore budget/profiling + protocol15 + prior runtime invariants")

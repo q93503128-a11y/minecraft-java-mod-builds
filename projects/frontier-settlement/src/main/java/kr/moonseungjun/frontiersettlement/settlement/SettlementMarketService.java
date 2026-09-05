@@ -181,6 +181,7 @@ public final class SettlementMarketService {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
         if (level != server.overworld()) return;
+        if (!event.getState().is(Blocks.BARREL)) return;
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return;
         BlockPos pos = event.getPos();

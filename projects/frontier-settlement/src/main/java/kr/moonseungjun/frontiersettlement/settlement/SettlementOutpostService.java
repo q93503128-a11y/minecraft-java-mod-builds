@@ -508,6 +508,8 @@ public final class SettlementOutpostService {
         if (!state.active()) return;
 
         BlockPos pos = event.getPos();
+        if (Math.abs(pos.getX() - state.gateX()) > 16 || Math.abs(pos.getZ() - state.gateZ()) > 16
+                || Math.abs(pos.getY() - state.gateY()) > 20) return;
         BlockState current = level.getBlockState(pos);
         List<OutpostBlueprints.Placement> plan = OutpostBlueprints.create(state);
         int builtCount;

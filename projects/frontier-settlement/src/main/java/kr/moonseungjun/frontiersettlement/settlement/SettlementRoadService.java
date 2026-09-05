@@ -697,6 +697,33 @@ public final class SettlementRoadService {
         return true;
     }
 
+    private static boolean withinActiveRoadProtectionEnvelope(RoadConstructionState road, BlockPos pos) {
+        List<Integer> path = road.path();
+        if (path != null && path.size() >= 3) {
+            for (int i = 0; i + 2 < path.size(); i += 3) {
+                if (Math.abs(pos.getX() - path.get(i)) <= 4
+                        && Math.abs(pos.getZ() - path.get(i + 2)) <= 4
+                        && Math.abs(pos.getY() - path.get(i + 1)) <= 12) return true;
+            }
+        } else {
+            for (int i = 0; i < road.length(); i++) {
+                int x = road.startX() + road.directionX() * i;
+                int z = road.startZ() + road.directionZ() * i;
+                if (Math.abs(pos.getX() - x) <= 4 && Math.abs(pos.getZ() - z) <= 4
+                        && Math.abs(pos.getY() - road.startY()) <= 12) return true;
+            }
+        }
+        List<Integer> supports = road.bridgeSupports();
+        if (supports != null) {
+            for (int i = 0; i + 2 < supports.size(); i += 3) {
+                if (Math.abs(pos.getX() - supports.get(i)) <= 2
+                        && Math.abs(pos.getZ() - supports.get(i + 2)) <= 2
+                        && Math.abs(pos.getY() - supports.get(i + 1)) <= 16) return true;
+            }
+        }
+        return false;
+    }
+
     public static void onBreakBlock(BreakBlockEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
@@ -705,6 +732,7 @@ public final class SettlementRoadService {
         RoadConstructionState road = data.roadConstruction();
         if (!road.active()) return;
         BlockPos pos = event.getPos();
+        if (!withinActiveRoadProtectionEnvelope(road, pos)) return;
         BlockState current = level.getBlockState(pos);
         for (TunnelCell cell : tunnelExcavationPlan(road)) {
             if (cell.target().equals(pos) && !current.isAir()) {

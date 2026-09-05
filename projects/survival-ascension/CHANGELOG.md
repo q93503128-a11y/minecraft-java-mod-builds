@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.17-alpha.1
+- Replaced the fixed-count-only tunnel scheduler with a 6 ms global / 4 ms per-job soft server-thread time budget plus EWMA prediction before starting another full vanilla break pipeline. The existing 12-target local hard cap remains only a secondary safety ceiling.
+- Kept `ServerPlayerGameMode.destroyBlock` authoritative for every eligible tunnel block, preserving NeoForge break cancellation, Silk Touch/Fortune/loot, item/XP drops, durability policy, stats/advancements, normal neighbor/light/fluid behavior and client synchronization. No chunk force-loading was added.
+- Added per-job runtime profiling for target generation, validation, reduced-wear bookkeeping, the complete vanilla/NeoForge destroy pipeline, and scheduler-slice p95/p99/max. `/ascension borestats` reports the latest completed job.
+- Frontier Settlement Alpha.113 adds cheap physical envelope/type gates before expensive settlement break-protection plan reconstruction, removing a confirmed cross-mod amplification path triggered once per automatically mined block.
+- Network protocol remains 15. Tunnel geometry, hardness gate, drops, enchantment semantics and the one-normal-wear-per-four-successful-extra-block policy are unchanged.
+
 ## 0.61.16-alpha.1
 - Added a soft TBOS Fracture Shrine direction/distance tracker. Built shrine SavedData gives exact coordinates; unopened shrine plans are labeled `예상` until TBOS resolves the final dry-surface placement.
 - The bridge is reflection-only, never force-loads or materializes shrine chunks, and clears itself when `tbos` is absent. Network protocol is now 15; combat/progression rules are unchanged.

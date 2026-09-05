@@ -162,6 +162,10 @@ public final class SettlementCoreService {
             return;
         }
 
+        BlockPos center = data.centerPos();
+        if (Math.abs(pos.getX() - center.getX()) > 6 || Math.abs(pos.getZ() - center.getZ()) > 6
+                || pos.getY() < center.getY() - 1 || pos.getY() > center.getY() + 5) return;
+
         // Protect the matching civic state from every tier, not only the current tier. A temporary
         // population drop must not turn formerly automatic public works into recoverable free items.
         for (SettlementTier tier : SettlementTier.values()) {

@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.112" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.113" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -61,9 +61,17 @@ require("List<GradeCell> result = new ArrayList<>(width * depth);" in constructi
 require("현장 자재통 위치가 막혀 있습니다" in construction and "실제 건물 부지 안의 정리 칸이 막혀 있습니다" in construction,
         "placement blocker diagnostics missing")
 
+require("withinConstructionProtectionEnvelope" in construction, "construction bulk-break coarse guard missing")
+core_break = text(SETTLEMENT / "SettlementCoreService.java")
+require("Math.abs(pos.getX() - center.getX()) > 6" in core_break, "civic core still rebuilds all tier plans for remote breaks")
+waterfront_break = text(SETTLEMENT / "SettlementWaterfrontService.java")
+require("brokenState.is(Blocks.SPRUCE_SLAB)" in waterfront_break and "brokenState.is(Blocks.BARREL)" in waterfront_break, "waterfront type gate missing")
+
 road = text(SETTLEMENT / "SettlementRoadService.java")
 outpost = text(SETTLEMENT / "SettlementOutpostService.java")
 civil = text(SETTLEMENT / "SettlementCivilWorkService.java")
+require("withinActiveRoadProtectionEnvelope" in road and "road.path()" in road, "road bulk-break coarse guard missing")
+require("Math.abs(pos.getX() - state.gateX()) > 16" in outpost, "outpost bulk-break coarse guard missing")
 require("infrastructureProjectBuilder" in road and "ProjectLane.ROAD" in road and "clearRoadConstruction" in road,
         "road start is not transactional through its dedicated builder lane")
 require("infrastructureProjectBuilder" in outpost and "ProjectLane.OUTPOST" in outpost and "clearOutpostConstruction" in outpost,
@@ -195,4 +203,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha112 footprint-only placement + blocker diagnostics + alpha111 location UX + prior invariants")
+print("CURRENT SOURCE CHECK PASS: alpha113 bulk-break event guards + alpha112 footprint-only placement + prior invariants")

@@ -40,6 +40,7 @@ public final class SettlementCartStationService {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
         if (level != server.overworld()) return;
+        if (!event.getState().is(Blocks.BARREL)) return;
         SettlementData data = SettlementData.get(server);
         if (!data.founded() || !level.getBlockState(event.getPos()).is(Blocks.BARREL)) return;
 

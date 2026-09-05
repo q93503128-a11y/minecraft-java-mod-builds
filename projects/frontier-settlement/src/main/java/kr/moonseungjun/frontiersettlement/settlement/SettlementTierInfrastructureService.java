@@ -73,6 +73,8 @@ public final class SettlementTierInfrastructureService {
 
     public static void onBreakBlock(BreakBlockEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return; MinecraftServer server=level.getServer(); if(level!=server.overworld())return;
+        Block eventBlock=event.getState().getBlock();
+        if(eventBlock!=Blocks.OAK_FENCE&&eventBlock!=Blocks.LANTERN)return;
         SettlementData data=SettlementData.get(server); if(!data.founded())return; BlockPos pos=event.getPos(); Block block=level.getBlockState(pos).getBlock();
         if(block!=Blocks.OAK_FENCE&&block!=Blocks.LANTERN)return;
         if(matchesLampPlan(level,data,pos,block,CAPITAL_LAMP_SPACING)

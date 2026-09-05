@@ -396,6 +396,9 @@ public final class SettlementWaterfrontService {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         MinecraftServer server = level.getServer();
         if (level != server.overworld()) return;
+        BlockState brokenState = event.getState();
+        if (!brokenState.is(Blocks.SPRUCE_SLAB) && !brokenState.is(Blocks.BARREL)
+                && !brokenState.is(Blocks.OAK_FENCE)) return;
         SettlementData settlement = SettlementData.get(server);
         if (!settlement.founded()) return;
         BlockPos pos = event.getPos();
