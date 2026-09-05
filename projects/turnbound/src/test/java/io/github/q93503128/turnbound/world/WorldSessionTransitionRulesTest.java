@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class WorldSessionTransitionRulesTest {
     @Test
     void sharedPhysicalGateNeverOverridesPersonalChapterEligibility() {
-        assertFalse(WorldSessionRouter.mayCrossSharedSeam(false, false));
-        assertFalse(WorldSessionRouter.mayCrossSharedSeam(false, true));
-        assertFalse(WorldSessionRouter.mayCrossSharedSeam(true, false));
-        assertTrue(WorldSessionRouter.mayCrossSharedSeam(true, true));
+        assertFalse(SharedWorldSessionRules.mayCrossSharedSeam(false, false));
+        assertFalse(SharedWorldSessionRules.mayCrossSharedSeam(false, true));
+        assertFalse(SharedWorldSessionRules.mayCrossSharedSeam(true, false));
+        assertTrue(SharedWorldSessionRules.mayCrossSharedSeam(true, true));
     }
 }
