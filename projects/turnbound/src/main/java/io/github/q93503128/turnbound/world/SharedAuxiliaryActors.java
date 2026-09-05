@@ -43,7 +43,13 @@ public final class SharedAuxiliaryActors {
 
     private static final String COMMON_TAG = SharedAuxiliaryActorCatalog.COMMON_TAG;
     private static final AABB WORLD_AREA = new AABB(-520, 40, -520, 520, 116, 520);
-    private static final Map<Observer, Set<String>> OBSERVATIONS = new ConcurrentHashMap<>();
+    /**
+     * Observation ownership is world-local. Keeping UUID/scope observations in one JVM-global map can make an actor
+     * in a new integrated-server world appear observed because a stale/other-level observer used the same authored
+     * key. Weak level keys also ensure a stopped server is not retained by this static registry.
+     */
+    private static final Map<ServerLevel, Map<Observer, Set<String>>> OBSERVATIONS =
+            Collections.synchronizedMap(new WeakHashMap<>());
     /** Weak level keys prevent a stopped integrated/dedicated server from being retained by the static mod class. */
     private static final Map<ServerLevel, Map<String, UUID>> ACTORS = Collections.synchronizedMap(new WeakHashMap<>());
     private static final Set<ServerLevel> INDEXED_LEVELS = Collections.newSetFromMap(new WeakHashMap<>());
@@ -73,7 +79,7 @@ public final class SharedAuxiliaryActors {
         }
 
         Set<String> next = Set.copyOf(byKey.keySet());
-        Set<String> previous = OBSERVATIONS.put(observer, next);
+        Set<String> previous = observations(level).put(observer, next);
         if (previous == null) return;
         for (String removed : previous) {
             if (!next.contains(removed)) discardIfUnobserved(level, removed);
@@ -82,9 +88,17 @@ public final class SharedAuxiliaryActors {
 
     public static void removeScope(ServerLevel level, UUID playerId, String scope) {
         if (level == null || playerId == null || scope == null) return;
-        Set<String> removed = OBSERVATIONS.remove(new Observer(playerId, scope));
+        Map<Observer, Set<String>> levelObservations = observations(level);
+        Set<String> removed = levelObservations.remove(new Observer(playerId, scope));
         if (removed == null) return;
         for (String key : removed) discardIfUnobserved(level, key);
+        if (levelObservations.isEmpty()) {
+            synchronized (OBSERVATIONS) {
+                if (OBSERVATIONS.get(level) == levelObservations && levelObservations.isEmpty()) {
+                    OBSERVATIONS.remove(level);
+                }
+            }
+        }
     }
 
     public static void ensure(ServerLevel level, Spec spec) {
@@ -161,11 +175,17 @@ public final class SharedAuxiliaryActors {
     }
 
     private static void discardIfUnobserved(ServerLevel level, String actorKey) {
-        if (actorKey == null || stillObserved(actorKey)) return;
+        if (actorKey == null || stillObserved(level, actorKey)) return;
         Map<String, UUID> cache = cache(level);
         UUID id = cache.remove(actorKey);
         Entity entity = id == null ? null : level.getEntity(id);
         if (entity instanceof ArmorStand && actorKey.equals(key(entity))) entity.discard();
+    }
+
+    private static Map<Observer, Set<String>> observations(ServerLevel level) {
+        synchronized (OBSERVATIONS) {
+            return OBSERVATIONS.computeIfAbsent(level, ignored -> new ConcurrentHashMap<>());
+        }
     }
 
     private static Map<String, UUID> cache(ServerLevel level) {
@@ -174,8 +194,8 @@ public final class SharedAuxiliaryActors {
         }
     }
 
-    private static boolean stillObserved(String actorKey) {
-        for (Set<String> keys : OBSERVATIONS.values()) if (keys.contains(actorKey)) return true;
+    private static boolean stillObserved(ServerLevel level, String actorKey) {
+        for (Set<String> keys : observations(level).values()) if (keys.contains(actorKey)) return true;
         return false;
     }
 }
