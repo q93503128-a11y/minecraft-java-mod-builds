@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -95,7 +96,8 @@ public final class AsterMarchPartyFieldBarks {
         ChatFormatting color = speakerColor(speaker);
         player.sendSystemMessage(Component.literal(name + " · " + line).withStyle(color));
         Vec3 p = def.pos().add(0, 1.0, 0);
-        level.sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 3, 0.45, 0.35, 0.45, 0.005);
+        PersonalPresentationIsolation.particles(level, player, ParticleTypes.END_ROD,
+                p.x, p.y, p.z, 3, 0.45, 0.35, 0.45, 0.005);
     }
 
     private static String chooseSpeaker(ServerPlayer player, List<String> preferred) {
