@@ -56,6 +56,10 @@ public final class SettlementWorkerService {
     private static final long STUCK_PROGRESS_TIMEOUT_TICKS = 80L;
     private static final int MAX_APPROACH_PATH_TRIES = 64;
     private static final int PRODUCTION_HAUL_STACK = 64;
+    // Duplicate/migration scans are recovery maintenance, not production AI. Running their broad
+    // entity/evidence queries every 10 ticks wasted time in healthy saves; 200 still divides the
+    // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.
+    private static final int DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200;
     private static final int MAX_LOGS_PER_WORK = 16;
     private static final int MAX_STONE_PER_WORK = 16;
     private static final int LUMBER_WORK_PERIOD_TICKS = 100;
@@ -91,7 +95,7 @@ public final class SettlementWorkerService {
 
     public static void tick(MinecraftServer server, SettlementData data) {
         ServerLevel level = server.overworld();
-        if (server.getTickCount() % 10 == 0) {
+        if (server.getTickCount() % DUPLICATE_MAINTENANCE_INTERVAL_TICKS == 0) {
             SettlementOutpostLogisticsService.migrateLegacyWorkers(level, data);
             SettlementConstructionService.reconcileBuilderDuplicates(level, data);
             int removedDuplicates = reconcileProductionDuplicates(level, data);

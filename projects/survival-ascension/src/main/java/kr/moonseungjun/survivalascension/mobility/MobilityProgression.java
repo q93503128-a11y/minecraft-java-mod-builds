@@ -42,21 +42,27 @@ public final class MobilityProgression {
     private static final Map<UUID, TraversalState> TRAVERSAL = new HashMap<>();
     private static final Map<UUID, Long> DASH_READY_TICK = new HashMap<>();
     private static final Map<UUID, Integer> AIR_DASH_COUNT = new HashMap<>();
+    private static final Map<UUID, Integer> APPLIED_ATTRIBUTE_LEVEL = new HashMap<>();
 
     private MobilityProgression() {}
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        int level = SkillProgressData.get(player).level(player, SkillType.MOBILITY);
-        applyAttributes(player, level);
         UUID uuid = player.getUUID();
-        if (player.onGround()) AIR_DASH_COUNT.put(uuid, 0);
+        // Attribute state changes only when the mobility level changes. The old path re-read player
+        // progression and rewrote three transient modifiers every server tick for every player.
+        if (player.tickCount % 10 == 0 || !APPLIED_ATTRIBUTE_LEVEL.containsKey(uuid)) {
+            refreshAttributesIfNeeded(player);
+        }
+        if (player.onGround() && AIR_DASH_COUNT.getOrDefault(uuid, 0) != 0) AIR_DASH_COUNT.put(uuid, 0);
         trackTraversal(player);
         syncDashCooldown(player);
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        APPLIED_ATTRIBUTE_LEVEL.remove(player.getUUID());
+        refreshAttributesIfNeeded(player);
         // A dedicated-server relog must not reset a live dash cooldown. Client state can survive
         // world switches, so always send the authoritative server value on join.
         if (DASH_READY_TICK.containsKey(player.getUUID())) syncDashCooldown(player);
@@ -68,12 +74,14 @@ public final class MobilityProgression {
         // Traversal distance is session-local, but cooldown and airborne quota are gameplay state.
         // Keep those two until landing or actual server shutdown so relogging cannot refresh a dash.
         TRAVERSAL.remove(uuid);
+        APPLIED_ATTRIBUTE_LEVEL.remove(uuid);
     }
 
     public static void onServerStopping(ServerStoppingEvent event) {
         TRAVERSAL.clear();
         DASH_READY_TICK.clear();
         AIR_DASH_COUNT.clear();
+        APPLIED_ATTRIBUTE_LEVEL.clear();
     }
 
     public static void performAction(ServerPlayer player) {
@@ -172,6 +180,15 @@ public final class MobilityProgression {
             ExpeditionProgression.recordSkillAction(player, SkillType.MOBILITY, units * 6);
         }
         TRAVERSAL.put(uuid, new TraversalState(dimension, pos.x, pos.z, bank));
+    }
+
+    private static void refreshAttributesIfNeeded(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        int level = SkillProgressData.get(player).level(player, SkillType.MOBILITY);
+        Integer applied = APPLIED_ATTRIBUTE_LEVEL.get(uuid);
+        if (applied != null && applied == level) return;
+        applyAttributes(player, level);
+        APPLIED_ATTRIBUTE_LEVEL.put(uuid, level);
     }
 
     private static void applyAttributes(ServerPlayer player, int level) {

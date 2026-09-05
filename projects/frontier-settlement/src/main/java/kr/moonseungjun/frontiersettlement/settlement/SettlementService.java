@@ -34,7 +34,7 @@ public final class SettlementService {
         }
         SettlementCoreService.tick(server, data);
         if (tick % 40 == 0) SettlementStorageService.ensureManagedStorage(server.overworld(), data);
-        if (tick % 10 == 0) SettlementConstructionService.settleIdleBuilders(server, data);
+        if (tick % 20 == 0) SettlementConstructionService.settleIdleBuilders(server, data);
         SettlementConstructionOfficeService.tick(server, data);
         SettlementBarracksService.tick(server, data);
         SettlementMilitaryOutpostService.tick(server, data);

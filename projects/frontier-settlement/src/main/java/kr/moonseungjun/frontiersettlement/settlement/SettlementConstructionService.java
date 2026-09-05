@@ -1322,9 +1322,14 @@ public final class SettlementConstructionService {
     }
 
     public static List<FrontierWorkerEntity> ensureProjectBuilders(ServerLevel level, SettlementData data) {
-        reconcileBuilderDuplicates(level, data);
+        // One authoritative query per active-project tick. The old path queried the same builder
+        // envelope once in reconcileBuilderDuplicates() and immediately again in findBuilders().
         List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(level, data));
         int desired = desiredBuilderCount(data);
+        if (existing.size() > desired) {
+            for (int i = desired; i < existing.size(); i++) removeDuplicateBuilderPreservingCargo(level, existing.get(i));
+            existing = new ArrayList<>(existing.subList(0, desired));
+        }
         for (FrontierWorkerEntity builder : existing) {
             if (!builder.entityTags().contains(BUILDER_TAG)) builder.addTag(BUILDER_TAG);
             builder.setNoAi(false);

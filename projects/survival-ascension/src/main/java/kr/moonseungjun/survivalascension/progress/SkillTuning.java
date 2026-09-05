@@ -66,13 +66,16 @@ public final class SkillTuning {
         double early;
         double late;
         switch (skill) {
+            // Mining already earns XP from very high real block counts and keeps its proven pacing.
             case MINING -> { early = 1.25D; late = 1.10D; }
-            case WOODCUTTING -> { early = 1.60D; late = 1.25D; }
-            case HARVESTING -> { early = 1.50D; late = 1.20D; }
-            case FISHING -> { early = 3.00D; late = 2.50D; }
-            case COMBAT -> { early = 1.25D; late = 1.15D; }
-            case CONSTRUCTION -> { early = 2.75D; late = 1.75D; }
-            case MOBILITY -> { early = 2.10D; late = 1.40D; }
+            // Action-scarce skills are normalized against actual survival play time. Lv90 is a major
+            // infrastructure/mastery threshold, so these must not require thousands of repetitive actions.
+            case WOODCUTTING -> { early = 2.50D; late = 2.00D; }
+            case HARVESTING -> { early = 3.00D; late = 2.50D; }
+            case FISHING -> { early = 6.00D; late = 5.00D; }
+            case COMBAT -> { early = 4.00D; late = 3.50D; }
+            case CONSTRUCTION -> { early = 5.00D; late = 3.50D; }
+            case MOBILITY -> { early = 4.00D; late = 3.00D; }
             default -> { early = 1.0D; late = 1.0D; }
         }
         double progress = Math.min(1.0D, level / 60.0D);

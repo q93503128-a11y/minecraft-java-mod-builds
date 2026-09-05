@@ -49,7 +49,7 @@ public final class WarbandDirector {
     private static final String NO_WARBAND_KEY = "survivalascension_no_warband";
     private static final String PLAYER_NEXT_FORMATION_KEY = "survivalascension_next_warband_formation";
 
-    private static final int BEHAVIOR_INTERVAL = 10;
+    private static final int BEHAVIOR_INTERVAL = 20;
     private static final int FORMATION_INTERVAL = 200;
     private static final int ROUT_TICKS = 160;
     private static final double FORMATION_RADIUS = 40.0D;

@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.104" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.105" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -69,10 +69,13 @@ require("QUARRY_REMOTE_WORK_REACH_SQR = 25.0D" in worker, "bounded five-block qu
 require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource workers still require point-blank target contact")
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
+require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
 
 service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementGuidanceService.nextGoal(player.level().getServer(), data)" in service, "guidance is missing server authority")
 require("8-tick grading gate" not in service, "obsolete construction cadence prose remains")
+require("tick % 20 == 0) SettlementConstructionService.settleIdleBuilders" in service, "idle builder path maintenance cadence regressed")
+require("List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(level, data));" in construction, "active builder discovery path missing")
 
 palette = text(JAVA / "client/BuildingPaletteScreen.java")
 require("civilUnlocked" not in palette, "client still owns partial civil unlock logic")
@@ -127,4 +130,4 @@ logistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")
 require("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")
 require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")
 
-print("CURRENT SOURCE CHECK PASS: alpha104 full flatten + serialized builder crew + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha105 runtime optimization + alpha104 full flatten + prior authority invariants")
