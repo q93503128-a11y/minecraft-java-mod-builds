@@ -1,0 +1,110 @@
+name: Apply Survival Alpha 619 Lifecycle Cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-survival-alpha619-lifecycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-survival-alpha619-lifecycle
+  cancel-in-progress: false
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+          cache-dependency-path: projects/survival-ascension/**/*.gradle*
+
+      - name: Apply authoritative lifecycle cleanup
+        run: python3 scripts/apply_survival_alpha619.py
+
+      - name: Validate resource JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          roots=[Path('projects/survival-ascension/src/main/resources'), Path('projects/frontier-settlement/src/main/resources/assets/weaponsexpanded')]
+          count=0
+          for root in roots:
+              for p in root.rglob('*.json'):
+                  json.loads(p.read_text(encoding='utf-8'))
+                  count+=1
+          print('JSON VALIDATION PASS', count)
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Verify Survival JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, hashlib
+          jars=[p for p in Path('projects/survival-ascension/build/libs').glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
+          if not jars: raise SystemExit('no Survival jar')
+          jar=max(jars,key=lambda p:p.stat().st_size)
+          if jar.stat().st_size <= 0: raise SystemExit('empty Survival jar')
+          with zipfile.ZipFile(jar) as z:
+              names=z.namelist()
+              required=[
+                  'kr/moonseungjun/survivalascension/expedition/ExpeditionOperationSystem.class',
+                  'kr/moonseungjun/survivalascension/client/ClientSkillState.class',
+                  'kr/moonseungjun/survivalascension/client/ClientMobilityState.class',
+                  'kr/moonseungjun/survivalascension/elite/EliteMobSystem.class',
+                  'META-INF/neoforge.mods.toml',
+              ]
+              missing=[x for x in required if x not in names]
+              if missing: raise SystemExit('missing jar entries: '+repr(missing))
+              if len(names) != len(set(names)): raise SystemExit('duplicate jar entries')
+          sha=hashlib.sha256(jar.read_bytes()).hexdigest()
+          Path('/tmp/survival-jar-path').write_text(str(jar),encoding='utf-8')
+          print('JAR VERIFY PASS',jar,jar.stat().st_size,'sha256='+sha)
+          PY
+
+      - name: Commit tested source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm .github/workflows/apply-survival-alpha619-lifecycle.yml scripts/apply_survival_alpha619.py
+          git add projects/survival-ascension projects/frontier-settlement/src/main/resources/assets/weaponsexpanded/lang/ko_kr.json
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'Harden Survival lifecycle authority and session reset'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Upload tested JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: survivalascension-0.61.9-alpha.1-tested
+          path: projects/survival-ascension/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 7
