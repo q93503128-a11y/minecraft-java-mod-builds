@@ -56,6 +56,12 @@ public final class AsterMarchFoundationBuilder {
         State state = STATES.computeIfAbsent(level, ignored -> new State());
         holdPlayer(player);
 
+        // Foundation mutation is world-owned work, not player-owned work. PlayerTickEvent fires once per player, so
+        // without this guard N connected players would multiply the destructive column budget by N in the same tick.
+        long gameTime = level.getGameTime();
+        if (state.lastProcessedGameTime == gameTime) return false;
+        state.lastProcessedGameTime = gameTime;
+
         int processed = 0;
         while (processed < COLUMNS_PER_TICK && state.regionIndex < REGIONS.size()) {
             Rect region = REGIONS.get(state.regionIndex);
@@ -75,7 +81,7 @@ public final class AsterMarchFoundationBuilder {
         int percent = Math.min(99, (int)Math.floor(state.completed * 100.0 / TOTAL_COLUMNS));
         if (percent != state.lastPercent && (percent == 0 || percent >= state.lastPercent + 2)) {
             state.lastPercent = percent;
-            FieldNetwork.sync(player, FieldUiSnapshot.loading("아스테르 지형 생성", percent));
+            syncLoading(level, "아스테르 지형 생성", percent);
         }
         if (state.regionIndex < REGIONS.size()) return false;
 
@@ -84,8 +90,13 @@ public final class AsterMarchFoundationBuilder {
         level.setBlock(MARKER_C, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
         level.setBlock(MARKER_D, Blocks.DIAMOND_BLOCK.defaultBlockState(), 2);
         STATES.remove(level);
-        FieldNetwork.sync(player, FieldUiSnapshot.loading("아스테르 배치", 100));
+        syncLoading(level, "아스테르 배치", 100);
         return true;
+    }
+
+    private static void syncLoading(ServerLevel level, String label, int percent) {
+        FieldUiSnapshot snapshot = FieldUiSnapshot.loading(label, percent);
+        for (ServerPlayer waiting : level.players()) FieldNetwork.sync(waiting, snapshot);
     }
 
     private static void authorColumn(ServerLevel level, int x, int z) {
@@ -155,5 +166,6 @@ public final class AsterMarchFoundationBuilder {
         private int offset;
         private int completed;
         private int lastPercent = -2;
+        private long lastProcessedGameTime = Long.MIN_VALUE;
     }
 }
