@@ -85,9 +85,7 @@ public final class ClientMythicState {
         target = new Target(payload.targetId(), payload.x(), payload.z(), System.currentTimeMillis());
     }
 
-    public static void clear() {
-        target = null;
-    }
+    public static void clear() { target = null; }
 
     public static Target current() {
         Target value = target;
@@ -111,9 +109,7 @@ old = '''        double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
         String label = "신화 III   " + arrow + "   " + distance + "m";
 '''
 new = '''        double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
-        // Track what the player is actually looking at, not the body yaw used by third-person movement.
-        double cameraYaw = minecraft.gameRenderer.getMainCamera().getYRot();
-        double relative = Mth.wrapDegrees(targetYaw - cameraYaw);
+        double relative = Mth.wrapDegrees(targetYaw - minecraft.player.getYRot());
         String arrow = relativeArrow(relative);
         String label = "신화 III  " + arrow + "  약 " + distance + "m";
 '''
@@ -138,6 +134,8 @@ client.write_text(s, encoding='utf-8')
 
 elite = root / 'src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java'
 s = elite.read_text(encoding='utf-8')
+s = s.replace('import net.minecraft.core.particles.ParticleTypes;\n', 'import net.minecraft.core.BlockPos;\nimport net.minecraft.core.particles.ParticleTypes;\nimport net.minecraft.core.registries.BuiltInRegistries;\n', 1)
+s = s.replace('import net.minecraft.world.entity.Entity;\n', 'import net.minecraft.world.entity.Entity;\nimport net.minecraft.world.entity.EntitySpawnReason;\nimport net.minecraft.world.entity.EntityType;\n', 1)
 s = s.replace('import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;\n', 'import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;\nimport net.neoforged.neoforge.event.entity.player.PlayerEvent;\n', 1)
 old = '''    public static void onServerTick(ServerTickEvent.Pre event) {
         if (++mythicTicker < 10) return;
@@ -227,29 +225,6 @@ new = '''    private static void syncMythicTracker(ServerPlayer player) {
 if old not in s:
     raise SystemExit('sync tracker method anchor missing')
 s = s.replace(old, new, 1)
-elite.write_text(s, encoding='utf-8')
-
-network = root / 'src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java'
-s = network.read_text(encoding='utf-8').replace('private static final String PROTOCOL = "12";', 'private static final String PROTOCOL = "13";', 1)
-network.write_text(s, encoding='utf-8')
-
-# Admin-only deterministic Mythic test command: spawn via the existing vanilla registry spawn API and promote it through the same elite path.
-cmd = root / 'src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java'
-s = cmd.read_text(encoding='utf-8')
-s = s.replace('import kr.moonseungjun.survivalascension.expedition.ExpeditionData;\n', 'import kr.moonseungjun.survivalascension.expedition.ExpeditionData;\nimport kr.moonseungjun.survivalascension.elite.EliteMobSystem;\n', 1)
-anchor = '''                .then(Commands.literal("content").executes(context -> showContent(context.getSource().getPlayerOrException())))
-'''
-if anchor not in s:
-    raise SystemExit('command root anchor missing')
-s = s.replace(anchor, anchor + '''                .then(Commands.literal("mythic")
-                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                        .then(Commands.literal("spawn").executes(context -> EliteMobSystem.spawnTestMythic(context.getSource().getPlayerOrException()))))
-''', 1)
-cmd.write_text(s, encoding='utf-8')
-
-# Add test helper using the same applyElite authority.
-s = elite.read_text(encoding='utf-8')
-s = s.replace('import net.minecraft.core.particles.ParticleTypes;\n', 'import net.minecraft.core.BlockPos;\nimport net.minecraft.core.particles.ParticleTypes;\nimport net.minecraft.world.entity.EntitySpawnReason;\nimport net.minecraft.world.entity.EntityType;\n', 1)
 anchor = '''    public static int rankId(net.minecraft.world.entity.LivingEntity entity) {
         return entity.getPersistentData().getIntOr(RANK_KEY, 0);
     }
@@ -260,8 +235,10 @@ helper = '''    public static int rankId(net.minecraft.world.entity.LivingEntity
 
     public static int spawnTestMythic(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return 0;
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse("minecraft:zombie"));
+        if (type == null) return 0;
         BlockPos pos = player.blockPosition().relative(player.getDirection(), 10);
-        Entity entity = EntityType.ZOMBIE.spawn(level, pos, EntitySpawnReason.COMMAND);
+        Entity entity = type.spawn(level, pos, EntitySpawnReason.COMMAND);
         if (!(entity instanceof Mob mob)) {
             if (entity != null) entity.discard();
             player.sendSystemMessage(Component.literal("§c[신화 테스트] §f좀비 생성에 실패했습니다."));
@@ -278,7 +255,23 @@ if anchor not in s:
 s = s.replace(anchor, helper, 1)
 elite.write_text(s, encoding='utf-8')
 
-# Top-of-file changelog entry.
+network = root / 'src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java'
+s = network.read_text(encoding='utf-8').replace('private static final String PROTOCOL = "12";', 'private static final String PROTOCOL = "13";', 1)
+network.write_text(s, encoding='utf-8')
+
+cmd = root / 'src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java'
+s = cmd.read_text(encoding='utf-8')
+s = s.replace('import kr.moonseungjun.survivalascension.expedition.ExpeditionData;\n', 'import kr.moonseungjun.survivalascension.expedition.ExpeditionData;\nimport kr.moonseungjun.survivalascension.elite.EliteMobSystem;\n', 1)
+anchor = '''                .then(Commands.literal("content").executes(context -> showContent(context.getSource().getPlayerOrException())))
+'''
+if anchor not in s:
+    raise SystemExit('command root anchor missing')
+s = s.replace(anchor, anchor + '''                .then(Commands.literal("mythic")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.literal("spawn").executes(context -> EliteMobSystem.spawnTestMythic(context.getSource().getPlayerOrException()))))
+''', 1)
+cmd.write_text(s, encoding='utf-8')
+
 ch = root / 'CHANGELOG.md'
 s = ch.read_text(encoding='utf-8')
 header = '# Changelog\n\n'
@@ -286,7 +279,7 @@ entry = '''## 0.61.8-alpha.1
 - Rebuilt the Mythic III tracker as a deterministic server-authoritative per-player target: nearest alive same-dimension Mythic within 192 blocks wins, and explicit clear packets remove dead/out-of-range/dimension-stale targets.
 - Mythic target sync now runs periodically and immediately on login, respawn and dimension change instead of depending on a 1.6-second client wall-clock timeout.
 - Mythic target packets now carry active state and target UUID in addition to coordinates; protocol bumped from 12 to 13.
-- The compact top HUD now uses camera yaw rather than body yaw and shows Mythic identity, eight-way direction and approximate distance.
+- The compact top HUD preserves the established eight-way yaw mapping and shows Mythic identity plus approximate distance without a large screen-covering panel.
 - Added operator test command `/ascension mythic spawn`, which creates a deterministic Mythic III zombie through the same rank/attribute/runtime path used by normal Mythics.
 - No Frontier Settlement construction or residential-integrity behavior changed.
 
