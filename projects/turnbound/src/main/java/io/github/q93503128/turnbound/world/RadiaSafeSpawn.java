@@ -8,7 +8,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Places the player on the authored Radia overlook without re-flattening the surrounding terrain.
- * The hub builder owns topology; this class only guarantees headroom on the exact spawn pad.
+ * The hub builder owns topology; this class only guarantees a tiny solid spawn pad and headroom.
  */
 public final class RadiaSafeSpawn {
     private RadiaSafeSpawn() {}
@@ -23,11 +23,16 @@ public final class RadiaSafeSpawn {
             for (int dz = -1; dz <= 1; dz++) {
                 int x = cx + dx;
                 int z = cz + dz;
-                if (level.getBlockState(new BlockPos(x, groundY, z)).isAir()) {
-                    level.setBlock(new BlockPos(x, groundY, z), Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
+                BlockPos ground = new BlockPos(x, groundY, z);
+                var state = level.getBlockState(ground);
+                if (state.isAir() || !state.getFluidState().isEmpty()) {
+                    level.setBlock(ground, Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
                 }
                 for (int y = groundY + 1; y <= groundY + 4; y++) {
-                    level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 2);
+                    BlockPos headroom = new BlockPos(x, y, z);
+                    if (!level.getBlockState(headroom).isAir()) {
+                        level.setBlock(headroom, Blocks.AIR.defaultBlockState(), 2);
+                    }
                 }
             }
         }
