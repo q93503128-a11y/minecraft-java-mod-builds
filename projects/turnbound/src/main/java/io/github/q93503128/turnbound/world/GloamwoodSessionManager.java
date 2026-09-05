@@ -45,6 +45,7 @@ public final class GloamwoodSessionManager {
         SESSIONS.put(player.getUUID(), session);
         session.refresh(level, player);
         session.spawnAll(level, player);
+        FieldSharedInteractionActors.ensureGloamwood(level, chapter);
         Vec3 entry = chapter.entry();
         player.setPos(entry.x, entry.y, entry.z);
         player.setYRot(180.0F);
@@ -70,13 +71,38 @@ public final class GloamwoodSessionManager {
             player.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (player.tickCount % 20 == 0) clearVanillaMobs(level);
+        if (player.tickCount % 20 == 0) {
+            clearVanillaMobs(level);
+            FieldSharedInteractionActors.ensureGloamwood(level, session.chapter);
+        }
         session.tickEncounters(level, player);
     }
 
     public static boolean interactEntity(ServerPlayer player, Entity target) {
         Session session = SESSIONS.get(player.getUUID());
         if (session == null || target == null) return false;
+
+        FieldSharedInteractionActors.Role sharedRole = FieldSharedInteractionActors.role(target);
+        if (sharedRole == FieldSharedInteractionActors.Role.GLOAM_RELAY) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
+        int sharedSpore = FieldSharedInteractionActors.gloamSporeIndex(sharedRole);
+        if (sharedSpore >= 0) {
+            if (!session.questComplete(player, "MQ_C02_01_spores")) {
+                int progress = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C02_01_spores", 0);
+                if (sharedSpore == progress) {
+                    CampaignProgressStore.questInteract(player.getUUID(), "SPORE_LANTERN");
+                    CampaignPersistence.saveIfDirty(player);
+                    session.refresh((ServerLevel)player.level(), player);
+                    session.spawnMissing((ServerLevel)player.level(), player);
+                    FieldSharedInteractionActors.ensureGloamwood((ServerLevel)player.level(), session.chapter);
+                    FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+                }
+            }
+            return true;
+        }
+
         UUID id = target.getUUID();
         if (id.equals(session.relay)) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
@@ -91,6 +117,7 @@ public final class GloamwoodSessionManager {
                 CampaignPersistence.saveIfDirty(player);
                 session.refresh((ServerLevel)player.level(), player);
                 session.spawnMissing((ServerLevel)player.level(), player);
+                FieldSharedInteractionActors.ensureGloamwood((ServerLevel)player.level(), session.chapter);
                 FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             }
             return true;
@@ -128,6 +155,7 @@ public final class GloamwoodSessionManager {
         ServerLevel level = (ServerLevel)player.level();
         session.refresh(level, player);
         session.spawnMissing(level, player);
+        FieldSharedInteractionActors.ensureGloamwood(level, session.chapter);
         V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(encounterId);
         boolean victory = outcome == BattleOutcome.ALLY_VICTORY;
         FieldUiSnapshot.Reward reward = new FieldUiSnapshot.Reward(
