@@ -72,7 +72,7 @@ jobs:
         run: |
           git config user.name 'coworkaccount'
           git config user.email 'cyp1jhh2@gmail.com'
-          git rm .github/workflows/frontier-alpha104-full-flatten-crew-20260905.yml tools/apply_frontier_alpha104_tmp.py
+          git rm -f .github/workflows/frontier-alpha104-full-flatten-crew-20260905.yml tools/apply_frontier_alpha104_tmp.py
           git add projects/frontier-settlement
           git commit -m 'Frontier alpha104 full flatten and builder crews'
       - name: Rebase and reverify
