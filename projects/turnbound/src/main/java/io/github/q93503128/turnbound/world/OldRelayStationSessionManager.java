@@ -44,6 +44,8 @@ public final class OldRelayStationSessionManager {
         OldRelayStationWorld.BuiltChapter chapter = OldRelayStationWorld.build(level);
         Session session = new Session(chapter); SESSIONS.put(player.getUUID(), session);
         session.refresh(level, player); session.spawnAll(level, player);
+        FieldSharedInteractionActors.ensureOldRelay(level, chapter,
+                session.bossCleared(player) && !session.questComplete(player, FINAL_QUEST));
         Vec3 p = chapter.entry(); player.setPos(p.x,p.y,p.z); player.setYRot(90); player.setXRot(4); player.setDeltaMovement(Vec3.ZERO);
         player.sendSystemMessage(Component.literal("TURNBOUND · Chapter 5 구 중계소").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
         player.sendSystemMessage(Component.literal("세라크 기록 4개를 복원하고 균열감시자를 격파한 뒤 Relay console을 재가동하십시오.").withStyle(ChatFormatting.GRAY));
@@ -52,20 +54,95 @@ public final class OldRelayStationSessionManager {
     }
 
     public static boolean active(ServerPlayer p){return SESSIONS.containsKey(p.getUUID())&&p.level().dimension()==Level.OVERWORLD;}
-    public static void tick(ServerPlayer p){Session s=SESSIONS.get(p.getUUID());if(s==null||BattleSessionManager.exists(p))return;ServerLevel l=(ServerLevel)p.level();if(!OldRelayStationWorld.contains(p.position())){Vec3 e=s.chapter.entry();p.setPos(e.x,e.y,e.z);p.setDeltaMovement(Vec3.ZERO);return;}if(p.tickCount%20==0)clearVanillaMobs(l);s.tickEncounters(l,p);}
+    public static void tick(ServerPlayer p){
+        Session s=SESSIONS.get(p.getUUID());
+        if(s==null||BattleSessionManager.exists(p))return;
+        ServerLevel l=(ServerLevel)p.level();
+        if(!OldRelayStationWorld.contains(p.position())){Vec3 e=s.chapter.entry();p.setPos(e.x,e.y,e.z);p.setDeltaMovement(Vec3.ZERO);return;}
+        if(p.tickCount%20==0){
+            clearVanillaMobs(l);
+            FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+        }
+        s.tickEncounters(l,p);
+    }
 
     public static boolean interactEntity(ServerPlayer p,Entity target){
-        Session s=SESSIONS.get(p.getUUID());if(s==null||target==null)return false;UUID id=target.getUUID();
+        Session s=SESSIONS.get(p.getUUID());if(s==null||target==null)return false;
+        FieldSharedInteractionActors.Role sharedRole=FieldSharedInteractionActors.role(target);
+        if(sharedRole==FieldSharedInteractionActors.Role.OLD_RELAY_FT){
+            FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.TRAVEL,null));
+            return true;
+        }
+        int sharedRecord=FieldSharedInteractionActors.oldRelayRecordIndex(sharedRole);
+        if(sharedRecord>=0){
+            if(!s.questComplete(p,RECORD_QUEST)){
+                int progress=Math.min(4,s.recordCount(p));
+                if(sharedRecord==progress){
+                    CampaignProgressStore.questInteract(p.getUUID(),"SERAK_RECORD");
+                    CampaignPersistence.saveIfDirty(p);
+                    ServerLevel l=(ServerLevel)p.level();
+                    s.refresh(l,p);s.spawnMissing(l,p);
+                    FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+                    FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.QUEST,null));
+                }
+            }
+            return true;
+        }
+        if(sharedRole==FieldSharedInteractionActors.Role.OLD_RELAY_FINAL_CONSOLE){
+            if(s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST)){
+                CampaignProgressStore.questInteract(p.getUUID(),"RELAY_CONSOLE");
+                CampaignPersistence.saveIfDirty(p);
+                ServerLevel l=(ServerLevel)p.level();
+                s.refresh(l,p);
+                FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+                FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.RESULT,null));
+                if(s.questComplete(p,FINAL_QUEST))p.sendSystemMessage(Component.literal("Aster March Relay 재연결 · Endgame 개방").withStyle(ChatFormatting.LIGHT_PURPLE,ChatFormatting.BOLD));
+            }
+            return true;
+        }
+
+        UUID id=target.getUUID();
         if(id.equals(s.relay)){FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.TRAVEL,null));return true;}
-        Integer record=s.recordActors.remove(id);if(record!=null){if(!s.questComplete(p,RECORD_QUEST)){CampaignProgressStore.questInteract(p.getUUID(),"SERAK_RECORD");Entity e=((ServerLevel)p.level()).getEntity(id);if(e!=null)e.discard();CampaignPersistence.saveIfDirty(p);s.refresh((ServerLevel)p.level(),p);s.spawnMissing((ServerLevel)p.level(),p);FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.QUEST,null));}return true;}
-        if(id.equals(s.finalConsole)){if(s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST)){CampaignProgressStore.questInteract(p.getUUID(),"RELAY_CONSOLE");CampaignPersistence.saveIfDirty(p);s.refresh((ServerLevel)p.level(),p);FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.RESULT,null));if(s.questComplete(p,FINAL_QUEST))p.sendSystemMessage(Component.literal("Aster March Relay 재연결 · Endgame 개방").withStyle(ChatFormatting.LIGHT_PURPLE,ChatFormatting.BOLD));}return true;}
+        Integer record=s.recordActors.remove(id);
+        if(record!=null){
+            if(!s.questComplete(p,RECORD_QUEST)){
+                CampaignProgressStore.questInteract(p.getUUID(),"SERAK_RECORD");
+                Entity e=((ServerLevel)p.level()).getEntity(id);if(e!=null)e.discard();
+                CampaignPersistence.saveIfDirty(p);
+                ServerLevel l=(ServerLevel)p.level();
+                s.refresh(l,p);s.spawnMissing(l,p);
+                FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+                FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.QUEST,null));
+            }
+            return true;
+        }
+        if(id.equals(s.finalConsole)){
+            if(s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST)){
+                CampaignProgressStore.questInteract(p.getUUID(),"RELAY_CONSOLE");
+                CampaignPersistence.saveIfDirty(p);
+                ServerLevel l=(ServerLevel)p.level();
+                s.refresh(l,p);
+                FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+                FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.RESULT,null));
+                if(s.questComplete(p,FINAL_QUEST))p.sendSystemMessage(Component.literal("Aster March Relay 재연결 · Endgame 개방").withStyle(ChatFormatting.LIGHT_PURPLE,ChatFormatting.BOLD));
+            }
+            return true;
+        }
         return false;
     }
 
     public static void command(ServerPlayer p,String raw){Session s=SESSIONS.get(p.getUUID());if(s==null||raw==null||BattleSessionManager.exists(p))return;String[] a=raw.split("\\|",-1);if(a.length<2||!"TRAVEL".equals(a[0]))return;if(AsterMarchRegionCatalog.FT_RADIA.equals(a[1])){remove(p);RadiaHubSessionManager.enter(p);}else if(AsterMarchRegionCatalog.FT_RELAY.equals(a[1])){Vec3 ft=s.chapter.fastTravel();p.setPos(ft.x,ft.y,ft.z);p.setYRot(90);p.setDeltaMovement(Vec3.ZERO);FieldNetwork.sync(p,s.snapshot(p,FieldUiSnapshot.Mode.NONE,null));}}
 
     public static void onBattleEnded(ServerPlayer p,String encounterId,BattleOutcome outcome){
-        Session s=SESSIONS.get(p.getUUID());if(s==null)return;EncounterActor actor=s.encounters.get(encounterId);if(actor==null)return;actor.engaged=false;actor.group=null;actor.graceTicks=outcome==BattleOutcome.ALLY_VICTORY?0:40;ServerLevel l=(ServerLevel)p.level();s.refresh(l,p);s.spawnMissing(l,p);V04Catalogs.Encounter spec=CampaignEncounterCatalog.spec(encounterId);boolean win=outcome==BattleOutcome.ALLY_VICTORY;FieldUiSnapshot.Reward r=new FieldUiSnapshot.Reward(spec.label(),win?V04Catalogs.battleXp(spec):0,win?V04Catalogs.battleGold(spec):0,win,win&&BOSS_ID.equals(encounterId));if(win&&BOSS_ID.equals(encounterId))p.sendSystemMessage(Component.literal("세라크 격파 · 최종 Relay console을 작동하십시오.").withStyle(ChatFormatting.GOLD,ChatFormatting.BOLD));FieldNetwork.sync(p,s.snapshot(p,win?FieldUiSnapshot.Mode.RESULT:FieldUiSnapshot.Mode.QUEST,r));
+        Session s=SESSIONS.get(p.getUUID());if(s==null)return;
+        EncounterActor actor=s.encounters.get(encounterId);if(actor==null)return;
+        actor.engaged=false;actor.group=null;actor.graceTicks=outcome==BattleOutcome.ALLY_VICTORY?0:40;
+        ServerLevel l=(ServerLevel)p.level();s.refresh(l,p);s.spawnMissing(l,p);
+        FieldSharedInteractionActors.ensureOldRelay(l,s.chapter,s.bossCleared(p)&&!s.questComplete(p,FINAL_QUEST));
+        V04Catalogs.Encounter spec=CampaignEncounterCatalog.spec(encounterId);boolean win=outcome==BattleOutcome.ALLY_VICTORY;
+        FieldUiSnapshot.Reward r=new FieldUiSnapshot.Reward(spec.label(),win?V04Catalogs.battleXp(spec):0,win?V04Catalogs.battleGold(spec):0,win,win&&BOSS_ID.equals(encounterId));
+        if(win&&BOSS_ID.equals(encounterId))p.sendSystemMessage(Component.literal("세라크 격파 · 최종 Relay console을 작동하십시오.").withStyle(ChatFormatting.GOLD,ChatFormatting.BOLD));
+        FieldNetwork.sync(p,s.snapshot(p,win?FieldUiSnapshot.Mode.RESULT:FieldUiSnapshot.Mode.QUEST,r));
     }
 
     public static void remove(ServerPlayer p){Session s=SESSIONS.remove(p.getUUID());if(s!=null&&p.level() instanceof ServerLevel l)s.despawnAll(l);if(s!=null)FieldNetwork.close(p);}
