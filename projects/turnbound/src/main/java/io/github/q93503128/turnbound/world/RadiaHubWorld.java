@@ -111,7 +111,6 @@ public final class RadiaHubWorld {
         return new Facility(id, label, new Vec3(x, y, z));
     }
 
-    /** Migration cleanup only: remove the known legacy boxes before laying the new topology. */
     private static void clearLegacyStructures(ServerLevel level) {
         for (LegacyBox box : LEGACY_STRUCTURES) {
             for (int x = box.minX; x <= box.maxX; x++) {
@@ -125,7 +124,6 @@ public final class RadiaHubWorld {
         }
     }
 
-    /** Re-author the entire Radia footprint so old flat grass/roads cannot survive below the new town. */
     private static void terrain(ServerLevel level) {
         for (int x = AsterMarchRegionCatalog.RADIA.minX(); x <= AsterMarchRegionCatalog.RADIA.maxX(); x++) {
             for (int z = AsterMarchRegionCatalog.RADIA.minZ(); z <= AsterMarchRegionCatalog.RADIA.maxZ(); z++) {
@@ -326,7 +324,6 @@ public final class RadiaHubWorld {
         }
     }
 
-    /** South Gate is now a real boundary embedded into a curved fortified ridge. */
     private static void southGate(ServerLevel level, boolean open) {
         int gateZ = 108;
         for (int x = -54; x <= 54; x++) {
@@ -515,7 +512,7 @@ public final class RadiaHubWorld {
     private static boolean hasMarker(ServerLevel level) {
         return level.getBlockState(new BlockPos(0, MARKER_Y, 20)).is(Blocks.LODESTONE)
                 && level.getBlockState(new BlockPos(1, MARKER_Y, 20)).is(Blocks.AMETHYST_BLOCK)
-                && level.getBlockState(new BlockPos(2, MARKER_Y, 20)).is(Blocks.COPPER_BLOCK)
+                && level.getBlockState(new BlockPos(2, MARKER_Y, 20)).is(Blocks.LAPIS_BLOCK)
                 && level.getBlockState(new BlockPos(3, MARKER_Y, 20)).is(Blocks.EMERALD_BLOCK)
                 && level.getBlockState(new BlockPos(4, MARKER_Y, 20)).is(Blocks.GOLD_BLOCK)
                 && level.getBlockState(new BlockPos(5, MARKER_Y, 20)).is(Blocks.DIAMOND_BLOCK);
@@ -524,7 +521,7 @@ public final class RadiaHubWorld {
     private static void writeMarker(ServerLevel level) {
         set(level, 0, MARKER_Y, 20, Blocks.LODESTONE);
         set(level, 1, MARKER_Y, 20, Blocks.AMETHYST_BLOCK);
-        set(level, 2, MARKER_Y, 20, Blocks.COPPER_BLOCK);
+        set(level, 2, MARKER_Y, 20, Blocks.LAPIS_BLOCK);
         set(level, 3, MARKER_Y, 20, Blocks.EMERALD_BLOCK);
         set(level, 4, MARKER_Y, 20, Blocks.GOLD_BLOCK);
         set(level, 5, MARKER_Y, 20, Blocks.DIAMOND_BLOCK);
