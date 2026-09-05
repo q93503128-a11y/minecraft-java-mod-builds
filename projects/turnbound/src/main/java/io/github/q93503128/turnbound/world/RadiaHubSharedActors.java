@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * Owns the physical Radia interaction actors as world-shared entities.
  *
- * Player sessions never own or despawn these ArmorStands. Identity lives on scoreboard-style entity tags, so
+ * Player sessions never own or despawn these ArmorStands. Identity lives on persistent entity command tags, so
  * a second player entering Radia reuses the same actors and a server restart can recover the persisted entities.
  */
 public final class RadiaHubSharedActors {
@@ -62,7 +62,7 @@ public final class RadiaHubSharedActors {
                 if (first != null) stand.discard();
                 continue;
             }
-            if (stand.getTags().contains(RadiaHubActorCatalog.COMMON_TAG) || legacyActor(stand)) {
+            if (stand.entityTags().contains(RadiaHubActorCatalog.COMMON_TAG) || legacyActor(stand)) {
                 stand.discard();
             }
         }
@@ -70,7 +70,7 @@ public final class RadiaHubSharedActors {
         for (Spec spec : specs(hub)) {
             ArmorStand stand = existing.get(spec.role());
             if (stand == null || stand.isRemoved()) {
-                stand = spawn(level, spec);
+                spawn(level, spec);
             } else {
                 configure(level, stand, spec);
             }
@@ -79,7 +79,7 @@ public final class RadiaHubSharedActors {
 
     public static RadiaHubActorCatalog.Role role(Entity entity) {
         if (!(entity instanceof ArmorStand)) return null;
-        for (String tag : entity.getTags()) {
+        for (String tag : entity.entityTags()) {
             RadiaHubActorCatalog.Role role = RadiaHubActorCatalog.fromTag(tag);
             if (role != null) return role;
         }
