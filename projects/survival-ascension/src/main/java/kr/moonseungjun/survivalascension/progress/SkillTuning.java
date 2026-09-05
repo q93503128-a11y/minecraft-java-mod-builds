@@ -134,12 +134,21 @@ public final class SkillTuning {
     }
 
     public static double fishingRodPreservationChance(int level) {
-        if (level >= 100) return 0.65D;
-        if (level >= 90) return 0.50D;
-        if (level >= 60) return 0.35D;
-        if (level >= 30) return 0.20D;
-        if (level >= 10) return 0.10D;
-        return 0.0D;
+        int clamped = clamp(level);
+        if (clamped < 10) return 0.0D;
+        if (clamped < 30) return 0.10D + 0.15D * (clamped - 10) / 20.0D;
+        if (clamped < 60) return 0.25D + 0.20D * (clamped - 30) / 30.0D;
+        if (clamped < 90) return 0.45D + 0.20D * (clamped - 60) / 30.0D;
+        return 0.65D + 0.15D * (clamped - 90) / 10.0D;
+    }
+
+    public static double fishingBonusCatchChance(int level) {
+        int clamped = clamp(level);
+        if (clamped < 10) return 0.0D;
+        if (clamped < 30) return 0.10D + 0.15D * (clamped - 10) / 20.0D;
+        if (clamped < 60) return 0.25D + 0.25D * (clamped - 30) / 30.0D;
+        if (clamped < 90) return 0.50D + 0.25D * (clamped - 60) / 30.0D;
+        return 0.75D + 0.25D * (clamped - 90) / 10.0D;
     }
 
     public static double combatDamageMultiplier(int level) {
@@ -186,36 +195,37 @@ public final class SkillTuning {
 
     public static double mobilitySpeedMultiplier(int level) {
         int clamped = clamp(level);
-        return 1.0D + 0.0015D * clamped + 0.000005D * clamped * clamped;
+        return 1.0D + 0.0020D * clamped + 0.000010D * clamped * clamped;
     }
     public static double mobilityStepHeight(int level) {
         if (level >= 100) return 2.0D;
-        if (level >= 90) return 1.5D;
-        if (level >= 60) return 1.25D;
+        if (level >= 90) return 1.75D;
+        if (level >= 60) return 1.50D;
+        if (level >= 30) return 1.25D;
         if (level >= 10) return 1.0D;
         return 0.6D;
     }
     public static double mobilitySafeFallDistance(int level) {
-        if (level >= 100) return 16.0D;
-        if (level >= 90) return 12.0D;
-        if (level >= 60) return 8.0D;
-        if (level >= 30) return 6.0D;
-        if (level >= 10) return 4.0D;
-        return 3.0D;
+        int clamped = clamp(level);
+        if (clamped < 10) return 3.0D;
+        if (clamped < 30) return 4.0D + 2.0D * (clamped - 10) / 20.0D;
+        if (clamped < 60) return 6.0D + 2.0D * (clamped - 30) / 30.0D;
+        if (clamped < 90) return 8.0D + 4.0D * (clamped - 60) / 30.0D;
+        return 12.0D + 4.0D * (clamped - 90) / 10.0D;
     }
     public static double mobilityDashPower(int level) {
-        if (level >= 100) return 1.80D;
-        if (level >= 90) return 1.55D;
-        if (level >= 60) return 1.25D;
-        if (level >= 30) return 0.95D;
-        return 0.0D;
+        int clamped = clamp(level);
+        if (clamped < 30) return 0.0D;
+        if (clamped < 60) return 0.95D + 0.30D * (clamped - 30) / 30.0D;
+        if (clamped < 90) return 1.25D + 0.30D * (clamped - 60) / 30.0D;
+        return 1.55D + 0.25D * (clamped - 90) / 10.0D;
     }
     public static int mobilityDashCooldownTicks(int level) {
-        if (level >= 100) return 16;
-        if (level >= 90) return 24;
-        if (level >= 60) return 40;
-        if (level >= 30) return 60;
-        return Integer.MAX_VALUE;
+        int clamped = clamp(level);
+        if (clamped < 30) return Integer.MAX_VALUE;
+        if (clamped < 60) return (int)Math.round(60.0D - 20.0D * (clamped - 30) / 30.0D);
+        if (clamped < 90) return (int)Math.round(40.0D - 16.0D * (clamped - 60) / 30.0D);
+        return (int)Math.round(24.0D - 8.0D * (clamped - 90) / 10.0D);
     }
 
     public static int masteryTier(int level) {

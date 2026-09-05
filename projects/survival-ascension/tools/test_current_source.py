@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.12-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.13-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.12-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.13-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -106,6 +106,13 @@ client = text(JAVA / "client/SurvivalAscensionClient.java")
 require("InputConstants.KEY_X" in client, "dash default key must be X")
 require("mobility_action\", InputConstants.KEY_V" not in client, "old V dash default returned")
 
+require("MobilityProgression::onPlayerRespawn" in main and "MobilityProgression::onPlayerChangedDimension" in main, "mobility transient attributes are not restored across lifecycle boundaries")
+require("return 1.0D + 0.0020D * clamped + 0.000010D * clamped * clamped;" in tuning, "mobility per-level speed scaling drift")
+require("if (level >= 30) return 1.25D;" in tuning and "if (level >= 60) return 1.50D;" in tuning, "mobility step progression drift")
+require("fishingBonusCatchChance" in tuning, "fishing bonus-yield progression missing")
+fishing = text(JAVA / "fishing/FishingProgression.java")
+require("applyBonusCatch" in fishing and "stack.grow(1)" in fishing, "fishing bonus catch is not applied to real fish drops")
+
 hud = text(JAVA / "client/SkillHudOverlay.java")
 require("graphics.guiWidth() - width - rightMargin" in hud, "Mythic tracker is not right-edge anchored")
 require("graphics.guiWidth() >= 420" in hud, "Mythic tracker desktop boss-bar separation missing")
@@ -124,4 +131,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.12 Mythic HUD + X dash + pacing/runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.13 mobility/fishing progression + Mythic HUD + runtime invariants")

@@ -69,6 +69,18 @@ public final class MobilityProgression {
         else SkillNetwork.sendMobilityCooldown(player, new MobilityCooldownPayload(0));
     }
 
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        APPLIED_ATTRIBUTE_LEVEL.remove(player.getUUID());
+        refreshAttributesIfNeeded(player);
+    }
+
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        APPLIED_ATTRIBUTE_LEVEL.remove(player.getUUID());
+        refreshAttributesIfNeeded(player);
+    }
+
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID uuid = event.getEntity().getUUID();
         // Traversal distance is session-local, but cooldown and airborne quota are gameplay state.
@@ -206,10 +218,10 @@ public final class MobilityProgression {
     private static void announceMilestones(ServerPlayer player, SkillProgressData.AddXpResult result) {
         if (!result.leveledUp()) return;
         int oldLevel = result.oldLevel(), newLevel = result.newLevel();
-        if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1블록 단차 자동 넘기기 + 낙하 안전 강화"));
-        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §fV · 지상 돌진"));
-        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f공중에서 V를 한 번 더 사용할 수 있습니다."));
-        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f극한 돌진 · 종말 단계 승천 중추 완공 시 공중 돌진 2회"));
+        if (oldLevel < 10 && newLevel >= 10) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1블록 단차 · 이동 속도 +2%대 · 안전 낙하 4블록"));
+        if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1.25블록 단차 · 지상 돌진 · 이후 레벨마다 돌진 성능 증가"));
+        if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1.5블록 단차 · 공중 돌진 1회 · 이동 속도 약 +16%"));
+        if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§d[기동 해금] §f1.75블록 단차 · 극한 돌진 · 조건 충족 시 공중 돌진 2회"));
         if (oldLevel < 100 && newLevel >= 100) {
             String dashes = ExpeditionProgression.hasFieldMastery(player) ? "4회" : "3회";
             player.sendSystemMessage(Component.literal("§d[기동 숙련 VI] §f2블록 단차 · 16블록 안전 낙하 · 중추 완공 시 공중 돌진 " + dashes));

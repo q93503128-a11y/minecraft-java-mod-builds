@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.61.13-alpha.1
+- Restored Mobility transient movement attributes immediately after respawn and dimension changes, fixing the step-height/safe-fall/speed perks disappearing after transitions such as entering the Nether.
+- Rebalanced Mobility so ordinary levels matter: movement speed now reaches +30% at Lv100, safe-fall and dash power scale continuously between milestones, dash cooldown improves continuously from Lv30 onward, and step height now progresses 1.0/1.25/1.5/1.75/2.0 blocks at Lv10/30/60/90/100.
+- Expanded Fishing beyond rod durability: rod preservation now scales continuously between milestones and real fish catches gain an extra-fish chance that scales 10%/25%/50%/75%/100% at Lv10/30/60/90/100. Treasure and non-fish drops are not duplicated.
+- Mining, Woodcutting, Harvesting, Combat and Construction balance is unchanged in this patch.
+
 ## 0.61.12-alpha.1
 - Moved the Mythic III directional tracker out of the vanilla/NeoForge top-center boss-bar lane on normal desktop GUI widths, preventing two or more simultaneous Mythic boss bars from covering the arrow/distance HUD.
 - Added a narrow-GUI fallback below the normal stacked boss-bar region instead of forcing the tracker into an overlapping top-center slot.
