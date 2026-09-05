@@ -15,7 +15,7 @@ class QuestMenuContentServiceTest {
     void cleanup() { CampaignProgressStore.removeRuntime(playerId); }
 
     @Test
-    void characterQuestMenuUsesAuthoredChapterAndOwnershipGatesWithoutInventingObjectives() {
+    void characterQuestMenuUsesAuthoredChapterAndOwnershipGatesWithoutLeakingIdentifiers() {
         CampaignProgressStore.ensureNewGame(playerId);
         CampaignProgressStore.commit(playerId, "TUTORIAL_1", BattleOutcome.ALLY_VICTORY);
         CampaignProgressStore.commit(playerId, "TUTORIAL_2", BattleOutcome.ALLY_VICTORY);
@@ -33,8 +33,11 @@ class QuestMenuContentServiceTest {
         assertTrue(QuestMenuContentService.available(playerId, "P08"));
 
         String wire = QuestMenuContentService.encode(playerId);
-        assertTrue(wire.contains("CQ_P01|CHARACTER · 카이렌 · 끝까지 남은 길"));
-        assertTrue(wire.contains("CQ_P08|CHARACTER · 라제 · 불길 속에서 웃는 법"));
-        assertTrue(wire.contains("Signature Trial"));
+        assertTrue(wire.contains("인연 · 카이렌"));
+        assertTrue(wire.contains("인연 · 라제"));
+        assertTrue(wire.contains("전용 장비 시험"));
+        assertFalse(wire.contains("CQ_P01"));
+        assertFalse(wire.contains("CQ_P08"));
+        assertFalse(wire.contains("Signature Trial"));
     }
 }
