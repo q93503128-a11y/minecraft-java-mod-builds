@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
 
+# Triggered after staging so GitHub registers the workflow before execution.
 jobs:
   patch-build-publish:
     runs-on: ubuntu-latest
