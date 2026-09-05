@@ -6,32 +6,36 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
-/** Guarantees that the opening spawn is a clear plaza tile rather than a roof or vanilla heightmap result. */
+/**
+ * Places the player on the authored Radia overlook without re-flattening the surrounding terrain.
+ * The hub builder owns topology; this class only guarantees headroom on the exact spawn pad.
+ */
 public final class RadiaSafeSpawn {
-    private static final int CX = 0;
-    private static final int CZ = 12;
-    private static final int GROUND_Y = 65;
-
     private RadiaSafeSpawn() {}
 
     public static void place(ServerLevel level, ServerPlayer player) {
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dz = -3; dz <= 3; dz++) {
-                int x = CX + dx, z = CZ + dz;
-                for (int y = GROUND_Y - 3; y < GROUND_Y; y++) {
-                    level.setBlock(new BlockPos(x, y, z), Blocks.DIRT.defaultBlockState(), 2);
+        Vec3 spawn = RadiaHubWorld.spawnPoint();
+        int groundY = (int)Math.floor(spawn.y) - 1;
+        int cx = (int)Math.floor(spawn.x);
+        int cz = (int)Math.floor(spawn.z);
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int x = cx + dx;
+                int z = cz + dz;
+                if (level.getBlockState(new BlockPos(x, groundY, z)).isAir()) {
+                    level.setBlock(new BlockPos(x, groundY, z), Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
                 }
-                level.setBlock(new BlockPos(x, GROUND_Y, z),
-                        (Math.abs(dx) + Math.abs(dz) <= 2 ? Blocks.POLISHED_ANDESITE : Blocks.STONE_BRICKS).defaultBlockState(), 2);
-                for (int y = GROUND_Y + 1; y <= GROUND_Y + 7; y++) {
+                for (int y = groundY + 1; y <= groundY + 4; y++) {
                     level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 2);
                 }
             }
         }
+
         player.setNoGravity(false);
         player.fallDistance = 0.0F;
         player.setDeltaMovement(Vec3.ZERO);
-        player.setPos(CX + 0.5, GROUND_Y + 1.0, CZ + 0.5);
+        player.setPos(spawn.x, spawn.y, spawn.z);
         player.setYRot(180.0F);
         player.setXRot(3.0F);
     }
