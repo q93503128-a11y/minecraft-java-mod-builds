@@ -6,6 +6,7 @@ import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,10 +18,10 @@ import java.util.UUID;
 /**
  * Keeps player-specific presentation out of other clients while leaving shared world actors untouched.
  *
- * <p>A presentation scope owns every temporary entity created synchronously inside it, including GeckoLib battle
- * actors and fallback/marker armor stands. NeoForge then retracts those entities from every non-owner client whenever
- * tracking starts. The same scope also routes battle particles only to that owner, so two battles may overlap in the
- * same authored arena without leaking actors, markers or VFX into each other.</p>
+ * <p>A presentation scope owns authored battle actors plus the temporary ArmorStand markers/fallbacks created inside
+ * it. NeoForge then retracts those entities from every non-owner client whenever tracking starts. The same scope routes
+ * battle particles only to that owner, so two battles may overlap in the same authored arena without leaking actors,
+ * markers or VFX into each other.</p>
  */
 @EventBusSubscriber(modid = Turnbound.MOD_ID)
 public final class PersonalPresentationIsolation {
@@ -73,17 +74,21 @@ public final class PersonalPresentationIsolation {
         return owner == null || owner.equals(viewer);
     }
 
+    private static boolean privatePresentationType(Entity entity) {
+        return entity instanceof BattleActorEntity || entity instanceof ArmorStand;
+    }
+
     /** EntityJoinLevelEvent occurs during addFreshEntity, before normal client tracking/pairing begins. */
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         Entity entity = event.getEntity();
-        // Every private presentation entity is runtime-only. A crash must never resurrect actors or marker stands.
+        // Every tagged private presentation entity is runtime-only. A crash must never resurrect actors or markers.
         if (event.loadedFromDisk() && owner(entity) != null) {
             event.setCanceled(true);
             return;
         }
         UUID owner = PRESENTATION_OWNER.get();
-        if (owner != null) markPrivate(entity, owner);
+        if (owner != null && privatePresentationType(entity)) markPrivate(entity, owner);
     }
 
     /** StartTracking is non-cancellable, so retract the just-paired entity from every non-owner client. */
