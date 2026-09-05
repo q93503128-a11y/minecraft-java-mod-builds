@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -64,8 +65,8 @@ public final class AsterMarchApproachAtmosphere {
         if (clears.contains(encounterId)) return;
         double distanceSq = player.position().distanceToSqr(center);
         if (distanceSq > 20.0 * 20.0) return;
-        pulse(level, center, ambient, 5, 3.2, 1.2, 3.2, 0.015);
-        if (distanceSq <= 12.0 * 12.0) pulse(level, center.add(0, 1.2, 0), accent, 3, 1.8, 1.4, 1.8, 0.02);
+        pulse(level, player, center, ambient, 5, 3.2, 1.2, 3.2, 0.015);
+        if (distanceSq <= 12.0 * 12.0) pulse(level, player, center.add(0, 1.2, 0), accent, 3, 1.8, 1.4, 1.8, 0.02);
     }
 
     private static void boss(ServerLevel level, ServerPlayer player, Set<String> clears, String encounterId,
@@ -73,12 +74,13 @@ public final class AsterMarchApproachAtmosphere {
         if (clears.contains(encounterId)) return;
         double distanceSq = player.position().distanceToSqr(center);
         if (distanceSq > 34.0 * 34.0) return;
-        pulse(level, center, ambient, 7, 5.5, 1.5, 5.5, 0.018);
-        if (distanceSq <= 24.0 * 24.0) pulse(level, center.add(0, 1.5, 0), accent, 5, 3.0, 2.0, 3.0, 0.025);
+        pulse(level, player, center, ambient, 7, 5.5, 1.5, 5.5, 0.018);
+        if (distanceSq <= 24.0 * 24.0) pulse(level, player, center.add(0, 1.5, 0), accent, 5, 3.0, 2.0, 3.0, 0.025);
     }
 
-    private static void pulse(ServerLevel level, Vec3 center, ParticleOptions particle, int count,
+    private static void pulse(ServerLevel level, ServerPlayer player, Vec3 center, ParticleOptions particle, int count,
                               double spreadX, double spreadY, double spreadZ, double speed) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, spreadX, spreadY, spreadZ, speed);
+        PersonalPresentationIsolation.particles(level, player, particle,
+                center.x, center.y, center.z, count, spreadX, spreadY, spreadZ, speed);
     }
 }
