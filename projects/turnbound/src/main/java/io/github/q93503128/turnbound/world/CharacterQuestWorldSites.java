@@ -7,25 +7,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Physical v0.4 Character Quest investigation sites.
  *
  * The character wiki specifies each story premise but leaves most detailed step-by-step objectives open. v0.4 therefore
  * resolves CHARACTER_STORY through one authored investigation site per quest instead of inventing extra combat counts.
+ * The clue prop is world-shared; availability, completion and rewards remain strictly player-local.
  */
 public final class CharacterQuestWorldSites {
     public record Site(String questId, String characterId, String title, String routeHint, Vec3 position,
@@ -35,7 +31,8 @@ public final class CharacterQuestWorldSites {
     private static final int MARKER_Y = 55;
     private static final int MARKER_Z = -92;
     private static final double SPAWN_RADIUS_SQ = 112.0 * 112.0;
-    private static final double DESPAWN_RADIUS_SQ = 136.0 * 136.0;
+    private static final String SCOPE = "character_quest_sites";
+    private static final String KEY_PREFIX = "character_quest:";
     private static final List<Site> SITES = List.of(
             new Site("CQ_P01", "P01", "CQ_P01 · 끝까지 남은 길", "그늘숲 동쪽 · 무너진 북문 초소",
                     new Vec3(52.0, 70.0, -318.0),
@@ -62,9 +59,6 @@ public final class CharacterQuestWorldSites {
                     new Vec3(150.0, 66.0, 390.0),
                     "사고 당시 작업기록은 라제가 도망친 것이 아니라 후방 인부를 끌어내기 위해 반대편 통로로 갔음을 보여 준다.", Items.IRON_AXE, ChatFormatting.RED));
 
-    /** player -> spawned actor uuid -> site */
-    private static final Map<UUID, Map<UUID, Site>> ACTORS = new ConcurrentHashMap<>();
-
     private CharacterQuestWorldSites() {}
 
     public static List<Site> sites() { return SITES; }
@@ -82,48 +76,28 @@ public final class CharacterQuestWorldSites {
 
     public static void sync(ServerLevel level, ServerPlayer player) {
         build(level);
-        UUID playerId = player.getUUID();
-        Map<UUID, Site> actors = ACTORS.computeIfAbsent(playerId, ignored -> new LinkedHashMap<>());
-
-        for (var entry : List.copyOf(actors.entrySet())) {
-            Entity entity = level.getEntity(entry.getKey());
-            Site site = entry.getValue();
-            boolean keep = entity != null && available(player, site) && !completed(player, site)
-                    && player.position().distanceToSqr(site.position()) <= DESPAWN_RADIUS_SQ;
-            if (!keep) {
-                if (entity != null) entity.discard();
-                actors.remove(entry.getKey());
-            }
-        }
-
+        List<SharedAuxiliaryActors.Spec> desired = new ArrayList<>();
         for (Site site : SITES) {
             if (!available(player, site) || completed(player, site)) continue;
             if (player.position().distanceToSqr(site.position()) > SPAWN_RADIUS_SQ) continue;
-            if (actors.containsValue(site)) continue;
-            ArmorStand stand = new ArmorStand(level, site.position().x, site.position().y, site.position().z);
-            stand.setInvulnerable(true);
-            stand.setNoGravity(true);
-            stand.setShowArms(true);
-            stand.setCustomName(Component.literal(site.title()).withStyle(site.color(), ChatFormatting.BOLD));
-            stand.setCustomNameVisible(true);
-            stand.setItemSlot(EquipmentSlot.MAINHAND, site.item().getDefaultInstance());
-            level.addFreshEntity(stand);
-            actors.put(stand.getUUID(), site);
+            desired.add(new SharedAuxiliaryActors.Spec(key(site), site.position(),
+                    Component.literal("인연 조사 · " + displayTitle(site)).withStyle(site.color(), ChatFormatting.BOLD),
+                    site.item(), false, true, List.of(site.title())));
         }
+        SharedAuxiliaryActors.sync(level, player.getUUID(), SCOPE, desired);
     }
 
     public static boolean interact(ServerPlayer player, Entity target) {
-        if (player == null || target == null) return false;
-        Map<UUID, Site> actors = ACTORS.get(player.getUUID());
-        if (actors == null) return false;
-        Site site = actors.get(target.getUUID());
+        if (player == null || target == null || !(player.level() instanceof ServerLevel level)) return false;
+        Site site = siteForSharedKey(SharedAuxiliaryActors.key(target));
         if (site == null) return false;
         if (!available(player, site)) {
-            player.sendSystemMessage(Component.literal("TURNBOUND · 아직 이 Character Quest를 조사할 수 없습니다.").withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.literal("TURNBOUND · 아직 이 인연 기록을 조사할 수 없습니다.").withStyle(ChatFormatting.GRAY));
             return true;
         }
         if (completed(player, site)) {
-            target.discard(); actors.remove(target.getUUID()); return true;
+            player.sendSystemMessage(Component.literal("이미 정리한 인연 기록입니다.").withStyle(ChatFormatting.GRAY));
+            return true;
         }
 
         try {
@@ -131,25 +105,34 @@ public final class CharacterQuestWorldSites {
             QuestCatalog.Reward reward = QuestCatalog.reward(quest);
             CampaignPersistence.saveIfDirty(player);
             player.sendSystemMessage(Component.literal(site.finding()).withStyle(ChatFormatting.WHITE));
-            player.sendSystemMessage(Component.literal("Character Quest 완료 · " + quest.name()).withStyle(site.color(), ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.literal("인연 이야기 완료 · " + quest.name()).withStyle(site.color(), ChatFormatting.BOLD));
             player.sendSystemMessage(Component.literal("Crystal +" + reward.crystal() + " · Gold +" + reward.gold() + " · Profile Story 해금")
                     .withStyle(ChatFormatting.GOLD));
-            target.discard(); actors.remove(target.getUUID());
+            sync(level, player);
             MetaNetwork.sync(player);
         } catch (RuntimeException ex) {
-            player.sendSystemMessage(Component.literal("TURNBOUND · Character Quest 조건이 아직 충족되지 않았습니다.").withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.literal("TURNBOUND · 인연 이야기 조건이 아직 충족되지 않았습니다.").withStyle(ChatFormatting.GRAY));
         }
         return true;
     }
 
     public static void remove(ServerPlayer player) {
         if (player == null || !(player.level() instanceof ServerLevel level)) return;
-        Map<UUID, Site> actors = ACTORS.remove(player.getUUID());
-        if (actors == null) return;
-        for (UUID actorId : actors.keySet()) {
-            Entity entity = level.getEntity(actorId);
-            if (entity != null) entity.discard();
-        }
+        SharedAuxiliaryActors.removeScope(level, player.getUUID(), SCOPE);
+    }
+
+    private static String key(Site site) { return KEY_PREFIX + site.questId(); }
+
+    private static Site siteForSharedKey(String key) {
+        if (key == null || !key.startsWith(KEY_PREFIX)) return null;
+        String questId = key.substring(KEY_PREFIX.length());
+        for (Site site : SITES) if (site.questId().equals(questId)) return site;
+        return null;
+    }
+
+    private static String displayTitle(Site site) {
+        int separator = site.title().indexOf(" · ");
+        return separator >= 0 ? site.title().substring(separator + 3) : site.title();
     }
 
     private static boolean available(ServerPlayer player, Site site) {
