@@ -251,7 +251,7 @@ public final class AsterMarchFieldIncidents {
         ParticleOptions primary = particle(def.region());
         Vec3 p = def.pos().add(0, 0.75, 0);
         ring(level, player, primary, p, resolved ? 0.65 : 0.9, resolved ? 10 : 16);
-        level.sendParticles(player, resolved ? ParticleTypes.END_ROD : primary,
+        level.sendParticles(player, resolved ? ParticleTypes.END_ROD : primary, false, false,
                 p.x, p.y + 0.35, p.z, resolved ? 3 : 7, 0.28, 0.3, 0.28, 0.015);
     }
 
@@ -260,7 +260,8 @@ public final class AsterMarchFieldIncidents {
         Vec3 p = def.pos().add(0, 0.65, 0);
         ring(level, player, primary, p, resolved ? 0.8 : 1.15, resolved ? 14 : 22);
         ring(level, player, ParticleTypes.END_ROD, p.add(0, 0.55, 0), resolved ? 0.45 : 0.72, resolved ? 8 : 14);
-        level.sendParticles(player, primary, p.x, p.y + 0.5, p.z, resolved ? 6 : 12, 0.45, 0.5, 0.45, 0.025);
+        level.sendParticles(player, primary, false, false,
+                p.x, p.y + 0.5, p.z, resolved ? 6 : 12, 0.45, 0.5, 0.45, 0.025);
     }
 
     private static void directionalTrail(ServerLevel level, ServerPlayer player, Vec3 from, Vec3 to, ParticleOptions primary) {
@@ -270,8 +271,8 @@ public final class AsterMarchFieldIncidents {
         double length = Math.min(13.0, Math.sqrt(flat.lengthSqr()));
         for (double distance = 1.25; distance <= length; distance += 1.35) {
             Vec3 p = from.add(direction.scale(distance));
-            level.sendParticles(player, primary, p.x, p.y + Math.sin(distance * 0.8) * 0.08, p.z,
-                    2, 0.09, 0.08, 0.09, 0.005);
+            level.sendParticles(player, primary, false, false,
+                    p.x, p.y + Math.sin(distance * 0.8) * 0.08, p.z, 2, 0.09, 0.08, 0.09, 0.005);
         }
     }
 
@@ -280,7 +281,7 @@ public final class AsterMarchFieldIncidents {
             double angle = Math.PI * 2.0 * i / count;
             double x = center.x + Math.cos(angle) * radius;
             double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(player, particle, x, center.y, z, 1, 0.01, 0.01, 0.01, 0.0);
+            level.sendParticles(player, particle, false, false, x, center.y, z, 1, 0.01, 0.01, 0.01, 0.0);
         }
     }
 
