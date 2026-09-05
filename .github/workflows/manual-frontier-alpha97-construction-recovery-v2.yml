@@ -1,0 +1,242 @@
+name: Manual Frontier Alpha97 Construction Recovery V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-frontier-alpha97-construction-recovery-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply construction navigation recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          gp = root / 'gradle.properties'
+          g = gp.read_text(encoding='utf-8')
+          if 'mod_version=0.1.0-alpha.96' not in g:
+              raise SystemExit('unexpected Frontier version')
+          g = g.replace('mod_version=0.1.0-alpha.96', 'mod_version=0.1.0-alpha.97', 1)
+          g += '\n# Alpha.97 construction recovery: trust fresh vanilla navigation instead of re-rejecting legal partial-block paths, require the builder to be on plausible ground before site-envelope authority, and expose grading material/path stalls in the HUD context.\n'
+          gp.write_text(g, encoding='utf-8')
+
+          p = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java'
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('builderWithinSiteWorkEnvelope(construction, type, builder)',
+                        'builderWithinSiteWorkEnvelope(level, construction, type, builder)')
+
+          start = s.index('    private static boolean builderWithinSiteWorkEnvelope(')
+          end = s.index('    private static boolean hasReachableGroundWorkPosition(', start)
+          s = s[:start] + '''    private static boolean builderWithinSiteWorkEnvelope(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                          FrontierWorkerEntity builder) {
+        BuildingRotation rotation = construction.buildingRotation();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        double minX = construction.originX() - SITE_WORK_MARGIN;
+        double maxX = construction.originX() + width - 1 + SITE_WORK_MARGIN + 1.0D;
+        double minZ = construction.originZ() - SITE_WORK_MARGIN;
+        double maxZ = construction.originZ() + depth - 1 + SITE_WORK_MARGIN + 1.0D;
+        if (builder.getX() < minX || builder.getX() > maxX || builder.getZ() < minZ || builder.getZ() > maxZ) return false;
+        int x = (int) Math.floor(builder.getX());
+        int z = (int) Math.floor(builder.getZ());
+        BlockPos surface = safeSurfaceCell(level, x, z);
+        return surface != null && Math.abs(builder.getY() - surface.getY()) <= 2.25D;
+    }
+
+''' + s[end:]
+
+          start = s.index('    private static Path createReachablePath(')
+          end = s.index('    private static boolean moveToReachable(', start)
+          s = s[:start] + '''    private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
+        Path path = builder.getNavigation().createPath(target, 0);
+        if (path == null || !path.canReach() || path.getEndNode() == null) return null;
+        BlockPos end = path.getEndNode().asBlockPos();
+        if (Math.abs(end.getX() - target.getX()) > 1
+                || Math.abs(end.getY() - target.getY()) > 1
+                || Math.abs(end.getZ() - target.getZ()) > 1) return null;
+        if (!(builder.level() instanceof ServerLevel level) || !level.hasChunkAt(end)) return null;
+        // Fresh vanilla navigation already accounts for legal stairs, slabs and other partial blocks.
+        return path;
+    }
+
+''' + s[end:]
+
+          strict = s.find('    private static boolean pathNodesCurrentlyClear(')
+          if strict >= 0:
+              end = s.index('private static boolean blocksCurrentPathCell(', strict)
+              s = s[:strict] + '    ' + s[end:]
+
+          old = '''        if (construction.grading()) {
+            List<GradeCell> gradePlan = createGradePlan(level, construction, type);
+            int gradeStep = construction.gradeStep();
+            if (gradeStep < gradePlan.size() && !canGradeCell(level, construction, type, gradePlan.get(gradeStep))) {
+                BlockPos pos = gradePlan.get(gradeStep).floor();
+                return "부지 정리 막힘 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
+                        + " 주변의 물·보호 블록·깊은 지형을 확인하세요";
+            }
+            return "";
+        }
+'''
+          new = '''        if (construction.grading()) {
+            List<GradeCell> gradePlan = createGradePlan(level, construction, type);
+            int gradeStep = construction.gradeStep();
+            if (gradeStep >= gradePlan.size()) return "";
+            GradeCell cell = gradePlan.get(gradeStep);
+            if (!canGradeCell(level, construction, type, cell)) {
+                BlockPos pos = cell.floor();
+                return "부지 정리 막힘 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
+                        + " 주변의 물·보호 블록·깊은 지형을 확인하세요";
+            }
+            if (cell.retainingStone() > 0) {
+                BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+                if (!level.hasChunkAt(supply)) return "부지 정리 자재통 청크 미로드";
+                Container crate = level.getBlockState(supply).is(Blocks.BARREL)
+                        && level.getBlockEntity(supply) instanceof Container existing ? existing : null;
+                long staged = crate == null ? 0L : SettlementInventory.countStone(crate);
+                if (staged < cell.retainingStone()) {
+                    BlockPos stoneSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+                    if (stoneSource == null) return "부지 정리 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone) == null) {
+                        return "부지 정리 석재 접근 불가 · 저장소까지 실제 통로를 확인하세요";
+                    }
+                }
+            }
+            BlockPos work = gradeWorkPosition(level, cell.floor());
+            if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > GRADE_WORK_RANGE_SQR
+                    && !hasReachableGradeWorkPosition(level, builder, work)) {
+                return "부지 정리 현장 접근 불가 · 현재 정리 칸까지 실제 통로를 확인하세요";
+            }
+            return "";
+        }
+'''
+          if old not in s:
+              raise SystemExit('grading issue block not found')
+          s = s.replace(old, new, 1)
+
+          anchor = '    private static List<GradeCell> createGradePlan(ServerLevel level, ConstructionState construction, BuildingType type) {\n'
+          helper = '''    private static boolean hasReachableGradeWorkPosition(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        if (createReachablePath(builder, target) != null) return true;
+        int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
+        for (int[] offset : offsets) {
+            int x = target.getX() + offset[0];
+            int z = target.getZ() + offset[1];
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (isWalkableApproachCell(level, candidate) && createReachablePath(builder, candidate) != null) return true;
+        }
+        return false;
+    }
+
+'''
+          if anchor not in s:
+              raise SystemExit('grade plan anchor not found')
+          s = s.replace(anchor, helper + anchor, 1)
+          p.write_text(s, encoding='utf-8')
+
+          ctx = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementContextService.java'
+          c = ctx.read_text(encoding='utf-8')
+          old = '''                projectProgress = percent(worked, gradeTotal + buildTotal);
+                projectLabel = type.displayName() + " 공사";
+                String constructionDetail = construction.grading()
+                        ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반"
+                        : "자재 운반·시공 중";
+                String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
+                if (!constructionIssue.isBlank()) constructionDetail += " · " + constructionIssue;
+'''
+          new = '''                projectProgress = percent(worked, gradeTotal + buildTotal);
+                String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
+                projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · 막힘");
+                String constructionDetail = construction.grading()
+                        ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반"
+                        : "자재 운반·시공 중";
+                if (!constructionIssue.isBlank()) constructionDetail += " · " + constructionIssue;
+'''
+          if old not in c:
+              raise SystemExit('context project block not found')
+          ctx.write_text(c.replace(old, new, 1), encoding='utf-8')
+          print('ALPHA97_CONSTRUCTION_RECOVERY_PATCHED')
+          PY
+          git diff --check
+
+      - name: Contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java
+          C=projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementContextService.java
+          grep -q 'mod_version=0.1.0-alpha.97' projects/frontier-settlement/gradle.properties
+          grep -q 'Fresh vanilla navigation already accounts' "$P"
+          grep -q 'builderWithinSiteWorkEnvelope(ServerLevel level' "$P"
+          grep -q '부지 정리 석재 접근 불가' "$P"
+          grep -q 'hasReachableGradeWorkPosition' "$P"
+          grep -q 'constructionIssue.isBlank()' "$C"
+          if grep -q 'pathNodesCurrentlyClear' "$P"; then exit 1; fi
+
+      - name: JSON audit
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          files=list(pathlib.Path('projects/frontier-settlement/src/main/resources').rglob('*.json'))
+          for p in files: json.loads(p.read_text(encoding='utf-8'))
+          print('JSON_OK', len(files), 'files')
+          PY
+
+      - name: Build Frontier
+        working-directory: projects/frontier-settlement
+        run: ./gradlew clean build --no-daemon
+
+      - name: Verify jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR='projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.97.jar'
+          test -s "$JAR"
+          jar tf "$JAR" | grep -q 'SettlementConstructionService.class'
+          jar tf "$JAR" | grep -q 'SettlementContextService.class'
+          test -z "$(zipinfo -1 "$JAR" | sort | uniq -d)"
+          sha256sum "$JAR"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-alpha97-replacement
+          path: projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.97.jar
+          if-no-files-found: error
+
+      - name: Commit canonical source and self-remove workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-frontier-alpha97-construction-recovery.yml
+          rm -f .github/workflows/manual-frontier-alpha97-construction-recovery-v2.yml
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/gradle.properties \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementContextService.java \
+                  .github/workflows/manual-frontier-alpha97-construction-recovery.yml \
+                  .github/workflows/manual-frontier-alpha97-construction-recovery-v2.yml
+          git commit -m 'Recover Frontier construction navigation and stall reporting'
+          git push origin HEAD:main
