@@ -41,7 +41,7 @@ final class BattleHudLayout {
     static Layout calculate(int requestedWidth, int requestedHeight) {
         int width = Math.max(1, requestedWidth);
         int height = Math.max(1, requestedHeight);
-        boolean compact = width < 560 || height < 300;
+        boolean compact = width < 700 || height < 400;
         boolean tiny = height < 200;
         int margin = compact ? 4 : 7;
         int xs = tiny ? 2 : compact ? 3 : 4;
