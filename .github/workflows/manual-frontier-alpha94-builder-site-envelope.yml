@@ -1,0 +1,212 @@
+name: Manual Frontier Alpha94 Builder Site Envelope
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/manual-frontier-alpha94-builder-site-envelope.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply builder site-envelope recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          gp = Path('projects/frontier-settlement/gradle.properties')
+          g = gp.read_text(encoding='utf-8')
+          if 'mod_version=0.1.0-alpha.93' not in g:
+              raise SystemExit('unexpected Frontier version')
+          g = g.replace('mod_version=0.1.0-alpha.93', 'mod_version=0.1.0-alpha.94', 1)
+          g += '\n# Alpha.94 builder site-envelope recovery: once the physical builder reaches the local construction zone it may place every blueprint height from ground level; /frontier status now reports an unreachable site instead of silently stalling.\n'
+          gp.write_text(g, encoding='utf-8')
+
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
+          s = p.read_text(encoding='utf-8')
+
+          old = '    private static final double WORK_POSITION_REACHED_SQR = 9.0D;\n'
+          new = old + '    private static final int SITE_WORK_MARGIN = 12;\n'
+          if old not in s or 'SITE_WORK_MARGIN' in s:
+              raise SystemExit('unexpected work-range declaration')
+          s = s.replace(old, new, 1)
+
+          old = '''    private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                     BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+        // Construction height is presentation only: the worker stays on safe ground around the footprint.
+        // This avoids fragile stair/scaffold navigation while still requiring the physical worker to reach the site.
+        for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
+            double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+            if (workDistance <= WORK_POSITION_REACHED_SQR) {
+                builder.getNavigation().stop();
+                return true;
+            }
+            if (moveToReachable(builder, work, 1.05D)) return false;
+        }
+        builder.getNavigation().stop();
+        return false;
+    }
+
+'''
+          new = '''    private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
+                                                     BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
+        // The builder must physically reach the construction zone, but no individual blueprint block
+        // requires a fragile exact perimeter cell or vertical scaffold. Once the worker is locally on site,
+        // every height is authoritative from ground level. This keeps construction visible without letting
+        // hedges, doorways or already-built walls turn one later blueprint step into a permanent stall.
+        if (builderWithinSiteWorkEnvelope(construction, type, builder)) {
+            builder.getNavigation().stop();
+            return true;
+        }
+        for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
+            double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+            if (workDistance <= WORK_POSITION_REACHED_SQR) {
+                builder.getNavigation().stop();
+                return true;
+            }
+            if (moveToReachable(builder, work, 1.05D)) return false;
+        }
+        builder.getNavigation().stop();
+        return false;
+    }
+
+    private static boolean builderWithinSiteWorkEnvelope(ConstructionState construction, BuildingType type,
+                                                          FrontierWorkerEntity builder) {
+        BuildingRotation rotation = construction.buildingRotation();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        double minX = construction.originX() - SITE_WORK_MARGIN;
+        double maxX = construction.originX() + width - 1 + SITE_WORK_MARGIN + 1.0D;
+        double minZ = construction.originZ() - SITE_WORK_MARGIN;
+        double maxZ = construction.originZ() + depth - 1 + SITE_WORK_MARGIN + 1.0D;
+        return builder.getX() >= minX && builder.getX() <= maxX
+                && builder.getZ() >= minZ && builder.getZ() <= maxZ;
+    }
+
+    private static boolean hasReachableGroundWorkPosition(ServerLevel level, ConstructionState construction,
+                                                          BuildingType type, BuildingBlueprints.Placement placement,
+                                                          FrontierWorkerEntity builder, BlockPos supply) {
+        if (builderWithinSiteWorkEnvelope(construction, type, builder)) return true;
+        for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
+            if (createReachablePath(builder, work) != null) return true;
+        }
+        return false;
+    }
+
+'''
+          if old not in s:
+              raise SystemExit('missing moveBuilderToWorkPosition block')
+          s = s.replace(old, new, 1)
+
+          old = '''                if (SettlementInventory.countStone(crate) < stoneDelta) {
+                    BlockPos stoneSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+                    if (stoneSource == null) return "건설 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone) == null) {
+                        return "건설 석재 접근 불가 · 자재가 든 저장소까지 통로를 확보하세요";
+                    }
+                }
+            }
+            return "";
+'''
+          new = '''                if (SettlementInventory.countStone(crate) < stoneDelta) {
+                    BlockPos stoneSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+                    if (stoneSource == null) return "건설 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone) == null) {
+                        return "건설 석재 접근 불가 · 자재가 든 저장소까지 통로를 확보하세요";
+                    }
+                }
+            }
+            if (!hasReachableGroundWorkPosition(level, construction, type, placement, builder, supply)) {
+                return "건설 현장 접근 불가 · 건물 주변 지상 통로를 확인하거나 /frontier normalize를 실행하세요";
+            }
+            return "";
+'''
+          if old not in s:
+              raise SystemExit('missing constructionIssue insertion point')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          print('ALPHA94_SOURCE_PATCHED')
+          PY
+
+      - name: Contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java')
+          s = p.read_text(encoding='utf-8')
+          checks = [
+              'SITE_WORK_MARGIN = 12',
+              'builderWithinSiteWorkEnvelope(construction, type, builder)',
+              'hasReachableGroundWorkPosition',
+              '건설 현장 접근 불가',
+              'retireLegacyConstructionScaffolds',
+          ]
+          for c in checks:
+              if c not in s: raise SystemExit('missing contract: '+c)
+          if 'ensureConstructionScaffolds(level, data, type, supply);' in s:
+              raise SystemExit('legacy scaffold runtime call returned')
+          print('ALPHA94_CONTRACT_OK')
+          PY
+
+      - name: Build Frontier
+        working-directory: projects/frontier-settlement
+        run: ./gradlew clean build --no-daemon
+
+      - name: Verify jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR='projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.94.jar'
+          test -s "$JAR"
+          unzip -l "$JAR" | grep -q 'SettlementConstructionService.class'
+          python3 - <<'PY'
+          import zipfile
+          p='projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.94.jar'
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              if len(names)!=len(set(names)): raise SystemExit('duplicate jar entries')
+          print('JAR_OK')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-alpha94-replacement
+          path: projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.94.jar
+          if-no-files-found: error
+
+      - name: Commit canonical source and self-remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-frontier-alpha94-builder-site-envelope.yml
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/gradle.properties \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.java \
+                  .github/workflows/manual-frontier-alpha94-builder-site-envelope.yml
+          git commit -m 'Make settlement construction site-local and path tolerant'
+          git push origin HEAD:main
