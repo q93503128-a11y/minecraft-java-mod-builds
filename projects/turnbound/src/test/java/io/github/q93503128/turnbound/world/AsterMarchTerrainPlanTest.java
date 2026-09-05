@@ -22,9 +22,10 @@ class AsterMarchTerrainPlanTest {
 
     @Test
     void harborIsWaterWhileCentralTownRemainsElevatedLand() {
-        assertFalse(AsterMarchTerrainPlan.radiaLand(0, -82));
-        assertEquals(AsterMarchTerrainPlan.Kind.RADIA_WATER, AsterMarchTerrainPlan.column(0, -82).kind());
-        assertEquals(AsterMarchTerrainPlan.RADIA_SEA_Y, AsterMarchTerrainPlan.column(0, -82).surfaceY());
+        // x=0 is the authored north causeway through the inlet, so sample open water beside it.
+        assertFalse(AsterMarchTerrainPlan.radiaLand(20, -82));
+        assertEquals(AsterMarchTerrainPlan.Kind.RADIA_WATER, AsterMarchTerrainPlan.column(20, -82).kind());
+        assertEquals(AsterMarchTerrainPlan.RADIA_SEA_Y, AsterMarchTerrainPlan.column(20, -82).surfaceY());
 
         assertTrue(AsterMarchTerrainPlan.radiaLand(0, 12));
         int centerY = AsterMarchTerrainPlan.radiaSurfaceY(0, 12);
