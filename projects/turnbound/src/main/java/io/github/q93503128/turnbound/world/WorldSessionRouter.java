@@ -153,7 +153,7 @@ public final class WorldSessionRouter {
     }
 
     static boolean mayCrossSharedSeam(boolean physicalOpen, boolean playerEligible) {
-        return physicalOpen && playerEligible;
+        return SharedWorldSessionRules.mayCrossSharedSeam(physicalOpen, playerEligible);
     }
 
     private static void beginRelayApproach(ServerPlayer p) {
