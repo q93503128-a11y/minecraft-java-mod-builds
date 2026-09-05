@@ -35,7 +35,9 @@ import java.util.Set;
 
 public final class SettlementWorkerService {
     public static final String RESOURCE_WORKER_TAG = "frontier_settlement_resource_worker";
-    private static final String WORKSITE_EXPORT_TAG = "frontier_settlement_worksite_export";
+    // Alpha.107 no longer re-extracts every produced stack from the profession barrel.
+    // Keep the old entity tag only as a one-way save migration marker.
+    private static final String LEGACY_WORKSITE_EXPORT_TAG = "frontier_settlement_worksite_export";
     private static final String LUMBER_WORKER_NAME = "벌목 주민";
     private static final String FARM_WORKER_NAME = "농사 주민";
     private static final String QUARRY_WORKER_NAME = "채석 주민";
@@ -65,6 +67,9 @@ public final class SettlementWorkerService {
     // This is deliberately bounded: distant resources still require normal pathfinding.
     private static final double LUMBER_REMOTE_WORK_REACH_SQR = 36.0D; // 6 blocks
     private static final double QUARRY_REMOTE_WORK_REACH_SQR = 25.0D; // 5 blocks
+    // A worker already beside its own profession barrel should interact directly instead of
+    // depending on a fragile final path cell inside fences/walls.
+    private static final double WORKSITE_STORAGE_INTERACTION_REACH_SQR = 36.0D; // 6 blocks
 
     private SettlementWorkerService() {}
 
@@ -259,6 +264,14 @@ public final class SettlementWorkerService {
             // Clear stale Alpha.84-87 quarantine/active-project flags on every ordinary work tick.
             worker.setNoAi(false);
             worker.setInvulnerable(false);
+            // Old saves can contain a worker that was carrying a worksite-export stack. That old
+            // state caused a local-barrel -> MAINHAND -> town-storage retry loop. Retire it once and
+            // let the ordinary cargo state machine decide where the physical stack belongs.
+            if (worker.entityTags().contains(LEGACY_WORKSITE_EXPORT_TAG)) {
+                worker.removeTag(LEGACY_WORKSITE_EXPORT_TAG);
+                worker.getNavigation().stop();
+                MOVEMENT_WATCHES.remove(worker.getUUID());
+            }
             work.run(level, data, worker, building);
         }
     }
@@ -479,7 +492,6 @@ public final class SettlementWorkerService {
 
     private static void workLumber(ServerLevel level, SettlementData data,
                                    FrontierWorkerEntity worker, BuildingRecord camp) {
-        if (tryExportWorksiteBuffer(level, data, worker, camp)) return;
         ItemStack carried = worker.getMainHandItem();
         Item expected = carried.isEmpty() ? null : carried.getItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
@@ -510,12 +522,14 @@ public final class SettlementWorkerService {
         }
         ItemStack harvested = harvestVerticalTrunk(level, data, target, item,
                 Math.min(SettlementProductionEfficiencyService.lumberBatch(efficiencyGrade), room));
-        if (!harvested.isEmpty() && appendCargo(worker, harvested)) worker.swing(InteractionHand.MAIN_HAND);
+        if (!harvested.isEmpty() && appendCargo(worker, harvested)) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            deliverIfCargoFull(level, data, worker, camp);
+        }
     }
 
     private static void workFarm(ServerLevel level, SettlementData data,
                                  FrontierWorkerEntity worker, BuildingRecord farm) {
-        if (tryExportWorksiteBuffer(level, data, worker, farm)) return;
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty() && !carried.is(Items.WHEAT)) {
             deliverToWorksiteStorage(level, data, worker, farm, carried);
@@ -569,7 +583,10 @@ public final class SettlementWorkerService {
             }
         }
         if (harvested > 0) {
-            if (appendCargo(worker, new ItemStack(Items.WHEAT, harvested))) worker.swing(InteractionHand.MAIN_HAND);
+            if (appendCargo(worker, new ItemStack(Items.WHEAT, harvested))) {
+                worker.swing(InteractionHand.MAIN_HAND);
+                deliverIfCargoFull(level, data, worker, farm);
+            }
             return;
         }
         if (grown > 0) worker.swing(InteractionHand.MAIN_HAND);
@@ -580,7 +597,6 @@ public final class SettlementWorkerService {
 
     private static void workQuarry(ServerLevel level, SettlementData data,
                                    FrontierWorkerEntity worker, BuildingRecord quarry) {
-        if (tryExportWorksiteBuffer(level, data, worker, quarry)) return;
         ItemStack carried = worker.getMainHandItem();
         Item expected = carried.isEmpty() ? null : carried.getItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
@@ -609,12 +625,14 @@ public final class SettlementWorkerService {
         }
         ItemStack stone = harvestStoneCluster(level, data, target, item,
                 Math.min(SettlementProductionEfficiencyService.quarryBatch(efficiencyGrade), room));
-        if (!stone.isEmpty() && appendCargo(worker, stone)) worker.swing(InteractionHand.MAIN_HAND);
+        if (!stone.isEmpty() && appendCargo(worker, stone)) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            deliverIfCargoFull(level, data, worker, quarry);
+        }
     }
 
     private static void workMine(ServerLevel level, SettlementData data,
                                  FrontierWorkerEntity worker, BuildingRecord mine) {
-        if (tryExportWorksiteBuffer(level, data, worker, mine)) return;
         ItemStack carried = worker.getMainHandItem();
         if (!carried.isEmpty() && carried.getCount() >= cargoLimit(carried)) {
             deliverToWorksiteStorage(level, data, worker, mine, carried);
@@ -641,68 +659,16 @@ public final class SettlementWorkerService {
             return;
         }
         ItemStack mined = mineOre(level, ore, room);
-        if (!mined.isEmpty() && appendCargo(worker, mined)) worker.swing(InteractionHand.MAIN_HAND);
-    }
-
-    /**
-     * Profession barrels remain visible local buffers, but they are not dead-end economy silos.
-     * Once ordinary harvesting has staged a stack there, that same worker takes the physical stack
-     * and walks it to shared/general town storage. The export tag distinguishes this cargo from a
-     * freshly harvested stack so it cannot accidentally resume harvesting on the trip to town.
-     */
-    private static boolean tryExportWorksiteBuffer(ServerLevel level, SettlementData data,
-                                                   FrontierWorkerEntity worker, BuildingRecord building) {
-        if (worker.entityTags().contains(WORKSITE_EXPORT_TAG)) {
-            ItemStack exporting = worker.getMainHandItem();
-            if (exporting.isEmpty()) {
-                worker.removeTag(WORKSITE_EXPORT_TAG);
-                return false;
-            }
-            deliverToTownStorage(level, data, worker, exporting);
-            if (worker.getMainHandItem().isEmpty()) worker.removeTag(WORKSITE_EXPORT_TAG);
-            return true;
+        if (!mined.isEmpty() && appendCargo(worker, mined)) {
+            worker.swing(InteractionHand.MAIN_HAND);
+            deliverIfCargoFull(level, data, worker, mine);
         }
-        if (!worker.getMainHandItem().isEmpty()) return false;
-
-        BlockPos local = SettlementStorageService.worksiteStoragePosition(building);
-        if (local == null || !level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)) return false;
-        if (!(level.getBlockEntity(local) instanceof Container container)) return false;
-        if (!hasExportableWorksiteOutput(building.buildingType(), container)) return false;
-
-        if (worker.distanceToSqr(local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D) > 9.0D) {
-            moveNear(level, worker, local, 0.86D);
-            return true;
-        }
-
-        ItemStack staged = SettlementStorageService.extract(
-                level, local, stack -> isExportableWorksiteOutput(building.buildingType(), stack), PRODUCTION_HAUL_STACK);
-        if (staged.isEmpty()) return false;
-        worker.setItemSlot(EquipmentSlot.MAINHAND, staged);
-        worker.addTag(WORKSITE_EXPORT_TAG);
-        worker.getNavigation().stop();
-        return true;
     }
 
-    private static boolean hasExportableWorksiteOutput(BuildingType type, Container container) {
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            if (isExportableWorksiteOutput(type, container.getItem(slot))) return true;
-        }
-        return false;
-    }
-
-    private static boolean isExportableWorksiteOutput(BuildingType type, ItemStack stack) {
-        if (stack == null || stack.isEmpty() || type == null) return false;
-        return switch (type) {
-            // Managed worksite barrels are visible physical buffers and players can interact with them.
-            // Export only items that this profession can actually create; never vacuum arbitrary player
-            // storage merely because it happens to sit in a managed barrel.
-            case LUMBER_CAMP -> stack.is(ItemTags.LOGS);
-            case FARM -> stack.is(Items.WHEAT);
-            case QUARRY -> isQuarryOutputItem(stack);
-            case MINE -> isMineOutputItem(stack);
-            default -> false;
-        };
-    }
+    // Profession barrels are already part of SettlementStorageService's authoritative physical
+    // resource ledger. Alpha.107 therefore leaves deposited output in that local buffer and lets
+    // the producer resume work. When the barrel is actually full, the ordinary delivery path
+    // naturally falls back to another loaded town storage target.
 
     private static boolean isQuarryOutputItem(ItemStack stack) {
         return stack.is(Items.STONE) || stack.is(Items.DEEPSLATE) || stack.is(Items.ANDESITE)
@@ -717,6 +683,13 @@ public final class SettlementWorkerService {
         // compatibility without treating unrelated blocks, tools, food or equipment as mine output.
         return stack.getItem() instanceof BlockItem blockItem
                 && blockItem.getBlock().defaultBlockState().is(Tags.Blocks.ORES);
+    }
+
+    private static void deliverIfCargoFull(ServerLevel level, SettlementData data,
+                                               FrontierWorkerEntity worker, BuildingRecord building) {
+        ItemStack carried = worker.getMainHandItem();
+        if (carried.isEmpty() || carried.getCount() < cargoLimit(carried)) return;
+        deliverToWorksiteStorage(level, data, worker, building, carried);
     }
 
     private static int cargoLimit(ItemStack stack) {
@@ -763,15 +736,19 @@ public final class SettlementWorkerService {
         if (carried.isEmpty()) return;
         BlockPos local = SettlementStorageService.worksiteStoragePosition(building);
         if (local != null && level.hasChunkAt(local) && level.getBlockState(local).is(Blocks.BARREL)
-                && SettlementStorageService.hasRoomAt(level, local, carried) && !isTargetBlocked(level, worker, local)) {
-            if (worker.distanceToSqr(local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D) > 9.0D) {
-                if (moveNear(level, worker, local, 0.86D)) return;
-            } else {
+                && SettlementStorageService.hasRoomAt(level, local, carried)) {
+            double distance = worker.distanceToSqr(
+                    local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);
+            if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {
+                // Full-stack handoff is authoritative as soon as the worker is beside its own jobsite.
+                // Do not wait for a final path node that can be invalidated by fences, doors or knockback.
+                worker.getNavigation().stop();
                 ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);
                 worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
                 clearTargetIfEmpty(worker);
                 return;
             }
+            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) return;
         }
         deliverToTownStorage(level, data, worker, carried);
     }
@@ -892,14 +869,21 @@ public final class SettlementWorkerService {
     }
 
     private static void clearTargetIfEmpty(FrontierWorkerEntity worker) {
-        if (worker.getMainHandItem().isEmpty()) clearResourceTarget(worker);
-        MOVEMENT_WATCHES.remove(worker.getUUID());
+        if (!worker.getMainHandItem().isEmpty()) {
+            MOVEMENT_WATCHES.remove(worker.getUUID());
+            return;
+        }
+        // A completed physical deposit is a hard state-machine boundary: stale target, blocked-path
+        // and navigation state must not survive into the next production cycle.
+        worker.getNavigation().stop();
+        clearTransientWorkerState(worker);
     }
 
     private static void clearTransientWorkerState(FrontierWorkerEntity worker) {
         clearResourceTarget(worker);
         MOVEMENT_WATCHES.remove(worker.getUUID());
         BLOCKED_TARGETS.remove(worker.getUUID());
+        worker.removeTag(LEGACY_WORKSITE_EXPORT_TAG);
     }
 
     private static boolean isWalkableApproach(ServerLevel level, BlockPos pos) {

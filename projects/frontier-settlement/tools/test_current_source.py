@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.106" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.107" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -70,6 +70,11 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
+require("WORKSITE_STORAGE_INTERACTION_REACH_SQR = 36.0D" in worker, "close worksite deposit reach missing")
+require("deliverIfCargoFull" in worker, "full-stack immediate deposit handoff missing")
+require("tryExportWorksiteBuffer(" not in worker, "retired worksite re-extraction loop returned")
+require("LEGACY_WORKSITE_EXPORT_TAG" in worker and "worker.removeTag(LEGACY_WORKSITE_EXPORT_TAG)" in worker, "legacy export-tag migration missing")
+require("Profession barrels are already part of SettlementStorageService's authoritative physical" in worker, "worksite barrel authority rationale missing")
 production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")
 require("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")
 require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")
@@ -130,6 +135,11 @@ require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in
 for production_type in ("BuildingType.LUMBER_CAMP", "BuildingType.FARM", "BuildingType.QUARRY", "BuildingType.MINE"):
     require(production_type in integrity, f"ruined production building is not integrity-tracked: {production_type}")
 require("if (type == BuildingType.HOUSE) clearKnownHouseRemnants" in integrity, "production retirement may clear player/container remnants")
+require("REPAIR_INTERVAL_TICKS = 20" in integrity and "MAX_REPAIR_BLOCKS_PER_PASS = 12" in integrity, "bounded immediate house repair cadence missing")
+require("repairDamagedHouses" in integrity and "repairPass" in integrity and "integrityPass" in integrity, "house repair is not ordered before ruin retirement")
+require("SettlementStorageService.consume(level, data, woodCost, stoneCost, 0L)" in integrity, "house repair bypasses physical wood/stone authority")
+require("SettlementStorageService.consumeMetal(level, data, metalCost)" in integrity, "house lantern repair bypasses canonical metal authority")
+require("canRepairVacancy" in integrity and "level.getBlockEntity(pos) != null" in integrity, "house repair may overwrite protected/player container cells")
 
 military = text(SETTLEMENT / "SettlementMilitaryOutpostService.java")
 require(military.count("SettlementInventory.countMetal(container)") >= 3, "remote military metal still uses raw item counts")
@@ -142,4 +152,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha106 production density + active farm tending + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha107 worker handoff + physical house repair + prior authority invariants")
