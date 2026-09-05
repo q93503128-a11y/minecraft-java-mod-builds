@@ -1,0 +1,59 @@
+name: Survival 0.61.14 Expedition Current UI 20260905
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/survival-06114-expedition-current-ui-20260905.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Apply expedition UI patch
+        run: python projects/survival-ascension/tools/patch_expedition_current_region_ui.py
+      - name: Verify current source
+        working-directory: projects/survival-ascension
+        run: python tools/test_current_source.py
+      - name: Java 25 clean build
+        working-directory: projects/survival-ascension
+        run: ./gradlew clean build --no-daemon
+      - name: Verify runtime JAR
+        working-directory: projects/survival-ascension
+        run: python tools/verify_jar.py build/libs/survivalascension-0.61.14-alpha.1.jar
+      - name: Commit canonical source and remove temporary files
+        run: |
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm projects/survival-ascension/tools/patch_expedition_current_region_ui.py
+          git rm .github/workflows/survival-06114-expedition-current-ui-20260905.yml
+          git add projects/survival-ascension
+          git commit -m 'Show current expedition region in Survival UI'
+      - name: Rebase and reverify current main
+        run: |
+          git fetch origin main
+          git rebase origin/main
+          cd projects/survival-ascension
+          python tools/test_current_source.py
+          ./gradlew clean build --no-daemon
+          python tools/verify_jar.py build/libs/survivalascension-0.61.14-alpha.1.jar
+      - name: Stage artifact
+        run: |
+          mkdir -p out
+          cp projects/survival-ascension/build/libs/survivalascension-0.61.14-alpha.1.jar out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survivalascension-0.61.14-alpha.1-tested
+          path: out/survivalascension-0.61.14-alpha.1.jar
+      - name: Push main
+        run: git push origin HEAD:main
