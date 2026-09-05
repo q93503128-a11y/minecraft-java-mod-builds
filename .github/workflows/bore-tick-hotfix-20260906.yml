@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'tools/apply_bore_tick_hotfix_tmp.py'
+      - 'tools/continue_bore_tick_hotfix_tmp.py'
       - '.github/workflows/bore-tick-hotfix-20260906.yml'
 
 permissions:
@@ -21,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
@@ -33,7 +34,7 @@ jobs:
           git pull --rebase origin main
 
       - name: Apply adaptive bore and Frontier event patch
-        run: python tools/apply_bore_tick_hotfix_tmp.py
+        run: python tools/continue_bore_tick_hotfix_tmp.py
 
       - name: Verify source contracts
         run: |
@@ -65,10 +66,10 @@ jobs:
           from pathlib import Path
           import zipfile
           checks = [
-              (Path('projects/survival-ascension/build/libs'), 'survivalascension', '0.61.17-alpha.1'),
-              (Path('projects/frontier-settlement/build/libs'), 'frontier_settlement', '0.1.0-alpha.113'),
+              (Path('projects/survival-ascension/build/libs'), '0.61.17-alpha.1'),
+              (Path('projects/frontier-settlement/build/libs'), '0.1.0-alpha.113'),
           ]
-          for root, marker, version in checks:
+          for root, version in checks:
               jars = [p for p in root.glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
               assert jars, f'no runtime jar in {root}'
               jar = max(jars, key=lambda p: p.stat().st_size)
@@ -76,14 +77,14 @@ jobs:
               with zipfile.ZipFile(jar) as z:
                   names = set(z.namelist())
                   assert 'META-INF/neoforge.mods.toml' in names
-                  classes = [n for n in names if n.endswith('.class')]
-                  assert classes, jar
+                  assert any(n.endswith('.class') for n in names)
               print(jar, jar.stat().st_size, version)
           PY
 
       - name: Commit canonical changes and retire temporary mutators
         run: |
           rm tools/apply_bore_tick_hotfix_tmp.py
+          rm tools/continue_bore_tick_hotfix_tmp.py
           rm .github/workflows/bore-tick-hotfix-20260906.yml
           git add -A
           git commit -m "Optimize bulk tunnel server tick latency"
