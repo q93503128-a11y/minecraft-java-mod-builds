@@ -7,8 +7,8 @@ import java.util.List;
  * Reference-driven battle HUD geometry.
  *
  * The battlefield stays visually dominant: party state is a thin bottom strip, enemy state lives in world-space,
- * and the current actor's actions form one compact vertical stack at the lower-right.  This follows the same
- * information hierarchy as the reference screenshots without copying their art assets.
+ * and the current actor's actions form one compact vertical stack at the lower-right. The layout deliberately scales
+ * the action dock and keeps a tiny-height fallback so the same hierarchy survives Minecraft GUI-scale changes.
  */
 final class BattleHudLayout {
     static final int SKILL_COUNT = 5;
@@ -42,16 +42,16 @@ final class BattleHudLayout {
         int width = Math.max(1, requestedWidth);
         int height = Math.max(1, requestedHeight);
         boolean compact = width < 560 || height < 300;
-
+        boolean tiny = height < 200;
         int margin = compact ? 4 : 7;
-        int xs = compact ? 3 : 4;
-        int s = compact ? 4 : 6;
+        int xs = tiny ? 2 : compact ? 3 : 4;
+        int s = compact ? 5 : 7;
 
-        // Small reference-style utility controls occupy only the extreme lower-right corner.
-        int controlH = compact ? 15 : 17;
-        int autoW = compact ? 32 : 38;
-        int speedW = compact ? 30 : 36;
-        int fleeW = compact ? 38 : 46;
+        // Utility controls stay visually subordinate at the extreme lower-right.
+        int controlH = tiny ? 15 : compact ? 16 : 18;
+        int autoW = compact ? 34 : 40;
+        int speedW = compact ? 31 : 37;
+        int fleeW = compact ? 40 : 48;
         int controlsTotal = autoW + speedW + fleeW + xs * 2;
         int controlsX = Math.max(margin, width - margin - controlsTotal);
         int controlsY = Math.max(margin, height - margin - controlH);
@@ -59,12 +59,12 @@ final class BattleHudLayout {
         Rect auto = inside(width, height, flee.right() + xs, controlsY, autoW, controlH);
         Rect speed = inside(width, height, auto.right() + xs, controlsY, speedW, controlH);
 
-        // Party state is one thin horizontal status row, not four large cards.
-        int allyH = compact ? 15 : 17;
+        // Party state remains a single low-profile strip instead of four cards.
+        int allyH = tiny ? 15 : compact ? 16 : 18;
         int allyGap = compact ? 3 : 5;
         int allyAreaRight = Math.max(margin + 4, controlsX - s);
         int allyAvailable = Math.max(4, allyAreaRight - margin);
-        int allyW = Math.max(1, Math.min(compact ? 92 : 118,
+        int allyW = Math.max(1, Math.min(compact ? 96 : 124,
                 (allyAvailable - allyGap * (ALLY_COUNT - 1)) / ALLY_COUNT));
         int allyY = height - margin - allyH;
         List<Rect> allies = new ArrayList<>(ALLY_COUNT);
@@ -72,23 +72,25 @@ final class BattleHudLayout {
             allies.add(inside(width, height, margin + i * (allyW + allyGap), allyY, allyW, allyH));
         }
 
-        // Enemy state is projected above actors. Compatibility rectangles remain intentionally negligible.
+        // Enemy state is projected above actors. Compatibility rectangles intentionally stay negligible.
         List<Rect> enemies = new ArrayList<>(ENEMY_COUNT);
         for (int i = 0; i < ENEMY_COUNT; i++) {
             enemies.add(inside(width, height, width - margin - 1, margin + i, 1, 1));
         }
 
-        // TURNBOUND still benefits from a turn queue, but the reference has no giant top HUD wall.
-        int timelineW = Math.min(compact ? 168 : 228, Math.max(1, width - margin * 2));
-        int timelineH = compact ? 13 : 15;
+        // TURNBOUND keeps its turn queue, but as a restrained top-center strip.
+        int timelineW = Math.min(compact ? 170 : 232, Math.max(1, width - margin * 2));
+        int timelineH = tiny ? 12 : compact ? 13 : 15;
         Rect timeline = inside(width, height, (width - timelineW) / 2, margin, timelineW, timelineH);
 
-        // Current actor actions: one readable vertical list, matching the reference's lower-right interaction flow.
-        int dockW = compact ? Math.min(112, Math.max(94, width / 4)) : 132;
+        // Current actor actions use one vertical scan path. Standard viewports get slightly more width for Korean names.
+        int dockW = tiny ? Math.min(104, Math.max(90, width / 3))
+                : compact ? Math.min(122, Math.max(102, width / 4))
+                : Math.min(156, Math.max(142, width / 6));
         int dockX = width - margin - dockW;
-        int skillH = compact ? 20 : 22;
-        int skillGap = compact ? 2 : 3;
-        int headerH = compact ? 16 : 18;
+        int skillH = tiny ? 17 : compact ? 20 : 24;
+        int skillGap = tiny ? 1 : compact ? 2 : 3;
+        int headerH = tiny ? 14 : compact ? 16 : 17;
         int skillAreaH = SKILL_COUNT * skillH + (SKILL_COUNT - 1) * skillGap;
         int dockBottom = controlsY - s;
         int dockY = Math.max(timeline.bottom() + s, dockBottom - headerH - skillAreaH);
@@ -98,10 +100,11 @@ final class BattleHudLayout {
             skills.add(inside(width, height, dockX, header.bottom() + i * (skillH + skillGap), dockW, skillH));
         }
 
-        int tooltipW = compact ? 154 : 214;
-        int tooltipH = compact ? 68 : 86;
+        int tooltipW = tiny ? 138 : compact ? 164 : 226;
+        int tooltipH = tiny ? 48 : compact ? 70 : 92;
         int tooltipX = Math.max(margin, dockX - tooltipW - s);
-        int tooltipY = Math.max(timeline.bottom() + s, Math.min(dockY + 10, controlsY - tooltipH - s));
+        int tooltipY = Math.max(timeline.bottom() + s,
+                Math.min(dockY + (tiny ? 3 : 12), controlsY - tooltipH - s));
         Rect tooltip = inside(width, height, tooltipX, tooltipY,
                 Math.min(tooltipW, Math.max(1, dockX - margin - s)), tooltipH);
 
