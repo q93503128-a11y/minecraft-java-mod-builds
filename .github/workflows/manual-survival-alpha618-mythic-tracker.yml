@@ -1,0 +1,70 @@
+name: Manual Survival Alpha618 Mythic Tracker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual-survival-alpha618-mythic-tracker.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Apply fix
+        run: python3 .github/scripts/survival_alpha618_mythic_tracker_fix.py
+      - name: Validate patch and JSON
+        run: |
+          git diff --check
+          grep -q 'mod_version=0.61.8-alpha.1' projects/survival-ascension/gradle.properties
+          grep -q 'PROTOCOL = "13"' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java
+          grep -q 'PlayerChangedDimensionEvent' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java
+          grep -q 'MythicTargetPayload.clear' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java
+          grep -q 'getMainCamera().getYRot' projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java
+          python3 - <<'PY'
+          import json, pathlib
+          files=list(pathlib.Path('projects/survival-ascension/src/main/resources').rglob('*.json'))
+          for p in files: json.loads(p.read_text(encoding='utf-8'))
+          print('JSON_OK', len(files))
+          PY
+      - name: Build
+        working-directory: projects/survival-ascension
+        run: ./gradlew clean build --no-daemon
+      - name: Verify jar
+        run: |
+          JAR=projects/survival-ascension/build/libs/survivalascension-0.61.8-alpha.1.jar
+          test -s "$JAR"
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/client/ClientMythicState.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/network/MythicTargetPayload.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/elite/EliteMobSystem.class'
+          jar tf "$JAR" | grep -q 'META-INF/neoforge.mods.toml'
+          test -z "$(zipinfo -1 "$JAR" | sort | uniq -d)"
+          sha256sum "$JAR"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survival-alpha618-mythic-tracker
+          path: projects/survival-ascension/build/libs/survivalascension-0.61.8-alpha.1.jar
+          if-no-files-found: error
+      - name: Commit main
+        run: |
+          rm -f .github/workflows/manual-survival-alpha618-mythic-tracker.yml
+          rm -f .github/scripts/survival_alpha618_mythic_tracker_fix.py
+          git config user.name coworkaccount
+          git config user.email cyp1jhh2@gmail.com
+          git add projects/survival-ascension/gradle.properties projects/survival-ascension/CHANGELOG.md projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/SurvivalAscension.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/MythicTargetPayload.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/network/SkillNetwork.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/ClientMythicState.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SkillHudOverlay.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/SurvivalAscensionClient.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/elite/EliteMobSystem.java projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/command/AscensionCommands.java .github/workflows/manual-survival-alpha618-mythic-tracker.yml .github/scripts/survival_alpha618_mythic_tracker_fix.py
+          git commit -m 'Fix Mythic target tracker authority and HUD sync'
+          git push origin HEAD:main
