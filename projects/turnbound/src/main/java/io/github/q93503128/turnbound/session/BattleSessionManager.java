@@ -162,11 +162,14 @@ public final class BattleSessionManager {
     private static BattleSession privateSession(ServerPlayer player, Supplier<BattleSession> factory) {
         BattleSession[] box = new BattleSession[1];
         boolean wasInvisible = player.isInvisible();
-        PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> box[0] = factory.get());
-        // BattleSession historically hid the physical player shell for the local third-person camera. Restore the
-        // authoritative server visibility immediately; the client now suppresses only its own battle-view player renders.
-        player.setInvisible(wasInvisible);
-        return box[0];
+        try {
+            PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> box[0] = factory.get());
+            return box[0];
+        } finally {
+            // BattleSession historically hid the physical player shell for its local third-person camera. Keep the
+            // authoritative server visibility unchanged; client rendering now isolates the private battle view.
+            player.setInvisible(wasInvisible);
+        }
     }
 
     public static void clearAll(Iterable<ServerPlayer> players) {
