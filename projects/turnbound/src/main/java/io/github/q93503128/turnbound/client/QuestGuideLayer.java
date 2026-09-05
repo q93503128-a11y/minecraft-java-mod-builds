@@ -17,7 +17,6 @@ public final class QuestGuideLayer implements GuiLayer {
     private static final int MUTED = 0xFFC9BDAA;
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
-    // Default stays compact; J is the explicit opt-in for the full quest explanation.
     private static boolean expanded = false;
 
     public static void toggle() { expanded = !expanded; }
@@ -85,7 +84,7 @@ public final class QuestGuideLayer implements GuiLayer {
 
     private static void drawDirectionCue(GuiGraphicsExtractor graphics, Minecraft minecraft, Target target) {
         double dx = target.x - minecraft.player.getX(), dz = target.z - minecraft.player.getZ();
-        int distance = (int)Math.round(Math.hypot(dx, dz));
+        int distance = (int) Math.round(Math.hypot(dx, dz));
         double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
         double delta = wrapDegrees(targetYaw - minecraft.player.getYRot());
         String arrow = directionArrow(delta);
@@ -118,7 +117,7 @@ public final class QuestGuideLayer implements GuiLayer {
     }
 
     private static String targetLine(Minecraft minecraft, Target target) {
-        int distance = (int)Math.round(Math.hypot(target.x - minecraft.player.getX(), target.z - minecraft.player.getZ()));
+        int distance = (int) Math.round(Math.hypot(target.x - minecraft.player.getX(), target.z - minecraft.player.getZ()));
         return "◆ " + target.label + " · " + distance + "m";
     }
 
@@ -129,52 +128,78 @@ public final class QuestGuideLayer implements GuiLayer {
     private static Target target(FieldUiSnapshot snapshot) {
         String raw = snapshot.objective();
         if (raw == null) return null;
-        if (raw.contains("Director Iven") || raw.contains("라디아 도착")) return new Target("Director Iven", 0.5, 6.5);
+        if (raw.contains("총괄관 아이븐") || raw.contains("Director Iven") || raw.contains("라디아 도착")) {
+            return new Target("총괄관 아이븐", 0.5, 6.5);
+        }
         if (isPartyObjective(raw)) return null;
         if (raw.contains("전투 훈련") || raw.contains("남문 개방")) {
             int index = Math.max(0, Math.min(3, snapshot.patrolsCleared()));
-            if (index >= 3) return new Target("South Gate", 0, 104);
+            if (index >= 3) return new Target("남문", 0, 104);
             double z = index == 0 ? 49 : index == 1 ? 59 : 69;
             return new Target("전투 훈련 " + (index + 1), 50, z);
         }
-        if (raw.contains("Chapter 1") || raw.contains("그라울")) {
-            if (Math.abs(minecraftPlayerX()) <= 128 && minecraftPlayerZ() <= 128) return new Target("South Gate", 0, 104);
+        if (chapter(raw, 1) || raw.contains("그라울")) {
+            if (Math.abs(minecraftPlayerX()) <= 128 && minecraftPlayerZ() <= 128) return new Target("남문", 0, 104);
             return new Target("그라울", 355, 245);
         }
-        if (raw.contains("Chapter 2") || raw.contains("베르나")) return new Target("베르나", -35, -440);
-        if (raw.contains("Chapter 3") || raw.contains("ORO-7")) return new Target("ORO-7", -430, 35);
-        if (raw.contains("Chapter 4") || raw.contains("콜바크")) return new Target("콜바크", 65, 455);
+        if (chapter(raw, 2) || raw.contains("베르나")) return new Target("베르나", -35, -440);
+        if (chapter(raw, 3) || raw.contains("ORO-7")) return new Target("ORO-7", -430, 35);
+        if (chapter(raw, 4) || raw.contains("콜바크")) return new Target("콜바크", 65, 455);
         if (raw.contains("중계소 열쇠") || raw.contains("Relay 조각") || raw.contains("계전소")) return new Target("라디아 계전소", 0, 24);
-        if (raw.contains("Chapter 5") || raw.contains("세라크")) return new Target("세라크", 430, -350);
+        if (chapter(raw, 5) || raw.contains("세라크")) return new Target("세라크", 430, -350);
         return null;
     }
 
-    private static double minecraftPlayerX() { Minecraft m=Minecraft.getInstance(); return m.player==null?0:m.player.getX(); }
-    private static double minecraftPlayerZ() { Minecraft m=Minecraft.getInstance(); return m.player==null?0:m.player.getZ(); }
+    private static boolean chapter(String raw, int chapter) {
+        return raw.contains("제" + chapter + "장") || raw.contains("Chapter " + chapter);
+    }
+
+    private static double minecraftPlayerX() {
+        Minecraft m = Minecraft.getInstance();
+        return m.player == null ? 0 : m.player.getX();
+    }
+
+    private static double minecraftPlayerZ() {
+        Minecraft m = Minecraft.getInstance();
+        return m.player == null ? 0 : m.player.getZ();
+    }
 
     static String playerFacingObjective(String raw) {
         if (raw == null || raw.isBlank()) return "";
         String text = stripLeadingInternalQuestId(raw.trim());
         return text.replace("카이렌/브람/엘리시아/변경 사냥꾼", "카이렌 · 변경 사냥꾼")
-                .replace("P01/P03/P04/F03", "카이렌 · 변경 사냥꾼").replace("P01/F03", "카이렌 · 변경 사냥꾼")
-                .replace("ENC_M01/M02 승리", "초입 순찰 2개 격파").replace("ENC_M04의 E003 전투에서 승리", "심부의 불안정 폭발체 격파")
-                .replace("B01을 격파", "그라울 격파").replace("B01 그라울 격파", "들이받는 왕 그라울 격파")
-                .replace("B02 베르나 격파", "가시어미 베르나 격파").replace("B03 ORO-7 정지", "수문관리기 ORO-7 정지")
-                .replace("B04 콜바크 격파", "재의 거상 콜바크 격파").replace("B05 세라크", "균열감시자 세라크")
-                .replace("Relay fragment", "Relay 조각");
+                .replace("P01/P03/P04/F03", "카이렌 · 변경 사냥꾼")
+                .replace("P01/F03", "카이렌 · 변경 사냥꾼")
+                .replace("ENC_M01/M02 승리", "초입 순찰 2개 격파")
+                .replace("ENC_M04의 E003 전투에서 승리", "심부의 불안정 폭발체 격파")
+                .replace("B01 그라울", "들이받는 왕 그라울")
+                .replace("B01을 격파", "그라울 격파")
+                .replace("B02 베르나", "가시어미 베르나")
+                .replace("B03 ORO-7", "수문관리기 ORO-7")
+                .replace("B04 콜바크", "재의 거상 콜바크")
+                .replace("B05 세라크", "균열감시자 세라크")
+                .replace("Relay fragment", "Relay 조각")
+                .replace("Relay console", "Relay 제어 콘솔");
     }
 
     static String playerFacingHint(String raw) {
         if (raw == null) return "";
-        return raw.replace("Relay fragment", "Relay 조각").replace("B01", "그라울").replace("B02", "베르나")
-                .replace("B03", "ORO-7").replace("B04", "콜바크").replace("B05", "세라크");
+        return raw.replace("Relay fragment", "Relay 조각")
+                .replace("Relay console", "Relay 제어 콘솔")
+                .replace("B01", "그라울")
+                .replace("B02", "베르나")
+                .replace("B03", "ORO-7")
+                .replace("B04", "콜바크")
+                .replace("B05", "세라크");
     }
 
     private static String stripLeadingInternalQuestId(String text) {
         int space = text.indexOf(' ');
         if (space > 0) {
             String first = text.substring(0, space);
-            if (first.startsWith("MQ_") || first.startsWith("CQ_") || first.startsWith("RQ_")) return text.substring(space + 1).stripLeading();
+            if (first.startsWith("MQ_") || first.startsWith("CQ_") || first.startsWith("RQ_")) {
+                return text.substring(space + 1).stripLeading();
+            }
         }
         return text;
     }
@@ -183,7 +208,10 @@ public final class QuestGuideLayer implements GuiLayer {
         List<String> lines = new ArrayList<>();
         String remaining = text == null ? "" : text.trim();
         while (!remaining.isEmpty() && lines.size() < maxLines) {
-            if (minecraft.font.width(remaining) <= maxWidth) { lines.add(remaining); break; }
+            if (minecraft.font.width(remaining) <= maxWidth) {
+                lines.add(remaining);
+                break;
+            }
             int cut = remaining.length();
             while (cut > 1 && minecraft.font.width(remaining.substring(0, cut)) > maxWidth) cut--;
             int preferred = remaining.lastIndexOf(' ', cut);
