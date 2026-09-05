@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.10-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.11-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.10-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.11-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -102,6 +102,10 @@ for optimization in (
 ):
     require(optimization in mobility, f"mobility optimization invariant missing: {optimization}")
 
+client = text(JAVA / "client/SurvivalAscensionClient.java")
+require("InputConstants.KEY_X" in client, "dash default key must be X")
+require("mobility_action\", InputConstants.KEY_V" not in client, "old V dash default returned")
+
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
 require("FORMATION_INTERVAL = 200" in warband, "warband formation cadence drift")
@@ -115,4 +119,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.10 pacing + runtime optimization invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.11 X dash + pacing/runtime invariants")

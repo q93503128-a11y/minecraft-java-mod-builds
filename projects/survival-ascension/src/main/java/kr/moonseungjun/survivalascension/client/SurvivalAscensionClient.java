@@ -46,7 +46,7 @@ public final class SurvivalAscensionClient {
     private static final KeyMapping OPEN_EXPEDITION = new KeyMapping(
             "key.survivalascension.expedition", InputConstants.KEY_J, KeyMapping.Category.MISC);
     private static final KeyMapping MOBILITY_ACTION = new KeyMapping(
-            "key.survivalascension.mobility_action", InputConstants.KEY_V, KeyMapping.Category.MISC);
+            "key.survivalascension.mobility_action", InputConstants.KEY_X, KeyMapping.Category.MISC);
 
     public SurvivalAscensionClient(IEventBus modBus) {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
