@@ -1,0 +1,176 @@
+name: Manual Frontier Alpha95 Drop Cleanup
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/manual-frontier-alpha95-drop-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Apply drop cleanup feature
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCg== ' | tr -d ' ' | base64 -d > /tmp/frontier_alpha95.py
+          cat >> /tmp/frontier_alpha95.py <<'PYAPPEND'
+
+gp = Path("projects/frontier-settlement/gradle.properties")
+g = gp.read_text(encoding="utf-8")
+if "mod_version=0.1.0-alpha.94" not in g:
+    raise SystemExit("unexpected Frontier version")
+g = g.replace("mod_version=0.1.0-alpha.94", "mod_version=0.1.0-alpha.95", 1)
+g += "\n# Alpha.95 dropped-item cleanup: /frontier cleanup drops removes nearby terrain-stone clutter; explicit /frontier cleanup drops all removes every nearby dropped item and reports entity/item counts.\n"
+gp.write_text(g, encoding="utf-8")
+
+p = Path("projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java")
+s = p.read_text(encoding="utf-8")
+
+s = s.replace(
+    "import net.minecraft.server.MinecraftServer;\nimport net.minecraft.server.level.ServerPlayer;\n",
+    "import net.minecraft.server.MinecraftServer;\nimport net.minecraft.server.level.ServerLevel;\nimport net.minecraft.server.level.ServerPlayer;\nimport net.minecraft.world.entity.item.ItemEntity;\nimport net.minecraft.world.item.Items;\nimport net.minecraft.world.phys.AABB;\n",
+    1,
+)
+
+old = '''                .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
+                .then(Commands.literal("normalize").executes(SettlementCommands::normalize))
+                .then(Commands.literal("road").executes(SettlementCommands::road))
+'''
+new = '''                .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
+                .then(Commands.literal("normalize").executes(SettlementCommands::normalize))
+                .then(Commands.literal("cleanup")
+                        .then(Commands.literal("drops")
+                                .executes(SettlementCommands::cleanupStoneDrops)
+                                .then(Commands.literal("stone").executes(SettlementCommands::cleanupStoneDrops))
+                                .then(Commands.literal("all").executes(SettlementCommands::cleanupAllDrops))))
+                .then(Commands.literal("road").executes(SettlementCommands::road))
+'''
+if old not in s:
+    raise SystemExit("command insertion point missing")
+s = s.replace(old, new, 1)
+
+insert_at = s.index("    private static int rescan(")
+method = r'''    private static final double DROP_CLEANUP_HORIZONTAL_RADIUS = 128.0D;
+    private static final double DROP_CLEANUP_VERTICAL_RADIUS = 64.0D;
+
+    private static int cleanupStoneDrops(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return cleanupDrops(context, false);
+    }
+
+    private static int cleanupAllDrops(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return cleanupDrops(context, true);
+    }
+
+    private static int cleanupDrops(CommandContext<CommandSourceStack> context, boolean all) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        ServerLevel level = (ServerLevel) player.level();
+        AABB area = player.getBoundingBox().inflate(
+                DROP_CLEANUP_HORIZONTAL_RADIUS,
+                DROP_CLEANUP_VERTICAL_RADIUS,
+                DROP_CLEANUP_HORIZONTAL_RADIUS);
+        var drops = level.getEntitiesOfClass(ItemEntity.class, area,
+                entity -> entity.isAlive() && (all || isStoneClutter(entity)));
+        long itemCount = 0L;
+        for (ItemEntity drop : drops) {
+            itemCount += drop.getItem().getCount();
+            drop.discard();
+        }
+        String scope = all ? "모든 드랍 아이템" : "돌·암석 드랍";
+        player.sendSystemMessage(Component.literal(
+                "드랍 정리 완료 | " + scope + " | 엔티티 " + drops.size() + "개 | 아이템 " + itemCount
+                        + "개 | 현재 위치 기준 수평 128 / 수직 64블록"));
+        return drops.size();
+    }
+
+    private static boolean isStoneClutter(ItemEntity entity) {
+        var stack = entity.getItem();
+        return stack.is(Items.STONE)
+                || stack.is(Items.COBBLESTONE)
+                || stack.is(Items.DEEPSLATE)
+                || stack.is(Items.COBBLED_DEEPSLATE)
+                || stack.is(Items.ANDESITE)
+                || stack.is(Items.DIORITE)
+                || stack.is(Items.GRANITE)
+                || stack.is(Items.TUFF)
+                || stack.is(Items.CALCITE)
+                || stack.is(Items.DRIPSTONE_BLOCK)
+                || stack.is(Items.BLACKSTONE)
+                || stack.is(Items.BASALT);
+    }
+
+'''
+s = s[:insert_at] + method + s[insert_at:]
+p.write_text(s, encoding="utf-8")
+print("ALPHA95_PATCHED")
+PYAPPEND
+          python3 /tmp/frontier_alpha95.py
+
+      - name: Contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'mod_version=0.1.0-alpha.95' projects/frontier-settlement/gradle.properties
+          grep -q 'Commands.literal("cleanup")' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java
+          grep -q 'cleanupAllDrops' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java
+          grep -q 'DROP_CLEANUP_HORIZONTAL_RADIUS = 128.0D' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java
+          grep -q 'Items.COBBLESTONE' projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java
+
+      - name: Build Frontier
+        working-directory: projects/frontier-settlement
+        run: ./gradlew clean build --no-daemon
+
+      - name: Verify jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR='projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.95.jar'
+          test -s "$JAR"
+          unzip -l "$JAR" | grep -q 'SettlementCommands.class'
+          python3 - <<'PY'
+          import zipfile
+          p='projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.95.jar'
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              if len(names)!=len(set(names)):
+                  raise SystemExit('duplicate jar entries')
+          print('JAR_OK')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-alpha95-replacement
+          path: projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.95.jar
+          if-no-files-found: error
+
+      - name: Commit canonical source and self-remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/manual-frontier-alpha95-drop-cleanup.yml
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement/gradle.properties \
+                  projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java \
+                  .github/workflows/manual-frontier-alpha95-drop-cleanup.yml
+          git commit -m 'Add safe dropped-item cleanup commands'
+          git push origin HEAD:main
