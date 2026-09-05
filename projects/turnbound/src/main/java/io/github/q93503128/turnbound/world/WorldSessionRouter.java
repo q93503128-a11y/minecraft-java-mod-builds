@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.combat.BattleOutcome;
+import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -8,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -35,8 +37,6 @@ public final class WorldSessionRouter {
         if (!(p.level() instanceof ServerLevel level)) return;
         AsterMarchWorldShell.build(level);
         AsterMarchContentOrchestrator.build(level);
-        // Legacy per-player sync remains as a compatibility input; SavedData is the final physical-world authority.
-        AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
         AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         RadiaHubSessionManager.enter(p);
         AsterMarchSharedWorldProgress.sync(level, p.getUUID());
@@ -47,7 +47,6 @@ public final class WorldSessionRouter {
         try {
             AsterMarchWorldShell.build(level);
             AsterMarchContentOrchestrator.build(level);
-            AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
             AsterMarchSharedWorldProgress.sync(level, p.getUUID());
             AsterMarchContentOrchestrator.tick(level, p);
 
@@ -65,8 +64,8 @@ public final class WorldSessionRouter {
             else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.tick(p);
             else FieldSessionManager.tick(p);
         } finally {
-            // Session compatibility code can still request a per-player closed state. SavedData is the last writer so
-            // a lower-progress player can never physically close a world gate already opened by somebody else.
+            // SavedData is always the last physical-world writer. Per-player session compatibility code may request
+            // a closed gate, but a lower-progress player can never physically re-close a gate the shared world opened.
             AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         }
     }
@@ -81,20 +80,26 @@ public final class WorldSessionRouter {
                 FieldSessionManager.enter(p);
                 return true;
             }
-            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_GLOAMWOOD)
-                    && pos.z <= -108.0 && Math.abs(pos.x) <= 12.0) {
+            if (pos.z <= -108.0 && Math.abs(pos.x) <= 12.0
+                    && mayCrossSharedSeam(
+                    AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_GLOAMWOOD),
+                    GloamwoodSessionManager.chapterUnlocked(p))) {
                 RadiaHubSessionManager.remove(p);
                 GloamwoodSessionManager.enter(p);
                 return true;
             }
-            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_BROKEN_AQUEDUCT)
-                    && pos.x <= -124.0 && Math.abs(pos.z - 20.0) <= 12.0) {
+            if (pos.x <= -124.0 && Math.abs(pos.z - 20.0) <= 12.0
+                    && mayCrossSharedSeam(
+                    AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_BROKEN_AQUEDUCT),
+                    BrokenAqueductSessionManager.chapterUnlocked(p))) {
                 RadiaHubSessionManager.remove(p);
                 BrokenAqueductSessionManager.enter(p);
                 return true;
             }
-            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_OLD_RELAY_APPROACH)
-                    && pos.x >= 124.0 && Math.abs(pos.z + 80.0) <= 13.0) {
+            if (pos.x >= 124.0 && Math.abs(pos.z + 80.0) <= 13.0
+                    && mayCrossSharedSeam(
+                    AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_OLD_RELAY_APPROACH),
+                    OldRelayStationSessionManager.chapterUnlocked(p))) {
                 beginRelayApproach(p);
                 return true;
             }
@@ -109,8 +114,10 @@ public final class WorldSessionRouter {
                 p.setYRot(180.0F);
                 return true;
             }
-            if (AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_EMBER_QUARRY)
-                    && AsterMarchWorldShell.nearGate(pos, AsterMarchWorldShell.Gate.QUARRY_PASS, 11.0)) {
+            if (AsterMarchWorldShell.nearGate(pos, AsterMarchWorldShell.Gate.QUARRY_PASS, 11.0)
+                    && mayCrossSharedSeam(
+                    AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_EMBER_QUARRY),
+                    EmberQuarrySessionManager.chapterUnlocked(p))) {
                 FieldSessionManager.remove(p);
                 EmberQuarrySessionManager.enter(p);
                 return true;
@@ -145,6 +152,10 @@ public final class WorldSessionRouter {
         return false;
     }
 
+    static boolean mayCrossSharedSeam(boolean physicalOpen, boolean playerEligible) {
+        return physicalOpen && playerEligible;
+    }
+
     private static void beginRelayApproach(ServerPlayer p) {
         RadiaHubSessionManager.remove(p);
         RELAY_APPROACH.add(p.getUUID());
@@ -160,7 +171,9 @@ public final class WorldSessionRouter {
         Vec3 pos = p.position();
         if (p.tickCount % 20 == 0) {
             AABB area = new AABB(116, 48, -208, 286, 104, -54);
-            for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) mob.discard();
+            for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
+                if (!(mob instanceof BattleActorEntity)) mob.discard();
+            }
         }
 
         if (pos.x < 130.0 && Math.abs(pos.z + 80.0) <= 20.0) {
@@ -172,7 +185,11 @@ public final class WorldSessionRouter {
         }
         if (pos.distanceToSqr(new Vec3(270.0, 68.0, -185.0)) <= 13.0 * 13.0) {
             RELAY_APPROACH.remove(p.getUUID());
-            OldRelayStationSessionManager.enter(p);
+            if (!OldRelayStationSessionManager.enter(p)) {
+                RadiaHubSessionManager.enter(p);
+                p.setPos(119.5, 66.0, -80.5);
+                p.setYRot(90.0F);
+            }
             return;
         }
         if (!AsterMarchWorldShell.relayTransitContains(pos)) {
@@ -182,25 +199,35 @@ public final class WorldSessionRouter {
     }
 
     public static boolean interactEntity(ServerPlayer p, Entity e) {
-        if (AsterMarchContentOrchestrator.interact(p, e)) return true;
-        if (RELAY_APPROACH.contains(p.getUUID())) return false;
-        if (RadiaHubSessionManager.active(p)) return RadiaHubSessionManager.interactEntity(p, e);
-        if (GloamwoodSessionManager.active(p)) return GloamwoodSessionManager.interactEntity(p, e);
-        if (BrokenAqueductSessionManager.active(p)) return BrokenAqueductSessionManager.interactEntity(p, e);
-        if (EmberQuarrySessionManager.active(p)) return EmberQuarrySessionManager.interactEntity(p, e);
-        if (OldRelayStationSessionManager.active(p)) return OldRelayStationSessionManager.interactEntity(p, e);
-        return FieldSessionManager.interactEntity(p, e);
+        if (!(p.level() instanceof ServerLevel level)) return false;
+        try {
+            if (AsterMarchContentOrchestrator.interact(p, e)) return true;
+            if (RELAY_APPROACH.contains(p.getUUID())) return false;
+            if (RadiaHubSessionManager.active(p)) return RadiaHubSessionManager.interactEntity(p, e);
+            if (GloamwoodSessionManager.active(p)) return GloamwoodSessionManager.interactEntity(p, e);
+            if (BrokenAqueductSessionManager.active(p)) return BrokenAqueductSessionManager.interactEntity(p, e);
+            if (EmberQuarrySessionManager.active(p)) return EmberQuarrySessionManager.interactEntity(p, e);
+            if (OldRelayStationSessionManager.active(p)) return OldRelayStationSessionManager.interactEntity(p, e);
+            return FieldSessionManager.interactEntity(p, e);
+        } finally {
+            AsterMarchSharedWorldProgress.sync(level, p.getUUID());
+        }
     }
 
     public static void command(ServerPlayer p, String c) {
-        if (handleCanonicalFastTravel(p, c)) return;
-        if (RELAY_APPROACH.contains(p.getUUID())) return;
-        if (RadiaHubSessionManager.active(p)) { RadiaHubSessionManager.command(p, c); return; }
-        if (GloamwoodSessionManager.active(p)) { GloamwoodSessionManager.command(p, c); return; }
-        if (BrokenAqueductSessionManager.active(p)) { BrokenAqueductSessionManager.command(p, c); return; }
-        if (EmberQuarrySessionManager.active(p)) { EmberQuarrySessionManager.command(p, c); return; }
-        if (OldRelayStationSessionManager.active(p)) { OldRelayStationSessionManager.command(p, c); return; }
-        FieldSessionManager.command(p, c);
+        if (!(p.level() instanceof ServerLevel level)) return;
+        try {
+            if (handleCanonicalFastTravel(p, c)) return;
+            if (RELAY_APPROACH.contains(p.getUUID())) return;
+            if (RadiaHubSessionManager.active(p)) { RadiaHubSessionManager.command(p, c); return; }
+            if (GloamwoodSessionManager.active(p)) { GloamwoodSessionManager.command(p, c); return; }
+            if (BrokenAqueductSessionManager.active(p)) { BrokenAqueductSessionManager.command(p, c); return; }
+            if (EmberQuarrySessionManager.active(p)) { EmberQuarrySessionManager.command(p, c); return; }
+            if (OldRelayStationSessionManager.active(p)) { OldRelayStationSessionManager.command(p, c); return; }
+            FieldSessionManager.command(p, c);
+        } finally {
+            AsterMarchSharedWorldProgress.sync(level, p.getUUID());
+        }
     }
 
     private static boolean handleCanonicalFastTravel(ServerPlayer p, String command) {
@@ -216,6 +243,11 @@ public final class WorldSessionRouter {
                     .withStyle(ChatFormatting.GRAY));
             return true;
         }
+        if (!destinationSessionEligible(p, destinationId)) {
+            p.sendSystemMessage(Component.literal("현재 진행도로 이 계전소를 사용할 수 없습니다.")
+                    .withStyle(ChatFormatting.GRAY));
+            return true;
+        }
 
         leaveTravelSession(p);
         boolean entered = switch (destinationId) {
@@ -228,6 +260,7 @@ public final class WorldSessionRouter {
             default -> false;
         };
         if (!entered) {
+            if (!active(p)) RadiaHubSessionManager.enter(p);
             p.sendSystemMessage(Component.literal("계전소 이동을 시작할 수 없습니다.").withStyle(ChatFormatting.RED));
             return true;
         }
@@ -238,6 +271,18 @@ public final class WorldSessionRouter {
         p.setXRot(3.0F);
         p.setDeltaMovement(Vec3.ZERO);
         return true;
+    }
+
+    private static boolean destinationSessionEligible(ServerPlayer p, String destinationId) {
+        if (p == null || p.level().dimension() != Level.OVERWORLD) return false;
+        return switch (destinationId) {
+            case AsterMarchRegionCatalog.FT_RADIA, AsterMarchRegionCatalog.FT_MEADOW -> true;
+            case AsterMarchRegionCatalog.FT_GLOAM -> GloamwoodSessionManager.chapterUnlocked(p);
+            case AsterMarchRegionCatalog.FT_AQUEDUCT -> BrokenAqueductSessionManager.chapterUnlocked(p);
+            case AsterMarchRegionCatalog.FT_QUARRY -> EmberQuarrySessionManager.chapterUnlocked(p);
+            case AsterMarchRegionCatalog.FT_RELAY -> OldRelayStationSessionManager.chapterUnlocked(p);
+            default -> false;
+        };
     }
 
     private static void leaveTravelSession(ServerPlayer p) {
@@ -251,12 +296,17 @@ public final class WorldSessionRouter {
     }
 
     public static void onBattleEnded(ServerPlayer p, String id, BattleOutcome o) {
-        if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.onBattleEnded(p, id, o);
-        else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.onBattleEnded(p, id, o);
-        else if (BrokenAqueductSessionManager.active(p)) BrokenAqueductSessionManager.onBattleEnded(p, id, o);
-        else if (EmberQuarrySessionManager.active(p)) EmberQuarrySessionManager.onBattleEnded(p, id, o);
-        else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.onBattleEnded(p, id, o);
-        else FieldSessionManager.onBattleEnded(p, id, o);
+        if (!(p.level() instanceof ServerLevel level)) return;
+        try {
+            if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.onBattleEnded(p, id, o);
+            else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.onBattleEnded(p, id, o);
+            else if (BrokenAqueductSessionManager.active(p)) BrokenAqueductSessionManager.onBattleEnded(p, id, o);
+            else if (EmberQuarrySessionManager.active(p)) EmberQuarrySessionManager.onBattleEnded(p, id, o);
+            else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.onBattleEnded(p, id, o);
+            else FieldSessionManager.onBattleEnded(p, id, o);
+        } finally {
+            AsterMarchSharedWorldProgress.sync(level, p.getUUID());
+        }
     }
 
     public static void remove(ServerPlayer p) {
