@@ -135,7 +135,6 @@ public final class DroppedItemCleanupService {
           s = s.replace(anchor2, anchor2 + '        NeoForge.EVENT_BUS.addListener(DroppedItemCleanupService::onServerTick);\n', 1)
           main.write_text(s, encoding='utf-8')
 
-          # Keep the manual cleanup command, but make its stone filter use the same whitelist as auto-cleanup.
           commands = root / 'src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java'
           c = commands.read_text(encoding='utf-8')
           start = c.index('    private static boolean isStoneClutter(ItemEntity entity) {')
@@ -199,3 +198,5 @@ public final class DroppedItemCleanupService {
                   .github/workflows/manual-frontier-alpha96-auto-drop-cleanup.yml
           git commit -m 'Add automatic low-value drop pressure cleanup'
           git push origin HEAD:main
+
+# retry trigger
