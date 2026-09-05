@@ -31,6 +31,13 @@ public final class InfrastructureSiteService {
             new SiteRequirement(Blocks.STONECUTTER, "석재 절단기", 1),
             new SiteRequirement(Blocks.CRAFTING_TABLE, "작업대", 1)
     ));
+    private static final SiteProfile ANGLER_SITE = new SiteProfile(false, List.of(
+            new SiteRequirement(Blocks.WATER, "물", 12),
+            new SiteRequirement(Blocks.BARREL, "배럴", 1),
+            new SiteRequirement(Blocks.SMOKER, "훈연기", 1),
+            new SiteRequirement(Blocks.CAMPFIRE, "모닥불", 1),
+            new SiteRequirement(Blocks.LANTERN, "랜턴", 2)
+    ));
     private static final SiteProfile INDUSTRIAL_SITE = new SiteProfile(false, List.of(
             new SiteRequirement(Blocks.STONE_BRICKS, "석재 벽돌", 16),
             new SiteRequirement(Blocks.IRON_BLOCK, "철 블록", 2),
@@ -176,6 +183,7 @@ public final class InfrastructureSiteService {
 
     private static SiteProfile profile(InfrastructureProject project) {
         return switch (project) {
+            case ANGLER_HARBOR -> ANGLER_SITE;
             case CIVIL_WORKS -> CIVIL_SITE;
             case INDUSTRIAL_WORKS -> INDUSTRIAL_SITE;
             case APEX_TRACKING_POST -> APEX_SITE;

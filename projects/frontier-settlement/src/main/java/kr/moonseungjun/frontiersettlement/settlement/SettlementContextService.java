@@ -84,6 +84,14 @@ public final class SettlementContextService {
             }
         }
 
+        BlockPos settlementCenter = data.centerPos();
+        targets.add(new SettlementContextTarget(
+                "settlement", "settlement",
+                settlementCenter.getX(), settlementCenter.getY(), settlementCenter.getZ(),
+                settlementCenter.getX(), settlementCenter.getY(), settlementCenter.getZ(),
+                settlementCenter.getX(), settlementCenter.getY(), settlementCenter.getZ(),
+                "본진", "공동 마을 중심 · M → 인프라에서 좌표/방향 확인", -1));
+
         BlockPos stock = data.stockpilePos();
         SettlementResources resources = data.resources();
         targets.add(new SettlementContextTarget(

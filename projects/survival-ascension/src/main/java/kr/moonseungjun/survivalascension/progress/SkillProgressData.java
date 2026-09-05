@@ -25,13 +25,15 @@ public final class SkillProgressData extends SavedData {
     private static final Codec<Map<String, Long>> SKILL_XP_CODEC = Codec.unboundedMap(Codec.STRING, Codec.LONG);
 
     private record PlayerEntry(String uuid, Map<String, Long> skills, long legacyMiningXp, boolean introduced,
-                               int constructionLength) {
+                               int constructionLength, int fishingBonusMilli, int fishingPreserveMilli) {
         private static final Codec<PlayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("uuid").forGetter(PlayerEntry::uuid),
                 SKILL_XP_CODEC.optionalFieldOf("skills", Map.of()).forGetter(PlayerEntry::skills),
                 Codec.LONG.optionalFieldOf("mining_xp", 0L).forGetter(PlayerEntry::legacyMiningXp),
                 Codec.BOOL.optionalFieldOf("introduced", false).forGetter(PlayerEntry::introduced),
-                Codec.INT.optionalFieldOf("construction_length", 0).forGetter(PlayerEntry::constructionLength)
+                Codec.INT.optionalFieldOf("construction_length", 0).forGetter(PlayerEntry::constructionLength),
+                Codec.INT.optionalFieldOf("fishing_bonus_milli", 0).forGetter(PlayerEntry::fishingBonusMilli),
+                Codec.INT.optionalFieldOf("fishing_preserve_milli", 0).forGetter(PlayerEntry::fishingPreserveMilli)
         ).apply(instance, PlayerEntry::new));
     }
 
@@ -47,14 +49,19 @@ public final class SkillProgressData extends SavedData {
         private final Map<String, Long> xp = new HashMap<>();
         private boolean introduced;
         private int constructionLength;
+        private int fishingBonusMilli;
+        private int fishingPreserveMilli;
 
-        private PlayerState(Map<String, Long> xp, long legacyMiningXp, boolean introduced, int constructionLength) {
+        private PlayerState(Map<String, Long> xp, long legacyMiningXp, boolean introduced, int constructionLength,
+                            int fishingBonusMilli, int fishingPreserveMilli) {
             xp.forEach((id, value) -> this.xp.put(id, Math.max(0L, value)));
             if (!this.xp.containsKey(SkillType.MINING.id()) && legacyMiningXp > 0L) {
                 this.xp.put(SkillType.MINING.id(), legacyMiningXp);
             }
             this.introduced = introduced;
             this.constructionLength = Math.max(0, constructionLength);
+            this.fishingBonusMilli = Math.floorMod(fishingBonusMilli, 1000);
+            this.fishingPreserveMilli = Math.floorMod(fishingPreserveMilli, 1000);
         }
     }
 
@@ -68,14 +75,16 @@ public final class SkillProgressData extends SavedData {
 
     private SkillProgressData(List<PlayerEntry> entries) {
         for (PlayerEntry entry : entries) {
-            players.put(entry.uuid(), new PlayerState(entry.skills(), entry.legacyMiningXp(), entry.introduced(), entry.constructionLength()));
+            players.put(entry.uuid(), new PlayerState(entry.skills(), entry.legacyMiningXp(), entry.introduced(), entry.constructionLength(),
+                    entry.fishingBonusMilli(), entry.fishingPreserveMilli()));
         }
     }
 
     private List<PlayerEntry> entries() {
         List<PlayerEntry> result = new ArrayList<>(players.size());
         players.forEach((uuid, state) -> result.add(new PlayerEntry(
-                uuid, Map.copyOf(state.xp), 0L, state.introduced, state.constructionLength)));
+                uuid, Map.copyOf(state.xp), 0L, state.introduced, state.constructionLength,
+                state.fishingBonusMilli, state.fishingPreserveMilli)));
         return result;
     }
 
@@ -85,7 +94,7 @@ public final class SkillProgressData extends SavedData {
     public boolean ensureProfile(ServerPlayer player) {
         String key = player.getUUID().toString();
         if (players.containsKey(key)) return false;
-        players.put(key, new PlayerState(Map.of(), 0L, false, 0));
+        players.put(key, new PlayerState(Map.of(), 0L, false, 0, 0, 0));
         setDirty();
         return true;
     }
@@ -99,6 +108,24 @@ public final class SkillProgressData extends SavedData {
     public int level(ServerPlayer player, SkillType skill) { return SkillTuning.levelFromXp(xp(player, skill)); }
     public Map<String, Long> snapshot(ServerPlayer player) { return Map.copyOf(state(player).xp); }
     public int constructionLengthSelection(ServerPlayer player) { return state(player).constructionLength; }
+    public int fishingBonusMilli(ServerPlayer player) { return state(player).fishingBonusMilli; }
+    public int fishingPreserveMilli(ServerPlayer player) { return state(player).fishingPreserveMilli; }
+
+    public void setFishingBonusMilli(ServerPlayer player, int milli) {
+        PlayerState state = state(player);
+        int normalized = Math.floorMod(milli, 1000);
+        if (state.fishingBonusMilli == normalized) return;
+        state.fishingBonusMilli = normalized;
+        setDirty();
+    }
+
+    public void setFishingPreserveMilli(ServerPlayer player, int milli) {
+        PlayerState state = state(player);
+        int normalized = Math.floorMod(milli, 1000);
+        if (state.fishingPreserveMilli == normalized) return;
+        state.fishingPreserveMilli = normalized;
+        setDirty();
+    }
 
     public void setConstructionLengthSelection(ServerPlayer player, int length) {
         PlayerState state = state(player);

@@ -1,6 +1,8 @@
 package kr.moonseungjun.frontiersettlement.client;
 
 import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
+import kr.moonseungjun.frontiersettlement.network.SettlementContextTarget;
+import net.minecraft.world.level.Level;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -176,6 +178,7 @@ public final class BuildingPaletteScreen extends Screen {
                     contentX, infoY + 9, TEXT_SECONDARY, false);
             g.text(this.font, Component.literal("메뉴에서 작업을 고른 뒤 월드 프리뷰로 위치와 범위를 확인하세요."),
                     contentX, infoY + 22, TEXT_MUTED, false);
+            drawSettlementLocations(g, infoY + 39);
         }
 
         if (panelHeight >= 245) {
@@ -183,6 +186,76 @@ public final class BuildingPaletteScreen extends Screen {
                     contentX, panelY + panelHeight - 16, TEXT_MUTED, false);
         }
         super.extractRenderState(g, mx, my, p);
+    }
+
+    private void drawSettlementLocations(GuiGraphicsExtractor g, int startY) {
+        List<SettlementContextTarget> bases = new ArrayList<>();
+        for (SettlementContextTarget target : ClientSettlementState.context().targets()) {
+            if ("settlement".equals(target.kind()) || "outpost".equals(target.kind())) bases.add(target);
+        }
+        if (bases.isEmpty()) {
+            g.text(this.font, Component.literal("거점 위치 동기화 대기 중…"), contentX, startY, TEXT_MUTED, false);
+            return;
+        }
+
+        var minecraft = Minecraft.getInstance();
+        var player = minecraft.player;
+        boolean overworld = minecraft.level != null && minecraft.level.dimension().equals(Level.OVERWORLD);
+        if (player != null && overworld) {
+            bases.sort((a, b) -> Long.compare(distanceSq(player.getX(), player.getZ(), a), distanceSq(player.getX(), player.getZ(), b)));
+        } else {
+            bases.sort((a, b) -> {
+                if ("settlement".equals(a.kind())) return -1;
+                if ("settlement".equals(b.kind())) return 1;
+                return Integer.compare(a.markerX(), b.markerX());
+            });
+        }
+
+        int bottom = panelY + panelHeight - 27;
+        int maxRows = Math.max(1, (bottom - startY) / 11);
+        int visible = Math.min(bases.size(), maxRows);
+        for (int i = 0; i < visible; i++) {
+            SettlementContextTarget target = bases.get(i);
+            String label = "settlement".equals(target.kind()) ? "본진" : target.title();
+            String line = label + " · X " + target.markerX() + " Y " + target.markerY() + " Z " + target.markerZ();
+            if (player != null && overworld) {
+                long dx = Math.round(target.markerX() + 0.5D - player.getX());
+                long dz = Math.round(target.markerZ() + 0.5D - player.getZ());
+                long distance = Math.round(Math.sqrt((double) dx * dx + (double) dz * dz));
+                line += " · " + distance + "블록 " + directionName(dx, dz);
+            } else {
+                line += " · 오버월드";
+            }
+            if (i == visible - 1 && bases.size() > visible) {
+                line += " · 외 " + (bases.size() - visible) + "곳";
+            }
+            line = trimToWidth(line, contentWidth);
+            int color = "settlement".equals(target.kind()) ? TEXT_ACCENT : TEXT_SECONDARY;
+            g.text(this.font, Component.literal(line), contentX, startY + i * 11, color, false);
+        }
+    }
+
+    private static long distanceSq(double x, double z, SettlementContextTarget target) {
+        long dx = Math.round(target.markerX() + 0.5D - x);
+        long dz = Math.round(target.markerZ() + 0.5D - z);
+        return dx * dx + dz * dz;
+    }
+
+    private static String directionName(long dx, long dz) {
+        if (dx == 0L && dz == 0L) return "현재 위치";
+        String[] names = {"북", "북동", "동", "남동", "남", "남서", "서", "북서"};
+        double angle = Math.atan2((double) dx, (double) -dz);
+        int index = (int) Math.round(angle / (Math.PI / 4.0D));
+        index = Math.floorMod(index, 8);
+        return names[index];
+    }
+
+    private String trimToWidth(String text, int maxWidth) {
+        if (this.font.width(text) <= maxWidth) return text;
+        String suffix = "…";
+        String out = text;
+        while (!out.isEmpty() && this.font.width(out + suffix) > maxWidth) out = out.substring(0, out.length() - 1);
+        return out + suffix;
     }
 
     private void drawBuildingDetail(GuiGraphicsExtractor g, SettlementSnapshotPayload data, BuildingType type) {

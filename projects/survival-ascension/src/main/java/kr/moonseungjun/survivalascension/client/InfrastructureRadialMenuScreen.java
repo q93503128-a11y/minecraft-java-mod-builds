@@ -27,6 +27,7 @@ public final class InfrastructureRadialMenuScreen extends Screen {
     private static final Entry[] ENTRIES = {
             new Entry("채석장 네트워크", "터널 5×5×8→7×7×10", new ItemStack(Items.RAIL), InfrastructureProject.QUARRY_NETWORK, Action.FUND),
             new Entry("관개 시설", "Lv.30 자동 재파종", new ItemStack(Items.WATER_BUCKET), InfrastructureProject.IRRIGATION_WORKS, Action.FUND),
+            new Entry("어업 부두", "추가 어획 누적보장 · 마모 절약 · XP", new ItemStack(Items.FISHING_ROD), InfrastructureProject.ANGLER_HARBOR, Action.FUND),
             new Entry("건축 공방", "입체 5³→7³", new ItemStack(Items.SMITHING_TABLE), InfrastructureProject.BUILDER_FOUNDRY, Action.FUND),
             new Entry("전투 훈련장", "질주 전방 균열선", new ItemStack(Items.IRON_SWORD), InfrastructureProject.COMBAT_ACADEMY, Action.FUND),
             new Entry("토목 공사소", "3폭 도로/교량", new ItemStack(Items.SCAFFOLDING), InfrastructureProject.CIVIL_WORKS, Action.FUND),

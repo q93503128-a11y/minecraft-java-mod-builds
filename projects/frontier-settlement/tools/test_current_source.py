@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.108" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.109" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -98,6 +98,11 @@ require("List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(leve
 palette = text(JAVA / "client/BuildingPaletteScreen.java")
 require("civilUnlocked" not in palette, "client still owns partial civil unlock logic")
 require("기존 시설 자동 개량" in palette, "production vertical progression is hidden from the build palette")
+context_ui = text(SETTLEMENT / "SettlementContextService.java")
+require('"settlement", "settlement"' in context_ui and '"본진"' in context_ui and "data.centerPos()" in context_ui,
+        "main settlement navigation target missing")
+require("drawSettlementLocations" in palette and "directionName" in palette and '"outpost".equals(target.kind())' in palette,
+        "settlement/outpost coordinate navigation UI missing")
 
 commands = text(JAVA / "command/SettlementCommands.java")
 require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in commands, "status shows stale barracks food cost")
@@ -157,4 +162,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha108 tree-aware placement + alpha107 worker/repair + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha109 settlement navigation + alpha108 tree-aware placement + prior authority invariants")

@@ -62,7 +62,8 @@ public final class SkillsScreen extends Screen {
                     + " · 속도 " + format(SkillTuning.miningSpeedMultiplier(level));
             case WOODCUTTING -> "연쇄 " + SkillTuning.woodcuttingLogLimit(level) + "로그 · 속도 " + format(SkillTuning.woodcuttingSpeedMultiplier(level));
             case HARVESTING -> "수확 " + SkillTuning.harvestingAreaSize(level) + "×" + SkillTuning.harvestingAreaSize(level) + " · 속도 " + format(SkillTuning.harvestingSpeedMultiplier(level));
-            case FISHING -> "낚싯대 마모 방지 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D) + "% · 어획 성공으로 숙련";
+            case FISHING -> "마모 절약 " + Math.round(SkillTuning.fishingRodPreservationChance(level) * 100.0D)
+                    + "% 누적 · 추가 어획 " + Math.round(SkillTuning.fishingBonusCatchChance(level) * 100.0D) + "% 누적";
             case COMBAT -> "피해 " + format(SkillTuning.combatDamageMultiplier(level)) + " · 파급 " + cleaveText(level);
             case CONSTRUCTION -> "선 " + SkillTuning.constructionLineLength(level) + "블록 · 면 " + SkillTuning.constructionPlaneSize(level) + "×" + SkillTuning.constructionPlaneSize(level);
             case MOBILITY -> "이속 " + format(SkillTuning.mobilitySpeedMultiplier(level)) + " · 단차 "

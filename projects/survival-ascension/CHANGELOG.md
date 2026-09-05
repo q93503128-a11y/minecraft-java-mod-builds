@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.15-alpha.1
+- Replaced Fishing mastery bonus-catch and rod-preservation coin flips with persistent deterministic accumulation. The same percentage now becomes guaranteed progress toward the next extra fish or saved durability point, removing long unlucky streaks without duplicating treasure loot.
+- Added the stage-0 `어업 부두` infrastructure project. It adds +35 percentage points to deterministic bonus catch, +15 points to rod preservation, and +25% Fishing mastery XP so fewer repeated casts are needed.
+- `어업 부두` has a physical waterside commissioning check around a real barrel: nearby water, barrel, smoker, campfire and lanterns are required before the final funding step. No chunks are force-loaded.
+- Kept vanilla FishingHook bite timing untouched; the reduced grind comes from deterministic yield, durability and XP density rather than brittle private-timer manipulation.
+- Network protocol remains 14 and expedition state is unchanged.
+
 ## 0.61.14-alpha.1
 - Added the server-authoritative current expedition region to the expedition snapshot and bumped the network protocol to 14. The client no longer has to infer its active regional objective from the visible list.
 - The expedition screen now requests a fresh snapshot immediately when opened, shows `현재 원정권 · <지역>` under the title, and highlights the matching row with a cyan accent plus `▶ 현재`.

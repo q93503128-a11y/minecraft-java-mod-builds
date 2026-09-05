@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.14-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.15-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.14-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.15-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -111,7 +111,20 @@ require("return 1.0D + 0.0020D * clamped + 0.000010D * clamped * clamped;" in tu
 require("if (level >= 30) return 1.25D;" in tuning and "if (level >= 60) return 1.50D;" in tuning, "mobility step progression drift")
 require("fishingBonusCatchChance" in tuning, "fishing bonus-yield progression missing")
 fishing = text(JAVA / "fishing/FishingProgression.java")
-require("applyBonusCatch" in fishing and "stack.grow(1)" in fishing, "fishing bonus catch is not applied to real fish drops")
+require("applyBonusCatch" in fishing and "fish.grow(extra)" in fishing, "fishing deterministic bonus catch is not applied to real fish drops")
+require("player.getRandom().nextDouble() < chance" not in fishing, "fishing mastery returned to streaky RNG")
+require("ANGLER_HARBOR" in infra and "어업 부두" in infra, "fishing infrastructure project missing")
+require("HARBOR_BONUS_CATCH_MILLI = 350" in fishing and "HARBOR_PRESERVATION_MILLI = 150" in fishing,
+        "angler harbor fishing bonus drift")
+require("HARBOR_XP_MULTIPLIER = 1.25D" in fishing, "angler harbor XP acceleration drift")
+progress_data = text(JAVA / "progress/SkillProgressData.java")
+require("fishing_bonus_milli" in progress_data and "fishing_preserve_milli" in progress_data,
+        "persistent deterministic fishing meters missing")
+site = text(JAVA / "infrastructure/InfrastructureSiteService.java")
+require("ANGLER_SITE" in site and "Blocks.WATER" in site and "Blocks.SMOKER" in site,
+        "physical waterside angler harbor commissioning site missing")
+infra_ui = text(JAVA / "client/InfrastructureRadialMenuScreen.java")
+require("어업 부두" in infra_ui and "Items.FISHING_ROD" in infra_ui, "angler harbor missing from infrastructure menu")
 
 network = text(JAVA / "network/SkillNetwork.java")
 require('PROTOCOL = "14"' in network, "expedition current-region packet protocol must be 14")
@@ -140,4 +153,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.14 current expedition UI + mobility/fishing + Mythic HUD + runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.15 deterministic fishing + Angler Harbor + current expedition UI + runtime invariants")

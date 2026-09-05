@@ -24,6 +24,15 @@ public enum InfrastructureProject {
                     exact("glass", Items.GLASS, "유리", 32, 3),
                     exact("slime", Items.SLIME_BALL, "슬라임볼", 8, 4)
             )),
+    ANGLER_HARBOR(
+            "angler_harbor", "어업 부두", "낚시 추가 어획·마모 절약을 확률 대신 누적 보장식으로 운용 · 추가 어획 +35%p · 마모 절약 +15%p · 숙련 XP +25%", 0,
+            List.of(
+                    shared("wood", SharedEconomyCompat.ResourceCategory.WOOD, 96),
+                    shared("stone", SharedEconomyCompat.ResourceCategory.STONE, 48),
+                    shared("metal", SharedEconomyCompat.ResourceCategory.METAL, 24),
+                    exact("prismarine", Items.PRISMARINE_SHARD, "프리즈머린 조각", 8),
+                    exact("nautilus", Items.NAUTILUS_SHELL, "앵무조개 껍데기", 2)
+            )),
     BUILDER_FOUNDRY(
             "builder_foundry", "건축 공방", "건축 Lv.90 입체 5×5×5 · Lv.100 7×7×7", 0,
             List.of(
