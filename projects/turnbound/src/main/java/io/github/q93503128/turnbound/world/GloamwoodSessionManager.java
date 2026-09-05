@@ -10,11 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -26,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Chapter 2 field runtime: three spore interactions, five encounters, FT_GLOAM and B02 Verna. */
+/** Chapter 2 field runtime: shared spore anchors, five encounters and the Verna route. */
 public final class GloamwoodSessionManager {
     private static final List<String> NORMAL_IDS = List.of("ENC_G01", "ENC_G02", "ENC_G03", "ENC_G04", "ENC_G05");
     private static final String BOSS_ID = "BATTLE_B02";
@@ -39,20 +35,22 @@ public final class GloamwoodSessionManager {
         RadiaHubSessionManager.remove(player);
         FieldSessionManager.remove(player);
         remove(player);
-        ServerLevel level = (ServerLevel)player.level();
+        ServerLevel level = (ServerLevel) player.level();
         GloamwoodChapterWorld.BuiltChapter chapter = GloamwoodChapterWorld.build(level);
         Session session = new Session(chapter);
         SESSIONS.put(player.getUUID(), session);
         session.refresh(level, player);
-        session.spawnAll(level, player);
+        session.spawnMissing(level, player);
         FieldSharedInteractionActors.ensureGloamwood(level, chapter);
         Vec3 entry = chapter.entry();
         player.setPos(entry.x, entry.y, entry.z);
         player.setYRot(180.0F);
         player.setXRot(4.0F);
         player.setDeltaMovement(Vec3.ZERO);
-        player.sendSystemMessage(Component.literal("TURNBOUND · Chapter 2 그늘 아래").withStyle(ChatFormatting.DARK_GREEN, ChatFormatting.BOLD));
-        player.sendSystemMessage(Component.literal("포자등불 3곳을 조사해 깊은 길을 열고, 뿌리수호병이 포함된 전투 2개를 승리하십시오.").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(Component.literal("TURNBOUND · 제2장 그늘 아래")
+                .withStyle(ChatFormatting.DARK_GREEN, ChatFormatting.BOLD));
+        player.sendSystemMessage(Component.literal("포자등불 3곳을 조사해 깊은 길을 열고, 뿌리수호병이 포함된 전투를 돌파하십시오.")
+                .withStyle(ChatFormatting.GRAY));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
         return true;
     }
@@ -64,7 +62,7 @@ public final class GloamwoodSessionManager {
     public static void tick(ServerPlayer player) {
         Session session = SESSIONS.get(player.getUUID());
         if (session == null || BattleSessionManager.exists(player)) return;
-        ServerLevel level = (ServerLevel)player.level();
+        ServerLevel level = (ServerLevel) player.level();
         if (!GloamwoodChapterWorld.contains(player.position())) {
             Vec3 entry = session.chapter.entry();
             player.setPos(entry.x, entry.y, entry.z);
@@ -82,43 +80,25 @@ public final class GloamwoodSessionManager {
         Session session = SESSIONS.get(player.getUUID());
         if (session == null || target == null) return false;
 
-        FieldSharedInteractionActors.Role sharedRole = FieldSharedInteractionActors.role(target);
-        if (sharedRole == FieldSharedInteractionActors.Role.GLOAM_RELAY) {
+        FieldSharedInteractionActors.Role role = FieldSharedInteractionActors.role(target);
+        if (role == FieldSharedInteractionActors.Role.GLOAM_RELAY) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
             return true;
         }
-        int sharedSpore = FieldSharedInteractionActors.gloamSporeIndex(sharedRole);
-        if (sharedSpore >= 0) {
+        int spore = FieldSharedInteractionActors.gloamSporeIndex(role);
+        if (spore >= 0) {
             if (!session.questComplete(player, "MQ_C02_01_spores")) {
-                int progress = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C02_01_spores", 0);
-                if (sharedSpore == progress) {
+                int progress = CampaignProgressStore.quests(player.getUUID()).counters()
+                        .getOrDefault("MQ_C02_01_spores", 0);
+                if (spore == progress) {
                     CampaignProgressStore.questInteract(player.getUUID(), "SPORE_LANTERN");
                     CampaignPersistence.saveIfDirty(player);
-                    session.refresh((ServerLevel)player.level(), player);
-                    session.spawnMissing((ServerLevel)player.level(), player);
-                    FieldSharedInteractionActors.ensureGloamwood((ServerLevel)player.level(), session.chapter);
+                    ServerLevel level = (ServerLevel) player.level();
+                    session.refresh(level, player);
+                    session.spawnMissing(level, player);
+                    FieldSharedInteractionActors.ensureGloamwood(level, session.chapter);
                     FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
                 }
-            }
-            return true;
-        }
-
-        UUID id = target.getUUID();
-        if (id.equals(session.relay)) {
-            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
-            return true;
-        }
-        Integer sporeIndex = session.sporeActors.remove(id);
-        if (sporeIndex != null) {
-            if (!session.questComplete(player, "MQ_C02_01_spores")) {
-                CampaignProgressStore.questInteract(player.getUUID(), "SPORE_LANTERN");
-                Entity actor = ((ServerLevel)player.level()).getEntity(id);
-                if (actor != null) actor.discard();
-                CampaignPersistence.saveIfDirty(player);
-                session.refresh((ServerLevel)player.level(), player);
-                session.spawnMissing((ServerLevel)player.level(), player);
-                FieldSharedInteractionActors.ensureGloamwood((ServerLevel)player.level(), session.chapter);
-                FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             }
             return true;
         }
@@ -152,7 +132,7 @@ public final class GloamwoodSessionManager {
         actor.engaged = false;
         actor.group = null;
         actor.graceTicks = outcome == BattleOutcome.ALLY_VICTORY ? 0 : 40;
-        ServerLevel level = (ServerLevel)player.level();
+        ServerLevel level = (ServerLevel) player.level();
         session.refresh(level, player);
         session.spawnMissing(level, player);
         FieldSharedInteractionActors.ensureGloamwood(level, session.chapter);
@@ -162,11 +142,14 @@ public final class GloamwoodSessionManager {
                 spec.label(), victory ? V04Catalogs.battleXp(spec) : 0, victory ? V04Catalogs.battleGold(spec) : 0,
                 victory, victory && BOSS_ID.equals(encounterId));
         if (victory && BOSS_ID.equals(encounterId)) {
-            player.sendSystemMessage(Component.literal("Chapter 2 완료 · 가시어미 베르나 격파").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.literal("제2장 완료 · 가시어미 베르나 격파")
+                    .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
         } else if (victory && session.deepOpen(player)) {
-            player.sendSystemMessage(Component.literal("그늘숲 진행 갱신 · 깊은 길/보스 관문 상태를 확인했습니다.").withStyle(ChatFormatting.DARK_GREEN));
+            player.sendSystemMessage(Component.literal("그늘숲 진행 갱신 · 깊은 길과 보스 관문 상태가 갱신되었습니다.")
+                    .withStyle(ChatFormatting.DARK_GREEN));
         }
-        FieldNetwork.sync(player, session.snapshot(player, victory ? FieldUiSnapshot.Mode.RESULT : FieldUiSnapshot.Mode.QUEST, reward));
+        FieldNetwork.sync(player, session.snapshot(player,
+                victory ? FieldUiSnapshot.Mode.RESULT : FieldUiSnapshot.Mode.QUEST, reward));
     }
 
     public static void remove(ServerPlayer player) {
@@ -182,11 +165,13 @@ public final class GloamwoodSessionManager {
 
     public static boolean chapterUnlocked(ServerPlayer player) {
         var snapshot = CampaignProgressStore.snapshot(player.getUUID());
-        return snapshot.clearedEncounters().contains("BATTLE_B01") || snapshot.quests().completed().contains("MQ_C01_03_graul");
+        return snapshot.clearedEncounters().contains("BATTLE_B01")
+                || snapshot.quests().completed().contains("MQ_C01_03_graul");
     }
 
     private static void clearVanillaMobs(ServerLevel level) {
-        AABB area = new AABB(AsterMarchRegionCatalog.GLOAMWOOD.minX() - 12, 52, AsterMarchRegionCatalog.GLOAMWOOD.minZ() - 12,
+        AABB area = new AABB(AsterMarchRegionCatalog.GLOAMWOOD.minX() - 12, 52,
+                AsterMarchRegionCatalog.GLOAMWOOD.minZ() - 12,
                 AsterMarchRegionCatalog.GLOAMWOOD.maxX() + 12, 104, -110);
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
             if (!(mob instanceof BattleActorEntity)) mob.discard();
@@ -196,8 +181,6 @@ public final class GloamwoodSessionManager {
     private static final class Session {
         private final GloamwoodChapterWorld.BuiltChapter chapter;
         private final Map<String, EncounterActor> encounters = new LinkedHashMap<>();
-        private final Map<UUID, Integer> sporeActors = new LinkedHashMap<>();
-        private UUID relay;
 
         private Session(GloamwoodChapterWorld.BuiltChapter chapter) {
             this.chapter = chapter;
@@ -237,14 +220,7 @@ public final class GloamwoodSessionManager {
             GloamwoodChapterWorld.setBossGateOpen(level, bossOpen(player));
         }
 
-        private void spawnAll(ServerLevel level, ServerPlayer player) {
-            spawnRelay(level);
-            spawnSporeMissing(level, player);
-            spawnMissing(level, player);
-        }
-
         private void spawnMissing(ServerLevel level, ServerPlayer player) {
-            spawnSporeMissing(level, player);
             for (EncounterActor actor : encounters.values()) {
                 if (!unlocked(player, actor.point.id()) || cleared(player, actor.point.id()) || actor.engaged) {
                     actor.despawn(level);
@@ -254,33 +230,20 @@ public final class GloamwoodSessionManager {
             }
         }
 
-        private void spawnRelay(ServerLevel level) {
-            if (relay != null && level.getEntity(relay) != null) return;
-            ArmorStand actor = actor(level, chapter.fastTravel(), "그늘숲 계전소 · FT_GLOAM", Items.AMETHYST_SHARD, ChatFormatting.LIGHT_PURPLE);
-            level.addFreshEntity(actor);
-            relay = actor.getUUID();
-        }
-
-        private void spawnSporeMissing(ServerLevel level, ServerPlayer player) {
-            if (questComplete(player, "MQ_C02_01_spores")) return;
-            int progress = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C02_01_spores", 0);
-            for (int i = Math.min(3, progress); i < chapter.sporeLanterns().size(); i++) {
-                boolean already = sporeActors.containsValue(i);
-                if (already) continue;
-                ArmorStand actor = actor(level, chapter.sporeLanterns().get(i), "포자등불 조사 " + (i + 1) + "/3", Items.GLOW_BERRIES, ChatFormatting.GREEN);
-                level.addFreshEntity(actor);
-                sporeActors.put(actor.getUUID(), i);
-            }
-        }
-
         private void tickEncounters(ServerLevel level, ServerPlayer player) {
             for (EncounterActor actor : encounters.values()) {
                 if (!unlocked(player, actor.point.id()) || cleared(player, actor.point.id())) continue;
-                if (actor.graceTicks > 0) { actor.graceTicks--; continue; }
+                if (actor.graceTicks > 0) {
+                    actor.graceTicks--;
+                    continue;
+                }
                 actor.spawn(level);
                 if (actor.group == null || actor.engaged) continue;
                 Entity lead = actor.group.lead(level);
-                if (lead == null) { actor.group = null; continue; }
+                if (lead == null) {
+                    actor.group = null;
+                    continue;
+                }
                 if (player.position().distanceToSqr(actor.group.center()) <= 12.25) {
                     boolean started = BattleSessionManager.startEncounterAt(player, actor.point.id(), true, true,
                             actor.point.battleAnchor(), actor.point.battleYaw());
@@ -306,7 +269,8 @@ public final class GloamwoodSessionManager {
             int normalClears = 0;
             for (String id : NORMAL_IDS) if (clears.contains(id)) normalClears++;
             return new FieldUiSnapshot(true, mode, normalClears, 5, bossOpen(player), clears.contains(BOSS_ID), 0, 0,
-                    objective(player), dialogue(player), reward == null ? FieldUiSnapshot.Reward.none() : reward, views, travels);
+                    objective(player), dialogue(player), reward == null ? FieldUiSnapshot.Reward.none() : reward,
+                    views, travels);
         }
 
         private FieldUiSnapshot.Encounter view(ServerPlayer player, String id, Set<String> clears) {
@@ -316,15 +280,17 @@ public final class GloamwoodSessionManager {
 
         private String objective(ServerPlayer player) {
             if (!questComplete(player, "MQ_C02_01_spores")) {
-                int count = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C02_01_spores", 0);
-                return "MQ_C02_01 포자 흔적 · 포자등불 조사 " + Math.min(3, count) + "/3";
+                int count = CampaignProgressStore.quests(player.getUUID()).counters()
+                        .getOrDefault("MQ_C02_01_spores", 0);
+                return "포자 흔적 · 포자등불 조사 " + Math.min(3, count) + "/3";
             }
             if (!questComplete(player, "MQ_C02_02_root_wall")) {
-                int count = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C02_02_root_wall", 0);
-                return "MQ_C02_02 뿌리 장벽 · E008 뿌리수호병 포함 전투 승리 " + Math.min(2, count) + "/2";
+                int count = CampaignProgressStore.quests(player.getUUID()).counters()
+                        .getOrDefault("MQ_C02_02_root_wall", 0);
+                return "뿌리 장벽 · 뿌리수호병이 포함된 전투 승리 " + Math.min(2, count) + "/2";
             }
-            if (!questComplete(player, "MQ_C02_03_verna")) return "MQ_C02_03 베르나 · B02 가시어미 베르나 격파";
-            return "Chapter 2 완료 · 라디아로 귀환하거나 다음 지역을 준비";
+            if (!questComplete(player, "MQ_C02_03_verna")) return "베르나 · 가시어미 베르나 격파";
+            return "제2장 완료 · 라디아로 귀환하거나 다음 지역을 준비";
         }
 
         private String dialogue(ServerPlayer player) {
@@ -335,9 +301,6 @@ public final class GloamwoodSessionManager {
         }
 
         private void despawnAll(ServerLevel level) {
-            if (relay != null) { Entity e = level.getEntity(relay); if (e != null) e.discard(); relay = null; }
-            for (UUID id : List.copyOf(sporeActors.keySet())) { Entity e = level.getEntity(id); if (e != null) e.discard(); }
-            sporeActors.clear();
             for (EncounterActor actor : encounters.values()) actor.despawn(level);
         }
     }
@@ -348,7 +311,9 @@ public final class GloamwoodSessionManager {
         private boolean engaged;
         private int graceTicks;
 
-        private EncounterActor(GloamwoodChapterWorld.EncounterPoint point) { this.point = point; }
+        private EncounterActor(GloamwoodChapterWorld.EncounterPoint point) {
+            this.point = point;
+        }
 
         private void spawn(ServerLevel level) {
             if (group != null && group.alive(level)) return;
@@ -360,17 +325,5 @@ public final class GloamwoodSessionManager {
             if (group != null) group.despawn(level);
             group = null;
         }
-    }
-
-    private static ArmorStand actor(ServerLevel level, Vec3 pos, String name, Item item, ChatFormatting color) {
-        ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
-        stand.setInvulnerable(true);
-        stand.setNoGravity(true);
-        stand.setShowArms(true);
-        stand.setCustomName(Component.literal(name).withStyle(color));
-        stand.setCustomNameVisible(true);
-        stand.setItemSlot(EquipmentSlot.MAINHAND, item.getDefaultInstance());
-        stand.setItemSlot(EquipmentSlot.HEAD, Items.LEATHER_HELMET.getDefaultInstance());
-        return stand;
     }
 }
