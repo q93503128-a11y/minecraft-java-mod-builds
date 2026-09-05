@@ -59,6 +59,7 @@ public final class FieldSessionManager {
         player.setXRot(3.0F);
         player.setDeltaMovement(Vec3.ZERO);
         session.spawnAll(level);
+        FieldSharedInteractionActors.ensureSouthgate(level, slice, chapter);
         player.sendSystemMessage(Component.literal("TURNBOUND · 남문 초원 Chapter 1").withStyle(ChatFormatting.GOLD));
         player.sendSystemMessage(Component.literal("M01~M05와 B01 그라울까지 한 지역 진행으로 연결되었습니다.").withStyle(ChatFormatting.GRAY));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
@@ -81,7 +82,10 @@ public final class FieldSessionManager {
             player.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (player.tickCount % 20 == 0) clearVanillaMobs(level, session.slice, session.chapter);
+        if (player.tickCount % 20 == 0) {
+            clearVanillaMobs(level, session.slice, session.chapter);
+            FieldSharedInteractionActors.ensureSouthgate(level, session.slice, session.chapter);
+        }
         session.tickPatrols(level, player);
     }
 
@@ -108,6 +112,7 @@ public final class FieldSessionManager {
         boolean chapterCleared = session.chapterComplete();
         session.refreshWorld(level);
         session.spawnUnlockedMissing(level);
+        FieldSharedInteractionActors.ensureSouthgate(level, session.slice, session.chapter);
 
         FieldUiSnapshot.Reward reward = new FieldUiSnapshot.Reward(spec.label(), xp, gold, first, chapterCleared && B01_ID.equals(canonicalId));
         player.sendSystemMessage(Component.literal("승리 · " + spec.label()).withStyle(ChatFormatting.GREEN));
@@ -126,6 +131,16 @@ public final class FieldSessionManager {
     public static boolean interactEntity(ServerPlayer player, Entity target) {
         FieldSession session = SESSIONS.get(player.getUUID());
         if (session == null || target == null) return false;
+        FieldSharedInteractionActors.Role role = FieldSharedInteractionActors.role(target);
+        if (role == FieldSharedInteractionActors.Role.SOUTHGATE_SCOUT) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+            return true;
+        }
+        if (role == FieldSharedInteractionActors.Role.SOUTHGATE_RELAY_VILLAGE
+                || role == FieldSharedInteractionActors.Role.SOUTHGATE_RELAY_MEADOW) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
         UUID id = target.getUUID();
         if (id.equals(session.npc)) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
