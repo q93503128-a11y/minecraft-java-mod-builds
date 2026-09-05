@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import json, runpy
+
+ROOT = Path(__file__).resolve().parents[1]
+SA = ROOT / 'projects/survival-ascension'
+FR = ROOT / 'projects/frontier-settlement'
+SET = FR / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+PREV = ROOT / 'tools/continue_bore_tick_hotfix_tmp.py'
+
+def read(p): return p.read_text(encoding='utf-8')
+def write(p,s): p.write_text(s, encoding='utf-8')
+def rep(p,old,new):
+    s=read(p)
+    if old not in s: raise SystemExit(f'missing finalizer anchor in {p}: {old[:120]!r}')
+    write(p,s.replace(old,new,1))
+
+try:
+    runpy.run_path(str(PREV), run_name='__main__')
+except SystemExit as e:
+    if 'SettlementTierInfrastructureService.java' not in str(e): raise
+    print('EXPECTED SECOND-STAGE TIER ANCHOR:', e)
+
+# Tier infrastructure: block type is available from the event, so reject stone before SavedData/road scans.
+tier = SET / 'SettlementTierInfrastructureService.java'
+rep(tier,
+'''        if (!(event.getLevel() instanceof ServerLevel level)) return; MinecraftServer server=level.getServer(); if(level!=server.overworld())return;
+        SettlementData data=SettlementData.get(server); if(!data.founded())return; BlockPos pos=event.getPos(); Block block=level.getBlockState(pos).getBlock();
+        if(block!=Blocks.OAK_FENCE&&block!=Blocks.LANTERN)return;''',
+'''        if (!(event.getLevel() instanceof ServerLevel level)) return; MinecraftServer server=level.getServer(); if(level!=server.overworld())return;
+        Block block=event.getState().getBlock(); if(block!=Blocks.OAK_FENCE&&block!=Blocks.LANTERN)return;
+        SettlementData data=SettlementData.get(server); if(!data.founded())return; BlockPos pos=event.getPos();''')
+
+# Frontier version, lock and verifier.
+rep(FR/'gradle.properties','mod_version=0.1.0-alpha.112','mod_version=0.1.0-alpha.113')
+with (FR/'gradle.properties').open('a',encoding='utf-8') as f:
+    f.write('\n# Alpha.113 bulk-break event cost: unrelated break events are rejected by cheap physical envelopes/type gates before rebuilding settlement protection plans.\n')
+lockp=FR/'COMPANION_LOCK.json'; lock=json.loads(read(lockp))
+if lock.get('target',{}).get('frontier_settlement')!='0.1.0-alpha.112': raise SystemExit('unexpected Frontier lock version')
+lock['target']['frontier_settlement']='0.1.0-alpha.113'
+lock.setdefault('notes',[]).append('Alpha.113 preserves exact infrastructure break protection while rejecting unrelated BreakBlockEvents by cheap type/geometric gates before expensive plan reconstruction, reducing cross-mod bulk-mining amplification.')
+write(lockp,json.dumps(lock,ensure_ascii=False,indent=2)+'\n')
+
+# Survival changelog / performance runbook.
+ch=SA/'CHANGELOG.md'; text=read(ch)
+entry='''## 0.61.17-alpha.1
+- Replaced the fixed-count-only tunnel scheduler with a 6 ms global / 4 ms per-job soft server-thread time budget plus EWMA prediction before starting another full vanilla break pipeline. The existing 12-target local hard cap remains only a secondary safety ceiling.
+- Kept `ServerPlayerGameMode.destroyBlock` authoritative for every eligible tunnel block, preserving NeoForge break cancellation, Silk Touch/Fortune/loot, item/XP drops, durability policy, stats/advancements, normal neighbor/light/fluid behavior and client synchronization. No chunk force-loading was added.
+- Added per-job runtime profiling for target generation, validation, reduced-wear bookkeeping, the complete vanilla/NeoForge destroy pipeline, and scheduler-slice p95/p99/max. `/ascension borestats` reports the latest completed job.
+- Frontier Settlement Alpha.113 adds cheap physical envelope/type gates before expensive settlement break-protection plan reconstruction, removing a confirmed cross-mod amplification path triggered once per automatically mined block.
+- Network protocol remains 15. Tunnel geometry, hardness gate, drops, enchantment semantics and the one-normal-wear-per-four-successful-extra-block policy are unchanged.
+
+'''
+if '## 0.61.17-alpha.1' not in text:
+    if not text.startswith('# Changelog\n\n'): raise SystemExit('changelog header drift')
+    write(ch,text.replace('# Changelog\n\n','# Changelog\n\n'+entry,1))
+
+write(SA/'TUNNEL_PERFORMANCE.md','''# Tunnel bulk-mining server-tick performance
+
+## Reported integrated-server baseline
+Minecraft Java 26.2 / NeoForge 26.2 / Java 25, shaders off: ordinary play averaged about 8 ms with a roughly 16 ms max tick. A 7x7x10 tunnel job averaged about 62 ms and showed a roughly 790 ms max server tick while client FPS stayed near 60. These are human F3 measurements and are the acceptance baseline, not CI-generated numbers.
+
+## Current-main root cause audit
+The target queue was already a deque and geometry was generated once. The defect was cost control: one job could still start twelve `ServerPlayerGameMode.destroyBlock` pipelines in one tick regardless of the time spent by preceding calls. Each pipeline deliberately includes vanilla/NeoForge break event, loot/enchantment, drop/entity, block/neighbor/light/fluid, stat/advancement and client-sync work.
+
+Frontier Settlement multiplied that cost because global BreakBlockEvent listeners could rebuild complete active building/road/outpost plans, and the civic-core listener rebuilt all tier plans, even for unrelated tunnel blocks. This was avoidable CPU/allocation/GC pressure layered on top of the necessary break pipeline.
+
+## 0.61.17 / Alpha.113 controls
+- 6 ms global and 4 ms per-job soft bore budgets measured with `System.nanoTime()`.
+- EWMA prediction avoids knowingly starting another full destroy pipeline when the remaining slice is smaller than recent pipeline cost; one target is always allowed to prevent starvation.
+- Existing loaded-chunk admission remains fail-closed. No force-load/generation path was added.
+- The manual-equivalent `gameMode.destroyBlock` path remains intact. There is no raw AIR fast path and no loot/enchantment/event bypass.
+- Pending-count bookkeeping is batched once per scheduler slice rather than once per target.
+- Frontier listeners use block-type or conservative physical envelopes before exact plan protection. Exact cancellation still runs for candidate positions.
+
+## Runtime profiler
+After a job completes, run `/ascension borestats`; the log also emits `[bore-profile]`. Buckets: target generation, validation, reduced-wear bookkeeping, complete vanilla destroy pipeline p95/p99/max, and scheduler-slice p95/p99/max. The destroy bucket deliberately includes downstream NeoForge subscribers and Minecraft internals; splitting it further would require invasive instrumentation and is not used as a production shortcut.
+
+## Required real-play acceptance
+The original integrated-server pack must be re-run because build/CI success cannot establish F3 MSPT. Exercise ordinary stone, ores/mixed blocks, fluid and gravity adjacency, block entities, chunk boundaries, enchanted/Silk Touch/Fortune tools, full inventory, LAN, player movement/logout/death, save/rejoin, and overlapping requests. Compare F3 avg/max and `/ascension borestats` against the reported ~8/16 ms idle and ~62/790 ms bore baseline. Human performance acceptance is pending until repeated >50 ms and hundreds-of-ms spikes are absent in that environment.
+''')
+
+sat=SA/'tools/test_current_source.py'
+rep(sat,'require("mod_version=0.61.16-alpha.1" in props, "Survival Ascension version drift")','require("mod_version=0.61.17-alpha.1" in props, "Survival Ascension version drift")')
+rep(sat,'require(\'VERSION = "0.61.16-alpha.1"\' in main, "source version drift")','require(\'VERSION = "0.61.17-alpha.1"\' in main, "source version drift")')
+rep(sat,'warband = text(JAVA / "elite/WarbandDirector.java")','''bore = text(JAVA / "mining/BoreMiningService.java")
+automated_break = text(JAVA / "progress/AutomatedToolBreak.java")
+commands = text(JAVA / "command/AscensionCommands.java")
+require("GLOBAL_SOFT_TIME_BUDGET_NANOS = 6_000_000L" in bore and "LOCAL_SOFT_TIME_BUDGET_NANOS = 4_000_000L" in bore, "bore time budget missing")
+require("LOCAL_HARD_BLOCK_CAP_PER_TICK = 12" in bore and "now + predicted > localDeadline" in bore, "adaptive predictive stop missing")
+require("removePending(job.playerId, removed)" in bore and "removePending(job.playerId, 1)" not in bore, "pending-count batching regressed")
+require("TimedBreakResult" in automated_break and "player.gameMode.destroyBlock(target)" in automated_break, "manual-equivalent destroy path/profiler missing")
+require("setBlock(target" not in bore and "setChunkForced" not in bore and "addRegionTicket" not in bore, "bore bypass/force-load returned")
+require("pipelineP95Nanos" in bore and "sliceP99Nanos" in bore, "bore percentile profiler missing")
+require("borestats" in commands and "BoreMiningService.profileLines" in commands, "bore runtime profile command missing")
+
+warband = text(JAVA / "elite/WarbandDirector.java")''')
+rep(sat,'print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.16 soft TBOS shrine locator + protocol15 + prior runtime invariants")','print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.17 adaptive bore budget/profiling + protocol15 + prior runtime invariants")')
+
+frt=FR/'tools/test_current_source.py'
+rep(frt,'require("mod_version=0.1.0-alpha.112" in gradle, "current verifier/version drift")','require("mod_version=0.1.0-alpha.113" in gradle, "current verifier/version drift")')
+rep(frt,'road = text(SETTLEMENT / "SettlementRoadService.java")','''require("withinConstructionProtectionEnvelope" in construction, "construction bulk-break coarse guard missing")
+core_break = text(SETTLEMENT / "SettlementCoreService.java")
+require("Math.abs(pos.getX() - center.getX()) > 6" in core_break, "civic core still rebuilds all tier plans for remote breaks")
+waterfront_break = text(SETTLEMENT / "SettlementWaterfrontService.java")
+require("brokenState.is(Blocks.SPRUCE_SLAB)" in waterfront_break and "brokenState.is(Blocks.BARREL)" in waterfront_break, "waterfront type gate missing")
+
+road = text(SETTLEMENT / "SettlementRoadService.java")''')
+rep(frt,'require("infrastructureProjectBuilder" in road and "ProjectLane.ROAD" in road and "clearRoadConstruction" in road,','''require("withinActiveRoadProtectionEnvelope" in road and "road.path()" in road, "road bulk-break coarse guard missing")
+require("Math.abs(pos.getX() - state.gateX()) > 16" in outpost, "outpost bulk-break coarse guard missing")
+require("infrastructureProjectBuilder" in road and "ProjectLane.ROAD" in road and "clearRoadConstruction" in road,''')
+rep(frt,'print("CURRENT SOURCE CHECK PASS: alpha112 footprint-only placement + blocker diagnostics + alpha111 location UX + prior invariants")','print("CURRENT SOURCE CHECK PASS: alpha113 bulk-break event guards + alpha112 footprint-only placement + prior invariants")')
+
+print('FINAL PATCH APPLIED')
