@@ -20,6 +20,7 @@ import java.util.UUID;
  */
 public final class TurnboundWorldSavedData extends SavedData {
     public static final String REGION_RADIA = "RADIA";
+    public static final String REGION_MEADOW = "SOUTHGATE_MEADOW";
     public static final String REGION_GLOAMWOOD = "GLOAMWOOD";
     public static final String REGION_BROKEN_AQUEDUCT = "BROKEN_AQUEDUCT";
     public static final String REGION_EMBER_QUARRY = "EMBER_QUARRY";
@@ -91,6 +92,10 @@ public final class TurnboundWorldSavedData extends SavedData {
     public void reconcilePlayerProgress(UUID playerId) {
         if (playerId == null || !CampaignProgressStore.hasRuntime(playerId)) return;
         var snapshot = CampaignProgressStore.snapshot(playerId);
+        if (snapshot.quests().completed().contains("MQ_P00_03_south_gate")
+                || snapshot.quests().unlockFlags().contains("REGION_MEADOW")) {
+            unlockRegion(REGION_MEADOW);
+        }
         for (String encounterId : List.of("BATTLE_B01", "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05")) {
             if (snapshot.clearedEncounters().contains(encounterId)) recordEncounterClear(encounterId);
         }
