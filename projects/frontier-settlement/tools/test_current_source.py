@@ -16,7 +16,14 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.100" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.101" in gradle, "current verifier/version drift")
+
+inventory = text(SETTLEMENT / "SettlementInventory.java")
+storage = text(SETTLEMENT / "SettlementStorageService.java")
+require("if (stack.is(Items.DIAMOND)) return 6;" in inventory, "diamond metal value missing or drifted")
+require(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not included in settlement metal classification")
+require("stack.is(Items.DIAMOND)" in storage, "diamond is counted as metal but unavailable to physical metal extraction")
+require("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")
 
 construction = text(SETTLEMENT / "SettlementConstructionService.java")
 for retired in (
@@ -94,4 +101,4 @@ for retired in retired_mutators:
 integrity = text(SETTLEMENT / "SettlementBuildingIntegrityService.java")
 require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")
 
-print("CURRENT SOURCE CHECK PASS: alpha100 authority cleanup invariants")
+print("CURRENT SOURCE CHECK PASS: alpha101 diamond-metal and authority invariants")

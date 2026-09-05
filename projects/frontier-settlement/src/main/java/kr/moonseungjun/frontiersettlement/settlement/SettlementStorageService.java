@@ -406,6 +406,7 @@ public final class SettlementStorageService {
                 || stack.is(Items.RAW_COPPER)
                 || stack.is(Items.GOLD_INGOT)
                 || stack.is(Items.RAW_GOLD)
+                || stack.is(Items.DIAMOND)
                 || stack.is(ExternalContentTags.C_INGOTS)
                 || stack.is(ExternalContentTags.C_RAW_MATERIALS)
                 || stack.is(ExternalContentTags.SETTLEMENT_METAL);

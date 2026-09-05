@@ -74,6 +74,7 @@ public final class SettlementInventory {
         if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;
         if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;
         if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;
+        if (stack.is(Items.DIAMOND)) return 6;
         return 2;
     }
 
@@ -131,6 +132,7 @@ public final class SettlementInventory {
                 || stack.is(Items.RAW_COPPER)
                 || stack.is(Items.GOLD_INGOT)
                 || stack.is(Items.RAW_GOLD)
+                || stack.is(Items.DIAMOND)
                 || stack.is(ExternalContentTags.C_INGOTS)
                 || stack.is(ExternalContentTags.C_RAW_MATERIALS)
                 || stack.is(ExternalContentTags.SETTLEMENT_METAL);
