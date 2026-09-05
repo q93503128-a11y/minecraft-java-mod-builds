@@ -29,9 +29,11 @@ public final class EliteVfxTelegraphs {
             double sideways = Math.sin((i + variant * 2.0) * 1.7) * 0.08 * (0.35 + t);
             Vec3 normal = new Vec3(-delta.z, 0, delta.x).normalize().scale(sideways);
             Vec3 p = from.add(delta.scale(t)).add(normal);
-            level.sendParticles(ParticleTypes.FLAME, p.x, p.y, p.z, 1, 0.015, 0.01, 0.015, 0.0);
+            PersonalPresentationIsolation.particles(level, ParticleTypes.FLAME, p.x, p.y, p.z,
+                    1, 0.015, 0.01, 0.015, 0.0);
             if ((i + variant) % 3 == 0) {
-                level.sendParticles(ParticleTypes.SMOKE, p.x, p.y + 0.02, p.z, 1, 0.025, 0.01, 0.025, 0.0);
+                PersonalPresentationIsolation.particles(level, ParticleTypes.SMOKE, p.x, p.y + 0.02, p.z,
+                        1, 0.025, 0.01, 0.025, 0.0);
             }
         }
     }
