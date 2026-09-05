@@ -97,15 +97,22 @@ public final class BattleSessionManager {
 
     public static void command(ServerPlayer player, String command) {
         BattleSession session = SESSIONS.get(player.getUUID());
-        if (session == null) return;
+        if (session == null || command == null) return;
         String[] parts = command.split("\\|", -1);
+
+        // Battle exit can rebuild shared field actors and world state. Never let that work inherit the private
+        // battle-presentation owner or the respawned field silhouettes could become visible only to this player.
+        if ("FLEE".equals(parts[0])) {
+            if (session.finished() || session.fleeAllowed()) end(player);
+            return;
+        }
+
         PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> {
             switch (parts[0]) {
                 case "ACT" -> { if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]); }
                 case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
                 case "AUTO" -> session.toggleAuto(player);
                 case "SPEED" -> session.toggleSpeed(player);
-                case "FLEE" -> { if (session.finished() || session.fleeAllowed()) end(player); }
                 default -> { }
             }
         });
@@ -140,10 +147,23 @@ public final class BattleSessionManager {
                     CampaignPersistence.saveIfDirty(player);
                 }
             }
+
+            // From this point onward settlement is complete (or safely journaled for lifecycle shutdown). Never leave
+            // the client trapped on the result screen because presentation cleanup or shared-world restoration failed.
             SESSIONS.remove(player.getUUID());
-            PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> old.cleanup(player));
+            try {
+                PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> old.cleanup(player));
+            } catch (RuntimeException ex) {
+                Turnbound.LOGGER.error("TURNBOUND failed to clean battle presentation for {} after settlement",
+                        player.getUUID(), ex);
+            }
             if (!deferredReward && !encounterId.isBlank() && CampaignEncounterCatalog.contains(encounterId)) {
-                WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
+                try {
+                    WorldSessionRouter.onBattleEnded(player, encounterId, outcome);
+                } catch (RuntimeException ex) {
+                    Turnbound.LOGGER.error("TURNBOUND failed to restore field state for {} after encounter {}",
+                            player.getUUID(), encounterId, ex);
+                }
             }
         }
         BattleNetwork.close(player);
