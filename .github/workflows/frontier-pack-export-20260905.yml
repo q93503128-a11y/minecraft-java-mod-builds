@@ -32,14 +32,14 @@ jobs:
           cd projects/survival-ascension
           chmod +x gradlew
           ./gradlew clean build --no-daemon
-          test -f build/libs/survival_ascension-0.61.9-alpha.1.jar
+          test -f build/libs/survivalascension-0.61.9-alpha.1.jar
       - name: Verify and stage JARs
         run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib, zipfile, shutil
           out=Path('export'); out.mkdir()
-          jars=[Path('projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.102.jar'),Path('projects/survival-ascension/build/libs/survival_ascension-0.61.9-alpha.1.jar')]
+          jars=[Path('projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.102.jar'),Path('projects/survival-ascension/build/libs/survivalascension-0.61.9-alpha.1.jar')]
           for jar in jars:
               with zipfile.ZipFile(jar) as z:
                   names=z.namelist(); assert 'META-INF/neoforge.mods.toml' in names; assert len(names)==len(set(names))
