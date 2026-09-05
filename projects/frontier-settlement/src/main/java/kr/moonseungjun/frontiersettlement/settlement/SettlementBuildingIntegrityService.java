@@ -8,18 +8,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.List;
+import java.util.Set;
 
-/**
- * Keeps the settlement ledger tied to the physical world for completed houses.
- *
- * A heavily burned/exploded house must not keep granting housing forever or permanently reserve a
- * dead lot. We only retire a house after every blueprint position is loaded and fewer than 45% of
- * its expected blocks remain. Retirement clears only blocks that still exactly match the Frontier
- * house blueprint, and never deletes block entities or arbitrary player blocks.
- */
+/** Keeps completed-building authority tied to the physical world. */
 public final class SettlementBuildingIntegrityService {
     private static final int CHECK_INTERVAL_TICKS = 100;
     private static final int RUIN_INTACT_PERCENT = 45;
+    private static final Set<BuildingType> PRODUCTION_TYPES = Set.of(
+            BuildingType.LUMBER_CAMP, BuildingType.FARM, BuildingType.QUARRY, BuildingType.MINE);
 
     private SettlementBuildingIntegrityService() {}
 
@@ -31,8 +27,7 @@ public final class SettlementBuildingIntegrityService {
         ServerLevel level = server.overworld();
         for (BuildingRecord building : List.copyOf(data.buildings())) {
             BuildingType type = BuildingType.fromId(building.type());
-            if (type != BuildingType.HOUSE) continue;
-            if (!fullyLoaded(level, type, building)) continue;
+            if (!tracksIntegrity(type) || !fullyLoaded(level, type, building)) continue;
             List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(
                     type, building.origin(), building.rotation());
             int intact = 0;
@@ -41,18 +36,24 @@ public final class SettlementBuildingIntegrityService {
             }
             if ((long) intact * 100L >= (long) plan.size() * RUIN_INTACT_PERCENT) continue;
 
-            clearKnownHouseRemnants(level, plan);
+            // Retire authority first. Production remnants/containers become ordinary recoverable world blocks;
+            // only houses keep the Alpha.98 matching non-container remnant cleanup.
             if (data.removeCompletedBuilding(building)) {
+                if (type == BuildingType.HOUSE) clearKnownHouseRemnants(level, plan);
                 SettlementService.refreshResources(server, data);
                 SettlementService.broadcast(server, data);
             }
-            break; // bounded: retire at most one ruined house per scan
+            break;
         }
     }
 
+    private static boolean tracksIntegrity(BuildingType type) {
+        return type == BuildingType.HOUSE || PRODUCTION_TYPES.contains(type);
+    }
+
     private static boolean fullyLoaded(ServerLevel level, BuildingType type, BuildingRecord building) {
-        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, building.origin(), building.rotation());
-        for (BuildingBlueprints.Placement placement : plan) {
+        for (BuildingBlueprints.Placement placement : RotatedBlueprints.create(
+                type, building.origin(), building.rotation())) {
             if (!level.hasChunkAt(placement.pos())) return false;
         }
         return true;

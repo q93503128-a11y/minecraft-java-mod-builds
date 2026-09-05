@@ -8,11 +8,13 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import kr.moonseungjun.frontiersettlement.content.FrontierWorkerEntity;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.ArrayList;
@@ -379,42 +381,52 @@ public final class SettlementOutpostLogisticsService {
 
     private static void loadMilitarySupply(ServerLevel level, SettlementData data,
                                            OutpostRecord outpost, FrontierWorkerEntity worker) {
-        if (!SettlementStorageService.storageAvailable(level, data)) {
-            worker.getNavigation().stop();
-            return;
-        }
+        if (!SettlementStorageService.storageAvailable(level, data)) { worker.getNavigation().stop(); return; }
         int foodShortage = SettlementMilitaryOutpostService.foodSupplyShortage(level, outpost);
-        int metalShortage = SettlementMilitaryOutpostService.metalSupplyShortage(level, outpost);
-        Predicate<ItemStack> predicate;
-        int amount;
         if (foodShortage > 0) {
-            predicate = SettlementInventory::isFood;
-            amount = Math.min(foodShortage, transportBatchSize(data));
-        } else if (metalShortage > 0) {
-            predicate = SettlementStorageService::isMetalStack;
-            amount = Math.min(metalShortage, transportBatchSize(data));
-        } else if (SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) > 0) {
-            // Third priority only: the same assigned transporter carries one exact external weapon
-            // after the outpost's survival food/metal reserves are already satisfied.
-            predicate = SettlementExternalContentService::isExternalWeapon;
-            amount = 1;
-        } else {
-            worker.getNavigation().stop();
+            loadMilitaryTownStack(level, data, worker, SettlementInventory::isFood,
+                    Math.min(foodShortage, transportBatchSize(data)));
             return;
         }
+        int metalShortage = SettlementMilitaryOutpostService.metalSupplyShortage(level, outpost);
+        if (metalShortage > 0) { loadMilitaryTownMetal(level, data, worker, metalShortage); return; }
+        if (SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) > 0) {
+            loadMilitaryTownStack(level, data, worker, SettlementExternalContentService::isExternalWeapon, 1);
+            return;
+        }
+        worker.getNavigation().stop();
+    }
 
+    private static void loadMilitaryTownStack(ServerLevel level, SettlementData data,
+                                              FrontierWorkerEntity worker, Predicate<ItemStack> predicate, int amount) {
         BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);
-        if (source == null) {
-            worker.getNavigation().stop();
-            return;
-        }
+        if (source == null) { worker.getNavigation().stop(); return; }
         if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
-                > STORAGE_INTERACTION_RANGE_SQR) {
-            moveToStorageInteraction(level, worker, source, 0.84D);
+                > STORAGE_INTERACTION_RANGE_SQR) { moveToStorageInteraction(level, worker, source, 0.84D); return; }
+        ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);
+        if (!extracted.isEmpty()) beginMilitarySupplyTrip(level, data, worker, extracted);
+    }
+
+    private static void loadMilitaryTownMetal(ServerLevel level, SettlementData data,
+                                              FrontierWorkerEntity worker, int metalShortage) {
+        int batch = transportBatchSize(data);
+        for (int unit = 1; unit <= 24; unit++) {
+            final int unitValue = unit;
+            Predicate<ItemStack> predicate = stack -> SettlementInventory.metalValue(stack) == unitValue;
+            BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);
+            if (source == null) continue;
+            if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)
+                    > STORAGE_INTERACTION_RANGE_SQR) { moveToStorageInteraction(level, worker, source, 0.84D); return; }
+            int amount = Math.min(batch, Math.max(1, (metalShortage + unitValue - 1) / unitValue));
+            ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);
+            if (!extracted.isEmpty()) beginMilitarySupplyTrip(level, data, worker, extracted);
             return;
         }
-        ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);
-        if (extracted.isEmpty()) return;
+        worker.getNavigation().stop();
+    }
+
+    private static void beginMilitarySupplyTrip(ServerLevel level, SettlementData data,
+                                                FrontierWorkerEntity worker, ItemStack extracted) {
         worker.setItemSlot(EquipmentSlot.MAINHAND, extracted);
         worker.removeTag(MILITARY_RETURN_TRIP_TAG);
         worker.addTag(MILITARY_SUPPLY_TRIP_TAG);
@@ -526,9 +538,11 @@ public final class SettlementOutpostLogisticsService {
     }
 
     private static boolean isMiningCargo(ItemStack stack) {
-        return stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)
+        if (stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)
                 || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)
-                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI);
+                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI)) return true;
+        return stack.getItem() instanceof BlockItem blockItem
+                && blockItem.getBlock().defaultBlockState().is(Tags.Blocks.ORES);
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,

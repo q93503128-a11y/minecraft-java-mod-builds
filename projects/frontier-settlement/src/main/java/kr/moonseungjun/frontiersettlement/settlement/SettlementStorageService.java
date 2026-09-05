@@ -399,17 +399,8 @@ public final class SettlementStorageService {
     }
 
     public static boolean isMetalStack(ItemStack stack) {
-        if (!SettlementInventory.isMetalResource(stack)) return false;
-        return stack.is(Items.IRON_INGOT)
-                || stack.is(Items.RAW_IRON)
-                || stack.is(Items.COPPER_INGOT)
-                || stack.is(Items.RAW_COPPER)
-                || stack.is(Items.GOLD_INGOT)
-                || stack.is(Items.RAW_GOLD)
-                || stack.is(Items.DIAMOND)
-                || stack.is(ExternalContentTags.C_INGOTS)
-                || stack.is(ExternalContentTags.C_RAW_MATERIALS)
-                || stack.is(ExternalContentTags.SETTLEMENT_METAL);
+        // Classification and value share one authority; remote extraction cannot drift from town costs.
+        return SettlementInventory.metalValue(stack) > 0;
     }
 
     private static boolean allStorageChunksLoaded(ServerLevel level, List<BlockPos> positions) {

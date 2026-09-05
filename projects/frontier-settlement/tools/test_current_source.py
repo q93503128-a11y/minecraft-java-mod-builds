@@ -16,13 +16,14 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.101" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.102" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
 require("if (stack.is(Items.DIAMOND)) return 6;" in inventory, "diamond metal value missing or drifted")
 require(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not included in settlement metal classification")
-require("stack.is(Items.DIAMOND)" in storage, "diamond is counted as metal but unavailable to physical metal extraction")
+require("return SettlementInventory.metalValue(stack) > 0;" in storage, "storage bypasses canonical metal authority")
+require("consumeMetalAndFood" in inventory, "local metal value consumption missing")
 require("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")
 
 construction = text(SETTLEMENT / "SettlementConstructionService.java")
@@ -100,5 +101,16 @@ for retired in retired_mutators:
 
 integrity = text(SETTLEMENT / "SettlementBuildingIntegrityService.java")
 require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")
+for production_type in ("BuildingType.LUMBER_CAMP", "BuildingType.FARM", "BuildingType.QUARRY", "BuildingType.MINE"):
+    require(production_type in integrity, f"ruined production building is not integrity-tracked: {production_type}")
+require("if (type == BuildingType.HOUSE) clearKnownHouseRemnants" in integrity, "production retirement may clear player/container remnants")
 
-print("CURRENT SOURCE CHECK PASS: alpha101 diamond-metal and authority invariants")
+military = text(SETTLEMENT / "SettlementMilitaryOutpostService.java")
+require(military.count("SettlementInventory.countMetal(container)") >= 3, "remote military metal still uses raw item counts")
+require("SettlementInventory.consumeMetalAndFood(container, metal, food)" in military, "remote recruitment bypasses canonical metal values")
+
+logistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")
+require("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")
+require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")
+
+print("CURRENT SOURCE CHECK PASS: alpha102 production integrity and economy authority invariants")

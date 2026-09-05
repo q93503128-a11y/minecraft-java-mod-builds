@@ -113,7 +113,7 @@ public final class SettlementMilitaryOutpostService {
             if (!isActiveMilitaryOutpost(level, outpost)) continue;
             if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) continue;
             food += SettlementInventory.countFood(container);
-            metal += countMatching(container, SettlementStorageService::isMetalStack);
+            metal += SettlementInventory.countMetal(container);
         }
         return new SupplySnapshot(food, metal);
     }
@@ -127,7 +127,7 @@ public final class SettlementMilitaryOutpostService {
     public static int metalSupplyShortage(ServerLevel level, OutpostRecord outpost) {
         if (!isActiveMilitaryOutpost(level, outpost)) return 0;
         if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return 0;
-        long present = countMatching(container, SettlementStorageService::isMetalStack);
+        long present = SettlementInventory.countMetal(container);
         return Math.max(0, TARGET_METAL_RESERVE - (int) Math.min(Integer.MAX_VALUE, present));
     }
 
@@ -182,7 +182,7 @@ public final class SettlementMilitaryOutpostService {
         if (!isActiveMilitaryOutpost(level, outpost) || findSentry(level, outpost) != null) return null;
         if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return null;
         if (SettlementInventory.countFood(container) < RECRUIT_FOOD_COST
-                || countMatching(container, SettlementStorageService::isMetalStack) < RECRUIT_METAL_COST) return null;
+                || SettlementInventory.countMetal(container) < RECRUIT_METAL_COST) return null;
 
         BlockPos home = outpost.center().above();
         if (!level.hasChunkAt(home)) return null;
@@ -336,32 +336,6 @@ public final class SettlementMilitaryOutpostService {
     }
 
     private static boolean consumeLocalSupply(Container container, long food, long metal) {
-        if (SettlementInventory.countFood(container) < food
-                || countMatching(container, SettlementStorageService::isMetalStack) < metal) return false;
-        consumeMatching(container, food, SettlementInventory::isFood);
-        consumeMatching(container, metal, SettlementStorageService::isMetalStack);
-        container.setChanged();
-        return true;
-    }
-
-    private static long countMatching(Container container, java.util.function.Predicate<ItemStack> predicate) {
-        long total = 0L;
-        for (int slot = 0; slot < container.getContainerSize(); slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (!stack.isEmpty() && predicate.test(stack)) total += stack.getCount();
-        }
-        return total;
-    }
-
-    private static void consumeMatching(Container container, long amount,
-                                        java.util.function.Predicate<ItemStack> predicate) {
-        long left = amount;
-        for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
-            ItemStack stack = container.getItem(slot);
-            if (stack.isEmpty() || !predicate.test(stack)) continue;
-            int take = (int) Math.min(left, stack.getCount());
-            stack.shrink(take);
-            left -= take;
-        }
+        return SettlementInventory.consumeMetalAndFood(container, metal, food);
     }
 }

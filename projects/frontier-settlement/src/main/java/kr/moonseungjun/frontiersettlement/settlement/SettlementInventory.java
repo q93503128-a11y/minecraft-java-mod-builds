@@ -15,6 +15,16 @@ public final class SettlementInventory {
     public static long countMetal(Container container) { return countValue(container, SettlementInventory::metalValue); }
     public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }
 
+    /** Atomic local-container cost using the same value authority as the shared settlement ledger. */
+    public static boolean consumeMetalAndFood(Container container, long metal, long food) {
+        if (metal < 0L || food < 0L) return false;
+        if (countMetal(container) < metal || countFood(container) < food) return false;
+        consumeValue(container, metal, SettlementInventory::metalValue);
+        consumeValue(container, food, SettlementInventory::foodValue);
+        container.setChanged();
+        return true;
+    }
+
     public static boolean consume(Container container, long wood, long stone, long food) {
         if (countWood(container) < wood || countStone(container) < stone || countFood(container) < food) return false;
         consumeMatching(container, wood, SettlementInventory::isWood);
