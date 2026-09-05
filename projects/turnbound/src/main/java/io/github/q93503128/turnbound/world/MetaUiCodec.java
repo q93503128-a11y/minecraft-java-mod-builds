@@ -33,8 +33,10 @@ public final class MetaUiCodec {
         for (var row : snapshot.challenges()) out.append("X|").append(row.id()).append('|').append(row.ordinal()).append('|')
                 .append(safe(row.label())).append('|').append(row.completed()?1:0).append('|').append(row.autoEvaluable()?1:0)
                 .append('|').append(safe(row.unresolvedReason())).append('\n');
-        for (var row : snapshot.regionQuests()) out.append("Q|").append(row.id()).append('|').append(row.region()).append('|')
-                .append(row.objectiveSpecified()?1:0).append('|').append(row.completed()?1:0).append('|').append(safe(row.chestRule())).append('\n');
+        // Region quest IDs are server progression keys. The client only needs a readable title for this passive list.
+        for (var row : snapshot.regionQuests()) out.append("Q|").append(safe(regionQuestTitle(row.id(), row.region()))).append('|')
+                .append(safe(row.region())).append('|').append(row.objectiveSpecified()?1:0).append('|')
+                .append(row.completed()?1:0).append('|').append(safe(row.chestRule())).append('\n');
         for (var row : snapshot.archiveHistory()) out.append("A|").append(row.characterId()).append('|').append(safe(row.name())).append('|')
                 .append(row.nativeStars()).append('|').append(row.newlyOwned()?1:0).append('|').append(row.essenceGranted()).append('|').append(row.pityAfter()).append('\n');
         for (var row : snapshot.shopItems()) out.append("S|").append(row.itemId()).append('|').append(safe(row.name())).append('|')
@@ -42,6 +44,27 @@ public final class MetaUiCodec {
         for (var row : snapshot.codex()) out.append("D|").append(row.category()).append('|').append(row.id()).append('|').append(safe(row.name())).append('|')
                 .append(row.discovered()?1:0).append('|').append(row.detailUnlocked()?1:0).append('|').append(safe(row.summary())).append('\n');
         return out.toString();
+    }
+
+    static String regionQuestTitle(String id, String region) {
+        String key = id == null ? "" : id;
+        String known = switch (key) {
+            case "RQ_MEADOW_01" -> "초원의 잔향";
+            case "RQ_GLOAM_01" -> "그늘 아래의 흔적";
+            case "RQ_AQUEDUCT_01" -> "멈춘 수로의 기록";
+            case "RQ_QUARRY_01" -> "재 속의 잔해";
+            case "RQ_RELAY_01", "RQ_OLD_RELAY_01" -> "중계소의 잔류 신호";
+            default -> null;
+        };
+        if (known != null) return known;
+        return switch (region == null ? "" : region) {
+            case "MEADOW" -> "남문 초원 지역 임무";
+            case "GLOAMWOOD" -> "그늘숲 지역 임무";
+            case "AQUEDUCT" -> "붕괴 수로 지역 임무";
+            case "QUARRY" -> "잿불 채석장 지역 임무";
+            case "OLD_RELAY", "OLD_RELAY_STATION" -> "구 중계소 지역 임무";
+            default -> "지역 임무";
+        };
     }
 
     private static String safe(String value) {
