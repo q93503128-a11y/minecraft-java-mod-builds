@@ -61,13 +61,13 @@ public final class EnemyDefeatVfx {
     private static void ring(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int count) {
         for (int i = 0; i < count; i++) {
             double a = Math.PI * 2.0 * i / count;
-            level.sendParticles(particle, center.x + Math.cos(a) * radius, center.y,
+            PersonalPresentationIsolation.particles(level, particle, center.x + Math.cos(a) * radius, center.y,
                     center.z + Math.sin(a) * radius, 1, .01, .01, .01, 0);
         }
     }
 
     private static void burst(ServerLevel level, ParticleOptions particle, Vec3 center, int count,
                               double dx, double dy, double dz, double speed) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, dx, dy, dz, speed);
+        PersonalPresentationIsolation.particles(level, particle, center.x, center.y, center.z, count, dx, dy, dz, speed);
     }
 }
