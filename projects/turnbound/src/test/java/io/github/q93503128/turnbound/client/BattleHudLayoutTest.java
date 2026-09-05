@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BattleHudLayoutTest {
     @Test
     void allHudRectanglesStayPositiveAndInsideViewport() {
-        int[][] sizes = {{256,160},{320,180},{420,225},{480,270},{640,360},{854,480},{960,540},{1920,1080}};
+        int[][] sizes = {{256,160},{320,180},{420,225},{480,270},{640,360},{854,480},{960,540},{1280,720},{1920,1080}};
         for (int[] size : sizes) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
             assertEquals(4, layout.allyBars().size());
@@ -46,8 +46,37 @@ class BattleHudLayoutTest {
         assertTrue(layout.timeline().right() < 854 * 3 / 4);
         assertTrue(layout.timeline().x() > 854 / 4);
         assertTrue(layout.tooltipArea().right() <= layout.actionHeader().x());
-        // Enemy state is world-space in alpha.15; compatibility rectangles must not form a top-right wall.
         for (var enemy : layout.enemyBars()) assertEquals(1, enemy.width());
         assertEquals(1, layout.confirmButton().width());
+    }
+
+    @Test
+    void referenceActionDockKeepsOneVerticalScanPathAndLowScreenCoverage() {
+        for (int[] size : new int[][]{{640,360},{854,480},{1280,720},{1920,1080}}) {
+            BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
+            var skills = layout.skillButtons();
+            assertFalse(layout.compact(), size[0] + "x" + size[1]);
+            assertTrue(skills.getFirst().width() <= size[0] * 0.20, size[0] + "x" + size[1]);
+            for (int i = 1; i < skills.size(); i++) {
+                assertEquals(skills.getFirst().x(), skills.get(i).x());
+                assertEquals(skills.getFirst().width(), skills.get(i).width());
+                assertTrue(skills.get(i).y() > skills.get(i - 1).bottom());
+            }
+            assertEquals(skills.getFirst().x(), layout.actionHeader().x());
+            assertEquals(skills.getFirst().width(), layout.actionHeader().width());
+            assertTrue(layout.allyBars().getFirst().height() <= size[1] * 0.06);
+        }
+    }
+
+    @Test
+    void tinyViewportShrinksRowsBeforeAllowingActionDockToHitUtilityControls() {
+        for (int[] size : new int[][]{{256,160},{320,180}}) {
+            BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
+            for (var skill : layout.skillButtons()) {
+                assertFalse(skill.overlaps(layout.autoButton()), size[0] + "x" + size[1]);
+                assertFalse(skill.overlaps(layout.speedButton()), size[0] + "x" + size[1]);
+                assertFalse(skill.overlaps(layout.fleeButton()), size[0] + "x" + size[1]);
+            }
+        }
     }
 }
