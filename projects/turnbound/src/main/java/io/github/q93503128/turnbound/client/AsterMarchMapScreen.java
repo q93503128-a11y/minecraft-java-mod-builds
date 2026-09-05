@@ -10,14 +10,14 @@ import org.lwjgl.glfw.GLFW;
 
 /** Readable authored-world overview with wheel zoom centered around the player. */
 final class AsterMarchMapScreen extends Screen {
-    private static final int TEXT = 0xFFF4F0E6;
-    private static final int SECONDARY = 0xFFB7B2AA;
-    private static final int MUTED = 0xFF737B87;
-    private static final int BLUE = 0xFF6DC6FF;
-    private static final int GOLD = 0xFFFFC857;
-    private static final int GREEN = 0xFF62D39A;
-    private static final int RED = 0xFFFF6B6B;
-    private static final int ROAD = 0xFFD8C79D;
+    private static final int TEXT = TurnboundUiTokens.TEXT_PRIMARY;
+    private static final int SECONDARY = TurnboundUiTokens.TEXT_SECONDARY;
+    private static final int MUTED = TurnboundUiTokens.TEXT_MUTED;
+    private static final int BLUE = TurnboundUiTokens.PRIMARY;
+    private static final int GOLD = TurnboundUiTokens.ACCENT;
+    private static final int GREEN = TurnboundUiTokens.SUCCESS;
+    private static final int RED = TurnboundUiTokens.DANGER;
+    private static final int ROAD = TurnboundUiTokens.MAP_ROAD;
 
     private static final double[][] SOUTH_ROUTE = {{0,110},{0,132},{13,176},{88,205},{190,230},{286,240},{355,245}};
     private static final double[][] GLOAM_ROUTE = {{0,-108},{-3,-145},{-12,-161},{-68,-226},{-40,-300},{-98,-392},{-35,-440}};
@@ -98,9 +98,8 @@ final class AsterMarchMapScreen extends Screen {
             if (!inside(marker.x(), marker.z(), view)) continue;
             int sx = mapX + worldToMap(marker.x(), view.minX, view.span, mapSize);
             int sy = mapY + worldToMap(marker.z(), view.minZ, view.span, mapSize);
-            int color = markerColor(marker.kind()); int r = marker.kind() == AsterMarchMapData.Kind.BOSS ? 3 : 2;
-            graphics.fill(sx-r-1,sy-r-1,sx+r+2,sy+r+2,0xD014171B); graphics.fill(sx-r,sy-r,sx+r+1,sy+r+1,color);
-            double dx=mouseX-sx,dy=mouseY-sy,d=dx*dx+dy*dy; if(d<=64.0&&d<hoveredDistance){hoveredDistance=d;hovered=marker;}
+            AsterMarchMarkerStyle.draw(graphics, sx, sy, marker.kind());
+            double dx=mouseX-sx,dy=mouseY-sy,d=dx*dx+dy*dy; if(d<=81.0&&d<hoveredDistance){hoveredDistance=d;hovered=marker;}
         }
         if (inside(px,pz,view)) {
             int psx=mapX+worldToMap(px,view.minX,view.span,mapSize),psy=mapY+worldToMap(pz,view.minZ,view.span,mapSize);
@@ -120,8 +119,10 @@ final class AsterMarchMapScreen extends Screen {
         }
         int legendY=infoY+91;
         if(infoH>150){
-            legend(graphics,infoX+9,legendY,BLUE,"시설 · 파란 점"); legend(graphics,infoX+9,legendY+17,GREEN,"사냥터 · 초록 점");
-            legend(graphics,infoX+9,legendY+34,GOLD,"계전소 · 금색 점"); legend(graphics,infoX+9,legendY+51,RED,"보스 · 빨간 점");
+            legend(graphics,infoX+9,legendY,AsterMarchMapData.Kind.FACILITY,"시설");
+            legend(graphics,infoX+9,legendY+17,AsterMarchMapData.Kind.HUNT,"사냥터");
+            legend(graphics,infoX+9,legendY+34,AsterMarchMapData.Kind.RELAY,"계전소");
+            legend(graphics,infoX+9,legendY+51,AsterMarchMapData.Kind.BOSS,"보스");
         }
         if(infoH>190) graphics.text(font,Component.literal("━ 주요 이동로"),infoX+9,legendY+72,ROAD,false);
         if(infoH>220){
@@ -131,14 +132,17 @@ final class AsterMarchMapScreen extends Screen {
         super.extractRenderState(graphics,mouseX,mouseY,partialTick);
     }
 
-    private void legend(GuiGraphicsExtractor g,int x,int y,int color,String text){g.fill(x,y+2,x+5,y+7,0xFF15181D);g.fill(x+1,y+3,x+4,y+6,color);g.text(font,Component.literal(text),x+9,y,SECONDARY,false);}
+    private void legend(GuiGraphicsExtractor g,int x,int y,AsterMarchMapData.Kind kind,String text){
+        AsterMarchMarkerStyle.drawSmall(g,x+4,y+5,kind);
+        g.text(font,Component.literal(text),x+11,y,SECONDARY,false);
+    }
     private Viewport viewport(double px,double pz){double full=AsterMarchMapData.MAX-AsterMarchMapData.MIN,span=full/zoom;double minX=zoom<=1.001?AsterMarchMapData.MIN:clamp(px-span/2.0,AsterMarchMapData.MIN,AsterMarchMapData.MAX-span);double minZ=zoom<=1.001?AsterMarchMapData.MIN:clamp(pz-span/2.0,AsterMarchMapData.MIN,AsterMarchMapData.MAX-span);return new Viewport(minX,minZ,span);}
     private void drawRoute(GuiGraphicsExtractor g,int mapX,int mapY,int mapSize,Viewport view,double[][] route){for(int i=0;i<route.length-1;i++){int x0=mapX+worldToMap(route[i][0],view.minX,view.span,mapSize),y0=mapY+worldToMap(route[i][1],view.minZ,view.span,mapSize),x1=mapX+worldToMap(route[i+1][0],view.minX,view.span,mapSize),y1=mapY+worldToMap(route[i+1][1],view.minZ,view.span,mapSize);drawLineClipped(g,x0,y0,x1,y1,mapX,mapY,mapX+mapSize,mapY+mapSize,ROAD);}}
     private void drawLineClipped(GuiGraphicsExtractor g,int x0,int y0,int x1,int y1,int minX,int minY,int maxX,int maxY,int color){int dx=Math.abs(x1-x0),sx=x0<x1?1:-1,dy=-Math.abs(y1-y0),sy=y0<y1?1:-1,err=dx+dy,guard=0;while(guard++<4096){if(x0>=minX&&x0<maxX&&y0>=minY&&y0<maxY)g.fill(x0,y0,x0+2,y0+2,color);if(x0==x1&&y0==y1)break;int e2=2*err;if(e2>=dy){err+=dy;x0+=sx;}if(e2<=dx){err+=dx;y0+=sy;}}}
     private int worldToMap(double value,double minimum,double span,int mapSize){return(int)Math.round((value-minimum)/span*mapSize);} private boolean inside(double x,double z,Viewport v){return x>=v.minX&&x<=v.minX+v.span&&z>=v.minZ&&z<=v.minZ+v.span;}
     private int regionColor(String label){return switch(label){case"라디아"->0xD05D765A;case"남문 초원"->0xC0748B4B;case"그늘숲"->0xC03C5A48;case"붕괴 수로"->0xC06B7076;case"잿불 채석장"->0xC0845B45;case"구 중계소"->0xC0444655;default->0xB05C636B;};}
     private void outline(GuiGraphicsExtractor g,int x,int y,int width,int height,int color){if(width<=1||height<=1)return;g.fill(x,y,x+width,y+1,color);g.fill(x,y+height-1,x+width,y+height,color);g.fill(x,y,x+1,y+height,color);g.fill(x+width-1,y,x+width,y+height,color);}
-    private static int markerColor(AsterMarchMapData.Kind kind){return switch(kind){case FACILITY->BLUE;case HUNT->GREEN;case BOSS->RED;case RELAY->GOLD;};}
+    private static int markerColor(AsterMarchMapData.Kind kind){return AsterMarchMarkerStyle.color(kind);}
     private static double clamp(double value,double min,double max){return Math.max(min,Math.min(max,value));}
     private record Viewport(double minX,double minZ,double span){}
 }

@@ -15,12 +15,8 @@ import org.jetbrains.annotations.NotNull;
 
 /** Terrain-readable exploration minimap. M opens the world map; N hides/shows this HUD map. */
 public final class AsterMarchMinimapLayer implements GuiLayer {
-    private static final int TEXT = 0xFFF4F0E6;
-    private static final int MUTED = 0xFFB7B2AA;
-    private static final int BLUE = 0xFF6DC6FF;
-    private static final int GOLD = 0xFFFFC857;
-    private static final int GREEN = 0xFF62D39A;
-    private static final int RED = 0xFFFF6B6B;
+    private static final int TEXT = TurnboundUiTokens.TEXT_PRIMARY;
+    private static final int MUTED = TurnboundUiTokens.TEXT_SECONDARY;
 
     // 48x48 was oversized at common GUI scale 3. Keep the same 4-block sampling radius with a denser 40x40 view.
     private static final int GRID = 40;
@@ -46,8 +42,8 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
 
         int panelW = MAP_SIZE + 22;
         int panelH = MAP_SIZE + 54;
-        int x = 8;
-        int y = 8;
+        int x = TurnboundUiTokens.S;
+        int y = TurnboundUiTokens.S;
         TurnboundUiSkin.panel(graphics, x, y, panelW, panelH);
         graphics.text(minecraft.font, Component.literal("M 지도 · N 숨김"), x + 7, y + 7, TEXT, false);
 
@@ -71,19 +67,17 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
             if (Math.abs(dx) > radius || Math.abs(dz) > radius) continue;
             int sx = mapX + MAP_SIZE / 2 + (int)Math.round(dx / STEP * CELL);
             int sy = mapY + MAP_SIZE / 2 + (int)Math.round(dz / STEP * CELL);
-            int color = markerColor(marker.kind());
-            graphics.fill(sx - 1, sy - 1, sx + 2, sy + 2, 0xFF16191D);
-            graphics.fill(sx, sy, sx + 2, sy + 2, color);
+            AsterMarchMarkerStyle.drawSmall(graphics, sx, sy, marker.kind());
         }
 
         drawPlayerArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot());
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
         int legendY = mapY + MAP_SIZE + 4;
-        drawLegend(graphics, minecraft, mapX, legendY, BLUE, "시설");
-        drawLegend(graphics, minecraft, mapX + 42, legendY, GREEN, "사냥");
-        drawLegend(graphics, minecraft, mapX, legendY + 10, GOLD, "계전");
-        drawLegend(graphics, minecraft, mapX + 42, legendY + 10, RED, "보스");
+        drawLegend(graphics, minecraft, mapX, legendY, AsterMarchMapData.Kind.FACILITY, "시설");
+        drawLegend(graphics, minecraft, mapX + 42, legendY, AsterMarchMapData.Kind.HUNT, "사냥");
+        drawLegend(graphics, minecraft, mapX, legendY + 10, AsterMarchMapData.Kind.RELAY, "계전");
+        drawLegend(graphics, minecraft, mapX + 42, legendY + 10, AsterMarchMapData.Kind.BOSS, "보스");
 
         AsterMarchMapData.Marker nearest = AsterMarchMapData.nearest(px, pz);
         String footer;
@@ -95,10 +89,10 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         graphics.text(minecraft.font, Component.literal(fit(minecraft, footer, panelW - 14)), x + 7, y + panelH - 11, MUTED, false);
     }
 
-    private static void drawLegend(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int y, int color, String label) {
-        graphics.fill(x, y + 2, x + 5, y + 7, 0xFF15181D);
-        graphics.fill(x + 1, y + 3, x + 4, y + 6, color);
-        graphics.text(minecraft.font, Component.literal(label), x + 7, y, MUTED, false);
+    private static void drawLegend(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int y,
+                                   AsterMarchMapData.Kind kind, String label) {
+        AsterMarchMarkerStyle.drawSmall(graphics, x + 3, y + 4, kind);
+        graphics.text(minecraft.font, Component.literal(label), x + 9, y, MUTED, false);
     }
 
     private static void refreshTerrain(Minecraft minecraft) {
@@ -161,7 +155,6 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
     }
 
     private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }
-    private static int markerColor(AsterMarchMapData.Kind kind) { return switch (kind) { case FACILITY -> BLUE; case HUNT -> GREEN; case BOSS -> RED; case RELAY -> GOLD; }; }
     private static String fit(Minecraft minecraft, String value, int maxWidth) {
         if (minecraft.font.width(value) <= maxWidth) return value;
         int end = value.length();

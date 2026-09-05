@@ -30,7 +30,7 @@ final class BattleHudButton extends Button {
         var font=Minecraft.getInstance().font;
         String label=UiTextLayout.fit(raw,Math.max(8,getWidth()-12));
         int tx=getX()+Math.max(5,(getWidth()-font.width(label))/2),ty=getY()+Math.max(2,(getHeight()-font.lineHeight)/2);
-        graphics.text(font,Component.literal(label),tx,ty,active?0xFFF4F0E6:0xFFA5A5A5,true);
+        graphics.text(font,Component.literal(label),tx,ty,active?TurnboundUiTokens.TEXT_PRIMARY:0xFFA5A5A5,true);
     }
 
     private static boolean isStableSkillLabel(String raw){
