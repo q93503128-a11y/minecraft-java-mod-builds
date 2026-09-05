@@ -6,32 +6,29 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Physical discoveries for the twelve canonical Region Quest IDs.
  *
  * v0.4 names these quests and defines a region-tier chest reward, but deliberately leaves detailed objectives open.
  * This layer therefore authors discoverable scenes and lore without fabricating kill counts or mandatory objectives.
+ * Physical discovery props are world-shared; reading them remains player-local.
  */
 public final class RegionQuestWorldSites {
     public record Site(String id, String region, String label, Vec3 position, String lore, Item item, ChatFormatting color) {}
 
     private static final int MARKER_X=-102, MARKER_Y=54, MARKER_Z=334;
     private static final double SPAWN_RADIUS_SQ=96.0*96.0;
-    private static final double DESPAWN_RADIUS_SQ=124.0*124.0;
+    private static final String SCOPE="region_quest_sites";
+    private static final String KEY_PREFIX="region_quest:";
     private static final List<Site> SITES=List.of(
             new Site("RQ_M01_broken_cart","SOUTHGATE","부서진 보급 수레",new Vec3(48,67,192),"초원 순찰대의 오래된 보급 수레. 바퀴 자국은 동쪽으로 급히 꺾여 있다.",Items.CHEST_MINECART,ChatFormatting.YELLOW),
             new Site("RQ_M02_missing_scout","SOUTHGATE","실종 정찰병의 표식",new Vec3(128,67,315),"바위 뒤에 남은 정찰 표식. 누군가 추격을 피해 채석장 방향으로 빠져나갔다.",Items.SPYGLASS,ChatFormatting.GREEN),
@@ -46,9 +43,6 @@ public final class RegionQuestWorldSites {
             new Site("RQ_Q02_cooling_route","QUARRY","냉각수 우회로",new Vec3(-124,68,438),"용암 절단면 아래로 이어지는 냉각수 우회관. 오래된 수동 밸브가 아직 남아 있다.",Items.WATER_BUCKET,ChatFormatting.AQUA),
             new Site("RQ_Q03_old_tool","QUARRY","버려진 절단 공구",new Vec3(94,65,424),"급히 내려놓은 채 굳어 버린 절단 공구. 손잡이에 피난 방향을 긁어 표시했다.",Items.IRON_PICKAXE,ChatFormatting.RED));
 
-    /** player -> actor uuid -> site. Discoveries are session-local until Region Quest objectives become fully canonical. */
-    private static final Map<UUID,Map<UUID,Site>> ACTORS=new ConcurrentHashMap<>();
-
     private RegionQuestWorldSites(){}
     public static List<Site> sites(){return SITES;}
 
@@ -60,28 +54,37 @@ public final class RegionQuestWorldSites {
 
     public static void sync(ServerLevel l,ServerPlayer p){
         build(l);
-        Map<UUID,Site> actors=ACTORS.computeIfAbsent(p.getUUID(),ignored->new LinkedHashMap<>());
-        for(var e:List.copyOf(actors.entrySet())){
-            Entity entity=l.getEntity(e.getKey());
-            if(entity==null||p.position().distanceToSqr(e.getValue().position())>DESPAWN_RADIUS_SQ){if(entity!=null)entity.discard();actors.remove(e.getKey());}
-        }
+        List<SharedAuxiliaryActors.Spec> desired=new ArrayList<>();
         for(Site s:SITES){
-            if(p.position().distanceToSqr(s.position())>SPAWN_RADIUS_SQ||actors.containsValue(s))continue;
-            ArmorStand a=new ArmorStand(l,s.position().x,s.position().y,s.position().z);a.setInvulnerable(true);a.setNoGravity(true);a.setShowArms(true);
-            a.setCustomName(Component.literal(s.label()).withStyle(s.color()));a.setCustomNameVisible(true);a.setItemSlot(EquipmentSlot.MAINHAND,s.item().getDefaultInstance());
-            l.addFreshEntity(a);actors.put(a.getUUID(),s);
+            if(p.position().distanceToSqr(s.position())>SPAWN_RADIUS_SQ)continue;
+            desired.add(new SharedAuxiliaryActors.Spec(key(s),s.position(),
+                    Component.literal(s.label()).withStyle(s.color()),s.item(),false,true,List.of(s.label())));
         }
+        SharedAuxiliaryActors.sync(l,p.getUUID(),SCOPE,desired);
     }
 
     public static boolean interact(ServerPlayer p,Entity target){
-        if(p==null||target==null)return false;Map<UUID,Site> actors=ACTORS.get(p.getUUID());if(actors==null)return false;Site s=actors.get(target.getUUID());if(s==null)return false;
+        if(p==null||target==null)return false;
+        Site s=siteForSharedKey(SharedAuxiliaryActors.key(target));
+        if(s==null)return false;
         p.sendSystemMessage(Component.literal("지역 발견 · "+s.label()).withStyle(s.color(),ChatFormatting.BOLD));
         p.sendSystemMessage(Component.literal(s.lore()).withStyle(ChatFormatting.GRAY));
         p.sendSystemMessage(Component.literal("현장 단서가 지역 기록에 남았습니다.").withStyle(ChatFormatting.DARK_GRAY));
         return true;
     }
 
-    public static void remove(ServerPlayer p){if(p==null||!(p.level() instanceof ServerLevel l))return;Map<UUID,Site> actors=ACTORS.remove(p.getUUID());if(actors==null)return;for(UUID id:actors.keySet()){Entity e=l.getEntity(id);if(e!=null)e.discard();}}
+    public static void remove(ServerPlayer p){
+        if(p==null||!(p.level() instanceof ServerLevel l))return;
+        SharedAuxiliaryActors.removeScope(l,p.getUUID(),SCOPE);
+    }
+
+    private static String key(Site site){return KEY_PREFIX+site.id();}
+    private static Site siteForSharedKey(String key){
+        if(key==null||!key.startsWith(KEY_PREFIX))return null;
+        String id=key.substring(KEY_PREFIX.length());
+        for(Site site:SITES)if(site.id().equals(id))return site;
+        return null;
+    }
 
     private static void buildScene(ServerLevel l,Site s){int x=(int)Math.round(s.position().x),y=(int)Math.round(s.position().y)-1,z=(int)Math.round(s.position().z);switch(s.region()){
         case"SOUTHGATE"->meadow(l,x,y,z,s.id());case"GLOAMWOOD"->forest(l,x,y,z,s.id());case"AQUEDUCT"->aqueduct(l,x,y,z,s.id());case"QUARRY"->quarry(l,x,y,z,s.id());default->{}}
