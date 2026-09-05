@@ -250,14 +250,14 @@ public final class RadiaHubSessionManager {
             switch (facilityId) {
                 case "ECHO_ARCHIVE" -> {
                     if (!CampaignContentUnlocks.archive(playerId)) {
-                        locked(player, "Echo Archive · 그라울 클리어 후 소환 기능 해금");
+                        locked(player, "메아리 기록관 · 그라울 격파 후 소환 기능 해금");
                         return;
                     }
                     MetaNetwork.open(player, "ARCHIVE");
                 }
                 case "FORGE_ANNEX" -> {
                     if (!CampaignContentUnlocks.forge(playerId)) {
-                        locked(player, "Forge Annex · Chapter 1 완료 후 장비 강화 해금");
+                        locked(player, "대장간 별관 · 제1장 완료 후 장비 강화 해금");
                         return;
                     }
                     MetaNetwork.open(player, "FORGE");
@@ -265,7 +265,7 @@ public final class RadiaHubSessionManager {
                 case "MARKET_ROW" -> MetaNetwork.open(player, "MARKET");
                 case "TRAINING_YARD" -> {
                     if (!CampaignContentUnlocks.prologueComplete(playerId)) {
-                        locked(player, "Training Yard · 먼저 Prologue 전투 훈련 3회를 완료해야 합니다.");
+                        locked(player, "훈련장 · 먼저 도입부 전투 훈련 3회를 완료해야 합니다.");
                         return;
                     }
                     player.sendSystemMessage(Component.literal("자유 훈련전 · 보상 없음").withStyle(ChatFormatting.YELLOW));
@@ -273,37 +273,37 @@ public final class RadiaHubSessionManager {
                 }
                 case "RIFT_GATE" -> {
                     if (!CampaignContentUnlocks.endgame(playerId)) {
-                        locked(player, "Rift Gate · 세라크 격파와 Relay 재연결 후 개방");
+                        locked(player, "균열문 · 세라크 격파와 Relay 재연결 후 개방");
                         return;
                     }
                     MetaNetwork.open(player, "RIFT");
                 }
                 case "MEMORIAL_STEPS" -> {
                     if (!CampaignContentUnlocks.characterQuestStageOne(playerId)) {
-                        locked(player, "Memorial Steps · Chapter 2 이후 인연 기록이 개방됩니다.");
+                        locked(player, "추모 계단 · 제2장 이후 인연 기록이 개방됩니다.");
                         return;
                     }
-                    player.sendSystemMessage(Component.literal("Memorial Steps · 모르웬 및 각성 관련 기록")
+                    player.sendSystemMessage(Component.literal("추모 계단 · 모르웬 및 각성 관련 기록")
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                     MetaNetwork.open(player, "CHARACTERS");
                 }
                 case "CLOCK_TOWER" -> {
                     if (!CampaignContentUnlocks.chapter3Complete(playerId)) {
-                        locked(player, "Clock Tower · 개인 사건은 Chapter 3 완료 이후 조사할 수 있습니다.");
+                        locked(player, "시계탑 · 개인 사건은 제3장 완료 이후 조사할 수 있습니다.");
                         return;
                     }
-                    player.sendSystemMessage(Component.literal("Clock Tower · 멈춘 시계탑").withStyle(ChatFormatting.AQUA));
+                    player.sendSystemMessage(Component.literal("시계탑 · 멈춘 시계탑").withStyle(ChatFormatting.AQUA));
                     MetaNetwork.open(player, "CHARACTERS");
                 }
                 case "BARRACKS" -> {
                     if (!CampaignContentUnlocks.characterQuestStageOne(playerId)) {
-                        locked(player, "Barracks · Chapter 2 이후 수비대 기록이 개방됩니다.");
+                        locked(player, "병영 · 제2장 이후 수비대 기록이 개방됩니다.");
                         return;
                     }
-                    player.sendSystemMessage(Component.literal("Barracks · 수비대 관련 기록").withStyle(ChatFormatting.GREEN));
+                    player.sendSystemMessage(Component.literal("병영 · 수비대 관련 기록").withStyle(ChatFormatting.GREEN));
                     MetaNetwork.open(player, "CHARACTERS");
                 }
-                default -> {}
+                default -> { }
             }
         }
 
@@ -322,10 +322,10 @@ public final class RadiaHubSessionManager {
             List<FieldUiSnapshot.Travel> travels = new ArrayList<>();
             travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_RADIA, "라디아 계전소", true, true));
             travels.add(new FieldUiSnapshot.Travel("SOUTH_GATE", "남문 초원 진입", regionUnlocked(player), false));
-            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_GLOAM, "그늘숲 Chapter 2", chapterOneComplete(player), false));
-            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_AQUEDUCT, "붕괴 수로 Chapter 3", chapterTwoComplete(player), false));
-            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_QUARRY, "잿불 채석장 Chapter 4", chapterThreeComplete(player), false));
-            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_RELAY, "구 중계소 Chapter 5", relayKeyComplete(player), false));
+            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_GLOAM, "그늘숲 · 제2장", chapterOneComplete(player), false));
+            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_AQUEDUCT, "붕괴 수로 · 제3장", chapterTwoComplete(player), false));
+            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_QUARRY, "잿불 채석장 · 제4장", chapterThreeComplete(player), false));
+            travels.add(new FieldUiSnapshot.Travel(AsterMarchRegionCatalog.FT_RELAY, "구 중계소 · 제5장", relayKeyComplete(player), false));
             return new FieldUiSnapshot(
                     true, mode, wins, 3, false, storyComplete(player), 0, 0,
                     objective(player, wins), dialogue(player),
@@ -334,16 +334,16 @@ public final class RadiaHubSessionManager {
         }
 
         private String objective(ServerPlayer player, int wins) {
-            if (!complete(player, "MQ_P00_01_arrival")) return "라디아 도착 · Director Iven과 대화";
+            if (!complete(player, "MQ_P00_01_arrival")) return "라디아 도착 · 총괄관 아이븐과 대화";
             if (!complete(player, "MQ_P00_02_first_party")) return "첫 파티 · 카이렌 · 변경 사냥꾼 편성 확인";
             if (!complete(player, "MQ_P00_03_south_gate")) return "남문 개방 · 전투 훈련 " + wins + "/3";
-            if (!chapterOneComplete(player)) return "Chapter 1 · 그라울 격파";
-            if (!chapterTwoComplete(player)) return "Chapter 2 · 베르나 격파";
-            if (!chapterThreeComplete(player)) return "Chapter 3 · ORO-7 정지";
-            if (!chapterFourComplete(player)) return "Chapter 4 · 콜바크 격파";
+            if (!chapterOneComplete(player)) return "제1장 · 들이받는 왕 그라울 격파";
+            if (!chapterTwoComplete(player)) return "제2장 · 가시어미 베르나 격파";
+            if (!chapterThreeComplete(player)) return "제3장 · 수문관리기 ORO-7 정지";
+            if (!chapterFourComplete(player)) return "제4장 · 재의 거상 콜바크 격파";
             if (!relayKeyComplete(player)) return "중계소 열쇠 · 라디아 계전소에 세 지역 Relay 조각 제출";
-            if (!storyComplete(player)) return "Chapter 5 · 구 중계소에서 세라크와 Relay 재연결 진행";
-            return "메인 스토리 완료 · Rift Gate / Hard / Signature / Awakening 콘텐츠 개방";
+            if (!storyComplete(player)) return "제5장 · 구 중계소에서 세라크 격파와 Relay 재연결 진행";
+            return "메인 스토리 완료 · 균열문 / 고난도 재도전 / 전용 장비 시험 / 각성 콘텐츠 개방";
         }
 
         private String dialogue(ServerPlayer player) {
