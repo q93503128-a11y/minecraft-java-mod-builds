@@ -33,11 +33,7 @@ public record FieldUiSnapshot(
         public static Reward none() { return new Reward("", 0, 0, false, false); }
     }
 
-    /**
-     * Field encounter preview projected from the same canonical combat data used by BattleEngine.
-     * v0.4 does not author a separate recommended-CP table, so recommendedCp is the summed enemy CP reference
-     * under the existing canonical CP formula rather than a guaranteed win/loss threshold.
-     */
+    /** Field encounter preview projected from the same canonical combat data used by BattleEngine. */
     public record Encounter(
             String id,
             String label,
@@ -102,15 +98,12 @@ public record FieldUiSnapshot(
         reward = reward == null ? Reward.none() : reward;
         encounters = List.copyOf(encounters == null ? List.of() : encounters);
         travels = List.copyOf(travels == null ? List.of() : travels);
-        loadingStage = loadingStage == null ? "" : loadingStage;
+        loadingStage = playerFacingText(loadingStage == null ? "" : loadingStage);
         loadingPercent = Math.max(0, Math.min(100, loadingPercent));
     }
 
-    /**
-     * Internal quest/enemy IDs are useful in code and save data, but they should never leak into the authored RPG
-     * objective copy. Keep the translation at the final field-UI boundary so progression code can stay canonical.
-     */
-    private static String playerFacingText(String value) {
+    /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */
+    static String playerFacingText(String value) {
         if (value == null || value.isBlank()) return "";
         String text = value;
         for (String token : List.of(
@@ -123,6 +116,16 @@ public record FieldUiSnapshot(
             text = text.replace(token, "");
         }
         return text
+                .replace("BATTLE_B01", "들이받는 왕 그라울")
+                .replace("BATTLE_B02", "가시어미 베르나")
+                .replace("BATTLE_B03", "수문관리기 ORO-7")
+                .replace("BATTLE_B04", "재의 거상 콜바크")
+                .replace("BATTLE_B05", "균열감시자 세라크")
+                .replace("B01 그라울", "들이받는 왕 그라울")
+                .replace("B02 베르나", "가시어미 베르나")
+                .replace("B03 ORO-7", "수문관리기 ORO-7")
+                .replace("B04 콜바크", "재의 거상 콜바크")
+                .replace("B05 세라크", "균열감시자 세라크")
                 .replace("P01/P03/P04/F03", "카이렌/브람/엘리시아/변경 사냥꾼")
                 .replace("P01", "카이렌")
                 .replace("P02", "루메아")
@@ -139,15 +142,24 @@ public record FieldUiSnapshot(
                 .replace("B04", "콜바크")
                 .replace("B05", "세라크")
                 .replace("EL03", "녹슨 백부장")
+                .replace("E003", "불안정 폭발체")
                 .replace("E008", "뿌리수호병")
                 .replace("E012/E013", "잿빛 사냥개/잉걸술사")
                 .replace("E014", "용암굴착수")
                 .replace("CORE_FRAGMENT", "Relay 핵 파편")
+                .replace("Director Iven", "총괄관 아이븐")
                 .replace("Relay fragment", "Relay 조각")
                 .replace("Relay console", "Relay 제어 콘솔")
-                .replace("Rift Gate / Hard Boss / Signature Trial", "균열문 / 고난도 재도전 / 전용 장비 시험")
+                .replace("Rift Gate", "균열문")
+                .replace("Hard Boss", "고난도 재도전")
                 .replace("Signature Trial", "전용 장비 시험")
-                .replace("Hard Boss", "고난도 재도전");
+                .replace("Awakening", "각성")
+                .replace("CANON_GAP", "정보 준비 중")
+                .replace("Chapter 1", "제1장")
+                .replace("Chapter 2", "제2장")
+                .replace("Chapter 3", "제3장")
+                .replace("Chapter 4", "제4장")
+                .replace("Chapter 5", "제5장");
     }
 
     /** Compatibility constructor for normal field snapshots. */
