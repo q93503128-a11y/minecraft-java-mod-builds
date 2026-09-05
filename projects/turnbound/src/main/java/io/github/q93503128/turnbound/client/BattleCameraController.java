@@ -11,17 +11,17 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * The default view must show both formations at once; manual orbit is a correction tool, not the primary way to read battle.
  */
 public final class BattleCameraController {
-    private static final float DEFAULT_DISTANCE = 9.8F;
-    private static final float MIN_DISTANCE = 6.1F;
-    private static final float MAX_DISTANCE = 15.0F;
-    private static final float DEFAULT_PITCH = 27.5F;
-    private static final float MIN_PITCH = 13.0F;
-    private static final float MAX_PITCH = 51.0F;
+    private static final float DEFAULT_DISTANCE = 8.0F;
+    private static final float MIN_DISTANCE = 5.5F;
+    private static final float MAX_DISTANCE = 12.5F;
+    private static final float DEFAULT_PITCH = 21.0F;
+    private static final float MIN_PITCH = 10.0F;
+    private static final float MAX_PITCH = 42.0F;
     private static final float DEFAULT_YAW_OFFSET = 22.0F;
     private static final float HORIZONTAL_DEGREES_PER_PIXEL = 0.44F;
     private static final float VERTICAL_DEGREES_PER_PIXEL = 0.36F;
     private static final float WHEEL_DISTANCE_STEP = 0.90F;
-    private static final float FOV = 55.0F;
+    private static final float FOV = 52.0F;
     private static final float VIEW_LERP = 0.66F;
     private static final float ZOOM_LERP = 0.38F;
 
