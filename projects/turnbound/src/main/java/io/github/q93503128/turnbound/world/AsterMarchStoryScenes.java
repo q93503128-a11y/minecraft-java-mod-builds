@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleOptions;
@@ -463,7 +464,7 @@ public final class AsterMarchStoryScenes {
 
         private void tick(ServerLevel level, ServerPlayer player) {
             int elapsed = Math.max(0, player.tickCount - startTick);
-            if (elapsed % 10 == 0) scenePulse(level, def, origin, elapsed);
+            if (elapsed % 10 == 0) scenePulse(level, player, def, origin, elapsed);
             int line = elapsed / LINE_TICKS;
             if (line < def.lines().size() && line != shownLine) showLine(level, player, line);
             if (line >= def.lines().size()) {
@@ -514,10 +515,10 @@ public final class AsterMarchStoryScenes {
         }
     }
 
-    private static void scenePulse(ServerLevel level, SceneDef def, Vec3 origin, int elapsed) {
+    private static void scenePulse(ServerLevel level, ServerPlayer player, SceneDef def, Vec3 origin, int elapsed) {
         ParticleOptions particle = sceneParticle(def.key().region());
         double phase = elapsed * 0.09;
-        level.sendParticles(particle,
+        PersonalPresentationIsolation.particles(level, player, particle,
                 origin.x + Math.cos(phase) * 1.8,
                 origin.y + 1.0,
                 origin.z + Math.sin(phase) * 1.8,
@@ -529,7 +530,8 @@ public final class AsterMarchStoryScenes {
         double max = Math.min(8.0, Math.sqrt(flat.lengthSqr()));
         for (double d = 2.0; d <= max; d += 2.0) {
             Vec3 p = origin.add(dir.scale(d));
-            level.sendParticles(particle, p.x, p.y + 0.25, p.z, 1, 0.08, 0.08, 0.08, 0.002);
+            PersonalPresentationIsolation.particles(level, player, particle,
+                    p.x, p.y + 0.25, p.z, 1, 0.08, 0.08, 0.08, 0.002);
         }
     }
 }
