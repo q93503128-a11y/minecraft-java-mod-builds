@@ -1,0 +1,104 @@
+name: Apply Frontier Alpha99 Authority Cleanup
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/apply-frontier-alpha99-authority.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+          cache-dependency-path: projects/frontier-settlement/**/*.gradle*
+
+      - name: Apply authority cleanup
+        run: python3 scripts/apply_frontier_alpha99_authority_cleanup.py
+
+      - name: Current source invariant check
+        run: python3 projects/frontier-settlement/tools/test_current_source.py
+
+      - name: Validate Frontier JSON
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('projects/frontier-settlement/src/main/resources')
+          files=list(root.rglob('*.json'))
+          for p in files:
+              json.loads(p.read_text(encoding='utf-8'))
+          print('JSON VALIDATION PASS', len(files))
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Verify Frontier JAR
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, zipfile
+          jars=[p for p in Path('projects/frontier-settlement/build/libs').glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
+          if not jars: raise SystemExit('no Frontier jar')
+          jar=max(jars,key=lambda p:p.stat().st_size)
+          if jar.stat().st_size <= 0: raise SystemExit('empty Frontier jar')
+          with zipfile.ZipFile(jar) as z:
+              names=z.namelist()
+              required=[
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementGuidanceService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementRoadService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementCivilWorkService.class',
+                  'META-INF/neoforge.mods.toml',
+              ]
+              missing=[x for x in required if x not in names]
+              if missing: raise SystemExit('missing jar entries: '+repr(missing))
+              if 'kr/moonseungjun/frontiersettlement/settlement/SettlementResidentRoutineService.class' in names:
+                  raise SystemExit('retired resident routine class still packaged')
+              if len(names) != len(set(names)): raise SystemExit('duplicate jar entries')
+          sha=hashlib.sha256(jar.read_bytes()).hexdigest()
+          Path('/tmp/frontier-jar-path').write_text(str(jar),encoding='utf-8')
+          print('JAR VERIFY PASS',jar,jar.stat().st_size,'sha256='+sha)
+          PY
+
+      - name: Commit tested source to main
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm .github/workflows/apply-frontier-alpha99-authority.yml scripts/apply_frontier_alpha99_authority_cleanup.py
+          git add -A projects/frontier-settlement
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'Clean Frontier runtime authority and stale balance paths'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Upload tested JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-0.1.0-alpha.99-tested
+          path: projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 7
