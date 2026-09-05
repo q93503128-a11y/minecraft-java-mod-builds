@@ -15,32 +15,33 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import java.util.UUID;
 
 /**
- * Keeps player-specific presentation out of other clients while leaving shared world/combat actors untouched.
+ * Keeps player-specific presentation out of other clients while leaving shared world actors untouched.
  *
- * <p>Private actors are still authoritative server entities so existing animation/timing code can stay unchanged.
- * Actor ownership is attached before tracking whenever spawning happens inside {@link #withPrivateActorOwner};
- * NeoForge then filters every non-owner tracking start by immediately removing that actor from the viewer.</p>
+ * <p>A presentation scope owns every temporary entity created synchronously inside it, including GeckoLib battle
+ * actors and fallback/marker armor stands. NeoForge then retracts those entities from every non-owner client whenever
+ * tracking starts. The same scope also routes battle particles only to that owner, so two battles may overlap in the
+ * same authored arena without leaking actors, markers or VFX into each other.</p>
  */
 @EventBusSubscriber(modid = Turnbound.MOD_ID)
 public final class PersonalPresentationIsolation {
-    private static final ThreadLocal<UUID> SPAWN_OWNER = new ThreadLocal<>();
+    private static final ThreadLocal<UUID> PRESENTATION_OWNER = new ThreadLocal<>();
 
     private PersonalPresentationIsolation() {}
 
-    /** Runs a narrowly-scoped presentation block whose newly joined battle actors belong only to {@code owner}. */
+    /** Runs one synchronous player-private presentation block. Nested scopes restore the previous owner. */
     public static void withPrivateActorOwner(UUID owner, Runnable action) {
         if (owner == null || action == null) return;
-        UUID previous = SPAWN_OWNER.get();
-        SPAWN_OWNER.set(owner);
+        UUID previous = PRESENTATION_OWNER.get();
+        PRESENTATION_OWNER.set(owner);
         try {
             action.run();
         } finally {
-            if (previous == null) SPAWN_OWNER.remove();
-            else SPAWN_OWNER.set(previous);
+            if (previous == null) PRESENTATION_OWNER.remove();
+            else PRESENTATION_OWNER.set(previous);
         }
     }
 
-    /** Convenience for callers that must spawn a private actor outside a scoped story block. */
+    /** Convenience for callers that must spawn a private actor outside a scoped presentation block. */
     public static BattleActorEntity spawnPrivateActor(
             ServerLevel level, String combatantId, Vec3 pos, float yaw, UUID owner) {
         if (level == null || owner == null) return null;
@@ -75,14 +76,14 @@ public final class PersonalPresentationIsolation {
     /** EntityJoinLevelEvent occurs during addFreshEntity, before normal client tracking/pairing begins. */
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
-        // Private story actors are short-lived runtime presentation only. If a crash persisted one, never resurrect it.
-        if (event.loadedFromDisk() && event.getEntity() instanceof BattleActorEntity actor && owner(actor) != null) {
+        Entity entity = event.getEntity();
+        // Every private presentation entity is runtime-only. A crash must never resurrect actors or marker stands.
+        if (event.loadedFromDisk() && owner(entity) != null) {
             event.setCanceled(true);
             return;
         }
-        UUID owner = SPAWN_OWNER.get();
-        if (owner == null || !(event.getEntity() instanceof BattleActorEntity actor)) return;
-        markPrivate(actor, owner);
+        UUID owner = PRESENTATION_OWNER.get();
+        if (owner != null) markPrivate(entity, owner);
     }
 
     /** StartTracking is non-cancellable, so retract the just-paired entity from every non-owner client. */
@@ -101,7 +102,7 @@ public final class PersonalPresentationIsolation {
         }
     }
 
-    /** Sends a presentation particle packet only to the intended player. */
+    /** Sends a presentation particle packet only to the explicitly intended player. */
     public static <T extends ParticleOptions> boolean particles(
             ServerLevel level, ServerPlayer player, T particle,
             double x, double y, double z, int count,
@@ -109,5 +110,24 @@ public final class PersonalPresentationIsolation {
         if (level == null || player == null || particle == null) return false;
         return level.sendParticles(player, particle, false, false,
                 x, y, z, count, xDist, yDist, zDist, speed);
+    }
+
+    /**
+     * Battle-VFX dispatcher. Inside a private presentation scope the packet goes only to its owner; outside a scope
+     * it preserves the ordinary shared-world broadcast behavior used by genuinely shared ambient presentation.
+     */
+    public static <T extends ParticleOptions> boolean particles(
+            ServerLevel level, T particle,
+            double x, double y, double z, int count,
+            double xDist, double yDist, double zDist, double speed) {
+        if (level == null || particle == null) return false;
+        UUID owner = PRESENTATION_OWNER.get();
+        if (owner != null && level.getServer() != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
+            if (player == null || player.level() != level) return false;
+            return level.sendParticles(player, particle, false, false,
+                    x, y, z, count, xDist, yDist, zDist, speed);
+        }
+        return level.sendParticles(particle, x, y, z, count, xDist, yDist, zDist, speed);
     }
 }
