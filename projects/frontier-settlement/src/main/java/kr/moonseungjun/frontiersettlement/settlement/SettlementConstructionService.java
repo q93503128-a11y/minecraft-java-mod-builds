@@ -35,6 +35,7 @@ public final class SettlementConstructionService {
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
     private static final double WORK_POSITION_REACHED_SQR = 9.0D;
+    private static final int SITE_WORK_MARGIN = 12;
     // Direct hand reach is deliberately much smaller than scaffold coverage. Reusing the 14-block
     // scaffold coverage radius here let a builder stand on the ground and place an entire tower roof.
     private static final double DIRECT_HIGH_WORK_RANGE_SQR = 25.0D;
@@ -730,6 +731,9 @@ public final class SettlementConstructionService {
                     }
                 }
             }
+            if (!hasReachableGroundWorkPosition(level, construction, type, placement, builder, supply)) {
+                return "건설 현장 접근 불가 · 건물 주변 지상 통로를 확인하세요";
+            }
             return "";
         }
 
@@ -920,8 +924,14 @@ public final class SettlementConstructionService {
 
     private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
                                                      BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
-        // Construction height is presentation only: the worker stays on safe ground around the footprint.
-        // This avoids fragile stair/scaffold navigation while still requiring the physical worker to reach the site.
+        // The builder must physically reach the construction zone, but no individual blueprint block
+        // requires a fragile exact perimeter cell or vertical scaffold. Once the worker is locally on site,
+        // every height is authoritative from ground level. This keeps construction visible without letting
+        // hedges, doorways or already-built walls turn one later blueprint step into a permanent stall.
+        if (builderWithinSiteWorkEnvelope(construction, type, builder)) {
+            builder.getNavigation().stop();
+            return true;
+        }
         for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
             if (workDistance <= WORK_POSITION_REACHED_SQR) {
@@ -931,6 +941,29 @@ public final class SettlementConstructionService {
             if (moveToReachable(builder, work, 1.05D)) return false;
         }
         builder.getNavigation().stop();
+        return false;
+    }
+
+    private static boolean builderWithinSiteWorkEnvelope(ConstructionState construction, BuildingType type,
+                                                          FrontierWorkerEntity builder) {
+        BuildingRotation rotation = construction.buildingRotation();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        double minX = construction.originX() - SITE_WORK_MARGIN;
+        double maxX = construction.originX() + width - 1 + SITE_WORK_MARGIN + 1.0D;
+        double minZ = construction.originZ() - SITE_WORK_MARGIN;
+        double maxZ = construction.originZ() + depth - 1 + SITE_WORK_MARGIN + 1.0D;
+        return builder.getX() >= minX && builder.getX() <= maxX
+                && builder.getZ() >= minZ && builder.getZ() <= maxZ;
+    }
+
+    private static boolean hasReachableGroundWorkPosition(ServerLevel level, ConstructionState construction,
+                                                          BuildingType type, BuildingBlueprints.Placement placement,
+                                                          FrontierWorkerEntity builder, BlockPos supply) {
+        if (builderWithinSiteWorkEnvelope(construction, type, builder)) return true;
+        for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
+            if (createReachablePath(builder, work) != null) return true;
+        }
         return false;
     }
 
