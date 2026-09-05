@@ -41,7 +41,10 @@
 
 1. [`AGENTS.md`](./AGENTS.md)
 2. [`docs/BUILD_STANDARD.md`](./docs/BUILD_STANDARD.md)
-3. 대상 프로젝트의 `PROJECT.md`
+3. [`docs/QUALITY_STANDARD.md`](./docs/QUALITY_STANDARD.md)
+4. 대상 프로젝트의 `PROJECT.md`
+
+`BUILD_STANDARD.md`는 빌드·테스트·패키징 정본이고, `QUALITY_STANDARD.md`는 UI/UX·모델·애니메이션·도구 선택·코드 구조·성능·외부 자산 활용까지 포함한 공용 품질 정본이다.
 
 ## 공용 저장소 원칙
 
@@ -60,7 +63,8 @@ minecraft-java-mod-builds/
 │  ├─ countryside-days/
 │  └─ living-kingdoms/
 ├─ docs/
-│  └─ BUILD_STANDARD.md
+│  ├─ BUILD_STANDARD.md
+│  └─ QUALITY_STANDARD.md
 ├─ AGENTS.md
 └─ README.md
 ```
