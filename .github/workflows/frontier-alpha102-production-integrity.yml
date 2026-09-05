@@ -12,133 +12,112 @@ permissions:
 jobs:
   apply-build-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
 
-      - name: Apply Alpha102 production authority fixes
+      - name: Patch Alpha102
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
 
-          ROOT = Path('projects/frontier-settlement')
-          SETTLEMENT = ROOT / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+          root = Path('projects/frontier-settlement')
+          st = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
 
-          def read(path):
-              return path.read_text(encoding='utf-8')
+          def txt(p): return p.read_text(encoding='utf-8')
+          def put(p, s): p.write_text(s, encoding='utf-8')
+          def one(p, old, new):
+              s = txt(p)
+              if s.count(old) != 1: raise SystemExit(f'{p}: expected 1 target, got {s.count(old)}')
+              put(p, s.replace(old, new, 1))
+          def rex(p, pat, repl):
+              s = txt(p); s2, n = re.subn(pat, repl, s, count=1, flags=re.S)
+              if n != 1: raise SystemExit(f'{p}: regex target drifted')
+              put(p, s2)
 
-          def write(path, content):
-              path.write_text(content, encoding='utf-8')
-
-          def replace_once(path, old, new):
-              content = read(path)
-              if content.count(old) != 1:
-                  raise SystemExit(f'{path}: expected exactly one replacement target, found {content.count(old)}')
-              write(path, content.replace(old, new, 1))
-
-          gradle = ROOT / 'gradle.properties'
-          replace_once(gradle, 'mod_version=0.1.0-alpha.101', 'mod_version=0.1.0-alpha.102')
-          replace_once(
-              gradle,
+          gp = root / 'gradle.properties'
+          one(gp, 'mod_version=0.1.0-alpha.101', 'mod_version=0.1.0-alpha.102')
+          one(gp,
               '# Alpha.101 economy convenience: vanilla diamonds count as high-value settlement metal while lower-value metal remains the first consumption priority.\n',
-              '# Alpha.101 economy convenience: vanilla diamonds count as high-value settlement metal while lower-value metal remains the first consumption priority.\n\n# Alpha.102 production integrity: ruined production jobs retire, remote military metal uses canonical value units, and companion ore cargo can return to town.\n'
-          )
+              '# Alpha.101 economy convenience: vanilla diamonds count as high-value settlement metal while lower-value metal remains the first consumption priority.\n\n# Alpha.102 production integrity: ruined production jobs retire, remote military metal uses canonical value units, and companion ore cargo can return to town.\n')
 
-          inventory = SETTLEMENT / 'SettlementInventory.java'
-          replace_once(
-              inventory,
+          inv = st / 'SettlementInventory.java'
+          one(inv,
               '    public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }\n\n    public static boolean consume(Container container, long wood, long stone, long food) {',
-              '''    public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }\n\n    /** Atomic local-container cost using the same value authority as the shared settlement ledger. */\n    public static boolean consumeMetalAndFood(Container container, long metal, long food) {\n        if (metal < 0L || food < 0L) return false;\n        if (countMetal(container) < metal || countFood(container) < food) return false;\n        consumeValue(container, metal, SettlementInventory::metalValue);\n        consumeValue(container, food, SettlementInventory::foodValue);\n        container.setChanged();\n        return true;\n    }\n\n    public static boolean consume(Container container, long wood, long stone, long food) {'''
-          )
+              '''    public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }\n\n    /** Atomic local-container cost using the same value authority as the shared settlement ledger. */\n    public static boolean consumeMetalAndFood(Container container, long metal, long food) {\n        if (metal < 0L || food < 0L) return false;\n        if (countMetal(container) < metal || countFood(container) < food) return false;\n        consumeValue(container, metal, SettlementInventory::metalValue);\n        consumeValue(container, food, SettlementInventory::foodValue);\n        container.setChanged();\n        return true;\n    }\n\n    public static boolean consume(Container container, long wood, long stone, long food) {''')
 
-          storage = SETTLEMENT / 'SettlementStorageService.java'
-          old_metal = '''    public static boolean isMetalStack(ItemStack stack) {\n        if (!SettlementInventory.isMetalResource(stack)) return false;\n        return stack.is(Items.IRON_INGOT)\n                || stack.is(Items.RAW_IRON)\n                || stack.is(Items.COPPER_INGOT)\n                || stack.is(Items.RAW_COPPER)\n                || stack.is(Items.GOLD_INGOT)\n                || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.DIAMOND)\n                || stack.is(ExternalContentTags.C_INGOTS)\n                || stack.is(ExternalContentTags.C_RAW_MATERIALS)\n                || stack.is(ExternalContentTags.SETTLEMENT_METAL);\n    }'''
-          new_metal = '''    public static boolean isMetalStack(ItemStack stack) {\n        // One authority for classification and value. Adding/removing a metal in SettlementInventory\n        // automatically changes storage counting, remote supply extraction and settlement costs together.\n        return SettlementInventory.metalValue(stack) > 0;\n    }'''
-          replace_once(storage, old_metal, new_metal)
+          storage = st / 'SettlementStorageService.java'
+          rex(storage,
+              r'    public static boolean isMetalStack\(ItemStack stack\) \{.*?\n    \}',
+              '''    public static boolean isMetalStack(ItemStack stack) {\n        // Classification and value share one authority; remote extraction cannot drift from town costs.\n        return SettlementInventory.metalValue(stack) > 0;\n    }''')
 
-          integrity = SETTLEMENT / 'SettlementBuildingIntegrityService.java'
-          write(integrity, '''package kr.moonseungjun.frontiersettlement.settlement;\n\nimport net.minecraft.core.BlockPos;\nimport net.minecraft.server.MinecraftServer;\nimport net.minecraft.server.level.ServerLevel;\nimport net.minecraft.world.level.block.Blocks;\nimport net.minecraft.world.level.block.state.BlockState;\nimport net.neoforged.neoforge.event.tick.ServerTickEvent;\n\nimport java.util.List;\nimport java.util.Set;\n\n/**\n * Keeps completed-building authority tied to the physical world.\n *\n * Houses retain the Alpha.98 cleanup behavior. Production buildings also retire after severe physical\n * destruction so a vanished lumber camp, farm, quarry or mine cannot keep a ghost job slot or recreate\n * its managed worksite barrel forever. Production remnants are deliberately left untouched: containers\n * and player edits become ordinary world blocks after the record is retired and can be recovered safely.\n */\npublic final class SettlementBuildingIntegrityService {\n    private static final int CHECK_INTERVAL_TICKS = 100;\n    private static final int RUIN_INTACT_PERCENT = 45;\n    private static final Set<BuildingType> PRODUCTION_TYPES = Set.of(\n            BuildingType.LUMBER_CAMP, BuildingType.FARM, BuildingType.QUARRY, BuildingType.MINE);\n\n    private SettlementBuildingIntegrityService() {}\n\n    public static void onServerTick(ServerTickEvent.Post event) {\n        MinecraftServer server = event.getServer();\n        if (server.getTickCount() % CHECK_INTERVAL_TICKS != 0) return;\n        SettlementData data = SettlementData.get(server);\n        if (!data.founded()) return;\n        ServerLevel level = server.overworld();\n        for (BuildingRecord building : List.copyOf(data.buildings())) {\n            BuildingType type = BuildingType.fromId(building.type());\n            if (!tracksIntegrity(type)) continue;\n            if (!fullyLoaded(level, type, building)) continue;\n            List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(\n                    type, building.origin(), building.rotation());\n            int intact = 0;\n            for (BuildingBlueprints.Placement placement : plan) {\n                if (level.getBlockState(placement.pos()).is(placement.state().getBlock())) intact++;\n            }\n            if ((long) intact * 100L >= (long) plan.size() * RUIN_INTACT_PERCENT) continue;\n\n            if (type == BuildingType.HOUSE) clearKnownHouseRemnants(level, plan);\n            if (data.removeCompletedBuilding(building)) {\n                SettlementService.refreshResources(server, data);\n                SettlementService.broadcast(server, data);\n            }\n            break; // bounded: retire at most one ruined building per scan\n        }\n    }\n\n    private static boolean tracksIntegrity(BuildingType type) {\n        return type == BuildingType.HOUSE || PRODUCTION_TYPES.contains(type);\n    }\n\n    private static boolean fullyLoaded(ServerLevel level, BuildingType type, BuildingRecord building) {\n        List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, building.origin(), building.rotation());\n        for (BuildingBlueprints.Placement placement : plan) {\n            if (!level.hasChunkAt(placement.pos())) return false;\n        }\n        return true;\n    }\n\n    private static void clearKnownHouseRemnants(ServerLevel level, List<BuildingBlueprints.Placement> plan) {\n        for (BuildingBlueprints.Placement placement : plan) {\n            BlockPos pos = placement.pos();\n            if (level.getBlockEntity(pos) != null) continue;\n            BlockState current = level.getBlockState(pos);\n            if (!current.is(placement.state().getBlock())) continue;\n            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);\n        }\n    }\n}\n''')
+          integrity = st / 'SettlementBuildingIntegrityService.java'
+          put(integrity, '''package kr.moonseungjun.frontiersettlement.settlement;\n\nimport net.minecraft.core.BlockPos;\nimport net.minecraft.server.MinecraftServer;\nimport net.minecraft.server.level.ServerLevel;\nimport net.minecraft.world.level.block.Blocks;\nimport net.minecraft.world.level.block.state.BlockState;\nimport net.neoforged.neoforge.event.tick.ServerTickEvent;\n\nimport java.util.List;\nimport java.util.Set;\n\n/** Keeps completed-building authority tied to the physical world. */\npublic final class SettlementBuildingIntegrityService {\n    private static final int CHECK_INTERVAL_TICKS = 100;\n    private static final int RUIN_INTACT_PERCENT = 45;\n    private static final Set<BuildingType> PRODUCTION_TYPES = Set.of(\n            BuildingType.LUMBER_CAMP, BuildingType.FARM, BuildingType.QUARRY, BuildingType.MINE);\n\n    private SettlementBuildingIntegrityService() {}\n\n    public static void onServerTick(ServerTickEvent.Post event) {\n        MinecraftServer server = event.getServer();\n        if (server.getTickCount() % CHECK_INTERVAL_TICKS != 0) return;\n        SettlementData data = SettlementData.get(server);\n        if (!data.founded()) return;\n        ServerLevel level = server.overworld();\n        for (BuildingRecord building : List.copyOf(data.buildings())) {\n            BuildingType type = BuildingType.fromId(building.type());\n            if (!tracksIntegrity(type) || !fullyLoaded(level, type, building)) continue;\n            List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(\n                    type, building.origin(), building.rotation());\n            int intact = 0;\n            for (BuildingBlueprints.Placement placement : plan) {\n                if (level.getBlockState(placement.pos()).is(placement.state().getBlock())) intact++;\n            }\n            if ((long) intact * 100L >= (long) plan.size() * RUIN_INTACT_PERCENT) continue;\n\n            // Retire authority first. Production remnants/containers become ordinary recoverable world blocks;\n            // only houses keep the Alpha.98 matching non-container remnant cleanup.\n            if (data.removeCompletedBuilding(building)) {\n                if (type == BuildingType.HOUSE) clearKnownHouseRemnants(level, plan);\n                SettlementService.refreshResources(server, data);\n                SettlementService.broadcast(server, data);\n            }\n            break;\n        }\n    }\n\n    private static boolean tracksIntegrity(BuildingType type) {\n        return type == BuildingType.HOUSE || PRODUCTION_TYPES.contains(type);\n    }\n\n    private static boolean fullyLoaded(ServerLevel level, BuildingType type, BuildingRecord building) {\n        for (BuildingBlueprints.Placement placement : RotatedBlueprints.create(\n                type, building.origin(), building.rotation())) {\n            if (!level.hasChunkAt(placement.pos())) return false;\n        }\n        return true;\n    }\n\n    private static void clearKnownHouseRemnants(ServerLevel level, List<BuildingBlueprints.Placement> plan) {\n        for (BuildingBlueprints.Placement placement : plan) {\n            BlockPos pos = placement.pos();\n            if (level.getBlockEntity(pos) != null) continue;\n            BlockState current = level.getBlockState(pos);\n            if (!current.is(placement.state().getBlock())) continue;\n            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);\n        }\n    }\n}\n''')
 
-          military = SETTLEMENT / 'SettlementMilitaryOutpostService.java'
-          content = read(military)
-          replacements = {
-              '            metal += countMatching(container, SettlementStorageService::isMetalStack);':
-                  '            metal += SettlementInventory.countMetal(container);',
-              '        long present = countMatching(container, SettlementStorageService::isMetalStack);':
-                  '        long present = SettlementInventory.countMetal(container);',
-              '                || countMatching(container, SettlementStorageService::isMetalStack) < RECRUIT_METAL_COST) return null;':
-                  '                || SettlementInventory.countMetal(container) < RECRUIT_METAL_COST) return null;',
-          }
-          for old, new in replacements.items():
-              if content.count(old) != 1:
-                  raise SystemExit(f'{military}: replacement target drifted: {old!r}')
-              content = content.replace(old, new, 1)
-          pattern = re.compile(r'''    private static boolean consumeLocalSupply\(Container container, long food, long metal\) \{.*?(?=\n\})''', re.S)
-          match = pattern.search(content)
-          if not match:
-              raise SystemExit('SettlementMilitaryOutpostService consumeLocalSupply tail not found')
-          content = pattern.sub('''    private static boolean consumeLocalSupply(Container container, long food, long metal) {\n        return SettlementInventory.consumeMetalAndFood(container, metal, food);\n    }''', content, count=1)
-          write(military, content)
+          mil = st / 'SettlementMilitaryOutpostService.java'
+          s = txt(mil)
+          for old, new in (
+              ('metal += countMatching(container, SettlementStorageService::isMetalStack);', 'metal += SettlementInventory.countMetal(container);'),
+              ('long present = countMatching(container, SettlementStorageService::isMetalStack);', 'long present = SettlementInventory.countMetal(container);'),
+              ('countMatching(container, SettlementStorageService::isMetalStack) < RECRUIT_METAL_COST', 'SettlementInventory.countMetal(container) < RECRUIT_METAL_COST'),
+          ):
+              if s.count(old) != 1: raise SystemExit(f'{mil}: target drifted: {old}')
+              s = s.replace(old, new, 1)
+          s, n = re.subn(
+              r'    private static boolean consumeLocalSupply\(Container container, long food, long metal\) \{.*?(?=\n\})',
+              '    private static boolean consumeLocalSupply(Container container, long food, long metal) {\n        return SettlementInventory.consumeMetalAndFood(container, metal, food);\n    }',
+              s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('military local supply tail drifted')
+          put(mil, s)
 
-          logistics = SETTLEMENT / 'SettlementOutpostLogisticsService.java'
-          content = read(logistics)
-          if 'import net.minecraft.world.item.BlockItem;' not in content:
-              content = content.replace('import net.minecraft.world.item.ItemStack;\n', 'import net.minecraft.world.item.BlockItem;\nimport net.minecraft.world.item.ItemStack;\n', 1)
-          if 'import net.neoforged.neoforge.common.Tags;' not in content:
-              content = content.replace('import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;\n', 'import net.neoforged.neoforge.common.Tags;\nimport net.neoforged.neoforge.event.entity.living.LivingDropsEvent;\n', 1)
+          log = st / 'SettlementOutpostLogisticsService.java'
+          s = txt(log)
+          s = s.replace('import net.minecraft.world.item.ItemStack;\n', 'import net.minecraft.world.item.BlockItem;\nimport net.minecraft.world.item.ItemStack;\n', 1)
+          s = s.replace('import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;\n', 'import net.neoforged.neoforge.common.Tags;\nimport net.neoforged.neoforge.event.entity.living.LivingDropsEvent;\n', 1)
+          load = '''    private static void loadMilitarySupply(ServerLevel level, SettlementData data,\n                                           OutpostRecord outpost, FrontierWorkerEntity worker) {\n        if (!SettlementStorageService.storageAvailable(level, data)) { worker.getNavigation().stop(); return; }\n        int foodShortage = SettlementMilitaryOutpostService.foodSupplyShortage(level, outpost);\n        if (foodShortage > 0) {\n            loadMilitaryTownStack(level, data, worker, SettlementInventory::isFood,\n                    Math.min(foodShortage, transportBatchSize(data)));\n            return;\n        }\n        int metalShortage = SettlementMilitaryOutpostService.metalSupplyShortage(level, outpost);\n        if (metalShortage > 0) { loadMilitaryTownMetal(level, data, worker, metalShortage); return; }\n        if (SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) > 0) {\n            loadMilitaryTownStack(level, data, worker, SettlementExternalContentService::isExternalWeapon, 1);\n            return;\n        }\n        worker.getNavigation().stop();\n    }\n\n    private static void loadMilitaryTownStack(ServerLevel level, SettlementData data,\n                                              FrontierWorkerEntity worker, Predicate<ItemStack> predicate, int amount) {\n        BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);\n        if (source == null) { worker.getNavigation().stop(); return; }\n        if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)\n                > STORAGE_INTERACTION_RANGE_SQR) { moveToStorageInteraction(level, worker, source, 0.84D); return; }\n        ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);\n        if (!extracted.isEmpty()) beginMilitarySupplyTrip(level, data, worker, extracted);\n    }\n\n    private static void loadMilitaryTownMetal(ServerLevel level, SettlementData data,\n                                              FrontierWorkerEntity worker, int metalShortage) {\n        int batch = transportBatchSize(data);\n        for (int unit = 1; unit <= 24; unit++) {\n            final int unitValue = unit;\n            Predicate<ItemStack> predicate = stack -> SettlementInventory.metalValue(stack) == unitValue;\n            BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);\n            if (source == null) continue;\n            if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)\n                    > STORAGE_INTERACTION_RANGE_SQR) { moveToStorageInteraction(level, worker, source, 0.84D); return; }\n            int amount = Math.min(batch, Math.max(1, (metalShortage + unitValue - 1) / unitValue));\n            ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);\n            if (!extracted.isEmpty()) beginMilitarySupplyTrip(level, data, worker, extracted);\n            return;\n        }\n        worker.getNavigation().stop();\n    }\n\n    private static void beginMilitarySupplyTrip(ServerLevel level, SettlementData data,\n                                                FrontierWorkerEntity worker, ItemStack extracted) {\n        worker.setItemSlot(EquipmentSlot.MAINHAND, extracted);\n        worker.removeTag(MILITARY_RETURN_TRIP_TAG);\n        worker.addTag(MILITARY_SUPPLY_TRIP_TAG);\n        SettlementService.refreshResources(level.getServer(), data);\n        SettlementService.broadcast(level.getServer(), data);\n    }\n'''
+          s, n = re.subn(
+              r'    private static void loadMilitarySupply\(ServerLevel level, SettlementData data,\n                                           OutpostRecord outpost, FrontierWorkerEntity worker\) \{.*?(?=\n    private static void deliverMilitarySupply)',
+              load, s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('logistics military supply block drifted')
+          old = '''    private static boolean isMiningCargo(ItemStack stack) {\n        return stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI);\n    }'''
+          new = '''    private static boolean isMiningCargo(ItemStack stack) {\n        if (stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI)) return true;\n        return stack.getItem() instanceof BlockItem blockItem\n                && blockItem.getBlock().defaultBlockState().is(Tags.Blocks.ORES);\n    }'''
+          if s.count(old) != 1: raise SystemExit('mining cargo block drifted')
+          put(log, s.replace(old, new, 1))
 
-          load_pattern = re.compile(r'''    private static void loadMilitarySupply\(ServerLevel level, SettlementData data,\n                                           OutpostRecord outpost, FrontierWorkerEntity worker\) \{.*?(?=\n    private static void deliverMilitarySupply)''', re.S)
-          if not load_pattern.search(content):
-              raise SystemExit('SettlementOutpostLogisticsService loadMilitarySupply block not found')
-          load_replacement = '''    private static void loadMilitarySupply(ServerLevel level, SettlementData data,\n                                           OutpostRecord outpost, FrontierWorkerEntity worker) {\n        if (!SettlementStorageService.storageAvailable(level, data)) {\n            worker.getNavigation().stop();\n            return;\n        }\n\n        int foodShortage = SettlementMilitaryOutpostService.foodSupplyShortage(level, outpost);\n        if (foodShortage > 0) {\n            loadMilitaryTownStack(level, data, worker, SettlementInventory::isFood,\n                    Math.min(foodShortage, transportBatchSize(data)));\n            return;\n        }\n\n        int metalShortage = SettlementMilitaryOutpostService.metalSupplyShortage(level, outpost);\n        if (metalShortage > 0) {\n            loadMilitaryTownMetal(level, data, worker, metalShortage);\n            return;\n        }\n\n        if (SettlementMilitaryOutpostService.weaponSupplyShortage(level, outpost) > 0) {\n            loadMilitaryTownStack(level, data, worker, SettlementExternalContentService::isExternalWeapon, 1);\n            return;\n        }\n\n        worker.getNavigation().stop();\n    }\n\n    private static void loadMilitaryTownStack(ServerLevel level, SettlementData data,\n                                              FrontierWorkerEntity worker, Predicate<ItemStack> predicate, int amount) {\n        BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);\n        if (source == null) {\n            worker.getNavigation().stop();\n            return;\n        }\n        if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)\n                > STORAGE_INTERACTION_RANGE_SQR) {\n            moveToStorageInteraction(level, worker, source, 0.84D);\n            return;\n        }\n        ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);\n        if (extracted.isEmpty()) return;\n        beginMilitarySupplyTrip(level, data, worker, extracted);\n    }\n\n    /**\n     * Remote metal reserve is expressed in the same value units as the town ledger. Prefer the lowest\n     * reachable unit value first, then carry only enough physical items to cover the remaining value.\n     * A diamond therefore contributes six reserve units instead of being treated as one generic item.\n     */\n    private static void loadMilitaryTownMetal(ServerLevel level, SettlementData data,\n                                              FrontierWorkerEntity worker, int metalShortage) {\n        int batch = transportBatchSize(data);\n        for (int unit = 1; unit <= 24; unit++) {\n            final int unitValue = unit;\n            Predicate<ItemStack> predicate = stack -> SettlementInventory.metalValue(stack) == unitValue;\n            BlockPos source = findReachableExtractionTarget(level, data, worker, predicate);\n            if (source == null) continue;\n            if (worker.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D)\n                    > STORAGE_INTERACTION_RANGE_SQR) {\n                moveToStorageInteraction(level, worker, source, 0.84D);\n                return;\n            }\n            int amount = Math.min(batch, Math.max(1, (metalShortage + unitValue - 1) / unitValue));\n            ItemStack extracted = SettlementStorageService.extract(level, source, predicate, amount);\n            if (extracted.isEmpty()) return;\n            beginMilitarySupplyTrip(level, data, worker, extracted);\n            return;\n        }\n        worker.getNavigation().stop();\n    }\n\n    private static void beginMilitarySupplyTrip(ServerLevel level, SettlementData data,\n                                                FrontierWorkerEntity worker, ItemStack extracted) {\n        worker.setItemSlot(EquipmentSlot.MAINHAND, extracted);\n        worker.removeTag(MILITARY_RETURN_TRIP_TAG);\n        worker.addTag(MILITARY_SUPPLY_TRIP_TAG);\n        SettlementService.refreshResources(level.getServer(), data);\n        SettlementService.broadcast(level.getServer(), data);\n    }\n'''
-          content = load_pattern.sub(load_replacement, content, count=1)
-
-          old_cargo = '''    private static boolean isMiningCargo(ItemStack stack) {\n        return stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI);\n    }'''
-          new_cargo = '''    private static boolean isMiningCargo(ItemStack stack) {\n        if (stack.is(Items.RAW_IRON) || stack.is(Items.RAW_COPPER) || stack.is(Items.RAW_GOLD)\n                || stack.is(Items.COAL) || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD)\n                || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI)) return true;\n        // Specialized outpost mining preserves unknown companion ores as their physical ore-block\n        // ItemStack. The transporter must accept the same fallback or those real outputs become stranded.\n        return stack.getItem() instanceof BlockItem blockItem\n                && blockItem.getBlock().defaultBlockState().is(Tags.Blocks.ORES);\n    }'''
-          if content.count(old_cargo) != 1:
-              raise SystemExit('SettlementOutpostLogisticsService mining cargo authority drifted')
-          content = content.replace(old_cargo, new_cargo, 1)
-          write(logistics, content)
-
-          verifier = ROOT / 'tools/test_current_source.py'
-          content = read(verifier)
-          content = content.replace('mod_version=0.1.0-alpha.101', 'mod_version=0.1.0-alpha.102', 1)
-          old_checks = '''require("if (stack.is(Items.DIAMOND)) return 6;" in inventory, "diamond metal value missing or drifted")\nrequire(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not included in settlement metal classification")\nrequire("stack.is(Items.DIAMOND)" in storage, "diamond is counted as metal but unavailable to physical metal extraction")\nrequire("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")'''
-          new_checks = '''require("if (stack.is(Items.DIAMOND)) return 6;" in inventory, "diamond metal value missing or drifted")\nrequire(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not included in settlement metal classification")\nrequire("consumeMetalAndFood" in inventory, "canonical local-container metal value consumption missing")\nrequire("return SettlementInventory.metalValue(stack) > 0;" in storage, "storage duplicates or bypasses canonical metal authority")\nrequire("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")'''
-          if content.count(old_checks) != 1:
-              raise SystemExit('test_current_source metal check block drifted')
-          content = content.replace(old_checks, new_checks, 1)
-          old_integrity = 'require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")'
-          new_integrity = '''require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")\nfor production_type in ("BuildingType.LUMBER_CAMP", "BuildingType.FARM", "BuildingType.QUARRY", "BuildingType.MINE"):\n    require(production_type in integrity, f"ruined production building is not integrity-tracked: {production_type}")\nrequire("if (type == BuildingType.HOUSE) clearKnownHouseRemnants" in integrity, "production retirement may destructively clear player/container remnants")\n\nmilitary = text(SETTLEMENT / "SettlementMilitaryOutpostService.java")\nrequire(military.count("SettlementInventory.countMetal(container)") >= 3, "remote military reserve still counts metal as raw item count")\nrequire("SettlementInventory.consumeMetalAndFood(container, metal, food)" in military, "remote military recruitment bypasses canonical metal values")\nrequire("countMatching(container, SettlementStorageService::isMetalStack)" not in military, "legacy remote metal item-count authority returned")\n\nlogistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")\nrequire("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling does not use canonical value units")\nrequire("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore-block cargo cannot return from specialized outposts")'''
-          if content.count(old_integrity) != 1:
-              raise SystemExit('test_current_source integrity check drifted')
-          content = content.replace(old_integrity, new_integrity, 1)
-          content = content.replace('CURRENT SOURCE CHECK PASS: alpha101 diamond-metal and authority invariants', 'CURRENT SOURCE CHECK PASS: alpha102 production integrity and economy authority invariants', 1)
-          write(verifier, content)
+          ver = root / 'tools/test_current_source.py'
+          s = txt(ver).replace('mod_version=0.1.0-alpha.101', 'mod_version=0.1.0-alpha.102', 1)
+          s = s.replace('require("stack.is(Items.DIAMOND)" in storage, "diamond is counted as metal but unavailable to physical metal extraction")',
+                        'require("return SettlementInventory.metalValue(stack) > 0;" in storage, "storage bypasses canonical metal authority")', 1)
+          s = s.replace('require("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")',
+                        'require("consumeMetalAndFood" in inventory, "local metal value consumption missing")\nrequire("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")', 1)
+          anchor = 'require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")'
+          extra = anchor + '''\nfor production_type in ("BuildingType.LUMBER_CAMP", "BuildingType.FARM", "BuildingType.QUARRY", "BuildingType.MINE"):\n    require(production_type in integrity, f"ruined production building is not integrity-tracked: {production_type}")\nrequire("if (type == BuildingType.HOUSE) clearKnownHouseRemnants" in integrity, "production retirement may clear player/container remnants")\n\nmilitary = text(SETTLEMENT / "SettlementMilitaryOutpostService.java")\nrequire(military.count("SettlementInventory.countMetal(container)") >= 3, "remote military metal still uses raw item counts")\nrequire("SettlementInventory.consumeMetalAndFood(container, metal, food)" in military, "remote recruitment bypasses canonical metal values")\n\nlogistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")\nrequire("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")\nrequire("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")'''
+          if s.count(anchor) != 1: raise SystemExit('verifier integrity anchor drifted')
+          s = s.replace(anchor, extra, 1)
+          s = s.replace('CURRENT SOURCE CHECK PASS: alpha101 diamond-metal and authority invariants',
+                        'CURRENT SOURCE CHECK PASS: alpha102 production integrity and economy authority invariants', 1)
+          put(ver, s)
           PY
 
-      - name: Current source invariants
+      - name: Verify current source
         run: python projects/frontier-settlement/tools/test_current_source.py
 
-      - name: Validate JSON resources
+      - name: Validate JSON
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import json
-          root = Path('projects/frontier-settlement/src/main/resources')
-          files = list(root.rglob('*.json'))
-          for path in files:
-              json.loads(path.read_text(encoding='utf-8'))
+          files = list(Path('projects/frontier-settlement/src/main/resources').rglob('*.json'))
+          for p in files: json.loads(p.read_text(encoding='utf-8'))
           print(f'JSON validation PASS: {len(files)} JSON files')
           PY
 
@@ -148,37 +127,30 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build --no-daemon
 
-      - name: Verify JAR structure
+      - name: Verify JAR
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import zipfile
           jars = [p for p in Path('projects/frontier-settlement/build/libs').glob('*.jar') if '-sources' not in p.name]
-          if len(jars) != 1:
-              raise SystemExit(f'expected one runtime jar, found: {[p.name for p in jars]}')
+          if len(jars) != 1: raise SystemExit(f'runtime jars: {jars}')
           jar = jars[0]
-          if '0.1.0-alpha.102' not in jar.name:
-              raise SystemExit(f'wrong version jar: {jar.name}')
-          required = {
-              'META-INF/neoforge.mods.toml',
-              'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
-              'kr/moonseungjun/frontiersettlement/settlement/SettlementBuildingIntegrityService.class',
-              'kr/moonseungjun/frontiersettlement/settlement/SettlementMilitaryOutpostService.class',
-              'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostLogisticsService.class',
-          }
+          if '0.1.0-alpha.102' not in jar.name: raise SystemExit(jar.name)
           with zipfile.ZipFile(jar) as z:
               names = z.namelist()
-              missing = sorted(required - set(names))
-              dupes = sorted({name for name in names if names.count(name) > 1})
-          if missing:
-              raise SystemExit(f'missing required jar entries: {missing}')
-          if dupes:
-              raise SystemExit(f'duplicate jar entries: {dupes[:20]}')
+              required = {'META-INF/neoforge.mods.toml',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementWorkerService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementBuildingIntegrityService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementMilitaryOutpostService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostLogisticsService.class'}
+              missing = required - set(names)
+              if missing: raise SystemExit(f'missing: {sorted(missing)}')
+              if len(names) != len(set(names)): raise SystemExit('duplicate jar entries')
           print(f'JAR verify PASS: {jar} ({jar.stat().st_size} bytes)')
           PY
 
-      - name: Commit, rebase latest main, reverify, push
+      - name: Commit and push main
         shell: bash
         run: |
           git config user.name 'coworkaccount'
@@ -194,7 +166,7 @@ jobs:
           cd ../..
           git push origin HEAD:main
 
-      - name: Upload tested Alpha102 JAR
+      - name: Upload tested JAR
         uses: actions/upload-artifact@v4
         with:
           name: frontier-settlement-0.1.0-alpha.102-tested
