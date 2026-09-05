@@ -1,4 +1,8 @@
 RELEASE SOURCE AUDIT FAIL
+- release version drifted: expected 0.61.0-alpha.1, got 0.61.13-alpha.1
 - 0.49/0.50 production UI missing: 산업 가공소 완공 → 통 4블록 이내
+- 0.52 runtime banner missing: VERSION = "0.61.0-alpha.1"
+- 0.53 shield event wiring missing: VERSION = "0.61.0-alpha.1"
+- 0.54 runtime banner missing: VERSION = "0.61.0-alpha.1"
 - 0.58 network protocol missing: PROTOCOL = "9"
 RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.61 runtime identity
