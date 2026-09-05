@@ -1,0 +1,164 @@
+name: Apply Frontier Alpha100 Source Authority Cleanup
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/apply-frontier-alpha100-source-authority.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+          cache-dependency-path: projects/frontier-settlement/**/*.gradle*
+
+      - name: Apply source-of-truth cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ROOT=Path('projects/frontier-settlement')
+          SET=ROOT/'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+          CMD=ROOT/'src/main/java/kr/moonseungjun/frontiersettlement/command/SettlementCommands.java'
+
+          def one(path, old, new, label):
+              s=path.read_text(encoding='utf-8')
+              if s.count(old)!=1:
+                  raise SystemExit(f'{label}: expected one match, found {s.count(old)}')
+              path.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          gradle=ROOT/'gradle.properties'
+          one(gradle,'mod_version=0.1.0-alpha.99','mod_version=0.1.0-alpha.100','version')
+
+          civil=SET/'SettlementCivilWorkService.java'
+          one(civil,
+              '''/**\n * Alpha.49-51 bounded selected-area civil works.\n *\n * Alpha.49 established project-local cut-to-fill earth relocation. Alpha.50 added physical imported\n * dirt/coarse-dirt hauling. Alpha.51 expands the bounded envelope and adds retaining-heavy terraces\n * whose exact cobblestone is physically hauled by the same shared construction worker.\n */''',
+              '''/** Bounded selected-area civil works using one project state and the shared construction worker. */''',
+              'civil historical header')
+          one(civil,'return invalid("토목 1회 범위는 최대 17×17입니다.");',
+                    'return invalid("토목 1회 범위는 최대 " + MAX_WIDTH + "×" + MAX_DEPTH + "입니다.");',
+                    'civil size message')
+          one(civil,'return invalid("토목 영역은 플레이어 44블록 안에서 지정해 주세요.");',
+                    'return invalid("토목 영역은 플레이어 " + MAX_PLAYER_DISTANCE + "블록 안에서 지정해 주세요.");',
+                    'civil player range message')
+          one(civil,'return invalid("본진 토목 영역은 마을 중심 112블록 안에서 지정해 주세요.");',
+                    'return invalid("본진 토목 영역은 마을 중심 " + MAX_SETTLEMENT_RADIUS + "블록 안에서 지정해 주세요.");',
+                    'civil settlement range message')
+          one(civil,'return invalid("각 지점의 절토·성토 높이 차는 최대 7블록입니다.");',
+                    'return invalid("각 지점의 높이 차는 절토 최대 " + MAX_CUT_DEPTH + "블록 · 성토 최대 " + MAX_FILL_DEPTH + "블록입니다.");',
+                    'civil height message')
+
+          layout=SET/'CartStationLayout.java'
+          one(layout,
+              '    private CartStationLayout() {}\n\n    public static List<BlockPos> freightPositions(BlockPos origin) {',
+              '    private CartStationLayout() {}\n\n    public static int freightSlotCount() { return FREIGHT.length; }\n\n    public static List<BlockPos> freightPositions(BlockPos origin) {',
+              'cart freight count authority')
+
+          cart=SET/'SettlementCartStationService.java'
+          one(cart,
+              '    private static final long MAX_ROAD_DISTANCE_SQR = 12L * 12L;',
+              '    public static final int MAX_ROAD_DISTANCE = 12;\n    private static final long MAX_ROAD_DISTANCE_SQR = (long) MAX_ROAD_DISTANCE * MAX_ROAD_DISTANCE;',
+              'cart road range authority')
+          one(cart,
+              '        return "수레 정거장은 기존 도로에서 12블록 안쪽에 배치해 주세요.";',
+              '        return "수레 정거장은 기존 도로에서 " + MAX_ROAD_DISTANCE + "블록 안쪽에 배치해 주세요.";',
+              'cart range message')
+
+          cmd=CMD
+          one(cmd,
+              '"토목 | M 팔레트 · 최대 17×17 / 절토·성토 ±7 · 3블록+ 노출 가장자리 실제 조약돌 옹벽 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0"',
+              '"토목 | M 팔레트 · 최대 " + SettlementCivilWorkService.MAX_WIDTH + "×" + SettlementCivilWorkService.MAX_DEPTH + " / 절토 최대 " + SettlementCivilWorkService.MAX_CUT_DEPTH + " · 성토 최대 " + SettlementCivilWorkService.MAX_FILL_DEPTH + " · 3블록+ 노출 가장자리 실제 조약돌 옹벽 · 현장 earthBank 우선 · 부족분은 공동 창고 실제 흙/거친 흙 물리 운반 · 가상 토사 0"',
+              'civil status authority')
+          one(cmd,
+              '" | 수레 정거장 화물 배럴 "+(data.buildingCount(BuildingType.CART_STATION)*4)+" |',
+              '" | 수레 정거장 화물 배럴 "+(data.buildingCount(BuildingType.CART_STATION)*CartStationLayout.freightSlotCount())+" |',
+              'cart status freight count')
+
+          test=ROOT/'tools/test_current_source.py'
+          s=test.read_text(encoding='utf-8')
+          if 'mod_version=0.1.0-alpha.99' not in s:
+              raise SystemExit('current verifier version anchor drift')
+          s=s.replace('mod_version=0.1.0-alpha.99','mod_version=0.1.0-alpha.100',1)
+          checks='''\ncart_layout = text(SETTLEMENT / "CartStationLayout.java")\ncart_service = text(SETTLEMENT / "SettlementCartStationService.java")\nrequire("freightSlotCount()" in cart_layout, "cart freight slot count is not authoritative")\nrequire("MAX_ROAD_DISTANCE = 12" in cart_service and '" + MAX_ROAD_DISTANCE + "' in cart_service, "cart road range display duplicates its balance")\nrequire("최대 17×17" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil size display duplicates current constants")\nrequire("플레이어 44블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil player range display duplicates current constant")\nrequire("마을 중심 112블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil settlement range display duplicates current constant")\nrequire("절토·성토 높이 차는 최대 7블록" not in text(SETTLEMENT / "SettlementCivilWorkService.java"), "civil height display duplicates current constants")\nrequire("CartStationLayout.freightSlotCount()" in commands, "status duplicates cart-station freight count")\nrequire("SettlementCivilWorkService.MAX_WIDTH" in commands and "SettlementCivilWorkService.MAX_CUT_DEPTH" in commands, "status duplicates civil-work limits")\n'''
+          marker='\nrequire(not (SETTLEMENT / "SettlementResidentRoutineService.java").exists(), "retired night navigation authority still exists")\n'
+          if checks.strip() not in s:
+              if s.count(marker)!=1:
+                  raise SystemExit('current verifier source-authority marker drift')
+              s=s.replace(marker,checks+marker,1)
+          s=s.replace('CURRENT SOURCE CHECK PASS: alpha99 authority cleanup invariants','CURRENT SOURCE CHECK PASS: alpha100 authority cleanup invariants',1)
+          test.write_text(s,encoding='utf-8')
+          print('Frontier alpha100 source authority cleanup applied')
+          PY
+
+      - name: Current source invariant check
+        run: python3 projects/frontier-settlement/tools/test_current_source.py
+
+      - name: Validate Frontier JSON
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          files=list(Path('projects/frontier-settlement/src/main/resources').rglob('*.json'))
+          for p in files: json.loads(p.read_text(encoding='utf-8'))
+          print('JSON VALIDATION PASS',len(files))
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Verify Frontier JAR
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,zipfile
+          jars=[p for p in Path('projects/frontier-settlement/build/libs').glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
+          if not jars: raise SystemExit('no Frontier jar')
+          jar=max(jars,key=lambda p:p.stat().st_size)
+          with zipfile.ZipFile(jar) as z:
+              names=z.namelist()
+              required=['kr/moonseungjun/frontiersettlement/settlement/SettlementCivilWorkService.class','kr/moonseungjun/frontiersettlement/settlement/CartStationLayout.class','META-INF/neoforge.mods.toml']
+              missing=[x for x in required if x not in names]
+              if missing: raise SystemExit('missing jar entries: '+repr(missing))
+              if len(names)!=len(set(names)): raise SystemExit('duplicate jar entries')
+          print('JAR VERIFY PASS',jar,jar.stat().st_size,'sha256='+hashlib.sha256(jar.read_bytes()).hexdigest())
+          PY
+
+      - name: Commit tested source to main
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm .github/workflows/apply-frontier-alpha100-source-authority.yml
+          git add -A projects/frontier-settlement
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'Centralize Frontier displayed gameplay limits'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Upload tested JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-0.1.0-alpha.100-tested
+          path: projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 7
