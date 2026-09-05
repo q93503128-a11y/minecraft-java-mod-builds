@@ -185,7 +185,7 @@ public final class AsterMarchFieldIncidents {
                     def.icon(), true, true,
                     List.of("조사 · " + def.title(), "기록 · " + def.title())));
             boolean resolved = resolved(snapshot, def.resolution());
-            if (distanceSq <= DISCOVERY_RADIUS_SQ && discovered.add(def.id())) reveal(level, def, resolved);
+            if (distanceSq <= DISCOVERY_RADIUS_SQ && discovered.add(def.id())) reveal(level, player, def, resolved);
         }
         SharedAuxiliaryActors.sync(level, playerId, SCOPE, desired);
     }
@@ -199,8 +199,8 @@ public final class AsterMarchFieldIncidents {
         ChatFormatting color = color(def.region());
         player.sendSystemMessage(Component.literal("현장 조사 · " + def.title()).withStyle(color, ChatFormatting.BOLD));
         player.sendSystemMessage(Component.literal(resolved ? def.after() : def.before()).withStyle(ChatFormatting.GRAY));
-        inspectPulse(level, def, resolved);
-        if (!resolved && def.next() != null) directionalTrail(level, player.position().add(0, 0.9, 0), def.next(), particle(def.region()));
+        inspectPulse(level, player, def, resolved);
+        if (!resolved && def.next() != null) directionalTrail(level, player, player.position().add(0, 0.9, 0), def.next(), particle(def.region()));
         return true;
     }
 
@@ -247,40 +247,40 @@ public final class AsterMarchFieldIncidents {
         };
     }
 
-    private static void reveal(ServerLevel level, Def def, boolean resolved) {
+    private static void reveal(ServerLevel level, ServerPlayer player, Def def, boolean resolved) {
         ParticleOptions primary = particle(def.region());
         Vec3 p = def.pos().add(0, 0.75, 0);
-        ring(level, primary, p, resolved ? 0.65 : 0.9, resolved ? 10 : 16);
-        level.sendParticles(resolved ? ParticleTypes.END_ROD : primary,
+        ring(level, player, primary, p, resolved ? 0.65 : 0.9, resolved ? 10 : 16);
+        level.sendParticles(player, resolved ? ParticleTypes.END_ROD : primary,
                 p.x, p.y + 0.35, p.z, resolved ? 3 : 7, 0.28, 0.3, 0.28, 0.015);
     }
 
-    private static void inspectPulse(ServerLevel level, Def def, boolean resolved) {
+    private static void inspectPulse(ServerLevel level, ServerPlayer player, Def def, boolean resolved) {
         ParticleOptions primary = particle(def.region());
         Vec3 p = def.pos().add(0, 0.65, 0);
-        ring(level, primary, p, resolved ? 0.8 : 1.15, resolved ? 14 : 22);
-        ring(level, ParticleTypes.END_ROD, p.add(0, 0.55, 0), resolved ? 0.45 : 0.72, resolved ? 8 : 14);
-        level.sendParticles(primary, p.x, p.y + 0.5, p.z, resolved ? 6 : 12, 0.45, 0.5, 0.45, 0.025);
+        ring(level, player, primary, p, resolved ? 0.8 : 1.15, resolved ? 14 : 22);
+        ring(level, player, ParticleTypes.END_ROD, p.add(0, 0.55, 0), resolved ? 0.45 : 0.72, resolved ? 8 : 14);
+        level.sendParticles(player, primary, p.x, p.y + 0.5, p.z, resolved ? 6 : 12, 0.45, 0.5, 0.45, 0.025);
     }
 
-    private static void directionalTrail(ServerLevel level, Vec3 from, Vec3 to, ParticleOptions primary) {
+    private static void directionalTrail(ServerLevel level, ServerPlayer player, Vec3 from, Vec3 to, ParticleOptions primary) {
         Vec3 flat = new Vec3(to.x - from.x, 0, to.z - from.z);
         if (flat.lengthSqr() < 0.001) return;
         Vec3 direction = flat.normalize();
         double length = Math.min(13.0, Math.sqrt(flat.lengthSqr()));
         for (double distance = 1.25; distance <= length; distance += 1.35) {
             Vec3 p = from.add(direction.scale(distance));
-            level.sendParticles(primary, p.x, p.y + Math.sin(distance * 0.8) * 0.08, p.z,
+            level.sendParticles(player, primary, p.x, p.y + Math.sin(distance * 0.8) * 0.08, p.z,
                     2, 0.09, 0.08, 0.09, 0.005);
         }
     }
 
-    private static void ring(ServerLevel level, ParticleOptions particle, Vec3 center, double radius, int count) {
+    private static void ring(ServerLevel level, ServerPlayer player, ParticleOptions particle, Vec3 center, double radius, int count) {
         for (int i = 0; i < count; i++) {
             double angle = Math.PI * 2.0 * i / count;
             double x = center.x + Math.cos(angle) * radius;
             double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(particle, x, center.y, z, 1, 0.01, 0.01, 0.01, 0.0);
+            level.sendParticles(player, particle, x, center.y, z, 1, 0.01, 0.01, 0.01, 0.0);
         }
     }
 
