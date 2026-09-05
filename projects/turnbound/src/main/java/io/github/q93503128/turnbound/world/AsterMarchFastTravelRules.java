@@ -2,13 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import java.util.Set;
 
-/**
- * Pure v0.4 fast-travel activation rules.
- *
- * <p>The six anchor positions are canonical. Meadow/Quarry activation follows explicitly authored quest unlocks.
- * Gloamwood/Aqueduct mirror the already-shipped local relay gates as an implementation bridge until the canon
- * names those two relay activations separately. Relay Station uses the authored relay-key/entrance milestone.</p>
- */
+/** Pure v0.4 fast-travel activation rules. */
 public final class AsterMarchFastTravelRules {
     public record Progress(Set<String> completedQuests, Set<String> unlockFlags, Set<String> clearedEncounters) {
         public Progress {
@@ -58,7 +52,7 @@ public final class AsterMarchFastTravelRules {
             case AsterMarchRegionCatalog.FT_GLOAM -> "그늘숲의 포자등불 조사를 완료하면 이 계전소를 사용할 수 있습니다.";
             case AsterMarchRegionCatalog.FT_AQUEDUCT -> "붕괴 수로의 수문 조사를 완료하면 이 계전소를 사용할 수 있습니다.";
             case AsterMarchRegionCatalog.FT_QUARRY -> "재의 길을 확보하면 이 계전소를 사용할 수 있습니다.";
-            case AsterMarchRegionCatalog.FT_RELAY -> "세 지역 Relay fragment를 제출해 구 중계소 접근로를 복원해야 합니다.";
+            case AsterMarchRegionCatalog.FT_RELAY -> "세 지역 Relay 조각을 제출해 구 중계소 접근로를 복원해야 합니다.";
             default -> "해당 계전소는 아직 활성화되지 않았습니다.";
         };
     }
