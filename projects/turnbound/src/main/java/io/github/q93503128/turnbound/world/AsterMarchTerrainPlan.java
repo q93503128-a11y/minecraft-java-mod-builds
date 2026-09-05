@@ -3,7 +3,7 @@ package io.github.q93503128.turnbound.world;
 /**
  * Single source of truth for authored Aster March terrain heights.
  *
- * The legacy build used one raw Y value for the whole 1024x1024 playfield.  Radia now owns a
+ * The legacy build used one raw Y value for the whole 1024x1024 playfield. Radia now owns a
  * deterministic coastal terrain mask while the remaining v0.4 field regions keep the stable
  * campaign base height until their authored terrain passes are migrated.
  */
@@ -32,6 +32,9 @@ public final class AsterMarchTerrainPlan {
     public static boolean radiaLand(int x, int z) {
         if (!AsterMarchRegionCatalog.RADIA.contains(x, z)) return false;
 
+        // Canonical world seams remain physically walkable. These are narrow authored causeways, not a flat border.
+        if (northCauseway(x, z) || westCauseway(x, z) || eastCauseway(x, z)) return true;
+
         // Authored inland neck: South Gate must physically connect Radia to Southgate Meadow.
         if (z >= 88 && Math.abs(x) <= 42 - Math.max(0, z - 88) / 3) return true;
 
@@ -53,6 +56,11 @@ public final class AsterMarchTerrainPlan {
     }
 
     public static int radiaSurfaceY(int x, int z) {
+        // Seam causeways intentionally meet the legacy chapter ribbons close to their stable Y=65 datum.
+        if (northCauseway(x, z)) return 65;
+        if (westCauseway(x, z)) return 65;
+        if (eastCauseway(x, z)) return 65;
+
         int y;
         if (z <= -70) {
             y = 64;
@@ -74,6 +82,20 @@ public final class AsterMarchTerrainPlan {
 
         // Keep the authored range safely inside the existing Radia containment envelope.
         return Math.max(64, Math.min(76, y));
+    }
+
+    private static boolean northCauseway(int x, int z) {
+        if (z < -112 || z > -62) return false;
+        int width = z > -74 ? 4 : 6;
+        return Math.abs(x) <= width;
+    }
+
+    private static boolean westCauseway(int x, int z) {
+        return x >= -128 && x <= -96 && Math.abs(z - 20) <= 5;
+    }
+
+    private static boolean eastCauseway(int x, int z) {
+        return x >= 56 && x <= 128 && Math.abs(z + 80) <= 5;
     }
 
     private static double ellipse(double x, double z, double cx, double cz, double rx, double rz) {
