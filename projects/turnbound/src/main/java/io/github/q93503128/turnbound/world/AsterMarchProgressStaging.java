@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -145,11 +146,13 @@ public final class AsterMarchProgressStaging {
             double length = Math.min(14.0, Math.sqrt(flat.lengthSqr()));
             for (double d = 1.5; d <= length; d += 1.6) {
                 Vec3 p = origin.add(dir.scale(d));
-                level.sendParticles(particle, p.x, p.y + 0.15 * Math.sin(d), p.z, 2, 0.18, 0.12, 0.18, 0.01);
+                PersonalPresentationIsolation.particles(level, player, particle,
+                        p.x, p.y + 0.15 * Math.sin(d), p.z, 2, 0.18, 0.12, 0.18, 0.01);
             }
         }
         if (player.position().distanceToSqr(target) <= 48.0 * 48.0) {
-            level.sendParticles(particle, target.x, target.y + 1.0, target.z, 24, 2.4, 1.6, 2.4, 0.025);
+            PersonalPresentationIsolation.particles(level, player, particle,
+                    target.x, target.y + 1.0, target.z, 24, 2.4, 1.6, 2.4, 0.025);
         }
     }
 }
