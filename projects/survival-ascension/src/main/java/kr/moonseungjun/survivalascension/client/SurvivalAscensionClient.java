@@ -102,7 +102,14 @@ public final class SurvivalAscensionClient {
 
     private static void onClientTick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.level == null) ClientMythicState.clear();
+        if (minecraft.player == null || minecraft.level == null) {
+            // One session boundary owns all static client caches. Do not let a previous server/world
+            // leak HUD/progression state into the next connection while waiting for fresh snapshots.
+            ClientSkillState.reset();
+            ClientExpeditionState.reset();
+            ClientMobilityState.reset();
+            ClientMythicState.clear();
+        }
         while (OPEN_MENU.consumeClick()) {
             if (minecraft.player == null || minecraft.level == null) continue;
             Screen current = minecraft.gui.screen();

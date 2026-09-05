@@ -75,65 +75,191 @@ public final class ExpeditionOperationSystem {
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % 20 != 0) return;
-        ExpeditionOperationData data = ExpeditionOperationData.get(player);
-        ExpeditionOperationData.ActiveOperation active = data.active(player);
-        if (active == null) return;
-        if (player.isCreative() || player.isSpectator()) { fail(player, "게임 모드가 변경되어 작전이 종료되었습니다."); return; }
-        if (!(player.level() instanceof ServerLevel level) || !active.dimension().equals(level.dimension().toString())) { fail(player, "작전 중 다른 차원으로 이탈했습니다."); return; }
-        ExpeditionOperation operation = ExpeditionOperation.forRegion(active.region());
-        long now = level.getGameTime();
-        if (now >= active.deadline()) { fail(player, "작전 제한시간을 초과했습니다."); return; }
-        active = recoverComplicationState(player, data, active, operation, level);
-        if (active == null) return;
-        if (active.complication() == ExpeditionComplication.HOT_EXTRACTION && active.complicationState() == 1 && active.extractionDeadline() > 0L && now >= active.extractionDeadline()) { fail(player, "긴급 철수 제한시간을 초과했습니다."); return; }
+        ActiveContext context = validateActive(player);
+        if (context == null) return;
+
+        ExpeditionOperationData data = context.data();
+        ExpeditionOperationData.ActiveOperation active = context.active();
+        ExpeditionOperation operation = context.operation();
+        ServerLevel level = context.level();
         double distanceSq = active.anchor().distSqr(player.blockPosition());
-        if (!active.rangeReached() && distanceSq >= operation.rangeTarget() * operation.rangeTarget()) if (data.markRangeReached(player)) player.sendSystemMessage(Component.literal("§6[작전 전진선 돌파] §f" + operation.koreanName() + " §7· 이제 전초 " + WORK_RADIUS + "블록 밖의 " + active.region().koreanName() + "에서 현장 목표가 기록됩니다."));
-        if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0 && distanceSq >= (double) active.complicationState() * active.complicationState() && ExpeditionProgression.currentRegion(player) == active.region()) if (data.completeForwardShift(player)) { player.sendSystemMessage(Component.literal("§a[전선 재전개 완료] §f추가 전진선을 확보했습니다. 남은 현장 목표 기록이 재개됩니다.")); active = data.active(player); }
-        if (data.objectivesComplete(player, operation) && distanceSq <= RETURN_RADIUS * RETURN_RADIUS && OutpostService.isRecoveryOperational(player, level, active.dimension(), active.anchor())) complete(player, operation);
+        if (!active.rangeReached() && distanceSq >= operation.rangeTarget() * operation.rangeTarget()) {
+            if (data.markRangeReached(player)) {
+                player.sendSystemMessage(Component.literal("§6[작전 전진선 돌파] §f" + operation.koreanName()
+                        + " §7· 이제 전초 " + WORK_RADIUS + "블록 밖의 " + active.region().koreanName()
+                        + "에서 현장 목표가 기록됩니다."));
+                active = data.active(player);
+            }
+        }
+        if (active != null && active.complication() == ExpeditionComplication.FORWARD_SHIFT
+                && active.complicationState() > 0
+                && distanceSq >= (double) active.complicationState() * active.complicationState()
+                && ExpeditionProgression.currentRegion(player) == active.region()) {
+            if (data.completeForwardShift(player)) {
+                player.sendSystemMessage(Component.literal("§a[전선 재전개 완료] §f추가 전진선을 확보했습니다. 남은 현장 목표 기록이 재개됩니다."));
+                active = data.active(player);
+            }
+        }
+        if (active != null && data.objectivesComplete(player, operation)
+                && distanceSq <= RETURN_RADIUS * RETURN_RADIUS
+                && OutpostService.isRecoveryOperational(player, level, active.dimension(), active.anchor())) {
+            complete(player, operation);
+        }
     }
 
     public static void onLivingDeath(LivingDeathEvent event) { if (!event.isCanceled() && event.getEntity() instanceof ServerPlayer player && isActive(player)) fail(player, "작전 중 사망했습니다. 투입한 보급권은 반환되지 않습니다."); }
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) { if (event.getEntity() instanceof ServerPlayer player && isActive(player)) { player.sendSystemMessage(Component.literal("§6[원정 작전 재개] §f로그아웃 전 진행 중이던 작전이 유지되어 있습니다.")); sendStatus(player); } }
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (ExpeditionOperationData.get(player).active(player) == null) return;
+        ActiveContext context = validateActive(player);
+        if (context == null) return;
+        player.sendSystemMessage(Component.literal("§6[원정 작전 재개] §f로그아웃 전 진행 중이던 작전이 유지되어 있습니다."));
+        sendStatus(player, context);
+    }
 
     public static void recordAction(ServerPlayer player, ExpeditionAction action, int amount) {
-        if (amount <= 0 || player.isCreative() || player.isSpectator()) return;
-        ExpeditionOperationData data = ExpeditionOperationData.get(player); ExpeditionOperationData.ActiveOperation active = data.active(player);
-        if (active == null || !active.rangeReached()) return;
-        if (!(player.level() instanceof ServerLevel level) || !active.dimension().equals(level.dimension().toString())) return;
+        if (amount <= 0) return;
+        ActiveContext context = validateActive(player);
+        if (context == null || !context.active().rangeReached()) return;
+
+        ExpeditionOperationData data = context.data();
+        ExpeditionOperationData.ActiveOperation active = context.active();
+        ServerLevel level = context.level();
         double distanceSq = active.anchor().distSqr(player.blockPosition());
         if (distanceSq < WORK_RADIUS * WORK_RADIUS || ExpeditionProgression.currentRegion(player) != active.region()) return;
-        ExpeditionOperation operation = ExpeditionOperation.forRegion(active.region());
-        if (active.complication() == ExpeditionComplication.DEEP_FRONT && distanceSq < operation.rangeTarget() * operation.rangeTarget()) return;
+        ExpeditionOperation operation = context.operation();
+        if (active.complication() == ExpeditionComplication.DEEP_FRONT
+                && distanceSq < operation.rangeTarget() * operation.rangeTarget()) return;
         if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0) return;
         for (int i = 0; i < operation.tasks().size(); i++) {
-            ExpeditionOperation.Task task = operation.tasks().get(i); if (task.action() != action) continue;
-            ExpeditionOperationData.ProgressResult result = data.addProgress(player, i, amount, task.target()); if (result.newProgress() == result.oldProgress()) continue;
+            ExpeditionOperation.Task task = operation.tasks().get(i);
+            if (task.action() != action) continue;
+            ExpeditionOperationData.ProgressResult result = data.addProgress(player, i, amount, task.target());
+            if (result.newProgress() == result.oldProgress()) continue;
             boolean objectivesComplete = data.objectivesComplete(player, operation);
             if (result.taskCompletedNow()) {
-                player.sendSystemMessage(Component.literal("§6[작전 목표 완료] §f" + task.action().koreanName() + " §a" + result.newProgress() + "/" + task.target()));
+                player.sendSystemMessage(Component.literal("§6[작전 목표 완료] §f" + task.action().koreanName()
+                        + " §a" + result.newProgress() + "/" + task.target()));
                 ExpeditionOperationData.ActiveOperation refreshed = data.active(player);
-                if (!objectivesComplete && refreshed != null && refreshed.complication() == ExpeditionComplication.FORWARD_SHIFT && refreshed.complicationState() == 0) { int targetRadius = operation.rangeTarget() + FORWARD_SHIFT_EXTRA; if (data.beginForwardShift(player, targetRadius)) player.sendSystemMessage(Component.literal("§c[전선 재전개] §f첫 현장 목표가 끝났습니다. 남은 목표는 원점 기준 §e" + targetRadius + "블록§f까지 추가 전진한 뒤 다시 기록됩니다.")); }
-            } else { int oldQuarter=result.oldProgress()*4/task.target(),newQuarter=result.newProgress()*4/task.target(); if(newQuarter>oldQuarter) player.sendSystemMessage(Component.literal("§6[작전 진행] §f"+task.action().koreanName()+" §e"+result.newProgress()+"/"+task.target()),true); }
+                if (!objectivesComplete && refreshed != null
+                        && refreshed.complication() == ExpeditionComplication.FORWARD_SHIFT
+                        && refreshed.complicationState() == 0) {
+                    int targetRadius = operation.rangeTarget() + FORWARD_SHIFT_EXTRA;
+                    if (data.beginForwardShift(player, targetRadius)) {
+                        player.sendSystemMessage(Component.literal("§c[전선 재전개] §f첫 현장 목표가 끝났습니다. 남은 목표는 원점 기준 §e"
+                                + targetRadius + "블록§f까지 추가 전진한 뒤 다시 기록됩니다."));
+                    }
+                }
+            } else {
+                int oldQuarter = result.oldProgress() * 4 / task.target();
+                int newQuarter = result.newProgress() * 4 / task.target();
+                if (newQuarter > oldQuarter) {
+                    player.sendSystemMessage(Component.literal("§6[작전 진행] §f" + task.action().koreanName()
+                            + " §e" + result.newProgress() + "/" + task.target()), true);
+                }
+            }
             if (objectivesComplete) {
-                ExpeditionOperationData.ActiveOperation refreshed=data.active(player);
-                if(refreshed!=null&&refreshed.complication()==ExpeditionComplication.HOT_EXTRACTION&&refreshed.complicationState()==0){int window=refreshed.complication().extractionWindowTicks(operation);if(data.armExtraction(player,level.getGameTime()+window))player.sendSystemMessage(Component.literal("§c[긴급 철수] §f현장 목표 완료. §e"+window/1200+"분 "+(window/20)%60+"초§f 안에 같은 전초8블록으로 귀환해야 합니다."));}
-                player.sendSystemMessage(Component.literal("§a[작전 현장 목표 완료] §f같은 전초기지 반경 "+RETURN_RADIUS+"블록으로 복귀하면 작전이 완료됩니다."));
+                ExpeditionOperationData.ActiveOperation refreshed = data.active(player);
+                if (refreshed != null
+                        && refreshed.complication() == ExpeditionComplication.HOT_EXTRACTION
+                        && refreshed.complicationState() == 0) {
+                    int window = refreshed.complication().extractionWindowTicks(operation);
+                    if (data.armExtraction(player, level.getGameTime() + window)) {
+                        player.sendSystemMessage(Component.literal("§c[긴급 철수] §f현장 목표 완료. §e"
+                                + window / 1200 + "분 " + (window / 20) % 60
+                                + "초§f 안에 같은 전초8블록으로 귀환해야 합니다."));
+                    }
+                }
+                player.sendSystemMessage(Component.literal("§a[작전 현장 목표 완료] §f같은 전초기지 반경 "
+                        + RETURN_RADIUS + "블록으로 복귀하면 작전이 완료됩니다."));
             }
             return;
         }
     }
 
     public static void sendStatus(ServerPlayer player) {
-        ExpeditionOperationData data=ExpeditionOperationData.get(player); ExpeditionOperationData.ActiveOperation active=data.active(player);
-        player.sendSystemMessage(Component.literal("§6[원정 작전] §f지역 최초 완수 §e"+data.uniqueCompleted(player)+"/9 §7· 총 귀환 성공 §f"+data.totalCompletions(player)+(data.masteryClaimed(player)?" §6· 9종 완주 보상 수령":"")));
-        if(active==null){player.sendSystemMessage(Component.literal("§7활성 전초기지에서 보급권1로 시작 · 완수한 해당 원정권 필요 · 출발/현지작업/귀환 + 작전 변수1개"));return;}
-        ExpeditionOperation operation=ExpeditionOperation.forRegion(active.region()); long now=player.level() instanceof ServerLevel level?level.getGameTime():0L; long seconds=Math.max(0L,(active.deadline()-now+19L)/20L);
-        player.sendSystemMessage(Component.literal("§f"+operation.koreanName()+" §7· 전진선 "+(active.rangeReached()?"§a돌파":"§e"+operation.rangeTarget()+"블록 필요")+" §7· 남은 "+seconds/60+"분 "+seconds%60+"초"));
-        player.sendSystemMessage(Component.literal("§c작전 변수 §f"+active.complication().koreanName()+" §7· "+active.complication().description()));
-        if(active.region()==ExpeditionRegion.DEEP&&ContentPackCompatibility.hasResonanceOperationRewards())player.sendSystemMessage(Component.literal("  §d공명 회수 계약 §7· 귀환 시 현재 손 장비 종류 우선 · 현재 §d"+TargetedResonanceRecovery.describeFocus(player.getMainHandItem(),player.getOffhandItem())));
-        if(active.complication()==ExpeditionComplication.FORWARD_SHIFT&&active.complicationState()>0)player.sendSystemMessage(Component.literal("  §c재전개 대기 §7· 원점에서 §e"+active.complicationState()+"블록§7까지 추가 전진 필요")); else if(active.complication()==ExpeditionComplication.FORWARD_SHIFT&&active.complicationState()<0)player.sendSystemMessage(Component.literal("  §a전선 재전개 완료")); else if(active.complication()==ExpeditionComplication.HOT_EXTRACTION&&active.complicationState()==1){long extractionSeconds=Math.max(0L,(active.extractionDeadline()-now+19L)/20L);player.sendSystemMessage(Component.literal("  §c긴급 철수 §e"+extractionSeconds/60+"분 "+extractionSeconds%60+"초 남음"));}
-        player.sendSystemMessage(Component.literal("  §7- §f"+operation.tasks().get(0).action().koreanName()+" §e"+active.progressA()+"§7/§f"+operation.tasks().get(0).target()));
-        player.sendSystemMessage(Component.literal("  §7- §f"+operation.tasks().get(1).action().koreanName()+" §e"+active.progressB()+"§7/§f"+operation.tasks().get(1).target()));
+        ExpeditionOperationData data = ExpeditionOperationData.get(player);
+        player.sendSystemMessage(Component.literal("§6[원정 작전] §f지역 최초 완수 §e" + data.uniqueCompleted(player)
+                + "/9 §7· 총 귀환 성공 §f" + data.totalCompletions(player)
+                + (data.masteryClaimed(player) ? " §6· 9종 완주 보상 수령" : "")));
+        if (data.active(player) == null) {
+            player.sendSystemMessage(Component.literal("§7활성 전초기지에서 보급권1로 시작 · 완수한 해당 원정권 필요 · 출발/현지작업/귀환 + 작전 변수1개"));
+            return;
+        }
+        ActiveContext context = validateActive(player);
+        if (context == null) {
+            player.sendSystemMessage(Component.literal("§7현재 유효한 원정 작전 없음"));
+            return;
+        }
+        sendStatus(player, context);
+    }
+
+    private static void sendStatus(ServerPlayer player, ActiveContext context) {
+        ExpeditionOperationData.ActiveOperation active = context.active();
+        ExpeditionOperation operation = context.operation();
+        long now = context.now();
+        long seconds = Math.max(0L, (active.deadline() - now + 19L) / 20L);
+        player.sendSystemMessage(Component.literal("§f" + operation.koreanName() + " §7· 전진선 "
+                + (active.rangeReached() ? "§a돌파" : "§e" + operation.rangeTarget() + "블록 필요")
+                + " §7· 남은 " + seconds / 60 + "분 " + seconds % 60 + "초"));
+        player.sendSystemMessage(Component.literal("§c작전 변수 §f" + active.complication().koreanName()
+                + " §7· " + active.complication().description()));
+        if (active.region() == ExpeditionRegion.DEEP && ContentPackCompatibility.hasResonanceOperationRewards()) {
+            player.sendSystemMessage(Component.literal("  §d공명 회수 계약 §7· 귀환 시 현재 손 장비 종류 우선 · 현재 §d"
+                    + TargetedResonanceRecovery.describeFocus(player.getMainHandItem(), player.getOffhandItem())));
+        }
+        if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() > 0) {
+            player.sendSystemMessage(Component.literal("  §c재전개 대기 §7· 원점에서 §e" + active.complicationState()
+                    + "블록§7까지 추가 전진 필요"));
+        } else if (active.complication() == ExpeditionComplication.FORWARD_SHIFT && active.complicationState() < 0) {
+            player.sendSystemMessage(Component.literal("  §a전선 재전개 완료"));
+        } else if (active.complication() == ExpeditionComplication.HOT_EXTRACTION && active.complicationState() == 1) {
+            long extractionSeconds = Math.max(0L, (active.extractionDeadline() - now + 19L) / 20L);
+            player.sendSystemMessage(Component.literal("  §c긴급 철수 §e" + extractionSeconds / 60
+                    + "분 " + extractionSeconds % 60 + "초 남음"));
+        }
+        player.sendSystemMessage(Component.literal("  §7- §f" + operation.tasks().get(0).action().koreanName()
+                + " §e" + active.progressA() + "§7/§f" + operation.tasks().get(0).target()));
+        player.sendSystemMessage(Component.literal("  §7- §f" + operation.tasks().get(1).action().koreanName()
+                + " §e" + active.progressB() + "§7/§f" + operation.tasks().get(1).target()));
+    }
+
+    private record ActiveContext(
+            ExpeditionOperationData data,
+            ExpeditionOperationData.ActiveOperation active,
+            ExpeditionOperation operation,
+            ServerLevel level,
+            long now) {}
+
+    private static ActiveContext validateActive(ServerPlayer player) {
+        ExpeditionOperationData data = ExpeditionOperationData.get(player);
+        ExpeditionOperationData.ActiveOperation active = data.active(player);
+        if (active == null) return null;
+        if (player.isCreative() || player.isSpectator()) {
+            fail(player, "게임 모드가 변경되어 작전이 종료되었습니다.");
+            return null;
+        }
+        if (!(player.level() instanceof ServerLevel level)
+                || !active.dimension().equals(level.dimension().toString())) {
+            fail(player, "작전 중 다른 차원으로 이탈했습니다.");
+            return null;
+        }
+        ExpeditionOperation operation = ExpeditionOperation.forRegion(active.region());
+        long now = level.getGameTime();
+        if (now >= active.deadline()) {
+            fail(player, "작전 제한시간을 초과했습니다.");
+            return null;
+        }
+        active = recoverComplicationState(player, data, active, operation, level);
+        if (active == null) return null;
+        if (active.complication() == ExpeditionComplication.HOT_EXTRACTION
+                && active.complicationState() == 1
+                && active.extractionDeadline() > 0L
+                && now >= active.extractionDeadline()) {
+            fail(player, "긴급 철수 제한시간을 초과했습니다.");
+            return null;
+        }
+        return new ActiveContext(data, active, operation, level, now);
     }
 
     private static ExpeditionOperationData.ActiveOperation recoverComplicationState(ServerPlayer player, ExpeditionOperationData data, ExpeditionOperationData.ActiveOperation active, ExpeditionOperation operation, ServerLevel level) {

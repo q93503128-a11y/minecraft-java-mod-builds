@@ -25,6 +25,11 @@ public final class ClientMobilityState {
         remainingCooldownTicks = incoming;
     }
 
+    public static void reset() {
+        totalCooldownTicks = 0;
+        remainingCooldownTicks = 0;
+    }
+
     public static int remainingTicks() { return Math.max(0, remainingCooldownTicks); }
 
     public static float readyProgress() {

@@ -427,7 +427,19 @@ public final class EliteMobSystem {
 
     private static MythicRuntime ensureMythicRuntime(Mob mob) {
         if (!(mob.level() instanceof ServerLevel level)) throw new IllegalStateException("mythic mob must be server-side");
-        return MYTHICS.computeIfAbsent(mob.getUUID(), id -> new MythicRuntime(level, mob));
+        UUID id = mob.getUUID();
+        MythicRuntime current = MYTHICS.get(id);
+        if (current != null && current.level == level) return current;
+
+        // Entity UUIDs survive portal/dimension transfer. A computeIfAbsent here would keep the
+        // old ServerLevel forever, so replace that runtime atomically and carry only real credit.
+        MythicRuntime replacement = new MythicRuntime(level, mob);
+        if (current != null) {
+            replacement.contributors.addAll(current.contributors);
+            closeMythicBar(current);
+        }
+        MYTHICS.put(id, replacement);
+        return replacement;
     }
 
     private static void updateMythicPhase(Mob mob) {

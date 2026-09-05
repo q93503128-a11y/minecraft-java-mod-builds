@@ -48,6 +48,13 @@ public final class ClientSkillState {
         }
     }
 
+    public static void reset() {
+        XP.clear();
+        RECENT.clear();
+        lastUpdate = null;
+        lastUpdateMillis = 0L;
+    }
+
     public static long xp(SkillType skill) {
         return XP.getOrDefault(skill.id(), 0L);
     }

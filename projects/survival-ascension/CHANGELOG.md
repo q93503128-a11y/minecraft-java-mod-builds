@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.9-alpha.1
+- Consolidated expedition active-operation validation into one authoritative lifecycle path used by tick, login, status and progress recording. Stored dimension, game mode and operation/extraction deadlines are now rejected before a stale operation is presented as resumed.
+- Added one client-session reset boundary for skill snapshots/recent XP notices, expedition snapshots, mobility cooldown HUD state and Mythic target state when the client leaves a world, preventing static HUD data from leaking into another connection.
+- Hardened Mythic runtime ownership across entity dimension transfer: a Mythic UUID that joins a different ServerLevel now replaces the old runtime/bossbar while preserving contributor credit instead of retaining a stale level pointer.
+- Corrected the full-pack Weapons Expanded Korean descriptions for Polluting, Leech and Cleaving; Polluting now states its actual Poison I durations (8s/15s), and the previous machine-translated Cleaving sentence was removed.
+- No new parallel SavedData, alternate encounter registry or duplicate safety-state layer was added; the patch reduces lifecycle duplication instead.
+
 ## 0.61.8-alpha.1
 - Rebuilt the Mythic III tracker as a deterministic server-authoritative per-player target: nearest alive same-dimension Mythic within 192 blocks wins, and explicit clear packets remove dead/out-of-range/dimension-stale targets.
 - Mythic target sync now runs periodically and immediately on login, respawn and dimension change instead of depending on a 1.6-second client wall-clock timeout.
