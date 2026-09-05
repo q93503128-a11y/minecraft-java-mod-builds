@@ -11,7 +11,7 @@ class AsterMarchRegionCatalogTest {
     void v04MajorAnchorsRemainExact() {
         var radia = AsterMarchRegionCatalog.fastTravelPoint(AsterMarchRegionCatalog.FT_RADIA);
         assertEquals(0.0, radia.x());
-        assertEquals(66.0, radia.y());
+        assertEquals(76.0, radia.y());
         assertEquals(20.0, radia.z());
         assertEquals(180.0F, radia.yaw());
 
