@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.61.12-alpha.1
+- Moved the Mythic III directional tracker out of the vanilla/NeoForge top-center boss-bar lane on normal desktop GUI widths, preventing two or more simultaneous Mythic boss bars from covering the arrow/distance HUD.
+- Added a narrow-GUI fallback below the normal stacked boss-bar region instead of forcing the tracker into an overlapping top-center slot.
+- No encounter authority, Mythic targeting, boss-bar ownership, combat balance, packets or SavedData changed; this patch is client HUD placement only.
+
 ## 0.61.9-alpha.1
 - Consolidated expedition active-operation validation into one authoritative lifecycle path used by tick, login, status and progress recording. Stored dimension, game mode and operation/extraction deadlines are now rejected before a stale operation is presented as resumed.
 - Added one client-session reset boundary for skill snapshots/recent XP notices, expedition snapshots, mobility cooldown HUD state and Mythic target state when the client leaves a world, preventing static HUD data from leaking into another connection.

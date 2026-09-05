@@ -79,8 +79,20 @@ public final class SkillHudOverlay {
         String arrow = relativeArrow(relative);
         String label = "신화 III  " + arrow + "  약 " + distance + "m";
         int width = Math.max(118, minecraft.font.width(label) + 16);
-        int left = (graphics.guiWidth() - width) / 2;
-        int top = 28;
+        int top = 8;
+        int rightMargin = 8;
+        int preferredLeft = graphics.guiWidth() - width - rightMargin;
+        int left;
+        if (graphics.guiWidth() >= 420) {
+            // Vanilla/NeoForge boss bars own the top-center lane. Keep the directional tracker
+            // in the upper-right on normal desktop GUI widths so multiple Mythics cannot cover it.
+            left = Math.max(6, preferredLeft);
+        } else {
+            // On narrow GUI scales there is not enough horizontal separation from a boss bar.
+            // Fall below the normal multi-boss stack instead of fighting for the center lane.
+            left = Math.max(6, (graphics.guiWidth() - width) / 2);
+            top = 78;
+        }
         int border = distance <= 48 ? 0xFFE6A23C : 0xC0906A28;
         graphics.fill(left - 1, top - 1, left + width + 1, top + 14, border);
         graphics.fill(left, top, left + width, top + 13, 0xD4141110);

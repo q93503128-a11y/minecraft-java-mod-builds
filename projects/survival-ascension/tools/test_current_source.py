@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.11-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.12-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.11-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.12-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -106,6 +106,11 @@ client = text(JAVA / "client/SurvivalAscensionClient.java")
 require("InputConstants.KEY_X" in client, "dash default key must be X")
 require("mobility_action\", InputConstants.KEY_V" not in client, "old V dash default returned")
 
+hud = text(JAVA / "client/SkillHudOverlay.java")
+require("graphics.guiWidth() - width - rightMargin" in hud, "Mythic tracker is not right-edge anchored")
+require("graphics.guiWidth() >= 420" in hud, "Mythic tracker desktop boss-bar separation missing")
+require("top = 78" in hud, "Mythic tracker narrow-screen boss-bar fallback missing")
+
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
 require("FORMATION_INTERVAL = 200" in warband, "warband formation cadence drift")
@@ -119,4 +124,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.11 X dash + pacing/runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.12 Mythic HUD + X dash + pacing/runtime invariants")
