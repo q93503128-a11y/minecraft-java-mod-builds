@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.UUID;
@@ -17,17 +18,29 @@ import java.util.UUID;
  * Keeps player-specific presentation out of other clients while leaving shared world/combat actors untouched.
  *
  * <p>Private actors are still authoritative server entities so existing animation/timing code can stay unchanged.
- * NeoForge fires StartTracking after vanilla pairing data is sent; non-owners immediately receive a remove packet,
- * and the same filter runs again whenever tracking restarts after a chunk/range transition.</p>
+ * Actor ownership is attached before tracking whenever spawning happens inside {@link #withPrivateActorOwner};
+ * NeoForge then filters every non-owner tracking start by immediately removing that actor from the viewer.</p>
  */
 @EventBusSubscriber(modid = Turnbound.MOD_ID)
 public final class PersonalPresentationIsolation {
+    private static final ThreadLocal<UUID> SPAWN_OWNER = new ThreadLocal<>();
+
     private PersonalPresentationIsolation() {}
 
-    /**
-     * Spawns an ordinary authored battle actor, then immediately marks it as owner-only and retracts the pairing from
-     * every already-present non-owner. Future tracking starts are filtered by {@link #onStartTracking}.
-     */
+    /** Runs a narrowly-scoped presentation block whose newly joined battle actors belong only to {@code owner}. */
+    public static void withPrivateActorOwner(UUID owner, Runnable action) {
+        if (owner == null || action == null) return;
+        UUID previous = SPAWN_OWNER.get();
+        SPAWN_OWNER.set(owner);
+        try {
+            action.run();
+        } finally {
+            if (previous == null) SPAWN_OWNER.remove();
+            else SPAWN_OWNER.set(previous);
+        }
+    }
+
+    /** Convenience for callers that must spawn a private actor outside a scoped story block. */
     public static BattleActorEntity spawnPrivateActor(
             ServerLevel level, String combatantId, Vec3 pos, float yaw, UUID owner) {
         if (level == null || owner == null) return null;
@@ -59,6 +72,15 @@ public final class PersonalPresentationIsolation {
         return owner == null || owner.equals(viewer);
     }
 
+    /** EntityJoinLevelEvent occurs during addFreshEntity, before normal client tracking/pairing begins. */
+    @SubscribeEvent
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        UUID owner = SPAWN_OWNER.get();
+        if (owner == null || !(event.getEntity() instanceof BattleActorEntity actor)) return;
+        markPrivate(actor, owner);
+    }
+
+    /** StartTracking is non-cancellable, so retract the just-paired entity from every non-owner client. */
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (!(event.getEntity() instanceof ServerPlayer viewer)) return;
