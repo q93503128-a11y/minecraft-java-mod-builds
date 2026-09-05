@@ -128,6 +128,7 @@ public final class PersonalPresentationIsolation {
             return level.sendParticles(player, particle, false, false,
                     x, y, z, count, xDist, yDist, zDist, speed);
         }
-        return level.sendParticles(particle, x, y, z, count, xDist, yDist, zDist, speed);
+        level.sendParticles(particle, x, y, z, count, xDist, yDist, zDist, speed);
+        return true;
     }
 }
