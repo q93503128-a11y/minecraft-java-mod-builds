@@ -13,7 +13,7 @@ class BattleControlRulesTest {
         var state = BattleControlRules.state(snapshot);
         assertEquals("자동 잠금", state.autoLabel());
         assertFalse(state.autoActive());
-        assertEquals("×2 잠금", state.speedLabel());
+        assertEquals("2배속 잠금", state.speedLabel());
         assertFalse(state.speedActive());
         assertEquals("도주 불가", state.fleeLabel());
         assertFalse(state.fleeActive());
@@ -24,7 +24,7 @@ class BattleControlRulesTest {
         var running = BattleControlRules.state(snapshot(true, 2, true, true, true, false));
         assertEquals("자동✓", running.autoLabel());
         assertTrue(running.autoActive());
-        assertEquals("×2", running.speedLabel());
+        assertEquals("2배속", running.speedLabel());
         assertTrue(running.speedActive());
         assertEquals("도주", running.fleeLabel());
         assertTrue(running.fleeActive());
@@ -32,6 +32,7 @@ class BattleControlRulesTest {
         var finished = BattleControlRules.state(snapshot(false, 1, false, false, false, true));
         assertEquals("복귀", finished.fleeLabel());
         assertEquals("자동", finished.autoLabel());
+        assertEquals("1배속", finished.speedLabel());
         assertTrue(finished.fleeActive());
         assertFalse(finished.autoActive());
         assertFalse(finished.speedActive());

@@ -51,12 +51,23 @@ class BattleHudLayoutTest {
     }
 
     @Test
+    void utilityControlsReserveEnoughWidthForKoreanStateLabels() {
+        for (int[] size : new int[][]{{320,180},{640,360},{854,480},{1280,720}}) {
+            BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
+            assertTrue(layout.autoButton().width() >= 48, size[0] + "x" + size[1]);
+            assertTrue(layout.speedButton().width() >= 50, size[0] + "x" + size[1]);
+            assertTrue(layout.fleeButton().width() >= 50, size[0] + "x" + size[1]);
+        }
+    }
+
+    @Test
     void referenceActionDockKeepsOneVerticalScanPathAndLowScreenCoverage() {
         for (int[] size : new int[][]{{854,480},{1280,720},{1920,1080}}) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
             var skills = layout.skillButtons();
             assertFalse(layout.compact(), size[0] + "x" + size[1]);
-            assertTrue(skills.getFirst().width() <= size[0] * 0.20, size[0] + "x" + size[1]);
+            assertTrue(skills.getFirst().width() <= size[0] * 0.18, size[0] + "x" + size[1]);
+            assertTrue(skills.getFirst().height() <= 22, size[0] + "x" + size[1]);
             for (int i = 1; i < skills.size(); i++) {
                 assertEquals(skills.getFirst().x(), skills.get(i).x());
                 assertEquals(skills.getFirst().width(), skills.get(i).width());
@@ -64,7 +75,7 @@ class BattleHudLayoutTest {
             }
             assertEquals(skills.getFirst().x(), layout.actionHeader().x());
             assertEquals(skills.getFirst().width(), layout.actionHeader().width());
-            assertTrue(layout.allyBars().getFirst().height() <= size[1] * 0.06);
+            assertTrue(layout.allyBars().getFirst().height() <= size[1] * 0.05);
         }
     }
 

@@ -17,7 +17,8 @@ public final class QuestGuideLayer implements GuiLayer {
     private static final int MUTED = 0xFFC9BDAA;
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
-    private static boolean expanded = true;
+    // Default stays compact; J is the explicit opt-in for the full quest explanation.
+    private static boolean expanded = false;
 
     public static void toggle() { expanded = !expanded; }
     public static boolean expanded() { return expanded; }
@@ -33,17 +34,19 @@ public final class QuestGuideLayer implements GuiLayer {
         Target target = target(snapshot);
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
-        int width = Math.min(250, Math.max(194, graphics.guiWidth() / 4));
-        int x = graphics.guiWidth() - width - 9;
-        int y = 9;
+        int width = expanded
+                ? Math.min(238, Math.max(202, graphics.guiWidth() / 4))
+                : Math.min(220, Math.max(184, graphics.guiWidth() / 5));
+        int x = graphics.guiWidth() - width - 7;
+        int y = 7;
         String objective = playerFacingObjective(snapshot.objective());
 
         if (!expanded) {
-            int h = 25;
+            int h = 22;
             TurnboundUiSkin.panel(graphics, x, y, width, h);
-            String compact = UiTextLayout.fit("목표 · " + objective, width - 72);
-            graphics.text(minecraft.font, Component.literal(compact), x + 10, y + 8, TEXT, true);
-            graphics.text(minecraft.font, Component.literal("J 상세"), x + width - 10 - minecraft.font.width("J 상세"), y + 8, GOLD, false);
+            String compact = UiTextLayout.fit("목표 · " + objective, width - 64);
+            graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
+            graphics.text(minecraft.font, Component.literal("J 상세"), x + width - 8 - minecraft.font.width("J 상세"), y + 6, GOLD, false);
             return;
         }
 
@@ -53,30 +56,30 @@ public final class QuestGuideLayer implements GuiLayer {
             String location = targetLine(minecraft, target);
             hint = hint.isBlank() ? location : location + " · " + hint;
         }
-        List<String> objectiveLines = wrap(minecraft, objective, width - 24, 5);
-        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 24, 3);
-        int height = 34 + objectiveLines.size() * 11 + (hintLines.isEmpty() ? 0 : 6 + hintLines.size() * 10);
-        height = Math.min(122, Math.max(48, height));
+        List<String> objectiveLines = wrap(minecraft, objective, width - 20, 4);
+        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, 2);
+        int height = 30 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9);
+        height = Math.min(108, Math.max(44, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
-        graphics.text(minecraft.font, Component.literal("목표"), x + 12, y + 10, GOLD, true);
-        graphics.text(minecraft.font, Component.literal("J 접기"), x + width - 12 - minecraft.font.width("J 접기"), y + 10, MUTED, false);
-        int ty = y + 25;
+        graphics.text(minecraft.font, Component.literal("목표"), x + 10, y + 8, GOLD, true);
+        graphics.text(minecraft.font, Component.literal("J 접기"), x + width - 10 - minecraft.font.width("J 접기"), y + 8, MUTED, false);
+        int ty = y + 22;
         for (String line : objectiveLines) {
-            graphics.text(minecraft.font, Component.literal(line), x + 12, ty, TEXT, true);
-            ty += 11;
+            graphics.text(minecraft.font, Component.literal(line), x + 10, ty, TEXT, true);
+            ty += 10;
         }
         if (!hintLines.isEmpty()) {
-            ty += 2;
+            ty += 1;
             for (String line : hintLines) {
-                if (ty + 9 >= y + height) break;
-                graphics.text(minecraft.font, Component.literal(line), x + 12, ty, target == null ? MUTED : GOLD, false);
-                ty += 10;
+                if (ty + 8 >= y + height) break;
+                graphics.text(minecraft.font, Component.literal(line), x + 10, ty, target == null ? MUTED : GOLD, false);
+                ty += 9;
             }
         }
         if (snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
-            graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 12, y + 25, GREEN, true);
+            graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
         }
     }
 
@@ -87,13 +90,13 @@ public final class QuestGuideLayer implements GuiLayer {
         double delta = wrapDegrees(targetYaw - minecraft.player.getYRot());
         String arrow = directionArrow(delta);
         String text = arrow + "  " + target.label + " · " + distance + "m";
-        int maxW = Math.min(250, graphics.guiWidth() / 2);
-        text = UiTextLayout.fit(text, maxW - 20);
-        int w = minecraft.font.width(text) + 20;
-        int x = (graphics.guiWidth() - w) / 2, y = 12;
-        graphics.fill(x, y, x + w, y + 21, 0xB516181C);
-        graphics.fill(x, y + 20, x + w, y + 22, GOLD);
-        graphics.text(minecraft.font, Component.literal(text), x + 10, y + 7, GOLD, true);
+        int maxW = Math.min(220, graphics.guiWidth() / 2);
+        text = UiTextLayout.fit(text, maxW - 16);
+        int w = minecraft.font.width(text) + 16;
+        int x = (graphics.guiWidth() - w) / 2, y = 7;
+        graphics.fill(x, y, x + w, y + 18, 0xB516181C);
+        graphics.fill(x, y + 17, x + w, y + 19, GOLD);
+        graphics.text(minecraft.font, Component.literal(text), x + 8, y + 5, GOLD, true);
     }
 
     private static String directionArrow(double delta) {
