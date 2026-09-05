@@ -52,7 +52,7 @@ public final class EnemyBattleTelegraphs {
         Vec3 core = source.add(0, .75, 0);
         ring(level, ParticleTypes.FLAME, source.add(0, .1, 0), .55, 14);
         ring(level, ParticleTypes.FLAME, source.add(0, .18, 0), .92, 18);
-        level.sendParticles(ParticleTypes.SMOKE, core.x, core.y, core.z, 10, .35, .45, .35, .015);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.SMOKE, core.x, core.y, core.z, 10, .35, .45, .35, .015);
     }
 
     private static void bursterRelease(ServerLevel level, Vec3 source) {
@@ -68,13 +68,13 @@ public final class EnemyBattleTelegraphs {
     private static void medicReform(ServerLevel level, Vec3 target) {
         ring(level, ParticleTypes.END_ROD, target.add(0, .18, 0), .65, 14);
         ring(level, ParticleTypes.ENCHANT, target.add(0, .65, 0), .47, 12);
-        level.sendParticles(ParticleTypes.END_ROD, target.x, target.y + 1.0, target.z, 6, .28, .45, .28, .02);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.END_ROD, target.x, target.y + 1.0, target.z, 6, .28, .45, .28, .02);
     }
 
     private static void sporeField(ServerLevel level, Vec3 target) {
         ring(level, ParticleTypes.ENCHANT, target.add(0, .12, 0), 1.15, 22);
         ring(level, ParticleTypes.SOUL, target.add(0, .18, 0), 1.55, 26);
-        level.sendParticles(ParticleTypes.ENCHANT, target.x, target.y + .7, target.z, 10, .85, .35, .85, .01);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.ENCHANT, target.x, target.y + .7, target.z, 10, .85, .35, .85, .01);
     }
 
     private static void rootBarrier(ServerLevel level, Vec3 target) {
@@ -96,7 +96,7 @@ public final class EnemyBattleTelegraphs {
     private static void floodRot(ServerLevel level, Vec3 target) {
         ring(level, ParticleTypes.SOUL, target.add(0, .12, 0), .92, 18);
         ring(level, ParticleTypes.SMOKE, target.add(0, .08, 0), 1.25, 22);
-        level.sendParticles(ParticleTypes.SOUL, target.x, target.y + .6, target.z, 7, .55, .25, .55, .01);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.SOUL, target.x, target.y + .6, target.z, 7, .55, .25, .55, .01);
     }
 
     private static void supportLink(ServerLevel level, Vec3 source, Vec3 target) {
@@ -119,7 +119,7 @@ public final class EnemyBattleTelegraphs {
     private static void drillCrush(ServerLevel level, Vec3 target) {
         radial(level, ParticleTypes.CRIT, target.add(0, .08, 0), 6, 1.45, 7);
         ring(level, ParticleTypes.ASH, target.add(0, .12, 0), 1.2, 20);
-        level.sendParticles(ParticleTypes.SMOKE, target.x, target.y + .35, target.z, 9, .65, .18, .65, .02);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.SMOKE, target.x, target.y + .35, target.z, 9, .65, .18, .65, .02);
     }
 
     private static void captainCommand(ServerLevel level, Vec3 source) {
@@ -163,7 +163,7 @@ public final class EnemyBattleTelegraphs {
         for (int i = 0; i <= steps; i++) {
             if (stride > 1 && i % stride != 0) continue;
             Vec3 p = from.add(delta.scale(i / (double)steps));
-            level.sendParticles(particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
+            PersonalPresentationIsolation.particles(level, particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
         }
     }
 
@@ -180,14 +180,14 @@ public final class EnemyBattleTelegraphs {
             double a = Math.PI * 2.0 * i / count;
             double x = center.x + Math.cos(a) * radius;
             double z = center.z + Math.sin(a) * radius;
-            level.sendParticles(particle, x, center.y, z, 1, .01, .01, .01, 0);
+            PersonalPresentationIsolation.particles(level, particle, x, center.y, z, 1, .01, .01, .01, 0);
         }
     }
 
     private static void vertical(ServerLevel level, ParticleOptions particle, Vec3 base, double height, int steps) {
         for (int i = 0; i <= steps; i++) {
             Vec3 p = base.add(0, height * i / Math.max(1.0, steps), 0);
-            level.sendParticles(particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
+            PersonalPresentationIsolation.particles(level, particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
         }
     }
 
@@ -197,7 +197,7 @@ public final class EnemyBattleTelegraphs {
             double t = i / (double)(count - 1);
             double a = yawBias - .75 + t * 1.5;
             Vec3 p = center.add(Math.cos(a) * radius, (t - .5) * .75, Math.sin(a) * radius);
-            level.sendParticles(particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
+            PersonalPresentationIsolation.particles(level, particle, p.x, p.y, p.z, 1, .01, .01, .01, 0);
         }
     }
 }
