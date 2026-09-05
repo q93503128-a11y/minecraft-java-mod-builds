@@ -1,6 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+REPO = ROOT.parents[1]
 JAVA = ROOT / "src/main/java/kr/moonseungjun/frontiersettlement"
 SETTLEMENT = JAVA / "settlement"
 
@@ -62,6 +63,22 @@ require("SettlementExplorationBenefitService.reforgePower(data)" in commands, "s
 require(not (SETTLEMENT / "SettlementResidentRoutineService.java").exists(), "retired night navigation authority still exists")
 require("__pycache__/" in text(ROOT / ".gitignore"), "Python cache ignore missing")
 require(not any((ROOT / "tools").rglob("*.pyc")), "generated pyc committed in tools")
+
+retired_mutators = (
+    REPO / ".github/workflows/apply-frontier-alpha89.yml",
+    REPO / ".github/workflows/apply-frontier-alpha90.yml",
+    REPO / ".github/workflows/apply-frontier-alpha90-retry.yml",
+    REPO / ".github/workflows/apply-frontier-alpha91.yml",
+    REPO / ".github/workflows/apply-starter-shared-supply-depot.yml",
+    ROOT / "tools/apply_alpha89.py",
+    ROOT / "tools/apply_alpha91_patch.py",
+    ROOT / "tools/patch_production_shared_depot_routing.py",
+    ROOT / "tools/patch_worksite_output_provenance.py",
+    REPO / "tools/apply_starter_shared_supply_depot.py",
+    REPO / "tools/fix_starter_depot_migration_gate.py",
+)
+for retired in retired_mutators:
+    require(not retired.exists(), f"obsolete Frontier mutator returned: {retired.relative_to(REPO)}")
 
 integrity = text(SETTLEMENT / "SettlementBuildingIntegrityService.java")
 require("RUIN_INTACT_PERCENT = 45" in integrity and "removeCompletedBuilding" in integrity and "clearKnownHouseRemnants" in integrity, "Alpha98 house integrity authority regressed")
