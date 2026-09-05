@@ -58,8 +58,8 @@ public final class FieldSessionManager {
         FieldSharedInteractionActors.ensureSouthgate(level, slice, chapter);
         SouthgateSharedPatrols.ensure(level, slice, chapter);
 
-        player.sendSystemMessage(Component.literal("TURNBOUND · 남문 초원 Chapter 1").withStyle(ChatFormatting.GOLD));
-        player.sendSystemMessage(Component.literal("M01~M05와 B01 그라울까지 한 지역 진행으로 연결되었습니다.").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(Component.literal("TURNBOUND · 제1장 남문 초원").withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(Component.literal("초원의 순찰대를 돌파하고 봉쇄선 너머의 그라울을 추적하십시오.").withStyle(ChatFormatting.GRAY));
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.NONE, null));
         return true;
     }
@@ -116,13 +116,13 @@ public final class FieldSessionManager {
                 chapterCleared && B01_ID.equals(canonicalId));
         player.sendSystemMessage(Component.literal("승리 · " + spec.label()).withStyle(ChatFormatting.GREEN));
         if (session.starterComplete() && (canonicalId.equals("ENC_M01") || canonicalId.equals("ENC_M02"))) {
-            player.sendSystemMessage(Component.literal("FT_MEADOW와 남문 초원 심부가 개방되었습니다.").withStyle(ChatFormatting.AQUA));
+            player.sendSystemMessage(Component.literal("남문 초원 심부와 계전소가 개방되었습니다.").withStyle(ChatFormatting.AQUA));
         }
         if (session.bossUnlocked() && canonicalId.equals("ENC_M04")) {
-            player.sendSystemMessage(Component.literal("불안정 폭발체를 제압했습니다. B01 그라울의 봉쇄문이 열립니다.").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Component.literal("불안정 폭발체를 제압했습니다. 그라울의 봉쇄문이 열립니다.").withStyle(ChatFormatting.RED));
         }
         if (chapterCleared && B01_ID.equals(canonicalId)) {
-            player.sendSystemMessage(Component.literal("Chapter 1 완료 · 들이받는 왕 그라울 격파").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.literal("제1장 완료 · 들이받는 왕 그라울 격파").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
         }
         FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.RESULT, reward));
     }
@@ -255,13 +255,13 @@ public final class FieldSessionManager {
         }
 
         private String objective() {
-            if (chapterComplete()) return "Chapter 1 완료 · 그라울 격파 · 다음 목적지는 그늘숲(Gloamwood)";
+            if (chapterComplete()) return "제1장 완료 · 라디아로 귀환해 그늘숲 진입을 준비";
             if (!starterComplete()) {
                 int count = (cleared.contains("ENC_M01") ? 1 : 0) + (cleared.contains("ENC_M02") ? 1 : 0);
-                return "MQ_C01_01 초원 순찰 · ENC_M01/M02 승리  " + count + "/2";
+                return "초원 순찰 · 초입 순찰 2개 격파 " + count + "/2";
             }
-            if (!cleared.contains("ENC_M04")) return "MQ_C01_02 불안정 폭발체 · ENC_M04의 E003 전투에서 승리";
-            return "MQ_C01_03 그라울 · 열린 봉쇄문 너머 B01을 격파";
+            if (!cleared.contains("ENC_M04")) return "불안정 폭발체 · 심부의 불안정 폭발체 격파";
+            return "그라울 · 열린 봉쇄문 너머 들이받는 왕 그라울 격파";
         }
 
         private String dialogue() {
