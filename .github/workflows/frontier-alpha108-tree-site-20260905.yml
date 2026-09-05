@@ -21,7 +21,16 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Apply Alpha108 patch
-        run: python3 tools/apply_frontier_alpha108_tree_site_tmp.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_frontier_alpha108_tree_site_tmp.py')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('lock.get("versions", {}).get("frontier_settlement")', 'lock.get("target", {}).get("frontier_settlement")')
+          text = text.replace('lock["versions"]["frontier_settlement"]', 'lock["target"]["frontier_settlement"]')
+          p.write_text(text, encoding='utf-8')
+          PY
+          python3 tools/apply_frontier_alpha108_tree_site_tmp.py
       - name: Verify current source and JSON
         run: |
           cd projects/frontier-settlement
