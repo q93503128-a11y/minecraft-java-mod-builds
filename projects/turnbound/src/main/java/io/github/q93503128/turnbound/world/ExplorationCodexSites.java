@@ -6,19 +6,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Optional non-reward lore discoveries that give the authored map exploration density without changing economy. */
 public final class ExplorationCodexSites {
@@ -26,6 +21,9 @@ public final class ExplorationCodexSites {
     private record Lore(String title, Vec3 pos, String text, Item item, ChatFormatting color, Theme theme) {}
 
     private static final int MARKER_X=466,MARKER_Y=46,MARKER_Z=-92;
+    private static final double SPAWN_RADIUS_SQ=80.0*80.0;
+    private static final String SCOPE="exploration_codex";
+    private static final String KEY_PREFIX="exploration_codex:";
     private static final List<Lore> LORE=List.of(
             new Lore("라디아 외벽 Relay 표식",new Vec3(112,66,-92),"라디아 외벽의 오래된 계전 표식. 다섯 방향으로 갈라지는 선이 한 점에서 끊겨 있다.",Items.COMPASS,ChatFormatting.AQUA,Theme.RADIA),
 
@@ -49,36 +47,42 @@ public final class ExplorationCodexSites {
             new Lore("중계소 임시 구호 구역",new Vec3(336,68,-258),"정비 부품 사이에 응급 처치 도구가 섞여 있다. 이곳은 어느 순간 기계보다 사람을 먼저 고치는 장소가 됐다.",Items.GOLDEN_APPLE,ChatFormatting.AQUA,Theme.RELAY),
             new Lore("세라크 관측 척추",new Vec3(411,66,-347),"보스실로 이어지는 좁은 관측로. 모든 측정 장치가 한 점이 아니라 여러 방향의 균열을 동시에 기록하도록 배치돼 있다.",Items.CLOCK,ChatFormatting.DARK_PURPLE,Theme.RELAY));
 
-    private static final Map<UUID,Map<UUID,Lore>> ACTORS=new ConcurrentHashMap<>();
     private ExplorationCodexSites(){}
 
     public static void build(ServerLevel l){if(hasMarker(l))return;for(Lore lore:LORE)scene(l,lore);writeMarker(l);}
 
     public static void sync(ServerLevel l,ServerPlayer p){
         build(l);
-        Map<UUID,Lore>a=ACTORS.computeIfAbsent(p.getUUID(),x->new LinkedHashMap<>());
-        for(var e:List.copyOf(a.entrySet())){
-            Entity entity=l.getEntity(e.getKey());
-            if(entity==null||p.position().distanceToSqr(e.getValue().pos())>10000){if(entity!=null)entity.discard();a.remove(e.getKey());}
+        List<SharedAuxiliaryActors.Spec> desired=new ArrayList<>();
+        for(int i=0;i<LORE.size();i++){
+            Lore lore=LORE.get(i);
+            if(p.position().distanceToSqr(lore.pos())>SPAWN_RADIUS_SQ)continue;
+            desired.add(new SharedAuxiliaryActors.Spec(key(i),lore.pos(),
+                    Component.literal(lore.title()).withStyle(lore.color()),lore.item(),false,true,List.of(lore.title())));
         }
-        for(Lore lore:LORE){
-            if(p.position().distanceToSqr(lore.pos())>6400||a.containsValue(lore))continue;
-            ArmorStand s=new ArmorStand(l,lore.pos().x,lore.pos().y,lore.pos().z);
-            s.setInvulnerable(true);s.setNoGravity(true);s.setShowArms(true);
-            s.setCustomName(Component.literal(lore.title()).withStyle(lore.color()));s.setCustomNameVisible(true);
-            s.setItemSlot(EquipmentSlot.MAINHAND,lore.item().getDefaultInstance());l.addFreshEntity(s);a.put(s.getUUID(),lore);
-        }
+        SharedAuxiliaryActors.sync(l,p.getUUID(),SCOPE,desired);
     }
 
     public static boolean interact(ServerPlayer p,Entity target){
-        Map<UUID,Lore>a=ACTORS.get(p.getUUID());if(a==null)return false;Lore lore=a.get(target.getUUID());if(lore==null)return false;
+        if(p==null||target==null)return false;
+        Lore lore=loreForSharedKey(SharedAuxiliaryActors.key(target));
+        if(lore==null)return false;
         p.sendSystemMessage(Component.literal("Aster March 기록 · "+lore.title()).withStyle(lore.color(),ChatFormatting.BOLD));
         p.sendSystemMessage(Component.literal(lore.text()).withStyle(ChatFormatting.GRAY));return true;
     }
 
     public static void remove(ServerPlayer p){
-        if(p==null||!(p.level() instanceof ServerLevel l))return;Map<UUID,Lore>a=ACTORS.remove(p.getUUID());if(a==null)return;
-        for(UUID id:a.keySet()){Entity e=l.getEntity(id);if(e!=null)e.discard();}
+        if(p==null||!(p.level() instanceof ServerLevel l))return;
+        SharedAuxiliaryActors.removeScope(l,p.getUUID(),SCOPE);
+    }
+
+    private static String key(int index){return KEY_PREFIX+index;}
+    private static Lore loreForSharedKey(String key){
+        if(key==null||!key.startsWith(KEY_PREFIX))return null;
+        try{
+            int index=Integer.parseInt(key.substring(KEY_PREFIX.length()));
+            return index>=0&&index<LORE.size()?LORE.get(index):null;
+        }catch(NumberFormatException ignored){return null;}
     }
 
     private static void scene(ServerLevel l,Lore lore){
