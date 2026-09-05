@@ -7,12 +7,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>These incidents intentionally own no quest completion, rewards, encounter clears or campaign flags. They make
  * the scenery useful: players can inspect a place, read a before/after interpretation driven by existing canonical
- * progress, and receive a short visual cue toward the next relevant part of the route. This keeps exploration dense
- * without creating a second progression authority beside the chapter/quest systems.</p>
+ * progress, and receive a short visual cue toward the next relevant part of the route. Physical props are shared
+ * world state while discovery pulses and before/after interpretation remain player-local.</p>
  */
 public final class AsterMarchFieldIncidents {
     private enum Region { SOUTHGATE, GLOAMWOOD, AQUEDUCT, QUARRY, RELAY }
@@ -52,9 +51,9 @@ public final class AsterMarchFieldIncidents {
     ) {}
 
     private static final double SPAWN_RADIUS_SQ = 58.0 * 58.0;
-    private static final double DESPAWN_RADIUS_SQ = 72.0 * 72.0;
-    private static final double LABEL_RADIUS_SQ = 14.0 * 14.0;
     private static final double DISCOVERY_RADIUS_SQ = 10.0 * 10.0;
+    private static final String SCOPE = "field_incidents";
+    private static final String KEY_PREFIX = "field_incident:";
 
     private static final List<Def> DEFINITIONS = List.of(
             // Southgate Meadow: four existing micro-landmarks become readable pieces of the first front line.
@@ -165,8 +164,6 @@ public final class AsterMarchFieldIncidents {
     );
 
     private static final Map<String, Def> BY_ID = index();
-    /** player -> (incident id -> spawned interaction actor) */
-    private static final Map<UUID, Map<String, UUID>> ACTORS = new ConcurrentHashMap<>();
     /** Presentation-only one-shot reveal pulse; not persisted and never used as campaign progress. */
     private static final Map<UUID, Set<String>> DISCOVERED = new ConcurrentHashMap<>();
 
@@ -175,45 +172,27 @@ public final class AsterMarchFieldIncidents {
     public static void sync(ServerLevel level, ServerPlayer player) {
         if (level == null || player == null) return;
         UUID playerId = player.getUUID();
-        Map<String, UUID> actors = ACTORS.computeIfAbsent(playerId, ignored -> new LinkedHashMap<>());
         Set<String> discovered = DISCOVERED.computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet());
         var snapshot = CampaignProgressStore.snapshot(playerId);
-
-        // Remove stale or distant interaction actors first so only the local stretch of route is populated.
-        for (var entry : List.copyOf(actors.entrySet())) {
-            Def def = BY_ID.get(entry.getKey());
-            Entity entity = level.getEntity(entry.getValue());
-            if (def == null || entity == null || player.position().distanceToSqr(def.pos()) > DESPAWN_RADIUS_SQ) {
-                if (entity != null) entity.discard();
-                actors.remove(entry.getKey());
-            }
-        }
+        List<SharedAuxiliaryActors.Spec> desired = new ArrayList<>();
 
         for (Def def : DEFINITIONS) {
             double distanceSq = player.position().distanceToSqr(def.pos());
             if (distanceSq > SPAWN_RADIUS_SQ) continue;
+            ChatFormatting color = color(def.region());
+            desired.add(new SharedAuxiliaryActors.Spec(key(def), def.pos(),
+                    Component.literal("현장 조사 · " + def.title()).withStyle(color),
+                    def.icon(), true, true,
+                    List.of("조사 · " + def.title(), "기록 · " + def.title())));
             boolean resolved = resolved(snapshot, def.resolution());
-            ArmorStand stand = actor(level, actors, def, resolved);
-            if (stand == null) continue;
-            stand.setCustomNameVisible(distanceSq <= LABEL_RADIUS_SQ);
-            applyName(stand, def, resolved);
             if (distanceSq <= DISCOVERY_RADIUS_SQ && discovered.add(def.id())) reveal(level, def, resolved);
         }
+        SharedAuxiliaryActors.sync(level, playerId, SCOPE, desired);
     }
 
     public static boolean interact(ServerPlayer player, Entity target) {
         if (player == null || target == null || !(player.level() instanceof ServerLevel level)) return false;
-        Map<String, UUID> actors = ACTORS.get(player.getUUID());
-        if (actors == null || actors.isEmpty()) return false;
-        String incidentId = null;
-        for (var entry : actors.entrySet()) {
-            if (entry.getValue().equals(target.getUUID())) {
-                incidentId = entry.getKey();
-                break;
-            }
-        }
-        if (incidentId == null) return false;
-        Def def = BY_ID.get(incidentId);
+        Def def = defForSharedKey(SharedAuxiliaryActors.key(target));
         if (def == null) return false;
 
         boolean resolved = resolved(CampaignProgressStore.snapshot(player.getUUID()), def.resolution());
@@ -225,41 +204,23 @@ public final class AsterMarchFieldIncidents {
         return true;
     }
 
-    /** Battle owns the field while active; remove these floating inspection props until field control returns. */
+    /** Battle hides only this player's observation claim; another nearby player keeps the shared prop alive. */
     public static void cancelForBattle(ServerLevel level, ServerPlayer player) {
         if (level == null || player == null) return;
-        despawn(level, ACTORS.remove(player.getUUID()));
+        SharedAuxiliaryActors.removeScope(level, player.getUUID(), SCOPE);
     }
 
     public static void remove(ServerPlayer player) {
         if (player == null || !(player.level() instanceof ServerLevel level)) return;
-        despawn(level, ACTORS.remove(player.getUUID()));
+        SharedAuxiliaryActors.removeScope(level, player.getUUID(), SCOPE);
         DISCOVERED.remove(player.getUUID());
     }
 
-    private static ArmorStand actor(ServerLevel level, Map<String, UUID> actors, Def def, boolean resolved) {
-        UUID existingId = actors.get(def.id());
-        Entity existing = existingId == null ? null : level.getEntity(existingId);
-        if (existing instanceof ArmorStand stand) return stand;
-        if (existingId != null) actors.remove(def.id());
+    private static String key(Def def) { return KEY_PREFIX + def.id(); }
 
-        ArmorStand stand = new ArmorStand(level, def.pos().x, def.pos().y, def.pos().z);
-        stand.setInvisible(true);
-        stand.setInvulnerable(true);
-        stand.setNoGravity(true);
-        stand.setShowArms(true);
-        stand.setYRot(0.0F);
-        stand.setItemSlot(EquipmentSlot.MAINHAND, def.icon().getDefaultInstance());
-        applyName(stand, def, resolved);
-        level.addFreshEntity(stand);
-        actors.put(def.id(), stand.getUUID());
-        return stand;
-    }
-
-    private static void applyName(ArmorStand stand, Def def, boolean resolved) {
-        ChatFormatting color = resolved ? ChatFormatting.DARK_GRAY : color(def.region());
-        String prefix = resolved ? "기록 · " : "조사 · ";
-        stand.setCustomName(Component.literal(prefix + def.title()).withStyle(color));
+    private static Def defForSharedKey(String key) {
+        if (key == null || !key.startsWith(KEY_PREFIX)) return null;
+        return BY_ID.get(key.substring(KEY_PREFIX.length()));
     }
 
     private static boolean resolved(CampaignProgressStore.Snapshot snapshot, Resolution state) {
@@ -354,14 +315,5 @@ public final class AsterMarchFieldIncidents {
             if (out.put(def.id(), def) != null) throw new IllegalStateException("Duplicate Aster March field incident " + def.id());
         }
         return Map.copyOf(out);
-    }
-
-    private static void despawn(ServerLevel level, Map<String, UUID> actors) {
-        if (actors == null) return;
-        for (UUID id : actors.values()) {
-            Entity entity = level.getEntity(id);
-            if (entity != null) entity.discard();
-        }
-        actors.clear();
     }
 }
