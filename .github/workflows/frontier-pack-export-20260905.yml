@@ -1,0 +1,195 @@
+name: Frontier Pack Export 20260905
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/frontier-pack-export-20260905.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Build Frontier Settlement
+        shell: bash
+        run: |
+          cd projects/frontier-settlement
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+          test -f build/libs/frontier_settlement-0.1.0-alpha.102.jar
+
+      - name: Build Survival Ascension
+        shell: bash
+        run: |
+          cd projects/survival-ascension
+          chmod +x gradlew
+          ./gradlew clean build --no-daemon
+          test -f build/libs/survival_ascension-0.61.9-alpha.1.jar
+
+      - name: Generate MRPACK from canonical companion lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, shutil, urllib.request, zipfile
+          from pathlib import Path
+
+          root = Path('.')
+          lock = json.loads((root/'projects/frontier-settlement/COMPANION_LOCK.json').read_text(encoding='utf-8'))
+          out = root/'pack-export'
+          stage = out/'stage'
+          mods = stage/'overrides/mods'
+          mods.mkdir(parents=True, exist_ok=True)
+
+          frontier = root/'projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.102.jar'
+          survival = root/'projects/survival-ascension/build/libs/survival_ascension-0.61.9-alpha.1.jar'
+          shutil.copy2(frontier, mods/frontier.name)
+          shutil.copy2(survival, mods/survival.name)
+
+          entries = []
+          ua = {'User-Agent': 'FrontierSettlementPackBuilder/1.0'}
+
+          # The lock has accumulated explanatory notes but its actual mod records remain under companions.
+          companions = lock.get('companions') or lock.get('mods') or lock.get('entries')
+          if not isinstance(companions, list):
+              # Find the first list of dicts containing source/id records without depending on a historical key name.
+              for value in lock.values():
+                  if isinstance(value, list) and value and all(isinstance(x, dict) for x in value):
+                      if any('source' in x and 'id' in x for x in value):
+                          companions = value
+                          break
+          if not isinstance(companions, list):
+              raise SystemExit('Unable to locate companion records in COMPANION_LOCK.json')
+
+          def env_for(side):
+              if side == 'client_preferred':
+                  return {'client':'required','server':'unsupported'}
+              return {'client':'required','server':'required'}
+
+          for mod in companions:
+              source = mod.get('source')
+              side = mod.get('side','client_server')
+              if source == 'modrinth':
+                  vid = mod['version_id']
+                  req = urllib.request.Request(f'https://api.modrinth.com/v2/version/{vid}', headers=ua)
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      meta = json.load(r)
+                  files = meta.get('files') or []
+                  primary = next((f for f in files if f.get('primary')), files[0] if files else None)
+                  if not primary:
+                      raise SystemExit(f'No downloadable file for {mod["id"]} / {vid}')
+                  hashes = primary.get('hashes') or {}
+                  sha1 = hashes.get('sha1')
+                  sha512 = hashes.get('sha512')
+                  if not sha1 or not sha512:
+                      raise SystemExit(f'Missing hashes for {mod["id"]}')
+                  entries.append({
+                      'path': 'mods/' + primary['filename'],
+                      'hashes': {'sha1': sha1, 'sha512': sha512},
+                      'env': env_for(side),
+                      'downloads': [primary['url']],
+                      'fileSize': primary['size'],
+                  })
+              elif source == 'curseforge' and mod.get('curseforge_project_id') == 853794:
+                  # Canonical lock pins Dungeons and Taverns 5.3.0 NeoForge, CF file 8262693.
+                  # Use the official CurseForge redirect URL in the pack index; hash the exact file now.
+                  import subprocess
+                  tmp = out/'dungeons-and-taverns-5.3.0-NeoForge.jar'
+                  url = 'https://www.curseforge.com/api/v1/mods/853794/files/8262693/download'
+                  subprocess.run(['curl','-fL','--retry','3','-A','Mozilla/5.0',url,'-o',str(tmp)], check=True)
+                  data = tmp.read_bytes()
+                  entries.append({
+                      'path': 'mods/dungeons-and-taverns-5.3.0 [NeoForge].jar',
+                      'hashes': {
+                          'sha1': hashlib.sha1(data).hexdigest(),
+                          'sha512': hashlib.sha512(data).hexdigest(),
+                      },
+                      'env': env_for(side),
+                      'downloads': [url],
+                      'fileSize': len(data),
+                  })
+                  tmp.unlink()
+              else:
+                  raise SystemExit(f'Unsupported required companion source: {mod}')
+
+          index = {
+              'formatVersion': 1,
+              'game': 'minecraft',
+              'versionId': 'frontier-a102-survival-0.61.9-20260905',
+              'name': 'Frontier Settlement + Survival Ascension',
+              'summary': 'Moonseungjun canonical Minecraft 26.2 NeoForge pack export',
+              'files': entries,
+              'dependencies': {
+                  'minecraft': '26.2',
+                  'neoforge': '26.2.0.38-beta'
+              }
+          }
+          (stage/'modrinth.index.json').write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding='utf-8')
+          mrpack = out/'frontier-settlement-survival-ascension-20260905.mrpack'
+          with zipfile.ZipFile(mrpack, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              for p in stage.rglob('*'):
+                  if p.is_file(): z.write(p, p.relative_to(stage).as_posix())
+          with zipfile.ZipFile(mrpack) as z:
+              json.loads(z.read('modrinth.index.json').decode('utf-8'))
+              names = z.namelist()
+              assert f'overrides/mods/{frontier.name}' in names
+              assert f'overrides/mods/{survival.name}' in names
+          print(f'MRPACK PASS: {mrpack} {mrpack.stat().st_size} bytes, external files={len(entries)}')
+          PY
+
+      - name: Verify runtime JARs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, zipfile
+          jars = [
+              Path('projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.102.jar'),
+              Path('projects/survival-ascension/build/libs/survival_ascension-0.61.9-alpha.1.jar'),
+          ]
+          for jar in jars:
+              with zipfile.ZipFile(jar) as z:
+                  names=z.namelist()
+                  assert 'META-INF/neoforge.mods.toml' in names
+                  assert len(names)==len(set(names))
+              print(jar.name, jar.stat().st_size, hashlib.sha256(jar.read_bytes()).hexdigest())
+          PY
+
+      - name: Stage export files
+        shell: bash
+        run: |
+          mkdir -p export
+          cp projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.102.jar export/
+          cp projects/survival-ascension/build/libs/survival_ascension-0.61.9-alpha.1.jar export/
+          cp pack-export/frontier-settlement-survival-ascension-20260905.mrpack export/
+          sha256sum export/* | tee export/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-pack-20260905
+          path: export/*
+          if-no-files-found: error
+
+      - name: Remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm .github/workflows/frontier-pack-export-20260905.yml
+          git commit -m 'Remove temporary Frontier pack export workflow'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
