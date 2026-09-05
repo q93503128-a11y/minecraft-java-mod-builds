@@ -21,7 +21,9 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Apply performance and pacing patch
-        run: python3 tools/apply_combined_perf_pacing_tmp.py
+        run: |
+          python3 tools/apply_combined_perf_pacing_tmp.py
+          cp tools/current_sa_checker_tmp.py projects/survival-ascension/tools/test_current_source.py
       - name: Frontier source and resource checks
         run: |
           cd projects/frontier-settlement
@@ -75,7 +77,7 @@ jobs:
         run: |
           git config user.name 'coworkaccount'
           git config user.email 'cyp1jhh2@gmail.com'
-          git rm -f .github/workflows/apply-combined-perf-pacing-20260905.yml tools/apply_combined_perf_pacing_tmp.py
+          git rm -f .github/workflows/apply-combined-perf-pacing-20260905.yml tools/apply_combined_perf_pacing_tmp.py tools/current_sa_checker_tmp.py
           git add projects/frontier-settlement projects/survival-ascension
           git commit -m 'Optimize Frontier runtime and rebalance Survival mastery pacing'
       - name: Rebase and reverify current main
