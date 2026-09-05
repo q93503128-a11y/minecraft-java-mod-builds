@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.111" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.112" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -55,6 +55,11 @@ require("isNaturalTreeLog" in construction and "BlockTags.LOGS" in construction 
 require("isClearableSiteVegetation(level, pos, state)" in construction, "grading does not clear verified natural tree vegetation")
 require("isClearableSiteVegetation(level, supply, current)" in construction, "site supply position still rejects natural vegetation")
 require("TREE_CANOPY_SEARCH_HEIGHT = 10" in construction and "TREE_CANOPY_SEARCH_RADIUS = 2" in construction, "bounded tree evidence envelope drifted")
+require("for (int x = -1; x <= width; x++)" not in construction and "for (int z = -1; z <= depth; z++)" not in construction,
+        "hidden exterior site/grading veto ring returned")
+require("List<GradeCell> result = new ArrayList<>(width * depth);" in construction, "grading plan is not footprint-only")
+require("현장 자재통 위치가 막혀 있습니다" in construction and "실제 건물 부지 안의 정리 칸이 막혀 있습니다" in construction,
+        "placement blocker diagnostics missing")
 
 road = text(SETTLEMENT / "SettlementRoadService.java")
 outpost = text(SETTLEMENT / "SettlementOutpostService.java")
@@ -190,4 +195,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha111 explicit settlement location UX + alpha110 scalable parallel construction crews + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha112 footprint-only placement + blocker diagnostics + alpha111 location UX + prior invariants")

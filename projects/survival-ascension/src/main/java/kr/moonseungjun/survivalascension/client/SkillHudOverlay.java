@@ -29,6 +29,7 @@ public final class SkillHudOverlay {
         if (minecraft.player == null) return;
 
         renderMythicTracker(graphics, minecraft);
+        renderFractureShrineTracker(graphics, minecraft);
         renderMobilityCooldown(graphics, minecraft);
         List<ClientSkillState.RecentSkillUpdate> updates = ClientSkillState.recentUpdates();
         if (updates.isEmpty()) return;
@@ -98,6 +99,22 @@ public final class SkillHudOverlay {
         graphics.fill(left, top, left + width, top + 13, 0xD4141110);
         int textX = left + (width - minecraft.font.width(label)) / 2;
         graphics.text(minecraft.font, label, textX, top + 2, 0xFFFFD166, true);
+    }
+
+    private static void renderFractureShrineTracker(GuiGraphicsExtractor graphics, Minecraft minecraft) {
+        ClientFractureShrineState.Target target = ClientFractureShrineState.current();
+        if (target == null || minecraft.player == null) return;
+        double dx = target.x() - minecraft.player.getX(), dz = target.z() - minecraft.player.getZ();
+        int distance = (int)Math.round(Math.sqrt(dx * dx + dz * dz));
+        double relative = Mth.wrapDegrees(Math.toDegrees(Math.atan2(-dx, dz)) - minecraft.player.getYRot());
+        String label = "균열 성소" + (target.exact() ? "" : " 예상") + "  " + relativeArrow(relative) + "  약 " + distance + "m";
+        int width = Math.max(132, minecraft.font.width(label) + 16), left, top;
+        boolean mythic = ClientMythicState.current() != null;
+        if (graphics.guiWidth() >= 420) { left = Math.max(6, graphics.guiWidth() - width - 8); top = mythic ? 27 : 8; }
+        else { left = Math.max(6, (graphics.guiWidth() - width) / 2); top = mythic ? 97 : 78; }
+        graphics.fill(left - 1, top - 1, left + width + 1, top + 14, target.exact() ? 0xFF6BA8A0 : 0xC0607774);
+        graphics.fill(left, top, left + width, top + 13, 0xD4101717);
+        graphics.text(minecraft.font, label, left + (width - minecraft.font.width(label)) / 2, top + 2, 0xFFE2FFF8, true);
     }
 
     private static String relativeArrow(double degrees) {

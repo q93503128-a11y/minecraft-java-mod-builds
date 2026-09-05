@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.15-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.16-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.15-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.16-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -127,7 +127,7 @@ infra_ui = text(JAVA / "client/InfrastructureRadialMenuScreen.java")
 require("어업 부두" in infra_ui and "Items.FISHING_ROD" in infra_ui, "angler harbor missing from infrastructure menu")
 
 network = text(JAVA / "network/SkillNetwork.java")
-require('PROTOCOL = "14"' in network, "expedition current-region packet protocol must be 14")
+require('PROTOCOL = "15"' in network, "TBOS shrine locator packet protocol must be 15")
 expedition_payload = text(JAVA / "network/ExpeditionSnapshotPayload.java")
 require("String currentRegionId" in expedition_payload and "ExpeditionProgression.currentRegion(player)" in expedition_payload, "server-authoritative current expedition region missing from snapshot")
 expedition_state = text(JAVA / "client/ClientExpeditionState.java")
@@ -139,6 +139,13 @@ hud = text(JAVA / "client/SkillHudOverlay.java")
 require("graphics.guiWidth() - width - rightMargin" in hud, "Mythic tracker is not right-edge anchored")
 require("graphics.guiWidth() >= 420" in hud, "Mythic tracker desktop boss-bar separation missing")
 require("top = 78" in hud, "Mythic tracker narrow-screen boss-bar fallback missing")
+locator = text(JAVA / "compat/TbosFractureShrineLocator.java")
+require("TbosFractureShrineLocator::onPlayerTick" in main, "TBOS shrine locator event missing")
+require("AdventureWorldManager" in locator and "TemporalSiteManager" in locator and "fractureShrines" in locator,
+        "TBOS planned/exact shrine bridge missing")
+require("setChunkForced" not in locator and "addRegionTicket" not in locator, "TBOS locator may force-load chunks")
+require("FractureShrineTargetPayload.TYPE" in network and "installFractureShrineReceiver" in network, "TBOS locator packet missing")
+require("ClientFractureShrineState" in hud and "균열 성소" in hud and "예상" in hud, "TBOS locator HUD missing")
 
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
@@ -153,4 +160,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.15 deterministic fishing + Angler Harbor + current expedition UI + runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.16 soft TBOS shrine locator + protocol15 + prior runtime invariants")

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.61.16-alpha.1
+- Added a soft TBOS Fracture Shrine direction/distance tracker. Built shrine SavedData gives exact coordinates; unopened shrine plans are labeled `예상` until TBOS resolves the final dry-surface placement.
+- The bridge is reflection-only, never force-loads or materializes shrine chunks, and clears itself when `tbos` is absent. Network protocol is now 15; combat/progression rules are unchanged.
+
 ## 0.61.15-alpha.1
 - Replaced Fishing mastery bonus-catch and rod-preservation coin flips with persistent deterministic accumulation. The same percentage now becomes guaranteed progress toward the next extra fish or saved durability point, removing long unlucky streaks without duplicating treasure loot.
 - Added the stage-0 `어업 부두` infrastructure project. It adds +35 percentage points to deterministic bonus catch, +15 points to rod preservation, and +25% Fishing mastery XP so fewer repeated casts are needed.

@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.111"
+    "frontier_settlement": "0.1.0-alpha.112"
   },
   "notes": [
     "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
@@ -63,7 +63,8 @@
     "Alpha.107 keeps completed production worksite barrels as authoritative physical buffers instead of immediately re-extracting each produced stack, and repairs only missing/replaceable completed-HOUSE blueprint cells from real loaded settlement wood/stone/metal before existing ruin retirement.",
     "Alpha.108 makes ordinary building placement tree-aware without treating arbitrary wooden structures as terrain: verified natural log columns with nearby leaf canopy are ignored for grade-height sampling, then cleared by the existing physical grading pass; grass, flowers, leaves and the derived site-supply position remain safely clearable while fluids, block entities, non-tree solids, settlement overlap and bounded cut/fill limits still fail closed.",
     "Alpha.110 replaces the old single shared-project lock for building/road/outpost with up to three infrastructure-derived managed lanes while civil flattening remains exclusive. Physical builders scale from a base crew of 2 by +2 per construction office and +1 per completed outpost, capped at 12. Road and outpost keep dedicated builder slots; remaining builders form the serialized building crew. Concurrent managed sites must remain at least 24 horizontal blocks apart; no force-load, teleport, virtual resource or second material authority is added.",
-    "Alpha.111 turns the saved main-settlement/outpost context data into an explicit M > infrastructure > base-location screen with coordinates, Overworld distance and 8-way direction; checkpoint/waypoint state is not an authority for settlement positions."
+    "Alpha.111 turns the saved main-settlement/outpost context data into an explicit M > infrastructure > base-location screen with coordinates, Overworld distance and 8-way direction; checkpoint/waypoint state is not an authority for settlement positions.",
+    "Alpha.112 keeps companion pins unchanged. Building site validation/grading now uses only the real rotated footprint; the exterior worker approach ring no longer vetoes legal lots, while the external supply barrel and actual footprint blockers report explicit placement reasons."
   ],
   "entries": [
     {

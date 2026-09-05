@@ -52,6 +52,7 @@ public final class SurvivalAscensionClient {
         SkillNetwork.installClientReceivers(ClientSkillState::onUpdate, ClientSkillState::onSnapshot);
         SkillNetwork.installExpeditionReceiver(ClientExpeditionState::onSnapshot);
         SkillNetwork.installMythicReceiver(ClientMythicState::onTarget);
+        SkillNetwork.installFractureShrineReceiver(ClientFractureShrineState::onTarget);
         SkillNetwork.installMobilityReceiver(ClientMobilityState::onCooldown);
         SkillClientBridge.install(ClientSkillState::level);
         modBus.addListener(RegisterGuiLayersEvent.class, SurvivalAscensionClient::onRegisterGuiLayers);
@@ -109,6 +110,7 @@ public final class SurvivalAscensionClient {
             ClientExpeditionState.reset();
             ClientMobilityState.reset();
             ClientMythicState.clear();
+            ClientFractureShrineState.clear();
         }
         while (OPEN_MENU.consumeClick()) {
             if (minecraft.player == null || minecraft.level == null) continue;

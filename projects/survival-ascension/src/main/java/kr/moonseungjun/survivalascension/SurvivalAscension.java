@@ -10,6 +10,7 @@ import kr.moonseungjun.survivalascension.compat.ApexContentRewardService;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.compat.ContentPackLootBridge;
 import kr.moonseungjun.survivalascension.compat.TbsJournalRestorationService;
+import kr.moonseungjun.survivalascension.compat.TbosFractureShrineLocator;
 import kr.moonseungjun.survivalascension.construction.ConstructionProgression;
 import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.elite.EndgameMutationSystem;
@@ -46,7 +47,7 @@ import org.slf4j.Logger;
 @Mod(SurvivalAscension.MOD_ID)
 public final class SurvivalAscension {
     public static final String MOD_ID = "survivalascension";
-    public static final String VERSION = "0.61.15-alpha.1";
+    public static final String VERSION = "0.61.16-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SurvivalAscension(IEventBus modEventBus) {
@@ -101,6 +102,7 @@ public final class SurvivalAscension {
         NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(TbosFractureShrineLocator::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(TbsJournalRestorationService::onServerStopping);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ExpeditionIncidentSystem::onPlayerLoggedOut);

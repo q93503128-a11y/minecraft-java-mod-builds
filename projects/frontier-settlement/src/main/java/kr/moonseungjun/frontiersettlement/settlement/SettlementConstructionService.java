@@ -163,12 +163,21 @@ public final class SettlementConstructionService {
         if (overlapsInfrastructure(data, site.origin(), type, rotation)) {
             return invalidPlacement("선택한 부지가 기존 건물·도로·전초기지 또는 공동 창고와 겹칩니다.");
         }
+        BlockPos supply = supplyPosition(site.origin(), type, rotation);
+        if (!isSafeSupplyPosition(level, supply)) {
+            return invalidPlacement("현장 자재통 위치가 막혀 있습니다 · "
+                    + supply.getX() + ", " + supply.getY() + ", " + supply.getZ()
+                    + " · 위치를 조금 옮기거나 R로 회전해 주세요.");
+        }
         ConstructionState gradingPreview = new ConstructionState(
                 type.id(), site.origin().getX(), site.origin().getY(), site.origin().getZ(),
                 rotation.id(), ConstructionState.GRADE_STEP_OFFSET);
         for (GradeCell cell : createGradePlan(level, gradingPreview, type)) {
             if (!canGradeCell(level, gradingPreview, type, cell)) {
-                return invalidPlacement("건물 주변 1블록까지 부지 정리가 가능한 공간이 필요합니다. 물·보호된 블록·깊은 절벽·미로드 경계를 피해 다시 지정해 주세요.");
+                BlockPos blocked = cell.floor().above();
+                return invalidPlacement("실제 건물 부지 안의 정리 칸이 막혀 있습니다 · "
+                        + blocked.getX() + ", " + blocked.getY() + ", " + blocked.getZ()
+                        + " · 물·보호 블록·깊은 절벽을 확인해 주세요.");
             }
         }
         String message = "배치 가능";
@@ -410,9 +419,9 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = construction.buildingRotation();
         int width = rotation.rotatedWidth(type);
         int depth = rotation.rotatedDepth(type);
-        List<GradeCell> result = new ArrayList<>((width + 2) * (depth + 2));
-        for (int x = -1; x <= width; x++) {
-            for (int z = -1; z <= depth; z++) {
+        List<GradeCell> result = new ArrayList<>(width * depth);
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
                 boolean foundation = x >= 0 && x < width && z >= 0 && z < depth;
                 boolean edge = foundation && (x == 0 || x == width - 1 || z == 0 || z == depth - 1);
                 BlockPos floor = construction.origin().offset(x, -1, z);
@@ -1655,8 +1664,10 @@ public final class SettlementConstructionService {
         int baseY = heights.get(heights.size() / 2);
         BlockPos origin = new BlockPos(originX, baseY, originZ);
 
-        for (int x = -1; x <= width; x++) {
-            for (int z = -1; z <= depth; z++) {
+        // Only the actual rotated blueprint footprint is placement authority. The exterior
+        // one-block ring remains optional worker approach space and must not veto a legal lot.
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
                 for (int y = -MAX_GRADE_FILL_DEPTH; y <= type.clearHeight(); y++) {
                     BlockPos pos = origin.offset(x, y, z);
                     if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null) return null;
@@ -1681,7 +1692,6 @@ public final class SettlementConstructionService {
                 }
             }
         }
-        if (!isSafeSupplyPosition(level, supplyPosition(origin, type, rotation))) return null;
         return new Site(origin, terrainSpan, terrainStoneCost);
     }
 
