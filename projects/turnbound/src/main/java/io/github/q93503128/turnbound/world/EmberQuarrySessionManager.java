@@ -48,6 +48,7 @@ public final class EmberQuarrySessionManager {
         SESSIONS.put(player.getUUID(), session);
         session.refresh(level, player);
         session.spawnAll(level, player);
+        FieldSharedInteractionActors.ensureQuarry(level, chapter, Math.min(2, session.counter(player, CORE_QUEST + "|E014")));
         Vec3 entry = chapter.entry();
         player.setPos(entry.x, entry.y, entry.z);
         player.setYRot(0.0F);
@@ -71,13 +72,38 @@ public final class EmberQuarrySessionManager {
             player.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (player.tickCount % 20 == 0) clearVanillaMobs(level);
+        if (player.tickCount % 20 == 0) {
+            clearVanillaMobs(level);
+            FieldSharedInteractionActors.ensureQuarry(level, session.chapter,
+                    Math.min(2, session.counter(player, CORE_QUEST + "|E014")));
+        }
         session.tickEncounters(level, player);
     }
 
     public static boolean interactEntity(ServerPlayer player, Entity target) {
         Session session = SESSIONS.get(player.getUUID());
         if (session == null || target == null) return false;
+        FieldSharedInteractionActors.Role sharedRole = FieldSharedInteractionActors.role(target);
+        if (sharedRole == FieldSharedInteractionActors.Role.QUARRY_RELAY) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
+        int sharedCore = FieldSharedInteractionActors.quarryCoreIndex(sharedRole);
+        if (sharedCore >= 0) {
+            int kills = Math.min(2, session.counter(player, CORE_QUEST + "|E014"));
+            int looted = Math.min(2, session.counter(player, CORE_QUEST + "|CORE_FRAGMENT"));
+            if (!session.questComplete(player, CORE_QUEST) && sharedCore == looted && looted < kills) {
+                CampaignProgressStore.recordLoot(player.getUUID(), "CORE_FRAGMENT", 1);
+                CampaignPersistence.saveIfDirty(player);
+                session.refresh((ServerLevel) player.level(), player);
+                session.spawnMissing((ServerLevel) player.level(), player);
+                FieldSharedInteractionActors.ensureQuarry((ServerLevel) player.level(), session.chapter,
+                        Math.min(2, session.counter(player, CORE_QUEST + "|E014")));
+                FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+            }
+            return true;
+        }
+
         UUID id = target.getUUID();
         if (id.equals(session.relay)) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
@@ -94,6 +120,8 @@ public final class EmberQuarrySessionManager {
                 CampaignPersistence.saveIfDirty(player);
                 session.refresh((ServerLevel) player.level(), player);
                 session.spawnMissing((ServerLevel) player.level(), player);
+                FieldSharedInteractionActors.ensureQuarry((ServerLevel) player.level(), session.chapter,
+                        Math.min(2, session.counter(player, CORE_QUEST + "|E014")));
                 FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             }
             return true;
@@ -139,6 +167,8 @@ public final class EmberQuarrySessionManager {
         ServerLevel level = (ServerLevel) player.level();
         session.refresh(level, player);
         session.spawnMissing(level, player);
+        FieldSharedInteractionActors.ensureQuarry(level, session.chapter,
+                Math.min(2, session.counter(player, CORE_QUEST + "|E014")));
         FieldUiSnapshot.Reward reward = new FieldUiSnapshot.Reward(
                 spec.label(), victory ? V04Catalogs.battleXp(spec) : 0, victory ? V04Catalogs.battleGold(spec) : 0,
                 victory, victory && BOSS_ID.equals(encounterId));
