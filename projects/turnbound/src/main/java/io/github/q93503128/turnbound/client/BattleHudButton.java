@@ -60,7 +60,7 @@ final class BattleHudButton extends Button {
         int nameX=separatorX+7;
         String name=UiTextLayout.fit(body,Math.max(10,getWidth()-(nameX-getX())-chipW-7));
         int nameColor=!active?0xFF969CA5:0xFFF6F7F8;
-        graphics.text(font,Component.literal(name),nameX,ty,nameColor,selected,true);
+        graphics.text(font,Component.literal(name),nameX,ty,nameColor,true);
 
         if(!cooldown.isEmpty()){
             int chipX=getX()+getWidth()-chipW-5;
