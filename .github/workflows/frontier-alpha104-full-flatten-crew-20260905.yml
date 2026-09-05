@@ -21,8 +21,19 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - name: Apply Alpha104 patch
-        run: python3 tools/apply_frontier_alpha104_tmp.py
+      - name: Fix staged patch marker and apply Alpha104
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_frontier_alpha104_tmp.py')
+          s = p.read_text(encoding='utf-8')
+          old = "    private static boolean moveBuilder(ServerLevel level, FrontierWorkerEntity builder, BlockPos target, double speed) {"
+          new = "    private static boolean moveBuilder(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {"
+          if s.count(old) != 1:
+              raise SystemExit(f'civil mover patch marker count={s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+          python3 tools/apply_frontier_alpha104_tmp.py
       - name: Source and JSON checks
         run: |
           cd projects/frontier-settlement
