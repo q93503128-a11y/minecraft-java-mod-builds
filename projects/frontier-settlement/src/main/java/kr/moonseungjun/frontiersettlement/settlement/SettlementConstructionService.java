@@ -34,7 +34,7 @@ public final class SettlementConstructionService {
     private static final String BUILDER_NAME = "건설 주민";
     private static final int DIRECT_BLOCK_UPDATE = 2;
     private static final int NORMAL_BLOCK_UPDATE = 3;
-    private static final double WORK_POSITION_REACHED_SQR = 110.25D;
+    private static final double WORK_POSITION_REACHED_SQR = 9.0D;
     // Direct hand reach is deliberately much smaller than scaffold coverage. Reusing the 14-block
     // scaffold coverage radius here let a builder stand on the ground and place an entire tower roof.
     private static final double DIRECT_HIGH_WORK_RANGE_SQR = 25.0D;
@@ -165,9 +165,6 @@ public final class SettlementConstructionService {
                 return invalidPlacement("건물 주변 1블록까지 부지 정리가 가능한 공간이 필요합니다. 물·보호된 블록·깊은 절벽·미로드 경계를 피해 다시 지정해 주세요.");
             }
         }
-        if (!hasFreshScaffoldCoverage(level, type, site.origin(), rotation)) {
-            return invalidPlacement("고층 시공용 작업 발판을 확보할 공간이 부족합니다. 건물 바깥 3~4블록의 나무·바위·기존 구조물을 비우거나 위치를 옮겨 주세요.");
-        }
         String message = "배치 가능";
         if (site.terrainWork()) {
             message += " · 지형 공사 포함";
@@ -266,7 +263,7 @@ public final class SettlementConstructionService {
 
         Container crate = ensureSupplyCrate(level, supply);
         if (crate == null) return false;
-        ensureConstructionScaffolds(level, data, type, supply);
+        retireLegacyConstructionScaffolds(level, data, type, builder, supply);
         if (!stageRemainingMaterials(server, data, type, plan.size(), builder, crate, supply)) return false;
         if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
 
@@ -841,12 +838,8 @@ public final class SettlementConstructionService {
                 return false;
             }
             if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
-            // Completion itself never depends on scaffold cleanup. But if an already-paid blueprint
-            // block has drifted/missing at height, the repair pass needs the same physical scaffold
-            // authority as ordinary construction. Rebuild only in that exceptional repair path.
-            if (placement.pos().getY() - data.construction().originY() > 3) {
-                ensureConstructionScaffolds(level, data, type, supply);
-            }
+            // Already-paid blueprint drift uses the same safe ground-perimeter authority as ordinary construction.
+            // High repairs never recreate the retired stair scaffold system.
             if (!moveBuilderToWorkPosition(level, data.construction(), type, placement, builder, supply)) return false;
             if (!level.setBlock(placement.pos(), placement.state(), NORMAL_BLOCK_UPDATE)) return false;
             builder.swing(InteractionHand.MAIN_HAND);
@@ -927,25 +920,14 @@ public final class SettlementConstructionService {
 
     private static boolean moveBuilderToWorkPosition(ServerLevel level, ConstructionState construction, BuildingType type,
                                                      BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
-        BlockPos target = placement.pos();
-        int relativeY = target.getY() - construction.originY();
-        if (relativeY > 3 && builder.distanceToSqr(
-                target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) <= DIRECT_HIGH_WORK_RANGE_SQR) {
-            return true;
-        }
-
+        // Construction height is presentation only: the worker stays on safe ground around the footprint.
+        // This avoids fragile stair/scaffold navigation while still requiring the physical worker to reach the site.
         for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
             double workDistance = builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
-            // Ground authority is legal only for genuinely low work. Never let a ground fallback
-            // authorize roof/tower placement merely because the footprint is nearby.
-            if (relativeY <= 3 && work.getY() <= construction.originY()
-                    && workDistance <= WORK_POSITION_REACHED_SQR) return true;
-            // High work only becomes authoritative after the builder has physically reached the
-            // elevated scaffold work cell. Scaffold coverage may be wide across a large roof, but
-            // standing on the ground inside that same coverage radius is no longer sufficient.
-            if (relativeY > 3 && work.getY() > construction.originY()
-                    && workDistance <= SCAFFOLD_POSITION_REACHED_SQR) return true;
-            // A partial path is not authority: try the next scaffold if this exact work point cannot be reached.
+            if (workDistance <= WORK_POSITION_REACHED_SQR) {
+                builder.getNavigation().stop();
+                return true;
+            }
             if (moveToReachable(builder, work, 1.05D)) return false;
         }
         builder.getNavigation().stop();
@@ -955,25 +937,59 @@ public final class SettlementConstructionService {
     private static List<BlockPos> workPositionsFor(ServerLevel level, ConstructionState construction, BuildingType type,
                                                    BuildingBlueprints.Placement placement, FrontierWorkerEntity builder, BlockPos supply) {
         BlockPos target = placement.pos();
-        int relativeY = target.getY() - construction.originY();
-        BlockPos ground = new BlockPos(target.getX(), construction.originY(), target.getZ());
-        if (relativeY <= 3) return List.of(ground);
+        BuildingRotation rotation = construction.buildingRotation();
+        int width = rotation.rotatedWidth(type);
+        int depth = rotation.rotatedDepth(type);
+        int minX = construction.originX() - 1;
+        int maxX = construction.originX() + width;
+        int minZ = construction.originZ() - 1;
+        int maxZ = construction.originZ() + depth;
+        int alignedX = Math.max(construction.originX(), Math.min(construction.originX() + width - 1, target.getX()));
+        int alignedZ = Math.max(construction.originZ(), Math.min(construction.originZ() + depth - 1, target.getZ()));
 
-        List<BlockPos> result = new ArrayList<>();
-        List<ScaffoldTower> towers = scaffoldTowers(construction.origin(), type, construction.buildingRotation(), supply);
-        for (int towerIndex = 0; towerIndex < towers.size(); towerIndex++) {
-            if (!construction.ownsScaffold(towerIndex)) continue;
-            ScaffoldTower tower = towers.get(towerIndex);
-            if (!towerUsable(level, tower) || tower.steps().isEmpty()) continue;
-            int index = Math.min(tower.steps().size() - 1, Math.max(0, relativeY - 3));
-            BlockPos candidate = tower.steps().get(index).above();
-            if (targetDistanceSqr(candidate, target) <= HIGH_WORK_RANGE_SQR) result.add(candidate);
+        Set<BlockPos> unique = new HashSet<>();
+        addGroundWorkCandidate(level, unique, minX, alignedZ);
+        addGroundWorkCandidate(level, unique, maxX, alignedZ);
+        addGroundWorkCandidate(level, unique, alignedX, minZ);
+        addGroundWorkCandidate(level, unique, alignedX, maxZ);
+
+        // Fallback across the complete one-block grading ring. A tree, crate, doorway, or already-built wall
+        // on one side must not make a tall blueprint step depend on climbing a temporary staircase.
+        for (int x = minX; x <= maxX; x++) {
+            addGroundWorkCandidate(level, unique, x, minZ);
+            addGroundWorkCandidate(level, unique, x, maxZ);
         }
-        result.sort(Comparator.comparingDouble(pos -> builder.distanceToSqr(
-                pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D)));
-        // High work has no ground-authority fallback. If no claimed, usable scaffold can cover this
-        // placement, construction pauses safely instead of remotely placing from the footprint.
+        for (int z = minZ + 1; z < maxZ; z++) {
+            addGroundWorkCandidate(level, unique, minX, z);
+            addGroundWorkCandidate(level, unique, maxX, z);
+        }
+
+        List<BlockPos> result = new ArrayList<>(unique);
+        result.sort(Comparator.comparingDouble(pos -> {
+            double tx = (double) pos.getX() - target.getX();
+            double tz = (double) pos.getZ() - target.getZ();
+            double targetHorizontal = tx * tx + tz * tz;
+            return targetHorizontal * 4.0D + builder.distanceToSqr(
+                    pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
+        }));
         return List.copyOf(result);
+    }
+
+    private static void addGroundWorkCandidate(ServerLevel level, Set<BlockPos> result, int x, int z) {
+        BlockPos candidate = safeSurfaceCell(level, x, z);
+        if (candidate != null) result.add(candidate);
+    }
+
+    private static void retireLegacyConstructionScaffolds(ServerLevel level, SettlementData data, BuildingType type,
+                                                           FrontierWorkerEntity builder, BlockPos supply) {
+        ConstructionState construction = data.construction();
+        if (construction.scaffoldMask() == 0) return;
+        BlockPos safe = findSafeBuilderHome(level, data);
+        if (safe == null) return;
+        builder.getNavigation().stop();
+        builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
+        removeConstructionScaffoldsBestEffort(level, construction, type, supply);
+        data.setConstructionScaffoldMask(0);
     }
 
     private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
@@ -1326,11 +1342,12 @@ private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, Bl
             if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
             active.setNoAi(false);
             active.setInvulnerable(false);
+            recoverBuilderFromBlockedCell(level, data, active);
             return active;
         }
         if (!builderAssignmentEvidenceLoaded(level, data)) return null;
-        BlockPos spawn = data.centerPos().offset(1, 0, 1);
-        if (!level.hasChunkAt(spawn)) return null;
+        BlockPos spawn = findSafeBuilderHome(level, data);
+        if (spawn == null) return null;
         FrontierWorkerEntity builder = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
         builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
         builder.setYRot(0.0F);
@@ -1341,6 +1358,41 @@ private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, Bl
         builder.setNoAi(false);
         builder.addTag(BUILDER_TAG);
         return level.addFreshEntity(builder) ? builder : null;
+    }
+
+    private static void recoverBuilderFromBlockedCell(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
+        BlockPos feet = builder.blockPosition();
+        BlockPos head = feet.above();
+        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return;
+        if (!blocksCurrentPathCell(level, feet, level.getBlockState(feet))
+                && !blocksCurrentPathCell(level, head, level.getBlockState(head))) return;
+        BlockPos safe = findSafeBuilderHome(level, data);
+        if (safe == null) return;
+        builder.getNavigation().stop();
+        builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
+    }
+
+    private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data) {
+        BlockPos center = data.centerPos();
+        BlockPos preferred = safeSurfaceCell(level, center.getX() + 1, center.getZ() + 1);
+        if (preferred != null) return preferred;
+        for (int radius = 1; radius <= 8; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    BlockPos candidate = safeSurfaceCell(level, center.getX() + dx, center.getZ() + dz);
+                    if (candidate != null) return candidate;
+                }
+            }
+        }
+        return safeSurfaceCell(level, center.getX(), center.getZ());
+    }
+
+    private static BlockPos safeSurfaceCell(ServerLevel level, int x, int z) {
+        if (!level.hasChunkAt(new BlockPos(x, 0, z))) return null;
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos candidate = new BlockPos(x, y, z);
+        return isWalkableApproachCell(level, candidate) ? candidate : null;
     }
 
     /**
@@ -1412,8 +1464,8 @@ private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, Bl
     }
 
     static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
-        BlockPos home = data.centerPos().offset(1, 0, 1);
-        if (!level.hasChunkAt(home)) {
+        BlockPos home = findSafeBuilderHome(level, data);
+        if (home == null) {
             builder.getNavigation().stop();
             return false;
         }
