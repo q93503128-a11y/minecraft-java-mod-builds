@@ -39,29 +39,36 @@ public final class WorldSessionRouter {
         AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
         AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         RadiaHubSessionManager.enter(p);
+        AsterMarchSharedWorldProgress.sync(level, p.getUUID());
     }
 
     public static void tick(ServerPlayer p) {
         if (!(p.level() instanceof ServerLevel level)) return;
-        AsterMarchWorldShell.build(level);
-        AsterMarchContentOrchestrator.build(level);
-        AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
-        AsterMarchSharedWorldProgress.sync(level, p.getUUID());
-        AsterMarchContentOrchestrator.tick(level, p);
+        try {
+            AsterMarchWorldShell.build(level);
+            AsterMarchContentOrchestrator.build(level);
+            AsterMarchWorldShell.syncProgressionGates(level, p.getUUID());
+            AsterMarchSharedWorldProgress.sync(level, p.getUUID());
+            AsterMarchContentOrchestrator.tick(level, p);
 
-        if (RELAY_APPROACH.contains(p.getUUID())) {
-            tickRelayApproach(level, p);
-            return;
+            if (RELAY_APPROACH.contains(p.getUUID())) {
+                tickRelayApproach(level, p);
+                return;
+            }
+
+            if (!BattleSessionManager.exists(p) && transitionAtWorldSeam(level, p)) return;
+
+            if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.tick(p);
+            else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.tick(p);
+            else if (BrokenAqueductSessionManager.active(p)) BrokenAqueductSessionManager.tick(p);
+            else if (EmberQuarrySessionManager.active(p)) EmberQuarrySessionManager.tick(p);
+            else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.tick(p);
+            else FieldSessionManager.tick(p);
+        } finally {
+            // Session compatibility code can still request a per-player closed state. SavedData is the last writer so
+            // a lower-progress player can never physically close a world gate already opened by somebody else.
+            AsterMarchSharedWorldProgress.sync(level, p.getUUID());
         }
-
-        if (!BattleSessionManager.exists(p) && transitionAtWorldSeam(level, p)) return;
-
-        if (RadiaHubSessionManager.active(p)) RadiaHubSessionManager.tick(p);
-        else if (GloamwoodSessionManager.active(p)) GloamwoodSessionManager.tick(p);
-        else if (BrokenAqueductSessionManager.active(p)) BrokenAqueductSessionManager.tick(p);
-        else if (EmberQuarrySessionManager.active(p)) EmberQuarrySessionManager.tick(p);
-        else if (OldRelayStationSessionManager.active(p)) OldRelayStationSessionManager.tick(p);
-        else FieldSessionManager.tick(p);
     }
 
     private static boolean transitionAtWorldSeam(ServerLevel level, ServerPlayer p) {
