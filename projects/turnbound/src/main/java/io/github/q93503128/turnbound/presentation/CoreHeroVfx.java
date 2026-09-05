@@ -207,7 +207,8 @@ final class CoreHeroVfx {
         for (int i = 0; i <= steps; i++) {
             double progress = i / (double) steps;
             Vec3 point = from.add(delta.scale(progress));
-            level.sendParticles(particle, point.x, point.y, point.z, 1, 0.02, 0.02, 0.02, 0);
+            PersonalPresentationIsolation.particles(level, particle, point.x, point.y, point.z,
+                    1, 0.02, 0.02, 0.02, 0);
         }
     }
 
@@ -216,7 +217,8 @@ final class CoreHeroVfx {
             double angle = Math.PI * 2 * i / count;
             double x = center.x + Math.cos(angle) * radius;
             double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(particle, x, center.y, z, 1, 0.01, 0.01, 0.01, 0);
+            PersonalPresentationIsolation.particles(level, particle, x, center.y, z,
+                    1, 0.01, 0.01, 0.01, 0);
         }
     }
 
@@ -227,7 +229,8 @@ final class CoreHeroVfx {
             double x = center.x + Math.cos(angle) * radius;
             double y = center.y + (progress - 0.5) * 1.2;
             double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(particle, x, y, z, 1, 0.01, 0.01, 0.01, 0);
+            PersonalPresentationIsolation.particles(level, particle, x, y, z,
+                    1, 0.01, 0.01, 0.01, 0);
         }
     }
 
@@ -241,6 +244,7 @@ final class CoreHeroVfx {
             double dz,
             double speed
     ) {
-        level.sendParticles(particle, center.x, center.y, center.z, count, dx, dy, dz, speed);
+        PersonalPresentationIsolation.particles(level, particle, center.x, center.y, center.z,
+                count, dx, dy, dz, speed);
     }
 }
