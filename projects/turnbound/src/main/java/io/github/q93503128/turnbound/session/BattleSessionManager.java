@@ -99,16 +99,18 @@ public final class BattleSessionManager {
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null || command == null) return;
         String[] parts = command.split("\\|", -1);
+        String opcode = parts[0];
 
         // Battle exit can rebuild shared field actors and world state. Never let that work inherit the private
         // battle-presentation owner or the respawned field silhouettes could become visible only to this player.
-        if ("FLEE".equals(parts[0])) {
+        if ("FLEE".equals(opcode)) {
             if (session.finished() || session.fleeAllowed()) end(player);
             return;
         }
+        if (!BattleCommandScopePolicy.privatePresentation(opcode)) return;
 
         PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> {
-            switch (parts[0]) {
+            switch (opcode) {
                 case "ACT" -> { if (parts.length >= 4) session.action(player, parts[1], parts[2], parts[3]); }
                 case "FOCUS" -> session.focusTarget(player, parts.length >= 2 ? parts[1] : "");
                 case "AUTO" -> session.toggleAuto(player);
