@@ -10,9 +10,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,16 +24,23 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Character Quest presentation layered over the existing investigation-site authority.
  *
- * No quest counters or rewards live here. Unfinished field-side quests gain the actual owner actor beside the clue,
- * P07 gains Toto as a second contract participant, and newly completed quests receive a short owner-specific closure.
- * Radia-local quests intentionally keep their existing static clue actors because the hub owns its own mob cleanup.
+ * No quest counters or rewards live here. Field-side quest owner models are shared world presentation while each
+ * player's availability, completion baseline, dialogue and closure remain personal. This prevents two players from
+ * producing stacked copies of the same hero/Toto at one authored investigation site.
  */
 public final class AsterMarchCharacterQuestPresentation {
     private record Bundle(CharacterQuestWorldSites.Site site, UUID owner, UUID companion) {}
 
     private static final double ACTOR_RADIUS_SQ = 58.0 * 58.0;
-    private static final double DESPAWN_RADIUS_SQ = 74.0 * 74.0;
-    private static final Map<UUID, Map<String, Bundle>> BUNDLES = new ConcurrentHashMap<>();
+    private static final String COMMON_TAG = "turnbound_cq_shared_actor";
+    private static final String QUEST_TAG_PREFIX = "turnbound_cq_quest:";
+    private static final String OWNER_TAG = "turnbound_cq_owner";
+    private static final String COMPANION_TAG = "turnbound_cq_companion";
+
+    /** quest id -> one shared physical owner/companion bundle. */
+    private static final Map<String, Bundle> BUNDLES = new ConcurrentHashMap<>();
+    /** player -> quest ids whose shared field actors this player currently needs. */
+    private static final Map<UUID, Set<String>> OBSERVATIONS = new ConcurrentHashMap<>();
     private static final Map<UUID, Set<String>> SEEN_COMPLETED = new ConcurrentHashMap<>();
 
     private AsterMarchCharacterQuestPresentation() {}
@@ -41,6 +49,74 @@ public final class AsterMarchCharacterQuestPresentation {
         if (level == null || player == null) return;
         UUID playerId = player.getUUID();
         Set<String> completed = CampaignProgressStore.snapshot(playerId).quests().completed();
+        seedCompletionMoments(level, player, completed);
+
+        Set<String> desired = new HashSet<>();
+        // The four Radia investigations already sit inside facility scenes. Field sites benefit most from the real owner model.
+        if (!RadiaHubSessionManager.active(player)) {
+            for (CharacterQuestWorldSites.Site site : CharacterQuestWorldSites.sites()) {
+                if (completed.contains(site.questId()) || !QuestMenuContentService.available(playerId, site.characterId())) continue;
+                if (player.position().distanceToSqr(site.position()) > ACTOR_RADIUS_SQ) continue;
+                desired.add(site.questId());
+                ensureShared(level, site);
+                if (player.tickCount % 20 == 0 && player.position().distanceToSqr(site.position()) <= 18.0 * 18.0) {
+                    ambient(level, site);
+                }
+            }
+        }
+
+        Set<String> previous = OBSERVATIONS.put(playerId, Set.copyOf(desired));
+        if (previous != null) {
+            for (String questId : previous) if (!desired.contains(questId)) discardIfUnobserved(level, questId);
+        }
+    }
+
+    public static boolean interact(ServerPlayer player, Entity target) {
+        if (player == null || target == null || !(player.level() instanceof ServerLevel level)) return false;
+        Bundle bundle = bundleForEntity(target.getUUID());
+        if (bundle == null) return false;
+        CharacterQuestWorldSites.Site site = bundle.site();
+        UUID playerId = player.getUUID();
+
+        if (!QuestMenuContentService.available(playerId, site.characterId())) {
+            player.sendSystemMessage(Component.literal("아직 이 인연 기록을 조사할 수 없다.").withStyle(ChatFormatting.GRAY));
+            return true;
+        }
+        if (CampaignProgressStore.snapshot(playerId).quests().completed().contains(site.questId())) {
+            player.sendSystemMessage(Component.literal("이미 정리한 인연 기록이다.").withStyle(ChatFormatting.GRAY));
+            return true;
+        }
+
+        if (target.getUUID().equals(bundle.owner())) {
+            player.sendSystemMessage(Component.literal(CanonicalData.definition(site.characterId()).name() + " · "
+                    + investigationLine(site.characterId())).withStyle(site.color(), ChatFormatting.BOLD));
+            player.sendSystemMessage(Component.literal("주변의 기록과 조사 지점을 확인해.").withStyle(ChatFormatting.GRAY));
+            focusClue(level, site);
+            return true;
+        }
+        if (bundle.companion() != null && target.getUUID().equals(bundle.companion())) {
+            player.sendSystemMessage(Component.literal("토토가 오래된 계약 제단 쪽을 바라본다.")
+                    .withStyle(ChatFormatting.BLUE));
+            focusClue(level, site);
+            return true;
+        }
+        return false;
+    }
+
+    /** Battle drops only this player's observation; another nearby player keeps the shared actor alive. */
+    public static void cancelForBattle(ServerLevel level, ServerPlayer player) {
+        if (level == null || player == null) return;
+        removeObservation(level, player.getUUID());
+    }
+
+    public static void remove(ServerPlayer player) {
+        if (player == null || !(player.level() instanceof ServerLevel level)) return;
+        removeObservation(level, player.getUUID());
+        SEEN_COMPLETED.remove(player.getUUID());
+    }
+
+    private static void seedCompletionMoments(ServerLevel level, ServerPlayer player, Set<String> completed) {
+        UUID playerId = player.getUUID();
         Set<String> seen = SEEN_COMPLETED.get(playerId);
         if (seen == null) {
             seen = new HashSet<>();
@@ -48,101 +124,115 @@ public final class AsterMarchCharacterQuestPresentation {
                 if (completed.contains(site.questId())) seen.add(site.questId());
             }
             SEEN_COMPLETED.put(playerId, seen);
-        } else {
-            for (CharacterQuestWorldSites.Site site : CharacterQuestWorldSites.sites()) {
-                if (completed.contains(site.questId()) && seen.add(site.questId())) completionMoment(level, player, site);
-            }
+            return;
         }
-
-        Map<String, Bundle> bundles = BUNDLES.computeIfAbsent(playerId, ignored -> new HashMap<>());
-        for (var entry : List.copyOf(bundles.entrySet())) {
-            Bundle bundle = entry.getValue();
-            boolean keep = !completed.contains(bundle.site().questId())
-                    && QuestMenuContentService.available(playerId, bundle.site().characterId())
-                    && player.position().distanceToSqr(bundle.site().position()) <= DESPAWN_RADIUS_SQ
-                    && entityAlive(level, bundle.owner());
-            if (!keep) {
-                despawn(level, bundle);
-                bundles.remove(entry.getKey());
-            }
-        }
-
-        // The four Radia investigations already sit inside facility scenes. Field sites benefit most from the real owner model.
-        if (RadiaHubSessionManager.active(player)) return;
         for (CharacterQuestWorldSites.Site site : CharacterQuestWorldSites.sites()) {
-            if (completed.contains(site.questId()) || !QuestMenuContentService.available(playerId, site.characterId())) continue;
-            if (player.position().distanceToSqr(site.position()) > ACTOR_RADIUS_SQ) continue;
-            if (bundles.containsKey(site.questId())) continue;
-            Bundle bundle = spawn(level, site);
-            if (bundle != null) bundles.put(site.questId(), bundle);
-        }
-
-        if (player.tickCount % 20 == 0) {
-            for (Bundle bundle : bundles.values()) {
-                if (player.position().distanceToSqr(bundle.site().position()) <= 18.0 * 18.0) ambient(level, bundle.site());
-            }
+            if (completed.contains(site.questId()) && seen.add(site.questId())) completionMoment(level, player, site);
         }
     }
 
-    public static boolean interact(ServerPlayer player, Entity target) {
-        if (player == null || target == null) return false;
-        Map<String, Bundle> bundles = BUNDLES.get(player.getUUID());
-        if (bundles == null) return false;
-        for (Bundle bundle : bundles.values()) {
-            if (target.getUUID().equals(bundle.owner())) {
-                CharacterQuestWorldSites.Site site = bundle.site();
-                player.sendSystemMessage(Component.literal(CanonicalData.definition(site.characterId()).name() + " · "
-                        + investigationLine(site.characterId())).withStyle(site.color(), ChatFormatting.BOLD));
-                player.sendSystemMessage(Component.literal("주변의 기록과 조사 지점을 확인해.").withStyle(ChatFormatting.GRAY));
-                if (player.level() instanceof ServerLevel level) focusClue(level, site);
-                return true;
-            }
-            if (bundle.companion() != null && target.getUUID().equals(bundle.companion())) {
-                player.sendSystemMessage(Component.literal("토토가 오래된 계약 제단 쪽을 바라본다.")
-                        .withStyle(ChatFormatting.BLUE));
-                if (player.level() instanceof ServerLevel level) focusClue(level, bundle.site());
-                return true;
-            }
-        }
-        return false;
-    }
+    private static void ensureShared(ServerLevel level, CharacterQuestWorldSites.Site site) {
+        Bundle current = BUNDLES.get(site.questId());
+        BattleActorEntity owner = current == null ? null : actor(level, current.owner());
+        BattleActorEntity companion = current == null ? null : actor(level, current.companion());
+        if (owner == null) owner = recover(level, site, OWNER_TAG);
+        if ("P07".equals(site.characterId()) && companion == null) companion = recover(level, site, COMPANION_TAG);
 
-    /** Despawns only visual companions during combat while preserving completion baselines for the current session. */
-    public static void cancelForBattle(ServerLevel level, ServerPlayer player) {
-        if (level == null || player == null) return;
-        Map<String, Bundle> bundles = BUNDLES.remove(player.getUUID());
-        if (bundles != null) for (Bundle bundle : bundles.values()) despawn(level, bundle);
-    }
-
-    public static void remove(ServerPlayer player) {
-        if (player == null || !(player.level() instanceof ServerLevel level)) return;
-        cancelForBattle(level, player);
-        SEEN_COMPLETED.remove(player.getUUID());
-    }
-
-    private static Bundle spawn(ServerLevel level, CharacterQuestWorldSites.Site site) {
+        removeLegacyActors(level, site, owner, companion);
         Vec3 clue = site.position();
         Vec3 ownerPos = clue.add(ownerOffset(site.characterId()));
-        BattleActorEntity owner = TurnboundBattleActors.spawn(level, site.characterId(), ownerPos, yawToward(ownerPos, clue));
-        if (owner == null) return null;
-        owner.setFieldWalking(false);
-        owner.setCustomName(Component.literal(CanonicalData.definition(site.characterId()).name() + " · 조사 중")
-                .withStyle(site.color(), ChatFormatting.BOLD));
-        owner.setCustomNameVisible(true);
+        if (owner == null) owner = TurnboundBattleActors.spawn(level, site.characterId(), ownerPos, yawToward(ownerPos, clue));
+        if (owner == null) return;
+        configure(owner, site, OWNER_TAG, ownerPos, clue,
+                CanonicalData.definition(site.characterId()).name() + " · 조사 중", site.color());
 
-        UUID companion = null;
+        UUID companionId = null;
         if ("P07".equals(site.characterId())) {
             Vec3 totoPos = clue.add(-2.0, 0.0, -1.2);
-            BattleActorEntity toto = TurnboundBattleActors.spawn(level, "P07_SUMMON", totoPos, yawToward(totoPos, clue));
-            if (toto != null) {
-                toto.setFieldWalking(false);
-                toto.setCustomName(Component.literal("토토").withStyle(ChatFormatting.BLUE));
-                toto.setCustomNameVisible(true);
-                companion = toto.getUUID();
+            if (companion == null) companion = TurnboundBattleActors.spawn(level, "P07_SUMMON", totoPos, yawToward(totoPos, clue));
+            if (companion != null) {
+                configure(companion, site, COMPANION_TAG, totoPos, clue, "토토", ChatFormatting.BLUE);
+                companionId = companion.getUUID();
             }
+        } else if (companion != null) {
+            companion.discard();
         }
-        focusClue(level, site);
-        return new Bundle(site, owner.getUUID(), companion);
+        BUNDLES.put(site.questId(), new Bundle(site, owner.getUUID(), companionId));
+    }
+
+    private static void configure(BattleActorEntity actor, CharacterQuestWorldSites.Site site, String roleTag,
+                                  Vec3 pos, Vec3 clue, String label, ChatFormatting color) {
+        float yaw = yawToward(pos, clue);
+        actor.setPos(pos.x, pos.y, pos.z);
+        actor.setDeltaMovement(Vec3.ZERO);
+        actor.setYRot(yaw);
+        actor.setYHeadRot(yaw);
+        actor.setYBodyRot(yaw);
+        actor.setFieldWalking(false);
+        actor.setCustomName(Component.literal(label).withStyle(color, ChatFormatting.BOLD));
+        actor.setCustomNameVisible(true);
+        actor.addTag(COMMON_TAG);
+        actor.addTag(QUEST_TAG_PREFIX + site.questId());
+        actor.addTag(roleTag);
+    }
+
+    private static BattleActorEntity recover(ServerLevel level, CharacterQuestWorldSites.Site site, String roleTag) {
+        Vec3 clue = site.position();
+        AABB area = new AABB(clue.x - 5.5, clue.y - 2.0, clue.z - 5.5, clue.x + 5.5, clue.y + 4.0, clue.z + 5.5);
+        BattleActorEntity first = null;
+        String questTag = QUEST_TAG_PREFIX + site.questId();
+        for (BattleActorEntity actor : level.getEntitiesOfClass(BattleActorEntity.class, area)) {
+            if (!actor.entityTags().contains(COMMON_TAG)
+                    || !actor.entityTags().contains(questTag)
+                    || !actor.entityTags().contains(roleTag)) continue;
+            if (first == null) first = actor;
+            else actor.discard();
+        }
+        return first;
+    }
+
+    private static void removeLegacyActors(ServerLevel level, CharacterQuestWorldSites.Site site,
+                                           BattleActorEntity canonicalOwner, BattleActorEntity canonicalCompanion) {
+        Vec3 clue = site.position();
+        AABB area = new AABB(clue.x - 5.5, clue.y - 2.0, clue.z - 5.5, clue.x + 5.5, clue.y + 4.0, clue.z + 5.5);
+        String ownerName = CanonicalData.definition(site.characterId()).name() + " · 조사 중";
+        for (BattleActorEntity actor : level.getEntitiesOfClass(BattleActorEntity.class, area)) {
+            if (actor == canonicalOwner || actor == canonicalCompanion || actor.entityTags().contains(COMMON_TAG)) continue;
+            Component name = actor.getCustomName();
+            if (name == null) continue;
+            String text = name.getString();
+            if (ownerName.equals(text) || ("P07".equals(site.characterId()) && "토토".equals(text))) actor.discard();
+        }
+    }
+
+    private static Bundle bundleForEntity(UUID entityId) {
+        if (entityId == null) return null;
+        for (Bundle bundle : BUNDLES.values()) {
+            if (entityId.equals(bundle.owner()) || entityId.equals(bundle.companion())) return bundle;
+        }
+        return null;
+    }
+
+    private static void removeObservation(ServerLevel level, UUID playerId) {
+        Set<String> removed = OBSERVATIONS.remove(playerId);
+        if (removed == null) return;
+        for (String questId : removed) discardIfUnobserved(level, questId);
+    }
+
+    private static void discardIfUnobserved(ServerLevel level, String questId) {
+        for (Set<String> observed : OBSERVATIONS.values()) if (observed.contains(questId)) return;
+        Bundle bundle = BUNDLES.remove(questId);
+        if (bundle == null) return;
+        Entity owner = level.getEntity(bundle.owner());
+        if (owner != null) owner.discard();
+        Entity companion = bundle.companion() == null ? null : level.getEntity(bundle.companion());
+        if (companion != null) companion.discard();
+    }
+
+    private static BattleActorEntity actor(ServerLevel level, UUID id) {
+        if (id == null) return null;
+        Entity entity = level.getEntity(id);
+        return entity instanceof BattleActorEntity actor && !actor.isRemoved() ? actor : null;
     }
 
     private static Vec3 ownerOffset(String id) {
@@ -216,18 +306,6 @@ public final class AsterMarchCharacterQuestPresentation {
             case "P08" -> ParticleTypes.SMALL_FLAME;
             default -> ParticleTypes.END_ROD;
         };
-    }
-
-    private static boolean entityAlive(ServerLevel level, UUID id) {
-        return id != null && level.getEntity(id) != null;
-    }
-
-    private static void despawn(ServerLevel level, Bundle bundle) {
-        if (bundle == null) return;
-        Entity owner = bundle.owner() == null ? null : level.getEntity(bundle.owner());
-        if (owner != null) owner.discard();
-        Entity companion = bundle.companion() == null ? null : level.getEntity(bundle.companion());
-        if (companion != null) companion.discard();
     }
 
     private static float yawToward(Vec3 from, Vec3 to) {
