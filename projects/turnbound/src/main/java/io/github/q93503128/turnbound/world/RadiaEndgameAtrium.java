@@ -9,8 +9,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -18,9 +16,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,10 +29,11 @@ public final class RadiaEndgameAtrium {
     private static final Vec3 CENTER = new Vec3(-100.0,66.0,-88.0);
     private static final Vec3 CHALLENGE_BOARD_POS = new Vec3(-121.0,66.0,-86.0);
     private static final double ACTIVE_RADIUS_SQ = 74.0 * 74.0;
+    private static final String SCOPE="radia_endgame_atrium";
+    private static final String SELECTOR_KEY_PREFIX="endgame_selector:";
+    private static final String CHALLENGE_KEY="endgame_challenge_board";
     private static final List<Selector> SELECTORS = selectors();
-    private static final Map<UUID, Map<UUID, Selector>> ACTORS = new ConcurrentHashMap<>();
-    private static final Map<UUID, UUID> CHALLENGE_BOARDS = new ConcurrentHashMap<>();
-    private static final Map<UUID, String> SELECTED = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, String> SELECTED = new ConcurrentHashMap<>();
 
     private RadiaEndgameAtrium() {}
     public static List<Selector> selectorsView(){ return SELECTORS; }
@@ -49,31 +46,37 @@ public final class RadiaEndgameAtrium {
     public static void sync(ServerLevel l, ServerPlayer p){
         build(l);
         UUID pid=p.getUUID();
-        Map<UUID,Selector> actors=ACTORS.computeIfAbsent(pid, ignored->new LinkedHashMap<>());
         boolean active=CampaignContentUnlocks.endgame(pid) && RadiaHubSessionManager.active(p)
                 && p.position().distanceToSqr(CENTER)<=ACTIVE_RADIUS_SQ;
-        if(!active){ despawn(l,actors); despawnChallengeBoard(l,pid); SELECTED.remove(pid); return; }
-        for(var entry:List.copyOf(actors.entrySet())) if(l.getEntity(entry.getKey())==null) actors.remove(entry.getKey());
-        for(Selector s:SELECTORS){
-            if(actors.containsValue(s)) continue;
-            ArmorStand a=new ArmorStand(l,s.position().x,s.position().y,s.position().z);
-            a.setInvulnerable(true);a.setNoGravity(true);a.setShowArms(true);
-            applySelectorName(a,s,s.encounterId().equals(SELECTED.get(pid)));
-            a.setItemSlot(EquipmentSlot.MAINHAND,itemFor(s).getDefaultInstance());
-            l.addFreshEntity(a);actors.put(a.getUUID(),s);
+        List<SharedAuxiliaryActors.Spec> desired=new ArrayList<>();
+        if(active){
+            for(Selector s:SELECTORS){
+                ChatFormatting color=selectorColor(s);
+                desired.add(new SharedAuxiliaryActors.Spec(selectorKey(s),s.position(),
+                        Component.literal(s.label()).withStyle(color),itemFor(s),false,true,
+                        List.of(s.label(),"▶ "+s.label()+" · 선택됨")));
+            }
+            desired.add(new SharedAuxiliaryActors.Spec(CHALLENGE_KEY,CHALLENGE_BOARD_POS,
+                    Component.literal("도전 과제 게시판").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD),
+                    Items.WRITABLE_BOOK,false,true,challengeLegacyNames()));
+        }else{
+            SELECTED.remove(pid);
         }
-        refreshSelectorNames(l,pid,actors);
-        spawnChallengeBoard(l,p);
+        SharedAuxiliaryActors.sync(l,pid,SCOPE,desired);
     }
 
     public static boolean interact(ServerPlayer p,Entity target){
         if(p==null||target==null) return false;
         UUID pid=p.getUUID();
-        UUID board=CHALLENGE_BOARDS.get(pid);
-        if(board!=null&&board.equals(target.getUUID())){MetaNetwork.open(p,"QUESTS");return true;}
+        String key=SharedAuxiliaryActors.key(target);
+        if(CHALLENGE_KEY.equals(key)){
+            int done=ChallengeService.completed(pid).size();
+            p.sendSystemMessage(Component.literal("도전 과제 · "+done+"/20").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD));
+            MetaNetwork.open(p,"QUESTS");
+            return true;
+        }
 
-        Map<UUID,Selector> actors=ACTORS.get(pid); if(actors==null) return false;
-        Selector s=actors.get(target.getUUID()); if(s==null) return false;
+        Selector s=selectorForSharedKey(key); if(s==null) return false;
         if(!RadiaHubSessionManager.active(p)){p.sendSystemMessage(Component.literal("TURNBOUND · Endgame 입장은 라디아에서만 가능합니다."));return true;}
         boolean unlocked;
         if(s.type().equals("NORMAL")){
@@ -83,16 +86,15 @@ public final class RadiaEndgameAtrium {
         if(!unlocked){p.sendSystemMessage(Component.literal("TURNBOUND · 아직 잠긴 재도전입니다.").withStyle(ChatFormatting.GRAY));return true;}
 
         SELECTED.put(pid,s.encounterId());
-        refreshSelectorNames((ServerLevel)p.level(),pid,actors);
+        p.sendSystemMessage(Component.literal("선택 · "+s.label()).withStyle(selectorColor(s),ChatFormatting.BOLD));
         EndgameBriefing.send(p,EndgameBriefing.build(pid,s.encounterId(),s.type(),s.level()));
         return true;
     }
 
     public static void remove(ServerPlayer p){
         if(p==null||!(p.level() instanceof ServerLevel l)) return;
-        UUID pid=p.getUUID();
-        Map<UUID,Selector> actors=ACTORS.remove(pid); if(actors!=null) despawn(l,actors);
-        despawnChallengeBoard(l,pid); SELECTED.remove(pid);
+        SharedAuxiliaryActors.removeScope(l,p.getUUID(),SCOPE);
+        SELECTED.remove(p.getUUID());
     }
 
     private static List<Selector> selectors(){
@@ -112,39 +114,23 @@ public final class RadiaEndgameAtrium {
         return List.copyOf(out);
     }
 
-    private static void applySelectorName(ArmorStand a,Selector s,boolean selected){
-        ChatFormatting c=s.type().equals("HARD")?ChatFormatting.RED:s.type().equals("NORMAL")?ChatFormatting.GOLD:(s.milestone()?ChatFormatting.LIGHT_PURPLE:ChatFormatting.AQUA);
-        String prefix=selected?"▶ ":"";String suffix=selected?" · 선택됨":"";
-        a.setCustomName(Component.literal(prefix+s.label()+suffix).withStyle(c,selected?ChatFormatting.BOLD:ChatFormatting.RESET));
-        a.setCustomNameVisible(true);
+    private static String selectorKey(Selector selector){return SELECTOR_KEY_PREFIX+selector.encounterId();}
+
+    private static Selector selectorForSharedKey(String key){
+        if(key==null||!key.startsWith(SELECTOR_KEY_PREFIX))return null;
+        String id=key.substring(SELECTOR_KEY_PREFIX.length());
+        for(Selector selector:SELECTORS)if(selector.encounterId().equals(id))return selector;
+        return null;
     }
 
-    private static void refreshSelectorNames(ServerLevel l,UUID pid,Map<UUID,Selector> actors){
-        String selected=SELECTED.getOrDefault(pid,"");
-        for(var entry:actors.entrySet()){
-            Entity e=l.getEntity(entry.getKey());
-            if(e instanceof ArmorStand a) applySelectorName(a,entry.getValue(),entry.getValue().encounterId().equals(selected));
-        }
+    private static ChatFormatting selectorColor(Selector s){
+        return s.type().equals("HARD")?ChatFormatting.RED:s.type().equals("NORMAL")?ChatFormatting.GOLD:(s.milestone()?ChatFormatting.LIGHT_PURPLE:ChatFormatting.AQUA);
     }
 
-    private static void spawnChallengeBoard(ServerLevel l,ServerPlayer p){
-        UUID pid=p.getUUID();UUID existing=CHALLENGE_BOARDS.get(pid);
-        if(existing!=null&&l.getEntity(existing)!=null){updateChallengeBoardName(l,pid);return;}
-        ArmorStand board=new ArmorStand(l,CHALLENGE_BOARD_POS.x,CHALLENGE_BOARD_POS.y,CHALLENGE_BOARD_POS.z);
-        board.setInvulnerable(true);board.setNoGravity(true);board.setShowArms(true);
-        board.setItemSlot(EquipmentSlot.MAINHAND,Items.WRITABLE_BOOK.getDefaultInstance());
-        l.addFreshEntity(board);CHALLENGE_BOARDS.put(pid,board.getUUID());updateChallengeBoardName(l,pid);
-    }
-
-    private static void updateChallengeBoardName(ServerLevel l,UUID pid){
-        UUID id=CHALLENGE_BOARDS.get(pid);Entity e=id==null?null:l.getEntity(id);if(!(e instanceof ArmorStand board))return;
-        int done=ChallengeService.completed(pid).size();
-        board.setCustomName(Component.literal("Challenge Board · "+done+"/20").withStyle(ChatFormatting.GREEN,ChatFormatting.BOLD));
-        board.setCustomNameVisible(true);
-    }
-
-    private static void despawnChallengeBoard(ServerLevel l,UUID pid){
-        UUID id=CHALLENGE_BOARDS.remove(pid);Entity e=id==null?null:l.getEntity(id);if(e!=null)e.discard();
+    private static List<String> challengeLegacyNames(){
+        ArrayList<String> names=new ArrayList<>();
+        for(int i=0;i<=20;i++)names.add("Challenge Board · "+i+"/20");
+        return List.copyOf(names);
     }
 
     private static Item itemFor(Selector s){
@@ -217,10 +203,6 @@ public final class RadiaEndgameAtrium {
     private static void pedestal(ServerLevel l,int x,int y,int z,Block base,Block core){
         for(int dx=-2;dx<=2;dx++) for(int dz=-1;dz<=1;dz++) set(l,x+dx,y,z+dz,base);
         set(l,x,y+1,z,core);
-    }
-
-    private static void despawn(ServerLevel l,Map<UUID,Selector> actors){
-        for(UUID id:List.copyOf(actors.keySet())){Entity e=l.getEntity(id);if(e!=null)e.discard();actors.remove(id);}
     }
 
     /** Fourth marker block bumps the atrium presentation schema so existing test worlds rebuild once. */
