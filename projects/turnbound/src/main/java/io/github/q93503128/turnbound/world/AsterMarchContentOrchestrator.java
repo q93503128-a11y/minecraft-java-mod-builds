@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,7 +30,8 @@ public final class AsterMarchContentOrchestrator {
             AsterMarchFieldIncidents.cancelForBattle(level, player);
             return;
         }
-        AsterMarchStoryScenes.tick(level, player);
+        PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(),
+                () -> AsterMarchStoryScenes.tick(level, player));
         if (player.tickCount % 10 != 0) return;
         TutorialWaypointService.sync(level, player);
         AsterMarchBossAftermath.sync(level);
