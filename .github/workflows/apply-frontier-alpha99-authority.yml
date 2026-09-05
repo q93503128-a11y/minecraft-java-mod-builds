@@ -28,7 +28,7 @@ jobs:
       - name: Apply authority cleanup
         run: python3 scripts/run_frontier_alpha99_cleanup_v2.py
 
-      - name: Current source invariant check
+      - name: Current source invariant check v3
         run: python3 projects/frontier-settlement/tools/test_current_source.py
 
       - name: Validate Frontier JSON
