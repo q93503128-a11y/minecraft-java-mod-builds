@@ -93,9 +93,8 @@ public final class SettlementRoadService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return invalid("먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return invalid("도로는 현재 오버월드 공동 마을에서만 건설할 수 있습니다.");
-        if (SettlementProjectAuthority.anyActive(server, data)) {
-            return invalid("현재 공동 공사가 끝난 뒤 새 도로를 계획해 주세요.");
-        }
+        String projectBlock = SettlementProjectAuthority.startBlockReason(server, data, SettlementProjectAuthority.ProjectLane.ROAD);
+        if (projectBlock != null) return invalid(projectBlock);
         if (data.houseCount() < 1 || data.lumberCampCount() < 1) {
             return invalid("첫 도로는 주택 1채와 벌목소 1곳을 완성한 뒤 열립니다.");
         }
@@ -118,6 +117,9 @@ public final class SettlementRoadService {
         RouteCandidate chosen = chooseCandidate(level, data, startXZ, endXZ);
         if (!chosen.valid()) return invalid(chosen.message().isBlank()
                 ? "두 자동 경로 모두 안전한 3칸 폭 도로를 만들 수 없습니다." : chosen.message());
+        if (!SettlementProjectAuthority.routeSeparatedFromOtherActive(data, SettlementProjectAuthority.ProjectLane.ROAD, chosen.centers())) {
+            return invalid("동시 공사 도로는 다른 활성 공사 현장에서 " + SettlementProjectAuthority.MIN_PARALLEL_SEPARATION + "블록 이상 떨어져야 합니다.");
+        }
 
         if (!chosen.supports().isEmpty() && SettlementTier.current(data).ordinal() < SettlementTier.VILLAGE.ordinal()) {
             return invalid("교각이 필요한 장교량·협곡 횡단은 마을 단계부터 건설할 수 있습니다.");
@@ -170,7 +172,7 @@ public final class SettlementRoadService {
         }
 
         data.beginRoadConstruction(chosen.centers(), chosen.profile(), chosen.supports());
-        if (SettlementConstructionService.ensureProjectBuilder(level, data) == null) {
+        if (SettlementConstructionService.infrastructureProjectBuilder(level, data, SettlementProjectAuthority.ProjectLane.ROAD) == null) {
             data.clearRoadConstruction();
             SettlementService.broadcast(server, data);
             return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 도로 착공을 취소했습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
@@ -199,7 +201,8 @@ public final class SettlementRoadService {
         }
 
         ServerLevel level = server.overworld();
-        FrontierWorkerEntity builder = findRoadBuilder(level, data, data.centerPos(), road, plan);
+        FrontierWorkerEntity builder = SettlementConstructionService.infrastructureProjectBuilder(
+                level, data, SettlementProjectAuthority.ProjectLane.ROAD);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(false);

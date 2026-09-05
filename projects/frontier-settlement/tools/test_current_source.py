@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.109" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.110" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -41,7 +41,13 @@ for retired in (
     require(retired not in construction, f"retired scaffold authority returned: {retired}")
 require("retireLegacyConstructionScaffolds(" in construction, "legacy scaffold teardown compatibility was removed")
 require("ensureProjectBuilder(" in construction, "shared project-builder authority missing")
-require("MAX_BUILDER_CREW = 3" in construction, "bounded construction crew cap missing")
+require("MAX_BUILDER_CREW = 12" in construction, "expanded bounded construction crew cap missing")
+require("BASE_BUILDER_CREW = 2" in construction and "BUILDERS_PER_CONSTRUCTION_OFFICE = 2" in construction,
+        "builder workforce no longer scales from base crew through construction offices")
+require("data.outposts().size()" in construction and "OUTPOST_BUILDER_BONUS_CAP = 6" in construction,
+        "completed outposts no longer expand builder workforce")
+require("buildingProjectBuilders" in construction and "infrastructureProjectBuilder" in construction,
+        "dedicated building/road/outpost builder routing missing")
 require("ensureProjectBuilders" in construction and "desiredBuilderCount" in construction, "multi-builder crew authority missing")
 require("i == 0" in construction and "tickConstructionBuilder" in construction, "builder crew is not serialized through one scheduler")
 require("terrainSurfaceHeight(level, worldX, worldZ)" in construction, "placement height still treats natural trunks as terrain peaks")
@@ -53,8 +59,23 @@ require("TREE_CANOPY_SEARCH_HEIGHT = 10" in construction and "TREE_CANOPY_SEARCH
 road = text(SETTLEMENT / "SettlementRoadService.java")
 outpost = text(SETTLEMENT / "SettlementOutpostService.java")
 civil = text(SETTLEMENT / "SettlementCivilWorkService.java")
-require("ensureProjectBuilder" in road and "clearRoadConstruction" in road, "road start is not transactional")
-require("ensureProjectBuilder" in outpost and "clearOutpostConstruction" in outpost, "outpost start is not transactional")
+require("infrastructureProjectBuilder" in road and "ProjectLane.ROAD" in road and "clearRoadConstruction" in road,
+        "road start is not transactional through its dedicated builder lane")
+require("infrastructureProjectBuilder" in outpost and "ProjectLane.OUTPOST" in outpost and "clearOutpostConstruction" in outpost,
+        "outpost start is not transactional through its dedicated builder lane")
+project_authority = text(SETTLEMENT / "SettlementProjectAuthority.java")
+require("MAX_PARALLEL_MANAGED_PROJECTS = 3" in project_authority and "parallelProjectLimit" in project_authority,
+        "managed parallel-project capacity missing")
+require("MIN_PARALLEL_SEPARATION = 24" in project_authority and "routeSeparatedFromOtherActive" in project_authority,
+        "parallel project physical-separation guard missing")
+require("SettlementCivilWorkData.get(server).project().active()" in project_authority,
+        "civil work is no longer exclusive against managed parallel projects")
+require("startBlockReason" in construction and "ProjectLane.BUILDING" in construction,
+        "building path bypasses centralized lane capacity")
+require("startBlockReason" in road and "ProjectLane.ROAD" in road,
+        "road path bypasses centralized lane capacity")
+require("startBlockReason" in outpost and "ProjectLane.OUTPOST" in outpost,
+        "outpost path bypasses centralized lane capacity")
 require("ensureProjectBuilders" in civil and "data.clear();" in civil, "civil start/crew acquisition is not transactional")
 require("WORK_INTERVAL_TICKS = 5" in civil, "civil scheduler cadence drifted from five-tick service cadence")
 require("Heightmap.Types.WORLD_SURFACE" in civil, "full flatten does not clear leaves/ordinary surface blocks")
@@ -162,4 +183,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha109 settlement navigation + alpha108 tree-aware placement + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha110 scalable parallel construction crews + alpha109 navigation + prior authority invariants")

@@ -57,7 +57,10 @@ public final class SettlementConstructionService {
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
     private static final int MAX_SCAFFOLD_STEP = 7;
     private static final int BUILDER_ROUTE_MARGIN = 32;
-    private static final int MAX_BUILDER_CREW = 3;
+    private static final int BASE_BUILDER_CREW = 2;
+    private static final int BUILDERS_PER_CONSTRUCTION_OFFICE = 2;
+    private static final int OUTPOST_BUILDER_BONUS_CAP = 6;
+    private static final int MAX_BUILDER_CREW = 12;
 
     private SettlementConstructionService() {}
 
@@ -131,8 +134,10 @@ public final class SettlementConstructionService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return invalidPlacement("공동 마을이 없습니다.");
         if (player.level() != server.overworld()) return invalidPlacement("오버월드에서만 배치할 수 있습니다.");
-        if (SettlementProjectAuthority.anyActive(server, data)) {
-            return invalidPlacement("현재 공동 공사가 끝난 뒤 새 건물을 배치해 주세요.");
+        String projectBlock = SettlementProjectAuthority.startBlockReason(server, data, SettlementProjectAuthority.ProjectLane.BUILDING);
+        if (projectBlock != null) return invalidPlacement(projectBlock);
+        if (!SettlementProjectAuthority.separatedFromOtherActive(data, SettlementProjectAuthority.ProjectLane.BUILDING, selectedCenter)) {
+            return invalidPlacement("동시 공사 현장은 서로 " + SettlementProjectAuthority.MIN_PARALLEL_SEPARATION + "블록 이상 떨어뜨려 주세요.");
         }
         String locked = lockedReason(data, type);
         if (locked != null) return invalidPlacement(locked);
@@ -194,8 +199,10 @@ public final class SettlementConstructionService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return new StartResult(false, "건설은 현재 오버월드 공동 마을에서만 시작할 수 있습니다.");
-        if (SettlementProjectAuthority.anyActive(server, data)) {
-            return new StartResult(false, "현재 공동 공사가 끝난 뒤 건물을 시작해 주세요.");
+        String projectBlock = SettlementProjectAuthority.startBlockReason(server, data, SettlementProjectAuthority.ProjectLane.BUILDING);
+        if (projectBlock != null) return new StartResult(false, projectBlock);
+        if (!SettlementProjectAuthority.separatedFromOtherActive(data, SettlementProjectAuthority.ProjectLane.BUILDING, selectedCenter)) {
+            return new StartResult(false, "동시 공사 현장은 서로 " + SettlementProjectAuthority.MIN_PARALLEL_SEPARATION + "블록 이상 떨어뜨려 주세요.");
         }
 
         PlacementCheck check = checkPlacement(player, type, selectedCenter, rotationId);
@@ -218,8 +225,8 @@ public final class SettlementConstructionService {
         BuildingRotation rotation = BuildingRotation.fromId(rotationId);
         data.beginConstruction(type, check.origin(), rotation);
         data.replaceConstructionStep(ConstructionState.GRADE_STEP_OFFSET);
-        FrontierWorkerEntity builder = ensureProjectBuilder(level, data);
-        if (builder == null) {
+        List<FrontierWorkerEntity> builders = buildingProjectBuilders(level, data);
+        if (builders.isEmpty()) {
             data.clearConstruction();
             SettlementService.broadcast(server, data);
             return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 착공하지 않았습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
@@ -245,7 +252,7 @@ public final class SettlementConstructionService {
             return true;
         }
 
-        List<FrontierWorkerEntity> builders = ensureProjectBuilders(level, data);
+        List<FrontierWorkerEntity> builders = buildingProjectBuilders(level, data);
         if (builders.isEmpty()) return false;
         for (int i = 0; i < builders.size(); i++) {
             if (!data.construction().active()) return true;
@@ -1333,7 +1340,32 @@ public final class SettlementConstructionService {
     }
 
     public static int desiredBuilderCount(SettlementData data) {
-        return Math.min(MAX_BUILDER_CREW, 1 + Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)));
+        int offices = Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE));
+        int outpostBonus = Math.min(OUTPOST_BUILDER_BONUS_CAP, data.outposts().size());
+        return Math.min(MAX_BUILDER_CREW, BASE_BUILDER_CREW + offices * BUILDERS_PER_CONSTRUCTION_OFFICE + outpostBonus);
+    }
+
+    public static List<FrontierWorkerEntity> buildingProjectBuilders(ServerLevel level, SettlementData data) {
+        List<FrontierWorkerEntity> all = ensureProjectBuilders(level, data);
+        if (all.isEmpty()) return List.of();
+        List<FrontierWorkerEntity> crew = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            if (data.roadConstruction().active() && i == 0) continue;
+            if (data.outpostConstruction().active() && i == 1) continue;
+            crew.add(all.get(i));
+        }
+        return List.copyOf(crew);
+    }
+
+    public static FrontierWorkerEntity infrastructureProjectBuilder(ServerLevel level, SettlementData data,
+                                                                     SettlementProjectAuthority.ProjectLane lane) {
+        List<FrontierWorkerEntity> all = ensureProjectBuilders(level, data);
+        int index = switch (lane) {
+            case ROAD -> 0;
+            case OUTPOST -> 1;
+            case BUILDING -> -1;
+        };
+        return index >= 0 && all.size() > index ? all.get(index) : null;
     }
 
     public static List<FrontierWorkerEntity> ensureProjectBuilders(ServerLevel level, SettlementData data) {

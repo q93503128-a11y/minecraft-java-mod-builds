@@ -10,6 +10,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOffic
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementData;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementProjectAuthority;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementWatchtowerService;
@@ -64,7 +65,7 @@ public final class SettlementNetwork {
         else if(type==BuildingType.BARRACKS)lock=SettlementBarracksService.lockedReason(data);
         else if(type==BuildingType.CONSTRUCTION_OFFICE)lock=SettlementConstructionOfficeService.lockedReason(data);
         if(lock!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),lock));return;}
-        if(data.construction().active()||data.roadConstruction().active()||data.outpostConstruction().active()||SettlementCivilWorkData.get(player.level().getServer()).project().active()){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),"현재 공사가 끝난 뒤 새 건물을 배치해 주세요."));return;}
+        String projectLock=SettlementProjectAuthority.startBlockReason(player.level().getServer(),data,SettlementProjectAuthority.ProjectLane.BUILDING);if(projectLock!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),projectLock));return;}
         BlockPos center=new BlockPos(payload.centerX(),payload.centerY(),payload.centerZ());
         if(type==BuildingType.CART_STATION){String p=SettlementCartStationService.placementReason(data,center);if(p!=null){context.reply(new PlacementPreviewPayload(payload.nonce(),type.id(),false,false,0,0,0,payload.rotation(),p));return;}}
         var check=SettlementConstructionService.checkPlacement(player,type,center,payload.rotation());

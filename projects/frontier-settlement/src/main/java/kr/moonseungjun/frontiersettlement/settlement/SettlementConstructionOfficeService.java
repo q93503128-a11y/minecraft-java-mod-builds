@@ -23,8 +23,9 @@ import java.util.function.Predicate;
 /**
  * Construction offices do not create an abstract speed stat. Their physical supply runner keeps
  * nearby office material bays stocked from real loaded settlement storage. Completed offices also
- * authorize additional physical builders (up to the centralized crew cap), while SettlementConstructionService
- * remains the sole serialized mutation/resource scheduler so multiple bodies cannot double-spend a project step.
+ * authorize additional physical builders (up to the centralized crew cap). Building mutation remains serialized
+ * inside SettlementConstructionService, while road/outpost lanes reserve separate physical builders so parallel jobs
+ * cannot issue navigation orders to the same body or double-spend one project's persisted step.
  */
 public final class SettlementConstructionOfficeService {
     public static final String SUPPLY_RUNNER_TAG = "frontier_settlement_construction_supply_runner";

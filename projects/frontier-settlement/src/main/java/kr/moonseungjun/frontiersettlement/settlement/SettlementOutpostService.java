@@ -59,9 +59,8 @@ public final class SettlementOutpostService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return PlacementCheck.invalid("먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return PlacementCheck.invalid("전초기지는 오버월드에만 건설할 수 있습니다.");
-        if (SettlementProjectAuthority.anyActive(server, data)) {
-            return PlacementCheck.invalid("현재 공동 공사가 끝난 뒤 전초기지를 배치해 주세요.");
-        }
+        String projectBlock = SettlementProjectAuthority.startBlockReason(server, data, SettlementProjectAuthority.ProjectLane.OUTPOST);
+        if (projectBlock != null) return PlacementCheck.invalid(projectBlock);
 
         int roadIndex = nearestUnclaimedRoad(data, selected);
         if (roadIndex < 0) return PlacementCheck.invalid("사용하지 않은 완성 도로 끝을 가리켜 주세요.");
@@ -75,6 +74,10 @@ public final class SettlementOutpostService {
         }
 
         BlockPos gate = gateFor(road);
+        if (!SettlementProjectAuthority.separatedFromOtherActive(data, SettlementProjectAuthority.ProjectLane.OUTPOST, gate)) {
+            return new PlacementCheck(false, roadIndex, gate, road.directionX(), road.directionZ(),
+                    "general", "동시 공사 전초기지는 다른 활성 공사 현장에서 " + SettlementProjectAuthority.MIN_PARALLEL_SEPARATION + "블록 이상 떨어져야 합니다.");
+        }
         ServerLevel level = server.overworld();
         if (!assessSite(level, data, roadIndex, gate, road.directionX(), road.directionZ())) {
             return new PlacementCheck(false, roadIndex, gate, road.directionX(), road.directionZ(),
@@ -101,15 +104,17 @@ public final class SettlementOutpostService {
         SettlementData data = SettlementData.get(server);
         if (!data.founded()) return new StartResult(false, "먼저 공동 마을을 시작해야 합니다.");
         if (player.level() != server.overworld()) return new StartResult(false, "전초기지는 오버월드에만 건설할 수 있습니다.");
-        if (SettlementProjectAuthority.anyActive(server, data)) {
-            return new StartResult(false, "현재 공동 공사가 끝난 뒤 전초기지를 시작해 주세요.");
-        }
+        String projectBlock = SettlementProjectAuthority.startBlockReason(server, data, SettlementProjectAuthority.ProjectLane.OUTPOST);
+        if (projectBlock != null) return new StartResult(false, projectBlock);
         if (roadIndex < 0 || roadIndex >= data.roads().size() || isRoadClaimed(data, roadIndex)) {
             return new StartResult(false, "선택한 도로는 전초기지에 연결할 수 없습니다.");
         }
 
         RoadSegment road = data.roads().get(roadIndex);
         BlockPos gate = gateFor(road);
+        if (!SettlementProjectAuthority.separatedFromOtherActive(data, SettlementProjectAuthority.ProjectLane.OUTPOST, gate)) {
+            return new StartResult(false, "동시 공사 전초기지는 다른 활성 공사 현장에서 " + SettlementProjectAuthority.MIN_PARALLEL_SEPARATION + "블록 이상 떨어져야 합니다.");
+        }
         if (player.blockPosition().distSqr(road.end())
                 > (double) MAX_PLAYER_DISTANCE_FROM_ROAD_END * MAX_PLAYER_DISTANCE_FROM_ROAD_END) {
             return new StartResult(false, "선택한 도로 끝에서 48블록 안으로 이동해 주세요.");
@@ -132,7 +137,7 @@ public final class SettlementOutpostService {
 
         data.beginOutpostConstruction(roadIndex, gate, road.directionX(), road.directionZ());
         data.replaceOutpostConstructionStep(OutpostConstructionState.GRADE_STEP_OFFSET);
-        if (SettlementConstructionService.ensureProjectBuilder(level, data) == null) {
+        if (SettlementConstructionService.infrastructureProjectBuilder(level, data, SettlementProjectAuthority.ProjectLane.OUTPOST) == null) {
             data.clearOutpostConstruction();
             SettlementService.broadcast(server, data);
             return new StartResult(false, "건설 작업자를 안전하게 확보할 수 없어 전초기지 착공을 취소했습니다. 주변 마을·공동 창고 청크를 로드한 뒤 다시 시도해 주세요. 자원은 차감되지 않았습니다.");
@@ -153,7 +158,8 @@ public final class SettlementOutpostService {
         }
 
         ServerLevel level = server.overworld();
-        FrontierWorkerEntity builder = findOutpostBuilder(level, data, data.centerPos(), state, plan);
+        FrontierWorkerEntity builder = SettlementConstructionService.infrastructureProjectBuilder(
+                level, data, SettlementProjectAuthority.ProjectLane.OUTPOST);
         if (builder == null) return false;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(false);
