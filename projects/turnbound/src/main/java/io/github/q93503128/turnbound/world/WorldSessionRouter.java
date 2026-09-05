@@ -98,7 +98,7 @@ public final class WorldSessionRouter {
             if (pos.z <= 119.0 && Math.abs(pos.x) <= 12.0) {
                 FieldSessionManager.remove(p);
                 RadiaHubSessionManager.enter(p);
-                p.setPos(0.5, 66.0, 106.5);
+                p.setPos(0.5, 68.0, 106.5);
                 p.setYRot(180.0F);
                 return true;
             }
