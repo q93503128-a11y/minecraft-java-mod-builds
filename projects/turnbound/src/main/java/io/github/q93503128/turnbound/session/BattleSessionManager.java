@@ -78,7 +78,6 @@ public final class BattleSessionManager {
     public static boolean resumeIfPresent(ServerPlayer player) {
         BattleSession session = SESSIONS.get(player.getUUID());
         if (session == null) return false;
-        player.setInvisible(true);
         Vec3 anchor = session.battleAnchor();
         player.setPos(anchor.x, anchor.y, anchor.z);
         player.setYRot(session.battleYaw());
@@ -162,7 +161,11 @@ public final class BattleSessionManager {
 
     private static BattleSession privateSession(ServerPlayer player, Supplier<BattleSession> factory) {
         BattleSession[] box = new BattleSession[1];
+        boolean wasInvisible = player.isInvisible();
         PersonalPresentationIsolation.withPrivateActorOwner(player.getUUID(), () -> box[0] = factory.get());
+        // BattleSession historically hid the physical player shell for the local third-person camera. Restore the
+        // authoritative server visibility immediately; the client now suppresses only its own battle-view player renders.
+        player.setInvisible(wasInvisible);
         return box[0];
     }
 
