@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.102" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.103" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -55,6 +55,11 @@ require("arrivalFoodCost()" in worker, "canonical worker arrival-food accessor m
 require("SettlementWorkerService.arrivalFoodCost()" in guidance, "guidance duplicates arrival-food balance")
 require("data.resources().food() < 8L" not in guidance, "stale arrival-food value returned")
 require("SettlementCivilWorkData.get(server).project().active()" in guidance, "active civil work absent from next-goal authority")
+require("LUMBER_REMOTE_WORK_REACH_SQR = 36.0D" in worker, "bounded six-block lumber remote work missing")
+require("QUARRY_REMOTE_WORK_REACH_SQR = 25.0D" in worker, "bounded five-block quarry remote work missing")
+require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource workers still require point-blank target contact")
+require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
+require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 
 service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementGuidanceService.nextGoal(player.level().getServer(), data)" in service, "guidance is missing server authority")
@@ -113,4 +118,4 @@ logistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")
 require("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")
 require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")
 
-print("CURRENT SOURCE CHECK PASS: alpha102 production integrity and economy authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha103 production reach plus alpha102 authority invariants")

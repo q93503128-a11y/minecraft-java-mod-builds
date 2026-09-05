@@ -62,6 +62,11 @@ public final class SettlementWorkerService {
     private static final int FARM_WORK_PERIOD_TICKS = 120;
     private static final int QUARRY_WORK_PERIOD_TICKS = 80;
     private static final int MINING_WORK_PERIOD_TICKS = 160;
+    // Close-range remote work prevents a valid physical resource from becoming unusable
+    // merely because leaves, fencing, or rough terrain blocks the final standing cell.
+    // This is deliberately bounded: distant resources still require normal pathfinding.
+    private static final double LUMBER_REMOTE_WORK_REACH_SQR = 36.0D; // 6 blocks
+    private static final double QUARRY_REMOTE_WORK_REACH_SQR = 25.0D; // 5 blocks
 
     private SettlementWorkerService() {}
 
@@ -489,10 +494,14 @@ public final class SettlementWorkerService {
             else moveNear(level, worker, camp.workCenter(), 0.82D);
             return;
         }
-        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
+        if (!withinResourceWorkReach(worker, target, LUMBER_REMOTE_WORK_REACH_SQR)) {
             moveNear(level, worker, target, 0.92D);
             return;
         }
+        // Once the worker is close enough to work, stop any stale approach path so the
+        // next target cannot inherit movement toward the already-harvested trunk.
+        worker.getNavigation().stop();
+        MOVEMENT_WATCHES.remove(worker.getUUID());
         if (!workDue(level, camp, LUMBER_WORK_PERIOD_TICKS)) return;
         Item item = level.getBlockState(target).getBlock().asItem();
         int room = cargoRoom(worker, item);
@@ -566,10 +575,12 @@ public final class SettlementWorkerService {
             else moveNear(level, worker, quarry.workCenter(), 0.82D);
             return;
         }
-        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
+        if (!withinResourceWorkReach(worker, target, QUARRY_REMOTE_WORK_REACH_SQR)) {
             moveNear(level, worker, target, 0.90D);
             return;
         }
+        worker.getNavigation().stop();
+        MOVEMENT_WATCHES.remove(worker.getUUID());
         if (!workDue(level, quarry, QUARRY_WORK_PERIOD_TICKS)) return;
         Item item = level.getBlockState(target).getBlock().asItem();
         int room = cargoRoom(worker, item);
@@ -903,12 +914,14 @@ public final class SettlementWorkerService {
 
     private static boolean isValidTreeTarget(ServerLevel level, SettlementData data, FrontierWorkerEntity worker,
                                              BlockPos pos, Item expected) {
-        if (!level.hasChunkAt(pos) || isTargetBlocked(level, worker, pos) || isProtected(data, pos)) return false;
+        if (!level.hasChunkAt(pos) || isProtected(data, pos)
+                || isBlockedOutsideWorkReach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)) return false;
         BlockState state = level.getBlockState(pos);
         if (!state.is(BlockTags.LOGS)) return false;
         Item item = state.getBlock().asItem();
         return item != Items.AIR && (expected == null || item == expected)
-                && isNaturalTreeBase(level, pos) && hasWalkableApproach(level, pos);
+                && isNaturalTreeBase(level, pos)
+                && canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR);
     }
 
     private static BlockPos findTree(ServerLevel level, SettlementData data, FrontierWorkerEntity worker,
@@ -932,8 +945,10 @@ public final class SettlementWorkerService {
                         Item item = state.getBlock().asItem();
                         if (item == Items.AIR || (expected != null && item != expected)) continue;
                         BlockPos base = descendToTrunkBase(level, data, probe, item);
-                        if (!seenBases.add(base) || isTargetBlocked(level, worker, base)
-                                || !isNaturalTreeBase(level, base) || !hasWalkableApproach(level, base)) continue;
+                        if (!seenBases.add(base)
+                                || isBlockedOutsideWorkReach(level, worker, base, LUMBER_REMOTE_WORK_REACH_SQR)
+                                || !isNaturalTreeBase(level, base)
+                                || !canWorkOrApproach(level, worker, base, LUMBER_REMOTE_WORK_REACH_SQR)) continue;
                         int availableLogs = countVerticalTrunk(level, data, base, item);
                         if (availableLogs <= 0) continue;
                         TreeCandidate candidate = new TreeCandidate(base, item, base.distSqr(center), availableLogs);
@@ -1017,6 +1032,21 @@ public final class SettlementWorkerService {
                 || below.is(Blocks.MYCELIUM) || below.is(Blocks.MUD);
     }
 
+    private static boolean withinResourceWorkReach(FrontierWorkerEntity worker, BlockPos target,
+                                                   double reachSqr) {
+        return worker.distanceToSqr(target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D) <= reachSqr;
+    }
+
+    private static boolean canWorkOrApproach(ServerLevel level, FrontierWorkerEntity worker, BlockPos target,
+                                             double reachSqr) {
+        return withinResourceWorkReach(worker, target, reachSqr) || hasWalkableApproach(level, target);
+    }
+
+    private static boolean isBlockedOutsideWorkReach(ServerLevel level, FrontierWorkerEntity worker,
+                                                     BlockPos target, double reachSqr) {
+        return isTargetBlocked(level, worker, target) && !withinResourceWorkReach(worker, target, reachSqr);
+    }
+
     private static boolean hasWalkableApproach(ServerLevel level, BlockPos target) {
         int[] dyOrder = {0, 1, -1, 2, -2, 3, -3};
         for (int radius = 1; radius <= 3; radius++) {
@@ -1072,11 +1102,13 @@ public final class SettlementWorkerService {
         long now = level.getGameTime();
         CachedTarget cached = RESOURCE_TARGETS.get(id);
         if (cached != null && cached.expiresAt() > now && level.hasChunkAt(cached.pos())
-                && !isTargetBlocked(level, worker, cached.pos()) && !isProtected(data, cached.pos())) {
+                && !isProtected(data, cached.pos())
+                && !isBlockedOutsideWorkReach(level, worker, cached.pos(), QUARRY_REMOTE_WORK_REACH_SQR)) {
             BlockState state = level.getBlockState(cached.pos());
             Item item = state.getBlock().asItem();
             if (isQuarryStone(state) && item != Items.AIR && (expected == null || item == expected)
-                    && level.getBlockState(cached.pos().above()).isAir() && hasWalkableApproach(level, cached.pos())) {
+                    && level.getBlockState(cached.pos().above()).isAir()
+                    && canWorkOrApproach(level, worker, cached.pos(), QUARRY_REMOTE_WORK_REACH_SQR)) {
                 return cached.pos();
             }
         }
@@ -1106,8 +1138,10 @@ public final class SettlementWorkerService {
                         BlockState state = level.getBlockState(pos);
                         Item item = state.getBlock().asItem();
                         if (!isQuarryStone(state) || item == Items.AIR || (expected != null && item != expected)
-                                || isProtected(data, pos) || isTargetBlocked(level, worker, pos)
-                                || !level.getBlockState(pos.above()).isAir() || !hasWalkableApproach(level, pos)) continue;
+                                || isProtected(data, pos)
+                                || isBlockedOutsideWorkReach(level, worker, pos, QUARRY_REMOTE_WORK_REACH_SQR)
+                                || !level.getBlockState(pos.above()).isAir()
+                                || !canWorkOrApproach(level, worker, pos, QUARRY_REMOTE_WORK_REACH_SQR)) continue;
                         double distance = pos.distSqr(center);
                         if (distance < bestDistance) { best = pos; bestDistance = distance; }
                     }
