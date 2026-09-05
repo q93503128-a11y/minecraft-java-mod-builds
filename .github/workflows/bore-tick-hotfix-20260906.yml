@@ -33,6 +33,19 @@ jobs:
           git config user.email "cyp1jhh2@gmail.com"
           git pull --rebase origin main
 
+      - name: Normalize continuation source anchor
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/continue_bore_tick_hotfix_tmp.py')
+          s = p.read_text(encoding='utf-8')
+          old = "insert_in_break_method(tier, '        if(level!=server.overworld())return;\\n',"
+          new = "insert_in_break_method(tier, 'if(level!=server.overworld())return;\\n',"
+          if old not in s:
+              raise SystemExit('tier-infrastructure continuation anchor declaration missing')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply adaptive bore and Frontier event patch
         run: python tools/continue_bore_tick_hotfix_tmp.py
 
