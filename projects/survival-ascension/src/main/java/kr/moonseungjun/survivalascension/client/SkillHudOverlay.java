@@ -77,7 +77,7 @@ public final class SkillHudOverlay {
         double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
         double relative = Mth.wrapDegrees(targetYaw - minecraft.player.getYRot());
         String arrow = relativeArrow(relative);
-        String label = "신화 III   " + arrow + "   " + distance + "m";
+        String label = "신화 III  " + arrow + "  약 " + distance + "m";
         int width = Math.max(118, minecraft.font.width(label) + 16);
         int left = (graphics.guiWidth() - width) / 2;
         int top = 28;

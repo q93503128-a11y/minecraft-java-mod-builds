@@ -14,7 +14,9 @@ import kr.moonseungjun.survivalascension.network.SkillNetwork;
 import kr.moonseungjun.survivalascension.progress.SkillProgressData;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import kr.moonseungjun.survivalascension.world.WorldAscensionData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -26,6 +28,8 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -41,6 +45,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -120,7 +125,6 @@ public final class EliteMobSystem {
     public static void onServerTick(ServerTickEvent.Pre event) {
         if (++mythicTicker < 10) return;
         mythicTicker = 0;
-        if (MYTHICS.isEmpty()) return;
         List<UUID> remove = new ArrayList<>();
         for (Map.Entry<UUID, MythicRuntime> entry : new ArrayList<>(MYTHICS.entrySet())) {
             MythicRuntime runtime = entry.getValue();
@@ -138,7 +142,6 @@ public final class EliteMobSystem {
             mob.setGlowingTag(true);
             mob.setPersistenceRequired();
             syncMythicBossBar(runtime, mob);
-            if (runtime.level.getGameTime() % 20L == 0L) syncMythicTracker(runtime, mob);
             int phase = mob.getPersistentData().getIntOr(MYTHIC_PHASE_KEY, 0);
             if (phase >= 1) mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 30, phase >= 2 ? 1 : 0, true, false));
             if (phase >= 2) {
@@ -152,6 +155,21 @@ public final class EliteMobSystem {
             }
         }
         for (UUID id : remove) MYTHICS.remove(id);
+        if (event.getServer().getTickCount() % 20 == 0) {
+            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) syncMythicTracker(player);
+        }
+    }
+
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncMythicTracker(player);
+    }
+
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncMythicTracker(player);
+    }
+
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncMythicTracker(player);
     }
 
     public static void onServerStopping(ServerStoppingEvent event) {
@@ -251,6 +269,23 @@ public final class EliteMobSystem {
 
     public static int rankId(net.minecraft.world.entity.LivingEntity entity) {
         return entity.getPersistentData().getIntOr(RANK_KEY, 0);
+    }
+
+    public static int spawnTestMythic(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return 0;
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse("minecraft:zombie"));
+        if (type == null) return 0;
+        BlockPos pos = player.blockPosition().relative(player.getDirection(), 10);
+        Entity entity = type.spawn(level, pos, EntitySpawnReason.COMMAND);
+        if (!(entity instanceof Mob mob)) {
+            if (entity != null) entity.discard();
+            player.sendSystemMessage(Component.literal("§c[신화 테스트] §f좀비 생성에 실패했습니다."));
+            return 0;
+        }
+        applyElite(mob, Rank.MYTHIC_III, Trait.SWIFT, 1);
+        syncMythicTracker(player);
+        player.sendSystemMessage(Component.literal("§6[신화 테스트] §f정면 약 10블록에 신화 III 좀비를 소환했습니다."));
+        return 1;
     }
 
     private static void reactToPlayerHit(Mob defender, ServerPlayer player) {
@@ -428,11 +463,30 @@ public final class EliteMobSystem {
         return players;
     }
 
-    private static void syncMythicTracker(MythicRuntime runtime, Mob mob) {
-        MythicTargetPayload payload = new MythicTargetPayload(mob.getX(), mob.getZ());
-        for (ServerPlayer player : playersNear(runtime.level, mob, MYTHIC_ALERT_RADIUS)) {
-            SkillNetwork.sendMythicTarget(player, payload);
+    private static void syncMythicTracker(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator() || !(player.level() instanceof ServerLevel level)) {
+            SkillNetwork.sendMythicTarget(player, MythicTargetPayload.clear());
+            return;
         }
+        double maxDistanceSqr = MYTHIC_ALERT_RADIUS * MYTHIC_ALERT_RADIUS;
+        Mob nearest = null;
+        double nearestDistanceSqr = Double.MAX_VALUE;
+        for (Map.Entry<UUID, MythicRuntime> entry : MYTHICS.entrySet()) {
+            MythicRuntime runtime = entry.getValue();
+            if (runtime.level != level) continue;
+            Entity entity = level.getEntity(entry.getKey());
+            if (!(entity instanceof Mob mob) || !mob.isAlive() || rank(mob) != Rank.MYTHIC_III) continue;
+            double distanceSqr = player.distanceToSqr(mob);
+            if (distanceSqr > maxDistanceSqr) continue;
+            if (nearest == null || distanceSqr < nearestDistanceSqr
+                    || (distanceSqr == nearestDistanceSqr && mob.getUUID().compareTo(nearest.getUUID()) < 0)) {
+                nearest = mob;
+                nearestDistanceSqr = distanceSqr;
+            }
+        }
+        SkillNetwork.sendMythicTarget(player, nearest == null
+                ? MythicTargetPayload.clear()
+                : MythicTargetPayload.target(nearest.getUUID(), nearest.getX(), nearest.getZ()));
     }
 
     private static String directionLabel(ServerPlayer player, Entity target) {

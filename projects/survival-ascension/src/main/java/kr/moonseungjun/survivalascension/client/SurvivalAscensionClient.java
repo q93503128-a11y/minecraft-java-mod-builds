@@ -102,6 +102,7 @@ public final class SurvivalAscensionClient {
 
     private static void onClientTick(ClientTickEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) ClientMythicState.clear();
         while (OPEN_MENU.consumeClick()) {
             if (minecraft.player == null || minecraft.level == null) continue;
             Screen current = minecraft.gui.screen();

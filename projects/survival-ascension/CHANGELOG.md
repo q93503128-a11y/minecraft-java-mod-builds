@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.61.8-alpha.1
+- Rebuilt the Mythic III tracker as a deterministic server-authoritative per-player target: nearest alive same-dimension Mythic within 192 blocks wins, and explicit clear packets remove dead/out-of-range/dimension-stale targets.
+- Mythic target sync now runs periodically and immediately on login, respawn and dimension change instead of depending on a 1.6-second client wall-clock timeout.
+- Mythic target packets now carry active state and target UUID in addition to coordinates; protocol bumped from 12 to 13.
+- The compact top HUD preserves the established eight-way yaw mapping and shows Mythic identity plus approximate distance without a large screen-covering panel.
+- Added operator test command `/ascension mythic spawn`, which creates a deterministic Mythic III zombie through the same rank/attribute/runtime path used by normal Mythics.
+- No Frontier Settlement construction or residential-integrity behavior changed.
+
 ## 0.60.0-alpha.1
 - Added `Final Ascension / 최후의 승천` acts 1-3 behind the existing canonical `FinalAscensionProgression.isReady()` gate; readiness still comes only from Ender Dragon stage2, Expedition 9/9, Apex first-clear 9/9 and the completed Ascension Nexus.
 - Act 1 `World Test / 세계의 시험` uses real world actions instead of menu counters: a bounded 3×2 mining wall, four real construction repair targets, three high-pressure combat guards and three physical movement checkpoints. Existing Mining/Construction/Combat/Mobility behavior therefore acts on the same blocks, mobs and movement, while Shift remains the precision/safe override.

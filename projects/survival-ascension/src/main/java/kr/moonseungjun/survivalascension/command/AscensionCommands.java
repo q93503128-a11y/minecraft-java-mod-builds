@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import kr.moonseungjun.survivalascension.apex.ApexHuntData;
 import kr.moonseungjun.survivalascension.compat.ContentPackCompatibility;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
+import kr.moonseungjun.survivalascension.elite.EliteMobSystem;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionOperationData;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import kr.moonseungjun.survivalascension.production.FieldDepotData;
@@ -31,6 +32,9 @@ public final class AscensionCommands {
         event.getDispatcher().register(Commands.literal("ascension")
                 .then(Commands.literal("stats").executes(context -> showStats(context.getSource().getPlayerOrException())))
                 .then(Commands.literal("content").executes(context -> showContent(context.getSource().getPlayerOrException())))
+                .then(Commands.literal("mythic")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.literal("spawn").executes(context -> EliteMobSystem.spawnTestMythic(context.getSource().getPlayerOrException()))))
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING))
