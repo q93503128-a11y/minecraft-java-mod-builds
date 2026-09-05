@@ -5,36 +5,50 @@ import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
+import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Shared field representation for authored campaign encounters outside Southgate.
  *
- * The battle catalog already defines the exact enemy composition. Field groups mirror that composition with real
- * actors, but also arrange it with a region-specific silhouette so every area does not look like the same five
- * mannequins in a generic row. This remains presentation only: BattleSession owns all actual combat truth.
+ * BattleSession owns combat truth and CampaignProgressStore owns player progression. This class owns only the
+ * physical enemy silhouettes in the shared world. Multiple player sessions requesting the same encounter therefore
+ * receive the same Group instead of spawning stacked copies. A group disappears only when no non-battling player in
+ * that chapter still needs that encounter, and is reconstructed after a loss or when another player still needs it.
  */
 public final class FieldEncounterPresentation {
     private static final Set<String> BACKLINE = Set.of("E002", "E005", "E007", "E010", "E011", "E013");
+    private static final String COMMON_TAG = "turnbound_shared_field_enemy";
+    private static final String ENCOUNTER_TAG_PREFIX = "turnbound_field_encounter:";
+    private static final String SLOT_TAG_PREFIX = "turnbound_field_slot:";
+    private static final Map<String, Group> SHARED = new LinkedHashMap<>();
+    private static ServerLevel boundLevel;
 
     private FieldEncounterPresentation() {}
 
     public static final class Group {
+        private final String encounterId;
         private final List<UUID> actorIds;
         private final Vec3 center;
 
-        private Group(List<UUID> actorIds, Vec3 center) {
+        private Group(String encounterId, List<UUID> actorIds, Vec3 center) {
+            this.encounterId = encounterId;
             this.actorIds = List.copyOf(actorIds);
             this.center = center;
         }
@@ -52,7 +66,18 @@ public final class FieldEncounterPresentation {
 
         public Vec3 center() { return center; }
 
+        /**
+         * Session-facing release. The shared actors remain when another active player still needs this encounter.
+         * This lets one player enter battle without erasing another player's field target.
+         */
         public void despawn(ServerLevel level) {
+            bind(level);
+            if (neededByAnyPlayer(level, encounterId)) return;
+            discardNow(level);
+            if (SHARED.get(encounterId) == this) SHARED.remove(encounterId);
+        }
+
+        private void discardNow(ServerLevel level) {
             for (UUID id : actorIds) {
                 Entity entity = level.getEntity(id);
                 if (entity != null) entity.discard();
@@ -61,7 +86,26 @@ public final class FieldEncounterPresentation {
     }
 
     public static Group spawn(ServerLevel level, String encounterId, Vec3 center, float battleYaw) {
+        bind(level);
         V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(encounterId);
+
+        Group existing = SHARED.get(encounterId);
+        if (existing != null && existing.alive(level)) return existing;
+        if (existing != null) SHARED.remove(encounterId);
+
+        Group adopted = adoptTaggedGroup(level, encounterId, spec, center);
+        if (adopted != null) {
+            SHARED.put(encounterId, adopted);
+            return adopted;
+        }
+
+        cleanupLegacyCopies(level, spec, center);
+        Group created = spawnFresh(level, encounterId, spec, center, battleYaw);
+        SHARED.put(encounterId, created);
+        return created;
+    }
+
+    private static Group spawnFresh(ServerLevel level, String encounterId, V04Catalogs.Encounter spec, Vec3 center, float battleYaw) {
         List<UUID> ids = new ArrayList<>();
         Vec3 forward = forward(battleYaw);
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
@@ -71,9 +115,114 @@ public final class FieldEncounterPresentation {
             Vec3 pos = center.add(offset(spec.region(), defId, i, spec.enemies().size(), forward, right));
             float yaw = facingYaw(battleYaw);
             Entity actor = spawnActor(level, defId, spec.level(), pos, yaw, spec.boss());
+            tag(actor, encounterId, i);
             ids.add(actor.getUUID());
         }
-        return new Group(ids, center);
+        return new Group(encounterId, ids, center);
+    }
+
+    private static Group adoptTaggedGroup(ServerLevel level, String encounterId, V04Catalogs.Encounter spec, Vec3 center) {
+        AABB area = around(center, 7.0, 5.0);
+        Map<Integer, Entity> bySlot = new HashMap<>();
+        List<Entity> tagged = new ArrayList<>();
+        collectTagged(level.getEntitiesOfClass(BattleActorEntity.class, area), encounterId, bySlot, tagged);
+        collectTagged(level.getEntitiesOfClass(ArmorStand.class, area), encounterId, bySlot, tagged);
+
+        if (tagged.isEmpty()) return null;
+        if (bySlot.size() != spec.enemies().size()) {
+            for (Entity entity : tagged) entity.discard();
+            return null;
+        }
+
+        List<UUID> ids = new ArrayList<>();
+        for (int i = 0; i < spec.enemies().size(); i++) {
+            Entity entity = bySlot.get(i);
+            if (entity == null) {
+                for (Entity taggedEntity : tagged) taggedEntity.discard();
+                return null;
+            }
+            ids.add(entity.getUUID());
+        }
+        return new Group(encounterId, ids, center);
+    }
+
+    private static <T extends Entity> void collectTagged(List<T> entities, String encounterId,
+                                                          Map<Integer, Entity> bySlot, List<Entity> tagged) {
+        String encounterTag = ENCOUNTER_TAG_PREFIX + encounterId;
+        for (Entity entity : entities) {
+            if (!entity.entityTags().contains(COMMON_TAG) || !entity.entityTags().contains(encounterTag)) continue;
+            tagged.add(entity);
+            int slot = slot(entity);
+            Entity previous = bySlot.putIfAbsent(slot, entity);
+            if (slot < 0 || previous != null) entity.discard();
+        }
+    }
+
+    private static int slot(Entity entity) {
+        for (String tag : entity.entityTags()) {
+            if (!tag.startsWith(SLOT_TAG_PREFIX)) continue;
+            try { return Integer.parseInt(tag.substring(SLOT_TAG_PREFIX.length())); }
+            catch (NumberFormatException ignored) { return -1; }
+        }
+        return -1;
+    }
+
+    private static void tag(Entity entity, String encounterId, int slot) {
+        entity.addTag(COMMON_TAG);
+        entity.addTag(ENCOUNTER_TAG_PREFIX + encounterId);
+        entity.addTag(SLOT_TAG_PREFIX + slot);
+    }
+
+    /**
+     * Migrates alpha.17 per-player copies left in an existing world. Cleanup only runs with no active battle and
+     * only near this encounter's authored position, with canonical enemy names as a second guard.
+     */
+    private static void cleanupLegacyCopies(ServerLevel level, V04Catalogs.Encounter spec, Vec3 center) {
+        for (ServerPlayer player : level.players()) if (BattleSessionManager.exists(player)) return;
+        Set<String> names = new java.util.HashSet<>();
+        for (String defId : spec.enemies()) names.add(CanonicalData.definition(defId, spec.level(), 0, false).name());
+        AABB area = around(center, 7.0, 5.0);
+        for (BattleActorEntity entity : level.getEntitiesOfClass(BattleActorEntity.class, area)) {
+            if (!entity.entityTags().contains(COMMON_TAG) && entity.getCustomName() != null
+                    && names.contains(entity.getCustomName().getString())) entity.discard();
+        }
+        for (ArmorStand entity : level.getEntitiesOfClass(ArmorStand.class, area)) {
+            if (!entity.entityTags().contains(COMMON_TAG) && entity.getCustomName() != null
+                    && names.contains(entity.getCustomName().getString())) entity.discard();
+        }
+    }
+
+    private static boolean neededByAnyPlayer(ServerLevel level, String encounterId) {
+        FieldSharedEncounterRules.Region region = FieldSharedEncounterRules.regionOf(encounterId);
+        for (ServerPlayer player : level.players()) {
+            if (BattleSessionManager.exists(player) || !activeInRegion(player, region)) continue;
+            var snapshot = CampaignProgressStore.snapshot(player.getUUID());
+            if (snapshot.clearedEncounters().contains(encounterId)) continue;
+            var quests = snapshot.quests();
+            if (FieldSharedEncounterRules.unlocked(encounterId, quests.completed(), quests.unlockFlags())) return true;
+        }
+        return false;
+    }
+
+    private static boolean activeInRegion(ServerPlayer player, FieldSharedEncounterRules.Region region) {
+        return switch (region) {
+            case GLOAMWOOD -> GloamwoodSessionManager.active(player);
+            case AQUEDUCT -> BrokenAqueductSessionManager.active(player);
+            case QUARRY -> EmberQuarrySessionManager.active(player);
+            case RELAY -> OldRelayStationSessionManager.active(player);
+            case OTHER -> false;
+        };
+    }
+
+    private static void bind(ServerLevel level) {
+        if (boundLevel == level) return;
+        SHARED.clear();
+        boundLevel = level;
+    }
+
+    private static AABB around(Vec3 center, double horizontal, double vertical) {
+        return new AABB(center.x - horizontal, center.y - vertical, center.z - horizontal,
+                center.x + horizontal, center.y + vertical, center.z + horizontal);
     }
 
     private static Entity spawnActor(ServerLevel level, String defId, int levelValue, Vec3 pos, float yaw, boolean boss) {
@@ -83,13 +232,10 @@ public final class FieldEncounterPresentation {
             animated.setCustomName(Component.literal(name));
             animated.setCustomNameVisible(false);
             animated.setFieldWalking(false);
-            // Solo elites should read as deliberate gatekeepers rather than ordinary idle mobs even before the
-            // proximity threat prelude takes over. Boss telegraphs are intentionally saved for player approach.
             if (defId.startsWith("EL")) animated.playReady();
             return animated;
         }
 
-        // Defensive fallback only. Authored campaign enemies should normally resolve to GeckoLib actors.
         ArmorStand stand = new ArmorStand(level, pos.x, pos.y, pos.z);
         stand.setInvulnerable(true);
         stand.setNoGravity(true);
@@ -104,13 +250,7 @@ public final class FieldEncounterPresentation {
         return stand;
     }
 
-    /**
-     * Region silhouettes:
-     * - Gloamwood spreads into a crescent/ambush shape.
-     * - Aqueduct guards hold disciplined lateral lines with support behind them.
-     * - Quarry packs form a forward wedge, making beasts/drillers feel like a push down the route.
-     * - Relay rooms use a staggered chamber formation to sell mixed recovered combat data.
-     */
+    /** Region-specific silhouettes keep each authored field visually distinct. */
     private static Vec3 offset(String region, String defId, int index, int count, Vec3 forward, Vec3 right) {
         if (count <= 1) return Vec3.ZERO;
         Vec3 base = switch (region) {
@@ -179,7 +319,6 @@ public final class FieldEncounterPresentation {
         return new Vec3(-Math.sin(rad), 0.0, Math.cos(rad));
     }
 
-    /** Encounter actors face toward the party approach side instead of sharing the battle camera yaw literally. */
     private static float facingYaw(float battleYaw) {
         float yaw = battleYaw + 180.0F;
         while (yaw >= 180.0F) yaw -= 360.0F;
