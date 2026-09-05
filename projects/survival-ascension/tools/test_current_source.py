@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.13-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.14-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.13-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.14-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -113,6 +113,15 @@ require("fishingBonusCatchChance" in tuning, "fishing bonus-yield progression mi
 fishing = text(JAVA / "fishing/FishingProgression.java")
 require("applyBonusCatch" in fishing and "stack.grow(1)" in fishing, "fishing bonus catch is not applied to real fish drops")
 
+network = text(JAVA / "network/SkillNetwork.java")
+require('PROTOCOL = "14"' in network, "expedition current-region packet protocol must be 14")
+expedition_payload = text(JAVA / "network/ExpeditionSnapshotPayload.java")
+require("String currentRegionId" in expedition_payload and "ExpeditionProgression.currentRegion(player)" in expedition_payload, "server-authoritative current expedition region missing from snapshot")
+expedition_state = text(JAVA / "client/ClientExpeditionState.java")
+require("currentRegionId()" in expedition_state, "client expedition state does not retain current region")
+expedition_screen = text(JAVA / "client/ExpeditionScreen.java")
+require("현재 원정권" in expedition_screen and "isCurrent" in expedition_screen and "requestSnapshot();" in expedition_screen, "expedition current-region visibility/highlight missing")
+
 hud = text(JAVA / "client/SkillHudOverlay.java")
 require("graphics.guiWidth() - width - rightMargin" in hud, "Mythic tracker is not right-edge anchored")
 require("graphics.guiWidth() >= 420" in hud, "Mythic tracker desktop boss-bar separation missing")
@@ -131,4 +140,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.13 mobility/fishing progression + Mythic HUD + runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.14 current expedition UI + mobility/fishing + Mythic HUD + runtime invariants")

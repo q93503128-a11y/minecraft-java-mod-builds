@@ -2,6 +2,7 @@ package kr.moonseungjun.survivalascension.network;
 
 import kr.moonseungjun.survivalascension.SurvivalAscension;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionData;
+import kr.moonseungjun.survivalascension.expedition.ExpeditionProgression;
 import kr.moonseungjun.survivalascension.expedition.ExpeditionRegion;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -12,9 +13,12 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.HashMap;
 import java.util.Map;
 
-public record ExpeditionSnapshotPayload(int discoveredMask, int completedMask, Map<String, String> directives)
+public record ExpeditionSnapshotPayload(int discoveredMask, int completedMask, String currentRegionId, Map<String, String> directives)
         implements CustomPacketPayload {
-    public ExpeditionSnapshotPayload { directives = Map.copyOf(directives); }
+    public ExpeditionSnapshotPayload {
+        currentRegionId = currentRegionId == null ? "" : currentRegionId;
+        directives = Map.copyOf(directives);
+    }
 
     public static final Type<ExpeditionSnapshotPayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "expedition_snapshot"));
@@ -23,6 +27,7 @@ public record ExpeditionSnapshotPayload(int discoveredMask, int completedMask, M
             (buf, payload) -> {
                 buf.writeVarInt(payload.discoveredMask());
                 buf.writeVarInt(payload.completedMask());
+                buf.writeUtf(payload.currentRegionId());
                 buf.writeVarInt(payload.directives().size());
                 payload.directives().forEach((region, summary) -> {
                     buf.writeUtf(region);
@@ -32,10 +37,11 @@ public record ExpeditionSnapshotPayload(int discoveredMask, int completedMask, M
             buf -> {
                 int discovered = buf.readVarInt();
                 int completed = buf.readVarInt();
+                String currentRegionId = buf.readUtf();
                 int size = buf.readVarInt();
                 Map<String, String> directives = new HashMap<>(size);
                 for (int i = 0; i < size; i++) directives.put(buf.readUtf(), buf.readUtf());
-                return new ExpeditionSnapshotPayload(discovered, completed, directives);
+                return new ExpeditionSnapshotPayload(discovered, completed, currentRegionId, directives);
             });
 
     public static ExpeditionSnapshotPayload from(ServerPlayer player) {
@@ -50,7 +56,9 @@ public record ExpeditionSnapshotPayload(int discoveredMask, int completedMask, M
             }
             if (data.isComplete(player, region)) completed |= region.bit();
         }
-        return new ExpeditionSnapshotPayload(discovered, completed, directives);
+        ExpeditionRegion current = ExpeditionProgression.currentRegion(player);
+        String currentRegionId = current == null ? "" : current.name();
+        return new ExpeditionSnapshotPayload(discovered, completed, currentRegionId, directives);
     }
 
     @Override

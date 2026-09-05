@@ -7,6 +7,7 @@ import java.util.Map;
 public final class ClientExpeditionState {
     private static int discoveredMask;
     private static int completedMask;
+    private static String currentRegionId = "";
     private static Map<String, String> directives = Map.of();
     private static boolean loaded;
 
@@ -15,6 +16,7 @@ public final class ClientExpeditionState {
     public static void onSnapshot(ExpeditionSnapshotPayload payload) {
         discoveredMask = payload.discoveredMask();
         completedMask = payload.completedMask();
+        currentRegionId = payload.currentRegionId();
         directives = Map.copyOf(payload.directives());
         loaded = true;
     }
@@ -22,6 +24,7 @@ public final class ClientExpeditionState {
     public static void reset() {
         discoveredMask = 0;
         completedMask = 0;
+        currentRegionId = "";
         directives = Map.of();
         loaded = false;
     }
@@ -29,5 +32,6 @@ public final class ClientExpeditionState {
     public static boolean loaded() { return loaded; }
     public static int discoveredMask() { return discoveredMask; }
     public static int completedMask() { return completedMask; }
+    public static String currentRegionId() { return currentRegionId; }
     public static String directive(String regionId) { return directives.getOrDefault(regionId, ""); }
 }

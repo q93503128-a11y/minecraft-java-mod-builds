@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.61.14-alpha.1
+- Added the server-authoritative current expedition region to the expedition snapshot and bumped the network protocol to 14. The client no longer has to infer its active regional objective from the visible list.
+- The expedition screen now requests a fresh snapshot immediately when opened, shows `현재 원정권 · <지역>` under the title, and highlights the matching row with a cyan accent plus `▶ 현재`.
+- When the player is outside all currently unlocked expedition biomes, the screen explicitly shows `현재 원정권 · 없음` instead of leaving the player to guess why progress is not moving.
+- No expedition objective counts, completion rewards, biome classification, world-stage gates, incidents or operation rules changed.
+
 ## 0.61.13-alpha.1
 - Restored Mobility transient movement attributes immediately after respawn and dimension changes, fixing the step-height/safe-fall/speed perks disappearing after transitions such as entering the Nether.
 - Rebalanced Mobility so ordinary levels matter: movement speed now reaches +30% at Lv100, safe-fall and dash power scale continuously between milestones, dash cooldown improves continuously from Lv30 onward, and step height now progresses 1.0/1.25/1.5/1.75/2.0 blocks at Lv10/30/60/90/100.

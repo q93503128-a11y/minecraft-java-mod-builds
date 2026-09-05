@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class SkillNetwork {
-    private static final String PROTOCOL = "13";
+    private static final String PROTOCOL = "14";
     private static volatile Consumer<SkillUpdatePayload> updateSink = payload -> {};
     private static volatile Consumer<SkillSnapshotPayload> snapshotSink = payload -> {};
     private static volatile Consumer<ExpeditionSnapshotPayload> expeditionSink = payload -> {};
