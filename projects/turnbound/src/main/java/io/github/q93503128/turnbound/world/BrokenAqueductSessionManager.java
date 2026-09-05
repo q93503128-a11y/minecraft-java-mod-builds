@@ -46,6 +46,7 @@ public final class BrokenAqueductSessionManager {
         SESSIONS.put(player.getUUID(), session);
         session.refresh(level, player);
         session.spawnAll(level, player);
+        FieldSharedInteractionActors.ensureAqueduct(level, chapter);
         Vec3 entry = chapter.entry();
         player.setPos(entry.x, entry.y, entry.z);
         player.setYRot(-90.0F);
@@ -71,13 +72,37 @@ public final class BrokenAqueductSessionManager {
             player.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (player.tickCount % 20 == 0) clearVanillaMobs(level);
+        if (player.tickCount % 20 == 0) {
+            clearVanillaMobs(level);
+            FieldSharedInteractionActors.ensureAqueduct(level, session.chapter);
+        }
         session.tickEncounters(level, player);
     }
 
     public static boolean interactEntity(ServerPlayer player, Entity target) {
         Session session = SESSIONS.get(player.getUUID());
         if (session == null || target == null) return false;
+        FieldSharedInteractionActors.Role sharedRole = FieldSharedInteractionActors.role(target);
+        if (sharedRole == FieldSharedInteractionActors.Role.AQUEDUCT_RELAY) {
+            FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
+            return true;
+        }
+        int sharedValve = FieldSharedInteractionActors.aqueductValveIndex(sharedRole);
+        if (sharedValve >= 0) {
+            if (!session.questComplete(player, "MQ_C03_01_dry_channel")) {
+                int progress = CampaignProgressStore.quests(player.getUUID()).counters().getOrDefault("MQ_C03_01_dry_channel", 0);
+                if (sharedValve == progress) {
+                    CampaignProgressStore.questInteract(player.getUUID(), "AQUEDUCT_VALVE");
+                    CampaignPersistence.saveIfDirty(player);
+                    session.refresh((ServerLevel) player.level(), player);
+                    session.spawnMissing((ServerLevel) player.level(), player);
+                    FieldSharedInteractionActors.ensureAqueduct((ServerLevel) player.level(), session.chapter);
+                    FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
+                }
+            }
+            return true;
+        }
+
         UUID id = target.getUUID();
         if (id.equals(session.relay)) {
             FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.TRAVEL, null));
@@ -92,6 +117,7 @@ public final class BrokenAqueductSessionManager {
                 CampaignPersistence.saveIfDirty(player);
                 session.refresh((ServerLevel) player.level(), player);
                 session.spawnMissing((ServerLevel) player.level(), player);
+                FieldSharedInteractionActors.ensureAqueduct((ServerLevel) player.level(), session.chapter);
                 FieldNetwork.sync(player, session.snapshot(player, FieldUiSnapshot.Mode.QUEST, null));
             }
             return true;
@@ -127,6 +153,7 @@ public final class BrokenAqueductSessionManager {
         ServerLevel level = (ServerLevel) player.level();
         session.refresh(level, player);
         session.spawnMissing(level, player);
+        FieldSharedInteractionActors.ensureAqueduct(level, session.chapter);
         V04Catalogs.Encounter spec = CampaignEncounterCatalog.spec(encounterId);
         boolean victory = outcome == BattleOutcome.ALLY_VICTORY;
         FieldUiSnapshot.Reward reward = new FieldUiSnapshot.Reward(
