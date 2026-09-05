@@ -10,12 +10,14 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -42,6 +44,9 @@ public final class SharedAuxiliaryActors {
     private static final String COMMON_TAG = SharedAuxiliaryActorCatalog.COMMON_TAG;
     private static final AABB WORLD_AREA = new AABB(-520, 40, -520, 520, 116, 520);
     private static final Map<Observer, Set<String>> OBSERVATIONS = new ConcurrentHashMap<>();
+    /** Weak level keys prevent a stopped integrated/dedicated server from being retained by the static mod class. */
+    private static final Map<ServerLevel, Map<String, UUID>> ACTORS = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Set<ServerLevel> INDEXED_LEVELS = Collections.newSetFromMap(new WeakHashMap<>());
 
     private SharedAuxiliaryActors() {}
 
@@ -56,6 +61,7 @@ public final class SharedAuxiliaryActors {
 
     public static void sync(ServerLevel level, UUID playerId, String scope, Collection<Spec> desired) {
         if (level == null || playerId == null || scope == null || scope.isBlank()) return;
+        indexOnce(level);
         Observer observer = new Observer(playerId, scope);
         Map<String, Spec> byKey = new HashMap<>();
         if (desired != null) {
@@ -83,12 +89,15 @@ public final class SharedAuxiliaryActors {
 
     public static void ensure(ServerLevel level, Spec spec) {
         if (level == null || spec == null) return;
+        indexOnce(level);
         removeLegacyNear(level, spec);
-        ArmorStand found = null;
-        for (ArmorStand stand : level.getEntitiesOfClass(ArmorStand.class, WORLD_AREA)) {
-            if (!spec.key().equals(key(stand))) continue;
-            if (found == null) found = stand;
-            else stand.discard();
+        Map<String, UUID> cache = cache(level);
+        UUID cachedId = cache.get(spec.key());
+        Entity cached = cachedId == null ? null : level.getEntity(cachedId);
+        ArmorStand found = cached instanceof ArmorStand stand && spec.key().equals(key(stand)) ? stand : null;
+        if (found == null) {
+            if (cachedId != null) cache.remove(spec.key(), cachedId);
+            found = recoverNear(level, spec);
         }
         if (found == null || found.isRemoved()) {
             found = new ArmorStand(level, spec.pos().x, spec.pos().y, spec.pos().z);
@@ -97,6 +106,7 @@ public final class SharedAuxiliaryActors {
         } else {
             configure(found, spec);
         }
+        cache.put(spec.key(), found.getUUID());
     }
 
     private static void configure(ArmorStand stand, Spec spec) {
@@ -113,6 +123,31 @@ public final class SharedAuxiliaryActors {
         stand.addTag(SharedAuxiliaryActorCatalog.roleTag(spec.key()));
     }
 
+    private static void indexOnce(ServerLevel level) {
+        synchronized (ACTORS) {
+            if (!INDEXED_LEVELS.add(level)) return;
+            Map<String, UUID> cache = ACTORS.computeIfAbsent(level, ignored -> new HashMap<>());
+            for (ArmorStand stand : level.getEntitiesOfClass(ArmorStand.class, WORLD_AREA)) {
+                String actorKey = key(stand);
+                if (actorKey == null) continue;
+                UUID previous = cache.putIfAbsent(actorKey, stand.getUUID());
+                if (previous != null && !previous.equals(stand.getUUID())) stand.discard();
+            }
+        }
+    }
+
+    private static ArmorStand recoverNear(ServerLevel level, Spec spec) {
+        Vec3 p = spec.pos();
+        AABB nearby = new AABB(p.x - 2.0, p.y - 1.5, p.z - 2.0, p.x + 2.0, p.y + 3.0, p.z + 2.0);
+        ArmorStand found = null;
+        for (ArmorStand stand : level.getEntitiesOfClass(ArmorStand.class, nearby)) {
+            if (!spec.key().equals(key(stand))) continue;
+            if (found == null) found = stand;
+            else stand.discard();
+        }
+        return found;
+    }
+
     private static void removeLegacyNear(ServerLevel level, Spec spec) {
         if (spec.legacyNames().isEmpty()) return;
         Set<String> aliases = new HashSet<>(spec.legacyNames());
@@ -127,8 +162,15 @@ public final class SharedAuxiliaryActors {
 
     private static void discardIfUnobserved(ServerLevel level, String actorKey) {
         if (actorKey == null || stillObserved(actorKey)) return;
-        for (ArmorStand stand : level.getEntitiesOfClass(ArmorStand.class, WORLD_AREA)) {
-            if (actorKey.equals(key(stand))) stand.discard();
+        Map<String, UUID> cache = cache(level);
+        UUID id = cache.remove(actorKey);
+        Entity entity = id == null ? null : level.getEntity(id);
+        if (entity instanceof ArmorStand && actorKey.equals(key(entity))) entity.discard();
+    }
+
+    private static Map<String, UUID> cache(ServerLevel level) {
+        synchronized (ACTORS) {
+            return ACTORS.computeIfAbsent(level, ignored -> new HashMap<>());
         }
     }
 
