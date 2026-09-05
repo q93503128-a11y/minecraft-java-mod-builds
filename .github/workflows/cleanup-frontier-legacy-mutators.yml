@@ -1,0 +1,128 @@
+name: Cleanup Frontier Legacy Mutators
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/cleanup-frontier-legacy-mutators.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup-build-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+          cache-dependency-path: projects/frontier-settlement/**/*.gradle*
+
+      - name: Remove obsolete Frontier mutators and guard current source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/workflows/apply-frontier-alpha89.yml \
+            .github/workflows/apply-frontier-alpha90.yml \
+            .github/workflows/apply-frontier-alpha90-retry.yml \
+            .github/workflows/apply-frontier-alpha91.yml \
+            .github/workflows/apply-starter-shared-supply-depot.yml \
+            projects/frontier-settlement/tools/apply_alpha89.py \
+            projects/frontier-settlement/tools/apply_alpha91_patch.py \
+            projects/frontier-settlement/tools/patch_production_shared_depot_routing.py \
+            projects/frontier-settlement/tools/patch_worksite_output_provenance.py \
+            tools/apply_starter_shared_supply_depot.py \
+            tools/fix_starter_depot_migration_gate.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/test_current_source.py')
+          s = p.read_text(encoding='utf-8')
+          anchor = 'ROOT = Path(__file__).resolve().parents[1]\nJAVA = ROOT / "src/main/java/kr/moonseungjun/frontiersettlement"\n'
+          replacement = 'ROOT = Path(__file__).resolve().parents[1]\nREPO = ROOT.parents[1]\nJAVA = ROOT / "src/main/java/kr/moonseungjun/frontiersettlement"\n'
+          if 'REPO = ROOT.parents[1]' not in s:
+              if s.count(anchor) != 1:
+                  raise SystemExit('current verifier repo-root anchor drift')
+              s = s.replace(anchor, replacement, 1)
+          block = '''\nretired_mutators = (\n    REPO / ".github/workflows/apply-frontier-alpha89.yml",\n    REPO / ".github/workflows/apply-frontier-alpha90.yml",\n    REPO / ".github/workflows/apply-frontier-alpha90-retry.yml",\n    REPO / ".github/workflows/apply-frontier-alpha91.yml",\n    REPO / ".github/workflows/apply-starter-shared-supply-depot.yml",\n    ROOT / "tools/apply_alpha89.py",\n    ROOT / "tools/apply_alpha91_patch.py",\n    ROOT / "tools/patch_production_shared_depot_routing.py",\n    ROOT / "tools/patch_worksite_output_provenance.py",\n    REPO / "tools/apply_starter_shared_supply_depot.py",\n    REPO / "tools/fix_starter_depot_migration_gate.py",\n)\nfor retired in retired_mutators:\n    require(not retired.exists(), f"obsolete Frontier mutator returned: {retired.relative_to(REPO)}")\n'''
+          marker = '\nintegrity = text(SETTLEMENT / "SettlementBuildingIntegrityService.java")\n'
+          if 'retired_mutators = (' not in s:
+              if s.count(marker) != 1:
+                  raise SystemExit('current verifier insertion marker drift')
+              s = s.replace(marker, block + marker, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Current source invariant check
+        run: python3 projects/frontier-settlement/tools/test_current_source.py
+
+      - name: Validate Frontier JSON
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          files=list(Path('projects/frontier-settlement/src/main/resources').rglob('*.json'))
+          for p in files:
+              json.loads(p.read_text(encoding='utf-8'))
+          print('JSON VALIDATION PASS', len(files))
+          PY
+
+      - name: Java 25 clean build
+        working-directory: projects/frontier-settlement
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build
+
+      - name: Verify Frontier JAR
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, zipfile
+          jars=[p for p in Path('projects/frontier-settlement/build/libs').glob('*.jar') if '-sources' not in p.name and '-javadoc' not in p.name]
+          if not jars: raise SystemExit('no Frontier jar')
+          jar=max(jars,key=lambda p:p.stat().st_size)
+          with zipfile.ZipFile(jar) as z:
+              names=z.namelist()
+              required=[
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementConstructionService.class',
+                  'kr/moonseungjun/frontiersettlement/settlement/SettlementBuildingIntegrityService.class',
+                  'META-INF/neoforge.mods.toml',
+              ]
+              missing=[x for x in required if x not in names]
+              if missing: raise SystemExit('missing jar entries: '+repr(missing))
+              if len(names) != len(set(names)): raise SystemExit('duplicate jar entries')
+          sha=hashlib.sha256(jar.read_bytes()).hexdigest()
+          print('JAR VERIFY PASS', jar, jar.stat().st_size, 'sha256='+sha)
+          PY
+
+      - name: Commit tested cleanup to main
+        run: |
+          set -euo pipefail
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git rm .github/workflows/cleanup-frontier-legacy-mutators.yml
+          git add -A .github/workflows projects/frontier-settlement tools
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'Remove obsolete Frontier patch mutators'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Upload tested Alpha99 JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontier-settlement-0.1.0-alpha.99-cleaned
+          path: projects/frontier-settlement/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 7
