@@ -62,6 +62,27 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
+// GitHub's text-only connector cannot reliably preserve arbitrary PNG bytes. Keep the repaired
+// Elysia texture as canonical Base64 text and deterministically restore the exact PNG for every
+// build/run. This also prevents malformed ancillary/trailing chunks from reappearing.
+var generateElysiaTexture = tasks.register('generateElysiaTexture') {
+    def inputFile = file('src/main/resources/assets/turnbound/textures/entity/hero/elysia.png.b64')
+    def outputDir = layout.buildDirectory.dir('generated/resources/elysia')
+    inputs.file inputFile
+    outputs.dir outputDir
+    doLast {
+        def outputFile = outputDir.get().file('assets/turnbound/textures/entity/hero/elysia.png').asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.bytes = java.util.Base64.getDecoder().decode(inputFile.getText('UTF-8').trim())
+    }
+}
+sourceSets.main.resources.srcDir generateElysiaTexture
+neoForge.ideSyncTask generateElysiaTexture
+
+tasks.withType(ProcessResources).configureEach {
+    exclude 'assets/turnbound/textures/entity/hero/elysia.png.b64'
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 25
