@@ -376,6 +376,19 @@ public final class SettlementConstructionService {
         return false;
     }
 
+    private static boolean hasReachableGradeWorkPosition(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        if (createReachablePath(builder, target) != null) return true;
+        int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
+        for (int[] offset : offsets) {
+            int x = target.getX() + offset[0];
+            int z = target.getZ() + offset[1];
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (isWalkableApproachCell(level, candidate) && createReachablePath(builder, candidate) != null) return true;
+        }
+        return false;
+    }
+
     private static List<GradeCell> createGradePlan(ServerLevel level, ConstructionState construction, BuildingType type) {
         BuildingRotation rotation = construction.buildingRotation();
         int width = rotation.rotatedWidth(type);
@@ -670,10 +683,31 @@ public final class SettlementConstructionService {
         if (construction.grading()) {
             List<GradeCell> gradePlan = createGradePlan(level, construction, type);
             int gradeStep = construction.gradeStep();
-            if (gradeStep < gradePlan.size() && !canGradeCell(level, construction, type, gradePlan.get(gradeStep))) {
-                BlockPos pos = gradePlan.get(gradeStep).floor();
+            if (gradeStep >= gradePlan.size()) return "";
+            GradeCell cell = gradePlan.get(gradeStep);
+            if (!canGradeCell(level, construction, type, cell)) {
+                BlockPos pos = cell.floor();
                 return "부지 정리 막힘 · " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
                         + " 주변의 물·보호 블록·깊은 지형을 확인하세요";
+            }
+            if (cell.retainingStone() > 0) {
+                BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
+                if (!level.hasChunkAt(supply)) return "부지 정리 자재통 청크 미로드";
+                Container crate = level.getBlockState(supply).is(Blocks.BARREL)
+                        && level.getBlockEntity(supply) instanceof Container existing ? existing : null;
+                long staged = crate == null ? 0L : SettlementInventory.countStone(crate);
+                if (staged < cell.retainingStone()) {
+                    BlockPos stoneSource = SettlementStorageService.findExtractionTarget(level, data, SettlementInventory::isStone);
+                    if (stoneSource == null) return "부지 정리 석재 대기 · 공동 저장소에 석재를 보충하세요";
+                    if (findReachableExtractionTarget(level, data, builder, SettlementInventory::isStone) == null) {
+                        return "부지 정리 석재 접근 불가 · 저장소까지 실제 통로를 확인하세요";
+                    }
+                }
+            }
+            BlockPos work = gradeWorkPosition(level, cell.floor());
+            if (builder.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > GRADE_WORK_RANGE_SQR
+                    && !hasReachableGradeWorkPosition(level, builder, work)) {
+                return "부지 정리 현장 접근 불가 · 현재 정리 칸까지 실제 통로를 확인하세요";
             }
             return "";
         }
@@ -928,7 +962,7 @@ public final class SettlementConstructionService {
         // requires a fragile exact perimeter cell or vertical scaffold. Once the worker is locally on site,
         // every height is authoritative from ground level. This keeps construction visible without letting
         // hedges, doorways or already-built walls turn one later blueprint step into a permanent stall.
-        if (builderWithinSiteWorkEnvelope(construction, type, builder)) {
+        if (builderWithinSiteWorkEnvelope(level, construction, type, builder)) {
             builder.getNavigation().stop();
             return true;
         }
@@ -944,7 +978,7 @@ public final class SettlementConstructionService {
         return false;
     }
 
-    private static boolean builderWithinSiteWorkEnvelope(ConstructionState construction, BuildingType type,
+    private static boolean builderWithinSiteWorkEnvelope(ServerLevel level, ConstructionState construction, BuildingType type,
                                                           FrontierWorkerEntity builder) {
         BuildingRotation rotation = construction.buildingRotation();
         int width = rotation.rotatedWidth(type);
@@ -953,14 +987,17 @@ public final class SettlementConstructionService {
         double maxX = construction.originX() + width - 1 + SITE_WORK_MARGIN + 1.0D;
         double minZ = construction.originZ() - SITE_WORK_MARGIN;
         double maxZ = construction.originZ() + depth - 1 + SITE_WORK_MARGIN + 1.0D;
-        return builder.getX() >= minX && builder.getX() <= maxX
-                && builder.getZ() >= minZ && builder.getZ() <= maxZ;
+        if (builder.getX() < minX || builder.getX() > maxX || builder.getZ() < minZ || builder.getZ() > maxZ) return false;
+        int x = (int) Math.floor(builder.getX());
+        int z = (int) Math.floor(builder.getZ());
+        BlockPos surface = safeSurfaceCell(level, x, z);
+        return surface != null && Math.abs(builder.getY() - surface.getY()) <= 2.25D;
     }
 
     private static boolean hasReachableGroundWorkPosition(ServerLevel level, ConstructionState construction,
                                                           BuildingType type, BuildingBlueprints.Placement placement,
                                                           FrontierWorkerEntity builder, BlockPos supply) {
-        if (builderWithinSiteWorkEnvelope(construction, type, builder)) return true;
+        if (builderWithinSiteWorkEnvelope(level, construction, type, builder)) return true;
         for (BlockPos work : workPositionsFor(level, construction, type, placement, builder, supply)) {
             if (createReachablePath(builder, work) != null) return true;
         }
@@ -1027,9 +1064,13 @@ public final class SettlementConstructionService {
 
     private static Path createReachablePath(FrontierWorkerEntity builder, BlockPos target) {
         Path path = builder.getNavigation().createPath(target, 0);
-        if (path == null || !path.canReach() || path.getEndNode() == null
-                || !path.getEndNode().asBlockPos().equals(target)) return null;
-        if (!(builder.level() instanceof ServerLevel level) || !pathNodesCurrentlyClear(level, path)) return null;
+        if (path == null || !path.canReach() || path.getEndNode() == null) return null;
+        BlockPos end = path.getEndNode().asBlockPos();
+        if (Math.abs(end.getX() - target.getX()) > 1
+                || Math.abs(end.getY() - target.getY()) > 1
+                || Math.abs(end.getZ() - target.getZ()) > 1) return null;
+        if (!(builder.level() instanceof ServerLevel level) || !level.hasChunkAt(end)) return null;
+        // Fresh vanilla navigation already accounts for legal stairs, slabs and other partial blocks.
         return path;
     }
 
@@ -1068,21 +1109,7 @@ public final class SettlementConstructionService {
         return List.copyOf(candidates);
     }
 
-    private static boolean pathNodesCurrentlyClear(ServerLevel level, Path path) {
-    for (int i = 0; i < path.getNodeCount(); i++) {
-        BlockPos feet = path.getNode(i).asBlockPos();
-        BlockPos head = feet.above();
-        if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return false;
-        if (level.getBlockEntity(feet) != null || level.getBlockEntity(head) != null) return false;
-        BlockState feetState = level.getBlockState(feet);
-        BlockState headState = level.getBlockState(head);
-        if (!feetState.getFluidState().isEmpty() || !headState.getFluidState().isEmpty()) return false;
-        if (blocksCurrentPathCell(level, feet, feetState) || blocksCurrentPathCell(level, head, headState)) return false;
-    }
-    return true;
-}
-
-private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, BlockState state) {
+    private static boolean blocksCurrentPathCell(ServerLevel level, BlockPos pos, BlockState state) {
     if (state.isAir() || state.canBeReplaced()) return false;
     return !state.getCollisionShape(level, pos).isEmpty();
 }

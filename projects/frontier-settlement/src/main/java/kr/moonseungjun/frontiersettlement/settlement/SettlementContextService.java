@@ -32,11 +32,11 @@ public final class SettlementContextService {
                         ? Math.min(gradeTotal, Math.max(0, construction.gradeStep()))
                         : gradeTotal + Math.max(0, construction.buildStep());
                 projectProgress = percent(worked, gradeTotal + buildTotal);
-                projectLabel = type.displayName() + " 공사";
+                String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
+                projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · 막힘");
                 String constructionDetail = construction.grading()
                         ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반"
                         : "자재 운반·시공 중";
-                String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
                 if (!constructionIssue.isBlank()) constructionDetail += " · " + constructionIssue;
                 targets.add(new SettlementContextTarget(
                         "construction", "construction",
