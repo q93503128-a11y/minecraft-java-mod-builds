@@ -16,6 +16,9 @@ final class TurnboundUiSkin {
     private static final Identifier BUTTON_GREY = id("button_long_grey.png");
     private static final Identifier CHECK_BLUE = id("icon_check_blue.png");
 
+    private static final int BATTLE_ACTION_GREEN = 0xFF39D353;
+    private static final int BATTLE_ACTION_GREEN_SOFT = 0xFF76E58A;
+
     private TurnboundUiSkin() {}
 
     static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
@@ -41,6 +44,30 @@ final class TurnboundUiSkin {
                 int mark = Math.min(8, height - 8);
                 check(graphics, x + width - mark - 4, y + 4, mark);
             }
+        }
+    }
+
+    /**
+     * Battle-only action row. The Kenney grey frame supplies a consistent authored edge, while the interior follows
+     * the supplied reference's dark-neutral list + one strong green selected state. This is intentionally separate
+     * from generic menu buttons so the rest of TURNBOUND's UI does not inherit combat-specific styling.
+     */
+    static void battleSkillButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                                  boolean active, boolean hovered, boolean selected) {
+        stretch(graphics, BUTTON_GREY, x, y, width, height);
+        int inner = !active ? 0xE0282B31 : selected ? 0xE01D9C3B : 0xE014181D;
+        graphics.fill(x + 4, y + 4, x + width - 4, y + height - 4, inner);
+
+        int edge = !active ? 0xFF5C6168 : selected ? BATTLE_ACTION_GREEN_SOFT : 0xFF5B6570;
+        graphics.fill(x + 4, y + 3, x + 6, y + height - 3, edge);
+
+        if (selected && active) {
+            graphics.fill(x + 6, y + 3, x + width - 4, y + 5, BATTLE_ACTION_GREEN);
+            graphics.fill(x + 6, y + height - 5, x + width - 4, y + height - 3, 0xFF2EBA49);
+        }
+        if (active && hovered) {
+            graphics.fill(x + 6, y + 5, x + width - 4, y + height - 5,
+                    selected ? 0x18FFFFFF : 0x1639D353);
         }
     }
 
