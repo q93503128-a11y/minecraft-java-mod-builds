@@ -27,6 +27,18 @@ public final class TurnboundWorldSavedData extends SavedData {
     public static final String REGION_OLD_RELAY_APPROACH = "OLD_RELAY_APPROACH";
     public static final String REGION_ENDGAME = "ENDGAME";
 
+    // Monotonic authored-world gates. These deliberately share the persisted unlock set with regions so old saves
+    // remain codec-compatible; once any player earns one of these, another player can never physically re-close it.
+    public static final String GATE_SOUTHGATE_DEEP = "GATE_SOUTHGATE_DEEP";
+    public static final String GATE_SOUTHGATE_BOSS = "GATE_SOUTHGATE_BOSS";
+    public static final String GATE_GLOAM_DEEP = "GATE_GLOAM_DEEP";
+    public static final String GATE_GLOAM_BOSS = "GATE_GLOAM_BOSS";
+    public static final String GATE_AQUEDUCT_LOWER = "GATE_AQUEDUCT_LOWER";
+    public static final String GATE_AQUEDUCT_ORO = "GATE_AQUEDUCT_ORO";
+    public static final String GATE_QUARRY_ASH = "GATE_QUARRY_ASH";
+    public static final String GATE_QUARRY_BOSS = "GATE_QUARRY_BOSS";
+    public static final String GATE_OLD_RELAY_BOSS = "GATE_OLD_RELAY_BOSS";
+
     private static final Codec<TurnboundWorldSavedData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.listOf().optionalFieldOf("clearedBosses", List.of())
                     .forGetter(data -> List.copyOf(data.clearedBosses)),
@@ -92,19 +104,44 @@ public final class TurnboundWorldSavedData extends SavedData {
     public void reconcilePlayerProgress(UUID playerId) {
         if (playerId == null || !CampaignProgressStore.hasRuntime(playerId)) return;
         var snapshot = CampaignProgressStore.snapshot(playerId);
-        if (snapshot.quests().completed().contains("MQ_P00_03_south_gate")
-                || snapshot.quests().unlockFlags().contains("REGION_MEADOW")) {
+        var quests = snapshot.quests();
+        Set<String> clears = snapshot.clearedEncounters();
+
+        if (quests.completed().contains("MQ_P00_03_south_gate")
+                || quests.unlockFlags().contains("REGION_MEADOW")) {
             unlockRegion(REGION_MEADOW);
         }
+
+        if (clears.contains("ENC_M01") && clears.contains("ENC_M02")) unlockRegion(GATE_SOUTHGATE_DEEP);
+        if (clears.contains("ENC_M04") || clears.contains("BATTLE_B01")) unlockRegion(GATE_SOUTHGATE_BOSS);
+
+        if (quests.completed().contains("MQ_C02_01_spores") || quests.unlockFlags().contains("GLOAM_DEEP_PATH")
+                || clears.contains("BATTLE_B02")) unlockRegion(GATE_GLOAM_DEEP);
+        if (quests.completed().contains("MQ_C02_02_root_wall") || quests.unlockFlags().contains("B02_GATE")
+                || clears.contains("BATTLE_B02")) unlockRegion(GATE_GLOAM_BOSS);
+
+        if (quests.completed().contains("MQ_C03_01_dry_channel") || quests.unlockFlags().contains("AQUEDUCT_LOWER")
+                || clears.contains("BATTLE_B03")) unlockRegion(GATE_AQUEDUCT_LOWER);
+        if (quests.completed().contains("MQ_C03_02_old_orders") || quests.unlockFlags().contains("ORO_ROOM")
+                || clears.contains("BATTLE_B03")) unlockRegion(GATE_AQUEDUCT_ORO);
+
+        if (quests.completed().contains("MQ_C04_01_ash_route") || quests.unlockFlags().contains("FT_QUARRY")
+                || clears.contains("BATTLE_B04")) unlockRegion(GATE_QUARRY_ASH);
+        if (quests.completed().contains("MQ_C04_02_core_fragment") || quests.unlockFlags().contains("B04_GATE")
+                || clears.contains("BATTLE_B04")) unlockRegion(GATE_QUARRY_BOSS);
+
+        if (quests.completed().contains("MQ_C05_02_serak_record") || quests.unlockFlags().contains("B05_GATE")
+                || clears.contains("BATTLE_B05")) unlockRegion(GATE_OLD_RELAY_BOSS);
+
         for (String encounterId : List.of("BATTLE_B01", "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05")) {
-            if (snapshot.clearedEncounters().contains(encounterId)) recordEncounterClear(encounterId);
+            if (clears.contains(encounterId)) recordEncounterClear(encounterId);
         }
-        if (snapshot.quests().completed().contains("MQ_C05_01_relay_key")
-                || snapshot.quests().unlockFlags().contains("OLD_RELAY_ENTRANCE")) {
+        if (quests.completed().contains("MQ_C05_01_relay_key")
+                || quests.unlockFlags().contains("OLD_RELAY_ENTRANCE")) {
             unlockRegion(REGION_OLD_RELAY_APPROACH);
         }
-        if (snapshot.quests().completed().contains("MQ_C05_03_reconnect")
-                || snapshot.quests().unlockFlags().contains("ENDGAME")) {
+        if (quests.completed().contains("MQ_C05_03_reconnect")
+                || quests.unlockFlags().contains("ENDGAME")) {
             unlockRegion(REGION_ENDGAME);
         }
     }
