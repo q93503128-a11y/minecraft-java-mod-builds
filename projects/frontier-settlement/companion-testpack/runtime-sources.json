@@ -2,12 +2,18 @@
   "schema": 1,
   "sources": {
     "dungeons_and_taverns": {
-      "file_id": 8262693,
-      "file_name": "dungeons-and-taverns-5.3.0 [NeoForge].jar",
-      "download_url": "https://edge.forgecdn.net/files/8262/693/dungeons-and-taverns-5.3.0%20%5BNeoForge%5D.jar",
-      "source_page": "https://www.curseforge.com/minecraft/mc-mods/dungeon-and-taverns/files/8262693",
+      "source": "modrinth",
+      "project_id": "tpehi7ww",
+      "version_id": "UP9sRfQF",
+      "version": "5.3.0",
+      "loader": "neoforge",
+      "minecraft": "26.2",
+      "file_name": "dungeons-and-taverns-5.3.0.jar",
+      "download_url": "https://cdn.modrinth.com/data/tpehi7ww/versions/UP9sRfQF/dungeons-and-taverns-5.3.0.jar",
+      "sha1": "64e6b6e2b3fdb948d49cdc7aea23c1b693fd5156",
+      "sha512": "c4b6e6e5be6fa77f9d12d584a10fd541377a75ec926aba12e55d360518425aadf8832e1e9eb5a774a7388bd340879ab79ddd115b9e5263e6f44d23c021f9a111",
       "sha256": "2ca47414352ef2fbbbdb61af678e2a0bc3facb6093262f4caac43e35e8022d9b",
-      "note": "Official CurseForge 26.2 NeoForge file. Direct ForgeCDN URL is derived from CurseForge file id 8262693; SHA-256 was fixed after canonical resolver run 32820635301 downloaded and verified the binary. Expanded 16-client/15-server resolver run 32843469320 revalidated this same pinned binary while verifying the Variants & Ventures candidate stack."
+      "note": "Official Modrinth-hosted 26.2 NeoForge 5.3.0 file. SHA-256 is byte-identical to the previously pinned CurseForge binary, so MRPACK can install it automatically from the Modrinth CDN."
     }
   }
 }
