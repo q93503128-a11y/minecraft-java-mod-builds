@@ -10,14 +10,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MetaPresentationBoundaryTest {
     @Test
-    void translatesRegionCodesWithoutInventingQuestObjectives() {
+    void translatesRegionCodesAndHidesRegionQuestIdentifiers() {
         var region = new MetaUiSnapshot.RegionQuestRow("RQ_M01", "MEADOW", false, false, "UNRESOLVED");
         ClientMetaState.update(snapshot(List.of(), List.of(), List.of(region)));
 
         var row = ClientMetaState.snapshot().regionQuests().getFirst();
         assertEquals("남문 초원", row.region());
         assertFalse(row.objectiveSpecified());
-        assertEquals("RQ_M01", row.id());
+        assertEquals("남문 초원 지역 임무", row.id());
+        assertFalse(row.id().contains("RQ_"));
     }
 
     @Test
@@ -27,6 +28,7 @@ class MetaPresentationBoundaryTest {
 
         var row = ClientMetaState.snapshot().challenges().getFirst();
         assertEquals("행동 게이지 지연 합계 800", row.label());
+        // The unresolved marker remains internal client state and is not rendered by the challenge list.
         assertEquals("CANON_GAP", row.unresolvedReason());
     }
 
