@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.progression.CharacterGrowthRules;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleOptions;
@@ -89,9 +90,11 @@ public final class AsterMarchCharacterMilestones {
         player.sendSystemMessage(Component.literal(name + " · " + text).withStyle(color(id), ChatFormatting.BOLD));
         Vec3 p = player.position().add(0, 1.05, 0);
         ParticleOptions particle = particle(id);
-        level.sendParticles(particle, p.x, p.y, p.z, count, 1.2, 1.0, 1.2, 0.025);
+        PersonalPresentationIsolation.particles(level, player, particle,
+                p.x, p.y, p.z, count, 1.2, 1.0, 1.2, 0.025);
         if (text.startsWith("각성")) {
-            level.sendParticles(ParticleTypes.END_ROD, p.x, p.y + 0.25, p.z, 20, 0.8, 1.15, 0.8, 0.02);
+            PersonalPresentationIsolation.particles(level, player, ParticleTypes.END_ROD,
+                    p.x, p.y + 0.25, p.z, 20, 0.8, 1.15, 0.8, 0.02);
         }
     }
 
