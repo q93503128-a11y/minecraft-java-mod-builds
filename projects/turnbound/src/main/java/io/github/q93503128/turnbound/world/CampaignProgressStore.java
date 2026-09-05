@@ -25,7 +25,7 @@ import java.util.random.RandomGenerator;
 
 /** Server-side campaign progression authority shared by combat, growth, equipment, quests, gacha and persistence. */
 public final class CampaignProgressStore {
-    private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "F03");
+    private static final List<String> DEFAULT_PARTY = List.of("P01", "F03");
 
     public record Snapshot(
             PlayerProfile.Snapshot profile,
@@ -66,10 +66,8 @@ public final class CampaignProgressStore {
 
     private static final Map<UUID, PlayerProgress> PLAYERS = new LinkedHashMap<>();
     private static final GachaService GACHA = new GachaService(RandomGenerator.getDefault());
-    private static final List<CharacterSpec> STORY_PARTY = List.of(
+    private static final List<CharacterSpec> STARTER_PARTY = List.of(
             new CharacterSpec("P01", "카이렌"),
-            new CharacterSpec("P03", "브람"),
-            new CharacterSpec("P04", "엘리시아"),
             new CharacterSpec("F03", "변경 사냥꾼"));
 
     private CampaignProgressStore() {}
@@ -111,6 +109,8 @@ public final class CampaignProgressStore {
             progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, V04Catalogs.bossFirstClearEssence(bossId));
             if ("B01".equals(bossId)) applyB01FirstClear(progress);
         }
+        if (firstClear && "TUTORIAL_1".equals(canonicalId)) grantStoryRecruit(progress, "P03");
+        if (firstClear && "TUTORIAL_2".equals(canonicalId)) grantStoryRecruit(progress, "P04");
 
         recordQuestEvent(progress, QuestProgress.Event.battleWin(canonicalId, Set.copyOf(encounter.enemies())));
         if (encounter.boss()) recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
@@ -202,25 +202,11 @@ public final class CampaignProgressStore {
         return quest;
     }
 
-    public static void questInteract(UUID playerId, String targetId) {
-        recordQuestEvent(player(playerId), QuestProgress.Event.interact(targetId));
-    }
-
-    public static void confirmParty(UUID playerId, Set<String> characterIds) {
-        recordQuestEvent(player(playerId), QuestProgress.Event.partyConfirm(characterIds));
-    }
-
-    public static void inventoryFlag(UUID playerId, String flagId) {
-        recordQuestEvent(player(playerId), QuestProgress.Event.inventoryFlag(flagId));
-    }
-
-    public static void recordKill(UUID playerId, String enemyId, int amount) {
-        recordQuestEvent(player(playerId), QuestProgress.Event.kill(enemyId, amount));
-    }
-
-    public static void recordLoot(UUID playerId, String lootId, int amount) {
-        recordQuestEvent(player(playerId), QuestProgress.Event.loot(lootId, amount));
-    }
+    public static void questInteract(UUID playerId, String targetId) { recordQuestEvent(player(playerId), QuestProgress.Event.interact(targetId)); }
+    public static void confirmParty(UUID playerId, Set<String> characterIds) { recordQuestEvent(player(playerId), QuestProgress.Event.partyConfirm(characterIds)); }
+    public static void inventoryFlag(UUID playerId, String flagId) { recordQuestEvent(player(playerId), QuestProgress.Event.inventoryFlag(flagId)); }
+    public static void recordKill(UUID playerId, String enemyId, int amount) { recordQuestEvent(player(playerId), QuestProgress.Event.kill(enemyId, amount)); }
+    public static void recordLoot(UUID playerId, String lootId, int amount) { recordQuestEvent(player(playerId), QuestProgress.Event.loot(lootId, amount)); }
 
     public static CharacterGrowthRules.State promote(UUID playerId, String characterId) {
         PlayerProgress progress = player(playerId);
@@ -259,9 +245,7 @@ public final class CampaignProgressStore {
     }
 
     public static CharacterGrowthRules.State awaken(UUID playerId, String characterId) {
-        if (AwakeningRouteRules.canonGap(characterId)) {
-            throw new IllegalStateException(AwakeningRouteRules.blockReason(characterId));
-        }
+        if (AwakeningRouteRules.canonGap(characterId)) throw new IllegalStateException(AwakeningRouteRules.blockReason(characterId));
         PlayerProgress progress = player(playerId);
         CharacterGrowthRules.State state = requireGrowth(progress, characterId);
         CharacterProgression.State level = requireCharacter(progress, characterId);
@@ -376,6 +360,14 @@ public final class CampaignProgressStore {
         progress.profile.unlockStarterArchive();
     }
 
+    private static void grantStoryRecruit(PlayerProgress progress, String characterId) {
+        PlayerProfile.Acquisition acquisition = progress.profile.acquireCharacter(characterId);
+        if (!acquisition.newlyOwned()) return;
+        initializeCharacter(progress, characterId);
+        if (progress.activeParty.size() < 4) progress.activeParty.add(characterId);
+        progress.dirty = true;
+    }
+
     private static void recordQuestEvent(PlayerProgress progress, QuestProgress.Event event) {
         boolean changed = false;
         for (QuestCatalog.Quest quest : QuestCatalog.kind(QuestCatalog.Kind.MAIN)) {
@@ -436,9 +428,7 @@ public final class CampaignProgressStore {
     }
 
     private static void grantPartyAndReserveXp(PlayerProgress progress, int fullXp) {
-        for (String characterId : progress.activeParty) {
-            progress.characters.put(characterId, gain(progress, characterId, fullXp).after());
-        }
+        for (String characterId : progress.activeParty) progress.characters.put(characterId, gain(progress, characterId, fullXp).after());
         grantReserveXp(progress, fullXp);
     }
 
@@ -468,7 +458,6 @@ public final class CampaignProgressStore {
 
     private static void ensureStateForOwned(PlayerProgress progress) {
         for (String characterId : progress.profile.ownedCharacters()) initializeCharacter(progress, characterId);
-        for (CharacterSpec spec : STORY_PARTY) initializeCharacter(progress, spec.id());
     }
 
     private static CharacterProgression.State requireCharacter(PlayerProgress progress, String characterId) {
@@ -491,9 +480,7 @@ public final class CampaignProgressStore {
 
     private static int shopChapter(PlayerProgress progress) {
         int completedChapter = 0;
-        for (int chapter = 1; chapter <= 5; chapter++) {
-            if (QuestCatalog.chapterComplete(chapter, progress.quests.completed())) completedChapter = chapter;
-        }
+        for (int chapter = 1; chapter <= 5; chapter++) if (QuestCatalog.chapterComplete(chapter, progress.quests.completed())) completedChapter = chapter;
         return Math.max(1, completedChapter + 1);
     }
 
@@ -537,7 +524,7 @@ public final class CampaignProgressStore {
 
         private PlayerProgress(boolean seedStoryParty) {
             if (seedStoryParty) {
-                for (CharacterSpec spec : STORY_PARTY) {
+                for (CharacterSpec spec : STARTER_PARTY) {
                     profile.acquireCharacter(spec.id());
                     initializeCharacter(this, spec.id());
                     activeParty.add(spec.id());

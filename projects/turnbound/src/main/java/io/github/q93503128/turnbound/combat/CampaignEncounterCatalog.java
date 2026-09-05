@@ -34,13 +34,31 @@ public final class CampaignEncounterCatalog {
 
         for (int index = 0; index < encounter.enemies().size(); index++) {
             String enemyId = encounter.enemies().get(index);
-            CombatantDefinition definition = CanonicalData.definition(enemyId, encounter.level(), 0, false);
+            CombatantDefinition canonical = CanonicalData.definition(enemyId, encounter.level(), 0, false);
+            CombatantDefinition definition = tempoAdjustedEnemy(canonical, encounter);
             String instanceId = encounter.boss()
                     ? "boss_" + enemyId.toLowerCase()
                     : canonicalId(encounterId).toLowerCase() + "_enemy_" + index;
             units.add(new CombatantState(instanceId, definition, CombatantSide.ENEMY, 4 + index));
         }
         return new BattleState(units);
+    }
+
+    /**
+     * Field battles should resolve briskly enough that turn decisions matter more than HP attrition.
+     * This is encounter tuning only; canonical character/enemy data and formulas remain untouched.
+     */
+    private static CombatantDefinition tempoAdjustedEnemy(CombatantDefinition base, V04Catalogs.Encounter encounter) {
+        double hpScale;
+        if (encounter.id().startsWith("TUTORIAL_")) hpScale = 0.68;
+        else if (encounter.boss()) hpScale = 0.88;
+        else if (base.elite()) hpScale = 0.86;
+        else hpScale = 0.80;
+        BattleStats stats = base.stats();
+        BattleStats tuned = new BattleStats(Math.max(1, (int)Math.round(stats.maxHp() * hpScale)),
+                stats.attack(), stats.defense(), stats.speed());
+        return new CombatantDefinition(base.id(), base.name(), tuned, base.basicSkillId(), base.skills(),
+                base.nativeStars(), base.rules(), base.params());
     }
 
     private static CombatantDefinition campaignDefinition(UUID playerId, String characterId) {

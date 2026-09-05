@@ -21,7 +21,9 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static void tick(ServerLevel level, ServerPlayer player) {
-        if (BattleSessionManager.exists(player)) {
+        boolean inBattle = BattleSessionManager.exists(player);
+        FieldMovementTuning.apply(player, !inBattle);
+        if (inBattle) {
             AsterMarchStoryScenes.cancelForBattle(level, player);
             AsterMarchCharacterQuestPresentation.cancelForBattle(level, player);
             AsterMarchFieldIncidents.cancelForBattle(level, player);
@@ -29,6 +31,7 @@ public final class AsterMarchContentOrchestrator {
         }
         AsterMarchStoryScenes.tick(level, player);
         if (player.tickCount % 10 != 0) return;
+        TutorialWaypointService.sync(level, player);
         AsterMarchBossAftermath.sync(level);
         AsterMarchApproachAtmosphere.tick(level, player);
         AsterMarchProgressStaging.tick(level, player);
@@ -56,6 +59,7 @@ public final class AsterMarchContentOrchestrator {
     }
 
     public static void remove(ServerPlayer player) {
+        FieldMovementTuning.reset(player);
         AsterMarchStoryScenes.remove(player);
         AsterMarchProgressStaging.remove(player);
         AsterMarchFieldIncidents.remove(player);

@@ -23,17 +23,18 @@ public final class RadiaHubWorld {
         }
     }
 
+    /** Interaction actors sit at entrances/open ground, never under roofs, stairs or decorative walls. */
     private static final List<Facility> FACILITIES = List.of(
             f("RELAY_HALL", "Relay Hall", 0, -8),
-            f("ECHO_ARCHIVE", "Echo Archive", -56, 8),
-            f("FORGE_ANNEX", "Forge Annex", 56, 8),
+            f("ECHO_ARCHIVE", "Echo Archive", -56, 22),
+            f("FORGE_ANNEX", "Forge Annex", 56, 22),
             f("MARKET_ROW", "Market Row", -57, 55),
-            f("TRAINING_YARD", "Training Yard", 57, 58),
-            f("RIFT_GATE", "Rift Gate", -82, -58),
-            f("SOUTH_GATE", "South Gate", 0, 112),
-            f("MEMORIAL_STEPS", "Memorial Steps", -28, -60),
-            f("CLOCK_TOWER", "Clock Tower", 22, -62),
-            f("BARRACKS", "Barracks", 72, -26));
+            f("TRAINING_YARD", "Training Yard", 57, 38),
+            f("RIFT_GATE", "Rift Gate", -82, -54),
+            f("SOUTH_GATE", "South Gate", 0, 104),
+            f("MEMORIAL_STEPS", "Memorial Steps", -28, -47),
+            f("CLOCK_TOWER", "Clock Tower", 22, -49),
+            f("BARRACKS", "Barracks", 72, -11));
 
     private RadiaHubWorld() {}
 
@@ -42,7 +43,6 @@ public final class RadiaHubWorld {
             plaza(level); roads(level); starterGuidance(level);
             building(level, -12,-20,25,24, Blocks.STONE_BRICKS, Blocks.POLISHED_ANDESITE);
             interiorLights(level, -12,-20,25,24);
-            // Echo Archive deliberately stays dark and amethyst-lit as part of its archive/rift atmosphere.
             building(level, -69,-2,26,22, Blocks.DARK_OAK_PLANKS, Blocks.AMETHYST_BLOCK);
             building(level, 44,-2,25,22, Blocks.STONE_BRICKS, Blocks.IRON_BLOCK);
             interiorLights(level, 44,-2,25,22);
@@ -59,9 +59,8 @@ public final class RadiaHubWorld {
     public static void setSouthGateOpen(ServerLevel level, boolean open) { southGate(level, open); }
 
     private static BuiltHub built() {
-        // Opening spawn is deliberately not the fast-travel relay. The player starts facing Director Iven.
         return new BuiltHub(new Vec3(0.5,66,12.5), new Vec3(0.5,66,-1.5), new Vec3(7.5,66,2.5),
-                new Vec3(0,66,24), new Vec3(0,66,110),
+                new Vec3(0,66,24), new Vec3(0,66,104),
                 List.of(new Vec3(50,66,49),new Vec3(50,66,59),new Vec3(50,66,69)),
                 List.of(new Vec3(62,66,48),new Vec3(62,66,59),new Vec3(62,66,70)), FACILITIES);
     }
@@ -76,13 +75,11 @@ public final class RadiaHubWorld {
                 f.id().equals("TRAINING_YARD")?20:f.id().equals("MARKET_ROW")?17:13);
     }
 
-    /** Embedded gold route marks communicate the opening flow without floating debug text. */
     private static void starterGuidance(ServerLevel l){
         for(int z=8;z>=0;z-=4) set(l,0,Y,z,Blocks.GOLD_BLOCK);
         for(int x=12;x<=56;x+=11) set(l,x,Y,20,Blocks.GOLD_BLOCK);
         for(int z=28;z<=40;z+=6) set(l,58,Y,z,Blocks.GOLD_BLOCK);
-        for(int z=36;z<=100;z+=16) set(l,0,Y,z,Blocks.GOLD_BLOCK);
-        // Training entrance arch at the end of the east guide road.
+        for(int z=36;z<=96;z+=15) set(l,0,Y,z,Blocks.GOLD_BLOCK);
         for(int y=Y+1;y<=Y+4;y++){ set(l,53,y,40,Blocks.STONE_BRICKS); set(l,63,y,40,Blocks.STONE_BRICKS); }
         for(int x=53;x<=63;x++) set(l,x,Y+5,40,Blocks.POLISHED_ANDESITE);
         set(l,53,Y+5,40,Blocks.LANTERN); set(l,63,Y+5,40,Blocks.LANTERN);
@@ -99,7 +96,6 @@ public final class RadiaHubWorld {
         for(int z:new int[]{48,59,70}) for(int dx=-7;dx<=7;dx++) set(l,62+dx,Y,z,Blocks.SMOOTH_STONE);
         for(int z=42;z<=76;z+=4){ set(l,38,Y+1,z,Blocks.OAK_FENCE); set(l,78,Y+1,z,Blocks.OAK_FENCE); }
         for(int x=38;x<=78;x+=4){
-            // The old build fenced the tutorial actors in completely. Keep a wide north entrance aligned to the road.
             if(x<52||x>64) set(l,x,Y+1,40,Blocks.OAK_FENCE);
             set(l,x,Y+1,78,Blocks.OAK_FENCE);
         }
@@ -116,6 +112,8 @@ public final class RadiaHubWorld {
     private static void memorial(ServerLevel l){
         for(int z=-71;z<=-51;z++) for(int x=-38;x<=-18;x++) set(l,x,Y+Math.max(0,(-51-z)/4),z,Blocks.POLISHED_ANDESITE);
         for(int x=-35;x<=-21;x+=7){ set(l,x,Y+6,-70,Blocks.CHISELED_STONE_BRICKS); set(l,x,Y+7,-70,Blocks.SOUL_LANTERN); }
+        // A small landing keeps the interaction actor visibly in front of the stairs.
+        for(int x=-33;x<=-23;x++) for(int z=-50;z<=-44;z++) column(l,x,z,Blocks.POLISHED_ANDESITE);
     }
 
     private static void clock(ServerLevel l){
@@ -131,14 +129,24 @@ public final class RadiaHubWorld {
         for(int z=-33;z<=-19;z+=4){ set(l,66,Y+1,z,Blocks.IRON_BARS); set(l,78,Y+1,z,Blocks.TARGET); }
     }
 
+    /** Compact fortified gate: readable as an entrance instead of two oversized stone slabs. */
     private static void southGate(ServerLevel l,boolean open){
-        int z=116;
-        for(int x=-14;x<=14;x++){
-            if(Math.abs(x)<=5){ for(int y=Y+1;y<=Y+5;y++) set(l,x,y,z,open?Blocks.AIR:Blocks.IRON_BARS); }
-            else for(int y=Y+1;y<=Y+7;y++) set(l,x,y,z,Blocks.STONE_BRICKS);
+        int z=108;
+        for(int x=-12;x<=12;x++) for(int y=Y+1;y<=Y+8;y++) set(l,x,y,z,Blocks.AIR);
+        for(int x=-10;x<=10;x++) set(l,x,Y,z,Blocks.POLISHED_ANDESITE);
+        for(int x=-10;x<=10;x++) {
+            boolean passage=Math.abs(x)<=4;
+            if(passage) {
+                for(int y=Y+1;y<=Y+4;y++) set(l,x,y,z,open?Blocks.AIR:Blocks.IRON_BARS);
+            } else if(Math.abs(x)>=7) {
+                int h=Math.abs(x)>=9?5:3;
+                for(int y=Y+1;y<=Y+h;y++) set(l,x,y,z,(x+y)%4==0?Blocks.CHISELED_STONE_BRICKS:Blocks.STONE_BRICKS);
+            }
         }
-        for(int x=-16;x<=16;x++) set(l,x,Y,z,Blocks.POLISHED_ANDESITE);
-        post(l,-12,Y+7,z,true); post(l,12,Y+7,z,true);
+        for(int x=-6;x<=6;x++) set(l,x,Y+5,z,Blocks.STONE_BRICK_SLAB);
+        set(l,-6,Y+5,z,Blocks.CHISELED_STONE_BRICKS); set(l,6,Y+5,z,Blocks.CHISELED_STONE_BRICKS);
+        post(l,-9,Y+5,z,true); post(l,9,Y+5,z,true);
+        for(int dz=1;dz<=7;dz++) for(int x=-4;x<=4;x++) set(l,x,Y,z+dz,Blocks.POLISHED_ANDESITE);
     }
 
     private static void relay(ServerLevel l){ pad(l,0,24,5,Blocks.POLISHED_ANDESITE,Blocks.STONE_BRICKS); set(l,0,Y+1,24,Blocks.AMETHYST_BLOCK); set(l,0,Y+2,24,Blocks.BEACON); }
@@ -154,11 +162,8 @@ public final class RadiaHubWorld {
         int door=x0+w/2; for(int y=Y+1;y<=Y+3;y++) set(l,door,y,z0+d-1,Blocks.AIR);
     }
 
-    /** Ceiling-integrated light grid for ordinary civic interiors; atmospheric facilities opt out. */
     private static void interiorLights(ServerLevel l,int x0,int z0,int w,int d){
-        for(int x=x0+4;x<x0+w-3;x+=6){
-            for(int z=z0+4;z<z0+d-3;z+=6) set(l,x,Y+6,z,Blocks.SEA_LANTERN);
-        }
+        for(int x=x0+4;x<x0+w-3;x+=6) for(int z=z0+4;z<z0+d-3;z+=6) set(l,x,Y+6,z,Blocks.SEA_LANTERN);
     }
 
     private static void stall(ServerLevel l,int x,int z,Block wood){
@@ -180,7 +185,7 @@ public final class RadiaHubWorld {
     private static void levelCircle(ServerLevel l,int cx,int cz,int r){ for(int x=cx-r;x<=cx+r;x++) for(int z=cz-r;z<=cz+r;z++) if((x-cx)*(x-cx)+(z-cz)*(z-cz)<=r*r) column(l,x,z,Blocks.GRASS_BLOCK); }
     private static void column(ServerLevel l,int x,int z,Block ground){ for(int y=Y-3;y<Y;y++) set(l,x,y,z,Blocks.DIRT); set(l,x,Y,z,ground); for(int y=Y+1;y<=Y+10;y++) set(l,x,y,z,Blocks.AIR); }
     private static void post(ServerLevel l,int x,int y,int z,boolean soul){ set(l,x,y+1,z,Blocks.COBBLESTONE_WALL); set(l,x,y+2,z,soul?Blocks.SOUL_LANTERN:Blocks.LANTERN); }
-    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.EMERALD_BLOCK)&&l.getBlockState(new BlockPos(3,MARKER_Y,20)).is(Blocks.GOLD_BLOCK); }
-    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE);set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK);set(l,2,MARKER_Y,20,Blocks.EMERALD_BLOCK);set(l,3,MARKER_Y,20,Blocks.GOLD_BLOCK); }
+    private static boolean hasMarker(ServerLevel l){ return l.getBlockState(new BlockPos(0,MARKER_Y,20)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(1,MARKER_Y,20)).is(Blocks.AMETHYST_BLOCK)&&l.getBlockState(new BlockPos(2,MARKER_Y,20)).is(Blocks.EMERALD_BLOCK)&&l.getBlockState(new BlockPos(3,MARKER_Y,20)).is(Blocks.GOLD_BLOCK)&&l.getBlockState(new BlockPos(4,MARKER_Y,20)).is(Blocks.DIAMOND_BLOCK); }
+    private static void writeMarker(ServerLevel l){ set(l,0,MARKER_Y,20,Blocks.LODESTONE);set(l,1,MARKER_Y,20,Blocks.AMETHYST_BLOCK);set(l,2,MARKER_Y,20,Blocks.EMERALD_BLOCK);set(l,3,MARKER_Y,20,Blocks.GOLD_BLOCK);set(l,4,MARKER_Y,20,Blocks.DIAMOND_BLOCK); }
     private static void set(ServerLevel l,int x,int y,int z,Block b){ l.setBlock(new BlockPos(x,y,z),b.defaultBlockState(),2); }
 }
