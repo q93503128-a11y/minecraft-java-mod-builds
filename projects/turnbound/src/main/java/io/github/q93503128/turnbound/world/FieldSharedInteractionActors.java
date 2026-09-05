@@ -59,18 +59,22 @@ public final class FieldSharedInteractionActors {
     }
 
     public static int gloamSporeIndex(Role role) {
+        if (role == null) return -1;
         return FieldSharedActorCatalog.gloamSporeIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int aqueductValveIndex(Role role) {
+        if (role == null) return -1;
         return FieldSharedActorCatalog.aqueductValveIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int quarryCoreIndex(Role role) {
+        if (role == null) return -1;
         return FieldSharedActorCatalog.quarryCoreIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
     public static int oldRelayRecordIndex(Role role) {
+        if (role == null) return -1;
         return FieldSharedActorCatalog.oldRelayRecordIndex(FieldSharedActorCatalog.Role.valueOf(role.name()));
     }
 
