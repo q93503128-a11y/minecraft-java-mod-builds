@@ -147,6 +147,9 @@ public final class BuildingPaletteScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("토목 평탄화   · 절토/성토"),
                 b -> { CivilWorkPlacementClient.beginPlacement(); this.minecraft.gui.setScreen(null); })
                 .bounds(x, y + 62, width, 23).build());
+        addRenderableWidget(Button.builder(Component.literal("거점 위치   · 본진/전초 좌표·방향"),
+                b -> this.minecraft.gui.setScreen(new SettlementLocationScreen(this)))
+                .bounds(x, y + 93, width, 23).build());
     }
 
     @Override
@@ -172,13 +175,12 @@ public final class BuildingPaletteScreen extends Screen {
             if (detail == null) detail = category.buildings.get(0);
             drawBuildingDetail(g, data, detail);
         } else if (category == Category.INFRA && panelHeight >= 270) {
-            int infoY = contentY + 102;
+            int infoY = contentY + 133;
             g.fill(contentX, infoY, contentX + contentWidth, infoY + 1, DIVIDER);
-            g.text(this.font, Component.literal("인프라는 건물보다 월드의 연결 관계가 중요합니다."),
+            g.text(this.font, Component.literal("본진을 잃어버렸다면 ‘거점 위치’에서 저장 좌표와 방향을 확인하세요."),
                     contentX, infoY + 9, TEXT_SECONDARY, false);
-            g.text(this.font, Component.literal("메뉴에서 작업을 고른 뒤 월드 프리뷰로 위치와 범위를 확인하세요."),
+            g.text(this.font, Component.literal("체크포인트를 바꿔도 본진·전초기지 좌표는 마을 세이브에 남습니다."),
                     contentX, infoY + 22, TEXT_MUTED, false);
-            drawSettlementLocations(g, infoY + 39);
         }
 
         if (panelHeight >= 245) {

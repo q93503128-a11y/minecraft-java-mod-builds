@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.110" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.111" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -122,8 +122,15 @@ require("기존 시설 자동 개량" in palette, "production vertical progressi
 context_ui = text(SETTLEMENT / "SettlementContextService.java")
 require('"settlement", "settlement"' in context_ui and '"본진"' in context_ui and "data.centerPos()" in context_ui,
         "main settlement navigation target missing")
-require("drawSettlementLocations" in palette and "directionName" in palette and '"outpost".equals(target.kind())' in palette,
-        "settlement/outpost coordinate navigation UI missing")
+location_screen = text(JAVA / "client/SettlementLocationScreen.java")
+require("거점 위치   · 본진/전초 좌표·방향" in palette and "new SettlementLocationScreen(this)" in palette,
+        "explicit settlement-location button missing from infrastructure menu")
+require('"settlement".equals(target.kind())' in location_screen and '"outpost".equals(target.kind())' in location_screen,
+        "dedicated location screen does not enumerate main settlement and outposts")
+require("markerX()" in location_screen and "markerY()" in location_screen and "markerZ()" in location_screen,
+        "dedicated location screen does not expose saved coordinates")
+require("distanceSq" in location_screen and "directionName" in location_screen and "오버월드" in location_screen,
+        "dedicated location screen distance/direction/dimension behavior missing")
 
 commands = text(JAVA / "command/SettlementCommands.java")
 require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in commands, "status shows stale barracks food cost")
@@ -183,4 +190,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha110 scalable parallel construction crews + alpha109 navigation + prior authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha111 explicit settlement location UX + alpha110 scalable parallel construction crews + prior authority invariants")
