@@ -9,7 +9,11 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 public final class SettlementCommands {
@@ -22,6 +26,11 @@ public final class SettlementCommands {
                 .then(Commands.literal("status").executes(SettlementCommands::status))
                 .then(Commands.literal("rescan").executes(SettlementCommands::rescan))
                 .then(Commands.literal("normalize").executes(SettlementCommands::normalize))
+                .then(Commands.literal("cleanup")
+                        .then(Commands.literal("drops")
+                                .executes(SettlementCommands::cleanupStoneDrops)
+                                .then(Commands.literal("stone").executes(SettlementCommands::cleanupStoneDrops))
+                                .then(Commands.literal("all").executes(SettlementCommands::cleanupAllDrops))))
                 .then(Commands.literal("road").executes(SettlementCommands::road))
                 .then(Commands.literal("outpost").executes(SettlementCommands::outpost))
                 .then(Commands.literal("build")
@@ -158,6 +167,54 @@ public final class SettlementCommands {
         player.sendSystemMessage(Component.literal(
                 "참고 | 건설 주민 1명은 공동 건설 담당이라 공사가 없어도 정상적으로 유지됩니다."));
         return 1;
+    }
+
+    private static final double DROP_CLEANUP_HORIZONTAL_RADIUS = 128.0D;
+    private static final double DROP_CLEANUP_VERTICAL_RADIUS = 64.0D;
+
+    private static int cleanupStoneDrops(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return cleanupDrops(context, false);
+    }
+
+    private static int cleanupAllDrops(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return cleanupDrops(context, true);
+    }
+
+    private static int cleanupDrops(CommandContext<CommandSourceStack> context, boolean all) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        ServerLevel level = (ServerLevel) player.level();
+        AABB area = player.getBoundingBox().inflate(
+                DROP_CLEANUP_HORIZONTAL_RADIUS,
+                DROP_CLEANUP_VERTICAL_RADIUS,
+                DROP_CLEANUP_HORIZONTAL_RADIUS);
+        var drops = level.getEntitiesOfClass(ItemEntity.class, area,
+                entity -> entity.isAlive() && (all || isStoneClutter(entity)));
+        long itemCount = 0L;
+        for (ItemEntity drop : drops) {
+            itemCount += drop.getItem().getCount();
+            drop.discard();
+        }
+        String scope = all ? "모든 드랍 아이템" : "돌·암석 드랍";
+        player.sendSystemMessage(Component.literal(
+                "드랍 정리 완료 | " + scope + " | 엔티티 " + drops.size() + "개 | 아이템 " + itemCount
+                        + "개 | 현재 위치 기준 수평 128 / 수직 64블록"));
+        return drops.size();
+    }
+
+    private static boolean isStoneClutter(ItemEntity entity) {
+        var stack = entity.getItem();
+        return stack.is(Items.STONE)
+                || stack.is(Items.COBBLESTONE)
+                || stack.is(Items.DEEPSLATE)
+                || stack.is(Items.COBBLED_DEEPSLATE)
+                || stack.is(Items.ANDESITE)
+                || stack.is(Items.DIORITE)
+                || stack.is(Items.GRANITE)
+                || stack.is(Items.TUFF)
+                || stack.is(Items.CALCITE)
+                || stack.is(Items.DRIPSTONE_BLOCK)
+                || stack.is(Items.BLACKSTONE)
+                || stack.is(Items.BASALT);
     }
 
     private static int rescan(CommandContext<CommandSourceStack> context) throws CommandSyntaxException { ServerPlayer p=context.getSource().getPlayerOrException(); MinecraftServer s=p.level().getServer(); SettlementData d=SettlementData.get(s); if(!d.founded())return 0; SettlementService.refreshResources(s,d); SettlementService.broadcast(s,d); return status(context); }
