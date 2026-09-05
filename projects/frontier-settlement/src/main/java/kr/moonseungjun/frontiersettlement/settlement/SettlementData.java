@@ -177,6 +177,19 @@ public final class SettlementData extends SavedData {
         setDirty();
     }
 
+    public boolean removeCompletedBuilding(BuildingRecord target) {
+        if (target == null) return false;
+        List<BuildingRecord> next = new ArrayList<>(buildings());
+        if (!next.remove(target)) return false;
+        BuildingType type = BuildingType.fromId(target.type());
+        if (type == BuildingType.HOUSE) houseCount = Math.max(0, houseCount - 1);
+        if (type == BuildingType.LUMBER_CAMP) lumberCampCount = Math.max(0, lumberCampCount - 1);
+        if (type != null) housingCapacity = Math.max(0, housingCapacity - type.housingGain());
+        infrastructure = new SettlementInfrastructureState(next, roads(), roadConstruction(), outposts(), outpostConstruction());
+        setDirty();
+        return true;
+    }
+
     public void clearConstruction() { if (!construction.active()) return; construction = ConstructionState.EMPTY; setDirty(); }
 
     public void beginRoadConstruction(BlockPos start, int directionX, int directionZ, int length) {

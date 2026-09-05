@@ -1,17 +1,4 @@
-from pathlib import Path
-
-root = Path('projects/frontier-settlement')
-
-gp = root / 'gradle.properties'
-g = gp.read_text(encoding='utf-8')
-if 'mod_version=0.1.0-alpha.97' not in g:
-    raise SystemExit('unexpected Frontier version')
-g = g.replace('mod_version=0.1.0-alpha.97', 'mod_version=0.1.0-alpha.98', 1)
-g += '\n# Alpha.98 residential integrity: severely destroyed completed houses automatically retire their stale settlement record and clear only matching non-container Frontier blueprint remnants so the lot can be rebuilt without a command.\n'
-gp.write_text(g, encoding='utf-8')
-
-service = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementBuildingIntegrityService.java'
-service.write_text('''package kr.moonseungjun.frontiersettlement.settlement;
+package kr.moonseungjun.frontiersettlement.settlement;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -81,39 +68,3 @@ public final class SettlementBuildingIntegrityService {
         }
     }
 }
-''', encoding='utf-8')
-
-data_file = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementData.java'
-s = data_file.read_text(encoding='utf-8')
-anchor = '''    public void clearConstruction() { if (!construction.active()) return; construction = ConstructionState.EMPTY; setDirty(); }\n'''
-method = '''    public boolean removeCompletedBuilding(BuildingRecord target) {
-        if (target == null) return false;
-        List<BuildingRecord> next = new ArrayList<>(buildings());
-        if (!next.remove(target)) return false;
-        BuildingType type = BuildingType.fromId(target.type());
-        if (type == BuildingType.HOUSE) houseCount = Math.max(0, houseCount - 1);
-        if (type == BuildingType.LUMBER_CAMP) lumberCampCount = Math.max(0, lumberCampCount - 1);
-        if (type != null) housingCapacity = Math.max(0, housingCapacity - type.housingGain());
-        infrastructure = new SettlementInfrastructureState(next, roads(), roadConstruction(), outposts(), outpostConstruction());
-        setDirty();
-        return true;
-    }
-
-'''
-if anchor not in s:
-    raise SystemExit('SettlementData anchor missing')
-s = s.replace(anchor, method + anchor, 1)
-data_file.write_text(s, encoding='utf-8')
-
-main = root / 'src/main/java/kr/moonseungjun/frontiersettlement/FrontierSettlement.java'
-s = main.read_text(encoding='utf-8')
-import_anchor = 'import kr.moonseungjun.frontiersettlement.settlement.DroppedItemCleanupService;\n'
-if import_anchor not in s:
-    raise SystemExit('main import anchor missing')
-s = s.replace(import_anchor, import_anchor + 'import kr.moonseungjun.frontiersettlement.settlement.SettlementBuildingIntegrityService;\n', 1)
-listener_anchor = '        NeoForge.EVENT_BUS.addListener(DroppedItemCleanupService::onServerTick);\n'
-if listener_anchor not in s:
-    raise SystemExit('main listener anchor missing')
-s = s.replace(listener_anchor, listener_anchor + '        NeoForge.EVENT_BUS.addListener(SettlementBuildingIntegrityService::onServerTick);\n', 1)
-main.write_text(s, encoding='utf-8')
-print('ALPHA98_RESIDENTIAL_INTEGRITY_PATCHED')
