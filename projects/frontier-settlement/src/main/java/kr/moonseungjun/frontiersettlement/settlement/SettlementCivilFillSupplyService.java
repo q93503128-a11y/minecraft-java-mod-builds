@@ -50,15 +50,8 @@ public final class SettlementCivilFillSupplyService {
      */
     public static int remainingImportedFill(ServerLevel level, CivilWorkState project) {
         if (project == null || !project.active()) return 0;
-        int fillRemaining = 0;
-        for (int x = project.minX(); x <= project.maxX(); x++) {
-            for (int z = project.minZ(); z <= project.maxZ(); z++) {
-                BlockPos column = new BlockPos(x, project.gradeY(), z);
-                if (!level.hasChunkAt(column)) return -1;
-                int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
-                if (surfaceY < project.gradeY()) fillRemaining += project.gradeY() - surfaceY;
-            }
-        }
+        int fillRemaining = SettlementCivilWorkService.remainingFillBlocks(level, project);
+        if (fillRemaining < 0) return -1;
         return Math.max(0, fillRemaining - project.earthBank());
     }
 

@@ -55,6 +55,7 @@ public final class SettlementConstructionService {
     private static final int MAX_PLAYER_PLACEMENT_DISTANCE = 24;
     private static final int MAX_SCAFFOLD_STEP = 7;
     private static final int BUILDER_ROUTE_MARGIN = 32;
+    private static final int MAX_BUILDER_CREW = 3;
 
     private SettlementConstructionService() {}
 
@@ -242,31 +243,44 @@ public final class SettlementConstructionService {
             return true;
         }
 
-        FrontierWorkerEntity builder = ensureBuilder(level, data);
-        if (builder == null) return false;
+        List<FrontierWorkerEntity> builders = ensureProjectBuilders(level, data);
+        if (builders.isEmpty()) return false;
+        for (int i = 0; i < builders.size(); i++) {
+            if (!data.construction().active()) return true;
+            tickConstructionBuilder(server, data, type, builders.get(i), i == 0);
+        }
+        return !data.construction().active();
+    }
+
+    private static boolean tickConstructionBuilder(MinecraftServer server, SettlementData data,
+                                                   BuildingType type, FrontierWorkerEntity builder,
+                                                   boolean coordinator) {
+        ServerLevel level = server.overworld();
+        ConstructionState construction = data.construction();
+        if (!construction.active()) return true;
         if (builder.isNoAi()) builder.setNoAi(false);
         builder.setInvulnerable(false);
 
-        if (construction.grading()) return tickGrading(server, data, type, builder);
+        if (construction.grading()) return tickGrading(server, data, type, builder, coordinator);
 
         List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(type, construction.origin(), construction.rotation());
         BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
-        construction = data.construction();
         int buildStep = construction.buildStep();
-
-        // Once every blueprint step is consumed, completion no longer requires a recreated/accessible
-        // site crate or repaired scaffold. Those are cleanup details, not construction authority.
-        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
+        if (buildStep >= plan.size()) return coordinator && finishIfValid(server, data, type, plan, builder, supply);
 
         Container crate = ensureSupplyCrate(level, supply);
         if (crate == null) return false;
-        retireLegacyConstructionScaffolds(level, data, type, builder, supply);
-        if (!stageRemainingMaterials(server, data, type, plan.size(), builder, crate, supply)) return false;
+        if (coordinator) {
+            retireLegacyConstructionScaffolds(level, data, type, builder, supply);
+            if (!stageRemainingMaterials(server, data, type, plan.size(), builder, crate, supply)) return false;
+        } else if (!builder.getMainHandItem().isEmpty()) {
+            return false;
+        }
         if (server.getTickCount() % BUILD_INTERVAL_TICKS != 0) return false;
 
         construction = data.construction();
         buildStep = construction.buildStep();
-        if (buildStep >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
+        if (buildStep >= plan.size()) return coordinator && finishIfValid(server, data, type, plan, builder, supply);
         BuildingBlueprints.Placement placement = plan.get(buildStep);
         if (!moveBuilderToWorkPosition(level, construction, type, placement, builder, supply)) return false;
 
@@ -282,9 +296,7 @@ public final class SettlementConstructionService {
                 - costAtStep(type.woodCost(), buildStep, plan.size());
         long stoneDelta = costAtStep(type.stoneCost(), buildStep + 1, plan.size())
                 - costAtStep(type.stoneCost(), buildStep, plan.size());
-        if (SettlementInventory.countWood(crate) < woodDelta || SettlementInventory.countStone(crate) < stoneDelta) {
-            return false;
-        }
+        if (SettlementInventory.countWood(crate) < woodDelta || SettlementInventory.countStone(crate) < stoneDelta) return false;
 
         boolean placedNow = false;
         if (!current.is(placement.state().getBlock())) {
@@ -297,12 +309,15 @@ public final class SettlementConstructionService {
         }
         if (placedNow) builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
-        if (data.construction().buildStep() >= plan.size()) return finishIfValid(server, data, type, plan, builder, supply);
+        if (data.construction().buildStep() >= plan.size()) {
+            return coordinator && finishIfValid(server, data, type, plan, builder, supply);
+        }
         return false;
     }
 
     private static boolean tickGrading(MinecraftServer server, SettlementData data,
-                                       BuildingType type, FrontierWorkerEntity builder) {
+                                       BuildingType type, FrontierWorkerEntity builder,
+                                       boolean coordinator) {
         ServerLevel level = server.overworld();
         ConstructionState construction = data.construction();
         List<GradeCell> plan = createGradePlan(level, construction, type);
@@ -311,18 +326,22 @@ public final class SettlementConstructionService {
             data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
             return false;
         }
-
         GradeCell cell = plan.get(gradeStep);
         if (!canGradeCell(level, construction, type, cell)) {
             builder.getNavigation().stop();
             return false;
         }
 
+        Container terrainCrate = null;
         if (cell.retainingStone() > 0) {
             BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
-            Container crate = ensureSupplyCrate(level, supply);
-            if (crate == null) return false;
-            if (!stageTerrainStone(server, data, builder, crate, supply, cell.retainingStone())) return false;
+            terrainCrate = ensureSupplyCrate(level, supply);
+            if (terrainCrate == null) return false;
+            if (coordinator) {
+                if (!stageTerrainStone(server, data, builder, terrainCrate, supply, cell.retainingStone())) return false;
+            } else if (SettlementInventory.countStone(terrainCrate) < cell.retainingStone()) {
+                return false;
+            }
         }
         if (server.getTickCount() % GRADE_INTERVAL_TICKS != 0) return false;
 
@@ -331,13 +350,8 @@ public final class SettlementConstructionService {
             moveBuilderTowardGradeCell(level, builder, work);
             return false;
         }
-
-        Container terrainCrate = null;
-        if (cell.retainingStone() > 0) {
-            BlockPos supply = supplyPosition(construction.origin(), type, construction.buildingRotation());
-            terrainCrate = ensureSupplyCrate(level, supply);
-            if (terrainCrate == null || SettlementInventory.countStone(terrainCrate) < cell.retainingStone()) return false;
-        }
+        if (cell.retainingStone() > 0 && (terrainCrate == null
+                || SettlementInventory.countStone(terrainCrate) < cell.retainingStone())) return false;
 
         List<BlockSnapshot> gradeMutation = applyGradeCellTransactional(level, construction, type, cell);
         if (gradeMutation == null) return false;
@@ -351,9 +365,7 @@ public final class SettlementConstructionService {
         }
         builder.swing(InteractionHand.MAIN_HAND);
         data.advanceConstruction();
-        if (data.construction().gradeStep() >= plan.size()) {
-            data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
-        }
+        if (data.construction().gradeStep() >= plan.size()) data.replaceConstructionStep(ConstructionState.BUILD_STEP_OFFSET);
         return false;
     }
 
@@ -1305,38 +1317,51 @@ public final class SettlementConstructionService {
         }
     }
 
+    public static int desiredBuilderCount(SettlementData data) {
+        return Math.min(MAX_BUILDER_CREW, 1 + Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE)));
+    }
+
+    public static List<FrontierWorkerEntity> ensureProjectBuilders(ServerLevel level, SettlementData data) {
+        reconcileBuilderDuplicates(level, data);
+        List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(level, data));
+        int desired = desiredBuilderCount(data);
+        for (FrontierWorkerEntity builder : existing) {
+            if (!builder.entityTags().contains(BUILDER_TAG)) builder.addTag(BUILDER_TAG);
+            builder.setNoAi(false);
+            builder.setInvulnerable(false);
+            recoverBuilderFromBlockedCell(level, data, builder);
+        }
+        if (existing.size() >= desired || !builderAssignmentEvidenceLoaded(level, data)) return List.copyOf(existing);
+
+        Set<BlockPos> occupied = new HashSet<>();
+        for (FrontierWorkerEntity builder : existing) occupied.add(builder.blockPosition());
+        while (existing.size() < desired) {
+            BlockPos spawn = findSafeBuilderHome(level, data, occupied);
+            if (spawn == null) break;
+            FrontierWorkerEntity builder = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
+            builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
+            builder.setYRot(0.0F);
+            builder.setXRot(0.0F);
+            builder.setCustomName(Component.literal(BUILDER_NAME));
+            builder.setCustomNameVisible(true);
+            builder.setPersistenceRequired();
+            builder.setNoAi(false);
+            builder.addTag(BUILDER_TAG);
+            if (!level.addFreshEntity(builder)) break;
+            existing.add(builder);
+            occupied.add(spawn);
+        }
+        existing.sort(Comparator.comparing(builder -> builder.getUUID().toString()));
+        return List.copyOf(existing);
+    }
+
     public static FrontierWorkerEntity ensureProjectBuilder(ServerLevel level, SettlementData data) {
-        FrontierWorkerEntity builder = ensureBuilder(level, data);
-        if (builder == null) return null;
-        if (builder.isNoAi()) builder.setNoAi(false);
-        builder.setInvulnerable(false);
-        return builder;
+        List<FrontierWorkerEntity> builders = ensureProjectBuilders(level, data);
+        return builders.isEmpty() ? null : builders.getFirst();
     }
 
     public static FrontierWorkerEntity ensureBuilder(ServerLevel level, SettlementData data) {
-        reconcileBuilderDuplicates(level, data);
-        List<FrontierWorkerEntity> existing = findBuilders(level, data);
-        if (!existing.isEmpty()) {
-            FrontierWorkerEntity active = existing.getFirst();
-            if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
-            active.setNoAi(false);
-            active.setInvulnerable(false);
-            recoverBuilderFromBlockedCell(level, data, active);
-            return active;
-        }
-        if (!builderAssignmentEvidenceLoaded(level, data)) return null;
-        BlockPos spawn = findSafeBuilderHome(level, data);
-        if (spawn == null) return null;
-        FrontierWorkerEntity builder = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
-        builder.setPos(spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D);
-        builder.setYRot(0.0F);
-        builder.setXRot(0.0F);
-        builder.setCustomName(Component.literal(BUILDER_NAME));
-        builder.setCustomNameVisible(true);
-        builder.setPersistenceRequired();
-        builder.setNoAi(false);
-        builder.addTag(BUILDER_TAG);
-        return level.addFreshEntity(builder) ? builder : null;
+        return ensureProjectBuilder(level, data);
     }
 
     private static void recoverBuilderFromBlockedCell(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {
@@ -1352,19 +1377,24 @@ public final class SettlementConstructionService {
     }
 
     private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data) {
+        return findSafeBuilderHome(level, data, Set.of());
+    }
+
+    private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data, Set<BlockPos> occupied) {
         BlockPos center = data.centerPos();
         BlockPos preferred = safeSurfaceCell(level, center.getX() + 1, center.getZ() + 1);
-        if (preferred != null) return preferred;
+        if (preferred != null && !occupied.contains(preferred)) return preferred;
         for (int radius = 1; radius <= 8; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                     BlockPos candidate = safeSurfaceCell(level, center.getX() + dx, center.getZ() + dz);
-                    if (candidate != null) return candidate;
+                    if (candidate != null && !occupied.contains(candidate)) return candidate;
                 }
             }
         }
-        return safeSurfaceCell(level, center.getX(), center.getZ());
+        BlockPos fallback = safeSurfaceCell(level, center.getX(), center.getZ());
+        return fallback != null && !occupied.contains(fallback) ? fallback : null;
     }
 
     private static BlockPos safeSurfaceCell(ServerLevel level, int x, int z) {
@@ -1380,16 +1410,18 @@ public final class SettlementConstructionService {
      * their exact MAINHAND cargo is first materialized as an ItemEntity, and only then are they discarded.
      */
     public static int reconcileBuilderDuplicates(ServerLevel level, SettlementData data) {
-        // N+1 loaded builders are definitive duplicate evidence for one shared builder even if a
-        // wider route chunk is unloaded. The evidence gate remains only on spawning a missing builder.
         List<FrontierWorkerEntity> builders = findBuilders(level, data);
         if (builders.isEmpty()) return 0;
-        FrontierWorkerEntity active = builders.getFirst();
-        if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
-        active.setNoAi(false);
-        active.setInvulnerable(false);
+        int allowed = desiredBuilderCount(data);
+        int keep = Math.min(allowed, builders.size());
+        for (int i = 0; i < keep; i++) {
+            FrontierWorkerEntity builder = builders.get(i);
+            if (!builder.entityTags().contains(BUILDER_TAG)) builder.addTag(BUILDER_TAG);
+            builder.setNoAi(false);
+            builder.setInvulnerable(false);
+        }
         int removed = 0;
-        for (int i = 1; i < builders.size(); i++) {
+        for (int i = keep; i < builders.size(); i++) {
             if (removeDuplicateBuilderPreservingCargo(level, builders.get(i))) removed++;
         }
         return removed;
@@ -1428,18 +1460,38 @@ public final class SettlementConstructionService {
         builders.sort(Comparator.comparing(worker -> worker.getUUID().toString()));
         if (builders.isEmpty()) return 0;
 
-        FrontierWorkerEntity active = builders.getFirst();
-        if (!active.entityTags().contains(BUILDER_TAG)) active.addTag(BUILDER_TAG);
-        active.setNoAi(false);
-        active.setInvulnerable(false);
-        active.getNavigation().stop();
-
+        int allowed = desiredBuilderCount(data);
+        int keep = Math.min(allowed, builders.size());
+        for (int i = 0; i < keep; i++) {
+            FrontierWorkerEntity builder = builders.get(i);
+            if (!builder.entityTags().contains(BUILDER_TAG)) builder.addTag(BUILDER_TAG);
+            builder.setNoAi(false);
+            builder.setInvulnerable(false);
+            builder.getNavigation().stop();
+        }
         int removed = 0;
-        for (int i = 1; i < builders.size(); i++) {
+        for (int i = keep; i < builders.size(); i++) {
             if (removeDuplicateBuilderPreservingCargo(level, builders.get(i))) removed++;
         }
-        if (!SettlementProjectAuthority.anyActive(level.getServer(), data)) returnBuilderHome(level, data, active);
+        if (!SettlementProjectAuthority.anyActive(level.getServer(), data)) {
+            for (int i = 0; i < keep; i++) returnBuilderHome(level, data, builders.get(i));
+        }
         return removed;
+    }
+
+    public static void settleIdleBuilders(MinecraftServer server, SettlementData data) {
+        if (SettlementProjectAuthority.anyActive(server, data)) return;
+        ServerLevel level = server.overworld();
+        for (FrontierWorkerEntity builder : findBuilders(level, data)) {
+            builder.setNoAi(false);
+            builder.setInvulnerable(false);
+            builder.setCustomName(Component.literal(BUILDER_NAME));
+            if (!builder.getMainHandItem().isEmpty()) {
+                returnCarriedToTownStorage(server, data, builder);
+                continue;
+            }
+            returnBuilderHome(level, data, builder);
+        }
     }
 
     static boolean returnBuilderHome(ServerLevel level, SettlementData data, FrontierWorkerEntity builder) {

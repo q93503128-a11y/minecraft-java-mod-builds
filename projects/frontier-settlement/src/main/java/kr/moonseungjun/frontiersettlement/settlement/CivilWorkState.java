@@ -72,8 +72,23 @@ public record CivilWorkState(boolean active,
     public BlockPos center() { return new BlockPos((minX + maxX) / 2, gradeY, (minZ + maxZ) / 2); }
 
     public CivilWorkState afterCut() {
+        return afterCut(true);
+    }
+
+    public CivilWorkState afterCut(boolean reusableEarth) {
         return new CivilWorkState(true, minX, maxX, minZ, maxZ, gradeY, PHASE_CUT,
-                earthBank + 1, completedSteps + 1, initialCutBlocks, initialFillBlocks, initialRetainingBlocks);
+                earthBank + (reusableEarth ? 1 : 0), completedSteps + 1,
+                initialCutBlocks, initialFillBlocks, initialRetainingBlocks);
+    }
+
+    /** Save-compatible migration for the retired automatic retaining phase. */
+    public CivilWorkState withoutRetaining() {
+        if (!active || initialRetainingBlocks <= 0) return this;
+        int completedRetaining = completedRetainingBlocks();
+        int nextPhase = phase == PHASE_RETAIN ? PHASE_FILL : phase;
+        int nextCompleted = Math.max(0, completedSteps - completedRetaining);
+        return new CivilWorkState(true, minX, maxX, minZ, maxZ, gradeY, nextPhase,
+                earthBank, nextCompleted, initialCutBlocks, initialFillBlocks, 0);
     }
 
     public CivilWorkState beginRetaining() {

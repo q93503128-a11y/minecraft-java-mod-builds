@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.103" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.104" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -41,13 +41,22 @@ for retired in (
     require(retired not in construction, f"retired scaffold authority returned: {retired}")
 require("retireLegacyConstructionScaffolds(" in construction, "legacy scaffold teardown compatibility was removed")
 require("ensureProjectBuilder(" in construction, "shared project-builder authority missing")
+require("MAX_BUILDER_CREW = 3" in construction, "bounded construction crew cap missing")
+require("ensureProjectBuilders" in construction and "desiredBuilderCount" in construction, "multi-builder crew authority missing")
+require("i == 0" in construction and "tickConstructionBuilder" in construction, "builder crew is not serialized through one scheduler")
 
 road = text(SETTLEMENT / "SettlementRoadService.java")
 outpost = text(SETTLEMENT / "SettlementOutpostService.java")
 civil = text(SETTLEMENT / "SettlementCivilWorkService.java")
 require("ensureProjectBuilder" in road and "clearRoadConstruction" in road, "road start is not transactional")
 require("ensureProjectBuilder" in outpost and "clearOutpostConstruction" in outpost, "outpost start is not transactional")
-require("ensureProjectBuilder" in civil and "data.clear();" in civil, "civil start is not transactional")
+require("ensureProjectBuilders" in civil and "data.clear();" in civil, "civil start/crew acquisition is not transactional")
+require("WORK_INTERVAL_TICKS = 5" in civil, "civil scheduler cadence drifted from five-tick service cadence")
+require("Heightmap.Types.WORLD_SURFACE" in civil, "full flatten does not clear leaves/ordinary surface blocks")
+require("safeDemolitionTarget" in civil and "isReusableCut" in civil, "bulldoze demolition/reusable-earth split missing")
+require("MAX_CUT_DEPTH = 32" in civil and "MAX_FILL_DEPTH = 16" in civil, "bounded full-flatten vertical envelope missing")
+require("builderInsideCivilEnvelope" in civil, "civil work still depends on exact per-cell pathing")
+require("SettlementCivilRetainingService.checkPlan" not in civil, "retired automatic retaining gate still blocks full flatten planning")
 
 worker = text(SETTLEMENT / "SettlementWorkerService.java")
 guidance = text(SETTLEMENT / "SettlementGuidanceService.java")
@@ -118,4 +127,4 @@ logistics = text(SETTLEMENT / "SettlementOutpostLogisticsService.java")
 require("SettlementInventory.metalValue(stack) == unitValue" in logistics, "remote metal hauling bypasses canonical values")
 require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in logistics, "companion ore cargo can strand at outposts")
 
-print("CURRENT SOURCE CHECK PASS: alpha103 production reach plus alpha102 authority invariants")
+print("CURRENT SOURCE CHECK PASS: alpha104 full flatten + serialized builder crew + prior authority invariants")
