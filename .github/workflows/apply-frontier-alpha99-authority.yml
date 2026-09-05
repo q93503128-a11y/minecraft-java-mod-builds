@@ -26,7 +26,7 @@ jobs:
           cache-dependency-path: projects/frontier-settlement/**/*.gradle*
 
       - name: Apply authority cleanup
-        run: python3 scripts/apply_frontier_alpha99_authority_cleanup.py
+        run: python3 scripts/run_frontier_alpha99_cleanup_v2.py
 
       - name: Current source invariant check
         run: python3 projects/frontier-settlement/tools/test_current_source.py
@@ -86,7 +86,7 @@ jobs:
           set -euo pipefail
           git config user.name 'coworkaccount'
           git config user.email 'cyp1jhh2@gmail.com'
-          git rm .github/workflows/apply-frontier-alpha99-authority.yml scripts/apply_frontier_alpha99_authority_cleanup.py
+          git rm .github/workflows/apply-frontier-alpha99-authority.yml scripts/apply_frontier_alpha99_authority_cleanup.py scripts/run_frontier_alpha99_cleanup_v2.py
           git add -A projects/frontier-settlement
           git diff --cached --check
           git diff --cached --stat
