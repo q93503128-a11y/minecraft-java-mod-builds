@@ -22,7 +22,8 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
     private static final int GREEN = 0xFF62D39A;
     private static final int RED = 0xFFFF6B6B;
 
-    private static final int GRID = 48;
+    // 48x48 was oversized at common GUI scale 3. Keep the same 4-block sampling radius with a denser 40x40 view.
+    private static final int GRID = 40;
     private static final int CELL = 2;
     private static final int STEP = 4;
     private static final int MAP_SIZE = GRID * CELL;
@@ -43,14 +44,14 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         var field = ClientFieldState.snapshot();
         if (!field.active() || field.mode() == FieldUiSnapshot.Mode.LOADING) return;
 
-        int panelW = MAP_SIZE + 14;
-        int panelH = MAP_SIZE + 34;
+        int panelW = MAP_SIZE + 22;
+        int panelH = MAP_SIZE + 54;
         int x = 8;
         int y = 8;
         TurnboundUiSkin.panel(graphics, x, y, panelW, panelH);
-        graphics.text(minecraft.font, Component.literal("M 지도  ·  N 숨김"), x + 7, y + 7, TEXT, false);
+        graphics.text(minecraft.font, Component.literal("M 지도 · N 숨김"), x + 7, y + 7, TEXT, false);
 
-        int mapX = x + 7;
+        int mapX = x + (panelW - MAP_SIZE) / 2;
         int mapY = y + 20;
         refreshTerrain(minecraft);
         for (int gz = 0; gz < GRID; gz++) {
@@ -78,6 +79,12 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         drawPlayerArrow(graphics, mapX + MAP_SIZE / 2, mapY + MAP_SIZE / 2, minecraft.player.getYRot());
         graphics.text(minecraft.font, Component.literal("N"), mapX + MAP_SIZE - 9, mapY + 3, 0xEFFFFFFF, true);
 
+        int legendY = mapY + MAP_SIZE + 4;
+        drawLegend(graphics, minecraft, mapX, legendY, BLUE, "시설");
+        drawLegend(graphics, minecraft, mapX + 42, legendY, GREEN, "사냥");
+        drawLegend(graphics, minecraft, mapX, legendY + 10, GOLD, "계전");
+        drawLegend(graphics, minecraft, mapX + 42, legendY + 10, RED, "보스");
+
         AsterMarchMapData.Marker nearest = AsterMarchMapData.nearest(px, pz);
         String footer;
         if (nearest == null) footer = "주변 탐색";
@@ -88,25 +95,27 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         graphics.text(minecraft.font, Component.literal(fit(minecraft, footer, panelW - 14)), x + 7, y + panelH - 11, MUTED, false);
     }
 
+    private static void drawLegend(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int y, int color, String label) {
+        graphics.fill(x, y + 2, x + 5, y + 7, 0xFF15181D);
+        graphics.fill(x + 1, y + 3, x + 4, y + 6, color);
+        graphics.text(minecraft.font, Component.literal(label), x + 7, y, MUTED, false);
+    }
+
     private static void refreshTerrain(Minecraft minecraft) {
         int centerX = floorToStep(minecraft.player.getX());
         int centerZ = floorToStep(minecraft.player.getZ());
         int tick = minecraft.player.tickCount;
         if (centerX == cachedCenterX && centerZ == cachedCenterZ && tick - cachedTick < 12) return;
-
         cachedCenterX = centerX;
         cachedCenterZ = centerZ;
         cachedTick = tick;
         int startX = centerX - (GRID / 2) * STEP;
         int startZ = centerZ - (GRID / 2) * STEP;
         int playerY = (int)Math.floor(minecraft.player.getY());
-
-        for (int gz = 0; gz < GRID; gz++) {
-            for (int gx = 0; gx < GRID; gx++) {
-                int worldX = startX + gx * STEP;
-                int worldZ = startZ + gz * STEP;
-                TERRAIN[gx][gz] = terrainColor(minecraft, worldX, worldZ, playerY);
-            }
+        for (int gz = 0; gz < GRID; gz++) for (int gx = 0; gx < GRID; gx++) {
+            int worldX = startX + gx * STEP;
+            int worldZ = startZ + gz * STEP;
+            TERRAIN[gx][gz] = terrainColor(minecraft, worldX, worldZ, playerY);
         }
     }
 
@@ -115,7 +124,6 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         int y = minecraft.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
         BlockPos pos = new BlockPos(x, y, z);
         BlockState state = minecraft.level.getBlockState(pos);
-
         int base;
         if (!state.getFluidState().isEmpty()) base = 0xFF3979A9;
         else if (state.is(BlockTags.LEAVES)) base = 0xFF315F3D;
@@ -129,7 +137,6 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
                 || state.is(Blocks.POLISHED_ANDESITE) || state.is(Blocks.COBBLESTONE) || state.is(Blocks.GRAVEL)) base = 0xFF777D82;
         else if (state.is(Blocks.OAK_PLANKS) || state.is(Blocks.SPRUCE_PLANKS) || state.is(Blocks.DARK_OAK_PLANKS)) base = 0xFF9A7650;
         else base = y <= minecraft.level.getSeaLevel() + 1 ? 0xFF61717A : 0xFF6F7D64;
-
         int delta = Math.max(-7, Math.min(7, y - playerY));
         return shade(base, delta * 3);
     }
@@ -146,38 +153,15 @@ public final class AsterMarchMinimapLayer implements GuiLayer {
         int dir = Math.floorMod(Math.round(yaw / 90.0F), 4);
         graphics.fill(cx - 1, cy - 1, cx + 2, cy + 2, 0xFFFFFFFF);
         switch (dir) {
-            case 0 -> {
-                graphics.fill(cx - 2, cy + 2, cx + 3, cy + 3, 0xFFFFFFFF);
-                graphics.fill(cx, cy + 3, cx + 1, cy + 5, 0xFFFFFFFF);
-            }
-            case 1 -> {
-                graphics.fill(cx - 3, cy - 2, cx - 2, cy + 3, 0xFFFFFFFF);
-                graphics.fill(cx - 5, cy, cx - 3, cy + 1, 0xFFFFFFFF);
-            }
-            case 2 -> {
-                graphics.fill(cx - 2, cy - 3, cx + 3, cy - 2, 0xFFFFFFFF);
-                graphics.fill(cx, cy - 5, cx + 1, cy - 3, 0xFFFFFFFF);
-            }
-            default -> {
-                graphics.fill(cx + 2, cy - 2, cx + 3, cy + 3, 0xFFFFFFFF);
-                graphics.fill(cx + 3, cy, cx + 5, cy + 1, 0xFFFFFFFF);
-            }
+            case 0 -> { graphics.fill(cx - 2, cy + 2, cx + 3, cy + 3, 0xFFFFFFFF); graphics.fill(cx, cy + 3, cx + 1, cy + 5, 0xFFFFFFFF); }
+            case 1 -> { graphics.fill(cx - 3, cy - 2, cx - 2, cy + 3, 0xFFFFFFFF); graphics.fill(cx - 5, cy, cx - 3, cy + 1, 0xFFFFFFFF); }
+            case 2 -> { graphics.fill(cx - 2, cy - 3, cx + 3, cy - 2, 0xFFFFFFFF); graphics.fill(cx, cy - 5, cx + 1, cy - 3, 0xFFFFFFFF); }
+            default -> { graphics.fill(cx + 2, cy - 2, cx + 3, cy + 3, 0xFFFFFFFF); graphics.fill(cx + 3, cy, cx + 5, cy + 1, 0xFFFFFFFF); }
         }
     }
 
-    private static int floorToStep(double value) {
-        return Math.floorDiv((int)Math.floor(value), STEP) * STEP;
-    }
-
-    private static int markerColor(AsterMarchMapData.Kind kind) {
-        return switch (kind) {
-            case FACILITY -> BLUE;
-            case HUNT -> GREEN;
-            case BOSS -> RED;
-            case RELAY -> GOLD;
-        };
-    }
-
+    private static int floorToStep(double value) { return Math.floorDiv((int)Math.floor(value), STEP) * STEP; }
+    private static int markerColor(AsterMarchMapData.Kind kind) { return switch (kind) { case FACILITY -> BLUE; case HUNT -> GREEN; case BOSS -> RED; case RELAY -> GOLD; }; }
     private static String fit(Minecraft minecraft, String value, int maxWidth) {
         if (minecraft.font.width(value) <= maxWidth) return value;
         int end = value.length();

@@ -21,25 +21,22 @@ final class AsterMarchMapData {
     );
 
     static final List<Marker> MARKERS = List.of(
-            new Marker("Director Iven", "메인 진행", 0.5, -1.5, Kind.FACILITY),
-            new Marker("파티 편성 콘솔", "파티 편성", 7.5, 2.5, Kind.FACILITY),
+            new Marker("Director Iven", "메인 진행", 0.5, 6.5, Kind.FACILITY),
             new Marker("라디아 계전소", "빠른 이동", 0, 24, Kind.RELAY),
-            new Marker("Echo Archive", "소환", -56, 8, Kind.FACILITY),
-            new Marker("Forge Annex", "장비 강화", 56, 8, Kind.FACILITY),
+            new Marker("Echo Archive", "소환", -56, 22, Kind.FACILITY),
+            new Marker("Forge Annex", "장비 강화", 56, 22, Kind.FACILITY),
             new Marker("Market Row", "장비 상점", -57, 55, Kind.FACILITY),
-            new Marker("Training Yard", "전투 훈련", 57, 58, Kind.FACILITY),
-            new Marker("Rift Gate", "후반 도전", -82, -58, Kind.FACILITY),
-            new Marker("Memorial Steps", "캐릭터 퀘스트", -28, -60, Kind.FACILITY),
-            new Marker("Clock Tower", "캐릭터 사건", 22, -62, Kind.FACILITY),
-            new Marker("Barracks", "수비대 기록", 72, -26, Kind.FACILITY),
-            new Marker("South Gate", "남문 초원 출구", 0, 110, Kind.FACILITY),
-
+            new Marker("Training Yard", "전투 훈련", 57, 38, Kind.FACILITY),
+            new Marker("Rift Gate", "후반 도전", -82, -54, Kind.FACILITY),
+            new Marker("Memorial Steps", "캐릭터 퀘스트", -28, -47, Kind.FACILITY),
+            new Marker("Clock Tower", "캐릭터 사건", 22, -49, Kind.FACILITY),
+            new Marker("Barracks", "수비대 기록", 72, -11, Kind.FACILITY),
+            new Marker("South Gate", "남문 초원 출구", 0, 104, Kind.FACILITY),
             new Marker("남문 초원", "권장 Lv.1~6", 190, 230, Kind.HUNT),
             new Marker("그늘숲", "권장 Lv.5~10", -40, -300, Kind.HUNT),
             new Marker("붕괴 수로", "권장 Lv.8~13", -320, 20, Kind.HUNT),
             new Marker("잿불 채석장", "권장 Lv.11~16", 20, 405, Kind.HUNT),
             new Marker("구 중계소", "권장 Lv.15~20", 365, -305, Kind.HUNT),
-
             new Marker("그라울", "B01", 355, 245, Kind.BOSS),
             new Marker("베르나", "B02", -35, -440, Kind.BOSS),
             new Marker("ORO-7", "B03", -430, 35, Kind.BOSS),
@@ -50,16 +47,10 @@ final class AsterMarchMapData {
     private AsterMarchMapData() {}
 
     static Marker nearest(double x, double z) {
-        Marker best = null;
-        double bestDistance = Double.MAX_VALUE;
+        Marker best = null; double bestDistance = Double.MAX_VALUE;
         for (Marker marker : MARKERS) {
-            double dx = marker.x - x;
-            double dz = marker.z - z;
-            double distance = dx * dx + dz * dz;
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                best = marker;
-            }
+            double dx = marker.x - x, dz = marker.z - z, distance = dx * dx + dz * dz;
+            if (distance < bestDistance) { bestDistance = distance; best = marker; }
         }
         return best;
     }

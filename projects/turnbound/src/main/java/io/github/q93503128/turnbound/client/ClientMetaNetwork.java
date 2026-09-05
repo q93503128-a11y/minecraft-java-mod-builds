@@ -19,27 +19,25 @@ public final class ClientMetaNetwork {
 
     private static void handle(MetaSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            String hint = openHint(payload.snapshot());
-            ClientSignatureTrialState.update(payload.snapshot());
-            ClientMetaState.update(payload.snapshot());
+            String raw = payload.snapshot();
+            String hint = record(raw, "O|");
+            String feedback = record(raw, "F|");
+            if (!feedback.isBlank()) ClientUiFeedbackLayer.show(feedback);
+            ClientSignatureTrialState.update(raw);
+            ClientMetaState.update(raw);
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.gui.screen() instanceof BattleScreen || minecraft.gui.screen() instanceof BattleResultScreen
                     || minecraft.gui.screen() instanceof GachaPresentationScreen) return;
 
             if (!hint.isBlank()) {
                 FacilityUiAccess.applyHint(hint);
-                if ("MARKET".equals(hint)) {
-                    minecraft.gui.setScreen(new FacilityMarketScreen());
-                } else {
-                    minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
-                }
+                if ("MARKET".equals(hint)) minecraft.gui.setScreen(new FacilityMarketScreen());
+                else minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));
                 return;
             }
-            if (minecraft.gui.screen() instanceof FacilityMarketScreen market) {
-                market.refreshSnapshot();
-            } else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) {
-                screen.refreshSnapshot();
-            } else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
+            if (minecraft.gui.screen() instanceof FacilityMarketScreen market) market.refreshSnapshot();
+            else if (minecraft.gui.screen() instanceof MetaMenuScreen screen) screen.refreshSnapshot();
+            else if (!(minecraft.gui.screen() instanceof EndgameBriefingScreen)) {
                 FacilityUiAccess.clear();
                 minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.PARTY));
             }
@@ -63,11 +61,10 @@ public final class ClientMetaNetwork {
         });
     }
 
-    private static String openHint(String snapshot) {
+    private static String record(String snapshot, String prefix) {
         if (snapshot == null || snapshot.isBlank()) return "";
-        int end = snapshot.indexOf('\n');
-        String first = end < 0 ? snapshot : snapshot.substring(0, end);
-        return first.startsWith("O|") && first.length() > 2 ? first.substring(2) : "";
+        for (String line : snapshot.split("\n")) if (line.startsWith(prefix) && line.length() > prefix.length()) return line.substring(prefix.length());
+        return "";
     }
 
     private static MetaMenuScreen.Tab tab(String hint) {

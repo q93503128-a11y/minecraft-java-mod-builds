@@ -4,15 +4,19 @@ import io.github.q93503128.turnbound.network.EndgameBriefingPayload;
 import io.github.q93503128.turnbound.network.GachaPresentationPayload;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.MetaSnapshotPayload;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /** Server-to-client authority for the v0.4 management menu and presentation surfaces. */
 public final class MetaNetwork {
     public static final String PROTOCOL = "turnbound-meta-v04";
+    private static final Map<UUID, String> FEEDBACK = new ConcurrentHashMap<>();
     private MetaNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
@@ -26,7 +30,6 @@ public final class MetaNetwork {
                     String raw = payload.command();
                     if (raw == null || raw.isBlank()) return;
 
-                    // A briefing never grants authority to deploy by itself. DEPLOY is revalidated from scratch.
                     if (raw.startsWith("DEPLOY|")) {
                         EndgameDeploymentService.deploy(player, raw.substring("DEPLOY|".length()));
                         return;
@@ -35,14 +38,12 @@ public final class MetaNetwork {
                     String denial = MetaActionGate.denial(player.getUUID(), raw);
                     if (denial.isBlank()) denial = MetaFacilityActionGate.denial(player, raw);
                     if (!denial.isBlank()) {
-                        player.sendSystemMessage(Component.literal("TURNBOUND · " + denial));
+                        feedback(player, denial);
                         sync(player);
                         return;
                     }
 
                     if (GachaPresentationService.handle(player, raw)) return;
-
-                    // SYSTEM/physical selectors use START only to request the server-authored confirmation surface.
                     if (raw.startsWith("START|")) {
                         EndgameDeploymentService.brief(player, raw.substring("START|".length()));
                         return;
@@ -51,14 +52,13 @@ public final class MetaNetwork {
                 }));
     }
 
-    public static void sync(ServerPlayer player) {
-        send(player, "");
+    public static void feedback(ServerPlayer player, String text) {
+        if (player == null || text == null || text.isBlank()) return;
+        FEEDBACK.put(player.getUUID(), sanitize(text));
     }
 
-    /**
-     * Opens the management menu on the facility-relevant tab without adding a second wire payload.
-     * ClientMetaState safely ignores the O record while ClientMetaNetwork consumes it as transient UI routing.
-     */
+    public static void sync(ServerPlayer player) { send(player, ""); }
+
     public static void open(ServerPlayer player, String tabHint) {
         send(player, tabHint == null ? "" : tabHint.trim());
     }
@@ -67,7 +67,13 @@ public final class MetaNetwork {
         String encoded = QuestMenuContentService.encode(player.getUUID())
                 + SignatureTrialMenuContentService.encode(player.getUUID())
                 + MetaUiCodec.encode(MetaMenuService.snapshot(player));
-        if (!tabHint.isBlank()) encoded = "O|" + tabHint + "\n" + encoded;
+        String feedback = FEEDBACK.remove(player.getUUID());
+        if (feedback != null && !feedback.isBlank()) encoded = "F|" + feedback + "\n" + encoded;
+        if (!tabHint.isBlank()) encoded = "O|" + sanitize(tabHint) + "\n" + encoded;
         PacketDistributor.sendToPlayer(player, new MetaSnapshotPayload(encoded));
+    }
+
+    private static String sanitize(String value) {
+        return value.replace('|', '/').replace('\n', ' ').replace('\r', ' ');
     }
 }

@@ -2,11 +2,14 @@ package io.github.q93503128.turnbound;
 
 import io.github.q93503128.turnbound.client.AsterMarchMinimapLayer;
 import io.github.q93503128.turnbound.client.BattleCameraController;
+import io.github.q93503128.turnbound.client.BattleStatusLayer;
 import io.github.q93503128.turnbound.client.ClientAudioNetwork;
 import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
 import io.github.q93503128.turnbound.client.ClientFieldNetwork;
 import io.github.q93503128.turnbound.client.ClientMetaNetwork;
+import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
+import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
 import io.github.q93503128.turnbound.client.MetaMenuKeyHandler;
 import io.github.q93503128.turnbound.client.QuestGuideLayer;
 import io.github.q93503128.turnbound.client.VanillaHudPolicy;
@@ -27,12 +30,15 @@ public final class TurnboundClient {
         modEventBus.addListener((RegisterGuiLayersEvent event) -> {
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "aster_minimap"), new AsterMarchMinimapLayer());
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle_status"), new BattleStatusLayer());
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "ui_feedback"), new ClientUiFeedbackLayer());
         });
         NeoForge.EVENT_BUS.addListener(VanillaHudPolicy::onGuiLayer);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onFov);
         NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
+        NeoForge.EVENT_BUS.addListener(ClientWorldLoadingBootstrap::onTick);
         NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
 }
