@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,4 +74,30 @@ if "## 0.61.21 Bounded Bulk Mining" not in project:
     project = replace_once(project, section_anchor, section + section_anchor, "PROJECT 0.61.21 section")
 write(project_path, project)
 
-print("Bridged Survival Ascension 0.61.21 historical audit and project identity")
+# Restore the curated Korean overlay for the audited TBS inventory/gameplay keys. These entries are
+# Survival-owned resource overrides; keeping them exact prevents a low-quality generated translation
+# from silently replacing established Korean player-facing terminology.
+tbos_path = ROOT / "src/main/resources/assets/tbos/lang/ko_kr.json"
+tbos = json.loads(read(tbos_path))
+audited_tbos_ko = {
+    "itemGroup.tbos.yesterglass": "스티브의 탄생",
+    "block.tbos.archive_stone": "기록보관소 석재",
+    "block.tbos.yesterglass": "예스터글라스",
+    "block.tbos.cantor_gate": "기록보관소 보스 관문",
+    "item.tbos.cracked_yesterglass_lens": "금 간 예스터글라스 렌즈",
+    "item.tbos.archivists_journal": "기록관의 일지",
+    "item.tbos.memory_plate.tooltip": "기억 등불에 사용하면 이 장면을 불러옵니다. 기억 판은 소모되지 않습니다.",
+    "entity.tbos.parallax_wraith": "시차 망령",
+    "entity.tbos.hour_cantor": "시간의 칸토르",
+    "entity.tbos.phoenix_guardian": "최후의 큐레이터",
+    "pickup.tbos.key": "기록보관소 열쇠",
+    "boss.tbos.last_curator.title": "최후의 큐레이터",
+}
+tbos.update(audited_tbos_ko)
+write(tbos_path, json.dumps(tbos, ensure_ascii=False, indent=2) + "\n")
+reloaded_tbos = json.loads(read(tbos_path))
+for key, value in audited_tbos_ko.items():
+    if reloaded_tbos.get(key) != value:
+        raise SystemExit(f"TBS Korean overlay restore failed: {key}")
+
+print("Bridged Survival Ascension 0.61.21 historical audit, project identity and TBS Korean overlay")
