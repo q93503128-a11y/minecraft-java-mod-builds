@@ -87,12 +87,8 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          source_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_source.py' -printf '%f\n' | sort -V | tail -1)"
-          docs_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_docs.py' -printf '%f\n' | sort -V | tail -1)"
-          test -n "$source_audit"
-          test -n "$docs_audit"
-          python3 "tools/$source_audit"
-          python3 "tools/$docs_audit"
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
           ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
           python3 tools/verify_jar.py "build/libs/$EXPECTED_JAR"
           test -f "build/libs/$EXPECTED_JAR.sha256"
