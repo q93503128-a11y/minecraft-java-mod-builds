@@ -1,0 +1,55 @@
+name: Fix Frontier Companion CI 20260907
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-frontier-companion-ci-20260907.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Replace stale historical audit discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python3 - <<'PY'
+          from pathlib import Path
+          paths = [
+              Path('.github/workflows/frontier-companion-server-preflight.yml'),
+              Path('.github/workflows/frontier-companion-fresh-world-smoke.yml'),
+          ]
+          old = '''          source_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_source.py' -printf '%f\\n' | sort -V | tail -1)"\n          docs_audit="$(find tools -maxdepth 1 -type f -name 'test_alpha*_docs.py' -printf '%f\\n' | sort -V | tail -1)"\n          test -n "$source_audit"\n          test -n "$docs_audit"\n          python3 "tools/$source_audit"\n          python3 "tools/$docs_audit"\n'''
+          new = '''          python3 tools/test_current_source.py\n          python3 tools/test_current_docs.py\n'''
+          for path in paths:
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'stale audit block not found in {path}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          props = Path('projects/frontier-settlement/gradle.properties')
+          text = props.read_text(encoding='utf-8')
+          text = text.replace('retaining-heavy 17x17 / plus-or-minus-7 terraces', 'retaining-heavy 17x17 terraces')
+          props.write_text(text, encoding='utf-8')
+          PY
+          rm -f .github/workflows/fix-frontier-companion-ci-20260907.yml
+          git diff --check
+          (cd projects/frontier-settlement && python3 tools/test_current_source.py && python3 tools/test_current_docs.py && python3 tools/test_companion_testpack.py)
+      - name: Commit fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .github/workflows projects/frontier-settlement/gradle.properties
+          git commit -m 'Use current Frontier audits in companion CI'
+          git pull --rebase origin main
+          git push origin HEAD:main
