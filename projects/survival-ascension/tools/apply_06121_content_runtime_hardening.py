@@ -59,7 +59,7 @@ current_test = ROOT / "tools/test_current_source.py"
 replace_once(
     current_test,
     '''require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,\n        "guide contains duplicated hard-coded frontline supply balances")''',
-    '''require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,\n        "guide contains duplicated hard-coded frontline supply balances")\nrequire("ProductionService.localSupplyGuideText()" in guide and "localSupplyGuideText()" in production,\n        "guide no longer derives local frontline costs from ProductionService authority")''',
+    '''require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,\n        "guide contains duplicated hard-coded frontline supply balances")\nproduction = text(JAVA / "production/ProductionService.java")\nrequire("ProductionService.localSupplyGuideText()" in guide and "localSupplyGuideText()" in production,\n        "guide no longer derives local frontline costs from ProductionService authority")''',
     "current local-supply authority regression",
 )
 
