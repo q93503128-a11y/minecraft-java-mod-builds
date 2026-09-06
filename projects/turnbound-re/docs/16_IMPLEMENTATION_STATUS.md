@@ -5,7 +5,9 @@ Updated: 2026-09-07
 ## Current milestone
 M0 — Bootstrap & Contracts: **PASS**
 
-M1 — Deterministic Battle Core: **IN PROGRESS**
+M1 — Deterministic Battle Core: **PASS**
+
+M2 — Minecraft Adapter & Network: **NEXT**
 
 ## M0 accepted on main
 Validated build commit: `8d462013cf7633b9a9c82142ad027151b37e1b03`
@@ -42,24 +44,24 @@ Implemented M0 contracts:
 - Gradle unit-test runtime configured through ModDevGradle `unitTest` support so Minecraft/Codec classes are available to JUnit.
 - CI produces logs, JAR, SHA-256 and `BUILD_AND_RUNTIME_REPORT.md`.
 
-## M1 implemented and validated so far
-Latest validated M1 slice commit: `eef87df2e0c16cc9ff4959812bd98793e5873a7a`
+## M1 accepted on main
+Validated M1 commit: `d4226799857c0bffed11c1bbc25ba8d4db1402c0`
 
-GitHub Actions run: `34053736786` — PASS
+GitHub Actions run: `34056905906` — PASS
 
 Current verified deliverable:
 - version `0.1.0-alpha.1`
 - artifact `turnbound-re-0.1.0-alpha.1-deliverables`
-- artifact id `9995333942`
-- artifact archive SHA-256 digest: `3818c478a185ef324d6ccfd17e417ae00036dfe9802914488fe9c573ba9ae4a1`
-- production JAR SHA-256: `ce73efc37415ba8891a48d2f5fa396c69e66f9549a5f89536a3e2cc93e152b2c`
+- artifact id `9996240084`
+- artifact archive SHA-256 digest: `75e2b7360b669c41c76f3f8ee486add80a102439769ff629df192f7807c3e128`
+- production JAR SHA-256: `c62052ebb09a9d3a23e74a9a3c71ee47214fd91b4be5f04089fd59c8fd37c8cf`
 - production JAR verification: PASS
 
 Implemented:
 - canonical BattleState enum/state-machine foundation.
 - BattleInstance containing battleId, seed, revision, cycle, actor order, participants and event log.
 - SPD-desc initiative with stable `participantOrdinal` tie-break.
-- server-authoritative command acceptance skeleton with expected revision/current actor checks.
+- server-authoritative command acceptance with expected revision/current actor checks.
 - rejected stale/wrong-actor commands do not mutate revision or event log.
 - deterministic actor/cycle progression across repeated cycles.
 - canonical damage tags: MELEE / PROJECTILE / FIRE / BLAST / ARCANE / VOID.
@@ -83,40 +85,50 @@ Implemented:
 - DefinitionRegistry supports immutable validated status definitions while preserving the previous action/character constructor path.
 - status validation covers duplicate id, polarity, TURN/CYCLE duration, stack range and malformed refresh/tag/hook fields.
 - canonical shared status ids are contract-tested: GUARD / EXPOSED / POISE_GUARD / BURN / SLOW / ATK_UP / DEF_DOWN.
-- shared battle-owned `StatusRuntime` now stores deterministic active status ids and stack counts.
+- shared battle-owned `StatusRuntime` stores deterministic active status ids and stack counts.
 - shared `StatusService` is the mutation entry point for canonical status ids and data-defined max-stack enforcement.
-- GUARD / EXPOSED / POISE_GUARD no longer use independent boolean storage; legacy combat-state accessors delegate to the shared runtime.
-- Poise break/recovery/Guard lifecycle preserves the existing replay event contract while mutating the shared status runtime.
+- GUARD / EXPOSED / POISE_GUARD use the shared status ledger rather than independent boolean storage.
 - battle-owned `EnemyIntent` model exposes action id, type, target category, risk, break-cancel flag and optional downgrade action.
 - each live enemy publishes a deterministic Intent before its action window; the M1 AI stub resolves exactly the currently published Intent action.
 - replacing an already-published Intent emits `INTENT_CHANGED` before the changed AI command can resolve.
 - Poise break converts `breakCancelable=true` Intent to canonical `RECOVER`; recovered enemy turn emits `RECOVER` instead of silently selecting another action.
 - non-cancelable Intent with `breakDowngradeAction` is replaced by the configured downgraded action and normalized to NORMAL risk for the M1 stub.
 - defeated enemy Intent state is removed instead of leaving a stale telegraph.
-- terminal outcome evaluation now checks living PLAYER/ENEMY participants at `CHECK_END` and emits deterministic `BATTLE_RESULT` before entering `REWARD`.
-- `VICTORY` and `DEFEAT` are represented by battle-owned `Outcome`; terminal battles reject further player commands by phase.
+- terminal outcome evaluation checks living PLAYER/ENEMY participants at `CHECK_END` and emits deterministic `BATTLE_RESULT` before entering `REWARD`.
+- both VICTORY and DEFEAT paths are unit-tested through REWARD and CLEANUP.
 - defeated participants are skipped during actor advancement and emit `DEFEATED_ACTOR_SKIPPED`, preventing dead actors from receiving action windows.
 - end-of-battle cleanup transitions `REWARD -> CLEANUP -> NOT_IN_BATTLE`, clears enemy Intent state, zeros Energy and clears transient battle statuses.
-- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation, shared status runtime migration/max-stack validation, Intent publication/AI consistency, cancel-to-RECOVER, downgrade, event ordering, defeated-actor skip, victory/reward/cleanup and identical terminal event-stream checks.
+- `BattleCommand` carries stable command identity and target ids while preserving the legacy constructor used by earlier M1 tests.
+- strict `BattleCommandService` validates action ownership, cooldown readiness, status eligibility, target count, duplicate targets, target existence/alive state and SELF/ALLY/ENEMY/ANY team rule before mutating BattleInstance.
+- duplicate/retransmitted command identity is rejected after the first accepted command.
+- strict validation failures are mutation-free for revision, event log, battle state and Energy.
+- defeated targets are explicitly rejected by the strict target gate.
+- 100 complete player/enemy cycles are replayed twice with the same battle id, seed and command stream; both runs remain live without soft-lock and produce identical cycle/revision/RNG/event streams.
 
-Validation evidence for latest slice:
+M1 PASS evidence:
 - dependency resolution + clean build: PASS.
-- unit tests: PASS.
+- full JUnit suite: PASS.
+- explicit VICTORY and DEFEAT terminal flows: PASS.
+- strict action/target/retransmission validation tests: PASS.
+- 100-cycle deterministic/no-soft-lock test: PASS.
 - production JAR verification: PASS.
 - SHA-256 generation: PASS.
 - build report + logs + deliverable upload: PASS.
 
-## M1 remaining
-Continue in backlog/canonical order:
-1. complete target/action validation beyond revision/current actor: action ownership, cooldown/status eligibility, target count/team/alive and duplicate/retransmitted command identity.
-2. add explicit DEFEAT-path and broader long-run no-soft-lock coverage around the now-integrated terminal state machine.
-3. run the full deterministic same-seed + same-command stream suite and close M1 only when every validation dimension is mutation-free and terminal progression is proven.
+## Next implementation work — M2
+Continue in canonical backlog order:
+1. Entity participant binding between Minecraft entities and battle participant ids without leaking vanilla world AI/damage into battle resolution.
+2. world AI/damage isolation guards.
+3. C2S command and S2C snapshot/event payload contracts, preserving server authority and revision validation.
+4. DEBUG_ONLY battle HUD/inspection path only; do not create production UI.
+5. disconnect, entity removal, dimension change and cleanup guards so orphan battles cannot remain.
+6. establish the strongest practical runtime smoke/GameTest path and work toward the M2 PASS requirement: 20 repeated debug encounters with orphan battle count 0.
 
 ## Runtime verification status
 - Datagen: NOT RUN; no generated production data is required by the current M0/M1 slice.
 - GameTest: NOT RUN; no GameTest contract is implemented yet.
 - Dedicated server smoke: NOT RUN; runtime smoke task not yet established.
-- Client smoke: NOT RUN; current work is pure battle/data core and no production presentation is being claimed.
+- Client smoke: NOT RUN; M1 is a pure battle/data core and no production presentation is being claimed.
 
 ## Design gate
 Production UI, character appearance/model/animation, VFX, icons/fonts/colors and authored world visuals remain GATED and were not created or guessed.
