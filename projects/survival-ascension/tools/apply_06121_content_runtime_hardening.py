@@ -64,7 +64,7 @@ replace_once(
 )
 
 # The 0.58 regression wrapper is intentionally translated to current 0.61 contracts.
-# Historical source remains immutable; the translated test must recognize the current single-authority UI seam.
+# Historical source remains immutable; the translated test must recognize current runtime authority moves.
 release_test = ROOT / "tools/test_release_content_pack.py"
 text = release_test.read_text(encoding="utf-8")
 text = text.replace('PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"', 'PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"')
@@ -76,6 +76,7 @@ current_translations = """    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }'
     ('COMBAT -> { early = 1.25D; late = 1.15D; }', 'COMBAT -> { early = 4.00D; late = 3.50D; }'),
     ('CONSTRUCTION -> { early = 2.75D; late = 1.75D; }', 'CONSTRUCTION -> { early = 5.00D; late = 3.50D; }'),
     ('MOBILITY -> { early = 2.10D; late = 1.40D; }', 'MOBILITY -> { early = 4.00D; late = 3.00D; }'),
+    ('breakShovelArea', 'BulkMiningService.scheduleShovelArea'),
     ('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
     ('ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply', 'ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
 """
@@ -108,6 +109,7 @@ assert 'active.reinforcementCount > 0 ? " §7· 이변 개체 1체 포함" : ""'
 assert "산업 가공소 완공 → 통/공용 보급고 4블록 이내" in release_text
 assert "산업 가공소 완공 → 통 4블록 이내" not in release_text
 assert 'PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"' in release_text
+assert "('breakShovelArea', 'BulkMiningService.scheduleShovelArea')" in release_text
 assert "ProductionService.localSupplyGuideText()" in guide_text
 assert "원정은 식량(밀/당근/감자/비트) 12" not in guide_text
 assert "localSupplyCostText(LocalLoadout.EXPEDITION)" in production_text
