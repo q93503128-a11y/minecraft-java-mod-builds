@@ -44,6 +44,7 @@ jobs:
           set -euo pipefail
           python3 "$PROJECT_DIR/tools/apply_06121_bulk_mining_queue.py"
           python3 "$PROJECT_DIR/tools/apply_06121_historical_audit_bridge.py"
+          python3 "$PROJECT_DIR/tools/apply_06121_content_runtime_hardening.py"
           git diff --check
 
       - name: Current and historical source audits
@@ -72,6 +73,7 @@ jobs:
           jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/mining/BulkMiningService.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/mining/MiningProgression.class'
           jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/progress/AutomatedToolBreak.class'
+          jar tf "$JAR" | grep -q 'kr/moonseungjun/survivalascension/expedition/ExpeditionIncidentSystem.class'
 
       - name: Commit validated 0.61.21 to main and remove temporary helpers
         shell: bash
@@ -82,6 +84,7 @@ jobs:
           rm -f "$PROJECT_DIR/.bulk-mining-06121-trigger"
           rm -f "$PROJECT_DIR/tools/apply_06121_bulk_mining_queue.py"
           rm -f "$PROJECT_DIR/tools/apply_06121_historical_audit_bridge.py"
+          rm -f "$PROJECT_DIR/tools/apply_06121_content_runtime_hardening.py"
           rm -f .github/workflows/apply-survival-ascension-06121-bulk-mining.yml
           git add "$PROJECT_DIR" .github/workflows/apply-survival-ascension-06121-bulk-mining.yml
           git commit -m "Bound Survival bulk mining work per tick"
