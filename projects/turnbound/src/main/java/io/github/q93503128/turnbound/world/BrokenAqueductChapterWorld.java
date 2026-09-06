@@ -54,8 +54,12 @@ public final class BrokenAqueductChapterWorld {
                 && p.z <= AsterMarchRegionCatalog.AQUEDUCT.maxZ() + 8;
     }
 
-    public static void setLowerGateOpen(ServerLevel level, boolean open) { buildLowerGate(level, open); }
-    public static void setOroGateOpen(ServerLevel level, boolean open) { buildOroGate(level, open); }
+    public static void setLowerGateOpen(ServerLevel level, boolean open) {
+        buildLowerGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_AQUEDUCT_LOWER));
+    }
+    public static void setOroGateOpen(ServerLevel level, boolean open) {
+        buildOroGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_AQUEDUCT_ORO));
+    }
 
     private static BuiltChapter built() {
         AsterMarchRegionCatalog.Anchor ft = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_AQUEDUCT);
@@ -208,5 +212,9 @@ public final class BrokenAqueductChapterWorld {
     }
 
     private static double lerp(double a, double b, double t) { return a + (b - a) * t; }
-    private static void set(ServerLevel level, int x, int y, int z, Block block) { level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2); }
+    private static void set(ServerLevel level, int x, int y, int z, Block block) {
+        BlockPos pos = new BlockPos(x, y, z);
+        var target = block.defaultBlockState();
+        if (!level.getBlockState(pos).equals(target)) level.setBlock(pos, target, 2);
+    }
 }
