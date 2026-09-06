@@ -219,5 +219,7 @@ require("식량176" not in guide and "철56" not in guide and "석재벽돌128�
         "stale frontline manifest values returned to guide")
 require("장비 분해" in guide and "남은 내구도" in guide,
         "dynamic salvage rules are hidden from player guidance")
+require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,
+        "guide contains duplicated hard-coded frontline supply balances")
 
 print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.19 dynamic equipment salvage + canonical freight guide + full skill/runtime invariants")
