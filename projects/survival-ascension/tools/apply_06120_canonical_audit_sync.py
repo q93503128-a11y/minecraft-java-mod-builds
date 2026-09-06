@@ -58,6 +58,15 @@ replace_all_required(content_audit,
                      '산업 가공소 완공 → 통 4블록 이내',
                      '산업 가공소 완공 → 통/공용 보급고 4블록 이내')
 
+# test_release_content_pack.py executes a nested historical content source audit. Its authored
+# skill-XP literals predate the deliberate 0.61 solo-pacing retune, so translate every changed
+# skill at both wrapper levels in-memory instead of weakening the immutable baseline audit.
+replace_all_required(
+    content_audit,
+    "    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),",
+    '''    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }'),\n    ('HARVESTING -> { early = 1.50D; late = 1.20D; }', 'HARVESTING -> { early = 3.00D; late = 2.50D; }'),\n    ('COMBAT -> { early = 1.25D; late = 1.15D; }', 'COMBAT -> { early = 4.00D; late = 3.50D; }'),\n    ('CONSTRUCTION -> { early = 2.75D; late = 1.75D; }', 'CONSTRUCTION -> { early = 5.00D; late = 3.50D; }'),\n    ('MOBILITY -> { early = 2.10D; late = 1.40D; }', 'MOBILITY -> { early = 4.00D; late = 3.00D; }'),\n    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),''',
+)
+
 # Lock these manual regressions into the current-source checker too.
 current = ROOT / "tools/test_current_source.py"
 replace_once(
