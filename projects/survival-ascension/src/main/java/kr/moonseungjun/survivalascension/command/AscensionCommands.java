@@ -40,6 +40,7 @@ public final class AscensionCommands {
                 .then(skillSetLevelNode("mining", SkillType.MINING))
                 .then(skillSetLevelNode("woodcutting", SkillType.WOODCUTTING))
                 .then(skillSetLevelNode("harvesting", SkillType.HARVESTING))
+                .then(skillSetLevelNode("fishing", SkillType.FISHING))
                 .then(skillSetLevelNode("combat", SkillType.COMBAT))
                 .then(skillSetLevelNode("construction", SkillType.CONSTRUCTION))
                 .then(skillSetLevelNode("mobility", SkillType.MOBILITY)));
@@ -138,7 +139,7 @@ public final class AscensionCommands {
             case MOBILITY -> "이속 " + fmt(SkillTuning.mobilitySpeedMultiplier(level))
                     + " | 단차 " + String.format(java.util.Locale.ROOT, "%.2f", SkillTuning.mobilityStepHeight(level))
                     + " | 안전낙하 " + String.format(java.util.Locale.ROOT, "%.0f", SkillTuning.mobilitySafeFallDistance(level))
-                    + " | V " + (level < 30 ? "잠김" : SkillTuning.mobilityDashCooldownTicks(level) / 20.0D + "초");
+                    + " | X " + (level < 30 ? "잠김" : SkillTuning.mobilityDashCooldownTicks(level) / 20.0D + "초");
         };
         player.sendSystemMessage(Component.literal("§e" + skill.koreanName() + " §fLv." + level + " §7(" + progress + ") §8- §f" + extra));
     }

@@ -253,17 +253,21 @@ public final class SettlementWorkerService {
         void run(ServerLevel level, SettlementData data, FrontierWorkerEntity worker, BuildingRecord building);
     }
 
+    private record WorkerBuildingAssignment(BuildingRecord building, FrontierWorkerEntity worker) {}
+
     private static void runBuildingWorkers(ServerLevel level, SettlementData data, BuildingType type,
                                            String workerName, BuildingWork work) {
-        List<BuildingRecord> buildings = buildings(data, type);
+        List<BuildingRecord> loadedBuildings = new ArrayList<>();
+        for (BuildingRecord building : buildings(data, type)) {
+            if (level.hasChunkAt(building.workCenter())) loadedBuildings.add(building);
+        }
         List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);
-        int count = Math.min(buildings.size(), workers.size());
-        for (int i = 0; i < count; i++) {
-            BuildingRecord building = buildings.get(i);
-            if (!level.hasChunkAt(building.workCenter())) continue;
-            FrontierWorkerEntity worker = workers.get(i);
-            // Frontier owns the work order, but workers remain ordinary damageable mobs.
-            // Clear stale Alpha.84-87 quarantine/active-project flags on every ordinary work tick.
+        for (WorkerBuildingAssignment assignment : matchWorkersToBuildings(loadedBuildings, workers)) {
+            BuildingRecord building = assignment.building();
+            FrontierWorkerEntity worker = assignment.worker();
+            // Same-profession workers are physical civilians, not list-index slots. Match the closest
+            // remaining worker to the closest remaining completed workplace so a later build, death,
+            // relog or save migration cannot swap jobs merely because UUID lexical order changed.
             worker.setNoAi(false);
             worker.setInvulnerable(false);
             // Old saves can contain a worker that was carrying a worksite-export stack. That old
@@ -276,6 +280,44 @@ public final class SettlementWorkerService {
             }
             work.run(level, data, worker, building);
         }
+    }
+
+    private static List<WorkerBuildingAssignment> matchWorkersToBuildings(List<BuildingRecord> buildings,
+                                                                           List<FrontierWorkerEntity> workers) {
+        List<BuildingRecord> remainingBuildings = new ArrayList<>(buildings);
+        List<FrontierWorkerEntity> remainingWorkers = new ArrayList<>(workers);
+        List<WorkerBuildingAssignment> result = new ArrayList<>();
+        while (!remainingBuildings.isEmpty() && !remainingWorkers.isEmpty()) {
+            BuildingRecord bestBuilding = null;
+            FrontierWorkerEntity bestWorker = null;
+            double bestDistance = Double.MAX_VALUE;
+            long bestBuildingKey = Long.MAX_VALUE;
+            String bestWorkerKey = "";
+            for (BuildingRecord building : remainingBuildings) {
+                BlockPos work = building.workCenter();
+                long buildingKey = work.asLong();
+                for (FrontierWorkerEntity candidate : remainingWorkers) {
+                    double distance = candidate.distanceToSqr(
+                            work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
+                    String workerKey = candidate.getUUID().toString();
+                    if (distance < bestDistance
+                            || (Double.compare(distance, bestDistance) == 0
+                            && (buildingKey < bestBuildingKey
+                            || (buildingKey == bestBuildingKey && (bestWorker == null || workerKey.compareTo(bestWorkerKey) < 0))))) {
+                        bestBuilding = building;
+                        bestWorker = candidate;
+                        bestDistance = distance;
+                        bestBuildingKey = buildingKey;
+                        bestWorkerKey = workerKey;
+                    }
+                }
+            }
+            if (bestBuilding == null || bestWorker == null) break;
+            result.add(new WorkerBuildingAssignment(bestBuilding, bestWorker));
+            remainingBuildings.remove(bestBuilding);
+            remainingWorkers.remove(bestWorker);
+        }
+        return result;
     }
 
     private static void tryAttractWorker(MinecraftServer server, ServerLevel level, SettlementData data) {
@@ -303,10 +345,10 @@ public final class SettlementWorkerService {
         // Ordinary production workers have no per-worker manual assignment UI. Do not infer a vacancy
         // from a partial entity view; only recruit when their work<->storage envelope is fully loaded.
         if (localEvidenceLoaded) {
-            if (tryFillJob(server, level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber.size())) return;
-            if (tryFillJob(server, level, data, BuildingType.FARM, FARM_WORKER_NAME, farm.size())) return;
-            if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry.size())) return;
-            if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine.size())) return;
+            if (tryFillJob(server, level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber)) return;
+            if (tryFillJob(server, level, data, BuildingType.FARM, FARM_WORKER_NAME, farm)) return;
+            if (tryFillJob(server, level, data, BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry)) return;
+            if (tryFillJob(server, level, data, BuildingType.MINE, MINE_WORKER_NAME, mine)) return;
         }
 
         BuildingRecord missingWorkshop = SettlementWorkshopService.firstMissingLoadedAssignment(level, data);
@@ -405,10 +447,16 @@ public final class SettlementWorkerService {
     }
 
     private static boolean tryFillJob(MinecraftServer server, ServerLevel level, SettlementData data,
-                                      BuildingType type, String workerName, int existingWorkers) {
-        List<BuildingRecord> available = buildings(data, type);
-        if (existingWorkers >= available.size()) return false;
-        BuildingRecord target = available.get(existingWorkers);
+                                      BuildingType type, String workerName, List<FrontierWorkerEntity> existingWorkers) {
+        List<BuildingRecord> missing = new ArrayList<>(buildings(data, type));
+        if (missing.isEmpty()) return false;
+        for (WorkerBuildingAssignment assignment : matchWorkersToBuildings(missing, existingWorkers)) {
+            missing.remove(assignment.building());
+        }
+        if (missing.isEmpty()) return false;
+        // Evidence is complete before this method is called, so the nearest-worker matching above
+        // distinguishes a genuinely vacant workplace from a worker that merely belongs to a later build.
+        BuildingRecord target = missing.getFirst();
         if (!level.hasChunkAt(target.workCenter())) return true;
         if (!arrivalFoodAvailable(level, data)) return true;
         FrontierWorkerEntity arrival = spawnWorker(level, target.workCenter(), workerName);

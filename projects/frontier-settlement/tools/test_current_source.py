@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.114" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.115" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -114,6 +114,13 @@ require("deliverIfCargoFull" in worker, "full-stack immediate deposit handoff mi
 require("tryExportWorksiteBuffer(" not in worker, "retired worksite re-extraction loop returned")
 require("LEGACY_WORKSITE_EXPORT_TAG" in worker and "worker.removeTag(LEGACY_WORKSITE_EXPORT_TAG)" in worker, "legacy export-tag migration missing")
 require("Profession barrels are already part of SettlementStorageService's authoritative physical" in worker, "worksite barrel authority rationale missing")
+require("matchWorkersToBuildings" in worker and "WorkerBuildingAssignment" in worker,
+        "same-profession workers returned to UUID/list-index workplace assignment")
+require("BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber)" in worker
+        and "BuildingType.FARM, FARM_WORKER_NAME, farm)" in worker
+        and "BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry)" in worker
+        and "BuildingType.MINE, MINE_WORKER_NAME, mine)" in worker,
+        "vacancy recruitment no longer uses physical worker/workplace matching")
 production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")
 require("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")
 require("farmBatch" in production_efficiency and "case 1 -> 12" in production_efficiency and "default -> 24" in production_efficiency,
@@ -219,4 +226,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: alpha113 bulk-break event guards + alpha112 footprint-only placement + prior invariants")
+print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.115 worker/workplace authority + physical production ecology/balance + prior invariants")

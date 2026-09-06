@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.17-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.18-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.17-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.18-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -105,6 +105,12 @@ for optimization in (
 client = text(JAVA / "client/SurvivalAscensionClient.java")
 require("InputConstants.KEY_X" in client, "dash default key must be X")
 require("mobility_action\", InputConstants.KEY_V" not in client, "old V dash default returned")
+commands_for_controls = text(JAVA / "command/AscensionCommands.java")
+guide_for_controls = text(JAVA / "client/GuideScreen.java")
+require('" | X "' in commands_for_controls and ' / X %s"' in guide_for_controls,
+        "mobility stats/help no longer match the actual X key")
+require('" | V "' not in commands_for_controls and ' / V %s"' not in guide_for_controls,
+        "stale V mobility label returned")
 
 require("MobilityProgression::onPlayerRespawn" in main and "MobilityProgression::onPlayerChangedDimension" in main, "mobility transient attributes are not restored across lifecycle boundaries")
 require("return 1.0D + 0.0020D * clamped + 0.000010D * clamped * clamped;" in tuning, "mobility per-level speed scaling drift")
@@ -150,6 +156,17 @@ require("ClientFractureShrineState" in hud and "균열 성소" in hud and "예�
 bore = text(JAVA / "mining/BoreMiningService.java")
 automated_break = text(JAVA / "progress/AutomatedToolBreak.java")
 commands = text(JAVA / "command/AscensionCommands.java")
+for skill_literal, skill_enum in (
+    ("mining", "MINING"),
+    ("woodcutting", "WOODCUTTING"),
+    ("harvesting", "HARVESTING"),
+    ("fishing", "FISHING"),
+    ("combat", "COMBAT"),
+    ("construction", "CONSTRUCTION"),
+    ("mobility", "MOBILITY"),
+):
+    require(f'skillSetLevelNode("{skill_literal}", SkillType.{skill_enum})' in commands,
+            f"GM skill playtest command missing: {skill_literal}")
 require("GLOBAL_SOFT_TIME_BUDGET_NANOS = 6_000_000L" in bore and "LOCAL_SOFT_TIME_BUDGET_NANOS = 4_000_000L" in bore, "bore time budget missing")
 require("LOCAL_HARD_BLOCK_CAP_PER_TICK = 12" in bore and "now + predicted > localDeadline" in bore, "adaptive predictive stop missing")
 require("removePending(job.playerId, removed)" in bore and "removePending(job.playerId, 1)" not in bore, "pending-count batching regressed")
@@ -157,6 +174,19 @@ require("TimedBreakResult" in automated_break and "player.gameMode.destroyBlock(
 require("setBlock(target" not in bore and "setChunkForced" not in bore and "addRegionTicket" not in bore, "bore bypass/force-load returned")
 require("pipelineP95Nanos" in bore and "sliceP99Nanos" in bore, "bore percentile profiler missing")
 require("borestats" in commands and "BoreMiningService.profileLines" in commands, "bore runtime profile command missing")
+construction = text(JAVA / "construction/ConstructionProgression.java")
+harvesting = text(JAVA / "harvesting/HarvestingProgression.java")
+woodcutting = text(JAVA / "woodcutting/WoodcuttingProgression.java")
+irrigation = text(JAVA / "harvesting/IrrigationReplantService.java")
+require("level.getBlockEntity(target) != null" in mining, "bulk mining no longer protects block entities")
+require("AREA_BREAK_GUARD" in mining and "player.isShiftKeyDown()" in mining, "mining recursion/precision guard missing")
+require("CHAIN_GUARD" in woodcutting and "JOBS.clear()" in woodcutting, "woodcutting queue/recursion cleanup missing")
+require("AREA_GUARD" in harvesting and "MAX_PENDING_PER_PLAYER" in harvesting and "JOBS.clear()" in harvesting,
+        "harvesting queue bounds/cleanup missing")
+require("FieldDepotService.hasMaterial" in irrigation and "FieldDepotService.consumeOne" in irrigation,
+        "irrigation replant no longer consumes physical seed material")
+require("EventHooks.onBlockPlace" in construction and "FieldDepotService.consumeOne" in construction,
+        "construction placement/material transaction guard missing")
 
 warband = text(JAVA / "elite/WarbandDirector.java")
 require("BEHAVIOR_INTERVAL = 20" in warband, "warband broad scan cadence regressed")
@@ -171,4 +201,4 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.17 adaptive bore budget/profiling + protocol15 + prior runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.18 full skill command/control regression + adaptive bore budget/profiling + protocol15 + prior runtime invariants")
