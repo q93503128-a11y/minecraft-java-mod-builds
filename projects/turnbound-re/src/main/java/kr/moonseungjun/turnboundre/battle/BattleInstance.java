@@ -19,6 +19,8 @@ public final class BattleInstance {
     private final UUID battleId;
     private final long seed;
     private final Map<String, BattleParticipant> participants;
+    private final Map<String, ParticipantCombatState> combatStates;
+    private final DeterministicBattleRng rng;
     private final List<BattleEvent> eventLog = new ArrayList<>();
     private List<String> actorOrder;
     private BattleState state = BattleState.ENCOUNTER_OPEN;
@@ -32,6 +34,10 @@ public final class BattleInstance {
         this.battleId = battleId;
         this.seed = seed;
         this.participants = validatedParticipants(participants);
+        Map<String, ParticipantCombatState> mutable = new HashMap<>();
+        this.participants.forEach((id, participant) -> mutable.put(id, new ParticipantCombatState(participant)));
+        this.combatStates = mutable;
+        this.rng = new DeterministicBattleRng(seed);
         this.actorOrder = InitiativeService.order(participants);
         emit("BATTLE_OPEN", "", "seed=" + seed);
     }
@@ -82,6 +88,29 @@ public final class BattleInstance {
         eventLog.add(new BattleEvent(revision, "AI_COMMAND", actor.id(), "basic"));
     }
 
+    /** Applies canonical deterministic damage using this battle's single RNG stream and mutable target state. */
+    public DamageService.DamageResult resolveDamage(String actorId, String targetId, DamageService.DamageRequest request) {
+        requireState(BattleState.RESOLVING);
+        if (!participants.containsKey(actorId)) throw new IllegalArgumentException("unknown actor: " + actorId);
+        ParticipantCombatState target = combatState(targetId);
+        if (!target.alive()) throw new IllegalArgumentException("target is not alive: " + targetId);
+
+        DamageService.DamageRequest canonicalRequest = new DamageService.DamageRequest(
+                request.tag(), request.affinity(), request.hpPower(), request.poisePower(), request.attack(), request.defense(),
+                target.exposed(), request.criticalChance(), request.criticalMultiplier(), request.otherMultiplier());
+        DamageService.DamageResult result = DamageService.resolve(canonicalRequest, rng);
+
+        int hpDamage = target.guard() ? (int) Math.floor(result.finalDamage() * 0.5D) : result.finalDamage();
+        target.applyHpDamage(hpDamage);
+        boolean brokePoise = target.applyPoiseDamage(result.poiseDamage());
+
+        revision++;
+        emit("DAMAGE", actorId, "target=" + targetId + " hp=" + hpDamage + " " + result.breakdown());
+        if (brokePoise) emit("EXPOSED_APPLIED", targetId, "poise=0");
+        if (!target.alive()) emit("PARTICIPANT_DEFEATED", targetId, "hp=0");
+        return result;
+    }
+
     public void finishResolution() {
         requireState(BattleState.RESOLVING);
         transition(BattleState.CHECK_END);
@@ -97,6 +126,16 @@ public final class BattleInstance {
 
     private void prepareCurrentActor() {
         transition(BattleState.ACTOR_READY);
+        ParticipantCombatState actorState = combatState(currentActorId());
+        if (actorState.exposed()) {
+            actorState.recoverAtTurnStartIfExposed();
+            emit("EXPOSED_RECOVERED", currentActorId(), "poise=" + actorState.poise());
+            emit("POISE_GUARD_APPLIED", currentActorId(), "mult=0.5");
+        } else if (actorState.poiseGuard()) {
+            actorState.expirePoiseGuardAtTurnStart();
+            emit("POISE_GUARD_EXPIRED", currentActorId(), "");
+        }
+        actorState.setGuard(false);
         BattleParticipant actor = participants.get(currentActorId());
         if (actor.team() == BattleTeam.PLAYER) transition(BattleState.AWAIT_COMMAND);
         else transition(BattleState.RESOLVING);
@@ -119,6 +158,12 @@ public final class BattleInstance {
         return actorOrder.isEmpty() ? "" : actorOrder.get(actorIndex);
     }
 
+    public ParticipantCombatState combatState(String participantId) {
+        ParticipantCombatState state = combatStates.get(participantId);
+        if (state == null) throw new IllegalArgumentException("unknown participant: " + participantId);
+        return state;
+    }
+
     public UUID battleId() { return battleId; }
     public long seed() { return seed; }
     public long revision() { return revision; }
@@ -127,4 +172,5 @@ public final class BattleInstance {
     public String currentActorId() { return actorOrder.get(actorIndex); }
     public List<String> actorOrder() { return List.copyOf(actorOrder); }
     public List<BattleEvent> eventLog() { return List.copyOf(eventLog); }
+    public long rngDraws() { return rng.draws(); }
 }
