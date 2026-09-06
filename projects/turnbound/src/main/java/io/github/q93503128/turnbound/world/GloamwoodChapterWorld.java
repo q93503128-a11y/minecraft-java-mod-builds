@@ -62,8 +62,12 @@ public final class GloamwoodChapterWorld {
                 && p.z <= -112;
     }
 
-    public static void setDeepGateOpen(ServerLevel level, boolean open) { buildDeepGate(level, open); }
-    public static void setBossGateOpen(ServerLevel level, boolean open) { buildBossGate(level, open); }
+    public static void setDeepGateOpen(ServerLevel level, boolean open) {
+        buildDeepGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_GLOAM_DEEP));
+    }
+    public static void setBossGateOpen(ServerLevel level, boolean open) {
+        buildBossGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_GLOAM_BOSS));
+    }
 
     private static BuiltChapter built() {
         AsterMarchRegionCatalog.Anchor ft = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_GLOAM);
@@ -240,5 +244,9 @@ public final class GloamwoodChapterWorld {
     }
 
     private static double lerp(double a, double b, double t) { return a + (b - a) * t; }
-    private static void set(ServerLevel level, int x, int y, int z, Block block) { level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2); }
+    private static void set(ServerLevel level, int x, int y, int z, Block block) {
+        BlockPos pos = new BlockPos(x, y, z);
+        var target = block.defaultBlockState();
+        if (!level.getBlockState(pos).equals(target)) level.setBlock(pos, target, 2);
+    }
 }
