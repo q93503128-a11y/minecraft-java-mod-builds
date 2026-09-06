@@ -38,6 +38,14 @@ jobs:
               p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
             python3 tools/apply_frontier_survival_full_audit_fixes_20260906.py
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/tools/test_current_source.py')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("and '\" / X %s\"' in guide_for_controls", "and ' / X %s\"' in guide_for_controls")
+          s = s.replace("and '\" / V %s\"' not in guide_for_controls", "and ' / V %s\"' not in guide_for_controls")
+          p.write_text(s, encoding='utf-8')
+          PY
           else
             echo 'Audit fixes already applied on this branch.'
           fi
