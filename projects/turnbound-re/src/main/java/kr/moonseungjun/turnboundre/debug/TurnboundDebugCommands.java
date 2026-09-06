@@ -10,7 +10,7 @@ public final class TurnboundDebugCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("turnbound_re")
-                .requires(source -> source.hasPermission(2))
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("contracts")
                         .executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal("TURNBOUND: RE M0 contracts ready"), false);
