@@ -27,28 +27,93 @@ jobs:
           java-version: '25'
           cache: gradle
       - name: Verify toolchain
+        id: toolchain
         run: |
-          java -version
-          ./gradlew --version
-      - name: Clean build and unit tests
-        run: ./gradlew --no-daemon clean build --stacktrace
-      - name: Verify JAR
+          mkdir -p ci-output
+          {
+            java -version
+            ./gradlew --version
+          } 2>&1 | tee ci-output/toolchain.log
+      - name: Resolve dependencies and clean build
+        id: build
         run: |
-          JAR=$(ls build/libs/turnbound_re-*.jar | head -n1)
+          set -o pipefail
+          ./gradlew --no-daemon dependencies clean build --stacktrace 2>&1 | tee ci-output/clean-build.log
+      - name: Verify production JAR
+        id: verify
+        if: steps.build.outcome == 'success'
+        run: |
+          set -euo pipefail
+          JAR=$(find build/libs -maxdepth 1 -type f -name 'turnbound_re-*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)
           test -n "$JAR"
-          unzip -t "$JAR"
-          unzip -l "$JAR" | grep 'META-INF/neoforge.mods.toml'
-          unzip -l "$JAR" | grep 'kr/moonseungjun/turnboundre/TurnboundRe.class'
-          unzip -l "$JAR" | grep 'assets/turnbound_re/'
-          unzip -l "$JAR" | grep 'data/turnbound_re/'
-          if unzip -l "$JAR" | grep -q '\.java$'; then exit 1; fi
-          sha256sum "$JAR" | tee build/turnbound-re.sha256
-      - name: Upload JAR
-        if: success()
+          {
+            echo "JAR=$JAR"
+            unzip -t "$JAR"
+            unzip -l "$JAR" | grep 'META-INF/neoforge.mods.toml'
+            unzip -l "$JAR" | grep 'kr/moonseungjun/turnboundre/TurnboundRe.class'
+            unzip -l "$JAR" | grep 'assets/turnbound_re/'
+            unzip -l "$JAR" | grep 'data/turnbound_re/'
+            if unzip -Z1 "$JAR" | grep -Eq '\.(java|kt|groovy)$'; then
+              echo 'ERROR: source file found in production JAR'
+              exit 1
+            fi
+            if unzip -Z1 "$JAR" | grep -Eq '(^|/)(\.github|tools)/'; then
+              echo 'ERROR: development-only path found in production JAR'
+              exit 1
+            fi
+            DUPES=$(unzip -Z1 "$JAR" | sort | uniq -d)
+            if [ -n "$DUPES" ]; then
+              echo 'ERROR: duplicate JAR entries:'
+              echo "$DUPES"
+              exit 1
+            fi
+          } 2>&1 | tee ci-output/jar-verify.log
+          sha256sum "$JAR" | tee ci-output/turnbound-re.sha256
+          cp "$JAR" ci-output/
+      - name: Write build report
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2-)
+          MC=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2-)
+          NEO=$(grep '^neo_version=' gradle.properties | cut -d= -f2-)
+          HASH=$(awk '{print $1}' ci-output/turnbound-re.sha256 2>/dev/null || true)
+          JAR=$(find ci-output -maxdepth 1 -type f -name 'turnbound_re-*.jar' -printf '%f\n' | head -n1 || true)
+          cat > ci-output/BUILD_AND_RUNTIME_REPORT.md <<EOF
+          # TURNBOUND: RE Build and Runtime Report
+
+          - Commit: $GITHUB_SHA
+          - Version: $VERSION
+          - Minecraft: $MC
+          - Java: 25
+          - NeoForge: $NEO
+          - Workflow run: $GITHUB_RUN_ID
+          - Clean build/unit tests: $BUILD_OUTCOME
+          - JAR verify: $VERIFY_OUTCOME
+          - JAR: ${JAR:-NOT PRODUCED}
+          - SHA-256: ${HASH:-NOT PRODUCED}
+          - Datagen: NOT RUN — M0 has no required generated production data yet.
+          - GameTest: NOT RUN — no GameTest contract is implemented in M0.
+          - Dedicated server smoke test: NOT RUN — runtime smoke task not yet established.
+          - Client smoke test: NOT RUN — headless CI presentation/runtime gate not yet established.
+          - Validation scope: Gradle dependency resolution, clean build, JUnit contracts, ZIP integrity, metadata, compiled class, asset/data namespace, source/development-path exclusion, duplicate entries, SHA-256.
+          EOF
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-re-0.1.0-alpha.1-logs
+          path: projects/turnbound-re/ci-output/
+          retention-days: 14
+      - name: Upload deliverables
+        if: steps.build.outcome == 'success' && steps.verify.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: turnbound-re-0.1.0-alpha.1-deliverables
           path: |
-            projects/turnbound-re/build/libs/turnbound_re-*.jar
-            projects/turnbound-re/build/turnbound-re.sha256
+            projects/turnbound-re/ci-output/turnbound_re-*.jar
+            projects/turnbound-re/ci-output/turnbound-re.sha256
+            projects/turnbound-re/ci-output/BUILD_AND_RUNTIME_REPORT.md
           retention-days: 14

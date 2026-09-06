@@ -6,10 +6,26 @@ import java.util.List;
 import java.util.Set;
 
 public final class DefinitionValidator {
+    private static final Set<String> ACTION_KINDS = Set.of("BASIC", "SKILL", "GUARD", "BURST", "PASSIVE");
     private static final Set<String> ROLES = Set.of("VANGUARD", "BREAKER", "STRIKER", "SUPPORT", "CONTROL");
     private static final Set<String> AFFINITIES = Set.of("FLAME", "TIDE", "GALE", "STONE", "LIGHT", "DARK");
 
     private DefinitionValidator() {}
+
+    public static List<String> validateActions(List<ActionDefinition> actions) {
+        List<String> errors = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (ActionDefinition action : actions) {
+            String id = action.id();
+            if (id == null || id.isBlank()) errors.add("action id is blank");
+            else if (!seen.add(id)) errors.add("duplicate action id: " + id);
+            if (!ACTION_KINDS.contains(action.kind())) errors.add(id + ": unknown action kind " + action.kind());
+            if (action.energyCost() < 0) errors.add(id + ": energyCost must be >= 0");
+            if (action.poiseDamage() < 0) errors.add(id + ": poiseDamage must be >= 0");
+            if (action.power() < 0) errors.add(id + ": power must be >= 0");
+        }
+        return List.copyOf(errors);
+    }
 
     public static List<String> validateCharacters(List<CharacterDefinition> characters, Set<String> actionIds) {
         List<String> errors = new ArrayList<>();
