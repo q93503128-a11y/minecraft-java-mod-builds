@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.network;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.battle.BattleEvent;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
+import kr.moonseungjun.turnboundre.debug.DebugBattleClientState;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -10,7 +11,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.List;
 
-/** M2 play-phase network registration. Common code contains no client rendering/UI references. */
+/** M2 play-phase network registration. Common code contains no production client rendering/UI references. */
 public final class BattleNetwork {
     private static final String PROTOCOL_VERSION = "1";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
@@ -24,10 +25,10 @@ public final class BattleNetwork {
                 BattleNetwork::handleCommand);
         registrar.playToClient(BattleNetworkPayloads.BattleSnapshotS2C.TYPE,
                 BattleNetworkPayloads.BattleSnapshotS2C.STREAM_CODEC,
-                (payload, context) -> {});
+                (payload, context) -> DebugBattleClientState.accept(payload));
         registrar.playToClient(BattleNetworkPayloads.BattleEventsS2C.TYPE,
                 BattleNetworkPayloads.BattleEventsS2C.STREAM_CODEC,
-                (payload, context) -> {});
+                (payload, context) -> DebugBattleClientState.accept(payload));
     }
 
     private static void handleCommand(BattleNetworkPayloads.BattleCommandC2S payload, IPayloadContext context) {

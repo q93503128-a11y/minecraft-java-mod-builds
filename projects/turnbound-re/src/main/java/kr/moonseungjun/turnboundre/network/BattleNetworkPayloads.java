@@ -32,6 +32,35 @@ public final class BattleNetworkPayloads {
         }
     }
 
+    public record SnapshotParticipant(
+            String id,
+            int hp,
+            int maxHp,
+            int poise,
+            int poiseMax,
+            int energy,
+            boolean guard,
+            boolean exposed,
+            boolean poiseGuard,
+            boolean alive
+    ) {}
+
+    public record DecodedSnapshot(
+            UUID battleId,
+            long revision,
+            String state,
+            int cycle,
+            String currentActorId,
+            List<SnapshotParticipant> participants
+    ) {}
+
+    public record DecodedEvents(
+            UUID battleId,
+            long resultingRevision,
+            int fromIndex,
+            List<BattleEvent> events
+    ) {}
+
     public record BattleCommandC2S(String wire) implements CustomPacketPayload {
         public static final Type<BattleCommandC2S> TYPE = new Type<>(Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_command"));
         public static final StreamCodec<RegistryFriendlyByteBuf, BattleCommandC2S> STREAM_CODEC = StreamCodec.composite(
@@ -75,6 +104,32 @@ public final class BattleNetworkPayloads {
                     Integer.toString(battle.cycle()), battle.currentActorId(), packList(participantRows)));
         }
 
+        public DecodedSnapshot decode() {
+            List<String> p = split(wire, 6);
+            List<SnapshotParticipant> participants = new ArrayList<>();
+            for (String row : unpackList(p.get(5))) {
+                List<String> r = split(row, 10);
+                participants.add(new SnapshotParticipant(
+                        r.get(0),
+                        Integer.parseInt(r.get(1)),
+                        Integer.parseInt(r.get(2)),
+                        Integer.parseInt(r.get(3)),
+                        Integer.parseInt(r.get(4)),
+                        Integer.parseInt(r.get(5)),
+                        Boolean.parseBoolean(r.get(6)),
+                        Boolean.parseBoolean(r.get(7)),
+                        Boolean.parseBoolean(r.get(8)),
+                        Boolean.parseBoolean(r.get(9))));
+            }
+            return new DecodedSnapshot(
+                    UUID.fromString(p.get(0)),
+                    Long.parseLong(p.get(1)),
+                    p.get(2),
+                    Integer.parseInt(p.get(3)),
+                    p.get(4),
+                    List.copyOf(participants));
+        }
+
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
@@ -95,6 +150,20 @@ public final class BattleNetworkPayloads {
 
         public static BattleEventsS2C rejection(UUID battleId, long revision, String reason) {
             return new BattleEventsS2C(join(battleId.toString(), Long.toString(revision), "-1", packList(List.of(join(Long.toString(revision), "COMMAND_REJECTED", "", reason)))));
+        }
+
+        public DecodedEvents decode() {
+            List<String> p = split(wire, 4);
+            List<BattleEvent> events = new ArrayList<>();
+            for (String row : unpackList(p.get(3))) {
+                List<String> r = split(row, 4);
+                events.add(new BattleEvent(Long.parseLong(r.get(0)), r.get(1), r.get(2), r.get(3)));
+            }
+            return new DecodedEvents(
+                    UUID.fromString(p.get(0)),
+                    Long.parseLong(p.get(1)),
+                    Integer.parseInt(p.get(2)),
+                    List.copyOf(events));
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
