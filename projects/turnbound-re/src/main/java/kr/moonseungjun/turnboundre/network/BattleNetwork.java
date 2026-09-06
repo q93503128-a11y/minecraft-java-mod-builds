@@ -41,21 +41,19 @@ public final class BattleNetwork {
             return;
         }
 
-        BattleNetworkGateway.Result result = GATEWAY.authorize(player.getUUID(), decoded);
+        BattleNetworkGateway.Result result = GATEWAY.submit(player.getUUID(), decoded);
         BattleInstance battle = result.battle();
         if (battle == null) return;
 
-        if (result.authorized()) {
-            // This slice deliberately stops before mutation: the next adapter step resolves definitions/policy and then
-            // invokes the existing strict BattleCommandService. No network path may bypass that M1 gate.
-            BattleEvent authorized = new BattleEvent(battle.revision(), "COMMAND_AUTHORIZED", decoded.actorId(), decoded.commandId());
+        if (result.accepted()) {
+            List<BattleEvent> events = BattleNetworkGateway.eventsSince(result);
             context.reply(BattleNetworkPayloads.BattleEventsS2C.from(
-                    battle.battleId(), battle.revision(), battle.eventLog().size(), List.of(authorized)));
+                    battle.battleId(), battle.revision(), result.eventStartIndex(), events));
         } else {
+            // Rejections remain mutation-free and return the authoritative revision for resynchronization.
             context.reply(BattleNetworkPayloads.BattleEventsS2C.rejection(
                     battle.battleId(), battle.revision(), result.code().name() + ":" + result.detail()));
         }
-        // Always return the authoritative state after command authorization/rejection for deterministic resync.
         context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(battle));
     }
 }
