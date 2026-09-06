@@ -69,7 +69,9 @@ public final class RewardGrantService {
         Result result = commit(player.getUUID(), transactionId, encounterId, state, outcome,
                 snapshot -> RewardTransactionJournal.prepare(primary, transactionId, snapshot),
                 () -> CampaignPersistence.saveOrThrow(player),
-                () -> RewardTransactionJournal.clear(primary));
+                // setData updates the persistent attachment in memory, but the player NBT is durably written later by
+                // Minecraft. Keep the WAL until a future load proves the attachment already contains this transaction.
+                () -> { });
 
         // Player rewards are committed first. The authored world's shared progression is a separate Minecraft SavedData
         // concern, so future co-op sees one B01-B05/world-unlock history instead of per-player copies of physical state.
