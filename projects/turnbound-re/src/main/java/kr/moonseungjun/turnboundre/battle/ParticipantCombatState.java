@@ -78,4 +78,10 @@ public final class ParticipantCombatState {
         if (guard) StatusService.applySingle(statuses, StatusService.GUARD);
         else StatusService.remove(statuses, StatusService.GUARD);
     }
+
+    /** End-of-battle cleanup contract: Energy and transient battle statuses never leak into the next battle. */
+    public void resetBattleResources() {
+        energy = 0;
+        statuses.clear();
+    }
 }
