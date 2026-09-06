@@ -30,12 +30,12 @@ class M2NetworkContractsTest {
     void authorityGateRejectsForeignSenderAndStaleRevisionWithoutMutation() {
         UUID battleId = UUID.randomUUID();
         UUID playerEntity = UUID.randomUUID();
-        UUID enemyEntity = UUID.randomUUID();
-        BattleInstance battle = new BattleInstance(battleId, 1234L, List.of(player(), enemy()));
+        List<BattleParticipant> participants = List.of(player(), enemy());
+        BattleInstance battle = new BattleInstance(battleId, 1234L, participants);
         BattleManager manager = new BattleManager();
         manager.register(battle, List.of(
                 new EntityParticipantBinding("p1", playerEntity),
-                new EntityParticipantBinding("e1", enemyEntity)));
+                new EntityParticipantBinding("e1", UUID.randomUUID())), participants);
         battle.start();
 
         BattleNetworkGateway gateway = new BattleNetworkGateway(manager);
@@ -43,31 +43,68 @@ class M2NetworkContractsTest {
         int events = battle.eventLog().size();
 
         var foreign = new BattleNetworkPayloads.DecodedCommand(battleId, revision, "p1", "basic", "cmd-a", List.of("e1"));
-        assertEquals(BattleNetworkGateway.ResultCode.SENDER_NOT_BOUND, gateway.authorize(UUID.randomUUID(), foreign).code());
+        assertEquals(BattleNetworkGateway.ResultCode.SENDER_NOT_BOUND, gateway.submit(UUID.randomUUID(), foreign).code());
         assertEquals(revision, battle.revision());
         assertEquals(events, battle.eventLog().size());
 
         var stale = new BattleNetworkPayloads.DecodedCommand(battleId, revision + 1, "p1", "basic", "cmd-b", List.of("e1"));
-        assertEquals(BattleNetworkGateway.ResultCode.STALE_REVISION, gateway.authorize(playerEntity, stale).code());
+        assertEquals(BattleNetworkGateway.ResultCode.STALE_REVISION, gateway.submit(playerEntity, stale).code());
         assertEquals(revision, battle.revision());
         assertEquals(events, battle.eventLog().size());
     }
 
     @Test
-    void authorityGateAcceptsOnlyBoundCurrentActorAndSnapshotIsNonEmpty() {
+    void boundBasicCommandMutatesThroughPersistentStrictGateAndReplayIsRejected() {
         UUID battleId = UUID.randomUUID();
         UUID playerEntity = UUID.randomUUID();
-        BattleInstance battle = new BattleInstance(battleId, 9L, List.of(player(), enemy()));
+        List<BattleParticipant> participants = List.of(player(), enemy());
+        BattleInstance battle = new BattleInstance(battleId, 9L, participants);
         BattleManager manager = new BattleManager();
         manager.register(battle, List.of(
                 new EntityParticipantBinding("p1", playerEntity),
-                new EntityParticipantBinding("e1", UUID.randomUUID())));
+                new EntityParticipantBinding("e1", UUID.randomUUID())), participants);
         battle.start();
 
-        var incoming = new BattleNetworkPayloads.DecodedCommand(battleId, battle.revision(), "p1", "basic", "cmd-ok", List.of("e1"));
-        BattleNetworkGateway.Result result = new BattleNetworkGateway(manager).authorize(playerEntity, incoming);
-        assertTrue(result.authorized());
+        long beforeRevision = battle.revision();
+        int beforeEnergy = battle.combatState("p1").energy();
+        BattleNetworkGateway gateway = new BattleNetworkGateway(manager);
+        var incoming = new BattleNetworkPayloads.DecodedCommand(battleId, beforeRevision, "p1", "basic", "cmd-ok", List.of("e1"));
+        BattleNetworkGateway.Result accepted = gateway.submit(playerEntity, incoming);
+
+        assertTrue(accepted.accepted());
+        assertEquals(beforeRevision + 1, battle.revision());
+        assertEquals(Math.min(100, beforeEnergy + 10), battle.combatState("p1").energy());
+        assertFalse(BattleNetworkGateway.eventsSince(accepted).isEmpty());
         assertFalse(BattleNetworkPayloads.BattleSnapshotS2C.from(battle).wire().isBlank());
-        assertFalse(BattleNetworkPayloads.BattleEventsS2C.rejection(battleId, battle.revision(), "test").wire().isBlank());
+
+        int eventsAfterAccept = battle.eventLog().size();
+        int energyAfterAccept = battle.combatState("p1").energy();
+        var replay = new BattleNetworkPayloads.DecodedCommand(battleId, battle.revision(), "p1", "basic", "cmd-ok", List.of("e1"));
+        BattleNetworkGateway.Result rejected = gateway.submit(playerEntity, replay);
+        assertEquals(BattleNetworkGateway.ResultCode.COMMAND_REJECTED, rejected.code());
+        assertEquals("DUPLICATE_COMMAND", rejected.detail());
+        assertEquals(eventsAfterAccept, battle.eventLog().size());
+        assertEquals(energyAfterAccept, battle.combatState("p1").energy());
+    }
+
+    @Test
+    void dataDefinedActionIsNotInventedByNetworkAdapter() {
+        UUID battleId = UUID.randomUUID();
+        UUID playerEntity = UUID.randomUUID();
+        List<BattleParticipant> participants = List.of(player(), enemy());
+        BattleInstance battle = new BattleInstance(battleId, 11L, participants);
+        BattleManager manager = new BattleManager();
+        manager.register(battle, List.of(
+                new EntityParticipantBinding("p1", playerEntity),
+                new EntityParticipantBinding("e1", UUID.randomUUID())), participants);
+        battle.start();
+        long revision = battle.revision();
+        int events = battle.eventLog().size();
+
+        var skill = new BattleNetworkPayloads.DecodedCommand(battleId, revision, "p1", "skill_unknown", "cmd-skill", List.of("e1"));
+        BattleNetworkGateway.Result result = new BattleNetworkGateway(manager).submit(playerEntity, skill);
+        assertEquals(BattleNetworkGateway.ResultCode.DATA_ACTION_NOT_RESOLVED, result.code());
+        assertEquals(revision, battle.revision());
+        assertEquals(events, battle.eventLog().size());
     }
 }
