@@ -151,6 +151,11 @@ public final class TurnboundDebugCommands {
         }
 
         UUID battleId = battle.battleId();
+        PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleEventsS2C.from(
+                battleId,
+                battle.revision(),
+                -1,
+                List.of(new BattleEvent(battle.revision(), DebugBattleClientState.CLEAR_EVENT_TYPE, "", "debug_cleanup"))));
         if (battle.state() == BattleState.REWARD) battle.cleanup();
         battles.cleanup(battleId);
         source.sendSuccess(() -> Component.literal("DEBUG_ONLY cleanup battle=" + battleId

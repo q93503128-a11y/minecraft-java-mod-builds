@@ -1,5 +1,6 @@
 package kr.moonseungjun.turnboundre.network;
 
+import kr.moonseungjun.turnboundre.battle.BattleEvent;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
 import kr.moonseungjun.turnboundre.battle.BattleParticipant;
 import kr.moonseungjun.turnboundre.battle.BattleTeam;
@@ -60,5 +61,24 @@ class M2DebugClientStateTest {
 
         assertEquals(9L, DebugBattleClientState.latestSnapshot().orElseThrow().revision());
         assertEquals(2, DebugBattleClientState.latestSnapshot().orElseThrow().cycle());
+    }
+
+    @Test
+    void explicitDebugCleanupEventClearsStaleClientSnapshot() {
+        UUID battleId = UUID.randomUUID();
+        String snapshotWire = BattleNetworkPayloads.join(
+                battleId.toString(), "5", "AWAIT_COMMAND", "1", "p1", "");
+        DebugBattleClientState.accept(new BattleNetworkPayloads.BattleSnapshotS2C(snapshotWire));
+        assertTrue(DebugBattleClientState.latestSnapshot().isPresent());
+
+        var clearPayload = BattleNetworkPayloads.BattleEventsS2C.from(
+                battleId,
+                5L,
+                -1,
+                List.of(new BattleEvent(5L, DebugBattleClientState.CLEAR_EVENT_TYPE, "", "test")));
+        DebugBattleClientState.accept(clearPayload);
+
+        assertTrue(DebugBattleClientState.latestSnapshot().isEmpty());
+        assertTrue(DebugBattleClientState.latestEvents().isEmpty());
     }
 }

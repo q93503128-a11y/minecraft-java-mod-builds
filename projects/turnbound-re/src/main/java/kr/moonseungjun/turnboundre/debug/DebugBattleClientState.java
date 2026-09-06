@@ -6,9 +6,11 @@ import java.util.Optional;
 
 /**
  * DEBUG_ONLY client-side inspection cache for authoritative S2C battle data.
- * This is deliberately not a production HUD and has no rendering dependency.
+ * This is deliberately not production presentation.
  */
 public final class DebugBattleClientState {
+    public static final String CLEAR_EVENT_TYPE = "DEBUG_CLIENT_CLEAR";
+
     private static final Object LOCK = new Object();
     private static BattleNetworkPayloads.DecodedSnapshot latestSnapshot;
     private static BattleNetworkPayloads.DecodedEvents latestEvents;
@@ -31,6 +33,11 @@ public final class DebugBattleClientState {
         if (payload == null) return;
         BattleNetworkPayloads.DecodedEvents decoded = payload.decode();
         synchronized (LOCK) {
+            if (decoded.events().stream().anyMatch(event -> CLEAR_EVENT_TYPE.equals(event.type()))) {
+                latestSnapshot = null;
+                latestEvents = null;
+                return;
+            }
             if (latestEvents == null
                     || !latestEvents.battleId().equals(decoded.battleId())
                     || decoded.resultingRevision() >= latestEvents.resultingRevision()) {
