@@ -9,6 +9,8 @@ public final class DefinitionValidator {
     private static final Set<String> ACTION_KINDS = Set.of("BASIC", "SKILL", "GUARD", "BURST", "PASSIVE");
     private static final Set<String> ROLES = Set.of("VANGUARD", "BREAKER", "STRIKER", "SUPPORT", "CONTROL");
     private static final Set<String> AFFINITIES = Set.of("FLAME", "TIDE", "GALE", "STONE", "LIGHT", "DARK");
+    private static final Set<String> STATUS_POLARITIES = Set.of("POSITIVE", "NEGATIVE", "NEUTRAL");
+    private static final Set<String> STATUS_DURATION_UNITS = Set.of("TURN", "CYCLE");
 
     private DefinitionValidator() {}
 
@@ -23,6 +25,23 @@ public final class DefinitionValidator {
             if (action.energyCost() < 0) errors.add(id + ": energyCost must be >= 0");
             if (action.poiseDamage() < 0) errors.add(id + ": poiseDamage must be >= 0");
             if (action.power() < 0) errors.add(id + ": power must be >= 0");
+        }
+        return List.copyOf(errors);
+    }
+
+    public static List<String> validateStatuses(List<StatusDefinition> statuses) {
+        List<String> errors = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (StatusDefinition status : statuses) {
+            String id = status.id();
+            if (id == null || id.isBlank()) errors.add("status id is blank");
+            else if (!seen.add(id)) errors.add("duplicate status id: " + id);
+            if (!STATUS_POLARITIES.contains(status.polarity())) errors.add(id + ": unknown polarity " + status.polarity());
+            if (!STATUS_DURATION_UNITS.contains(status.durationUnit())) errors.add(id + ": unknown durationUnit " + status.durationUnit());
+            if (status.maxStacks() < 1) errors.add(id + ": maxStacks must be >= 1");
+            if (status.refreshRule() == null || status.refreshRule().isBlank()) errors.add(id + ": refreshRule must not be blank");
+            for (String tag : status.dispelTags()) if (tag == null || tag.isBlank()) errors.add(id + ": blank dispelTag");
+            for (String hook : status.hooks()) if (hook == null || hook.isBlank()) errors.add(id + ": blank hook");
         }
         return List.copyOf(errors);
     }
