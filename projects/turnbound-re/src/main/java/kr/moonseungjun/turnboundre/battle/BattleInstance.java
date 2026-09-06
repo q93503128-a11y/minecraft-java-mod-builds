@@ -1,5 +1,7 @@
 package kr.moonseungjun.turnboundre.battle;
 
+import kr.moonseungjun.turnboundre.data.ActionDefinition;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +15,10 @@ public final class BattleInstance {
         ACCEPTED,
         WRONG_PHASE,
         STALE_REVISION,
-        WRONG_ACTOR
+        WRONG_ACTOR,
+        ACTION_MISMATCH,
+        INVALID_ACTION,
+        INSUFFICIENT_ENERGY
     }
 
     private final UUID battleId;
@@ -68,16 +73,74 @@ public final class BattleInstance {
         prepareCurrentActor();
     }
 
+    /** Convenience path for the two universal built-in commands. Data-defined Skill/Burst uses submit(command, action). */
     public CommandResult submit(BattleCommand command) {
+        ActionDefinition action = switch (command.actionId()) {
+            case "basic" -> new ActionDefinition("basic", "BASIC", 0, 0, 0);
+            case "guard" -> new ActionDefinition("guard", "GUARD", 0, 0, 0);
+            default -> null;
+        };
+        if (action == null) return CommandResult.INVALID_ACTION;
+        return submit(command, action);
+    }
+
+    /**
+     * Server-authoritative command acceptance for current M1 action semantics.
+     * Failed validation never changes revision, event log, Energy, Guard or phase.
+     */
+    public CommandResult submit(BattleCommand command, ActionDefinition action) {
         if (state != BattleState.AWAIT_COMMAND) return CommandResult.WRONG_PHASE;
         if (command.expectedRevision() != revision) return CommandResult.STALE_REVISION;
         if (!currentActorId().equals(command.actorId())) return CommandResult.WRONG_ACTOR;
         BattleParticipant actor = participants.get(command.actorId());
         if (actor.team() != BattleTeam.PLAYER) return CommandResult.WRONG_ACTOR;
+        if (action == null || !command.actionId().equals(action.id())) return CommandResult.ACTION_MISMATCH;
+
+        String kind = action.kind();
+        if (!(kind.equals("BASIC") || kind.equals("SKILL") || kind.equals("GUARD") || kind.equals("BURST"))) {
+            return CommandResult.INVALID_ACTION;
+        }
+        if (action.energyCost() < 0) return CommandResult.INVALID_ACTION;
+        if ((kind.equals("BASIC") || kind.equals("GUARD")) && action.energyCost() != 0) {
+            return CommandResult.INVALID_ACTION;
+        }
+
+        ParticipantCombatState actorState = combatState(actor.id());
+        if ((kind.equals("SKILL") || kind.equals("BURST")) && actorState.energy() < action.energyCost()) {
+            return CommandResult.INSUFFICIENT_ENERGY;
+        }
+
         revision++;
         state = BattleState.RESOLVING;
         eventLog.add(new BattleEvent(revision, "COMMAND_ACCEPTED", actor.id(), command.actionId()));
+        applyActionResourceSemantics(actor.id(), actorState, action);
         return CommandResult.ACCEPTED;
+    }
+
+    private void applyActionResourceSemantics(String actorId, ParticipantCombatState actorState, ActionDefinition action) {
+        switch (action.kind()) {
+            case "BASIC" -> {
+                int before = actorState.energy();
+                actorState.gainEnergy(10);
+                emit("ENERGY_CHANGED", actorId, before + "->" + actorState.energy() + " reason=BASIC");
+            }
+            case "GUARD" -> {
+                int before = actorState.energy();
+                actorState.setGuard(true);
+                actorState.gainEnergy(15);
+                emit("GUARD_APPLIED", actorId, "finalDamage=0.5 until=next_turn_start");
+                emit("ENERGY_CHANGED", actorId, before + "->" + actorState.energy() + " reason=GUARD");
+            }
+            case "SKILL", "BURST" -> {
+                int before = actorState.energy();
+                if (!actorState.spendEnergy(action.energyCost())) {
+                    throw new IllegalStateException("energy changed after command validation");
+                }
+                emit("ENERGY_CHANGED", actorId,
+                        before + "->" + actorState.energy() + " reason=" + action.kind() + " cost=" + action.energyCost());
+            }
+            default -> throw new IllegalStateException("unsupported action kind after validation: " + action.kind());
+        }
     }
 
     public void resolveEnemyStub() {
@@ -135,6 +198,7 @@ public final class BattleInstance {
             actorState.expirePoiseGuardAtTurnStart();
             emit("POISE_GUARD_EXPIRED", currentActorId(), "");
         }
+        if (actorState.guard()) emit("GUARD_EXPIRED", currentActorId(), "at=turn_start");
         actorState.setGuard(false);
         BattleParticipant actor = participants.get(currentActorId());
         if (actor.team() == BattleTeam.PLAYER) transition(BattleState.AWAIT_COMMAND);
