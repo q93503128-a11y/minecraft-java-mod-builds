@@ -43,16 +43,16 @@ Implemented M0 contracts:
 - CI produces logs, JAR, SHA-256 and `BUILD_AND_RUNTIME_REPORT.md`.
 
 ## M1 implemented and validated so far
-Latest validated M1 slice commit: `0c4ef95348a0aac0a5e9bc3fb7b3e2ca133d3a55`
+Latest validated M1 slice commit: `eef87df2e0c16cc9ff4959812bd98793e5873a7a`
 
-GitHub Actions run: `34050450947` — PASS
+GitHub Actions run: `34053736786` — PASS
 
 Current verified deliverable:
 - version `0.1.0-alpha.1`
 - artifact `turnbound-re-0.1.0-alpha.1-deliverables`
-- artifact id `9994379220`
-- artifact archive SHA-256 digest: `8658a657b0a1c3dd250ebf89206a149984c22a341c63d58804915f4a2b7ecd1b`
-- production JAR SHA-256: `ed79072cc9473c1852998e64d931d76b876d7a667fd090583544d22d2af05fdc`
+- artifact id `9995333942`
+- artifact archive SHA-256 digest: `3818c478a185ef324d6ccfd17e417ae00036dfe9802914488fe9c573ba9ae4a1`
+- production JAR SHA-256: `ce73efc37415ba8891a48d2f5fa396c69e66f9549a5f89536a3e2cc93e152b2c`
 - production JAR verification: PASS
 
 Implemented:
@@ -93,7 +93,11 @@ Implemented:
 - Poise break converts `breakCancelable=true` Intent to canonical `RECOVER`; recovered enemy turn emits `RECOVER` instead of silently selecting another action.
 - non-cancelable Intent with `breakDowngradeAction` is replaced by the configured downgraded action and normalized to NORMAL risk for the M1 stub.
 - defeated enemy Intent state is removed instead of leaving a stale telegraph.
-- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation, shared status runtime migration/max-stack validation, Intent publication/AI consistency, cancel-to-RECOVER, downgrade, event ordering and identical event-stream checks for the implemented slice.
+- terminal outcome evaluation now checks living PLAYER/ENEMY participants at `CHECK_END` and emits deterministic `BATTLE_RESULT` before entering `REWARD`.
+- `VICTORY` and `DEFEAT` are represented by battle-owned `Outcome`; terminal battles reject further player commands by phase.
+- defeated participants are skipped during actor advancement and emit `DEFEATED_ACTOR_SKIPPED`, preventing dead actors from receiving action windows.
+- end-of-battle cleanup transitions `REWARD -> CLEANUP -> NOT_IN_BATTLE`, clears enemy Intent state, zeros Energy and clears transient battle statuses.
+- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation, shared status runtime migration/max-stack validation, Intent publication/AI consistency, cancel-to-RECOVER, downgrade, event ordering, defeated-actor skip, victory/reward/cleanup and identical terminal event-stream checks.
 
 Validation evidence for latest slice:
 - dependency resolution + clean build: PASS.
@@ -104,9 +108,9 @@ Validation evidence for latest slice:
 
 ## M1 remaining
 Continue in backlog/canonical order:
-1. target/action validation beyond revision/current actor: ownership, cooldown/status, target count/team/alive, duplicate command.
-2. victory/defeat/reward event and cleanup transitions; skip defeated actors safely.
-3. deterministic same seed + same commands full event-stream test and explicit no-soft-lock transition tests for M1 PASS.
+1. complete target/action validation beyond revision/current actor: action ownership, cooldown/status eligibility, target count/team/alive and duplicate/retransmitted command identity.
+2. add explicit DEFEAT-path and broader long-run no-soft-lock coverage around the now-integrated terminal state machine.
+3. run the full deterministic same-seed + same-command stream suite and close M1 only when every validation dimension is mutation-free and terminal progression is proven.
 
 ## Runtime verification status
 - Datagen: NOT RUN; no generated production data is required by the current M0/M1 slice.
