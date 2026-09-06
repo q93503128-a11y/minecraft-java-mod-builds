@@ -74,7 +74,7 @@ public final class EquipmentRadialMenuScreen extends Screen {
             return EquipmentReforgeService.imprintRangeText();
         }
         if(rarity<=0)return "정예 / 승천 / 신화 장비 필요";
-        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 승천 옵션 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(rarity);case INFO->AscensionAffixes.effectSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
+        return switch(action){case REFORGE->"비용 · "+EquipmentReforgeService.costText(held);case AWAKEN->rarity<3?"신화 III 장비 필요":(AscensionAffixes.isAwakened(held)?"이미 각성 완료":"4번째 승천 옵션 개방");case SALVAGE->"환급 · "+EquipmentReforgeService.salvageText(held);case INFO->AscensionAffixes.effectSummary(held);case IMPRINT->"";case BACK->"통합 메뉴로 돌아가기";};
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){

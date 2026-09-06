@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.18-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.19-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.18-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.19-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -201,4 +201,23 @@ field = text(JAVA / "production/FieldDepotService.java")
 for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.18 full skill command/control regression + adaptive bore budget/profiling + protocol15 + prior runtime invariants")
+equipment = text(JAVA / "equipment/EquipmentReforgeService.java")
+equipment_ui = text(JAVA / "client/EquipmentRadialMenuScreen.java")
+guide = text(JAVA / "client/GuideScreen.java")
+require("salvageRewards(ItemStack stack)" in equipment and "salvageBodyValue" in equipment,
+        "equipment salvage returned to rarity-only fixed rewards")
+require("salvageEquipmentWeight" in equipment and "salvageMaterialQuality" in equipment
+        and "salvageConditionFactor" in equipment,
+        "equipment type/material/condition salvage scaling missing")
+require("AscensionAffixes.isAwakened(stack)" in equipment and "Items.NETHERITE_SCRAP" in equipment
+        and "Items.DRAGON_BREATH" in equipment,
+        "awakened salvage does not recover a bounded share of awakening materials")
+require("salvageText(held)" in equipment_ui, "salvage UI still previews rarity-only rewards")
+require("FreightService.FRONTLINE_FOOD" in guide and "FreightService.FRONTLINE_STONE_BRICKS" in guide,
+        "guide no longer derives frontline manifest from freight authority")
+require("식량176" not in guide and "철56" not in guide and "석재벽돌128만 선별" not in guide,
+        "stale frontline manifest values returned to guide")
+require("장비 분해" in guide and "남은 내구도" in guide,
+        "dynamic salvage rules are hidden from player guidance")
+
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.19 dynamic equipment salvage + canonical freight guide + full skill/runtime invariants")
