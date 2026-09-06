@@ -71,6 +71,18 @@ public final class AutomatedToolBreak {
         return timed(broken, start, destroyNanos);
     }
 
+    public static ItemStack captureToolProfile(ItemStack stack) {
+        if (stack.isEmpty()) return ItemStack.EMPTY;
+        ItemStack copy = stack.copyWithCount(1);
+        if (copy.isDamageableItem()) copy.setDamageValue(0);
+        return copy;
+    }
+
+    public static boolean matchesToolProfile(ItemStack current, ItemStack profile) {
+        if (current.isEmpty() || profile.isEmpty()) return false;
+        return ItemStack.isSameItemSameComponents(captureToolProfile(current), profile);
+    }
+
     private static TimedBreakResult timed(boolean broken, long start, long destroyNanos) {
         long total = Math.max(0L, System.nanoTime() - start);
         return new TimedBreakResult(broken, Math.max(0L, total - destroyNanos), destroyNanos);

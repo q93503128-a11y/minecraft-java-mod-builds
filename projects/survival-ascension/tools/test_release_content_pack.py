@@ -9,7 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
 CURRENT_LOCK_VERSION = "0.61.0-alpha.1-content-preview.1"
-PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
+PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"
 
 
 def read(rel: str) -> str:
@@ -48,7 +48,7 @@ baseline = baseline.replace('new LocalRequirement(\"석재 벽돌\", 128', 'new 
 baseline = baseline.replace('전초재고(식량48/철16/통나무32)', '전초 재고(식량 16 · 철 주괴 5 · 아무 종류의 통나무 12)')
 baseline = baseline.replace('전초재고(식량96/철32/석재벽돌128)', '전초 재고(식량 32 · 철 주괴 8 · 석재 벽돌 32)')
 baseline = baseline.replace('전초재고(식량32/철8/연료8)', '전초 재고(식량 12 · 철 주괴 3 · 연료: 석탄 또는 숯 3)')
-baseline = baseline.replace('한도3→토목6→중추9', '산업 가공소 완공 → 통 4블록 이내')
+baseline = baseline.replace('한도3→토목6→중추9', '산업 가공소 완공 → 통/공용 보급고 4블록 이내')
 """
 legacy = legacy.replace(
     'baseline = baseline.replace(BASELINE_LOCK_VERSION, REQUIRED_LOCK_VERSION)',
@@ -58,10 +58,18 @@ legacy = legacy.replace(
 # Adapt direct 0.58 pack needles without editing the historical audit file.
 for _old, _new in [
     ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),
+    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }'),
+    ('HARVESTING -> { early = 1.50D; late = 1.20D; }', 'HARVESTING -> { early = 3.00D; late = 2.50D; }'),
+    ('COMBAT -> { early = 1.25D; late = 1.15D; }', 'COMBAT -> { early = 4.00D; late = 3.50D; }'),
+    ('CONSTRUCTION -> { early = 2.75D; late = 1.75D; }', 'CONSTRUCTION -> { early = 5.00D; late = 3.50D; }'),
+    ('MOBILITY -> { early = 2.10D; late = 1.40D; }', 'MOBILITY -> { early = 4.00D; late = 3.00D; }'),
+    ('breakShovelArea', 'BulkMiningService.scheduleShovelArea'),
+    ('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
+    ('ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply', 'ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
     ('new MaterialCost(Items.AMETHYST_SHARD, 48', 'new MaterialCost(Items.AMETHYST_SHARD, 12'),
     ('new MaterialCost(Items.AMETHYST_SHARD, 96', 'new MaterialCost(Items.AMETHYST_SHARD, 24'),
     ('재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터', '재료 소비: 같은 차원에서 현재 로딩된 등록 창고 전체를 공용 재고로 사용하고'),
-    ('4블록 내 기본 통 앵커', '산업 가공소 완공 → 통 4블록 이내'),
+    ('4블록 내 기본 통 앵커', '산업 가공소 완공 → 통/공용 보급고 4블록 이내'),
     ('new LocalRequirement("식량", 32', 'new LocalRequirement("식량(밀/당근/감자/비트)", 12'),
     ('new LocalRequirement("철 주괴", 8', 'new LocalRequirement("철 주괴", 3'),
     ('new LocalRequirement("연료", 8', 'new LocalRequirement("연료(석탄 또는 숯)", 3'),
@@ -78,16 +86,16 @@ for _old, _new in [
     ('new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)'),
     ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),
     ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),
-    ('한도3→토목6→중추9', '산업 가공소 완공 → 통 4블록 이내'),
+    ('한도3→토목6→중추9', '산업 가공소 완공 → 통/공용 보급고 4블록 이내'),
     ('FRONTLINE_FOOD = 176', 'FRONTLINE_FOOD = 60'),
     ('FRONTLINE_IRON = 56', 'FRONTLINE_IRON = 16'),
     ('FRONTLINE_FUEL = 8', 'FRONTLINE_FUEL = 3'),
     ('FRONTLINE_LOGS = 32', 'FRONTLINE_LOGS = 12'),
     ('FRONTLINE_STONE_BRICKS = 128', 'FRONTLINE_STONE_BRICKS = 32'),
     ('식량176+철56+석탄/목탄8+통나무32+석재벽돌128', '식량(밀/당근/감자/비트) 60 + 철 주괴 16 + 연료(석탄 또는 숯) 3 + 아무 종류의 통나무 12 + 석재 벽돌 32'),
-    ('원정은 식량32+철8+석탄/목탄8', '원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3'),
-    ('전초 방어는 식량48+철16+통나무32', '전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12'),
-    ('요새 방어는 식량96+철32+석재벽돌128', '요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32'),
+    ('원정은 식량32+철8+석탄/목탄8', 'ProductionService.localSupplyGuideText()'),
+    ('전초 방어는 식량48+철16+통나무32', 'ProductionService.localSupplyGuideText()'),
+    ('요새 방어는 식량96+철32+석재벽돌128', 'ProductionService.localSupplyGuideText()'),
 ]:
     legacy = legacy.replace(_old, _new)
 
@@ -95,10 +103,18 @@ for _old, _new in [
 _content_lines = []
 for _old, _new in [
     ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),
+    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }'),
+    ('HARVESTING -> { early = 1.50D; late = 1.20D; }', 'HARVESTING -> { early = 3.00D; late = 2.50D; }'),
+    ('COMBAT -> { early = 1.25D; late = 1.15D; }', 'COMBAT -> { early = 4.00D; late = 3.50D; }'),
+    ('CONSTRUCTION -> { early = 2.75D; late = 1.75D; }', 'CONSTRUCTION -> { early = 5.00D; late = 3.50D; }'),
+    ('MOBILITY -> { early = 2.10D; late = 1.40D; }', 'MOBILITY -> { early = 4.00D; late = 3.00D; }'),
+    ('breakShovelArea', 'BulkMiningService.scheduleShovelArea'),
+    ('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
+    ('ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply', 'ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
     ('new MaterialCost(Items.AMETHYST_SHARD, 48', 'new MaterialCost(Items.AMETHYST_SHARD, 12'),
     ('new MaterialCost(Items.AMETHYST_SHARD, 96', 'new MaterialCost(Items.AMETHYST_SHARD, 24'),
     ('재료 소비: 모드 제작·건축·인프라 비용은 가까운 사용 가능 물류 통부터', '재료 소비: 같은 차원에서 현재 로딩된 등록 창고 전체를 공용 재고로 사용하고'),
-    ('4블록 내 기본 통 앵커', '산업 가공소 완공 → 통 4블록 이내'),
+    ('4블록 내 기본 통 앵커', '산업 가공소 완공 → 통/공용 보급고 4블록 이내'),
     ('new LocalRequirement("식량", 32', 'new LocalRequirement("식량(밀/당근/감자/비트)", 12'),
     ('new LocalRequirement("철 주괴", 8', 'new LocalRequirement("철 주괴", 3'),
     ('new LocalRequirement("연료", 8', 'new LocalRequirement("연료(석탄 또는 숯)", 3'),
@@ -115,16 +131,16 @@ for _old, _new in [
     ('new Requirement(Items.STONE_BRICKS, "석재 벽돌", 2048)', 'new Requirement(Items.STONE_BRICKS, "석재 벽돌", 384)'),
     ('new Requirement(Items.COBBLESTONE, "조약돌", 1536)', 'new Requirement(Items.COBBLESTONE, "조약돌", 256)'),
     ('new Requirement(Items.GRAVEL, "자갈", 1536)', 'new Requirement(Items.GRAVEL, "자갈", 256)'),
-    ('한도3→토목6→중추9', '산업 가공소 완공 → 통 4블록 이내'),
+    ('한도3→토목6→중추9', '산업 가공소 완공 → 통/공용 보급고 4블록 이내'),
     ('FRONTLINE_FOOD = 176', 'FRONTLINE_FOOD = 60'),
     ('FRONTLINE_IRON = 56', 'FRONTLINE_IRON = 16'),
     ('FRONTLINE_FUEL = 8', 'FRONTLINE_FUEL = 3'),
     ('FRONTLINE_LOGS = 32', 'FRONTLINE_LOGS = 12'),
     ('FRONTLINE_STONE_BRICKS = 128', 'FRONTLINE_STONE_BRICKS = 32'),
     ('식량176+철56+석탄/목탄8+통나무32+석재벽돌128', '식량(밀/당근/감자/비트) 60 + 철 주괴 16 + 연료(석탄 또는 숯) 3 + 아무 종류의 통나무 12 + 석재 벽돌 32'),
-    ('원정은 식량32+철8+석탄/목탄8', '원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3'),
-    ('전초 방어는 식량48+철16+통나무32', '전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12'),
-    ('요새 방어는 식량96+철32+석재벽돌128', '요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32'),
+    ('원정은 식량32+철8+석탄/목탄8', 'ProductionService.localSupplyGuideText()'),
+    ('전초 방어는 식량48+철16+통나무32', 'ProductionService.localSupplyGuideText()'),
+    ('요새 방어는 식량96+철32+석재벽돌128', 'ProductionService.localSupplyGuideText()'),
 ]:
     _content_lines.append(f"baseline = baseline.replace({_old!r}, {_new!r})")
     _escaped_old = _old.replace(chr(34), chr(92) + chr(34))

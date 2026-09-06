@@ -34,6 +34,21 @@ public final class ProductionService {
 
     private ProductionService() {}
 
+    public static String localSupplyGuideText() {
+        return "원정은 " + localSupplyCostText(LocalLoadout.EXPEDITION)
+                + " / 전초 방어는 " + localSupplyCostText(LocalLoadout.OUTPOST_DEFENSE)
+                + " / 요새 방어는 " + localSupplyCostText(LocalLoadout.BASTION_DEFENSE);
+    }
+
+    private static String localSupplyCostText(LocalLoadout loadout) {
+        StringBuilder out = new StringBuilder();
+        for (LocalRequirement requirement : requirements(loadout)) {
+            if (!out.isEmpty()) out.append(" + ");
+            out.append(requirement.label()).append(' ').append(requirement.amount());
+        }
+        return out.toString();
+    }
+
     public static void perform(ServerPlayer player, String action) {
         if (player.isCreative() || player.isSpectator()) {
             player.sendSystemMessage(Component.literal("§3[산업 생산망] §f크리에이티브/관전자 상태에서는 생산/물류 작업을 처리할 수 없습니다."));
@@ -108,7 +123,7 @@ public final class ProductionService {
                     + "§7/§f" + ProductionData.MAX_BUFFER));
         }
         player.sendSystemMessage(Component.literal("§7산업 투입: 같은 차원에서 현재 로딩된 등록 거점/창고 통 전체 + 부족분 인벤토리. 보급권: 실물 출고1 / 거점1 / 전초2 / 방어1 / 요새방어2 / 복귀1 / 원정1."));
-        player.sendSystemMessage(Component.literal("§7전선 작전은 보급권과 별도로 출발 전초의 실제 통 재고를 소비합니다. 원정=식량(밀/당근/감자/비트)12+철 주괴3+연료(석탄/숯)3 / 방어=식량16+철 주괴5+아무 종류의 통나무12 / 요새=식량32+철 주괴8+석재 벽돌32."));
+        player.sendSystemMessage(Component.literal("§7전선 작전은 보급권과 별도로 출발 전초의 실제 통 재고를 소비합니다. " + localSupplyGuideText() + "."));
         player.sendSystemMessage(Component.literal("§7창고군: 등록 앵커 하나당 반경6 실제 통 최대8개를 연결하며, 같은 차원에서 로딩된 등록 창고는 플레이어와 거리 제한 없이 공용 재고로 사용합니다."));
         player.sendSystemMessage(Component.literal("§7일괄 적재: 핫바/장비를 보존하고 주 인벤토리의 대량 자원을 가까운 사용 가능 실제 통부터 채웁니다."));
         player.sendSystemMessage(Component.literal("§7물리 화물: 산업+토목 완공 후 양쪽 활성 전초마다 반경6 소형 하역장(레일6+·동력레일·호퍼·제어)을 만들고 실제 상자 광산수레로 창고 재고를 운반합니다."));

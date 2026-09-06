@@ -8,8 +8,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_VERSION = "0.61.0-alpha.1"
-PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"
+CURRENT_VERSION = "0.61.21-alpha.1"
+PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"
 
 
 def read(rel: str) -> str:
@@ -67,6 +67,21 @@ for old, new in [
     ('"Math.min(0.65D"', '"Math.min(1.00D"'),
 ]:
     legacy = legacy.replace(old, new)
+
+# 0.61.21 moved high-volume Mining extra-target execution into BulkMiningService while
+# preserving the old loaded-only/no-force-load contract. Adapt only the historical audit source
+# location and exact loaded-only needles; the current cumulative audit checks the new scheduler.
+legacy = legacy.replace(
+    'mining57 = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java")',
+    'mining57 = read("src/main/java/kr/moonseungjun/survivalascension/mining/MiningProgression.java") + read("src/main/java/kr/moonseungjun/survivalascension/mining/BulkMiningService.java")'
+)
+legacy = legacy.replace(
+    'need(mining57, ["if (!level.hasChunkAt(next)) continue;", "if (!level.hasChunkAt(target)) continue;"], "0.57 mining loaded-only")',
+    'need(mining57, ["if (!level.hasChunkAt(next) || level.getBlockEntity(next) != null) continue;", "if (!level.hasChunkAt(target) || level.getBlockEntity(target) != null) continue;"], "0.57 mining loaded-only")'
+)
+# Protocol 15 is the current wire authority; the historical 0.58 audit needle is version identity,
+# not permission to roll the live network back to protocol 9.
+legacy = legacy.replace('PROTOCOL = "9"', 'PROTOCOL = "15"')
 
 # 0.61 also replaces the player-facing developer term "affix" with "승천 옵션".
 # Keep the historical 0.58 source untouched and adapt only its UI regression needle here.
@@ -135,6 +150,9 @@ for _old, _new in [
     ('요새 방어는 식량96+철32+석재벽돌128', '요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32'),
 ]:
     legacy = legacy.replace(_old, _new)
+
+# Current logistics UI names both container families instead of the older barrel-only shorthand.
+legacy = legacy.replace('산업 가공소 완공 → 통 4블록 이내', '산업 가공소 완공 → 통/공용 보급고 4블록 이내')
 
 # Inject approved translations into nested test_current_source.py baseline.
 _baseline_lines = []
@@ -256,7 +274,7 @@ need(woodcutting, [
     "SkillTuning.woodcuttingLogLimit"
 ], "0.59.1 high-rank woodcutting")
 need(harvesting, [
-    "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"
+    "skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 1152"
 ], "0.59.1 high-rank harvesting")
 
 # Canonical final admission authority remains unchanged and visible through normal play.
@@ -352,7 +370,7 @@ forbid(mobility + construction, ["setChunkForced", "addRegionTicket", "getChunk(
 need(elite, ["FinalAscensionBossSystem.isInternalSpawn()"], "0.61 final boss elite isolation")
 
 # Historical docs remain regression evidence; 0.61 has a focused release/acceptance note.
-need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")
+need(project, ["Mod version: `0.61.21-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")
 need(readme, ["## 0.59.0-alpha.1", "정점 사냥", "호위 수 자체를 늘리지"], "historical README regression docs")
 need(changelog, ["## 0.60.0-alpha.1", "Final Ascension", "Network protocol remains 9"], "0.60 CHANGELOG regression docs")
 need(testing, ["## 0.60 focused checks", "최후의 승천", "웅크리기", "Apex 진행"], "0.60 manual regression matrix")

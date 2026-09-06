@@ -76,7 +76,7 @@ public final class WoodcuttingProgression {
                 iterator.remove();
                 continue;
             }
-            if (!player.getMainHandItem().is(ItemTags.AXES)) {
+            if (!matchesJobTool(player, job)) {
                 iterator.remove();
                 continue;
             }
@@ -91,12 +91,12 @@ public final class WoodcuttingProgression {
                     if (!state.is(BlockTags.LOGS) || level.getBlockEntity(target) != null) continue;
                     if (!isValidLogBreak(player, level, target, state, player.getMainHandItem())) continue;
                     AutomatedToolBreak.destroyWithReducedWear(player, target);
-                    if (!player.getMainHandItem().is(ItemTags.AXES)) break;
+                    if (!matchesJobTool(player, job)) break;
                 }
             } finally {
                 CHAIN_GUARD.remove(player.getUUID());
             }
-            if (job.targets.isEmpty() || !player.getMainHandItem().is(ItemTags.AXES)) iterator.remove();
+            if (job.targets.isEmpty() || !matchesJobTool(player, job)) iterator.remove();
         }
     }
 
@@ -117,7 +117,8 @@ public final class WoodcuttingProgression {
         if (gathered.isEmpty()) return;
 
         Deque<BlockPos> targets = new ArrayDeque<>(gathered);
-        JOBS.put(player.getUUID(), new FellJob(level.dimension(), targets));
+        JOBS.put(player.getUUID(), new FellJob(level.dimension(), targets,
+                AutomatedToolBreak.captureToolProfile(player.getMainHandItem())));
         if (trees > 1) {
             player.sendSystemMessage(Component.literal("§a[수림 연쇄] §f주변 자연목 §e" + trees
                     + "그루§f를 하나의 벌목 작업으로 연결했습니다. §7총 로그 상한 " + limit), true);
@@ -227,12 +228,19 @@ public final class WoodcuttingProgression {
         }
     }
 
+    private static boolean matchesJobTool(ServerPlayer player, FellJob job) {
+        ItemStack held = player.getMainHandItem();
+        return held.is(ItemTags.AXES) && AutomatedToolBreak.matchesToolProfile(held, job.toolProfile);
+    }
+
     private static final class FellJob {
         private final ResourceKey<Level> dimension;
         private final Deque<BlockPos> targets;
-        private FellJob(ResourceKey<Level> dimension, Deque<BlockPos> targets) {
+        private final ItemStack toolProfile;
+        private FellJob(ResourceKey<Level> dimension, Deque<BlockPos> targets, ItemStack toolProfile) {
             this.dimension = dimension;
             this.targets = targets;
+            this.toolProfile = toolProfile;
         }
     }
 }

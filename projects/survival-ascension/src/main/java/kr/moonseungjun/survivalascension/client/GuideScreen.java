@@ -3,6 +3,7 @@ package kr.moonseungjun.survivalascension.client;
 /* Page navigation and skill-help information architecture follow Skill Proficiencies MIT. */
 
 import kr.moonseungjun.survivalascension.production.FreightService;
+import kr.moonseungjun.survivalascension.production.ProductionService;
 import kr.moonseungjun.survivalascension.progress.SkillTuning;
 import kr.moonseungjun.survivalascension.progress.SkillType;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -175,7 +176,7 @@ public final class GuideScreen extends Screen {
                         + " + 철 주괴 " + FreightService.FRONTLINE_IRON + " + 연료 " + FreightService.FRONTLINE_FUEL
                         + " + 통나무 " + FreightService.FRONTLINE_LOGS + " + 석재 벽돌 " + FreightService.FRONTLINE_STONE_BRICKS
                         + "이며 출발 전초 통에서 실제로 빠지고 같은 수레로 운송됩니다. Shift 없이 선택하면 기존 일반 대량화물 적재입니다."),
-                h("전선 현지 보급"), p("원정 작전·전초 방어·요새 방어는 현장 보급권과 별도로 출발 전초의 등록 통+연결 창고 통에 각 작전이 요구하는 실물 재고가 있어야 시작합니다. 필요한 수량은 각 작전의 서버 규칙이 직접 검증하며 인벤토리나 다른 거점 재고로 대체하지 않습니다. 먼 전초는 직접 적재하거나 물리 화물로 보급해야 합니다."),
+                h("전선 현지 보급"), p("원정 작전·전초 방어·요새 방어는 현장 보급권과 별도로 출발 전초의 등록 통+연결 창고 통에 각 작전이 요구하는 실물 재고가 있어야 시작합니다. " + ProductionService.localSupplyGuideText() + "가 필요합니다. 인벤토리나 다른 거점 재고로 대체하지 않으며 먼 전초는 직접 적재하거나 물리 화물로 보급해야 합니다."),
                 h("전초와 요새 방어"), p("전초의 실제 침대·모닥불·작업대·화로와 실제 방어진이 기능의 근거입니다. 요새 최종 공세에서는 Ravager/Vindicator가 적격 방어진을 실제로 파괴할 수 있습니다."),
                 h("최종 작업 체급"), p("현장 숙련: 터널7×7×12 · 벌목448 · 수확13×13 · 충격파7.5/20 · 건축 선65/도로3×65/면13×13 · 공중돌진4회. 최후의 승천 완료 후 Lv.100은 건축 선/도로65 · 벽/바닥15×15 · 공중돌진4회를 최종 권한으로 사용하며, 현장 숙련까지 갖추면 선/도로81 · 공중돌진5회로 확장됩니다.")
         );

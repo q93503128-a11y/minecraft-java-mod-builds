@@ -17,12 +17,13 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.20-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.21-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.20-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.21-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
+    "BulkMiningService::onServerTick",
     "WoodcuttingProgression::onServerTick",
     "HarvestingProgression::onServerTick",
     "CombatProgression::onLivingDeath",
@@ -178,11 +179,33 @@ construction = text(JAVA / "construction/ConstructionProgression.java")
 harvesting = text(JAVA / "harvesting/HarvestingProgression.java")
 woodcutting = text(JAVA / "woodcutting/WoodcuttingProgression.java")
 irrigation = text(JAVA / "harvesting/IrrigationReplantService.java")
-require("level.getBlockEntity(target) != null" in mining, "bulk mining no longer protects block entities")
+bulk_mining = text(JAVA / "mining/BulkMiningService.java")
+require("level.getBlockEntity(target) != null" in bulk_mining, "bulk mining no longer protects block entities")
+require("GLOBAL_BREAK_BUDGET_PER_TICK = 48" in bulk_mining and "LOCAL_BREAK_BUDGET_PER_TICK = 12" in bulk_mining,
+        "bulk mining lost bounded per-tick drain budgets")
+require("GLOBAL_SOFT_TIME_BUDGET_NANOS = 5_000_000L" in bulk_mining and "LOCAL_SOFT_TIME_BUDGET_NANOS = 3_000_000L" in bulk_mining,
+        "bulk mining lost server-thread soft time budgets")
+require("MAX_PENDING_PER_PLAYER = 512" in bulk_mining and "JOBS.clear()" in bulk_mining and "INTERNAL.clear()" in bulk_mining,
+        "bulk mining queue bound/cleanup missing")
+require("BulkMiningService::onServerStopping" in main and "BulkMiningService.isInternal(player)" in mining,
+        "bulk mining lifecycle/recursion guard missing")
+for schedule_call in ("schedulePickaxeArea", "scheduleShovelArea", "scheduleConnectedOre", "scheduleExtract"):
+    require(f"BulkMiningService.{schedule_call}" in mining, f"mining still bypasses tick-drained scheduler: {schedule_call}")
+require("AutomatedToolBreak.destroyWithReducedWear(player, target)" in bulk_mining
+        and "AutomatedToolBreak.destroyWithReducedWear(player, target)" not in mining,
+        "bulk mining destroy pipeline is not centralized in the bounded scheduler")
+for forbidden in ("setChunkForced", "addRegionTicket", "getChunk("):
+    require(forbidden not in bulk_mining, f"bulk mining may force-load/generate chunks: {forbidden}")
 require("AREA_BREAK_GUARD" in mining and "player.isShiftKeyDown()" in mining, "mining recursion/precision guard missing")
 require("CHAIN_GUARD" in woodcutting and "JOBS.clear()" in woodcutting, "woodcutting queue/recursion cleanup missing")
+require("captureToolProfile" in automated_break and "matchesToolProfile" in automated_break,
+        "queued work tool-profile authority missing")
+require("toolProfile" in woodcutting and "matchesJobTool(player, job)" in woodcutting,
+        "woodcutting queue can be started with a strong affixed tool then paid with another tool")
 require("AREA_GUARD" in harvesting and "MAX_PENDING_PER_PLAYER" in harvesting and "JOBS.clear()" in harvesting,
         "harvesting queue bounds/cleanup missing")
+require("toolProfile" in harvesting and "matchesJobTool(player, job)" in harvesting,
+        "harvesting queue can be started with a strong affixed tool then paid with another tool")
 require("MAX_PENDING_PER_PLAYER = 1152" in harvesting,
         "high-end harvesting affixes can be silently truncated by the pending queue")
 require("FieldDepotService.hasMaterial" in irrigation and "FieldDepotService.consumeOne" in irrigation,
@@ -233,5 +256,8 @@ require("장비 분해" in guide and "남은 내구도" in guide,
         "dynamic salvage rules are hidden from player guidance")
 require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,
         "guide contains duplicated hard-coded frontline supply balances")
+production = text(JAVA / "production/ProductionService.java")
+require("ProductionService.localSupplyGuideText()" in guide and "localSupplyGuideText()" in production,
+        "guide no longer derives local frontline costs from ProductionService authority")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.20 equipment economy + distinct rerolls + harvest queue + full skill/runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.21 tick-drained mining + queued-tool authority + equipment economy/full runtime invariants")

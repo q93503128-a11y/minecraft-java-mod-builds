@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.21-alpha.1
+- Mining 2D pickaxe areas, shovel earthworks, connected veins and Extract no longer execute hundreds of full vanilla/NeoForge block-break pipelines inside the initiating break event. Automatic extras are queued at 12 per player / 48 global per tick with additional 3 ms local / 5 ms global soft server-thread budgets.
+- The manual center block remains vanilla-authoritative and every queued extra still uses ServerPlayerGameMode.destroyBlock through AutomatedToolBreak, preserving protection cancellation, Fortune/Silk Touch/loot, drops, stats, durability policy and client synchronization. No chunk force-loading is added.
+- Maximum pending Mining work is 512 targets, above the current 440-extra shovel plane and 448-total Mythic pickaxe vein ceilings, so the performance guard does not silently truncate current equipment power.
+- Mining, Woodcutting and Harvesting queued jobs now capture a damage-normalized ItemStack component profile. Swapping from the high-tier affixed tool that created a large job to a different disposable tool cancels that queued work; normal durability changes on the original tool do not.
+- No SavedData schema, packet or network protocol changes. Network protocol remains 15.
+
 ## 0.61.20-alpha.1
 - Base equipment salvage still scales by equipment body, material quality and remaining durability, but each rarity is now capped so its pre-awakening salvage cannot return more of an imprint material than that rarity's imprint actually consumed. This closes imprint -> salvage diamond/material generation loops while retaining meaningful item-value differences.
 - Paid equipment rerolls can no longer return the identical affix set. If the random subset matches the current set, exactly one affix is replaced with a missing key.

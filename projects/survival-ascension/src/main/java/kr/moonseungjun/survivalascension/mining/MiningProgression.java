@@ -20,17 +20,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -38,8 +32,6 @@ public final class MiningProgression {
     private static final TagKey<Block> VALUABLE_ORES = TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(SurvivalAscension.MOD_ID, "valuable_ores"));
     private static final Set<UUID> AREA_BREAK_GUARD = new HashSet<>();
     private static final String MODE_KEY = "survivalascension_mining_mode";
-    private static final int EXTRACT_RADIUS_XZ = 12;
-    private static final int EXTRACT_RADIUS_Y = 12;
 
     private MiningProgression() {}
 
@@ -96,7 +88,7 @@ public final class MiningProgression {
             announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
         }
         if (BoreMiningService.isInternal(player)) return;
-        if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
+        if (BulkMiningService.isInternal(player) || AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
 
         int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
         MiningMode mode = effectiveMode(player, miningLevel);
@@ -111,23 +103,23 @@ public final class MiningProgression {
                 }
                 case AUTO -> {
                     if (centerState.is(VALUABLE_ORES)) {
-                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                        if (veinLimit > 1) BulkMiningService.scheduleConnectedOre(player, level, center, centerState, veinLimit);
                     } else if (areaSize > 1) {
-                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                        BulkMiningService.schedulePickaxeArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
                     }
                 }
                 case PLANE -> {
                     if (centerState.is(VALUABLE_ORES)) {
-                        if (veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                        if (veinLimit > 1) BulkMiningService.scheduleConnectedOre(player, level, center, centerState, veinLimit);
                     } else if (areaSize > 1) {
-                        breakArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+                        BulkMiningService.schedulePickaxeArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
                     }
                 }
                 case VEIN -> {
-                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) breakConnectedOre(player, level, center, centerState, veinLimit);
+                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) BulkMiningService.scheduleConnectedOre(player, level, center, centerState, veinLimit);
                 }
                 case EXTRACT -> {
-                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) extractMatchingOre(player, level, center, centerState, veinLimit);
+                    if (centerState.is(VALUABLE_ORES) && veinLimit > 1) BulkMiningService.scheduleExtract(player, level, center, centerState, veinLimit);
                 }
                 case BORE -> BoreMiningService.schedule(player, level, center, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
             }
@@ -167,14 +159,14 @@ public final class MiningProgression {
         int xp = Math.max(1, (int) Math.ceil(xpForShovelBlock(centerState, level, center) * AscensionAffixes.xpMultiplier(tool)));
         announceMilestones(player, SkillProgressionService.award(player, SkillType.MINING, xp));
     }
-    if (AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
+    if (BulkMiningService.isInternal(player) || AREA_BREAK_GUARD.contains(player.getUUID()) || player.isShiftKeyDown()) return;
     int miningLevel = SkillProgressData.get(player).level(player, SkillType.MINING);
     if (effectiveMode(player, miningLevel) == MiningMode.SINGLE) return;
     int areaSize = AscensionAffixes.adjustShovelArea(tool, SkillTuning.miningAreaSize(miningLevel));
     if (areaSize <= 1) return;
     AREA_BREAK_GUARD.add(player.getUUID());
     try {
-        breakShovelArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
+        BulkMiningService.scheduleShovelArea(player, level, center, areaSize, Math.max(0.0F, centerState.getDestroySpeed(level, center)));
     } finally {
         AREA_BREAK_GUARD.remove(player.getUUID());
     }
@@ -230,101 +222,6 @@ private static int xpForShovelBlock(BlockState state, ServerLevel level, BlockPo
         if (oldLevel < 30 && newLevel >= 30) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f5×5 + 연결 광맥 24 + 광맥 전용 모드"));
         if (oldLevel < 60 && newLevel >= 60) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f7×7 + 연결 광맥 64"));
         if (oldLevel < 90 && newLevel >= 90) player.sendSystemMessage(Component.literal("§b[채굴 해금] §f9×9 + 광맥128 + 추출. 채석장 네트워크 완공 시 5×5×8 터널 모드 추가."));
-    }
-
-    private static void breakConnectedOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
-        OreVeinMatcher matcher = OreVeinMatcher.forOrigin(originState);
-        Queue<BlockPos> frontier = new ArrayDeque<>();
-        Set<BlockPos> visited = new HashSet<>();
-        frontier.add(origin.immutable());
-        visited.add(origin.immutable());
-        int broken = 1;
-        while (!frontier.isEmpty() && broken < limit) {
-            BlockPos current = frontier.remove();
-            for (int dx = -1; dx <= 1 && broken < limit; dx++) for (int dy = -1; dy <= 1 && broken < limit; dy++) for (int dz = -1; dz <= 1 && broken < limit; dz++) {
-                if (dx == 0 && dy == 0 && dz == 0) continue;
-                BlockPos next = current.offset(dx, dy, dz).immutable();
-                if (!visited.add(next)) continue;
-                if (Math.abs(next.getX() - origin.getX()) > 12 || Math.abs(next.getY() - origin.getY()) > 24 || Math.abs(next.getZ() - origin.getZ()) > 12) continue;
-                if (!level.hasChunkAt(next)) continue;
-                BlockState state = level.getBlockState(next);
-                if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
-                if (level.getBlockEntity(next) != null || !isValidPickaxeBreak(player, level, next, state, player.getMainHandItem())) continue;
-                frontier.add(next);
-                if (!player.getMainHandItem().is(ItemTags.PICKAXES)) return;
-                if (AutomatedToolBreak.destroyWithReducedWear(player, next)) broken++;
-            }
-        }
-    }
-
-    private static void extractMatchingOre(ServerPlayer player, ServerLevel level, BlockPos origin, BlockState originState, int limit) {
-        OreVeinMatcher matcher = OreVeinMatcher.forOrigin(originState);
-        List<BlockPos> candidates = new ArrayList<>();
-        for (int dx = -EXTRACT_RADIUS_XZ; dx <= EXTRACT_RADIUS_XZ; dx++) {
-            for (int dy = -EXTRACT_RADIUS_Y; dy <= EXTRACT_RADIUS_Y; dy++) {
-                for (int dz = -EXTRACT_RADIUS_XZ; dz <= EXTRACT_RADIUS_XZ; dz++) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue;
-                    BlockPos next = origin.offset(dx, dy, dz).immutable();
-                    if (!level.hasChunkAt(next)) continue;
-                    BlockState state = level.getBlockState(next);
-                    if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
-                    if (level.getBlockEntity(next) != null || !isValidPickaxeBreak(player, level, next, state, player.getMainHandItem())) continue;
-                    candidates.add(next);
-                }
-            }
-        }
-        candidates.sort(Comparator.comparingLong(pos -> distanceSq(origin, pos)));
-        int broken = 1;
-        for (BlockPos target : candidates) {
-            if (broken >= limit || !player.getMainHandItem().is(ItemTags.PICKAXES)) break;
-            if (!level.hasChunkAt(target)) continue;
-            BlockState state = level.getBlockState(target);
-            if (!state.is(VALUABLE_ORES) || !matcher.matches(state)) continue;
-            if (AutomatedToolBreak.destroyWithReducedWear(player, target)) broken++;
-        }
-    }
-
-    private static long distanceSq(BlockPos a, BlockPos b) {
-        long dx = (long) b.getX() - a.getX();
-        long dy = (long) b.getY() - a.getY();
-        long dz = (long) b.getZ() - a.getZ();
-        return dx * dx + dy * dy + dz * dz;
-    }
-
-    private static void breakShovelArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {
-    int radius = size / 2;
-    Vec3 look = player.getLookAngle();
-    double ax = Math.abs(look.x), ay = Math.abs(look.y), az = Math.abs(look.z);
-    for (int a = -radius; a <= radius; a++) for (int b = -radius; b <= radius; b++) {
-        if (a == 0 && b == 0) continue;
-        if (!player.getMainHandItem().is(ItemTags.SHOVELS)) return;
-        BlockPos target = ay >= ax && ay >= az ? center.offset(a, 0, b) : (ax >= az ? center.offset(0, a, b) : center.offset(a, b, 0));
-        if (!level.hasChunkAt(target)) continue;
-        BlockState targetState = level.getBlockState(target);
-        if (!isValidShovelBreak(player, level, target, targetState, player.getMainHandItem())) continue;
-        if (level.getBlockEntity(target) != null) continue;
-        float targetHardness = targetState.getDestroySpeed(level, target);
-        if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-        AutomatedToolBreak.destroyWithReducedWear(player, target);
-    }
-}
-
-    private static void breakArea(ServerPlayer player, ServerLevel level, BlockPos center, int size, float centerHardness) {
-        int radius = size / 2;
-        Vec3 look = player.getLookAngle();
-        double ax = Math.abs(look.x), ay = Math.abs(look.y), az = Math.abs(look.z);
-        for (int a = -radius; a <= radius; a++) for (int b = -radius; b <= radius; b++) {
-            if (a == 0 && b == 0) continue;
-            if (!player.getMainHandItem().is(ItemTags.PICKAXES)) return;
-            BlockPos target = ay >= ax && ay >= az ? center.offset(a, 0, b) : (ax >= az ? center.offset(0, a, b) : center.offset(a, b, 0));
-            if (!level.hasChunkAt(target)) continue;
-            BlockState targetState = level.getBlockState(target);
-            if (!isValidPickaxeBreak(player, level, target, targetState, player.getMainHandItem())) continue;
-            if (level.getBlockEntity(target) != null) continue;
-            float targetHardness = targetState.getDestroySpeed(level, target);
-            if (centerHardness > 0.0F && targetHardness > centerHardness * 1.5F + 1.0F) continue;
-            AutomatedToolBreak.destroyWithReducedWear(player, target);
-        }
     }
 
     public static int areaSize(int level) { return SkillTuning.miningAreaSize(level); }

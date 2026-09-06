@@ -1,11 +1,18 @@
 # Survival Ascension
 
-- Mod version: `0.61.20-alpha.1`
+- Mod version: `0.61.21-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
 - Network protocol: `15`
-- Existing-world compatibility: 0.61.20 adds no SavedData ID or codec field and does not bump the network protocol. Existing skill XP, infrastructure/logistics/outpost/production data and affix CustomData remain compatible. Distinct rerolls and salvage caps are server-side service rules; the 1152 Harvesting queue cap is runtime-only. Network protocol remains 15.
+- Existing-world compatibility: 0.61.21 adds no SavedData ID or codec field and does not bump the network protocol. Existing skill XP, infrastructure/logistics/outpost/production data and affix CustomData remain compatible. Bulk Mining queues and queued-tool profiles are runtime-only. Network protocol remains 15.
+
+## 0.61.21 Bounded Bulk Mining / 대량 채굴 틱 분산
+- Pickaxe area mining, shovel earthworks, connected ore veins and Extract queue only automatic extra targets; the manually broken center block remains vanilla-authoritative.
+- Queued Mining destroys at most 12 blocks per player / 48 globally per tick and also obeys 3 ms local / 5 ms global soft server-thread budgets. Every extra still uses ServerPlayerGameMode.destroyBlock through AutomatedToolBreak.
+- The queue is capped at 512 targets, above every current live high-end area/vein ceiling, and never force-loads chunks or processes block entities.
+- Mining, Woodcutting and Harvesting queued jobs capture a damage-normalized tool component profile so changing to a different tool/affix/enchantment cancels the remaining queued work while ordinary durability loss does not.
+- No SavedData or packet change; protocol remains 15.
 
 ## 0.61.20 Equipment Economy & Harvest Queue Hardening / 장비 경제·수확 큐 안정화
 - Dynamic salvage retains equipment/body/material/condition scaling, but pre-awakening rewards are capped by the matching rarity's imprint-material budget.

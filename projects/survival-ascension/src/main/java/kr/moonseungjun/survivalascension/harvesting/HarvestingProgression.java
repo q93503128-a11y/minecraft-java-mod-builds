@@ -89,7 +89,7 @@ public final class HarvestingProgression {
             HarvestJob job = entry.getValue();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
             ServerLevel level = event.getServer().getLevel(job.dimension);
-            if (player == null || level == null || player.isSpectator() || player.level() != level || !player.getMainHandItem().is(ItemTags.HOES)) {
+            if (player == null || level == null || player.isSpectator() || player.level() != level || !matchesJobTool(player, job)) {
                 iterator.remove();
                 continue;
             }
@@ -103,12 +103,12 @@ public final class HarvestingProgression {
                     BlockState targetState = level.getBlockState(target);
                     if (!isMatureHarvest(targetState) || targetState.getDestroySpeed(level, target) < 0.0F || !targetState.canHarvestBlock(level, target, player)) continue;
                     AutomatedToolBreak.destroyWithReducedWear(player, target);
-                    if (!player.getMainHandItem().is(ItemTags.HOES)) break;
+                    if (!matchesJobTool(player, job)) break;
                 }
             } finally {
                 AREA_GUARD.remove(player.getUUID());
             }
-            if (job.targets.isEmpty() || !player.getMainHandItem().is(ItemTags.HOES)) iterator.remove();
+            if (job.targets.isEmpty() || !matchesJobTool(player, job)) iterator.remove();
         }
     }
 
@@ -147,7 +147,8 @@ public final class HarvestingProgression {
         }
 
         if (!targets.isEmpty()) {
-            JOBS.put(player.getUUID(), new HarvestJob(level.dimension(), targets));
+            JOBS.put(player.getUUID(), new HarvestJob(level.dimension(), targets,
+                    AutomatedToolBreak.captureToolProfile(player.getMainHandItem())));
             if (forwardDepth > 0) {
                 player.sendSystemMessage(Component.literal("§a[전진 수확로] §f기본 " + size + "×" + size
                         + " 수확 뒤 바라보는 방향으로 §e" + size + "폭 × " + forwardDepth + "칸§f을 추가 수확합니다."), true);
@@ -190,12 +191,19 @@ public final class HarvestingProgression {
         }
     }
 
+    private static boolean matchesJobTool(ServerPlayer player, HarvestJob job) {
+        ItemStack held = player.getMainHandItem();
+        return held.is(ItemTags.HOES) && AutomatedToolBreak.matchesToolProfile(held, job.toolProfile);
+    }
+
     private static final class HarvestJob {
         private final ResourceKey<Level> dimension;
         private final Deque<BlockPos> targets;
-        private HarvestJob(ResourceKey<Level> dimension, Deque<BlockPos> targets) {
+        private final ItemStack toolProfile;
+        private HarvestJob(ResourceKey<Level> dimension, Deque<BlockPos> targets, ItemStack toolProfile) {
             this.dimension = dimension;
             this.targets = targets;
+            this.toolProfile = toolProfile;
         }
     }
 }

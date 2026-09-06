@@ -316,8 +316,9 @@ public final class ExpeditionIncidentSystem {
         String objective = incident.kind() == ExpeditionIncident.Kind.AMBUSH
                 ? "습격대 " + active.initialMobCount + "체 격파"
                 : incident.action().koreanName() + " " + active.actionTarget();
+        String reinforcementNote = active.reinforcementCount > 0 ? " §7· 이변 개체 1체 포함" : "";
         notify(level, active.participants, Component.literal(prefix + "§f" + region.koreanName() + " · §e" + incident.koreanName()
-                + " §7· 참가 " + active.participantCountSnapshot + "명 · 공동 목표: §f" + objective), false);
+                + " §7· 참가 " + active.participantCountSnapshot + "명 · 공동 목표: §f" + objective + reinforcementNote), false);
     }
 
     private static void tickActive(ServerPlayer player, ActiveIncident active) {
