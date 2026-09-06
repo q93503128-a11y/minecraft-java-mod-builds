@@ -85,12 +85,14 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit("final ascension menu label missing from packaged client runtime")
 
     compiled_main = zf.read(main)
+    # The exact release version is already validated from the JAR filename/metadata by verify_jar.py.
+    # Keep this verifier focused on compiled 0.61 final-ascension wiring instead of pinning a historical alpha string.
     for token in [
-        b"0.61.0-alpha.1", b"three-phase Final Ascension boundary boss", b"FinalAscensionBossSystem",
+        b"three-phase Final Ascension boundary boss", b"FinalAscensionBossSystem",
         b"FinalAscensionSystem", b"onServerStopping", b"orderly server-stop encounter cleanup"
     ]:
         if token not in compiled_main:
-            raise SystemExit(f"0.61 compiled release identity/wiring token missing: {token!r}")
+            raise SystemExit(f"0.61 compiled release wiring token missing: {token!r}")
 
 print("final_ascension_canonical_gate_runtime=present")
 print("final_ascension_acts_1_3_runtime=present")
