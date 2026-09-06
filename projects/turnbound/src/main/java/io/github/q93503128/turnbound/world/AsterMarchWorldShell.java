@@ -111,18 +111,14 @@ public final class AsterMarchWorldShell {
         writeMarker(level);
     }
 
+    /**
+     * Compatibility entry point retained for older callers. Physical gates are world-shared and monotonic; a
+     * player's lower campaign progress must never write a shared gate closed. The canonical shared authority owns
+     * reconciliation and physical writes.
+     */
     public static void syncProgressionGates(ServerLevel level, UUID playerId) {
         if (playerId == null) return;
-        int mask = (CampaignContentUnlocks.chapter1Complete(playerId) ? 1 : 0)
-                | (CampaignContentUnlocks.chapter2Complete(playerId) ? 2 : 0)
-                | (CampaignContentUnlocks.chapter3Complete(playerId) ? 4 : 0)
-                | (CampaignContentUnlocks.oldRelayEntrance(playerId) ? 8 : 0);
-        Integer previous = GATE_MASK.put(playerId, mask);
-        if (previous != null && previous == mask) return;
-        setGateOpen(level, Gate.GLOAM_NORTH, (mask & 1) != 0);
-        setGateOpen(level, Gate.AQUEDUCT_WEST, (mask & 2) != 0);
-        setGateOpen(level, Gate.QUARRY_PASS, (mask & 4) != 0);
-        setGateOpen(level, Gate.RELAY_EAST, (mask & 8) != 0);
+        AsterMarchSharedWorldProgress.sync(level, playerId);
     }
 
     public static void forget(UUID playerId) { if (playerId != null) GATE_MASK.remove(playerId); }
@@ -461,6 +457,8 @@ public final class AsterMarchWorldShell {
     }
 
     private static void set(ServerLevel level, int x, int y, int z, Block block) {
-        level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2);
+        BlockPos pos = new BlockPos(x, y, z);
+        var target = block.defaultBlockState();
+        if (!level.getBlockState(pos).equals(target)) level.setBlock(pos, target, 2);
     }
 }
