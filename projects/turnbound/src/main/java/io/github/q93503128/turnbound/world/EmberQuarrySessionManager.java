@@ -186,9 +186,7 @@ public final class EmberQuarrySessionManager {
     private static void clearVanillaMobs(ServerLevel level) {
         AABB area = new AABB(AsterMarchRegionCatalog.QUARRY.minX() - 12, 46, 290,
                 AsterMarchRegionCatalog.QUARRY.maxX() + 12, 102, AsterMarchRegionCatalog.QUARRY.maxZ() + 12);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!(mob instanceof BattleActorEntity)) mob.discard();
-        }
+        FieldVanillaMobSanitizer.clearIfDue(level, FieldVanillaMobSanitizer.Region.QUARRY, area);
     }
 
     private static final class Session {
