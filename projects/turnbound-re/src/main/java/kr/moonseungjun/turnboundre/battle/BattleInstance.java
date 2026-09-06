@@ -25,6 +25,7 @@ public final class BattleInstance {
     private final long seed;
     private final Map<String, BattleParticipant> participants;
     private final Map<String, ParticipantCombatState> combatStates;
+    private final Map<String, EnemyIntent> enemyIntents = new HashMap<>();
     private final DeterministicBattleRng rng;
     private final List<BattleEvent> eventLog = new ArrayList<>();
     private List<String> actorOrder;
@@ -70,6 +71,11 @@ public final class BattleInstance {
     public void start() {
         requireState(BattleState.ENCOUNTER_OPEN);
         transition(BattleState.INTRO);
+        for (BattleParticipant participant : participants.values()) {
+            if (participant.team() == BattleTeam.ENEMY && combatState(participant.id()).alive()) {
+                revealEnemyIntent(participant.id(), EnemyIntent.basic(), false, "battle_start");
+            }
+        }
         prepareCurrentActor();
     }
 
@@ -143,12 +149,48 @@ public final class BattleInstance {
         }
     }
 
+    /**
+     * M1 AI stub: the action actually resolved is always the currently published Intent action.
+     * Poise-cancelled intents therefore resolve RECOVER instead of silently choosing another action.
+     */
     public void resolveEnemyStub() {
         if (state != BattleState.RESOLVING) throw new IllegalStateException("enemy resolution requires RESOLVING");
         BattleParticipant actor = participants.get(currentActorId());
         if (actor.team() != BattleTeam.ENEMY) throw new IllegalStateException("current actor is not ENEMY");
+        EnemyIntent intent = enemyIntents.get(actor.id());
+        if (intent == null) throw new IllegalStateException("enemy has no published intent: " + actor.id());
         revision++;
-        eventLog.add(new BattleEvent(revision, "AI_COMMAND", actor.id(), "basic"));
+        eventLog.add(new BattleEvent(revision, "AI_COMMAND", actor.id(), intent.actionId()));
+        if ("recover".equals(intent.actionId())) {
+            emit("RECOVER", actor.id(), "poise=" + combatState(actor.id()).poise());
+        }
+    }
+
+    /** Test/data hook for M1 AI scripting. Replacing a published intent always logs INTENT_CHANGED first. */
+    public void setEnemyIntent(String enemyId, EnemyIntent intent) {
+        BattleParticipant participant = participants.get(enemyId);
+        if (participant == null || participant.team() != BattleTeam.ENEMY) {
+            throw new IllegalArgumentException("intent target must be an enemy participant: " + enemyId);
+        }
+        if (intent == null) throw new IllegalArgumentException("intent must not be null");
+        if (!combatState(enemyId).alive()) throw new IllegalArgumentException("defeated enemy cannot receive intent: " + enemyId);
+        revealEnemyIntent(enemyId, intent, enemyIntents.containsKey(enemyId), "script");
+    }
+
+    public EnemyIntent enemyIntent(String enemyId) {
+        EnemyIntent intent = enemyIntents.get(enemyId);
+        if (intent == null) throw new IllegalArgumentException("enemy has no published intent: " + enemyId);
+        return intent;
+    }
+
+    private void revealEnemyIntent(String enemyId, EnemyIntent intent, boolean changed, String reason) {
+        EnemyIntent previous = enemyIntents.put(enemyId, intent);
+        if (changed && previous != null) {
+            emit("INTENT_CHANGED", enemyId, previous.actionId() + "->" + intent.actionId() + " reason=" + reason);
+        } else {
+            emit("INTENT_REVEALED", enemyId, intent.actionId() + " type=" + intent.type() + " target=" + intent.targeting()
+                    + " risk=" + intent.risk() + " breakCancelable=" + intent.breakCancelable());
+        }
     }
 
     /** Applies canonical deterministic damage using this battle's single RNG stream and mutable target state. */
@@ -169,14 +211,42 @@ public final class BattleInstance {
 
         revision++;
         emit("DAMAGE", actorId, "target=" + targetId + " hp=" + hpDamage + " " + result.breakdown());
-        if (brokePoise) emit("EXPOSED_APPLIED", targetId, "poise=0");
-        if (!target.alive()) emit("PARTICIPANT_DEFEATED", targetId, "hp=0");
+        if (brokePoise) {
+            emit("EXPOSED_APPLIED", targetId, "poise=0");
+            applyPoiseBreakToIntent(targetId);
+        }
+        if (!target.alive()) {
+            enemyIntents.remove(targetId);
+            emit("PARTICIPANT_DEFEATED", targetId, "hp=0");
+        }
         return result;
+    }
+
+    private void applyPoiseBreakToIntent(String targetId) {
+        BattleParticipant target = participants.get(targetId);
+        if (target == null || target.team() != BattleTeam.ENEMY) return;
+        EnemyIntent current = enemyIntents.get(targetId);
+        if (current == null) return;
+
+        if (current.breakCancelable()) {
+            revealEnemyIntent(targetId, EnemyIntent.recover(), true, "poise_break_cancel");
+        } else if (current.breakDowngradeAction() != null) {
+            revealEnemyIntent(targetId, current.withAction(current.breakDowngradeAction(), EnemyIntent.Risk.NORMAL),
+                    true, "poise_break_downgrade");
+        }
     }
 
     public void finishResolution() {
         requireState(BattleState.RESOLVING);
+        String resolvedActorId = currentActorId();
+        BattleParticipant resolvedActor = participants.get(resolvedActorId);
         transition(BattleState.CHECK_END);
+
+        if (resolvedActor.team() == BattleTeam.ENEMY && combatState(resolvedActorId).alive()) {
+            enemyIntents.remove(resolvedActorId);
+            revealEnemyIntent(resolvedActorId, EnemyIntent.basic(), false, "next_turn");
+        }
+
         actorIndex++;
         if (actorIndex >= actorOrder.size()) {
             cycle++;
