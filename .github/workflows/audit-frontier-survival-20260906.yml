@@ -25,38 +25,49 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Apply prior audited fixes if needed
+      - name: Canonicalize remaining freight guide text
         run: |
-          if grep -q 'mod_version=0.1.0-alpha.114' projects/frontier-settlement/gradle.properties; then
-            python3 - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          p = Path('projects/frontier-settlement/tools/test_current_source.py')
-          s = p.read_text(encoding='utf-8')
-          old = 'print("CURRENT SOURCE CHECK PASS: alpha113 bulk-break event guards + alpha112 footprint-only placement + prior invariants")'
-          new = 'print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.114 physical production ecology/balance + prior invariants")'
-          if old in s:
-              p.write_text(s.replace(old, new, 1), encoding='utf-8')
-          PY
-            python3 tools/apply_frontier_survival_full_audit_fixes_20260906.py
-            python3 - <<'PY'
-          from pathlib import Path
-          p = Path('projects/survival-ascension/tools/test_current_source.py')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace("and '\" / X %s\"' in guide_for_controls", "and ' / X %s\"' in guide_for_controls")
-          s = s.replace("and '\" / V %s\"' not in guide_for_controls", "and ' / V %s\"' not in guide_for_controls")
-          p.write_text(s, encoding='utf-8')
-          PY
-          else
-            echo 'Prior audit fixes already applied on this branch.'
-          fi
 
-      - name: Apply salvage rebalance and guide fixes
-        run: |
-          if grep -q 'mod_version=0.61.18-alpha.1' projects/survival-ascension/gradle.properties; then
-            python3 tools/apply_survival_salvage_rebalance_20260906.py
-          else
-            echo 'Salvage rebalance already applied on this branch.'
-          fi
+          guide = Path('projects/survival-ascension/src/main/java/kr/moonseungjun/survivalascension/client/GuideScreen.java')
+          check = Path('projects/survival-ascension/tools/test_current_source.py')
+          text = guide.read_text(encoding='utf-8')
+
+          old_bundle = '''                h("전선 화물 묶음"), p("빈 상자 광산수레에서 Shift를 누른 채 물리 화물 수레를 선택하면 일반 잡자재 대신 원정1회+전초 방어1회+요새 방어1회분만 선별합니다. 식량(밀/당근/감자/비트) 60 + 철 주괴 16 + 연료(석탄 또는 숯) 3 + 아무 종류의 통나무 12 + 석재 벽돌 32이며 출발 전초 통에서 실제로 빠지고 같은 수레로 운송됩니다. Shift 없이 선택하면 기존 일반 대량화물 적재입니다."),
+'''
+          new_bundle = '''                h("전선 화물 묶음"), p("빈 상자 광산수레에서 Shift를 누른 채 물리 화물 수레를 선택하면 일반 잡자재 대신 원정1회+전초 방어1회+요새 방어1회분만 선별합니다. 식량" + FreightService.FRONTLINE_FOOD
+                        + " + 철 주괴 " + FreightService.FRONTLINE_IRON + " + 연료 " + FreightService.FRONTLINE_FUEL
+                        + " + 통나무 " + FreightService.FRONTLINE_LOGS + " + 석재 벽돌 " + FreightService.FRONTLINE_STONE_BRICKS
+                        + "이며 출발 전초 통에서 실제로 빠지고 같은 수레로 운송됩니다. Shift 없이 선택하면 기존 일반 대량화물 적재입니다."),
+'''
+          old_supply = '''                h("전선 현지 보급"), p("원정 작전·전초 방어·요새 방어는 현장 보급권과 별도로 출발 전초의 등록 통+연결 창고 통에 실물 재고가 있어야 시작합니다. 원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3, 전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12, 요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32을 씁니다. 인벤토리나 다른 거점 재고로 대체하지 않으므로 먼 전초는 직접 적재하거나 물리 화물로 보급해야 합니다."),
+'''
+          new_supply = '''                h("전선 현지 보급"), p("원정 작전·전초 방어·요새 방어는 현장 보급권과 별도로 출발 전초의 등록 통+연결 창고 통에 각 작전이 요구하는 실물 재고가 있어야 시작합니다. 필요한 수량은 각 작전의 서버 규칙이 직접 검증하며 인벤토리나 다른 거점 재고로 대체하지 않습니다. 먼 전초는 직접 적재하거나 물리 화물로 보급해야 합니다."),
+'''
+
+          changed = False
+          if old_bundle in text:
+              text = text.replace(old_bundle, new_bundle, 1)
+              changed = True
+          if old_supply in text:
+              text = text.replace(old_supply, new_supply, 1)
+              changed = True
+          if changed:
+              guide.write_text(text, encoding='utf-8')
+
+          test = check.read_text(encoding='utf-8')
+          anchor = '''require("장비 분해" in guide and "남은 내구도" in guide,
+        "dynamic salvage rules are hidden from player guidance")
+'''
+          extra = '''require("장비 분해" in guide and "남은 내구도" in guide,
+        "dynamic salvage rules are hidden from player guidance")
+require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,
+        "guide contains duplicated hard-coded frontline supply balances")
+'''
+          if anchor in test and 'duplicated hard-coded frontline supply balances' not in test:
+              check.write_text(test.replace(anchor, extra, 1), encoding='utf-8')
+          PY
 
       - name: Validate project resources
         run: |
@@ -122,6 +133,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No source changes to commit.'
           else
-            git commit -m 'Rebalance equipment salvage and finish regression fixes'
+            git commit -m 'Canonicalize frontline guide authority'
             git push origin HEAD:audit/frontier-survival-salvage-20260906
           fi
