@@ -1,0 +1,65 @@
+name: Patch Frontier Companion Lock 20260907
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-frontier-companion-lock-20260907.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Retarget companion lock to current Frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('projects/frontier-settlement')
+          props = {}
+          for line in (root / 'gradle.properties').read_text(encoding='utf-8').splitlines():
+              if '=' in line and not line.lstrip().startswith('#'):
+                  k, v = line.split('=', 1)
+                  props[k.strip()] = v.strip()
+          current = props['mod_version']
+          path = root / 'COMPANION_LOCK.json'
+          data = json.loads(path.read_text(encoding='utf-8'))
+          old = data.get('target', {}).get('frontier_settlement')
+          if old == current:
+              print(f'Companion lock already targets {current}')
+          else:
+              data['target']['frontier_settlement'] = current
+              data['generated_at'] = '2026-09-07'
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+              print(f'Retargeted companion lock {old} -> {current}')
+          PY
+          cd projects/frontier-settlement
+          python3 tools/test_companion_testpack.py
+          cd ../..
+          git diff --check
+
+      - name: Commit companion lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement/COMPANION_LOCK.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Retarget Frontier companion lock to Alpha.116'
+          git pull --rebase origin main
+          cd projects/frontier-settlement
+          python3 tools/test_companion_testpack.py
+          cd ../..
+          git push origin HEAD:main
