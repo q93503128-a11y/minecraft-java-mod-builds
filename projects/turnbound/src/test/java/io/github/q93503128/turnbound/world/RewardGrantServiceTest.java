@@ -44,6 +44,40 @@ class RewardGrantServiceTest {
     }
 
     @Test
+    void olderTransactionRemainsCommittedAfterLaterSettlementAndSaveRoundTrip() {
+        UUID playerId = UUID.randomUUID();
+        try {
+            CampaignProgressStore.ensureNewGame(playerId);
+            CampaignProgressStore.markClean(playerId);
+            BattleState state = P0Scenario.create();
+
+            RewardGrantService.Result first = RewardGrantService.commit(
+                    playerId, "tx-old", "ENC_M01", state, BattleOutcome.ALLY_VICTORY, () -> { });
+            RewardGrantService.Result second = RewardGrantService.commit(
+                    playerId, "tx-new", "ENC_M02", state, BattleOutcome.ALLY_VICTORY, () -> { });
+            assertFalse(first.duplicate());
+            assertFalse(second.duplicate());
+            assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-old"));
+            assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-new"));
+
+            String encoded = CampaignSaveCodec.encode(CampaignProgressStore.snapshot(playerId));
+            CampaignProgressStore.restore(playerId, CampaignSaveCodec.decode(encoded));
+            long goldAfterBoth = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
+
+            RewardGrantService.Result replay = RewardGrantService.commit(
+                    playerId, "tx-old", "ENC_M01", state, BattleOutcome.ALLY_VICTORY, () -> { });
+
+            assertTrue(replay.duplicate());
+            assertEquals(goldAfterBoth, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
+            assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-old"));
+            assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-new"));
+        } finally {
+            RewardGrantService.resetForTests();
+            CampaignProgressStore.resetForTests(playerId);
+        }
+    }
+
+    @Test
     void failedPersistenceRollsBackEntireRewardTransaction() {
         UUID playerId = UUID.randomUUID();
         try {
