@@ -67,6 +67,7 @@ replace_once(
 # Historical source remains immutable; the translated test must recognize the current single-authority UI seam.
 release_test = ROOT / "tools/test_release_content_pack.py"
 text = release_test.read_text(encoding="utf-8")
+text = text.replace('PREVIOUS_DOC_VERSION = "0.59.0-alpha.1"', 'PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"')
 text = text.replace("산업 가공소 완공 → 통 4블록 이내", "산업 가공소 완공 → 통/공용 보급고 4블록 이내")
 
 translation_anchor = "    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),\n"
@@ -106,6 +107,7 @@ current_test_text = current_test.read_text(encoding="utf-8")
 assert 'active.reinforcementCount > 0 ? " §7· 이변 개체 1체 포함" : ""' in incident_text
 assert "산업 가공소 완공 → 통/공용 보급고 4블록 이내" in release_text
 assert "산업 가공소 완공 → 통 4블록 이내" not in release_text
+assert 'PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"' in release_text
 assert "ProductionService.localSupplyGuideText()" in guide_text
 assert "원정은 식량(밀/당근/감자/비트) 12" not in guide_text
 assert "localSupplyCostText(LocalLoadout.EXPEDITION)" in production_text
