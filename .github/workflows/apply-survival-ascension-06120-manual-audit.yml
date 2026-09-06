@@ -36,6 +36,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/survival-ascension/tools/apply_06120_manual_audit_fixes.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'replace_once(project, "- Network protocol: `9`", "- Network protocol: `15`")'
+          new = '''replace_once(\n    project,\n    "- Java: `25`\\n- Network protocol: `9`\\n- Existing-world compatibility:",\n    "- Java: `25`\\n- Network protocol: `15`\\n- Existing-world compatibility:",\n)'''
+          if s.count(old) != 1:
+              raise SystemExit(f'patch-runner compatibility target count: {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
           python3 "$PROJECT_DIR/tools/apply_06120_manual_audit_fixes.py"
 
       - name: Diff safety
