@@ -30,16 +30,24 @@ text = release_test.read_text(encoding="utf-8")
 text = text.replace("산업 가공소 완공 → 통 4블록 이내", "산업 가공소 완공 → 통/공용 보급고 4블록 이내")
 
 translation_anchor = "    ('Math.min(13, base + bonus)', 'Math.min(21, base + bonus)'),\n"
-skill_translations = """    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }'),
+current_translations = """    ('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }'),
     ('HARVESTING -> { early = 1.50D; late = 1.20D; }', 'HARVESTING -> { early = 3.00D; late = 2.50D; }'),
     ('COMBAT -> { early = 1.25D; late = 1.15D; }', 'COMBAT -> { early = 4.00D; late = 3.50D; }'),
     ('CONSTRUCTION -> { early = 2.75D; late = 1.75D; }', 'CONSTRUCTION -> { early = 5.00D; late = 3.50D; }'),
     ('MOBILITY -> { early = 2.10D; late = 1.40D; }', 'MOBILITY -> { early = 4.00D; late = 3.00D; }'),
+    ('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
+    ('ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply', 'ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
 """
 if "('WOODCUTTING -> { early = 1.60D; late = 1.25D; }', 'WOODCUTTING -> { early = 2.50D; late = 2.00D; }')" not in text:
     if translation_anchor not in text:
-        raise SystemExit("content audit skill translation anchor missing")
-    text = text.replace(translation_anchor, translation_anchor + skill_translations)
+        raise SystemExit("content audit translation anchor missing")
+    text = text.replace(translation_anchor, translation_anchor + current_translations)
+elif "('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))')" not in text:
+    if translation_anchor not in text:
+        raise SystemExit("content audit transactional translation anchor missing")
+    text = text.replace(translation_anchor, translation_anchor + """    ('OutpostSiegeSystem.isActive(player) && !consumeLocalOutpostSupply', 'OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
+    ('ExpeditionOperationSystem.isActive(player) && !consumeLocalOutpostSupply', 'ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))'),
+""")
 release_test.write_text(text, encoding="utf-8")
 
 # Fail closed if current contracts vanished.
@@ -54,6 +62,8 @@ for current in (
     "COMBAT -> { early = 4.00D; late = 3.50D; }",
     "CONSTRUCTION -> { early = 5.00D; late = 3.50D; }",
     "MOBILITY -> { early = 4.00D; late = 3.00D; }",
+    "OutpostSiegeSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))",
+    "ExpeditionOperationSystem.startOrStatus(player, () -> consumeLocalOutpostSupply(player, prepared))",
 ):
     assert current in release_text
 
