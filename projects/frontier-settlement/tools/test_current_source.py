@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.115" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.116" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -116,6 +116,9 @@ require("LEGACY_WORKSITE_EXPORT_TAG" in worker and "worker.removeTag(LEGACY_WORK
 require("Profession barrels are already part of SettlementStorageService's authoritative physical" in worker, "worksite barrel authority rationale missing")
 require("matchWorkersToBuildings" in worker and "WorkerBuildingAssignment" in worker,
         "same-profession workers returned to UUID/list-index workplace assignment")
+require("minimum-total-distance bipartite assignment" in worker
+        and "rowPotential" in worker and "columnPotential" in worker and "assignmentCost(" in worker,
+        "same-profession worker matching regressed to greedy nearest-pair selection")
 require("BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber)" in worker
         and "BuildingType.FARM, FARM_WORKER_NAME, farm)" in worker
         and "BuildingType.QUARRY, QUARRY_WORKER_NAME, quarry)" in worker
@@ -226,4 +229,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.115 worker/workplace authority + physical production ecology/balance + prior invariants")
+print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 minimum-distance worker/workplace matching + physical production ecology/balance + prior invariants")

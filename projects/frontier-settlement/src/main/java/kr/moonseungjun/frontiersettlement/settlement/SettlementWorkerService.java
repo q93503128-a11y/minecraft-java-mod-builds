@@ -284,40 +284,94 @@ public final class SettlementWorkerService {
 
     private static List<WorkerBuildingAssignment> matchWorkersToBuildings(List<BuildingRecord> buildings,
                                                                            List<FrontierWorkerEntity> workers) {
-        List<BuildingRecord> remainingBuildings = new ArrayList<>(buildings);
-        List<FrontierWorkerEntity> remainingWorkers = new ArrayList<>(workers);
-        List<WorkerBuildingAssignment> result = new ArrayList<>();
-        while (!remainingBuildings.isEmpty() && !remainingWorkers.isEmpty()) {
-            BuildingRecord bestBuilding = null;
-            FrontierWorkerEntity bestWorker = null;
-            double bestDistance = Double.MAX_VALUE;
-            long bestBuildingKey = Long.MAX_VALUE;
-            String bestWorkerKey = "";
-            for (BuildingRecord building : remainingBuildings) {
-                BlockPos work = building.workCenter();
-                long buildingKey = work.asLong();
-                for (FrontierWorkerEntity candidate : remainingWorkers) {
-                    double distance = candidate.distanceToSqr(
-                            work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
-                    String workerKey = candidate.getUUID().toString();
-                    if (distance < bestDistance
-                            || (Double.compare(distance, bestDistance) == 0
-                            && (buildingKey < bestBuildingKey
-                            || (buildingKey == bestBuildingKey && (bestWorker == null || workerKey.compareTo(bestWorkerKey) < 0))))) {
-                        bestBuilding = building;
-                        bestWorker = candidate;
-                        bestDistance = distance;
-                        bestBuildingKey = buildingKey;
-                        bestWorkerKey = workerKey;
+        List<BuildingRecord> sortedBuildings = new ArrayList<>(buildings);
+        sortedBuildings.sort(Comparator.comparingLong(building -> building.workCenter().asLong()));
+        List<FrontierWorkerEntity> sortedWorkers = new ArrayList<>(workers);
+        sortedWorkers.sort(Comparator.comparing(worker -> worker.getUUID().toString()));
+        if (sortedBuildings.isEmpty() || sortedWorkers.isEmpty()) return List.of();
+
+        // Alpha.116: solve the complete minimum-total-distance bipartite assignment rather than
+        // repeatedly taking the single nearest pair. The greedy Alpha.115 matcher could reserve the
+        // only reasonable worker for one workplace and strand the remaining worker at a very distant
+        // workplace even though a much shorter one-to-one assignment existed. Inputs are sorted first,
+        // and equal reduced costs prefer the lower column, so ties remain deterministic without adding
+        // a UUID/workplace save ledger or manual worker assignment UI.
+        boolean buildingsAreRows = sortedBuildings.size() <= sortedWorkers.size();
+        int rowCount = buildingsAreRows ? sortedBuildings.size() : sortedWorkers.size();
+        int columnCount = buildingsAreRows ? sortedWorkers.size() : sortedBuildings.size();
+        double[] rowPotential = new double[rowCount + 1];
+        double[] columnPotential = new double[columnCount + 1];
+        int[] columnMatch = new int[columnCount + 1];
+        int[] previousColumn = new int[columnCount + 1];
+
+        for (int row = 1; row <= rowCount; row++) {
+            columnMatch[0] = row;
+            double[] bestReducedCost = new double[columnCount + 1];
+            java.util.Arrays.fill(bestReducedCost, Double.POSITIVE_INFINITY);
+            boolean[] usedColumn = new boolean[columnCount + 1];
+            int column0 = 0;
+            do {
+                usedColumn[column0] = true;
+                int matchedRow = columnMatch[column0];
+                double delta = Double.POSITIVE_INFINITY;
+                int column1 = 0;
+                for (int column = 1; column <= columnCount; column++) {
+                    if (usedColumn[column]) continue;
+                    double reducedCost = assignmentCost(sortedBuildings, sortedWorkers, buildingsAreRows,
+                            matchedRow - 1, column - 1) - rowPotential[matchedRow] - columnPotential[column];
+                    if (reducedCost < bestReducedCost[column]) {
+                        bestReducedCost[column] = reducedCost;
+                        previousColumn[column] = column0;
+                    }
+                    if (bestReducedCost[column] < delta
+                            || (Double.compare(bestReducedCost[column], delta) == 0
+                            && (column1 == 0 || column < column1))) {
+                        delta = bestReducedCost[column];
+                        column1 = column;
                     }
                 }
-            }
-            if (bestBuilding == null || bestWorker == null) break;
-            result.add(new WorkerBuildingAssignment(bestBuilding, bestWorker));
-            remainingBuildings.remove(bestBuilding);
-            remainingWorkers.remove(bestWorker);
+                for (int column = 0; column <= columnCount; column++) {
+                    if (usedColumn[column]) {
+                        rowPotential[columnMatch[column]] += delta;
+                        columnPotential[column] -= delta;
+                    } else if (column > 0) {
+                        bestReducedCost[column] -= delta;
+                    }
+                }
+                column0 = column1;
+            } while (columnMatch[column0] != 0);
+
+            do {
+                int column1 = previousColumn[column0];
+                columnMatch[column0] = columnMatch[column1];
+                column0 = column1;
+            } while (column0 != 0);
         }
+
+        List<WorkerBuildingAssignment> result = new ArrayList<>();
+        for (int column = 1; column <= columnCount; column++) {
+            int row = columnMatch[column];
+            if (row == 0) continue;
+            BuildingRecord building = buildingsAreRows
+                    ? sortedBuildings.get(row - 1)
+                    : sortedBuildings.get(column - 1);
+            FrontierWorkerEntity worker = buildingsAreRows
+                    ? sortedWorkers.get(column - 1)
+                    : sortedWorkers.get(row - 1);
+            result.add(new WorkerBuildingAssignment(building, worker));
+        }
+        result.sort(Comparator
+                .comparingLong((WorkerBuildingAssignment assignment) -> assignment.building().workCenter().asLong())
+                .thenComparing(assignment -> assignment.worker().getUUID().toString()));
         return result;
+    }
+
+    private static double assignmentCost(List<BuildingRecord> buildings, List<FrontierWorkerEntity> workers,
+                                         boolean buildingsAreRows, int rowIndex, int columnIndex) {
+        BuildingRecord building = buildingsAreRows ? buildings.get(rowIndex) : buildings.get(columnIndex);
+        FrontierWorkerEntity worker = buildingsAreRows ? workers.get(columnIndex) : workers.get(rowIndex);
+        BlockPos work = building.workCenter();
+        return worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D);
     }
 
     private static void tryAttractWorker(MinecraftServer server, ServerLevel level, SettlementData data) {
