@@ -18,6 +18,10 @@ neoForge {
         configureEach { logLevel = org.slf4j.event.Level.INFO }
     }
     mods { "${mod_id}" { sourceSet sourceSets.main } }
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
@@ -37,7 +41,13 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-test { useJUnitPlatform() }
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'failed'
+        exceptionFormat = 'full'
+    }
+}
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 25 }
 
 jar {
