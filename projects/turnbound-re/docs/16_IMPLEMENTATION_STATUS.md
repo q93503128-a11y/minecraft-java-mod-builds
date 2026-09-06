@@ -7,7 +7,7 @@ M0 — Bootstrap & Contracts: **PASS**
 
 M1 — Deterministic Battle Core: **PASS**
 
-M2 — Minecraft Adapter & Network: **NEXT**
+M2 — Minecraft Adapter & Network: **IN PROGRESS**
 
 ## M0 accepted on main
 Validated build commit: `8d462013cf7633b9a9c82142ad027151b37e1b03`
@@ -49,7 +49,7 @@ Validated M1 commit: `d4226799857c0bffed11c1bbc25ba8d4db1402c0`
 
 GitHub Actions run: `34056905906` — PASS
 
-Current verified deliverable:
+M1 accepted deliverable:
 - version `0.1.0-alpha.1`
 - artifact `turnbound-re-0.1.0-alpha.1-deliverables`
 - artifact id `9996240084`
@@ -115,20 +115,41 @@ M1 PASS evidence:
 - SHA-256 generation: PASS.
 - build report + logs + deliverable upload: PASS.
 
-## Next implementation work — M2
+## M2 implemented and validated so far
+Latest validated M2 slice commit: `c6b573636e6774bff4a09ba286b6e240aa5f49fd`
+
+GitHub Actions run: `34057077439` — PASS
+
+Current verified deliverable:
+- version `0.1.0-alpha.1`
+- artifact `turnbound-re-0.1.0-alpha.1-deliverables`
+- artifact id `9996289950`
+- artifact archive SHA-256 digest: `86f91e618527600ed215e020dfa91c12a967ae1839896c3ad4c3ddd58e5c9487`
+- production JAR SHA-256: `ddba89a13117122ec2a0272caa763b1d339370c655f0d17c7ac7b4cb3f9a41e8`
+- production JAR verification: PASS
+
+Implemented M2 slice:
+- `EntityParticipantBinding` is the thin Minecraft adapter identity between an actual `Entity#getUUID()` and the deterministic core participant id.
+- `BattleManager` owns the server-side active battle registry, participant bindings and entity→battle lookup.
+- the same Minecraft entity cannot be registered into multiple live battles.
+- bindings are validated against participants actually owned by the target BattleInstance before registry mutation.
+- duplicate participant/entity bindings are rejected.
+- cleanup is idempotent and removes all entity→battle ownership so normal or exceptional teardown does not leave registry orphans.
+- JUnit covers registration/lookup, duplicate-live-battle rejection, invalid-binding mutation safety and cleanup returning active/bound counts to zero.
+
+## M2 remaining
 Continue in canonical backlog order:
-1. Entity participant binding between Minecraft entities and battle participant ids without leaking vanilla world AI/damage into battle resolution.
-2. world AI/damage isolation guards.
-3. C2S command and S2C snapshot/event payload contracts, preserving server authority and revision validation.
-4. DEBUG_ONLY battle HUD/inspection path only; do not create production UI.
-5. disconnect, entity removal, dimension change and cleanup guards so orphan battles cannot remain.
-6. establish the strongest practical runtime smoke/GameTest path and work toward the M2 PASS requirement: 20 repeated debug encounters with orphan battle count 0.
+1. world AI/damage/knockback/despawn isolation guards for bound battle entities, with full restoration on cleanup.
+2. C2S command and S2C snapshot/event payload contracts, preserving server authority and revision validation.
+3. DEBUG_ONLY battle HUD/inspection path only; do not create production UI.
+4. disconnect, entity removal, dimension change and cleanup guards so orphan battles cannot remain.
+5. establish the strongest practical runtime smoke/GameTest path and work toward the M2 PASS requirement: 20 repeated debug encounters with orphan battle count 0.
 
 ## Runtime verification status
-- Datagen: NOT RUN; no generated production data is required by the current M0/M1 slice.
+- Datagen: NOT RUN; no generated production data is required by the current M0/M1/M2 slice.
 - GameTest: NOT RUN; no GameTest contract is implemented yet.
 - Dedicated server smoke: NOT RUN; runtime smoke task not yet established.
-- Client smoke: NOT RUN; M1 is a pure battle/data core and no production presentation is being claimed.
+- Client smoke: NOT RUN; current M2 work is server/common adapter infrastructure and no production presentation is being claimed.
 
 ## Design gate
 Production UI, character appearance/model/animation, VFX, icons/fonts/colors and authored world visuals remain GATED and were not created or guessed.
