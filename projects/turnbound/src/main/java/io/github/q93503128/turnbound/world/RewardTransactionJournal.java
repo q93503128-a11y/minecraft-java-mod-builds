@@ -79,6 +79,8 @@ public final class RewardTransactionJournal {
         Pending pending = loaded.get();
         CampaignProgressStore.Snapshot current = CampaignProgressStore.snapshot(playerId);
         if (RewardGrantService.transactionCommitted(current, pending.transactionId())) {
+            // The canonical attachment loaded by Minecraft already contains the transaction. That load is our durable
+            // acknowledgement, so the WAL can finally be removed.
             clearBestEffort(primary);
             return Recovery.STALE;
         }
@@ -93,7 +95,10 @@ public final class RewardTransactionJournal {
             CampaignProgressStore.markDirty(playerId);
             throw ex;
         }
-        clearBestEffort(primary);
+        // Do not delete the WAL here. CampaignPersistence will copy the recovered snapshot into the player attachment,
+        // but Minecraft persists that entity attachment later. Keeping the journal makes another crash before that
+        // write harmless: the same committed snapshot is reapplied. A future load that sees the transaction in the
+        // canonical attachment takes the STALE branch above and removes the journal.
         return Recovery.APPLIED;
     }
 
