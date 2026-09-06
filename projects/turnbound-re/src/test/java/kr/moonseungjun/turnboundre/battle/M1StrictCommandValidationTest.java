@@ -35,6 +35,22 @@ final class M1StrictCommandValidationTest {
     }
 
     @Test
+    void defeatedTargetIsRejectedWithoutCommandMutation() {
+        Fixture f = fixture();
+        f.battle.combatState("e1").applyHpDamage(999);
+        long revision = f.battle.revision();
+        int events = f.battle.eventLog().size();
+        BattleState state = f.battle.state();
+        BattleCommand command = new BattleCommand(revision, "p1", "basic", "cmd-dead-target", List.of("e1"));
+
+        assertEquals(BattleCommandService.Result.INVALID_TARGET,
+                f.service.submit(command, BASIC, ActionUsePolicy.singleEnemy()));
+        assertEquals(revision, f.battle.revision());
+        assertEquals(events, f.battle.eventLog().size());
+        assertEquals(state, f.battle.state());
+    }
+
+    @Test
     void duplicateTargetsCannotSatisfyMultiTargetPolicy() {
         Fixture f = fixture();
         long revision = f.battle.revision();
