@@ -1,9 +1,29 @@
-RELEASE SOURCE AUDIT FAIL
-- release version drifted: expected 0.61.0-alpha.1, got 0.61.20-alpha.1
-- 0.49/0.50 production UI missing: 산업 가공소 완공 → 통 4블록 이내
-- 0.52 runtime banner missing: VERSION = "0.61.0-alpha.1"
-- 0.53 shield event wiring missing: VERSION = "0.61.0-alpha.1"
-- 0.54 runtime banner missing: VERSION = "0.61.0-alpha.1"
-- 0.51 PROJECT docs missing: Mod version: `0.59.0-alpha.1`
-- 0.58 network protocol missing: PROTOCOL = "9"
-RELEASE SOURCE AUDIT FAIL: 0.58 regression contract failed under 0.61 runtime identity
+CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.21 tick-drained mining + queued-tool authority + equipment economy/full runtime invariants
+RELEASE SOURCE AUDIT PASS
+- 0.49 frontline freight manifest and physical-only transport remain intact
+- 0.50 depot/outpost registration remains staged 3 -> 6 -> 9 and limit-first before resource mutation
+- 0.51 standard humanoid armor tags join imprint/reforge/awakening and elite affix drops
+- 0.51 worn armor uses 26.2 equipment-slot API and bounded effects: damage cap35%, mastery XP cap32%
+- 0.52 ranged launch snapshots prevent post-shot gear swapping; precision/burst scale and persisted modifiers are bounded
+- 0.52 each physical projectile can produce at most one area burst, including piercing shots
+- 0.53 successful standard-shield blocks create bounded zero-damage guard waves; Shift keeps precision blocking
+- 0.54 real mace-smash hits use bounded hostile-only outer impact rings while vanilla 3.5-block knockback remains authoritative
+- 0.55 Sulfur Caves and dedicated spear momentum drive-line integration are bounded and regression-checked
+- 0.56 Survival-snapshotted ranged projectiles retain bounded online shooter attribution across combat/reward layers
+- 0.57 Mining/Woodcutting enlarged work is loaded-only and Woodland/Arid origin actions are counted
+- README / PROJECT / CHANGELOG / TESTING are committed and synchronized to 0.57
+apex_optional_escort_replacement=PASS
+apex_optional_java_dependency=ABSENT
+apex_escort_count_inflation=ABSENT
+apex_phase_crossing_hit=PASS
+operation_interdictions=PASS
+high_rank_woodcutting_harvesting=PASS
+final_ascension_canonical_gate=PASS
+final_ascension_acts_1_3=PASS
+final_boundary_boss_three_phase=PASS
+final_completion_saved_data=PASS
+final_mobility_construction_authority=PASS
+final_ascension_apex_state_mutation=ABSENT
+final_ascension_force_load=ABSENT
+player_facing_final_unlock_guidance=PASS
+RELEASE SOURCE AUDIT PASS
