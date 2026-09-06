@@ -3,7 +3,7 @@ name: Frontier + Survival full regression audit 20260906
 on:
   push:
     branches:
-      - audit/frontier-survival-20260906
+      - audit/frontier-survival-salvage-20260906
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Apply audited fixes once
+      - name: Apply prior audited fixes if needed
         run: |
           if grep -q 'mod_version=0.1.0-alpha.114' projects/frontier-settlement/gradle.properties; then
             python3 - <<'PY'
@@ -47,7 +47,15 @@ jobs:
           p.write_text(s, encoding='utf-8')
           PY
           else
-            echo 'Audit fixes already applied on this branch.'
+            echo 'Prior audit fixes already applied on this branch.'
+          fi
+
+      - name: Apply salvage rebalance and guide fixes
+        run: |
+          if grep -q 'mod_version=0.61.18-alpha.1' projects/survival-ascension/gradle.properties; then
+            python3 tools/apply_survival_salvage_rebalance_20260906.py
+          else
+            echo 'Salvage rebalance already applied on this branch.'
           fi
 
       - name: Validate project resources
@@ -69,23 +77,7 @@ jobs:
         run: python3 projects/frontier-settlement/tools/test_current_source.py
 
       - name: Survival Ascension canonical source audit
-        id: survival_audit
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          python3 projects/survival-ascension/tools/test_current_source.py 2>&1 | tee survival-audit.log
-
-      - name: Upload Survival audit diagnostics
-        if: steps.survival_audit.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: survival-audit-diagnostics
-          path: survival-audit.log
-          if-no-files-found: error
-
-      - name: Stop on Survival audit failure
-        if: steps.survival_audit.outcome == 'failure'
-        run: exit 1
+        run: python3 projects/survival-ascension/tools/test_current_source.py
 
       - name: Build Frontier Settlement
         working-directory: projects/frontier-settlement
@@ -130,6 +122,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No source changes to commit.'
           else
-            git commit -m 'Harden settlement workers and skill regression coverage'
-            git push origin HEAD:audit/frontier-survival-20260906
+            git commit -m 'Rebalance equipment salvage and finish regression fixes'
+            git push origin HEAD:audit/frontier-survival-salvage-20260906
           fi
