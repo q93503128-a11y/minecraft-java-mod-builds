@@ -142,3 +142,5 @@ jobs:
           python3 tools/test_release_content_pack.py
           cd ../..
           git push origin HEAD:main
+
+# retrigger: 2026-09-07T07:56+09:00
