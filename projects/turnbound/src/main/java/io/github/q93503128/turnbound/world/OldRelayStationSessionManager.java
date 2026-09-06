@@ -190,9 +190,7 @@ public final class OldRelayStationSessionManager {
     private static void clearVanillaMobs(ServerLevel level) {
         AABB area = new AABB(240, 46, AsterMarchRegionCatalog.OLD_RELAY.minZ() - 12,
                 AsterMarchRegionCatalog.OLD_RELAY.maxX() + 12, 106, -160);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!(mob instanceof BattleActorEntity)) mob.discard();
-        }
+        FieldVanillaMobSanitizer.clearIfDue(level, FieldVanillaMobSanitizer.Region.OLD_RELAY, area);
     }
 
     private static final class Session {
