@@ -8,6 +8,7 @@ import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
+import io.github.q93503128.turnbound.world.AsterMarchVanillaSpawnGuard;
 import io.github.q93503128.turnbound.world.AsterMarchWorldSanitizer;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
 import io.github.q93503128.turnbound.world.CampaignProgressStore;
@@ -43,6 +44,7 @@ public final class Turnbound {
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);
         NeoForge.EVENT_BUS.addListener(TurnboundCommands::register);
+        NeoForge.EVENT_BUS.addListener(AsterMarchVanillaSpawnGuard::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(this::tick);
         NeoForge.EVENT_BUS.addListener(this::login);
         NeoForge.EVENT_BUS.addListener(this::logout);
