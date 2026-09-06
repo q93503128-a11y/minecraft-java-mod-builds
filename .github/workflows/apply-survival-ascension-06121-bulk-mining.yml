@@ -43,6 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 "$PROJECT_DIR/tools/apply_06121_bulk_mining_queue.py"
+          python3 "$PROJECT_DIR/tools/apply_06121_historical_audit_bridge.py"
           git diff --check
 
       - name: Current and historical source audits
@@ -80,6 +81,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f "$PROJECT_DIR/.bulk-mining-06121-trigger"
           rm -f "$PROJECT_DIR/tools/apply_06121_bulk_mining_queue.py"
+          rm -f "$PROJECT_DIR/tools/apply_06121_historical_audit_bridge.py"
           rm -f .github/workflows/apply-survival-ascension-06121-bulk-mining.yml
           git add "$PROJECT_DIR" .github/workflows/apply-survival-ascension-06121-bulk-mining.yml
           git commit -m "Bound Survival bulk mining work per tick"
