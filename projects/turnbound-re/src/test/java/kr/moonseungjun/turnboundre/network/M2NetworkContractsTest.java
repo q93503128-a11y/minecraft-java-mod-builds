@@ -34,8 +34,8 @@ class M2NetworkContractsTest {
         BattleInstance battle = new BattleInstance(battleId, 1234L, List.of(player(), enemy()));
         BattleManager manager = new BattleManager();
         manager.register(battle, List.of(
-                new EntityParticipantBinding(playerEntity, "p1"),
-                new EntityParticipantBinding(enemyEntity, "e1")));
+                new EntityParticipantBinding("p1", playerEntity),
+                new EntityParticipantBinding("e1", enemyEntity)));
         battle.start();
 
         BattleNetworkGateway gateway = new BattleNetworkGateway(manager);
@@ -60,8 +60,8 @@ class M2NetworkContractsTest {
         BattleInstance battle = new BattleInstance(battleId, 9L, List.of(player(), enemy()));
         BattleManager manager = new BattleManager();
         manager.register(battle, List.of(
-                new EntityParticipantBinding(playerEntity, "p1"),
-                new EntityParticipantBinding(UUID.randomUUID(), "e1")));
+                new EntityParticipantBinding("p1", playerEntity),
+                new EntityParticipantBinding("e1", UUID.randomUUID())));
         battle.start();
 
         var incoming = new BattleNetworkPayloads.DecodedCommand(battleId, battle.revision(), "p1", "basic", "cmd-ok", List.of("e1"));
