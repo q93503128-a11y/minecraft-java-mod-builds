@@ -1,0 +1,70 @@
+name: Apply Survival Ascension 0.61.20 Canonical Audit Sync
+
+on:
+  push:
+    paths:
+      - 'projects/survival-ascension/.canonical-audit-sync-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-apply:
+    runs-on: ubuntu-24.04
+    env:
+      PROJECT_DIR: projects/survival-ascension
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Apply canonical audit sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$PROJECT_DIR/tools/apply_06120_canonical_audit_sync.py"
+          git diff --check
+
+      - name: Current and historical audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          python3 tools/test_current_source.py
+          python3 tools/test_release_source.py
+          python3 tools/test_release_content_pack.py
+
+      - name: Clean Java 25 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          gradle --no-daemon --no-configuration-cache clean build --stacktrace --console=plain
+
+      - name: Commit validated audit sync to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f "$PROJECT_DIR/.canonical-audit-sync-trigger"
+          rm -f "$PROJECT_DIR/tools/apply_06120_canonical_audit_sync.py"
+          rm -f .github/workflows/apply-survival-ascension-06120-audit-sync.yml
+          git add "$PROJECT_DIR" .github/workflows/apply-survival-ascension-06120-audit-sync.yml
+          git commit -m "Sync Survival Ascension canonical audits with 0.61.20"
+          git pull --rebase origin main
+          git push origin HEAD:main
