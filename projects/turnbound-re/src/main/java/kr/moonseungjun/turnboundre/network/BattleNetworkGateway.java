@@ -35,10 +35,16 @@ public final class BattleNetworkGateway {
     private record ResolvedAction(ActionDefinition definition, ActionUsePolicy policy) {}
 
     private final BattleManager manager;
+    private final DataActionResolver dataActions;
 
     public BattleNetworkGateway(BattleManager manager) {
+        this(manager, null);
+    }
+
+    public BattleNetworkGateway(BattleManager manager, DataActionResolver dataActions) {
         if (manager == null) throw new IllegalArgumentException("manager must not be null");
         this.manager = manager;
+        this.dataActions = dataActions;
     }
 
     public Result submit(UUID senderEntityId, BattleNetworkPayloads.DecodedCommand incoming) {
@@ -72,8 +78,12 @@ public final class BattleNetworkGateway {
         }
 
         ResolvedAction resolved = resolveUniversal(incoming.actionId());
+        if (resolved == null && dataActions != null) {
+            resolved = dataActions.resolve(incoming.battleId(), incoming.actorId(), incoming.actionId())
+                    .map(it -> new ResolvedAction(it.definition(), it.policy()))
+                    .orElse(null);
+        }
         if (resolved == null) {
-            // Skill/Burst must come from the canonical data registry. Do not invent action definitions in the adapter.
             return new Result(ResultCode.DATA_ACTION_NOT_RESOLVED, battle, eventStart, incoming.actionId());
         }
 

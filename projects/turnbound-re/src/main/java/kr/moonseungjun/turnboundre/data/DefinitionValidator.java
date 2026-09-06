@@ -7,6 +7,8 @@ import java.util.Set;
 
 public final class DefinitionValidator {
     private static final Set<String> ACTION_KINDS = Set.of("BASIC", "SKILL", "GUARD", "BURST", "PASSIVE");
+    private static final Set<String> TARGET_TEAMS = Set.of("SELF", "ALLY", "ENEMY", "ANY");
+    private static final Set<String> TARGET_SHAPES = Set.of("SINGLE", "MULTI");
     private static final Set<String> ROLES = Set.of("VANGUARD", "BREAKER", "STRIKER", "SUPPORT", "CONTROL");
     private static final Set<String> AFFINITIES = Set.of("FLAME", "TIDE", "GALE", "STONE", "LIGHT", "DARK");
     private static final Set<String> STATUS_POLARITIES = Set.of("POSITIVE", "NEGATIVE", "NEUTRAL");
@@ -25,6 +27,22 @@ public final class DefinitionValidator {
             if (action.energyCost() < 0) errors.add(id + ": energyCost must be >= 0");
             if (action.poiseDamage() < 0) errors.add(id + ": poiseDamage must be >= 0");
             if (action.power() < 0) errors.add(id + ": power must be >= 0");
+
+            ActionDefinition.Targeting targeting = action.targeting();
+            if (targeting == null) {
+                errors.add(id + ": targeting must not be null");
+                continue;
+            }
+            if (!TARGET_TEAMS.contains(targeting.team())) {
+                errors.add(id + ": unknown targeting team " + targeting.team());
+            }
+            if (!TARGET_SHAPES.contains(targeting.shape())) {
+                errors.add(id + ": unknown targeting shape " + targeting.shape());
+            }
+            if (targeting.count() < 1) errors.add(id + ": targeting count must be >= 1");
+            if ("SINGLE".equals(targeting.shape()) && targeting.count() != 1) {
+                errors.add(id + ": SINGLE targeting count must be 1");
+            }
         }
         return List.copyOf(errors);
     }
