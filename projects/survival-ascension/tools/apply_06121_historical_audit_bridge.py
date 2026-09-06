@@ -39,6 +39,21 @@ ui_bridge_anchor = "# Inject approved translations into nested test_current_sour
 ui_bridge = '''# Current logistics UI names both container families instead of the older barrel-only shorthand.\nlegacy = legacy.replace('산업 가공소 완공 → 통 4블록 이내', '산업 가공소 완공 → 통/공용 보급고 4블록 이내')\n\n'''
 if ui_bridge not in release:
     release = replace_once(release, ui_bridge_anchor, ui_bridge + ui_bridge_anchor, "production UI audit bridge")
+
+# 0.61.20 intentionally raised the live Harvesting queue from the old 384 ceiling to 1152 so
+# the current high-end hoe area is not silently truncated. The old 0.59.1 gameplay invariant is
+# still exercised by the live cumulative audit; only the stale literal ceiling is advanced here.
+release = replace_once(release,
+    '"skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 384"',
+    '"skillLevel >= 90 ? 4 : 0", "fieldMastery ? 8", "player.isShiftKeyDown()", "MAX_PENDING_PER_PLAYER = 1152"',
+    "outer harvesting queue ceiling")
+
+# PROJECT is a live canonical document with historical 0.59 sections below it; therefore its header
+# must track the current runtime while the 0.59 section remains required as regression history.
+release = replace_once(release,
+    'need(project, ["Mod version: `0.59.0-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")',
+    'need(project, ["Mod version: `0.61.21-alpha.1`", "## 0.59 Apex Content Escort Integration"], "historical PROJECT regression docs")',
+    "outer PROJECT live header")
 write(release_path, release)
 
 # Keep the live long-form project identity current. Historical 0.58 sections below remain as history.
