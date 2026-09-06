@@ -61,7 +61,23 @@ jobs:
         run: python3 projects/frontier-settlement/tools/test_current_source.py
 
       - name: Survival Ascension canonical source audit
-        run: python3 projects/survival-ascension/tools/test_current_source.py
+        id: survival_audit
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 projects/survival-ascension/tools/test_current_source.py 2>&1 | tee survival-audit.log
+
+      - name: Upload Survival audit diagnostics
+        if: steps.survival_audit.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: survival-audit-diagnostics
+          path: survival-audit.log
+          if-no-files-found: error
+
+      - name: Stop on Survival audit failure
+        if: steps.survival_audit.outcome == 'failure'
+        run: exit 1
 
       - name: Build Frontier Settlement
         working-directory: projects/frontier-settlement
