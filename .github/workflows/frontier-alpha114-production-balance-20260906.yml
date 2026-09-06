@@ -29,6 +29,19 @@ jobs:
       - name: Rebase onto latest main
         run: git pull --rebase origin main
 
+      - name: Normalize outpost trunk patch anchor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_frontier_alpha114_production_balance.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'for (int y = 0; y < 16 && count < MAX_LOGS; y++) {'
+          new = 'for (int y = 0; y < 10 && count < MAX_LOGS; y++) {'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected one old anchor, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply production ecology patch
         run: python3 tools/apply_frontier_alpha114_production_balance.py
 
