@@ -45,8 +45,39 @@ class RewardTransactionJournalTest {
             assertEquals(RewardTransactionJournal.Recovery.APPLIED, RewardTransactionJournal.recover(primary, playerId));
             assertTrue(CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD) > goldBefore);
             assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-recover"));
-            assertFalse(Files.exists(RewardTransactionJournal.journalPath(primary)));
+            assertTrue(Files.exists(RewardTransactionJournal.journalPath(primary)));
             assertEquals(CampaignProgressStore.snapshot(playerId), CampaignSaveFiles.load(primary).orElseThrow().snapshot());
+
+            // A recovered attachment is not considered durable until a later load presents the transaction back to us.
+            assertEquals(RewardTransactionJournal.Recovery.STALE, RewardTransactionJournal.recover(primary, playerId));
+            assertFalse(Files.exists(RewardTransactionJournal.journalPath(primary)));
+        } finally {
+            RewardGrantService.resetForTests();
+            CampaignProgressStore.resetForTests(playerId);
+        }
+    }
+
+    @Test
+    void successfulSettlementKeepsJournalUntilCanonicalReloadAcknowledgesTransaction() throws Exception {
+        UUID playerId = UUID.randomUUID();
+        Path primary = tempDir.resolve("ack.json");
+        try {
+            CampaignProgressStore.ensureNewGame(playerId);
+            CampaignProgressStore.markClean(playerId);
+
+            RewardGrantService.Result result = RewardGrantService.commit(
+                    playerId, "tx-ack", "ENC_M01", P0Scenario.create(), BattleOutcome.ALLY_VICTORY,
+                    snapshot -> RewardTransactionJournal.prepare(primary, "tx-ack", snapshot),
+                    () -> CampaignSaveFiles.save(primary, CampaignProgressStore.snapshot(playerId)),
+                    () -> { });
+            assertFalse(result.duplicate());
+            assertTrue(Files.exists(RewardTransactionJournal.journalPath(primary)));
+
+            CampaignProgressStore.removeRuntime(playerId);
+            CampaignProgressStore.restore(playerId, CampaignSaveFiles.load(primary).orElseThrow().snapshot());
+            assertTrue(RewardGrantService.transactionCommitted(CampaignProgressStore.snapshot(playerId), "tx-ack"));
+            assertEquals(RewardTransactionJournal.Recovery.STALE, RewardTransactionJournal.recover(primary, playerId));
+            assertFalse(Files.exists(RewardTransactionJournal.journalPath(primary)));
         } finally {
             RewardGrantService.resetForTests();
             CampaignProgressStore.resetForTests(playerId);
