@@ -43,17 +43,17 @@ Implemented M0 contracts:
 - CI produces logs, JAR, SHA-256 and `BUILD_AND_RUNTIME_REPORT.md`.
 
 ## M1 implemented and validated so far
-Latest validated M1 slice commit: `3f8bc66177d53b0775496e20ec004448c9546090`
+Latest validated M1 slice commit: `4135dc08c1ea8720c6c14cd5d418bcffe0480af1`
 
-GitHub Actions run: `34041122937` — PASS
+GitHub Actions run: `34044270475` — PASS
 
 Current verified deliverable:
 - version `0.1.0-alpha.1`
 - artifact `turnbound-re-0.1.0-alpha.1-deliverables`
-- artifact id `9991703874`
-- artifact archive SHA-256 digest: `371e19f20a942f08ce15708735de5414bad838596c7c9cbe344b3d90c72ce9d7`
+- artifact id `9992614156`
+- artifact archive SHA-256 digest: `41bfc1a57022df2c3e315e58023de17d73d47892bcc5d56b5c1976971b791c93`
+- production JAR SHA-256: `59b8c18ce34e1d6697361ac26c40986d04ee76d4d175f7a4140c6525efb6f975`
 - production JAR verification: PASS
-- per-JAR SHA-256 file generation/upload: PASS (contained in deliverable artifact)
 
 Implemented:
 - canonical BattleState enum/state-machine foundation.
@@ -70,12 +70,21 @@ Implemented:
 - canonical Poise affinity multipliers and IMMUNE Poise=0 behavior.
 - replay-readable damage breakdown including raw, affinity, crit, exposed, variance, other modifier, final HP, Poise and RNG position.
 - battle-owned mutable participant combat state for HP, Poise, Energy, EXPOSED, POISE_GUARD and Guard flags.
-- BattleInstance now owns the deterministic RNG stream and applies DamageService results to mutable HP/Poise state.
+- BattleInstance owns the deterministic RNG stream and applies DamageService results to mutable HP/Poise state.
 - damage resolution emits replay-readable DAMAGE / EXPOSED_APPLIED / PARTICIPANT_DEFEATED events.
 - Poise break enters EXPOSED; target turn start removes EXPOSED, restores Poise to max and applies one-turn POISE_GUARD.
 - POISE_GUARD halves Poise damage and expires on the following turn start, preventing permanent stun-lock loops.
-- Energy storage is bounded to 0..100 with validated gain/spend primitives ready for command wiring.
-- pure JUnit coverage for stable initiative, revision rejection, repeated battle event streams, participant validation, same-seed damage stream identity, affinity/immune rules, EXPOSED multiplier, canonical tag coverage, invalid damage inputs, mutable HP/Poise mutation, EXPOSED recovery, POISE_GUARD mitigation and identical mutable state/event results for identical seed/input.
+- Energy storage is bounded to 0..100.
+- Basic command generates canonical +10 Energy.
+- Guard command generates canonical +15 Energy, applies non-stacking Guard and Guard expires at the actor's next turn start.
+- Guard halves incoming final HP damage while active.
+- data-defined Skill/Burst commands validate and spend their explicit Energy cost; insufficient-Energy rejection is mutation-free.
+- invalid action kind/action-id mismatch rejection is mutation-free.
+- StatusDefinition Mojang Codec with canonical minimum fields: id, polarity, durationUnit, maxStacks, refreshRule, dispelTags and hooks.
+- DefinitionRegistry now supports immutable validated status definitions while preserving the previous action/character constructor path.
+- status validation covers duplicate id, polarity, TURN/CYCLE duration, stack range and malformed refresh/tag/hook fields.
+- canonical shared status ids are contract-tested: GUARD / EXPOSED / POISE_GUARD / BURN / SLOW / ATK_UP / DEF_DOWN.
+- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation and identical event-stream checks for the implemented command slice.
 
 Validation evidence for latest slice:
 - dependency resolution + clean build: PASS.
@@ -86,13 +95,11 @@ Validation evidence for latest slice:
 
 ## M1 remaining
 Continue in backlog/canonical order:
-1. finish Energy command semantics: Basic +10, Guard +15, Skill/Burst spend validation.
-2. Guard command lifecycle and final-damage halving through command resolution.
-3. shared StatusDefinition/runtime status hooks for GUARD / EXPOSED / POISE_GUARD / BURN / SLOW / ATK_UP / DEF_DOWN.
-4. Intent model/AI intent consistency, break-cancel/recover behavior and `INTENT_CHANGED` event.
-5. target/action validation beyond revision/current actor: ownership, energy/cooldown/status, target count/team/alive, duplicate command.
-6. victory/defeat/reward event and cleanup transitions; skip defeated actors safely.
-7. deterministic same seed + same commands full event-stream test and explicit no-soft-lock transition tests for M1 PASS.
+1. shared Status runtime/StatusService hooks and migrate GUARD / EXPOSED / POISE_GUARD lifecycle onto the shared runtime without inventing presentation behavior.
+2. Intent model/AI intent consistency, break-cancel/recover behavior and `INTENT_CHANGED` event.
+3. target/action validation beyond revision/current actor: ownership, cooldown/status, target count/team/alive, duplicate command.
+4. victory/defeat/reward event and cleanup transitions; skip defeated actors safely.
+5. deterministic same seed + same commands full event-stream test and explicit no-soft-lock transition tests for M1 PASS.
 
 ## Runtime verification status
 - Datagen: NOT RUN; no generated production data is required by the current M0/M1 slice.
