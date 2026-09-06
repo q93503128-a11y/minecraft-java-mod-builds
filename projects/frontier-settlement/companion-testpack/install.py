@@ -116,10 +116,30 @@ def apply_committed_pin(entry: dict, file_meta: dict, expected: dict, pins: dict
         return expected
     if pin.get("version") != entry.get("version"):
         return expected
-    if pin.get("source") != file_meta.get("source"):
-        raise RuntimeError(f"{entry['id']}: committed pin source changed for same version")
-    if pin.get("filename") != file_meta.get("filename"):
-        raise RuntimeError(f"{entry['id']}: committed pin filename changed for same version")
+
+    source_changed = pin.get("source") != file_meta.get("source")
+    filename_changed = pin.get("filename") != file_meta.get("filename")
+    if source_changed or filename_changed:
+        # A hosting-source/filename migration is acceptable only when the upstream
+        # resolver exposes strong hashes that agree with the already verified pin.
+        # The downloaded bytes are then checked again against all three pinned
+        # digests below, so a same-version source migration can never silently
+        # substitute different content (Dungeons & Taverns CF -> Modrinth case).
+        comparable = 0
+        for algorithm in ("sha1", "sha256", "sha512"):
+            upstream = expected.get(algorithm)
+            pinned = pin.get(algorithm)
+            if upstream and pinned:
+                comparable += 1
+                if upstream.lower() != pinned.lower():
+                    raise RuntimeError(
+                        f"{entry['id']}: migrated source {algorithm} disagrees with committed pin"
+                    )
+        if comparable < 2:
+            raise RuntimeError(
+                f"{entry['id']}: source/filename changed without two matching strong upstream hashes"
+            )
+
     merged = dict(expected)
     for algorithm in ("sha1", "sha256", "sha512"):
         value = pin.get(algorithm)
