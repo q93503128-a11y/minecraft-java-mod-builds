@@ -1,10 +1,10 @@
 status=failure
-source_sha=ee12fa3565fd92415332a5602773467ef153a23b
-docs_sha=ee12fa3565fd92415332a5602773467ef153a23b
-source_docs_sha=ee12fa3565fd92415332a5602773467ef153a23b
-run_id=33937389589
-run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/33937389589
-version=0.1.0-alpha.95
+source_sha=c542f238f1478a22e89f7f4f7a1f429348bd317e
+docs_sha=c542f238f1478a22e89f7f4f7a1f429348bd317e
+source_docs_sha=c542f238f1478a22e89f7f4f7a1f429348bd317e
+run_id=34029270918
+run_url=https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/34029270918
+version=0.1.0-alpha.115
 jar_sha256=unknown
 minecraft=26.2
 neoforge=26.2.0.38-beta
