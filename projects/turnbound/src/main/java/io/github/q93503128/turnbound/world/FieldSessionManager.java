@@ -3,14 +3,12 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
-import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -195,9 +193,7 @@ public final class FieldSessionManager {
         AABB area = new AABB(AsterMarchRegionCatalog.SOUTHGATE.minX() - 4, Math.min(slice.baseY(), 56) - 8,
                 AsterMarchRegionCatalog.SOUTHGATE.minZ() - 4, AsterMarchRegionCatalog.SOUTHGATE.maxX() + 4, 96,
                 AsterMarchRegionCatalog.SOUTHGATE.maxZ() + 4);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!(mob instanceof BattleActorEntity)) mob.discard();
-        }
+        FieldVanillaMobSanitizer.clearIfDue(level, FieldVanillaMobSanitizer.Region.SOUTHGATE, area);
     }
 
     private static final class FieldSession {
