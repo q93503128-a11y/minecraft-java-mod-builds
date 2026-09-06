@@ -62,9 +62,15 @@ public final class BattleWorldEventHooks {
         if (event.getLevel().isClientSide()) return;
         UUID entityId = event.getEntity().getUUID();
         if (!isolation.requiresBattleCleanupBeforeRemoval(entityId)) return;
+        cleanupBattleForEntity(entityId);
+    }
 
-        battles.battleForEntity(entityId)
-                .map(BattleInstance::battleId)
-                .ifPresent(battles::cleanup);
+    private void cleanupBattleForEntity(UUID entityId) {
+        battles.battleForEntity(entityId).ifPresent(battle -> {
+            // Preserve the canonical terminal cleanup when possible, but never require terminal state
+            // to release Minecraft entity ownership during removal/disconnect/dimension transitions.
+            if (battle.state() == BattleState.REWARD) battle.cleanup();
+            battles.cleanup(battle.battleId());
+        });
     }
 }

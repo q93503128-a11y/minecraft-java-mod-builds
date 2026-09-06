@@ -26,6 +26,6 @@ public final class TurnboundRe {
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
-        TurnboundDebugCommands.register(event.getDispatcher());
+        TurnboundDebugCommands.register(event.getDispatcher(), BATTLES);
     }
 }

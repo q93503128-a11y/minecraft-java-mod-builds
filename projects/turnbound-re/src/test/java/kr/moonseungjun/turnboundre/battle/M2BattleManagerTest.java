@@ -32,6 +32,27 @@ final class M2BattleManagerTest {
     }
 
     @Test
+    void networkEnabledCleanupReleasesStrictGateAndAllBindingsTogether() {
+        List<BattleParticipant> participants = participants();
+        BattleInstance battle = new BattleInstance(
+                UUID.fromString("20000000-0000-0000-0000-000000000005"), 991L, participants);
+        BattleManager manager = new BattleManager();
+        manager.register(battle, bindings(), participants);
+
+        assertTrue(manager.commandService(battle.battleId()).isPresent());
+        assertEquals(2, manager.boundEntityCount());
+        manager.cleanup(battle.battleId());
+
+        assertTrue(manager.commandService(battle.battleId()).isEmpty());
+        assertTrue(manager.binding(battle.battleId(), "p").isEmpty());
+        assertTrue(manager.binding(battle.battleId(), "e").isEmpty());
+        assertTrue(manager.battleForEntity(PLAYER_ENTITY).isEmpty());
+        assertTrue(manager.battleForEntity(ENEMY_ENTITY).isEmpty());
+        assertEquals(0, manager.activeBattleCount());
+        assertEquals(0, manager.boundEntityCount());
+    }
+
+    @Test
     void sameEntityCannotJoinTwoLiveBattles() {
         BattleManager manager = new BattleManager();
         BattleInstance first = battle("20000000-0000-0000-0000-000000000002");
@@ -59,10 +80,14 @@ final class M2BattleManagerTest {
     }
 
     private static BattleInstance battle(String id) {
-        return new BattleInstance(UUID.fromString(id), 991L, List.of(
+        return new BattleInstance(UUID.fromString(id), 991L, participants());
+    }
+
+    private static List<BattleParticipant> participants() {
+        return List.of(
                 new BattleParticipant("p", BattleTeam.PLAYER, 0, 20, 100, 20, 10, 30),
                 new BattleParticipant("e", BattleTeam.ENEMY, 1, 10, 100, 20, 10, 30)
-        ));
+        );
     }
 
     private static List<EntityParticipantBinding> bindings() {
