@@ -58,6 +58,17 @@ replace_all_required(content_audit,
                      '산업 가공소 완공 → 통 4블록 이내',
                      '산업 가공소 완공 → 통/공용 보급고 4블록 이내')
 
+# The live guide deliberately stopped duplicating local-supply numbers and now tells players that
+# the server-side operation rules are authoritative. Translate those three old copied-number needles
+# to that single current guidance sentence in both historical wrapper layers.
+guide_authority = '원정·전초 방어·요새 방어의 보급권과 현지 실물 재고는 각 작전 시작 시 서버가 직접 검증합니다'
+for old in (
+    '원정은 식량(밀/당근/감자/비트) 12 + 철 주괴 3 + 연료(석탄 또는 숯) 3',
+    '전초 방어는 식량 16 + 철 주괴 5 + 아무 종류의 통나무 12',
+    '요새 방어는 식량 32 + 철 주괴 8 + 석재 벽돌 32',
+):
+    replace_all_required(content_audit, old, guide_authority)
+
 # test_release_content_pack.py executes a nested historical content source audit. Translate
 # deliberate post-0.58 authority changes at both wrapper levels in-memory instead of editing the
 # immutable historical baseline: solo skill pacing and callback-gated physical local supply.
