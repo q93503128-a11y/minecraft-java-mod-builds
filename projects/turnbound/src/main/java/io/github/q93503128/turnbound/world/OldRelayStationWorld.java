@@ -49,8 +49,12 @@ public final class OldRelayStationWorld {
                 && p.z >= AsterMarchRegionCatalog.OLD_RELAY.minZ() - 8 && p.z <= -162;
     }
 
-    public static void setEntranceOpen(ServerLevel level, boolean open) { buildEntranceGate(level, open); }
-    public static void setBossGateOpen(ServerLevel level, boolean open) { buildBossGate(level, open); }
+    public static void setEntranceOpen(ServerLevel level, boolean open) {
+        buildEntranceGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.REGION_OLD_RELAY_APPROACH));
+    }
+    public static void setBossGateOpen(ServerLevel level, boolean open) {
+        buildBossGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_OLD_RELAY_BOSS));
+    }
 
     private static BuiltChapter built() {
         AsterMarchRegionCatalog.Anchor ft = AsterMarchRegionCatalog.fastTravel(AsterMarchRegionCatalog.FT_RELAY);
@@ -89,5 +93,5 @@ public final class OldRelayStationWorld {
     private static boolean hasMarker(ServerLevel l){return l.getBlockState(new BlockPos(MARKER_X,MARKER_Y,MARKER_Z)).is(Blocks.LODESTONE)&&l.getBlockState(new BlockPos(MARKER_X+1,MARKER_Y,MARKER_Z)).is(Blocks.REINFORCED_DEEPSLATE)&&l.getBlockState(new BlockPos(MARKER_X+2,MARKER_Y,MARKER_Z)).is(Blocks.AMETHYST_BLOCK);}
     private static void writeMarker(ServerLevel l){set(l,MARKER_X,MARKER_Y,MARKER_Z,Blocks.LODESTONE);set(l,MARKER_X+1,MARKER_Y,MARKER_Z,Blocks.REINFORCED_DEEPSLATE);set(l,MARKER_X+2,MARKER_Y,MARKER_Z,Blocks.AMETHYST_BLOCK);}
     private static double lerp(double a,double b,double t){return a+(b-a)*t;}
-    private static void set(ServerLevel l,int x,int y,int z,Block b){l.setBlock(new BlockPos(x,y,z),b.defaultBlockState(),2);}
+    private static void set(ServerLevel l,int x,int y,int z,Block b){BlockPos p=new BlockPos(x,y,z);var target=b.defaultBlockState();if(!l.getBlockState(p).equals(target))l.setBlock(p,target,2);}
 }
