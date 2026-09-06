@@ -28,6 +28,15 @@ jobs:
       - name: Apply audited fixes once
         run: |
           if grep -q 'mod_version=0.1.0-alpha.114' projects/frontier-settlement/gradle.properties; then
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/tools/test_current_source.py')
+          s = p.read_text(encoding='utf-8')
+          old = 'print("CURRENT SOURCE CHECK PASS: alpha113 bulk-break event guards + alpha112 footprint-only placement + prior invariants")'
+          new = 'print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.114 physical production ecology/balance + prior invariants")'
+          if old in s:
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
             python3 tools/apply_frontier_survival_full_audit_fixes_20260906.py
           else
             echo 'Audit fixes already applied on this branch.'
