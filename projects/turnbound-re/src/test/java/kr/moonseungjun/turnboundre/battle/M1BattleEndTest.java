@@ -59,6 +59,27 @@ class M1BattleEndTest {
         assertTrue(battle.eventLog().stream().anyMatch(e -> e.type().equals("CLEANUP_COMPLETE")));
     }
 
+    @Test void lastPlayerDefeatTransitionsThroughDefeatToRewardThenCleanup() {
+        var battle = new BattleInstance(UUID.fromString("00000000-0000-0000-0000-000000000704"), 704L, List.of(
+                new BattleParticipant("e", BattleTeam.ENEMY, 0, 30, 100, 100, 100, 20),
+                new BattleParticipant("p", BattleTeam.PLAYER, 1, 10, 100, 100, 100, 20)
+        ));
+        battle.start();
+        assertEquals("e", battle.currentActorId());
+        assertEquals(BattleState.RESOLVING, battle.state());
+
+        battle.resolveDamage("e", "p", lethal());
+        battle.finishResolution();
+
+        assertEquals(BattleInstance.Outcome.DEFEAT, battle.outcome());
+        assertEquals(BattleState.REWARD, battle.state());
+        assertTrue(battle.eventLog().stream().anyMatch(e -> e.type().equals("BATTLE_RESULT") && e.detail().equals("DEFEAT")));
+        assertTrue(battle.eventLog().stream().anyMatch(e -> e.type().equals("REWARD_READY") && e.detail().contains("DEFEAT")));
+
+        battle.cleanup();
+        assertEquals(BattleState.NOT_IN_BATTLE, battle.state());
+    }
+
     @Test void terminalFlowIsDeterministicForSameSeedAndInputs() {
         var id = UUID.fromString("00000000-0000-0000-0000-000000000703");
         var participants = List.of(
