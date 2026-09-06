@@ -86,6 +86,7 @@ with zipfile.ZipFile(jar) as zf:
         "kr/moonseungjun/survivalascension/client/SkillsScreen.class",
         "kr/moonseungjun/survivalascension/mining/MiningProgression.class",
         "kr/moonseungjun/survivalascension/mining/MiningMode.class",
+        "kr/moonseungjun/survivalascension/mining/BulkMiningService.class",
         "kr/moonseungjun/survivalascension/mining/BoreMiningService.class",
         "kr/moonseungjun/survivalascension/woodcutting/WoodcuttingProgression.class",
         "kr/moonseungjun/survivalascension/harvesting/HarvestingProgression.class",
@@ -124,6 +125,7 @@ with zipfile.ZipFile(jar) as zf:
     production_class = zf.read("kr/moonseungjun/survivalascension/production/ProductionService.class")
     affix_class = zf.read("kr/moonseungjun/survivalascension/equipment/AscensionAffixes.class")
     mining_class = zf.read("kr/moonseungjun/survivalascension/mining/MiningProgression.class")
+    bulk_mining_class = zf.read("kr/moonseungjun/survivalascension/mining/BulkMiningService.class")
     compat_class = zf.read("kr/moonseungjun/survivalascension/compat/ContentPackCompatibility.class")
     combat_class = zf.read("kr/moonseungjun/survivalascension/combat/CombatProgression.class")
     expedition_class = zf.read("kr/moonseungjun/survivalascension/expedition/ExpeditionProgression.class")
@@ -141,8 +143,17 @@ with zipfile.ZipFile(jar) as zf:
         raise SystemExit("compiled ranged projectile owner attribution bridge missing")
     if b"rangedProjectileOwner" not in combat_class:
         raise SystemExit("compiled combat ranged owner fallback missing")
-    if b"MINEABLE_WITH_SHOVEL" not in mining_class or b"breakShovelArea" not in mining_class:
-        raise SystemExit("compiled shovel Mining bridge missing")
+    # 0.61.21 split Mining's initiating shovel bridge from the tick-drained automatic extras.
+    # Verify both compiled halves so the JAR check follows the live architecture instead of the
+    # retired pre-queue breakShovelArea method name.
+    if (b"MINEABLE_WITH_SHOVEL" not in mining_class
+            or b"handleShovelBreak" not in mining_class
+            or b"scheduleShovelArea" not in mining_class):
+        raise SystemExit("compiled shovel Mining initiation bridge missing")
+    if (b"scheduleShovelArea" not in bulk_mining_class
+            or b"isValidShovelBreak" not in bulk_mining_class
+            or b"SHOVELS" not in bulk_mining_class):
+        raise SystemExit("compiled tick-drained shovel Mining scheduler missing")
     if b"expedition_major_targets" not in compat_class or b"isMajorExpeditionTarget" not in compat_class:
         raise SystemExit("compiled major-target compatibility bridge missing")
     if b"isMajorExpeditionTarget" not in combat_class or b"grantMajorTargetBonus" not in combat_class:
@@ -184,6 +195,7 @@ print("bop_expedition_biome_bridge=present")
 print("major_external_target_runtime=present")
 print("standard_shovel_affix_bridge=present")
 print("shovel_mining_earthworks_runtime=present")
+print("bulk_mining_scheduler_runtime=present")
 print("physical_freight_runtime=present")
 print("physical_freight_railhead_runtime=present")
 print("civil_works_runtime=present")
