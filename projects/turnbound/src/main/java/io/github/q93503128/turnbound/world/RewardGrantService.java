@@ -148,7 +148,9 @@ public final class RewardGrantService {
         QuestProgress.Snapshot oldQuest = snapshot.quests();
         Map<String, Set<String>> marks = new LinkedHashMap<>();
         oldQuest.marks().forEach((key, values) -> marks.put(key, new LinkedHashSet<>(values)));
-        marks.put(TX_MARK_KEY, new LinkedHashSet<>(Set.of(transactionId)));
+        Set<String> committed = new LinkedHashSet<>(marks.getOrDefault(TX_MARK_KEY, Set.of()));
+        committed.add(transactionId);
+        marks.put(TX_MARK_KEY, committed);
         QuestProgress.Snapshot quests = new QuestProgress.Snapshot(
                 oldQuest.completed(), oldQuest.tracked(), oldQuest.unlockFlags(), oldQuest.rewardTokens(), oldQuest.counters(), marks);
         CampaignProgressStore.restore(playerId, new CampaignProgressStore.Snapshot(
