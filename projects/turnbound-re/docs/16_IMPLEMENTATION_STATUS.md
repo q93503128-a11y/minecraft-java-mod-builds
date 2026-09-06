@@ -43,16 +43,16 @@ Implemented M0 contracts:
 - CI produces logs, JAR, SHA-256 and `BUILD_AND_RUNTIME_REPORT.md`.
 
 ## M1 implemented and validated so far
-Latest validated M1 slice commit: `a7d8a2133e2b7f82d29d0ac2b143f92137860ba1`
+Latest validated M1 slice commit: `0c4ef95348a0aac0a5e9bc3fb7b3e2ca133d3a55`
 
-GitHub Actions run: `34047325791` — PASS
+GitHub Actions run: `34050450947` — PASS
 
 Current verified deliverable:
 - version `0.1.0-alpha.1`
 - artifact `turnbound-re-0.1.0-alpha.1-deliverables`
-- artifact id `9993500070`
-- artifact archive SHA-256 digest: `0e4f03a12597a60325bed3ecf9b469194d57d79c9666306e1c07a1cbea5a7ce6`
-- production JAR SHA-256: `94dfbd1cba68d63185e7dcdb5ae9c4df2855e0b0385d916631e4abc6c8b05dac`
+- artifact id `9994379220`
+- artifact archive SHA-256 digest: `8658a657b0a1c3dd250ebf89206a149984c22a341c63d58804915f4a2b7ecd1b`
+- production JAR SHA-256: `ed79072cc9473c1852998e64d931d76b876d7a667fd090583544d22d2af05fdc`
 - production JAR verification: PASS
 
 Implemented:
@@ -61,7 +61,6 @@ Implemented:
 - SPD-desc initiative with stable `participantOrdinal` tie-break.
 - server-authoritative command acceptance skeleton with expected revision/current actor checks.
 - rejected stale/wrong-actor commands do not mutate revision or event log.
-- enemy AI basic-command stub.
 - deterministic actor/cycle progression across repeated cycles.
 - canonical damage tags: MELEE / PROJECTILE / FIRE / BLAST / ARCANE / VOID.
 - affinity grades with canonical HP and Poise multipliers: WEAK / NORMAL / RESIST / IMMUNE.
@@ -88,7 +87,13 @@ Implemented:
 - shared `StatusService` is the mutation entry point for canonical status ids and data-defined max-stack enforcement.
 - GUARD / EXPOSED / POISE_GUARD no longer use independent boolean storage; legacy combat-state accessors delegate to the shared runtime.
 - Poise break/recovery/Guard lifecycle preserves the existing replay event contract while mutating the shared status runtime.
-- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation, shared status runtime migration/max-stack validation and identical event-stream checks for the implemented command slice.
+- battle-owned `EnemyIntent` model exposes action id, type, target category, risk, break-cancel flag and optional downgrade action.
+- each live enemy publishes a deterministic Intent before its action window; the M1 AI stub resolves exactly the currently published Intent action.
+- replacing an already-published Intent emits `INTENT_CHANGED` before the changed AI command can resolve.
+- Poise break converts `breakCancelable=true` Intent to canonical `RECOVER`; recovered enemy turn emits `RECOVER` instead of silently selecting another action.
+- non-cancelable Intent with `breakDowngradeAction` is replaced by the configured downgraded action and normalized to NORMAL risk for the M1 stub.
+- defeated enemy Intent state is removed instead of leaving a stale telegraph.
+- pure JUnit coverage includes initiative/revision/damage/Poise deterministic behavior, Energy gain/spend/rejection, Guard damage/lifecycle, status Codec/registry validation, shared status runtime migration/max-stack validation, Intent publication/AI consistency, cancel-to-RECOVER, downgrade, event ordering and identical event-stream checks for the implemented slice.
 
 Validation evidence for latest slice:
 - dependency resolution + clean build: PASS.
@@ -99,10 +104,9 @@ Validation evidence for latest slice:
 
 ## M1 remaining
 Continue in backlog/canonical order:
-1. Intent model/AI intent consistency, Poise-break cancel/downgrade, RECOVER behavior and `INTENT_CHANGED` event.
-2. target/action validation beyond revision/current actor: ownership, cooldown/status, target count/team/alive, duplicate command.
-3. victory/defeat/reward event and cleanup transitions; skip defeated actors safely.
-4. deterministic same seed + same commands full event-stream test and explicit no-soft-lock transition tests for M1 PASS.
+1. target/action validation beyond revision/current actor: ownership, cooldown/status, target count/team/alive, duplicate command.
+2. victory/defeat/reward event and cleanup transitions; skip defeated actors safely.
+3. deterministic same seed + same commands full event-stream test and explicit no-soft-lock transition tests for M1 PASS.
 
 ## Runtime verification status
 - Datagen: NOT RUN; no generated production data is required by the current M0/M1 slice.
