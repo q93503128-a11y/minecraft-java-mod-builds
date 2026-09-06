@@ -1,52 +1,24 @@
-# PROJECT — TURNBOUND: RE
+# TURNBOUND: RE
 
-## 1. 제품 정의
-Minecraft Java의 공간성과 생활 활동을 유지하면서 전투를 파티 기반 턴제 RPG로 재구성한다. 단순히 Minecraft 몹을 메뉴 전투로 바꾸는 모드가 아니라, 고정형 RPG 월드·캐릭터 수집/성장·전투·탐험·채집이 서로 순환하는 하나의 게임을 목표로 한다.
+- Slug: turnbound-re
+- Mod ID: turnbound_re
+- Namespace: turnbound_re
+- Mod version: 0.1.0-alpha.1
+- Minecraft: 26.2
+- Java: 25
+- Loader: NeoForge
+- Loader version: 26.2.0.38-beta
+- Gradle: wrapper shared with repository 26.2 projects
+- Build plugin: net.neoforged.moddev 2.0.143
+- Final JAR: build/libs/turnbound_re-0.1.0-alpha.1.jar
+- Existing-world compatibility: M0 bootstrap; no persistent world data yet
+- Required dependencies: NeoForge, Minecraft
+- Optional external mods: none
+- Forbidden bundled dependencies: all unapproved third-party runtime mods
+- Datagen task: runData (bootstrap only)
+- GameTest task: not yet registered
+- Server smoke-test task: runServer (manual/CI where EULA permits)
+- Client smoke-test task: runClient (manual/headful environment)
 
-## 2. 플랫폼
-- 저장소 공용 `docs/BUILD_STANDARD.md`를 최우선으로 따른다.
-- 현재 프로젝트 목표선: Minecraft Java 26.2 계열, NeoForge, Java 25.
-- 정확한 NeoForge/Gradle 패치는 구현 시작 시 공용 표준과 저장소의 최신 검증 조합을 따른다. 문서의 오래된 패치 번호를 고정 진실로 취급하지 않는다.
-
-## 3. 제품 목표
-- 4인 활성 파티.
-- 바닐라 생물을 포함한 대규모 캐릭터 로스터.
-- 짧은 잡몹 난타가 아니라 판단할 거리가 있는 전투.
-- 전투 시간이 늘어난 만큼 Minecraft 기본 전투보다 높은 Encounter 단위 보상.
-- 저태생 캐릭터도 조합/비용/역할로 활용 가능하되 고태생의 성장 보람을 침해하지 않음.
-- 광질·제작·낚시·농사·탐험이 실제 전투 성장으로 연결됨.
-- 싱글플레이 우선 개발, 서버 권한 구조는 처음부터 멀티 호환 가능하게 설계.
-
-## 4. 비목표
-- 구 TURNBOUND의 기능 보존.
-- 모든 자연 스폰 몹과 접촉할 때 강제 전투.
-- 복잡한 재화 수십 종.
-- 플레이어 반응속도가 전술보다 더 중요한 액션 게임화.
-- AI가 레퍼런스 없이 임의로 만든 최종 UI/맵/캐릭터/VFX.
-
-## 5. 개발 준비 판정
-### GO — 즉시 개발 가능
-- 전투 상태기계/턴 순서/명령 검증/대미지/Poise/Intent/승패.
-- 서버 권한 네트워크 구조.
-- 데이터 스키마와 검증기.
-- 대표 캐릭터/조우를 이용한 Vertical Slice.
-- 레벨·별·승급·보상·저장.
-
-### GATE — 코드는 기반만 준비, 최종 시각물 확정 금지
-- 전투 HUD 최종 형태.
-- 메뉴/캐릭터 화면 최종 디자인.
-- 월드/마을/던전의 미술 언어.
-- 스킬 VFX와 캐릭터 고유 외형.
-- 아이콘/프레임/폰트/색 체계.
-
-GATE 항목은 `AGENT_RULES.md`, `docs/06_UI_UX_PRESENTATION.md`, `docs/09_WORLD_ASSET_GATE.md`를 통과해야 한다.
-
-## 6. Definition of Done
-기능은 다음을 모두 만족해야 완료다.
-1. 서버 권한 규칙과 데이터 계약을 만족한다.
-2. 순수 로직 테스트 또는 GameTest가 존재한다.
-3. 잘못된 패킷/대상/상태에서 안전하게 거부된다.
-4. 실제 Minecraft 클라이언트에서 플레이 가능하다.
-5. 저장/재접속/전투 종료 cleanup 회귀가 없다.
-6. 시각 기능이면 공용 QUALITY_STANDARD의 레퍼런스→목업→실화면 비교 절차를 통과한다.
-7. 빌드 성공만으로 완료 처리하지 않는다.
+## Product authority
+The canonical product/system documents under this project remain authoritative. M0-M4 may implement only DEBUG_ONLY presentation; production UI, character visuals, VFX, and world art remain design-gated.
