@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.113" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.114" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -116,12 +116,28 @@ require("LEGACY_WORKSITE_EXPORT_TAG" in worker and "worker.removeTag(LEGACY_WORK
 require("Profession barrels are already part of SettlementStorageService's authoritative physical" in worker, "worksite barrel authority rationale missing")
 production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")
 require("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")
+require("farmBatch" in production_efficiency and "case 1 -> 12" in production_efficiency and "default -> 24" in production_efficiency,
+        "farm harvest batch ladder missing or drifted")
 require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")
 require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")
 require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")
+require("SettlementProductionEfficiencyService.farmBatch" in worker and "harvestLimit" in worker,
+        "staffed farm harvest is not bounded against full-stack-per-pass runaway")
 require("state.setValue(BlockStateProperties.AGE_7, Math.min(7, age + 1))" in worker, "staffed farm does not actively tend crop growth")
+require("tryReplantHarvestedTree" in worker and "saplingForNaturalLog" in worker,
+        "town lumber worker no longer restores a physical managed forestry cycle")
+require("findManagedQuarryStone" in worker and "MANAGED_QUARRY_MAX_OVERBURDEN = 4" in worker
+        and "clearTopQuarryOverburden" in worker,
+        "town quarry still requires player-pre-exposed stone")
 for stale in ("FARM_WORK_PERIOD_TICKS", "LUMBER_WORK_PERIOD_TICKS", "QUARRY_WORK_PERIOD_TICKS", "MINING_WORK_PERIOD_TICKS"):
     require(stale not in worker, f"stale fixed production pacing authority returned: {stale}")
+outpost_production = text(SETTLEMENT / "SettlementOutpostProductionService.java")
+require("MAX_LOGS = 8" in outpost_production and "MAX_STONE = 8" in outpost_production,
+        "specialized outpost lumber/quarry batches did not receive the physical throughput correction")
+require("findManagedQuarryStone" in outpost_production and "clearTopQuarryOverburden" in outpost_production,
+        "specialized quarry outpost still requires pre-exposed stone")
+require("tryReplantHarvestedTree" in outpost_production,
+        "specialized lumber outpost lacks managed physical replanting")
 
 service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementGuidanceService.nextGoal(player.level().getServer(), data)" in service, "guidance is missing server authority")

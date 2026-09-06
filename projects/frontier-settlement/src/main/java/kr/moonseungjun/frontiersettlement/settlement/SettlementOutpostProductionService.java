@@ -40,8 +40,10 @@ public final class SettlementOutpostProductionService {
 
     private static final int TREE_RADIUS = 18;
     private static final int QUARRY_RADIUS = 16;
-    private static final int MAX_LOGS = 4;
-    private static final int MAX_STONE = 3;
+    private static final int MANAGED_QUARRY_FACE_RADIUS = 14;
+    private static final int MANAGED_QUARRY_MAX_OVERBURDEN = 4;
+    private static final int MAX_LOGS = 8;
+    private static final int MAX_STONE = 8;
     private static final int MAX_CROPS = 4;
     private static final int LUMBER_WORK_PERIOD_TICKS = 100;
     private static final int QUARRY_WORK_PERIOD_TICKS = 80;
@@ -239,15 +241,22 @@ public final class SettlementOutpostProductionService {
 
     private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
         BlockPos target = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
+        if (target == null) target = findManagedQuarryStone(level, data, outpost.center());
         if (target == null) {
             move(worker, outpost.center().above(), 0.65D);
             return;
         }
-        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {
-            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.78D, 9.0D);
+        BlockPos approach = quarryApproach(level, data, target);
+        if (approach == null) return;
+        if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
+            SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
             return;
         }
         if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
+        if (!level.getBlockState(target.above()).isAir()) {
+            if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);
+            return;
+        }
         ItemStack harvested = harvestStoneCluster(level, data, target);
         if (!harvested.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
@@ -417,8 +426,9 @@ public final class SettlementOutpostProductionService {
         if (!first.is(BlockTags.LOGS)) return ItemStack.EMPTY;
         Item item = first.getBlock().asItem();
         if (item == Items.AIR) return ItemStack.EMPTY;
+        BlockState originalTrunk = first;
         int count = 0;
-        for (int y = 0; y < 10 && count < MAX_LOGS; y++) {
+        for (int y = 0; y < 32 && count < MAX_LOGS; y++) {
             BlockPos pos = base.above(y);
             if (!level.hasChunkAt(pos)) break;
             BlockState state = level.getBlockState(pos);
@@ -429,7 +439,40 @@ public final class SettlementOutpostProductionService {
             if (!level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) break;
             count++;
         }
+        if (count > 0) tryReplantHarvestedTree(level, data, base, originalTrunk, item);
         return count == 0 ? ItemStack.EMPTY : new ItemStack(item, count);
+    }
+
+    private static void tryReplantHarvestedTree(ServerLevel level, SettlementData data, BlockPos base,
+                                                BlockState originalTrunk, Item item) {
+        if (!level.hasChunkAt(base) || isProtected(data, base) || !level.getBlockState(base).isAir()) return;
+        for (int y = 1; y <= 31; y++) {
+            BlockPos above = base.above(y);
+            if (!level.hasChunkAt(above)) return;
+            BlockState state = level.getBlockState(above);
+            if (state.is(BlockTags.LOGS) && state.getBlock().asItem() == item) return;
+        }
+        if (!isNaturalTreeGround(level.getBlockState(base.below()))) return;
+        BlockState sapling = saplingForNaturalLog(originalTrunk);
+        if (sapling != null) level.setBlock(base, sapling, 3);
+    }
+
+    private static boolean isNaturalTreeGround(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.PODZOL) || state.is(Blocks.ROOTED_DIRT) || state.is(Blocks.MOSS_BLOCK)
+                || state.is(Blocks.MYCELIUM) || state.is(Blocks.MUD);
+    }
+
+    private static BlockState saplingForNaturalLog(BlockState trunk) {
+        if (trunk.is(Blocks.OAK_LOG)) return Blocks.OAK_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.SPRUCE_LOG)) return Blocks.SPRUCE_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.BIRCH_LOG)) return Blocks.BIRCH_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.JUNGLE_LOG)) return Blocks.JUNGLE_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.ACACIA_LOG)) return Blocks.ACACIA_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.DARK_OAK_LOG)) return Blocks.DARK_OAK_SAPLING.defaultBlockState();
+        if (trunk.is(Blocks.MANGROVE_LOG)) return Blocks.MANGROVE_PROPAGULE.defaultBlockState();
+        if (trunk.is(Blocks.CHERRY_LOG)) return Blocks.CHERRY_SAPLING.defaultBlockState();
+        return null;
     }
 
     private static BlockPos findExposedStone(ServerLevel level, SettlementData data, BlockPos center, int radius) {
@@ -449,6 +492,68 @@ public final class SettlementOutpostProductionService {
             }
         }
         return best;
+    }
+
+    private static BlockPos findManagedQuarryStone(ServerLevel level, SettlementData data, BlockPos center) {
+        BlockPos best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (int radius = 7; radius <= MANAGED_QUARRY_FACE_RADIUS; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    for (int y = center.getY() - 7; y <= center.getY() + 2; y++) {
+                        BlockPos pos = new BlockPos(center.getX() + dx, y, center.getZ() + dz);
+                        if (!level.hasChunkAt(pos) || isProtected(data, pos) || !isQuarryStone(level.getBlockState(pos))) continue;
+                        int cover = quarryOverburdenDepth(level, data, pos);
+                        if (cover <= 0) continue;
+                        double distance = pos.distSqr(center);
+                        if (distance < bestDistance) { best = pos; bestDistance = distance; }
+                    }
+                }
+            }
+            if (best != null) return best;
+        }
+        return null;
+    }
+
+    private static BlockPos quarryApproach(ServerLevel level, SettlementData data, BlockPos target) {
+        int cover = quarryOverburdenDepth(level, data, target);
+        if (cover < 0) return null;
+        return cover == 0 ? target : target.above(cover + 1);
+    }
+
+    private static int quarryOverburdenDepth(ServerLevel level, SettlementData data, BlockPos stone) {
+        if (!level.hasChunkAt(stone) || !isQuarryStone(level.getBlockState(stone)) || isProtected(data, stone)) return -1;
+        BlockPos first = stone.above();
+        if (!level.hasChunkAt(first)) return -1;
+        if (level.getBlockState(first).isAir()) return 0;
+        for (int depth = 1; depth <= MANAGED_QUARRY_MAX_OVERBURDEN; depth++) {
+            BlockPos pos = stone.above(depth);
+            if (!level.hasChunkAt(pos) || level.getBlockEntity(pos) != null || isProtected(data, pos)) return -1;
+            BlockState state = level.getBlockState(pos);
+            if (!state.getFluidState().isEmpty() || !isSafeQuarryOverburden(state)) return -1;
+            BlockPos above = pos.above();
+            if (!level.hasChunkAt(above)) return -1;
+            if (level.getBlockState(above).isAir()) return depth;
+        }
+        return -1;
+    }
+
+    private static boolean clearTopQuarryOverburden(ServerLevel level, SettlementData data, BlockPos stone) {
+        int depth = quarryOverburdenDepth(level, data, stone);
+        if (depth <= 0) return false;
+        BlockPos top = stone.above(depth);
+        if (!level.hasChunkAt(top) || level.getBlockEntity(top) != null || isProtected(data, top)) return false;
+        BlockState state = level.getBlockState(top);
+        if (!state.getFluidState().isEmpty() || !isSafeQuarryOverburden(state)) return false;
+        return level.setBlock(top, Blocks.AIR.defaultBlockState(), 3);
+    }
+
+    private static boolean isSafeQuarryOverburden(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.PODZOL) || state.is(Blocks.ROOTED_DIRT) || state.is(Blocks.MOSS_BLOCK)
+                || state.is(Blocks.MUD) || state.is(Blocks.GRAVEL) || state.is(Blocks.SAND)
+                || state.is(Blocks.RED_SAND) || state.is(Blocks.CLAY) || state.is(Blocks.SNOW_BLOCK);
     }
 
     private static ItemStack harvestStoneCluster(ServerLevel level, SettlementData data, BlockPos base) {
