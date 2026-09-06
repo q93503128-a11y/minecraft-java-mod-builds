@@ -43,13 +43,13 @@ Implemented M0 contracts:
 - CI produces logs, JAR, SHA-256 and `BUILD_AND_RUNTIME_REPORT.md`.
 
 ## M1 implemented and validated so far
-Validated M1 slice commit: `e800978992a56e0faa70563f6f57abe811a6ad59`
+Latest validated M1 slice commit: `6683cea798026291f4bda46e107b944c782d096e`
 
-GitHub Actions run: `34039088297` — PASS
+GitHub Actions run: `34039530209` — PASS
 
 Current verified JAR:
 - `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `b29f3b94e6fd644a603c4d138bc2c83d16d88a8fa8dc0a43095e7d1aa682e5f7`
+- SHA-256: `419b84d409ccd7a27cb5c1e666474f70716df8215d3e58770c8faf61f0e65bad`
 
 Implemented:
 - canonical BattleState enum/state-machine foundation.
@@ -59,12 +59,24 @@ Implemented:
 - rejected stale/wrong-actor commands do not mutate revision or event log.
 - enemy AI basic-command stub.
 - deterministic actor/cycle progression across repeated cycles.
-- pure JUnit coverage for stable initiative, revision rejection, deterministic repeated event streams and participant membership validation.
+- canonical damage tags: MELEE / PROJECTILE / FIRE / BLAST / ARCANE / VOID.
+- affinity grades with canonical HP and Poise multipliers: WEAK / NORMAL / RESIST / IMMUNE.
+- deterministic per-battle RNG stream abstraction with explicit draw counting; damage resolution consumes a fixed two-draw order for crit then variance.
+- canonical HP damage formula with crit, EXPOSED x1.20, [0.95, 1.05] deterministic variance, IMMUNE=0 exception and stable modifier ordering.
+- canonical Poise affinity multipliers and IMMUNE Poise=0 behavior.
+- replay-readable damage breakdown including raw, affinity, crit, exposed, variance, other modifier, final HP, Poise and RNG draw position.
+- pure JUnit coverage for stable initiative, revision rejection, repeated battle event streams, participant validation, same-seed damage stream identity, affinity/immune rules, EXPOSED multiplier, canonical tag coverage and invalid damage inputs.
+
+Validation evidence for latest slice:
+- dependency resolution + clean build: PASS.
+- unit tests: PASS.
+- production JAR verification: PASS.
+- build report + logs + deliverable upload: PASS.
 
 ## M1 remaining
 Continue in backlog/canonical order:
-1. Damage/Affinity service and deterministic single RNG stream with event breakdown.
-2. mutable participant combat state (HP/Poise/Energy/status/Guard).
+1. mutable participant combat state (HP/Poise/Energy/status/Guard).
+2. wire DamageService into BattleInstance resolution/event log using the battle-owned RNG stream.
 3. Poise → EXPOSED → recovery → POISE_GUARD lifecycle and anti-stunlock behavior.
 4. Energy generation/spend, Guard and shared statuses.
 5. Intent model/AI intent consistency and `INTENT_CHANGED` behavior.
