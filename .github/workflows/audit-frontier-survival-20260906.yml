@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -16,12 +16,22 @@ jobs:
     steps:
       - name: Checkout audit branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
+
+      - name: Apply audited fixes once
+        run: |
+          if grep -q 'mod_version=0.1.0-alpha.114' projects/frontier-settlement/gradle.properties; then
+            python3 tools/apply_frontier_survival_full_audit_fixes_20260906.py
+          else
+            echo 'Audit fixes already applied on this branch.'
+          fi
 
       - name: Validate project resources
         run: |
@@ -40,6 +50,9 @@ jobs:
 
       - name: Frontier canonical source audit
         run: python3 projects/frontier-settlement/tools/test_current_source.py
+
+      - name: Survival Ascension canonical source audit
+        run: python3 projects/survival-ascension/tools/test_current_source.py
 
       - name: Build Frontier Settlement
         working-directory: projects/frontier-settlement
@@ -75,3 +88,15 @@ jobs:
                       raise SystemExit(f'{jar}: expected class/resource token {token!r} missing')
               print(jar, jar.stat().st_size)
           PY
+
+      - name: Commit verified source fixes
+        run: |
+          git config user.name 'coworkaccount'
+          git config user.email 'cyp1jhh2@gmail.com'
+          git add projects/frontier-settlement projects/survival-ascension
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+          else
+            git commit -m 'Harden settlement workers and skill regression coverage'
+            git push origin HEAD:audit/frontier-survival-20260906
+          fi
