@@ -73,7 +73,11 @@ with zipfile.ZipFile(jar) as zf:
     if tbos_name not in zf.namelist():
         raise SystemExit(f"0.59.1 packaged Korean integration resource missing: {tbos_name}")
     tbos = json.loads(zf.read(tbos_name).decode("utf-8"))
-    expected_prefix_counts = {
+    canonical_tbos_path = ROOT / "src/main/resources/assets/tbos/lang/ko_kr.json"
+    canonical_tbos = json.loads(canonical_tbos_path.read_text(encoding="utf-8"))
+    if tbos != canonical_tbos:
+        raise SystemExit("0.59.1 packaged TBS Korean localization drifted from committed canonical source")
+    minimum_prefix_counts = {
         "itemGroup.": 1,
         "block.": 118,
         "item.": 21,
@@ -81,12 +85,10 @@ with zipfile.ZipFile(jar) as zf:
         "pickup.": 6,
         "boss.": 7,
     }
-    if len(tbos) != sum(expected_prefix_counts.values()):
-        raise SystemExit(f"0.59.1 TBS Korean inventory key count mismatch: {len(tbos)} != {sum(expected_prefix_counts.values())}")
-    for prefix, expected in expected_prefix_counts.items():
+    for prefix, minimum in minimum_prefix_counts.items():
         actual = sum(1 for key in tbos if key.startswith(prefix))
-        if actual != expected:
-            raise SystemExit(f"0.59.1 TBS Korean {prefix} key count mismatch: {actual} != {expected}")
+        if actual < minimum:
+            raise SystemExit(f"0.59.1 TBS Korean {prefix} key coverage regressed: {actual} < {minimum}")
     expected_tbos = {
         "itemGroup.tbos.yesterglass": "스티브의 탄생",
         "block.tbos.yesterglass": "예스터글라스",
