@@ -21,6 +21,12 @@ public final class BattleInstance {
         INSUFFICIENT_ENERGY
     }
 
+    public enum Outcome {
+        ONGOING,
+        VICTORY,
+        DEFEAT
+    }
+
     private final UUID battleId;
     private final long seed;
     private final Map<String, BattleParticipant> participants;
@@ -30,6 +36,7 @@ public final class BattleInstance {
     private final List<BattleEvent> eventLog = new ArrayList<>();
     private List<String> actorOrder;
     private BattleState state = BattleState.ENCOUNTER_OPEN;
+    private Outcome outcome = Outcome.ONGOING;
     private long revision;
     private int cycle = 1;
     private int actorIndex;
@@ -99,7 +106,7 @@ public final class BattleInstance {
         if (command.expectedRevision() != revision) return CommandResult.STALE_REVISION;
         if (!currentActorId().equals(command.actorId())) return CommandResult.WRONG_ACTOR;
         BattleParticipant actor = participants.get(command.actorId());
-        if (actor.team() != BattleTeam.PLAYER) return CommandResult.WRONG_ACTOR;
+        if (actor.team() != BattleTeam.PLAYER || !combatState(actor.id()).alive()) return CommandResult.WRONG_ACTOR;
         if (action == null || !command.actionId().equals(action.id())) return CommandResult.ACTION_MISMATCH;
 
         String kind = action.kind();
@@ -157,6 +164,7 @@ public final class BattleInstance {
         if (state != BattleState.RESOLVING) throw new IllegalStateException("enemy resolution requires RESOLVING");
         BattleParticipant actor = participants.get(currentActorId());
         if (actor.team() != BattleTeam.ENEMY) throw new IllegalStateException("current actor is not ENEMY");
+        if (!combatState(actor.id()).alive()) throw new IllegalStateException("defeated enemy cannot resolve: " + actor.id());
         EnemyIntent intent = enemyIntents.get(actor.id());
         if (intent == null) throw new IllegalStateException("enemy has no published intent: " + actor.id());
         revision++;
@@ -197,6 +205,7 @@ public final class BattleInstance {
     public DamageService.DamageResult resolveDamage(String actorId, String targetId, DamageService.DamageRequest request) {
         requireState(BattleState.RESOLVING);
         if (!participants.containsKey(actorId)) throw new IllegalArgumentException("unknown actor: " + actorId);
+        if (!combatState(actorId).alive()) throw new IllegalArgumentException("actor is not alive: " + actorId);
         ParticipantCombatState target = combatState(targetId);
         if (!target.alive()) throw new IllegalArgumentException("target is not alive: " + targetId);
 
@@ -242,22 +251,76 @@ public final class BattleInstance {
         BattleParticipant resolvedActor = participants.get(resolvedActorId);
         transition(BattleState.CHECK_END);
 
+        Outcome checked = checkOutcome();
+        if (checked != Outcome.ONGOING) {
+            settleOutcome(checked);
+            return;
+        }
+
         if (resolvedActor.team() == BattleTeam.ENEMY && combatState(resolvedActorId).alive()) {
             enemyIntents.remove(resolvedActorId);
             revealEnemyIntent(resolvedActorId, EnemyIntent.basic(), false, "next_turn");
         }
 
-        actorIndex++;
-        if (actorIndex >= actorOrder.size()) {
-            cycle++;
-            actorIndex = 0;
-            actorOrder = InitiativeService.order(List.copyOf(participants.values()));
-            emit("CYCLE_STARTED", "", Integer.toString(cycle));
-        }
+        advanceToNextLivingActor();
         prepareCurrentActor();
     }
 
+    private Outcome checkOutcome() {
+        boolean playerAlive = hasLiving(BattleTeam.PLAYER);
+        boolean enemyAlive = hasLiving(BattleTeam.ENEMY);
+        if (!enemyAlive) return Outcome.VICTORY;
+        if (!playerAlive) return Outcome.DEFEAT;
+        return Outcome.ONGOING;
+    }
+
+    private boolean hasLiving(BattleTeam team) {
+        for (BattleParticipant participant : participants.values()) {
+            if (participant.team() == team && combatState(participant.id()).alive()) return true;
+        }
+        return false;
+    }
+
+    private void settleOutcome(Outcome checked) {
+        outcome = checked;
+        BattleState resultState = checked == Outcome.VICTORY ? BattleState.VICTORY : BattleState.DEFEAT;
+        transition(resultState);
+        emit("BATTLE_RESULT", "", checked.name());
+        transition(BattleState.REWARD);
+        emit("REWARD_READY", "", "outcome=" + checked.name());
+    }
+
+    /** Finalizes the terminal battle and clears battle-owned transient resources. */
+    public void cleanup() {
+        requireState(BattleState.REWARD);
+        transition(BattleState.CLEANUP);
+        combatStates.values().forEach(ParticipantCombatState::resetBattleResources);
+        enemyIntents.clear();
+        emit("CLEANUP_COMPLETE", "", "energy=0 statuses=cleared");
+        transition(BattleState.NOT_IN_BATTLE);
+    }
+
+    private void advanceToNextLivingActor() {
+        int inspected = 0;
+        while (inspected < actorOrder.size()) {
+            actorIndex++;
+            if (actorIndex >= actorOrder.size()) {
+                cycle++;
+                actorIndex = 0;
+                actorOrder = InitiativeService.order(List.copyOf(participants.values()));
+                emit("CYCLE_STARTED", "", Integer.toString(cycle));
+            }
+            inspected++;
+            if (combatState(currentActorId()).alive()) return;
+            emit("DEFEATED_ACTOR_SKIPPED", currentActorId(), "cycle=" + cycle);
+        }
+        throw new IllegalStateException("no living actor found while battle outcome is ongoing");
+    }
+
     private void prepareCurrentActor() {
+        if (!combatState(currentActorId()).alive()) {
+            throw new IllegalStateException("cannot prepare defeated actor: " + currentActorId());
+        }
         transition(BattleState.ACTOR_READY);
         ParticipantCombatState actorState = combatState(currentActorId());
         if (actorState.exposed()) {
@@ -303,6 +366,7 @@ public final class BattleInstance {
     public long revision() { return revision; }
     public int cycle() { return cycle; }
     public BattleState state() { return state; }
+    public Outcome outcome() { return outcome; }
     public String currentActorId() { return actorOrder.get(actorIndex); }
     public List<String> actorOrder() { return List.copyOf(actorOrder); }
     public List<BattleEvent> eventLog() { return List.copyOf(eventLog); }
