@@ -16,8 +16,26 @@ public final class BattleManager {
     private final Map<UUID, BattleInstance> activeBattles = new HashMap<>();
     private final Map<UUID, UUID> entityToBattle = new HashMap<>();
     private final Map<UUID, Map<String, EntityParticipantBinding>> bindingsByBattle = new HashMap<>();
+    private final Map<UUID, BattleCommandService> commandServices = new HashMap<>();
 
+    /**
+     * Compatibility registration for adapter-only tests that do not submit player commands.
+     * Network-enabled encounters must use the overload that also supplies the canonical participant list.
+     */
     public void register(BattleInstance battle, List<EntityParticipantBinding> bindings) {
+        registerInternal(battle, bindings, null);
+    }
+
+    /**
+     * Registers a live battle together with its persistent strict command gate.
+     * Keeping one BattleCommandService per battle preserves command-id replay protection across packets.
+     */
+    public void register(BattleInstance battle, List<EntityParticipantBinding> bindings, List<BattleParticipant> participants) {
+        if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
+        registerInternal(battle, bindings, new BattleCommandService(battle, participants));
+    }
+
+    private void registerInternal(BattleInstance battle, List<EntityParticipantBinding> bindings, BattleCommandService commandService) {
         if (battle == null) throw new IllegalArgumentException("battle must not be null");
         if (bindings == null || bindings.isEmpty()) throw new IllegalArgumentException("bindings must not be empty");
         UUID battleId = battle.battleId();
@@ -45,6 +63,7 @@ public final class BattleManager {
 
         activeBattles.put(battleId, battle);
         bindingsByBattle.put(battleId, Map.copyOf(byParticipant));
+        if (commandService != null) commandServices.put(battleId, commandService);
         for (EntityParticipantBinding binding : bindings) {
             entityToBattle.put(binding.entityId(), battleId);
         }
@@ -64,6 +83,10 @@ public final class BattleManager {
         return bindings == null ? Optional.empty() : Optional.ofNullable(bindings.get(participantId));
     }
 
+    public Optional<BattleCommandService> commandService(UUID battleId) {
+        return Optional.ofNullable(commandServices.get(battleId));
+    }
+
     public int activeBattleCount() {
         return activeBattles.size();
     }
@@ -77,6 +100,7 @@ public final class BattleManager {
      */
     public Optional<BattleInstance> cleanup(UUID battleId) {
         BattleInstance battle = activeBattles.remove(battleId);
+        commandServices.remove(battleId);
         Map<String, EntityParticipantBinding> bindings = bindingsByBattle.remove(battleId);
         if (bindings != null) {
             for (EntityParticipantBinding binding : bindings.values()) {
