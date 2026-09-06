@@ -3,14 +3,12 @@ package io.github.q93503128.turnbound.world;
 import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.content.V04Catalogs;
-import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -171,9 +169,7 @@ public final class BrokenAqueductSessionManager {
         AABB area = new AABB(AsterMarchRegionCatalog.AQUEDUCT.minX() - 12, 46,
                 AsterMarchRegionCatalog.AQUEDUCT.minZ() - 12,
                 -120, 100, AsterMarchRegionCatalog.AQUEDUCT.maxZ() + 12);
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, area)) {
-            if (!(mob instanceof BattleActorEntity)) mob.discard();
-        }
+        FieldVanillaMobSanitizer.clearIfDue(level, FieldVanillaMobSanitizer.Region.AQUEDUCT, area);
     }
 
     private static final class Session {
