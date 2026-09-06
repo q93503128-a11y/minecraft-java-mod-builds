@@ -4,12 +4,10 @@ package kr.moonseungjun.turnboundre.battle;
 public final class ParticipantCombatState {
     private final int maxHp;
     private final int poiseMax;
+    private final StatusRuntime statuses = new StatusRuntime();
     private int hp;
     private int poise;
     private int energy;
-    private boolean exposed;
-    private boolean poiseGuard;
-    private boolean guard;
 
     public ParticipantCombatState(BattleParticipant participant) {
         if (participant == null) throw new IllegalArgumentException("participant must not be null");
@@ -24,10 +22,11 @@ public final class ParticipantCombatState {
     public int poise() { return poise; }
     public int poiseMax() { return poiseMax; }
     public int energy() { return energy; }
-    public boolean exposed() { return exposed; }
-    public boolean poiseGuard() { return poiseGuard; }
-    public boolean guard() { return guard; }
+    public boolean exposed() { return statuses.has(StatusService.EXPOSED); }
+    public boolean poiseGuard() { return statuses.has(StatusService.POISE_GUARD); }
+    public boolean guard() { return statuses.has(StatusService.GUARD); }
     public boolean alive() { return hp > 0; }
+    public StatusRuntime statuses() { return statuses; }
 
     public void applyHpDamage(int damage) {
         if (damage < 0) throw new IllegalArgumentException("damage must be >= 0");
@@ -37,12 +36,12 @@ public final class ParticipantCombatState {
     /** Returns true only when this hit newly breaks Poise. */
     public boolean applyPoiseDamage(int damage) {
         if (damage < 0) throw new IllegalArgumentException("damage must be >= 0");
-        if (exposed || damage == 0) return false;
-        int effective = poiseGuard ? (int) Math.floor(damage * 0.5D) : damage;
+        if (exposed() || damage == 0) return false;
+        int effective = poiseGuard() ? (int) Math.floor(damage * 0.5D) : damage;
         poise = Math.max(0, poise - effective);
         if (poise == 0) {
-            exposed = true;
-            poiseGuard = false;
+            StatusService.applySingle(statuses, StatusService.EXPOSED);
+            StatusService.remove(statuses, StatusService.POISE_GUARD);
             return true;
         }
         return false;
@@ -50,16 +49,17 @@ public final class ParticipantCombatState {
 
     /** Canonical target-turn recovery: EXPOSED ends, Poise refills, then one-turn POISE_GUARD begins. */
     public boolean recoverAtTurnStartIfExposed() {
-        if (!exposed) return false;
-        exposed = false;
+        if (!exposed()) return false;
+        StatusService.remove(statuses, StatusService.EXPOSED);
         poise = poiseMax;
-        poiseGuard = true;
+        StatusService.applySingle(statuses, StatusService.POISE_GUARD);
         return true;
     }
 
     /** POISE_GUARD lasts through the recovered actor's turn and expires at its next turn start. */
-    public void expirePoiseGuardAtTurnStart() {
-        if (!exposed) poiseGuard = false;
+    public boolean expirePoiseGuardAtTurnStart() {
+        if (exposed()) return false;
+        return StatusService.remove(statuses, StatusService.POISE_GUARD);
     }
 
     public void gainEnergy(int amount) {
@@ -74,5 +74,8 @@ public final class ParticipantCombatState {
         return true;
     }
 
-    public void setGuard(boolean guard) { this.guard = guard; }
+    public void setGuard(boolean guard) {
+        if (guard) StatusService.applySingle(statuses, StatusService.GUARD);
+        else StatusService.remove(statuses, StatusService.GUARD);
+    }
 }
