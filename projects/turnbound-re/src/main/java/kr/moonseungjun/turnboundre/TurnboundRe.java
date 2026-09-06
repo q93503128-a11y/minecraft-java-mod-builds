@@ -1,6 +1,8 @@
 package kr.moonseungjun.turnboundre;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.turnboundre.battle.BattleManager;
+import kr.moonseungjun.turnboundre.battle.BattleWorldEventHooks;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -13,10 +15,12 @@ public final class TurnboundRe {
     public static final String MOD_ID = "turnbound_re";
     public static final String VERSION = "0.1.0-alpha.1";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static final BattleManager BATTLES = new BattleManager();
 
     public TurnboundRe(IEventBus modEventBus) {
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-        LOGGER.info("TURNBOUND: RE {} M0 bootstrap loaded", VERSION);
+        new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
+        LOGGER.info("TURNBOUND: RE {} M2 adapter loaded", VERSION);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
