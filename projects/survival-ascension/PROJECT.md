@@ -1,11 +1,17 @@
 # Survival Ascension
 
-- Mod version: `0.59.0-alpha.1`
+- Mod version: `0.61.20-alpha.1`
 - Minecraft: `26.2`
 - NeoForge: `26.2.0.38-beta`
 - Java: `25`
-- Network protocol: `9`
-- Existing-world compatibility: no new SavedData ID or codec field in 0.59. The new Apex escort bridge is runtime/tag-only and replaces at most one initial non-ocean escort slot; all 0.58 skill/expedition compatibility data, existing skill XP totals, `infrastructure_v1`, `field_depots_v1`, `outpost_v1`, `production_v1`, existing affix CustomData and older data remain unchanged. Network protocol stays 9. The content-preview lock advances only its Survival release identity to `0.59.0-alpha.1-content-preview.1`; the seven external project/version IDs are unchanged.
+- Network protocol: `15`
+- Existing-world compatibility: 0.61.20 adds no SavedData ID or codec field and does not bump the network protocol. Existing skill XP, infrastructure/logistics/outpost/production data and affix CustomData remain compatible. Distinct rerolls and salvage caps are server-side service rules; the 1152 Harvesting queue cap is runtime-only. Network protocol remains 15.
+
+## 0.61.20 Equipment Economy & Harvest Queue Hardening / 장비 경제·수확 큐 안정화
+- Dynamic salvage retains equipment/body/material/condition scaling, but pre-awakening rewards are capped by the matching rarity's imprint-material budget.
+- Paid rerolls are guaranteed to change at least one affix; awakened Mythic reroll cost is amethyst16 + diamond2 + echo1.
+- Harvesting accepts up to 1152 queued targets while retaining the existing 12-per-player / 64-global tick drain.
+- No SavedData/protocol/force-load change; strong solo-balance affix magnitudes remain intentionally unchanged.
 
 ## 0.59 Apex Content Escort Integration / 정점 사냥 콘텐츠 호위 연동
 - Non-ocean Apex hunts may resolve one curated optional monster from a Survival-owned `apex_escorts_tier_0/1/2` EntityType tag according to the region's world-stage tier.

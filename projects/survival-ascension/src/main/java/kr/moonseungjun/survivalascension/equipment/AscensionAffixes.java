@@ -121,7 +121,8 @@ public final class AscensionAffixes {
         Category category = category(stack);
         if (rarity <= 0 || category == Category.NONE) return false;
         boolean awakened = isAwakened(stack);
-        rollAffixes(stack, random, awakened ? 4 : rarity, category, awakened);
+        List<String> previous = currentAffixes(stack);
+        rerollAffixes(stack, random, awakened ? 4 : rarity, category, awakened, previous);
         return true;
     }
 
@@ -142,6 +143,28 @@ public final class AscensionAffixes {
         chosen.add(missing.get(random.nextInt(missing.size())));
         writeAffixes(stack, 3, category, chosen, true);
         return true;
+    }
+
+    private static void rerollAffixes(ItemStack stack, RandomSource random, int count, Category category,
+                                      boolean awakened, List<String> previous) {
+        List<String> pool = new ArrayList<>(AFFIX_POOL);
+        Collections.shuffle(pool, new java.util.Random(random.nextLong()));
+        int affixCount = Math.max(1, Math.min(count, pool.size()));
+        List<String> chosen = new ArrayList<>(pool.subList(0, affixCount));
+
+        // A paid reroll must change gameplay. If the random subset is identical, swap exactly one
+        // affix for a currently missing key. AFFIX_POOL has five keys and rerolls use at most four.
+        if (chosen.size() == previous.size() && previous.containsAll(chosen) && chosen.containsAll(previous)) {
+            String missing = null;
+            for (String key : AFFIX_POOL) {
+                if (!previous.contains(key)) {
+                    missing = key;
+                    break;
+                }
+            }
+            if (missing != null && !chosen.isEmpty()) chosen.set(chosen.size() - 1, missing);
+        }
+        writeAffixes(stack, Math.max(1, Math.min(3, count)), category, chosen, awakened);
     }
 
     private static void rollAffixes(ItemStack stack, RandomSource random, int count, Category category, boolean awakened) {

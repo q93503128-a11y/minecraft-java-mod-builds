@@ -40,7 +40,7 @@ import java.util.UUID;
 public final class HarvestingProgression {
     private static final int GLOBAL_HARVEST_BUDGET_PER_TICK = 64;
     private static final int LOCAL_HARVEST_BUDGET_PER_TICK = 12;
-    private static final int MAX_PENDING_PER_PLAYER = 384;
+    private static final int MAX_PENDING_PER_PLAYER = 1152;
     private static final int XP_PER_HARVEST = 15;
     private static final Set<UUID> AREA_GUARD = new HashSet<>();
     private static final Map<UUID, HarvestJob> JOBS = new HashMap<>();

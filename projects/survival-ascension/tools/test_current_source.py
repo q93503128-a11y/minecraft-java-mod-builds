@@ -17,10 +17,10 @@ def require(condition, message):
 props = text(ROOT / "gradle.properties")
 require("minecraft_version=26.2" in props, "Minecraft version drift")
 require("neo_version=26.2.0.38-beta" in props, "NeoForge version drift")
-require("mod_version=0.61.19-alpha.1" in props, "Survival Ascension version drift")
+require("mod_version=0.61.20-alpha.1" in props, "Survival Ascension version drift")
 
 main = text(JAVA / "SurvivalAscension.java")
-require('VERSION = "0.61.19-alpha.1"' in main, "source version drift")
+require('VERSION = "0.61.20-alpha.1"' in main, "source version drift")
 for event in (
     "MiningProgression::onBlockBreak",
     "WoodcuttingProgression::onServerTick",
@@ -183,6 +183,8 @@ require("AREA_BREAK_GUARD" in mining and "player.isShiftKeyDown()" in mining, "m
 require("CHAIN_GUARD" in woodcutting and "JOBS.clear()" in woodcutting, "woodcutting queue/recursion cleanup missing")
 require("AREA_GUARD" in harvesting and "MAX_PENDING_PER_PLAYER" in harvesting and "JOBS.clear()" in harvesting,
         "harvesting queue bounds/cleanup missing")
+require("MAX_PENDING_PER_PLAYER = 1152" in harvesting,
+        "high-end harvesting affixes can be silently truncated by the pending queue")
 require("FieldDepotService.hasMaterial" in irrigation and "FieldDepotService.consumeOne" in irrigation,
         "irrigation replant no longer consumes physical seed material")
 require("EventHooks.onBlockPlace" in construction and "FieldDepotService.consumeOne" in construction,
@@ -202,6 +204,7 @@ for forbidden in ("setChunkForced", "addRegionTicket"):
     require(forbidden not in field, f"physical depot policy regressed: {forbidden}")
 
 equipment = text(JAVA / "equipment/EquipmentReforgeService.java")
+affixes = text(JAVA / "equipment/AscensionAffixes.java")
 equipment_ui = text(JAVA / "client/EquipmentRadialMenuScreen.java")
 guide = text(JAVA / "client/GuideScreen.java")
 require("salvageRewards(ItemStack stack)" in equipment and "salvageBodyValue" in equipment,
@@ -212,6 +215,15 @@ require("salvageEquipmentWeight" in equipment and "salvageMaterialQuality" in eq
 require("AscensionAffixes.isAwakened(stack)" in equipment and "Items.NETHERITE_SCRAP" in equipment
         and "Items.DRAGON_BREATH" in equipment,
         "awakened salvage does not recover a bounded share of awakening materials")
+require("capBaseSalvageToImprintCost(amounts, rarity);" in equipment
+        and "imprintCosts(rarity - 1)" in equipment,
+        "base salvage can exceed the imprint material budget and print rare materials")
+require("Only five four-affix combinations exist" in equipment
+        and 'new MaterialCost(Items.ECHO_SHARD, 1, "메아리 조각")' in equipment,
+        "awakened Mythic reroll cost hardening missing")
+require("rerollAffixes" in affixes and "previous.containsAll(chosen)" in affixes
+        and "!previous.contains(key)" in affixes,
+        "paid equipment reroll can return the identical affix set")
 require("salvageText(held)" in equipment_ui, "salvage UI still previews rarity-only rewards")
 require("FreightService.FRONTLINE_FOOD" in guide and "FreightService.FRONTLINE_STONE_BRICKS" in guide,
         "guide no longer derives frontline manifest from freight authority")
@@ -222,4 +234,4 @@ require("장비 분해" in guide and "남은 내구도" in guide,
 require("식량(밀/당근/감자/비트) 60" not in guide and "원정은 식량(밀/당근/감자/비트) 12" not in guide,
         "guide contains duplicated hard-coded frontline supply balances")
 
-print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.19 dynamic equipment salvage + canonical freight guide + full skill/runtime invariants")
+print("CURRENT SOURCE CHECK PASS: Survival Ascension 0.61.20 equipment economy + distinct rerolls + harvest queue + full skill/runtime invariants")

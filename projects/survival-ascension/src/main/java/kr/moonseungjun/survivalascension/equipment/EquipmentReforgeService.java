@@ -181,10 +181,12 @@ public final class EquipmentReforgeService {
 
     private static MaterialCost[] reforgeCosts(int rarity, boolean awakened) {
         if (rarity == 3 && awakened) {
+            // Only five four-affix combinations exist. Identical rerolls are blocked, so keep the
+            // late-game sink meaningful without making a targeted awakened reroll excessively punitive.
             return new MaterialCost[] {
-                    new MaterialCost(Items.AMETHYST_SHARD, 24, "자수정 조각"),
-                    new MaterialCost(Items.DIAMOND, 3, "다이아몬드"),
-                    new MaterialCost(Items.ECHO_SHARD, 2, "메아리 조각")
+                    new MaterialCost(Items.AMETHYST_SHARD, 16, "자수정 조각"),
+                    new MaterialCost(Items.DIAMOND, 2, "다이아몬드"),
+                    new MaterialCost(Items.ECHO_SHARD, 1, "메아리 조각")
             };
         }
         return switch (rarity) {
@@ -249,6 +251,8 @@ public final class EquipmentReforgeService {
             addReward(amounts, labels, Items.ECHO_SHARD, body / 4, "메아리 조각");
         }
 
+        capBaseSalvageToImprintCost(amounts, rarity);
+
         if (AscensionAffixes.isAwakened(stack)) {
             // Awakening is expensive enough that destroying the finished item should return a meaningful,
             // but still clearly partial, share of the one-time awakening investment.
@@ -265,6 +269,13 @@ public final class EquipmentReforgeService {
             result[index++] = new MaterialCost(entry.getKey(), entry.getValue(), labels.get(entry.getKey()));
         }
         return result;
+    }
+
+    private static void capBaseSalvageToImprintCost(Map<Item, Integer> amounts, int rarity) {
+        for (MaterialCost budget : imprintCosts(rarity - 1)) {
+            Integer current = amounts.get(budget.item());
+            if (current != null && current > budget.count()) amounts.put(budget.item(), budget.count());
+        }
     }
 
     /**

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.20-alpha.1
+- Base equipment salvage still scales by equipment body, material quality and remaining durability, but each rarity is now capped so its pre-awakening salvage cannot return more of an imprint material than that rarity's imprint actually consumed. This closes imprint -> salvage diamond/material generation loops while retaining meaningful item-value differences.
+- Paid equipment rerolls can no longer return the identical affix set. If the random subset matches the current set, exactly one affix is replaced with a missing key.
+- Awakened Mythic reroll cost is reduced to amethyst16 + diamond2 + echo1 now that every paid reroll is guaranteed to change the four-affix set.
+- High-end Harvesting queued work cap rises from 384 to 1152 targets so large Mythic hoe areas/forward lanes are not silently truncated. Execution remains bounded at the existing 12 local / 64 global targets per tick.
+- No SavedData schema, packet, network protocol, force-load policy or strong solo-balance affix magnitude changed. Network protocol remains 15.
+
 ## 0.61.17-alpha.1
 - Replaced the fixed-count-only tunnel scheduler with a 6 ms global / 4 ms per-job soft server-thread time budget plus EWMA prediction before starting another full vanilla break pipeline. The existing 12-target local hard cap remains only a secondary safety ceiling.
 - Kept `ServerPlayerGameMode.destroyBlock` authoritative for every eligible tunnel block, preserving NeoForge break cancellation, Silk Touch/Fortune/loot, item/XP drops, durability policy, stats/advancements, normal neighbor/light/fluid behavior and client synchronization. No chunk force-loading was added.

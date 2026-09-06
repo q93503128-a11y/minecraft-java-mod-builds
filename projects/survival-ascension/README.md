@@ -1,8 +1,13 @@
 # Survival Ascension
 
-Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `9`.
+Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
+
+## 0.61.20-alpha.1 — Equipment Economy & Harvest Queue Hardening / 장비 경제·수확 큐 안정화
+장비 분해의 부위/재질/내구도 차등 보상은 유지하되, 각 등급의 기본 분해가 해당 등급 각인에 실제로 들어간 희귀 재료보다 더 많이 반환하지 못하도록 상한을 둔다. 각성 재료의 부분 회수는 별도 각성 투자분에서만 추가된다. 따라서 장비 각인→분해로 다이아몬드 같은 희귀 재료를 생성할 수 없다.
+
+유료 재련은 반드시 최소 한 옵션이 달라진다. 각성 신화는 가능한 4옵션 조합이 5개뿐이므로 재련 비용을 자수정16·다이아2·메아리1로 낮췄다. 고등급 괭이의 대형 수확 영역은 1152개 큐까지 받아들이되 실제 작업은 기존 틱당 로컬12/전체64 제한으로 계속 분산한다. 네트워크 프로토콜은 15 그대로이며 저장 데이터 스키마 변경은 없다.
 
 ## 0.59.0-alpha.1 — Apex Content Escort Integration / 정점 사냥 콘텐츠 호위 연동
 정점 사냥이 잠겨 있던 외부 적 콘텐츠를 실제 전투 조합으로 사용하기 시작한다. 콘텐츠 팩이 로드된 비해양 정점 사냥에서는 별도 `apex_escorts_tier_0/1/2` EntityType 태그에서 검증된 몬스터를 골라 **기존 초기 호위 한 자리를 교체**한다. 호위 수 자체를 늘리지 않으므로 단순 물량 인플레이션이 아니며, 외부 호위는 빛나는 효과와 시작 메시지의 `이변 호위 1체 포함`으로 즉시 식별된다.
