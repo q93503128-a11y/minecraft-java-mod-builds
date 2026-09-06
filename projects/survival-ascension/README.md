@@ -4,6 +4,13 @@ Minecraft Java 26.2 / NeoForge 26.2.0.38-beta / Java 25. Network protocol `15`.
 
 Survival Ascension makes progression increase the physical scale of player actions, then makes infrastructure, logistics, expeditions and combat consume that larger output again.
 
+## 0.61.21-alpha.1 — Bounded Bulk Mining / 대량 채굴 틱 분산
+채굴 2D 면적 작업, 삽 토공, 연결 광맥, Extract의 자동 추가 블록은 최초 파괴 이벤트 안에서 한꺼번에 처리하지 않고 큐에 넣어 틱마다 분산한다. 수동으로 부순 중심 블록은 계속 바닐라 권한이며, 모든 추가 블록도 `ServerPlayerGameMode.destroyBlock` 경로를 사용한다.
+
+플레이어당 틱 최대12, 서버 전체 최대48과 로컬3 ms / 전체5 ms 소프트 시간 예산을 함께 적용한다. 대기 큐는 최대512개로 현재 최상위 면적·광맥 범위보다 크며, 로드되지 않은 청크를 강제 로드하지 않고 블록 엔티티는 처리하지 않는다.
+
+Mining·Woodcutting·Harvesting 대기 작업은 시작 도구의 내구도 수치만 정규화한 컴포넌트 프로필을 보관한다. 일반적인 내구도 감소는 작업을 유지하지만 다른 도구·승천 옵션·인챈트로 바꾸면 남은 큐를 취소한다. 새 SavedData/packet 변경은 없고 네트워크 프로토콜은 `15` 그대로다.
+
 ## 0.61.20-alpha.1 — Equipment Economy & Harvest Queue Hardening / 장비 경제·수확 큐 안정화
 장비 분해의 부위/재질/내구도 차등 보상은 유지하되, 각 등급의 기본 분해가 해당 등급 각인에 실제로 들어간 희귀 재료보다 더 많이 반환하지 못하도록 상한을 둔다. 각성 재료의 부분 회수는 별도 각성 투자분에서만 추가된다. 따라서 장비 각인→분해로 다이아몬드 같은 희귀 재료를 생성할 수 없다.
 

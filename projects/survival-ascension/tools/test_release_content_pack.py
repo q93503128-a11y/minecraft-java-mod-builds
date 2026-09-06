@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors: list[str] = []
-CURRENT_LOCK_VERSION = "0.61.0-alpha.1-content-preview.1"
+CURRENT_LOCK_VERSION = "0.61.21-alpha.1-content-preview.1"
 PREVIOUS_DOC_VERSION = "0.61.21-alpha.1"
 
 

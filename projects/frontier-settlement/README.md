@@ -4,7 +4,7 @@ Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
 Canonical direction: `ORIGINAL_DESIGN_v0.2.md` + `CANONICAL_PLAN.md`. Remaining original-scope gaps are tracked in `COMPLETION_GAP_AUDIT.md`.
 
-## Current version: 0.1.0-alpha.79
+## Current version: 0.1.0-alpha.116
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -28,9 +28,9 @@ Hard rules:
 
 ## Controls
 
-No new Alpha.72 key was added.
+Current default construction controls:
 
-- `B` — settlement/infrastructure palette;
+- `M` — settlement/infrastructure palette;
 - `R` — rotate an ordinary building placement;
 - `Enter` — confirm the current building/road/outpost/civil-work selection step;
 - `Backspace` — reset the road start or civil-work first corner.
