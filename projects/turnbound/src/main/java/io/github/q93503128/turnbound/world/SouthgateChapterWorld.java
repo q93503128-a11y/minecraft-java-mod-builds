@@ -59,9 +59,13 @@ public final class SouthgateChapterWorld {
     public static BuiltChapter build(ServerLevel level, int ignoredLegacyBaseY) { return build(level); }
 
     /** M01+M02 completion opens the authored deep-meadow route. */
-    public static void setEntryGateOpen(ServerLevel level, boolean open) { buildDeepGate(level, open); }
+    public static void setEntryGateOpen(ServerLevel level, boolean open) {
+        buildDeepGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_SOUTHGATE_DEEP));
+    }
     public static void setEntryGateOpen(ServerLevel level, int ignoredLegacyBaseY, boolean open) { setEntryGateOpen(level, open); }
-    public static void setBossGateOpen(ServerLevel level, boolean open) { buildBossGate(level, open); }
+    public static void setBossGateOpen(ServerLevel level, boolean open) {
+        buildBossGate(level, open || AsterMarchSharedWorldProgress.regionOpen(level, TurnboundWorldSavedData.GATE_SOUTHGATE_BOSS));
+    }
 
     public static boolean contains(BuiltChapter chapter, Vec3 pos) {
         if (pos == null || pos.y < 54 || pos.y > 92) return false;
@@ -220,5 +224,9 @@ public final class SouthgateChapterWorld {
     }
 
     private static double lerp(double a, double b, double t) { return a + (b - a) * t; }
-    private static void set(ServerLevel level, int x, int y, int z, Block block) { level.setBlock(new BlockPos(x, y, z), block.defaultBlockState(), 2); }
+    private static void set(ServerLevel level, int x, int y, int z, Block block) {
+        BlockPos pos = new BlockPos(x, y, z);
+        var target = block.defaultBlockState();
+        if (!level.getBlockState(pos).equals(target)) level.setBlock(pos, target, 2);
+    }
 }
