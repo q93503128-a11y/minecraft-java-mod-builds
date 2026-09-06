@@ -31,6 +31,10 @@ public final class StatusRuntime {
         return stacksById.remove(requireId(statusId)) != null;
     }
 
+    public void clear() {
+        stacksById.clear();
+    }
+
     public Set<String> activeIds() {
         return Set.copyOf(stacksById.keySet());
     }
