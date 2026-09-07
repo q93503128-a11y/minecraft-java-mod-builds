@@ -157,7 +157,7 @@ public final class TurnboundDebugCommands {
                 new EntityParticipantBinding(ENEMY_ID, enemy.getUUID())), participants, definitionContext);
         battle.start();
         publishDataBasicIntent(battle, definitionContext);
-        syncDebugState(player, battle, 0);
+        syncDebugState(player, battle, battles, 0);
 
         source.sendSuccess(() -> Component.literal(
                 "DEBUG_ONLY data encounter started battle=" + battleId
@@ -221,13 +221,13 @@ public final class TurnboundDebugCommands {
                 .of(battle.battleId(), command).decode();
         BattleNetworkGateway.Result result = new BattleNetworkGateway(battles).submit(player.getUUID(), decoded);
         if (!result.accepted()) {
-            sendRejection(player, battle, result);
+            sendRejection(player, battle, result, battles);
             source.sendFailure(Component.literal(
                     "DEBUG_ONLY " + slot.label + " rejected: " + result.code() + " / " + result.detail()));
             return 0;
         }
 
-        syncDebugState(player, battle, result.eventStartIndex());
+        syncDebugState(player, battle, battles, result.eventStartIndex());
         source.sendSuccess(() -> Component.literal(debugBattleLine(battle, battles)), false);
         return 1;
     }
@@ -268,7 +268,7 @@ public final class TurnboundDebugCommands {
         if (battle.outcome() == BattleInstance.Outcome.ONGOING && battle.combatState(ENEMY_ID).alive()) {
             publishDataBasicIntent(battle, context);
         }
-        syncDebugState(player, battle, fromIndex);
+        syncDebugState(player, battle, battles, fromIndex);
         source.sendSuccess(() -> Component.literal(debugBattleLine(battle, battles)), false);
         return 1;
     }
@@ -319,7 +319,7 @@ public final class TurnboundDebugCommands {
         CharacterDefinition enemy = context.definitions().characters().get(context.characterId(ENEMY_ID));
         if (enemy == null) throw new IllegalStateException("debug enemy CharacterDefinition missing from snapshot");
         ActionDefinition basic = context.definitions().actions().get(enemy.basicAction());
-        if (basic == null) throw new IllegalStateException("debug enemy basic action missing from snapshot: " + enemy.basicAction());
+        if (basic == null) throw new IllegalStateException("debug enemy basic action missing from battle snapshot: " + enemy.basicAction());
         EnemyIntent.Targeting targeting = "MULTI".equals(basic.targeting().shape())
                 ? EnemyIntent.Targeting.ALL : EnemyIntent.Targeting.SINGLE;
         battle.setEnemyIntent(ENEMY_ID, new EnemyIntent(
@@ -338,11 +338,14 @@ public final class TurnboundDebugCommands {
     private static void sendRejection(
             ServerPlayer player,
             BattleInstance battle,
-            BattleNetworkGateway.Result result
+            BattleNetworkGateway.Result result,
+            BattleManager battles
     ) {
         PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleEventsS2C.rejection(
                 battle.battleId(), battle.revision(), result.code().name() + ":" + result.detail()));
-        PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleSnapshotS2C.from(battle));
+        BattleDefinitionContext definitions = battles.definitionContext(battle.battleId()).orElse(null);
+        PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleSnapshotS2C.from(
+                battle, definitions, battles));
     }
 
     private static BattleInstance requirePlayerBattle(CommandSourceStack source, BattleManager battles, ServerPlayer player) {
@@ -351,13 +354,20 @@ public final class TurnboundDebugCommands {
         return battle;
     }
 
-    private static void syncDebugState(ServerPlayer player, BattleInstance battle, int fromIndex) {
+    private static void syncDebugState(
+            ServerPlayer player,
+            BattleInstance battle,
+            BattleManager battles,
+            int fromIndex
+    ) {
         List<BattleEvent> all = battle.eventLog();
         int start = Math.max(0, Math.min(fromIndex, all.size()));
         List<BattleEvent> events = List.copyOf(all.subList(start, all.size()));
         PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleEventsS2C.from(
                 battle.battleId(), battle.revision(), start, events));
-        PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleSnapshotS2C.from(battle));
+        BattleDefinitionContext definitions = battles.definitionContext(battle.battleId()).orElse(null);
+        PacketDistributor.sendToPlayer(player, BattleNetworkPayloads.BattleSnapshotS2C.from(
+                battle, definitions, battles));
     }
 
     private static String debugBattleLine(BattleInstance battle, BattleManager battles) {
