@@ -34,6 +34,58 @@ jobs:
           gradle --version
       - name: Tests and clean build
         run: gradle --no-daemon clean test build --stacktrace
+      - name: Dedicated server smoke
+        run: |
+          mkdir -p build/smoke run runs/server
+          printf 'eula=true\n' > run/eula.txt
+          printf 'eula=true\n' > runs/server/eula.txt
+          set +e
+          timeout 150s gradle --no-daemon runServer --stacktrace > build/smoke/server-console.log 2>&1
+          STATUS=$?
+          set -e
+          cat build/smoke/server-console.log
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
+            echo "runServer exited unexpectedly with status $STATUS"
+            exit "$STATUS"
+          fi
+          LOGS=$(find . -type f -path '*/logs/latest.log' -print)
+          if [ -z "$LOGS" ]; then
+            echo 'No server latest.log was produced'
+            exit 1
+          fi
+          cat $LOGS > build/smoke/server-latest-combined.log
+          grep -q 'Riftfrontier core loaded' build/smoke/server-latest-combined.log
+          grep -q 'Riftfrontier content snapshot published' build/smoke/server-latest-combined.log
+          grep -q 'Done (' build/smoke/server-latest-combined.log
+          if grep -Eq 'Crash report|Encountered an unexpected exception|Failed to start the minecraft server' build/smoke/server-latest-combined.log; then
+            echo 'Fatal server startup marker found'
+            exit 1
+          fi
+          echo 'PASS — dedicated server reached ready state and loaded Riftfrontier content' > build/smoke/server.status
+      - name: Client smoke under virtual display
+        run: |
+          mkdir -p build/smoke
+          set +e
+          xvfb-run -a timeout 150s gradle --no-daemon runClient --stacktrace > build/smoke/client-console.log 2>&1
+          STATUS=$?
+          set -e
+          cat build/smoke/client-console.log
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 124 ]; then
+            echo "runClient exited unexpectedly with status $STATUS"
+            exit "$STATUS"
+          fi
+          LOGS=$(find . -type f -path '*/logs/latest.log' -print)
+          if [ -z "$LOGS" ]; then
+            echo 'No client latest.log was produced'
+            exit 1
+          fi
+          cat $LOGS > build/smoke/client-latest-combined.log
+          grep -q 'Riftfrontier core loaded' build/smoke/client-latest-combined.log
+          if grep -Eq 'Crash report|Minecraft crashed|Encountered an unexpected exception' build/smoke/client-latest-combined.log; then
+            echo 'Fatal client startup marker found'
+            exit 1
+          fi
+          echo 'PASS — client initialized Riftfrontier under Xvfb without a fatal crash marker' > build/smoke/client.status
       - name: Inspect executable JAR
         run: |
           JAR="build/libs/riftfrontier-0.1.0-alpha.1.jar"
@@ -50,6 +102,8 @@ jobs:
         if: always()
         run: |
           mkdir -p build/reports/riftfrontier
+          SERVER_STATUS=$(cat build/smoke/server.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
+          CLIENT_STATUS=$(cat build/smoke/client.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           {
             echo '# Riftfrontier CI Build Report'
             echo
@@ -59,8 +113,8 @@ jobs:
             echo '- Minecraft: 26.2'
             echo '- NeoForge: 26.2.0.38-beta'
             echo '- clean/test/build: see workflow logs'
-            echo '- server smoke: NOT RUN in M0 workflow'
-            echo '- client smoke: NOT RUN in M0 workflow'
+            echo "- server smoke: $SERVER_STATUS"
+            echo "- client smoke: $CLIENT_STATUS"
             echo '- GameTest: NOT RUN until first registered GameTest fixture'
           } > build/reports/riftfrontier/BUILD_AND_RUNTIME_REPORT.md
       - name: Upload deliverables
@@ -81,6 +135,9 @@ jobs:
           path: |
             projects/riftfrontier/build/reports/**
             projects/riftfrontier/build/test-results/**
+            projects/riftfrontier/build/smoke/**
             projects/riftfrontier/build/jar-contents.txt
+            projects/riftfrontier/run/logs/**
+            projects/riftfrontier/runs/**/logs/**
           if-no-files-found: ignore
           retention-days: 7
