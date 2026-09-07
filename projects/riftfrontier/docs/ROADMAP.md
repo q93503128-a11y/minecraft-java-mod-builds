@@ -55,14 +55,15 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 목표: 첫 실제 플레이 루프 구축.
 
-### M2-A — Domain foundation
+### M2-A — Domain foundation — VERIFIED
 
-구현됨. 전체 CI green 확인 전에는 검증 완료로 표시하지 않는다.
+기준 코드 커밋 `5d226045e3d6c2140bd810124548806c026b0073`, GitHub Actions run `34089894370`에서 clean/unit test/build, native GameTest, dedicated server, Xvfb client, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
 
 - `Region → ExpeditionResource / Contract` graph
 - contract required resource / reward loot / extraction-result reference
 - `ExtractionResultProfile` 정책 정의
-- 불변 `ExpeditionRun`
+- Minecraft/DFU 비의존 불변 `ExpeditionRun`
+- 별도 `ExpeditionRunCodec` persistence adapter
 - `ExpeditionLifecycle` 상태 전이와 소속/요구조건 검증
 - persistence schema 2 + `1 → 2` migration
 - `RiftfrontierWorldData.expeditions[]`
