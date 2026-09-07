@@ -45,13 +45,20 @@ class ExpeditionEvidenceCheckpointTest {
     }
 
     @Test
-    void trailHasHardUpperBound() {
+    void fullTrailCannotBlockGameplayAndTerminalOutcomeIsStillPreserved() {
         ExpeditionRun run = ExpeditionRun.preparing(33L, REGION, CONTRACT, OWNER, "fp", 100L).deploy();
         for (int i = 0; i < 16; i++) {
             run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED, 100L + i, 0, 3));
         }
         ExpeditionRun full = run;
-        assertThrows(IllegalStateException.class, () -> full.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED, 116L, 0, 3)));
+        ExpeditionRun ignored = full.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED, 116L, 0, 3));
+        assertSame(full, ignored, "A diagnostic checkpoint past the bound must not mutate or fail gameplay");
+
+        ExpeditionRun failed = full.fail(117L, ExpeditionRun.EndReason.PLAYER_ABORT)
+            .appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.FAILED, 117L, 0, 2));
+        assertEquals(16, failed.evidenceTrail().size());
+        assertEquals(ExpeditionEvidenceCheckpoint.Stage.FAILED, failed.evidenceTrail().getLast().stage());
+        assertEquals(101L, failed.evidenceTrail().getFirst().gameTime(), "Terminal evidence may evict the oldest non-terminal observation at the hard bound");
     }
 
     private static ExpeditionEvidenceCheckpoint checkpoint(ExpeditionEvidenceCheckpoint.Stage stage, long time, int salvage, int threats) {

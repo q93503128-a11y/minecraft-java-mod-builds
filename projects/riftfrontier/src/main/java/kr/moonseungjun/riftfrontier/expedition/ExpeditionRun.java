@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.expedition;
 
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,15 +74,9 @@ public record ExpeditionRun(
         boolean terminalEvidenceSeen = false;
         for (ExpeditionEvidenceCheckpoint checkpoint : evidenceTrail) {
             Objects.requireNonNull(checkpoint, "evidence checkpoint");
-            if (checkpoint.gameTime() < startedGameTime) {
-                throw new IllegalArgumentException("Expedition evidence cannot predate run start");
-            }
-            if (checkpoint.gameTime() < previousEvidenceTime) {
-                throw new IllegalArgumentException("Expedition evidence must be monotonic by game time");
-            }
-            if (terminalEvidenceSeen) {
-                throw new IllegalArgumentException("No evidence may follow a terminal checkpoint");
-            }
+            if (checkpoint.gameTime() < startedGameTime) throw new IllegalArgumentException("Expedition evidence cannot predate run start");
+            if (checkpoint.gameTime() < previousEvidenceTime) throw new IllegalArgumentException("Expedition evidence must be monotonic by game time");
+            if (terminalEvidenceSeen) throw new IllegalArgumentException("No evidence may follow a terminal checkpoint");
             terminalEvidenceSeen = checkpoint.stage().terminal();
             previousEvidenceTime = checkpoint.gameTime();
         }
@@ -103,15 +98,9 @@ public record ExpeditionRun(
         if (status == Status.FAILED && endReason == EndReason.EXTRACTION) throw new IllegalArgumentException("FAILED expedition cannot use extraction end reason");
         if (terminalEvidenceSeen) {
             ExpeditionEvidenceCheckpoint.Stage evidenceStage = evidenceTrail.getLast().stage();
-            if (status == Status.EXTRACTED && evidenceStage != ExpeditionEvidenceCheckpoint.Stage.EXTRACTED) {
-                throw new IllegalArgumentException("EXTRACTED run terminal evidence must end with EXTRACTED stage");
-            }
-            if (status == Status.FAILED && evidenceStage != ExpeditionEvidenceCheckpoint.Stage.FAILED) {
-                throw new IllegalArgumentException("FAILED run terminal evidence must end with FAILED stage");
-            }
-            if (!status.terminal()) {
-                throw new IllegalArgumentException("Non-terminal run cannot contain terminal evidence");
-            }
+            if (status == Status.EXTRACTED && evidenceStage != ExpeditionEvidenceCheckpoint.Stage.EXTRACTED) throw new IllegalArgumentException("EXTRACTED run terminal evidence must end with EXTRACTED stage");
+            if (status == Status.FAILED && evidenceStage != ExpeditionEvidenceCheckpoint.Stage.FAILED) throw new IllegalArgumentException("FAILED run terminal evidence must end with FAILED stage");
+            if (!status.terminal()) throw new IllegalArgumentException("Non-terminal run cannot contain terminal evidence");
         }
     }
 
@@ -149,18 +138,25 @@ public record ExpeditionRun(
         return copy(Status.FAILED, recoveredResources, gameTime, reason, evidenceTrail);
     }
 
+    /**
+     * Evidence must never become a gameplay failure mode. Non-terminal checkpoints stop accumulating at
+     * the hard bound; a terminal checkpoint may evict the oldest non-terminal observation so the final
+     * outcome is always preserved.
+     */
     public ExpeditionRun appendEvidence(ExpeditionEvidenceCheckpoint checkpoint) {
         Objects.requireNonNull(checkpoint, "checkpoint");
-        if (evidenceTrail.size() >= MAX_EVIDENCE_CHECKPOINTS) {
-            throw new IllegalStateException("Expedition evidence checkpoint limit reached for run " + sequence);
-        }
         validateEvidenceStage(checkpoint.stage());
         if (!evidenceTrail.isEmpty()) {
             ExpeditionEvidenceCheckpoint previous = evidenceTrail.getLast();
             if (previous.stage().terminal()) throw new IllegalStateException("Cannot append evidence after terminal checkpoint");
             if (checkpoint.gameTime() < previous.gameTime()) throw new IllegalArgumentException("Evidence game time cannot move backwards");
         }
-        List<ExpeditionEvidenceCheckpoint> next = new java.util.ArrayList<>(evidenceTrail);
+
+        List<ExpeditionEvidenceCheckpoint> next = new ArrayList<>(evidenceTrail);
+        if (next.size() >= MAX_EVIDENCE_CHECKPOINTS) {
+            if (!checkpoint.stage().terminal()) return this;
+            next.removeFirst();
+        }
         next.add(checkpoint);
         return copy(status, recoveredResources, endedGameTime, endReason, next);
     }
