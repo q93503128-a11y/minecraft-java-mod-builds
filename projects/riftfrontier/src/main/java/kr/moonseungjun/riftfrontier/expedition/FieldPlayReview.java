@@ -89,6 +89,15 @@ public final class FieldPlayReview {
             .toList();
     }
 
+    /**
+     * Returns descriptive pacing/pressure metrics derived only from the caller's persisted evidence.
+     * This never turns those numbers into a synthetic quality verdict.
+     */
+    public static FieldPlayEvidenceMetrics metrics(ServerPlayer player) {
+        RiftfrontierWorldData world = RiftfrontierWorldData.get((ServerLevel) player.level());
+        return FieldPlayEvidenceMetrics.from(latestFor(player, world));
+    }
+
     private static ExpeditionRun latestFor(ServerPlayer player, RiftfrontierWorldData world) {
         return world.expeditions().stream()
             .filter(value -> value.ownerId().isEmpty() || value.ownedBy(player.getUUID()))
