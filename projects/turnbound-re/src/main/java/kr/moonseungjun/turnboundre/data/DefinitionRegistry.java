@@ -66,6 +66,7 @@ public final class DefinitionRegistry {
 
         Set<String> actionIds = ids(actions.stream().map(ActionDefinition::id).toList());
         errors.addAll(DefinitionValidator.validateCharacters(characters, actionIds));
+        errors.addAll(DefinitionCrossReferenceValidator.validate(actions, characters, statuses));
 
         Map<String, CharacterDefinition> characterMap = mapCharacters(characters);
         Set<String> characterIds = Set.copyOf(characterMap.keySet());
