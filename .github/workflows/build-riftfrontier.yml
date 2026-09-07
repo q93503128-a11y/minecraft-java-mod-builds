@@ -50,11 +50,20 @@ jobs:
           if [ -n "$LOGS" ]; then
             cat $LOGS > build/smoke/gametest-latest-combined.log
           fi
-          if grep -Eq 'Game test.*failed|Failed game tests|Crash report|Encountered an unexpected exception' build/smoke/gametest-console.log build/smoke/gametest-latest-combined.log 2>/dev/null; then
+          cat build/smoke/gametest-console.log build/smoke/gametest-latest-combined.log 2>/dev/null > build/smoke/gametest-verification.log || true
+          if grep -Eq 'Game test.*failed|Failed game tests|Crash report|Encountered an unexpected exception' build/smoke/gametest-verification.log; then
             echo 'GameTest failure marker found'
             exit 1
           fi
-          echo 'PASS — Riftfrontier registered GameTest suite completed successfully' > build/smoke/gametest.status
+          if ! grep -Eq '[1-9][0-9]* tests are now running' build/smoke/gametest-verification.log; then
+            echo 'No positive marker proving that at least one GameTest actually ran'
+            exit 1
+          fi
+          if ! grep -Eq 'All [1-9][0-9]* required tests passed' build/smoke/gametest-verification.log; then
+            echo 'No positive marker proving that required GameTests passed'
+            exit 1
+          fi
+          echo 'PASS — non-zero required GameTest suite executed and passed' > build/smoke/gametest.status
       - name: Dedicated server smoke
         run: |
           mkdir -p build/smoke run runs/server
@@ -118,6 +127,7 @@ jobs:
           grep -q 'META-INF/neoforge.mods.toml' build/jar-contents.txt
           grep -q 'assets/riftfrontier/' build/jar-contents.txt
           grep -q 'data/riftfrontier/' build/jar-contents.txt
+          grep -q 'data/riftfrontier/test_instance/authoritative_runtime_state.json' build/jar-contents.txt
           if grep -q '\.java$' build/jar-contents.txt; then echo 'Java source leaked into JAR'; exit 1; fi
           sha256sum "$JAR" | tee "$JAR.sha256"
       - name: Build report
