@@ -4,13 +4,15 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M2 — EXPEDITION DOMAIN FOUNDATION VERIFIED / GAMEPLAY INTEGRATION NEXT`
+`M2-B — GAMEPLAY ADAPTER + HUB FEEDBACK VERIFIED / REGION ENCOUNTER NEXT`
 
-M0/M1의 빌드·runtime·content kernel 기반 위에 M2 첫 원정 도메인 경계를 구현했다. `region / expedition_resource / contract / extraction_result`가 하나의 검증된 content graph로 연결되고, 실제 원정은 별도의 불변 `ExpeditionRun`과 `ExpeditionLifecycle`을 통해 서버 권위 SavedData에 저장된다.
+M0/M1의 빌드·runtime·content kernel 기반과 M2-A 원정 도메인 위에, 첫 production `region_01`의 실제 Minecraft gameplay adapter와 **원정 결과 → 거점 저장 → 보급 → 다음 원정 변화** 피드백 루프까지 연결했다.
 
-Persistence root는 schema `2`로 올라갔으며 schema `1 → 2` migration이 명시되어 있다. 첫 vertical-slice fixture에는 salvage resource, salvage recovery contract, secured-return extraction policy가 들어가며 JUnit과 native GameTest가 상태 전이와 실제 authoritative SavedData 업데이트를 검증한다.
+현재 authoritative persistence root는 schema `3`이다. schema `2 → 3` migration은 기존 expedition run을 보존하면서 Region 01 secured salvage, expedition supply, region pressure를 추가한다.
 
-기준 코드 커밋 `5d226045e3d6c2140bd810124548806c026b0073`, GitHub Actions run `34089894370`에서 **clean/unit test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다. 따라서 M2-A 원정 도메인 기반은 검증 완료로 간주한다.
+기준 코드 커밋 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions `Build Riftfrontier` run `34096694269`에서 **clean/unit test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다.
+
+따라서 다음 작업은 이미 검증된 원정 lifecycle/storage/supply를 반복하지 않고 **Region 01 환경 효과 + 실제 적 역할 2종 + elite 1종 + pressure 기반 위험 변화**를 실제 runtime encounter로 연결한다.
 
 ## 작업 시작 시 반드시 읽기
 
@@ -24,7 +26,8 @@ Persistence root는 schema `2`로 올라갔으며 schema `1 → 2` migration이 
 8. `docs/ROADMAP.md`
 9. 현재 content/runtime/persistence를 다루면 `docs/CONTENT_RUNTIME.md`
 10. expedition 작업이면 `docs/EXPEDITION_RUNTIME.md`
-11. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
+11. M2 gameplay 작업이면 `docs/M2B_GAMEPLAY_ADAPTER.md`
+12. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
 
 ## 방향 요약
 
@@ -50,6 +53,8 @@ Prepare
 
 ## 현재 구현된 기반
 
+### Content/runtime
+
 - versioned JSON content documents (`schema_version = 1`)
 - stable `ContentId`
 - typed definitions: combat archetype / region / loot profile / creature / encounter / expedition resource / contract / extraction result
@@ -63,30 +68,53 @@ Prepare
 - deterministic `ContentCatalog` SHA-256 fingerprint
 - `ContentRuntimeSnapshot` + atomic last-known-good publication
 - NeoForge server ResourceManager reload listener
-- persistence schema root version `2` + explicit sequential migration registry
-- schema `1 → 2` migration에서 persisted expedition domain 도입
+- gameplay read-only `ContentLookup`
+
+### Persistence/expedition
+
+- persistence schema root version `3` + explicit sequential migration registry
+- schema `1 → 2`: expedition run domain
+- schema `2 → 3`: hub salvage / supply / Region 01 pressure
 - authoritative overworld-scoped `RiftfrontierWorldData` SavedData (`riftfrontier:world_state`)
 - durable world revision / expedition sequence / active content fingerprint / expedition runs 저장
+- durable `secured_region_01_salvage`, `expedition_supply`, `region_01_pressure`
 - Minecraft/DFU와 분리된 순수 불변 `ExpeditionRun` 상태 머신: PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED 또는 FAILED
 - 별도 `ExpeditionRunCodec` persistence adapter
 - `ExpeditionLifecycle`: region/contract/resource 소속 및 contract requirement 검증
 - 서버 시작 시 active content fingerprint와 SavedData root 동기화
+
+### M2 gameplay adapter
+
+- fixture와 분리된 production `region_01` Region Pack
+- temporary `/riftfrontier expedition start / extract / provision / abort / status` 입력 표면
+- bounded technical hub/region cell 진입·귀환
+- 실제 block interaction 기반 salvage 회수
+- extraction retained salvage → authoritative hub storage 정산
+- successful extraction → `region_01_pressure` 증가
+- pressure에 따라 다음 Region 01 preparation supply cost 상승
+- secured salvage 1 → expedition supply 2 provisioning
+- 원정 시작 전 authoritative supply 소비; 부족하면 원정 생성 거부
+- 사망/로그아웃/abort → FAILED, preparation supply 미환불
+- technical cells/commands는 production art/UI가 아니며 디자인 gate 전 임시 검증 표면
+
+### Verification
+
 - `/riftfrontier runtime` read-only 진단 명령
 - native Minecraft 26.2 test-function registry + data-driven `test_instance` GameTest
-- GameTest에서 content runtime ↔ authoritative SavedData ↔ expedition lifecycle 연동 검증
+- GameTest에서 content runtime ↔ SavedData ↔ expedition lifecycle ↔ hub feedback 검증
 - CI GameTest gate: non-zero 실행 marker + required tests passed marker 강제
 - CI dedicated server/client smoke + executable JAR/SHA-256 검증
 
 ## 다음 개발 작업
 
-이제 M1/M2 기반 schema를 반복해서 늘리지 않는다. 다음은 **첫 실제 플레이 가능한 Expedition vertical slice 연결**이다.
+이미 검증한 schema/gameplay adapter/storage/supply를 다시 넓히지 않는다. 다음은 **Region 01 원정 공간의 실제 위험/전투 상호작용**이다.
 
-1. technical fixture와 분리된 production `region_01` Region Pack을 만든다.
-2. 거점에서 contract 선택 → authoritative `ExpeditionRun` 생성 서버 경로를 만든다.
-3. 실제 region 진입/배치와 expedition resource 회수 이벤트를 연결한다.
-4. contract objective 충족 → extraction request → 귀환/정산을 Minecraft 플레이에 연결한다.
-5. extraction result의 retained resource / threat delta / world consequence가 실제 다음 원정 상태에 영향을 주게 한다.
-6. 사망·중도 이탈·강제 실패 시 `FAILED` 처리와 보존/손실 규칙을 명시한다.
-7. 이 최소 루프가 GameTest와 실제 플레이에서 검증된 뒤에 전투/보스 presentation과 물류/산업을 넓힌다.
+1. production `region_01` environment rule 1개를 server-authoritative runtime effect로 연결한다.
+2. production content의 일반 적 역할 2종을 실제 spawn/defeat state에 연결한다.
+3. elite 1종을 별도 역할과 최소 telegraph/counterplay 요구가 있는 encounter로 연결한다.
+4. `region_01_pressure`가 environment 또는 encounter 위험 조건 하나 이상을 실제 변경하게 한다.
+5. resource objective와 combat objective가 같은 원정에서 의미 있게 충돌하도록 composition한다.
+6. native GameTest를 통과시킨다.
+7. 실제 Minecraft 플레이 검수 전에는 전투/presentation 완료를 선언하지 않는다.
 
 첫 `region_01`이 작은 DLC처럼 완결되기 전에는 추가 지역을 대량 생산하지 않는다.
