@@ -11,6 +11,7 @@ import java.util.Objects;
  */
 public record FieldPlayReviewSnapshot(
     long sequence,
+    String owner,
     String status,
     String endReason,
     boolean terminal,
@@ -31,6 +32,8 @@ public record FieldPlayReviewSnapshot(
 ) {
     public FieldPlayReviewSnapshot {
         if (sequence <= 0L) throw new IllegalArgumentException("sequence must be > 0");
+        owner = Objects.requireNonNull(owner, "owner");
+        if (owner.isBlank()) throw new IllegalArgumentException("owner cannot be blank");
         status = Objects.requireNonNull(status, "status");
         if (status.isBlank()) throw new IllegalArgumentException("status cannot be blank");
         endReason = Objects.requireNonNull(endReason, "endReason");
@@ -62,6 +65,7 @@ public record FieldPlayReviewSnapshot(
     public String reportLine() {
         String threatObservation = terminal ? "terminal" : Integer.toString(liveThreats);
         return "run=" + sequence
+            + ";owner=" + owner
             + ";status=" + status
             + ";endReason=" + endReason
             + ";elapsedTicks=" + elapsedTicks
