@@ -14,9 +14,11 @@ import net.minecraft.world.entity.monster.skeleton.Skeleton;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Server-authoritative technical combat adapter for Region 01.
@@ -24,6 +26,10 @@ import java.util.List;
  * Vanilla mobs are deliberately used as behaviour proxies during M2. Their silhouettes, names and
  * presentation are not production art. What is production-relevant here is encounter composition,
  * pressure scaling, extraction choice pressure and the replaceable role boundary.
+ *
+ * Runtime threat ownership is tracked by expedition sequence rather than by a spatial query. A patrol
+ * therefore cannot be "cleared" merely by luring a live proxy outside the technical cell, and terminal
+ * cleanup can still discard a tracked proxy after it has moved away from its spawn center.
  */
 public final class Region01EncounterRuntime {
     private static final String RUN_TAG_PREFIX = "riftfrontier.region01.run.";
@@ -31,6 +37,14 @@ public final class Region01EncounterRuntime {
     private static final String ROLE_HUNTER = "hunter";
     private static final String ROLE_SCOUT = "scout";
     private static final String ROLE_ELITE = "elite_anchor";
+
+    /**
+     * M2 has exactly one authoritative non-terminal expedition. Keep direct entity handles so patrol
+     * ownership survives movement and chunk-boundary pathing without any per-tick world scan. Entries
+     * are removed on terminal cleanup. A persisted restart-recovery policy belongs to the later field
+     * hardening pass and must not silently degrade into broad entity scanning.
+     */
+    private static final Map<Long, List<Mob>> RUN_THREATS = new HashMap<>();
 
     private Region01EncounterRuntime() {}
 
@@ -50,6 +64,7 @@ public final class Region01EncounterRuntime {
 
     public static EncounterPlan begin(ServerLevel level, BlockPos center, long runSequence, int pressure) {
         clearRun(level, center, runSequence);
+        RUN_THREATS.put(runSequence, new ArrayList<>());
         EncounterPlan plan = planForPressure(pressure);
 
         for (int i = 0; i < plan.hunters(); i++) {
@@ -88,13 +103,22 @@ public final class Region01EncounterRuntime {
     }
 
     public static void clearRun(ServerLevel level, BlockPos center, long runSequence) {
-        for (Mob mob : liveThreats(level, center, runSequence)) mob.discard();
+        List<Mob> tracked = RUN_THREATS.remove(runSequence);
+        if (tracked == null) return;
+        for (Mob mob : tracked) {
+            if (!mob.isRemoved()) mob.discard();
+        }
+        tracked.clear();
     }
 
     private static List<Mob> liveThreats(ServerLevel level, BlockPos center, long runSequence) {
-        String runTag = runTag(runSequence);
-        AABB bounds = new AABB(center).inflate(16.0D, 8.0D, 16.0D);
-        return level.getEntitiesOfClass(Mob.class, bounds, mob -> mob.isAlive() && mob.entityTags().contains(runTag));
+        List<Mob> tracked = RUN_THREATS.get(runSequence);
+        if (tracked == null || tracked.isEmpty()) return List.of();
+        return tracked.stream()
+            .filter(mob -> mob.level() == level)
+            .filter(Mob::isAlive)
+            .filter(mob -> !mob.isRemoved())
+            .toList();
     }
 
     private static void spawn(ServerLevel level, Mob mob, BlockPos pos, long runSequence, String role) {
@@ -103,6 +127,7 @@ public final class Region01EncounterRuntime {
         mob.addTag(ROLE_TAG_PREFIX + role);
         mob.snapTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
         if (!level.addFreshEntity(mob)) throw new IllegalStateException("Minecraft rejected Region 01 encounter spawn for role " + role);
+        RUN_THREATS.computeIfAbsent(runSequence, ignored -> new ArrayList<>()).add(mob);
     }
 
     private static String runTag(long runSequence) {
