@@ -6,11 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Immutable publication boundary for validated content definitions.
- * The mutable loading registry never escapes this API; callers only receive immutable views/records.
- */
-public final class ContentRuntimeSnapshot {
+/** Immutable publication boundary for validated content definitions. */
+public final class ContentRuntimeSnapshot implements ContentLookup {
     private final long generation;
     private final Instant loadedAt;
     private final List<String> packIds;
@@ -32,15 +29,15 @@ public final class ContentRuntimeSnapshot {
     public String fingerprint() { return catalog.fingerprint(); }
     public int definitionCount() { return registry.size(); }
 
+    @Override
     public Optional<CoreDefinition> find(CoreDefinition.Kind kind, ContentId id) {
         return registry.find(kind, id);
     }
 
+    @Override
     public Collection<CoreDefinition> all() {
         return registry.all();
     }
 
-    public ContentCatalog catalog() {
-        return catalog;
-    }
+    public ContentCatalog catalog() { return catalog; }
 }

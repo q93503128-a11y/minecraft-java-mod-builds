@@ -1,21 +1,18 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
 import kr.moonseungjun.riftfrontier.content.ContentId;
-import kr.moonseungjun.riftfrontier.content.ContentRegistry;
+import kr.moonseungjun.riftfrontier.content.ContentLookup;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Server-side domain rules for the first expedition loop.
- * This class performs no teleportation or rendering; it validates and advances authoritative state.
- */
+/** Server-side domain rules for the first expedition loop. Minecraft effects live in adapters. */
 public final class ExpeditionLifecycle {
-    private final ContentRegistry content;
+    private final ContentLookup content;
 
-    public ExpeditionLifecycle(ContentRegistry content) {
+    public ExpeditionLifecycle(ContentLookup content) {
         this.content = Objects.requireNonNull(content, "content");
     }
 
@@ -38,11 +35,7 @@ public final class ExpeditionLifecycle {
 
     public ExpeditionRun recover(ExpeditionRun run, ContentId resourceId, int amount) {
         requireRunDefinitions(run);
-        CoreDefinition.ExpeditionResource resource = require(
-            CoreDefinition.Kind.EXPEDITION_RESOURCE,
-            resourceId,
-            CoreDefinition.ExpeditionResource.class
-        );
+        CoreDefinition.ExpeditionResource resource = require(CoreDefinition.Kind.EXPEDITION_RESOURCE, resourceId, CoreDefinition.ExpeditionResource.class);
         if (!resource.region().equals(run.regionId())) {
             throw new IllegalArgumentException("Resource " + resourceId + " does not belong to active region " + run.regionId());
         }
@@ -64,17 +57,12 @@ public final class ExpeditionLifecycle {
             throw new IllegalStateException("Extraction can only resolve after it is requested");
         }
         CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, run.contractId(), CoreDefinition.Contract.class);
-        CoreDefinition.ExtractionResultProfile resultProfile = require(
-            CoreDefinition.Kind.EXTRACTION_RESULT,
-            contract.extractionResult(),
-            CoreDefinition.ExtractionResultProfile.class
-        );
+        CoreDefinition.ExtractionResultProfile resultProfile = require(CoreDefinition.Kind.EXTRACTION_RESULT, contract.extractionResult(), CoreDefinition.ExtractionResultProfile.class);
         boolean objectiveSatisfied = contract.requiredResources().entrySet().stream()
             .allMatch(entry -> run.recoveredResources().getOrDefault(entry.getKey(), 0) >= entry.getValue());
         if (!objectiveSatisfied) {
             throw new IllegalStateException("Contract requirements are not satisfied for extraction: " + contract.id());
         }
-
         Map<ContentId, Integer> retained = retain(run.recoveredResources(), resultProfile.retainedPercent());
         ExpeditionRun completed = run.extract(gameTime);
         return new Resolution(completed, resultProfile, retained, contract.worldConsequence());
@@ -89,9 +77,7 @@ public final class ExpeditionLifecycle {
         Objects.requireNonNull(run, "run");
         require(CoreDefinition.Kind.REGION, run.regionId(), CoreDefinition.Region.class);
         CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, run.contractId(), CoreDefinition.Contract.class);
-        if (!contract.region().equals(run.regionId())) {
-            throw new IllegalStateException("Persisted expedition references a contract from another region");
-        }
+        if (!contract.region().equals(run.regionId())) throw new IllegalStateException("Persisted expedition references a contract from another region");
     }
 
     private static Map<ContentId, Integer> retain(Map<ContentId, Integer> resources, int retainedPercent) {
@@ -109,12 +95,7 @@ public final class ExpeditionLifecycle {
         return type.cast(definition);
     }
 
-    public record Resolution(
-        ExpeditionRun run,
-        CoreDefinition.ExtractionResultProfile resultProfile,
-        Map<ContentId, Integer> retainedResources,
-        String worldConsequence
-    ) {
+    public record Resolution(ExpeditionRun run, CoreDefinition.ExtractionResultProfile resultProfile, Map<ContentId, Integer> retainedResources, String worldConsequence) {
         public Resolution {
             Objects.requireNonNull(run, "run");
             Objects.requireNonNull(resultProfile, "resultProfile");

@@ -5,6 +5,8 @@ import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
 import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
@@ -36,6 +38,9 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::rightClickBlock);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerClone);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerLoggedOut);
     }
 
     private static void addServerReloadListeners(AddServerReloadListenersEvent event) {
@@ -44,16 +49,13 @@ public final class Riftfrontier {
 
     private static void registerCommands(RegisterCommandsEvent event) {
         RuntimeDiagnosticsCommand.register(event);
+        ExpeditionGameplayCommand.register(event);
     }
 
     private static void serverStarted(ServerStartedEvent event) {
         var snapshot = ContentRuntime.requireCurrent();
         var worldData = RiftfrontierWorldData.get(event.getServer().overworld());
         boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
-        LOGGER.info(
-            "Riftfrontier authoritative world root ready: changed={}, {}",
-            changed,
-            worldData.diagnosticSummary()
-        );
+        LOGGER.info("Riftfrontier authoritative world root ready: changed={}, {}", changed, worldData.diagnosticSummary());
     }
 }

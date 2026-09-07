@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class ContentRegistry {
+public final class ContentRegistry implements ContentLookup {
     private final Map<CoreDefinition.Kind, Map<ContentId, CoreDefinition>> byKind = new EnumMap<>(CoreDefinition.Kind.class);
 
     public ContentRegistry() {
@@ -22,8 +22,21 @@ public final class ContentRegistry {
         return definition;
     }
 
-    public Optional<CoreDefinition> find(CoreDefinition.Kind kind, ContentId id) { return Optional.ofNullable(byKind.get(kind).get(id)); }
-    public boolean contains(CoreDefinition.Kind kind, ContentId id) { return byKind.get(kind).containsKey(id); }
-    public Collection<CoreDefinition> all() { return byKind.values().stream().flatMap(map -> map.values().stream()).toList(); }
-    public int size() { return byKind.values().stream().mapToInt(Map::size).sum(); }
+    @Override
+    public Optional<CoreDefinition> find(CoreDefinition.Kind kind, ContentId id) {
+        return Optional.ofNullable(byKind.get(kind).get(id));
+    }
+
+    public boolean contains(CoreDefinition.Kind kind, ContentId id) {
+        return byKind.get(kind).containsKey(id);
+    }
+
+    @Override
+    public Collection<CoreDefinition> all() {
+        return byKind.values().stream().flatMap(map -> map.values().stream()).toList();
+    }
+
+    public int size() {
+        return byKind.values().stream().mapToInt(Map::size).sum();
+    }
 }

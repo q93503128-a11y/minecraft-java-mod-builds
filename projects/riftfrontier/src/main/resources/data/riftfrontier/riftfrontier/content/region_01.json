@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "pack_id": "riftfrontier:production/region_01",
+  "definitions": [
+    {"kind":"combat_archetype","id":"riftfrontier:archetype/region_01_pursuer","behaviours":["pursue","melee_combo"]},
+    {"kind":"combat_archetype","id":"riftfrontier:archetype/region_01_skirmisher","behaviours":["orbit","retreat","ranged_pressure"]},
+    {
+      "kind":"region",
+      "id":"riftfrontier:region/region_01",
+      "gameplay_rule":"field salvage is only secured by a successful extraction; abandoning the expedition loses the run",
+      "archetypes":["riftfrontier:archetype/region_01_pursuer","riftfrontier:archetype/region_01_skirmisher"],
+      "resources":["riftfrontier:resource/region_01_salvage"],
+      "contracts":["riftfrontier:contract/region_01_salvage_recovery"]
+    },
+    {"kind":"loot_profile","id":"riftfrontier:loot/region_01_salvage","pools":["secured_field_salvage","regional_material"]},
+    {"kind":"expedition_resource","id":"riftfrontier:resource/region_01_salvage","region":"riftfrontier:region/region_01","category":"salvage","carry_weight":2,"field_value":10},
+    {"kind":"extraction_result","id":"riftfrontier:extraction/region_01_secured_return","outcome":"secured_return","retained_percent":100,"threat_delta":-1,"world_consequence":"secured salvage reaches the hub and reduces unresolved expedition pressure"},
+    {
+      "kind":"contract",
+      "id":"riftfrontier:contract/region_01_salvage_recovery",
+      "region":"riftfrontier:region/region_01",
+      "objective":"secure three field salvage units and return through extraction",
+      "required_resources":{"riftfrontier:resource/region_01_salvage":3},
+      "reward_loot_profile":"riftfrontier:loot/region_01_salvage",
+      "extraction_result":"riftfrontier:extraction/region_01_secured_return",
+      "world_consequence":"the recovered shipment becomes available to the next preparation cycle"
+    },
+    {"kind":"creature","id":"riftfrontier:creature/region_01_scout","region":"riftfrontier:region/region_01","archetype":"riftfrontier:archetype/region_01_skirmisher","loot_profile":"riftfrontier:loot/region_01_salvage","behaviours":["orbit","retreat","ranged_pressure"]},
+    {"kind":"creature","id":"riftfrontier:creature/region_01_hunter","region":"riftfrontier:region/region_01","archetype":"riftfrontier:archetype/region_01_pursuer","loot_profile":"riftfrontier:loot/region_01_salvage","behaviours":["pursue","melee_combo"]},
+    {"kind":"encounter","id":"riftfrontier:encounter/region_01_patrol","region":"riftfrontier:region/region_01","participants":["riftfrontier:creature/region_01_scout","riftfrontier:creature/region_01_hunter"],"objective":"recover salvage while managing patrol pressure","world_consequence":"successful recovery opens the first material return loop"}
+  ]
+}
