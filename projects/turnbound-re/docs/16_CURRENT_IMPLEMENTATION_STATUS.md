@@ -6,14 +6,14 @@
 기획 정본을 대체하지 않는다. CANON/세부 규칙은 기존 문서가 우선하며, 이 문서는 "어디까지 구현/검증됐는가"만 기록한다.
 
 ## 1. 마지막 검증 기준
-- 마지막 TURNBOUND: RE 코드 검증 커밋: `9544e30487bf9d9025f5e5d258fca67784a92f28`
-- GitHub Actions: `Build turnbound-re` run `34075982400`
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `4d6123170791dbf752ac40f21fc20be6e5a04d4f`
+- GitHub Actions: `Build turnbound-re` run `34098792600`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `5133b0f38f618402b9e2abe49021d13e0b489a1ecbafed581c95a4a06c7da505`
+- SHA-256: `5e5bf0225724646c8553876b7512380d12522b013fb936577a9ba10de412c8c9`
 
-M5 pre-implementation visual gate는 문서 변경이므로 위 코드/JAR 검증 SHA를 대체하지 않는다.
+위 검증에는 M0~M4 회귀와 M5 첫 production Battle HUD의 protocol/presentation/layout 계약이 포함된다.
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
 ## 2. M0 — Bootstrap & Contracts
@@ -53,8 +53,9 @@ M5 pre-implementation visual gate는 문서 변경이므로 위 코드/JAR 검�
 - C2S command + S2C snapshot/events.
 - stale revision/sender ownership/current actor/action ownership/target validation.
 - disconnect/entity removal/dimension cleanup guards.
-- DEBUG_ONLY client state/HUD.
+- DEBUG_ONLY client inspection state.
 - 20-cycle automated encounter/cleanup soak with orphan battle 0.
+- M5에서 production client presentation cache/HUD로 승격하면서 옛 `DebugBattleHud`는 제거하고 `DebugBattleClientState`만 production cache를 읽는 inspection facade로 축소.
 
 미수행:
 - 실제 Minecraft client에서 20회 반복 조우 manual gate.
@@ -140,7 +141,7 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. M5 — Production UI / Presentation
-상태: **PRE-IMPLEMENTATION VISUAL GATE PASS / FIRST HUD IMPLEMENTATION PENDING**
+상태: **FIRST PRODUCTION BATTLE HUD AUTOMATED PASS / VISUAL SCREENSHOT AUDIT PENDING**
 
 완료된 visual gate:
 - 공용 `QUALITY_STANDARD.md`와 `AGENT_RULES.md` 재확인.
@@ -156,35 +157,55 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - Battle HUD structural mockup 정본화.
 - Party Formation structural mockup 정본화.
 - Minecraft 26.2/NeoForge `Screen`, GUI-scale relative layout, `blitSprite`, `nine_slice`, scissor/tooltip feasibility 확인.
-- 첫 production pass는 Vanilla/NeoForge Screen을 사용하고 대형 UI dependency를 추가하지 않기로 결정.
+- 첫 production pass는 Vanilla/NeoForge GUI를 사용하고 대형 UI dependency를 추가하지 않기로 결정.
+
+첫 production Battle HUD 자동 구현 완료:
+- network protocol `v3`.
+- S2C participant snapshot에 `team`, `participantOrdinal`, `characterId`, active statuses, Enemy Intent를 서버 권위 데이터로 제공.
+- 현재 player actor에 대해 Basic / Skill 1 / Skill 2 / Guard / Burst를 `SnapshotAction`으로 서버가 제공.
+- action마다 Energy cost, target team/shape/count, `usable`, `disabledReason`을 서버가 판정하여 client가 소유권/자원/타깃 가능성을 추측하지 않음.
+- `BattleClientState`가 authoritative snapshot/event의 유일 client cache.
+- read-only `BattlePresentationModel`이 현재 actor부터 시작하는 turn rail을 만들되 party slot은 `participantOrdinal` 기준으로 안정적으로 유지.
+- `UiLayoutMetrics`가 battle HUD logical layout을 pure helper로 관리하고 지원 불가 초소형 canvas에서는 겹쳐 그리지 않고 HUD를 생략.
+- production `BattleHud`가 `VanillaGuiLayers.HOTBAR` 위에 등록되어 chat/title/subtitle를 `AboveAll` 방식으로 덮지 않음.
+- 좌측 turn rail, enemy HP/Poise/Intent/EXPOSED, 하단 party HP/Energy/status, server-published command strip을 렌더.
+- 중앙 Minecraft world viewport를 상시 가리는 대형 panel을 두지 않음.
+- 첫 구조 검증 자산은 Minecraft 자체 advancement frame / title box / boss bar sprite를 사용하며, 임의 AI 제작 최종 frame/icon을 정본으로 굳히지 않음.
+- 옛 `DebugBattleHud`는 삭제. duplicate production/debug HUD를 남기지 않음.
+- production definition 기반 M5 테스트에서 Skeleton의 5 action slot, Energy 부족 disabled state, 다중 target 부족 disabled state를 검증.
+- turn rail 회전과 안정적인 party slot 순서를 회귀 테스트.
+- 1280×720 / 1920×1080 / 640×360 layout bounds 자동 검증 및 320×180 unsupported guard 검증.
+- `Build turnbound-re` run `34098792600`: clean build/JUnit + production JAR verify **SUCCESS**.
 
 아직 완료가 아닌 것:
-- production Battle HUD 실제 Java/render 구현.
-- 실제 production sprite/icon asset 선정 및 source/license 기록.
-- Party/Character/Growth 실제 Screen 구현.
+- Battle HUD의 실제 keyboard/mouse action selection 및 `BattleCommandC2S` 제출 UX.
+- target selection / world target marker.
+- action tooltip 및 상세 disabled reason presentation.
+- 실제 TURNBOUND production sprite/icon asset 선정·제작/도입과 source/license 기록.
+- Party Formation 실제 Screen 구현.
+- Character Overview / Skills / Growth 실제 Screen 구현.
 - 실제 Minecraft screenshot side-by-side audit.
 - 여러 GUI scale/1280×720/1920×1080 실화면 검증.
 - 구현 후 visual regression 수정.
 
 중요:
-- pre-implementation gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
+- 첫 HUD 자동 gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
 - 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
-- DEBUG_ONLY HUD를 옆에 남긴 채 production HUD를 중복 유지하지 않는다. 필요한 debug 정보는 별도 debug overlay로 격리한다.
+- client presentation은 서버 snapshot을 표시하고 선택만 담당한다. combat 결과/소유권/자원/target legality를 client가 권위적으로 재계산하지 않는다.
 
 ## 9. 다음 세션의 정확한 시작점
 1. 현재 GitHub `main` HEAD 재확인.
-2. `17_M5_UI_VISUAL_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md` 다시 확인.
-3. production UI의 첫 코드 배치 시작:
-   - `UiLayoutMetrics`/semantic token contract.
-   - read-only `BattlePresentationModel`.
-   - turn queue + participant bars.
-   - enemy Intent/Poise/EXPOSED presentation.
-   - Basic/Skill/Guard/Burst command strip.
-   - action tooltip/target marker/disabled reason.
-4. layout 계산을 pure helper로 분리하고 1280×720/1920×1080/좁은 logical width 자동 bounds test 추가.
-5. 첫 HUD가 screenshot-ready 상태가 되면 clean build/JUnit/JAR verify 후 main 반영.
+2. NeoForge 26.2의 실제 client keyboard/mouse/key-mapping 및 client→server payload 전송 API를 확인.
+3. production battle input controller를 구현:
+   - 현재 server-published action slot 선택.
+   - 선택 action의 server-published target rule/count에 따른 candidate target 선택 UI.
+   - local state는 선택/hover presentation에만 한정.
+   - submit 시 authoritative snapshot의 `battleId`, `revision`, `currentActorId`, selected `actionId`, selected target ids로 `BattleCommandC2S`를 구성.
+   - 최종 legality는 기존 server `BattleNetworkGateway`/`BattleCommandService`가 다시 검증.
+4. command strip selected/disabled/targeting 상태, action tooltip, target marker를 HUD에 연결.
+5. clean build/JUnit/JAR verify 후 main 반영.
 6. 이어서 Party Formation + Character Overview/Skills/Growth Screen 구현.
 7. 실제 Minecraft screenshot을 reference/structural mockup과 비교해 visual QA 반복.
-8. 그때도 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
+8. 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
 
 구 TURNBOUND는 계속 ZERO AUTHORITY다. UI도 구 프로젝트에서 자동 계승하지 않는다.
