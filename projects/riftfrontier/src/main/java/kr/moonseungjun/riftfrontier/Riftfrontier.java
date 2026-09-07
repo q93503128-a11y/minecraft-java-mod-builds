@@ -43,6 +43,7 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::entityJoinLevel);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerLoggedIn);
     }
 
     private static void addServerReloadListeners(AddServerReloadListenersEvent event) {
@@ -60,7 +61,7 @@ public final class Riftfrontier {
         boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
         var reconciled = ExpeditionGameplayService.reconcileAfterServerRestart(event.getServer().overworld());
         reconciled.ifPresent(run -> LOGGER.warn(
-            "Riftfrontier restart reconciliation failed non-terminal expedition sequence={} status={} without refund; persisted proxy entities will be discarded when loaded",
+            "Riftfrontier restart reconciliation failed non-terminal expedition sequence={} status={} without refund; persisted proxy entities will be discarded when loaded and stranded field players will be returned through the login re-entry adapter",
             run.sequence(), run.status()
         ));
         LOGGER.info("Riftfrontier authoritative world root ready: changed={}, {}", changed, worldData.diagnosticSummary());
