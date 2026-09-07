@@ -1,0 +1,75 @@
+name: Frontier Alpha.120 Companion Lock Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha120-companion-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha120-companion-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Synchronize Frontier target only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('projects/frontier-settlement')
+          version = '0.1.0-alpha.120'
+          paths = [
+              root / 'COMPANION_LOCK.json',
+              root / 'companion-testpack/resolved-lock.client.json',
+              root / 'companion-testpack/resolved-lock.server.json',
+          ]
+          for path in paths:
+              data = json.loads(path.read_text(encoding='utf-8'))
+              old = data.get('target', {}).get('frontier_settlement')
+              if old not in ('0.1.0-alpha.119', version):
+                  raise SystemExit(f'{path}: unexpected Frontier target {old!r}')
+              data.setdefault('target', {})['frontier_settlement'] = version
+              if path.name == 'COMPANION_LOCK.json':
+                  notes = data.setdefault('notes', [])
+                  note = ('Frontier Alpha.120 changes only the Frontier runtime JAR: deterministic blacksmith '
+                          'reinforcement and copper/iron-only maintenance payment. Third-party companion binary '
+                          'versions and committed hashes remain unchanged and require fresh server validation.')
+                  if note not in notes:
+                      notes.append(note)
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          python3 projects/frontier-settlement/tools/test_companion_testpack.py
+          git diff --check
+      - name: Commit synchronized project locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement/COMPANION_LOCK.json \
+                  projects/frontier-settlement/companion-testpack/resolved-lock.client.json \
+                  projects/frontier-settlement/companion-testpack/resolved-lock.server.json
+          git diff --cached --check
+          git commit -m 'frontier: sync Alpha.120 companion runtime targets'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
