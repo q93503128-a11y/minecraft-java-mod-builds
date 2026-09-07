@@ -48,6 +48,7 @@ public final class ExpeditionLifecycle {
 
     public ExpeditionRun requestExtraction(ExpeditionRun run) {
         requireRunDefinitions(run);
+        requireContractObjectiveSatisfied(run);
         return run.requestExtraction();
     }
 
@@ -56,13 +57,8 @@ public final class ExpeditionLifecycle {
         if (run.status() != ExpeditionRun.Status.EXTRACTION_REQUESTED) {
             throw new IllegalStateException("Extraction can only resolve after it is requested");
         }
-        CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, run.contractId(), CoreDefinition.Contract.class);
+        CoreDefinition.Contract contract = requireContractObjectiveSatisfied(run);
         CoreDefinition.ExtractionResultProfile resultProfile = require(CoreDefinition.Kind.EXTRACTION_RESULT, contract.extractionResult(), CoreDefinition.ExtractionResultProfile.class);
-        boolean objectiveSatisfied = contract.requiredResources().entrySet().stream()
-            .allMatch(entry -> run.recoveredResources().getOrDefault(entry.getKey(), 0) >= entry.getValue());
-        if (!objectiveSatisfied) {
-            throw new IllegalStateException("Contract requirements are not satisfied for extraction: " + contract.id());
-        }
         Map<ContentId, Integer> retained = retain(run.recoveredResources(), resultProfile.retainedPercent());
         ExpeditionRun completed = run.extract(gameTime);
         return new Resolution(completed, resultProfile, retained, contract.worldConsequence());
@@ -78,6 +74,16 @@ public final class ExpeditionLifecycle {
         require(CoreDefinition.Kind.REGION, run.regionId(), CoreDefinition.Region.class);
         CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, run.contractId(), CoreDefinition.Contract.class);
         if (!contract.region().equals(run.regionId())) throw new IllegalStateException("Persisted expedition references a contract from another region");
+    }
+
+    private CoreDefinition.Contract requireContractObjectiveSatisfied(ExpeditionRun run) {
+        CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, run.contractId(), CoreDefinition.Contract.class);
+        boolean objectiveSatisfied = contract.requiredResources().entrySet().stream()
+            .allMatch(entry -> run.recoveredResources().getOrDefault(entry.getKey(), 0) >= entry.getValue());
+        if (!objectiveSatisfied) {
+            throw new IllegalStateException("Contract requirements are not satisfied for extraction: " + contract.id());
+        }
+        return contract;
     }
 
     private static Map<ContentId, Integer> retain(Map<ContentId, Integer> resources, int retainedPercent) {
