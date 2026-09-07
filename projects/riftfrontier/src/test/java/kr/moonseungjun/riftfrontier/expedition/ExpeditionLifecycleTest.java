@@ -20,6 +20,7 @@ class ExpeditionLifecycleTest {
 
         ExpeditionRun run = lifecycle.begin(1L, REGION, CONTRACT, fingerprint, 100L);
         assertEquals(ExpeditionRun.Status.PREPARING, run.status());
+        assertEquals(ExpeditionRun.EndReason.NONE, run.endReason());
 
         run = lifecycle.deploy(run);
         run = lifecycle.recover(run, SALVAGE, 2);
@@ -30,11 +31,13 @@ class ExpeditionLifecycleTest {
             underfilled.status(),
             "Rejected extraction must not strand the authoritative run in EXTRACTION_REQUESTED"
         );
+        assertEquals(ExpeditionRun.EndReason.NONE, underfilled.endReason());
 
         run = lifecycle.recover(run, SALVAGE, 1);
         run = lifecycle.requestExtraction(run);
         var resolution = lifecycle.resolveExtraction(run, 150L);
         assertEquals(ExpeditionRun.Status.EXTRACTED, resolution.run().status());
+        assertEquals(ExpeditionRun.EndReason.EXTRACTION, resolution.run().endReason());
         assertEquals(150L, resolution.run().endedGameTime());
         assertEquals(3, resolution.retainedResources().get(SALVAGE));
         assertEquals(-1, resolution.resultProfile().threatDelta());
@@ -55,10 +58,13 @@ class ExpeditionLifecycleTest {
             () -> lifecycle.recover(deployed, ContentId.rift("resource/not_registered"), 1)
         );
 
-        ExpeditionRun failed = lifecycle.fail(deployed, 9L);
+        ExpeditionRun failed = lifecycle.fail(deployed, 9L, ExpeditionRun.EndReason.PLAYER_DEATH);
         assertEquals(ExpeditionRun.Status.FAILED, failed.status());
+        assertEquals(ExpeditionRun.EndReason.PLAYER_DEATH, failed.endReason());
         assertEquals(9L, failed.endedGameTime());
-        assertThrows(IllegalStateException.class, () -> lifecycle.fail(failed, 10L));
+        assertThrows(IllegalStateException.class, () -> lifecycle.fail(failed, 10L, ExpeditionRun.EndReason.PLAYER_LOGOUT));
+        assertThrows(IllegalArgumentException.class, () -> deployed.fail(10L, ExpeditionRun.EndReason.NONE));
+        assertThrows(IllegalArgumentException.class, () -> deployed.fail(10L, ExpeditionRun.EndReason.EXTRACTION));
     }
 
     @Test
@@ -75,8 +81,10 @@ class ExpeditionLifecycleTest {
         assertEquals("abc123", extracted.contentFingerprint());
         assertEquals(4, extracted.recoveredResources().get(SALVAGE));
         assertEquals(ExpeditionRun.Status.EXTRACTED, extracted.status());
+        assertEquals(ExpeditionRun.EndReason.EXTRACTION, extracted.endReason());
         assertEquals(42L, extracted.startedGameTime());
         assertEquals(90L, extracted.endedGameTime());
         assertEquals(ExpeditionRun.Status.PREPARING, preparing.status(), "transitions must not mutate older snapshots");
+        assertEquals(ExpeditionRun.EndReason.NONE, preparing.endReason());
     }
 }
