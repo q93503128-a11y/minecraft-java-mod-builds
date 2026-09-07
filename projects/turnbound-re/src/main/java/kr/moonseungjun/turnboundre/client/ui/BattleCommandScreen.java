@@ -2,9 +2,11 @@ package kr.moonseungjun.turnboundre.client.ui;
 
 import kr.moonseungjun.turnboundre.battle.BattleCommand;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
+import kr.moonseungjun.turnboundre.client.BattleCommandOverlayState;
 import kr.moonseungjun.turnboundre.client.BattleCommandSelection;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
 import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
+import kr.moonseungjun.turnboundre.client.input.BattleInputHandler;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -46,12 +48,14 @@ public final class BattleCommandScreen extends Screen {
         targetHeaderTextX = 0;
         targetHeaderTextY = 0;
         targetHeaderTextWidth = 0;
+        BattleCommandOverlayState.close();
 
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null || !model.awaitingPlayerCommand()) {
             BattleTargetMarkerState.clear();
             return;
         }
+        BattleCommandOverlayState.open();
 
         if (selectedAction != null) {
             selectedAction = BattleCommandSelection.publishedAction(model, selectedAction).orElse(null);
@@ -81,9 +85,14 @@ public final class BattleCommandScreen extends Screen {
         int totalWidth = cell * actions.size() + totalGap;
         int x = command.x() + Math.max(0, (command.width() - totalWidth) / 2);
         int y = command.bottom() - 20;
+        String actorName = model.currentActor().map(BattleCommandScreen::displayName).orElse("");
 
         for (BattleNetworkPayloads.SnapshotAction action : actions) {
-            Component label = BattleActionPresentation.slotLabel(action);
+            String actionName = conciseActionName(action.id(), actorName);
+            String energy = action.energyCost() > 0 ? " E" + action.energyCost() : "";
+            String rawLabel = BattleActionPresentation.slotLabel(action).getString()
+                    + " · " + actionName + energy;
+            Component label = Component.literal(fit(rawLabel, Math.max(1, cell - UiLayoutMetrics.SPACE_4)));
             Button button = Button.builder(label, ignored -> chooseAction(action))
                     .bounds(x, y, cell, 20)
                     .build();
@@ -253,6 +262,28 @@ public final class BattleCommandScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        BattlePresentationModel model = BattleClientState.presentation().orElse(null);
+        if (selectedAction == null && model != null && model.awaitingPlayerCommand()) {
+            UiLayoutMetrics.Rect command = commandRegion();
+            BattleNetworkPayloads.SnapshotParticipant actor = model.currentActor().orElse(null);
+            if (actor != null) {
+                String header = Component.translatable(
+                        "hud.turnbound_re.command_header",
+                        displayName(actor),
+                        BattleInputHandler.openKeyName()).getString();
+                graphics.text(this.font, Component.literal(fit(header, command.width() - UiLayoutMetrics.SPACE_8)),
+                        command.x() + UiLayoutMetrics.SPACE_4, command.y() + UiLayoutMetrics.SPACE_4,
+                        0xFFFFFFFF, true);
+            }
+            if (model.availableActions().isEmpty()) {
+                String unavailable = Component.translatable("hud.turnbound_re.no_actions").getString();
+                graphics.text(this.font, Component.literal(fit(unavailable, command.width() - UiLayoutMetrics.SPACE_8)),
+                        command.x() + UiLayoutMetrics.SPACE_4,
+                        command.y() + UiLayoutMetrics.SPACE_4 + this.font.lineHeight + UiLayoutMetrics.SPACE_2,
+                        0xFFAAAAAA, true);
+            }
+        }
+
         if (selectedAction != null && targetHeaderTextWidth > 0) {
             String summary = BattleActionPresentation.selectedSummary(selectedAction).getString()
                     + " · "
@@ -288,12 +319,18 @@ public final class BattleCommandScreen extends Screen {
                 break;
             }
         }
-        BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model != null && selectedAction != null) {
             publishTargetMarkers(model, hoveredTargetId);
         } else {
             BattleTargetMarkerState.clear();
         }
+    }
+
+    @Override
+    public void removed() {
+        BattleCommandOverlayState.close();
+        BattleTargetMarkerState.clear();
+        super.removed();
     }
 
     private void publishTargetMarkers(BattlePresentationModel model, String hoveredTargetId) {
@@ -339,6 +376,13 @@ public final class BattleCommandScreen extends Screen {
     private static String displayName(BattleNetworkPayloads.SnapshotParticipant participant) {
         String source = participant.characterId().isBlank() ? participant.id() : participant.characterId();
         return humanizeId(source);
+    }
+
+    private static String conciseActionName(String actionId, String actorName) {
+        String name = BattleActionPresentation.actionName(actionId);
+        if (actorName == null || actorName.isBlank()) return name;
+        String prefix = actorName + " ";
+        return name.regionMatches(true, 0, prefix, 0, prefix.length()) ? name.substring(prefix.length()) : name;
     }
 
     private String fit(String text, int maxWidth) {
