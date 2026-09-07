@@ -20,7 +20,12 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.Tags;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Physical local production for specialized outposts.
@@ -49,20 +54,32 @@ public final class SettlementOutpostProductionService {
     private static final int QUARRY_WORK_PERIOD_TICKS = 80;
     private static final int MINING_WORK_PERIOD_TICKS = 160;
     private static final int AGRICULTURE_WORK_PERIOD_TICKS = 120;
+    // Specialized workers are stable persistent entities. Resolve the known UUID on the hot path and
+    // rescan the wide 97x65x97 assignment envelope only for cache misses/deaths or periodic duplicate
+    // maintenance. Work cadence remains 10 ticks, so production and navigation responsiveness do not change.
+    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
+    private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
 
     private SettlementOutpostProductionService() {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
-        if (server.getTickCount() % 10 != 0) return;
+        int tick = server.getTickCount();
+        if (tick % 10 != 0) return;
         ServerLevel level = server.overworld();
+        boolean maintenance = tick % WORKER_MAINTENANCE_INTERVAL_TICKS == 0;
+        Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
         for (OutpostRecord outpost : data.outposts()) {
-            if ("general".equals(outpost.specialization()) || !outpostLoaded(level, outpost)) continue;
+            if ("general".equals(outpost.specialization())) continue;
+            if (maintenance) liveSpecializedOutposts.add(outpost.id());
+            if (!outpostLoaded(level, outpost)) continue;
             if ("agriculture".equals(outpost.specialization()) && pristineLegacyAgriculturePlot(level, data, outpost)) {
                 initializeSpecializationSite(level, data, outpost);
             }
-            FrontierWorkerEntity worker = ensureWorker(level, outpost);
+            FrontierWorkerEntity worker = resolveCachedWorker(level, outpost);
+            if (worker == null || maintenance) worker = ensureWorker(level, outpost);
             if (worker != null) work(level, data, outpost, worker);
         }
+        if (maintenance) WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
     }
 
     /** Called when a new specialized outpost becomes authoritative. Only agriculture needs a fixed worksite. */
@@ -73,6 +90,27 @@ public final class SettlementOutpostProductionService {
 
     private static boolean outpostLoaded(ServerLevel level, OutpostRecord outpost) {
         return level.hasChunkAt(outpost.center()) && level.hasChunkAt(outpost.stockpile());
+    }
+
+    private static FrontierWorkerEntity resolveCachedWorker(ServerLevel level, OutpostRecord outpost) {
+        UUID uuid = WORKER_UUID_CACHE.get(outpost.id());
+        if (uuid == null) return null;
+        if (!(level.getEntity(uuid) instanceof FrontierWorkerEntity worker)
+                || !worker.isAlive()
+                || !worker.entityTags().contains(PRODUCTION_WORKER_TAG)
+                || !worker.entityTags().contains(productionTag(outpost.id()))
+                || !assignmentBounds(outpost).contains(worker.getX(), worker.getY(), worker.getZ())) {
+            WORKER_UUID_CACHE.remove(outpost.id());
+            return null;
+        }
+        worker.setNoAi(false);
+        worker.setInvulnerable(false);
+        return worker;
+    }
+
+    private static FrontierWorkerEntity rememberWorker(OutpostRecord outpost, FrontierWorkerEntity worker) {
+        WORKER_UUID_CACHE.put(outpost.id(), worker.getUUID());
+        return worker;
     }
 
     private static FrontierWorkerEntity ensureWorker(ServerLevel level, OutpostRecord outpost) {
@@ -97,7 +135,7 @@ public final class SettlementOutpostProductionService {
             for (FrontierWorkerEntity duplicate : legacy) {
                 SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, duplicate);
             }
-            return active;
+            return rememberWorker(outpost, active);
         }
 
         // Missing is authority. Do not migrate or spawn from a partial entity view.
@@ -112,7 +150,7 @@ public final class SettlementOutpostProductionService {
             for (int i = 1; i < legacy.size(); i++) {
                 SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, legacy.get(i));
             }
-            return active;
+            return rememberWorker(outpost, active);
         }
 
         FrontierWorkerEntity worker = new FrontierWorkerEntity(FrontierContent.FRONTIER_WORKER.get(), level);
@@ -126,7 +164,7 @@ public final class SettlementOutpostProductionService {
         worker.addTag(PRODUCTION_WORKER_TAG);
         worker.addTag(assignmentTag);
         if (!level.addFreshEntity(worker)) return null;
-        return worker;
+        return rememberWorker(outpost, worker);
     }
 
     private static List<FrontierWorkerEntity> findLegacyWorkers(ServerLevel level, OutpostRecord outpost,
