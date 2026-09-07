@@ -3,7 +3,7 @@
   "status": "expanded_fresh_world_server_smoke_pass",
   "frontier": {
     "version": "0.1.0-alpha.124",
-    "jar_sha256": "1a7780e287a86be914e72b24df5a6830725c76287bb2b08da26baee2a2574670"
+    "jar_sha256": "7260f2b1c6a0d625f54153c20709b7f51da44b1ea23d6259365ff43e48eab3ae"
   },
   "minecraft": "26.2",
   "neoforge": "26.2.0.38-beta",
@@ -28,8 +28,8 @@
     "binary_resolution_verified": true,
     "dedicated_server_preflight_verified": true,
     "binary_resolution_source_sha": "c84d5554189d8559f1bb21500829b84fe43ccc5f",
-    "preflight_run_id": 34110611410,
-    "preflight_source_sha": "685a2bf256fe4ff850d9470c41bc0d60341aeee7",
+    "preflight_run_id": 34113843771,
+    "preflight_source_sha": "6738f2b46ce8c877504a98482c1cea864440ec74",
     "server_payload_jars_including_frontier": 16,
     "conclusion": "success",
     "ci_eula_accepted": true,
