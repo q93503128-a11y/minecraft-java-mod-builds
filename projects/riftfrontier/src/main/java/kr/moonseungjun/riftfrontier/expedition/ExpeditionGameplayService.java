@@ -162,16 +162,14 @@ public final class ExpeditionGameplayService {
         int liveThreatsBeforeExit = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, run.sequence());
 
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
-        // Validate first without mutating or persisting anything. Only an accepted attempt may become evidence.
-        lifecycle.validateExtractionRequest(run);
-        run = recordEvidence(
+        ExpeditionEvidenceCheckpoint preExtraction = evidenceCheckpoint(
             world,
             run,
             ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
             overworld.getGameTime(),
             liveThreatsBeforeExit
         );
-        ExpeditionRun requested = lifecycle.requestExtraction(run);
+        ExpeditionRun requested = ExpeditionExtractionGate.accept(lifecycle, run, preExtraction);
         world.updateExpedition(requested);
         ExpeditionLifecycle.Resolution resolution = lifecycle.resolveExtraction(requested, level.getGameTime());
         world.updateExpedition(resolution.run());
@@ -324,7 +322,17 @@ public final class ExpeditionGameplayService {
         long gameTime,
         int liveThreats
     ) {
-        ExpeditionEvidenceCheckpoint checkpoint = new ExpeditionEvidenceCheckpoint(
+        return world.updateExpedition(run.appendEvidence(evidenceCheckpoint(world, run, stage, gameTime, liveThreats)));
+    }
+
+    private static ExpeditionEvidenceCheckpoint evidenceCheckpoint(
+        RiftfrontierWorldData world,
+        ExpeditionRun run,
+        ExpeditionEvidenceCheckpoint.Stage stage,
+        long gameTime,
+        int liveThreats
+    ) {
+        return new ExpeditionEvidenceCheckpoint(
             stage,
             gameTime,
             run.recoveredResources().getOrDefault(RESOURCE_ID, 0),
@@ -333,7 +341,6 @@ public final class ExpeditionGameplayService {
             world.expeditionSupply(),
             world.region01Pressure()
         );
-        return world.updateExpedition(run.appendEvidence(checkpoint));
     }
 
     private static void prepareTechnicalCell(ServerLevel level, BlockPos center, boolean resourceNodes) {
