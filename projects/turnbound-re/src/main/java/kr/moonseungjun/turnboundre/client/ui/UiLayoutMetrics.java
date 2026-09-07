@@ -40,6 +40,25 @@ public final class UiLayoutMetrics {
             Rect reservedWorldViewport
     ) {}
 
+    /**
+     * Target selection reuses the battle command region rather than opening a center-screen modal.
+     * The header owns back/confirm/page controls and the grid owns only compact target choices.
+     */
+    public record TargetChooserLayout(
+            Rect region,
+            Rect header,
+            Rect grid,
+            int columns,
+            int rows,
+            int pageSize
+    ) {
+        public TargetChooserLayout {
+            if (columns <= 0 || rows <= 0 || pageSize != columns * rows) {
+                throw new IllegalArgumentException("invalid target chooser grid");
+            }
+        }
+    }
+
     /** Rendering quietly defers at extreme GUI scales instead of throwing every frame. */
     public static boolean supportsBattleHud(int screenWidth, int screenHeight) {
         return screenWidth >= MIN_BATTLE_HUD_WIDTH && screenHeight >= MIN_BATTLE_HUD_HEIGHT;
@@ -77,6 +96,21 @@ public final class UiLayoutMetrics {
                 viewportBottom - viewportY);
 
         return new BattleHudLayout(turnRail, enemySummary, partyStatus, commandStrip, reservedWorldViewport);
+    }
+
+    public static TargetChooserLayout targetChooser(int screenWidth, int screenHeight) {
+        BattleHudLayout hud = battleHud(screenWidth, screenHeight);
+        Rect region = hud.commandStrip();
+        int headerHeight = 18;
+        int gridY = region.y() + headerHeight + SPACE_2;
+        int gridHeight = region.bottom() - gridY;
+        Rect header = new Rect(region.x(), region.y(), region.width(), headerHeight);
+        Rect grid = new Rect(region.x(), gridY, region.width(), gridHeight);
+
+        int columns = region.width() >= 280 ? 3 : 2;
+        int targetRowHeight = 20;
+        int rows = clamp((grid.height() + SPACE_2) / (targetRowHeight + SPACE_2), 1, 2);
+        return new TargetChooserLayout(region, header, grid, columns, rows, columns * rows);
     }
 
     private static int clamp(int value, int min, int max) {
