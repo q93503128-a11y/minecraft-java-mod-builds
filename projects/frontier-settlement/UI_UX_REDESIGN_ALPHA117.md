@@ -198,29 +198,32 @@ The UI must not justify expensive server polling.
 - avoid adding a new packet stream merely for animation;
 - shared-storage aggregation should use one combined container pass where possible;
 - repeated environment/worker scans should be event-driven, cached or cadence-limited according to `docs/QUALITY_STANDARD.md`;
+- stationary placement previews revalidate at one-second cadence, while target/rotation changes invalidate immediately;
+- specialized and fishing outpost worker UUID lookup is the ordinary hot path, with full assignment scans retained for bounded maintenance/recovery;
+- fishing shoreline evidence may be reused only inside the current server tick;
 - no client UI action force-loads chunks.
 
 ## 9. Acceptance checklist
 
-Implementation is not complete until all applicable items pass.
+Implementation is not complete until all applicable items pass. `[x]` below means code/static/automated evidence exists; it does **not** substitute for the explicitly graphical checks left open.
 
-- [ ] M screen makes settlement tier immediately obvious.
-- [ ] 6-stage tier progress is visible without reading a sentence.
-- [ ] next growth goal is visible near tier, not buried in a footer.
-- [ ] resources/population have a stable visual location.
-- [ ] construction categories have an unmistakable selected state.
-- [ ] building rows communicate available / resource-short / locked using text + structure/color.
-- [ ] contextual detail shows cost, footprint, housing, unlock requirement.
-- [ ] infrastructure uses the same visual language as buildings.
-- [ ] Esc/Close/M behavior remains predictable.
-- [ ] no new management key proliferation.
-- [ ] HUD is less obstructive while idle.
-- [ ] placement mode reason text remains server-derived.
-- [ ] 16:9, 16:10, small window and multiple GUI scales are checked.
-- [ ] long Korean labels and large resource values do not overlap critical controls.
-- [ ] locked / insufficient / empty / hover states are actually checked.
-- [ ] Java 25 clean build passes.
-- [ ] runtime JAR verification passes.
+- [x] M screen makes settlement tier immediately obvious in the authored hierarchy.
+- [x] 6-stage tier progress is implemented without requiring a sentence.
+- [x] next growth goal is authored near tier, not buried in a footer.
+- [x] resources/population have a stable authored location.
+- [x] construction categories have an explicit selected state in code.
+- [x] building rows communicate available / resource-short / locked using text plus structure/color.
+- [x] contextual detail includes cost, footprint, housing and unlock information.
+- [x] infrastructure uses the same shared theme/tokens as the construction palette.
+- [x] Esc/Close/M interaction remains within the existing palette model.
+- [x] no new management key proliferation.
+- [x] idle HUD is reduced relative to the command palette.
+- [x] placement mode reason text remains server-derived.
+- [ ] 16:9, 16:10, small window and multiple GUI scales are checked in a graphical client.
+- [ ] long Korean labels and large resource values are visually verified not to overlap critical controls.
+- [ ] locked / insufficient / empty / hover states are visually checked in the actual client.
+- [ ] Java 25 clean build passes for the final Alpha.117 release commit.
+- [ ] runtime JAR verification passes for the final Alpha.117 release commit.
 - [ ] an actual Minecraft client screenshot is reviewed against this document and the reference patterns.
 
 ## 10. Non-goals for Alpha.117
@@ -231,3 +234,19 @@ Implementation is not complete until all applicable items pass.
 - no per-NPC management dashboard;
 - no copied commercial-game art;
 - no claim of visual completion before graphical client review.
+
+## 11. Alpha.117 implementation status
+
+Code/static work completed in this pass:
+
+- shared `FrontierUiTheme` tokens adopted by settlement-facing screens/HUD;
+- M palette hierarchy rebuilt around settlement state and construction intent;
+- stale B-key guidance removed from current interaction copy;
+- single-pass physical resource aggregation wired into settlement storage scans;
+- automatic proximity blacksmith repair replaced by explicit player interaction consuming real metal;
+- building/road/outpost/civil stationary preview polling reduced from four times per second to once per second without delaying target-change invalidation;
+- fishing shoreline scans deduplicated within one server tick;
+- specialized-production and fishing outpost worker hot paths changed from repeated wide AABB scans to physical UUID entity lookup, with 200-tick maintenance scans preserved for duplicate/recovery safety;
+- current source audit now locks these performance/UI invariants.
+
+Release acceptance remains gated on the final Alpha.117 clean build/JAR verification and then a real graphical client screenshot/play pass.
