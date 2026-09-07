@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.121" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.122" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -134,19 +134,54 @@ require("BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, lumber)" in worker
         and "BuildingType.MINE, MINE_WORKER_NAME, mine)" in worker,
         "vacancy recruitment no longer uses physical worker/workplace matching")
 production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")
-require("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")
+production_upgrade = text(SETTLEMENT / "SettlementProductionUpgradeService.java")
+building_record = text(SETTLEMENT / "BuildingRecord.java")
+require("upgrade_grade" in building_record and "optionalFieldOf(\"upgrade_grade\", 0)" in building_record and "withUpgradeGrade" in building_record,
+        "save-compatible per-building production grade missing")
+require("maxGrade(SettlementData data)" in production_efficiency and "grade(SettlementData data, BuildingRecord building)" in production_efficiency,
+        "tier-ceiling/per-building production authority missing")
+require("building.upgradeGrade() <= 0" in production_efficiency and "return maxGrade(data)" in production_efficiency,
+        "legacy grade fallback missing before one-way migration")
+require("migrateLegacyGrades" in production_upgrade and "building.withUpgradeGrade(inherited)" in production_upgrade,
+        "pre-Alpha.122 free-grade inheritance migration missing")
+require("new UpgradeCost(128L, 96L, 0L)" in production_upgrade
+        and "new UpgradeCost(256L, 192L, 32L)" in production_upgrade
+        and "new UpgradeCost(512L, 384L, 96L)" in production_upgrade,
+        "RTS production investment cost ladder drifted")
+require("countProductionUpgradeMetal" in production_upgrade and "consumeProductionUpgrade" in production_upgrade,
+        "facility improvement does not use the atomic common-metal payment path")
+require("player.isShiftKeyDown()" in production_upgrade and "event.getItemStack().isEmpty()" in production_upgrade
+        and "productionBuildingAt" in production_upgrade, "player-directed local-barrel improvement interaction missing")
 require("farmBatch" in production_efficiency and "case 1 -> 12" in production_efficiency and "default -> 24" in production_efficiency,
         "farm harvest batch ladder missing or drifted")
-require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")
+require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production improvement ceiling ladder drifted")
 require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")
 require("worksiteBufferCount" in production_efficiency and "case 1 -> 1; case 2 -> 2; default -> 3" in production_efficiency,
-        "tier-scaled physical worksite buffer ladder missing")
+        "per-building physical worksite buffer ladder missing")
 require("MAX_WORKSITE_BUFFER_BARRELS = 3" in storage
         and "desiredWorksiteStoragePositions" in storage
         and "worksiteStoragePositions(BuildingRecord building)" in storage,
         "bounded physical profession-buffer storage authority missing")
-require("SettlementStorageService.worksiteStoragePositions(building)" in worker,
-        "production workers do not use every unlocked local physical buffer")
+require("SettlementStorageService.desiredWorksiteStoragePositions(building, data)" in worker,
+        "production workers can bypass their paid local-buffer grade")
+require("SettlementProductionEfficiencyService.grade(data, camp)" in worker
+        and "SettlementProductionEfficiencyService.grade(data, farm)" in worker
+        and "SettlementProductionEfficiencyService.grade(data, quarry)" in worker
+        and "SettlementProductionEfficiencyService.grade(data, mine)" in worker,
+        "production loops are not reading their own persisted building grade")
+require("SettlementProductionEfficiencyService.grade(data, building)" in storage and "canProvisionWorksiteBuffers" in storage,
+        "worksite buffer capacity does not follow safe per-building improvement")
+require("consumeProductionUpgrade" in storage and "countProductionUpgradeMetal" in storage
+        and "SettlementEquipmentUpgradeService::isBlacksmithMetal" in storage,
+        "production investment physical payment is not atomic/common-metal-only")
+require("desiredWorksiteStoragePositions(building, data)" in storage,
+        "locked local barrels can still join the settlement resource ledger")
+service = text(SETTLEMENT / "SettlementService.java")
+require("SettlementProductionUpgradeService.tick(server, data)" in service, "production-grade migration is not wired into settlement runtime")
+entry = text(JAVA / "FrontierSettlement.java")
+require("SettlementProductionUpgradeService::onRightClickBlock" in entry, "production improvement interaction is not registered")
+guide = text(JAVA / "client/SettlementGuideScreen.java")
+require("생산시설 현장 저장통을 우클릭" in guide, "in-game guide does not teach production investment")
 production_status = text(SETTLEMENT / "SettlementProductionStatusService.java")
 require("STALE_AFTER_TICKS = 200L" in production_status and "statusFor" in production_status, "production status cache missing")
 require("주민 없음" in worker and "주변 벌목 대상 없음" in worker and "접근 가능한 채석면 없음" in worker and "광맥 고갈" in worker and "현장·공동 저장고 가득 참" in worker, "production status coverage missing")

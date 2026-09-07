@@ -4,30 +4,32 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 
-public record BuildingRecord(String type, int originX, int originY, int originZ, int rotation) {
+public record BuildingRecord(String type, int originX, int originY, int originZ, int rotation, int upgradeGrade) {
     public static final Codec<BuildingRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("type").forGetter(BuildingRecord::type),
             Codec.INT.fieldOf("origin_x").forGetter(BuildingRecord::originX),
             Codec.INT.fieldOf("origin_y").forGetter(BuildingRecord::originY),
             Codec.INT.fieldOf("origin_z").forGetter(BuildingRecord::originZ),
-            Codec.INT.optionalFieldOf("rotation", 0).forGetter(BuildingRecord::rotation)
+            Codec.INT.optionalFieldOf("rotation", 0).forGetter(BuildingRecord::rotation),
+            // 0 is a one-way legacy sentinel for pre-Alpha.122 saves. New buildings always write 1.
+            Codec.INT.optionalFieldOf("upgrade_grade", 0).forGetter(BuildingRecord::upgradeGrade)
     ).apply(instance, BuildingRecord::new));
 
+    public BuildingRecord(String type, int originX, int originY, int originZ, int rotation) {
+        this(type, originX, originY, originZ, rotation, 1);
+    }
+
     public BuildingRecord(String type, int originX, int originY, int originZ) {
-        this(type, originX, originY, originZ, 0);
+        this(type, originX, originY, originZ, 0, 1);
     }
 
-    public BlockPos origin() {
-        return new BlockPos(originX, originY, originZ);
+    public BuildingRecord withUpgradeGrade(int grade) {
+        return new BuildingRecord(type, originX, originY, originZ, rotation, Math.max(1, Math.min(4, grade)));
     }
 
-    public BuildingType buildingType() {
-        return BuildingType.fromId(type);
-    }
-
-    public BuildingRotation buildingRotation() {
-        return BuildingRotation.fromId(rotation);
-    }
+    public BlockPos origin() { return new BlockPos(originX, originY, originZ); }
+    public BuildingType buildingType() { return BuildingType.fromId(type); }
+    public BuildingRotation buildingRotation() { return BuildingRotation.fromId(rotation); }
 
     public int rotatedWidth() {
         BuildingType resolved = buildingType();

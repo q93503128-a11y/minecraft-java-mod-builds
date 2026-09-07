@@ -630,7 +630,7 @@ public final class SettlementWorkerService {
         // next target cannot inherit movement toward the already-harvested trunk.
         worker.getNavigation().stop();
         MOVEMENT_WATCHES.remove(worker.getUUID());
-        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, camp);
         if (!workDue(level, camp, SettlementProductionEfficiencyService.lumberWorkPeriod(efficiencyGrade))) return;
         Item item = level.getBlockState(target).getBlock().asItem();
         int room = cargoRoom(worker, item);
@@ -662,7 +662,7 @@ public final class SettlementWorkerService {
             moveNear(level, worker, farm.workCenter(), 0.88D);
             return;
         }
-        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, farm);
         int farmPeriod = SettlementProductionEfficiencyService.farmWorkPeriod(efficiencyGrade);
         if (!workDue(level, farm, farmPeriod)) return;
         BuildingType type = farm.buildingType();
@@ -743,7 +743,7 @@ public final class SettlementWorkerService {
         }
         worker.getNavigation().stop();
         MOVEMENT_WATCHES.remove(worker.getUUID());
-        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, quarry);
         int quarryPeriod = SettlementProductionEfficiencyService.quarryWorkPeriod(efficiencyGrade);
         if (!workDue(level, quarry, quarryPeriod)) return;
         if (!level.getBlockState(target.above()).isAir()) {
@@ -778,7 +778,7 @@ public final class SettlementWorkerService {
             moveNear(level, worker, work, 0.86D);
             return;
         }
-        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);
+        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, mine);
         if (!workDue(level, mine, SettlementProductionEfficiencyService.mineWorkPeriod(efficiencyGrade))) return;
         Item expected = carried.isEmpty() ? null : carried.getItem();
         BlockPos ore = findOreBelow(level, data, work, expected);
@@ -870,7 +870,7 @@ public final class SettlementWorkerService {
                                                  FrontierWorkerEntity worker, BuildingRecord building,
                                                  ItemStack carried) {
         if (carried.isEmpty()) return;
-        for (BlockPos local : SettlementStorageService.worksiteStoragePositions(building)) {
+        for (BlockPos local : SettlementStorageService.desiredWorksiteStoragePositions(building, data)) {
             if (!level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)
                     || !SettlementStorageService.hasRoomAt(level, local, carried)) continue;
             double distance = worker.distanceToSqr(

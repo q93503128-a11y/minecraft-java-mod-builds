@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.121
+## Current version: 0.1.0-alpha.122
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -225,3 +225,13 @@ Treat these as playtest evidence, not assumptions.
 - One threat lookup is shared by all three soldiers of a barracks per patrol pass instead of repeating the same monster AABB scan three times.
 - Citadel-expanded patrols use the matching 32-block loaded-area evidence gate, preserving no-force-load behavior.
 - Soldier capacity, real-weapon authority, recruitment payment and physical cargo rules are unchanged.
+
+
+## Alpha.122 RTS production investment
+
+- Settlement tier now unlocks the maximum production-facility improvement grade instead of granting a free global upgrade to every lumber camp, farm, quarry and mine.
+- Newly completed production buildings start at improvement I. Existing pre-Alpha.122 production buildings inherit the improvement grade they were already receiving at migration time, then become individually persistent.
+- Sneak-right-click any completed production building's local barrel with an empty hand to buy the next improvement using real loaded settlement storage.
+- Improvement II costs 128 wood + 96 stone; III costs 256 wood + 192 stone + 32 physical copper/iron items; IV costs 512 wood + 384 stone + 96 physical copper/iron items. Diamonds/gold/modded high-value metal are never silently consumed for facility improvement.
+- Grade II unlocks at Village, III at Frontier Town, and IV at Domain. A paid improvement remains on that building even if the settlement later temporarily loses a tier condition.
+- Local worksite buffers scale from that building's own improvement grade (I=1, II=2, III/IV=3 barrels); central warehouse/supply depots remain the long-duration logistics authority.

@@ -177,6 +177,17 @@ public final class SettlementData extends SavedData {
         setDirty();
     }
 
+    public boolean replaceCompletedBuilding(BuildingRecord target, BuildingRecord replacement) {
+        if (target == null || replacement == null) return false;
+        List<BuildingRecord> next = new ArrayList<>(buildings());
+        int index = next.indexOf(target);
+        if (index < 0) return false;
+        next.set(index, replacement);
+        infrastructure = new SettlementInfrastructureState(next, roads(), roadConstruction(), outposts(), outpostConstruction());
+        setDirty();
+        return true;
+    }
+
     public boolean removeCompletedBuilding(BuildingRecord target) {
         if (target == null) return false;
         List<BuildingRecord> next = new ArrayList<>(buildings());

@@ -70,17 +70,29 @@ public final class SettlementStorageService {
         return positions;
     }
 
-    private static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {
+    public static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {
         List<BlockPos> planned = worksiteStoragePositions(building);
         if (planned.isEmpty()) return List.of();
         int count = SettlementProductionEfficiencyService.worksiteBufferCount(
-                SettlementProductionEfficiencyService.grade(data));
+                SettlementProductionEfficiencyService.grade(data, building));
         return planned.subList(0, Math.min(count, planned.size()));
+    }
+
+    public static boolean canProvisionWorksiteBuffers(ServerLevel level, BuildingRecord building, int grade) {
+        List<BlockPos> planned = worksiteStoragePositions(building);
+        int count = Math.min(SettlementProductionEfficiencyService.worksiteBufferCount(grade), planned.size());
+        for (int i = 0; i < count; i++) {
+            BlockPos pos = planned.get(i);
+            if (level.hasChunkAt(pos) && level.getBlockState(pos).is(Blocks.BARREL)
+                    && level.getBlockEntity(pos) instanceof Container) continue;
+            if (!canSafelyCreateManagedBarrel(level, pos)) return false;
+        }
+        return true;
     }
 
     public static List<BlockPos> worksiteStoragePositions(SettlementData data) {
         List<BlockPos> positions = new ArrayList<>();
-        for (BuildingRecord building : data.buildings()) positions.addAll(worksiteStoragePositions(building));
+        for (BuildingRecord building : data.buildings()) positions.addAll(desiredWorksiteStoragePositions(building, data));
         return positions;
     }
 
@@ -277,6 +289,35 @@ public final class SettlementStorageService {
         if (resources.metal() < metal || resources.food() < food) return false;
         removeValue(level, positions, metal, SettlementInventory::metalValue);
         removeValue(level, positions, food, SettlementInventory::foodValue);
+        return true;
+    }
+
+    /** One precheck and one server-thread mutation for RTS production-facility investment. */
+    public static long countProductionUpgradeMetal(ServerLevel level, SettlementData data) {
+        List<BlockPos> positions = activeStoragePositions(level, data);
+        if (!allStorageChunksLoaded(level, positions)) return -1L;
+        long count = 0L;
+        for (BlockPos pos : positions) {
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (SettlementEquipmentUpgradeService.isBlacksmithMetal(stack)) count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    public static boolean consumeProductionUpgrade(ServerLevel level, SettlementData data,
+                                                   long wood, long stone, long copperIronItems) {
+        if (wood < 0L || stone < 0L || copperIronItems < 0L) return false;
+        List<BlockPos> positions = activeStoragePositions(level, data);
+        if (!allStorageChunksLoaded(level, positions)) return false;
+        SettlementResources resources = scan(level, data);
+        long commonMetal = countProductionUpgradeMetal(level, data);
+        if (resources.wood() < wood || resources.stone() < stone || commonMetal < copperIronItems) return false;
+        remove(level, positions, wood, SettlementInventory::isWood);
+        remove(level, positions, stone, SettlementInventory::isStone);
+        remove(level, positions, copperIronItems, SettlementEquipmentUpgradeService::isBlacksmithMetal);
         return true;
     }
 
