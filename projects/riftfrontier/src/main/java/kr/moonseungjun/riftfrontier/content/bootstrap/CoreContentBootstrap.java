@@ -1,41 +1,32 @@
 package kr.moonseungjun.riftfrontier.content.bootstrap;
 
-import kr.moonseungjun.riftfrontier.content.ContentId;
-import kr.moonseungjun.riftfrontier.content.ContentRegistry;
-import kr.moonseungjun.riftfrontier.content.ContentValidator;
-import kr.moonseungjun.riftfrontier.content.CoreDefinition;
+import kr.moonseungjun.riftfrontier.content.ContentPackLoader;
 
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
-/** M1 fixture expressed only through shared definitions. Names here are technical fixtures, not locked production lore/art. */
+/** M1 technical fixture loaded through the same typed JSON path future content packs will use. */
 public final class CoreContentBootstrap {
+    private static final String FIXTURE_RESOURCE = "/data/riftfrontier/riftfrontier/content/vertical_slice_fixture.json";
+
     private CoreContentBootstrap() { }
 
-    public static ContentRegistry createFixtureRegistry() {
-        ContentRegistry registry = new ContentRegistry();
-        ContentId pursuer = ContentId.rift("archetype/pursuer");
-        ContentId skirmisher = ContentId.rift("archetype/skirmisher");
-        ContentId region = ContentId.rift("region/vertical_slice_01");
-        ContentId loot = ContentId.rift("loot/salvage_basic");
-        ContentId scout = ContentId.rift("creature/fixture_scout");
-        ContentId hunter = ContentId.rift("creature/fixture_hunter");
-
-        registry.register(new CoreDefinition.CombatArchetype(pursuer, Set.of("pursue", "melee_combo")));
-        registry.register(new CoreDefinition.CombatArchetype(skirmisher, Set.of("orbit", "retreat", "ranged_pressure")));
-        registry.register(new CoreDefinition.Region(region, "expedition pressure changes with unresolved local threat", Set.of(pursuer, skirmisher)));
-        registry.register(new CoreDefinition.LootProfile(loot, List.of("field_salvage", "regional_material")));
-        registry.register(new CoreDefinition.Creature(scout, region, skirmisher, loot, Set.of("orbit", "retreat", "ranged_pressure")));
-        registry.register(new CoreDefinition.Creature(hunter, region, pursuer, loot, Set.of("pursue", "melee_combo")));
-        registry.register(new CoreDefinition.Encounter(
-            ContentId.rift("encounter/fixture_patrol"), region, List.of(scout, hunter),
-            "recover expedition salvage while breaking contact or defeating the patrol",
-            "local threat decreases and recovered supply becomes available to the return loop"
-        ));
-        return registry;
+    public static ContentPackLoader.LoadedPack loadFixturePack() {
+        try (InputStream stream = CoreContentBootstrap.class.getResourceAsStream(FIXTURE_RESOURCE)) {
+            if (stream == null) throw new IllegalStateException("Missing core content fixture: " + FIXTURE_RESOURCE);
+            try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                return new ContentPackLoader().load(reader);
+            }
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to read core content fixture: " + FIXTURE_RESOURCE, error);
+        }
     }
 
-    public static ContentValidator.Report bootstrapAndValidate() {
-        return new ContentValidator().validate(createFixtureRegistry());
+    public static ContentPackLoader.LoadedPack bootstrapAndValidate() {
+        ContentPackLoader.LoadedPack pack = loadFixturePack();
+        pack.requireValid();
+        return pack;
     }
 }
