@@ -26,6 +26,7 @@ public final class BattleCommandScreen extends Screen {
     private static final int TARGETS_PER_PAGE = 6;
     private static final int TARGET_COLUMNS = 2;
 
+    private final List<ActionButtonBinding> actionButtons = new ArrayList<>();
     private BattleNetworkPayloads.SnapshotAction selectedAction;
     private final Set<String> selectedTargetIds = new LinkedHashSet<>();
     private int targetPage;
@@ -42,6 +43,10 @@ public final class BattleCommandScreen extends Screen {
 
     @Override
     protected void init() {
+        actionButtons.clear();
+        panelWidth = 0;
+        panelHeight = 0;
+
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null || !model.awaitingPlayerCommand()) return;
 
@@ -62,8 +67,8 @@ public final class BattleCommandScreen extends Screen {
         List<BattleNetworkPayloads.SnapshotAction> actions = model.availableActions();
         if (actions.isEmpty()) return;
 
-        int gap = 2;
-        int available = Math.max(200, this.width - 16);
+        int gap = UiLayoutMetrics.SPACE_2;
+        int available = Math.max(200, this.width - UiLayoutMetrics.SPACE_16);
         int totalWidth = Math.min(420, available);
         int cell = Math.max(38, (totalWidth - gap * (actions.size() - 1)) / actions.size());
         totalWidth = cell * actions.size() + gap * (actions.size() - 1);
@@ -71,11 +76,16 @@ public final class BattleCommandScreen extends Screen {
         int y = this.height - 28;
 
         for (BattleNetworkPayloads.SnapshotAction action : actions) {
-            Button button = Button.builder(Component.literal(actionButtonLabel(action)), ignored -> chooseAction(action))
+            boolean selected = selectedAction != null && selectedAction.id().equals(action.id());
+            Component label = selected
+                    ? Component.literal("> ").append(BattleActionPresentation.slotLabel(action))
+                    : BattleActionPresentation.slotLabel(action);
+            Button button = Button.builder(label, ignored -> chooseAction(action))
                     .bounds(x, y, cell, 20)
                     .build();
             button.active = action.usable();
             this.addRenderableWidget(button);
+            actionButtons.add(new ActionButtonBinding(button, action));
             x += cell + gap;
         }
     }
@@ -115,14 +125,14 @@ public final class BattleCommandScreen extends Screen {
 
         panelWidth = Math.min(340, Math.max(260, this.width - 48));
         int rows = Math.max(1, (page.size() + TARGET_COLUMNS - 1) / TARGET_COLUMNS);
-        panelHeight = 54 + rows * 24 + (pageCount > 1 ? 22 : 0);
+        panelHeight = 62 + rows * 24 + (pageCount > 1 ? 22 : 0);
         panelX = (this.width - panelWidth) / 2;
-        panelY = Math.max(16, (this.height - panelHeight) / 2 - 8);
+        panelY = Math.max(UiLayoutMetrics.SPACE_16, (this.height - panelHeight) / 2 - UiLayoutMetrics.SPACE_8);
 
-        int innerGap = 4;
+        int innerGap = UiLayoutMetrics.SPACE_4;
         int buttonWidth = (panelWidth - 24 - innerGap) / TARGET_COLUMNS;
-        int startX = panelX + 12;
-        int startY = panelY + 28;
+        int startX = panelX + UiLayoutMetrics.SPACE_12;
+        int startY = panelY + 36;
 
         for (int i = 0; i < page.size(); i++) {
             BattleNetworkPayloads.SnapshotParticipant participant = page.get(i);
@@ -151,7 +161,7 @@ public final class BattleCommandScreen extends Screen {
         }
 
         this.addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), ignored -> clearTargetSelection())
-                .bounds(panelX + 12, footerY, 62, 20)
+                .bounds(panelX + UiLayoutMetrics.SPACE_12, footerY, 62, 20)
                 .build());
 
         if (pageCount > 1) {
@@ -228,25 +238,33 @@ public final class BattleCommandScreen extends Screen {
             graphics.fill(panelX, panelY + panelHeight - 1, panelX + panelWidth, panelY + panelHeight, 0xFF5A4A2A);
             String title = Component.translatable("screen.turnbound_re.select_targets",
                     selectedTargetIds.size(), selectedAction.targetCount()).getString();
-            graphics.text(this.font, Component.literal(title), panelX + 12, panelY + 9, 0xFFFFFFFF, true);
+            graphics.text(this.font, Component.literal(title), panelX + UiLayoutMetrics.SPACE_12, panelY + 9,
+                    0xFFFFFFFF, true);
             String actionName = conciseActionName(selectedAction.id());
             graphics.text(this.font, Component.literal(actionName),
-                    panelX + panelWidth - 12 - this.font.width(actionName), panelY + 9, 0xFFAAAAAA, false);
+                    panelX + panelWidth - UiLayoutMetrics.SPACE_12 - this.font.width(actionName), panelY + 9,
+                    0xFFAAAAAA, false);
+            String summary = BattleActionPresentation.selectedSummary(selectedAction).getString();
+            graphics.text(this.font, Component.literal(fit(summary, panelWidth - UiLayoutMetrics.SPACE_24)),
+                    panelX + UiLayoutMetrics.SPACE_12, panelY + 19, 0xFFAAAAAA, false);
         }
         if (!feedback.isBlank()) {
             graphics.centeredText(this.font, Component.literal(feedback), this.width / 2,
-                    Math.max(8, this.height - 44), 0xFFFFCC66);
+                    Math.max(UiLayoutMetrics.SPACE_8, this.height - 44), 0xFFFFCC66);
         }
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-    }
 
-    private static String actionButtonLabel(BattleNetworkPayloads.SnapshotAction action) {
-        return switch (action.slot()) {
-            case "BASIC" -> "Basic";
-            case "GUARD" -> "Guard";
-            case "BURST" -> "Burst";
-            default -> action.slot().startsWith("SKILL_") ? "S" + action.slot().substring("SKILL_".length()) : "Action";
-        };
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
+        for (ActionButtonBinding binding : actionButtons) {
+            if (binding.button().isMouseOver(mouseX, mouseY)) {
+                graphics.setTooltipForNextFrame(
+                        this.font,
+                        BattleActionPresentation.tooltip(binding.action()),
+                        mouseX,
+                        mouseY);
+                break;
+            }
+        }
     }
 
     private static String displayName(BattleNetworkPayloads.SnapshotParticipant participant) {
@@ -255,8 +273,19 @@ public final class BattleCommandScreen extends Screen {
     }
 
     private static String conciseActionName(String actionId) {
-        String name = humanizeId(actionId);
+        String name = BattleActionPresentation.actionName(actionId);
         return name.length() <= 24 ? name : name.substring(0, 21) + "...";
+    }
+
+    private String fit(String text, int maxWidth) {
+        if (text == null || text.isBlank() || maxWidth <= 0) return "";
+        if (this.font.width(text) <= maxWidth) return text;
+        String suffix = "...";
+        int suffixWidth = this.font.width(suffix);
+        if (suffixWidth >= maxWidth) return "";
+        int end = text.length();
+        while (end > 0 && this.font.width(text.substring(0, end)) + suffixWidth > maxWidth) end--;
+        return end <= 0 ? "" : text.substring(0, end) + suffix;
     }
 
     private static String humanizeId(String id) {
@@ -271,6 +300,8 @@ public final class BattleCommandScreen extends Screen {
         }
         return result.isEmpty() ? "?" : String.join(" ", result);
     }
+
+    private record ActionButtonBinding(Button button, BattleNetworkPayloads.SnapshotAction action) {}
 
     @Override public boolean isPauseScreen() { return false; }
     @Override public boolean isInGameUi() { return true; }
