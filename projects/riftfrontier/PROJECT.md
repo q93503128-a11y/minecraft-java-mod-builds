@@ -65,6 +65,9 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 20. 원정 상태 전이는 `PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED` 또는 명시적 `FAILED`만 허용하며, 우회 상태 변경을 저장 데이터에서 직접 수행하지 않는다.
 21. 원정은 자신을 만든 content fingerprint를 저장한다. 이후 datapack reload로 현재 콘텐츠가 달라져도 과거 run의 작성 기준을 추적할 수 있어야 한다.
 22. 순수 원정 도메인은 Minecraft/DFU serialization에 직접 의존하지 않는다. `ExpeditionRun`과 `ExpeditionLifecycle`은 순수 상태/규칙이고, `ExpeditionRunCodec`과 SavedData가 persistence adapter를 담당한다.
+23. 원정 보상은 메시지 숫자로 끝내지 않는다. retained resource는 authoritative hub storage에 정산되고 이후 준비/생산/연구 중 하나 이상의 실제 입력이 되어야 한다.
+24. 다음 원정 변화는 문구가 아니라 저장된 세계 상태가 실제 비용·환경·encounter 중 하나 이상을 변경해야 한다. 첫 구현은 `region_01_pressure → preparation supply cost`로 검증한다.
+25. M2의 salvage→supply 직접 변환은 첫 vertical slice의 최소 adapter다. M4에서 request/production 체계를 구현할 때 정식 생산 흐름으로 승격하되 **원정 결과가 다음 준비를 바꾼다는 인과관계**는 유지한다.
 
 ## 정본 읽기 순서
 
@@ -80,39 +83,42 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 8. `ROADMAP.md`
 9. content/runtime/persistence 작업이면 `CONTENT_RUNTIME.md`
 10. expedition 작업이면 `EXPEDITION_RUNTIME.md`
-11. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
+11. M2 gameplay 작업이면 `M2B_GAMEPLAY_ADAPTER.md`
+12. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
 
 ## 현재 단계
 
-`M2 — EXPEDITION DOMAIN FOUNDATION VERIFIED / GAMEPLAY INTEGRATION NEXT`
+`M2-B — GAMEPLAY ADAPTER + HUB FEEDBACK VERIFIED / REGION ENCOUNTER NEXT`
 
 M0/M1에서 빌드/JAR, typed content graph, atomic runtime snapshot, ResourceManager reload, pack dependency/provenance, validator issue code, overworld-authoritative SavedData, diagnostics, native GameTest/CI gate를 검증했다.
 
-M2-A에서는 다음을 구현하고 검증했다.
+M2-A에서는 content policy와 authoritative `ExpeditionRun`/`ExpeditionLifecycle`, schema 2 저장 경계를 검증했다.
 
-- `region`이 노출하는 expedition resource / contract 관계
-- `expedition_resource` content definition
-- `contract` objective / required resource / reward / extraction-result 관계
-- `extraction_result` 정책 정의
-- 전체 graph reference validation
-- Minecraft/DFU와 분리된 불변 `ExpeditionRun` 상태 머신
-- `ExpeditionLifecycle` 도메인 서비스
-- 별도 `ExpeditionRunCodec` persistence adapter
-- persistence schema `1 → 2` migration
-- `RiftfrontierWorldData` 아래 expedition run 저장/갱신
-- 첫 vertical-slice fixture의 salvage contract
-- JUnit lifecycle 회귀 테스트
-- native GameTest에서 실제 SavedData root와 원정 상태 전이 검증
+M2-B에서는 다음을 실제 Minecraft adapter로 구현하고 검증했다.
 
-검증 기준 코드 커밋은 `5d226045e3d6c2140bd810124548806c026b0073`, GitHub Actions run은 `34089894370`이다. clean/test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
+- fixture와 분리된 production `region_01`
+- validated content snapshot 기반 authoritative expedition 시작
+- bounded technical hub/region 진입·귀환
+- block interaction 기반 salvage 회수
+- extraction/FAILED lifecycle
+- persistence schema 3 + `2 → 3` migration
+- retained salvage → hub authoritative storage
+- hub salvage → expedition supply provisioning
+- expedition 시작 전 preparation supply 원자적 소비
+- successful extraction → Region 01 pressure 증가
+- pressure → 다음 preparation supply cost 증가
+- native GameTest에서 준비 소비 → run → extraction 정산 → pressure → provisioning → SavedData 재조회 검증
+
+현재 검증 기준 커밋은 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions `Build Riftfrontier` run은 `34096694269`이다. clean/unit test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, artifact/report 단계가 모두 성공했다.
 
 ## 다음 정확한 개발 경계
 
-다음 묶음은 schema를 더 늘리는 작업이 아니다. **현재 도메인 계약을 실제 플레이 공간에 연결**한다.
+다음 묶음은 schema, 원정 시작/철수 adapter, hub storage/supply를 더 확장하는 작업이 아니다. **Region 01 자체의 실제 위험/전투 상호작용**을 만든다.
 
-1. 첫 production `region_01` Region Pack을 fixture와 분리해 만든다.
-2. 거점에서 contract를 선택하고 authoritative expedition을 생성하는 서버 경로를 만든다.
-3. 실제 원정 진입/배치와 region-scoped resource 회수 이벤트를 연결한다.
-4. extraction request/resolve가 플레이어 귀환, 보유 자원 정산, world consequence에 실제 영향을 주도록 연결한다.
-5. 실패/사망/이탈 시 `FAILED` 정책과 보존/손실 규칙을 명시한다.
-6. 위 최소 루프를 GameTest와 실제 플레이에서 검증한 뒤 전투/보스 presentation을 확장한다.
+1. production `region_01` environment rule 1개를 server-authoritative runtime effect로 연결한다.
+2. 이미 정의된 일반 적 역할 2종을 실제 spawn/defeat 상태에 연결한다.
+3. elite 1종을 추가하되 단순 체력 배수가 아니라 역할·telegraph·counterplay가 있는 encounter로 만든다.
+4. `region_01_pressure`가 environment 또는 encounter 위험 조건 하나 이상을 실제 변경하게 한다.
+5. resource objective와 combat objective가 같은 원정에서 서로 의미 있는 선택 압력을 만들게 한다.
+6. native GameTest를 추가하고 통과시킨다.
+7. 실제 Minecraft 플레이/시각 검수를 하지 않은 상태에서 combat/presentation 완료를 선언하지 않는다.
