@@ -29,6 +29,8 @@ public final class BattleWorldTargetMarker {
         BattleTargetMarkerState.MarkerKind marker = BattleTargetMarkerState.markerFor(
                 model.battleId(), model.revision(), event.getEntity().getUUID()).orElse(null);
         if (marker == null) return;
+        int ordinal = BattleTargetMarkerState.markerOrdinalFor(
+                model.battleId(), model.revision(), event.getEntity().getUUID()).orElse(0);
 
         Component original = event.getOriginalContent();
         Component base = original != null ? original.copy() : event.getEntity().getDisplayName().copy();
@@ -40,10 +42,14 @@ public final class BattleWorldTargetMarker {
             case SELECTED -> Component.translatable("marker.turnbound_re.target.selected")
                     .withStyle(ChatFormatting.GREEN);
         };
+        Component number = ordinal > 0
+                ? Component.literal("#" + ordinal + " ").withStyle(ChatFormatting.WHITE)
+                : Component.empty();
 
         event.setContent(Component.empty()
                 .append(base)
                 .append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+                .append(number)
                 .append(label));
         event.setCanRender(TriState.TRUE);
     }
