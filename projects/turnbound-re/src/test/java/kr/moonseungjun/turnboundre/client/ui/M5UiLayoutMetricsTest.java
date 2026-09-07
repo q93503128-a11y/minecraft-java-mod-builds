@@ -29,6 +29,32 @@ class M5UiLayoutMetricsTest {
     }
 
     @Test
+    void minimumCanvasUsesReadableTwoByTwoPartyGridWithoutTakingTheWorld() {
+        UiLayoutMetrics.BattleHudLayout layout = UiLayoutMetrics.battleHud(480, 270);
+        UiLayoutMetrics.PartyGridLayout party = UiLayoutMetrics.partyGrid(layout.partyStatus(), 4);
+
+        assertTrue(party.compact());
+        assertEquals(2, party.columns());
+        assertEquals(2, party.rows());
+        assertTrue(party.cellWidth() >= 120, "compact party cells must still fit identity and resources");
+        assertTrue(party.cellHeight() >= 40, "compact party rows must fit two bars and one status line");
+        assertTrue(layout.reservedWorldViewport().width() >= 300);
+        assertTrue(layout.reservedWorldViewport().height() >= 96);
+        assertFalse(layout.reservedWorldViewport().intersects(layout.partyStatus()));
+        assertFalse(layout.reservedWorldViewport().intersects(layout.commandStrip()));
+    }
+
+    @Test
+    void normalCanvasKeepsFourMemberPartyOnOneRow() {
+        UiLayoutMetrics.BattleHudLayout layout = UiLayoutMetrics.battleHud(640, 360);
+        UiLayoutMetrics.PartyGridLayout party = UiLayoutMetrics.partyGrid(layout.partyStatus(), 4);
+        assertFalse(party.compact());
+        assertEquals(4, party.columns());
+        assertEquals(1, party.rows());
+        assertTrue(party.cellWidth() >= 90);
+    }
+
+    @Test
     void targetChooserReusesCommandStripInsteadOfCreatingCenterModal() {
         for (int[] size : List.of(
                 new int[]{480, 270},
