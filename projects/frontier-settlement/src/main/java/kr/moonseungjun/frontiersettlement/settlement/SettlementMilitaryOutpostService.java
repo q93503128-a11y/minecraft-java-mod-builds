@@ -18,8 +18,10 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Loaded-only dangerous-region military overlay for otherwise-general outposts. */
@@ -45,6 +47,14 @@ public final class SettlementMilitaryOutpostService {
             {0, 0}, {8, 0}, {-8, 0}, {0, 8}, {0, -8},
             {8, 8}, {8, -8}, {-8, 8}, {-8, -8}
     };
+
+    // Multiple logistics/status paths can ask whether the same outpost is dangerous in one server
+    // tick. The evidence query contains a monster AABB scan plus light samples, so reuse it within
+    // that tick instead of repeating identical world reads. The cache never survives into the next
+    // game tick and therefore cannot delay combat/supply state changes.
+    private static final Map<Integer, DangerEvidence> DANGER_EVIDENCE_CACHE = new HashMap<>();
+    private static ServerLevel dangerEvidenceCacheLevel;
+    private static long dangerEvidenceCacheGameTime = Long.MIN_VALUE;
 
     private SettlementMilitaryOutpostService() {}
 
@@ -147,6 +157,16 @@ public final class SettlementMilitaryOutpostService {
     }
 
     public static DangerEvidence dangerEvidence(ServerLevel level, OutpostRecord outpost) {
+        long gameTime = level.getGameTime();
+        if (dangerEvidenceCacheLevel != level || dangerEvidenceCacheGameTime != gameTime) {
+            DANGER_EVIDENCE_CACHE.clear();
+            dangerEvidenceCacheLevel = level;
+            dangerEvidenceCacheGameTime = gameTime;
+        }
+        return DANGER_EVIDENCE_CACHE.computeIfAbsent(outpost.id(), ignored -> computeDangerEvidence(level, outpost));
+    }
+
+    private static DangerEvidence computeDangerEvidence(ServerLevel level, OutpostRecord outpost) {
         if (!militaryAreaLoaded(level, outpost)) return new DangerEvidence(false, 0, 0, 0, 0);
         BlockPos center = outpost.center();
         AABB area = new AABB(center).inflate(DANGER_RADIUS, 12.0D, DANGER_RADIUS);
