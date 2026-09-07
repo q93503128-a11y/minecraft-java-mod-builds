@@ -7,6 +7,7 @@ import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
+import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -21,13 +22,14 @@ public final class TurnboundRe {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final BattleManager BATTLES = new BattleManager();
     public static final DefinitionRepository DEFINITIONS = new DefinitionRepository();
+    public static final PlayerProgressStore PROGRESS = new PlayerProgressStore(DEFINITIONS);
 
     public TurnboundRe(IEventBus modEventBus) {
         modEventBus.addListener(BattleNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
         new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
-        LOGGER.info("TURNBOUND: RE {} M3 data foundation loaded", VERSION);
+        LOGGER.info("TURNBOUND: RE {} M4 progression foundation loaded", VERSION);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
