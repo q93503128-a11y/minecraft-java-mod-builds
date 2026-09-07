@@ -6,22 +6,36 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
-/** Loads a versioned pack of content definitions into an isolated registry and validates all references. */
+/** Loads a versioned content document into an isolated registry. Full graph validation happens after pack merge. */
 public final class ContentPackLoader {
     public static final int CURRENT_CONTENT_SCHEMA = 1;
+    public static final String UNKNOWN_SOURCE = "<unknown>";
 
-    public record LoadedPack(int schemaVersion, String packId, ContentRegistry registry, ContentValidator.Report validation) {
+    public record LoadedPack(
+        int schemaVersion,
+        String packId,
+        String source,
+        List<String> dependencies,
+        ContentRegistry registry,
+        ContentValidator.Report validation
+    ) {
         public LoadedPack {
-            packId = Objects.requireNonNull(packId);
-            registry = Objects.requireNonNull(registry);
-            validation = Objects.requireNonNull(validation);
+            packId = Objects.requireNonNull(packId, "packId");
+            source = Objects.requireNonNull(source, "source");
+            dependencies = List.copyOf(dependencies);
+            registry = Objects.requireNonNull(registry, "registry");
+            validation = Objects.requireNonNull(validation, "validation");
         }
 
         public void requireValid() {
             if (validation.hasErrors()) {
-                throw new IllegalStateException("Content pack '" + packId + "' failed validation:\n" + validation.format());
+                throw new IllegalStateException("Content pack '" + packId + "' from " + source + " failed validation:\n" + validation.format());
             }
         }
     }
@@ -39,6 +53,10 @@ public final class ContentPackLoader {
     }
 
     public LoadedPack load(Reader reader) {
+        return load(reader, UNKNOWN_SOURCE);
+    }
+
+    public LoadedPack load(Reader reader, String source) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) throw new IllegalArgumentException("Content pack root must be a JSON object");
         JsonObject object = root.getAsJsonObject();
@@ -48,6 +66,10 @@ public final class ContentPackLoader {
             throw new IllegalArgumentException("Unsupported content schema " + schemaVersion + "; expected " + CURRENT_CONTENT_SCHEMA);
         }
         String packId = requireString(object, "pack_id");
+        List<String> dependencies = optionalUniqueStringArray(object, "depends_on");
+        if (dependencies.contains(packId)) {
+            throw new IllegalArgumentException("Content pack '" + packId + "' cannot depend on itself");
+        }
         JsonArray definitions = requireArray(object, "definitions");
 
         ContentRegistry registry = new ContentRegistry();
@@ -55,12 +77,16 @@ public final class ContentPackLoader {
             try {
                 registry.register(codec.decode(definitions.get(index)));
             } catch (RuntimeException error) {
-                throw new IllegalArgumentException("Invalid definition at index " + index + " in pack '" + packId + "': " + error.getMessage(), error);
+                throw new IllegalArgumentException(
+                    "Invalid definition at index " + index + " in pack '" + packId + "' from " + source + ": " + error.getMessage(),
+                    error
+                );
             }
         }
 
+        // Per-document validation remains useful diagnostics, but cross-document references are resolved after merge.
         ContentValidator.Report report = validator.validate(registry);
-        return new LoadedPack(schemaVersion, packId, registry, report);
+        return new LoadedPack(schemaVersion, packId, source, dependencies, registry, report);
     }
 
     private static int requireInt(JsonObject object, String key) {
@@ -85,5 +111,24 @@ public final class ContentPackLoader {
         JsonElement value = object.get(key);
         if (value == null || !value.isJsonArray()) throw new IllegalArgumentException("Missing or non-array field '" + key + "'");
         return value.getAsJsonArray();
+    }
+
+    private static List<String> optionalUniqueStringArray(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (value == null) return List.of();
+        if (!value.isJsonArray()) throw new IllegalArgumentException("Field '" + key + "' must be an array when present");
+
+        Set<String> unique = new LinkedHashSet<>();
+        List<String> ordered = new ArrayList<>();
+        for (JsonElement element : value.getAsJsonArray()) {
+            if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+                throw new IllegalArgumentException("Field '" + key + "' must contain only strings");
+            }
+            String text = element.getAsString().trim();
+            if (text.isEmpty()) throw new IllegalArgumentException("Field '" + key + "' must not contain blank values");
+            if (!unique.add(text)) throw new IllegalArgumentException("Field '" + key + "' contains duplicate value '" + text + "'");
+            ordered.add(text);
+        }
+        return List.copyOf(ordered);
     }
 }
