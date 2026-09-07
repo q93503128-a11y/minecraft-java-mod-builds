@@ -6,17 +6,17 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.117"
+    "frontier_settlement": "0.1.0-alpha.118"
   },
   "notes": [
-    "This lock is the canonical candidate stack for Alpha.117 fresh-world and graphical-client compatibility testing.",
-    "All third-party versions and hashes are unchanged from the previously verified Alpha.116 candidate stack; Alpha.117 requires a fresh dedicated-server preflight because the Frontier runtime JAR changed.",
-    "Resolved client/server profiles have now been regenerated for Alpha.117; this revision intentionally retriggers build, preflight and fresh-world validation against that resolved state.",
-    "Frontier Alpha.117 core CI run 34075488787 passed source audit, current-doc audit, Java 25 clean build and runtime JAR verification; this revision performs the final companion preflight/fresh-world validation on the corrected current-doc audit.",
+    "This lock is the canonical candidate stack for Alpha.118 fresh-world and graphical-client compatibility testing.",
+    "All third-party versions and hashes are unchanged from the previously verified Alpha.116 candidate stack; Alpha.118 requires a fresh dedicated-server preflight because the Frontier runtime JAR changed.",
+    "Resolved client/server profiles have now been regenerated for Alpha.118; this revision intentionally retriggers build, preflight and fresh-world validation against that resolved state.",
+    "Frontier Alpha.118 core CI run 34075488787 passed source audit, current-doc audit, Java 25 clean build and runtime JAR verification; this revision performs the final companion preflight/fresh-world validation on the corrected current-doc audit.",
     "World-generation entries must be present before the test world is created.",
     "Dungeons and Taverns 5.3.0 NeoForge is pinned to official Modrinth version UP9sRfQF and remains byte-identical to the previously verified binary.",
     "Companion integration remains soft: Frontier does not copy companion code/assets, create a second logistics authority, force-load chunks or mint virtual settlement resources.",
-    "Alpha.117 changes Frontier-owned UI/runtime behavior only: shared UI hierarchy/tokens, manual physical-metal blacksmith repair, single-pass resource scans, throttled stationary placement previews, same-tick shoreline reuse and cached physical worker lookup.",
+    "Alpha.118 adds physical lumber/quarry target caching and five-second empty-scan backoff on top of the Alpha.117 UI/runtime hardening; companion binary pins remain unchanged.",
     "Automated preflight does not promote graphical-client, spawn-density, long-session or multiplayer acceptance."
   ],
   "entries": [
@@ -30,7 +30,9 @@
       "version": "2.6.4",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["lithostitched"]
+      "dependencies": [
+        "lithostitched"
+      ]
     },
     {
       "id": "lithostitched",
@@ -78,7 +80,10 @@
       "version": "3.2.2+26.2-neoforge",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["cloth_config", "player_animation_library"]
+      "dependencies": [
+        "cloth_config",
+        "player_animation_library"
+      ]
     },
     {
       "id": "cloth_config",
@@ -138,7 +143,9 @@
       "version": "26.2-3.25.74.1922",
       "loader": "neoforge",
       "required": true,
-      "dependencies": ["sophisticated_core"]
+      "dependencies": [
+        "sophisticated_core"
+      ]
     },
     {
       "id": "sophisticated_core",
@@ -176,7 +183,10 @@
       "required": true,
       "license": "CC-BY-NC-ND-4.0",
       "integration_role": "dependency",
-      "dependencies": ["resourceful_lib", "yacl"],
+      "dependencies": [
+        "resourceful_lib",
+        "yacl"
+      ],
       "note": "Official binary dependency only; Frontier does not copy or modify its code/assets."
     },
     {

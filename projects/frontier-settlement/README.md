@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.117
+## Current version: 0.1.0-alpha.118
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -77,6 +77,18 @@ Alpha.117 also reduces repeated work without changing physical gameplay authorit
 - full assignment-AABB scans remain as conservative 10-second maintenance for duplicate cleanup, old-save migration and missing-worker recovery;
 - no cache becomes population, cargo, resource or spawn authority;
 - blacksmith equipment repair is explicit player-directed interaction and consumes real settlement metal rather than silently repairing nearby equipment.
+
+## Alpha.118 specialized outpost scan budget
+
+Alpha.118 reduces repeated physical-world search cost without reducing authored work range or production throughput:
+
+- lumber and quarry outposts cache the selected physical block coordinate while it remains a valid loaded target;
+- ordinary 10-tick worker updates validate that one cached coordinate instead of rescanning the full work radius;
+- a destroyed, replaced, protected or unloaded target invalidates immediately and may be reacquired on the next work update;
+- a full search that finds no eligible resource backs off for 100 ticks (five seconds) rather than repeating every half-second;
+- natural-leaf evidence for a cached lumber target is reconfirmed only when the 100-tick harvest cadence is actually due;
+- quarry overburden may continue to clear layer-by-layer against the same cached stone face;
+- tree radius 18, quarry radius 16, work periods, harvest batch limits, real ItemStack cargo, protection checks and no-force-load rules are unchanged.
 
 ## Functional building families
 
