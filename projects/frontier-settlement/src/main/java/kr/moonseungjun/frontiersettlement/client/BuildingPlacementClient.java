@@ -27,6 +27,11 @@ public final class BuildingPlacementClient {
     public static final KeyMapping RESET = new KeyMapping(
             "key.frontier_settlement.road_reset", GLFW.GLFW_KEY_BACKSPACE, CATEGORY);
 
+    // Target/rotation changes still invalidate immediately. Only identical stationary previews are
+    // refreshed once per second, avoiding four full server placement audits every second while the
+    // player simply keeps the crosshair on the same block.
+    private static final int STATIONARY_REFRESH_TICKS = 20;
+
     private static boolean active;
     private static BuildingType selectedType = BuildingType.HOUSE;
     private static BuildingRotation rotation = BuildingRotation.NONE;
@@ -74,8 +79,8 @@ public final class BuildingPlacementClient {
 
         if (!active) return;
         BlockPos nextTarget = resolveTarget(minecraft);
-        if (!nextTarget.equals(target)) { target = nextTarget; refreshTicks = 0; }
-        if (refreshTicks-- <= 0) { send(false); refreshTicks = 5; }
+        if (!nextTarget.equals(target)) { target = nextTarget; preview = null; refreshTicks = 0; }
+        if (refreshTicks-- <= 0) { send(false); refreshTicks = STATIONARY_REFRESH_TICKS; }
     }
 
     public static void beginPlacement(BuildingType type) {
