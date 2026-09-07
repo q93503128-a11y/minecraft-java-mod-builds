@@ -12,10 +12,16 @@ public final class ContentValidator {
         EMPTY_BEHAVIOUR_SET,
         MISSING_UNIQUE_GAMEPLAY_RULE,
         NO_REGION_ARCHETYPES,
+        NO_REGION_RESOURCES,
+        NO_REGION_CONTRACTS,
         EMPTY_LOOT_POOLS,
         MISSING_REFERENCE,
         EMPTY_ENCOUNTER_PARTICIPANTS,
         EMPTY_ENCOUNTER_OBJECTIVE,
+        EMPTY_CONTRACT_OBJECTIVE,
+        EMPTY_CONTRACT_REQUIREMENTS,
+        INVALID_RESOURCE_CATEGORY,
+        INVALID_EXTRACTION_OUTCOME,
         NO_WORLD_CONSEQUENCE
     }
 
@@ -44,7 +50,11 @@ public final class ContentValidator {
                 case CoreDefinition.Region region -> {
                     if (region.gameplayRule().isBlank()) error(issues, Code.MISSING_UNIQUE_GAMEPLAY_RULE, region.id(), "region has no unique gameplay rule");
                     if (region.archetypes().isEmpty()) warn(issues, Code.NO_REGION_ARCHETYPES, region.id(), "region has no combat archetypes yet");
+                    if (region.resources().isEmpty()) warn(issues, Code.NO_REGION_RESOURCES, region.id(), "region has no expedition resources yet");
+                    if (region.contracts().isEmpty()) warn(issues, Code.NO_REGION_CONTRACTS, region.id(), "region has no contracts yet");
                     for (ContentId id : region.archetypes()) require(registry, issues, region.id(), CoreDefinition.Kind.COMBAT_ARCHETYPE, id);
+                    for (ContentId id : region.resources()) require(registry, issues, region.id(), CoreDefinition.Kind.EXPEDITION_RESOURCE, id);
+                    for (ContentId id : region.contracts()) require(registry, issues, region.id(), CoreDefinition.Kind.CONTRACT, id);
                 }
                 case CoreDefinition.LootProfile loot -> {
                     if (loot.pools().isEmpty()) warn(issues, Code.EMPTY_LOOT_POOLS, loot.id(), "loot profile has no pools");
@@ -61,6 +71,25 @@ public final class ContentValidator {
                     for (ContentId id : encounter.participants()) require(registry, issues, encounter.id(), CoreDefinition.Kind.CREATURE, id);
                     if (encounter.objective().isBlank()) error(issues, Code.EMPTY_ENCOUNTER_OBJECTIVE, encounter.id(), "encounter has no objective");
                     if (encounter.worldConsequence().isBlank()) warn(issues, Code.NO_WORLD_CONSEQUENCE, encounter.id(), "encounter has no world consequence");
+                }
+                case CoreDefinition.ExpeditionResource resource -> {
+                    require(registry, issues, resource.id(), CoreDefinition.Kind.REGION, resource.region());
+                    if (resource.category().isBlank()) error(issues, Code.INVALID_RESOURCE_CATEGORY, resource.id(), "expedition resource category is blank");
+                }
+                case CoreDefinition.Contract contract -> {
+                    require(registry, issues, contract.id(), CoreDefinition.Kind.REGION, contract.region());
+                    require(registry, issues, contract.id(), CoreDefinition.Kind.LOOT_PROFILE, contract.rewardLootProfile());
+                    require(registry, issues, contract.id(), CoreDefinition.Kind.EXTRACTION_RESULT, contract.extractionResult());
+                    if (contract.objective().isBlank()) error(issues, Code.EMPTY_CONTRACT_OBJECTIVE, contract.id(), "contract has no objective");
+                    if (contract.requiredResources().isEmpty()) warn(issues, Code.EMPTY_CONTRACT_REQUIREMENTS, contract.id(), "contract has no resource requirements");
+                    for (ContentId id : contract.requiredResources().keySet()) {
+                        require(registry, issues, contract.id(), CoreDefinition.Kind.EXPEDITION_RESOURCE, id);
+                    }
+                    if (contract.worldConsequence().isBlank()) warn(issues, Code.NO_WORLD_CONSEQUENCE, contract.id(), "contract has no world consequence");
+                }
+                case CoreDefinition.ExtractionResultProfile extraction -> {
+                    if (extraction.outcome().isBlank()) error(issues, Code.INVALID_EXTRACTION_OUTCOME, extraction.id(), "extraction result outcome is blank");
+                    if (extraction.worldConsequence().isBlank()) warn(issues, Code.NO_WORLD_CONSEQUENCE, extraction.id(), "extraction result has no world consequence");
                 }
             }
         }
