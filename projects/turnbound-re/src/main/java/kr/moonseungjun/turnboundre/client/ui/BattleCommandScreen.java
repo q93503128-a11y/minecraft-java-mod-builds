@@ -24,18 +24,14 @@ import java.util.UUID;
  * every action and target candidate originates from the current authoritative server snapshot.
  */
 public final class BattleCommandScreen extends Screen {
-    private static final int TARGETS_PER_PAGE = 6;
-    private static final int TARGET_COLUMNS = 2;
-
     private final List<ActionButtonBinding> actionButtons = new ArrayList<>();
     private final List<TargetButtonBinding> targetButtons = new ArrayList<>();
     private BattleNetworkPayloads.SnapshotAction selectedAction;
     private final Set<String> selectedTargetIds = new LinkedHashSet<>();
     private int targetPage;
-    private int panelX;
-    private int panelY;
-    private int panelWidth;
-    private int panelHeight;
+    private int targetHeaderTextX;
+    private int targetHeaderTextY;
+    private int targetHeaderTextWidth;
     private String feedback = "";
 
     public BattleCommandScreen() {
@@ -47,8 +43,9 @@ public final class BattleCommandScreen extends Screen {
     protected void init() {
         actionButtons.clear();
         targetButtons.clear();
-        panelWidth = 0;
-        panelHeight = 0;
+        targetHeaderTextX = 0;
+        targetHeaderTextY = 0;
+        targetHeaderTextWidth = 0;
 
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null || !model.awaitingPlayerCommand()) {
@@ -65,11 +62,11 @@ public final class BattleCommandScreen extends Screen {
             }
         }
 
-        buildActionButtons(model);
-        if (selectedAction != null) {
-            buildTargetButtons(model);
-        } else {
+        if (selectedAction == null) {
             BattleTargetMarkerState.clear();
+            buildActionButtons(model);
+        } else {
+            buildTargetButtons(model);
         }
     }
 
@@ -77,19 +74,16 @@ public final class BattleCommandScreen extends Screen {
         List<BattleNetworkPayloads.SnapshotAction> actions = model.availableActions();
         if (actions.isEmpty()) return;
 
+        UiLayoutMetrics.Rect command = commandRegion();
         int gap = UiLayoutMetrics.SPACE_2;
-        int available = Math.max(200, this.width - UiLayoutMetrics.SPACE_16);
-        int totalWidth = Math.min(420, available);
-        int cell = Math.max(38, (totalWidth - gap * (actions.size() - 1)) / actions.size());
-        totalWidth = cell * actions.size() + gap * (actions.size() - 1);
-        int x = (this.width - totalWidth) / 2;
-        int y = this.height - 28;
+        int totalGap = gap * Math.max(0, actions.size() - 1);
+        int cell = Math.max(1, (command.width() - totalGap) / actions.size());
+        int totalWidth = cell * actions.size() + totalGap;
+        int x = command.x() + Math.max(0, (command.width() - totalWidth) / 2);
+        int y = command.bottom() - 20;
 
         for (BattleNetworkPayloads.SnapshotAction action : actions) {
-            boolean selected = selectedAction != null && selectedAction.id().equals(action.id());
-            Component label = selected
-                    ? Component.literal("> ").append(BattleActionPresentation.slotLabel(action))
-                    : BattleActionPresentation.slotLabel(action);
+            Component label = BattleActionPresentation.slotLabel(action);
             Button button = Button.builder(label, ignored -> chooseAction(action))
                     .bounds(x, y, cell, 20)
                     .build();
@@ -128,66 +122,77 @@ public final class BattleCommandScreen extends Screen {
             return;
         }
 
-        int pageCount = Math.max(1, (candidates.size() + TARGETS_PER_PAGE - 1) / TARGETS_PER_PAGE);
+        UiLayoutMetrics.TargetChooserLayout layout = targetChooserLayout();
+        int pageSize = layout.pageSize();
+        int pageCount = Math.max(1, (candidates.size() + pageSize - 1) / pageSize);
         targetPage = Math.max(0, Math.min(targetPage, pageCount - 1));
-        int from = targetPage * TARGETS_PER_PAGE;
-        int to = Math.min(candidates.size(), from + TARGETS_PER_PAGE);
+        int from = targetPage * pageSize;
+        int to = Math.min(candidates.size(), from + pageSize);
         List<BattleNetworkPayloads.SnapshotParticipant> page = candidates.subList(from, to);
 
-        panelWidth = Math.min(340, Math.max(260, this.width - 48));
-        int rows = Math.max(1, (page.size() + TARGET_COLUMNS - 1) / TARGET_COLUMNS);
-        panelHeight = 62 + rows * 24 + (pageCount > 1 ? 22 : 0);
-        panelX = (this.width - panelWidth) / 2;
-        panelY = Math.max(UiLayoutMetrics.SPACE_16, (this.height - panelHeight) / 2 - UiLayoutMetrics.SPACE_8);
-
-        int innerGap = UiLayoutMetrics.SPACE_4;
-        int buttonWidth = (panelWidth - 24 - innerGap) / TARGET_COLUMNS;
-        int startX = panelX + UiLayoutMetrics.SPACE_12;
-        int startY = panelY + 36;
+        int gap = UiLayoutMetrics.SPACE_2;
+        int columns = layout.columns();
+        int buttonWidth = Math.max(1, (layout.grid().width() - gap * (columns - 1)) / columns);
+        int rowHeight = 20;
 
         for (int i = 0; i < page.size(); i++) {
             BattleNetworkPayloads.SnapshotParticipant participant = page.get(i);
-            int col = i % TARGET_COLUMNS;
-            int row = i / TARGET_COLUMNS;
-            int x = startX + col * (buttonWidth + innerGap);
-            int y = startY + row * 24;
+            int col = i % columns;
+            int row = i / columns;
+            int x = layout.grid().x() + col * (buttonWidth + gap);
+            int y = layout.grid().y() + row * (rowHeight + gap);
+            int ordinal = from + i + 1;
             boolean chosen = selectedTargetIds.contains(participant.id());
-            String label = (chosen ? "[✓] " : "") + displayName(participant);
+            String label = (chosen ? "✓ " : "") + "#" + ordinal + " " + displayName(participant);
             Button target = Button.builder(Component.literal(label), ignored -> toggleTarget(model, participant.id()))
-                    .bounds(x, y, buttonWidth, 20)
+                    .bounds(x, y, buttonWidth, rowHeight)
                     .build();
             this.addRenderableWidget(target);
             targetButtons.add(new TargetButtonBinding(target, participant.id()));
         }
 
-        int footerY = panelY + panelHeight - 22;
+        UiLayoutMetrics.Rect header = layout.header();
+        int headerHeight = header.height();
+        int backWidth = 42;
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), ignored -> clearTargetSelection())
+                .bounds(header.x(), header.y(), backWidth, headerHeight)
+                .build());
+
+        int right = header.right();
         if (selectedAction.targetCount() > 1) {
+            int confirmWidth = 64;
+            right -= confirmWidth;
             Button confirm = Button.builder(
                             Component.translatable("screen.turnbound_re.confirm_targets",
                                     selectedTargetIds.size(), selectedAction.targetCount()),
                             ignored -> submit(model, selectedAction, List.copyOf(selectedTargetIds)))
-                    .bounds(panelX + panelWidth - 112, footerY, 100, 20)
+                    .bounds(right, header.y(), confirmWidth, headerHeight)
                     .build();
             confirm.active = selectedTargetIds.size() == selectedAction.targetCount();
             this.addRenderableWidget(confirm);
+            right -= gap;
         }
 
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), ignored -> clearTargetSelection())
-                .bounds(panelX + UiLayoutMetrics.SPACE_12, footerY, 62, 20)
-                .build());
-
         if (pageCount > 1) {
-            Button prev = Button.builder(Component.literal("<"), ignored -> changePage(-1))
-                    .bounds(panelX + 80, footerY, 24, 20)
-                    .build();
-            prev.active = targetPage > 0;
-            this.addRenderableWidget(prev);
+            int navWidth = 20;
+            right -= navWidth;
             Button next = Button.builder(Component.literal(">"), ignored -> changePage(1))
-                    .bounds(panelX + 108, footerY, 24, 20)
+                    .bounds(right, header.y(), navWidth, headerHeight)
                     .build();
             next.active = targetPage + 1 < pageCount;
             this.addRenderableWidget(next);
+            right -= gap + navWidth;
+            Button prev = Button.builder(Component.literal("<"), ignored -> changePage(-1))
+                    .bounds(right, header.y(), navWidth, headerHeight)
+                    .build();
+            prev.active = targetPage > 0;
+            this.addRenderableWidget(prev);
+            right -= gap;
         }
+
+        targetHeaderTextX = header.x() + backWidth + UiLayoutMetrics.SPACE_4;
+        targetHeaderTextY = header.y() + 5;
+        targetHeaderTextWidth = Math.max(0, right - UiLayoutMetrics.SPACE_4 - targetHeaderTextX);
 
         publishTargetMarkers(model, null);
     }
@@ -248,25 +253,19 @@ public final class BattleCommandScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        if (selectedAction != null && panelWidth > 0 && panelHeight > 0) {
-            graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xD0181818);
-            graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, 0xFFE0C06A);
-            graphics.fill(panelX, panelY + panelHeight - 1, panelX + panelWidth, panelY + panelHeight, 0xFF5A4A2A);
-            String title = Component.translatable("screen.turnbound_re.select_targets",
+        if (selectedAction != null && targetHeaderTextWidth > 0) {
+            String summary = BattleActionPresentation.selectedSummary(selectedAction).getString()
+                    + " · "
+                    + Component.translatable("screen.turnbound_re.select_targets",
                     selectedTargetIds.size(), selectedAction.targetCount()).getString();
-            graphics.text(this.font, Component.literal(title), panelX + UiLayoutMetrics.SPACE_12, panelY + 9,
-                    0xFFFFFFFF, true);
-            String actionName = conciseActionName(selectedAction.id());
-            graphics.text(this.font, Component.literal(actionName),
-                    panelX + panelWidth - UiLayoutMetrics.SPACE_12 - this.font.width(actionName), panelY + 9,
-                    0xFFAAAAAA, false);
-            String summary = BattleActionPresentation.selectedSummary(selectedAction).getString();
-            graphics.text(this.font, Component.literal(fit(summary, panelWidth - UiLayoutMetrics.SPACE_24)),
-                    panelX + UiLayoutMetrics.SPACE_12, panelY + 19, 0xFFAAAAAA, false);
+            graphics.text(this.font, Component.literal(fit(summary, targetHeaderTextWidth)),
+                    targetHeaderTextX, targetHeaderTextY, 0xFFFFFFFF, true);
         }
         if (!feedback.isBlank()) {
-            graphics.centeredText(this.font, Component.literal(feedback), this.width / 2,
-                    Math.max(UiLayoutMetrics.SPACE_8, this.height - 44), 0xFFFFCC66);
+            UiLayoutMetrics.Rect command = commandRegion();
+            graphics.text(this.font, Component.literal(fit(feedback, command.width())),
+                    command.x(), Math.max(UiLayoutMetrics.SPACE_8, command.y() - this.font.lineHeight - UiLayoutMetrics.SPACE_2),
+                    0xFFFFCC66, true);
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -310,14 +309,36 @@ public final class BattleCommandScreen extends Screen {
                 hoveredTargetId);
     }
 
+    private UiLayoutMetrics.Rect commandRegion() {
+        if (UiLayoutMetrics.supportsBattleHud(this.width, this.height)) {
+            return UiLayoutMetrics.battleHud(this.width, this.height).commandStrip();
+        }
+        int margin = Math.min(UiLayoutMetrics.SPACE_8, Math.max(0, Math.min(this.width, this.height) / 8));
+        int x = Math.min(margin, Math.max(0, this.width - 1));
+        int width = Math.max(1, this.width - x - margin);
+        int height = Math.max(20, Math.min(58, Math.max(20, this.height - margin * 2)));
+        int y = Math.max(0, this.height - height - margin);
+        return new UiLayoutMetrics.Rect(x, y, width, height);
+    }
+
+    private UiLayoutMetrics.TargetChooserLayout targetChooserLayout() {
+        if (UiLayoutMetrics.supportsBattleHud(this.width, this.height)) {
+            return UiLayoutMetrics.targetChooser(this.width, this.height);
+        }
+        UiLayoutMetrics.Rect region = commandRegion();
+        int headerHeight = Math.min(18, Math.max(1, region.height() / 3));
+        int gridY = region.y() + headerHeight;
+        int gridHeight = Math.max(1, region.bottom() - gridY);
+        UiLayoutMetrics.Rect header = new UiLayoutMetrics.Rect(region.x(), region.y(), region.width(), headerHeight);
+        UiLayoutMetrics.Rect grid = new UiLayoutMetrics.Rect(region.x(), gridY, region.width(), gridHeight);
+        int columns = region.width() >= 280 ? 3 : 2;
+        int rows = Math.max(1, Math.min(2, grid.height() / 20));
+        return new UiLayoutMetrics.TargetChooserLayout(region, header, grid, columns, rows, columns * rows);
+    }
+
     private static String displayName(BattleNetworkPayloads.SnapshotParticipant participant) {
         String source = participant.characterId().isBlank() ? participant.id() : participant.characterId();
         return humanizeId(source);
-    }
-
-    private static String conciseActionName(String actionId) {
-        String name = BattleActionPresentation.actionName(actionId);
-        return name.length() <= 24 ? name : name.substring(0, 21) + "...";
     }
 
     private String fit(String text, int maxWidth) {
