@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.125"
+    "frontier_settlement": "0.1.0-alpha.126"
   },
   "notes": [
     "This lock is the canonical candidate stack for Alpha.118 fresh-world and graphical-client compatibility testing.",
@@ -21,7 +21,8 @@
     "Frontier Alpha.120 changes only the Frontier runtime JAR: deterministic blacksmith reinforcement and copper/iron-only maintenance payment. Third-party companion binary versions and committed hashes remain unchanged and require fresh server validation.",
     "Frontier Alpha.123 changes only the project-owned Frontier runtime JAR: central warehouse/cart-station logistics investment, physical storage expansion, and bounded productive-freight throughput. Third-party companion pins/hashes remain unchanged.",
     "Frontier Alpha.124 changes only the project-owned Frontier runtime JAR: paid military grades, bounded barracks/watch/citadel command growth and physical post-combat military resupply. Third-party companion pins/hashes remain unchanged.",
-    "Frontier Alpha.125 changes only the project-owned Frontier runtime JAR and presentation: RTS operations summary, bottleneck/upgrade backlog visibility, and corrected per-building upgrade UI. Third-party companion pins/hashes remain unchanged."
+    "Frontier Alpha.125 changes only the project-owned Frontier runtime JAR and presentation: RTS operations summary, bottleneck/upgrade backlog visibility, and corrected per-building upgrade UI. Third-party companion pins/hashes remain unchanged.",
+    "Frontier Alpha.126 changes only the project-owned Frontier runtime JAR and presentation: paid civic/trade city investment grades, stronger physical late-game resource sinks, grade-scaled administration/market benefits, and progression-guidance alignment. Third-party companion pins/hashes remain unchanged."
   ],
   "entries": [
     {

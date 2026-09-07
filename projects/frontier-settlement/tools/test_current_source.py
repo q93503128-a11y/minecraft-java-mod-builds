@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.125" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.126" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -45,8 +45,9 @@ for retired in (
     require(retired not in construction, f"retired scaffold authority returned: {retired}")
 require("retireLegacyConstructionScaffolds(" in construction, "legacy scaffold teardown compatibility was removed")
 require("ensureProjectBuilder(" in construction, "shared project-builder authority missing")
-require("MAX_BUILDER_CREW = 14" in construction and "CIVIC_HALL_BUILDER_BONUS = 2" in construction,
-        "civic-hall bounded construction crew bonus missing")
+require("MAX_BUILDER_CREW = 14" in construction
+        and "SettlementCityInvestmentService.civicHallBuilderBonus(data)" in construction,
+        "grade-scaled civic-hall bounded construction crew bonus missing")
 require("BASE_BUILDER_CREW = 2" in construction and "BUILDERS_PER_CONSTRUCTION_OFFICE = 2" in construction,
         "builder workforce no longer scales from base crew through construction offices")
 require("data.outposts().size()" in construction and "OUTPOST_BUILDER_BONUS_CAP = 6" in construction,
@@ -114,10 +115,8 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
-require("BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600" in worker
-        and "CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400" in worker
-        and "workerAttractionIntervalTicks(data)" in worker,
-        "civic-hall civilian attraction cadence missing")
+require("SettlementCityInvestmentService.workerAttractionIntervalTicks(data)" in worker,
+        "city-investment civilian attraction cadence missing")
 require("WORKSITE_STORAGE_INTERACTION_REACH_SQR = 36.0D" in worker, "close worksite deposit reach missing")
 require("deliverIfCargoFull" in worker, "full-stack immediate deposit handoff missing")
 require("tryExportWorksiteBuffer(" not in worker, "retired worksite re-extraction loop returned")
@@ -458,11 +457,42 @@ palette_screen = text(JAVA / "client" / "BuildingPaletteScreen.java")
 require("Presentation-only RTS summary" in operations_summary and "snapshot.context().targets()" in operations_summary,
         "operations summary stopped reusing the existing presentation snapshot/context")
 require("productionUpgradeBacklog" in operations_summary and "logisticsUpgradeBacklog" in operations_summary
-        and "militaryUpgradeBacklog" in operations_summary, "RTS paid-upgrade backlog visibility missing")
+        and "militaryUpgradeBacklog" in operations_summary and "cityInvestmentBacklog" in operations_summary,
+        "RTS paid-upgrade backlog visibility missing")
 require("ClientSettlementState.snapshot()" in operations_screen and "SettlementOperationsSummary.from(snapshot)" in operations_screen,
         "operations screen is not driven by synchronized client presentation state")
 require("new SettlementOperationsScreen(this)" in palette_screen, "M palette operations entry point missing")
-require("신규 개량 I" in palette_screen and "신규 물류 I" in palette_screen and "신규 군사 I" in palette_screen,
+require("신규 개량 I" in palette_screen and "신규 물류 I" in palette_screen and "신규 군사 I" in palette_screen
+        and "신규 도시 I" in palette_screen,
         "construction palette returned to misleading free tier-derived facility grades")
 require("완공 후 현장 저장통에서 수동 개량" in palette_screen,
         "production investment interaction guidance missing from construction palette")
+
+# Alpha.126 city investment.
+city_investment = text(SETTLEMENT / "SettlementCityInvestmentService.java")
+require("new UpgradeCost(320L, 256L, 48L)" in city_investment
+        and "new UpgradeCost(640L, 512L, 128L)" in city_investment
+        and "new UpgradeCost(1024L, 768L, 256L)" in city_investment,
+        "civic-hall city investment ladder drifted")
+require("new UpgradeCost(384L, 288L, 64L)" in city_investment
+        and "new UpgradeCost(768L, 576L, 160L)" in city_investment
+        and "new UpgradeCost(1280L, 896L, 320L)" in city_investment,
+        "trade-hall city investment ladder drifted")
+require("case 1 -> 400" in city_investment and "case 4 -> 200" in city_investment
+        and "case 1 -> 2" in city_investment and "case 4 -> 5" in city_investment,
+        "civic administration grade benefits drifted")
+require("case 1 -> 4" in city_investment and "case 4 -> 10" in city_investment,
+        "trade-hall market grade benefits drifted")
+require("countCommonUpgradeMetal" in city_investment and "consumeLogisticsUpgrade" in city_investment,
+        "city investment bypasses physical common-metal payment")
+require("player.isShiftKeyDown()" in city_investment and "event.getItemStack().isEmpty()" in city_investment
+        and "localToWorld(7, 2, 6)" in city_investment,
+        "landmark-local city investment interaction missing")
+require("SettlementCityInvestmentService.tick(server, data)" in service,
+        "city grade migration is not wired into settlement runtime")
+require("SettlementCityInvestmentService::onRightClickBlock" in entry,
+        "city investment interaction is not registered")
+require("SettlementCityInvestmentService.tradeHallMarketBonus(data)" in text(SETTLEMENT / "SettlementExplorationBenefitService.java"),
+        "trade hall still uses a flat presence-only market bonus")
+require("농장 2곳으로 식량 기반 확대" not in guidance,
+        "guidance still incorrectly forces two farms despite farm+warehouse satisfying mature food base")

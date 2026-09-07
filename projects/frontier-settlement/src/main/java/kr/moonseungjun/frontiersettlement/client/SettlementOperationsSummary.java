@@ -31,6 +31,7 @@ public record SettlementOperationsSummary(
         int barracks,
         int citadels,
         int militaryUpgradeBacklog,
+        int cityInvestmentBacklog,
         int outposts,
         String priority,
         List<String> alerts) {
@@ -56,10 +57,12 @@ public record SettlementOperationsSummary(
         int barracks = 0;
         int citadels = 0;
         int militaryUpgradeBacklog = 0;
+        int cityInvestmentBacklog = 0;
 
         int productionCeiling = productionCeiling(snapshot.tier());
         int logisticsCeiling = logisticsCeiling(snapshot.tier());
         int militaryCeiling = militaryCeiling(snapshot.tier());
+        int cityCeiling = militaryCeiling;
 
         for (SettlementContextTarget target : snapshot.context().targets()) {
             if (!"building".equals(target.kind())) continue;
@@ -88,6 +91,12 @@ public record SettlementOperationsSummary(
                 continue;
             }
 
+            if (type == BuildingType.CIVIC_HALL || type == BuildingType.TRADE_HALL) {
+                int grade = gradeAfter(target.detail(), "도시 ");
+                if (grade > 0 && grade < cityCeiling) cityInvestmentBacklog++;
+                continue;
+            }
+
             if (type == BuildingType.GUARD_POST || type == BuildingType.WATCHTOWER
                     || type == BuildingType.BARRACKS || type == BuildingType.CITADEL) {
                 if (type == BuildingType.GUARD_POST) guardPosts++;
@@ -110,6 +119,7 @@ public record SettlementOperationsSummary(
         if (logisticsSaturated > 0) alerts.add("물류 저장시설 " + logisticsSaturated + "곳이 포화 상태입니다.");
         if (productionUpgradeBacklog > 0) alerts.add("현재 등급에서 생산시설 " + productionUpgradeBacklog + "곳을 더 개량할 수 있습니다.");
         if (logisticsUpgradeBacklog > 0) alerts.add("현재 등급에서 물류시설 " + logisticsUpgradeBacklog + "곳을 더 확장할 수 있습니다.");
+        if (cityInvestmentBacklog > 0) alerts.add("현재 등급에서 도시 핵심시설 " + cityInvestmentBacklog + "곳에 추가 투자할 수 있습니다.");
         if (militaryUpgradeBacklog > 0) alerts.add("현재 등급에서 방어시설 " + militaryUpgradeBacklog + "곳을 더 개량할 수 있습니다.");
 
         String priority;
@@ -127,6 +137,8 @@ public record SettlementOperationsSummary(
             priority = "생산시설 개량 투자";
         } else if (logisticsUpgradeBacklog > 0) {
             priority = "창고·수레 정거장 확장";
+        } else if (cityInvestmentBacklog > 0) {
+            priority = "시민회관·교역회관 도시 투자";
         } else if (militaryUpgradeBacklog > 0) {
             priority = "방어망 개량 투자";
         } else if (snapshot.nextGoal() != null && !snapshot.nextGoal().isBlank()) {
@@ -139,7 +151,7 @@ public record SettlementOperationsSummary(
                 housingCapacity, productionSites, productionWorking, productionMissingWorker,
                 productionBlocked, productionUnknown, productionUpgradeBacklog,
                 warehouses, cartStations, logisticsSaturated, logisticsUpgradeBacklog,
-                guardPosts, watchtowers, barracks, citadels, militaryUpgradeBacklog,
+                guardPosts, watchtowers, barracks, citadels, militaryUpgradeBacklog, cityInvestmentBacklog,
                 snapshot.context().outpostCount(), priority, alerts);
     }
 

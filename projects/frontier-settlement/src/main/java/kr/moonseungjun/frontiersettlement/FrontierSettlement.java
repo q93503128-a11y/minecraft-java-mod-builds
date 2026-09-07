@@ -10,6 +10,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementBarracksService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementBenefitService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCartStationService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCivilWorkService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementCityInvestmentService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionOfficeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementConstructionService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementCoreService;
@@ -61,6 +62,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementConstructionOfficeService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementProductionUpgradeService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementLogisticsUpgradeService::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementCityInvestmentService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementMilitaryUpgradeService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementEquipmentUpgradeService::onItemAttributeModifiers);

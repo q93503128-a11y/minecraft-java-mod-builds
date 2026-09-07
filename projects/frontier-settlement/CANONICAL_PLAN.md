@@ -1024,3 +1024,15 @@ The RTS-management layer remains presentation-first and low-micromanagement:
 - Facility grades remain physical-building state. Tier unlocks a ceiling; the player pays real settlement wood/stone/copper/iron at the existing world interaction point.
 - A new production/logistics/military building starts at grade I; UI must never imply that settlement tier grants its grade for free.
 - Long-term RTS pressure should come from visible construction, storage, equipment, military, logistics and facility investment sinks rather than passive daily deletion of resources.
+
+### Alpha.126 — city-scale physical investment
+
+The late game must consume the abundance created by physical production instead of solving abundance by silently throttling workers. Civic Hall and Trade Hall therefore become repeatable I-IV investment anchors using their existing persisted `BuildingRecord.upgradeGrade`. The city grade is not a currency or a new tier: Frontier still has one physical ItemStack economy and the settlement tier only unlocks the maximum purchasable grade.
+
+Canonical costs are intentionally city-scale. Civic II/III/IV consumes 320/256/48, 640/512/128 and 1024/768/256 wood/stone/common copper-or-iron items; Trade II/III/IV consumes 384/288/64, 768/576/160 and 1280/896/320. Gold, diamond and arbitrary high-value modded metals cannot silently satisfy these item-count payments.
+
+Civic grade I preserves the existing 20-second civilian vacancy-attraction cadence and +2 builder contribution. II/III/IV improve that to 16s/+3, 13s/+4 and 10s/+5 while the global builder hard cap remains 14. Trade grade I preserves the existing +4 relic-market bonus and II/III/IV raise only that component to +6/+8/+10; exploration/conquest/territory-network bonuses keep their own existing caps. No grade mints residents, emeralds, cargo or resources.
+
+The interaction remains physical and local: empty-hand sneak-right-click the Civic Hall lectern or Trade Hall bell while shared storage is fully loaded. The entire wood/stone/common-metal payment is checked and removed through the existing settlement storage authority before the grade is committed. City grades do not become Frontier Capital requirements, preventing an existing save from being demoted by a new optional investment system.
+
+UI is observational: server context publishes the persisted city grade and next cost, and the Alpha.125 operations summary derives the city-investment backlog from that already-synchronized context instead of starting new entity or world scans.

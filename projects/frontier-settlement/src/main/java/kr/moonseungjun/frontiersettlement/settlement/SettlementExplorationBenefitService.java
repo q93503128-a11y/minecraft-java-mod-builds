@@ -37,7 +37,6 @@ public final class SettlementExplorationBenefitService {
     public static final int MARKET_EMERALD_BONUS_PER_CONQUEST = 2;
     public static final int MARKET_EMERALD_BONUS_PER_TRADE = 1;
     public static final int MARKET_EMERALD_BONUS_PER_NETWORK_LEVEL = 1;
-    public static final int MARKET_EMERALD_BONUS_TRADE_HALL = 4;
     public static final int REPAIR_BONUS_PER_SURVEY = 16;
     public static final int REPAIR_BONUS_PER_CONQUEST = 8;
     public static final int REPAIR_BONUS_PER_INDUSTRIAL = 12;
@@ -141,7 +140,7 @@ public final class SettlementExplorationBenefitService {
                 + conquestLevel(data) * MARKET_EMERALD_BONUS_PER_CONQUEST
                 + tradeKnowledge(data) * MARKET_EMERALD_BONUS_PER_TRADE
                 + territoryNetworkLevel(data) * MARKET_EMERALD_BONUS_PER_NETWORK_LEVEL
-                + (data.buildingCount(BuildingType.TRADE_HALL) > 0 ? MARKET_EMERALD_BONUS_TRADE_HALL : 0);
+                + SettlementCityInvestmentService.tradeHallMarketBonus(data);
     }
 
     public static int marketPayout(SettlementData data, int basePayout) {

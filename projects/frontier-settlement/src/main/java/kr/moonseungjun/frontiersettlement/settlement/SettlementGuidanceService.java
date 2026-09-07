@@ -25,15 +25,14 @@ public final class SettlementGuidanceService {
         if (data.roads().isEmpty()) return "다음 목표 · M 메뉴 → 도로 계획";
         if (data.outposts().isEmpty()) return "다음 목표 · M 메뉴 → 도로 끝에 전초기지";
         if (data.population() < 4) return populationGoal(data, 4);
-        if (data.buildingCount(BuildingType.MARKET) < 1) return buildingGoal(data, BuildingType.MARKET);
-        if (data.buildingCount(BuildingType.CART_STATION) < 1) return buildingGoal(data, BuildingType.CART_STATION);
-        if (data.buildingCount(BuildingType.CONSTRUCTION_OFFICE) < 1) return buildingGoal(data, BuildingType.CONSTRUCTION_OFFICE);
         if (data.buildingCount(BuildingType.MINE) < 1) return buildingGoal(data, BuildingType.MINE);
+        if (data.buildingCount(BuildingType.MARKET) < 1) return buildingGoal(data, BuildingType.MARKET);
+        if (data.buildingCount(BuildingType.CONSTRUCTION_OFFICE) < 1) return buildingGoal(data, BuildingType.CONSTRUCTION_OFFICE);
+        if (data.buildingCount(BuildingType.CART_STATION) < 1) return buildingGoal(data, BuildingType.CART_STATION);
         if (data.outposts().size() < 2) return "다음 목표 · 두 번째 도로·전초기지 확보";
         if (data.population() < 8) return populationGoal(data, 8);
         if (data.buildingCount(BuildingType.BLACKSMITH) < 1) return buildingGoal(data, BuildingType.BLACKSMITH);
         if (data.buildingCount(BuildingType.WORKSHOP) < 1) return buildingGoal(data, BuildingType.WORKSHOP);
-        if (data.buildingCount(BuildingType.FARM) < 2) return "다음 목표 · 농장 2곳으로 식량 기반 확대";
         if (data.buildingCount(BuildingType.CIVIC_HALL) < 1) {
             String lock = SettlementConstructionService.lockedReason(data, BuildingType.CIVIC_HALL);
             return lock == null ? buildingGoal(data, BuildingType.CIVIC_HALL) : "중후반 목표 · " + lock;

@@ -60,8 +60,8 @@ public final class SettlementWorkerService {
     private static final long STUCK_PROGRESS_TIMEOUT_TICKS = 80L;
     private static final int MAX_APPROACH_PATH_TRIES = 64;
     private static final int PRODUCTION_HAUL_STACK = 64;
-    private static final int BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600;
-    private static final int CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400;
+    // Civic administration cadence is owned by SettlementCityInvestmentService so one grade
+    // controls both the UI promise and the actual vacancy-attraction scheduler.
     // Duplicate/migration scans are recovery maintenance, not production AI. Running their broad
     // entity/evidence queries every 10 ticks wasted time in healthy saves; 200 still divides the
     // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.
@@ -80,9 +80,7 @@ public final class SettlementWorkerService {
     public static long arrivalFoodCost() { return ARRIVAL_FOOD_COST; }
 
     public static int workerAttractionIntervalTicks(SettlementData data) {
-        return data.buildingCount(BuildingType.CIVIC_HALL) > 0
-                ? CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS
-                : BASE_WORKER_ATTRACTION_INTERVAL_TICKS;
+        return SettlementCityInvestmentService.workerAttractionIntervalTicks(data);
     }
 
     public record NormalizeResult(int removedProductionWorkers, int loadedProductionWorkers) {}

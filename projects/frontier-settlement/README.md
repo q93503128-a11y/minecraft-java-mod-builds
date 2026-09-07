@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.125
+## Current version: 0.1.0-alpha.126
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -269,3 +269,16 @@ Treat these as playtest evidence, not assumptions.
 - Productive outpost-to-town freight grows with cart-station grade (32/40/48 items before bonuses), then receives up to +8 from the best warehouse and the existing territory-network bonus, with a hard 64-item cap.
 - Military and waterfront reverse-supply trips deliberately keep the existing ordinary cart-station cap; Alpha.123 does not create a second transporter, teleport cargo or force-load routes.
 - M/Jade building context shows logistics grade, physical storage usage, saturation and the next upgrade requirement/cost.
+
+## Alpha.126 city investment
+
+- Civic hall and trade hall now use paid city-investment grades I-IV without adding a currency, tax, happiness meter or second settlement ledger.
+- Every newly completed landmark begins at city I. Grade II unlocks at Frontier Town, III at Domain and IV at Frontier Capital; settlement tier remains an unlock ceiling, not a free global upgrade.
+- Civic hall II/III/IV cost 320/256/48, 640/512/128 and 1024/768/256 wood/stone/common copper-or-iron items.
+- Trade hall II/III/IV cost 384/288/64, 768/576/160 and 1280/896/320 wood/stone/common copper-or-iron items.
+- Civic administration preserves the existing grade-I 20-second civilian attraction cadence and +2 builder bonus, then scales to 16s/+3, 13s/+4 and 10s/+5.
+- Trade administration preserves the existing grade-I relic-market +4 bonus, then scales to +6/+8/+10. Exploration, conquest and territory-network bonuses still stack through their existing capped authorities.
+- Investments are explicit local interactions: empty-hand sneak-right-click the civic-hall lectern or trade-hall bell. All storage must be loaded and the shared physical ItemStacks are removed before the grade commit.
+- City grades are optional power/resource sinks and do not become new Frontier Capital prerequisites, so existing saves are never downgraded by this pass.
+- The M operations snapshot now reports available city-investment backlog without launching another server scan.
+- Progression guidance now places the mine at its real Village-era availability and no longer forces a second farm when farm + warehouse already satisfies the mature-food predicate.

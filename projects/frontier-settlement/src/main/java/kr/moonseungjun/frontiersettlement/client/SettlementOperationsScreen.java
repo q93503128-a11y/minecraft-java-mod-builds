@@ -104,7 +104,8 @@ public final class SettlementOperationsScreen extends Screen {
 
         drawCard(graphics, innerX, top, cardWidth, cardHeight, "성장 · 인구", List.of(
                 "인구 " + snapshot.population() + " / 주거 " + summary.housingCapacity(),
-                "건물 " + snapshot.context().buildingCount() + " · 전초 " + summary.outposts(),
+                "건물 " + snapshot.context().buildingCount() + " · 전초 " + summary.outposts()
+                        + " · 도시 투자 " + summary.cityInvestmentBacklog(),
                 projectLine(snapshot)));
 
         drawCard(graphics, innerX + cardWidth + gap, top, cardWidth, cardHeight, "생산", List.of(

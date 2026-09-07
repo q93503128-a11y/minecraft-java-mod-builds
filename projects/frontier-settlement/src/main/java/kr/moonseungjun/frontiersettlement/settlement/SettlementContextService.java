@@ -178,8 +178,13 @@ public final class SettlementContextService {
                     + SettlementOutpostLogisticsService.productiveTransportBatchSize(data) + "개/회 · "
                     + SettlementLogisticsUpgradeService.storageSummary(level, building) + " · "
                     + SettlementLogisticsUpgradeService.upgradeHint(data, building);
-            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";
-            case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
+            case CIVIC_HALL -> "완공 · 도시 " + SettlementCityInvestmentService.roman(SettlementCityInvestmentService.grade(building))
+                    + " · 시민 중심 · 주거 +" + type.housingGain() + " · "
+                    + SettlementCityInvestmentService.civicEffectSummary(data) + " · "
+                    + SettlementCityInvestmentService.upgradeHint(data, building);
+            case TRADE_HALL -> "완공 · 도시 " + SettlementCityInvestmentService.roman(SettlementCityInvestmentService.grade(building))
+                    + " · " + SettlementCityInvestmentService.tradeEffectSummary(data) + " · 주거 +" + type.housingGain()
+                    + " · " + SettlementCityInvestmentService.upgradeHint(data, building);
             case CITADEL -> "완공 · 군사 " + SettlementMilitaryUpgradeService.roman(SettlementMilitaryUpgradeService.grade(building))
                     + " · 감시 지휘 +" + (int) SettlementMilitaryUpgradeService.citadelWatchBonus(data)
                     + " · 전초 군수 목표 식량 " + SettlementMilitaryUpgradeService.remoteFoodReserve(data)

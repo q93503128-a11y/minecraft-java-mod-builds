@@ -393,7 +393,14 @@ public final class BuildingPaletteScreen extends Screen {
     }
 
     private static String specialEffect(SettlementSnapshotPayload data, BuildingType type) {
-        if (type == BuildingType.CIVIC_HALL) return "주민 유입 20초 · 건설 인력 +2";
+        if (type == BuildingType.CIVIC_HALL) {
+            int ceiling = cityCeiling(data.tier());
+            return "신규 도시 I · 주민 유입 20초 · 건설 인력 +2 · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 강단에서 수동 투자";
+        }
+        if (type == BuildingType.TRADE_HALL) {
+            int ceiling = cityCeiling(data.tier());
+            return "신규 도시 I · 유물 교역 보너스 +4 · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 종에서 수동 투자";
+        }
         if (type == BuildingType.LUMBER_CAMP || type == BuildingType.FARM
                 || type == BuildingType.QUARRY || type == BuildingType.MINE) {
             int ceiling = productionCeiling(data.tier());
@@ -435,6 +442,10 @@ public final class BuildingPaletteScreen extends Screen {
             case "개척 수도" -> 4;
             default -> 1;
         };
+    }
+
+    private static int cityCeiling(String tier) {
+        return militaryCeiling(tier);
     }
 
     private static String gradeLabel(int grade) {

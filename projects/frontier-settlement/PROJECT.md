@@ -2,7 +2,7 @@
 
 The complete repository-side design source of truth is `CANONICAL_PLAN.md`. Read that file, this current-direction summary and the current `main` source before continuing development. Where an older backlog still treats lifelike NPC simulation or rare-NPC breadth as a priority, the bounded-NPC direction below supersedes that priority without deleting the rest of the original design.
 
-Current implementation delta: **0.1.0-alpha.79**. The large historical canonical/gap documents remain the original scope ledger; this file records the newer bounded-NPC and exploration/outpost gameplay direction until the next consolidated documentation pass.
+Current implementation delta: **0.1.0-alpha.126**. The large historical canonical/gap documents remain the original scope ledger; this file records the current bounded-NPC, physical RTS-economy and exploration/outpost direction.
 
 Non-negotiable summary:
 
@@ -37,3 +37,7 @@ Alpha.78 turns the Alpha.77 territory-network level into a small physical logist
 ### Alpha.79 pre-playtest manual-audit hardening
 
 A full manual source pass before the next real client test found two resource-authority edge cases and closes both without adding gameplay scope. New physical outpost construction no longer advances a matching pre-placed blueprint block for free: the builder must still fetch and consume that step's exact wood/stone share, while old prepaid save phases remain untouched. Settlement resource classification is now fail-closed across wood/stone/metal/food: one ItemStack can fund exactly one category, while expedition relics and recognized external weapons can never be consumed as ordinary settlement material even if a companion/datapack accidentally cross-tags them. This also closes the same cross-tag edge in recruitment, workshop upkeep and every shared-storage cost path. No new virtual ledger, menu, worker, chunk loading or companion class dependency is introduced. Real multiplayer/save/reload/transporter-death/route-unload acceptance remains a playtest requirement, not something this source audit claims to prove.
+
+### Alpha.126 city investment direction
+
+Late-game abundance is answered with explicit, repeatable physical investment rather than production nerfs or abstract currencies. Civic Hall and Trade Hall each persist a paid I-IV city grade; the settlement tier only unlocks the ceiling. Civic investment improves bounded resident attraction and builder capacity, Trade investment improves only the existing relic-market component, and every upgrade consumes real loaded wood/stone/common copper-or-iron ItemStacks. City grades are optional and do not gate Frontier Capital, preserving old-save tier stability.
