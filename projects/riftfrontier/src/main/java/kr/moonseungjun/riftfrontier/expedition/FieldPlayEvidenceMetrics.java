@@ -25,7 +25,7 @@ public record FieldPlayEvidenceMetrics(
     OptionalInt minObservedLiveThreats,
     OptionalInt maxObservedLiveThreats,
     OptionalInt terminalObservedLiveThreats,
-    int finalObservedSalvage,
+    OptionalInt finalObservedSalvage,
     String terminalStage,
     String endReason
 ) {
@@ -36,8 +36,7 @@ public record FieldPlayEvidenceMetrics(
                 run.sequence(), 0, 0,
                 OptionalLong.empty(), OptionalLong.empty(), optionalTerminalElapsed(run),
                 OptionalLong.empty(), OptionalLong.empty(),
-                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(),
-                run.recoveredResources().values().stream().mapToInt(Integer::intValue).sum(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(),
                 "legacy-unavailable", run.endReason().serializedName()
             );
         }
@@ -82,7 +81,7 @@ public record FieldPlayEvidenceMetrics(
             threats.getCount() == 0 ? OptionalInt.empty() : OptionalInt.of(threats.getMin()),
             threats.getCount() == 0 ? OptionalInt.empty() : OptionalInt.of(threats.getMax()),
             terminalThreats,
-            last.recoveredSalvage(),
+            OptionalInt.of(last.recoveredSalvage()),
             last.stage().terminal() ? last.stage().serializedName() : "active",
             run.endReason().serializedName()
         );
@@ -110,7 +109,7 @@ public record FieldPlayEvidenceMetrics(
             + ";liveThreatsMin=" + render(minObservedLiveThreats)
             + ";liveThreatsMax=" + render(maxObservedLiveThreats)
             + ";terminalLiveThreats=" + render(terminalObservedLiveThreats)
-            + ";finalSalvage=" + finalObservedSalvage
+            + ";finalSalvage=" + render(finalObservedSalvage)
             + ";terminalStage=" + terminalStage
             + ";endReason=" + endReason;
     }
