@@ -1,5 +1,6 @@
 package kr.moonseungjun.riftfrontier.persistence;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -52,8 +53,17 @@ public final class PersistenceMigrationRegistry {
         return Map.copyOf(state);
     }
 
-    /** Pre-alpha legacy root (schema 0) carried no structural fields beyond the payload itself. */
+    /**
+     * Schema 0 was the pre-alpha unversioned root. Schema 1 introduced revision/content breadcrumbs.
+     * Schema 2 introduces persisted expedition runs. Old worlds migrate with an explicit empty run list.
+     */
     public static PersistenceMigrationRegistry defaults() {
-        return new PersistenceMigrationRegistry().register(0, input -> new LinkedHashMap<>(input));
+        return new PersistenceMigrationRegistry()
+            .register(0, input -> new LinkedHashMap<>(input))
+            .register(1, input -> {
+                Map<String, Object> migrated = new LinkedHashMap<>(input);
+                migrated.putIfAbsent("expeditions", new ArrayList<>());
+                return migrated;
+            });
     }
 }
