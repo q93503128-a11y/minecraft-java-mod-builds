@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "pack_id": "riftfrontier:fixture/vertical_slice_01",
+  "definitions": [
+    {
+      "kind": "combat_archetype",
+      "id": "riftfrontier:archetype/pursuer",
+      "behaviours": ["pursue", "melee_combo"]
+    },
+    {
+      "kind": "combat_archetype",
+      "id": "riftfrontier:archetype/skirmisher",
+      "behaviours": ["orbit", "retreat", "ranged_pressure"]
+    },
+    {
+      "kind": "region",
+      "id": "riftfrontier:region/vertical_slice_01",
+      "gameplay_rule": "expedition pressure changes with unresolved local threat",
+      "archetypes": [
+        "riftfrontier:archetype/pursuer",
+        "riftfrontier:archetype/skirmisher"
+      ]
+    },
+    {
+      "kind": "loot_profile",
+      "id": "riftfrontier:loot/salvage_basic",
+      "pools": ["field_salvage", "regional_material"]
+    },
+    {
+      "kind": "creature",
+      "id": "riftfrontier:creature/fixture_scout",
+      "region": "riftfrontier:region/vertical_slice_01",
+      "archetype": "riftfrontier:archetype/skirmisher",
+      "loot_profile": "riftfrontier:loot/salvage_basic",
+      "behaviours": ["orbit", "retreat", "ranged_pressure"]
+    },
+    {
+      "kind": "creature",
+      "id": "riftfrontier:creature/fixture_hunter",
+      "region": "riftfrontier:region/vertical_slice_01",
+      "archetype": "riftfrontier:archetype/pursuer",
+      "loot_profile": "riftfrontier:loot/salvage_basic",
+      "behaviours": ["pursue", "melee_combo"]
+    },
+    {
+      "kind": "encounter",
+      "id": "riftfrontier:encounter/fixture_patrol",
+      "region": "riftfrontier:region/vertical_slice_01",
+      "participants": [
+        "riftfrontier:creature/fixture_scout",
+        "riftfrontier:creature/fixture_hunter"
+      ],
+      "objective": "recover expedition salvage while breaking contact or defeating the patrol",
+      "world_consequence": "local threat decreases and recovered supply becomes available to the return loop"
+    }
+  ]
+}
