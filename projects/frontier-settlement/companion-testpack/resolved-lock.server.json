@@ -193,7 +193,7 @@
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "34597ec234acc8c567f7e6a3e25570f31f906fd8",
+    "source_sha": "1087e280f4aaf356639c214420e9d4380d7c48db",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; client-preferred entries are omitted from the server profile."
   }
 }
