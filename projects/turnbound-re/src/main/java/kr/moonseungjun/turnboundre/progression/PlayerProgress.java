@@ -1,5 +1,7 @@
 package kr.moonseungjun.turnboundre.progression;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.turnboundre.data.ProgressionDefinition;
 
 import java.util.HashSet;
@@ -18,8 +20,20 @@ public record PlayerProgress(
 ) {
     public static final int CURRENT_SCHEMA = 1;
 
+    public static final Codec<PlayerProgress> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.INT.fieldOf("schemaVersion").forGetter(PlayerProgress::schemaVersion),
+            Codec.LONG.fieldOf("coin").forGetter(PlayerProgress::coin),
+            Codec.LONG.fieldOf("essence").forGetter(PlayerProgress::essence),
+            Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("shards", Map.of()).forGetter(PlayerProgress::shards),
+            Codec.unboundedMap(Codec.STRING, CharacterProgress.CODEC).optionalFieldOf("characters", Map.of()).forGetter(PlayerProgress::characters),
+            Codec.STRING.listOf().optionalFieldOf("party", List.of()).forGetter(PlayerProgress::party),
+            Codec.INT.fieldOf("partyCapacity").forGetter(PlayerProgress::partyCapacity)
+    ).apply(instance, PlayerProgress::new));
+
     public PlayerProgress {
-        if (schemaVersion < 1) throw new IllegalArgumentException("schemaVersion must be >= 1");
+        if (schemaVersion < 1 || schemaVersion > CURRENT_SCHEMA) {
+            throw new IllegalArgumentException("unsupported schemaVersion " + schemaVersion);
+        }
         if (coin < 0 || essence < 0) throw new IllegalArgumentException("currencies must be >= 0");
         if (partyCapacity < 1) throw new IllegalArgumentException("partyCapacity must be >= 1");
         shards = shards == null ? Map.of() : Map.copyOf(shards);
