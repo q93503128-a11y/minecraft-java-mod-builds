@@ -29,6 +29,29 @@ class M5UiLayoutMetricsTest {
     }
 
     @Test
+    void targetChooserReusesCommandStripInsteadOfCreatingCenterModal() {
+        for (int[] size : List.of(
+                new int[]{480, 270},
+                new int[]{640, 360},
+                new int[]{1280, 720},
+                new int[]{1920, 1080})) {
+            UiLayoutMetrics.BattleHudLayout hud = UiLayoutMetrics.battleHud(size[0], size[1]);
+            UiLayoutMetrics.TargetChooserLayout chooser = UiLayoutMetrics.targetChooser(size[0], size[1]);
+
+            assertEquals(hud.commandStrip(), chooser.region());
+            assertTrue(chooser.header().inside(size[0], size[1]));
+            assertTrue(chooser.grid().inside(size[0], size[1]));
+            assertFalse(chooser.region().intersects(hud.reservedWorldViewport()),
+                    () -> "target chooser invaded world viewport at " + size[0] + "x" + size[1]);
+            assertEquals(chooser.columns() * chooser.rows(), chooser.pageSize());
+            assertTrue(chooser.pageSize() >= 2);
+        }
+
+        assertEquals(6, UiLayoutMetrics.targetChooser(1280, 720).pageSize(),
+                "normal desktop layout should expose six targets without a popup");
+    }
+
+    @Test
     void unsupportedTinyLogicalCanvasIsDetectedBeforeRenderAndStillFailsExplicitLayout() {
         assertFalse(UiLayoutMetrics.supportsBattleHud(320, 180));
         IllegalArgumentException error = assertThrows(
