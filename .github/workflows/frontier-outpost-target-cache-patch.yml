@@ -23,257 +23,206 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          from textwrap import dedent, indent
+          import re
 
           source = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostProductionService.java')
           audit = Path('projects/frontier-settlement/tools/test_current_source.py')
           s = source.read_text(encoding='utf-8')
 
-          def replace_once(old: str, new: str, label: str):
+          def sub_once(pattern: str, replacement: str, label: str, flags: int = 0):
               global s
-              count = s.count(old)
+              s, count = re.subn(pattern, lambda _: replacement, s, count=1, flags=flags)
               if count != 1:
                   raise SystemExit(f'{label}: expected 1 match, found {count}')
-              s = s.replace(old, new, 1)
 
-          replace_once(
-          '''    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
-              private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
-          ''',
-          '''    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
-              private static final int TARGET_RESCAN_DELAY_TICKS = 100;
-              private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
-              // Lumber/quarry targets are physical world coordinates, not resource authority. Reuse a still-valid
-              // target while a worker walks or waits for its production cadence instead of rescanning thousands of
-              // blocks every ten ticks. Empty searches back off for five seconds; invalidated cached targets retry
-              // immediately so player/world changes remain responsive without shrinking the authored work radius.
-              private static final Map<Integer, BlockPos> LUMBER_TARGET_CACHE = new HashMap<>();
-              private static final Map<Integer, BlockPos> QUARRY_TARGET_CACHE = new HashMap<>();
-              private static final Map<Integer, Long> LUMBER_TARGET_RETRY_AFTER = new HashMap<>();
-              private static final Map<Integer, Long> QUARRY_TARGET_RETRY_AFTER = new HashMap<>();
-          ''',
-          'target cache fields')
+          fields = indent(dedent('''\
+          private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
+          private static final int TARGET_RESCAN_DELAY_TICKS = 100;
+          private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
+          // Lumber/quarry targets are physical world coordinates, not resource authority. Reuse a still-valid
+          // target while a worker walks or waits for its production cadence instead of rescanning thousands of
+          // blocks every ten ticks. Empty searches back off for five seconds; invalidated cached targets retry
+          // immediately so player/world changes remain responsive without shrinking the authored work radius.
+          private static final Map<Integer, BlockPos> LUMBER_TARGET_CACHE = new HashMap<>();
+          private static final Map<Integer, BlockPos> QUARRY_TARGET_CACHE = new HashMap<>();
+          private static final Map<Integer, Long> LUMBER_TARGET_RETRY_AFTER = new HashMap<>();
+          private static final Map<Integer, Long> QUARRY_TARGET_RETRY_AFTER = new HashMap<>();'''), '    ')
+          sub_once(
+              r'    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;\n    private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>\(\);',
+              fields,
+              'target cache fields')
 
-          replace_once(
-          '''        Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
-              for (OutpostRecord outpost : data.outposts()) {
-                  if ("general".equals(outpost.specialization())) continue;
-                  if (maintenance) liveSpecializedOutposts.add(outpost.id());
-          ''',
-          '''        Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
-              Set<Integer> liveLumberOutposts = maintenance ? new HashSet<>() : Set.of();
-              Set<Integer> liveQuarryOutposts = maintenance ? new HashSet<>() : Set.of();
-              for (OutpostRecord outpost : data.outposts()) {
-                  if ("general".equals(outpost.specialization())) continue;
-                  if (maintenance) {
-                      liveSpecializedOutposts.add(outpost.id());
-                      if ("lumber".equals(outpost.specialization())) liveLumberOutposts.add(outpost.id());
-                      if ("quarry".equals(outpost.specialization())) liveQuarryOutposts.add(outpost.id());
-                  }
-          ''',
-          'maintenance live sets')
+          live_sets = indent(dedent('''\
+          Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
+          Set<Integer> liveLumberOutposts = maintenance ? new HashSet<>() : Set.of();
+          Set<Integer> liveQuarryOutposts = maintenance ? new HashSet<>() : Set.of();
+          for (OutpostRecord outpost : data.outposts()) {
+              if ("general".equals(outpost.specialization())) continue;
+              if (maintenance) {
+                  liveSpecializedOutposts.add(outpost.id());
+                  if ("lumber".equals(outpost.specialization())) liveLumberOutposts.add(outpost.id());
+                  if ("quarry".equals(outpost.specialization())) liveQuarryOutposts.add(outpost.id());
+              }'''), '        ')
+          sub_once(
+              r'        Set<Integer> liveSpecializedOutposts = maintenance \? new HashSet<>\(\) : Set\.of\(\);\n        for \(OutpostRecord outpost : data\.outposts\(\)\) \{\n            if \("general"\.equals\(outpost\.specialization\(\)\)\) continue;\n            if \(maintenance\) liveSpecializedOutposts\.add\(outpost\.id\(\)\);',
+              live_sets,
+              'maintenance live sets')
 
-          replace_once(
-          '''        if (maintenance) WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
-              }
-          ''',
-          '''        if (maintenance) {
-                  WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
-                  LUMBER_TARGET_CACHE.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
-                  LUMBER_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
-                  QUARRY_TARGET_CACHE.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
-                  QUARRY_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
-              }
-              }
-          ''',
-          'maintenance cache cleanup')
+          cleanup = indent(dedent('''\
+          if (maintenance) {
+              WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
+              LUMBER_TARGET_CACHE.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
+              LUMBER_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
+              QUARRY_TARGET_CACHE.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
+              QUARRY_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
+          }'''), '        ')
+          sub_once(
+              r'        if \(maintenance\) WORKER_UUID_CACHE\.keySet\(\)\.removeIf\(id -> !liveSpecializedOutposts\.contains\(id\)\);',
+              cleanup,
+              'maintenance cache cleanup')
 
-          replace_once(
-          '''    private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-                  BlockPos target = findTree(level, data, outpost.center(), TREE_RADIUS);
-                  if (target == null) {
-                      move(worker, outpost.center().above(), 0.65D);
-                      return;
-                  }
-                  if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
-                      SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.8D, 8.0D);
-                      return;
-                  }
-                  if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
-                  ItemStack harvested = harvestVerticalTrunk(level, data, target);
-                  if (!harvested.isEmpty()) {
-                      worker.swing(InteractionHand.MAIN_HAND);
-                      worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                      SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, LUMBER_WORK_PERIOD_TICKS);
-                  }
+          work_block = indent(dedent('''\
+          private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
+              BlockPos target = resolveLumberTarget(level, data, outpost);
+              if (target == null) {
+                  move(worker, outpost.center().above(), 0.65D);
+                  return;
               }
-
-              private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-                  BlockPos target = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
-                  if (target == null) target = findManagedQuarryStone(level, data, outpost.center());
-                  if (target == null) {
-                      move(worker, outpost.center().above(), 0.65D);
-                      return;
-                  }
-                  BlockPos approach = quarryApproach(level, data, target);
-                  if (approach == null) return;
-                  if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
-                      SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
-                      return;
-                  }
-                  if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
-                  if (!level.getBlockState(target.above()).isAir()) {
-                      if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);
-                      return;
-                  }
-                  ItemStack harvested = harvestStoneCluster(level, data, target);
-                  if (!harvested.isEmpty()) {
-                      worker.swing(InteractionHand.MAIN_HAND);
-                      worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                      SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
-                  }
+              if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
+                  SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.8D, 8.0D);
+                  return;
               }
-          ''',
-          '''    private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-                  BlockPos target = resolveLumberTarget(level, data, outpost);
-                  if (target == null) {
-                      move(worker, outpost.center().above(), 0.65D);
-                      return;
-                  }
-                  if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
-                      SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.8D, 8.0D);
-                      return;
-                  }
-                  if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
-                  // Natural-leaf evidence is expensive, so confirm it only when a harvest is actually due rather
-                  // than on every navigation tick. The full search required the same evidence when caching target.
-                  if (!hasLeavesAbove(level, target)) {
-                      invalidateLumberTarget(outpost.id());
-                      return;
-                  }
-                  ItemStack harvested = harvestVerticalTrunk(level, data, target);
+              if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
+              // Natural-leaf evidence is expensive, so confirm it only when a harvest is actually due rather
+              // than on every navigation tick. The full search required the same evidence when caching target.
+              if (!hasLeavesAbove(level, target)) {
                   invalidateLumberTarget(outpost.id());
-                  if (!harvested.isEmpty()) {
-                      worker.swing(InteractionHand.MAIN_HAND);
-                      worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                      SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, LUMBER_WORK_PERIOD_TICKS);
-                  }
+                  return;
               }
+              ItemStack harvested = harvestVerticalTrunk(level, data, target);
+              invalidateLumberTarget(outpost.id());
+              if (!harvested.isEmpty()) {
+                  worker.swing(InteractionHand.MAIN_HAND);
+                  worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+                  SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, LUMBER_WORK_PERIOD_TICKS);
+              }
+          }
 
-              private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-                  BlockPos target = resolveQuarryTarget(level, data, outpost);
-                  if (target == null) {
-                      move(worker, outpost.center().above(), 0.65D);
-                      return;
-                  }
-                  BlockPos approach = quarryApproach(level, data, target);
-                  if (approach == null) {
-                      invalidateQuarryTarget(outpost.id());
-                      return;
-                  }
-                  if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
-                      SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
-                      return;
-                  }
-                  if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
-                  if (!level.getBlockState(target.above()).isAir()) {
-                      if (clearTopQuarryOverburden(level, data, target)) {
-                          worker.swing(InteractionHand.MAIN_HAND);
-                      } else {
-                          invalidateQuarryTarget(outpost.id());
-                      }
-                      return;
-                  }
-                  ItemStack harvested = harvestStoneCluster(level, data, target);
+          private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
+              BlockPos target = resolveQuarryTarget(level, data, outpost);
+              if (target == null) {
+                  move(worker, outpost.center().above(), 0.65D);
+                  return;
+              }
+              BlockPos approach = quarryApproach(level, data, target);
+              if (approach == null) {
                   invalidateQuarryTarget(outpost.id());
-                  if (!harvested.isEmpty()) {
+                  return;
+              }
+              if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
+                  SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
+                  return;
+              }
+              if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
+              if (!level.getBlockState(target.above()).isAir()) {
+                  if (clearTopQuarryOverburden(level, data, target)) {
                       worker.swing(InteractionHand.MAIN_HAND);
-                      worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                      SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
+                  } else {
+                      invalidateQuarryTarget(outpost.id());
                   }
+                  return;
               }
+              ItemStack harvested = harvestStoneCluster(level, data, target);
+              invalidateQuarryTarget(outpost.id());
+              if (!harvested.isEmpty()) {
+                  worker.swing(InteractionHand.MAIN_HAND);
+                  worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
+                  SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
+              }
+          }
 
-              private static BlockPos resolveLumberTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-                  int id = outpost.id();
-                  BlockPos cached = LUMBER_TARGET_CACHE.get(id);
-                  if (cached != null) {
-                      if (validCachedLumberTarget(level, data, outpost, cached)) return cached;
-                      invalidateLumberTarget(id);
-                  }
-                  long now = level.getGameTime();
-                  Long retryAfter = LUMBER_TARGET_RETRY_AFTER.get(id);
-                  if (retryAfter != null && now < retryAfter) return null;
-                  BlockPos found = findTree(level, data, outpost.center(), TREE_RADIUS);
-                  if (found == null) {
-                      LUMBER_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
-                      return null;
-                  }
-                  LUMBER_TARGET_CACHE.put(id, found);
-                  LUMBER_TARGET_RETRY_AFTER.remove(id);
-                  return found;
+          private static BlockPos resolveLumberTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+              int id = outpost.id();
+              BlockPos cached = LUMBER_TARGET_CACHE.get(id);
+              if (cached != null) {
+                  if (validCachedLumberTarget(level, data, outpost, cached)) return cached;
+                  invalidateLumberTarget(id);
               }
+              long now = level.getGameTime();
+              Long retryAfter = LUMBER_TARGET_RETRY_AFTER.get(id);
+              if (retryAfter != null && now < retryAfter) return null;
+              BlockPos found = findTree(level, data, outpost.center(), TREE_RADIUS);
+              if (found == null) {
+                  LUMBER_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
+                  return null;
+              }
+              LUMBER_TARGET_CACHE.put(id, found);
+              LUMBER_TARGET_RETRY_AFTER.remove(id);
+              return found;
+          }
 
-              private static boolean validCachedLumberTarget(ServerLevel level, SettlementData data,
-                                                              OutpostRecord outpost, BlockPos target) {
-                  if (!withinTargetEnvelope(outpost.center(), target, TREE_RADIUS, -4, 10) || !level.hasChunkAt(target)) return false;
-                  return level.getBlockState(target).is(BlockTags.LOGS) && !isProtected(data, target);
-              }
+          private static boolean validCachedLumberTarget(ServerLevel level, SettlementData data,
+                                                          OutpostRecord outpost, BlockPos target) {
+              if (!withinTargetEnvelope(outpost.center(), target, TREE_RADIUS, -4, 10) || !level.hasChunkAt(target)) return false;
+              return level.getBlockState(target).is(BlockTags.LOGS) && !isProtected(data, target);
+          }
 
-              private static void invalidateLumberTarget(int outpostId) {
-                  LUMBER_TARGET_CACHE.remove(outpostId);
-                  LUMBER_TARGET_RETRY_AFTER.remove(outpostId);
-              }
+          private static void invalidateLumberTarget(int outpostId) {
+              LUMBER_TARGET_CACHE.remove(outpostId);
+              LUMBER_TARGET_RETRY_AFTER.remove(outpostId);
+          }
 
-              private static BlockPos resolveQuarryTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-                  int id = outpost.id();
-                  BlockPos cached = QUARRY_TARGET_CACHE.get(id);
-                  if (cached != null) {
-                      if (validCachedQuarryTarget(level, data, outpost, cached)) return cached;
-                      invalidateQuarryTarget(id);
-                  }
-                  long now = level.getGameTime();
-                  Long retryAfter = QUARRY_TARGET_RETRY_AFTER.get(id);
-                  if (retryAfter != null && now < retryAfter) return null;
-                  BlockPos found = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
-                  if (found == null) found = findManagedQuarryStone(level, data, outpost.center());
-                  if (found == null) {
-                      QUARRY_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
-                      return null;
-                  }
-                  QUARRY_TARGET_CACHE.put(id, found);
-                  QUARRY_TARGET_RETRY_AFTER.remove(id);
-                  return found;
+          private static BlockPos resolveQuarryTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+              int id = outpost.id();
+              BlockPos cached = QUARRY_TARGET_CACHE.get(id);
+              if (cached != null) {
+                  if (validCachedQuarryTarget(level, data, outpost, cached)) return cached;
+                  invalidateQuarryTarget(id);
               }
+              long now = level.getGameTime();
+              Long retryAfter = QUARRY_TARGET_RETRY_AFTER.get(id);
+              if (retryAfter != null && now < retryAfter) return null;
+              BlockPos found = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
+              if (found == null) found = findManagedQuarryStone(level, data, outpost.center());
+              if (found == null) {
+                  QUARRY_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
+                  return null;
+              }
+              QUARRY_TARGET_CACHE.put(id, found);
+              QUARRY_TARGET_RETRY_AFTER.remove(id);
+              return found;
+          }
 
-              private static boolean validCachedQuarryTarget(ServerLevel level, SettlementData data,
-                                                              OutpostRecord outpost, BlockPos target) {
-                  if (!withinTargetEnvelope(outpost.center(), target, QUARRY_RADIUS, -7, 4) || !level.hasChunkAt(target)) return false;
-                  return isQuarryStone(level.getBlockState(target)) && !isProtected(data, target);
-              }
+          private static boolean validCachedQuarryTarget(ServerLevel level, SettlementData data,
+                                                          OutpostRecord outpost, BlockPos target) {
+              if (!withinTargetEnvelope(outpost.center(), target, QUARRY_RADIUS, -7, 4) || !level.hasChunkAt(target)) return false;
+              return isQuarryStone(level.getBlockState(target)) && !isProtected(data, target);
+          }
 
-              private static void invalidateQuarryTarget(int outpostId) {
-                  QUARRY_TARGET_CACHE.remove(outpostId);
-                  QUARRY_TARGET_RETRY_AFTER.remove(outpostId);
-              }
+          private static void invalidateQuarryTarget(int outpostId) {
+              QUARRY_TARGET_CACHE.remove(outpostId);
+              QUARRY_TARGET_RETRY_AFTER.remove(outpostId);
+          }
 
-              private static boolean withinTargetEnvelope(BlockPos center, BlockPos target, int radius, int minY, int maxY) {
-                  int dx = target.getX() - center.getX();
-                  int dz = target.getZ() - center.getZ();
-                  int dy = target.getY() - center.getY();
-                  return dx * dx + dz * dz <= radius * radius && dy >= minY && dy <= maxY;
-              }
-          ''',
-          'lumber/quarry cached target work')
+          private static boolean withinTargetEnvelope(BlockPos center, BlockPos target, int radius, int minY, int maxY) {
+              int dx = target.getX() - center.getX();
+              int dz = target.getZ() - center.getZ();
+              int dy = target.getY() - center.getY();
+              return dx * dx + dz * dz <= radius * radius && dy >= minY && dy <= maxY;
+          }
+
+          private static void workMine'''), '    ')
+          sub_once(
+              r'    private static void workLumber\(.*?\n    private static void workMine',
+              work_block,
+              'lumber/quarry cached target work',
+              re.S)
 
           source.write_text(s, encoding='utf-8')
 
           a = audit.read_text(encoding='utf-8')
-          old = '''require("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in outpost_production
-                  and "WORKER_UUID_CACHE" in outpost_production
-                  and "resolveCachedWorker" in outpost_production
-                  and "level.getEntity(uuid)" in outpost_production,
-                  "specialized outpost worker lookup returned to wide AABB scans on the hot path")
-          '''
-          new = old + '''require("TARGET_RESCAN_DELAY_TICKS = 100" in outpost_production
+          audit_add = '''require("TARGET_RESCAN_DELAY_TICKS = 100" in outpost_production
                   and "LUMBER_TARGET_CACHE" in outpost_production
                   and "QUARRY_TARGET_CACHE" in outpost_production
                   and "resolveLumberTarget" in outpost_production
@@ -283,9 +232,12 @@ jobs:
                   and "withinTargetEnvelope" in outpost_production,
                   "cached specialized target validation missing")
           '''
-          if a.count(old) != 1:
-              raise SystemExit(f'audit insertion: expected 1 match, found {a.count(old)}')
-          audit.write_text(a.replace(old, new, 1), encoding='utf-8')
+          pattern = (r'(require\("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in outpost_production.*?'
+                     r'"specialized outpost worker lookup returned to wide AABB scans on the hot path"\)\n)')
+          a, count = re.subn(pattern, lambda m: m.group(1) + audit_add, a, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'audit insertion: expected 1 match, found {count}')
+          audit.write_text(a, encoding='utf-8')
           PY
 
           python3 projects/frontier-settlement/tools/test_current_source.py
