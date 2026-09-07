@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.persistence;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,6 +13,18 @@ class PersistenceMigrationRegistryTest {
         var migrated = PersistenceMigrationRegistry.defaults().migrate(0, Map.of("marker", "legacy"));
         assertEquals("legacy", migrated.get("marker"));
         assertEquals(PersistenceSchema.CURRENT, migrated.get(PersistenceSchema.VERSION_KEY));
+        assertEquals(List.of(), migrated.get("expeditions"));
+    }
+
+    @Test
+    void schemaOneExplicitlyAddsEmptyExpeditionDomain() {
+        var migrated = PersistenceMigrationRegistry.defaults().migrate(
+            1,
+            Map.of(PersistenceSchema.VERSION_KEY, 1, "world_revision", 4L)
+        );
+        assertEquals(2, migrated.get(PersistenceSchema.VERSION_KEY));
+        assertEquals(4L, migrated.get("world_revision"));
+        assertEquals(List.of(), migrated.get("expeditions"));
     }
 
     @Test
