@@ -4,13 +4,13 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M2-B — REGION 01 EDGE HARDENED / RESTART RECONCILIATION + FIELD PLAY NEXT`
+`M2-B — RESTART RECONCILIATION VERIFIED / FIELD PLAY NEXT`
 
-M0/M1의 빌드·runtime·content kernel, M2-A 원정 도메인, M2-B의 **원정 결과 → 거점 저장 → 보급 → 다음 원정 변화**와 Region 01 encounter runtime 위에 첫 lifecycle edge-hardening까지 검증했다.
+M0/M1의 빌드·runtime·content kernel, M2-A 원정 도메인, M2-B의 **원정 결과 → 거점 저장 → 보급 → 다음 원정 변화**, Region 01 encounter runtime, same-process edge hardening에 이어 **server restart reconciliation까지 자동 검증**했다.
 
-현재 authoritative persistence root는 schema `3`이다. encounter 묶음은 새 저장 schema를 만들지 않고 기존 `region_01_pressure`를 실제 전투/환경 조건에 사용한다.
+현재 authoritative persistence root는 schema `3`이다. encounter 묶음은 새 저장 schema를 만들지 않고 기존 `region_01_pressure`와 persisted expedition lifecycle을 권위 기준으로 사용한다.
 
-현재 검증 기준 코드 커밋은 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, GitHub Actions `Build Riftfrontier` run `34104215746`이다. **clean/unit test/build, 3 required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다. 검증 JAR SHA-256은 `525d9359b1e5097c677b2775a7c550e33e6352e2be1cf487f9ac84661d55336a`다.
+현재 검증 기준 코드 커밋은 `eef82853220ba36aa1d6d2096293541fc5c92c41`, GitHub Actions `Build Riftfrontier` run `34109970161`이다. **clean/unit test/build, required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다. 검증 JAR SHA-256은 `f42cff32667fa5aab72fb31d196a3d03aff2c265746de8041eed4d169716d490`다.
 
 ## 작업 시작 시 반드시 읽기
 
@@ -25,7 +25,8 @@ M0/M1의 빌드·runtime·content kernel, M2-A 원정 도메인, M2-B의 **원�
 9. 현재 content/runtime/persistence를 다루면 `docs/CONTENT_RUNTIME.md`
 10. expedition 작업이면 `docs/EXPEDITION_RUNTIME.md`
 11. M2 gameplay 작업이면 `docs/M2B_GAMEPLAY_ADAPTER.md`
-12. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
+12. restart/encounter persistence 경계를 다루면 `docs/RESTART_RECONCILIATION.md`
+13. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
 
 ## 방향 요약
 
@@ -77,6 +78,8 @@ Prepare
 - 별도 `ExpeditionRunCodec` persistence adapter
 - `ExpeditionLifecycle`: region/contract/resource 소속 및 contract requirement 검증
 - contract 미충족 extraction은 상태 전이 전에 거부되어 DEPLOYED 상태를 보존
+- server restart 시 persisted non-terminal expedition은 추정 복구하지 않고 명시적으로 `FAILED` 처리
+- restart failure에서도 이미 사용한 preparation supply는 환불하지 않음
 
 ### M2 gameplay adapter / Region 01
 
@@ -98,6 +101,8 @@ Prepare
 - patrol을 제거하고 철수하면 retained salvage +1 bonus; 빠른 철수는 가능하지만 bonus를 포기
 - run sequence가 소유한 direct threat tracking으로 technical cell 밖으로 유인한 살아 있는 적도 patrol-clear를 차단
 - terminal cleanup이 같은 server process에서 추적 중인 run threat를 위치와 무관하게 제거
+- proxy entity에 stable run/role tag를 기록하고, restart 이후 process-local tracker가 없는 persisted proxy는 `EntityJoinLevelEvent`에서 event-driven으로 제거
+- restart orphan cleanup은 startup/per-tick broad world scan을 사용하지 않음
 - vanilla entity는 M2 behaviour 검증용 proxy일 뿐 production art/최종 AI가 아님
 
 ### Verification
@@ -106,22 +111,22 @@ Prepare
 - native Minecraft 26.2 test-function registry + data-driven required GameTest
 - authoritative runtime/state GameTest
 - Region 01 encounter GameTest: pressure plan 변화 + 실제 hunter/scout/elite spawn/tracking + 48블록 lure regression + cleanup
+- restart reconciliation GameTest: non-terminal SavedData run → FAILED, no supply refund, orphan tagged proxy rejection/discard
 - extraction lifecycle unit regression: underfilled 요청이 DEPLOYED 상태를 보존
 - CI GameTest gate: non-zero 실행 marker + required tests passed marker 강제
 - CI dedicated server/client smoke + executable JAR/SHA-256 검증
 
 ## 다음 개발 작업
 
-이번 묶음으로 **장거리 lure 보상 악용, 위치 기반 cleanup 누락, underfilled extraction soft-lock, explicit abort field-exit 누락**은 같은-process runtime 기준으로 닫았다. 같은 문제를 다시 만드는 작업은 하지 않는다.
+이번 묶음으로 **active expedition server restart의 authoritative run 처리와 persisted technical proxy orphan cleanup**까지 닫았다. 같은 문제를 다시 구현하지 않는다.
 
-다음은 M2 vertical slice의 **restart reconciliation + 실제 field-play 품질 검수**다.
+다음은 M2 vertical slice의 **실제 field-play 품질 검수**다.
 
-1. active expedition 중 server stop/restart가 발생했을 때 SavedData run과 persisted encounter proxy의 권위 관계를 재구성하거나 안전하게 실패 처리한다. broad per-tick world scan으로 때우지 않는다.
-2. restart/reload 경계를 자동 검증한다.
-3. 실제 Minecraft client에서 Region 01 원정을 반복 플레이해 combat pacing, spawn spacing, salvage hazard, 빠른 철수/순찰 제거 선택을 검수한다.
-4. death/logout/abort/extraction 직전·직후를 실제 플레이로 재검수한다.
-5. field-play 결과를 근거로 pressure scaling과 patrol reward를 조정한다.
-6. 기술 proxy의 문제를 기록하되 임의 모델/UI를 확정하지 않는다. M3용 combat/visual reference dossier를 먼저 만든다.
-7. 실제 화면/플레이 검수를 통과하기 전에는 combat/presentation 완료를 선언하지 않는다.
+1. 실제 Minecraft client에서 Region 01 원정을 반복 플레이해 combat pacing, spawn spacing, aggro, salvage hazard, 빠른 철수/순찰 제거 선택을 검수한다.
+2. death/logout/abort/extraction 직전·직후와 restart 이후 플레이어 재진입 체감을 실제 플레이로 재검수한다.
+3. field-play 결과를 근거로 pressure scaling과 patrol reward를 조정한다.
+4. 기술 proxy의 문제를 기록하되 임의 모델/UI를 확정하지 않는다.
+5. M3로 넘어가기 전에 `REFERENCE_TARGETS.md` 원칙에 맞는 combat/visual reference dossier를 만든다.
+6. 실제 화면/플레이 검수를 통과하기 전에는 combat/presentation 완료를 선언하지 않는다.
 
 첫 `region_01`이 작은 DLC처럼 완결되기 전에는 추가 지역을 대량 생산하지 않는다.
