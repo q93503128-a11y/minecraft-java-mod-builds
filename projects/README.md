@@ -4,6 +4,12 @@
 
 ## 활성 프로젝트
 
+- [`riftfrontier`](./riftfrontier/) — Riftfrontier / 균열 개척기, 차원 탐사 액션 RPG + 개척·물류 + 산업·연구 + 세력 시뮬레이션
+  - 상태: `M0 CANON LOCKED / BUILD BOOTSTRAP NEXT`
+  - 정본 시작점: [`riftfrontier/README.md`](./riftfrontier/README.md)
+  - 개발 순서: M0 Canon & Bootstrap → M1 Content Kernel → M2 Expedition Vertical Slice → M3 Combat/Boss Quality Gate → M4 Logistics/Industry → M5 Faction/Dynamic World → M6 Region 01 Production Complete → M7 Scale-Out
+  - 핵심 원칙: 콘텐츠 개수보다 시스템 상호작용, Region Pack 밀도, schema/builder/validator 기반 생산, 외부 reference 기반 디자인
+
 - [`turnbound-re`](./turnbound-re/) — TURNBOUND: RE, Minecraft 파티 턴제 RPG
   - 상태: `CORE IMPLEMENTATION READY / FINAL VISUALS GATED`
   - 정본 시작점: [`turnbound-re/README.md`](./turnbound-re/README.md)
