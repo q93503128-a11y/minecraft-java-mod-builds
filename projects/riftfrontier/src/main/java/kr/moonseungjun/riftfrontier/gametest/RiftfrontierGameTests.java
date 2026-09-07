@@ -10,6 +10,8 @@ import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -113,7 +115,19 @@ public final class RiftfrontierGameTests {
             "Encounter runtime must spawn and track every hunter/scout/elite role in the actual GameTest world"
         );
         helper.assertTrue(!Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Live encounter must not report patrol-cleared");
+
+        // Regression: the old 16-block spatial lookup treated a lured but still-living proxy as defeated.
+        var localThreats = helper.getLevel().getEntitiesOfClass(Mob.class, new AABB(center).inflate(12.0D, 8.0D, 12.0D));
+        helper.assertTrue(!localThreats.isEmpty(), "Encounter must expose at least one live proxy for lure-boundary regression coverage");
+        Mob lured = localThreats.getFirst();
+        lured.snapTo(center.getX() + 48.5D, center.getY(), center.getZ() + 48.5D, lured.getYRot(), lured.getXRot());
+        helper.assertTrue(
+            Region01EncounterRuntime.liveThreatCount(helper.getLevel(), center, technicalRun) == spawned.totalThreats(),
+            "A live proxy outside the technical cell must still block patrol-cleared bonus eligibility"
+        );
+
         Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
+        helper.assertTrue(lured.isRemoved(), "Terminal cleanup must discard a tracked proxy even after it left the technical cell");
         helper.assertTrue(Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Run cleanup must remove every encounter proxy");
         helper.succeed();
     }
