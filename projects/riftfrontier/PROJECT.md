@@ -64,6 +64,7 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 19. 원정 콘텐츠 정의와 실제 원정 상태를 섞지 않는다. `Region/ExpeditionResource/Contract/ExtractionResultProfile`은 불변 content policy이고, `ExpeditionRun`은 서버 권위 세계 사실이다.
 20. 원정 상태 전이는 `PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED` 또는 명시적 `FAILED`만 허용하며, 우회 상태 변경을 저장 데이터에서 직접 수행하지 않는다.
 21. 원정은 자신을 만든 content fingerprint를 저장한다. 이후 datapack reload로 현재 콘텐츠가 달라져도 과거 run의 작성 기준을 추적할 수 있어야 한다.
+22. 순수 원정 도메인은 Minecraft/DFU serialization에 직접 의존하지 않는다. `ExpeditionRun`과 `ExpeditionLifecycle`은 순수 상태/규칙이고, `ExpeditionRunCodec`과 SavedData가 persistence adapter를 담당한다.
 
 ## 정본 읽기 순서
 
@@ -83,26 +84,27 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 
 ## 현재 단계
 
-`M2 — EXPEDITION DOMAIN FOUNDATION IMPLEMENTED / GAMEPLAY INTEGRATION NEXT`
+`M2 — EXPEDITION DOMAIN FOUNDATION VERIFIED / GAMEPLAY INTEGRATION NEXT`
 
 M0/M1에서 빌드/JAR, typed content graph, atomic runtime snapshot, ResourceManager reload, pack dependency/provenance, validator issue code, overworld-authoritative SavedData, diagnostics, native GameTest/CI gate를 검증했다.
 
-M2의 첫 도메인 경계로 다음이 구현되어 있다.
+M2-A에서는 다음을 구현하고 검증했다.
 
 - `region`이 노출하는 expedition resource / contract 관계
 - `expedition_resource` content definition
 - `contract` objective / required resource / reward / extraction-result 관계
 - `extraction_result` 정책 정의
 - 전체 graph reference validation
-- 불변 `ExpeditionRun` 상태 머신
+- Minecraft/DFU와 분리된 불변 `ExpeditionRun` 상태 머신
 - `ExpeditionLifecycle` 도메인 서비스
+- 별도 `ExpeditionRunCodec` persistence adapter
 - persistence schema `1 → 2` migration
 - `RiftfrontierWorldData` 아래 expedition run 저장/갱신
 - 첫 vertical-slice fixture의 salvage contract
 - JUnit lifecycle 회귀 테스트
 - native GameTest에서 실제 SavedData root와 원정 상태 전이 검증
 
-이 단계의 CI 전체 green이 확인되기 전에는 M2 기반을 완료로 선언하지 않는다.
+검증 기준 코드 커밋은 `5d226045e3d6c2140bd810124548806c026b0073`, GitHub Actions run은 `34089894370`이다. clean/test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
 
 ## 다음 정확한 개발 경계
 
