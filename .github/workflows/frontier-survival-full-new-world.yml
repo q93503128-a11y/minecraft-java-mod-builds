@@ -5,10 +5,16 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/frontier-survival-full-new-world.yml'
+      - 'projects/frontier-settlement/gradle.properties'
       - 'projects/frontier-settlement/src/main/java/**'
-      - 'projects/survival-ascension/src/main/java/**'
       - 'projects/frontier-settlement/src/main/resources/assets/**/lang/ko_kr.json'
+      - 'projects/frontier-settlement/companion-testpack/resolved-lock.client.json'
+      - 'projects/frontier-settlement/companion-testpack/resolved-lock.server.json'
+      - 'projects/survival-ascension/gradle.properties'
+      - 'projects/survival-ascension/src/main/java/**'
       - 'projects/survival-ascension/src/main/resources/assets/**/lang/ko_kr.json'
+      - 'projects/survival-ascension/modpack/content-lock.json'
+      - 'projects/survival-ascension/tools/build_mrpack.py'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +40,25 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Build Frontier Alpha.91 and Survival 0.61 compatibility JARs
+      - name: Resolve canonical project versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          FRONTIER_VERSION="$(sed -n 's/^mod_version=//p' projects/frontier-settlement/gradle.properties | head -n1)"
+          SURVIVAL_VERSION="$(sed -n 's/^mod_version=//p' projects/survival-ascension/gradle.properties | head -n1)"
+          test -n "$FRONTIER_VERSION"
+          test -n "$SURVIVAL_VERSION"
+          {
+            echo "FRONTIER_VERSION=$FRONTIER_VERSION"
+            echo "SURVIVAL_VERSION=$SURVIVAL_VERSION"
+            echo "FRONTIER_JAR=projects/frontier-settlement/build/libs/frontier_settlement-$FRONTIER_VERSION.jar"
+            echo "SURVIVAL_JAR=projects/survival-ascension/build/libs/survivalascension-$SURVIVAL_VERSION.jar"
+            echo "PACK_FILE=frontier-settlement-$FRONTIER_VERSION-survival-ascension-$SURVIVAL_VERSION-full-ko-jei-new-world.mrpack"
+          } >> "$GITHUB_ENV"
+          echo "Frontier=$FRONTIER_VERSION"
+          echo "Survival=$SURVIVAL_VERSION"
+
+      - name: Build and verify current compatibility JARs
         shell: bash
         run: |
           set -euo pipefail
@@ -54,15 +78,17 @@ jobs:
           PY
           (cd projects/survival-ascension && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
           (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
-          python3 projects/survival-ascension/tools/verify_jar.py projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
-          python3 projects/frontier-settlement/tools/verify_jar.py projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.91.jar
+          test -f "$SURVIVAL_JAR"
+          test -f "$FRONTIER_JAR"
+          python3 projects/survival-ascension/tools/verify_jar.py "$SURVIVAL_JAR"
+          python3 projects/frontier-settlement/tools/verify_jar.py "$FRONTIER_JAR"
 
       - name: Build Survival content-pack manifest from canonical lock
         shell: bash
         run: |
           set -euo pipefail
           python3 projects/survival-ascension/tools/build_mrpack.py \
-            --survival-jar projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar \
+            --survival-jar "$SURVIVAL_JAR" \
             --output "$GITHUB_WORKSPACE/survival-content.mrpack"
 
       - name: Build all-features Korean combined MRPack with JEI
@@ -70,15 +96,21 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import hashlib, json, urllib.request, zipfile
+          import hashlib, json, os, urllib.request, zipfile
           from pathlib import Path
 
           root=Path.cwd()
           frontier_root=root/'projects/frontier-settlement'
           survival_pack=root/'survival-content.mrpack'
-          frontier_jar=frontier_root/'build/libs/frontier_settlement-0.1.0-alpha.91.jar'
-          survival_jar=root/'projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar'
+          frontier_jar=root/os.environ['FRONTIER_JAR']
+          survival_jar=root/os.environ['SURVIVAL_JAR']
+          frontier_version=os.environ['FRONTIER_VERSION']
+          survival_version=os.environ['SURVIVAL_VERSION']
+          out=root/os.environ['PACK_FILE']
           resolved=json.loads((frontier_root/'companion-testpack/resolved-lock.client.json').read_text(encoding='utf-8'))
+          target=resolved.get('target') or {}
+          if target.get('frontier_settlement') != frontier_version:
+              raise SystemExit(f"Frontier resolved lock mismatch: {target.get('frontier_settlement')} != {frontier_version}")
           with zipfile.ZipFile(survival_pack) as z:
               survival_index=json.loads(z.read('modrinth.index.json'))
 
@@ -100,7 +132,7 @@ jobs:
                       'server':'unsupported' if f['id']=='xaeros_minimap' else 'required'
                   },
                   'downloads':[f['url']],
-                  'fileSize':0,
+                  'fileSize':f.get('size',0),
               }
               files.append(entry)
               by_name[f['filename']]=entry
@@ -129,14 +161,13 @@ jobs:
           index={
               'formatVersion':1,
               'game':'minecraft',
-              'versionId':'frontier-alpha91-survival-0.61-full-ko-jei-new-world.1',
+              'versionId':f'frontier-{frontier_version}-survival-{survival_version}-full-ko-jei-new-world',
               'name':'Frontier Settlement + Survival Ascension FULL KO + JEI',
-              'summary':'New-world all-features pack with full Korean overlays and JEI recipe viewing.',
+              'summary':f'Frontier {frontier_version} + Survival Ascension {survival_version}; new-world all-features pack with Korean overlays and JEI.',
               'files':files,
               'dependencies':{'minecraft':'26.2','neoforge':'26.2.0.38-beta'},
           }
-          readme='''Frontier Settlement + Survival Ascension FULL KO + JEI — NEW WORLD\n\nMinecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25\n\nThis pack combines the complete current Frontier companion client stack with the current Survival Ascension content pack. It includes Terralith and Biomes O' Plenty/TerraBlender, Dungeons & Taverns, Repurposed Structures, The Birth of Steve, Amethyst Resonance, Better Combat, Weapons Expanded, Lootr, Sophisticated Backpacks, Variants & Ventures, Jade, Xaero's Minimap and their pinned libraries.\n\nKorean localization overlays are bundled in the project JARs for the pinned FULL stack, including the missing Sophisticated Backpacks upgrade text. Dungeons & Taverns' malformed upstream Korean language file is superseded by a valid complete overlay.\n\nJEI 30.13.0.77 is included client-side for recipe/usage lookup. Hover an item and use the configured JEI recipe/usage keys (normally R/U), or search it in JEI.\n\nCREATE A NEW WORLD with this pack. Do not use this FULL profile to reopen the older Frontier-only world.\n\nControls: Frontier settlement menu = M. Survival Ascension menu = K.\n\nThird-party binaries are referenced from their official distribution URLs and are not embedded in this archive. Only the two project-owned mod JARs are embedded.\n'''
-          out=root/'Frontier_Settlement_Alpha91_SurvivalAscension_FULL_KO_JEI_NEW_WORLD.mrpack'
+          readme=f'''Frontier Settlement + Survival Ascension FULL KO + JEI — NEW WORLD\n\nFrontier Settlement {frontier_version}\nSurvival Ascension {survival_version}\nMinecraft 26.2 / NeoForge 26.2.0.38-beta / Java 25\n\nThis pack combines the current canonical Frontier companion client stack with the current Survival Ascension content pack. It includes Terralith and Biomes O' Plenty/TerraBlender, Dungeons & Taverns, Repurposed Structures, The Birth of Steve, Amethyst Resonance, Better Combat, Weapons Expanded, Lootr, Sophisticated Backpacks, Variants & Ventures, Jade, Xaero's Minimap and their pinned libraries.\n\nKorean localization overlays are bundled in the project JARs for the pinned FULL stack. Dungeons & Taverns' malformed upstream Korean language file is superseded by the project's valid overlay where required.\n\nJEI 30.13.0.77 is included client-side for recipe/usage lookup. Hover an item and use the configured JEI recipe/usage keys (normally R/U), or search it in JEI.\n\nCREATE A NEW WORLD with this pack. Do not use this FULL profile to reopen an older incompatible Frontier-only world without a backup.\n\nControls: Frontier settlement menu = M. Survival Ascension menu = K.\n\nThird-party binaries are referenced from their official distribution URLs and are not embedded in this archive. Only the two project-owned mod JARs are embedded.\n'''
           with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
               z.writestr('modrinth.index.json',json.dumps(index,ensure_ascii=False,indent=2)+'\n')
               z.write(frontier_jar,'overrides/mods/'+frontier_jar.name)
@@ -144,6 +175,7 @@ jobs:
               z.writestr('overrides/FULL_KO_JEI_NEW_WORLD_README.txt',readme)
           with zipfile.ZipFile(out) as z:
               parsed=json.loads(z.read('modrinth.index.json'))
+              assert parsed['versionId'] == index['versionId']
               assert len(parsed['files']) == len({Path(x['path']).name for x in parsed['files']})
               assert any('dungeons-and-taverns' in x['path'] for x in parsed['files'])
               assert any('BiomesOPlenty' in x['path'] for x in parsed['files'])
@@ -151,9 +183,11 @@ jobs:
               jei=[x for x in parsed['files'] if 'jei-' in x['path'].lower()]
               assert len(jei)==1
               assert jei[0].get('env',{}).get('server')=='unsupported'
+              names=set(z.namelist())
+              assert 'overrides/mods/'+frontier_jar.name in names
+              assert 'overrides/mods/'+survival_jar.name in names
           for p in (out, frontier_jar, survival_jar):
-              h=hashlib.sha256(p.read_bytes()).hexdigest()
-              print(p.name, h)
+              print(p.name, hashlib.sha256(p.read_bytes()).hexdigest())
           (root/'FULL_KO_JEI_SHA256.txt').write_text(
               '\n'.join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}" for p in (out,frontier_jar,survival_jar))+'\n',encoding='utf-8')
           print('combined_external_files=',len(files))
@@ -165,7 +199,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import hashlib, json, urllib.request, zipfile
+          import hashlib, json, os, urllib.request, zipfile
           from pathlib import Path
 
           root=Path.cwd()
@@ -175,6 +209,9 @@ jobs:
           for p in mods.glob('*.jar'):
               p.unlink()
           server=json.loads((root/'projects/frontier-settlement/companion-testpack/resolved-lock.server.json').read_text(encoding='utf-8'))
+          target=server.get('target') or {}
+          if target.get('frontier_settlement') != os.environ['FRONTIER_VERSION']:
+              raise SystemExit('server resolved lock does not match current Frontier version')
 
           def get(url, out, sha256=None, sha1=None, sha512=None):
               if out.exists():
@@ -206,7 +243,7 @@ jobs:
               get(f['downloads'][0],out,sha1=f['hashes'].get('sha1'),sha512=f['hashes'].get('sha512'))
               present.add(name)
 
-          survival=root/'projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar'
+          survival=root/os.environ['SURVIVAL_JAR']
           (mods/survival.name).write_bytes(survival.read_bytes())
           print('server_mod_jars=',len(list(mods.glob('*.jar'))))
           print('\n'.join(sorted(p.name for p in mods.glob('*.jar'))))
@@ -271,15 +308,15 @@ jobs:
           python3 "$GITHUB_WORKSPACE/run_full_server.py" "$ROOT" "$GITHUB_WORKSPACE/frontier-survival-full-ko-jei-smoke.log"
           test -f "$GAME/world_full_ko_jei/level.dat"
 
-      - name: Upload full Korean JEI new-world pack
+      - name: Upload current full Korean JEI new-world pack
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: frontier-alpha91-survival-061-full-ko-jei-new-world
+          name: frontier-survival-full-ko-jei-new-world-current
           path: |
-            Frontier_Settlement_Alpha91_SurvivalAscension_FULL_KO_JEI_NEW_WORLD.mrpack
+            frontier-settlement-*-survival-ascension-*-full-ko-jei-new-world.mrpack
             FULL_KO_JEI_SHA256.txt
-            projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.91.jar
-            projects/survival-ascension/build/libs/survivalascension-0.61.0-alpha.1.jar
+            projects/frontier-settlement/build/libs/frontier_settlement-*.jar
+            projects/survival-ascension/build/libs/survivalascension-*.jar
             frontier-survival-full-ko-jei-smoke.log
           if-no-files-found: warn
