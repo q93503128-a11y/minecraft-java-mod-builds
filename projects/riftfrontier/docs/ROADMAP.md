@@ -73,7 +73,7 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 정본: `EXPEDITION_RUNTIME.md`
 
-### M2-B — Gameplay integration — EDGE HARDENED / RESTART RECONCILIATION + FIELD PLAY NEXT
+### M2-B — Gameplay integration — RESTART RECONCILIATION VERIFIED / FIELD PLAY NEXT
 
 첫 gameplay adapter 기준 코드 커밋 `c0ef978c81d36fe63cb9e69942a8aa7f3c6cae6d`, GitHub Actions run `34094802012`에서 전체 Riftfrontier gate가 성공했다.
 
@@ -81,7 +81,9 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 Region 01 encounter runtime 초기 기준은 `a7791123eade916c14041b4d32306c4befd8fc6a`, run `34099256007`이다.
 
-**현재 edge-hardening 검증 기준 코드 커밋은 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, GitHub Actions run `34104215746`이다.** clean/unit test/build, 3 required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/deliverable upload가 모두 성공했다. 검증 JAR SHA-256은 `525d9359b1e5097c677b2775a7c550e33e6352e2be1cf487f9ac84661d55336a`다.
+same-process edge-hardening 기준은 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, run `34104215746`이다.
+
+**현재 restart-reconciliation 검증 기준 코드 커밋은 `eef82853220ba36aa1d6d2096293541fc5c92c41`, GitHub Actions run `34109970161`이다.** clean/unit test/build, required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/deliverable upload가 모두 성공했다. 검증 JAR SHA-256은 `f42cff32667fa5aab72fb31d196a3d03aff2c265746de8041eed4d169716d490`다.
 
 완료·검증됨:
 
@@ -114,27 +116,32 @@ Region 01 encounter runtime 초기 기준은 `a7791123eade916c14041b4d32306c4bef
 - elite anchor는 단순 HP multiplier가 아니라 Ravager의 shield-stun counterplay를 이용한 technical role로 검증
 - resource objective와 combat objective를 보상 trade-off로 연결: patrol을 제거하면 extraction retained salvage +1, 빠른 extraction은 가능하지만 bonus 포기
 - 원정 실패/철수에서 해당 run encounter cleanup
-- **run-sequence 소유 direct threat tracking으로 technical cell 밖 장거리 lure가 patrol-clear 보상을 우회하지 못함**
+- run-sequence 소유 direct threat tracking으로 technical cell 밖 장거리 lure가 patrol-clear 보상을 우회하지 못함
 - required native GameTest에서 실제 threat를 48블록 밖으로 이동한 뒤 live-threat 유지와 terminal cleanup 검증
-- **underfilled extraction은 상태 전이 전에 거부되어 run이 DEPLOYED에 남고 추가 회수 가능**
+- underfilled extraction은 상태 전이 전에 거부되어 run이 DEPLOYED에 남고 추가 회수 가능
 - explicit abort는 FAILED/encounter cleanup 후 technical hub로 귀환
+- **server restart에서 persisted non-terminal expedition을 추정 복구하지 않고 authoritative `FAILED`로 확정**
+- **restart failure에서도 이미 소비한 preparation supply는 환불하지 않음**
+- **technical proxy의 stable run/role tag를 restart breadcrumb로 사용**
+- **process-local tracker가 없는 persisted tagged proxy는 `EntityJoinLevelEvent`에서 event-driven으로 제거**
+- **restart orphan cleanup에 startup/per-tick broad entity scan을 사용하지 않음**
+- required native GameTest에서 deployed persisted run → restart fail → no refund → orphan proxy rejection/discard를 검증
 
 중요한 품질 경계:
 
 - 현재 Zombie/Skeleton/Ravager는 M2 **technical behaviour proxy**다. production creature model/animation/최종 AI가 아니다.
 - technical cell/명령 UI 역시 production presentation이 아니다.
-- process-local direct threat tracker는 same-process lure/cleanup에는 안전하지만 **서버 재시작 후 복구는 아직 검증하지 않았다.**
+- restart consistency의 서버 권위/technical proxy 경계는 자동 검증됐지만, **restart 뒤 실제 플레이어 재진입 UX는 field play 전까지 완료로 선언하지 않는다.**
 - automated GameTest/CI가 녹색이어도 실제 Minecraft 반복 플레이와 시각 검수를 하지 않았으므로 combat/presentation 완료를 선언하지 않는다.
 
-정본: `M2B_GAMEPLAY_ADAPTER.md`
+정본: `M2B_GAMEPLAY_ADAPTER.md`, restart 경계는 `RESTART_RECONCILIATION.md`
 
-다음 구현 묶음 — 이미 닫은 encounter/lure/extraction atomicity를 다시 만들지 않는다:
+다음 구현 묶음 — 이미 닫은 encounter/lure/extraction atomicity/restart reconciliation을 다시 만들지 않는다:
 
-- active expedition 도중 서버 stop/restart가 발생했을 때 SavedData run과 persisted proxy entity를 authoritative하게 reconcile하거나 명시적으로 실패 처리
-- restart recovery를 broad per-tick world scan 없이 구현하고 자동 검증
 - 실제 Minecraft client에서 Region 01 원정을 반복 플레이해 combat pacing / spawn spacing / aggro / salvage hazard / extraction choice를 검수
-- death/logout/abort/extraction 직전·직후를 실제 플레이로 재검수
-- pressure scaling과 patrol bonus 수치는 실제 플레이 근거로 조정
+- death/logout/abort/extraction 직전·직후와 restart 이후 플레이어 재진입을 실제 플레이로 재검수
+- field-play 근거로 pressure scaling과 patrol bonus 수치를 조정
+- 재진입 UX 문제가 확인되면 이벤트 의미를 감추는 무조건 teleport가 아니라 명시적 field-exit/re-entry adapter로 해결
 - M3 production combat/elite/boss 작업 전에 reference dossier 작성
 - 전체 `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` vertical slice를 실제 플레이 검수
 - 실제 화면/플레이 검수를 통과하기 전에는 presentation/전투 품질 완료를 선언하지 않음
