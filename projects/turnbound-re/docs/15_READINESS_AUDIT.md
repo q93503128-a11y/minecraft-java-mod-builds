@@ -1,17 +1,19 @@
 # 15 — IMPLEMENTATION READINESS AUDIT
 
-검수 기준일: 2026-09-06
+검수 기준일: 2026-09-07
 
 ## 결론
 - **Core implementation readiness: GO**
-- **Vertical Slice M0~M4: GO**
+- **M0~M4 automated implementation gates: PASS**
+- **M2 manual client gate: PENDING — final combined playtest에서 수행**
+- **M4 runtime world save/reconnect manual check: PENDING — final combined playtest에서 수행**
+- **M5 production visual implementation: GATED — research/design/mockup 선행 필수**
 - **Final production content completeness: NOT COMPLETE**
-- **Final visual/UI/world presentation: GATED BY DESIGN PROCESS**
 
-`IMPLEMENTATION READY`는 "지금부터 개발자가 핵심 전투 규칙을 임의로 발명하지 않고 M0부터 구현할 수 있다"는 뜻이다. "모든 캐릭터/지역/아이템/드롭/최종 화면까지 추가 기획 없이 완제품을 만들 수 있다"는 뜻은 아니다.
+`M0~M4 automated PASS`는 현재 representative vertical slice의 핵심 계약과 자동 회귀검증이 닫혔다는 뜻이다. 모든 캐릭터/지역/아이템/최종 UI/최종 밸런스까지 완제품이라는 뜻은 아니다.
 
 ## 1. 구현자가 더 이상 결정하면 안 되는 코어
-다음은 현재 정본대로 구현한다.
+다음은 현재 정본대로 유지한다.
 - 프로젝트 독립성 및 구 TURNBOUND ZERO AUTHORITY.
 - 4인 활성 파티.
 - originStar ★1~★5 / currentStar 최대 ★6.
@@ -28,14 +30,25 @@
 - visible Encounter.
 - 바닐라 Mob 전수 매핑/명시 제외 validation.
 - 데이터 중심 Character/Action/Status/Encounter/Reward 정의.
-- M0~M4에서는 DEBUG_ONLY UI만 허용.
+- M4까지 DEBUG_ONLY UI만 허용.
+- authored Encounter metadata가 Encounter reward의 유일한 정본 source.
+- 진행 중 battle은 definition + reward table snapshot을 유지하여 `/reload`가 이미 열린 전투를 변형하지 않음.
+- VICTORY→REWARD settlement는 공용 lifecycle에서 one-shot persistence로 처리.
 
-## 2. M0 시작 전 추가 기획 필요 여부
-**없음.**
+## 2. M0~M4 현재 검증 상태
+마지막 검증 기준:
+- commit `9544e30487bf9d9025f5e5d258fca67784a92f28`
+- `Build turnbound-re` run `34075982400`
+- result **SUCCESS**
+- Java 25 / NeoForge 26.2.0.38-beta / Gradle 9.2.1
+- dependency resolution + `clean build` + 전체 JUnit + production JAR verify 통과.
+- JAR SHA-256 `5133b0f38f618402b9e2abe49021d13e0b489a1ecbafed581c95a4a06c7da505`.
 
-M0에서 필요한 플랫폼 패치 번호는 게임 기획 결정이 아니라 저장소 공용 BUILD_STANDARD와 현재 검증 조합을 확인해 선택하는 개발환경 결정이다.
+M4 E2E 자동 검증은 production authored Encounter를 직접 사용해 battle open→actual data action→victory→reward→one-shot claim→PlayerProgress→SavedData Codec round-trip→unlock/level cap/ascend/party/Squad Cost→reload-equivalent round-trip을 검증한다.
 
-## 3. M0~M4 중 플레이테스트로 튜닝 가능한 항목
+persistence callback 실패 시 reward claim은 소모되지 않고 재시도 가능하다.
+
+## 3. 플레이테스트로 튜닝 가능한 항목
 이 값들은 코드를 막지 않으며 데이터로 조정한다.
 - affinity 배율.
 - EXPOSED damage multiplier.
@@ -61,9 +74,9 @@ M0에서 필요한 플랫폼 패치 번호는 게임 기획 결정이 아니라 
 - 최종 획득처와 Character Shard 분배.
 - 튜토리얼/스토리/텍스트 콘텐츠.
 
-이들은 M0 코어 개발의 blocker가 아니다. 대표 콘텐츠로 시스템을 검증한 뒤 데이터 생산 파이프라인을 이용해 확장한다.
+이들은 M5 시각 게이트 준비의 blocker가 아니다. 대표 콘텐츠로 시스템을 검증한 뒤 데이터 생산 파이프라인을 이용해 확장한다.
 
-## 5. 의도적으로 GATE인 항목
+## 5. M5 의도적 Visual Gate
 다음은 문서 부족이 아니라 잘못된 즉흥 디자인을 막기 위한 의도적 게이트다.
 - production battle HUD.
 - party/character/growth/inventory UI의 시각 언어.
@@ -72,22 +85,33 @@ M0에서 필요한 플랫폼 패치 번호는 게임 기획 결정이 아니라 
 - 마을/지역/던전의 최종 미술.
 - 아이콘/폰트/프레임/색 체계.
 
-`AGENT_RULES.md`와 `06_UI_UX_PRESENTATION.md`의 외부 레퍼런스→분석→목업→Minecraft 구현→실화면 비교 절차를 통과해야 한다.
+production UI를 만들기 전에 반드시:
+1. 실제 우수 턴제 RPG UI 다수 조사.
+2. 실제 Minecraft UI/모드 구현 사례 조사.
+3. 여러 reference를 기능/정보계층/연출 원리 단위로 비교.
+4. `08_REFERENCE_CATALOG.md` 보강.
+5. 화면별 information hierarchy.
+6. design tokens.
+7. mockup.
+8. 그 뒤 Minecraft 구현.
+9. 실화면 screenshot comparison 반복.
 
-## 6. 알려진 기술 리스크
-문서로 제거할 수 없고 실제 구현/실게임으로 검증해야 한다.
-- NeoForge 현재 버전의 Entity AI suppression/restore 세부 API.
-- resource reload와 진행 중 battle snapshot의 경계.
+`AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, 공용 `QUALITY_STANDARD.md`가 이 절차의 authority다.
+
+## 6. 알려진 기술 리스크 / 수동 검증 부채
+자동 gate와 별개로 실제 구현/실게임에서 확인해야 한다.
+- 실제 client 20회 encounter 반복 시 Entity AI suppression/restore와 orphan battle 0 확인.
+- 실제 world save/reload 또는 재접속 시 progression persistence 확인.
 - client animation queue와 server revision 동기화.
-- dimension change/disconnect/death cleanup.
+- dimension change/disconnect/death cleanup 체감 검증.
 - 대규모 바닐라 roster 데이터 유지보수.
 - 향후 multiplayer에서 latency가 반응형 입력에 미치는 영향.
 - save migration.
 - 최종 world/assets의 라이선스와 성능.
 
-따라서 "문제 발생 가능성 0%"는 보장할 수 없지만, 이 리스크는 현재 M0~M4의 테스트 계획에서 조기에 발견하도록 설계되어 있다.
+사용자 방침상 앞의 client/runtime 수동 검증은 중간 JAR마다 요구하지 않고 전체적으로 한 번에 볼 만한 완성본에서 수행한다.
 
 ## 7. 다음 행동
-**즉시 M0 Bootstrap & Contracts를 시작한다.**
+**M5 Production UI/Presentation Gate의 연구/설계 단계로 이동한다.**
 
-M0에서 완성해야 할 첫 계약은 build scaffold, mod id `turnbound_re`, Codec/data registry, validation, vanilla Mob coverage 검사, pure battle test harness, debug command skeleton이다.
+지금 할 일은 UI Java 구현이 아니다. 실제 턴제 RPG UI와 Minecraft 구현 사례 조사→reference catalog→information hierarchy→design tokens→mockup 순으로 선행 정본을 만든다. 이 gate가 닫힌 뒤에만 production HUD/menu 구현을 시작한다.
