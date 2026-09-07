@@ -80,6 +80,13 @@ public final class BattleTargetMarkerState {
         return entry == null ? OptionalInt.empty() : OptionalInt.of(entry.ordinal());
     }
 
+    public static boolean isPublishedFor(UUID expectedBattleId, long expectedRevision) {
+        if (expectedBattleId == null) return false;
+        synchronized (LOCK) {
+            return expectedBattleId.equals(battleId) && expectedRevision == revision;
+        }
+    }
+
     private static MarkerEntry entryFor(UUID expectedBattleId, long expectedRevision, UUID entityId) {
         if (expectedBattleId == null || entityId == null) return null;
         synchronized (LOCK) {
