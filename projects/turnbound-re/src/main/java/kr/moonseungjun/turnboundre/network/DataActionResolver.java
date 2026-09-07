@@ -60,7 +60,7 @@ public final class DataActionResolver {
         }
 
         ActionDefinition action = definitions.actions().get(actionId);
-        if (action == null || !("SKILL".equals(action.kind()) || "BURST".equals(action.kind()))) {
+        if (action == null || !isSubmitAction(action.kind())) {
             return Optional.empty();
         }
 
@@ -86,6 +86,10 @@ public final class DataActionResolver {
                 targetRule
         );
         return Optional.of(new ResolvedAction(action, policy));
+    }
+
+    private static boolean isSubmitAction(String kind) {
+        return "BASIC".equals(kind) || "SKILL".equals(kind) || "BURST".equals(kind);
     }
 
     private static int targetCount(ActionDefinition.Targeting targeting) {
