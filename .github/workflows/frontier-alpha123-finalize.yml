@@ -1,0 +1,50 @@
+name: Frontier Alpha.123 Finalize
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha123-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Sync companion locks and remove staging
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          pack = Path('projects/frontier-settlement/companion-testpack')
+          for name in ('resolved-lock.client.json', 'resolved-lock.server.json'):
+              path = pack / name
+              data = json.loads(path.read_text(encoding='utf-8'))
+              old = data['target'].get('frontier_settlement')
+              if old not in ('0.1.0-alpha.122', '0.1.0-alpha.123'):
+                  raise SystemExit(f'unexpected {name} Frontier target: {old}')
+              data['target']['frontier_settlement'] = '0.1.0-alpha.123'
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+          (cd projects/frontier-settlement && python3 tools/test_companion_testpack.py)
+          rm -rf .github/alpha123
+          rm -f .github/workflows/frontier-alpha123-logistics-investment.yml
+          rm -f .github/workflows/frontier-alpha123-finalize.yml
+          git diff --check
+      - name: Commit final Alpha.123 lock state
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'frontier: sync Alpha.123 companion locks and remove staging'
+          git push origin HEAD:main
