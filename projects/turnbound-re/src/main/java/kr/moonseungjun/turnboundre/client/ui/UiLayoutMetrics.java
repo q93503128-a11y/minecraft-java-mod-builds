@@ -9,8 +9,8 @@ public final class UiLayoutMetrics {
     public static final int SPACE_16 = 16;
     public static final int SPACE_24 = 24;
 
-    private static final int MIN_WIDTH = 480;
-    private static final int MIN_HEIGHT = 270;
+    public static final int MIN_BATTLE_HUD_WIDTH = 480;
+    public static final int MIN_BATTLE_HUD_HEIGHT = 270;
 
     private UiLayoutMetrics() {}
 
@@ -40,10 +40,15 @@ public final class UiLayoutMetrics {
             Rect reservedWorldViewport
     ) {}
 
+    /** Rendering quietly defers at extreme GUI scales instead of throwing every frame. */
+    public static boolean supportsBattleHud(int screenWidth, int screenHeight) {
+        return screenWidth >= MIN_BATTLE_HUD_WIDTH && screenHeight >= MIN_BATTLE_HUD_HEIGHT;
+    }
+
     public static BattleHudLayout battleHud(int screenWidth, int screenHeight) {
-        if (screenWidth < MIN_WIDTH || screenHeight < MIN_HEIGHT) {
+        if (!supportsBattleHud(screenWidth, screenHeight)) {
             throw new IllegalArgumentException(
-                    "battle HUD requires at least " + MIN_WIDTH + "x" + MIN_HEIGHT
+                    "battle HUD requires at least " + MIN_BATTLE_HUD_WIDTH + "x" + MIN_BATTLE_HUD_HEIGHT
                             + " logical pixels, got " + screenWidth + "x" + screenHeight);
         }
 

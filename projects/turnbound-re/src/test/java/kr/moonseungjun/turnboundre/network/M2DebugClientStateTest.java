@@ -52,9 +52,9 @@ class M2DebugClientStateTest {
     void olderSnapshotCannotOverwriteNewerInspectionStateForSameBattle() {
         UUID battleId = UUID.randomUUID();
         String newerWire = BattleNetworkPayloads.join(
-                battleId.toString(), "9", "AWAIT_COMMAND", "2", "p1", "");
+                battleId.toString(), "9", "AWAIT_COMMAND", "2", "p1", "", "");
         String olderWire = BattleNetworkPayloads.join(
-                battleId.toString(), "4", "AWAIT_COMMAND", "1", "p1", "");
+                battleId.toString(), "4", "AWAIT_COMMAND", "1", "p1", "", "");
 
         DebugBattleClientState.accept(new BattleNetworkPayloads.BattleSnapshotS2C(newerWire));
         DebugBattleClientState.accept(new BattleNetworkPayloads.BattleSnapshotS2C(olderWire));
@@ -67,7 +67,7 @@ class M2DebugClientStateTest {
     void explicitDebugCleanupEventClearsStaleClientSnapshot() {
         UUID battleId = UUID.randomUUID();
         String snapshotWire = BattleNetworkPayloads.join(
-                battleId.toString(), "5", "AWAIT_COMMAND", "1", "p1", "");
+                battleId.toString(), "5", "AWAIT_COMMAND", "1", "p1", "", "");
         DebugBattleClientState.accept(new BattleNetworkPayloads.BattleSnapshotS2C(snapshotWire));
         assertTrue(DebugBattleClientState.latestSnapshot().isPresent());
 
