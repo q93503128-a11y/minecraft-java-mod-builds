@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -19,31 +21,50 @@ public final class BattleManager {
     private final Map<UUID, Map<String, EntityParticipantBinding>> bindingsByBattle = new HashMap<>();
     private final Map<UUID, BattleCommandService> commandServices = new HashMap<>();
     private final Map<UUID, BattleDefinitionContext> definitionContexts = new HashMap<>();
+    private final Map<UUID, BattleRewardContext> rewardContexts = new HashMap<>();
+    private final Set<UUID> claimedRewards = new HashSet<>();
 
     /** Adapter-only registration for tests/flows that do not submit player commands. */
     public void register(BattleInstance battle, List<EntityParticipantBinding> bindings) {
-        registerInternal(battle, bindings, null, null, null);
+        registerInternal(battle, bindings, null, null, null, null);
     }
 
     /** Universal/debug command registration without data-driven character definitions. */
     public void register(BattleInstance battle, List<EntityParticipantBinding> bindings, List<BattleParticipant> participants) {
         if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
-        registerInternal(battle, bindings, participants, new BattleCommandService(battle, participants), null);
+        registerInternal(battle, bindings, participants, new BattleCommandService(battle, participants), null, null);
     }
 
-    /**
-     * Production/data-driven registration. Definition context is snapshotted for the whole battle so /reload cannot
-     * silently alter an already-running encounter.
-     */
+    /** Production/data-driven registration without a reward-bearing authored Encounter. */
     public void register(
             BattleInstance battle,
             List<EntityParticipantBinding> bindings,
             List<BattleParticipant> participants,
             BattleDefinitionContext definitionContext
     ) {
+        register(battle, bindings, participants, definitionContext, null);
+    }
+
+    /**
+     * Production/data-driven registration. Definition and reward metadata are snapshotted for the whole battle so
+     * /reload cannot silently alter an already-running encounter or its reward table.
+     */
+    public void register(
+            BattleInstance battle,
+            List<EntityParticipantBinding> bindings,
+            List<BattleParticipant> participants,
+            BattleDefinitionContext definitionContext,
+            BattleRewardContext rewardContext
+    ) {
         if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
         if (definitionContext == null) throw new IllegalArgumentException("definitionContext must not be null");
-        registerInternal(battle, bindings, participants, new BattleCommandService(battle, participants), definitionContext);
+        registerInternal(
+                battle,
+                bindings,
+                participants,
+                new BattleCommandService(battle, participants),
+                definitionContext,
+                rewardContext);
     }
 
     private void registerInternal(
@@ -51,7 +72,8 @@ public final class BattleManager {
             List<EntityParticipantBinding> bindings,
             List<BattleParticipant> participants,
             BattleCommandService commandService,
-            BattleDefinitionContext definitionContext
+            BattleDefinitionContext definitionContext,
+            BattleRewardContext rewardContext
     ) {
         if (battle == null) throw new IllegalArgumentException("battle must not be null");
         if (bindings == null || bindings.isEmpty()) throw new IllegalArgumentException("bindings must not be empty");
@@ -62,6 +84,14 @@ public final class BattleManager {
             Set<String> participantIds = participants.stream().map(BattleParticipant::id).collect(Collectors.toUnmodifiableSet());
             if (!definitionContext.characterIdsByParticipant().keySet().equals(participantIds)) {
                 throw new IllegalArgumentException("definition context must map every participant exactly once");
+            }
+        }
+        if (rewardContext != null) {
+            if (definitionContext == null) {
+                throw new IllegalArgumentException("reward context requires a data-driven definition context");
+            }
+            if (!definitionContext.definitions().rewards().containsKey(rewardContext.rewardTableId())) {
+                throw new IllegalArgumentException("reward context references missing reward table " + rewardContext.rewardTableId());
             }
         }
 
@@ -86,6 +116,7 @@ public final class BattleManager {
         bindingsByBattle.put(battleId, Map.copyOf(byParticipant));
         if (commandService != null) commandServices.put(battleId, commandService);
         if (definitionContext != null) definitionContexts.put(battleId, definitionContext);
+        if (rewardContext != null) rewardContexts.put(battleId, rewardContext);
         for (EntityParticipantBinding binding : bindings) entityToBattle.put(binding.entityId(), battleId);
     }
 
@@ -111,9 +142,34 @@ public final class BattleManager {
         return Optional.ofNullable(definitionContexts.get(battleId));
     }
 
+    public Optional<BattleRewardContext> rewardContext(UUID battleId) {
+        return Optional.ofNullable(rewardContexts.get(battleId));
+    }
+
     public Optional<String> characterId(UUID battleId, String participantId) {
         BattleDefinitionContext context = definitionContexts.get(battleId);
         return context == null ? Optional.empty() : Optional.ofNullable(context.characterId(participantId));
+    }
+
+    public boolean rewardClaimed(UUID battleId) {
+        return claimedRewards.contains(battleId);
+    }
+
+    /**
+     * Executes the claim callback at most once and only for a data-driven VICTORY that has reached REWARD.
+     * If the callback throws or returns null the claim is not committed, so callers can retry safely.
+     */
+    public <T> Optional<T> claimVictoryReward(UUID battleId, Function<BattleRewardContext, T> claim) {
+        if (battleId == null || claim == null) throw new IllegalArgumentException("battleId/claim required");
+        BattleInstance battle = activeBattles.get(battleId);
+        BattleRewardContext context = rewardContexts.get(battleId);
+        if (battle == null || context == null || claimedRewards.contains(battleId)) return Optional.empty();
+        if (battle.outcome() != BattleInstance.Outcome.VICTORY || battle.state() != BattleState.REWARD) {
+            return Optional.empty();
+        }
+        T result = Objects.requireNonNull(claim.apply(context), "reward claim callback must not return null");
+        claimedRewards.add(battleId);
+        return Optional.of(result);
     }
 
     public int activeBattleCount() { return activeBattles.size(); }
@@ -124,6 +180,8 @@ public final class BattleManager {
         BattleInstance battle = activeBattles.remove(battleId);
         commandServices.remove(battleId);
         definitionContexts.remove(battleId);
+        rewardContexts.remove(battleId);
+        claimedRewards.remove(battleId);
         Map<String, EntityParticipantBinding> bindings = bindingsByBattle.remove(battleId);
         if (bindings != null) {
             for (EntityParticipantBinding binding : bindings.values()) entityToBattle.remove(binding.entityId(), battleId);
