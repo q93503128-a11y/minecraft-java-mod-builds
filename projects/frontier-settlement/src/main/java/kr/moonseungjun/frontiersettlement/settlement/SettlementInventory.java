@@ -8,12 +8,42 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public final class SettlementInventory {
+    public record ResourceCounts(long wood, long stone, long metal, long food) {}
+
+    private static final int RESOURCE_WOOD = 1;
+    private static final int RESOURCE_STONE = 2;
+    private static final int RESOURCE_METAL = 4;
+    private static final int RESOURCE_FOOD = 8;
+
     private SettlementInventory() {}
 
     public static long countWood(Container container) { return count(container, SettlementInventory::isWood); }
     public static long countStone(Container container) { return count(container, SettlementInventory::isStone); }
     public static long countMetal(Container container) { return countValue(container, SettlementInventory::metalValue); }
     public static long countFood(Container container) { return countValue(container, SettlementInventory::foodValue); }
+
+    /**
+     * One physical container pass for the shared settlement ledger. The old scan called four public
+     * counters independently, which re-read every slot and re-ran tag classification four times every
+     * refresh. This preserves the exact exclusive-resource rules while doing the classification once.
+     */
+    public static ResourceCounts countResources(Container container) {
+        long wood = 0L;
+        long stone = 0L;
+        long metal = 0L;
+        long food = 0L;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (stack.isEmpty()) continue;
+            int mask = resourceMask(stack);
+            int amount = stack.getCount();
+            if (mask == RESOURCE_WOOD) wood += amount;
+            else if (mask == RESOURCE_STONE) stone += amount;
+            else if (mask == RESOURCE_METAL) metal += (long) rawMetalUnitValue(stack) * amount;
+            else if (mask == RESOURCE_FOOD) food += (long) rawFoodUnitValue(stack) * amount;
+        }
+        return new ResourceCounts(wood, stone, metal, food);
+    }
 
     /** Atomic local-container cost using the same value authority as the shared settlement ledger. */
     public static boolean consumeMetalAndFood(Container container, long metal, long food) {
@@ -56,11 +86,6 @@ public final class SettlementInventory {
         return remaining;
     }
 
-    private static final int RESOURCE_WOOD = 1;
-    private static final int RESOURCE_STONE = 2;
-    private static final int RESOURCE_METAL = 4;
-    private static final int RESOURCE_FOOD = 8;
-
     public static boolean isWood(ItemStack stack) {
         return exclusiveResource(stack, RESOURCE_WOOD);
     }
@@ -80,7 +105,14 @@ public final class SettlementInventory {
 
     /** Physical-resource unit values shared with Survival Ascension. */
     public static int metalValue(ItemStack stack) {
-        if (!isMetalResource(stack)) return 0;
+        return resourceMask(stack) == RESOURCE_METAL ? rawMetalUnitValue(stack) : 0;
+    }
+
+    public static int foodValue(ItemStack stack) {
+        return resourceMask(stack) == RESOURCE_FOOD ? rawFoodUnitValue(stack) : 0;
+    }
+
+    private static int rawMetalUnitValue(ItemStack stack) {
         if (stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)) return 1;
         if (stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON)) return 2;
         if (stack.is(Items.GOLD_INGOT) || stack.is(Items.RAW_GOLD)) return 3;
@@ -88,8 +120,7 @@ public final class SettlementInventory {
         return 2;
     }
 
-    public static int foodValue(ItemStack stack) {
-        if (!isFood(stack)) return 0;
+    private static int rawFoodUnitValue(ItemStack stack) {
         if (stack.is(Items.WHEAT)) return 1;
         if (stack.is(Items.GOLDEN_APPLE)) return 12;
         if (stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 24;
@@ -105,14 +136,18 @@ public final class SettlementInventory {
      * recruitment or upkeep material even if an external datapack accidentally gives them a resource tag.
      */
     private static boolean exclusiveResource(ItemStack stack, int expected) {
+        return resourceMask(stack) == expected;
+    }
+
+    private static int resourceMask(ItemStack stack) {
         if (stack.isEmpty() || stack.is(ExternalContentTags.EXPEDITION_RELICS)
-                || SettlementExternalContentService.isExternalWeapon(stack)) return false;
+                || SettlementExternalContentService.isExternalWeapon(stack)) return 0;
         int mask = 0;
         if (rawWood(stack)) mask |= RESOURCE_WOOD;
         if (rawStone(stack)) mask |= RESOURCE_STONE;
         if (rawMetal(stack)) mask |= RESOURCE_METAL;
         if (rawFood(stack)) mask |= RESOURCE_FOOD;
-        return mask == expected;
+        return mask;
     }
 
     private static boolean rawWood(ItemStack stack) {
