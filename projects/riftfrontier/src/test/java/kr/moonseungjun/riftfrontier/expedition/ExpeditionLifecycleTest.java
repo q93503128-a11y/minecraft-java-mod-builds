@@ -1,7 +1,5 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
-import com.google.gson.JsonElement;
-import com.mojang.serialization.JsonOps;
 import kr.moonseungjun.riftfrontier.content.ContentCatalog;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
@@ -54,19 +52,26 @@ class ExpeditionLifecycleTest {
 
         ExpeditionRun failed = lifecycle.fail(deployed, 9L);
         assertEquals(ExpeditionRun.Status.FAILED, failed.status());
+        assertEquals(9L, failed.endedGameTime());
         assertThrows(IllegalStateException.class, () -> lifecycle.fail(failed, 10L));
     }
 
     @Test
-    void expeditionRunCodecRoundTripsAuthoritativeFields() {
-        ExpeditionRun original = ExpeditionRun.preparing(7L, REGION, CONTRACT, "abc123", 42L)
-            .deploy()
-            .recover(SALVAGE, 4)
-            .requestExtraction()
-            .extract(90L);
+    void immutableTransitionsPreserveExpeditionIdentityAndSnapshotFingerprint() {
+        ExpeditionRun preparing = ExpeditionRun.preparing(7L, REGION, CONTRACT, "abc123", 42L);
+        ExpeditionRun deployed = preparing.deploy();
+        ExpeditionRun recovered = deployed.recover(SALVAGE, 4);
+        ExpeditionRun requested = recovered.requestExtraction();
+        ExpeditionRun extracted = requested.extract(90L);
 
-        JsonElement encoded = ExpeditionRun.CODEC.encodeStart(JsonOps.INSTANCE, original).getOrThrow();
-        ExpeditionRun decoded = ExpeditionRun.CODEC.parse(JsonOps.INSTANCE, encoded).getOrThrow();
-        assertEquals(original, decoded);
+        assertEquals(7L, extracted.sequence());
+        assertEquals(REGION, extracted.regionId());
+        assertEquals(CONTRACT, extracted.contractId());
+        assertEquals("abc123", extracted.contentFingerprint());
+        assertEquals(4, extracted.recoveredResources().get(SALVAGE));
+        assertEquals(ExpeditionRun.Status.EXTRACTED, extracted.status());
+        assertEquals(42L, extracted.startedGameTime());
+        assertEquals(90L, extracted.endedGameTime());
+        assertEquals(ExpeditionRun.Status.PREPARING, preparing.status(), "transitions must not mutate older snapshots");
     }
 }
