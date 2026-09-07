@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -78,6 +79,7 @@ public final class ExpeditionGameplayService {
             allocated.ownerId(),
             allocated.contentFingerprint(),
             Optional.of(startContext),
+            List.of(),
             allocated.status(),
             allocated.recoveredResources(),
             allocated.startedGameTime(),
@@ -100,6 +102,13 @@ public final class ExpeditionGameplayService {
             || encounter.elites() != startContext.plannedElites()) {
             throw new IllegalStateException("Region 01 encounter runtime drifted from persisted expedition start context");
         }
+        deployed = recordEvidence(
+            world,
+            deployed,
+            ExpeditionEvidenceCheckpoint.Stage.DEPLOYED,
+            overworld.getGameTime(),
+            encounter.totalThreats()
+        );
         teleport(player, overworld, TECHNICAL_REGION.offset(0, 0, -4));
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Expedition deployed. Supply spent: " + startContext.preparationSupplyCost()
@@ -129,8 +138,15 @@ public final class ExpeditionGameplayService {
             .map(ExpeditionStartContext::regionPressure)
             .orElseGet(world::region01Pressure);
         Region01EncounterRuntime.applySalvageHazard(player, hazardPressure);
-        int amount = recovered.recoveredResources().getOrDefault(RESOURCE_ID, 0);
         int liveThreats = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, recovered.sequence());
+        recovered = recordEvidence(
+            world,
+            recovered,
+            ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED,
+            overworld.getGameTime(),
+            liveThreats
+        );
+        int amount = recovered.recoveredResources().getOrDefault(RESOURCE_ID, 0);
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Field salvage secured: " + amount + "/3. Active patrol threats=" + liveThreats
                 + ". Clear the patrol for a bonus salvage unit, or risk a fast extraction."
@@ -142,18 +158,40 @@ public final class ExpeditionGameplayService {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         ExpeditionRun run = activeFor(player, world).orElseThrow(() -> new IllegalStateException("No active expedition owned by this player"));
+        ServerLevel overworld = level.getServer().overworld();
+        int liveThreatsBeforeExit = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, run.sequence());
+        run = recordEvidence(
+            world,
+            run,
+            ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
+            overworld.getGameTime(),
+            liveThreatsBeforeExit
+        );
+
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun requested = lifecycle.requestExtraction(run);
         world.updateExpedition(requested);
         ExpeditionLifecycle.Resolution resolution = lifecycle.resolveExtraction(requested, level.getGameTime());
         world.updateExpedition(resolution.run());
 
-        ServerLevel overworld = level.getServer().overworld();
-        boolean patrolCleared = Region01EncounterRuntime.patrolCleared(overworld, TECHNICAL_REGION, run.sequence());
+        boolean patrolCleared = liveThreatsBeforeExit == 0;
         int baseRetainedSalvage = resolution.retainedResources().getOrDefault(RESOURCE_ID, 0);
         int patrolBonus = patrolCleared ? 1 : 0;
         int retainedSalvage = Math.addExact(baseRetainedSalvage, patrolBonus);
         world.settleRegion01Extraction(retainedSalvage);
+        ExpeditionRun evidencedTerminal = recordEvidence(
+            world,
+            resolution.run(),
+            ExpeditionEvidenceCheckpoint.Stage.EXTRACTED,
+            overworld.getGameTime(),
+            liveThreatsBeforeExit
+        );
+        resolution = new ExpeditionLifecycle.Resolution(
+            evidencedTerminal,
+            resolution.resultProfile(),
+            resolution.retainedResources(),
+            resolution.worldConsequence()
+        );
         Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, run.sequence());
         returnToHub(player);
         player.sendSystemMessage(Component.literal(
@@ -189,10 +227,19 @@ public final class ExpeditionGameplayService {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         Optional<ExpeditionRun> active = activeFor(player, world);
         if (active.isEmpty()) return Optional.empty();
+        ServerLevel overworld = level.getServer().overworld();
+        int liveThreatsBeforeFailure = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, active.get().sequence());
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime(), endReason);
         world.updateExpedition(failed);
-        Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
+        failed = recordEvidence(
+            world,
+            failed,
+            ExpeditionEvidenceCheckpoint.Stage.FAILED,
+            overworld.getGameTime(),
+            liveThreatsBeforeFailure
+        );
+        Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, failed.sequence());
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Expedition failed: " + messageReason + " [cause=" + endReason.serializedName()
                 + "]. Preparation supply is not refunded."
@@ -207,6 +254,13 @@ public final class ExpeditionGameplayService {
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime(), ExpeditionRun.EndReason.SERVER_RESTART);
         world.updateExpedition(failed);
+        failed = recordEvidence(
+            world,
+            failed,
+            ExpeditionEvidenceCheckpoint.Stage.FAILED,
+            level.getGameTime(),
+            -1
+        );
         Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
         return Optional.of(failed);
     }
@@ -260,6 +314,25 @@ public final class ExpeditionGameplayService {
     }
 
     public static BlockPos technicalRegionCenter() { return TECHNICAL_REGION; }
+
+    private static ExpeditionRun recordEvidence(
+        RiftfrontierWorldData world,
+        ExpeditionRun run,
+        ExpeditionEvidenceCheckpoint.Stage stage,
+        long gameTime,
+        int liveThreats
+    ) {
+        ExpeditionEvidenceCheckpoint checkpoint = new ExpeditionEvidenceCheckpoint(
+            stage,
+            gameTime,
+            run.recoveredResources().getOrDefault(RESOURCE_ID, 0),
+            liveThreats,
+            world.securedRegion01Salvage(),
+            world.expeditionSupply(),
+            world.region01Pressure()
+        );
+        return world.updateExpedition(run.appendEvidence(checkpoint));
+    }
 
     private static void prepareTechnicalCell(ServerLevel level, BlockPos center, boolean resourceNodes) {
         for (int dx = -5; dx <= 5; dx++) {

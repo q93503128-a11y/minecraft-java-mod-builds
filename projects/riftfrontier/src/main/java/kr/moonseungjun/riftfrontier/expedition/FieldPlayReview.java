@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Comparator;
+import java.util.List;
 
 /** Read-only Minecraft adapter for evidence-driven Region 01 field-play review. */
 public final class FieldPlayReview {
@@ -14,10 +15,7 @@ public final class FieldPlayReview {
     public static FieldPlayReviewSnapshot capture(ServerPlayer player) {
         ServerLevel playerLevel = (ServerLevel) player.level();
         RiftfrontierWorldData world = RiftfrontierWorldData.get(playerLevel);
-        ExpeditionRun run = world.expeditions().stream()
-            .filter(value -> value.ownerId().isEmpty() || value.ownedBy(player.getUUID()))
-            .max(Comparator.comparingLong(ExpeditionRun::sequence))
-            .orElseThrow(() -> new IllegalStateException("No expedition has been recorded for this player yet"));
+        ExpeditionRun run = latestFor(player, world);
 
         boolean terminal = run.status().terminal();
         long now = playerLevel.getGameTime();
@@ -74,5 +72,27 @@ public final class FieldPlayReview {
             currentFingerprint.equals(run.contentFingerprint()),
             run.contentFingerprint()
         );
+    }
+
+    /**
+     * Returns the bounded persisted lifecycle evidence for the caller's latest run. Empty legacy trails
+     * remain explicitly labelled instead of being reconstructed as if they were observed facts.
+     */
+    public static List<String> trail(ServerPlayer player) {
+        RiftfrontierWorldData world = RiftfrontierWorldData.get((ServerLevel) player.level());
+        ExpeditionRun run = latestFor(player, world);
+        if (run.evidenceTrail().isEmpty()) {
+            return List.of("run=" + run.sequence() + ";evidence=legacy-unavailable");
+        }
+        return run.evidenceTrail().stream()
+            .map(checkpoint -> checkpoint.reportLine(run.sequence(), run.startedGameTime()))
+            .toList();
+    }
+
+    private static ExpeditionRun latestFor(ServerPlayer player, RiftfrontierWorldData world) {
+        return world.expeditions().stream()
+            .filter(value -> value.ownerId().isEmpty() || value.ownedBy(player.getUUID()))
+            .max(Comparator.comparingLong(ExpeditionRun::sequence))
+            .orElseThrow(() -> new IllegalStateException("No expedition has been recorded for this player yet"));
     }
 }

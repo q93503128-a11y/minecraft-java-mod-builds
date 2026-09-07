@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -22,6 +23,19 @@ public final class ExpeditionRunCodec {
         Codec.INT.fieldOf("hazard_ticks").forGetter(ExpeditionStartContext::hazardTicks),
         Codec.INT.fieldOf("hazard_amplifier").forGetter(ExpeditionStartContext::hazardAmplifier)
     ).apply(instance, ExpeditionStartContext::new));
+    private static final Codec<ExpeditionEvidenceCheckpoint.Stage> EVIDENCE_STAGE_CODEC = Codec.STRING.xmap(
+        ExpeditionEvidenceCheckpoint.Stage::parse,
+        ExpeditionEvidenceCheckpoint.Stage::serializedName
+    );
+    private static final Codec<ExpeditionEvidenceCheckpoint> EVIDENCE_CHECKPOINT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        EVIDENCE_STAGE_CODEC.fieldOf("stage").forGetter(ExpeditionEvidenceCheckpoint::stage),
+        Codec.LONG.fieldOf("game_time").forGetter(ExpeditionEvidenceCheckpoint::gameTime),
+        Codec.INT.fieldOf("recovered_salvage").forGetter(ExpeditionEvidenceCheckpoint::recoveredSalvage),
+        Codec.INT.fieldOf("live_threats").forGetter(ExpeditionEvidenceCheckpoint::liveThreats),
+        Codec.INT.fieldOf("hub_salvage").forGetter(ExpeditionEvidenceCheckpoint::hubSalvage),
+        Codec.INT.fieldOf("expedition_supply").forGetter(ExpeditionEvidenceCheckpoint::expeditionSupply),
+        Codec.INT.fieldOf("region_pressure").forGetter(ExpeditionEvidenceCheckpoint::regionPressure)
+    ).apply(instance, ExpeditionEvidenceCheckpoint::new));
 
     public static final Codec<ExpeditionRun> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.LONG.fieldOf("sequence").forGetter(ExpeditionRun::sequence),
@@ -30,6 +44,7 @@ public final class ExpeditionRunCodec {
         UUID_CODEC.optionalFieldOf("owner_uuid").forGetter(ExpeditionRun::ownerId),
         Codec.STRING.fieldOf("content_fingerprint").forGetter(ExpeditionRun::contentFingerprint),
         START_CONTEXT_CODEC.optionalFieldOf("start_context").forGetter(ExpeditionRun::startContext),
+        EVIDENCE_CHECKPOINT_CODEC.listOf().optionalFieldOf("field_evidence", List.of()).forGetter(ExpeditionRun::evidenceTrail),
         STATUS_CODEC.fieldOf("status").forGetter(ExpeditionRun::status),
         Codec.unboundedMap(CONTENT_ID_CODEC, Codec.INT).optionalFieldOf("recovered_resources", Map.of()).forGetter(ExpeditionRun::recoveredResources),
         Codec.LONG.fieldOf("started_game_time").forGetter(ExpeditionRun::startedGameTime),
