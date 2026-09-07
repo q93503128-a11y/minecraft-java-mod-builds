@@ -12,11 +12,18 @@ import java.util.OptionalLong;
  * Metrics are intentionally descriptive rather than evaluative. They expose comparable pacing and
  * pressure observations for manual M2 field-play without declaring combat feel, fairness, or a pass/fail
  * result on behalf of the reviewer.
+ *
+ * PRE_EXTRACTION checkpoints are written at an extraction-attempt boundary in the current M2 adapter.
+ * A rejected underfilled attempt leaves the authoritative run DEPLOYED, so it must never be presented as
+ * an accepted pre-extraction time. For a successfully extracted run the last PRE_EXTRACTION checkpoint is
+ * the accepted attempt; earlier checkpoints are rejected attempts and remain visible through the attempt
+ * count rather than corrupting the pacing metric.
  */
 public record FieldPlayEvidenceMetrics(
     long sequence,
     int checkpoints,
     int salvageCheckpoints,
+    int extractionAttemptCheckpoints,
     OptionalLong firstSalvageElapsedTicks,
     OptionalLong preExtractionElapsedTicks,
     OptionalLong terminalElapsedTicks,
@@ -33,7 +40,7 @@ public record FieldPlayEvidenceMetrics(
         List<ExpeditionEvidenceCheckpoint> trail = run.evidenceTrail();
         if (trail.isEmpty()) {
             return new FieldPlayEvidenceMetrics(
-                run.sequence(), 0, 0,
+                run.sequence(), 0, 0, 0,
                 OptionalLong.empty(), OptionalLong.empty(), optionalTerminalElapsed(run),
                 OptionalLong.empty(), OptionalLong.empty(),
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(),
@@ -44,15 +51,15 @@ public record FieldPlayEvidenceMetrics(
         List<ExpeditionEvidenceCheckpoint> salvage = trail.stream()
             .filter(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED)
             .toList();
+        List<ExpeditionEvidenceCheckpoint> extractionAttempts = trail.stream()
+            .filter(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION)
+            .toList();
 
         OptionalLong firstSalvage = salvage.isEmpty()
             ? OptionalLong.empty()
             : OptionalLong.of(elapsed(run, salvage.getFirst()));
 
-        OptionalLong preExtraction = trail.stream()
-            .filter(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION)
-            .mapToLong(checkpoint -> elapsed(run, checkpoint))
-            .findFirst();
+        OptionalLong preExtraction = acceptedPreExtractionElapsed(run, extractionAttempts);
 
         LongSummaryStatistics intervals = new LongSummaryStatistics();
         for (int i = 1; i < salvage.size(); i++) {
@@ -73,6 +80,7 @@ public record FieldPlayEvidenceMetrics(
             run.sequence(),
             trail.size(),
             salvage.size(),
+            extractionAttempts.size(),
             firstSalvage,
             preExtraction,
             optionalTerminalElapsed(run),
@@ -85,6 +93,15 @@ public record FieldPlayEvidenceMetrics(
             last.stage().terminal() ? last.stage().serializedName() : "active",
             run.endReason().serializedName()
         );
+    }
+
+    private static OptionalLong acceptedPreExtractionElapsed(
+        ExpeditionRun run,
+        List<ExpeditionEvidenceCheckpoint> extractionAttempts
+    ) {
+        if (extractionAttempts.isEmpty()) return OptionalLong.empty();
+        if (run.status() != ExpeditionRun.Status.EXTRACTED) return OptionalLong.empty();
+        return OptionalLong.of(elapsed(run, extractionAttempts.getLast()));
     }
 
     private static OptionalLong optionalTerminalElapsed(ExpeditionRun run) {
@@ -101,6 +118,7 @@ public record FieldPlayEvidenceMetrics(
         return "run=" + sequence
             + ";checkpoints=" + checkpoints
             + ";salvageCheckpoints=" + salvageCheckpoints
+            + ";extractionAttempts=" + extractionAttemptCheckpoints
             + ";firstSalvageTicks=" + render(firstSalvageElapsedTicks)
             + ";preExtractionTicks=" + render(preExtractionElapsedTicks)
             + ";terminalTicks=" + render(terminalElapsedTicks)
