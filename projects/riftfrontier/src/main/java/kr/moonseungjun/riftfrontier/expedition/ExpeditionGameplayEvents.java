@@ -33,13 +33,13 @@ public final class ExpeditionGameplayEvents {
     public static void playerClone(PlayerEvent.Clone event) {
         if (!event.isWasDeath()) return;
         if (event.getEntity() instanceof ServerPlayer player) {
-            ExpeditionGameplayService.failActive(player, "player death");
+            ExpeditionGameplayService.failActive(player, ExpeditionRun.EndReason.PLAYER_DEATH, "player death");
         }
     }
 
     public static void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            ExpeditionGameplayService.failActive(player, "player left during expedition");
+            ExpeditionGameplayService.failActive(player, ExpeditionRun.EndReason.PLAYER_LOGOUT, "player left during expedition");
         }
     }
 
