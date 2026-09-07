@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.ui;
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
+import kr.moonseungjun.turnboundre.client.input.BattleInputHandler;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -175,13 +176,18 @@ public final class BattleHud {
         graphics.enableScissor(region.x(), region.y(), region.right(), region.bottom());
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX,
                 region.x(), region.y(), region.width(), 16);
-        drawCentered(graphics, font, fit(font, "YOUR TURN - " + displayName(actor), region.width() - 8),
+        String header = Component.translatable(
+                "hud.turnbound_re.command_header",
+                displayName(actor),
+                BattleInputHandler.openKeyName()).getString();
+        drawCentered(graphics, font, fit(font, header, region.width() - UiLayoutMetrics.SPACE_8),
                 region.x() + region.width() / 2, region.y() + 4, TEXT_PRIMARY, true);
 
         List<BattleNetworkPayloads.SnapshotAction> actions = model.availableActions();
         if (actions.isEmpty()) {
-            graphics.text(font, Component.literal("No server action snapshot"), region.x() + 4, region.y() + 24,
-                    TEXT_SECONDARY, true);
+            String unavailable = Component.translatable("hud.turnbound_re.no_actions").getString();
+            graphics.text(font, Component.literal(fit(font, unavailable, region.width() - UiLayoutMetrics.SPACE_8)),
+                    region.x() + UiLayoutMetrics.SPACE_4, region.y() + 24, TEXT_SECONDARY, true);
             graphics.disableScissor();
             return;
         }
@@ -198,12 +204,10 @@ public final class BattleHud {
                     action.usable() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
 
             String name = conciseActionName(action.id(), displayName(actor));
-            drawCentered(graphics, font, fit(font, name, slotWidth - 2), centerX, region.y() + 38,
+            drawCentered(graphics, font, fit(font, name, slotWidth - UiLayoutMetrics.SPACE_2), centerX, region.y() + 38,
                     action.usable() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
-            String cost = action.usable()
-                    ? (action.energyCost() > 0 ? "E " + action.energyCost() : "READY")
-                    : disabledText(action);
-            drawCentered(graphics, font, fit(font, cost, slotWidth - 2), centerX, region.y() + 48,
+            String cost = BattleActionPresentation.hudCost(action).getString();
+            drawCentered(graphics, font, fit(font, cost, slotWidth - UiLayoutMetrics.SPACE_2), centerX, region.y() + 48,
                     TEXT_SECONDARY, true);
         }
         graphics.disableScissor();
@@ -262,14 +266,6 @@ public final class BattleHud {
         return humanizeId(status.id()) + stacks + remaining;
     }
 
-    private static String disabledText(BattleNetworkPayloads.SnapshotAction action) {
-        return switch (action.disabledReason()) {
-            case "ENERGY" -> "NEED E" + action.energyCost();
-            case "TARGETS" -> "NO TARGET";
-            default -> "LOCKED";
-        };
-    }
-
     private static String slotGlyph(String slot) {
         return switch (slot) {
             case "BASIC" -> "B";
@@ -284,7 +280,7 @@ public final class BattleHud {
     }
 
     private static String conciseActionName(String actionId, String actorName) {
-        String name = humanizeId(actionId);
+        String name = BattleActionPresentation.actionName(actionId);
         String prefix = actorName + " ";
         return name.regionMatches(true, 0, prefix, 0, prefix.length()) ? name.substring(prefix.length()) : name;
     }
