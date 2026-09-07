@@ -1,0 +1,163 @@
+name: Frontier Alpha.122 Production Investment v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha122-production-investment-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply corrected Alpha.122 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/frontier-alpha122-production-investment.yml').read_text(encoding='utf-8')
+          start_marker = "          python3 - <<'PY'\n"
+          end_marker = "\n          PY\n\n      - name: Audit and build"
+          start = workflow.index(start_marker) + len(start_marker)
+          end = workflow.index(end_marker, start)
+          script = textwrap.dedent(workflow[start:end])
+          script = script.replace(
+              "'import kr.moonseungjun.frontiersettlement.settlement.SettlementProjectAuthority;'",
+              "'import kr.moonseungjun.frontiersettlement.settlement.SettlementEquipmentUpgradeService;'"
+          ).replace(
+              "'import kr.moonseungjun.frontiersettlement.settlement.SettlementProjectAuthority;\\nimport kr.moonseungjun.frontiersettlement.settlement.SettlementProductionUpgradeService;'",
+              "'import kr.moonseungjun.frontiersettlement.settlement.SettlementEquipmentUpgradeService;\\nimport kr.moonseungjun.frontiersettlement.settlement.SettlementProductionUpgradeService;'"
+          )
+          exec(compile(script, '<alpha122-base-patch>', 'exec'), {})
+
+          root = Path('projects/frontier-settlement')
+          sett = root/'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+          def replace_once(path, old, new, label):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          storage = sett/'SettlementStorageService.java'
+          replace_once(storage,
+              '    private static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {',
+              '    public static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {',
+              'expose grade-limited local buffers')
+          replace_once(storage,
+              '        for (BuildingRecord building : data.buildings()) positions.addAll(worksiteStoragePositions(building));',
+              '        for (BuildingRecord building : data.buildings()) positions.addAll(desiredWorksiteStoragePositions(building, data));',
+              'ledger ignores locked local buffers')
+
+          atomic = '''    /** One precheck and one server-thread mutation for RTS production-facility investment. */
+    public static long countProductionUpgradeMetal(ServerLevel level, SettlementData data) {
+        List<BlockPos> positions = activeStoragePositions(level, data);
+        if (!allStorageChunksLoaded(level, positions)) return -1L;
+        long count = 0L;
+        for (BlockPos pos : positions) {
+            if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+            for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (SettlementEquipmentUpgradeService.isBlacksmithMetal(stack)) count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    public static boolean consumeProductionUpgrade(ServerLevel level, SettlementData data,
+                                                   long wood, long stone, long copperIronItems) {
+        if (wood < 0L || stone < 0L || copperIronItems < 0L) return false;
+        List<BlockPos> positions = activeStoragePositions(level, data);
+        if (!allStorageChunksLoaded(level, positions)) return false;
+        SettlementResources resources = scan(level, data);
+        long commonMetal = countProductionUpgradeMetal(level, data);
+        if (resources.wood() < wood || resources.stone() < stone || commonMetal < copperIronItems) return false;
+        remove(level, positions, wood, SettlementInventory::isWood);
+        remove(level, positions, stone, SettlementInventory::isStone);
+        remove(level, positions, copperIronItems, SettlementEquipmentUpgradeService::isBlacksmithMetal);
+        return true;
+    }
+
+'''
+          replace_once(storage,
+              '    public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {',
+              atomic + '    public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {',
+              'atomic production investment payment')
+
+          worker = sett/'SettlementWorkerService.java'
+          replace_once(worker,
+              'for (BlockPos local : SettlementStorageService.worksiteStoragePositions(building)) {',
+              'for (BlockPos local : SettlementStorageService.desiredWorksiteStoragePositions(building, data)) {',
+              'worker obeys paid local buffer grade')
+
+          upgrade = sett/'SettlementProductionUpgradeService.java'
+          replace_once(upgrade,
+              'long copperIron = SettlementEquipmentUpgradeService.countBlacksmithMetalItems(level, data);',
+              'long copperIron = SettlementStorageService.countProductionUpgradeMetal(level, data);',
+              'upgrade common metal count')
+          old_payment = '''        // Same server-thread transaction after a complete availability check: wood/stone removal cannot affect copper/iron slots.
+        if (!SettlementStorageService.consume(level, data, cost.wood(), cost.stone(), 0L)
+                || !SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems(level, data, cost.copperIronItems())) {'''
+          new_payment = '''        if (!SettlementStorageService.consumeProductionUpgrade(level, data,
+                cost.wood(), cost.stone(), cost.copperIronItems())) {'''
+          replace_once(upgrade, old_payment, new_payment, 'atomic upgrade payment call')
+
+          test = root/'tools/test_current_source.py'
+          t = test.read_text(encoding='utf-8')
+          t = t.replace(
+              'require("countBlacksmithMetalItems" in production_upgrade and "consumeBlacksmithMetalItems" in production_upgrade,\n        "facility improvement can silently spend non-copper/iron metal")',
+              'require("countProductionUpgradeMetal" in production_upgrade and "consumeProductionUpgrade" in production_upgrade,\n        "facility improvement does not use the atomic common-metal payment path")'
+          )
+          t = t.replace(
+              'require("SettlementStorageService.worksiteStoragePositions(building)" in worker,\n        "production workers do not use every unlocked local physical buffer")',
+              'require("SettlementStorageService.desiredWorksiteStoragePositions(building, data)" in worker,\n        "production workers can bypass their paid local-buffer grade")'
+          )
+          anchor = 'require("SettlementProductionEfficiencyService.grade(data, building)" in storage and "canProvisionWorksiteBuffers" in storage,\n        "worksite buffer capacity does not follow safe per-building improvement")\n'
+          if anchor not in t: raise SystemExit('post-patch storage audit anchor missing')
+          t = t.replace(anchor, anchor + '''require("consumeProductionUpgrade" in storage and "countProductionUpgradeMetal" in storage\n        and "SettlementEquipmentUpgradeService::isBlacksmithMetal" in storage,\n        "production investment physical payment is not atomic/common-metal-only")\nrequire("desiredWorksiteStoragePositions(building, data)" in storage,\n        "locked local barrels can still join the settlement resource ledger")\n''', 1)
+          test.write_text(t, encoding='utf-8')
+          PY
+
+      - name: Audit and build
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.122.jar
+          git diff --check
+
+      - name: Commit Alpha.122
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git commit -m 'frontier: release 0.1.0-alpha.122 per-building production investment'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
