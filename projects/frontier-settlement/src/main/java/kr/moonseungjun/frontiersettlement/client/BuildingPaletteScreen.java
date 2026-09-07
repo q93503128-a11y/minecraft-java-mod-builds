@@ -52,6 +52,7 @@ public final class BuildingPaletteScreen extends Screen {
     private static final int TEXT_ACCENT = 0xFFFFD58A;
     private static final int TEXT_GOOD = 0xFFAEDC9A;
     private static final int TEXT_WARN = 0xFFFFC878;
+    private static final int SETTLEMENT_TIER_COUNT = 6;
 
     private final Category category;
     private final List<BuildingRow> buildingRows = new ArrayList<>();
@@ -162,13 +163,26 @@ public final class BuildingPaletteScreen extends Screen {
         g.fill(panelX, panelY, panelX + 4, panelY + panelHeight, PANEL_EDGE);
         g.fill(panelX + sidebarWidth + 2, panelY + 41, panelX + sidebarWidth + 3, panelY + panelHeight - 10, DIVIDER);
 
-        g.text(this.font, Component.literal("마을 건설"), panelX + 12, panelY + 13, TEXT_PRIMARY, true);
-        String resources = data.tier() + "   목재 " + data.wood() + "   석재 " + data.stone()
-                + "   금속 " + data.metal() + "   식량 " + data.food() + "   인구 " + data.population();
-        g.text(this.font, Component.literal(resources), panelX + 12, panelY + 29, TEXT_SECONDARY, false);
+        String tier = data.tier() == null || data.tier().isBlank() ? "확인 중" : data.tier();
+        int tierRank = tierRank(tier);
+        String title = tierRank > 0
+                ? "마을 건설 · 마을 등급 " + tier + " (" + tierRank + "/" + SETTLEMENT_TIER_COUNT + ")"
+                : "마을 건설 · 마을 등급 " + tier;
+        g.text(this.font, Component.literal(trimToWidth(title, Math.max(100, panelWidth - 150))),
+                panelX + 12, panelY + 13, TEXT_PRIMARY, true);
 
-        g.text(this.font, Component.literal(category.label), contentX, panelY + 46, TEXT_ACCENT, true);
-        g.text(this.font, Component.literal(category.description), contentX, panelY + 59, TEXT_SECONDARY, false);
+        String resources = "목재 " + data.wood() + "   석재 " + data.stone()
+                + "   금속 " + data.metal() + "   식량 " + data.food() + "   인구 " + data.population();
+        g.text(this.font, Component.literal(trimToWidth(resources, panelWidth - 24)),
+                panelX + 12, panelY + 29, TEXT_SECONDARY, false);
+
+        String categoryLine = category.label + " · " + category.description;
+        g.text(this.font, Component.literal(trimToWidth(categoryLine, contentWidth)),
+                contentX, panelY + 46, TEXT_ACCENT, true);
+        String goal = data.nextGoal();
+        String goalLine = goal == null || goal.isBlank() ? "현재 목표 · 자유 건설과 영토 확장" : goal;
+        g.text(this.font, Component.literal(trimToWidth(goalLine, contentWidth)),
+                contentX, panelY + 59, TEXT_SECONDARY, false);
 
         if (splitDetails && !category.buildings.isEmpty()) {
             BuildingType detail = hoveredBuilding(mx, my);
@@ -250,6 +264,18 @@ public final class BuildingPaletteScreen extends Screen {
         int index = (int) Math.round(angle / (Math.PI / 4.0D));
         index = Math.floorMod(index, 8);
         return names[index];
+    }
+
+    private static int tierRank(String tier) {
+        return switch (tier) {
+            case "개척 캠프" -> 1;
+            case "촌락" -> 2;
+            case "마을" -> 3;
+            case "개척 도시" -> 4;
+            case "영지" -> 5;
+            case "개척 수도" -> 6;
+            default -> 0;
+        };
     }
 
     private String trimToWidth(String text, int maxWidth) {
