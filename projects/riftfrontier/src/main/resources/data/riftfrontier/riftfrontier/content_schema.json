@@ -1,6 +1,16 @@
 {
   "schemaVersion": 1,
-  "status": "m1-kernel-fixture",
+  "status": "m1-active",
   "types": ["combat_archetype", "region", "loot_profile", "creature", "encounter"],
-  "note": "Runtime JSON loading is intentionally deferred until the typed kernel and validation contract are proven by tests."
+  "packEnvelope": {
+    "required": ["schema_version", "pack_id", "definitions"],
+    "unknownSchemaPolicy": "reject"
+  },
+  "validation": {
+    "duplicateStableId": "error",
+    "missingReference": "error",
+    "duplicateSetValue": "error",
+    "missingWorldConsequence": "warn"
+  },
+  "note": "Definitions are decoded into typed CoreDefinition records, registered through ContentRegistry, then reference-validated before runtime use."
 }
