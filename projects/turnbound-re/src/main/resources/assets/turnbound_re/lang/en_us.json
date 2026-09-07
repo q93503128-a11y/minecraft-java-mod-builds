@@ -1,1 +1,10 @@
-{"turnbound_re.debug.ready":"TURNBOUND: RE debug contracts ready"}
+{
+  "turnbound_re.debug.ready": "TURNBOUND: RE debug contracts ready",
+  "key.category.turnbound_re.battle": "TURNBOUND: RE",
+  "key.turnbound_re.open_battle_commands": "Open Battle Commands",
+  "screen.turnbound_re.battle_commands": "Battle Commands",
+  "screen.turnbound_re.select_targets": "Select targets %s/%s",
+  "screen.turnbound_re.confirm_targets": "Confirm %s/%s",
+  "screen.turnbound_re.no_targets": "No valid targets",
+  "screen.turnbound_re.selection_changed": "Battle state changed. Choose again."
+}

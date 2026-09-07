@@ -70,7 +70,7 @@ public final class BattleNetworkPayloads {
 
     /**
      * A server-published action affordance for the current player actor.
-     * "usable" is presentation guidance only; the server strict command gate remains authoritative.
+     * eligibleTargetIds is authoritative presentation data for selection only; the strict server gate revalidates submission.
      */
     public record SnapshotAction(
             String id,
@@ -84,7 +84,8 @@ public final class BattleNetworkPayloads {
             String targetShape,
             int targetCount,
             boolean usable,
-            String disabledReason
+            String disabledReason,
+            List<String> eligibleTargetIds
     ) {
         public SnapshotAction {
             if (id == null || id.isBlank()) throw new IllegalArgumentException("action id must not be blank");
@@ -96,8 +97,20 @@ public final class BattleNetworkPayloads {
             if (targetCount <= 0) throw new IllegalArgumentException("action targetCount must be > 0");
             if (damageTag == null) damageTag = "";
             if (disabledReason == null) disabledReason = "";
+            eligibleTargetIds = eligibleTargetIds == null ? List.of() : List.copyOf(eligibleTargetIds);
+            for (String targetId : eligibleTargetIds) {
+                if (targetId == null || targetId.isBlank()) {
+                    throw new IllegalArgumentException("eligibleTargetIds must not contain blanks");
+                }
+            }
+            if (eligibleTargetIds.stream().distinct().count() != eligibleTargetIds.size()) {
+                throw new IllegalArgumentException("eligibleTargetIds must not contain duplicates");
+            }
             if (usable && !disabledReason.isBlank()) throw new IllegalArgumentException("usable action must not carry disabledReason");
             if (!usable && disabledReason.isBlank()) throw new IllegalArgumentException("disabled action requires disabledReason");
+            if (usable && eligibleTargetIds.size() < targetCount) {
+                throw new IllegalArgumentException("usable action requires enough eligible targets");
+            }
         }
     }
 
@@ -229,7 +242,7 @@ public final class BattleNetworkPayloads {
                             action.id(), action.slot(), action.kind(), Integer.toString(action.energyCost()),
                             Integer.toString(action.hpPower()), Integer.toString(action.poisePower()), action.damageTag(),
                             action.targetTeam(), action.targetShape(), Integer.toString(action.targetCount()),
-                            Boolean.toString(action.usable()), action.disabledReason()))
+                            Boolean.toString(action.usable()), action.disabledReason(), packList(action.eligibleTargetIds())))
                     .toList();
 
             return new BattleSnapshotS2C(join(
@@ -256,11 +269,11 @@ public final class BattleNetworkPayloads {
 
             List<SnapshotAction> actions = new ArrayList<>();
             for (String row : unpackList(p.get(6))) {
-                List<String> r = split(row, 12);
+                List<String> r = split(row, 13);
                 actions.add(new SnapshotAction(
                         r.get(0), r.get(1), r.get(2), Integer.parseInt(r.get(3)), Integer.parseInt(r.get(4)),
                         Integer.parseInt(r.get(5)), r.get(6), r.get(7), r.get(8), Integer.parseInt(r.get(9)),
-                        Boolean.parseBoolean(r.get(10)), r.get(11)));
+                        Boolean.parseBoolean(r.get(10)), r.get(11), unpackList(r.get(12))));
             }
 
             return new DecodedSnapshot(
@@ -296,7 +309,9 @@ public final class BattleNetworkPayloads {
             for (int i = 0; i < character.skills().size(); i++) {
                 addDataAction(actions, battle, actor, actorState, definitions, character.skills().get(i), "SKILL_" + (i + 1));
             }
-            actions.add(new SnapshotAction("guard", "GUARD", "GUARD", 0, 0, 0, "", "SELF", "SINGLE", 1, true, ""));
+            actions.add(new SnapshotAction(
+                    "guard", "GUARD", "GUARD", 0, 0, 0, "", "SELF", "SINGLE", 1, true, "",
+                    List.of(actor.id())));
             addDataAction(actions, battle, actor, actorState, definitions, character.burst(), "BURST");
             return List.copyOf(actions);
         }
@@ -313,21 +328,22 @@ public final class BattleNetworkPayloads {
             ActionDefinition action = definitions.definitions().actions().get(actionId);
             if (action == null) throw new IllegalStateException("battle definition snapshot has no ActionDefinition " + actionId);
 
+            List<String> eligibleTargetIds = eligibleTargetIds(battle, actor, action.targeting().team());
             String disabledReason = "";
             if (actorState.energy() < action.energyCost()) {
                 disabledReason = "ENERGY";
-            } else if (eligibleTargetCount(battle, actor, action.targeting().team()) < action.targeting().count()) {
+            } else if (eligibleTargetIds.size() < action.targeting().count()) {
                 disabledReason = "TARGETS";
             }
 
             out.add(new SnapshotAction(
                     action.id(), slot, action.kind(), action.energyCost(), action.hpPower(), action.poisePower(),
                     action.damageTag(), action.targeting().team(), action.targeting().shape(), action.targeting().count(),
-                    disabledReason.isEmpty(), disabledReason));
+                    disabledReason.isEmpty(), disabledReason, eligibleTargetIds));
         }
 
-        private static int eligibleTargetCount(BattleInstance battle, BattleParticipant actor, String targetTeam) {
-            int count = 0;
+        private static List<String> eligibleTargetIds(BattleInstance battle, BattleParticipant actor, String targetTeam) {
+            List<String> ids = new ArrayList<>();
             for (String participantId : battle.actorOrder()) {
                 if (!battle.combatState(participantId).alive()) continue;
                 BattleParticipant target = battle.participant(participantId);
@@ -338,9 +354,9 @@ public final class BattleNetworkPayloads {
                     case "ANY" -> true;
                     default -> throw new IllegalStateException("validated action has unsupported target team " + targetTeam);
                 };
-                if (allowed) count++;
+                if (allowed) ids.add(participantId);
             }
-            return count;
+            return List.copyOf(ids);
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
