@@ -42,5 +42,8 @@
   "hud.turnbound_re.action.ready": "사용 가능",
   "hud.turnbound_re.action.need_energy": "E%s 필요",
   "hud.turnbound_re.action.no_target": "대상 없음",
-  "hud.turnbound_re.action.locked": "사용 불가"
+  "hud.turnbound_re.action.locked": "사용 불가",
+  "marker.turnbound_re.target.eligible": "대상",
+  "marker.turnbound_re.target.hovered": "지정 중",
+  "marker.turnbound_re.target.selected": "선택됨"
 }
