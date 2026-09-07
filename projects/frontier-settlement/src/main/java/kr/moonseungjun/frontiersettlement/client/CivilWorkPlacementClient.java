@@ -11,8 +11,10 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Uses the existing B / Enter / Backspace interaction budget: first corner fixes grade Y, second sets area. */
+/** Uses the existing M / Enter / Backspace interaction budget: first corner fixes grade Y, second sets area. */
 public final class CivilWorkPlacementClient {
+    private static final int STATIONARY_REFRESH_TICKS = 20;
+
     private static boolean active;
     private static BlockPos first;
     private static BlockPos target = BlockPos.ZERO;
@@ -48,7 +50,7 @@ public final class CivilWorkPlacementClient {
         }
         if (first != null && refreshTicks-- <= 0) {
             send(false);
-            refreshTicks = 5;
+            refreshTicks = STATIONARY_REFRESH_TICKS;
         }
     }
 
