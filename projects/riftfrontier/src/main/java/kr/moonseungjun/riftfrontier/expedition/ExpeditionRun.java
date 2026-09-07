@@ -21,7 +21,8 @@ public record ExpeditionRun(
     Status status,
     Map<ContentId, Integer> recoveredResources,
     long startedGameTime,
-    long endedGameTime
+    long endedGameTime,
+    EndReason endReason
 ) {
     public enum Status {
         PREPARING("preparing"),
@@ -52,12 +53,45 @@ public record ExpeditionRun(
         }
     }
 
+    /** Stable machine-readable terminal cause for review, recovery UX and future analytics. */
+    public enum EndReason {
+        NONE("none"),
+        EXTRACTION("extraction"),
+        PLAYER_ABORT("player_abort"),
+        PLAYER_DEATH("player_death"),
+        PLAYER_LOGOUT("player_logout"),
+        SERVER_RESTART("server_restart"),
+        OTHER_FAILURE("other_failure");
+
+        private final String serializedName;
+
+        EndReason(String serializedName) {
+            this.serializedName = serializedName;
+        }
+
+        public String serializedName() {
+            return serializedName;
+        }
+
+        public boolean failure() {
+            return this != NONE && this != EXTRACTION;
+        }
+
+        public static EndReason parse(String value) {
+            for (EndReason reason : values()) {
+                if (reason.serializedName.equals(value)) return reason;
+            }
+            throw new IllegalArgumentException("Unknown expedition end reason '" + value + "'");
+        }
+    }
+
     public ExpeditionRun {
         if (sequence <= 0) throw new IllegalArgumentException("sequence must be > 0");
         Objects.requireNonNull(regionId, "regionId");
         Objects.requireNonNull(contractId, "contractId");
         contentFingerprint = Objects.requireNonNull(contentFingerprint, "contentFingerprint");
         Objects.requireNonNull(status, "status");
+        Objects.requireNonNull(endReason, "endReason");
         Map<ContentId, Integer> normalized = new LinkedHashMap<>();
         Objects.requireNonNull(recoveredResources, "recoveredResources").forEach((resource, amount) -> {
             Objects.requireNonNull(resource, "resource id");
@@ -73,15 +107,24 @@ public record ExpeditionRun(
         if (!status.terminal() && endedGameTime != -1L) {
             throw new IllegalArgumentException("non-terminal expedition cannot have endedGameTime");
         }
+        if (!status.terminal() && endReason != EndReason.NONE) {
+            throw new IllegalArgumentException("non-terminal expedition cannot have an end reason");
+        }
+        if (status == Status.EXTRACTED && endReason != EndReason.EXTRACTION && endReason != EndReason.NONE) {
+            throw new IllegalArgumentException("EXTRACTED expedition cannot have failure end reason " + endReason);
+        }
+        if (status == Status.FAILED && endReason == EndReason.EXTRACTION) {
+            throw new IllegalArgumentException("FAILED expedition cannot use extraction end reason");
+        }
     }
 
     public static ExpeditionRun preparing(long sequence, ContentId regionId, ContentId contractId, String contentFingerprint, long gameTime) {
-        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, Status.PREPARING, Map.of(), gameTime, -1L);
+        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, Status.PREPARING, Map.of(), gameTime, -1L, EndReason.NONE);
     }
 
     public ExpeditionRun deploy() {
         requireStatus(Status.PREPARING);
-        return copy(Status.DEPLOYED, recoveredResources, -1L);
+        return copy(Status.DEPLOYED, recoveredResources, -1L, EndReason.NONE);
     }
 
     public ExpeditionRun recover(ContentId resourceId, int amount) {
@@ -91,29 +134,31 @@ public record ExpeditionRun(
         if (amount <= 0) throw new IllegalArgumentException("amount must be > 0");
         Map<ContentId, Integer> next = new LinkedHashMap<>(recoveredResources);
         next.merge(Objects.requireNonNull(resourceId, "resourceId"), amount, Math::addExact);
-        return copy(status, next, -1L);
+        return copy(status, next, -1L, EndReason.NONE);
     }
 
     public ExpeditionRun requestExtraction() {
         requireStatus(Status.DEPLOYED);
-        return copy(Status.EXTRACTION_REQUESTED, recoveredResources, -1L);
+        return copy(Status.EXTRACTION_REQUESTED, recoveredResources, -1L, EndReason.NONE);
     }
 
     public ExpeditionRun extract(long gameTime) {
         requireStatus(Status.EXTRACTION_REQUESTED);
-        return copy(Status.EXTRACTED, recoveredResources, gameTime);
+        return copy(Status.EXTRACTED, recoveredResources, gameTime, EndReason.EXTRACTION);
     }
 
-    public ExpeditionRun fail(long gameTime) {
+    public ExpeditionRun fail(long gameTime, EndReason reason) {
         if (status.terminal()) throw new IllegalStateException("Expedition is already terminal: " + status);
-        return copy(Status.FAILED, recoveredResources, gameTime);
+        Objects.requireNonNull(reason, "reason");
+        if (!reason.failure()) throw new IllegalArgumentException("Failure transition requires a failure end reason");
+        return copy(Status.FAILED, recoveredResources, gameTime, reason);
     }
 
     private void requireStatus(Status expected) {
         if (status != expected) throw new IllegalStateException("Expected expedition status " + expected + " but was " + status);
     }
 
-    private ExpeditionRun copy(Status nextStatus, Map<ContentId, Integer> resources, long endTime) {
-        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, nextStatus, resources, startedGameTime, endTime);
+    private ExpeditionRun copy(Status nextStatus, Map<ContentId, Integer> resources, long endTime, EndReason reason) {
+        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, nextStatus, resources, startedGameTime, endTime, reason);
     }
 }
