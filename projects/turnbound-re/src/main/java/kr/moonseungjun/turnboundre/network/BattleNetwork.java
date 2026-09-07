@@ -1,9 +1,10 @@
 package kr.moonseungjun.turnboundre.network;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
+import kr.moonseungjun.turnboundre.battle.BattleDefinitionContext;
 import kr.moonseungjun.turnboundre.battle.BattleEvent;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
-import kr.moonseungjun.turnboundre.debug.DebugBattleClientState;
+import kr.moonseungjun.turnboundre.client.BattleClientState;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -11,9 +12,9 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.List;
 
-/** M2 play-phase network registration. Common code contains no production client rendering/UI references. */
+/** Play-phase network registration. Battle truth remains server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "1";
+    private static final String PROTOCOL_VERSION = "2";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}
@@ -25,10 +26,10 @@ public final class BattleNetwork {
                 BattleNetwork::handleCommand);
         registrar.playToClient(BattleNetworkPayloads.BattleSnapshotS2C.TYPE,
                 BattleNetworkPayloads.BattleSnapshotS2C.STREAM_CODEC,
-                (payload, context) -> DebugBattleClientState.accept(payload));
+                (payload, context) -> BattleClientState.accept(payload));
         registrar.playToClient(BattleNetworkPayloads.BattleEventsS2C.TYPE,
                 BattleNetworkPayloads.BattleEventsS2C.STREAM_CODEC,
-                (payload, context) -> DebugBattleClientState.accept(payload));
+                (payload, context) -> BattleClientState.accept(payload));
     }
 
     private static void handleCommand(BattleNetworkPayloads.BattleCommandC2S payload, IPayloadContext context) {
@@ -55,6 +56,7 @@ public final class BattleNetwork {
             context.reply(BattleNetworkPayloads.BattleEventsS2C.rejection(
                     battle.battleId(), battle.revision(), result.code().name() + ":" + result.detail()));
         }
-        context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(battle));
+        BattleDefinitionContext definitions = TurnboundRe.BATTLES.definitionContext(battle.battleId()).orElse(null);
+        context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(battle, definitions));
     }
 }
