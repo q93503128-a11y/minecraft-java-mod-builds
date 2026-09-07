@@ -57,9 +57,20 @@ public final class ExpeditionLifecycle {
         return run.recover(resourceId, amount);
     }
 
-    public ExpeditionRun requestExtraction(ExpeditionRun run) {
+    /**
+     * Validates the extraction gate without mutating the immutable run. Gameplay adapters use this
+     * before persisting PRE_EXTRACTION evidence so a rejected attempt is a true authoritative no-op.
+     */
+    public void validateExtractionRequest(ExpeditionRun run) {
         requireRunDefinitions(run);
+        if (run.status() != ExpeditionRun.Status.DEPLOYED) {
+            throw new IllegalStateException("Extraction can only be requested from a deployed expedition");
+        }
         requireContractObjectiveSatisfied(run);
+    }
+
+    public ExpeditionRun requestExtraction(ExpeditionRun run) {
+        validateExtractionRequest(run);
         return run.requestExtraction();
     }
 
