@@ -25,50 +25,73 @@
 
 목표: 콘텐츠를 확장할 수 있는 언어와 검증 체계 만들기.
 
-우선 구현:
+구현됨:
 
 - stable content ID
 - content registry boundary
-- data schema loader
-- reference resolver
-- validator severity(ERROR/WARN)
-- datagen provider 구조
-- content catalog 생성
-- test fixture
-- persistence schema version 기반
+- versioned JSON schema loader
+- merged cross-document reference resolver
+- validator ERROR/WARN + machine-readable code
+- deterministic content catalog/fingerprint
+- pack dependency/provenance
+- ResourceManager reload + atomic last-known-good snapshot
+- persistence schema/migration root
+- native GameTest + server/client/JAR CI gate
 
-첫 schema 후보:
+현재 core type:
 
 - creature profile
 - combat archetype
 - region profile
 - loot profile
 - encounter profile
+- expedition resource
+- contract
+- extraction result profile
 
-완료 조건:
-
-- 잘못된 참조를 게임 실행 전 검출
-- 샘플 콘텐츠를 Java 복제 없이 데이터/공통 behaviour로 등록
-- unit/GameTest 가능한 core path 확보
+M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요구가 있을 때만 validator/test와 함께 추가한다.
 
 ## M2 — Expedition Vertical Slice Core
 
 목표: 첫 실제 플레이 루프 구축.
 
-- 중앙 거점 최소 기능
-- 원정 진입/귀환
-- region_01 runtime
+### M2-A — Domain foundation
+
+구현됨. 전체 CI green 확인 전에는 검증 완료로 표시하지 않는다.
+
+- `Region → ExpeditionResource / Contract` graph
+- contract required resource / reward loot / extraction-result reference
+- `ExtractionResultProfile` 정책 정의
+- 불변 `ExpeditionRun`
+- `ExpeditionLifecycle` 상태 전이와 소속/요구조건 검증
+- persistence schema 2 + `1 → 2` migration
+- `RiftfrontierWorldData.expeditions[]`
+- salvage vertical-slice fixture
+- JUnit lifecycle/migration/content graph 테스트
+- native GameTest SavedData 원정 전이 검증
+
+정본: `EXPEDITION_RUNTIME.md`
+
+### M2-B — Gameplay integration — NEXT
+
+다음 구현 묶음:
+
+- fixture와 분리된 production `region_01` Region Pack
+- 중앙 거점 최소 contract selection 경로
+- authoritative expedition 시작
+- 실제 region 진입/귀환
 - 환경 규칙 1개
 - 일반 적 archetype 여러 역할
 - elite 1종
-- 자원 회수
+- 실제 resource interaction → recovered resource 기록
+- extraction request/resolve → 귀환/정산
+- 실패/사망/이탈 policy
 - 저장/보급/가공의 최소 물류 연결
-- 계약/목표 1계열
 - world response 1계열
 
-완료 조건:
+M2 완료 조건:
 
-`준비 → 진입 → 목표/탐사 → 철수 → 투자 → 다음 원정 변화`가 실제 게임에서 끊기지 않고 동작.
+`준비 → 진입 → 목표/탐사 → 철수 → 투자 → 다음 원정 변화`가 실제 게임에서 끊기지 않고 동작하며 GameTest와 실제 플레이 검수를 통과한다.
 
 ## M3 — Combat & Boss Quality Gate
 
