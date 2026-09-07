@@ -24,13 +24,15 @@ jobs:
           from pathlib import Path
           p = Path('.github/workflows/frontier-alpha119-city-admin-buffer.yml')
           text = p.read_text(encoding='utf-8')
-          old = """          replace_once(worker,
-              '            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\\n',
-              '            // recruitment boundaries so duplicate authority is normalized before any new arrival.\\n')
-          """
-          if text.count(old) != 1:
-              raise SystemExit(f'expected obsolete comment replacement exactly once, got {text.count(old)}')
-          p.write_text(text.replace(old, ''), encoding='utf-8')
+          needle = "'            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\\\\n',"
+          if text.count(needle) != 1:
+              raise SystemExit(f'expected obsolete comment needle once, got {text.count(needle)}')
+          idx = text.index(needle)
+          start = text.rfind('          replace_once(worker,', 0, idx)
+          end = text.find('\n\n', idx)
+          if start < 0 or end < 0:
+              raise SystemExit('could not isolate obsolete comment replacement block')
+          p.write_text(text[:start] + text[end + 2:], encoding='utf-8')
           PY
           git diff --check
           git config user.name 'github-actions[bot]'
