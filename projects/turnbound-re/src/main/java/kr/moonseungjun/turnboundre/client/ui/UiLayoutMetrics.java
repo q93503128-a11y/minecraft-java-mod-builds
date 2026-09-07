@@ -41,6 +41,24 @@ public final class UiLayoutMetrics {
     ) {}
 
     /**
+     * Party status stays one row on normal layouts. At the minimum supported width, four members become a 2x2 grid
+     * so names and core resources are not crushed into ~64 logical pixels each.
+     */
+    public record PartyGridLayout(
+            int columns,
+            int rows,
+            int cellWidth,
+            int cellHeight,
+            boolean compact
+    ) {
+        public PartyGridLayout {
+            if (columns <= 0 || rows <= 0 || cellWidth <= 0 || cellHeight <= 0) {
+                throw new IllegalArgumentException("invalid party grid");
+            }
+        }
+    }
+
+    /**
      * Target selection reuses the battle command region rather than opening a center-screen modal.
      * The header owns back/confirm/page controls and the grid owns only compact target choices.
      */
@@ -72,7 +90,7 @@ public final class UiLayoutMetrics {
         }
 
         int margin = SPACE_8;
-        int bottomHeight = clamp(screenHeight / 5, 58, 82);
+        int bottomHeight = screenWidth < 600 ? 82 : clamp(screenHeight / 5, 58, 82);
         int railWidth = clamp(screenWidth / 10, 72, 112);
         int railHeight = clamp(screenHeight - bottomHeight - SPACE_24 - margin, 120, 228);
         int enemyWidth = clamp(screenWidth / 3, 180, 300);
@@ -96,6 +114,20 @@ public final class UiLayoutMetrics {
                 viewportBottom - viewportY);
 
         return new BattleHudLayout(turnRail, enemySummary, partyStatus, commandStrip, reservedWorldViewport);
+    }
+
+    public static PartyGridLayout partyGrid(Rect region, int partySize) {
+        if (partySize <= 0) throw new IllegalArgumentException("partySize must be > 0");
+        int count = Math.min(4, partySize);
+        boolean compact = region.width() < 360 && count > 2;
+        int columns = compact ? 2 : count;
+        int rows = (count + columns - 1) / columns;
+        return new PartyGridLayout(
+                columns,
+                rows,
+                Math.max(1, region.width() / columns),
+                Math.max(1, region.height() / rows),
+                compact);
     }
 
     public static TargetChooserLayout targetChooser(int screenWidth, int screenHeight) {
