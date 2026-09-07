@@ -1,0 +1,362 @@
+name: Frontier Alpha.119 City Administration and Production Buffer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha119-city-admin-buffer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha119-city-admin-buffer
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply Alpha.119 runtime and UI patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('projects/frontier-settlement')
+          settlement = root / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+          client = root / 'src/main/java/kr/moonseungjun/frontiersettlement/client'
+
+          def replace_once(path: Path, old: str, new: str):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement, found {count}: {old[:120]!r}')
+              path.write_text(text.replace(old, new), encoding='utf-8')
+
+          # Worker attraction: Civic Hall turns population recovery into a visible administration bonus.
+          worker = settlement / 'SettlementWorkerService.java'
+          replace_once(worker,
+              '    private static final int PRODUCTION_HAUL_STACK = 64;\n',
+              '    private static final int PRODUCTION_HAUL_STACK = 64;\n'
+              '    private static final int BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600;\n'
+              '    private static final int CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400;\n')
+          replace_once(worker,
+              '    public static long arrivalFoodCost() { return ARRIVAL_FOOD_COST; }\n',
+              '    public static long arrivalFoodCost() { return ARRIVAL_FOOD_COST; }\n\n'
+              '    public static int workerAttractionIntervalTicks(SettlementData data) {\n'
+              '        return data.buildingCount(BuildingType.CIVIC_HALL) > 0\n'
+              '                ? CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS\n'
+              '                : BASE_WORKER_ATTRACTION_INTERVAL_TICKS;\n'
+              '    }\n')
+          replace_once(worker,
+              '        if (server.getTickCount() % 600 == 0) tryAttractWorker(server, level, data);\n',
+              '        if (server.getTickCount() % workerAttractionIntervalTicks(data) == 0) {\n'
+              '            tryAttractWorker(server, level, data);\n'
+              '        }\n')
+          replace_once(worker,
+              '            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\n',
+              '            // recruitment boundaries so duplicate authority is normalized before any new arrival.\n')
+
+          # Construction administration: Civic Hall adds two bounded builders and raises only the hard cap by two.
+          construction = settlement / 'SettlementConstructionService.java'
+          replace_once(construction,
+              '    private static final int OUTPOST_BUILDER_BONUS_CAP = 6;\n    private static final int MAX_BUILDER_CREW = 12;\n',
+              '    private static final int OUTPOST_BUILDER_BONUS_CAP = 6;\n'
+              '    private static final int CIVIC_HALL_BUILDER_BONUS = 2;\n'
+              '    private static final int MAX_BUILDER_CREW = 14;\n')
+          replace_once(construction,
+              '    public static int desiredBuilderCount(SettlementData data) {\n'
+              '        int offices = Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE));\n'
+              '        int outpostBonus = Math.min(OUTPOST_BUILDER_BONUS_CAP, data.outposts().size());\n'
+              '        return Math.min(MAX_BUILDER_CREW, BASE_BUILDER_CREW + offices * BUILDERS_PER_CONSTRUCTION_OFFICE + outpostBonus);\n'
+              '    }\n',
+              '    public static int desiredBuilderCount(SettlementData data) {\n'
+              '        int offices = Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE));\n'
+              '        int outpostBonus = Math.min(OUTPOST_BUILDER_BONUS_CAP, data.outposts().size());\n'
+              '        int civicHallBonus = data.buildingCount(BuildingType.CIVIC_HALL) > 0 ? CIVIC_HALL_BUILDER_BONUS : 0;\n'
+              '        return Math.min(MAX_BUILDER_CREW,\n'
+              '                BASE_BUILDER_CREW + offices * BUILDERS_PER_CONSTRUCTION_OFFICE + outpostBonus + civicHallBonus);\n'
+              '    }\n')
+
+          # Production grade now also controls a bounded physical on-site buffer ladder.
+          efficiency = settlement / 'SettlementProductionEfficiencyService.java'
+          replace_once(efficiency,
+              '    public static int mineWorkPeriod(int grade) {\n'
+              '        return switch (clampGrade(grade)) { case 1 -> 160; case 2 -> 130; case 3 -> 100; default -> 80; };\n'
+              '    }\n\n'
+              '    public static String detail(BuildingType type, SettlementData data) {\n',
+              '    public static int mineWorkPeriod(int grade) {\n'
+              '        return switch (clampGrade(grade)) { case 1 -> 160; case 2 -> 130; case 3 -> 100; default -> 80; };\n'
+              '    }\n\n'
+              '    /** Physical profession barrels available beside one production building at this grade. */\n'
+              '    public static int worksiteBufferCount(int grade) {\n'
+              '        return switch (clampGrade(grade)) { case 1 -> 1; case 2 -> 2; default -> 3; };\n'
+              '    }\n\n'
+              '    public static String detail(BuildingType type, SettlementData data) {\n')
+          replace_once(efficiency,
+              '        String prefix = "개량 " + gradeLabel(grade) + " · ";\n'
+              '        return switch (type) {\n'
+              '            case LUMBER_CAMP -> prefix + "자동 벌목 · 작업 묶음 " + lumberBatch(grade);\n'
+              '            case FARM -> prefix + "자동 식량 생산 · 수확 묶음 " + farmBatch(grade) + " · 작물 성장 관리 "\n'
+              '                    + (farmGrowthModulo(grade) == 1 ? "전 구획" : farmGrowthModulo(grade) + "구획 순환");\n'
+              '            case QUARRY -> prefix + "자동 채석 · 작업 묶음 " + quarryBatch(grade);\n'
+              '            case MINE -> prefix + "유한 광석 채굴 · 작업 주기 " + mineWorkPeriod(grade) + "틱";\n'
+              '            default -> "";\n'
+              '        };\n',
+              '        String prefix = "개량 " + gradeLabel(grade) + " · ";\n'
+              '        String buffer = " · 현장 버퍼 " + worksiteBufferCount(grade) + "통";\n'
+              '        return switch (type) {\n'
+              '            case LUMBER_CAMP -> prefix + "자동 벌목 · 작업 묶음 " + lumberBatch(grade) + buffer;\n'
+              '            case FARM -> prefix + "자동 식량 생산 · 수확 묶음 " + farmBatch(grade) + " · 작물 성장 관리 "\n'
+              '                    + (farmGrowthModulo(grade) == 1 ? "전 구획" : farmGrowthModulo(grade) + "구획 순환") + buffer;\n'
+              '            case QUARRY -> prefix + "자동 채석 · 작업 묶음 " + quarryBatch(grade) + buffer;\n'
+              '            case MINE -> prefix + "유한 광석 채굴 · 작업 주기 " + mineWorkPeriod(grade) + "틱" + buffer;\n'
+              '            default -> "";\n'
+              '        };\n')
+
+          # Storage authority: reserve at most three vertical barrel cells; create only the count unlocked by grade.
+          storage = settlement / 'SettlementStorageService.java'
+          replace_once(storage,
+              '    private static final int[][] LEGACY_PUBLIC_STOCKPILE_OFFSETS = {\n'
+              '            {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}\n'
+              '    };\n',
+              '    private static final int[][] LEGACY_PUBLIC_STOCKPILE_OFFSETS = {\n'
+              '            {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}\n'
+              '    };\n'
+              '    private static final int MAX_WORKSITE_BUFFER_BARRELS = 3;\n')
+          replace_once(storage,
+              '    public static List<BlockPos> worksiteStoragePositions(SettlementData data) {\n'
+              '        List<BlockPos> positions = new ArrayList<>();\n'
+              '        for (BuildingRecord building : data.buildings()) {\n'
+              '            BlockPos pos = worksiteStoragePosition(building);\n'
+              '            if (pos != null) positions.add(pos);\n'
+              '        }\n'
+              '        return positions;\n'
+              '    }\n',
+              '    public static List<BlockPos> worksiteStoragePositions(BuildingRecord building) {\n'
+              '        BlockPos base = worksiteStoragePosition(building);\n'
+              '        if (base == null) return List.of();\n'
+              '        List<BlockPos> positions = new ArrayList<>(MAX_WORKSITE_BUFFER_BARRELS);\n'
+              '        for (int i = 0; i < MAX_WORKSITE_BUFFER_BARRELS; i++) positions.add(base.above(i));\n'
+              '        return positions;\n'
+              '    }\n\n'
+              '    private static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {\n'
+              '        List<BlockPos> planned = worksiteStoragePositions(building);\n'
+              '        if (planned.isEmpty()) return List.of();\n'
+              '        int count = SettlementProductionEfficiencyService.worksiteBufferCount(\n'
+              '                SettlementProductionEfficiencyService.grade(data));\n'
+              '        return planned.subList(0, Math.min(count, planned.size()));\n'
+              '    }\n\n'
+              '    public static List<BlockPos> worksiteStoragePositions(SettlementData data) {\n'
+              '        List<BlockPos> positions = new ArrayList<>();\n'
+              '        for (BuildingRecord building : data.buildings()) positions.addAll(worksiteStoragePositions(building));\n'
+              '        return positions;\n'
+              '    }\n')
+          replace_once(storage,
+              '        for (BlockPos pos : worksiteStoragePositions(data)) {\n'
+              '            if (!canSafelyCreateManagedBarrel(level, pos)) continue;\n'
+              '            level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);\n'
+              '        }\n',
+              '        for (BuildingRecord building : data.buildings()) {\n'
+              '            for (BlockPos pos : desiredWorksiteStoragePositions(building, data)) {\n'
+              '                if (!canSafelyCreateManagedBarrel(level, pos)) continue;\n'
+              '                level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);\n'
+              '            }\n'
+              '        }\n')
+
+          # Producers try every real local barrel before falling back to central/shared storage.
+          replace_once(worker,
+              '        BlockPos local = SettlementStorageService.worksiteStoragePosition(building);\n'
+              '        if (local != null && level.hasChunkAt(local) && level.getBlockState(local).is(Blocks.BARREL)\n'
+              '                && SettlementStorageService.hasRoomAt(level, local, carried)) {\n'
+              '            double distance = worker.distanceToSqr(\n'
+              '                    local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);\n'
+              '            if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {\n'
+              '                // Full-stack handoff is authoritative as soon as the worker is beside its own jobsite.\n'
+              '                // Do not wait for a final path node that can be invalidated by fences, doors or knockback.\n'
+              '                worker.getNavigation().stop();\n'
+              '                ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);\n'
+              '                worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);\n'
+              '                clearTargetIfEmpty(worker);\n'
+              '                return;\n'
+              '            }\n'
+              '            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) return;\n'
+              '        }\n'
+              '        deliverToTownStorage(level, data, worker, carried);\n',
+              '        for (BlockPos local : SettlementStorageService.worksiteStoragePositions(building)) {\n'
+              '            if (!level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)\n'
+              '                    || !SettlementStorageService.hasRoomAt(level, local, carried)) continue;\n'
+              '            double distance = worker.distanceToSqr(\n'
+              '                    local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);\n'
+              '            if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {\n'
+              '                // Full-stack handoff is authoritative as soon as the worker is beside any\n'
+              '                // unlocked physical profession buffer; central storage remains overflow.\n'
+              '                worker.getNavigation().stop();\n'
+              '                ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);\n'
+              '                worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);\n'
+              '                clearTargetIfEmpty(worker);\n'
+              '                return;\n'
+              '            }\n'
+              '            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) return;\n'
+              '        }\n'
+              '        deliverToTownStorage(level, data, worker, carried);\n')
+
+          # M-screen makes these infrastructure effects explicit instead of hiding them in code.
+          palette = client / 'BuildingPaletteScreen.java'
+          replace_once(palette,
+              '        if (type.housingGain() > 0) {\n'
+              '            y += 15;\n'
+              '            graphics.text(this.font, Component.literal("주거"), x, y, FrontierUiTheme.TEXT_MUTED, false);\n'
+              '            graphics.text(this.font, Component.literal("인구 수용 +" + type.housingGain()),\n'
+              '                    x + 42, y, FrontierUiTheme.TEXT_PRIMARY, false);\n'
+              '        }\n\n'
+              '        if (!type.unlockHint().isBlank()) {\n',
+              '        if (type.housingGain() > 0) {\n'
+              '            y += 15;\n'
+              '            graphics.text(this.font, Component.literal("주거"), x, y, FrontierUiTheme.TEXT_MUTED, false);\n'
+              '            graphics.text(this.font, Component.literal("인구 수용 +" + type.housingGain()),\n'
+              '                    x + 42, y, FrontierUiTheme.TEXT_PRIMARY, false);\n'
+              '        }\n\n'
+              '        String effect = specialEffect(data, type);\n'
+              '        if (!effect.isBlank()) {\n'
+              '            y += 15;\n'
+              '            graphics.text(this.font, Component.literal("효과"), x, y, FrontierUiTheme.TEXT_MUTED, false);\n'
+              '            graphics.text(this.font, Component.literal(trimToWidth(effect, Math.max(30, right - (x + 42)))),\n'
+              '                    x + 42, y, FrontierUiTheme.TEXT_PRIMARY, false);\n'
+              '        }\n\n'
+              '        if (!type.unlockHint().isBlank()) {\n')
+          replace_once(palette,
+              '    private static int tierRank(String tier) {\n',
+              '    private static String specialEffect(SettlementSnapshotPayload data, BuildingType type) {\n'
+              '        if (type == BuildingType.CIVIC_HALL) return "주민 유입 20초 · 건설 인력 +2";\n'
+              '        if (type == BuildingType.LUMBER_CAMP || type == BuildingType.FARM\n'
+              '                || type == BuildingType.QUARRY || type == BuildingType.MINE) {\n'
+              '            int rank = tierRank(data.tier());\n'
+              '            int grade = rank <= 2 ? 1 : rank == 3 ? 2 : rank == 4 ? 3 : 4;\n'
+              '            int buffers = grade == 1 ? 1 : grade == 2 ? 2 : 3;\n'
+              '            String label = switch (grade) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; default -> "IV"; };\n'
+              '            return "개량 " + label + " · 현장 버퍼 " + buffers + "통";\n'
+              '        }\n'
+              '        return "";\n'
+              '    }\n\n'
+              '    private static int tierRank(String tier) {\n')
+
+          # Version + canonical docs.
+          gradle = root / 'gradle.properties'
+          replace_once(gradle, 'mod_version=0.1.0-alpha.118', 'mod_version=0.1.0-alpha.119')
+
+          readme = root / 'README.md'
+          replace_once(readme, '## Current version: 0.1.0-alpha.118', '## Current version: 0.1.0-alpha.119')
+          marker = '## Functional building families\n'
+          text = readme.read_text(encoding='utf-8')
+          if marker not in text:
+              raise SystemExit('README functional-family marker missing')
+          alpha119 = '''## Alpha.119 city administration and production buffers\n\nAlpha.119 turns existing progression landmarks/production grades into more visible RTS-style infrastructure without creating a virtual resource ledger:\n\n- a completed civic hall reduces ordinary civilian vacancy checks from 600 to 400 ticks (30s -> 20s);\n- the civic hall contributes two additional bounded construction workers and raises the hard builder cap from 12 to 14;\n- production grade I uses one physical profession barrel, grade II may create a second, and grades III-IV may create a third vertical barrel at the same worksite;\n- only safe replaceable cells are filled, existing containers/fluids/player blocks are never overwritten, and previously created higher-grade barrels remain authoritative if tier later falls;\n- producers fill real local profession barrels first and then use the existing central warehouse/shared-depot overflow path;\n- the M palette explicitly reports civic-hall administration and current production-buffer capacity.\n\nCentral warehouses remain the long-duration storage backbone; the extra profession barrels are bounded short-range production buffers, not a replacement warehouse network.\n\n'''
+          if '## Alpha.119 city administration and production buffers' not in text:
+              readme.write_text(text.replace(marker, alpha119 + marker), encoding='utf-8')
+
+          # Keep candidate lock targets atomic with the version bump; external files/hashes are unchanged.
+          lock_path = root / 'COMPANION_LOCK.json'
+          lock = json.loads(lock_path.read_text(encoding='utf-8'))
+          lock['target']['frontier_settlement'] = '0.1.0-alpha.119'
+          kept = [n for n in lock.get('notes', []) if not n.startswith('This lock is the canonical candidate stack')
+                  and 'Alpha.118 core CI run' not in n and not n.startswith('Resolved client/server profiles')
+                  and not n.startswith('Alpha.118 adds physical') and not n.startswith('All third-party versions')]
+          lock['notes'] = [
+              'This lock is the canonical candidate stack for Alpha.119 fresh-world and graphical-client compatibility testing.',
+              'All third-party versions and hashes are unchanged from the previously verified candidate stack; Alpha.119 changes only Frontier runtime behavior and requires fresh verification.',
+              'Resolved client/server profile targets are advanced atomically with Frontier; the resolver re-verifies the same pinned external binaries.',
+              'Alpha.119 adds Civic Hall administration throughput and bounded tier-scaled physical profession buffers without changing companion binary pins.',
+          ] + kept
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          for name in ('resolved-lock.client.json', 'resolved-lock.server.json'):
+              path = root / 'companion-testpack' / name
+              data = json.loads(path.read_text(encoding='utf-8'))
+              data['target']['frontier_settlement'] = '0.1.0-alpha.119'
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          # Cumulative verifier: pin the new behavior so later refactors cannot silently remove it.
+          test = root / 'tools/test_current_source.py'
+          replace_once(test, 'mod_version=0.1.0-alpha.118', 'mod_version=0.1.0-alpha.119')
+          replace_once(test, 'require("MAX_BUILDER_CREW = 12" in construction, "expanded bounded construction crew cap missing")',
+              'require("MAX_BUILDER_CREW = 14" in construction and "CIVIC_HALL_BUILDER_BONUS = 2" in construction,\n'
+              '        "civic-hall bounded construction crew bonus missing")')
+          replace_once(test,
+              'require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")\n',
+              'require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")\n'
+              'require("BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600" in worker\n'
+              '        and "CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400" in worker\n'
+              '        and "workerAttractionIntervalTicks(data)" in worker,\n'
+              '        "civic-hall civilian attraction cadence missing")\n')
+          replace_once(test,
+              'require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")\n',
+              'require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")\n'
+              'require("worksiteBufferCount" in production_efficiency and "case 1 -> 1; case 2 -> 2; default -> 3" in production_efficiency,\n'
+              '        "tier-scaled physical worksite buffer ladder missing")\n'
+              'require("MAX_WORKSITE_BUFFER_BARRELS = 3" in storage\n'
+              '        and "desiredWorksiteStoragePositions" in storage\n'
+              '        and "worksiteStoragePositions(BuildingRecord building)" in storage,\n'
+              '        "bounded physical profession-buffer storage authority missing")\n'
+              'require("SettlementStorageService.worksiteStoragePositions(building)" in worker,\n'
+              '        "production workers do not use every unlocked local physical buffer")\n')
+          replace_once(test,
+              'require("FrontierUiTheme" in palette, "M palette bypasses shared Frontier UI tokens")\n',
+              'require("FrontierUiTheme" in palette, "M palette bypasses shared Frontier UI tokens")\n'
+              'require("주민 유입 20초 · 건설 인력 +2" in palette and "현장 버퍼" in palette,\n'
+              '        "M palette hides Alpha.119 civic/production infrastructure effects")\n')
+
+          # Completion audit records this as implementation, while graphical/long-session acceptance remains open.
+          gap = root / 'COMPLETION_GAP_AUDIT.md'
+          gap_text = gap.read_text(encoding='utf-8')
+          section = '''\n\n### Alpha.119 도시 행정 / 생산 버퍼 패스\n\n- 시민회관은 기존 랜드마크/주거 기능에 더해 일반 생산·전문 주민 빈자리 확인 주기를 600틱에서 400틱으로 단축한다.\n- 시민회관은 건설 주민 +2를 제공하며 기존 건설소/전초 보너스와 같은 bounded crew authority를 재사용하고 절대 상한은 14명이다.\n- 생산 개량 I/II/III-IV는 각 생산 건물에 최대 1/2/3개의 실제 BARREL 현장 버퍼를 사용한다. 추가 배럴은 기존 기준 배럴 위의 안전한 replaceable cell에만 생성되며 컨테이너·fluid·player block을 덮지 않는다.\n- 이미 생성된 상위 버퍼는 마을 단계가 내려가도 자원 장부에서 사라지지 않도록 최대 3칸을 계속 managed storage 위치로 인정한다.\n- 생산 주민은 현장 배럴을 먼저 채운 뒤 기존 shared depot/warehouse/cart-station 물류로 overflow한다. 새 virtual cargo/currency/save ledger/force-load는 없다.\n- M UI는 시민회관 행정 효과와 현재 개량/현장 버퍼 수를 명시한다. 실제 GUI scale/한글 잘림/장시간 생산 overflow 체감은 실플레이 검증이 남는다.\n'''
+          if '### Alpha.119 도시 행정 / 생산 버퍼 패스' not in gap_text:
+              gap.write_text(gap_text + section, encoding='utf-8')
+
+          PY
+
+          git diff --check
+
+      - name: Validate Alpha.119 before commit
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          python3 tools/test_companion_testpack.py
+          ./gradlew --no-daemon clean build
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.119.jar
+
+      - name: Commit Alpha.119 and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/frontier-alpha119-city-admin-buffer.yml
+          git add projects/frontier-settlement
+          git diff --cached --check
+          git commit -m 'frontier: release 0.1.0-alpha.119 city administration buffers'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
