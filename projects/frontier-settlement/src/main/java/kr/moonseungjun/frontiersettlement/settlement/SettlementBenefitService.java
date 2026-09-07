@@ -5,14 +5,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.Comparator;
 import java.util.List;
@@ -22,65 +25,82 @@ public final class SettlementBenefitService {
     public static final String WATCH_GUARD_TAG = "frontier_settlement_watch_guard";
     private static final String GUARD_POST_ASSIGNMENT_PREFIX = "frontier_settlement_guard_post_";
     private static final String WATCH_ASSIGNMENT_PREFIX = "frontier_settlement_watchtower_";
-    private static final int REPAIR_INTERVAL_TICKS = 100;
     private static final int GUARD_CHECK_INTERVAL_TICKS = 200;
     private static final int WATCHTOWER_CHECK_INTERVAL_TICKS = 100;
-    private static final double BLACKSMITH_RADIUS_SQR = 10.0D * 10.0D;
     private static final double WATCHTOWER_ALERT_RADIUS = 40.0D;
     private static final double CITADEL_WATCH_RADIUS_BONUS = 16.0D;
     private static final double GUARD_POST_SEARCH_RADIUS = 64.0D;
     private static final double GUARD_POST_HOME_RADIUS_SQR = 24.0D * 24.0D;
     private static final double WATCH_GUARD_SEARCH_RADIUS = 64.0D;
     private static final double WATCH_GUARD_HOME_RADIUS_SQR = 18.0D * 18.0D;
-    private static final int REPAIR_PER_METAL = 16;
-    private static final EquipmentSlot[] REPAIR_SLOTS = {
-            EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND,
-            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
-    };
 
     private SettlementBenefitService() {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
         int tick = server.getTickCount();
-        if (tick % REPAIR_INTERVAL_TICKS == 0) repairNearbyEquipment(server, data);
         if (tick % GUARD_CHECK_INTERVAL_TICKS == 0) maintainGuards(server.overworld(), data);
         if (tick % WATCHTOWER_CHECK_INTERVAL_TICKS == 0) maintainWatchtowers(server.overworld(), data);
     }
 
-    private static void repairNearbyEquipment(MinecraftServer server, SettlementData data) {
-        ServerLevel level = server.overworld();
-        boolean changed = false;
-        for (BuildingRecord blacksmith : buildings(data, BuildingType.BLACKSMITH)) {
-            BlockPos work = blacksmith.workCenter();
-            if (!level.hasChunkAt(work)) continue;
-            for (ServerPlayer player : level.players()) {
-                if (player.blockPosition().distSqr(work) > BLACKSMITH_RADIUS_SQR) continue;
-                ItemStack damaged = mostDamagedEquippedItem(player);
-                if (damaged.isEmpty()) continue;
-                if (!SettlementStorageService.consumeMetal(level, data, 1L)) return;
-                damaged.setDamageValue(Math.max(0, damaged.getDamageValue() - REPAIR_PER_METAL));
-                changed = true;
-            }
+    /**
+     * Blacksmith durability repair is deliberately player-directed instead of a proximity aura.
+     * Sneak-right-click the completed settlement blacksmith's own anvil while holding one damaged
+     * item. The repair consumes real metal from the shared physical storage network and repairs the
+     * held stack in one transaction. Ordinary anvil use remains untouched when the player is not
+     * sneaking.
+     */
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND) return;
+        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isShiftKeyDown()) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        BlockPos clicked = event.getPos();
+        if (!isAnvil(level, clicked)) return;
+
+        ItemStack held = event.getItemStack();
+        if (held.isEmpty() || !held.isDamageableItem() || held.getDamageValue() <= 0) return;
+
+        MinecraftServer server = level.getServer();
+        SettlementData data = SettlementData.get(server);
+        if (!data.founded() || !isSettlementBlacksmithAnvil(data, clicked)) return;
+
+        int repairPerMetal = Math.max(1, SettlementExplorationBenefitService.repairPerMetal(data));
+        int damage = held.getDamageValue();
+        long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);
+
+        if (!SettlementStorageService.storageAvailable(level, data)) {
+            player.displayClientMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."), true);
+            finishRepairInteraction(event);
+            return;
         }
-        if (changed) {
-            SettlementService.refreshResources(server, data);
-            SettlementService.broadcast(server, data);
+        if (!SettlementStorageService.consumeMetal(level, data, metalCost)) {
+            player.displayClientMessage(Component.literal("§6[마을] §f수리 금속이 부족합니다. 필요: " + metalCost), true);
+            finishRepairInteraction(event);
+            return;
         }
+
+        held.setDamageValue(0);
+        SettlementService.refreshResources(server, data);
+        SettlementService.broadcast(server, data);
+        player.displayClientMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 금속 " + metalCost + " 소비"), true);
+        finishRepairInteraction(event);
     }
 
-    private static ItemStack mostDamagedEquippedItem(ServerPlayer player) {
-        ItemStack best = ItemStack.EMPTY;
-        int bestDamage = 0;
-        for (EquipmentSlot slot : REPAIR_SLOTS) {
-            ItemStack stack = player.getItemBySlot(slot);
-            if (stack.isEmpty() || !stack.isDamageableItem()) continue;
-            int damage = stack.getDamageValue();
-            if (damage > bestDamage) {
-                best = stack;
-                bestDamage = damage;
-            }
+    private static boolean isSettlementBlacksmithAnvil(SettlementData data, BlockPos clicked) {
+        for (BuildingRecord blacksmith : buildings(data, BuildingType.BLACKSMITH)) {
+            if (blacksmith.localToWorld(2, 1, 2).equals(clicked)) return true;
         }
-        return best;
+        return false;
+    }
+
+    private static boolean isAnvil(ServerLevel level, BlockPos pos) {
+        var block = level.getBlockState(pos).getBlock();
+        return block == Blocks.ANVIL || block == Blocks.CHIPPED_ANVIL || block == Blocks.DAMAGED_ANVIL;
+    }
+
+    private static void finishRepairInteraction(PlayerInteractEvent.RightClickBlock event) {
+        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);
+        event.setCanceled(true);
     }
 
     private static void maintainGuards(ServerLevel level, SettlementData data) {
