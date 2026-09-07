@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRun;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionRunCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -32,7 +33,7 @@ public final class RiftfrontierWorldData extends SavedData {
         Codec.LONG.optionalFieldOf("world_revision", 0L).forGetter(RiftfrontierWorldData::worldRevision),
         Codec.LONG.optionalFieldOf("expedition_sequence", 0L).forGetter(RiftfrontierWorldData::expeditionSequence),
         Codec.STRING.optionalFieldOf("content_fingerprint", "").forGetter(RiftfrontierWorldData::contentFingerprint),
-        ExpeditionRun.CODEC.listOf().optionalFieldOf("expeditions", List.of()).forGetter(RiftfrontierWorldData::expeditions)
+        ExpeditionRunCodec.CODEC.listOf().optionalFieldOf("expeditions", List.of()).forGetter(RiftfrontierWorldData::expeditions)
     ).apply(instance, RiftfrontierWorldData::decode));
 
     public static final SavedDataType<RiftfrontierWorldData> TYPE = new SavedDataType<>(
