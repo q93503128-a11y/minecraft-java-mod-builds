@@ -1,0 +1,48 @@
+name: Frontier Alpha.119 Patcher Anchor Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha119-patcher-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove obsolete comment replacement and retrigger Alpha.119
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/frontier-alpha119-city-admin-buffer.yml')
+          text = p.read_text(encoding='utf-8')
+          old = """          replace_once(worker,
+              '            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\\n',
+              '            // recruitment boundaries so duplicate authority is normalized before any new arrival.\\n')
+"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected obsolete comment replacement exactly once, got {text.count(old)}')
+          p.write_text(text.replace(old, ''), encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/frontier-alpha119-patcher-fix.yml
+          git add .github/workflows/frontier-alpha119-city-admin-buffer.yml
+          git diff --cached --check
+          git commit -m 'chore: repair Frontier Alpha.119 patcher anchor'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
