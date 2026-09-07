@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.119
+## Current version: 0.1.0-alpha.120
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -100,6 +100,20 @@ Alpha.118 reduces repeated physical-world search cost without reducing authored 
 - The M palette exposes both civic administration and current production-buffer capacity.
 
 Central warehouses remain the long-duration storage backbone; extra profession barrels are bounded local buffers rather than a replacement warehouse network.
+
+## Alpha.120 deterministic blacksmith reinforcement
+
+- Sneak-right-clicking the completed settlement blacksmith anvil still repairs a damaged held item first.
+- A fully repaired single equipment stack with a normal attack-damage or armor attribute can instead be reinforced deterministically.
+- Reinforcement never rolls failure, destruction, downgrade or enchantment replacement.
+- The stack stores only a bounded reinforcement level in custom data; NeoForge's item-attribute event adds the bonus without replacing the equipment's original attribute component.
+- Attack-damage equipment gains +0.5 attack damage per reinforcement level; armor equipment gains +0.25 armor per level.
+- Settlement-tier caps are +1 through Village, +2 at Frontier Town, +4 at Domain and +5 at Frontier Capital.
+- Costs for +1/+2/+3/+4/+5 are 4/8/12/18/26 physical copper-or-iron items.
+- Blacksmith repair and reinforcement accept only copper/raw copper/iron/raw iron; gold, diamonds and arbitrary high-value modded metals are never implicit blacksmith payment.
+- A failed eligibility, tier-cap, storage-load or material check consumes nothing.
+
+Existing external item components, enchantments, names and lore remain authoritative. Unsupported items fall through to ordinary anvil behavior.
 
 ## Functional building families
 

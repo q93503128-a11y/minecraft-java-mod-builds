@@ -155,7 +155,7 @@ public final class SettlementContextService {
             case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data);
             case WAREHOUSE -> "완공 · 실물 저장";
             case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
-            case BLACKSMITH -> "완공 · 장비 지원";
+            case BLACKSMITH -> "완공 · 수리 · 확정 강화 최대 +" + SettlementEquipmentUpgradeService.reinforcementCap(data) + " · 구리/철 전용";
             case WORKSHOP -> "완공 · 금속 1 → 외부무기 내구 +" + SettlementExplorationBenefitService.repairPerMetal(data);
             case ADVANCED_WORKSHOP -> "완공 · 고급 제작 위력 " + SettlementExplorationBenefitService.forgePower(data)
                     + " · 영지 재련 " + SettlementExplorationBenefitService.reforgePower(data);
@@ -164,7 +164,7 @@ public final class SettlementContextService {
             case BARRACKS -> "완공 · 정식 주둔 3슬롯";
             case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);
             case CART_STATION -> "완공 · 도로 화물 허브";
-            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain();
+            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";
             case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
             case CITADEL -> "완공 · 감시망 반경 56 · 주거 +" + type.housingGain();
         };

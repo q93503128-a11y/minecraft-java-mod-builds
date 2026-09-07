@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.119" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.120" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -244,9 +244,37 @@ require("FrontierUiTheme" in guide_screen and "M 화면의 마을 등급" in gui
 
 benefit = text(SETTLEMENT / "SettlementBenefitService.java")
 require("onRightClickBlock" in benefit and "player.isShiftKeyDown()" in benefit
-        and "SettlementStorageService.consumeMetal" in benefit,
-        "blacksmith repair is not explicit player-directed physical maintenance")
+        and "SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems" in benefit,
+        "blacksmith repair is not explicit player-directed copper/iron maintenance")
+require("SettlementStorageService.consumeMetal(level, data, metalCost)" not in benefit,
+        "blacksmith repair can still implicitly consume gold/diamond-valued storage")
 require("repairNearbyEquipment" not in benefit, "automatic proximity blacksmith repair returned")
+
+equipment_upgrade = text(SETTLEMENT / "SettlementEquipmentUpgradeService.java")
+require("MAX_REINFORCEMENT_LEVEL = 5" in equipment_upgrade
+        and "ATTACK_DAMAGE_PER_LEVEL = 0.5D" in equipment_upgrade
+        and "ARMOR_PER_LEVEL = 0.25D" in equipment_upgrade,
+        "deterministic blacksmith reinforcement stat ladder missing")
+require("case FRONTIER_TOWN -> 2" in equipment_upgrade
+        and "case DOMAIN -> 4" in equipment_upgrade
+        and "case FRONTIER_CAPITAL -> 5" in equipment_upgrade,
+        "settlement-tier reinforcement caps missing")
+require("case 1 -> 4" in equipment_upgrade and "case 2 -> 8" in equipment_upgrade
+        and "case 3 -> 12" in equipment_upgrade and "case 4 -> 18" in equipment_upgrade
+        and "default -> 26" in equipment_upgrade,
+        "physical reinforcement cost ladder missing")
+require("DataComponents.CUSTOM_DATA" in equipment_upgrade and "CustomData.update" in equipment_upgrade,
+        "reinforcement level is not stored as bounded per-stack custom data")
+require("ItemAttributeModifierEvent" in equipment_upgrade
+        and "event.addModifier(Attributes.ATTACK_DAMAGE" in equipment_upgrade
+        and "event.addModifier(Attributes.ARMOR" in equipment_upgrade,
+        "reinforcement bypasses additive NeoForge item-attribute authority")
+require("Items.COPPER_INGOT" in equipment_upgrade and "Items.RAW_COPPER" in equipment_upgrade
+        and "Items.IRON_INGOT" in equipment_upgrade and "Items.RAW_IRON" in equipment_upgrade
+        and "Items.GOLD_INGOT" not in equipment_upgrade and "Items.DIAMOND" not in equipment_upgrade,
+        "blacksmith payment is not restricted to common copper/iron items")
+require("SettlementEquipmentUpgradeService::onItemAttributeModifiers" in text(JAVA / "FrontierSettlement.java"),
+        "dynamic reinforcement attribute listener is not registered on the NeoForge event bus")
 
 commands = text(JAVA / "command/SettlementCommands.java")
 require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in commands, "status shows stale barracks food cost")

@@ -58,32 +58,40 @@ public final class SettlementBenefitService {
         if (!isAnvil(level, clicked)) return;
 
         ItemStack held = event.getItemStack();
-        if (held.isEmpty() || !held.isDamageableItem() || held.getDamageValue() <= 0) return;
+        if (held.isEmpty()) return;
 
         MinecraftServer server = level.getServer();
         SettlementData data = SettlementData.get(server);
         if (!data.founded() || !isSettlementBlacksmithAnvil(data, clicked)) return;
 
-        int repairPerMetal = Math.max(1, SettlementExplorationBenefitService.repairPerMetal(data));
-        int damage = held.getDamageValue();
-        long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);
+        // A damaged item is always a repair transaction first. One click can never repair and reinforce.
+        if (held.isDamageableItem() && held.getDamageValue() > 0) {
+            int repairPerMetal = Math.max(1, SettlementExplorationBenefitService.repairPerMetal(data));
+            int damage = held.getDamageValue();
+            long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);
 
-        if (!SettlementStorageService.storageAvailable(level, data)) {
-            player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."));
+            if (!SettlementStorageService.storageAvailable(level, data)) {
+                player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."));
+                finishRepairInteraction(event);
+                return;
+            }
+            if (!SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems(level, data, metalCost)) {
+                player.sendSystemMessage(Component.literal("§6[마을] §f수리용 구리/철이 부족합니다. 필요: " + metalCost + "개"));
+                finishRepairInteraction(event);
+                return;
+            }
+
+            held.setDamageValue(0);
+            SettlementService.refreshResources(server, data);
+            SettlementService.broadcast(server, data);
+            player.sendSystemMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 구리/철 " + metalCost + "개 소비"));
             finishRepairInteraction(event);
             return;
         }
-        if (!SettlementStorageService.consumeMetal(level, data, metalCost)) {
-            player.sendSystemMessage(Component.literal("§6[마을] §f수리 금속이 부족합니다. 필요: " + metalCost));
-            finishRepairInteraction(event);
-            return;
-        }
 
-        held.setDamageValue(0);
-        SettlementService.refreshResources(server, data);
-        SettlementService.broadcast(server, data);
-        player.sendSystemMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 금속 " + metalCost + " 소비"));
-        finishRepairInteraction(event);
+        if (SettlementEquipmentUpgradeService.tryReinforce(player, level, server, data, held)) {
+            finishRepairInteraction(event);
+        }
     }
 
     private static boolean isSettlementBlacksmithAnvil(SettlementData data, BlockPos clicked) {
