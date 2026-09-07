@@ -1,0 +1,177 @@
+name: Frontier Alpha.122 Production Investment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha122-production-investment.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Patch Alpha.122
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('projects/frontier-settlement')
+          java = root / 'src/main/java/kr/moonseungjun/frontiersettlement'
+          sett = java / 'settlement'
+
+          def replace_once(path, old, new, label):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Version and canonical docs.
+          replace_once(root/'gradle.properties', 'mod_version=0.1.0-alpha.121', 'mod_version=0.1.0-alpha.122', 'version')
+          p = root/'gradle.properties'
+          text = p.read_text(encoding='utf-8')
+          text += '\n# Alpha.122 per-building production investment: tier unlocks upgrade ceilings; facilities pay physical resources for II-IV.\n# Alpha.122 canonical validation trigger (2026-09-07).\n'
+          p.write_text(text, encoding='utf-8')
+
+          replace_once(root/'README.md', '## Current version: 0.1.0-alpha.121', '## Current version: 0.1.0-alpha.122', 'readme version')
+          p = root/'README.md'
+          text = p.read_text(encoding='utf-8')
+          text += '''\n\n## Alpha.122 RTS production investment\n\n- Settlement tier now unlocks the maximum production-facility improvement grade instead of granting a free global upgrade to every lumber camp, farm, quarry and mine.\n- Newly completed production buildings start at improvement I. Existing pre-Alpha.122 production buildings inherit the improvement grade they were already receiving at migration time, then become individually persistent.\n- Sneak-right-click any completed production building's local barrel with an empty hand to buy the next improvement using real loaded settlement storage.\n- Improvement II costs 128 wood + 96 stone; III costs 256 wood + 192 stone + 32 physical copper/iron items; IV costs 512 wood + 384 stone + 96 physical copper/iron items. Diamonds/gold/modded high-value metal are never silently consumed for facility improvement.\n- Grade II unlocks at Village, III at Frontier Town, and IV at Domain. A paid improvement remains on that building even if the settlement later temporarily loses a tier condition.\n- Local worksite buffers scale from that building's own improvement grade (I=1, II=2, III/IV=3 barrels); central warehouse/supply depots remain the long-duration logistics authority.\n'''
+          p.write_text(text, encoding='utf-8')
+
+          for rel in ('COMPANION_LOCK.json','companion-testpack/resolved-lock.client.json','companion-testpack/resolved-lock.server.json'):
+              p = root/rel
+              data = json.loads(p.read_text(encoding='utf-8'))
+              if data.get('target',{}).get('frontier_settlement') != '0.1.0-alpha.121':
+                  raise SystemExit(rel + ' target drift')
+              data['target']['frontier_settlement'] = '0.1.0-alpha.122'
+              p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          # BuildingRecord gains a save-compatible per-building production grade.
+          (sett/'BuildingRecord.java').write_text('''package kr.moonseungjun.frontiersettlement.settlement;\n\nimport com.mojang.serialization.Codec;\nimport com.mojang.serialization.codecs.RecordCodecBuilder;\nimport net.minecraft.core.BlockPos;\n\npublic record BuildingRecord(String type, int originX, int originY, int originZ, int rotation, int upgradeGrade) {\n    public static final Codec<BuildingRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(\n            Codec.STRING.fieldOf("type").forGetter(BuildingRecord::type),\n            Codec.INT.fieldOf("origin_x").forGetter(BuildingRecord::originX),\n            Codec.INT.fieldOf("origin_y").forGetter(BuildingRecord::originY),\n            Codec.INT.fieldOf("origin_z").forGetter(BuildingRecord::originZ),\n            Codec.INT.optionalFieldOf("rotation", 0).forGetter(BuildingRecord::rotation),\n            // 0 is a one-way legacy sentinel for pre-Alpha.122 saves. New buildings always write 1.\n            Codec.INT.optionalFieldOf("upgrade_grade", 0).forGetter(BuildingRecord::upgradeGrade)\n    ).apply(instance, BuildingRecord::new));\n\n    public BuildingRecord(String type, int originX, int originY, int originZ, int rotation) {\n        this(type, originX, originY, originZ, rotation, 1);\n    }\n\n    public BuildingRecord(String type, int originX, int originY, int originZ) {\n        this(type, originX, originY, originZ, 0, 1);\n    }\n\n    public BuildingRecord withUpgradeGrade(int grade) {\n        return new BuildingRecord(type, originX, originY, originZ, rotation, Math.max(1, Math.min(4, grade)));\n    }\n\n    public BlockPos origin() { return new BlockPos(originX, originY, originZ); }\n    public BuildingType buildingType() { return BuildingType.fromId(type); }\n    public BuildingRotation buildingRotation() { return BuildingRotation.fromId(rotation); }\n\n    public int rotatedWidth() {\n        BuildingType resolved = buildingType();\n        return resolved == null ? 1 : buildingRotation().rotatedWidth(resolved);\n    }\n\n    public int rotatedDepth() {\n        BuildingType resolved = buildingType();\n        return resolved == null ? 1 : buildingRotation().rotatedDepth(resolved);\n    }\n\n    public BlockPos localToWorld(int localX, int localY, int localZ) {\n        BuildingType resolved = buildingType();\n        if (resolved == null) return origin().offset(localX, localY, localZ);\n        BlockPos localAbsolute = origin().offset(localX, localY, localZ);\n        return buildingRotation().rotateLocal(origin(), localAbsolute, resolved.width(), resolved.depth());\n    }\n\n    public BlockPos workCenter() {\n        BuildingType resolved = buildingType();\n        if (resolved == null) return origin();\n        return localToWorld(resolved.width() / 2, 1, resolved.depth() / 2);\n    }\n\n    public boolean protectsXZ(BlockPos pos, int padding) {\n        int width = rotatedWidth();\n        int depth = rotatedDepth();\n        return pos.getX() >= originX - padding\n                && pos.getX() < originX + width + padding\n                && pos.getZ() >= originZ - padding\n                && pos.getZ() < originZ + depth + padding;\n    }\n}\n''', encoding='utf-8')
+
+          # SettlementData needs an identity-preserving completed-record replacement path.
+          data_file = sett/'SettlementData.java'
+          replace_once(data_file,
+              '    public boolean removeCompletedBuilding(BuildingRecord target) {',
+              '''    public boolean replaceCompletedBuilding(BuildingRecord target, BuildingRecord replacement) {\n        if (target == null || replacement == null) return false;\n        List<BuildingRecord> next = new ArrayList<>(buildings());\n        int index = next.indexOf(target);\n        if (index < 0) return false;\n        next.set(index, replacement);\n        infrastructure = new SettlementInfrastructureState(next, roads(), roadConstruction(), outposts(), outpostConstruction());\n        setDirty();\n        return true;\n    }\n\n    public boolean removeCompletedBuilding(BuildingRecord target) {''',
+              'completed record replacement')
+
+          # Per-building efficiency: tier is now the unlock ceiling, not free global authority.
+          (sett/'SettlementProductionEfficiencyService.java').write_text('''package kr.moonseungjun.frontiersettlement.settlement;\n\n/** Production throughput is persisted per physical production building. Settlement tier only unlocks the next ceiling. */\npublic final class SettlementProductionEfficiencyService {\n    private SettlementProductionEfficiencyService() {}\n\n    public static boolean isProductionBuilding(BuildingType type) {\n        return type == BuildingType.LUMBER_CAMP || type == BuildingType.FARM\n                || type == BuildingType.QUARRY || type == BuildingType.MINE;\n    }\n\n    public static int maxGrade(SettlementData data) {\n        return switch (SettlementTier.current(data)) {\n            case CAMP, HAMLET -> 1;\n            case VILLAGE -> 2;\n            case FRONTIER_TOWN -> 3;\n            case DOMAIN, FRONTIER_CAPITAL -> 4;\n        };\n    }\n\n    /** Legacy grade 0 temporarily mirrors the old derived tier until the one-way migration freezes it. */\n    public static int grade(SettlementData data, BuildingRecord building) {\n        if (building == null || !isProductionBuilding(building.buildingType())) return 1;\n        if (building.upgradeGrade() <= 0) return maxGrade(data);\n        return clampGrade(building.upgradeGrade());\n    }\n\n    public static String gradeLabel(int grade) {\n        return switch (clampGrade(grade)) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; default -> "IV"; };\n    }\n    public static int lumberWorkPeriod(int grade) { return switch (clampGrade(grade)) { case 1 -> 100; case 2 -> 90; case 3 -> 80; default -> 70; }; }\n    public static int lumberBatch(int grade) { return switch (clampGrade(grade)) { case 1 -> 16; case 2 -> 20; case 3 -> 24; default -> 32; }; }\n    public static int farmWorkPeriod(int grade) { return switch (clampGrade(grade)) { case 1 -> 120; case 2 -> 100; case 3 -> 80; default -> 80; }; }\n    public static int farmBatch(int grade) { return switch (clampGrade(grade)) { case 1 -> 12; case 2 -> 16; case 3 -> 20; default -> 24; }; }\n    public static int farmGrowthModulo(int grade) { return switch (clampGrade(grade)) { case 1 -> 3; case 2, 3 -> 2; default -> 1; }; }\n    public static int quarryWorkPeriod(int grade) { return switch (clampGrade(grade)) { case 1 -> 80; case 2 -> 70; case 3 -> 60; default -> 50; }; }\n    public static int quarryBatch(int grade) { return switch (clampGrade(grade)) { case 1 -> 16; case 2 -> 20; case 3 -> 24; default -> 32; }; }\n    public static int mineWorkPeriod(int grade) { return switch (clampGrade(grade)) { case 1 -> 160; case 2 -> 130; case 3 -> 100; default -> 80; }; }\n    public static int worksiteBufferCount(int grade) { return switch (clampGrade(grade)) { case 1 -> 1; case 2 -> 2; default -> 3; }; }\n\n    public static String detail(BuildingType type, SettlementData data, BuildingRecord building) {\n        int grade = grade(data, building);\n        String prefix = "개량 " + gradeLabel(grade) + " · ";\n        String buffer = " · 현장 버퍼 " + worksiteBufferCount(grade) + "통";\n        String investment = " · " + SettlementProductionUpgradeService.upgradeHint(data, building);\n        return switch (type) {\n            case LUMBER_CAMP -> prefix + "자동 벌목 · 작업 묶음 " + lumberBatch(grade) + buffer + investment;\n            case FARM -> prefix + "자동 식량 생산 · 수확 묶음 " + farmBatch(grade) + " · 작물 성장 관리 "\n                    + (farmGrowthModulo(grade) == 1 ? "전 구획" : farmGrowthModulo(grade) + "구획 순환") + buffer + investment;\n            case QUARRY -> prefix + "자동 채석 · 작업 묶음 " + quarryBatch(grade) + buffer + investment;\n            case MINE -> prefix + "유한 광석 채굴 · 작업 주기 " + mineWorkPeriod(grade) + "틱" + buffer + investment;\n            default -> "";\n        };\n    }\n\n    private static int clampGrade(int grade) { return Math.max(1, Math.min(4, grade)); }\n}\n''', encoding='utf-8')
+
+          # New player-directed physical investment service.
+          (sett/'SettlementProductionUpgradeService.java').write_text('''package kr.moonseungjun.frontiersettlement.settlement;\n\nimport net.minecraft.core.BlockPos;\nimport net.minecraft.network.chat.Component;\nimport net.minecraft.server.MinecraftServer;\nimport net.minecraft.server.level.ServerLevel;\nimport net.minecraft.server.level.ServerPlayer;\nimport net.minecraft.world.InteractionHand;\nimport net.minecraft.world.InteractionResult;\nimport net.minecraft.world.level.block.Blocks;\nimport net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;\n\nimport java.util.List;\n\n/** Player-directed RTS investment for physical town production buildings. */\npublic final class SettlementProductionUpgradeService {\n    private SettlementProductionUpgradeService() {}\n    public record UpgradeCost(long wood, long stone, long copperIronItems) {}\n\n    public static void tick(MinecraftServer server, SettlementData data) {\n        if (server.getTickCount() % 20 != 0) return;\n        if (!migrateLegacyGrades(data)) return;\n        SettlementStorageService.ensureManagedStorage(server.overworld(), data);\n        SettlementService.refreshResources(server, data);\n        SettlementService.broadcast(server, data);\n    }\n\n    /** Pre-Alpha.122 buildings inherit exactly the free tier-derived grade they already had, once. */\n    static boolean migrateLegacyGrades(SettlementData data) {\n        int inherited = SettlementProductionEfficiencyService.maxGrade(data);\n        boolean changed = false;\n        for (BuildingRecord building : List.copyOf(data.buildings())) {\n            if (!SettlementProductionEfficiencyService.isProductionBuilding(building.buildingType())\n                    || building.upgradeGrade() > 0) continue;\n            changed |= data.replaceCompletedBuilding(building, building.withUpgradeGrade(inherited));\n        }\n        return changed;\n    }\n\n    public static UpgradeCost costForGrade(int grade) {\n        return switch (Math.max(2, Math.min(4, grade))) {\n            case 2 -> new UpgradeCost(128L, 96L, 0L);\n            case 3 -> new UpgradeCost(256L, 192L, 32L);\n            default -> new UpgradeCost(512L, 384L, 96L);\n        };\n    }\n\n    public static String upgradeHint(SettlementData data, BuildingRecord building) {\n        int current = SettlementProductionEfficiencyService.grade(data, building);\n        if (current >= 4) return "최대 개량";\n        int next = current + 1;\n        int ceiling = SettlementProductionEfficiencyService.maxGrade(data);\n        if (current >= ceiling) return "다음 " + SettlementProductionEfficiencyService.gradeLabel(next) + " · " + requiredTier(next) + " 필요";\n        UpgradeCost cost = costForGrade(next);\n        return "다음 " + SettlementProductionEfficiencyService.gradeLabel(next) + " · 목 " + cost.wood()\n                + " / 돌 " + cost.stone() + (cost.copperIronItems() > 0 ? " / 구리·철 " + cost.copperIronItems() : "")\n                + " · 빈손 웅크려 현장 저장통 우클릭";\n    }\n\n    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {\n        if (event.getHand() != InteractionHand.MAIN_HAND) return;\n        if (!(event.getEntity() instanceof ServerPlayer player) || !player.isShiftKeyDown()) return;\n        if (!event.getItemStack().isEmpty()) return;\n        if (!(event.getLevel() instanceof ServerLevel level) || !level.getBlockState(event.getPos()).is(Blocks.BARREL)) return;\n        MinecraftServer server = level.getServer();\n        if (level != server.overworld()) return;\n        SettlementData data = SettlementData.get(server);\n        if (!data.founded()) return;\n\n        BuildingRecord building = productionBuildingAt(data, event.getPos());\n        if (building == null) return;\n        if (building.upgradeGrade() <= 0) {\n            BuildingRecord migrated = building.withUpgradeGrade(SettlementProductionEfficiencyService.maxGrade(data));\n            if (data.replaceCompletedBuilding(building, migrated)) building = migrated;\n        }\n\n        int current = SettlementProductionEfficiencyService.grade(data, building);\n        if (current >= 4) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f이 생산시설은 이미 최대 개량 IV입니다."));\n            finish(event); return;\n        }\n        int next = current + 1;\n        int ceiling = SettlementProductionEfficiencyService.maxGrade(data);\n        if (next > ceiling) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f개량 " + SettlementProductionEfficiencyService.gradeLabel(next)\n                    + "은(는) " + requiredTier(next) + " 단계에서 열립니다."));\n            finish(event); return;\n        }\n        if (!SettlementStorageService.canProvisionWorksiteBuffers(level, building, next)) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f추가 현장 저장통 자리가 막혀 있습니다. 기존 저장통 위 공간을 비워 주세요."));\n            finish(event); return;\n        }\n        if (!SettlementStorageService.storageAvailable(level, data)) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 시설 개량을 진행할 수 있습니다."));\n            finish(event); return;\n        }\n\n        UpgradeCost cost = costForGrade(next);\n        SettlementResources resources = SettlementStorageService.scan(level, data);\n        long copperIron = SettlementEquipmentUpgradeService.countBlacksmithMetalItems(level, data);\n        if (resources.wood() < cost.wood() || resources.stone() < cost.stone() || copperIron < cost.copperIronItems()) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f시설 개량 재료 부족 · 필요 목재 " + cost.wood()\n                    + " / 석재 " + cost.stone() + (cost.copperIronItems() > 0 ? " / 구리·철 " + cost.copperIronItems() : "")\n                    + " · 현재 목 " + resources.wood() + " / 돌 " + resources.stone()\n                    + (cost.copperIronItems() > 0 ? " / 구리·철 " + Math.max(0L, copperIron) : "")));\n            finish(event); return;\n        }\n\n        // Same server-thread transaction after a complete availability check: wood/stone removal cannot affect copper/iron slots.\n        if (!SettlementStorageService.consume(level, data, cost.wood(), cost.stone(), 0L)\n                || !SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems(level, data, cost.copperIronItems())) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f시설 개량 재료를 안전하게 인출하지 못했습니다. 자원 상태를 다시 확인해 주세요."));\n            finish(event); return;\n        }\n        BuildingRecord upgraded = building.withUpgradeGrade(next);\n        if (!data.replaceCompletedBuilding(building, upgraded)) {\n            throw new IllegalStateException("Production building disappeared during same-thread upgrade transaction");\n        }\n        SettlementStorageService.ensureManagedStorage(level, data);\n        SettlementService.refreshResources(server, data);\n        SettlementService.broadcast(server, data);\n        player.sendSystemMessage(Component.literal("§6[마을] §f" + upgraded.buildingType().displayName() + " 개량 "\n                + SettlementProductionEfficiencyService.gradeLabel(next) + " 완료 · 생산성과 현장 저장 여유가 상승했습니다."));\n        finish(event);\n    }\n\n    private static BuildingRecord productionBuildingAt(SettlementData data, BlockPos clicked) {\n        for (BuildingRecord building : data.buildings()) {\n            if (!SettlementProductionEfficiencyService.isProductionBuilding(building.buildingType())) continue;\n            for (BlockPos storage : SettlementStorageService.worksiteStoragePositions(building)) {\n                if (storage.equals(clicked)) return building;\n            }\n        }\n        return null;\n    }\n\n    private static String requiredTier(int grade) {\n        return switch (grade) {\n            case 2 -> SettlementTier.VILLAGE.displayName();\n            case 3 -> SettlementTier.FRONTIER_TOWN.displayName();\n            default -> SettlementTier.DOMAIN.displayName();\n        };\n    }\n\n    private static void finish(PlayerInteractEvent.RightClickBlock event) {\n        event.setCancellationResult(InteractionResult.SUCCESS_SERVER);\n        event.setCanceled(true);\n    }\n}\n''', encoding='utf-8')
+
+          # Worksite physical buffers follow each building's persisted grade and can be preflighted transactionally.
+          storage = sett/'SettlementStorageService.java'
+          replace_once(storage,
+              '        int count = SettlementProductionEfficiencyService.worksiteBufferCount(\n                SettlementProductionEfficiencyService.grade(data));',
+              '        int count = SettlementProductionEfficiencyService.worksiteBufferCount(\n                SettlementProductionEfficiencyService.grade(data, building));',
+              'per-building storage grade')
+          replace_once(storage,
+              '    public static List<BlockPos> worksiteStoragePositions(SettlementData data) {',
+              '''    public static boolean canProvisionWorksiteBuffers(ServerLevel level, BuildingRecord building, int grade) {\n        List<BlockPos> planned = worksiteStoragePositions(building);\n        int count = Math.min(SettlementProductionEfficiencyService.worksiteBufferCount(grade), planned.size());\n        for (int i = 0; i < count; i++) {\n            BlockPos pos = planned.get(i);\n            if (level.hasChunkAt(pos) && level.getBlockState(pos).is(Blocks.BARREL)\n                    && level.getBlockEntity(pos) instanceof Container) continue;\n            if (!canSafelyCreateManagedBarrel(level, pos)) return false;\n        }\n        return true;\n    }\n\n    public static List<BlockPos> worksiteStoragePositions(SettlementData data) {''',
+              'buffer provisioning preflight')
+
+          # Four physical production loops now read their assigned building's grade.
+          worker = sett/'SettlementWorkerService.java'
+          replace_once(worker,
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);\n        if (!workDue(level, camp,',
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, camp);\n        if (!workDue(level, camp,', 'lumber grade')
+          replace_once(worker,
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);\n        int farmPeriod =',
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, farm);\n        int farmPeriod =', 'farm grade')
+          replace_once(worker,
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);\n        int quarryPeriod =',
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, quarry);\n        int quarryPeriod =', 'quarry grade')
+          replace_once(worker,
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data);\n        if (!workDue(level, mine,',
+              '        int efficiencyGrade = SettlementProductionEfficiencyService.grade(data, mine);\n        if (!workDue(level, mine,', 'mine grade')
+
+          # Runtime migration, context and player interaction registration.
+          service = sett/'SettlementService.java'
+          replace_once(service,
+              '        SettlementLegacyWorkerMigrationService.tick(server, data);',
+              '        SettlementLegacyWorkerMigrationService.tick(server, data);\n        SettlementProductionUpgradeService.tick(server, data);',
+              'upgrade migration tick')
+
+          context = sett/'SettlementContextService.java'
+          replace_once(context,
+              'case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data) + " · 상태: "',
+              'case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data, building) + " · 상태: "',
+              'context per-building detail')
+
+          entry = java/'FrontierSettlement.java'
+          replace_once(entry,
+              'import kr.moonseungjun.frontiersettlement.settlement.SettlementProjectAuthority;',
+              'import kr.moonseungjun.frontiersettlement.settlement.SettlementProjectAuthority;\nimport kr.moonseungjun.frontiersettlement.settlement.SettlementProductionUpgradeService;',
+              'entry import')
+          replace_once(entry,
+              '        NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);',
+              '        NeoForge.EVENT_BUS.addListener(SettlementProductionUpgradeService::onRightClickBlock);\n        NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);',
+              'entry interaction listener')
+
+          guide = java/'client/SettlementGuideScreen.java'
+          replace_once(guide,
+              '                    "생산시설은 마을 단계와 영토 확장에 따라 역할이 넓어집니다.",\n                    "농장 주민은 작물을 직접 관리해 바닐라 랜덤 성장만 기다리지 않습니다.",',
+              '                    "마을 단계는 생산시설 II~IV 개량 한도를 열며, 시설별 자원 투자가 필요합니다.",\n                    "빈손으로 웅크린 채 생산시설 현장 저장통을 우클릭하면 다음 개량을 진행합니다.",',
+              'guide production investment')
+
+          # Current-source audit now locks the investment semantics and migration safety.
+          test = root/'tools/test_current_source.py'
+          replace_once(test, 'mod_version=0.1.0-alpha.121', 'mod_version=0.1.0-alpha.122', 'test version')
+          t = test.read_text(encoding='utf-8')
+          old = '''production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")\nrequire("SettlementTier.current(data)" in production_efficiency, "production upgrades are not derived from canonical settlement tier")\nrequire("farmBatch" in production_efficiency and "case 1 -> 12" in production_efficiency and "default -> 24" in production_efficiency,\n        "farm harvest batch ladder missing or drifted")\nrequire("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")\nrequire("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")\nrequire("worksiteBufferCount" in production_efficiency and "case 1 -> 1; case 2 -> 2; default -> 3" in production_efficiency,\n        "tier-scaled physical worksite buffer ladder missing")\n'''
+          new = '''production_efficiency = text(SETTLEMENT / "SettlementProductionEfficiencyService.java")\nproduction_upgrade = text(SETTLEMENT / "SettlementProductionUpgradeService.java")\nbuilding_record = text(SETTLEMENT / "BuildingRecord.java")\nrequire("upgrade_grade" in building_record and "optionalFieldOf(\\\"upgrade_grade\\\", 0)" in building_record and "withUpgradeGrade" in building_record,\n        "save-compatible per-building production grade missing")\nrequire("maxGrade(SettlementData data)" in production_efficiency and "grade(SettlementData data, BuildingRecord building)" in production_efficiency,\n        "tier-ceiling/per-building production authority missing")\nrequire("building.upgradeGrade() <= 0" in production_efficiency and "return maxGrade(data)" in production_efficiency,\n        "legacy grade fallback missing before one-way migration")\nrequire("migrateLegacyGrades" in production_upgrade and "building.withUpgradeGrade(inherited)" in production_upgrade,\n        "pre-Alpha.122 free-grade inheritance migration missing")\nrequire("new UpgradeCost(128L, 96L, 0L)" in production_upgrade\n        and "new UpgradeCost(256L, 192L, 32L)" in production_upgrade\n        and "new UpgradeCost(512L, 384L, 96L)" in production_upgrade,\n        "RTS production investment cost ladder drifted")\nrequire("countBlacksmithMetalItems" in production_upgrade and "consumeBlacksmithMetalItems" in production_upgrade,\n        "facility improvement can silently spend non-copper/iron metal")\nrequire("player.isShiftKeyDown()" in production_upgrade and "event.getItemStack().isEmpty()" in production_upgrade\n        and "productionBuildingAt" in production_upgrade, "player-directed local-barrel improvement interaction missing")\nrequire("farmBatch" in production_efficiency and "case 1 -> 12" in production_efficiency and "default -> 24" in production_efficiency,\n        "farm harvest batch ladder missing or drifted")\nrequire("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production improvement ceiling ladder drifted")\nrequire("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")\nrequire("worksiteBufferCount" in production_efficiency and "case 1 -> 1; case 2 -> 2; default -> 3" in production_efficiency,\n        "per-building physical worksite buffer ladder missing")\n'''
+          if old not in t:
+              raise SystemExit('production audit block drift')
+          t = t.replace(old, new, 1)
+          anchor = 'require("SettlementStorageService.worksiteStoragePositions(building)" in worker,\n        "production workers do not use every unlocked local physical buffer")\n'
+          if anchor not in t: raise SystemExit('storage audit anchor drift')
+          t = t.replace(anchor, anchor + '''require("SettlementProductionEfficiencyService.grade(data, camp)" in worker\n        and "SettlementProductionEfficiencyService.grade(data, farm)" in worker\n        and "SettlementProductionEfficiencyService.grade(data, quarry)" in worker\n        and "SettlementProductionEfficiencyService.grade(data, mine)" in worker,\n        "production loops are not reading their own persisted building grade")\nrequire("SettlementProductionEfficiencyService.grade(data, building)" in storage and "canProvisionWorksiteBuffers" in storage,\n        "worksite buffer capacity does not follow safe per-building improvement")\nrequire("SettlementProductionUpgradeService.tick(server, data)" in service, "production-grade migration is not wired into settlement runtime")\nentry = text(JAVA / "FrontierSettlement.java")\nrequire("SettlementProductionUpgradeService::onRightClickBlock" in entry, "production improvement interaction is not registered")\nguide = text(JAVA / "client/SettlementGuideScreen.java")\nrequire("생산시설 현장 저장통을 우클릭" in guide, "in-game guide does not teach production investment")\n''', 1)
+          test.write_text(t, encoding='utf-8')
+          PY
+
+      - name: Audit and build
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.122.jar
+          git diff --check
+
+      - name: Commit Alpha.122
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git commit -m 'frontier: release 0.1.0-alpha.122 per-building production investment'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
