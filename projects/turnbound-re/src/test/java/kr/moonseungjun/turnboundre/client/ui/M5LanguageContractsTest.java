@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,14 +44,59 @@ class M5LanguageContractsTest {
                 "hud.turnbound_re.action.no_target",
                 "hud.turnbound_re.action.locked"
         );
-        for (String key : required) {
-            assertTrue(en.has(key), "missing battle UI translation: " + key);
-            assertTrue(!en.get(key).getAsString().isBlank(), "blank battle UI translation: " + key);
-        }
+        requireNonBlank(en, required);
 
         assertEquals("screen.turnbound_re.disabled.energy", BattleActionPresentation.disabledReasonKey("ENERGY"));
         assertEquals("screen.turnbound_re.disabled.targets", BattleActionPresentation.disabledReasonKey("TARGETS"));
         assertEquals("screen.turnbound_re.disabled.locked", BattleActionPresentation.disabledReasonKey("UNKNOWN"));
+    }
+
+    @Test
+    void battleHudCopyCoversEveryAuthoredIntentEnumAndCoreStatus() {
+        JsonObject en = read(EN);
+        Set<String> required = Set.of(
+                "hud.turnbound_re.state.now",
+                "hud.turnbound_re.state.defeated",
+                "hud.turnbound_re.intent.none",
+                "hud.turnbound_re.intent.line",
+                "hud.turnbound_re.intent.line_break",
+                "hud.turnbound_re.intent.unknown",
+                "hud.turnbound_re.status.detail.stacks_turns",
+                "hud.turnbound_re.status.detail.stacks",
+                "hud.turnbound_re.status.detail.turns"
+        );
+        requireNonBlank(en, required);
+
+        for (String risk : List.of("NORMAL", "DANGEROUS", "ULTIMATE")) {
+            String key = BattleHudPresentation.intentRiskKey(risk);
+            assertTrue(en.has(key), "missing intent risk translation: " + key);
+        }
+        for (String type : List.of("ATTACK", "DEFEND", "BUFF", "DEBUFF", "SPECIAL")) {
+            String key = BattleHudPresentation.intentTypeKey(type);
+            assertTrue(en.has(key), "missing intent type translation: " + key);
+        }
+        for (String targeting : List.of("SINGLE", "ALL", "SELF", "RANDOM")) {
+            String key = BattleHudPresentation.intentTargetingKey(targeting);
+            assertTrue(en.has(key), "missing intent targeting translation: " + key);
+        }
+
+        for (String status : List.of(
+                "guard", "exposed", "poise_guard", "burn", "slow", "atk_up",
+                "def_down", "venom", "webbed", "evasion", "ward", "volatile")) {
+            String key = BattleHudPresentation.statusNameKey("turnbound_re:" + status);
+            assertTrue(!key.isBlank(), "core status is not mapped: " + status);
+            assertTrue(en.has(key), "missing core status translation: " + key);
+        }
+
+        assertEquals("hud.turnbound_re.intent.unknown", BattleHudPresentation.intentRiskKey("UNKNOWN"));
+        assertEquals("", BattleHudPresentation.statusNameKey("turnbound_re:future_status"));
+    }
+
+    private static void requireNonBlank(JsonObject language, Set<String> keys) {
+        for (String key : keys) {
+            assertTrue(language.has(key), "missing battle UI translation: " + key);
+            assertTrue(!language.get(key).getAsString().isBlank(), "blank battle UI translation: " + key);
+        }
     }
 
     private static JsonObject read(String path) {
