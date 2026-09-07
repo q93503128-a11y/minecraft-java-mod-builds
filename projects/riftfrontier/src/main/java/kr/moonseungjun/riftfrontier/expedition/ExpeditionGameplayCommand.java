@@ -55,6 +55,13 @@ public final class ExpeditionGameplayCommand {
                                 return 0;
                             }
                         }))
+                        .then(Commands.literal("checklist").executes(context -> {
+                            var source = context.getSource();
+                            for (String line : FieldPlayScenarioMatrix.reportLines()) {
+                                source.sendSuccess(() -> Component.literal("Riftfrontier field checklist | " + line), false);
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        }))
                     )
                 )
         );
