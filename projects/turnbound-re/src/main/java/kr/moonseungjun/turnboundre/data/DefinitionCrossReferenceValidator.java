@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Cross-reference validation that requires multiple already-decoded definition families.
+ * Cross-reference and effect-semantics validation that requires multiple already-decoded definition families.
  * Keeping this separate from scalar/schema validation prevents permissive fallback behavior at runtime.
  */
 public final class DefinitionCrossReferenceValidator {
@@ -49,9 +49,54 @@ public final class DefinitionCrossReferenceValidator {
                         && !statusIds.contains(effect.status())) {
                     errors.add(action.id() + ": effect " + effect.type() + " references missing status " + effect.status());
                 }
+                validateEffectSemantics(errors, action, effect);
             }
         }
         return List.copyOf(errors);
+    }
+
+    private static void validateEffectSemantics(
+            List<String> errors,
+            ActionDefinition action,
+            ActionDefinition.Effect effect
+    ) {
+        switch (effect.type()) {
+            case "DAMAGE" -> {
+                if (action.hpPower() <= 0 && action.poisePower() <= 0) {
+                    errors.add(action.id() + ": DAMAGE effect requires hpPower > 0 or poisePower > 0");
+                }
+                if (!(effect.value() > 0.0D)) {
+                    errors.add(action.id() + ": DAMAGE effect value must be > 0");
+                }
+            }
+            case "HEAL" -> {
+                // Current canonical healing formula has no hidden flat-heal fallback.
+                // A zero hpPower HEAL therefore resolves to zero and is invalid content.
+                if (action.hpPower() <= 0) {
+                    errors.add(action.id() + ": HEAL effect requires hpPower > 0");
+                }
+                if (!(effect.value() > 0.0D)) {
+                    errors.add(action.id() + ": HEAL effect value must be > 0");
+                }
+            }
+            case "POISE_DAMAGE" -> {
+                if (action.poisePower() <= 0) {
+                    errors.add(action.id() + ": POISE_DAMAGE effect requires poisePower > 0");
+                }
+                if (!(effect.value() > 0.0D)) {
+                    errors.add(action.id() + ": POISE_DAMAGE effect value must be > 0");
+                }
+            }
+            case "ENERGY" -> {
+                if (effect.value() == 0.0D) errors.add(action.id() + ": ENERGY effect must change Energy");
+            }
+            case "INTENT_DELAY" -> {
+                if (effect.duration() < 1) errors.add(action.id() + ": INTENT_DELAY duration must be >= 1");
+            }
+            default -> {
+                // Scalar validation and status-reference validation cover the remaining effect families.
+            }
+        }
     }
 
     private static void requireKind(
