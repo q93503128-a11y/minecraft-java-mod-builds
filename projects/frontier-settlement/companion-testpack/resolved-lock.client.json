@@ -5,7 +5,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.116"
+    "frontier_settlement": "0.1.0-alpha.117"
   },
   "lock_status": "candidate_runtime_lock",
   "pin_policy": "same locked version must match committed resolved-lock.client.json hashes when present",
@@ -205,7 +205,7 @@
   ],
   "resolution": {
     "verified": true,
-    "source_sha": "ac732b9e0cba15e7cb6b9d45032f85b03e481c35",
+    "source_sha": "34597ec234acc8c567f7e6a3e25570f31f906fd8",
     "note": "Official third-party binaries were downloaded and hash-verified by CI; binaries are not redistributed in this repository."
   }
 }
