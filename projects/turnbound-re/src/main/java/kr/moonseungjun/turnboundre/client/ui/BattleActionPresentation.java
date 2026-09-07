@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.client.ui;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +59,7 @@ public final class BattleActionPresentation {
         return Component.translatable("screen.turnbound_re.selected_summary", targetRule(action), action.energyCost());
     }
 
-    public static List<Component> tooltip(BattleNetworkPayloads.SnapshotAction action) {
+    public static List<FormattedCharSequence> tooltip(BattleNetworkPayloads.SnapshotAction action) {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.literal(actionName(action.id())).withStyle(ChatFormatting.WHITE));
         lines.add(targetRule(action).copy().withStyle(ChatFormatting.GRAY));
@@ -87,7 +88,7 @@ public final class BattleActionPresentation {
         if (!action.usable()) {
             lines.add(disabledReason(action).copy().withStyle(ChatFormatting.RED));
         }
-        return List.copyOf(lines);
+        return lines.stream().map(Component::getVisualOrderText).toList();
     }
 
     public static String actionName(String actionId) {
