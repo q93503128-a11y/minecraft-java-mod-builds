@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Coast/river specialization overlay for otherwise-general outposts.
@@ -48,6 +49,7 @@ public final class SettlementFishingOutpostService {
     private static final int MAX_CATCH = 3;
     private static final double WORK_RANGE_SQR = 9.0D;
     private static final double SEARCH_RADIUS = 48.0D;
+    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
 
     // Fishing, waterfront and UI/context summaries can ask the same environmental question several
     // times in one server tick. Cache only that tick: world edits are therefore visible next tick and
@@ -57,18 +59,29 @@ public final class SettlementFishingOutpostService {
     private static final Map<Integer, FishingSpot> shorelineHits = new HashMap<>();
     private static final Set<Integer> shorelineMisses = new HashSet<>();
 
+    // The assigned fishing villager is a persistent physical entity. Keep its UUID as a lookup hint
+    // so the ordinary one-second fishing tick does not scan the full 48-block assignment AABB. A full
+    // scan still runs every ten seconds to migrate old saves and remove true duplicates, and any dead,
+    // unloaded or invalid cached entity falls back to the conservative scan/spawn path immediately.
+    private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
+
     private SettlementFishingOutpostService() {}
 
     public record FishingSpot(BlockPos bank, BlockPos water) {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
-        if (server.getTickCount() % 20 != 0) return;
+        int tick = server.getTickCount();
+        if (tick % 20 != 0) return;
         ServerLevel level = server.overworld();
+        boolean maintenance = tick % WORKER_MAINTENANCE_INTERVAL_TICKS == 0;
+        Set<Integer> liveGeneralOutposts = maintenance ? new HashSet<>() : Set.of();
         for (OutpostRecord outpost : data.outposts()) {
             if (!"general".equals(outpost.specialization())) continue;
+            if (maintenance) liveGeneralOutposts.add(outpost.id());
             if (!level.hasChunkAt(outpost.center()) || !level.hasChunkAt(outpost.stockpile())) continue;
 
-            FrontierWorkerEntity worker = findAssignedWorker(level, outpost);
+            FrontierWorkerEntity worker = resolveCachedWorker(level, outpost);
+            if (worker == null || maintenance) worker = findAssignedWorker(level, outpost);
             if (SettlementMilitaryOutpostService.isActiveMilitaryOutpost(level, outpost)) {
                 SettlementDeferredOutpostService.observeGeneralOverlay(server, outpost,
                         SettlementDeferredOutpostService.OVERLAY_MILITARY);
@@ -91,6 +104,7 @@ public final class SettlementFishingOutpostService {
                     && (worker.getMainHandItem().isEmpty() || SettlementInventory.isWood(worker.getMainHandItem()))) continue;
             work(level, outpost, spot, worker);
         }
+        if (maintenance) WORKER_UUID_CACHE.keySet().removeIf(id -> !liveGeneralOutposts.contains(id));
     }
 
     public static boolean hasFishingShoreline(ServerLevel level, OutpostRecord outpost) {
@@ -98,7 +112,8 @@ public final class SettlementFishingOutpostService {
     }
 
     public static FrontierWorkerEntity ensureAssignedWorker(ServerLevel level, OutpostRecord outpost) {
-        FrontierWorkerEntity worker = findAssignedWorker(level, outpost);
+        FrontierWorkerEntity worker = resolveCachedWorker(level, outpost);
+        if (worker == null) worker = findAssignedWorker(level, outpost);
         return worker != null ? worker : spawnAssignedWorker(level, outpost);
     }
 
@@ -123,6 +138,27 @@ public final class SettlementFishingOutpostService {
                 : "어업·수변교역";
     }
 
+    private static FrontierWorkerEntity resolveCachedWorker(ServerLevel level, OutpostRecord outpost) {
+        UUID uuid = WORKER_UUID_CACHE.get(outpost.id());
+        if (uuid == null) return null;
+        if (!(level.getEntity(uuid) instanceof FrontierWorkerEntity worker)
+                || !worker.isAlive()
+                || !worker.entityTags().contains(FISHING_WORKER_TAG)
+                || !worker.entityTags().contains(assignmentTag(outpost))
+                || !assignmentArea(outpost).contains(worker.getX(), worker.getY(), worker.getZ())) {
+            WORKER_UUID_CACHE.remove(outpost.id());
+            return null;
+        }
+        worker.setNoAi(false);
+        worker.setInvulnerable(false);
+        return worker;
+    }
+
+    private static FrontierWorkerEntity rememberWorker(OutpostRecord outpost, FrontierWorkerEntity worker) {
+        WORKER_UUID_CACHE.put(outpost.id(), worker.getUUID());
+        return worker;
+    }
+
     private static FrontierWorkerEntity spawnAssignedWorker(ServerLevel level, OutpostRecord outpost) {
         AABB area = assignmentArea(outpost);
         if (!assignmentEvidenceLoaded(level, area) || !findAssignedWorkers(level, outpost).isEmpty()) return null;
@@ -137,12 +173,15 @@ public final class SettlementFishingOutpostService {
         worker.addTag(FISHING_WORKER_TAG);
         worker.addTag(assignmentTag(outpost));
         worker.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.FISHING_ROD));
-        return level.addFreshEntity(worker) ? worker : null;
+        return level.addFreshEntity(worker) ? rememberWorker(outpost, worker) : null;
     }
 
     private static FrontierWorkerEntity findAssignedWorker(ServerLevel level, OutpostRecord outpost) {
         List<FrontierWorkerEntity> workers = findAssignedWorkers(level, outpost);
-        if (workers.isEmpty()) return null;
+        if (workers.isEmpty()) {
+            WORKER_UUID_CACHE.remove(outpost.id());
+            return null;
+        }
         FrontierWorkerEntity active = workers.getFirst();
         active.setNoAi(false);
         active.setInvulnerable(false);
@@ -152,7 +191,7 @@ public final class SettlementFishingOutpostService {
         for (int i = 1; i < workers.size(); i++) {
             SettlementWorkerService.removeDuplicateWorkerPreservingCargo(level, workers.get(i));
         }
-        return active;
+        return rememberWorker(outpost, active);
     }
 
     private static List<FrontierWorkerEntity> findAssignedWorkers(ServerLevel level, OutpostRecord outpost) {
