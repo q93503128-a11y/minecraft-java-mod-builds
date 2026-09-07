@@ -35,7 +35,14 @@ public final class ExpeditionGameplayService {
         var snapshot = ContentRuntime.requireCurrent();
         var lifecycle = new ExpeditionLifecycle(snapshot);
         long expectedSequence = world.expeditionSequence() + 1L;
-        ExpeditionRun validated = lifecycle.begin(expectedSequence, REGION_ID, CONTRACT_ID, snapshot.fingerprint(), level.getGameTime());
+        ExpeditionRun validated = lifecycle.begin(
+            expectedSequence,
+            REGION_ID,
+            CONTRACT_ID,
+            player.getUUID(),
+            snapshot.fingerprint(),
+            level.getGameTime()
+        );
 
         int supplyCost = world.region01PreparationSupplyCost();
         if (!world.consumeRegion01PreparationSupply()) {
@@ -45,8 +52,15 @@ public final class ExpeditionGameplayService {
             );
         }
 
-        ExpeditionRun persisted = world.createExpedition(REGION_ID, CONTRACT_ID, snapshot.fingerprint(), level.getGameTime());
+        ExpeditionRun persisted = world.createExpedition(
+            REGION_ID,
+            CONTRACT_ID,
+            player.getUUID(),
+            snapshot.fingerprint(),
+            level.getGameTime()
+        );
         if (persisted.sequence() != validated.sequence()) throw new IllegalStateException("Authoritative expedition allocation drifted from validated sequence");
+        if (!persisted.ownerId().equals(validated.ownerId())) throw new IllegalStateException("Authoritative expedition owner drifted from validated participant");
 
         ExpeditionRun deployed = lifecycle.deploy(persisted);
         world.updateExpedition(deployed);
@@ -67,7 +81,7 @@ public final class ExpeditionGameplayService {
     public static boolean tryRecover(ServerPlayer player, BlockPos pos) {
         ServerLevel playerLevel = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(playerLevel);
-        Optional<ExpeditionRun> active = active(world);
+        Optional<ExpeditionRun> active = activeFor(player, world);
         if (active.isEmpty() || active.get().status() != ExpeditionRun.Status.DEPLOYED) return false;
         if (!active.get().regionId().equals(REGION_ID)) return false;
 
@@ -92,7 +106,7 @@ public final class ExpeditionGameplayService {
     public static ExpeditionLifecycle.Resolution extract(ServerPlayer player) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
-        ExpeditionRun run = active(world).orElseThrow(() -> new IllegalStateException("No active expedition"));
+        ExpeditionRun run = activeFor(player, world).orElseThrow(() -> new IllegalStateException("No active expedition owned by this player"));
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun requested = lifecycle.requestExtraction(run);
         world.updateExpedition(requested);
@@ -130,7 +144,7 @@ public final class ExpeditionGameplayService {
     /** Manual abort is an explicit field exit, unlike death/logout failure policy. */
     public static ExpeditionRun abort(ServerPlayer player) {
         ExpeditionRun failed = failActive(player, ExpeditionRun.EndReason.PLAYER_ABORT, "aborted by player")
-            .orElseThrow(() -> new IllegalStateException("No active expedition"));
+            .orElseThrow(() -> new IllegalStateException("No active expedition owned by this player"));
         returnToHub(player);
         return failed;
     }
@@ -138,7 +152,7 @@ public final class ExpeditionGameplayService {
     public static Optional<ExpeditionRun> failActive(ServerPlayer player, ExpeditionRun.EndReason endReason, String messageReason) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
-        Optional<ExpeditionRun> active = active(world);
+        Optional<ExpeditionRun> active = activeFor(player, world);
         if (active.isEmpty()) return Optional.empty();
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime(), endReason);
@@ -174,17 +188,18 @@ public final class ExpeditionGameplayService {
      * Restart/logout failure may leave a player's persisted position inside the technical Region 01
      * cell after the authoritative run has already become terminal. In that precise state, returning
      * the player to the technical hub is an explicit field exit rather than an attempt to resurrect or
-     * infer expedition ownership. Active expeditions are never moved by this adapter.
+     * infer expedition ownership. Another player's active run must not suppress this stranded-player exit.
      */
     public static FieldReentryDecision reconcilePlayerFieldReentry(ServerPlayer player) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         ServerLevel overworld = level.getServer().overworld();
         boolean insideTechnicalRegion = level == overworld && insideTechnicalRegionCell(player.blockPosition());
-        FieldReentryDecision decision = FieldReentryDecision.evaluate(active(world).isPresent(), insideTechnicalRegion);
+        FieldReentryDecision decision = FieldReentryDecision.evaluate(activeFor(player, world).isPresent(), insideTechnicalRegion);
         if (!decision.returnToHub()) return decision;
 
         ExpeditionRun latest = world.expeditions().stream()
+            .filter(run -> run.ownerId().isEmpty() || run.ownedBy(player.getUUID()))
             .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence))
             .orElse(null);
         String cause = latest == null ? "unknown" : latest.endReason().serializedName();
@@ -199,7 +214,8 @@ public final class ExpeditionGameplayService {
     public static String status(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(serverLevel(player));
         String run = active(world)
-            .map(value -> "sequence=" + value.sequence() + ", status=" + value.status() + ", recovered=" + value.recoveredResources())
+            .map(value -> "sequence=" + value.sequence() + ", status=" + value.status() + ", owner="
+                + value.ownerId().map(Object::toString).orElse("legacy-unowned") + ", recovered=" + value.recoveredResources())
             .orElseGet(() -> world.expeditions().stream()
                 .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence))
                 .map(value -> "no active expedition; latestSequence=" + value.sequence() + ", latestStatus=" + value.status()
@@ -216,6 +232,10 @@ public final class ExpeditionGameplayService {
         return world.expeditions().stream()
             .filter(run -> !run.status().terminal())
             .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence));
+    }
+
+    public static Optional<ExpeditionRun> activeFor(ServerPlayer player, RiftfrontierWorldData world) {
+        return active(world).filter(run -> run.ownedBy(player.getUUID()));
     }
 
     public static BlockPos technicalRegionCenter() {
