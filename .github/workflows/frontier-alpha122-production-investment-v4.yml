@@ -1,0 +1,70 @@
+name: Frontier Alpha.122 Production Investment v4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha122-production-investment-v4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply Alpha.122 and repair audit harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, base64
+          workflow = Path('.github/workflows/frontier-alpha122-production-investment-v3.yml').read_text(encoding='utf-8')
+          match = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| python3", workflow)
+          if not match:
+              raise SystemExit('v3 encoded patch payload missing')
+          script = base64.b64decode(match.group(1)).decode('utf-8')
+          exec(compile(script, '<alpha122-v3-payload>', 'exec'), {})
+          test = Path('projects/frontier-settlement/tools/test_current_source.py')
+          text = test.read_text(encoding='utf-8')
+          anchor = 'require("SettlementProductionUpgradeService.tick(server, data)" in service, "production-grade migration is not wired into settlement runtime")'
+          if text.count(anchor) != 1:
+              raise SystemExit('service audit anchor drift')
+          text = text.replace(anchor, 'service = text(SETTLEMENT / "SettlementService.java")\n' + anchor, 1)
+          test.write_text(text, encoding='utf-8')
+          PY
+      - name: Audit and build
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.122.jar
+          git diff --check
+      - name: Commit Alpha.122
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git commit -m 'frontier: release 0.1.0-alpha.122 per-building production investment'
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
