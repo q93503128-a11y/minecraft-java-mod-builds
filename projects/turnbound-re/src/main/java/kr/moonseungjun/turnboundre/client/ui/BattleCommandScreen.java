@@ -4,6 +4,7 @@ import kr.moonseungjun.turnboundre.battle.BattleCommand;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattleCommandSelection;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
+import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -27,6 +28,7 @@ public final class BattleCommandScreen extends Screen {
     private static final int TARGET_COLUMNS = 2;
 
     private final List<ActionButtonBinding> actionButtons = new ArrayList<>();
+    private final List<TargetButtonBinding> targetButtons = new ArrayList<>();
     private BattleNetworkPayloads.SnapshotAction selectedAction;
     private final Set<String> selectedTargetIds = new LinkedHashSet<>();
     private int targetPage;
@@ -44,11 +46,15 @@ public final class BattleCommandScreen extends Screen {
     @Override
     protected void init() {
         actionButtons.clear();
+        targetButtons.clear();
         panelWidth = 0;
         panelHeight = 0;
 
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
-        if (model == null || !model.awaitingPlayerCommand()) return;
+        if (model == null || !model.awaitingPlayerCommand()) {
+            BattleTargetMarkerState.clear();
+            return;
+        }
 
         if (selectedAction != null) {
             selectedAction = BattleCommandSelection.publishedAction(model, selectedAction).orElse(null);
@@ -60,7 +66,11 @@ public final class BattleCommandScreen extends Screen {
         }
 
         buildActionButtons(model);
-        if (selectedAction != null) buildTargetButtons(model);
+        if (selectedAction != null) {
+            buildTargetButtons(model);
+        } else {
+            BattleTargetMarkerState.clear();
+        }
     }
 
     private void buildActionButtons(BattlePresentationModel model) {
@@ -114,6 +124,7 @@ public final class BattleCommandScreen extends Screen {
                 BattleCommandSelection.eligibleTargets(model, selectedAction);
         if (candidates.isEmpty()) {
             feedback = Component.translatable("screen.turnbound_re.no_targets").getString();
+            BattleTargetMarkerState.clear();
             return;
         }
 
@@ -146,6 +157,7 @@ public final class BattleCommandScreen extends Screen {
                     .bounds(x, y, buttonWidth, 20)
                     .build();
             this.addRenderableWidget(target);
+            targetButtons.add(new TargetButtonBinding(target, participant.id()));
         }
 
         int footerY = panelY + panelHeight - 22;
@@ -176,6 +188,8 @@ public final class BattleCommandScreen extends Screen {
             next.active = targetPage + 1 < pageCount;
             this.addRenderableWidget(next);
         }
+
+        publishTargetMarkers(model, null);
     }
 
     private void toggleTarget(BattlePresentationModel model, String targetId) {
@@ -199,6 +213,7 @@ public final class BattleCommandScreen extends Screen {
         selectedTargetIds.clear();
         targetPage = 0;
         feedback = "";
+        BattleTargetMarkerState.clear();
         this.rebuildWidgets();
     }
 
@@ -223,6 +238,7 @@ public final class BattleCommandScreen extends Screen {
             return;
         }
 
+        BattleTargetMarkerState.clear();
         ClientPacketDistributor.sendToServer(BattleNetworkPayloads.BattleCommandC2S.of(model.battleId(), command));
         this.minecraft.gui.setScreen(null);
     }
@@ -265,6 +281,33 @@ public final class BattleCommandScreen extends Screen {
                 break;
             }
         }
+
+        String hoveredTargetId = null;
+        for (TargetButtonBinding binding : targetButtons) {
+            if (binding.button().isMouseOver(mouseX, mouseY)) {
+                hoveredTargetId = binding.participantId();
+                break;
+            }
+        }
+        BattlePresentationModel model = BattleClientState.presentation().orElse(null);
+        if (model != null && selectedAction != null) {
+            publishTargetMarkers(model, hoveredTargetId);
+        } else {
+            BattleTargetMarkerState.clear();
+        }
+    }
+
+    private void publishTargetMarkers(BattlePresentationModel model, String hoveredTargetId) {
+        if (selectedAction == null) {
+            BattleTargetMarkerState.clear();
+            return;
+        }
+        BattleTargetMarkerState.publish(
+                model.battleId(),
+                model.revision(),
+                BattleCommandSelection.eligibleTargets(model, selectedAction),
+                selectedTargetIds,
+                hoveredTargetId);
     }
 
     private static String displayName(BattleNetworkPayloads.SnapshotParticipant participant) {
@@ -302,6 +345,7 @@ public final class BattleCommandScreen extends Screen {
     }
 
     private record ActionButtonBinding(Button button, BattleNetworkPayloads.SnapshotAction action) {}
+    private record TargetButtonBinding(Button button, String participantId) {}
 
     @Override public boolean isPauseScreen() { return false; }
     @Override public boolean isInGameUi() { return true; }
