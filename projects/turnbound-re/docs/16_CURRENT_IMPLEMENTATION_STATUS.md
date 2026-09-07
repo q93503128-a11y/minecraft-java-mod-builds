@@ -6,10 +6,12 @@
 기획 정본을 대체하지 않는다. CANON/세부 규칙은 기존 문서가 우선하며, 이 문서는 "어디까지 구현/검증됐는가"만 기록한다.
 
 ## 1. 마지막 검증 기준
-- 마지막 TURNBOUND: RE 검증 커밋: `a1d46ea3827e335cc89e0ca4d6effa1711c79cef`
-- GitHub Actions: `Build turnbound-re` run `34074495383`
+- 마지막 TURNBOUND: RE 검증 커밋: `9544e30487bf9d9025f5e5d258fca67784a92f28`
+- GitHub Actions: `Build turnbound-re` run `34075982400`
 - 결과: **SUCCESS**
-- 포함 검증: Java 25 toolchain, dependency resolution, clean build, 전체 JUnit, production JAR verify, artifact upload.
+- 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
+- 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
+- SHA-256: `5133b0f38f618402b9e2abe49021d13e0b489a1ecbafed581c95a4a06c7da505`
 
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
@@ -65,7 +67,7 @@ production definition 현재 대표 세트:
 - 8 characters: Zombie, Skeleton, Spider, Creeper, Blaze, Witch, Enderman, Iron Golem.
 - 40 actions.
 - 12 statuses.
-- normal + elite debug Encounter/Reward tables.
+- normal + elite Encounter/Reward tables.
 
 구현:
 - JSON → Codec → bundle merge → semantic/cross-reference validation → atomic registry.
@@ -82,7 +84,7 @@ production definition 현재 대표 세트:
 Witch healing의 `hpPower=0` 문제는 수정 완료.
 
 ## 6. M4 — Progression & Reward
-상태: **CORE + PERSISTENCE AUTOMATED PASS / END-TO-END ENCOUNTER SETTLEMENT PENDING**
+상태: **FULL AUTOMATED PASS / RUNTIME SAVE-RECONNECT MANUAL CHECK DEFERRED**
 
 완료:
 - `ProgressionDefinition`을 datapack definition군으로 관리.
@@ -101,20 +103,30 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - UUID별 immutable `PlayerProgress` 저장.
 - 변경 시에만 `setDirty()`.
 - `PlayerProgressStore`가 current definition snapshot으로 unlock/level/ascend/party/reward를 저장 상태에 적용.
-- `BattleRewardContext`가 battle open 시 owner/rewardTable/rewardSeed를 snapshot할 수 있음.
+- authored `EncounterDefinition`을 실제 전투로 여는 `AuthoredEncounterLauncher` 구현.
+- launcher는 한 definition snapshot에서 Encounter, enemy level/currentStar, participant CharacterDefinition, RewardTableDefinition을 함께 캡처.
+- `BattleRewardContext`는 owner/rewardSeed뿐 아니라 immutable `RewardTableDefinition` 자체를 캡처하여 전투 중 `/reload`가 이미 열린 Encounter의 보상을 바꾸지 못함.
+- reward context가 captured battle definition snapshot 밖의 table을 참조하면 registration 단계에서 거부.
 - `BattleManager.claimVictoryReward`는 VICTORY + REWARD에서만 단 한 번 claim 가능.
-- reward callback 실패 시 claim은 소모되지 않아 안전하게 retry 가능.
+- reward callback/persistence가 실패하면 claim은 소모되지 않아 retry 가능.
 - cleanup 시 reward metadata/claim state 제거.
-- `BattleRewardSettlementService`가 one-shot battle claim을 persisted `PlayerProgressStore.applyReward`로 연결할 준비 완료.
+- `BattleRewardSettlementService`가 captured RewardTableDefinition을 persisted `PlayerProgressStore.applyReward`로 연결.
+- `BattleRewardLifecycleHooks`가 server tick의 공용 terminal lifecycle에서 reward-ready battle만 정산. player network action/enemy resolution/status 처리 중 어느 경로에서 승리가 발생해도 보상 지급 코드를 복제하지 않음.
+- persistence 예외는 claim을 태우지 않고 pending 상태를 유지하여 다음 tick에서 재시도 가능.
 
-아직 남음:
-1. authored `EncounterDefinition`으로 전투를 여는 production encounter launcher가 `BattleRewardContext`를 등록하도록 연결.
-2. 전투가 `VICTORY → REWARD`에 도달할 때 `BattleRewardSettlementService.settleIfReady`를 호출하는 공용 lifecycle 연결부 구현.
-3. 같은 battle reward가 network/debug/AI 경로 중 어느 곳에서 terminal transition이 발생해도 정확히 한 번 저장되는 integration test.
-4. DEBUG_ONLY progression inspection/action commands 또는 동등한 자동 server integration path로 `new save → battle → reward → level → ascend → save/reload`를 검증.
-5. 실제 서버 save/reload 또는 재접속 검증 후 M4 full PASS 선언.
+통합 검증:
+- production `vertical_encounters.json`의 authored `turnbound_re:debug_overworld_patrol` 직접 로드.
+- authored Encounter → battle open → 실제 data action/network gateway → enemy intent/action executor → VICTORY → REWARD.
+- Encounter metadata의 rewardTable이 실제 reward source임을 검증.
+- deterministic reward roll → one-shot claim → duplicate claim 불가.
+- reward 적용 후 `TurnboundProgressSavedData.CODEC` round-trip.
+- unlock → level up → level cap 거부 → ascend → party/Squad Cost → save/reload equivalent round-trip.
+- 잘못된 enemy world-binding count와 snapshot 밖 reward table은 fail-fast.
+- 기존 M0~M3 및 M4 전체 JUnit + clean build + production JAR verify 회귀 통과.
 
-주의: debug single-mob encounter에 임의 RewardTable을 하드코딩해서 M4를 통과한 척하지 않는다. authored Encounter metadata가 reward source가 되어야 한다.
+남은 것은 자동 M4 blocker가 아니다:
+- 실제 Minecraft runtime에서 world save/reload 또는 재접속을 통한 최종 persistence 체감 검증.
+- 사용자 방침상 이 수동 검증은 M2 client 20회 gate와 함께 최종 완성본 테스트 시 수행한다.
 
 ## 7. 코드 위생 원칙
 매 배치에서 다음을 같이 검사한다.
@@ -127,18 +139,28 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. 디자인/비주얼 Gate
-계속 유지한다.
-- M4 완료 전 production UI/캐릭터 외형/VFX/월드 미술을 임의 제작하지 않는다.
-- M5 시작 시 반드시 `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, 공용 `QUALITY_STANDARD.md`를 다시 읽는다.
-- 외부 실제 게임 UI/캐릭터/스킬 연출 레퍼런스 → 분석 → design tokens/information hierarchy → mockup → Minecraft 구현 → 실제 화면 비교 순서를 지킨다.
-- AI가 상상으로 generic RPG UI를 즉석 제작하지 않는다.
+M4가 닫혔으므로 다음 단계는 **M5 Production UI/Presentation Gate 준비**다.
+
+그러나 production UI Java 코드를 바로 만들지 않는다.
+반드시 다음 순서를 먼저 완료한다.
+1. `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, 공용 `QUALITY_STANDARD.md` 재확인.
+2. 실제 우수 턴제 RPG UI 다수 조사.
+3. 실제 Minecraft UI/모드 구현 사례 조사.
+4. `08_REFERENCE_CATALOG.md`에 채택/금지 원리와 출처 보강.
+5. 화면별 information hierarchy 확정.
+6. design tokens 확정.
+7. mockup 작성 및 정본화.
+8. 그 뒤에만 production HUD/menu 구현.
+9. 실제 Minecraft 화면을 reference/mockup과 비교해 반복 수정.
+
+AI가 상상으로 generic RPG UI를 즉석 제작하지 않는다.
 
 ## 9. 다음 세션의 정확한 시작점
 1. 현재 GitHub `main` HEAD 재확인.
-2. `AGENTS.md`, `AGENT_RULES.md`, 공용 BUILD/QUALITY STANDARD, 이 문서 읽기.
-3. 마지막 TURNBOUND 검증 커밋 `a1d46e...`가 현재 main ancestry에 포함되는지 확인.
-4. M4 남은 authored Encounter → reward context → one-shot persisted settlement 연결 구현.
-5. 자동 integration test + clean build + JAR verify.
-6. M4 full automated gate가 닫히면 M5 Visual Gate 준비로 이동하되, 외부 reference 조사/목업 전에 production UI를 만들지 않는다.
+2. 공용 `QUALITY_STANDARD.md`, `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`, 이 문서 읽기.
+3. 마지막 TURNBOUND 검증 커밋 `9544e304...`가 현재 main ancestry에 포함되는지 확인.
+4. M5 Visual Gate 선행 연구부터 진행: 턴제 RPG UI + Minecraft 구현 사례를 여러 reference로 비교.
+5. reference catalog → information hierarchy → design tokens → mockup 순으로 정본 갱신.
+6. mockup gate가 닫히기 전 production UI Java/최종 visual asset을 만들지 않는다.
 
 사용자에게 중간 JAR 테스트를 요구하지 않는다. 전체적으로 한 번에 검토할 만한 완성도까지 계속 개발하고, 최종 테스트에서 피드백 받은 부분은 옛 코드/리소스 잔재 없이 교체한다.
