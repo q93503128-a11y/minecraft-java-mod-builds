@@ -1,0 +1,77 @@
+name: Frontier Alpha.127 Finalization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/frontier-settlement/tools/apply_alpha127.py'
+      - '.github/workflows/frontier-alpha127-finalization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_DIR: projects/frontier-settlement
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply Alpha.127
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 tools/apply_alpha127.py
+
+      - name: Audit Alpha.127 source docs and companion locks
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          python3 tools/test_companion_testpack.py
+          git diff --check
+
+      - name: Java 25 clean build and JAR verify
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          jar="build/libs/frontier_settlement-$version.jar"
+          test -f "$jar"
+          python3 tools/verify_jar.py "$jar"
+          test -f "$jar.sha256"
+
+      - name: Remove one-time staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f "$PROJECT_DIR/tools/apply_alpha127.py"
+          rm -f .github/workflows/frontier-alpha127-finalization.yml
+
+      - name: Commit Alpha.127
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'frontier: release 0.1.0-alpha.127 finalization'
+          git push origin HEAD:main
