@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 
 public final class RoadPlacementClient {
+    private static final int STATIONARY_REFRESH_TICKS = 20;
+
     private static boolean active;
     private static BlockPos start;
     private static BlockPos target = BlockPos.ZERO;
@@ -54,7 +56,7 @@ public final class RoadPlacementClient {
 
         if (start != null && refreshTicks-- <= 0) {
             send(false);
-            refreshTicks = 5;
+            refreshTicks = STATIONARY_REFRESH_TICKS;
         }
     }
 
