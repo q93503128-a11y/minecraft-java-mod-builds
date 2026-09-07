@@ -3,18 +3,24 @@ package kr.moonseungjun.turnboundre.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
+import java.util.List;
+
 /**
- * Canonical data-driven battle action contract used by M0+ registries and the M2 network resolver.
- * The five-argument constructor remains for universal/debug compatibility; production data should
- * provide the explicit targeting block described by docs/13_DATA_SCHEMA.md.
+ * Canonical data-driven battle action contract.
+ *
+ * JSON follows docs/13_DATA_SCHEMA.md: energyDelta is positive for generation and negative for cost,
+ * while legacy core callers can continue to use energyCost()/power()/poiseDamage() during migration.
  */
 public record ActionDefinition(
         String id,
         String kind,
-        int energyCost,
-        int poiseDamage,
-        int power,
-        Targeting targeting
+        int energyDelta,
+        int hpPower,
+        int poisePower,
+        String damageTag,
+        Targeting targeting,
+        int priority,
+        List<Effect> effects
 ) {
     public record Targeting(String team, String shape, int count) {
         public static final Codec<Targeting> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -24,8 +30,62 @@ public record ActionDefinition(
         ).apply(instance, Targeting::new));
     }
 
+    public record Effect(String type, String status, double value, int duration, double chance) {
+        public static final Codec<Effect> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.STRING.fieldOf("type").forGetter(Effect::type),
+                Codec.STRING.optionalFieldOf("status", "").forGetter(Effect::status),
+                Codec.DOUBLE.optionalFieldOf("value", 0.0D).forGetter(Effect::value),
+                Codec.INT.optionalFieldOf("duration", 0).forGetter(Effect::duration),
+                Codec.DOUBLE.optionalFieldOf("chance", 1.0D).forGetter(Effect::chance)
+        ).apply(instance, Effect::new));
+    }
+
+    public static final Codec<ActionDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.STRING.fieldOf("id").forGetter(ActionDefinition::id),
+            Codec.STRING.fieldOf("kind").forGetter(ActionDefinition::kind),
+            Codec.INT.fieldOf("energyDelta").forGetter(ActionDefinition::energyDelta),
+            Codec.INT.fieldOf("hpPower").forGetter(ActionDefinition::hpPower),
+            Codec.INT.fieldOf("poisePower").forGetter(ActionDefinition::poisePower),
+            Codec.STRING.fieldOf("damageTag").forGetter(ActionDefinition::damageTag),
+            Targeting.CODEC.fieldOf("targeting").forGetter(ActionDefinition::targeting),
+            Codec.INT.optionalFieldOf("priority", 0).forGetter(ActionDefinition::priority),
+            Effect.CODEC.listOf().optionalFieldOf("effects", List.of()).forGetter(ActionDefinition::effects)
+    ).apply(instance, ActionDefinition::new));
+
+    public ActionDefinition {
+        effects = effects == null ? List.of() : List.copyOf(effects);
+    }
+
+    /** Compatibility constructor for M0/M1 tests and the two universal debug commands. */
     public ActionDefinition(String id, String kind, int energyCost, int poiseDamage, int power) {
-        this(id, kind, energyCost, poiseDamage, power, defaultTargeting(kind));
+        this(id, kind, legacyEnergyDelta(kind, energyCost), power, poiseDamage, "MELEE",
+                defaultTargeting(kind), 0, List.of(new Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
+    }
+
+    /** Compatibility constructor retained for the M2 targeting tests. */
+    public ActionDefinition(String id, String kind, int energyCost, int poiseDamage, int power, Targeting targeting) {
+        this(id, kind, legacyEnergyDelta(kind, energyCost), power, poiseDamage, "MELEE",
+                targeting, 0, List.of(new Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
+    }
+
+    /** Compatibility accessor used by the deterministic core while JSON uses energyDelta. */
+    public int energyCost() {
+        return Math.max(0, -energyDelta);
+    }
+
+    /** Compatibility accessor; canonical name is hpPower. */
+    public int power() {
+        return hpPower;
+    }
+
+    /** Compatibility accessor; canonical name is poisePower. */
+    public int poiseDamage() {
+        return poisePower;
+    }
+
+    private static int legacyEnergyDelta(String kind, int energyCost) {
+        if ("SKILL".equals(kind) || "BURST".equals(kind)) return -energyCost;
+        return 0;
     }
 
     private static Targeting defaultTargeting(String kind) {
@@ -34,13 +94,4 @@ public record ActionDefinition(
         }
         return new Targeting("ENEMY", "SINGLE", 1);
     }
-
-    public static final Codec<ActionDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.STRING.fieldOf("id").forGetter(ActionDefinition::id),
-            Codec.STRING.fieldOf("kind").forGetter(ActionDefinition::kind),
-            Codec.INT.fieldOf("energyCost").forGetter(ActionDefinition::energyCost),
-            Codec.INT.fieldOf("poiseDamage").forGetter(ActionDefinition::poiseDamage),
-            Codec.INT.fieldOf("power").forGetter(ActionDefinition::power),
-            Targeting.CODEC.fieldOf("targeting").forGetter(ActionDefinition::targeting)
-    ).apply(instance, ActionDefinition::new));
 }

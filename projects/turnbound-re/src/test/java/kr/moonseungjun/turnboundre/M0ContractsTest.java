@@ -37,25 +37,24 @@ class M0ContractsTest {
     }
 
     @Test void invalidActionAndDuplicateIdsAreRejected() {
-        var invalid = new ActionDefinition("bad", "UNKNOWN", -1, -2, -3);
-        var duplicate = new ActionDefinition("bad", "BASIC", 0, 1, 1);
+        var invalid = new ActionDefinition("turnbound_re:bad", "UNKNOWN", -1, -2, -3);
+        var duplicate = new ActionDefinition("turnbound_re:bad", "BASIC", 0, 1, 1);
         var errors = DefinitionValidator.validateActions(List.of(invalid, duplicate));
         assertTrue(errors.stream().anyMatch(it -> it.contains("duplicate action id")), errors.toString());
         assertTrue(errors.stream().anyMatch(it -> it.contains("unknown action kind")), errors.toString());
-        assertTrue(errors.stream().anyMatch(it -> it.contains("energyCost")), errors.toString());
-        assertTrue(errors.stream().anyMatch(it -> it.contains("poiseDamage")), errors.toString());
-        assertTrue(errors.stream().anyMatch(it -> it.contains("power")), errors.toString());
+        assertTrue(errors.stream().anyMatch(it -> it.contains("hpPower")), errors.toString());
+        assertTrue(errors.stream().anyMatch(it -> it.contains("poisePower")), errors.toString());
     }
 
     @Test void definitionRegistryIsValidatedAndImmutable() {
-        var action = new ActionDefinition("zombie_basic", "BASIC", 0, 2, 10);
-        var character = new CharacterDefinition("zombie", 1, "VANGUARD", "STONE", List.of("zombie_basic"));
+        var action = new ActionDefinition("turnbound_re:zombie_basic", "BASIC", 0, 2, 10);
+        var character = new CharacterDefinition("turnbound_re:zombie", 1, "VANGUARD", "STONE", List.of("turnbound_re:zombie_basic"));
         var registry = DefinitionRegistry.create(List.of(action), List.of(character));
-        assertSame(action, registry.actions().get("zombie_basic"));
-        assertSame(character, registry.characters().get("zombie"));
+        assertSame(action, registry.actions().get("turnbound_re:zombie_basic"));
+        assertSame(character, registry.characters().get("turnbound_re:zombie"));
         assertThrows(UnsupportedOperationException.class, () -> registry.actions().clear());
         assertThrows(IllegalArgumentException.class, () -> DefinitionRegistry.create(
-                List.of(action), List.of(new CharacterDefinition("broken", 1, "VANGUARD", "STONE", List.of("missing")))));
+                List.of(action), List.of(new CharacterDefinition("turnbound_re:broken", 1, "VANGUARD", "STONE", List.of("turnbound_re:missing")))));
     }
 
     @Test void unmappedVanillaMobIsReported() {
