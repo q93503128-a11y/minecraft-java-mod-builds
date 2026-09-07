@@ -25,6 +25,10 @@ require(inventory.count("stack.is(Items.DIAMOND)") >= 2, "diamond is not include
 require("return SettlementInventory.metalValue(stack) > 0;" in storage, "storage bypasses canonical metal authority")
 require("consumeMetalAndFood" in inventory, "local metal value consumption missing")
 require("for (int unit = 1; unit <= 24" in storage, "low-value-first shared-resource consumption priority regressed")
+require("record ResourceCounts" in inventory and "countResources(Container container)" in inventory,
+        "single-pass settlement resource aggregation missing")
+require("SettlementInventory.ResourceCounts counts = SettlementInventory.countResources(container);" in storage,
+        "shared storage ledger returned to four independent container scans")
 
 construction = text(SETTLEMENT / "SettlementConstructionService.java")
 for retired in (
@@ -157,12 +161,21 @@ require("List<FrontierWorkerEntity> existing = new ArrayList<>(findBuilders(leve
 
 palette = text(JAVA / "client/BuildingPaletteScreen.java")
 require("civilUnlocked" not in palette, "client still owns partial civil unlock logic")
-require("기존 시설 자동 개량" in palette, "production vertical progression is hidden from the build palette")
+require("마을 등급" in palette and "SETTLEMENT_TIER_COUNT = 6" in palette,
+        "settlement tier hierarchy is not explicit in the M palette")
+require("다음 성장" in palette and "data.nextGoal()" in palette,
+        "server-authored next growth goal is missing from the M palette")
+require("FOUNDATION(" in palette and "PRODUCTION(" in palette and "SERVICES(" in palette
+        and "DEFENSE(" in palette and "LANDMARKS(" in palette and "INFRA(" in palette,
+        "construction-family navigation regressed")
+require("잠김" in palette and "건설 가능" in palette and "자원 부족" in palette,
+        "building availability states are not explicit")
+require("FrontierUiTheme" in palette, "M palette bypasses shared Frontier UI tokens")
 context_ui = text(SETTLEMENT / "SettlementContextService.java")
 require('"settlement", "settlement"' in context_ui and '"본진"' in context_ui and "data.centerPos()" in context_ui,
         "main settlement navigation target missing")
 location_screen = text(JAVA / "client/SettlementLocationScreen.java")
-require("거점 위치   · 본진/전초 좌표·방향" in palette and "new SettlementLocationScreen(this)" in palette,
+require("거점 위치" in palette and "new SettlementLocationScreen(this)" in palette,
         "explicit settlement-location button missing from infrastructure menu")
 require('"settlement".equals(target.kind())' in location_screen and '"outpost".equals(target.kind())' in location_screen,
         "dedicated location screen does not enumerate main settlement and outposts")
@@ -170,6 +183,24 @@ require("markerX()" in location_screen and "markerY()" in location_screen and "m
         "dedicated location screen does not expose saved coordinates")
 require("distanceSq" in location_screen and "directionName" in location_screen and "오버월드" in location_screen,
         "dedicated location screen distance/direction/dimension behavior missing")
+require("FrontierUiTheme" in location_screen, "location screen bypasses shared Frontier UI tokens")
+
+hud = text(JAVA / "client/SettlementHudOverlay.java")
+require("FrontierUiTheme" in hud and "projectProgress()" in hud,
+        "settlement HUD does not use shared hierarchy/progress tokens")
+require("data.nextGoal()" not in hud, "full growth guidance returned to the permanent idle HUD")
+start_screen = text(JAVA / "client/SettlementStartScreen.java")
+guide_screen = text(JAVA / "client/SettlementGuideScreen.java")
+require("FrontierUiTheme" in start_screen and "54칸 공동 보급고" in start_screen,
+        "founding screen is not aligned with current storage/UI authority")
+require("FrontierUiTheme" in guide_screen and "M 화면의 마을 등급" in guide_screen,
+        "guide screen is not aligned with current M-centered UX")
+
+benefit = text(SETTLEMENT / "SettlementBenefitService.java")
+require("onRightClickBlock" in benefit and "player.isShiftKeyDown()" in benefit
+        and "SettlementStorageService.consumeMetal" in benefit,
+        "blacksmith repair is not explicit player-directed physical maintenance")
+require("repairNearbyEquipment" not in benefit, "automatic proximity blacksmith repair returned")
 
 commands = text(JAVA / "command/SettlementCommands.java")
 require("SettlementExplorationBenefitService.barracksRecruitFoodCost(server)" in commands, "status shows stale barracks food cost")
@@ -229,4 +260,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 minimum-distance worker/workplace matching + physical production ecology/balance + prior invariants")
+print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 UI hierarchy + single-pass storage + manual blacksmith repair + prior invariants")
