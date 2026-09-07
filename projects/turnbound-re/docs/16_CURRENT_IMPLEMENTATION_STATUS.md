@@ -6,13 +6,14 @@
 기획 정본을 대체하지 않는다. CANON/세부 규칙은 기존 문서가 우선하며, 이 문서는 "어디까지 구현/검증됐는가"만 기록한다.
 
 ## 1. 마지막 검증 기준
-- 마지막 TURNBOUND: RE 검증 커밋: `9544e30487bf9d9025f5e5d258fca67784a92f28`
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `9544e30487bf9d9025f5e5d258fca67784a92f28`
 - GitHub Actions: `Build turnbound-re` run `34075982400`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
 - SHA-256: `5133b0f38f618402b9e2abe49021d13e0b489a1ecbafed581c95a4a06c7da505`
 
+M5 pre-implementation visual gate는 문서 변경이므로 위 코드/JAR 검증 SHA를 대체하지 않는다.
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
 ## 2. M0 — Bootstrap & Contracts
@@ -67,7 +68,7 @@ production definition 현재 대표 세트:
 - 8 characters: Zombie, Skeleton, Spider, Creeper, Blaze, Witch, Enderman, Iron Golem.
 - 40 actions.
 - 12 statuses.
-- normal + elite Encounter/Reward tables.
+- normal + elite debug Encounter/Reward tables.
 
 구현:
 - JSON → Codec → bundle merge → semantic/cross-reference validation → atomic registry.
@@ -138,29 +139,52 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 다른 모노레포 프로젝트의 concurrent `main` 변경을 force push로 덮지 않음.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
-## 8. 디자인/비주얼 Gate
-M4가 닫혔으므로 다음 단계는 **M5 Production UI/Presentation Gate 준비**다.
+## 8. M5 — Production UI / Presentation
+상태: **PRE-IMPLEMENTATION VISUAL GATE PASS / FIRST HUD IMPLEMENTATION PENDING**
 
-그러나 production UI Java 코드를 바로 만들지 않는다.
-반드시 다음 순서를 먼저 완료한다.
-1. `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, 공용 `QUALITY_STANDARD.md` 재확인.
-2. 실제 우수 턴제 RPG UI 다수 조사.
-3. 실제 Minecraft UI/모드 구현 사례 조사.
-4. `08_REFERENCE_CATALOG.md`에 채택/금지 원리와 출처 보강.
-5. 화면별 information hierarchy 확정.
-6. design tokens 확정.
-7. mockup 작성 및 정본화.
-8. 그 뒤에만 production HUD/menu 구현.
-9. 실제 Minecraft 화면을 reference/mockup과 비교해 반복 수정.
+완료된 visual gate:
+- 공용 `QUALITY_STANDARD.md`와 `AGENT_RULES.md` 재확인.
+- Persona 5 Royal, OCTOPATH TRAVELER II, Honkai: Star Rail, Metaphor: ReFantazio, Slay the Spire, Darkest Dungeon II, Pokémon Scarlet/Violet, Into the Breach, Clair Obscur 등 상용 사례 비교.
+- Cobblemon, Cobblemon Extended Battle UI, TurnBasedMinecraftMod, FTB/Questify 계열 Minecraft UI 사례 비교.
+- proprietary UI art를 복제하지 않고 문제/원리/변환만 기록.
+- 선택 방향: **Minecraft-native tactical overlay**.
+- `08_REFERENCE_CATALOG.md` M5 UI reference set 보강.
+- `17_M5_UI_VISUAL_GATE.md` 생성.
+- Battle HUD P0/P1/P2/P3 information hierarchy 확정.
+- Party/Character/Growth information hierarchy 확정.
+- spacing/surface/typography/icon/motion semantic token contract 확정.
+- Battle HUD structural mockup 정본화.
+- Party Formation structural mockup 정본화.
+- Minecraft 26.2/NeoForge `Screen`, GUI-scale relative layout, `blitSprite`, `nine_slice`, scissor/tooltip feasibility 확인.
+- 첫 production pass는 Vanilla/NeoForge Screen을 사용하고 대형 UI dependency를 추가하지 않기로 결정.
 
-AI가 상상으로 generic RPG UI를 즉석 제작하지 않는다.
+아직 완료가 아닌 것:
+- production Battle HUD 실제 Java/render 구현.
+- 실제 production sprite/icon asset 선정 및 source/license 기록.
+- Party/Character/Growth 실제 Screen 구현.
+- 실제 Minecraft screenshot side-by-side audit.
+- 여러 GUI scale/1280×720/1920×1080 실화면 검증.
+- 구현 후 visual regression 수정.
+
+중요:
+- pre-implementation gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
+- 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
+- DEBUG_ONLY HUD를 옆에 남긴 채 production HUD를 중복 유지하지 않는다. 필요한 debug 정보는 별도 debug overlay로 격리한다.
 
 ## 9. 다음 세션의 정확한 시작점
 1. 현재 GitHub `main` HEAD 재확인.
-2. 공용 `QUALITY_STANDARD.md`, `AGENT_RULES.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`, 이 문서 읽기.
-3. 마지막 TURNBOUND 검증 커밋 `9544e304...`가 현재 main ancestry에 포함되는지 확인.
-4. M5 Visual Gate 선행 연구부터 진행: 턴제 RPG UI + Minecraft 구현 사례를 여러 reference로 비교.
-5. reference catalog → information hierarchy → design tokens → mockup 순으로 정본 갱신.
-6. mockup gate가 닫히기 전 production UI Java/최종 visual asset을 만들지 않는다.
+2. `17_M5_UI_VISUAL_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md` 다시 확인.
+3. production UI의 첫 코드 배치 시작:
+   - `UiLayoutMetrics`/semantic token contract.
+   - read-only `BattlePresentationModel`.
+   - turn queue + participant bars.
+   - enemy Intent/Poise/EXPOSED presentation.
+   - Basic/Skill/Guard/Burst command strip.
+   - action tooltip/target marker/disabled reason.
+4. layout 계산을 pure helper로 분리하고 1280×720/1920×1080/좁은 logical width 자동 bounds test 추가.
+5. 첫 HUD가 screenshot-ready 상태가 되면 clean build/JUnit/JAR verify 후 main 반영.
+6. 이어서 Party Formation + Character Overview/Skills/Growth Screen 구현.
+7. 실제 Minecraft screenshot을 reference/structural mockup과 비교해 visual QA 반복.
+8. 그때도 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
 
-사용자에게 중간 JAR 테스트를 요구하지 않는다. 전체적으로 한 번에 검토할 만한 완성도까지 계속 개발하고, 최종 테스트에서 피드백 받은 부분은 옛 코드/리소스 잔재 없이 교체한다.
+구 TURNBOUND는 계속 ZERO AUTHORITY다. UI도 구 프로젝트에서 자동 계승하지 않는다.
