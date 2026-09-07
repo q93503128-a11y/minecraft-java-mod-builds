@@ -55,6 +55,19 @@ public final class ExpeditionGameplayCommand {
                                 return 0;
                             }
                         }))
+                        .then(Commands.literal("metrics").executes(context -> {
+                            var source = context.getSource();
+                            try {
+                                var metrics = FieldPlayReview.metrics(source.getPlayerOrException());
+                                source.sendSuccess(() -> Component.literal("Riftfrontier field metrics | " + metrics.reportLine()), false);
+                                return Command.SINGLE_SUCCESS;
+                            } catch (CommandSyntaxException error) {
+                                throw error;
+                            } catch (RuntimeException error) {
+                                source.sendFailure(Component.literal("Riftfrontier field metrics unavailable: " + error.getMessage()));
+                                return 0;
+                            }
+                        }))
                         .then(Commands.literal("checklist").executes(context -> {
                             var source = context.getSource();
                             for (String line : FieldPlayScenarioMatrix.reportLines()) {
