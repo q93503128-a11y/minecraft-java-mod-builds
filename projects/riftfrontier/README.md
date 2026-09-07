@@ -4,9 +4,11 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M0 — CANON LOCKED / BUILD BOOTSTRAP NEXT`
+`M1 — CONTENT KERNEL IN PROGRESS / RUNTIME RELOAD FOUNDATION IMPLEMENTED`
 
-현재는 방향과 생산 구조 정본을 먼저 고정했다. 아직 실행용 JAR이 있는 상태가 아니며, 다음 단계에서 NeoForge 프로젝트 bootstrap과 첫 clean build를 진행한다.
+M0 빌드 골격과 실행용 JAR 생성/검사 workflow는 마련되어 있다. M1에서는 stable content ID, typed definition, JSON schema loader, registry/reference validator, deterministic catalog fingerprint에 이어 **NeoForge 서버 ResourceManager reload → 전체 content graph merge/validate → last-known-good atomic snapshot publish** 기반까지 구현했다.
+
+M0의 실제 server/client smoke와 GameTest는 아직 실행 검증되지 않았으므로 완료로 간주하지 않는다.
 
 ## 작업 시작 시 반드시 읽기
 
@@ -15,15 +17,11 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 3. `/docs/QUALITY_STANDARD.md`
 4. `PROJECT.md`
 5. `docs/CANONICAL.md`
-6. 작업 성격에 따라 아래 문서
-
-### 프로젝트 정본
-
-- `docs/GAME_DESIGN_MASTER.md` — 시스템 수준 게임 디자인
-- `docs/CONTENT_ARCHITECTURE.md` — 대량 콘텐츠 생산 구조
-- `docs/REFERENCE_TARGETS.md` — 대형 모드 조사에서 가져올 설계 원리
-- `docs/ROADMAP.md` — milestone과 범위 제어
-- `THIRD_PARTY_ASSETS.md` — 외부 자산 추적
+6. `docs/GAME_DESIGN_MASTER.md`
+7. `docs/CONTENT_ARCHITECTURE.md`
+8. `docs/ROADMAP.md`
+9. 현재 content runtime을 다루면 `docs/CONTENT_RUNTIME.md`
+10. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
 
 ## 방향 요약
 
@@ -47,16 +45,29 @@ Prepare
 - 임의 디자인보다 실제 레퍼런스와 검증된 외부 자산
 - 코드 성공보다 실제 Minecraft 화면/플레이/성능 검수
 
+## 현재 구현된 M1 기반
+
+- versioned JSON content documents (`schema_version = 1`)
+- stable `ContentId`
+- typed core definitions: combat archetype / region / loot profile / creature / encounter
+- isolated document decode와 duplicate definition 거부
+- 여러 document를 합친 뒤 cross-document reference graph 검증
+- duplicate pack ID 거부
+- ERROR/WARN validator
+- deterministic `ContentCatalog` SHA-256 fingerprint
+- `ContentRuntimeSnapshot` + atomic last-known-good publication
+- NeoForge `AddServerReloadListenersEvent` 기반 server content reload listener
+- persistence schema root version `1`
+- unit regression tests for valid/invalid publish, generation, cross-document references, duplicate pack IDs, persistence schema
+
 ## 다음 개발 작업
 
-`docs/ROADMAP.md`의 M0 bootstrap:
+우선순위는 다음과 같다.
 
-- NeoForge 26.2 프로젝트 골격
-- Gradle/ModDevGradle 설정
-- mod metadata
-- 최소 common/client bootstrap
-- datagen/server/client run task
-- workflow/JAR verify
-- clean build + smoke test
+1. 현재 M1 runtime reload 묶음의 최종 CI/JAR 검증을 녹색으로 유지한다.
+2. M0에서 남은 dedicated server / client smoke를 실제 실행하고 결과를 정직하게 기록한다.
+3. resource provenance + machine-readable validator issue code + Region Pack manifest/dependency metadata를 추가한다.
+4. 실제 SavedData 계층과 persistence migration registry를 만든다.
+5. 그 뒤 M2 첫 Expedition vertical slice의 중앙 거점 ↔ region_01 진입/철수 최소 루프로 넘어간다.
 
-M0가 끝난 뒤 M1 Content Kernel에서 schema, registry, resolver, validator를 먼저 구현하고, 그 위에서 첫 vertical slice를 만든다.
+새 시스템을 넓히기 전에 현재 milestone의 검증 가능한 기반을 닫는다.
