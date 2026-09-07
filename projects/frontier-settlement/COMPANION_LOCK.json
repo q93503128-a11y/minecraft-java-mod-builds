@@ -6,66 +6,16 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.116"
+    "frontier_settlement": "0.1.0-alpha.117"
   },
   "notes": [
-    "This lock is the canonical candidate stack for the next fresh-world compatibility test.",
-    "The 13-client/12-server baseline passed exact NeoForge 26.2.0.38-beta dedicated-server loading through the normal EULA gate; full client and fresh-world gameplay acceptance remain pending.",
+    "This lock is the canonical candidate stack for Alpha.117 fresh-world and graphical-client compatibility testing.",
+    "All third-party versions and hashes are unchanged from the previously verified Alpha.116 candidate stack; Alpha.117 requires a fresh dedicated-server preflight because the Frontier runtime JAR changed.",
     "World-generation entries must be present before the test world is created.",
-    "Dungeons and Taverns 5.3.0 NeoForge is pinned to Modrinth version UP9sRfQF; its Modrinth-hosted file is byte-identical to the previously verified CurseForge binary and is the canonical MRPACK auto-install source.",
-    "Alpha.45 detects already-loaded external structure pieces by registry namespace without hard companion classes; structure generation remains owned by companion/worldgen mods.",
-    "Alpha.46 waterfront piers/trade are Frontier-owned physical settlement presentation/economy glue and do not add a companion dependency or a second outpost transport authority.",
-    "Alpha.47 domain relic reforging operates only on Frontier-recognized external weapons through normal enchantment compatibility APIs and does not add a hard Weapons Expanded class/item dependency.",
-    "Alpha.48 registers a Frontier soldier entity that inherits the proven Iron Golem combat body while using client-only humanoid/service-sword presentation; the visual sword is never a server ItemStack and no Better Combat or Weapons Expanded Java class becomes a hard dependency.",
-    "Alpha.49 adds bounded selected-area balanced earthworks using only already-loaded vanilla/companion terrain block state inspection; it never force-loads terrain, locates companion content, or adds a hard worldgen dependency.",
-    "Alpha.50 expands bounded civil works to a 13x13 / plus-or-minus-5 envelope and allows fill beyond on-site cut only through real dirt/coarse-dirt ItemStacks physically hauled by the existing construction worker from loaded settlement storage; no companion class, worldgen lookup, virtual soil balance, or second construction authority is added.",
-    "Alpha.51 expands the same civil tool to 17x17 / plus-or-minus-7 and adds a bounded one-block outer retaining ring when fill-facing edges stand at least three blocks above natural exterior ground; exact COBBLESTONE ItemStacks are physically hauled and consumed only after successful wall placement, with a seven-block retaining-height ceiling and no ravine bridge/tunnel claim.",
-    "Alpha.52 extends the existing road authority with bounded straight long-bridge and dry-ravine crossings up to 24 centerline cells; exact support cells are persisted, stone piers must reach natural support within 12 blocks, and the same road builder physically hauls stone with no second transport or construction authority.",
-    "Alpha.53 adds bounded automatic straight tunnel excavation inside the existing road authority: only already-loaded natural non-ore/non-fluid blocks are removed without drops, the same builder advances from the open tunnel face, road stone remains physical ItemStack authority, and no worldgen/companion hard dependency is added.",
-    "Alpha.54 keeps the same 24-cell tunnel ceiling but permits one bounded 90-degree bend with at least three tunnel centers on each leg; two deterministic 5-wide by 4-high STONE_BRICKS portal frames are excavated safely and then built from the same physically hauled road-stone authority, with no new logistics or companion dependency.",
-    "Alpha.55 derives a capped survey level from unique external structure discoveries and a capped conquest level from unique boss types: survey knowledge only biases the existing local outpost-specialization evidence, while conquest reduces new outpost physical material totals by at most 8 wood and 4 stone; repeated IDs remain non-farmable and no new currency, loot minting, save authority or logistics controller is created.",
-    "Alpha.56 reads only NeoForge common biome tags from the already-loaded outpost center and adds bounded evidence bias to the existing physical specialization survey: forest/dense vegetation helps lumber, plains/savanna helps agriculture, mountain/hill helps quarry/mining, and badlands/sandy terrain slightly helps quarry; no Terralith class/id hard dependency or biome-generated resource minting is introduced.",
-    "Alpha.57 upgrades only loaded town barracks soldiers: an idle soldier with an empty MAINHAND walks to the nearest loaded shared-storage container, extracts exactly one real Frontier-recognized external weapon ItemStack, equips it through vanilla Mob equipment persistence/sync, and returns that exact weapon as the sole recoverable military drop on death; remote military-outpost weapon supply remains deferred to the existing road transporter authority.",
-    "Alpha.58 is multiplayer pre-acceptance hardening rather than new gameplay: serverbound placement handlers explicitly stay on NeoForge MAIN handling, a founded-world login republishes one refreshed authoritative settlement snapshot to all connected players, and client logout clears cached settlement/context/placement/notice state before another world/server can reuse it. Long two-player runtime acceptance is still not claimed.",
-    "Alpha.59 centralizes building, road, outpost and civil-work exclusivity in one server-side SettlementProjectAuthority gate reused by every preview/start service path. UI, commands and stale client previews are not trusted as the final exclusivity authority; no new save field, worker, currency, key or companion dependency is added.",
-    "Alpha.60 makes ordinary building placement and Alpha.44 terrain grading transaction-safe: required crate material is verified before mutation, successful world placement precedes ItemStack consumption/state advance, failed placement consumes nothing, and unexpected post-placement consumption failure rolls the newly changed blocks back. Existing already-paid final repair semantics are retained to avoid double charging.",
-    "Alpha.61 makes outpost grading rollback-safe: each loaded grade cell snapshots every changed BlockState, checks every setBlock result, restores successful partial mutations in reverse order on failure, and advances the persisted outpost step only after the complete grade cell succeeds. No new save field, resource, worker, key or companion dependency is added.",
-    "Alpha.62 extends the existing military reverse-supply transporter with a third-priority exact external weapon cargo after food/metal reserves: the same assigned road worker physically carries one recognized weapon to the outpost stockpile, the idle sentry equips that exact stack locally, and death returns the exact equipped weapon once. No new transport authority, worker, save field, hard weapon dependency, force-load or teleport is added.",
-    "Alpha.63 hardens the same road transporter transaction boundary: stale in-flight external-weapon demand is rechecked at the outpost before insertion and the exact carried stack returns through the existing road path, while a tagged transporter death recovers its exact MAINHAND cargo once. No new route authority, save field, virtual cargo, force-load, teleport or hard companion dependency is added.",
-    "Alpha.64 makes existing food-funded resident arrivals atomic: ordinary workers, workshop artisans and outpost transporters must successfully enter the server world before real food and population commit, and an unexpected post-spawn food failure discards only that new worker. Assigned-worker spawn rechecks current loaded assignment and adds no reservation/save/logistics authority.",
-    "Alpha.65 gives local production/workshop civilians exact physical MAINHAND cargo recovery on death, with legacy-name compatibility and an explicit exclusion for road transporters so Alpha.63 remains their only recovery handler. No companion dependency, save ledger, virtual inventory or logistics authority is added.",
-    "Xaero 26.4.2 remains candidate-only for Frontier marker synchronization: the historical public WaypointsManager API is absent, so Alpha.65 keeps only HUD collision avoidance rather than internal/mixin waypoint injection.",
-    "Alpha.66 unifies the civilian lifecycle boundary: population reconciliation and ordinary-worker replacement require fully loaded work-to-storage evidence, advanced-forging artisans join the existing atomic food4/housing/population arrival path, and their physical MAINHAND cargo uses the same local exact-death-recovery rule; old loaded artisans are preserved without retroactive food charging.",
-    "Alpha.67 makes outpost transporter absence decisions fail closed against unloaded entity-search chunks: population reconciliation, missing-assignment replacement and legacy reassignment require the complete persisted-route transporter lookup envelope to be loaded, while normal physical route travel still pauses only at unloaded route boundaries. This adds no force-load, teleport, second transporter authority, virtual cargo or companion dependency.",
-    "Alpha.68 closes the normal-rest false-missing lifecycle edge: local production/workshop lookup evidence now includes the same work, concrete storage and HOUSE rest envelope used by worker search, while town-side outpost transporter routeBounds also include HOUSE rest footprints. Normal work/road movement remains physical and unloaded boundaries still pause; no force-load, teleport, UUID reservation ledger, virtual resident/cargo authority or companion dependency is added.",
-    "Alpha.69 contains historical duplicate assigned residents without destructive cleanup: fully loaded workshop, advanced-workshop and outpost assignment queries count every unique physical worker toward shared population, zero alone can authorize a food-funded replacement, and UUID order deterministically selects the sole active worker. No resident is deleted, no cargo is refunded or minted, and no new save ledger, force-load, teleport, worker family or logistics authority is added.",
-    "Alpha.70 hardens specialized outpost production without changing outpost-local labor economics: assignment absence/migration/spawn waits for the complete existing lookup envelope, UUID order selects one active worker if historical duplicates exist, failed entity insertion creates no phantom worker, and outpost production MAINHAND cargo joins exact physical death recovery. Town and outpost lumber/farm/quarry/mine output is now minted only after the corresponding world setBlock succeeds. No population ledger, food refund, force-load, teleport, virtual resource, second logistics authority or companion dependency is added.",
-    "Alpha.71 is lifecycle-only hardening: town barracks now use a storage-route-aware loaded-evidence envelope before declaring a slot missing or charging food8+metal2, UUID order selects the one active soldier while historical duplicates are preserved with extra AI disabled, and armory source choice is anchored to that barracks route. Construction-office supply runners likewise use their real office/storage route envelope, never destructively discard duplicate physical residents/cargo, limit future return deposits to the local source radius, and join exact MAINHAND cargo death recovery. No new content, worker ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
-    "Alpha.72 is full-project error hardening only: the shared builder uses loaded-evidence/UUID authority and physically returns home after every project, building/road/outpost/civil cleanup keeps carried/crate ItemStacks physical, road grading and waterfront placement commit only after successful world mutation, founding is rollback-safe and always leaves a physical pioneer marker, fishing/market/waterfront/civic-defense replacement is loaded-evidence-safe, renewable civic Iron Golems drop no iron, and military-outpost historical duplicates are non-destructively UUID-contained. No new content, UUID save ledger, virtual cargo, force-load, teleport, key, UI, building family or second logistics authority is added.",
-    "Alpha.73 is a gameplay feedback pass: capped first-time survey/conquest metadata now raises existing physical market relic payouts, one-metal weapon repair efficiency and advanced forge/reforge selection power while preserving exact ItemStack costs, no new currency/menu/save authority, optional companion boot, and the existing outpost-cost/specialization benefits.",
-    "Runtime preflight found later Sophisticated Backpacks/Core builds require NeoForge newer than the canonical 26.2.0.38-beta target; the baseline is therefore pinned to their early 26.2 ports and must pass the dedicated-server preflight before promotion.",
-    "Variants & Ventures 1.0.26 is promoted into the required candidate stack with Resourceful Lib 5.0.0 and YACL 3.9.5; fresh binary resolution and repeated dedicated-server preflight are required before any expanded-stack runtime claim.",
-    "Alpha.74 adds bounded first-kill external-hostile field knowledge: up to 3 levels lower real barracks recruitment food from 8 to a floor of 5 and extend loaded garrison threat detection from 28 to 40 blocks. The knowledge ledger owns no items/currency/population/logistics, references no companion classes, and does not promote human client/spawn-density acceptance.",
-    "Alpha.78 reuses the existing DOMAIN territory-network level only to raise normal cart-station productive outpost-to-town physical pickup batches from 32 to at most 44. Military/waterfront reverse supply keeps the historical 16/32 cap and priority, while the same outpost-assigned transporter still extracts real stockpile ItemStacks, carries them in MAINHAND over loaded persisted roads and inserts them into real town storage; no virtual cargo, force-load, teleport, second logistics authority or hard companion dependency is added.",
-    "Alpha.79 pre-playtest hardening keeps companion integration soft while making resource tags fail closed: one physical stack may satisfy exactly one wood/stone/metal/food category, and expedition relics/recognized external weapons are never ordinary settlement material. Matching pre-placed blocks in new physical outpost projects still pay the exact blueprint material delta; legacy prepaid saves remain untouched.",
-    "Alpha.80 changes only Frontier client renderer bootstrap timing; companion versions and binary pins are unchanged, and this lock is retargeted so the same candidate stack can be re-preflighted against the hotfix JAR.",
-    "Alpha.81 keeps the Alpha.80 candidate binary pins unchanged while adding Frontier-owned first-run settlement UI, category-first construction palette, in-game guide, pre-founding HUD guidance, and resource-only Korean language overlays for selected companion namespaces. No companion code/assets are copied into Frontier and no new hard companion Java dependency is added.",
-    "Alpha.82 keeps every Alpha.81 companion binary pin unchanged. Frontier moves its settlement menu to M, reserves B for Sophisticated Backpacks, leaves Xaero waypoint management on U, and removes only Xaero's redundant default-B quick-waypoint mapping while it is still on its shipped default; player-customized mappings are preserved, and no companion code or assets are copied.",
-    "Alpha.83 keeps every Alpha.82 companion binary pin unchanged while adding Frontier-owned late-game landmarks (civic hall, trade hall, citadel) and the derived Frontier Capital end-state. Landmark construction still consumes real shared wood/stone through the existing builder transaction; the trade hall only boosts existing physical relic emerald payout, the citadel only extends existing loaded watchtower coverage, and no companion code/assets, new currency, force-load, teleport or second logistics authority is added.",
-    "Alpha.84 keeps every Alpha.83 companion binary pin unchanged while replacing vanilla Villager worker bodies with a Frontier-owned PathfinderMob runtime; villager model/texture reuse is client-only presentation.",
-    "Alpha.85 keeps every Alpha.84 companion binary pin unchanged while fixing building pacing: building construction now ticks independently of the five-tick infrastructure scheduler, grading/build intervals are 3/4 ticks, ordinary work reach is 3.5 blocks, and the same physical builder hauls/reserves up to 32 real material items per category. No teleport, force-load, virtual resource ledger, second builder authority, or companion dependency is added.",
-    "Alpha.86 keeps every Alpha.85 companion binary pin unchanged while removing the remaining ordinary-building pacing bottlenecks: site material staging now uses a 64-item target with an 8-item low-water refill gate instead of one-item micro-resupply, grade/build cadence is 1/2 ticks, and the same physical builder uses a 10.5-block local work envelope with faster navigation modifiers for the few storage/site/home walks that remain. Real ItemStacks, loaded-chunk boundaries, one-builder authority, rollback rules, no force-load and no teleport are unchanged.",
-    "Alpha.87 keeps every Alpha.86 companion binary pin unchanged. Local production workers accumulate compatible real output up to one 64-item stack before ordinary return trips, search a wider loaded-only work envelope, farms automatically restore missing wheat on their own farmland, and a physically complete building no longer waits at 99% for the builder to path home. No force-loading, teleport logistics, periodic civilian upkeep, virtual resource ledger, or second construction authority is introduced.",
-    "Alpha.88 keeps every Alpha.87 companion binary pin unchanged. It fixes Frontier-owned worker runtime navigation by routing physical jobs to nearby loaded walkable interaction positions, keeps ordinary workers damageable, and commits a structurally complete building before any best-effort scaffold/barrel/return cleanup; no companion code/assets are copied.",
-    "Alpha.89 keeps every Alpha.88 companion binary pin unchanged. It performs loaded-evidence-safe save recovery for historical duplicate local production workers and the shared builder: UUID order keeps only the building-authorized physical count, exact MAINHAND cargo is materialized before an excess entity is discarded, stale builder NoAI/invulnerable quarantine is removed, population is repaired only under complete civilian evidence, and no unloaded resident, virtual item, force-load, teleport, companion code, or second worker authority is introduced.",
-    "Alpha.90 keeps every Alpha.89 companion binary pin unchanged. It adds a loaded-only /frontier normalize maintenance command, removes over-broad evidence gates only when the loaded entity count itself proves a duplicate, safely repairs known 100%-farm blueprint drift, retargets lumber work to reachable natural trunk bases, prefers the visible log species with the largest physical supply so same-item hauling converges on a full stack, resets stale worker navigation without teleporting, and introduces no force-load, virtual cargo, second resident ledger, companion code copy, or destructive container overwrite.",
-    "Alpha.91 keeps every Alpha.90 companion binary pin unchanged. Local production search envelopes expand substantially while target caching and miss cooldowns bound repeated scans; ground movement accepts only complete reachable vanilla paths, water is impassable for Frontier workers, and stuck targets are temporarily rejected instead of being reissued forever. Farm crop coordinates are now rotation-aware. Lumber, farm, quarry and mine workers prefer their own physical worksite barrel, with safe shared-storage fallback. The starter public stockpile grows into a non-destructive four-barrel cluster (up to 108 vanilla slots) and legacy completed worksites safely receive missing managed barrels without overwriting solid blocks or block entities. No force-load, teleport, virtual cargo, custom container protocol, second resident ledger, companion code copy, or destructive inventory migration is introduced.",
-    "Alpha.107 keeps completed production worksite barrels as authoritative physical buffers instead of immediately re-extracting each produced stack, and repairs only missing/replaceable completed-HOUSE blueprint cells from real loaded settlement wood/stone/metal before existing ruin retirement.",
-    "Alpha.108 makes ordinary building placement tree-aware without treating arbitrary wooden structures as terrain: verified natural log columns with nearby leaf canopy are ignored for grade-height sampling, then cleared by the existing physical grading pass; grass, flowers, leaves and the derived site-supply position remain safely clearable while fluids, block entities, non-tree solids, settlement overlap and bounded cut/fill limits still fail closed.",
-    "Alpha.110 replaces the old single shared-project lock for building/road/outpost with up to three infrastructure-derived managed lanes while civil flattening remains exclusive. Physical builders scale from a base crew of 2 by +2 per construction office and +1 per completed outpost, capped at 12. Road and outpost keep dedicated builder slots; remaining builders form the serialized building crew. Concurrent managed sites must remain at least 24 horizontal blocks apart; no force-load, teleport, virtual resource or second material authority is added.",
-    "Alpha.111 turns the saved main-settlement/outpost context data into an explicit M > infrastructure > base-location screen with coordinates, Overworld distance and 8-way direction; checkpoint/waypoint state is not an authority for settlement positions.",
-    "Alpha.112 keeps companion pins unchanged. Building site validation/grading now uses only the real rotated footprint; the exterior worker approach ring no longer vetoes legal lots, while the external supply barrel and actual footprint blockers report explicit placement reasons.",
-    "Alpha.113 preserves exact infrastructure break protection but rejects unrelated BreakBlockEvents by cheap block-type/geometric gates before expensive plan reconstruction, reducing cross-mod amplification during Survival bulk mining."
+    "Dungeons and Taverns 5.3.0 NeoForge is pinned to official Modrinth version UP9sRfQF and remains byte-identical to the previously verified binary.",
+    "Companion integration remains soft: Frontier does not copy companion code/assets, create a second logistics authority, force-load chunks or mint virtual settlement resources.",
+    "Alpha.117 changes Frontier-owned UI/runtime behavior only: shared UI hierarchy/tokens, manual physical-metal blacksmith repair, single-pass resource scans, throttled stationary placement previews, same-tick shoreline reuse and cached physical worker lookup.",
+    "Automated preflight does not promote graphical-client, spawn-density, long-session or multiplayer acceptance."
   ],
   "entries": [
     {
@@ -78,9 +28,7 @@
       "version": "2.6.4",
       "loader": "neoforge",
       "required": true,
-      "dependencies": [
-        "lithostitched"
-      ]
+      "dependencies": ["lithostitched"]
     },
     {
       "id": "lithostitched",
@@ -128,10 +76,7 @@
       "version": "3.2.2+26.2-neoforge",
       "loader": "neoforge",
       "required": true,
-      "dependencies": [
-        "cloth_config",
-        "player_animation_library"
-      ]
+      "dependencies": ["cloth_config", "player_animation_library"]
     },
     {
       "id": "cloth_config",
@@ -191,9 +136,7 @@
       "version": "26.2-3.25.74.1922",
       "loader": "neoforge",
       "required": true,
-      "dependencies": [
-        "sophisticated_core"
-      ]
+      "dependencies": ["sophisticated_core"]
     },
     {
       "id": "sophisticated_core",
@@ -231,10 +174,7 @@
       "required": true,
       "license": "CC-BY-NC-ND-4.0",
       "integration_role": "dependency",
-      "dependencies": [
-        "resourceful_lib",
-        "yacl"
-      ],
+      "dependencies": ["resourceful_lib", "yacl"],
       "note": "Official binary dependency only; Frontier does not copy or modify its code/assets."
     },
     {
@@ -250,7 +190,7 @@
       "license": "MIT",
       "integration_role": "dependency_library",
       "dependencies": [],
-      "note": "Required by Variants & Ventures; first official 26.2 NeoForge release selected for 26.2.0.38-beta compatibility testing."
+      "note": "Required by Variants & Ventures; verified 26.2 NeoForge runtime pin."
     },
     {
       "id": "yacl",
