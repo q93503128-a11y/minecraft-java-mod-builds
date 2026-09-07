@@ -15,8 +15,9 @@ public final class FieldPlayReview {
         ServerLevel playerLevel = (ServerLevel) player.level();
         RiftfrontierWorldData world = RiftfrontierWorldData.get(playerLevel);
         ExpeditionRun run = world.expeditions().stream()
+            .filter(value -> value.ownerId().isEmpty() || value.ownedBy(player.getUUID()))
             .max(Comparator.comparingLong(ExpeditionRun::sequence))
-            .orElseThrow(() -> new IllegalStateException("No expedition has been recorded yet"));
+            .orElseThrow(() -> new IllegalStateException("No expedition has been recorded for this player yet"));
 
         boolean terminal = run.status().terminal();
         long now = playerLevel.getGameTime();
@@ -45,6 +46,7 @@ public final class FieldPlayReview {
         String currentFingerprint = ContentRuntime.requireCurrent().fingerprint();
         return new FieldPlayReviewSnapshot(
             run.sequence(),
+            run.ownerId().map(Object::toString).orElse("legacy-unowned"),
             run.status().serializedName(),
             run.endReason().serializedName(),
             terminal,
