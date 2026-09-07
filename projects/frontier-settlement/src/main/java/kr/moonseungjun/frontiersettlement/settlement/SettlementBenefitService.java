@@ -69,12 +69,12 @@ public final class SettlementBenefitService {
         long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);
 
         if (!SettlementStorageService.storageAvailable(level, data)) {
-            player.displayClientMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."), true);
+            player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."));
             finishRepairInteraction(event);
             return;
         }
         if (!SettlementStorageService.consumeMetal(level, data, metalCost)) {
-            player.displayClientMessage(Component.literal("§6[마을] §f수리 금속이 부족합니다. 필요: " + metalCost), true);
+            player.sendSystemMessage(Component.literal("§6[마을] §f수리 금속이 부족합니다. 필요: " + metalCost));
             finishRepairInteraction(event);
             return;
         }
@@ -82,7 +82,7 @@ public final class SettlementBenefitService {
         held.setDamageValue(0);
         SettlementService.refreshResources(server, data);
         SettlementService.broadcast(server, data);
-        player.displayClientMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 금속 " + metalCost + " 소비"), true);
+        player.sendSystemMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 금속 " + metalCost + " 소비"));
         finishRepairInteraction(event);
     }
 
