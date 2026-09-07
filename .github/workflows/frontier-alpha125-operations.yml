@@ -31,6 +31,16 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/alpha125/patch.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/client/BuildingPaletteScreen.java')
+          s = p.read_text(encoding='utf-8')
+          old = 'return "신규 개량 I · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 현장 저장통에서 수동 개량";'
+          new = 'return "신규 개량 I · 현장 버퍼 1통 · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 현장 저장통에서 수동 개량";'
+          if s.count(old) != 1:
+              raise SystemExit('Alpha.125 production buffer UI anchor missing')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+          PY
 
       - name: Audit Alpha.125 source, docs and companion locks
         shell: bash
