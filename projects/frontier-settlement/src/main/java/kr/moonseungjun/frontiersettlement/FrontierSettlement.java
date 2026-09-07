@@ -33,6 +33,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(FrontierSettlement.MOD_ID)
 public final class FrontierSettlement {
     public static final String MOD_ID = "frontier_settlement";
+    // Alpha.120 canonical CI retrigger after companion runtime locks were synchronized.
 
     public FrontierSettlement(IEventBus modBus, ModContainer modContainer) {
         FrontierContent.register(modBus);
