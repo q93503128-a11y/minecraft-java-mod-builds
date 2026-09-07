@@ -240,6 +240,11 @@ public final class RiftfrontierGameTests {
         ExpeditionRun accepted = lifecycle.requestExtraction(recovered);
         helper.assertTrue(accepted.status() == ExpeditionRun.Status.EXTRACTION_REQUESTED, "A filled contract must still cross the extraction gate normally");
         helper.assertTrue(accepted.evidenceTrail().size() == evidenceBefore, "Lifecycle acceptance itself must not forge gameplay-adapter evidence");
+
+        ExpeditionLifecycle.Resolution resolved = lifecycle.resolveExtraction(accepted, helper.getLevel().getGameTime());
+        worldData.updateExpedition(resolved.run());
+        helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Extraction atomicity fixture must leave no active expedition behind");
+        helper.assertTrue(resolved.run().status() == ExpeditionRun.Status.EXTRACTED, "Cleanup resolution must preserve the normal accepted extraction path");
         helper.succeed();
     }
 }
