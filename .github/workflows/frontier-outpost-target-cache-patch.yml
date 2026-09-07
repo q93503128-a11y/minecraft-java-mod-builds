@@ -1,4 +1,4 @@
-name: Frontier Outpost Target Cache Patch
+name: Frontier Alpha.118 Target Cache Finalize
 
 on:
   push:
@@ -10,242 +10,102 @@ permissions:
   contents: write
 
 jobs:
-  patch:
+  finalize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Patch specialized outpost target caching and regression audit
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Promote cached-target hardening to Alpha.118
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          from textwrap import dedent, indent
-          import re
+          import json
 
-          source = Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostProductionService.java')
-          audit = Path('projects/frontier-settlement/tools/test_current_source.py')
-          s = source.read_text(encoding='utf-8')
+          root = Path('projects/frontier-settlement')
 
-          def sub_once(pattern: str, replacement: str, label: str, flags: int = 0):
-              global s
-              s, count = re.subn(pattern, lambda _: replacement, s, count=1, flags=flags)
+          def replace_once(path: Path, old: str, new: str, label: str):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
               if count != 1:
                   raise SystemExit(f'{label}: expected 1 match, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
 
-          fields = indent(dedent('''\
-          private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
-          private static final int TARGET_RESCAN_DELAY_TICKS = 100;
-          private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
-          // Lumber/quarry targets are physical world coordinates, not resource authority. Reuse a still-valid
-          // target while a worker walks or waits for its production cadence instead of rescanning thousands of
-          // blocks every ten ticks. Empty searches back off for five seconds; invalidated cached targets retry
-          // immediately so player/world changes remain responsive without shrinking the authored work radius.
-          private static final Map<Integer, BlockPos> LUMBER_TARGET_CACHE = new HashMap<>();
-          private static final Map<Integer, BlockPos> QUARRY_TARGET_CACHE = new HashMap<>();
-          private static final Map<Integer, Long> LUMBER_TARGET_RETRY_AFTER = new HashMap<>();
-          private static final Map<Integer, Long> QUARRY_TARGET_RETRY_AFTER = new HashMap<>();'''), '    ')
-          sub_once(
-              r'    private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;\n    private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>\(\);',
-              fields,
-              'target cache fields')
+          props = root / 'gradle.properties'
+          replace_once(props, 'mod_version=0.1.0-alpha.117', 'mod_version=0.1.0-alpha.118', 'gradle version')
+          p = props.read_text(encoding='utf-8')
+          note = ('\n# Alpha.118 specialized-outpost target caching: lumber/quarry workers reuse a still-valid physical work target, '
+                  'back off empty full-area rescans to five seconds, and invalidate immediately on world/protection changes without changing work radius or physical production authority.\n')
+          if 'Alpha.118 specialized-outpost target caching' not in p:
+              props.write_text(p.rstrip() + note, encoding='utf-8')
 
-          live_sets = indent(dedent('''\
-          Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
-          Set<Integer> liveLumberOutposts = maintenance ? new HashSet<>() : Set.of();
-          Set<Integer> liveQuarryOutposts = maintenance ? new HashSet<>() : Set.of();
-          for (OutpostRecord outpost : data.outposts()) {
-              if ("general".equals(outpost.specialization())) continue;
-              if (maintenance) {
-                  liveSpecializedOutposts.add(outpost.id());
-                  if ("lumber".equals(outpost.specialization())) liveLumberOutposts.add(outpost.id());
-                  if ("quarry".equals(outpost.specialization())) liveQuarryOutposts.add(outpost.id());
-              }'''), '        ')
-          sub_once(
-              r'        Set<Integer> liveSpecializedOutposts = maintenance \? new HashSet<>\(\) : Set\.of\(\);\n        for \(OutpostRecord outpost : data\.outposts\(\)\) \{\n            if \("general"\.equals\(outpost\.specialization\(\)\)\) continue;\n            if \(maintenance\) liveSpecializedOutposts\.add\(outpost\.id\(\)\);',
-              live_sets,
-              'maintenance live sets')
+          audit = root / 'tools/test_current_source.py'
+          replace_once(audit,
+                       'require("mod_version=0.1.0-alpha.117" in gradle, "current verifier/version drift")',
+                       'require("mod_version=0.1.0-alpha.118" in gradle, "current verifier/version drift")',
+                       'source audit version')
 
-          cleanup = indent(dedent('''\
-          if (maintenance) {
-              WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
-              LUMBER_TARGET_CACHE.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
-              LUMBER_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
-              QUARRY_TARGET_CACHE.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
-              QUARRY_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
-          }'''), '        ')
-          sub_once(
-              r'        if \(maintenance\) WORKER_UUID_CACHE\.keySet\(\)\.removeIf\(id -> !liveSpecializedOutposts\.contains\(id\)\);',
-              cleanup,
-              'maintenance cache cleanup')
+          readme = root / 'README.md'
+          replace_once(readme, '## Current version: 0.1.0-alpha.117', '## Current version: 0.1.0-alpha.118', 'README version')
+          r = readme.read_text(encoding='utf-8')
+          anchor = '## Functional building families\n'
+          section = '''## Alpha.118 specialized outpost scan budget\n\nAlpha.118 reduces repeated physical-world search cost without reducing authored work range or production throughput:\n\n- lumber and quarry outposts cache the selected physical block coordinate while it remains a valid loaded target;\n- ordinary 10-tick worker updates validate that one cached coordinate instead of rescanning the full work radius;\n- a destroyed, replaced, protected or unloaded target invalidates immediately and may be reacquired on the next work update;\n- a full search that finds no eligible resource backs off for 100 ticks (five seconds) rather than repeating every half-second;\n- natural-leaf evidence for a cached lumber target is reconfirmed only when the 100-tick harvest cadence is actually due;\n- quarry overburden may continue to clear layer-by-layer against the same cached stone face;\n- tree radius 18, quarry radius 16, work periods, harvest batch limits, real ItemStack cargo, protection checks and no-force-load rules are unchanged.\n\n'''
+          if '## Alpha.118 specialized outpost scan budget' not in r:
+              if r.count(anchor) != 1:
+                  raise SystemExit(f'README section anchor drift: {r.count(anchor)}')
+              readme.write_text(r.replace(anchor, section + anchor, 1), encoding='utf-8')
 
-          work_block = indent(dedent('''\
-          private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-              BlockPos target = resolveLumberTarget(level, data, outpost);
-              if (target == null) {
-                  move(worker, outpost.center().above(), 0.65D);
-                  return;
-              }
-              if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 8.0D) {
-                  SettlementWorkerStorageNavigation.moveToInteraction(level, worker, target, 0.8D, 8.0D);
-                  return;
-              }
-              if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
-              // Natural-leaf evidence is expensive, so confirm it only when a harvest is actually due rather
-              // than on every navigation tick. The full search required the same evidence when caching target.
-              if (!hasLeavesAbove(level, target)) {
-                  invalidateLumberTarget(outpost.id());
-                  return;
-              }
-              ItemStack harvested = harvestVerticalTrunk(level, data, target);
-              invalidateLumberTarget(outpost.id());
-              if (!harvested.isEmpty()) {
-                  worker.swing(InteractionHand.MAIN_HAND);
-                  worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                  SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, LUMBER_WORK_PERIOD_TICKS);
-              }
-          }
+          lock = root / 'COMPANION_LOCK.json'
+          data = json.loads(lock.read_text(encoding='utf-8'))
+          if data.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.117':
+              raise SystemExit('canonical companion lock target drift')
+          data['target']['frontier_settlement'] = '0.1.0-alpha.118'
+          notes = []
+          for note_text in data.get('notes', []):
+              note_text = note_text.replace('Alpha.117', 'Alpha.118')
+              if 'Alpha.118 changes Frontier-owned UI/runtime behavior only' in note_text:
+                  note_text = ('Alpha.118 adds physical lumber/quarry target caching and five-second empty-scan backoff on top of the '
+                               'Alpha.117 UI/runtime hardening; companion binary pins remain unchanged.')
+              notes.append(note_text)
+          data['notes'] = notes
+          lock.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-          private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-              BlockPos target = resolveQuarryTarget(level, data, outpost);
-              if (target == null) {
-                  move(worker, outpost.center().above(), 0.65D);
-                  return;
-              }
-              BlockPos approach = quarryApproach(level, data, target);
-              if (approach == null) {
-                  invalidateQuarryTarget(outpost.id());
-                  return;
-              }
-              if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
-                  SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
-                  return;
-              }
-              if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
-              if (!level.getBlockState(target.above()).isAir()) {
-                  if (clearTopQuarryOverburden(level, data, target)) {
-                      worker.swing(InteractionHand.MAIN_HAND);
-                  } else {
-                      invalidateQuarryTarget(outpost.id());
-                  }
-                  return;
-              }
-              ItemStack harvested = harvestStoneCluster(level, data, target);
-              invalidateQuarryTarget(outpost.id());
-              if (!harvested.isEmpty()) {
-                  worker.swing(InteractionHand.MAIN_HAND);
-                  worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
-                  SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
-              }
-          }
-
-          private static BlockPos resolveLumberTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-              int id = outpost.id();
-              BlockPos cached = LUMBER_TARGET_CACHE.get(id);
-              if (cached != null) {
-                  if (validCachedLumberTarget(level, data, outpost, cached)) return cached;
-                  invalidateLumberTarget(id);
-              }
-              long now = level.getGameTime();
-              Long retryAfter = LUMBER_TARGET_RETRY_AFTER.get(id);
-              if (retryAfter != null && now < retryAfter) return null;
-              BlockPos found = findTree(level, data, outpost.center(), TREE_RADIUS);
-              if (found == null) {
-                  LUMBER_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
-                  return null;
-              }
-              LUMBER_TARGET_CACHE.put(id, found);
-              LUMBER_TARGET_RETRY_AFTER.remove(id);
-              return found;
-          }
-
-          private static boolean validCachedLumberTarget(ServerLevel level, SettlementData data,
-                                                          OutpostRecord outpost, BlockPos target) {
-              if (!withinTargetEnvelope(outpost.center(), target, TREE_RADIUS, -4, 10) || !level.hasChunkAt(target)) return false;
-              return level.getBlockState(target).is(BlockTags.LOGS) && !isProtected(data, target);
-          }
-
-          private static void invalidateLumberTarget(int outpostId) {
-              LUMBER_TARGET_CACHE.remove(outpostId);
-              LUMBER_TARGET_RETRY_AFTER.remove(outpostId);
-          }
-
-          private static BlockPos resolveQuarryTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
-              int id = outpost.id();
-              BlockPos cached = QUARRY_TARGET_CACHE.get(id);
-              if (cached != null) {
-                  if (validCachedQuarryTarget(level, data, outpost, cached)) return cached;
-                  invalidateQuarryTarget(id);
-              }
-              long now = level.getGameTime();
-              Long retryAfter = QUARRY_TARGET_RETRY_AFTER.get(id);
-              if (retryAfter != null && now < retryAfter) return null;
-              BlockPos found = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
-              if (found == null) found = findManagedQuarryStone(level, data, outpost.center());
-              if (found == null) {
-                  QUARRY_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
-                  return null;
-              }
-              QUARRY_TARGET_CACHE.put(id, found);
-              QUARRY_TARGET_RETRY_AFTER.remove(id);
-              return found;
-          }
-
-          private static boolean validCachedQuarryTarget(ServerLevel level, SettlementData data,
-                                                          OutpostRecord outpost, BlockPos target) {
-              if (!withinTargetEnvelope(outpost.center(), target, QUARRY_RADIUS, -7, 4) || !level.hasChunkAt(target)) return false;
-              return isQuarryStone(level.getBlockState(target)) && !isProtected(data, target);
-          }
-
-          private static void invalidateQuarryTarget(int outpostId) {
-              QUARRY_TARGET_CACHE.remove(outpostId);
-              QUARRY_TARGET_RETRY_AFTER.remove(outpostId);
-          }
-
-          private static boolean withinTargetEnvelope(BlockPos center, BlockPos target, int radius, int minY, int maxY) {
-              int dx = target.getX() - center.getX();
-              int dz = target.getZ() - center.getZ();
-              int dy = target.getY() - center.getY();
-              return dx * dx + dz * dz <= radius * radius && dy >= minY && dy <= maxY;
-          }
-
-          private static void workMine'''), '    ')
-          sub_once(
-              r'    private static void workLumber\(.*?\n    private static void workMine',
-              work_block,
-              'lumber/quarry cached target work',
-              re.S)
-
-          source.write_text(s, encoding='utf-8')
-
-          a = audit.read_text(encoding='utf-8')
-          audit_add = '''require("TARGET_RESCAN_DELAY_TICKS = 100" in outpost_production
-                  and "LUMBER_TARGET_CACHE" in outpost_production
-                  and "QUARRY_TARGET_CACHE" in outpost_production
-                  and "resolveLumberTarget" in outpost_production
-                  and "resolveQuarryTarget" in outpost_production,
-                  "specialized outpost physical target caching/regression backoff missing")
-          require("validCachedLumberTarget" in outpost_production and "validCachedQuarryTarget" in outpost_production
-                  and "withinTargetEnvelope" in outpost_production,
-                  "cached specialized target validation missing")
-          '''
-          pattern = (r'(require\("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in outpost_production.*?'
-                     r'"specialized outpost worker lookup returned to wide AABB scans on the hot path"\)\n)')
-          a, count = re.subn(pattern, lambda m: m.group(1) + audit_add, a, count=1, flags=re.S)
-          if count != 1:
-              raise SystemExit(f'audit insertion: expected 1 match, found {count}')
-          audit.write_text(a, encoding='utf-8')
+          for name in ('resolved-lock.client.json', 'resolved-lock.server.json'):
+              path = root / 'companion-testpack' / name
+              resolved = json.loads(path.read_text(encoding='utf-8'))
+              if resolved.get('target', {}).get('frontier_settlement') != '0.1.0-alpha.117':
+                  raise SystemExit(f'{name}: resolved target drift')
+              resolved['target']['frontier_settlement'] = '0.1.0-alpha.118'
+              path.write_text(json.dumps(resolved, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
 
           python3 projects/frontier-settlement/tools/test_current_source.py
+          python3 projects/frontier-settlement/tools/test_current_docs.py
+          python3 projects/frontier-settlement/tools/test_companion_testpack.py
+          (cd projects/frontier-settlement && chmod +x gradlew && ./gradlew --no-daemon --no-configuration-cache clean build --console=plain)
+          python3 projects/frontier-settlement/tools/verify_jar.py projects/frontier-settlement/build/libs/frontier_settlement-0.1.0-alpha.118.jar
+          git diff --check
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementOutpostProductionService.java \
-                  projects/frontier-settlement/tools/test_current_source.py
-          git commit -m 'frontier: cache specialized outpost work targets'
+          git add projects/frontier-settlement/gradle.properties \
+                  projects/frontier-settlement/README.md \
+                  projects/frontier-settlement/tools/test_current_source.py \
+                  projects/frontier-settlement/COMPANION_LOCK.json \
+                  projects/frontier-settlement/companion-testpack/resolved-lock.client.json \
+                  projects/frontier-settlement/companion-testpack/resolved-lock.server.json
+          git commit -m 'frontier: release 0.1.0-alpha.118 target-cache hardening'
           git pull --rebase origin main
           git push origin HEAD:main
