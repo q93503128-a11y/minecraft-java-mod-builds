@@ -6,13 +6,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Ravager;
-import net.minecraft.world.entity.monster.Skeleton;
-import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.skeleton.Skeleton;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
@@ -54,18 +53,18 @@ public final class Region01EncounterRuntime {
         EncounterPlan plan = planForPressure(pressure);
 
         for (int i = 0; i < plan.hunters(); i++) {
-            Zombie hunter = new Zombie(EntityType.ZOMBIE, level);
+            Zombie hunter = new Zombie(level);
             spawn(level, hunter, center.offset(-4 + (i * 2), 0, 3), runSequence, ROLE_HUNTER);
         }
         for (int i = 0; i < plan.scouts(); i++) {
-            Skeleton scout = new Skeleton(EntityType.SKELETON, level);
+            Skeleton scout = new Skeleton(EntityTypes.SKELETON, level);
             scout.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
             spawn(level, scout, center.offset(4 - (i * 2), 0, -3), runSequence, ROLE_SCOUT);
         }
 
         // Technical proxy for a heavy controller role. Ravager's native shield-stun window gives
         // this elite actual counterplay instead of a health multiplier. Final art/AI is an M3 gate.
-        Ravager elite = new Ravager(EntityType.RAVAGER, level);
+        Ravager elite = new Ravager(EntityTypes.RAVAGER, level);
         spawn(level, elite, center.offset(0, 0, 2), runSequence, ROLE_ELITE);
         return plan;
     }
@@ -95,14 +94,14 @@ public final class Region01EncounterRuntime {
     private static List<Mob> liveThreats(ServerLevel level, BlockPos center, long runSequence) {
         String runTag = runTag(runSequence);
         AABB bounds = new AABB(center).inflate(16.0D, 8.0D, 16.0D);
-        return level.getEntitiesOfClass(Mob.class, bounds, mob -> mob.isAlive() && mob.getTags().contains(runTag));
+        return level.getEntitiesOfClass(Mob.class, bounds, mob -> mob.isAlive() && mob.entityTags().contains(runTag));
     }
 
     private static void spawn(ServerLevel level, Mob mob, BlockPos pos, long runSequence, String role) {
         mob.setPersistenceRequired();
         mob.addTag(runTag(runSequence));
         mob.addTag(ROLE_TAG_PREFIX + role);
-        mob.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        mob.snapTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
         if (!level.addFreshEntity(mob)) throw new IllegalStateException("Minecraft rejected Region 01 encounter spawn for role " + role);
     }
 
