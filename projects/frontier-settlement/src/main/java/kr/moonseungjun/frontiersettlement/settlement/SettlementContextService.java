@@ -115,7 +115,7 @@ public final class SettlementContextService {
                     building.originX() + width - 1, building.originY() + type.clearHeight() + 2,
                     building.originZ() + depth - 1,
                     marker.getX(), marker.getY(), marker.getZ(),
-                    type.displayName(), buildingDetail(type, data), -1));
+                    type.displayName(), buildingDetail(level, building, type, data), -1));
         }
 
         for (OutpostRecord outpost : data.outposts()) {
@@ -149,10 +149,10 @@ public final class SettlementContextService {
         return Math.max(0, Math.min(100, worked * 100 / total));
     }
 
-    private static String buildingDetail(BuildingType type, SettlementData data) {
+    private static String buildingDetail(ServerLevel level, BuildingRecord building, BuildingType type, SettlementData data) {
         return switch (type) {
             case HOUSE -> "완공 · 주거 +" + type.housingGain();
-            case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data);
+            case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data) + " · 상태: " + SettlementProductionStatusService.statusFor(level, building);
             case WAREHOUSE -> "완공 · 실물 저장";
             case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
             case BLACKSMITH -> "완공 · 수리 · 확정 강화 최대 +" + SettlementEquipmentUpgradeService.reinforcementCap(data) + " · 구리/철 전용";
@@ -166,7 +166,7 @@ public final class SettlementContextService {
             case CART_STATION -> "완공 · 도로 화물 허브";
             case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";
             case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
-            case CITADEL -> "완공 · 감시망 반경 56 · 주거 +" + type.housingGain();
+            case CITADEL -> "완공 · 감시망 반경 56 · 병영 감지 +12 · 순찰 반경 32 · 주거 +" + type.housingGain();
         };
     }
 }

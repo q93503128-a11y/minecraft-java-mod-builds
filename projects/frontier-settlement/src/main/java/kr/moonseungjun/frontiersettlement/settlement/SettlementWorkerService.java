@@ -96,6 +96,7 @@ public final class SettlementWorkerService {
     private static final Map<java.util.UUID, MovementWatch> MOVEMENT_WATCHES = new HashMap<>();
 
     public static void onServerStopping(ServerStoppingEvent event) {
+        SettlementProductionStatusService.clear();
         RESOURCE_TARGETS.clear();
         RESOURCE_SEARCH_RETRY_AFTER.clear();
         BLOCKED_TARGETS.clear();
@@ -271,6 +272,7 @@ public final class SettlementWorkerService {
         for (BuildingRecord building : buildings(data, type)) {
             if (level.hasChunkAt(building.workCenter())) loadedBuildings.add(building);
         }
+        for (BuildingRecord building : loadedBuildings) SettlementProductionStatusService.mark(level, building, "주민 없음");
         List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);
         for (WorkerBuildingAssignment assignment : matchWorkersToBuildings(loadedBuildings, workers)) {
             BuildingRecord building = assignment.building();
@@ -280,6 +282,7 @@ public final class SettlementWorkerService {
             // relog or save migration cannot swap jobs merely because UUID lexical order changed.
             worker.setNoAi(false);
             worker.setInvulnerable(false);
+            SettlementProductionStatusService.mark(level, building, "정상 작업 중");
             // Old saves can contain a worker that was carrying a worksite-export stack. That old
             // state caused a local-barrel -> MAINHAND -> town-storage retry loop. Retire it once and
             // let the ordinary cargo state machine decide where the physical stack belongs.
@@ -614,11 +617,12 @@ public final class SettlementWorkerService {
         }
         BlockPos target = findTreeForWorker(level, data, worker, camp.workCenter(), expected);
         if (target == null) {
-            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, camp, carried);
-            else moveNear(level, worker, camp.workCenter(), 0.82D);
+            if (!carried.isEmpty()) { SettlementProductionStatusService.mark(level, camp, "생산물 보관 중"); deliverToWorksiteStorage(level, data, worker, camp, carried); }
+            else { SettlementProductionStatusService.mark(level, camp, "주변 벌목 대상 없음"); moveNear(level, worker, camp.workCenter(), 0.82D); }
             return;
         }
         if (!withinResourceWorkReach(worker, target, LUMBER_REMOTE_WORK_REACH_SQR)) {
+            SettlementProductionStatusService.mark(level, camp, "벌목지 이동 중");
             moveNear(level, worker, target, 0.92D);
             return;
         }
@@ -654,6 +658,7 @@ public final class SettlementWorkerService {
             return;
         }
         if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {
+            SettlementProductionStatusService.mark(level, farm, "농장 복귀 중");
             moveNear(level, worker, farm.workCenter(), 0.88D);
             return;
         }
@@ -705,6 +710,7 @@ public final class SettlementWorkerService {
             return;
         }
         if (grown > 0) worker.swing(InteractionHand.MAIN_HAND);
+        if (harvested == 0 && grown == 0 && replanted == 0) SettlementProductionStatusService.mark(level, farm, "작물 성장 대기");
         if (!worker.getMainHandItem().isEmpty() && replanted == 0) {
             deliverToWorksiteStorage(level, data, worker, farm, worker.getMainHandItem());
         }
@@ -720,16 +726,18 @@ public final class SettlementWorkerService {
         }
         BlockPos target = findQuarryTargetForWorker(level, data, worker, quarry.workCenter(), expected);
         if (target == null) {
-            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, quarry, carried);
-            else moveNear(level, worker, quarry.workCenter(), 0.82D);
+            if (!carried.isEmpty()) { SettlementProductionStatusService.mark(level, quarry, "생산물 보관 중"); deliverToWorksiteStorage(level, data, worker, quarry, carried); }
+            else { SettlementProductionStatusService.mark(level, quarry, "접근 가능한 채석면 없음"); moveNear(level, worker, quarry.workCenter(), 0.82D); }
             return;
         }
         BlockPos approach = quarryApproach(level, data, target);
         if (approach == null) {
+            SettlementProductionStatusService.mark(level, quarry, "이동 경로 재탐색 중");
             clearResourceTarget(worker);
             return;
         }
         if (!withinResourceWorkReach(worker, approach, QUARRY_REMOTE_WORK_REACH_SQR)) {
+            SettlementProductionStatusService.mark(level, quarry, "채석면 이동 중");
             moveNear(level, worker, approach, 0.90D);
             return;
         }
@@ -739,6 +747,7 @@ public final class SettlementWorkerService {
         int quarryPeriod = SettlementProductionEfficiencyService.quarryWorkPeriod(efficiencyGrade);
         if (!workDue(level, quarry, quarryPeriod)) return;
         if (!level.getBlockState(target.above()).isAir()) {
+            SettlementProductionStatusService.mark(level, quarry, "채석면 정리 중");
             if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);
             return;
         }
@@ -765,6 +774,7 @@ public final class SettlementWorkerService {
         }
         BlockPos work = mine.workCenter();
         if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {
+            SettlementProductionStatusService.mark(level, mine, "광산 복귀 중");
             moveNear(level, worker, work, 0.86D);
             return;
         }
@@ -773,6 +783,7 @@ public final class SettlementWorkerService {
         Item expected = carried.isEmpty() ? null : carried.getItem();
         BlockPos ore = findOreBelow(level, data, work, expected);
         if (ore == null) {
+            SettlementProductionStatusService.mark(level, mine, "광맥 고갈");
             if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, mine, carried);
             return;
         }
@@ -866,18 +877,19 @@ public final class SettlementWorkerService {
                     local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);
             if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {
                 worker.getNavigation().stop();
+                SettlementProductionStatusService.mark(level, building, "현장 저장고 적재 중");
                 ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);
                 worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);
                 clearTargetIfEmpty(worker);
                 return;
             }
-            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) return;
+            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) { SettlementProductionStatusService.mark(level, building, "현장 저장고 운반 중"); return; }
         }
-        deliverToTownStorage(level, data, worker, carried);
+        deliverToTownStorage(level, data, worker, building, carried);
     }
 
     private static void deliverToTownStorage(ServerLevel level, SettlementData data,
-                                             FrontierWorkerEntity worker, ItemStack carried) {
+                                             FrontierWorkerEntity worker, BuildingRecord building, ItemStack carried) {
         Set<BlockPos> excluded = new HashSet<>();
         Map<BlockPos, Long> blocked = BLOCKED_TARGETS.get(worker.getUUID());
         if (blocked != null) {
@@ -888,6 +900,7 @@ public final class SettlementWorkerService {
         }
         BlockPos target = SettlementStorageService.findProductionDepositTargetExcluding(level, data, carried, excluded);
         if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {
+            SettlementProductionStatusService.mark(level, building, "현장·공동 저장고 가득 참");
             worker.getNavigation().stop();
             return;
         }

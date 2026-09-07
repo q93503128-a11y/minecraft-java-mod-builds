@@ -33,12 +33,13 @@ public final class SettlementBarracksService {
     private static final String LEGACY_FREE_GARRISON_NAME_PREFIX = "개척 수비대 [";
     private static final int PATROL_INTERVAL_TICKS = 40;
     private static final int RECRUIT_INTERVAL_TICKS = 600;
-    private static final int PATROL_RADIUS = 24;
+    private static final int BASE_PATROL_RADIUS = 24;
+    private static final int CITADEL_PATROL_RADIUS = 32;
+    private static final double CITADEL_THREAT_RADIUS_BONUS = 12.0D;
     public static final double BASE_THREAT_RADIUS = 28.0D;
     private static final double SOLDIER_SEARCH_RADIUS = 176.0D;
     private static final int SOLDIER_ROUTE_MARGIN = 32;
     private static final double HOME_RADIUS_SQR = 12.0D * 12.0D;
-    private static final double PATROL_LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;
 
     private SettlementBarracksService() {}
 
@@ -64,10 +65,11 @@ public final class SettlementBarracksService {
         }
         if (tick % PATROL_INTERVAL_TICKS != 0) return;
         for (BuildingRecord barracks : barracks(data)) {
-            if (!patrolAreaLoaded(level, barracks)) continue;
+            if (!patrolAreaLoaded(level, data, barracks)) continue;
+            Monster threat = nearestThreat(level, data, barracks.workCenter());
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
                 FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
-                if (soldier != null) patrol(level, data, barracks, slot, soldier);
+                if (soldier != null) patrol(level, data, barracks, slot, soldier, threat);
             }
         }
     }
@@ -79,7 +81,7 @@ public final class SettlementBarracksService {
     public static int loadedSoldierCount(ServerLevel level, SettlementData data) {
         Set<UUID> counted = new HashSet<>();
         for (BuildingRecord barracks : barracks(data)) {
-            if (!patrolAreaLoaded(level, barracks)) continue;
+            if (!patrolAreaLoaded(level, data, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
                 FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
                 if (soldier != null) counted.add(soldier.getUUID());
@@ -91,7 +93,7 @@ public final class SettlementBarracksService {
     public static int loadedArmedSoldierCount(ServerLevel level, SettlementData data) {
         int count = 0;
         for (BuildingRecord barracks : barracks(data)) {
-            if (!patrolAreaLoaded(level, barracks)) continue;
+            if (!patrolAreaLoaded(level, data, barracks)) continue;
             for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {
                 FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);
                 if (soldier != null && SettlementExternalContentService.isExternalWeapon(soldier.getMainHandItem())) count++;
@@ -143,9 +145,8 @@ public final class SettlementBarracksService {
                 event.getEntity().level(), event.getEntity().getX(), event.getEntity().getY(), event.getEntity().getZ(), recovered));
     }
 
-    private static void patrol(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier) {
+    private static void patrol(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier, Monster threat) {
         BlockPos home = soldierHome(barracks, slot);
-        Monster threat = nearestThreat(level, barracks.workCenter());
         if (threat != null) { soldier.setTarget(threat); return; }
         if (soldier.getTarget() != null) soldier.setTarget(null);
 
@@ -153,7 +154,8 @@ public final class SettlementBarracksService {
         if (SettlementMilitaryArmoryService.tickArmament(level, data, barracks.workCenter(), soldier)) return;
 
         double homeDistance = soldier.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
-        if (homeDistance > PATROL_LEASH_RADIUS_SQR) {
+        int patrolRadius = data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_PATROL_RADIUS : BASE_PATROL_RADIUS;
+        if (homeDistance > (double) patrolRadius * patrolRadius) {
             soldier.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.95D);
             return;
         }
@@ -162,8 +164,8 @@ public final class SettlementBarracksService {
         }
     }
 
-    private static Monster nearestThreat(ServerLevel level, BlockPos center) {
-        double threatRadius = SettlementExplorationBenefitService.barracksThreatRadius(level.getServer());
+    private static Monster nearestThreat(ServerLevel level, SettlementData data, BlockPos center) {
+        double threatRadius = SettlementExplorationBenefitService.barracksThreatRadius(level.getServer()) + (data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_THREAT_RADIUS_BONUS : 0.0D);
         AABB area = new AABB(center).inflate(threatRadius, 12.0D, threatRadius);
         return level.getEntitiesOfClass(Monster.class, area, monster -> monster.isAlive() && !(monster instanceof Creeper)).stream()
                 .min(Comparator.comparingDouble(monster -> monster.distanceToSqr(center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D))).orElse(null);
@@ -308,10 +310,11 @@ public final class SettlementBarracksService {
         }
     }
 
-    private static boolean patrolAreaLoaded(ServerLevel level, BuildingRecord barracks) {
+    private static boolean patrolAreaLoaded(ServerLevel level, SettlementData data, BuildingRecord barracks) {
         BlockPos center = barracks.workCenter();
         if (!level.hasChunkAt(center)) return false;
-        int[] offsets = {-PATROL_RADIUS, PATROL_RADIUS};
+        int patrolRadius = data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_PATROL_RADIUS : BASE_PATROL_RADIUS;
+        int[] offsets = {-patrolRadius, patrolRadius};
         for (int dx : offsets) for (int dz : offsets) if (!level.hasChunkAt(center.offset(dx, 0, dz))) return false;
         return true;
     }

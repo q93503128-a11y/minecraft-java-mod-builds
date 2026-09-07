@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.120" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.121" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -147,6 +147,11 @@ require("MAX_WORKSITE_BUFFER_BARRELS = 3" in storage
         "bounded physical profession-buffer storage authority missing")
 require("SettlementStorageService.worksiteStoragePositions(building)" in worker,
         "production workers do not use every unlocked local physical buffer")
+production_status = text(SETTLEMENT / "SettlementProductionStatusService.java")
+require("STALE_AFTER_TICKS = 200L" in production_status and "statusFor" in production_status, "production status cache missing")
+require("주민 없음" in worker and "주변 벌목 대상 없음" in worker and "접근 가능한 채석면 없음" in worker and "광맥 고갈" in worker and "현장·공동 저장고 가득 참" in worker, "production status coverage missing")
+context = text(SETTLEMENT / "SettlementContextService.java")
+require("SettlementProductionStatusService.statusFor(level, building)" in context, "production context cache reader missing")
 require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")
 require("SettlementProductionEfficiencyService.farmBatch" in worker and "harvestLimit" in worker,
         "staffed farm harvest is not bounded against full-stack-per-pass runaway")
@@ -335,3 +340,9 @@ tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
 print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.117 UI/runtime hardening + prior invariants")
+
+
+barracks_runtime = text(SETTLEMENT / "SettlementBarracksService.java")
+require("CITADEL_PATROL_RADIUS = 32" in barracks_runtime and "CITADEL_THREAT_RADIUS_BONUS = 12.0D" in barracks_runtime, "citadel response bonus missing")
+require("Monster threat = nearestThreat(level, data, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")
+require("patrolAreaLoaded(ServerLevel level, SettlementData data, BuildingRecord barracks)" in barracks_runtime, "citadel patrol loaded-area gate missing")

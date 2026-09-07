@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.120
+## Current version: 0.1.0-alpha.121
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -215,3 +215,13 @@ Automated validation does **not** prove the following:
 - long-play save/reload behavior.
 
 Treat these as playtest evidence, not assumptions.
+
+
+## Alpha.121 production state and citadel response
+
+- Existing production AI publishes presentation-only runtime states; UI/Jade does not launch a second entity/resource scan.
+- Loaded lumber/farm/quarry/mine buildings expose staffing, travel, depletion and storage-blocked states; unloaded sites report `청크 미로드`.
+- A citadel raises the barracks patrol leash from 24 to 32 blocks and adds 12 blocks to loaded garrison threat detection.
+- One threat lookup is shared by all three soldiers of a barracks per patrol pass instead of repeating the same monster AABB scan three times.
+- Citadel-expanded patrols use the matching 32-block loaded-area evidence gate, preserving no-force-load behavior.
+- Soldier capacity, real-weapon authority, recruitment payment and physical cargo rules are unchanged.
