@@ -150,6 +150,23 @@ public final class ExpeditionGameplayService {
         return Optional.of(failed);
     }
 
+    /**
+     * Conservative restart policy for M2: process-local encounter ownership cannot be proven after a
+     * JVM/server restart, so any persisted non-terminal expedition becomes FAILED before new play is
+     * accepted. Preparation cost remains spent. Persisted proxy mobs are cleaned lazily by their stable
+     * run tags when each entity loads; this avoids broad startup or per-tick world scans.
+     */
+    public static Optional<ExpeditionRun> reconcileAfterServerRestart(ServerLevel level) {
+        RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
+        Optional<ExpeditionRun> active = active(world);
+        if (active.isEmpty()) return Optional.empty();
+        var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
+        ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime());
+        world.updateExpedition(failed);
+        Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
+        return Optional.of(failed);
+    }
+
     public static String status(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(serverLevel(player));
         String run = active(world)
