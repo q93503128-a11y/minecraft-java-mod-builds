@@ -19,12 +19,46 @@
       "archetypes": [
         "riftfrontier:archetype/pursuer",
         "riftfrontier:archetype/skirmisher"
+      ],
+      "resources": [
+        "riftfrontier:resource/rift_salvage"
+      ],
+      "contracts": [
+        "riftfrontier:contract/salvage_recovery"
       ]
     },
     {
       "kind": "loot_profile",
       "id": "riftfrontier:loot/salvage_basic",
       "pools": ["field_salvage", "regional_material"]
+    },
+    {
+      "kind": "expedition_resource",
+      "id": "riftfrontier:resource/rift_salvage",
+      "region": "riftfrontier:region/vertical_slice_01",
+      "category": "salvage",
+      "carry_weight": 2,
+      "field_value": 10
+    },
+    {
+      "kind": "extraction_result",
+      "id": "riftfrontier:extraction/secured_return",
+      "outcome": "secured_return",
+      "retained_percent": 100,
+      "threat_delta": -1,
+      "world_consequence": "secured salvage returns to the hub and local expedition pressure eases"
+    },
+    {
+      "kind": "contract",
+      "id": "riftfrontier:contract/salvage_recovery",
+      "region": "riftfrontier:region/vertical_slice_01",
+      "objective": "recover a minimum field salvage shipment and extract safely",
+      "required_resources": {
+        "riftfrontier:resource/rift_salvage": 3
+      },
+      "reward_loot_profile": "riftfrontier:loot/salvage_basic",
+      "extraction_result": "riftfrontier:extraction/secured_return",
+      "world_consequence": "the recovered shipment becomes available to the next preparation cycle"
     },
     {
       "kind": "creature",
