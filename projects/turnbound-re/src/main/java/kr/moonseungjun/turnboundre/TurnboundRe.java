@@ -31,7 +31,7 @@ public final class TurnboundRe {
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
-        TurnboundDebugCommands.register(event.getDispatcher(), BATTLES);
+        TurnboundDebugCommands.register(event.getDispatcher(), BATTLES, DEFINITIONS);
     }
 
     private void addServerReloadListeners(AddServerReloadListenersEvent event) {
