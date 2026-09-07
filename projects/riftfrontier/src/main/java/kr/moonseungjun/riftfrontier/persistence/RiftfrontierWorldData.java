@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Authoritative world-scoped Riftfrontier root state.
@@ -204,10 +205,19 @@ public final class RiftfrontierWorldData extends SavedData {
         return expeditionSequence;
     }
 
-    /** Creates and persists a PREPARING run. Domain validation must happen before calling this mutation. */
+    /** Legacy/test-fixture allocation with no participant ownership. */
     public ExpeditionRun createExpedition(ContentId regionId, ContentId contractId, String activeContentFingerprint, long gameTime) {
         long sequence = allocateExpeditionSequence(activeContentFingerprint);
         ExpeditionRun run = ExpeditionRun.preparing(sequence, regionId, contractId, activeContentFingerprint, gameTime);
+        expeditions.add(run);
+        setDirty();
+        return run;
+    }
+
+    /** Creates and persists a PREPARING run bound to the authoritative participant UUID. */
+    public ExpeditionRun createExpedition(ContentId regionId, ContentId contractId, UUID ownerId, String activeContentFingerprint, long gameTime) {
+        long sequence = allocateExpeditionSequence(activeContentFingerprint);
+        ExpeditionRun run = ExpeditionRun.preparing(sequence, regionId, contractId, ownerId, activeContentFingerprint, gameTime);
         expeditions.add(run);
         setDirty();
         return run;
@@ -221,6 +231,9 @@ public final class RiftfrontierWorldData extends SavedData {
             if (existing.sequence() != updated.sequence()) continue;
             if (!existing.regionId().equals(updated.regionId()) || !existing.contractId().equals(updated.contractId())) {
                 throw new IllegalArgumentException("Expedition identity cannot change after allocation");
+            }
+            if (!existing.ownerId().equals(updated.ownerId())) {
+                throw new IllegalArgumentException("Expedition owner cannot change after allocation");
             }
             expeditions.set(index, updated);
             worldRevision++;
