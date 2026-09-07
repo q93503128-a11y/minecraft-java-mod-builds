@@ -126,7 +126,7 @@ public final class Region01EncounterRuntime {
 
     /** Exposed for deterministic regression coverage of the stable run ownership tag. */
     public static OptionalLong taggedRunSequence(Entity entity) {
-        for (String tag : entity.getTags()) {
+        for (String tag : entity.entityTags()) {
             if (!tag.startsWith(RUN_TAG_PREFIX)) continue;
             String suffix = tag.substring(RUN_TAG_PREFIX.length());
             try {
