@@ -5,10 +5,12 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.Map;
+import java.util.UUID;
 
 /** Minecraft/DFU serialization adapter for the pure ExpeditionRun domain record. */
 public final class ExpeditionRunCodec {
     private static final Codec<ContentId> CONTENT_ID_CODEC = Codec.STRING.xmap(ContentId::parse, ContentId::toString);
+    private static final Codec<UUID> UUID_CODEC = Codec.STRING.xmap(UUID::fromString, UUID::toString);
     private static final Codec<ExpeditionRun.Status> STATUS_CODEC = Codec.STRING.xmap(
         ExpeditionRun.Status::parse,
         ExpeditionRun.Status::serializedName
@@ -22,6 +24,7 @@ public final class ExpeditionRunCodec {
         Codec.LONG.fieldOf("sequence").forGetter(ExpeditionRun::sequence),
         CONTENT_ID_CODEC.fieldOf("region").forGetter(ExpeditionRun::regionId),
         CONTENT_ID_CODEC.fieldOf("contract").forGetter(ExpeditionRun::contractId),
+        UUID_CODEC.optionalFieldOf("owner_uuid").forGetter(ExpeditionRun::ownerId),
         Codec.STRING.fieldOf("content_fingerprint").forGetter(ExpeditionRun::contentFingerprint),
         STATUS_CODEC.fieldOf("status").forGetter(ExpeditionRun::status),
         Codec.unboundedMap(CONTENT_ID_CODEC, Codec.INT)
