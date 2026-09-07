@@ -14,14 +14,14 @@ class ContentPackSetTest {
     void crossDocumentReferencesBecomeValidAfterMerge() {
         var base = loader.load(new StringReader("""
             {"schema_version":1,"pack_id":"riftfrontier:base","definitions":[
-              {"type":"combat_archetype","id":"riftfrontier:archetype/skirmisher","behaviours":["pursue"]},
-              {"type":"loot_profile","id":"riftfrontier:loot/basic","pools":["scrap"]},
-              {"type":"region","id":"riftfrontier:region/test","gameplay_rule":"unstable weather","archetypes":["riftfrontier:archetype/skirmisher"]}
+              {"kind":"combat_archetype","id":"riftfrontier:archetype/skirmisher","behaviours":["pursue"]},
+              {"kind":"loot_profile","id":"riftfrontier:loot/basic","pools":["scrap"]},
+              {"kind":"region","id":"riftfrontier:region/test","gameplay_rule":"unstable weather","archetypes":["riftfrontier:archetype/skirmisher"]}
             ]}
             """));
         var extension = loader.load(new StringReader("""
             {"schema_version":1,"pack_id":"riftfrontier:extension","definitions":[
-              {"type":"creature","id":"riftfrontier:creature/scout","region":"riftfrontier:region/test","archetype":"riftfrontier:archetype/skirmisher","loot_profile":"riftfrontier:loot/basic","behaviours":["pursue"]}
+              {"kind":"creature","id":"riftfrontier:creature/scout","region":"riftfrontier:region/test","archetype":"riftfrontier:archetype/skirmisher","loot_profile":"riftfrontier:loot/basic","behaviours":["pursue"]}
             ]}
             """));
 
@@ -38,7 +38,7 @@ class ContentPackSetTest {
     void duplicatePackIdsAreRejected() {
         String json = """
             {"schema_version":1,"pack_id":"riftfrontier:duplicate","definitions":[
-              {"type":"combat_archetype","id":"riftfrontier:archetype/one","behaviours":["pursue"]}
+              {"kind":"combat_archetype","id":"riftfrontier:archetype/one","behaviours":["pursue"]}
             ]}
             """;
         var first = loader.load(new StringReader(json));
