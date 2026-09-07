@@ -343,7 +343,7 @@ public final class BattleNetworkPayloads {
         }
 
         private static List<String> eligibleTargetIds(BattleInstance battle, BattleParticipant actor, String targetTeam) {
-            List<String> ids = new ArrayList<>();
+            List<BattleParticipant> targets = new ArrayList<>();
             for (String participantId : battle.actorOrder()) {
                 if (!battle.combatState(participantId).alive()) continue;
                 BattleParticipant target = battle.participant(participantId);
@@ -354,9 +354,10 @@ public final class BattleNetworkPayloads {
                     case "ANY" -> true;
                     default -> throw new IllegalStateException("validated action has unsupported target team " + targetTeam);
                 };
-                if (allowed) ids.add(participantId);
+                if (allowed) targets.add(target);
             }
-            return List.copyOf(ids);
+            targets.sort(Comparator.comparingInt(BattleParticipant::participantOrdinal));
+            return targets.stream().map(BattleParticipant::id).toList();
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
