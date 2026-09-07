@@ -66,6 +66,7 @@ public final class RiftfrontierGameTests {
             helper.getLevel().getGameTime()
         );
         helper.assertTrue(persisted.sequence() == validated.sequence(), "Validated run sequence must match authoritative allocation");
+        helper.assertTrue(persisted.endReason() == ExpeditionRun.EndReason.NONE, "New expedition must not begin with a terminal cause");
 
         ExpeditionRun deployed = lifecycle.deploy(persisted);
         worldData.updateExpedition(deployed);
@@ -90,6 +91,7 @@ public final class RiftfrontierGameTests {
         var persistedAgain = resolvedAgain.expedition(resolution.run().sequence()).orElseThrow();
         helper.assertTrue(resolvedAgain == worldData, "SavedData lookup must return the authoritative cached world root");
         helper.assertTrue(persistedAgain.status() == ExpeditionRun.Status.EXTRACTED, "Completed expedition must persist as EXTRACTED");
+        helper.assertTrue(persistedAgain.endReason() == ExpeditionRun.EndReason.EXTRACTION, "Successful extraction must persist an explicit extraction cause");
         helper.assertTrue(
             persistedAgain.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0) == 3,
             "Recovered production resource must survive authoritative updates"
@@ -157,8 +159,13 @@ public final class RiftfrontierGameTests {
         ExpeditionRun failed = ExpeditionGameplayService.reconcileAfterServerRestart(helper.getLevel()).orElseThrow();
         helper.assertTrue(failed.sequence() == deployed.sequence(), "Restart reconciliation must fail the exact persisted active run");
         helper.assertTrue(failed.status() == ExpeditionRun.Status.FAILED, "Restart reconciliation must choose explicit FAILED instead of guessing recovery state");
+        helper.assertTrue(failed.endReason() == ExpeditionRun.EndReason.SERVER_RESTART, "Restart reconciliation must preserve a machine-readable server_restart cause");
         helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Restart reconciliation must leave no authoritative non-terminal run");
         helper.assertTrue(worldData.expeditionSupply() == supplyAfterSpend, "Server restart failure must not refund already-spent expedition supply");
+        helper.assertTrue(
+            worldData.expedition(failed.sequence()).orElseThrow().endReason() == ExpeditionRun.EndReason.SERVER_RESTART,
+            "Authoritative SavedData must retain the restart failure cause for later review/re-entry UX"
+        );
 
         long orphanRun = 9_999_991L;
         Zombie orphan = new Zombie(helper.getLevel());
