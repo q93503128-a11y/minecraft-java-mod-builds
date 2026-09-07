@@ -16,6 +16,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /** Production-code registration boundary for Riftfrontier's required in-world regression tests. */
@@ -24,6 +25,7 @@ public final class RiftfrontierGameTests {
         BuiltInRegistries.TEST_FUNCTION,
         Riftfrontier.MOD_ID
     );
+    private static final UUID TEST_OWNER = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
     static {
         TEST_FUNCTIONS.register("authoritative_runtime_state", () -> RiftfrontierGameTests::authoritativeRuntimeState);
@@ -56,16 +58,20 @@ public final class RiftfrontierGameTests {
             expected,
             ExpeditionGameplayService.REGION_ID,
             ExpeditionGameplayService.CONTRACT_ID,
+            TEST_OWNER,
             snapshot.fingerprint(),
             helper.getLevel().getGameTime()
         );
         ExpeditionRun persisted = worldData.createExpedition(
             ExpeditionGameplayService.REGION_ID,
             ExpeditionGameplayService.CONTRACT_ID,
+            TEST_OWNER,
             snapshot.fingerprint(),
             helper.getLevel().getGameTime()
         );
         helper.assertTrue(persisted.sequence() == validated.sequence(), "Validated run sequence must match authoritative allocation");
+        helper.assertTrue(persisted.ownerId().equals(validated.ownerId()), "Validated participant must match authoritative persisted owner");
+        helper.assertTrue(persisted.ownedBy(TEST_OWNER), "Authoritative run must be bound to the expected participant UUID");
         helper.assertTrue(persisted.endReason() == ExpeditionRun.EndReason.NONE, "New expedition must not begin with a terminal cause");
 
         ExpeditionRun deployed = lifecycle.deploy(persisted);
@@ -92,6 +98,7 @@ public final class RiftfrontierGameTests {
         helper.assertTrue(resolvedAgain == worldData, "SavedData lookup must return the authoritative cached world root");
         helper.assertTrue(persistedAgain.status() == ExpeditionRun.Status.EXTRACTED, "Completed expedition must persist as EXTRACTED");
         helper.assertTrue(persistedAgain.endReason() == ExpeditionRun.EndReason.EXTRACTION, "Successful extraction must persist an explicit extraction cause");
+        helper.assertTrue(persistedAgain.ownedBy(TEST_OWNER), "Owner UUID must survive authoritative updates through extraction");
         helper.assertTrue(
             persistedAgain.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0) == 3,
             "Recovered production resource must survive authoritative updates"
@@ -149,17 +156,20 @@ public final class RiftfrontierGameTests {
         ExpeditionRun persisted = worldData.createExpedition(
             ExpeditionGameplayService.REGION_ID,
             ExpeditionGameplayService.CONTRACT_ID,
+            TEST_OWNER,
             snapshot.fingerprint(),
             helper.getLevel().getGameTime()
         );
         ExpeditionRun deployed = lifecycle.deploy(persisted);
         worldData.updateExpedition(deployed);
+        helper.assertTrue(deployed.ownedBy(TEST_OWNER), "Restart fixture must begin as an owner-bound run");
         helper.assertTrue(ExpeditionGameplayService.active(worldData).isPresent(), "Deployed run must be non-terminal before restart reconciliation");
 
         ExpeditionRun failed = ExpeditionGameplayService.reconcileAfterServerRestart(helper.getLevel()).orElseThrow();
         helper.assertTrue(failed.sequence() == deployed.sequence(), "Restart reconciliation must fail the exact persisted active run");
         helper.assertTrue(failed.status() == ExpeditionRun.Status.FAILED, "Restart reconciliation must choose explicit FAILED instead of guessing recovery state");
         helper.assertTrue(failed.endReason() == ExpeditionRun.EndReason.SERVER_RESTART, "Restart reconciliation must preserve a machine-readable server_restart cause");
+        helper.assertTrue(failed.ownedBy(TEST_OWNER), "Restart reconciliation must preserve the participant owner identity");
         helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Restart reconciliation must leave no authoritative non-terminal run");
         helper.assertTrue(worldData.expeditionSupply() == supplyAfterSpend, "Server restart failure must not refund already-spent expedition supply");
         helper.assertTrue(
