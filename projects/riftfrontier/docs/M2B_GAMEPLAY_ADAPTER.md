@@ -8,16 +8,22 @@
 
 첫 authoritative hub feedback loop 기준 코드는 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions run `34096694269`이다.
 
-Region 01 encounter runtime 기준 코드는 `a7791123eade916c14041b4d32306c4befd8fc6a`, GitHub Actions `Build Riftfrontier` run `34099256007`이다. 이 run에서 다음 gate가 모두 성공했다.
+Region 01 encounter runtime 초기 검증 기준 코드는 `a7791123eade916c14041b4d32306c4befd8fc6a`, GitHub Actions `Build Riftfrontier` run `34099256007`이다.
+
+**현재 edge-hardening 검증 기준 코드는 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, GitHub Actions `Build Riftfrontier` run `34104215746`이다.** 이 run에서 다음 gate가 모두 성공했다.
 
 - clean / unit test / build
-- required native GameTest suite
+- required native GameTest suite: 3 tests 실행, `All 3 required tests passed`
 - dedicated server smoke
 - Xvfb client smoke
 - executable JAR inspection
 - report / deliverable upload
 
-encounter 구현 첫 시도는 Minecraft 26.2에서 이동된 monster package와 `EntityTypes`, `entityTags()`, `snapTo()` API 변화를 반영하지 못해 compile 단계에서 실패했다. 기능을 제거하거나 가짜 API로 우회하지 않고 26.2 Javadoc/NeoForge source를 기준으로 실제 API에 맞춰 수정한 뒤 전체 gate를 통과시켰다.
+검증 JAR SHA-256:
+
+`525d9359b1e5097c677b2775a7c550e33e6352e2be1cf487f9ac84661d55336a`
+
+Xvfb client에서는 CI 환경의 `libflite`/audio device 부재 경고가 발생하지만 Riftfrontier 초기화와 렌더 리소스 로딩을 계속했고 fatal crash marker 없이 smoke gate를 통과했다. 이를 실제 오디오/내레이터 품질 검증으로 확대 해석하지 않는다.
 
 ## 2. production content boundary
 
@@ -81,10 +87,17 @@ ContentLookup
 → retained Region 01 salvage +1 bonus
 
 /riftfrontier expedition extract
-→ contract requirement 검사
-→ EXTRACTION_REQUESTED → EXTRACTED
+→ **contract requirement를 상태 전이 전에 검사**
+→ 요구량 부족 시 run은 DEPLOYED 유지, 추가 회수 가능
+→ 요구량 충족 시 EXTRACTION_REQUESTED → EXTRACTED
 → retained salvage + optional patrol bonus를 hub storage에 정산
 → Region 01 pressure +1
+→ run encounter cleanup
+→ technical hub 귀환
+
+/riftfrontier expedition abort
+→ FAILED
+→ preparation supply 미환불
 → run encounter cleanup
 → technical hub 귀환
 
@@ -106,7 +119,9 @@ ContentLookup
 
 중요: 위 vanilla entity의 모델, 텍스처, 명칭, animation, 최종 AI는 Riftfrontier production creature design이 아니다. M3 combat/reference gate 전에 이 proxy를 최종 자산으로 승격하지 않는다.
 
-각 encounter entity에는 run tag와 role tag를 붙인다. gameplay는 개별 Java 객체 참조를 장기 저장하지 않고 현재 run의 live threat를 공간+tag로 조회한다. extraction/FAILED에서는 해당 run의 encounter entity를 정리한다.
+각 encounter entity에는 run tag와 role tag를 붙인다. **현재 process 안에서는 `runSequence → tracked Mob handles`로 소유권을 추적한다.** 따라서 살아 있는 적을 bounded technical cell 밖으로 유인해도 patrol-cleared로 오판하지 않으며, terminal cleanup은 위치와 무관하게 해당 run에서 추적 중인 entity를 discard한다.
+
+이 방식은 per-tick broad world scan을 피하고 현재 single-active-run M2 규칙과 맞는다. 단, entity handle map은 process-local이므로 **서버 재시작 후의 active-run/proxy reconciliation은 아직 별도 해결 대상**이다. 재시작 복구가 구현되기 전에는 encounter lifecycle 전체를 완성으로 선언하지 않는다.
 
 ## 6. pressure → 실제 위험
 
@@ -136,6 +151,8 @@ resource와 combat을 각각 독립 목표로 두지 않는다.
 
 Region 01은 contract 요구량의 salvage를 확보하면 patrol이 살아 있어도 extraction을 요청할 수 있다. 대신 patrol을 전부 제거한 상태에서 extraction하면 retained salvage에 +1 bonus가 붙는다.
 
+살아 있는 적을 기술 cell 밖으로 유인해서 bonus를 얻는 것은 허용하지 않는다. `patrolCleared`는 현재 run이 추적하는 live threat 전체를 기준으로 판단한다.
+
 따라서 플레이어는 같은 원정에서 다음을 비교하게 된다.
 
 ```text
@@ -151,7 +168,25 @@ Region 01은 contract 요구량의 salvage를 확보하면 patrol이 살아 있�
 
 이 선택은 메시지 설명이 아니라 authoritative settlement 결과를 실제로 바꾼다.
 
-## 8. authoritative hub feedback loop
+## 8. extraction atomicity contract
+
+contract requirement가 부족한 extraction 요청은 authoritative run 상태를 바꾸지 않는다.
+
+이전 구현은 먼저 `EXTRACTION_REQUESTED`를 저장한 뒤 `resolveExtraction`에서 요구량을 검사할 수 있어, 실제 gameplay adapter의 `tryRecover`가 DEPLOYED만 허용하는 상황에서 soft-lock 가능성이 있었다.
+
+현재는 `ExpeditionLifecycle.requestExtraction`이 requirement를 먼저 검증한다.
+
+```text
+underfilled DEPLOYED
+→ requestExtraction
+→ reject
+→ DEPLOYED 유지
+→ 추가 salvage 회수 가능
+```
+
+`resolveExtraction`도 같은 requirement를 다시 검사해 방어적 계약을 유지한다. unit test가 거부된 extraction이 원본 immutable run을 DEPLOYED로 유지하는지 검증한다.
+
+## 9. authoritative hub feedback loop
 
 Persistence schema 3은 첫 vertical slice에 필요한 최소 거점/세계 반응 상태만 가진다.
 
@@ -171,7 +206,7 @@ cost = min(3, 1 + floor(region_01_pressure / 2))
 
 `provision`은 secured salvage 1을 소비해 expedition supply 2를 만든다. M4에서 production/request 체계가 들어오면 이 임시 변환을 정식 recipe/request로 승격한다.
 
-## 9. persistence contract
+## 10. persistence contract
 
 schema 2 → 3 migration은 기존 expedition run을 보존하면서 다음 기본값을 추가한다.
 
@@ -183,7 +218,7 @@ encounter runtime은 새 persistence schema를 만들지 않는다. 전투 개�
 
 미래 schema, 빠진 migration step, 음수 storage/supply/pressure는 묵시적으로 수용하지 않는다.
 
-## 10. failure policy
+## 11. failure/exit policy
 
 첫 vertical slice에서 다음 상황은 active expedition을 `FAILED`로 끝낸다.
 
@@ -193,9 +228,11 @@ encounter runtime은 새 persistence schema를 만들지 않는다. 전투 개�
 
 실패 처리는 `ExpeditionGameplayEvents → ExpeditionGameplayService → ExpeditionLifecycle → RiftfrontierWorldData` 경계를 따른다. 이미 지불한 preparation supply는 환불하지 않으며 해당 run encounter cleanup을 요청한다.
 
-## 11. native GameTest contract
+**explicit abort는 플레이어가 직접 선택한 field exit이므로 FAILED + cleanup 후 technical hub로 귀환한다.** death/logout은 동일한 실패 저장 정책을 적용하지만, 이벤트 의미를 숨기는 임의 순간이동을 추가하지 않는다.
 
-required GameTest suite에는 두 개의 production regression 축이 있다.
+## 12. native GameTest contract
+
+현재 required GameTest suite는 실제 실행 시 3 tests를 돌며, Region 01 관련 핵심 회귀 축은 다음과 같다.
 
 ### `authoritative_runtime_state`
 
@@ -215,11 +252,16 @@ required GameTest suite에는 두 개의 production regression 축이 있다.
 - 실제 GameTest `ServerLevel`에서 hunter/scout/elite entity spawn
 - run 기반 live-threat tracking
 - patrol-cleared 판정
-- run cleanup 후 threat 0
+- 실제 threat 하나를 technical center에서 48블록 밖으로 이동
+- 이동한 threat가 여전히 patrol-clear를 차단하는지 검증
+- terminal cleanup이 이동한 threat까지 discard하는지 검증
+- cleanup 후 threat 0
+
+Unit test는 underfilled extraction 거부가 `DEPLOYED` 상태를 유지하는 것도 검증한다.
 
 CI는 non-zero test execution marker와 `All N required tests passed` marker를 모두 요구한다.
 
-## 12. technical cells/proxies are not production art
+## 13. technical cells/proxies are not production art
 
 현재 hub/region cell, 명령 입력, Zombie/Skeleton/Ravager proxy는 다음만 검증한다.
 
@@ -231,28 +273,33 @@ CI는 non-zero test execution marker와 `All N required tests passed` marker를 
 - resource/combat reward trade-off
 - extraction/failure lifecycle
 - 실제 Minecraft entity spawn/cleanup
+- lure/extraction 경계 회귀
 
 이를 최종 거점, 최종 지역 지형, production creature, UI, animation, sound 또는 combat presentation으로 간주하지 않는다.
 
-## 13. 현재 제한
+## 14. 현재 제한
 
 첫 vertical slice는 world-wide nonterminal expedition을 하나만 허용한다. `ExpeditionRun`에 player/party ownership schema가 아직 없기 때문에 멀티플레이 ownership을 가짜로 추론하지 않는다.
 
-현재 encounter tracking은 bounded technical Region 01 공간의 run tags를 기준으로 한다. 실제 field play에서 mob을 장거리 유인하거나 비정상 종료했을 때 cleanup 범위를 검수해야 한다. 이 edge case를 검증하기 전에는 encounter lifecycle 완성으로 확대 해석하지 않는다.
+현재 encounter tracking은 **한 서버 process 안에서** run sequence가 소유한 direct entity handle을 기준으로 한다. 장거리 lure 악용과 같은-process terminal cleanup은 검증됐지만, 서버 재시작 시 process-local tracker가 사라진 뒤 SavedData의 active run 및 persisted proxy를 reconcile하는 정책은 아직 없다. 이를 해결하기 전에는 restart-safe encounter lifecycle이라고 부르지 않는다.
 
 pressure/적 수/hazard/patrol bonus 수치는 시스템 인과를 검증하는 vertical-slice 값이다. 실제 플레이 근거 없이 장기 밸런스로 잠그지 않는다.
 
-## 14. 다음 정확한 작업
+또한 CI의 Xvfb client smoke는 초기화/치명 크래시 여부를 검증할 뿐 실제 전투 조작성, 시각 품질, 오디오 품질, pacing을 검증하지 않는다.
 
-이미 검증한 environment effect, hunter/scout/elite spawn, pressure scaling, patrol bonus, native GameTest를 반복하지 않는다.
+## 15. 다음 정확한 작업
 
-다음 M2-B 묶음은 **field-play review + edge-case hardening**이다.
+이미 검증한 environment effect, hunter/scout/elite spawn, pressure scaling, patrol bonus, 장거리 lure 회귀, underfilled extraction atomicity를 반복하지 않는다.
 
-1. 실제 Minecraft client에서 Region 01을 반복 플레이해 spawn spacing, aggro/pacing, salvage hazard, extraction 선택을 검수
-2. mob 장거리 이탈, player death, abort, logout, extraction 직전/직후 등 cleanup edge case 강화
-3. field play 결과로 pressure scaling과 patrol bonus 조정
-4. M3 전에 combat/elite/boss reference dossier 작성
-5. 기술 proxy를 production art로 승격하지 않음
-6. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체를 실제 플레이 검수한 뒤 M2 완료 여부 판단
+다음 M2-B 묶음은 **restart reconciliation + field-play review**다.
+
+1. active expedition 상태에서 서버 stop/restart가 발생했을 때 SavedData run과 Region 01 proxy entity의 권위 관계를 재구성하거나 안전하게 실패 처리하는 명시적 정책 구현
+2. broad per-tick world scan 없이 restart cleanup/recovery를 수행하고 자동 검증 추가
+3. 실제 Minecraft client에서 Region 01을 반복 플레이해 spawn spacing, aggro/pacing, salvage hazard, extraction 선택을 검수
+4. death/logout/abort/extraction 직전·직후를 실제 플레이로 재검수
+5. field play 결과로 pressure scaling과 patrol bonus 조정
+6. M3 전에 combat/elite/boss reference dossier 작성
+7. 기술 proxy를 production art로 승격하지 않음
+8. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체를 실제 플레이 검수한 뒤 M2 완료 여부 판단
 
 위 실제 플레이 검수가 끝나기 전에는 Region 02, 대규모 UI, production boss 확장을 시작하지 않는다.
