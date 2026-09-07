@@ -14,7 +14,7 @@ import java.util.List;
 
 /** Play-phase network registration. Battle truth remains server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "4";
+    private static final String PROTOCOL_VERSION = "5";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}
@@ -56,6 +56,6 @@ public final class BattleNetwork {
                     battle.battleId(), battle.revision(), result.code().name() + ":" + result.detail()));
         }
         BattleDefinitionContext definitions = TurnboundRe.BATTLES.definitionContext(battle.battleId()).orElse(null);
-        context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(battle, definitions));
+        context.reply(BattleNetworkPayloads.BattleSnapshotS2C.from(battle, definitions, TurnboundRe.BATTLES));
     }
 }
