@@ -218,10 +218,11 @@ public final class SettlementStorageService {
         long food = 0L;
         for (BlockPos pos : positions) {
             if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
-            wood += SettlementInventory.countWood(container);
-            stone += SettlementInventory.countStone(container);
-            food += SettlementInventory.countFood(container);
-            metal += SettlementInventory.countMetal(container);
+            SettlementInventory.ResourceCounts counts = SettlementInventory.countResources(container);
+            wood += counts.wood();
+            stone += counts.stone();
+            metal += counts.metal();
+            food += counts.food();
         }
         return new SettlementResources(wood, stone, metal, food);
     }
