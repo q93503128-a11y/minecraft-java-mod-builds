@@ -15,16 +15,13 @@ import java.util.Map;
 /** Pure deterministic parser/merger for reloadable definition bundle JSON resources. */
 public final class DefinitionBundleParser {
     public record Parsed(DefinitionRegistry registry, String hash, List<String> resourceIds) {
-        public Parsed {
-            resourceIds = List.copyOf(resourceIds);
-        }
+        public Parsed { resourceIds = List.copyOf(resourceIds); }
     }
 
     private DefinitionBundleParser() {}
 
     public static Parsed parse(Map<String, String> resources) {
         if (resources == null) throw new IllegalArgumentException("resources must not be null");
-
         List<Map.Entry<String, String>> ordered = new ArrayList<>(resources.entrySet());
         ordered.sort(Map.Entry.comparingByKey(Comparator.naturalOrder()));
 
@@ -33,6 +30,7 @@ public final class DefinitionBundleParser {
         List<StatusDefinition> statuses = new ArrayList<>();
         List<EncounterDefinition> encounters = new ArrayList<>();
         List<RewardTableDefinition> rewards = new ArrayList<>();
+        List<ProgressionDefinition> progressions = new ArrayList<>();
         List<String> resourceIds = new ArrayList<>();
         MessageDigest digest = sha256();
 
@@ -47,18 +45,18 @@ public final class DefinitionBundleParser {
                 if (error instanceof IllegalArgumentException illegal) throw illegal;
                 throw new IllegalArgumentException("Failed to decode TURNBOUND definitions from " + resourceId, error);
             }
-
             actions.addAll(bundle.actions());
             characters.addAll(bundle.characters());
             statuses.addAll(bundle.statuses());
             encounters.addAll(bundle.encounters());
             rewards.addAll(bundle.rewards());
+            progressions.addAll(bundle.progressions());
             resourceIds.add(resourceId);
             updateDigest(digest, resourceId);
             updateDigest(digest, json);
         }
 
-        DefinitionRegistry registry = DefinitionRegistry.create(actions, characters, statuses, encounters, rewards);
+        DefinitionRegistry registry = DefinitionRegistry.create(actions, characters, statuses, encounters, rewards, progressions);
         return new Parsed(registry, HexFormat.of().formatHex(digest.digest()), resourceIds);
     }
 
@@ -68,11 +66,8 @@ public final class DefinitionBundleParser {
     }
 
     private static MessageDigest sha256() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException("SHA-256 unavailable", impossible);
-        }
+        try { return MessageDigest.getInstance("SHA-256"); }
+        catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException("SHA-256 unavailable", impossible); }
     }
 
     private static void updateDigest(MessageDigest digest, String value) {

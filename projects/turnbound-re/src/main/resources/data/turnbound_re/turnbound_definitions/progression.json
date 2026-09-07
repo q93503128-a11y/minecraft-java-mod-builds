@@ -1,0 +1,24 @@
+{
+  "progressions": [
+    {
+      "id":"turnbound_re:default_progression",
+      "partyCapacity":12,
+      "unlockShardCostByOriginStar":{"1":5,"2":10,"3":20,"4":40,"5":60},
+      "levelCostsByStar":{
+        "1":{"coinBase":6,"coinPerLevel":2,"essenceBase":3,"essencePerLevel":1},
+        "2":{"coinBase":10,"coinPerLevel":3,"essenceBase":5,"essencePerLevel":2},
+        "3":{"coinBase":16,"coinPerLevel":4,"essenceBase":8,"essencePerLevel":3},
+        "4":{"coinBase":24,"coinPerLevel":6,"essenceBase":12,"essencePerLevel":4},
+        "5":{"coinBase":34,"coinPerLevel":8,"essenceBase":18,"essencePerLevel":5},
+        "6":{"coinBase":46,"coinPerLevel":10,"essenceBase":25,"essencePerLevel":7}
+      },
+      "ascensionCostsByTargetStar":{
+        "2":{"coin":100,"essence":30,"shards":5},
+        "3":{"coin":220,"essence":65,"shards":10},
+        "4":{"coin":450,"essence":130,"shards":20},
+        "5":{"coin":900,"essence":260,"shards":30},
+        "6":{"coin":1800,"essence":520,"shards":50}
+      }
+    }
+  ]
+}

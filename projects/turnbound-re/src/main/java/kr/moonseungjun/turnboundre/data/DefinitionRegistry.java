@@ -8,32 +8,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Immutable, atomically validated registry for all server-authoritative content definitions.
- */
+/** Immutable, atomically validated registry for all server-authoritative content definitions. */
 public final class DefinitionRegistry {
     private final Map<String, ActionDefinition> actions;
     private final Map<String, CharacterDefinition> characters;
     private final Map<String, StatusDefinition> statuses;
     private final Map<String, EncounterDefinition> encounters;
     private final Map<String, RewardTableDefinition> rewards;
+    private final Map<String, ProgressionDefinition> progressions;
 
     private DefinitionRegistry(
             Map<String, ActionDefinition> actions,
             Map<String, CharacterDefinition> characters,
             Map<String, StatusDefinition> statuses,
             Map<String, EncounterDefinition> encounters,
-            Map<String, RewardTableDefinition> rewards
+            Map<String, RewardTableDefinition> rewards,
+            Map<String, ProgressionDefinition> progressions
     ) {
         this.actions = Collections.unmodifiableMap(actions);
         this.characters = Collections.unmodifiableMap(characters);
         this.statuses = Collections.unmodifiableMap(statuses);
         this.encounters = Collections.unmodifiableMap(encounters);
         this.rewards = Collections.unmodifiableMap(rewards);
+        this.progressions = Collections.unmodifiableMap(progressions);
     }
 
     public static DefinitionRegistry create(List<ActionDefinition> actions, List<CharacterDefinition> characters) {
-        return create(actions, characters, List.of(), List.of(), List.of());
+        return create(actions, characters, List.of(), List.of(), List.of(), List.of());
     }
 
     public static DefinitionRegistry create(
@@ -41,14 +42,15 @@ public final class DefinitionRegistry {
             List<CharacterDefinition> characters,
             List<StatusDefinition> statuses
     ) {
-        return create(actions, characters, statuses, List.of(), List.of());
+        return create(actions, characters, statuses, List.of(), List.of(), List.of());
     }
 
     public static DefinitionRegistry create(DefinitionBundle bundle) {
         if (bundle == null) throw new IllegalArgumentException("bundle must not be null");
-        return create(bundle.actions(), bundle.characters(), bundle.statuses(), bundle.encounters(), bundle.rewards());
+        return create(bundle.actions(), bundle.characters(), bundle.statuses(), bundle.encounters(), bundle.rewards(), bundle.progressions());
     }
 
+    /** Compatibility overload for compact M0-M3 registries that have no progression tuning. */
     public static DefinitionRegistry create(
             List<ActionDefinition> actions,
             List<CharacterDefinition> characters,
@@ -56,13 +58,25 @@ public final class DefinitionRegistry {
             List<EncounterDefinition> encounters,
             List<RewardTableDefinition> rewards
     ) {
-        if (actions == null || characters == null || statuses == null || encounters == null || rewards == null) {
+        return create(actions, characters, statuses, encounters, rewards, List.of());
+    }
+
+    public static DefinitionRegistry create(
+            List<ActionDefinition> actions,
+            List<CharacterDefinition> characters,
+            List<StatusDefinition> statuses,
+            List<EncounterDefinition> encounters,
+            List<RewardTableDefinition> rewards,
+            List<ProgressionDefinition> progressions
+    ) {
+        if (actions == null || characters == null || statuses == null || encounters == null || rewards == null || progressions == null) {
             throw new IllegalArgumentException("definition lists must not be null");
         }
 
         List<String> errors = new ArrayList<>();
         errors.addAll(DefinitionValidator.validateActions(actions));
         errors.addAll(DefinitionValidator.validateStatuses(statuses));
+        errors.addAll(ProgressionDefinitionValidator.validate(progressions));
 
         Set<String> actionIds = ids(actions.stream().map(ActionDefinition::id).toList());
         errors.addAll(DefinitionValidator.validateCharacters(characters, actionIds));
@@ -80,7 +94,7 @@ public final class DefinitionRegistry {
         }
 
         return new DefinitionRegistry(
-                mapActions(actions), characterMap, mapStatuses(statuses), mapEncounters(encounters), mapRewards(rewards));
+                mapActions(actions), characterMap, mapStatuses(statuses), mapEncounters(encounters), mapRewards(rewards), mapProgressions(progressions));
     }
 
     private static Set<String> ids(List<String> values) {
@@ -117,9 +131,16 @@ public final class DefinitionRegistry {
         return out;
     }
 
+    private static Map<String, ProgressionDefinition> mapProgressions(List<ProgressionDefinition> values) {
+        Map<String, ProgressionDefinition> out = new LinkedHashMap<>();
+        for (ProgressionDefinition value : values) out.put(value.id(), value);
+        return out;
+    }
+
     public Map<String, ActionDefinition> actions() { return actions; }
     public Map<String, CharacterDefinition> characters() { return characters; }
     public Map<String, StatusDefinition> statuses() { return statuses; }
     public Map<String, EncounterDefinition> encounters() { return encounters; }
     public Map<String, RewardTableDefinition> rewards() { return rewards; }
+    public Map<String, ProgressionDefinition> progressions() { return progressions; }
 }

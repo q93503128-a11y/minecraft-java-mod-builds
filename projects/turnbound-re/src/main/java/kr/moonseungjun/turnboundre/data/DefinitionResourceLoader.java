@@ -43,10 +43,11 @@ public final class DefinitionResourceLoader implements ResourceManagerReloadList
         DefinitionBundleParser.Parsed parsed = DefinitionBundleParser.parse(raw);
         DefinitionRepository.Snapshot installed = repository.install(parsed.registry(), parsed.hash());
         TurnboundRe.LOGGER.info(
-                "Loaded TURNBOUND definitions generation={} hash={} resources={} actions={} characters={} statuses={} encounters={} rewards={}",
+                "Loaded TURNBOUND definitions generation={} hash={} resources={} actions={} characters={} statuses={} encounters={} rewards={} progressions={}",
                 installed.generation(), installed.hash(), parsed.resourceIds().size(),
                 installed.registry().actions().size(), installed.registry().characters().size(),
-                installed.registry().statuses().size(), installed.registry().encounters().size(), installed.registry().rewards().size());
+                installed.registry().statuses().size(), installed.registry().encounters().size(), installed.registry().rewards().size(),
+                installed.registry().progressions().size());
     }
 
     private static String read(Identifier id, Resource resource) {
