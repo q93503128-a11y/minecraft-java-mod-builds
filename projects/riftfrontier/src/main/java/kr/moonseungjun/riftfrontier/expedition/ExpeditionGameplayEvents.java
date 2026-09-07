@@ -42,4 +42,14 @@ public final class ExpeditionGameplayEvents {
             ExpeditionGameplayService.failActive(player, "player left during expedition");
         }
     }
+
+    /**
+     * Re-entry is evaluated only when the server has a concrete player login event. This keeps the
+     * restart/logout UX event-driven and avoids broad world scans or proximity-based ownership guesses.
+     */
+    public static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ExpeditionGameplayService.reconcilePlayerFieldReentry(player);
+        }
+    }
 }
