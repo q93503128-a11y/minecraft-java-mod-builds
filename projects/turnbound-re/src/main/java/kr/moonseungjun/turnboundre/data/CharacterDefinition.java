@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,34 +81,10 @@ public record CharacterDefinition(
     /** All referenced action ids in deterministic presentation order. */
     public List<String> actions() {
         List<String> out = new ArrayList<>();
-        if (basicAction != null && !basicAction.isBlank()) out.add(basicAction);
+        out.add(basicAction);
         out.addAll(skills);
-        if (burst != null && !burst.isBlank()) out.add(burst);
+        out.add(burst);
         out.addAll(passives);
         return List.copyOf(out);
-    }
-
-    /**
-     * Compatibility constructor for old contract tests only. New content must use the canonical constructor/JSON.
-     */
-    @Deprecated
-    public CharacterDefinition(String id, int originStar, String role, String legacyAffinity, List<String> actions) {
-        this(id, "", originStar, Math.max(1, Math.min(5, originStar)), List.of(role),
-                new Stats(1, 1, 1, 1, 1), new Growth(0, 0, 0, 0, 0), Map.of(),
-                legacyAffinities(legacyAffinity),
-                legacyAction(actions), List.of(legacyAction(actions)), legacyAction(actions), List.of(),
-                new Availability("DEBUG", ""), id == null ? "" : id);
-    }
-
-    private static String legacyAction(List<String> actions) {
-        return actions == null || actions.isEmpty() ? "turnbound_re:missing" : actions.getFirst();
-    }
-
-    private static Map<String, String> legacyAffinities(String value) {
-        boolean oldElement = List.of("FLAME", "TIDE", "GALE", "STONE", "LIGHT", "DARK").contains(value);
-        String grade = oldElement ? "NORMAL" : value;
-        Map<String, String> out = new LinkedHashMap<>();
-        for (String tag : List.of("MELEE", "PROJECTILE", "FIRE", "BLAST", "ARCANE", "VOID")) out.put(tag, grade);
-        return Map.copyOf(out);
     }
 }

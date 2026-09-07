@@ -4,13 +4,13 @@ import kr.moonseungjun.turnboundre.data.StatusDefinition;
 
 /** Shared status mutation entry point for deterministic battle state. */
 public final class StatusService {
-    public static final String GUARD = "GUARD";
-    public static final String EXPOSED = "EXPOSED";
-    public static final String POISE_GUARD = "POISE_GUARD";
-    public static final String BURN = "BURN";
-    public static final String SLOW = "SLOW";
-    public static final String ATK_UP = "ATK_UP";
-    public static final String DEF_DOWN = "DEF_DOWN";
+    public static final String GUARD = "turnbound_re:guard";
+    public static final String EXPOSED = "turnbound_re:exposed";
+    public static final String POISE_GUARD = "turnbound_re:poise_guard";
+    public static final String BURN = "turnbound_re:burn";
+    public static final String SLOW = "turnbound_re:slow";
+    public static final String ATK_UP = "turnbound_re:atk_up";
+    public static final String DEF_DOWN = "turnbound_re:def_down";
 
     private StatusService() {}
 

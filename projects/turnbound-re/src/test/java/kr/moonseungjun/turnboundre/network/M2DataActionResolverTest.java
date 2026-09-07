@@ -11,13 +11,17 @@ import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class M2DataActionResolverTest {
+    private static final String BASIC = "turnbound_re:test_basic";
     private static final String SKILL = "turnbound_re:test_skill";
+    private static final String BURST = "turnbound_re:test_burst";
     private static final String UNOWNED = "turnbound_re:unowned_skill";
+    private static final String HERO = "turnbound_re:test_hero";
 
     private static BattleParticipant player() {
         return new BattleParticipant("p1", BattleTeam.PLAYER, 0, 20, 100, 10, 5, 30);
@@ -28,12 +32,27 @@ class M2DataActionResolverTest {
     }
 
     private static DefinitionRegistry definitions() {
-        var skill = new ActionDefinition(SKILL, "SKILL", 0, 10, 40,
-                new ActionDefinition.Targeting("ENEMY", "SINGLE", 1));
-        var unowned = new ActionDefinition(UNOWNED, "SKILL", 0, 5, 20,
-                new ActionDefinition.Targeting("ENEMY", "SINGLE", 1));
-        var character = new CharacterDefinition("turnbound_re:test_hero", 5, "STRIKER", "FLAME", List.of(SKILL));
-        return DefinitionRegistry.create(List.of(skill, unowned), List.of(character));
+        var basic = action(BASIC, "BASIC", 10, 25, 5);
+        var skill = action(SKILL, "SKILL", -20, 40, 10);
+        var burst = action(BURST, "BURST", -100, 100, 25);
+        var unowned = action(UNOWNED, "SKILL", -20, 20, 5);
+        var character = new CharacterDefinition(
+                HERO, "minecraft:zombie", 5, 5, List.of("STRIKER"),
+                new CharacterDefinition.Stats(100, 25, 15, 20, 30),
+                new CharacterDefinition.Growth(5, 1.5, 1, 0.2, 0.5), Map.of(),
+                Map.of(
+                        "MELEE", "NORMAL", "PROJECTILE", "NORMAL", "FIRE", "NORMAL",
+                        "BLAST", "NORMAL", "ARCANE", "NORMAL", "VOID", "NORMAL"),
+                BASIC, List.of(SKILL), BURST, List.of(),
+                new CharacterDefinition.Availability("DEBUG", "turnbound_re:test"), HERO);
+        return DefinitionRegistry.create(List.of(basic, skill, burst, unowned), List.of(character));
+    }
+
+    private static ActionDefinition action(String id, String kind, int energyDelta, int hpPower, int poisePower) {
+        return new ActionDefinition(
+                id, kind, energyDelta, hpPower, poisePower, "MELEE",
+                new ActionDefinition.Targeting("ENEMY", "SINGLE", 1), 0,
+                List.of(new ActionDefinition.Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
     }
 
     private static Fixture fixture(DataActionResolver.RuntimeEligibility eligibility) {
@@ -49,7 +68,7 @@ class M2DataActionResolverTest {
 
         DataActionResolver resolver = new DataActionResolver(
                 definitions(),
-                (id, participantId) -> "p1".equals(participantId) ? "turnbound_re:test_hero" : null,
+                (id, participantId) -> "p1".equals(participantId) ? HERO : null,
                 eligibility);
         return new Fixture(battleId, playerEntity, battle, new BattleNetworkGateway(manager, resolver));
     }

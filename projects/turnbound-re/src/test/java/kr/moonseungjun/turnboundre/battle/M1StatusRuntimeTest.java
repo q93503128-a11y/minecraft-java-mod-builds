@@ -22,14 +22,18 @@ class M1StatusRuntimeTest {
 
     @Test void dataDefinedStackCountRespectsDefinitionMaximumWithoutInventingRefreshRules() {
         var runtime = new StatusRuntime();
-        var burn = new StatusDefinition("BURN", "NEGATIVE", "TURN", 3, "REFRESH", List.of("DEBUFF"), List.of("TURN_END"));
+        var burn = new StatusDefinition(
+                StatusService.BURN, "NEGATIVE", "TURN", 2, 3, "REFRESH_DURATION",
+                List.of("DEBUFF", "FIRE"),
+                List.of(new StatusDefinition.Hook(
+                        "TURN_END", new StatusDefinition.Effect("DAMAGE_MAX_HP_PERCENT", 0.03D))));
 
         StatusService.apply(runtime, burn, 2);
-        assertEquals(2, runtime.stacks("BURN"));
+        assertEquals(2, runtime.stacks(StatusService.BURN));
         assertThrows(IllegalArgumentException.class, () -> StatusService.apply(runtime, burn, 4));
     }
 
-    @Test void participantLegacyAccessorsAreBackedBySharedRuntime() {
+    @Test void participantAccessorsAreBackedBySharedRuntime() {
         var participant = new BattleParticipant("p", BattleTeam.PLAYER, 0, 10, 100, 100, 100, 10);
         var state = new ParticipantCombatState(participant);
 

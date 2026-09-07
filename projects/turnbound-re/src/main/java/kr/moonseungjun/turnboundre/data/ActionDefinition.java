@@ -7,9 +7,7 @@ import java.util.List;
 
 /**
  * Canonical data-driven battle action contract.
- *
- * JSON follows docs/13_DATA_SCHEMA.md: energyDelta is positive for generation and negative for cost,
- * while legacy core callers can continue to use energyCost()/power()/poiseDamage() during migration.
+ * JSON follows docs/13_DATA_SCHEMA.md: positive energyDelta generates Energy, negative consumes it.
  */
 public record ActionDefinition(
         String id,
@@ -56,32 +54,19 @@ public record ActionDefinition(
         effects = effects == null ? List.of() : List.copyOf(effects);
     }
 
-    /** Compatibility constructor for M0/M1 tests and the two universal debug commands. */
+    /** Convenience constructor for the two universal core actions and compact deterministic tests. */
     public ActionDefinition(String id, String kind, int energyCost, int poiseDamage, int power) {
         this(id, kind, legacyEnergyDelta(kind, energyCost), power, poiseDamage, "MELEE",
                 defaultTargeting(kind), 0, List.of(new Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
     }
 
-    /** Compatibility constructor retained for the M2 targeting tests. */
-    public ActionDefinition(String id, String kind, int energyCost, int poiseDamage, int power, Targeting targeting) {
-        this(id, kind, legacyEnergyDelta(kind, energyCost), power, poiseDamage, "MELEE",
-                targeting, 0, List.of(new Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
-    }
-
-    /** Compatibility accessor used by the deterministic core while JSON uses energyDelta. */
+    /** Core compatibility accessor while BattleInstance migrates to energyDelta semantics. */
     public int energyCost() {
         return Math.max(0, -energyDelta);
     }
 
-    /** Compatibility accessor; canonical name is hpPower. */
-    public int power() {
-        return hpPower;
-    }
-
-    /** Compatibility accessor; canonical name is poisePower. */
-    public int poiseDamage() {
-        return poisePower;
-    }
+    public int power() { return hpPower; }
+    public int poiseDamage() { return poisePower; }
 
     private static int legacyEnergyDelta(String kind, int energyCost) {
         if ("SKILL".equals(kind) || "BURST".equals(kind)) return -energyCost;
@@ -89,9 +74,7 @@ public record ActionDefinition(
     }
 
     private static Targeting defaultTargeting(String kind) {
-        if ("GUARD".equals(kind) || "PASSIVE".equals(kind)) {
-            return new Targeting("SELF", "SINGLE", 1);
-        }
+        if ("GUARD".equals(kind) || "PASSIVE".equals(kind)) return new Targeting("SELF", "SINGLE", 1);
         return new Targeting("ENEMY", "SINGLE", 1);
     }
 }

@@ -45,16 +45,4 @@ public record StatusDefinition(
         dispelTags = dispelTags == null ? List.of() : List.copyOf(dispelTags);
         hooks = hooks == null ? List.of() : List.copyOf(hooks);
     }
-
-    /** Compatibility constructor for the earlier M1 stack-only status contract. */
-    @Deprecated
-    public StatusDefinition(
-            String id, String polarity, String durationUnit, int maxStacks, String refreshRule,
-            List<String> dispelTags, List<String> legacyHooks
-    ) {
-        this(id, polarity, durationUnit, 1, maxStacks, refreshRule, dispelTags,
-                legacyHooks == null ? List.of() : legacyHooks.stream()
-                        .map(hook -> new Hook("LEGACY", new Effect(hook, 0.0D)))
-                        .toList());
-    }
 }

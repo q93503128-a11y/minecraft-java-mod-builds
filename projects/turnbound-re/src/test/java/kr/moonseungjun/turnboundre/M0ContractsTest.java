@@ -31,9 +31,14 @@ class M0ContractsTest {
     }
 
     @Test void invalidCharacterDefinitionIsRejected() {
-        var invalid = new CharacterDefinition("bad", 6, "UNKNOWN", "VOID", List.of("missing"));
+        var invalid = new CharacterDefinition(
+                "bad", "also_bad", 6, 0, List.of("UNKNOWN"),
+                new CharacterDefinition.Stats(0, -1, -1, -1, 0),
+                new CharacterDefinition.Growth(-1, 0, 0, 0, 0), Map.of(), Map.of(),
+                "missing", List.of(), "missing", List.of(),
+                new CharacterDefinition.Availability("", ""), "bad");
         var errors = DefinitionValidator.validateCharacters(List.of(invalid), Set.of());
-        assertTrue(errors.size() >= 4, errors.toString());
+        assertTrue(errors.size() >= 8, errors.toString());
     }
 
     @Test void invalidActionAndDuplicateIdsAreRejected() {
@@ -47,19 +52,47 @@ class M0ContractsTest {
     }
 
     @Test void definitionRegistryIsValidatedAndImmutable() {
-        var action = new ActionDefinition("turnbound_re:zombie_basic", "BASIC", 0, 2, 10);
-        var character = new CharacterDefinition("turnbound_re:zombie", 1, "VANGUARD", "STONE", List.of("turnbound_re:zombie_basic"));
-        var registry = DefinitionRegistry.create(List.of(action), List.of(character));
-        assertSame(action, registry.actions().get("turnbound_re:zombie_basic"));
-        assertSame(character, registry.characters().get("turnbound_re:zombie"));
+        var basic = action("turnbound_re:zombie_basic", "BASIC");
+        var skill = action("turnbound_re:zombie_skill", "SKILL");
+        var burst = action("turnbound_re:zombie_burst", "BURST");
+        var character = character("turnbound_re:zombie", basic.id(), skill.id(), burst.id());
+        var registry = DefinitionRegistry.create(List.of(basic, skill, burst), List.of(character));
+        assertSame(basic, registry.actions().get(basic.id()));
+        assertSame(character, registry.characters().get(character.id()));
         assertThrows(UnsupportedOperationException.class, () -> registry.actions().clear());
-        assertThrows(IllegalArgumentException.class, () -> DefinitionRegistry.create(
-                List.of(action), List.of(new CharacterDefinition("turnbound_re:broken", 1, "VANGUARD", "STONE", List.of("turnbound_re:missing")))));
+
+        var broken = character("turnbound_re:broken", basic.id(), "turnbound_re:missing", burst.id());
+        assertThrows(IllegalArgumentException.class,
+                () -> DefinitionRegistry.create(List.of(basic, skill, burst), List.of(broken)));
     }
 
     @Test void unmappedVanillaMobIsReported() {
         var missing = VanillaMobCoverageValidator.missing(Set.of("minecraft:zombie", "minecraft:skeleton"),
                 Map.of("minecraft:zombie", VanillaMobCoverageValidator.Coverage.PLAYABLE));
         assertEquals(List.of("minecraft:skeleton"), missing);
+    }
+
+    private static ActionDefinition action(String id, String kind) {
+        int energyDelta = switch (kind) {
+            case "BASIC" -> 10;
+            case "BURST" -> -100;
+            default -> -20;
+        };
+        return new ActionDefinition(
+                id, kind, energyDelta, 90, 20, "MELEE",
+                new ActionDefinition.Targeting("ENEMY", "SINGLE", 1), 0,
+                List.of(new ActionDefinition.Effect("DAMAGE", "", 1.0D, 0, 1.0D)));
+    }
+
+    private static CharacterDefinition character(String id, String basic, String skill, String burst) {
+        return new CharacterDefinition(
+                id, "minecraft:zombie", 2, 2, List.of("VANGUARD"),
+                new CharacterDefinition.Stats(140, 32, 28, 18, 100),
+                new CharacterDefinition.Growth(8, 2.1, 1.8, 0.35, 0.5), Map.of(),
+                Map.of(
+                        "MELEE", "NORMAL", "PROJECTILE", "NORMAL", "FIRE", "WEAK",
+                        "BLAST", "NORMAL", "ARCANE", "NORMAL", "VOID", "RESIST"),
+                basic, List.of(skill), burst, List.of(),
+                new CharacterDefinition.Availability("ENCOUNTER_SHARD", "turnbound_re:test"), id);
     }
 }
