@@ -73,9 +73,11 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 정본: `EXPEDITION_RUNTIME.md`
 
-### M2-B — Gameplay integration — PARTIAL VERIFIED
+### M2-B — Gameplay integration — SYSTEM FEEDBACK VERIFIED / ENCOUNTER NEXT
 
-기준 코드 커밋 `c0ef978c81d36fe63cb9e69942a8aa7f3c6cae6d`, GitHub Actions `Build Riftfrontier` run `34094802012`에서 clean/unit test/build, native GameTest, dedicated server, Xvfb client, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
+첫 gameplay adapter 기준 코드 커밋 `c0ef978c81d36fe63cb9e69942a8aa7f3c6cae6d`, GitHub Actions run `34094802012`에서 전체 Riftfrontier gate가 성공했다.
+
+첫 원정→거점→다음 원정 feedback loop 기준 코드 커밋은 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions `Build Riftfrontier` run `34096694269`이다. clean/unit test/build, native GameTest, dedicated server, Xvfb client, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
 
 완료·검증됨:
 
@@ -85,27 +87,37 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 - validated content snapshot 기반 authoritative expedition 시작
 - bounded technical hub / region cell 진입과 귀환
 - 실제 block 우클릭 resource interaction → `recovered_resources` 기록
-- extraction request/resolve → terminal `EXTRACTED` → 귀환/정산 결과 출력
+- extraction request/resolve → terminal `EXTRACTED`
 - abort / player death / logout → terminal `FAILED` policy
 - production graph를 쓰는 native GameTest 원정 전이 검증
 - technical cell이 production art가 아니라는 명시적 presentation gate
 - first slice에서는 ownership schema가 없으므로 world-wide nonterminal expedition 1개만 허용
+- persistence schema `3` + explicit `2 → 3` migration
+- authoritative `secured_region_01_salvage` hub storage
+- authoritative `expedition_supply` preparation stock
+- successful extraction → retained salvage hub 정산
+- successful extraction → `region_01_pressure` 증가
+- pressure에 따른 다음 Region 01 preparation supply cost 상승
+- hub salvage 1 → expedition supply 2 provisioning 변환
+- 원정 시작 전에 supply를 원자적으로 소비하고 부족하면 run 생성을 거부
+- failure는 preparation supply를 환불하지 않음
+- native GameTest에서 preparation 소비 → extraction settlement → pressure → provisioning → SavedData 재조회까지 검증
 
 정본: `M2B_GAMEPLAY_ADAPTER.md`
 
-다음 구현 묶음 — 이미 검증한 gameplay adapter를 반복하지 않는다:
+다음 구현 묶음 — 이미 검증한 gameplay adapter와 storage/supply feedback을 반복하지 않는다:
 
 - production `region_01` environment rule 1개를 실제 runtime effect로 연결
-- 일반 적 archetype 역할 2종의 실제 encounter spawn/defeat 연결
-- elite 1종
-- extraction retained resource를 hub authoritative storage로 정산
-- storage → 보급/준비 비용 또는 선택 1개 연결
-- world response 1계열이 다음 원정 위험/보급 조건을 실제 변경
-- 위 상호작용 전체 native GameTest + 실제 플레이 검수
+- 일반 적 archetype 역할 2종을 server-authoritative spawn/defeat 상태에 연결
+- elite 1종을 별도 encounter 역할로 연결
+- `region_01_pressure`가 environment 또는 encounter 위험 하나 이상을 실제 변경
+- resource objective와 combat objective가 같은 원정에서 의미 있게 충돌하도록 composition
+- 위 전체 native GameTest
+- 실제 Minecraft 플레이 검수 전에는 presentation/전투 품질 완료를 선언하지 않음
 
 M2 완료 조건:
 
-`준비 → 진입 → 목표/탐사 → 철수 → 투자 → 다음 원정 변화`가 실제 게임에서 끊기지 않고 동작하며 GameTest와 실제 플레이 검수를 통과한다.
+`준비 → 진입 → 목표/탐사/전투 → 철수 → 투자 → 다음 원정 변화`가 실제 게임에서 끊기지 않고 동작하며 GameTest와 실제 플레이 검수를 통과한다.
 
 ## M3 — Combat & Boss Quality Gate
 
@@ -140,6 +152,8 @@ M2 완료 조건:
 - transport abstraction
 - outpost 최소 기능
 - research choice
+
+M2의 salvage→supply 변환은 M4 production/request 체계가 생기기 전까지의 최소 vertical-slice adapter다. M4에서는 이를 정식 생산 recipe/request 흐름으로 승격하며, 검증된 인과관계 자체는 유지한다.
 
 완료 조건:
 
