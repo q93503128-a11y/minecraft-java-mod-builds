@@ -21,7 +21,7 @@ class ContentRuntimeTest {
         var snapshot = ContentRuntime.installValidated(pack.registry(), List.of(pack.packId()));
 
         assertEquals(1, snapshot.generation());
-        assertEquals(7, snapshot.definitionCount());
+        assertEquals(10, snapshot.definitionCount());
         assertEquals(List.of(pack.packId()), snapshot.packIds());
         assertEquals(ContentCatalog.from(pack.registry()).fingerprint(), snapshot.fingerprint());
         assertSame(snapshot, ContentRuntime.requireCurrent());
