@@ -1,22 +1,14 @@
 # Region 01 Persisted Field Evidence Trail
 
-Status: **VERIFIED / MANUAL FIELD PLAY STILL REQUIRED**
+Status: **VERIFIED BASELINE / MANUAL FIELD PLAY STILL REQUIRED**
 
-This document records the bounded automatic evidence trail added to the M2-B Region 01 field-play gate. It extends `FIELD_PLAY_REVIEW.md`; it does not replace the manual combat/presentation review required by `QUALITY_STANDARD.md` and `ROADMAP.md`.
-
-## Verified baseline
-
-Code baseline: `24e2b2e2ea14f629e1bbd71ca0aec180c86fe486`
-
-GitHub Actions `Build Riftfrontier`: `34142352896`
-
-The baseline passed tests and clean build, required native GameTest, dedicated-server smoke, Xvfb client smoke, executable JAR inspection, build-report generation, and deliverable/log artifact upload.
+This document records the bounded automatic evidence trail used by the M2-B Region 01 field-play gate. It extends `FIELD_PLAY_REVIEW.md`; it does not replace the manual combat/presentation review required by `QUALITY_STANDARD.md` and `ROADMAP.md`.
 
 ## Why this exists
 
-`/riftfrontier expedition review` gives a correct read-only snapshot when a human asks for one, but a manual reviewer can forget to capture an edge and a terminal snapshot cannot reconstruct the live threat count that existed immediately before cleanup.
+`/riftfrontier expedition review` gives a correct read-only snapshot when a human asks for one, but a manual reviewer can forget to capture an edge and a terminal snapshot cannot reconstruct every live observation that existed immediately before cleanup.
 
-New production expeditions therefore keep a small immutable `field_evidence` list inside their authoritative `ExpeditionRun`. It records observed lifecycle edges without deciding whether combat feels good.
+Production expeditions therefore keep a small immutable `field_evidence` list inside their authoritative `ExpeditionRun`. It records observed lifecycle edges without deciding whether combat feels good.
 
 This is evidence, not balancing logic. No reward, pressure, combat, extraction, ownership or failure decision is derived from the trail.
 
@@ -51,11 +43,24 @@ The production gameplay adapter records checkpoints at:
 ```text
 successful deployment
 → every successful salvage recovery
-→ immediately before an extraction request is resolved
+→ accepted extraction immediately before authoritative request transition
 → successful extraction after authoritative settlement
 → player abort/death/logout failure before encounter cleanup
 → server-restart reconciliation with threat count explicitly unavailable
 ```
+
+Extraction evidence has an additional atomicity contract:
+
+```text
+DEPLOYED
+→ validateExtractionRequest (read-only)
+   ├─ rejected: no state transition, no PRE_EXTRACTION, no SavedData write
+   └─ accepted: append PRE_EXTRACTION while still DEPLOYED
+                → EXTRACTION_REQUESTED
+                → resolve extraction
+```
+
+This ordering matters because `PRE_EXTRACTION` means an accepted extraction boundary, not merely that the player typed an extraction command. Saves produced before this contract was hardened may contain rejected-attempt checkpoints; `FIELD_PLAY_METRICS.md` keeps conservative legacy read semantics for them.
 
 The existing owner UUID, end reason, content fingerprint and persisted `start_context` remain the authoritative identity/tuning evidence for the same run.
 
@@ -71,7 +76,7 @@ Diagnostic evidence is not allowed to become a gameplay failure mode:
 - no checkpoint may be appended after a terminal checkpoint;
 - checkpoint game time must remain monotonic.
 
-This policy prevents repeated review/extraction attempts or future extra observation points from soft-locking an expedition merely because its diagnostic trail filled up.
+This policy prevents diagnostic observation from soft-locking an expedition merely because its bounded trail filled up.
 
 ## Persistence compatibility
 
@@ -79,13 +84,26 @@ This policy prevents repeated review/extraction attempts or future extra observa
 
 No persistence schema bump is used for this backward-compatible optional diagnostic extension. The existing explicit migration chain remains unchanged.
 
-## Review command
+## Required regression boundary
+
+The required native `extraction_evidence_atomicity` GameTest locks the rejected-request contract at the authoritative world boundary:
+
+- an underfilled Region 01 run remains `DEPLOYED`;
+- its evidence count does not change;
+- it gains no `PRE_EXTRACTION` checkpoint;
+- validation does not advance `worldRevision`;
+- after the required salvage is recovered, normal request/resolve still reaches `EXTRACTED`;
+- the test terminally closes its own fixture so it cannot leak a non-terminal run into other required GameTests.
+
+## Review commands
 
 `/riftfrontier expedition review` remains the concise current/latest-run snapshot.
 
 `/riftfrontier expedition review trail` prints the persisted checkpoints for the caller's latest owner-bound run in order. A legacy run with no stored trail reports `evidence=legacy-unavailable` instead of inventing observations.
 
-The command is read-only. It does not mutate expedition, encounter, economy or content state.
+`/riftfrontier expedition review metrics` summarizes those persisted observations without modifying the run.
+
+These commands are read-only. They do not mutate expedition, encounter, economy or content state.
 
 ## What automation still cannot prove
 
@@ -103,8 +121,8 @@ Those remain manual Minecraft client judgments.
 
 ## Exact next point
 
-Do not tune Region 01 numbers merely because the new trail exposes them. Run actual low-pressure and elevated-pressure Region 01 expeditions in the Minecraft client, then use both `/riftfrontier expedition review` and `/riftfrontier expedition review trail` to preserve the observed run context.
+Do not tune Region 01 numbers merely because the evidence is now structurally cleaner. Run actual low-pressure and elevated-pressure Region 01 expeditions in the Minecraft client, then use `/riftfrontier expedition review`, `review trail`, and `review metrics` to preserve the observed run context.
 
-Exercise normal extraction, abort, death, logout and restart/re-entry. Change spawn spacing, pressure scaling, hazard timing or patrol-clear reward only when a concrete gameplay symptom is paired with the persisted evidence for that run.
+Exercise normal extraction, abort, death, logout and restart/re-entry. Change spawn spacing, pressure scaling, hazard timing or patrol-clear reward only when a concrete gameplay symptom is paired with persisted evidence for that run.
 
 After this manual field-play gate is genuinely closed, prepare the M3 combat/elite/boss reference dossier before final creature art, animation, telegraph or production combat presentation work.
