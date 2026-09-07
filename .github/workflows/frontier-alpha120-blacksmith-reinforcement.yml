@@ -1,0 +1,356 @@
+name: Frontier Alpha.120 Blacksmith Reinforcement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha120-blacksmith-reinforcement.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha120-blacksmith-reinforcement
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply Alpha.120
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=projects/frontier-settlement
+          S="$P/src/main/java/kr/moonseungjun/frontiersettlement/settlement"
+
+          cat > "$S/SettlementEquipmentUpgradeService.java" <<'JAVA'
+          package kr.moonseungjun.frontiersettlement.settlement;
+
+          import kr.moonseungjun.frontiersettlement.FrontierSettlement;
+          import net.minecraft.core.BlockPos;
+          import net.minecraft.core.Holder;
+          import net.minecraft.core.component.DataComponents;
+          import net.minecraft.nbt.CompoundTag;
+          import net.minecraft.network.chat.Component;
+          import net.minecraft.resources.Identifier;
+          import net.minecraft.server.MinecraftServer;
+          import net.minecraft.server.level.ServerLevel;
+          import net.minecraft.server.level.ServerPlayer;
+          import net.minecraft.world.Container;
+          import net.minecraft.world.entity.EquipmentSlotGroup;
+          import net.minecraft.world.entity.ai.attributes.Attribute;
+          import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+          import net.minecraft.world.entity.ai.attributes.Attributes;
+          import net.minecraft.world.item.ItemStack;
+          import net.minecraft.world.item.Items;
+          import net.minecraft.world.item.component.CustomData;
+          import net.minecraft.world.item.component.ItemAttributeModifiers;
+          import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
+
+          import java.util.ArrayList;
+          import java.util.LinkedHashSet;
+          import java.util.List;
+          import java.util.Set;
+
+          /**
+           * Deterministic blacksmith reinforcement for normal and companion equipment.
+           *
+           * The stack stores only one bounded reinforcement level in CUSTOM_DATA. Gameplay attributes
+           * are added through NeoForge's ItemAttributeModifierEvent, so the original/default component,
+           * enchantments, custom name/lore and every unrelated component remain authoritative and intact.
+           * Reinforcement consumes only real copper/iron items from loaded settlement storage; gold,
+           * diamonds and arbitrary modded high-value metals are never implicit blacksmith payment.
+           */
+          public final class SettlementEquipmentUpgradeService {
+              public static final int MAX_REINFORCEMENT_LEVEL = 5;
+              public static final double ATTACK_DAMAGE_PER_LEVEL = 0.5D;
+              public static final double ARMOR_PER_LEVEL = 0.25D;
+
+              private static final String LEVEL_TAG = "frontier_settlement_blacksmith_reinforcement";
+              private static final Identifier ATTACK_MODIFIER_ID = Identifier.fromNamespaceAndPath(
+                      FrontierSettlement.MOD_ID, "blacksmith_attack_reinforcement");
+              private static final Identifier ARMOR_MODIFIER_ID = Identifier.fromNamespaceAndPath(
+                      FrontierSettlement.MOD_ID, "blacksmith_armor_reinforcement");
+
+              private SettlementEquipmentUpgradeService() {}
+
+              public static int reinforcementCap(SettlementData data) {
+                  return switch (SettlementTier.current(data)) {
+                      case CAMP, HAMLET, VILLAGE -> 1;
+                      case FRONTIER_TOWN -> 2;
+                      case DOMAIN -> 4;
+                      case FRONTIER_CAPITAL -> 5;
+                  };
+              }
+
+              public static int nextLevelCost(int nextLevel) {
+                  return switch (Math.max(1, Math.min(MAX_REINFORCEMENT_LEVEL, nextLevel))) {
+                      case 1 -> 4;
+                      case 2 -> 8;
+                      case 3 -> 12;
+                      case 4 -> 18;
+                      default -> 26;
+                  };
+              }
+
+              public static int reinforcementLevel(ItemStack stack) {
+                  if (stack.isEmpty()) return 0;
+                  CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+                  return Math.max(0, Math.min(MAX_REINFORCEMENT_LEVEL, tag.getIntOr(LEVEL_TAG, 0)));
+              }
+
+              /**
+               * @return true when this stack is reinforcement-capable and the blacksmith interaction
+               *         was handled, including cap/resource failure messages. Unsupported items return false
+               *         so ordinary anvil interaction is not hijacked.
+               */
+              public static boolean tryReinforce(ServerPlayer player, ServerLevel level, MinecraftServer server,
+                                                 SettlementData data, ItemStack stack) {
+                  ItemAttributeModifiers base = baseModifiers(stack);
+                  boolean attack = hasAttribute(base, Attributes.ATTACK_DAMAGE);
+                  boolean armor = hasAttribute(base, Attributes.ARMOR);
+                  if (!attack && !armor) return false;
+
+                  if (stack.getCount() != 1) {
+                      player.sendSystemMessage(Component.literal("§6[마을] §f강화할 장비는 한 번에 1개만 들고 있어야 합니다."));
+                      return true;
+                  }
+
+                  int current = reinforcementLevel(stack);
+                  int cap = reinforcementCap(data);
+                  if (current >= cap) {
+                      player.sendSystemMessage(Component.literal("§6[마을] §f현재 마을 단계의 대장간 강화 한도는 +" + cap + "입니다."));
+                      return true;
+                  }
+
+                  int next = current + 1;
+                  int cost = nextLevelCost(next);
+                  if (!SettlementStorageService.storageAvailable(level, data)) {
+                      player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 강화를 사용할 수 있습니다."));
+                      return true;
+                  }
+                  long available = countBlacksmithMetalItems(level, data);
+                  if (available < cost) {
+                      player.sendSystemMessage(Component.literal("§6[마을] §f강화 재료가 부족합니다. 필요: 구리/철 " + cost
+                              + "개 · 현재 " + Math.max(0L, available) + "개"));
+                      return true;
+                  }
+                  if (!consumeBlacksmithMetalItems(level, data, cost)) {
+                      player.sendSystemMessage(Component.literal("§6[마을] §f강화 재료를 안전하게 인출하지 못했습니다. 자원 상태를 다시 확인해 주세요."));
+                      return true;
+                  }
+
+                  CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putInt(LEVEL_TAG, next));
+                  SettlementService.refreshResources(server, data);
+                  SettlementService.broadcast(server, data);
+                  String gain = attack && armor
+                          ? "공격력 +" + (next * ATTACK_DAMAGE_PER_LEVEL) + " · 방어력 +" + (next * ARMOR_PER_LEVEL)
+                          : attack
+                                  ? "공격력 +" + (next * ATTACK_DAMAGE_PER_LEVEL)
+                                  : "방어력 +" + (next * ARMOR_PER_LEVEL);
+                  player.sendSystemMessage(Component.literal("§6[마을] §f대장간 강화 +" + next + " 완료 · " + gain
+                          + " · 구리/철 " + cost + "개 소비"));
+                  return true;
+              }
+
+              /** Blacksmith maintenance and reinforcement intentionally accept only common copper/iron. */
+              public static boolean isBlacksmithMetal(ItemStack stack) {
+                  return stack.is(Items.COPPER_INGOT) || stack.is(Items.RAW_COPPER)
+                          || stack.is(Items.IRON_INGOT) || stack.is(Items.RAW_IRON);
+              }
+
+              public static long countBlacksmithMetalItems(ServerLevel level, SettlementData data) {
+                  if (!SettlementStorageService.storageAvailable(level, data)) return -1L;
+                  long count = 0L;
+                  for (BlockPos pos : blacksmithStoragePositions(level, data)) {
+                      if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+                      for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                          ItemStack stack = container.getItem(slot);
+                          if (isBlacksmithMetal(stack)) count += stack.getCount();
+                      }
+                  }
+                  return count;
+              }
+
+              /** Exact physical-item consumption after a full availability check; no partial payment. */
+              public static boolean consumeBlacksmithMetalItems(ServerLevel level, SettlementData data, long amount) {
+                  if (amount <= 0L) return true;
+                  if (!SettlementStorageService.storageAvailable(level, data)) return false;
+                  if (countBlacksmithMetalItems(level, data) < amount) return false;
+
+                  long left = amount;
+                  // Preserve iron where possible: ordinary copper is spent before raw copper, then iron.
+                  for (int pass = 0; pass < 4 && left > 0L; pass++) {
+                      for (BlockPos pos : blacksmithStoragePositions(level, data)) {
+                          if (left <= 0L) break;
+                          if (!(level.getBlockEntity(pos) instanceof Container container)) continue;
+                          boolean changed = false;
+                          for (int slot = 0; slot < container.getContainerSize() && left > 0L; slot++) {
+                              ItemStack stack = container.getItem(slot);
+                              if (!matchesPass(stack, pass)) continue;
+                              int take = (int) Math.min(left, stack.getCount());
+                              stack.shrink(take);
+                              left -= take;
+                              changed = true;
+                          }
+                          if (changed) container.setChanged();
+                      }
+                  }
+                  return left == 0L;
+              }
+
+              public static void onItemAttributeModifiers(ItemAttributeModifierEvent event) {
+                  int level = reinforcementLevel(event.getItemStack());
+                  if (level <= 0) return;
+
+                  EquipmentSlotGroup attackSlot = firstAttributeSlot(event.getDefaultModifiers(), Attributes.ATTACK_DAMAGE);
+                  if (attackSlot != null) {
+                      event.addModifier(Attributes.ATTACK_DAMAGE,
+                              new AttributeModifier(ATTACK_MODIFIER_ID, level * ATTACK_DAMAGE_PER_LEVEL,
+                                      AttributeModifier.Operation.ADD_VALUE),
+                              attackSlot);
+                  }
+                  EquipmentSlotGroup armorSlot = firstAttributeSlot(event.getDefaultModifiers(), Attributes.ARMOR);
+                  if (armorSlot != null) {
+                      event.addModifier(Attributes.ARMOR,
+                              new AttributeModifier(ARMOR_MODIFIER_ID, level * ARMOR_PER_LEVEL,
+                                      AttributeModifier.Operation.ADD_VALUE),
+                              armorSlot);
+                  }
+              }
+
+              private static ItemAttributeModifiers baseModifiers(ItemStack stack) {
+                  ItemAttributeModifiers modifiers = stack.getOrDefault(
+                          DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+                  if (modifiers.modifiers().isEmpty()) {
+                      modifiers = stack.getItem().getDefaultAttributeModifiers(stack);
+                  }
+                  return modifiers;
+              }
+
+              private static boolean hasAttribute(ItemAttributeModifiers modifiers, Holder<Attribute> attribute) {
+                  return firstAttributeSlot(modifiers, attribute) != null;
+              }
+
+              private static EquipmentSlotGroup firstAttributeSlot(ItemAttributeModifiers modifiers,
+                                                                    Holder<Attribute> attribute) {
+                  for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+                      if (entry.attribute().equals(attribute)) return entry.slot();
+                  }
+                  return null;
+              }
+
+              private static List<BlockPos> blacksmithStoragePositions(ServerLevel level, SettlementData data) {
+                  Set<BlockPos> positions = new LinkedHashSet<>();
+                  positions.addAll(SupplyDepotRegistryService.loadedPositions(level, data));
+                  positions.addAll(SettlementStorageService.storagePositions(data));
+                  return new ArrayList<>(positions);
+              }
+
+              private static boolean matchesPass(ItemStack stack, int pass) {
+                  return switch (pass) {
+                      case 0 -> stack.is(Items.COPPER_INGOT);
+                      case 1 -> stack.is(Items.RAW_COPPER);
+                      case 2 -> stack.is(Items.IRON_INGOT);
+                      default -> stack.is(Items.RAW_IRON);
+                  };
+              }
+          }
+          JAVA
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          P = Path('projects/frontier-settlement')
+          S = P / 'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+
+          def replace_once(path, old, new):
+              text = path.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one replacement, got {text.count(old)}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          gradle = P / 'gradle.properties'
+          replace_once(gradle, 'mod_version=0.1.0-alpha.119', 'mod_version=0.1.0-alpha.120')
+          with gradle.open('a', encoding='utf-8') as f:
+              f.write('\n# Alpha.119 city administration and bounded tier-scaled physical production buffers.\n')
+              f.write('# Alpha.120 deterministic blacksmith equipment reinforcement with copper/iron-only physical payment.\n')
+
+          readme = P / 'README.md'
+          replace_once(readme, '## Current version: 0.1.0-alpha.119', '## Current version: 0.1.0-alpha.120')
+          anchor = ('Central warehouses remain the long-duration storage backbone; extra profession barrels are bounded local buffers rather than a replacement warehouse network.\n')
+          addition = '''Central warehouses remain the long-duration storage backbone; extra profession barrels are bounded local buffers rather than a replacement warehouse network.\n\n## Alpha.120 deterministic blacksmith reinforcement\n\n- Sneak-right-clicking the completed settlement blacksmith anvil still repairs a damaged held item first.\n- A fully repaired single equipment stack with a normal attack-damage or armor attribute can instead be reinforced deterministically.\n- Reinforcement never rolls failure, destruction, downgrade or enchantment replacement.\n- The stack stores only a bounded reinforcement level in custom data; NeoForge's item-attribute event adds the bonus without replacing the equipment's original attribute component.\n- Attack-damage equipment gains +0.5 attack damage per reinforcement level; armor equipment gains +0.25 armor per level.\n- Settlement-tier caps are +1 through Village, +2 at Frontier Town, +4 at Domain and +5 at Frontier Capital.\n- Costs for +1/+2/+3/+4/+5 are 4/8/12/18/26 physical copper-or-iron items.\n- Blacksmith repair and reinforcement accept only copper/raw copper/iron/raw iron; gold, diamonds and arbitrary high-value modded metals are never implicit blacksmith payment.\n- A failed eligibility, tier-cap, storage-load or material check consumes nothing.\n\nExisting external item components, enchantments, names and lore remain authoritative. Unsupported items fall through to ordinary anvil behavior.\n'''
+          replace_once(readme, anchor, addition)
+
+          benefit = S / 'SettlementBenefitService.java'
+          old = '''        ItemStack held = event.getItemStack();\n        if (held.isEmpty() || !held.isDamageableItem() || held.getDamageValue() <= 0) return;\n\n        MinecraftServer server = level.getServer();\n        SettlementData data = SettlementData.get(server);\n        if (!data.founded() || !isSettlementBlacksmithAnvil(data, clicked)) return;\n\n        int repairPerMetal = Math.max(1, SettlementExplorationBenefitService.repairPerMetal(data));\n        int damage = held.getDamageValue();\n        long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);\n\n        if (!SettlementStorageService.storageAvailable(level, data)) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."));\n            finishRepairInteraction(event);\n            return;\n        }\n        if (!SettlementStorageService.consumeMetal(level, data, metalCost)) {\n            player.sendSystemMessage(Component.literal("§6[마을] §f수리 금속이 부족합니다. 필요: " + metalCost));\n            finishRepairInteraction(event);\n            return;\n        }\n\n        held.setDamageValue(0);\n        SettlementService.refreshResources(server, data);\n        SettlementService.broadcast(server, data);\n        player.sendSystemMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 금속 " + metalCost + " 소비"));\n        finishRepairInteraction(event);\n'''
+          new = '''        ItemStack held = event.getItemStack();\n        if (held.isEmpty()) return;\n\n        MinecraftServer server = level.getServer();\n        SettlementData data = SettlementData.get(server);\n        if (!data.founded() || !isSettlementBlacksmithAnvil(data, clicked)) return;\n\n        // A damaged item is always a repair transaction first. One click can never repair and reinforce.\n        if (held.isDamageableItem() && held.getDamageValue() > 0) {\n            int repairPerMetal = Math.max(1, SettlementExplorationBenefitService.repairPerMetal(data));\n            int damage = held.getDamageValue();\n            long metalCost = Math.max(1L, (damage + (long) repairPerMetal - 1L) / repairPerMetal);\n\n            if (!SettlementStorageService.storageAvailable(level, data)) {\n                player.sendSystemMessage(Component.literal("§6[마을] §f공동 저장소가 모두 로드되어야 대장간 수리를 사용할 수 있습니다."));\n                finishRepairInteraction(event);\n                return;\n            }\n            if (!SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems(level, data, metalCost)) {\n                player.sendSystemMessage(Component.literal("§6[마을] §f수리용 구리/철이 부족합니다. 필요: " + metalCost + "개"));\n                finishRepairInteraction(event);\n                return;\n            }\n\n            held.setDamageValue(0);\n            SettlementService.refreshResources(server, data);\n            SettlementService.broadcast(server, data);\n            player.sendSystemMessage(Component.literal("§6[마을] §f대장간 수리 완료 · 구리/철 " + metalCost + "개 소비"));\n            finishRepairInteraction(event);\n            return;\n        }\n\n        if (SettlementEquipmentUpgradeService.tryReinforce(player, level, server, data, held)) {\n            finishRepairInteraction(event);\n        }\n'''
+          replace_once(benefit, old, new)
+
+          main = P / 'src/main/java/kr/moonseungjun/frontiersettlement/FrontierSettlement.java'
+          replace_once(main,
+              'import kr.moonseungjun.frontiersettlement.settlement.SettlementExplorationService;\n',
+              'import kr.moonseungjun.frontiersettlement.settlement.SettlementExplorationService;\nimport kr.moonseungjun.frontiersettlement.settlement.SettlementEquipmentUpgradeService;\n')
+          replace_once(main,
+              '        NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);\n',
+              '        NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);\n        NeoForge.EVENT_BUS.addListener(SettlementEquipmentUpgradeService::onItemAttributeModifiers);\n')
+
+          context = S / 'SettlementContextService.java'
+          replace_once(context,
+              '            case BLACKSMITH -> "완공 · 장비 지원";\n',
+              '            case BLACKSMITH -> "완공 · 수리 · 확정 강화 최대 +" + SettlementEquipmentUpgradeService.reinforcementCap(data) + " · 구리/철 전용";\n')
+          replace_once(context,
+              '            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain();\n',
+              '            case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";\n')
+
+          source_test = P / 'tools/test_current_source.py'
+          replace_once(source_test,
+              'require("mod_version=0.1.0-alpha.119" in gradle, "current verifier/version drift")',
+              'require("mod_version=0.1.0-alpha.120" in gradle, "current verifier/version drift")')
+          old_test = '''benefit = text(SETTLEMENT / "SettlementBenefitService.java")\nrequire("onRightClickBlock" in benefit and "player.isShiftKeyDown()" in benefit\n        and "SettlementStorageService.consumeMetal" in benefit,\n        "blacksmith repair is not explicit player-directed physical maintenance")\nrequire("repairNearbyEquipment" not in benefit, "automatic proximity blacksmith repair returned")\n'''
+          new_test = '''benefit = text(SETTLEMENT / "SettlementBenefitService.java")\nrequire("onRightClickBlock" in benefit and "player.isShiftKeyDown()" in benefit\n        and "SettlementEquipmentUpgradeService.consumeBlacksmithMetalItems" in benefit,\n        "blacksmith repair is not explicit player-directed copper/iron maintenance")\nrequire("SettlementStorageService.consumeMetal(level, data, metalCost)" not in benefit,\n        "blacksmith repair can still implicitly consume gold/diamond-valued storage")\nrequire("repairNearbyEquipment" not in benefit, "automatic proximity blacksmith repair returned")\n\nequipment_upgrade = text(SETTLEMENT / "SettlementEquipmentUpgradeService.java")\nrequire("MAX_REINFORCEMENT_LEVEL = 5" in equipment_upgrade\n        and "ATTACK_DAMAGE_PER_LEVEL = 0.5D" in equipment_upgrade\n        and "ARMOR_PER_LEVEL = 0.25D" in equipment_upgrade,\n        "deterministic blacksmith reinforcement stat ladder missing")\nrequire("case FRONTIER_TOWN -> 2" in equipment_upgrade\n        and "case DOMAIN -> 4" in equipment_upgrade\n        and "case FRONTIER_CAPITAL -> 5" in equipment_upgrade,\n        "settlement-tier reinforcement caps missing")\nrequire("case 1 -> 4" in equipment_upgrade and "case 2 -> 8" in equipment_upgrade\n        and "case 3 -> 12" in equipment_upgrade and "case 4 -> 18" in equipment_upgrade\n        and "default -> 26" in equipment_upgrade,\n        "physical reinforcement cost ladder missing")\nrequire("DataComponents.CUSTOM_DATA" in equipment_upgrade and "CustomData.update" in equipment_upgrade,\n        "reinforcement level is not stored as bounded per-stack custom data")\nrequire("ItemAttributeModifierEvent" in equipment_upgrade\n        and "event.addModifier(Attributes.ATTACK_DAMAGE" in equipment_upgrade\n        and "event.addModifier(Attributes.ARMOR" in equipment_upgrade,\n        "reinforcement bypasses additive NeoForge item-attribute authority")\nrequire("Items.COPPER_INGOT" in equipment_upgrade and "Items.RAW_COPPER" in equipment_upgrade\n        and "Items.IRON_INGOT" in equipment_upgrade and "Items.RAW_IRON" in equipment_upgrade\n        and "Items.GOLD_INGOT" not in equipment_upgrade and "Items.DIAMOND" not in equipment_upgrade,\n        "blacksmith payment is not restricted to common copper/iron items")\nrequire("SettlementEquipmentUpgradeService::onItemAttributeModifiers" in text(JAVA / "FrontierSettlement.java"),\n        "dynamic reinforcement attribute listener is not registered on the NeoForge event bus")\n'''
+          replace_once(source_test, old_test, new_test)
+          PY
+
+      - name: Validate Alpha.120
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=projects/frontier-settlement
+          python3 "$P/tools/test_current_source.py"
+          python3 "$P/tools/test_current_docs.py"
+          cd "$P"
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.120.jar
+          git diff --check
+
+      - name: Commit Alpha.120 project only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git diff --cached --check
+          git commit -m 'frontier: release 0.1.0-alpha.120 blacksmith reinforcement'
+          for attempt in 1 2 3 4 5 6; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 2))
+          done
+          exit 1
