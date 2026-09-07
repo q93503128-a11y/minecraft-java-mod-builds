@@ -4,13 +4,13 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M2 — EXPEDITION DOMAIN FOUNDATION IMPLEMENTED / GAMEPLAY INTEGRATION NEXT`
+`M2 — EXPEDITION DOMAIN FOUNDATION VERIFIED / GAMEPLAY INTEGRATION NEXT`
 
 M0/M1의 빌드·runtime·content kernel 기반 위에 M2 첫 원정 도메인 경계를 구현했다. `region / expedition_resource / contract / extraction_result`가 하나의 검증된 content graph로 연결되고, 실제 원정은 별도의 불변 `ExpeditionRun`과 `ExpeditionLifecycle`을 통해 서버 권위 SavedData에 저장된다.
 
-Persistence root는 schema `2`로 올라갔으며 schema `1 → 2` migration이 명시되어 있다. 첫 vertical-slice fixture에는 salvage resource, salvage recovery contract, secured-return extraction policy가 들어가며 JUnit과 native GameTest가 상태 전이와 실제 authoritative SavedData 업데이트를 검증하도록 확장됐다.
+Persistence root는 schema `2`로 올라갔으며 schema `1 → 2` migration이 명시되어 있다. 첫 vertical-slice fixture에는 salvage resource, salvage recovery contract, secured-return extraction policy가 들어가며 JUnit과 native GameTest가 상태 전이와 실제 authoritative SavedData 업데이트를 검증한다.
 
-**현재 M2 변경의 전체 CI gate가 green인지 확인되기 전에는 이 기반을 완료로 선언하지 않는다.** 직전 M1 기준 전체 runtime gate는 이미 검증되었다.
+기준 코드 커밋 `5d226045e3d6c2140bd810124548806c026b0073`, GitHub Actions run `34089894370`에서 **clean/unit test/build, native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/artifact 단계가 모두 성공**했다. 따라서 M2-A 원정 도메인 기반은 검증 완료로 간주한다.
 
 ## 작업 시작 시 반드시 읽기
 
@@ -67,7 +67,8 @@ Prepare
 - schema `1 → 2` migration에서 persisted expedition domain 도입
 - authoritative overworld-scoped `RiftfrontierWorldData` SavedData (`riftfrontier:world_state`)
 - durable world revision / expedition sequence / active content fingerprint / expedition runs 저장
-- 불변 `ExpeditionRun` 상태 머신: PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED 또는 FAILED
+- Minecraft/DFU와 분리된 순수 불변 `ExpeditionRun` 상태 머신: PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED 또는 FAILED
+- 별도 `ExpeditionRunCodec` persistence adapter
 - `ExpeditionLifecycle`: region/contract/resource 소속 및 contract requirement 검증
 - 서버 시작 시 active content fingerprint와 SavedData root 동기화
 - `/riftfrontier runtime` read-only 진단 명령
