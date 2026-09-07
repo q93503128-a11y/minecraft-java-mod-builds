@@ -61,6 +61,9 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 16. authoritative persistence는 schema version과 명시적 순차 migration을 사용하며 알 수 없는 미래 schema나 빠진 migration step을 묵시적으로 수용하지 않는다.
 17. 세계 공용 authoritative SavedData는 overworld storage의 단일 `riftfrontier:world_state` root를 사용한다. 다른 차원이 별도 world progression을 만들지 않는다.
 18. CI GameTest는 프로세스 종료 코드만 보지 않고 non-zero 실행 marker와 required-tests-passed marker를 모두 요구한다.
+19. 원정 콘텐츠 정의와 실제 원정 상태를 섞지 않는다. `Region/ExpeditionResource/Contract/ExtractionResultProfile`은 불변 content policy이고, `ExpeditionRun`은 서버 권위 세계 사실이다.
+20. 원정 상태 전이는 `PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED` 또는 명시적 `FAILED`만 허용하며, 우회 상태 변경을 저장 데이터에서 직접 수행하지 않는다.
+21. 원정은 자신을 만든 content fingerprint를 저장한다. 이후 datapack reload로 현재 콘텐츠가 달라져도 과거 run의 작성 기준을 추적할 수 있어야 한다.
 
 ## 정본 읽기 순서
 
@@ -75,21 +78,39 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 7. `CONTENT_ARCHITECTURE.md`
 8. `ROADMAP.md`
 9. content/runtime/persistence 작업이면 `CONTENT_RUNTIME.md`
-10. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
+10. expedition 작업이면 `EXPEDITION_RUNTIME.md`
+11. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
 
 ## 현재 단계
 
-`M1 — Runtime Foundation Verified / M2 Schema Boundary Next`
+`M2 — EXPEDITION DOMAIN FOUNDATION IMPLEMENTED / GAMEPLAY INTEGRATION NEXT`
 
-현재까지 M0 빌드/JAR 기반과 M1의 stable content ID, typed JSON definition, merged graph validation, atomic runtime snapshot, deterministic catalog fingerprint, server ResourceManager reload, pack dependency/provenance, machine-readable validator code, sequential persistence migration, 실제 overworld-authoritative `RiftfrontierWorldData`, runtime diagnostics, native GameTest/CI gate가 구현되었다.
+M0/M1에서 빌드/JAR, typed content graph, atomic runtime snapshot, ResourceManager reload, pack dependency/provenance, validator issue code, overworld-authoritative SavedData, diagnostics, native GameTest/CI gate를 검증했다.
 
-기준 커밋 `c307034286dd62d6df71bea47cf721ede1d75957`에서 clean/test/build, 실제 non-zero GameTest 실행/required tests 통과, dedicated server, Xvfb client, executable JAR 검사가 모두 성공했다.
+M2의 첫 도메인 경계로 다음이 구현되어 있다.
 
-M2 진입 전에 남은 설계 경계는 다음 하나의 묶음으로 다룬다.
+- `region`이 노출하는 expedition resource / contract 관계
+- `expedition_resource` content definition
+- `contract` objective / required resource / reward / extraction-result 관계
+- `extraction_result` 정책 정의
+- 전체 graph reference validation
+- 불변 `ExpeditionRun` 상태 머신
+- `ExpeditionLifecycle` 도메인 서비스
+- persistence schema `1 → 2` migration
+- `RiftfrontierWorldData` 아래 expedition run 저장/갱신
+- 첫 vertical-slice fixture의 salvage contract
+- JUnit lifecycle 회귀 테스트
+- native GameTest에서 실제 SavedData root와 원정 상태 전이 검증
 
-- `region / expedition_resource / contract / extraction-result` schema 책임 경계
-- 해당 content type의 codec/builder/validator/reference contract
-- SavedData root 아래 expedition lifecycle domain state
-- 첫 `region_01` pack이 이 계약만으로 시작 → 진행 → 철수/실패를 표현할 수 있는지 검증
+이 단계의 CI 전체 green이 확인되기 전에는 M2 기반을 완료로 선언하지 않는다.
 
-그다음 `준비 → 진입 → 탐사/목표 → 철수 → 투자 → 다음 원정 변화`의 최소 실제 플레이 루프를 완성한다.
+## 다음 정확한 개발 경계
+
+다음 묶음은 schema를 더 늘리는 작업이 아니다. **현재 도메인 계약을 실제 플레이 공간에 연결**한다.
+
+1. 첫 production `region_01` Region Pack을 fixture와 분리해 만든다.
+2. 거점에서 contract를 선택하고 authoritative expedition을 생성하는 서버 경로를 만든다.
+3. 실제 원정 진입/배치와 region-scoped resource 회수 이벤트를 연결한다.
+4. extraction request/resolve가 플레이어 귀환, 보유 자원 정산, world consequence에 실제 영향을 주도록 연결한다.
+5. 실패/사망/이탈 시 `FAILED` 정책과 보존/손실 규칙을 명시한다.
+6. 위 최소 루프를 GameTest와 실제 플레이에서 검증한 뒤 전투/보스 presentation을 확장한다.
