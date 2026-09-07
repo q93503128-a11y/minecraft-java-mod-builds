@@ -46,6 +46,8 @@ class ContentKernelTest {
         var report = new ContentValidator().validate(registry);
         assertTrue(report.hasErrors());
         assertEquals(3, report.issues().stream().filter(i -> i.severity() == ContentValidator.Severity.ERROR).count());
+        assertEquals(3, report.byCode(ContentValidator.Code.MISSING_REFERENCE).size());
+        assertTrue(report.format().contains("[MISSING_REFERENCE]"));
     }
 
     @Test
@@ -113,6 +115,7 @@ class ContentKernelTest {
         var report = new ContentValidator().validate(registry);
         assertFalse(report.hasErrors(), report::format);
         assertEquals(1, report.warnings().size());
+        assertEquals(ContentValidator.Code.NO_WORLD_CONSEQUENCE, report.warnings().getFirst().code());
     }
 
     @Test
