@@ -160,17 +160,18 @@ public final class ExpeditionGameplayService {
         ExpeditionRun run = activeFor(player, world).orElseThrow(() -> new IllegalStateException("No active expedition owned by this player"));
         ServerLevel overworld = level.getServer().overworld();
         int liveThreatsBeforeExit = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, run.sequence());
-        run = recordEvidence(
+
+        // The contract gate is intentionally evaluated before PRE_EXTRACTION is persisted.
+        // A rejected request must be a true no-op for both authoritative lifecycle state and field evidence.
+        var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
+        ExpeditionRun requested = lifecycle.requestExtraction(run);
+        requested = recordEvidence(
             world,
-            run,
+            requested,
             ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
             overworld.getGameTime(),
             liveThreatsBeforeExit
         );
-
-        var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
-        ExpeditionRun requested = lifecycle.requestExtraction(run);
-        world.updateExpedition(requested);
         ExpeditionLifecycle.Resolution resolution = lifecycle.resolveExtraction(requested, level.getGameTime());
         world.updateExpedition(resolution.run());
 
