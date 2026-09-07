@@ -58,7 +58,16 @@ public final class SettlementOutpostProductionService {
     // rescan the wide 97x65x97 assignment envelope only for cache misses/deaths or periodic duplicate
     // maintenance. Work cadence remains 10 ticks, so production and navigation responsiveness do not change.
     private static final int WORKER_MAINTENANCE_INTERVAL_TICKS = 200;
+    private static final int TARGET_RESCAN_DELAY_TICKS = 100;
     private static final Map<Integer, UUID> WORKER_UUID_CACHE = new HashMap<>();
+    // Lumber/quarry targets are physical world coordinates, not resource authority. Reuse a still-valid
+    // target while a worker walks or waits for its production cadence instead of rescanning thousands of
+    // blocks every ten ticks. Empty searches back off for five seconds; invalidated cached targets retry
+    // immediately so player/world changes remain responsive without shrinking the authored work radius.
+    private static final Map<Integer, BlockPos> LUMBER_TARGET_CACHE = new HashMap<>();
+    private static final Map<Integer, BlockPos> QUARRY_TARGET_CACHE = new HashMap<>();
+    private static final Map<Integer, Long> LUMBER_TARGET_RETRY_AFTER = new HashMap<>();
+    private static final Map<Integer, Long> QUARRY_TARGET_RETRY_AFTER = new HashMap<>();
 
     private SettlementOutpostProductionService() {}
 
@@ -68,9 +77,15 @@ public final class SettlementOutpostProductionService {
         ServerLevel level = server.overworld();
         boolean maintenance = tick % WORKER_MAINTENANCE_INTERVAL_TICKS == 0;
         Set<Integer> liveSpecializedOutposts = maintenance ? new HashSet<>() : Set.of();
+        Set<Integer> liveLumberOutposts = maintenance ? new HashSet<>() : Set.of();
+        Set<Integer> liveQuarryOutposts = maintenance ? new HashSet<>() : Set.of();
         for (OutpostRecord outpost : data.outposts()) {
             if ("general".equals(outpost.specialization())) continue;
-            if (maintenance) liveSpecializedOutposts.add(outpost.id());
+            if (maintenance) {
+                liveSpecializedOutposts.add(outpost.id());
+                if ("lumber".equals(outpost.specialization())) liveLumberOutposts.add(outpost.id());
+                if ("quarry".equals(outpost.specialization())) liveQuarryOutposts.add(outpost.id());
+            }
             if (!outpostLoaded(level, outpost)) continue;
             if ("agriculture".equals(outpost.specialization()) && pristineLegacyAgriculturePlot(level, data, outpost)) {
                 initializeSpecializationSite(level, data, outpost);
@@ -79,7 +94,13 @@ public final class SettlementOutpostProductionService {
             if (worker == null || maintenance) worker = ensureWorker(level, outpost);
             if (worker != null) work(level, data, outpost, worker);
         }
-        if (maintenance) WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
+        if (maintenance) {
+            WORKER_UUID_CACHE.keySet().removeIf(id -> !liveSpecializedOutposts.contains(id));
+            LUMBER_TARGET_CACHE.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
+            LUMBER_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveLumberOutposts.contains(id));
+            QUARRY_TARGET_CACHE.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
+            QUARRY_TARGET_RETRY_AFTER.keySet().removeIf(id -> !liveQuarryOutposts.contains(id));
+        }
     }
 
     /** Called when a new specialized outpost becomes authoritative. Only agriculture needs a fixed worksite. */
@@ -259,7 +280,7 @@ public final class SettlementOutpostProductionService {
     }
 
     private static void workLumber(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-        BlockPos target = findTree(level, data, outpost.center(), TREE_RADIUS);
+        BlockPos target = resolveLumberTarget(level, data, outpost);
         if (target == null) {
             move(worker, outpost.center().above(), 0.65D);
             return;
@@ -269,7 +290,14 @@ public final class SettlementOutpostProductionService {
             return;
         }
         if (!workDue(level, outpost, LUMBER_WORK_PERIOD_TICKS)) return;
+        // Natural-leaf evidence is expensive, so confirm it only when a harvest is actually due rather
+        // than on every navigation tick. The full search required the same evidence when caching target.
+        if (!hasLeavesAbove(level, target)) {
+            invalidateLumberTarget(outpost.id());
+            return;
+        }
         ItemStack harvested = harvestVerticalTrunk(level, data, target);
+        invalidateLumberTarget(outpost.id());
         if (!harvested.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
@@ -278,29 +306,106 @@ public final class SettlementOutpostProductionService {
     }
 
     private static void workQuarry(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {
-        BlockPos target = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
-        if (target == null) target = findManagedQuarryStone(level, data, outpost.center());
+        BlockPos target = resolveQuarryTarget(level, data, outpost);
         if (target == null) {
             move(worker, outpost.center().above(), 0.65D);
             return;
         }
         BlockPos approach = quarryApproach(level, data, target);
-        if (approach == null) return;
+        if (approach == null) {
+            invalidateQuarryTarget(outpost.id());
+            return;
+        }
         if (worker.distanceToSqr(approach.getX() + 0.5D, approach.getY(), approach.getZ() + 0.5D) > 9.0D) {
             SettlementWorkerStorageNavigation.moveToInteraction(level, worker, approach, 0.78D, 9.0D);
             return;
         }
         if (!workDue(level, outpost, QUARRY_WORK_PERIOD_TICKS)) return;
         if (!level.getBlockState(target.above()).isAir()) {
-            if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);
+            if (clearTopQuarryOverburden(level, data, target)) {
+                worker.swing(InteractionHand.MAIN_HAND);
+            } else {
+                invalidateQuarryTarget(outpost.id());
+            }
             return;
         }
         ItemStack harvested = harvestStoneCluster(level, data, target);
+        invalidateQuarryTarget(outpost.id());
         if (!harvested.isEmpty()) {
             worker.swing(InteractionHand.MAIN_HAND);
             worker.setItemSlot(EquipmentSlot.MAINHAND, harvested);
             SettlementDeferredOutpostService.consumeProductionCredit(level.getServer(), outpost, QUARRY_WORK_PERIOD_TICKS);
         }
+    }
+
+    private static BlockPos resolveLumberTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        int id = outpost.id();
+        BlockPos cached = LUMBER_TARGET_CACHE.get(id);
+        if (cached != null) {
+            if (validCachedLumberTarget(level, data, outpost, cached)) return cached;
+            invalidateLumberTarget(id);
+        }
+        long now = level.getGameTime();
+        Long retryAfter = LUMBER_TARGET_RETRY_AFTER.get(id);
+        if (retryAfter != null && now < retryAfter) return null;
+        BlockPos found = findTree(level, data, outpost.center(), TREE_RADIUS);
+        if (found == null) {
+            LUMBER_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
+            return null;
+        }
+        LUMBER_TARGET_CACHE.put(id, found);
+        LUMBER_TARGET_RETRY_AFTER.remove(id);
+        return found;
+    }
+
+    private static boolean validCachedLumberTarget(ServerLevel level, SettlementData data,
+                                                    OutpostRecord outpost, BlockPos target) {
+        if (!withinTargetEnvelope(outpost.center(), target, TREE_RADIUS, -4, 10) || !level.hasChunkAt(target)) return false;
+        return level.getBlockState(target).is(BlockTags.LOGS) && !isProtected(data, target);
+    }
+
+    private static void invalidateLumberTarget(int outpostId) {
+        LUMBER_TARGET_CACHE.remove(outpostId);
+        LUMBER_TARGET_RETRY_AFTER.remove(outpostId);
+    }
+
+    private static BlockPos resolveQuarryTarget(ServerLevel level, SettlementData data, OutpostRecord outpost) {
+        int id = outpost.id();
+        BlockPos cached = QUARRY_TARGET_CACHE.get(id);
+        if (cached != null) {
+            if (validCachedQuarryTarget(level, data, outpost, cached)) return cached;
+            invalidateQuarryTarget(id);
+        }
+        long now = level.getGameTime();
+        Long retryAfter = QUARRY_TARGET_RETRY_AFTER.get(id);
+        if (retryAfter != null && now < retryAfter) return null;
+        BlockPos found = findExposedStone(level, data, outpost.center(), QUARRY_RADIUS);
+        if (found == null) found = findManagedQuarryStone(level, data, outpost.center());
+        if (found == null) {
+            QUARRY_TARGET_RETRY_AFTER.put(id, now + TARGET_RESCAN_DELAY_TICKS);
+            return null;
+        }
+        QUARRY_TARGET_CACHE.put(id, found);
+        QUARRY_TARGET_RETRY_AFTER.remove(id);
+        return found;
+    }
+
+    private static boolean validCachedQuarryTarget(ServerLevel level, SettlementData data,
+                                                    OutpostRecord outpost, BlockPos target) {
+        if (!withinTargetEnvelope(outpost.center(), target, QUARRY_RADIUS, -7, 4) || !level.hasChunkAt(target)) return false;
+        return isQuarryStone(level.getBlockState(target)) && !isProtected(data, target);
+    }
+
+    private static void invalidateQuarryTarget(int outpostId) {
+        QUARRY_TARGET_CACHE.remove(outpostId);
+        QUARRY_TARGET_RETRY_AFTER.remove(outpostId);
+    }
+
+    private static boolean withinTargetEnvelope(BlockPos center, BlockPos target, int radius, int minY, int maxY) {
+        int dx = target.getX() - center.getX();
+        int dz = target.getZ() - center.getZ();
+        int dy = target.getY() - center.getY();
+        return dx * dx + dz * dz <= radius * radius && dy >= minY && dy <= maxY;
     }
 
     private static void workMine(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierWorkerEntity worker) {

@@ -157,6 +157,15 @@ require("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in outpost_production
         and "resolveCachedWorker" in outpost_production
         and "level.getEntity(uuid)" in outpost_production,
         "specialized outpost worker lookup returned to wide AABB scans on the hot path")
+require("TARGET_RESCAN_DELAY_TICKS = 100" in outpost_production
+        and "LUMBER_TARGET_CACHE" in outpost_production
+        and "QUARRY_TARGET_CACHE" in outpost_production
+        and "resolveLumberTarget" in outpost_production
+        and "resolveQuarryTarget" in outpost_production,
+        "specialized outpost physical target caching/regression backoff missing")
+require("validCachedLumberTarget" in outpost_production and "validCachedQuarryTarget" in outpost_production
+        and "withinTargetEnvelope" in outpost_production,
+        "cached specialized target validation missing")
 
 fishing = text(SETTLEMENT / "SettlementFishingOutpostService.java")
 require("shorelineHits" in fishing and "shorelineMisses" in fishing and "prepareShorelineCache" in fishing,
