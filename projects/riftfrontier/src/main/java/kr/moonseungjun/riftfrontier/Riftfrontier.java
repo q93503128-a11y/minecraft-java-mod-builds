@@ -7,6 +7,7 @@ import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
 import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayService;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
@@ -39,6 +40,7 @@ public final class Riftfrontier {
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::rightClickBlock);
+        NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::entityJoinLevel);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerClone);
         NeoForge.EVENT_BUS.addListener(ExpeditionGameplayEvents::playerLoggedOut);
     }
@@ -56,6 +58,11 @@ public final class Riftfrontier {
         var snapshot = ContentRuntime.requireCurrent();
         var worldData = RiftfrontierWorldData.get(event.getServer().overworld());
         boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
+        var reconciled = ExpeditionGameplayService.reconcileAfterServerRestart(event.getServer().overworld());
+        reconciled.ifPresent(run -> LOGGER.warn(
+            "Riftfrontier restart reconciliation failed non-terminal expedition sequence={} status={} without refund; persisted proxy entities will be discarded when loaded",
+            run.sequence(), run.status()
+        ));
         LOGGER.info("Riftfrontier authoritative world root ready: changed={}, {}", changed, worldData.diagnosticSummary());
     }
 }
