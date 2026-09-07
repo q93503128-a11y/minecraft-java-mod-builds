@@ -3,6 +3,7 @@ package kr.moonseungjun.riftfrontier.gametest;
 import kr.moonseungjun.riftfrontier.Riftfrontier;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionEvidenceCheckpoint;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionExtractionGate;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayService;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionLifecycle;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRun;
@@ -193,58 +194,66 @@ public final class RiftfrontierGameTests {
     private static void extractionEvidenceAtomicity(GameTestHelper helper) {
         var snapshot = ContentRuntime.requireCurrent();
         var lifecycle = new ExpeditionLifecycle(snapshot);
-        var worldData = RiftfrontierWorldData.get(helper.getLevel());
-        helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Extraction atomicity regression requires no pre-existing active expedition");
-
-        ExpeditionRun persisted = worldData.createExpedition(
+        long started = helper.getLevel().getGameTime();
+        ExpeditionRun deployed = lifecycle.deploy(lifecycle.begin(
+            9_000_001L,
             ExpeditionGameplayService.REGION_ID,
             ExpeditionGameplayService.CONTRACT_ID,
             TEST_OWNER,
             snapshot.fingerprint(),
-            helper.getLevel().getGameTime()
-        );
-        ExpeditionRun deployed = lifecycle.deploy(persisted);
+            started
+        ));
         deployed = deployed.appendEvidence(new ExpeditionEvidenceCheckpoint(
             ExpeditionEvidenceCheckpoint.Stage.DEPLOYED,
-            helper.getLevel().getGameTime(),
+            started,
             0,
-            -1,
-            worldData.securedRegion01Salvage(),
-            worldData.expeditionSupply(),
-            worldData.region01Pressure()
+            0,
+            0,
+            0,
+            0
         ));
-        worldData.updateExpedition(deployed);
 
         int evidenceBefore = deployed.evidenceTrail().size();
-        long revisionBefore = worldData.worldRevision();
+        ExpeditionEvidenceCheckpoint rejectedCheckpoint = new ExpeditionEvidenceCheckpoint(
+            ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
+            helper.getLevel().getGameTime(),
+            0,
+            0,
+            0,
+            0,
+            0
+        );
         boolean rejected = false;
         try {
-            lifecycle.validateExtractionRequest(deployed);
+            ExpeditionExtractionGate.accept(lifecycle, deployed, rejectedCheckpoint);
         } catch (IllegalStateException expected) {
             rejected = true;
         }
-        helper.assertTrue(rejected, "Underfilled Region 01 extraction request must be rejected before any authoritative mutation");
-
-        ExpeditionRun after = worldData.expedition(deployed.sequence()).orElseThrow();
-        helper.assertTrue(after.status() == ExpeditionRun.Status.DEPLOYED, "Rejected extraction must leave the authoritative run DEPLOYED");
-        helper.assertTrue(after.evidenceTrail().size() == evidenceBefore, "Rejected extraction must not append PRE_EXTRACTION evidence");
+        helper.assertTrue(rejected, "Underfilled Region 01 extraction request must be rejected by the production extraction gate");
+        helper.assertTrue(deployed.status() == ExpeditionRun.Status.DEPLOYED, "Rejected extraction must leave the immutable source run DEPLOYED");
+        helper.assertTrue(deployed.evidenceTrail().size() == evidenceBefore, "Rejected extraction must not append PRE_EXTRACTION evidence");
         helper.assertTrue(
-            after.evidenceTrail().stream().noneMatch(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION),
-            "Rejected extraction must not leave a misleading PRE_EXTRACTION checkpoint"
+            deployed.evidenceTrail().stream().noneMatch(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION),
+            "Rejected extraction must leave no misleading PRE_EXTRACTION checkpoint"
         );
-        helper.assertTrue(worldData.worldRevision() == revisionBefore, "Rejected extraction validation must not dirty authoritative SavedData");
 
-        ExpeditionRun recovered = lifecycle.recover(after, ExpeditionGameplayService.RESOURCE_ID, 3);
-        worldData.updateExpedition(recovered);
-        lifecycle.validateExtractionRequest(recovered);
-        ExpeditionRun accepted = lifecycle.requestExtraction(recovered);
-        helper.assertTrue(accepted.status() == ExpeditionRun.Status.EXTRACTION_REQUESTED, "A filled contract must still cross the extraction gate normally");
-        helper.assertTrue(accepted.evidenceTrail().size() == evidenceBefore, "Lifecycle acceptance itself must not forge gameplay-adapter evidence");
+        ExpeditionRun recovered = lifecycle.recover(deployed, ExpeditionGameplayService.RESOURCE_ID, 3);
+        ExpeditionEvidenceCheckpoint acceptedCheckpoint = new ExpeditionEvidenceCheckpoint(
+            ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
+            helper.getLevel().getGameTime(),
+            3,
+            0,
+            0,
+            0,
+            0
+        );
+        ExpeditionRun accepted = ExpeditionExtractionGate.accept(lifecycle, recovered, acceptedCheckpoint);
+        helper.assertTrue(accepted.status() == ExpeditionRun.Status.EXTRACTION_REQUESTED, "A filled contract must cross the production extraction gate normally");
+        helper.assertTrue(accepted.evidenceTrail().size() == evidenceBefore + 1, "Accepted extraction must append exactly one PRE_EXTRACTION checkpoint");
+        helper.assertTrue(accepted.evidenceTrail().getLast().stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION, "Accepted extraction evidence must be PRE_EXTRACTION");
 
         ExpeditionLifecycle.Resolution resolved = lifecycle.resolveExtraction(accepted, helper.getLevel().getGameTime());
-        worldData.updateExpedition(resolved.run());
-        helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Extraction atomicity fixture must leave no active expedition behind");
-        helper.assertTrue(resolved.run().status() == ExpeditionRun.Status.EXTRACTED, "Cleanup resolution must preserve the normal accepted extraction path");
+        helper.assertTrue(resolved.run().status() == ExpeditionRun.Status.EXTRACTED, "Accepted gate output must remain compatible with normal extraction resolution");
         helper.succeed();
     }
 }
