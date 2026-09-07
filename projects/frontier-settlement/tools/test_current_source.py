@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.126" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.127" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -496,3 +496,17 @@ require("SettlementCityInvestmentService.tradeHallMarketBonus(data)" in text(SET
         "trade hall still uses a flat presence-only market bonus")
 require("농장 2곳으로 식량 기반 확대" not in guidance,
         "guidance still incorrectly forces two farms despite farm+warehouse satisfying mature food base")
+
+
+# Alpha.127 territory-network finalization.
+require("productiveOutpostDiversity" in operations_summary and "territoryNetworkLevel" in operations_summary,
+        "operations summary does not expose productive-outpost diversity/territory network")
+require("collectProductiveOutpostRole" in operations_summary and "역할 · 벌목" in operations_summary
+        and "역할 · 농업" in operations_summary and "역할 · 채석" in operations_summary and "역할 · 광업" in operations_summary,
+        "territory network presentation no longer derives from the four real productive outpost roles")
+require("생산 특화" in operations_screen and "영지망" in operations_screen,
+        "operations screen hides the existing territory-network decision")
+require("벌목·농업·채석·광업 전초" in guide_screen and "영지망" in guide_screen,
+        "guide does not explain territory diversity")
+require((ROOT / "FINAL_IMPLEMENTATION_STATUS_ALPHA127.md").is_file(),
+        "Alpha.127 final implementation status document missing")

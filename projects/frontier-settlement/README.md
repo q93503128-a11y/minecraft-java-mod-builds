@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.126
+## Current version: 0.1.0-alpha.127
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -136,6 +136,16 @@ Existing external item components, enchantments, names and lore remain authorita
 - The screen surfaces one deterministic priority such as blocked construction, housing saturation, missing production workers, storage saturation, production blockers or available facility investment.
 - The construction palette now states the real rule for newly completed facilities: production/logistics/military buildings start at grade I. Settlement tier unlocks only the maximum purchasable grade.
 - Existing world interaction remains authoritative for upgrades: empty-hand sneak-right-click at the appropriate worksite/storage/command point, with real loaded settlement resources consumed by the existing server service.
+
+
+## Alpha.127 territory-network finalization
+
+- The existing M > 운영 screen now exposes productive-outpost diversity and the real Domain territory-network level (0-3).
+- Only the four physical productive roles count: lumber, agriculture, quarry and mining. Repeating one specialization never increases network level.
+- Domain/Frontier Capital settlements with unfinished diversity receive a low-priority operations recommendation only after more urgent construction, staffing, logistics and paid-upgrade bottlenecks are clear.
+- The guide now explains the already-existing payoff: territory diversity strengthens market payout, workshop repair, advanced forging and productive outpost freight.
+- This pass creates no currency, tax, research tree, virtual cargo, force-loading, second transport authority or new settlement save ledger.
+- Repository-side core implementation is now in final hardening/acceptance phase. Real-client visual/play, long survival, save/reload edge cases and two-player acceptance remain required before calling original v0.2 complete.
 
 ## Functional building families
 

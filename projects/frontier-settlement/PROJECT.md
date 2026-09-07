@@ -41,3 +41,8 @@ A full manual source pass before the next real client test found two resource-au
 ### Alpha.126 city investment direction
 
 Late-game abundance is answered with explicit, repeatable physical investment rather than production nerfs or abstract currencies. Civic Hall and Trade Hall each persist a paid I-IV city grade; the settlement tier only unlocks the ceiling. Civic investment improves bounded resident attraction and builder capacity, Trade investment improves only the existing relic-market component, and every upgrade consumes real loaded wood/stone/common copper-or-iron ItemStacks. City grades are optional and do not gate Frontier Capital, preserving old-save tier stability.
+
+
+### Alpha.127 final implementation-status reconciliation
+
+Frontier's repository-side core is now in final hardening/acceptance phase rather than broad feature construction. The physical settlement, six-tier growth, construction, production, paid facility upgrades, logistics, roads/outposts, exploration feedback, supplied military, civil works, city investment and RTS operations loop all have concrete implementations. The remaining release blockers are dominated by real-client visual/play acceptance, long-session pacing, save/reload/unload edge cases, two-player shared-state acceptance and full companion-stack runtime acceptance. Optional true Xaero marker sync, rare-NPC-specific value and larger monumental engineering remain non-blocking unless stable APIs or real-play evidence justify them.

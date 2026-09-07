@@ -5,7 +5,9 @@ import kr.moonseungjun.frontiersettlement.network.SettlementSnapshotPayload;
 import kr.moonseungjun.frontiersettlement.settlement.BuildingType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Presentation-only RTS summary derived from the existing authoritative settlement snapshot/context.
@@ -32,6 +34,8 @@ public record SettlementOperationsSummary(
         int citadels,
         int militaryUpgradeBacklog,
         int cityInvestmentBacklog,
+        int productiveOutpostDiversity,
+        int territoryNetworkLevel,
         int outposts,
         String priority,
         List<String> alerts) {
@@ -58,6 +62,7 @@ public record SettlementOperationsSummary(
         int citadels = 0;
         int militaryUpgradeBacklog = 0;
         int cityInvestmentBacklog = 0;
+        Set<String> productiveOutpostRoles = new HashSet<>();
 
         int productionCeiling = productionCeiling(snapshot.tier());
         int logisticsCeiling = logisticsCeiling(snapshot.tier());
@@ -65,6 +70,10 @@ public record SettlementOperationsSummary(
         int cityCeiling = militaryCeiling;
 
         for (SettlementContextTarget target : snapshot.context().targets()) {
+            if ("outpost".equals(target.kind())) {
+                collectProductiveOutpostRole(productiveOutpostRoles, target.detail());
+                continue;
+            }
             if (!"building".equals(target.kind())) continue;
             BuildingType type = BuildingType.fromId(buildingId(target.key()));
             if (type == null) continue;
@@ -108,6 +117,9 @@ public record SettlementOperationsSummary(
             }
         }
 
+        int productiveOutpostDiversity = productiveOutpostRoles.size();
+        int territoryNetworkLevel = territoryNetworkLevel(snapshot.tier(), productiveOutpostDiversity);
+
         List<String> alerts = new ArrayList<>();
         String project = snapshot.context().projectLabel();
         if (project != null && project.contains("막힘")) alerts.add("진행 중 공사가 막혀 있습니다.");
@@ -141,6 +153,8 @@ public record SettlementOperationsSummary(
             priority = "시민회관·교역회관 도시 투자";
         } else if (militaryUpgradeBacklog > 0) {
             priority = "방어망 개량 투자";
+        } else if (matureTerritoryTier(snapshot.tier()) && territoryNetworkLevel < 3) {
+            priority = "생산 특화 전초 다양화 · 영지망 " + territoryNetworkLevel + "/3";
         } else if (snapshot.nextGoal() != null && !snapshot.nextGoal().isBlank()) {
             priority = snapshot.nextGoal();
         } else {
@@ -152,7 +166,25 @@ public record SettlementOperationsSummary(
                 productionBlocked, productionUnknown, productionUpgradeBacklog,
                 warehouses, cartStations, logisticsSaturated, logisticsUpgradeBacklog,
                 guardPosts, watchtowers, barracks, citadels, militaryUpgradeBacklog, cityInvestmentBacklog,
+                productiveOutpostDiversity, territoryNetworkLevel,
                 snapshot.context().outpostCount(), priority, alerts);
+    }
+
+    private static void collectProductiveOutpostRole(Set<String> roles, String detail) {
+        if (detail == null) return;
+        if (detail.contains("역할 · 벌목")) roles.add("lumber");
+        else if (detail.contains("역할 · 농업")) roles.add("agriculture");
+        else if (detail.contains("역할 · 채석")) roles.add("quarry");
+        else if (detail.contains("역할 · 광업")) roles.add("mining");
+    }
+
+    private static boolean matureTerritoryTier(String tier) {
+        return "영지".equals(tier) || "개척 수도".equals(tier);
+    }
+
+    private static int territoryNetworkLevel(String tier, int diversity) {
+        if (!matureTerritoryTier(tier)) return 0;
+        return Math.min(3, Math.max(0, diversity - 1));
     }
 
     private static String buildingId(String key) {

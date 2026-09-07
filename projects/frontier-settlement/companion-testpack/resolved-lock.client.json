@@ -5,7 +5,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.126"
+    "frontier_settlement": "0.1.0-alpha.127"
   },
   "lock_status": "candidate_runtime_lock",
   "pin_policy": "same locked version must match committed resolved-lock.client.json hashes when present",

@@ -1,7 +1,7 @@
 # Frontier Settlement — v0.2 완성도 갭 감사
 
 기준 문서: `ORIGINAL_DESIGN_v0.2.md`
-현재 구현 기준: `0.1.0-alpha.79`
+현재 구현 기준: `0.1.0-alpha.127`
 
 상태:
 - `완료`: 원본 핵심 요구가 실제 구현됨
@@ -693,3 +693,16 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - 추가 배럴은 안전한 replaceable cell에만 생성되고, 이미 존재하는 컨테이너·fluid·player block은 덮지 않는다.
 - 생산 주민은 현장 버퍼를 먼저 채운 뒤 기존 중앙 창고/공유 보급 경로로 overflow한다. 새 가상 자원·화물·재화·force-load는 없다.
 - M UI는 시민회관 행정 효과와 현재 생산 버퍼 규모를 명시한다. 실제 GUI scale/장시간 overflow 체감은 실플레이 검증이 남는다.
+
+
+## 12. Alpha.127 현재 완성도 재조정
+
+Alpha.79 이후의 구현으로 이 문서 중 과거의 `미구현` 서술 상당수는 역사 기록이 되었다. 현재 정본 판단은 다음과 같다.
+
+- 핵심 게임 루프 구현: **거의 완료** — 물리 정착지, 6단계 성장, 생산/물류/군사/영토, 유료 시설 개량, 도시 투자, 탐험 되먹임, 장교량/터널/선택영역 토목까지 실제 시스템이 존재한다.
+- 남은 필수 작업의 중심: **구현 추가가 아니라 acceptance** — 장시간 생존 페이싱, save/reload·청크 unload 반복, 실제 그래픽 클라이언트, 2인 동시 조작/재접속, 전체 companion stack 실런타임.
+- Alpha.127은 기존 영지망을 M > 운영에서 직접 노출해 서로 다른 벌목/농업/채석/광업 전초가 후반 경제를 강화한다는 RTS 의사결정을 명시한다.
+- true Xaero marker, rare-NPC-specific value, 더 거대한 기념비급 토목은 **완료 판정을 막는 필수 구현으로 보지 않는다**. 안정적 API 또는 실제 플레이 필요성이 확인될 때만 선택적으로 확장한다.
+- 자동 source/docs/build/JAR 검증이 성공해도 실제 Minecraft 장시간/멀티 acceptance를 대신하지 않는다.
+
+따라서 Alpha.127 이후에는 새 대형 시스템을 계속 추가하기보다 실제 플레이에서 발견되는 결함을 수정하고 최종 acceptance를 닫는 것이 기본 방향이다.

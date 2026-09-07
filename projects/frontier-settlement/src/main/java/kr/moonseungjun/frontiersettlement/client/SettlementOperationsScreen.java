@@ -125,7 +125,8 @@ public final class SettlementOperationsScreen extends Screen {
         drawCard(graphics, innerX + cardWidth + gap, secondY, cardWidth, cardHeight, "방어 · 영토", List.of(
                 "초소 " + summary.guardPosts() + " · 감시탑 " + summary.watchtowers()
                         + " · 병영 " + summary.barracks(),
-                "성채 " + summary.citadels() + " · 전초 " + summary.outposts(),
+                "전초 " + summary.outposts() + " · 생산 특화 " + summary.productiveOutpostDiversity()
+                        + "/4 · 영지망 " + summary.territoryNetworkLevel() + "/3",
                 "군사 개량 가능 " + summary.militaryUpgradeBacklog() + "곳"));
     }
 
@@ -162,7 +163,7 @@ public final class SettlementOperationsScreen extends Screen {
         int y = panelY + panelHeight - 19;
         String text;
         if (summary.alerts().isEmpty()) {
-            text = "치명적 병목 없음 · 시설 개량은 월드의 해당 작업 지점에서 직접 투자";
+            text = "치명적 병목 없음 · 서로 다른 생산 특화 전초가 영지망과 후반 경제를 강화";
         } else {
             text = "우선 확인 · " + summary.alerts().getFirst();
         }
