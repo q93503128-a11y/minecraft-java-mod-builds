@@ -7,6 +7,7 @@ import kr.moonseungjun.riftfrontier.content.CoreDefinition;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /** Server-side domain rules for the first expedition loop. Minecraft effects live in adapters. */
 public final class ExpeditionLifecycle {
@@ -16,7 +17,18 @@ public final class ExpeditionLifecycle {
         this.content = Objects.requireNonNull(content, "content");
     }
 
+    /** Legacy/test-fixture entry point. Production gameplay should pass an owner UUID. */
     public ExpeditionRun begin(long sequence, ContentId regionId, ContentId contractId, String fingerprint, long gameTime) {
+        validateBegin(regionId, contractId);
+        return ExpeditionRun.preparing(sequence, regionId, contractId, fingerprint, gameTime);
+    }
+
+    public ExpeditionRun begin(long sequence, ContentId regionId, ContentId contractId, UUID ownerId, String fingerprint, long gameTime) {
+        validateBegin(regionId, contractId);
+        return ExpeditionRun.preparing(sequence, regionId, contractId, ownerId, fingerprint, gameTime);
+    }
+
+    private void validateBegin(ContentId regionId, ContentId contractId) {
         CoreDefinition.Region region = require(CoreDefinition.Kind.REGION, regionId, CoreDefinition.Region.class);
         CoreDefinition.Contract contract = require(CoreDefinition.Kind.CONTRACT, contractId, CoreDefinition.Contract.class);
         if (!contract.region().equals(region.id())) {
@@ -25,7 +37,6 @@ public final class ExpeditionLifecycle {
         if (!region.contracts().contains(contract.id())) {
             throw new IllegalArgumentException("Region " + regionId + " does not expose contract " + contractId);
         }
-        return ExpeditionRun.preparing(sequence, regionId, contractId, fingerprint, gameTime);
     }
 
     public ExpeditionRun deploy(ExpeditionRun run) {
