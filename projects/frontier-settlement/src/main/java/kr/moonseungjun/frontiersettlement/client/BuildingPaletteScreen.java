@@ -110,9 +110,14 @@ public final class BuildingPaletteScreen extends Screen {
     private void addHeaderActions() {
         int closeWidth = compact ? 42 : 48;
         int guideWidth = compact ? 46 : 58;
+        int operationsWidth = compact ? 42 : 52;
         int y = panelY + FrontierUiTheme.S;
         int closeX = panelX + panelWidth - FrontierUiTheme.S - closeWidth;
         int guideX = closeX - FrontierUiTheme.XS - guideWidth;
+        int operationsX = guideX - FrontierUiTheme.XS - operationsWidth;
+        addRenderableWidget(Button.builder(Component.literal("운영"),
+                b -> this.minecraft.gui.setScreen(new SettlementOperationsScreen(this)))
+                .bounds(operationsX, y, operationsWidth, 18).build());
         addRenderableWidget(Button.builder(Component.literal(compact ? "도움" : "가이드"),
                 b -> this.minecraft.gui.setScreen(new SettlementGuideScreen(this, 0)))
                 .bounds(guideX, y, guideWidth, 18).build());
@@ -391,13 +396,54 @@ public final class BuildingPaletteScreen extends Screen {
         if (type == BuildingType.CIVIC_HALL) return "주민 유입 20초 · 건설 인력 +2";
         if (type == BuildingType.LUMBER_CAMP || type == BuildingType.FARM
                 || type == BuildingType.QUARRY || type == BuildingType.MINE) {
-            int rank = tierRank(data.tier());
-            int grade = rank <= 2 ? 1 : rank == 3 ? 2 : rank == 4 ? 3 : 4;
-            int buffers = grade == 1 ? 1 : grade == 2 ? 2 : 3;
-            String label = switch (grade) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; default -> "IV"; };
-            return "개량 " + label + " · 현장 버퍼 " + buffers + "통";
+            int ceiling = productionCeiling(data.tier());
+            return "신규 개량 I · 현장 버퍼 1통 · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 현장 저장통에서 수동 개량";
+        }
+        if (type == BuildingType.WAREHOUSE || type == BuildingType.CART_STATION) {
+            int ceiling = logisticsCeiling(data.tier());
+            return "신규 물류 I · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 저장통에서 수동 확장";
+        }
+        if (type == BuildingType.GUARD_POST || type == BuildingType.WATCHTOWER
+                || type == BuildingType.BARRACKS || type == BuildingType.CITADEL) {
+            int ceiling = militaryCeiling(data.tier());
+            return "신규 군사 I · 현재 상한 " + gradeLabel(ceiling) + " · 완공 후 지휘 지점에서 수동 개량";
         }
         return "";
+    }
+
+    private static int productionCeiling(String tier) {
+        return switch (tier) {
+            case "마을" -> 2;
+            case "개척 도시" -> 3;
+            case "영지", "개척 수도" -> 4;
+            default -> 1;
+        };
+    }
+
+    private static int logisticsCeiling(String tier) {
+        return switch (tier) {
+            case "개척 도시" -> 2;
+            case "영지", "개척 수도" -> 3;
+            default -> 1;
+        };
+    }
+
+    private static int militaryCeiling(String tier) {
+        return switch (tier) {
+            case "개척 도시" -> 2;
+            case "영지" -> 3;
+            case "개척 수도" -> 4;
+            default -> 1;
+        };
+    }
+
+    private static String gradeLabel(int grade) {
+        return switch (Math.max(1, Math.min(4, grade))) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            default -> "IV";
+        };
     }
 
     private static int tierRank(String tier) {

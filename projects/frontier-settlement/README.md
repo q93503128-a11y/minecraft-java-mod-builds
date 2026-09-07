@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.124
+## Current version: 0.1.0-alpha.125
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -126,6 +126,16 @@ Existing external item components, enchantments, names and lore remain authorita
 - Wounded barracks soldiers and remote sentries recover only after immediate combat pressure clears. Each recovery batch consumes 4 ordinary food value and 1 copper/iron item from a real reachable storage container.
 - Recovery never silently spends gold, diamond, golden apples or enchanted golden apples.
 - There is no daily tax, virtual troop currency, free weapon minting, teleport logistics or chunk force-loading. Resource sink follows explicit investment and actual combat damage.
+
+## Alpha.125 RTS operations visibility
+
+- The existing M settlement palette now has an `운영` entry; no new global hotkey or separate management framework is introduced.
+- The operations screen summarizes population/housing, production staffing/runtime blockers, physical resource stock, warehouse/cart capacity, defense infrastructure and outpost count from the snapshot/context already synchronized for HUD/Jade/location presentation.
+- Opening the screen never launches a second server entity/world scan and never creates a save ledger, tax, virtual currency, happiness meter or family simulation.
+- Production/logistics/military upgrade backlog is derived from each completed physical building's persisted grade versus the settlement tier's current unlock ceiling, making late-game wood/stone/copper/iron investment visible instead of silently granting upgrades.
+- The screen surfaces one deterministic priority such as blocked construction, housing saturation, missing production workers, storage saturation, production blockers or available facility investment.
+- The construction palette now states the real rule for newly completed facilities: production/logistics/military buildings start at grade I. Settlement tier unlocks only the maximum purchasable grade.
+- Existing world interaction remains authoritative for upgrades: empty-hand sneak-right-click at the appropriate worksite/storage/command point, with real loaded settlement resources consumed by the existing server service.
 
 ## Functional building families
 

@@ -1013,3 +1013,14 @@ Central logistics now follows the same RTS investment rule as production: settle
 ## Alpha.124 RTS military / territory economy lock
 
 Defense growth is paid physical infrastructure, not an abstract troop-point layer. Guard post, watchtower, barracks and citadel grades use the shared BuildingRecord grade field and real settlement wood/stone/common copper-or-iron payment. The tier only unlocks the ceiling; it never grants the upgrade for free. Barracks remain the sole town-soldier authority and the existing outpost logistics worker remains the sole long-distance freight authority. Post-combat recovery may repeatedly consume ordinary physical food plus common copper/iron, but only after real damage and only from reachable loaded storage. Hidden daily upkeep, high-value implicit payment, virtual inventory, teleport freight and force-loading remain forbidden.
+
+## Alpha.125 operations-surface lock
+
+The RTS-management layer remains presentation-first and low-micromanagement:
+
+- `M -> 운영` is the single compact settlement operations summary; do not create a second hotkey-heavy dashboard family.
+- Existing authoritative snapshot/context data is reused. Opening operations UI must not trigger a second server entity/resource/world scan.
+- Show actionable bottlenecks and paid upgrade backlog before inventing taxes, happiness, families, abstract workforce points or virtual resources.
+- Facility grades remain physical-building state. Tier unlocks a ceiling; the player pays real settlement wood/stone/copper/iron at the existing world interaction point.
+- A new production/logistics/military building starts at grade I; UI must never imply that settlement tier grants its grade for free.
+- Long-term RTS pressure should come from visible construction, storage, equipment, military, logistics and facility investment sinks rather than passive daily deletion of resources.

@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.124" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.125" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -450,3 +450,19 @@ require("SettlementLogisticsUpgradeService.storageSummary(level, building)" in c
         "warehouse/cart saturation context missing")
 require("창고·수레 정거장은 빈손 웅크리기+저장통 우클릭" in guide_screen,
         "in-game guide does not teach logistics investment")
+
+# Alpha.125 RTS operations visibility.
+operations_summary = text(JAVA / "client" / "SettlementOperationsSummary.java")
+operations_screen = text(JAVA / "client" / "SettlementOperationsScreen.java")
+palette_screen = text(JAVA / "client" / "BuildingPaletteScreen.java")
+require("Presentation-only RTS summary" in operations_summary and "snapshot.context().targets()" in operations_summary,
+        "operations summary stopped reusing the existing presentation snapshot/context")
+require("productionUpgradeBacklog" in operations_summary and "logisticsUpgradeBacklog" in operations_summary
+        and "militaryUpgradeBacklog" in operations_summary, "RTS paid-upgrade backlog visibility missing")
+require("ClientSettlementState.snapshot()" in operations_screen and "SettlementOperationsSummary.from(snapshot)" in operations_screen,
+        "operations screen is not driven by synchronized client presentation state")
+require("new SettlementOperationsScreen(this)" in palette_screen, "M palette operations entry point missing")
+require("신규 개량 I" in palette_screen and "신규 물류 I" in palette_screen and "신규 군사 I" in palette_screen,
+        "construction palette returned to misleading free tier-derived facility grades")
+require("완공 후 현장 저장통에서 수동 개량" in palette_screen,
+        "production investment interaction guidance missing from construction palette")
