@@ -1,13 +1,10 @@
 package kr.moonseungjun.turnboundre.data;
 
+import kr.moonseungjun.turnboundre.fixtures.ProductionDefinitionFixture;
 import kr.moonseungjun.turnboundre.network.DataActionResolver;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -15,12 +12,11 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 class M3BundledContentTest {
-    private static final String ROOT = "data/turnbound_re/turnbound_definitions/";
     private static final String ZOMBIE = "turnbound_re:zombie";
 
     @Test
     void productionVerticalSliceBundlesDecodeAndValidateAsOneRegistry() throws IOException {
-        DefinitionBundleParser.Parsed parsed = loadBundledDefinitions();
+        DefinitionBundleParser.Parsed parsed = ProductionDefinitionFixture.load();
         DefinitionRegistry registry = parsed.registry();
 
         assertEquals(40, registry.actions().size());
@@ -60,7 +56,7 @@ class M3BundledContentTest {
 
     @Test
     void dataDrivenBasicIsARealOwnedCommandWhilePassiveIsNeverSubmittedAsACommand() throws IOException {
-        DefinitionRegistry registry = loadBundledDefinitions().registry();
+        DefinitionRegistry registry = ProductionDefinitionFixture.load().registry();
         DataActionResolver resolver = new DataActionResolver(
                 registry,
                 (battleId, participantId) -> "p1".equals(participantId) ? ZOMBIE : null,
@@ -71,31 +67,16 @@ class M3BundledContentTest {
         assertTrue(basic.isPresent());
         assertEquals("BASIC", basic.orElseThrow().definition().kind());
         assertTrue(basic.orElseThrow().policy().owned());
-
         assertTrue(resolver.resolve(battleId, "p1", "turnbound_re:zombie_undead_endurance").isEmpty());
     }
 
     @Test
     void bundledStatusReferencesCoverCoreAndRepresentativeControlStates() throws IOException {
-        Set<String> ids = loadBundledDefinitions().registry().statuses().keySet();
+        Set<String> ids = ProductionDefinitionFixture.load().registry().statuses().keySet();
         assertTrue(ids.containsAll(Set.of(
                 "turnbound_re:guard", "turnbound_re:exposed", "turnbound_re:poise_guard",
                 "turnbound_re:burn", "turnbound_re:slow", "turnbound_re:atk_up", "turnbound_re:def_down",
                 "turnbound_re:venom", "turnbound_re:webbed", "turnbound_re:evasion",
                 "turnbound_re:ward", "turnbound_re:volatile")));
-    }
-
-    private static DefinitionBundleParser.Parsed loadBundledDefinitions() throws IOException {
-        Map<String, String> resources = new LinkedHashMap<>();
-        for (String file : new String[]{
-                "core_statuses.json", "vertical_actions.json", "vertical_characters.json", "vertical_encounters.json"}) {
-            String classpath = ROOT + file;
-            try (InputStream stream = M3BundledContentTest.class.getClassLoader().getResourceAsStream(classpath)) {
-                assertNotNull(stream, "missing production resource " + classpath);
-                resources.put("turnbound_re:turnbound_definitions/" + file,
-                        new String(stream.readAllBytes(), StandardCharsets.UTF_8));
-            }
-        }
-        return DefinitionBundleParser.parse(resources);
     }
 }
