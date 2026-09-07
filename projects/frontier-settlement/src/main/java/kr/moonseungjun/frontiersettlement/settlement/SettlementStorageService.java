@@ -24,6 +24,7 @@ public final class SettlementStorageService {
     private static final int[][] LEGACY_PUBLIC_STOCKPILE_OFFSETS = {
             {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}
     };
+    private static final int MAX_WORKSITE_BUFFER_BARRELS = 3;
 
     private SettlementStorageService() {}
 
@@ -61,12 +62,25 @@ public final class SettlementStorageService {
         return null;
     }
 
+    public static List<BlockPos> worksiteStoragePositions(BuildingRecord building) {
+        BlockPos base = worksiteStoragePosition(building);
+        if (base == null) return List.of();
+        List<BlockPos> positions = new ArrayList<>(MAX_WORKSITE_BUFFER_BARRELS);
+        for (int i = 0; i < MAX_WORKSITE_BUFFER_BARRELS; i++) positions.add(base.above(i));
+        return positions;
+    }
+
+    private static List<BlockPos> desiredWorksiteStoragePositions(BuildingRecord building, SettlementData data) {
+        List<BlockPos> planned = worksiteStoragePositions(building);
+        if (planned.isEmpty()) return List.of();
+        int count = SettlementProductionEfficiencyService.worksiteBufferCount(
+                SettlementProductionEfficiencyService.grade(data));
+        return planned.subList(0, Math.min(count, planned.size()));
+    }
+
     public static List<BlockPos> worksiteStoragePositions(SettlementData data) {
         List<BlockPos> positions = new ArrayList<>();
-        for (BuildingRecord building : data.buildings()) {
-            BlockPos pos = worksiteStoragePosition(building);
-            if (pos != null) positions.add(pos);
-        }
+        for (BuildingRecord building : data.buildings()) positions.addAll(worksiteStoragePositions(building));
         return positions;
     }
 
@@ -93,9 +107,11 @@ public final class SettlementStorageService {
         boolean legacyPublicStorage = level.hasChunkAt(stockpile) && level.getBlockState(stockpile).is(Blocks.BARREL);
         if (legacyPublicStorage) upgradeLegacyPublicBarrels(level, data);
         ensureStarterSupplyDepot(level, stockpile);
-        for (BlockPos pos : worksiteStoragePositions(data)) {
-            if (!canSafelyCreateManagedBarrel(level, pos)) continue;
-            level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
+        for (BuildingRecord building : data.buildings()) {
+            for (BlockPos pos : desiredWorksiteStoragePositions(building, data)) {
+                if (!canSafelyCreateManagedBarrel(level, pos)) continue;
+                level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
+            }
         }
     }
 

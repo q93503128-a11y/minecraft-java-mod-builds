@@ -60,7 +60,8 @@ public final class SettlementConstructionService {
     private static final int BASE_BUILDER_CREW = 2;
     private static final int BUILDERS_PER_CONSTRUCTION_OFFICE = 2;
     private static final int OUTPOST_BUILDER_BONUS_CAP = 6;
-    private static final int MAX_BUILDER_CREW = 12;
+    private static final int CIVIC_HALL_BUILDER_BONUS = 2;
+    private static final int MAX_BUILDER_CREW = 14;
 
     private SettlementConstructionService() {}
 
@@ -1362,7 +1363,9 @@ public final class SettlementConstructionService {
     public static int desiredBuilderCount(SettlementData data) {
         int offices = Math.max(0, data.buildingCount(BuildingType.CONSTRUCTION_OFFICE));
         int outpostBonus = Math.min(OUTPOST_BUILDER_BONUS_CAP, data.outposts().size());
-        return Math.min(MAX_BUILDER_CREW, BASE_BUILDER_CREW + offices * BUILDERS_PER_CONSTRUCTION_OFFICE + outpostBonus);
+        int civicHallBonus = data.buildingCount(BuildingType.CIVIC_HALL) > 0 ? CIVIC_HALL_BUILDER_BONUS : 0;
+        return Math.min(MAX_BUILDER_CREW,
+                BASE_BUILDER_CREW + offices * BUILDERS_PER_CONSTRUCTION_OFFICE + outpostBonus + civicHallBonus);
     }
 
     public static List<FrontierWorkerEntity> buildingProjectBuilders(ServerLevel level, SettlementData data) {

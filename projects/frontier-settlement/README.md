@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.118
+## Current version: 0.1.0-alpha.119
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -89,6 +89,17 @@ Alpha.118 reduces repeated physical-world search cost without reducing authored 
 - natural-leaf evidence for a cached lumber target is reconfirmed only when the 100-tick harvest cadence is actually due;
 - quarry overburden may continue to clear layer-by-layer against the same cached stone face;
 - tree radius 18, quarry radius 16, work periods, harvest batch limits, real ItemStack cargo, protection checks and no-force-load rules are unchanged.
+
+## Alpha.119 city administration and production buffers
+
+- A completed civic hall reduces ordinary civilian vacancy checks from 600 to 400 ticks (30s -> 20s).
+- The civic hall contributes two additional bounded construction workers; the hard builder cap becomes 14.
+- Production grade I uses one physical profession barrel, grade II may create a second, and grades III-IV may create a third vertical barrel.
+- Extra barrels are created only in safe replaceable cells; existing containers, fluids and unrelated/player blocks are never overwritten.
+- Producers fill real local profession barrels before using the existing central/shared overflow path.
+- The M palette exposes both civic administration and current production-buffer capacity.
+
+Central warehouses remain the long-duration storage backbone; extra profession barrels are bounded local buffers rather than a replacement warehouse network.
 
 ## Functional building families
 

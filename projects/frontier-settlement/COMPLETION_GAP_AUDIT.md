@@ -684,3 +684,12 @@ Xaero26.4.2의 historical public `WaypointsManager` API는 없으므로 true set
 - expedition relic/recognized external weapon은 잘못된 외부 태그가 붙어도 건설·모집·수리 재료로 소모하지 않음;
 - 주민 replacement, MAINHAND cargo, shared-project race, client cache reset, save phase codec, 도로/토목 rollback, force-load/teleport 부재를 수동 재검토;
 - 실제 장시간 2인, reconnect, save/reload, 운송자 사망, route unload/reload 등의 실플레이 acceptance는 여전히 별도 검증 필요.
+
+
+### Alpha.119 도시 행정 / 생산 버퍼 패스
+
+- 시민회관은 일반 주민 빈자리 확인 주기를 600틱에서 400틱으로 줄이고 건설 주민 +2를 제공한다. 건설 주민 절대 상한은 14명이다.
+- 생산 개량 I/II/III-IV는 각 생산 건물에 최대 1/2/3개의 실제 BARREL 현장 버퍼를 사용한다.
+- 추가 배럴은 안전한 replaceable cell에만 생성되고, 이미 존재하는 컨테이너·fluid·player block은 덮지 않는다.
+- 생산 주민은 현장 버퍼를 먼저 채운 뒤 기존 중앙 창고/공유 보급 경로로 overflow한다. 새 가상 자원·화물·재화·force-load는 없다.
+- M UI는 시민회관 행정 효과와 현재 생산 버퍼 규모를 명시한다. 실제 GUI scale/장시간 overflow 체감은 실플레이 검증이 남는다.

@@ -60,15 +60,21 @@ public final class SettlementProductionEfficiencyService {
         return switch (clampGrade(grade)) { case 1 -> 160; case 2 -> 130; case 3 -> 100; default -> 80; };
     }
 
+    /** Physical profession barrels available beside one production building at this grade. */
+    public static int worksiteBufferCount(int grade) {
+        return switch (clampGrade(grade)) { case 1 -> 1; case 2 -> 2; default -> 3; };
+    }
+
     public static String detail(BuildingType type, SettlementData data) {
         int grade = grade(data);
         String prefix = "개량 " + gradeLabel(grade) + " · ";
+        String buffer = " · 현장 버퍼 " + worksiteBufferCount(grade) + "통";
         return switch (type) {
-            case LUMBER_CAMP -> prefix + "자동 벌목 · 작업 묶음 " + lumberBatch(grade);
+            case LUMBER_CAMP -> prefix + "자동 벌목 · 작업 묶음 " + lumberBatch(grade) + buffer;
             case FARM -> prefix + "자동 식량 생산 · 수확 묶음 " + farmBatch(grade) + " · 작물 성장 관리 "
-                    + (farmGrowthModulo(grade) == 1 ? "전 구획" : farmGrowthModulo(grade) + "구획 순환");
-            case QUARRY -> prefix + "자동 채석 · 작업 묶음 " + quarryBatch(grade);
-            case MINE -> prefix + "유한 광석 채굴 · 작업 주기 " + mineWorkPeriod(grade) + "틱";
+                    + (farmGrowthModulo(grade) == 1 ? "전 구획" : farmGrowthModulo(grade) + "구획 순환") + buffer;
+            case QUARRY -> prefix + "자동 채석 · 작업 묶음 " + quarryBatch(grade) + buffer;
+            case MINE -> prefix + "유한 광석 채굴 · 작업 주기 " + mineWorkPeriod(grade) + "틱" + buffer;
             default -> "";
         };
     }

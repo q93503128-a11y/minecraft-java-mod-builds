@@ -60,6 +60,8 @@ public final class SettlementWorkerService {
     private static final long STUCK_PROGRESS_TIMEOUT_TICKS = 80L;
     private static final int MAX_APPROACH_PATH_TRIES = 64;
     private static final int PRODUCTION_HAUL_STACK = 64;
+    private static final int BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600;
+    private static final int CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400;
     // Duplicate/migration scans are recovery maintenance, not production AI. Running their broad
     // entity/evidence queries every 10 ticks wasted time in healthy saves; 200 still divides the
     // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.
@@ -76,6 +78,12 @@ public final class SettlementWorkerService {
     private SettlementWorkerService() {}
 
     public static long arrivalFoodCost() { return ARRIVAL_FOOD_COST; }
+
+    public static int workerAttractionIntervalTicks(SettlementData data) {
+        return data.buildingCount(BuildingType.CIVIC_HALL) > 0
+                ? CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS
+                : BASE_WORKER_ATTRACTION_INTERVAL_TICKS;
+    }
 
     public record NormalizeResult(int removedProductionWorkers, int loadedProductionWorkers) {}
     private record TreeCandidate(BlockPos base, Item item, double distance, int availableLogs) {}
@@ -114,7 +122,9 @@ public final class SettlementWorkerService {
         }
         // Duplicate reconciliation must run first on the same 600-tick boundary so an excess
         // historical worker can never be removed and immediately replaced from stale population state.
-        if (server.getTickCount() % 600 == 0) tryAttractWorker(server, level, data);
+        if (server.getTickCount() % workerAttractionIntervalTicks(data) == 0) {
+            tryAttractWorker(server, level, data);
+        }
         if (server.getTickCount() % 10 != 0) return;
 
         runBuildingWorkers(level, data, BuildingType.LUMBER_CAMP, LUMBER_WORKER_NAME, SettlementWorkerService::workLumber);
@@ -849,14 +859,12 @@ public final class SettlementWorkerService {
                                                  FrontierWorkerEntity worker, BuildingRecord building,
                                                  ItemStack carried) {
         if (carried.isEmpty()) return;
-        BlockPos local = SettlementStorageService.worksiteStoragePosition(building);
-        if (local != null && level.hasChunkAt(local) && level.getBlockState(local).is(Blocks.BARREL)
-                && SettlementStorageService.hasRoomAt(level, local, carried)) {
+        for (BlockPos local : SettlementStorageService.worksiteStoragePositions(building)) {
+            if (!level.hasChunkAt(local) || !level.getBlockState(local).is(Blocks.BARREL)
+                    || !SettlementStorageService.hasRoomAt(level, local, carried)) continue;
             double distance = worker.distanceToSqr(
                     local.getX() + 0.5D, local.getY() + 0.5D, local.getZ() + 0.5D);
             if (distance <= WORKSITE_STORAGE_INTERACTION_REACH_SQR) {
-                // Full-stack handoff is authoritative as soon as the worker is beside its own jobsite.
-                // Do not wait for a final path node that can be invalidated by fences, doors or knockback.
                 worker.getNavigation().stop();
                 ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);
                 worker.setItemSlot(EquipmentSlot.MAINHAND, remaining);

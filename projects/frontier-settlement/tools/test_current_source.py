@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.118" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.119" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -45,7 +45,8 @@ for retired in (
     require(retired not in construction, f"retired scaffold authority returned: {retired}")
 require("retireLegacyConstructionScaffolds(" in construction, "legacy scaffold teardown compatibility was removed")
 require("ensureProjectBuilder(" in construction, "shared project-builder authority missing")
-require("MAX_BUILDER_CREW = 12" in construction, "expanded bounded construction crew cap missing")
+require("MAX_BUILDER_CREW = 14" in construction and "CIVIC_HALL_BUILDER_BONUS = 2" in construction,
+        "civic-hall bounded construction crew bonus missing")
 require("BASE_BUILDER_CREW = 2" in construction and "BUILDERS_PER_CONSTRUCTION_OFFICE = 2" in construction,
         "builder workforce no longer scales from base crew through construction offices")
 require("data.outposts().size()" in construction and "OUTPOST_BUILDER_BONUS_CAP = 6" in construction,
@@ -113,6 +114,10 @@ require(worker.count("withinResourceWorkReach(worker, target") >= 2, "resource w
 require("canWorkOrApproach(level, worker, pos, LUMBER_REMOTE_WORK_REACH_SQR)" in worker, "near lumber target still requires a walkable final cell")
 require("isBlockedOutsideWorkReach" in worker, "blocked-target retry still suppresses already-reachable remote work")
 require("DUPLICATE_MAINTENANCE_INTERVAL_TICKS = 200" in worker, "maintenance duplicate scans regressed to hot-path cadence")
+require("BASE_WORKER_ATTRACTION_INTERVAL_TICKS = 600" in worker
+        and "CIVIC_HALL_WORKER_ATTRACTION_INTERVAL_TICKS = 400" in worker
+        and "workerAttractionIntervalTicks(data)" in worker,
+        "civic-hall civilian attraction cadence missing")
 require("WORKSITE_STORAGE_INTERACTION_REACH_SQR = 36.0D" in worker, "close worksite deposit reach missing")
 require("deliverIfCargoFull" in worker, "full-stack immediate deposit handoff missing")
 require("tryExportWorksiteBuffer(" not in worker, "retired worksite re-extraction loop returned")
@@ -134,6 +139,14 @@ require("farmBatch" in production_efficiency and "case 1 -> 12" in production_ef
         "farm harvest batch ladder missing or drifted")
 require("case CAMP, HAMLET -> 1" in production_efficiency and "case DOMAIN, FRONTIER_CAPITAL -> 4" in production_efficiency, "production efficiency grade ladder drifted")
 require("farmGrowthModulo" in production_efficiency and "mineWorkPeriod" in production_efficiency, "production efficiency parameters incomplete")
+require("worksiteBufferCount" in production_efficiency and "case 1 -> 1; case 2 -> 2; default -> 3" in production_efficiency,
+        "tier-scaled physical worksite buffer ladder missing")
+require("MAX_WORKSITE_BUFFER_BARRELS = 3" in storage
+        and "desiredWorksiteStoragePositions" in storage
+        and "worksiteStoragePositions(BuildingRecord building)" in storage,
+        "bounded physical profession-buffer storage authority missing")
+require("SettlementStorageService.worksiteStoragePositions(building)" in worker,
+        "production workers do not use every unlocked local physical buffer")
 require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")
 require("SettlementProductionEfficiencyService.farmBatch" in worker and "harvestLimit" in worker,
         "staffed farm harvest is not bounded against full-stack-per-pass runaway")
@@ -194,6 +207,8 @@ require("FOUNDATION(" in palette and "PRODUCTION(" in palette and "SERVICES(" in
 require("잠김" in palette and "건설 가능" in palette and "자원 부족" in palette,
         "building availability states are not explicit")
 require("FrontierUiTheme" in palette, "M palette bypasses shared Frontier UI tokens")
+require("주민 유입 20초 · 건설 인력 +2" in palette and "현장 버퍼" in palette,
+        "M palette hides Alpha.119 civic/production infrastructure effects")
 
 for client_name in ("BuildingPlacementClient.java", "RoadPlacementClient.java", "OutpostPlacementClient.java", "CivilWorkPlacementClient.java"):
     placement_client = text(JAVA / "client" / client_name)

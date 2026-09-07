@@ -324,6 +324,14 @@ public final class BuildingPaletteScreen extends Screen {
                     x + 42, y, FrontierUiTheme.TEXT_PRIMARY, false);
         }
 
+        String effect = specialEffect(data, type);
+        if (!effect.isBlank()) {
+            y += 15;
+            graphics.text(this.font, Component.literal("효과"), x, y, FrontierUiTheme.TEXT_MUTED, false);
+            graphics.text(this.font, Component.literal(trimToWidth(effect, Math.max(30, right - (x + 42)))),
+                    x + 42, y, FrontierUiTheme.TEXT_PRIMARY, false);
+        }
+
         if (!type.unlockHint().isBlank()) {
             y += 20;
             FrontierUiTheme.divider(graphics, x, y, Math.max(1, right - x));
@@ -377,6 +385,19 @@ public final class BuildingPaletteScreen extends Screen {
 
     private static boolean isAffordable(SettlementSnapshotPayload data, BuildingType type) {
         return data.wood() >= type.woodCost() && data.stone() >= type.stoneCost();
+    }
+
+    private static String specialEffect(SettlementSnapshotPayload data, BuildingType type) {
+        if (type == BuildingType.CIVIC_HALL) return "주민 유입 20초 · 건설 인력 +2";
+        if (type == BuildingType.LUMBER_CAMP || type == BuildingType.FARM
+                || type == BuildingType.QUARRY || type == BuildingType.MINE) {
+            int rank = tierRank(data.tier());
+            int grade = rank <= 2 ? 1 : rank == 3 ? 2 : rank == 4 ? 3 : 4;
+            int buffers = grade == 1 ? 1 : grade == 2 ? 2 : 3;
+            String label = switch (grade) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; default -> "IV"; };
+            return "개량 " + label + " · 현장 버퍼 " + buffers + "통";
+        }
+        return "";
     }
 
     private static int tierRank(String tier) {
