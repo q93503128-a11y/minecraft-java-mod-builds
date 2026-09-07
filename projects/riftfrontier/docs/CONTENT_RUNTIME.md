@@ -1,10 +1,10 @@
 # Riftfrontier — Content Runtime Contract
 
-이 문서는 `CONTENT_ARCHITECTURE.md`의 data-driven 원칙을 실제 런타임에 적용하는 계약이다.
+이 문서는 `CONTENT_ARCHITECTURE.md`의 data-driven 원칙을 실제 런타임과 저장 상태에 적용하는 계약이다.
 
 ## 목적
 
-Riftfrontier의 대규모 Region Pack과 확장 콘텐츠는 Java 코드 복제 대신 여러 versioned JSON document로 구성될 수 있어야 한다. 리소스 리로드 중 일부 문서가 잘못되더라도 플레이 중인 서버가 반쯤 갱신된 상태를 보아서는 안 된다.
+Riftfrontier의 대규모 Region Pack과 확장 콘텐츠는 Java 코드 복제 대신 여러 versioned JSON document로 구성될 수 있어야 한다. 리소스 리로드 중 일부 문서가 잘못되더라도 플레이 중인 서버가 반쯤 갱신된 상태를 보아서는 안 되며, 검증된 콘텐츠와 세계 저장 상태의 관계도 추적 가능해야 한다.
 
 ## 서버 리로드 순서
 
@@ -24,11 +24,9 @@ ResourceManager
 → atomic publish
 ```
 
-핵심은 **참조 검증을 document 단위가 아니라 merge 이후 전체 graph에서 수행한다**는 것이다. 따라서 한 Region Pack을 region / creature / encounter / loot 등 여러 파일로 나누어도 서로 stable content ID로 참조할 수 있다.
+참조 검증은 document 단위가 아니라 merge 이후 전체 graph에서 수행한다. 따라서 한 Region Pack을 region / creature / encounter / loot 등 여러 파일로 나누어도 stable content ID로 상호 참조할 수 있다.
 
 ## Pack metadata 계약
-
-content document의 루트는 현재 다음 메타데이터를 지원한다.
 
 ```json
 {
@@ -40,100 +38,101 @@ content document의 루트는 현재 다음 메타데이터를 지원한다.
 ```
 
 - `pack_id`는 활성 pack 집합에서 유일해야 한다.
-- `depends_on`은 선택 필드이며 중복 값, 자기 자신 참조, 존재하지 않는 pack 참조를 허용하지 않는다.
-- pack dependency cycle은 publish 전에 실패한다.
-- 입력 파일 순서가 달라도 dependency와 `pack_id`를 기준으로 publish 순서가 deterministic해야 한다.
-- 각 pack은 원본 resource identifier를 provenance로 보존해 오류 메시지와 진단 로그에서 실제 source를 찾을 수 있어야 한다.
+- `depends_on`은 중복, 자기 자신 참조, 존재하지 않는 pack 참조를 허용하지 않는다.
+- dependency cycle은 publish 전에 실패한다.
+- 입력 파일 순서가 달라도 dependency와 `pack_id` 기준 publish 순서는 deterministic해야 한다.
+- 각 pack은 원본 resource identifier를 provenance로 보존한다.
 
 ## Last-known-good 규칙
 
-새 candidate가 decode, dependency, duplicate, schema 또는 reference validation 단계에서 실패하면 기존 `ContentRuntimeSnapshot`을 교체하지 않는다.
-
-부분 적용, 일부 registry만 갱신, 오류 항목만 조용히 생략하는 방식은 금지한다.
+새 candidate가 decode, dependency, duplicate, schema 또는 reference validation 단계에서 실패하면 기존 `ContentRuntimeSnapshot`을 교체하지 않는다. 부분 적용, 일부 registry만 갱신, 오류 항목만 조용히 생략하는 방식은 금지한다.
 
 ## Validator issue code
 
-검증 결과는 사람이 읽는 message만 제공하지 않는다. 각 issue에는 stable machine-readable code를 함께 둔다.
+검증 결과는 사람이 읽는 message와 stable machine-readable code를 함께 가진다. 현재 대표 코드는 `MISSING_REFERENCE`, `EMPTY_BEHAVIOUR_SET`, `MISSING_UNIQUE_GAMEPLAY_RULE`, `NO_REGION_ARCHETYPES`, `EMPTY_LOOT_POOLS`, `EMPTY_ENCOUNTER_PARTICIPANTS`, `EMPTY_ENCOUNTER_OBJECTIVE`, `NO_WORLD_CONSEQUENCE`다. CI와 후속 개발자 진단은 message 문자열 파싱 대신 code를 기준으로 분류한다.
 
-현재 코드 예:
+## Snapshot / Fingerprint 계약
 
-- `MISSING_REFERENCE`
-- `EMPTY_BEHAVIOUR_SET`
-- `MISSING_UNIQUE_GAMEPLAY_RULE`
-- `NO_REGION_ARCHETYPES`
-- `EMPTY_LOOT_POOLS`
-- `EMPTY_ENCOUNTER_PARTICIPANTS`
-- `EMPTY_ENCOUNTER_OBJECTIVE`
-- `NO_WORLD_CONSEQUENCE`
+런타임 소비자는 mutable loading registry를 직접 소유하지 않는다. `ContentRuntimeSnapshot`에서 generation, loadedAt, pack IDs, definition count, deterministic catalog fingerprint, typed immutable definitions만 읽는다. 성공 publish만 generation을 증가시킨다.
 
-CI와 후속 개발자 진단 UI는 message 문구를 파싱하지 않고 code를 기준으로 분류한다.
+`ContentCatalog` SHA-256 fingerprint는 현재 활성 콘텐츠 집합의 진단/호환성 breadcrumb다. persistence schema version을 대신하지 않는다.
 
-## Snapshot 계약
+## Authoritative persistence
 
-런타임 소비자는 mutable loading registry를 직접 소유하지 않는다. `ContentRuntimeSnapshot`을 통해 다음만 읽는다.
+세계 공용 저장 상태의 단일 root는 `RiftfrontierWorldData`이며 SavedData ID는 `riftfrontier:world_state`다. 어느 차원에서 접근하더라도 `server.overworld().getDataStorage()`에서 같은 root를 해석한다. 차원별 진행도 fork를 만들지 않는다.
 
-- generation
-- loadedAt
-- pack IDs
-- definition count
-- deterministic catalog fingerprint
-- typed definition lookup / immutable definition collection
-
-성공한 publish마다 generation이 증가한다. 실패한 candidate는 generation을 증가시키지 않는다.
-
-## Fingerprint
-
-`ContentCatalog`의 deterministic SHA-256 fingerprint는 현재 활성 콘텐츠 집합을 식별하는 진단 값이다. 이는 저장 데이터 migration version을 대신하지 않는다.
-
-## Persistence schema와 migration
-
-authoritative saved-data 계층은 `PersistenceSchema.CURRENT`를 기준으로 명시적인 schema version을 가진다.
-
-현재 최초 고정값:
+현재 root 필드:
 
 ```text
-CURRENT = 1
-VERSION_KEY = riftfrontier_schema_version
+riftfrontier_schema_version
+world_revision
+expedition_sequence
+content_fingerprint
 ```
 
-`PersistenceMigrationRegistry`는 한 버전씩 순서대로 이동하는 migration만 허용한다.
+- `PersistenceSchema.CURRENT = 1`
+- legacy schema `0 → 1`은 `PersistenceMigrationRegistry`를 통해 순차 migration한다.
+- 미래 schema 또는 중간 migration 누락은 실패한다.
+- decode가 끝난 뒤에만 migrated state를 gameplay code에 노출한다.
+- 서버 시작 시 활성 validated content fingerprint를 root와 동기화한다.
+- 동일 fingerprint는 불필요한 revision/dirty write를 만들지 않는다.
+- expedition sequence allocation은 서버 권위 mutation이며 sequence와 world revision을 증가시키고 active fingerprint를 함께 기록한다.
 
-- 현재보다 미래 schema는 즉시 거부한다.
-- 중간 migration step이 없으면 조용히 건너뛰지 않고 실패한다.
-- migration 성공 시 VERSION_KEY를 다음 버전으로 명시적으로 갱신한다.
-- 현재 pre-alpha legacy schema 0 → schema 1의 기본 migration은 payload를 보존하면서 version marker를 추가한다.
+향후 settlement/faction/expedition 같은 domain state도 이 root의 schema/migration 계약을 따르며, 임의의 별도 SavedData 섬을 만들지 않는다.
 
-실제 Minecraft `SavedData` 도메인이 추가되면 각 domain state는 이 registry 계약을 통과한 뒤 decode한다.
+## Runtime diagnostics
+
+`/riftfrontier runtime`은 read-only 서버 진단 명령이다. 현재 다음을 노출한다.
+
+- content snapshot generation
+- active pack IDs
+- definition count
+- catalog fingerprint
+- persistence schema
+- world revision
+- expedition sequence
+- persisted content fingerprint
+
+진단 명령은 상태를 수정하지 않는다. 이후 reload 실패 이력이나 definition-level provenance를 추가하더라도 동일한 read-only 원칙을 유지한다.
 
 ## 테스트 계약
 
-최소 회귀 테스트:
+JUnit/순수 로직 회귀 테스트는 content publication, cross-document reference, dependency/provenance, validator codes, migration을 검사한다.
 
-1. valid fixture가 snapshot으로 publish된다.
-2. invalid candidate가 last-known-good snapshot을 교체하지 않는다.
-3. 성공한 replacement만 generation을 증가시킨다.
-4. 서로 다른 JSON document 사이 reference가 merge 후 해결된다.
-5. duplicate pack ID는 두 source와 함께 거부한다.
-6. missing pack dependency는 publish 전에 거부한다.
-7. dependency cycle은 deterministic하게 거부한다.
-8. resource provenance가 merge 결과에 보존된다.
-9. validator issue code가 message와 독립적으로 조회된다.
-10. persistence migration이 순차적으로 current schema까지 이동하거나 명시적으로 실패한다.
+실제 Minecraft GameTest는 native 26.2 test-function registry와 data-driven `test_instance`를 사용한다. 현재 `riftfrontier:authoritative_runtime_state` 함수와 `authoritative_runtime_state.json`, 최소 empty structure가 JAR에 포함되며 다음을 실제 서버 월드에서 검증한다.
+
+1. validated content snapshot이 존재하고 비어 있지 않다.
+2. fingerprint가 존재한다.
+3. authoritative SavedData root를 가져온다.
+4. expedition sequence를 한 번 할당한다.
+5. 재조회한 SavedData가 동일 authoritative cached root다.
+6. sequence가 정확히 +1 된다.
+7. persisted content fingerprint가 active snapshot과 일치한다.
+8. world revision이 증가한다.
 
 ## CI runtime gate
 
-M0의 정적 build만으로 완료를 선언하지 않는다. 프로젝트 workflow는 다음 runtime gate를 수행하도록 유지한다.
+M0의 정적 build만으로 완료를 선언하지 않는다. workflow는 다음을 모두 요구한다.
 
-- dedicated server: EULA 동의가 격리된 CI run directory에서만 생성되고, `Riftfrontier core loaded`, content snapshot publish, 서버 ready (`Done (`) 로그를 확인한다.
-- client: Xvfb 가상 디스플레이에서 `runClient`를 제한 시간 실행하고 Riftfrontier initialization과 fatal crash marker 부재를 확인한다.
-- timeout 종료는 Minecraft가 정상적으로 계속 실행 중인 smoke 특성상 허용하되, 성공 marker가 없으면 실패다.
+- clean/unit test/build 성공
+- `runGameTestServer` 정상 종료
+- GameTest 로그에 **1개 이상 테스트 실제 실행 marker** 존재
+- GameTest 로그에 **required tests 전체 통과 marker** 존재
+- 실패/crash marker 부재
+- dedicated server에서 core load, content publish, authoritative world root attach, ready (`Done (`) 확인
+- Xvfb client에서 Riftfrontier initialization과 fatal crash marker 부재 확인
+- executable JAR에 실제 class, metadata, assets/data, required GameTest instance가 존재하고 ZIP 검사가 성공
+- SHA-256 생성
+
+기준 커밋 `c307034286dd62d6df71bea47cf721ede1d75957`의 실제 CI에서는 GameTest 서버가 non-zero 테스트를 실행했고 required tests가 모두 통과했으며, dedicated server/client/JAR gate도 성공했다. headless Linux runner의 narrator `libflite` 및 audio device 부재 경고는 Minecraft client가 계속 초기화되는 환경 제약으로 기록하며 Riftfrontier 기능 성공으로 오인하거나 모드 크래시로 오인하지 않는다.
 
 ## 다음 확장
 
-M1 후속 우선순위:
+M1 runtime foundation을 반복해서 넓히지 않는다. 다음 작업 묶음은 M2 첫 Expedition vertical slice를 위한 schema/lifecycle 경계다.
 
-- 실제 Minecraft `SavedData` root와 domain별 persistence adapter
-- reload 성공/실패 진단 명령 또는 개발자 화면
-- content provenance를 definition 단위까지 확장할 필요성 평가
-- GameTest에서 resource/runtime linkage 검증
-- M2 첫 Expedition vertical slice용 region/contract/resource schema 추가
+- `region / expedition_resource / contract / extraction-result` content type 계약
+- codec/builder/validator/reference rule
+- SavedData root 아래 expedition domain state와 lifecycle transition
+- 첫 `region_01` pack
+- 시작 → 진행 → 철수/실패 결과를 실제 GameTest로 검증
+- 필요 시 definition-level provenance와 reload failure diagnostics 확장
