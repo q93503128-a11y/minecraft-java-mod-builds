@@ -60,7 +60,10 @@ public final class SettlementProductionEfficiencyService {
         return switch (clampGrade(grade)) { case 1 -> 160; case 2 -> 130; case 3 -> 100; default -> 80; };
     }
 
-    /** Physical profession barrels available beside one production building at this grade. */
+    /**
+     * Physical short-range profession barrels available beside one production building at this grade.
+     * Central/shared storage remains the overflow and long-duration inventory authority.
+     */
     public static int worksiteBufferCount(int grade) {
         return switch (clampGrade(grade)) { case 1 -> 1; case 2 -> 2; default -> 3; };
     }
