@@ -24,7 +24,7 @@ ResourceManager
 → atomic publish
 ```
 
-참조 검증은 document 단위가 아니라 merge 이후 전체 graph에서 수행한다. 따라서 한 Region Pack을 region / creature / encounter / loot 등 여러 파일로 나누어도 stable content ID로 상호 참조할 수 있다.
+참조 검증은 document 단위가 아니라 merge 이후 전체 graph에서 수행한다. 따라서 한 Region Pack을 region / creature / encounter / loot / resource / contract 등 여러 파일로 나누어도 stable content ID로 상호 참조할 수 있다.
 
 ## Pack metadata 계약
 
@@ -49,7 +49,36 @@ ResourceManager
 
 ## Validator issue code
 
-검증 결과는 사람이 읽는 message와 stable machine-readable code를 함께 가진다. 현재 대표 코드는 `MISSING_REFERENCE`, `EMPTY_BEHAVIOUR_SET`, `MISSING_UNIQUE_GAMEPLAY_RULE`, `NO_REGION_ARCHETYPES`, `EMPTY_LOOT_POOLS`, `EMPTY_ENCOUNTER_PARTICIPANTS`, `EMPTY_ENCOUNTER_OBJECTIVE`, `NO_WORLD_CONSEQUENCE`다. CI와 후속 개발자 진단은 message 문자열 파싱 대신 code를 기준으로 분류한다.
+검증 결과는 사람이 읽는 message와 stable machine-readable code를 함께 가진다. 대표 코드는 `MISSING_REFERENCE`, `EMPTY_BEHAVIOUR_SET`, `MISSING_UNIQUE_GAMEPLAY_RULE`, `NO_REGION_ARCHETYPES`, `NO_REGION_RESOURCES`, `NO_REGION_CONTRACTS`, `EMPTY_CONTRACT_REQUIREMENTS`, `EMPTY_ENCOUNTER_PARTICIPANTS`, `NO_WORLD_CONSEQUENCE`다. CI와 후속 개발자 진단은 message 문자열 파싱 대신 code를 기준으로 분류한다.
+
+## M2 content graph
+
+현재 core content type은 다음과 같다.
+
+```text
+CombatArchetype
+Region
+LootProfile
+Creature
+Encounter
+ExpeditionResource
+Contract
+ExtractionResultProfile
+```
+
+원정 관련 필수 참조:
+
+```text
+Region → ExpeditionResource
+Region → Contract
+ExpeditionResource → Region
+Contract → Region
+Contract → ExpeditionResource requirements
+Contract → LootProfile
+Contract → ExtractionResultProfile
+```
+
+이 관계가 깨지면 atomic publish 전에 ERROR로 거부한다.
 
 ## Snapshot / Fingerprint 계약
 
@@ -59,80 +88,81 @@ ResourceManager
 
 ## Authoritative persistence
 
-세계 공용 저장 상태의 단일 root는 `RiftfrontierWorldData`이며 SavedData ID는 `riftfrontier:world_state`다. 어느 차원에서 접근하더라도 `server.overworld().getDataStorage()`에서 같은 root를 해석한다. 차원별 진행도 fork를 만들지 않는다.
+세계 공용 저장 상태의 단일 root는 `RiftfrontierWorldData`이며 SavedData ID는 `riftfrontier:world_state`다. 어느 차원에서 접근하더라도 `server.overworld().getDataStorage()`에서 같은 root를 해석한다.
 
-현재 root 필드:
+schema 2 root 필드:
 
 ```text
 riftfrontier_schema_version
 world_revision
 expedition_sequence
 content_fingerprint
+expeditions[]
 ```
 
-- `PersistenceSchema.CURRENT = 1`
-- legacy schema `0 → 1`은 `PersistenceMigrationRegistry`를 통해 순차 migration한다.
+- `PersistenceSchema.CURRENT = 2`
+- legacy schema `0 → 1 → 2`를 `PersistenceMigrationRegistry`로 순차 migration한다.
+- schema `1 → 2`는 빈 expedition list를 명시적으로 추가한다.
 - 미래 schema 또는 중간 migration 누락은 실패한다.
 - decode가 끝난 뒤에만 migrated state를 gameplay code에 노출한다.
-- 서버 시작 시 활성 validated content fingerprint를 root와 동기화한다.
-- 동일 fingerprint는 불필요한 revision/dirty write를 만들지 않는다.
-- expedition sequence allocation은 서버 권위 mutation이며 sequence와 world revision을 증가시키고 active fingerprint를 함께 기록한다.
+- expedition sequence allocation은 서버 권위 mutation이다.
+- persisted `ExpeditionRun`은 자신을 작성한 content fingerprint를 보존한다.
+- run identity(sequence/region/contract)는 생성 뒤 변경하지 않는다.
 
-향후 settlement/faction/expedition 같은 domain state도 이 root의 schema/migration 계약을 따르며, 임의의 별도 SavedData 섬을 만들지 않는다.
+원정 상태의 세부 계약은 `EXPEDITION_RUNTIME.md`를 정본으로 한다.
 
 ## Runtime diagnostics
 
-`/riftfrontier runtime`은 read-only 서버 진단 명령이다. 현재 다음을 노출한다.
-
-- content snapshot generation
-- active pack IDs
-- definition count
-- catalog fingerprint
-- persistence schema
-- world revision
-- expedition sequence
-- persisted content fingerprint
-
-진단 명령은 상태를 수정하지 않는다. 이후 reload 실패 이력이나 definition-level provenance를 추가하더라도 동일한 read-only 원칙을 유지한다.
+`/riftfrontier runtime`은 read-only 서버 진단 명령이다. 현재 content snapshot과 persistence schema, world revision, sequence, fingerprint를 노출하며 SavedData diagnostic summary는 전체/active expedition count도 포함한다. 진단 경로는 상태를 수정하지 않는다.
 
 ## 테스트 계약
 
-JUnit/순수 로직 회귀 테스트는 content publication, cross-document reference, dependency/provenance, validator codes, migration을 검사한다.
+JUnit/순수 로직 회귀 테스트는 content publication, cross-document reference, dependency/provenance, validator codes, migration과 expedition domain transition을 검사한다.
 
-실제 Minecraft GameTest는 native 26.2 test-function registry와 data-driven `test_instance`를 사용한다. 현재 `riftfrontier:authoritative_runtime_state` 함수와 `authoritative_runtime_state.json`, 최소 empty structure가 JAR에 포함되며 다음을 실제 서버 월드에서 검증한다.
+실제 Minecraft GameTest는 native 26.2 test-function registry와 data-driven `test_instance`를 사용한다. M2에서는 실제 서버 월드에서 다음을 확인한다.
 
-1. validated content snapshot이 존재하고 비어 있지 않다.
-2. fingerprint가 존재한다.
-3. authoritative SavedData root를 가져온다.
-4. expedition sequence를 한 번 할당한다.
-5. 재조회한 SavedData가 동일 authoritative cached root다.
-6. sequence가 정확히 +1 된다.
-7. persisted content fingerprint가 active snapshot과 일치한다.
-8. world revision이 증가한다.
+1. validated M2 content snapshot 존재
+2. authoritative overworld SavedData root 존재
+3. expedition sequence 단조 증가
+4. PREPARING run 생성
+5. DEPLOYED 전이
+6. region-scoped resource 회수
+7. extraction request와 contract requirement 검증
+8. EXTRACTED terminal state를 SavedData에 갱신
+9. 재조회한 run에 recovered resource가 유지
+10. content fingerprint와 world revision 유지/증가
+
+Mojang Codec과 실제 SavedData serialization의 최종 신뢰 경계는 Minecraft runtime/GameTest다. 순수 JUnit source set에 Minecraft/DFU 런타임 classpath를 복제해서 테스트를 가장하지 않는다.
 
 ## CI runtime gate
 
-M0의 정적 build만으로 완료를 선언하지 않는다. workflow는 다음을 모두 요구한다.
+workflow는 다음을 모두 요구한다.
 
 - clean/unit test/build 성공
 - `runGameTestServer` 정상 종료
-- GameTest 로그에 **1개 이상 테스트 실제 실행 marker** 존재
-- GameTest 로그에 **required tests 전체 통과 marker** 존재
+- GameTest 로그에 1개 이상 테스트 실제 실행 marker
+- GameTest 로그에 required tests 전체 통과 marker
 - 실패/crash marker 부재
-- dedicated server에서 core load, content publish, authoritative world root attach, ready (`Done (`) 확인
-- Xvfb client에서 Riftfrontier initialization과 fatal crash marker 부재 확인
-- executable JAR에 실제 class, metadata, assets/data, required GameTest instance가 존재하고 ZIP 검사가 성공
+- dedicated server에서 core/content/authoritative root/ready 확인
+- Xvfb client에서 Riftfrontier initialization + fatal crash marker 부재 확인
+- executable JAR 구조/필수 GameTest asset/ZIP 검사
 - SHA-256 생성
 
-기준 커밋 `c307034286dd62d6df71bea47cf721ede1d75957`의 실제 CI에서는 GameTest 서버가 non-zero 테스트를 실행했고 required tests가 모두 통과했으며, dedicated server/client/JAR gate도 성공했다. headless Linux runner의 narrator `libflite` 및 audio device 부재 경고는 Minecraft client가 계속 초기화되는 환경 제약으로 기록하며 Riftfrontier 기능 성공으로 오인하거나 모드 크래시로 오인하지 않는다.
+M2 코드의 전체 CI gate가 green으로 확인되기 전에는 M2 기반 완료를 선언하지 않는다.
 
 ## 다음 확장
 
-M1 runtime foundation을 반복해서 넓히지 않는다. 다음 작업 묶음은 M2 첫 Expedition vertical slice를 위한 schema/lifecycle 경계다.
+schema 자체를 반복 확장하지 않는다. 다음 작업은 `EXPEDITION_RUNTIME.md`의 domain을 첫 production `region_01` 실제 플레이에 연결한다.
 
-- `region / expedition_resource / contract / extraction-result` content type 계약
-- codec/builder/validator/reference rule
-- SavedData root 아래 expedition domain state와 lifecycle transition
-- 첫 `region_01` pack
-- 시작 → 진행 → 철수/실패 결과를 실제 GameTest로 검증
-- 필요 시 definition-level provenance와 reload failure diagnostics 확장
+```text
+hub contract selection
+→ authoritative run creation
+→ region entry
+→ real resource interaction
+→ objective progress
+→ extraction
+→ return/settlement
+→ world consequence
+```
+
+이 최소 루프가 실제 플레이와 GameTest에서 닫힌 뒤 전투/보스 presentation, 물류/산업으로 확장한다.
