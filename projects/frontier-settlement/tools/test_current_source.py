@@ -152,6 +152,20 @@ require("findManagedQuarryStone" in outpost_production and "clearTopQuarryOverbu
         "specialized quarry outpost still requires pre-exposed stone")
 require("tryReplantHarvestedTree" in outpost_production,
         "specialized lumber outpost lacks managed physical replanting")
+require("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in outpost_production
+        and "WORKER_UUID_CACHE" in outpost_production
+        and "resolveCachedWorker" in outpost_production
+        and "level.getEntity(uuid)" in outpost_production,
+        "specialized outpost worker lookup returned to wide AABB scans on the hot path")
+
+fishing = text(SETTLEMENT / "SettlementFishingOutpostService.java")
+require("shorelineHits" in fishing and "shorelineMisses" in fishing and "prepareShorelineCache" in fishing,
+        "fishing shoreline scan cache missing")
+require("WORKER_MAINTENANCE_INTERVAL_TICKS = 200" in fishing
+        and "WORKER_UUID_CACHE" in fishing
+        and "resolveCachedWorker" in fishing
+        and "level.getEntity(uuid)" in fishing,
+        "fishing worker lookup returned to full assignment AABB scans every second")
 
 service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementGuidanceService.nextGoal(player.level().getServer(), data)" in service, "guidance is missing server authority")
@@ -171,6 +185,14 @@ require("FOUNDATION(" in palette and "PRODUCTION(" in palette and "SERVICES(" in
 require("잠김" in palette and "건설 가능" in palette and "자원 부족" in palette,
         "building availability states are not explicit")
 require("FrontierUiTheme" in palette, "M palette bypasses shared Frontier UI tokens")
+
+for client_name in ("BuildingPlacementClient.java", "RoadPlacementClient.java", "OutpostPlacementClient.java", "CivilWorkPlacementClient.java"):
+    placement_client = text(JAVA / "client" / client_name)
+    require("STATIONARY_REFRESH_TICKS = 20" in placement_client,
+            f"stationary preview throttle missing: {client_name}")
+    require("refreshTicks = 5" not in placement_client,
+            f"five-tick stationary preview polling returned: {client_name}")
+
 context_ui = text(SETTLEMENT / "SettlementContextService.java")
 require('"settlement", "settlement"' in context_ui and '"본진"' in context_ui and "data.centerPos()" in context_ui,
         "main settlement navigation target missing")
@@ -260,4 +282,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 UI hierarchy + single-pass storage + manual blacksmith repair + prior invariants")
+print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 Alpha.117 UI/performance hardening + prior invariants")
