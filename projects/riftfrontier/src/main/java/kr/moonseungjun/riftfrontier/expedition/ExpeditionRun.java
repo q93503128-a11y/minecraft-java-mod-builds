@@ -5,6 +5,8 @@ import kr.moonseungjun.riftfrontier.content.ContentId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Authoritative immutable state for one expedition run.
@@ -17,6 +19,7 @@ public record ExpeditionRun(
     long sequence,
     ContentId regionId,
     ContentId contractId,
+    Optional<UUID> ownerId,
     String contentFingerprint,
     Status status,
     Map<ContentId, Integer> recoveredResources,
@@ -89,6 +92,7 @@ public record ExpeditionRun(
         if (sequence <= 0) throw new IllegalArgumentException("sequence must be > 0");
         Objects.requireNonNull(regionId, "regionId");
         Objects.requireNonNull(contractId, "contractId");
+        ownerId = Objects.requireNonNull(ownerId, "ownerId");
         contentFingerprint = Objects.requireNonNull(contentFingerprint, "contentFingerprint");
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(endReason, "endReason");
@@ -118,8 +122,21 @@ public record ExpeditionRun(
         }
     }
 
+    /** Legacy/test fixture constructor. New gameplay runs should use the owner-aware overload. */
     public static ExpeditionRun preparing(long sequence, ContentId regionId, ContentId contractId, String contentFingerprint, long gameTime) {
-        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, Status.PREPARING, Map.of(), gameTime, -1L, EndReason.NONE);
+        return preparing(sequence, regionId, contractId, Optional.empty(), contentFingerprint, gameTime);
+    }
+
+    public static ExpeditionRun preparing(long sequence, ContentId regionId, ContentId contractId, UUID ownerId, String contentFingerprint, long gameTime) {
+        return preparing(sequence, regionId, contractId, Optional.of(Objects.requireNonNull(ownerId, "ownerId")), contentFingerprint, gameTime);
+    }
+
+    private static ExpeditionRun preparing(long sequence, ContentId regionId, ContentId contractId, Optional<UUID> ownerId, String contentFingerprint, long gameTime) {
+        return new ExpeditionRun(sequence, regionId, contractId, ownerId, contentFingerprint, Status.PREPARING, Map.of(), gameTime, -1L, EndReason.NONE);
+    }
+
+    public boolean ownedBy(UUID playerId) {
+        return ownerId.map(value -> value.equals(playerId)).orElse(false);
     }
 
     public ExpeditionRun deploy() {
@@ -159,6 +176,6 @@ public record ExpeditionRun(
     }
 
     private ExpeditionRun copy(Status nextStatus, Map<ContentId, Integer> resources, long endTime, EndReason reason) {
-        return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, nextStatus, resources, startedGameTime, endTime, reason);
+        return new ExpeditionRun(sequence, regionId, contractId, ownerId, contentFingerprint, nextStatus, resources, startedGameTime, endTime, reason);
     }
 }
