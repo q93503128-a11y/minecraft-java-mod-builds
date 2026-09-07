@@ -10,6 +10,7 @@ class M5UiLayoutMetricsTest {
     @Test
     void battleHudRegionsStayInsideAndProtectTheWorldViewportAtTargetSizes() {
         for (int[] size : List.of(new int[]{1280, 720}, new int[]{1920, 1080}, new int[]{640, 360})) {
+            assertTrue(UiLayoutMetrics.supportsBattleHud(size[0], size[1]));
             UiLayoutMetrics.BattleHudLayout layout = UiLayoutMetrics.battleHud(size[0], size[1]);
             List<UiLayoutMetrics.Rect> regions = List.of(
                     layout.turnRail(), layout.enemySummary(), layout.partyStatus(),
@@ -28,7 +29,8 @@ class M5UiLayoutMetricsTest {
     }
 
     @Test
-    void unsupportedTinyLogicalCanvasFailsInsteadOfSilentlyOverlappingHud() {
+    void unsupportedTinyLogicalCanvasIsDetectedBeforeRenderAndStillFailsExplicitLayout() {
+        assertFalse(UiLayoutMetrics.supportsBattleHud(320, 180));
         IllegalArgumentException error = assertThrows(
                 IllegalArgumentException.class,
                 () -> UiLayoutMetrics.battleHud(320, 180));
