@@ -1,0 +1,74 @@
+name: Frontier Alpha.125 Operations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha125-operations.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply Alpha.125
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/alpha125/patch.py
+
+      - name: Audit Alpha.125 source, docs and companion locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/frontier-settlement
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          python3 tools/test_companion_testpack.py
+          git diff --check
+
+      - name: Java 25 clean build and JAR verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd projects/frontier-settlement
+          chmod +x gradlew
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          test -f build/libs/frontier_settlement-0.1.0-alpha.125.jar
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.125.jar
+          git diff --check
+
+      - name: Remove one-time patch staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/alpha125
+          rm -f .github/workflows/frontier-alpha125-operations.yml
+          git diff --check
+
+      - name: Commit Alpha.125
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'frontier: release 0.1.0-alpha.125 RTS operations visibility'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
