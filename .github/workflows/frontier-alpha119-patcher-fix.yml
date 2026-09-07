@@ -27,7 +27,7 @@ jobs:
           old = """          replace_once(worker,
               '            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\\n',
               '            // recruitment boundaries so duplicate authority is normalized before any new arrival.\\n')
-"""
+          """
           if text.count(old) != 1:
               raise SystemExit(f'expected obsolete comment replacement exactly once, got {text.count(old)}')
           p.write_text(text.replace(old, ''), encoding='utf-8')
