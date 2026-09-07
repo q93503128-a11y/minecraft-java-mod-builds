@@ -4,11 +4,13 @@ Riftfrontier는 Minecraft Java/NeoForge 26.2에서 개발하는 대형 **차원 
 
 ## 현재 상태
 
-`M1 — RUNTIME FOUNDATION VERIFIED / M2 SCHEMA BOUNDARY NEXT`
+`M2 — EXPEDITION DOMAIN FOUNDATION IMPLEMENTED / GAMEPLAY INTEGRATION NEXT`
 
-M0의 빌드/JAR/runtime smoke 기반에 이어 M1의 content kernel과 authoritative runtime 기반을 실제 Minecraft에서 검증했다. stable content ID, typed JSON definition, merged reference validation, deterministic catalog fingerprint, server ResourceManager reload, last-known-good atomic snapshot, pack dependency/provenance, machine-readable validator code, sequential persistence migration에 더해 **실제 Minecraft SavedData root, read-only runtime diagnostics, native 26.2 GameTest와 CI gate**가 연결되어 있다.
+M0/M1의 빌드·runtime·content kernel 기반 위에 M2 첫 원정 도메인 경계를 구현했다. `region / expedition_resource / contract / extraction_result`가 하나의 검증된 content graph로 연결되고, 실제 원정은 별도의 불변 `ExpeditionRun`과 `ExpeditionLifecycle`을 통해 서버 권위 SavedData에 저장된다.
 
-검증된 기준 커밋 `c307034286dd62d6df71bea47cf721ede1d75957`의 GitHub Actions에서 clean/test/build, `runGameTestServer`, dedicated server smoke, Xvfb client smoke, executable JAR 검사가 모두 통과했다. GameTest 서버 로그에는 non-zero 테스트 실행과 required test 전체 통과가 실제로 기록되었다.
+Persistence root는 schema `2`로 올라갔으며 schema `1 → 2` migration이 명시되어 있다. 첫 vertical-slice fixture에는 salvage resource, salvage recovery contract, secured-return extraction policy가 들어가며 JUnit과 native GameTest가 상태 전이와 실제 authoritative SavedData 업데이트를 검증하도록 확장됐다.
+
+**현재 M2 변경의 전체 CI gate가 green인지 확인되기 전에는 이 기반을 완료로 선언하지 않는다.** 직전 M1 기준 전체 runtime gate는 이미 검증되었다.
 
 ## 작업 시작 시 반드시 읽기
 
@@ -21,7 +23,8 @@ M0의 빌드/JAR/runtime smoke 기반에 이어 M1의 content kernel과 authorit
 7. `docs/CONTENT_ARCHITECTURE.md`
 8. `docs/ROADMAP.md`
 9. 현재 content/runtime/persistence를 다루면 `docs/CONTENT_RUNTIME.md`
-10. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
+10. expedition 작업이면 `docs/EXPEDITION_RUNTIME.md`
+11. 디자인/자산 작업이면 `docs/REFERENCE_TARGETS.md`와 `THIRD_PARTY_ASSETS.md`
 
 ## 방향 요약
 
@@ -49,9 +52,10 @@ Prepare
 
 - versioned JSON content documents (`schema_version = 1`)
 - stable `ContentId`
-- typed core definitions: combat archetype / region / loot profile / creature / encounter
+- typed definitions: combat archetype / region / loot profile / creature / encounter / expedition resource / contract / extraction result
 - isolated document decode + duplicate definition 거부
 - merge 후 cross-document reference graph validation
+- region ↔ expedition resource / contract 및 contract → resource / loot / extraction-result 참조 검증
 - optional `depends_on`, dependency 존재/self/duplicate/cycle 검증
 - deterministic topological pack ordering
 - resource identifier 기반 pack provenance
@@ -59,26 +63,29 @@ Prepare
 - deterministic `ContentCatalog` SHA-256 fingerprint
 - `ContentRuntimeSnapshot` + atomic last-known-good publication
 - NeoForge server ResourceManager reload listener
-- persistence schema root version `1` + explicit sequential migration registry
+- persistence schema root version `2` + explicit sequential migration registry
+- schema `1 → 2` migration에서 persisted expedition domain 도입
 - authoritative overworld-scoped `RiftfrontierWorldData` SavedData (`riftfrontier:world_state`)
-- durable world revision / expedition sequence / active content fingerprint 저장
+- durable world revision / expedition sequence / active content fingerprint / expedition runs 저장
+- 불변 `ExpeditionRun` 상태 머신: PREPARING → DEPLOYED → EXTRACTION_REQUESTED → EXTRACTED 또는 FAILED
+- `ExpeditionLifecycle`: region/contract/resource 소속 및 contract requirement 검증
 - 서버 시작 시 active content fingerprint와 SavedData root 동기화
 - `/riftfrontier runtime` read-only 진단 명령
 - native Minecraft 26.2 test-function registry + data-driven `test_instance` GameTest
-- GameTest에서 active content snapshot ↔ authoritative SavedData mutation/linkage 검증
+- GameTest에서 content runtime ↔ authoritative SavedData ↔ expedition lifecycle 연동 검증
 - CI GameTest gate: non-zero 실행 marker + required tests passed marker 강제
-- CI dedicated server smoke: ready/content/authoritative world root 확인
-- CI Xvfb client smoke: Riftfrontier initialization + fatal crash marker 부재 확인
-- executable JAR structure + required GameTest asset + SHA-256 검증
+- CI dedicated server/client smoke + executable JAR/SHA-256 검증
 
 ## 다음 개발 작업
 
-이제 M1에서 미완성 기반을 반복 확장하지 않는다. 다음 우선순위는 **M2 첫 Expedition vertical slice가 실제 데이터와 저장 상태로 존재하기 위한 schema 경계**다.
+이제 M1/M2 기반 schema를 반복해서 늘리지 않는다. 다음은 **첫 실제 플레이 가능한 Expedition vertical slice 연결**이다.
 
-1. `region`을 실제 원정 단위로 확장하고 `expedition_resource`, `contract`, `extraction/result` 정의의 책임 경계를 고정한다.
-2. 위 정의를 Java class 복제 없이 추가할 수 있도록 codec/builder/validator/reference rule을 함께 만든다.
-3. SavedData root 아래 expedition/domain state adapter를 추가해 시작 → 진행 → 철수/실패 결과를 서버 권위로 저장한다.
-4. 첫 `region_01` pack을 작은 DLC 단위로 작성하고 중앙 거점 ↔ 진입 ↔ 목표/회수 ↔ 철수 최소 루프를 GameTest 가능한 형태로 만든다.
-5. 그 뒤에야 실제 전투/보스 presentation과 물류/산업을 넓힌다.
+1. technical fixture와 분리된 production `region_01` Region Pack을 만든다.
+2. 거점에서 contract 선택 → authoritative `ExpeditionRun` 생성 서버 경로를 만든다.
+3. 실제 region 진입/배치와 expedition resource 회수 이벤트를 연결한다.
+4. contract objective 충족 → extraction request → 귀환/정산을 Minecraft 플레이에 연결한다.
+5. extraction result의 retained resource / threat delta / world consequence가 실제 다음 원정 상태에 영향을 주게 한다.
+6. 사망·중도 이탈·강제 실패 시 `FAILED` 처리와 보존/손실 규칙을 명시한다.
+7. 이 최소 루프가 GameTest와 실제 플레이에서 검증된 뒤에 전투/보스 presentation과 물류/산업을 넓힌다.
 
-새 시스템을 넓히기 전에 각 schema와 lifecycle이 자동 검증 가능하고 기존 world state를 깨지 않는지 확인한다.
+첫 `region_01`이 작은 DLC처럼 완결되기 전에는 추가 지역을 대량 생산하지 않는다.
