@@ -34,7 +34,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(FrontierSettlement.MOD_ID)
 public final class FrontierSettlement {
     public static final String MOD_ID = "frontier_settlement";
-    // Alpha.121 canonical CI retrigger after production-status/citadel hardening.
+    // Alpha.122 canonical/integrated CI retrigger after per-building RTS production investment.
 
     public FrontierSettlement(IEventBus modBus, ModContainer modContainer) {
         FrontierContent.register(modBus);
