@@ -31,6 +31,7 @@ class FieldPlayEvidenceMetricsTest {
 
         assertEquals(6, metrics.checkpoints());
         assertEquals(3, metrics.salvageCheckpoints());
+        assertEquals(1, metrics.extractionAttemptCheckpoints());
         assertEquals(OptionalLong.of(60L), metrics.firstSalvageElapsedTicks());
         assertEquals(OptionalLong.of(240L), metrics.preExtractionElapsedTicks());
         assertEquals(OptionalLong.of(260L), metrics.terminalElapsedTicks());
@@ -42,8 +43,47 @@ class FieldPlayEvidenceMetricsTest {
         assertEquals(OptionalInt.of(3), metrics.finalObservedSalvage());
         assertEquals("extracted", metrics.terminalStage());
         assertEquals("extraction", metrics.endReason());
+        assertTrue(metrics.reportLine().contains("extractionAttempts=1"));
         assertTrue(metrics.reportLine().contains("firstSalvageTicks=60"));
         assertTrue(metrics.reportLine().contains("liveThreatsMax=3"));
+    }
+
+    @Test
+    void rejectedExtractionAttemptDoesNotMasqueradeAsAcceptedPreExtraction() {
+        ExpeditionRun run = ExpeditionRun.preparing(10L, REGION, CONTRACT, UUID.randomUUID(), "fingerprint", 100L).deploy();
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.DEPLOYED, 110L, 0, 3));
+        run = run.recover(SALVAGE, 1).appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED, 150L, 1, 3));
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION, 170L, 1, 3));
+
+        FieldPlayEvidenceMetrics activeMetrics = FieldPlayEvidenceMetrics.from(run);
+        assertEquals(1, activeMetrics.extractionAttemptCheckpoints());
+        assertFalse(activeMetrics.preExtractionElapsedTicks().isPresent());
+        assertTrue(activeMetrics.reportLine().contains("preExtractionTicks=unavailable"));
+
+        run = run.recover(SALVAGE, 2).appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.SALVAGE_RECOVERED, 230L, 3, 1));
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION, 260L, 3, 1));
+        run = run.requestExtraction().extract(280L);
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.EXTRACTED, 280L, 3, 1));
+
+        FieldPlayEvidenceMetrics extractedMetrics = FieldPlayEvidenceMetrics.from(run);
+        assertEquals(2, extractedMetrics.extractionAttemptCheckpoints());
+        assertEquals(OptionalLong.of(160L), extractedMetrics.preExtractionElapsedTicks());
+        assertTrue(extractedMetrics.reportLine().contains("extractionAttempts=2"));
+    }
+
+    @Test
+    void failedRunNeverClaimsARejectedAttemptWasAcceptedExtraction() {
+        ExpeditionRun run = ExpeditionRun.preparing(11L, REGION, CONTRACT, UUID.randomUUID(), "fingerprint", 100L).deploy();
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.DEPLOYED, 110L, 0, 3));
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION, 140L, 0, 3));
+        run = run.fail(180L, ExpeditionRun.EndReason.PLAYER_ABORT);
+        run = run.appendEvidence(checkpoint(ExpeditionEvidenceCheckpoint.Stage.FAILED, 180L, 0, 3));
+
+        FieldPlayEvidenceMetrics metrics = FieldPlayEvidenceMetrics.from(run);
+        assertEquals(1, metrics.extractionAttemptCheckpoints());
+        assertFalse(metrics.preExtractionElapsedTicks().isPresent());
+        assertEquals("failed", metrics.terminalStage());
+        assertEquals("player_abort", metrics.endReason());
     }
 
     @Test
@@ -74,6 +114,7 @@ class FieldPlayEvidenceMetricsTest {
         FieldPlayEvidenceMetrics metrics = FieldPlayEvidenceMetrics.from(run);
 
         assertEquals(0, metrics.checkpoints());
+        assertEquals(0, metrics.extractionAttemptCheckpoints());
         assertEquals(OptionalLong.of(100L), metrics.terminalElapsedTicks());
         assertFalse(metrics.firstSalvageElapsedTicks().isPresent());
         assertFalse(metrics.minObservedLiveThreats().isPresent());
