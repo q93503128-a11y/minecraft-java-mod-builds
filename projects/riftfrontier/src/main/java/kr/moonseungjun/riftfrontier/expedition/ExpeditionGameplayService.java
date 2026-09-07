@@ -161,17 +161,18 @@ public final class ExpeditionGameplayService {
         ServerLevel overworld = level.getServer().overworld();
         int liveThreatsBeforeExit = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, run.sequence());
 
-        // The contract gate is intentionally evaluated before PRE_EXTRACTION is persisted.
-        // A rejected request must be a true no-op for both authoritative lifecycle state and field evidence.
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
-        ExpeditionRun requested = lifecycle.requestExtraction(run);
-        requested = recordEvidence(
+        // Validate first without mutating or persisting anything. Only an accepted attempt may become evidence.
+        lifecycle.validateExtractionRequest(run);
+        run = recordEvidence(
             world,
-            requested,
+            run,
             ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION,
             overworld.getGameTime(),
             liveThreatsBeforeExit
         );
+        ExpeditionRun requested = lifecycle.requestExtraction(run);
+        world.updateExpedition(requested);
         ExpeditionLifecycle.Resolution resolution = lifecycle.resolveExtraction(requested, level.getGameTime());
         world.updateExpedition(resolution.run());
 
