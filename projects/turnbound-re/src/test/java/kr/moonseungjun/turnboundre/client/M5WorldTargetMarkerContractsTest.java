@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,12 +67,20 @@ class M5WorldTargetMarkerContractsTest {
                 Set.of("e2"),
                 "e1");
 
+        assertTrue(BattleTargetMarkerState.isPublishedFor(battleId, 12L));
+        assertFalse(BattleTargetMarkerState.isPublishedFor(battleId, 13L));
         assertEquals(BattleTargetMarkerState.MarkerKind.HOVERED,
                 BattleTargetMarkerState.markerFor(battleId, 12L, hoveredEntityId).orElseThrow());
+        assertEquals(1,
+                BattleTargetMarkerState.markerOrdinalFor(battleId, 12L, hoveredEntityId).orElseThrow());
         assertEquals(BattleTargetMarkerState.MarkerKind.SELECTED,
                 BattleTargetMarkerState.markerFor(battleId, 12L, selectedEntityId).orElseThrow());
+        assertEquals(2,
+                BattleTargetMarkerState.markerOrdinalFor(battleId, 12L, selectedEntityId).orElseThrow());
         assertTrue(BattleTargetMarkerState.markerFor(battleId, 12L, unboundEntityId).isEmpty());
+        assertTrue(BattleTargetMarkerState.markerOrdinalFor(battleId, 12L, unboundEntityId).isEmpty());
         assertTrue(BattleTargetMarkerState.markerFor(battleId, 13L, hoveredEntityId).isEmpty());
+        assertTrue(BattleTargetMarkerState.markerOrdinalFor(battleId, 13L, hoveredEntityId).isEmpty());
         assertTrue(BattleTargetMarkerState.markerFor(UUID.randomUUID(), 12L, hoveredEntityId).isEmpty());
 
         BattleTargetMarkerState.publish(
@@ -83,9 +92,12 @@ class M5WorldTargetMarkerContractsTest {
         assertEquals(BattleTargetMarkerState.MarkerKind.SELECTED,
                 BattleTargetMarkerState.markerFor(battleId, 12L, selectedEntityId).orElseThrow(),
                 "selected must outrank hover so multi-target confirmation remains unambiguous");
+        assertEquals(1, BattleTargetMarkerState.markerOrdinalFor(battleId, 12L, selectedEntityId).orElseThrow());
 
         BattleTargetMarkerState.clear();
+        assertFalse(BattleTargetMarkerState.isPublishedFor(battleId, 12L));
         assertTrue(BattleTargetMarkerState.markerFor(battleId, 12L, selectedEntityId).isEmpty());
+        assertTrue(BattleTargetMarkerState.markerOrdinalFor(battleId, 12L, selectedEntityId).isEmpty());
     }
 
     private static BattleNetworkPayloads.SnapshotParticipant participant(
