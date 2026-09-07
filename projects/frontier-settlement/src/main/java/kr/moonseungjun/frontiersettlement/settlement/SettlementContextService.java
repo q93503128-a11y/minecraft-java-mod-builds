@@ -153,7 +153,10 @@ public final class SettlementContextService {
         return switch (type) {
             case HOUSE -> "완공 · 주거 +" + type.housingGain();
             case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data, building) + " · 상태: " + SettlementProductionStatusService.statusFor(level, building);
-            case WAREHOUSE -> "완공 · 실물 저장";
+            case WAREHOUSE -> "완공 · 물류 " + SettlementLogisticsUpgradeService.gradeLabel(SettlementLogisticsUpgradeService.grade(building))
+                    + " · 중앙 저장 " + SettlementLogisticsUpgradeService.warehouseStorageCount(building) + "통 · "
+                    + SettlementLogisticsUpgradeService.storageSummary(level, building) + " · "
+                    + SettlementLogisticsUpgradeService.upgradeHint(data, building);
             case CONSTRUCTION_OFFICE -> "완공 · 건설 자재 집결";
             case BLACKSMITH -> "완공 · 수리 · 확정 강화 최대 +" + SettlementEquipmentUpgradeService.reinforcementCap(data) + " · 구리/철 전용";
             case WORKSHOP -> "완공 · 금속 1 → 외부무기 내구 +" + SettlementExplorationBenefitService.repairPerMetal(data);
@@ -163,7 +166,11 @@ public final class SettlementContextService {
             case WATCHTOWER -> "완공 · 로드 위협 대응";
             case BARRACKS -> "완공 · 정식 주둔 3슬롯";
             case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);
-            case CART_STATION -> "완공 · 도로 화물 허브";
+            case CART_STATION -> "완공 · 물류 " + SettlementLogisticsUpgradeService.gradeLabel(SettlementLogisticsUpgradeService.grade(building))
+                    + " · 화물 저장 " + SettlementLogisticsUpgradeService.cartFreightStorageCount(building) + "통 · 생산 운송 "
+                    + SettlementOutpostLogisticsService.productiveTransportBatchSize(data) + "개/회 · "
+                    + SettlementLogisticsUpgradeService.storageSummary(level, building) + " · "
+                    + SettlementLogisticsUpgradeService.upgradeHint(data, building);
             case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";
             case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
             case CITADEL -> "완공 · 감시망 반경 56 · 병영 감지 +12 · 순찰 반경 32 · 주거 +" + type.housingGain();

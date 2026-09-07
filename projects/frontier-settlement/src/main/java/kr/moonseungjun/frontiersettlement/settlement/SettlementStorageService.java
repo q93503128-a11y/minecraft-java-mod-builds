@@ -103,6 +103,17 @@ public final class SettlementStorageService {
         for (BlockPos candidate : worksiteStoragePositions(data)) {
             if (candidate.equals(pos)) return true;
         }
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() == BuildingType.WAREHOUSE) {
+                for (BlockPos candidate : WarehouseLayout.activeStoragePositions(building)) {
+                    if (candidate.equals(pos)) return true;
+                }
+            } else if (building.buildingType() == BuildingType.CART_STATION) {
+                for (BlockPos candidate : CartStationLayout.activeFreightPositions(building)) {
+                    if (candidate.equals(pos)) return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -125,6 +136,7 @@ public final class SettlementStorageService {
                 level.setBlock(pos, Blocks.BARREL.defaultBlockState(), 3);
             }
         }
+        SettlementLogisticsUpgradeService.ensureManagedStorage(level, data);
     }
 
     private static void upgradeLegacyPublicBarrels(ServerLevel level, SettlementData data) {
@@ -183,7 +195,7 @@ public final class SettlementStorageService {
         target.setChanged();
     }
 
-    private static boolean canSafelyCreateManagedBarrel(ServerLevel level, BlockPos pos) {
+    public static boolean canSafelyCreateManagedBarrel(ServerLevel level, BlockPos pos) {
         if (!level.hasChunkAt(pos) || !level.hasChunkAt(pos.below())) return false;
         BlockState current = level.getBlockState(pos);
         BlockState below = level.getBlockState(pos.below());
@@ -199,9 +211,9 @@ public final class SettlementStorageService {
         positions.addAll(publicStockpilePositions(data));
         for (BuildingRecord building : data.buildings()) {
             if (building.buildingType() == BuildingType.WAREHOUSE) {
-                positions.addAll(WarehouseLayout.storagePositions(building));
+                positions.addAll(WarehouseLayout.activeStoragePositions(building));
             } else if (building.buildingType() == BuildingType.CART_STATION) {
-                positions.addAll(CartStationLayout.freightPositions(building));
+                positions.addAll(CartStationLayout.activeFreightPositions(building));
             }
         }
         return new ArrayList<>(positions);
@@ -228,7 +240,7 @@ public final class SettlementStorageService {
         List<BlockPos> positions = new ArrayList<>();
         for (BuildingRecord building : data.buildings()) {
             if (building.buildingType() == BuildingType.CART_STATION) {
-                positions.addAll(CartStationLayout.freightPositions(building));
+                positions.addAll(CartStationLayout.activeFreightPositions(building));
             }
         }
         return positions;
@@ -319,6 +331,17 @@ public final class SettlementStorageService {
         remove(level, positions, stone, SettlementInventory::isStone);
         remove(level, positions, copperIronItems, SettlementEquipmentUpgradeService::isBlacksmithMetal);
         return true;
+    }
+
+    /** Common copper/iron item count used by deterministic infrastructure investment. */
+    public static long countCommonUpgradeMetal(ServerLevel level, SettlementData data) {
+        return countProductionUpgradeMetal(level, data);
+    }
+
+    /** Alias keeps infrastructure semantics explicit while preserving the Alpha.122 atomic payment authority. */
+    public static boolean consumeLogisticsUpgrade(ServerLevel level, SettlementData data,
+                                                  long wood, long stone, long copperIronItems) {
+        return consumeProductionUpgrade(level, data, wood, stone, copperIronItems);
     }
 
     public static ItemStack insert(ServerLevel level, SettlementData data, ItemStack stack) {

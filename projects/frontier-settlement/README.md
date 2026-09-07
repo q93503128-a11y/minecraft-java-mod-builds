@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.122
+## Current version: 0.1.0-alpha.123
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -235,3 +235,15 @@ Treat these as playtest evidence, not assumptions.
 - Improvement II costs 128 wood + 96 stone; III costs 256 wood + 192 stone + 32 physical copper/iron items; IV costs 512 wood + 384 stone + 96 physical copper/iron items. Diamonds/gold/modded high-value metal are never silently consumed for facility improvement.
 - Grade II unlocks at Village, III at Frontier Town, and IV at Domain. A paid improvement remains on that building even if the settlement later temporarily loses a tier condition.
 - Local worksite buffers scale from that building's own improvement grade (I=1, II=2, III/IV=3 barrels); central warehouse/supply depots remain the long-duration logistics authority.
+
+
+## Alpha.123 RTS central logistics investment
+
+- Warehouse and cart-station logistics grades are persistent per building. Grade II unlocks at Frontier Town and III at Domain; settlement tier is an unlock ceiling, never a free logistics upgrade.
+- Warehouse II costs 256 wood + 192 stone + 24 physical copper/iron items; III costs 512 wood + 384 stone + 64 copper/iron items.
+- Cart-station II costs 320 wood + 224 stone + 32 physical copper/iron items; III costs 640 wood + 448 stone + 96 copper/iron items.
+- Existing warehouse/cart-station base storage remains valid. Warehouse expansion adds bounded real barrels from 6 -> 10 -> 14; cart-station freight storage grows 4 -> 6 -> 8.
+- Inactive future expansion cells never join the resource ledger. Upgrade placement refuses fluids, containers and unrelated/player blocks instead of replacing them.
+- Productive outpost-to-town freight grows with cart-station grade (32/40/48 items before bonuses), then receives up to +8 from the best warehouse and the existing territory-network bonus, with a hard 64-item cap.
+- Military and waterfront reverse-supply trips deliberately keep the existing ordinary cart-station cap; Alpha.123 does not create a second transporter, teleport cargo or force-load routes.
+- M/Jade building context shows logistics grade, physical storage usage, saturation and the next upgrade requirement/cost.

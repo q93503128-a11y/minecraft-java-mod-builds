@@ -49,8 +49,10 @@ public final class SettlementOutpostLogisticsService {
     private static final String LEGACY_TRANSPORT_WORKER_NAME = "운송 주민";
     private static final int BASE_TRANSPORT_STACK = 16;
     private static final int CART_STATION_TRANSPORT_STACK = 32;
+    private static final int CART_STATION_GRADE_II_TRANSPORT_STACK = 40;
+    private static final int CART_STATION_GRADE_III_TRANSPORT_STACK = 48;
     private static final int TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL = 4;
-    private static final int MAX_PRODUCTIVE_TRANSPORT_STACK = 44;
+    private static final int MAX_PRODUCTIVE_TRANSPORT_STACK = 64;
     private static final int ROAD_WAYPOINT_STRIDE = 3;
     private static final double ROAD_JOIN_RANGE_SQR = 25.0D;
     private static final double ENDPOINT_RANGE_SQR = 16.0D;
@@ -97,8 +99,15 @@ public final class SettlementOutpostLogisticsService {
      */
     public static int productiveTransportBatchSize(SettlementData data) {
         if (data.buildingCount(BuildingType.CART_STATION) <= 0) return BASE_TRANSPORT_STACK;
+        int cartGrade = SettlementLogisticsUpgradeService.bestGrade(data, BuildingType.CART_STATION);
+        int cartCapacity = switch (cartGrade) {
+            case 2 -> CART_STATION_GRADE_II_TRANSPORT_STACK;
+            case 3 -> CART_STATION_GRADE_III_TRANSPORT_STACK;
+            default -> CART_STATION_TRANSPORT_STACK;
+        };
         int networkLevel = SettlementExplorationBenefitService.territoryNetworkLevel(data);
-        return Math.min(MAX_PRODUCTIVE_TRANSPORT_STACK, CART_STATION_TRANSPORT_STACK
+        return Math.min(MAX_PRODUCTIVE_TRANSPORT_STACK, cartCapacity
+                + SettlementLogisticsUpgradeService.warehouseFreightBonus(data)
                 + networkLevel * TERRITORY_NETWORK_TRANSPORT_BONUS_PER_LEVEL);
     }
 

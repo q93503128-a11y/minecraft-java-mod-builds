@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.122" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.123" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -381,3 +381,50 @@ barracks_runtime = text(SETTLEMENT / "SettlementBarracksService.java")
 require("CITADEL_PATROL_RADIUS = 32" in barracks_runtime and "CITADEL_THREAT_RADIUS_BONUS = 12.0D" in barracks_runtime, "citadel response bonus missing")
 require("Monster threat = nearestThreat(level, data, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")
 require("patrolAreaLoaded(ServerLevel level, SettlementData data, BuildingRecord barracks)" in barracks_runtime, "citadel patrol loaded-area gate missing")
+
+
+logistics_upgrade = text(SETTLEMENT / "SettlementLogisticsUpgradeService.java")
+warehouse_layout = text(SETTLEMENT / "WarehouseLayout.java")
+cart_layout = text(SETTLEMENT / "CartStationLayout.java")
+require("case CAMP, HAMLET, VILLAGE -> 1" in logistics_upgrade
+        and "case FRONTIER_TOWN -> 2" in logistics_upgrade
+        and "case DOMAIN, FRONTIER_CAPITAL -> 3" in logistics_upgrade,
+        "logistics tier ceiling drifted")
+require("new UpgradeCost(256L, 192L, 24L)" in logistics_upgrade
+        and "new UpgradeCost(512L, 384L, 64L)" in logistics_upgrade
+        and "new UpgradeCost(320L, 224L, 32L)" in logistics_upgrade
+        and "new UpgradeCost(640L, 448L, 96L)" in logistics_upgrade,
+        "warehouse/cart logistics investment costs drifted")
+require("player.isShiftKeyDown()" in logistics_upgrade and "event.getItemStack().isEmpty()" in logistics_upgrade
+        and "logisticsBuildingAt" in logistics_upgrade,
+        "player-directed logistics upgrade interaction missing")
+require("countCommonUpgradeMetal" in logistics_upgrade and "consumeLogisticsUpgrade" in logistics_upgrade,
+        "logistics investment bypasses common-metal atomic payment")
+require("Grade I/II/III = 6/10/14 real barrels" in warehouse_layout
+        and "activeStoragePositions" in warehouse_layout,
+        "warehouse physical capacity ladder missing")
+require("Grade I/II/III = 4/6/8 physical freight barrels" in cart_layout
+        and "activeFreightPositions" in cart_layout,
+        "cart-station physical freight capacity ladder missing")
+require("WarehouseLayout.activeStoragePositions(building)" in storage
+        and "CartStationLayout.activeFreightPositions(building)" in storage,
+        "inactive future logistics barrels can join the settlement ledger")
+require("SettlementLogisticsUpgradeService.ensureManagedStorage(level, data)" in storage
+        and "public static boolean canSafelyCreateManagedBarrel" in storage,
+        "safe logistics storage provisioning is not wired")
+require("CART_STATION_GRADE_II_TRANSPORT_STACK = 40" in logistics
+        and "CART_STATION_GRADE_III_TRANSPORT_STACK = 48" in logistics
+        and "MAX_PRODUCTIVE_TRANSPORT_STACK = 64" in logistics
+        and "SettlementLogisticsUpgradeService.warehouseFreightBonus(data)" in logistics,
+        "productive freight grade/warehouse throughput ladder missing")
+require("public static int transportBatchSize(SettlementData data)" in logistics
+        and "CART_STATION_TRANSPORT_STACK" in logistics,
+        "ordinary reverse-supply transport authority was removed")
+require("SettlementLogisticsUpgradeService.tick(server, data)" in service,
+        "logistics legacy migration is not wired into settlement runtime")
+require("SettlementLogisticsUpgradeService::onRightClickBlock" in entry,
+        "logistics upgrade interaction is not registered")
+require("SettlementLogisticsUpgradeService.storageSummary(level, building)" in context,
+        "warehouse/cart saturation context missing")
+require("창고·수레 정거장은 빈손 웅크리기+저장통 우클릭" in guide_screen,
+        "in-game guide does not teach logistics investment")

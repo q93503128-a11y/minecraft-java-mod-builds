@@ -47,7 +47,7 @@ public final class SettlementCartStationService {
         BlockPos pos = event.getPos();
         for (BuildingRecord station : data.buildings()) {
             if (station.buildingType() != BuildingType.CART_STATION) continue;
-            if (!CartStationLayout.freightPositions(station).contains(pos)) continue;
+            if (!CartStationLayout.activeFreightPositions(station).contains(pos)) continue;
             event.setCanceled(true);
             event.setNotifyClient(true);
             return;

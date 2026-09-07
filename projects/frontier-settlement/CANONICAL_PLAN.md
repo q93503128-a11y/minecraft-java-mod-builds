@@ -1003,3 +1003,8 @@ Runtime acceptance for route unload/reload, transporter-death cargo recovery, sa
 - no resource is minted, no virtual balance is added, no force-load/teleport path is added, and no companion Java class dependency is introduced.
 
 This pass is a manual source hardening pass. Long two-player sessions, simultaneous request timing under a real client, reconnect/save-reload, transporter death/recovery and route chunk unload/reload remain runtime acceptance work.
+
+
+## Alpha.123 logistics authority lock
+
+Central logistics now follows the same RTS investment rule as production: settlement tier unlocks capacity, while each warehouse/cart station must be paid individually with real physical resources. Warehouse grades expand only bounded physical barrel capacity; cart-station grades increase only the existing road transporter's productive outpost-to-town pickup ceiling. Local production barrels remain buffers, shared/warehouse storage remains the durable resource authority, and optional shared depots remain compatible. No logistics grade may introduce virtual cargo, background teleport delivery, forced chunk loading, a second transport worker authority, or destructive replacement of player containers/fluids/blocks.
