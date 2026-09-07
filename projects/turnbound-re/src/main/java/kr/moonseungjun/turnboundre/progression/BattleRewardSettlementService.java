@@ -26,7 +26,7 @@ public final class BattleRewardSettlementService {
     }
 
     /**
-     * Returns empty when the battle is not a reward-bearing VICTORY or was already claimed.
+     * Common VICTORY -> REWARD settlement path. Returns empty for non-ready, rewardless or already-claimed battles.
      * Persistence occurs inside the BattleManager claim callback, so a failed save/application does not burn the claim.
      */
     public Optional<Settlement> settleIfReady(MinecraftServer server, UUID battleId) {
@@ -38,7 +38,7 @@ public final class BattleRewardSettlementService {
         RewardService.Applied applied = progress.applyReward(
                 server,
                 context.ownerPlayerId(),
-                context.rewardTableId(),
+                context.rewardTable(),
                 context.rewardSeed());
         return new Settlement(
                 context.ownerPlayerId(),

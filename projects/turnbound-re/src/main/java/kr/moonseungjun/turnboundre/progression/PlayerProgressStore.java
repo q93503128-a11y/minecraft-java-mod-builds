@@ -3,6 +3,7 @@ package kr.moonseungjun.turnboundre.progression;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.ProgressionDefinition;
+import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.List;
@@ -60,9 +61,23 @@ public final class PlayerProgressStore {
 
     public RewardService.Applied applyReward(MinecraftServer server, UUID playerId, String rewardTableId, long seed) {
         Context context = context();
+        RewardTableDefinition table = context.registry().rewards().get(rewardTableId);
+        if (table == null) throw new IllegalArgumentException("unknown reward table " + rewardTableId);
+        return applyReward(server, playerId, table, seed);
+    }
+
+    /** Persists a reward using the immutable table captured at encounter open, not a table reloaded later. */
+    public RewardService.Applied applyReward(
+            MinecraftServer server,
+            UUID playerId,
+            RewardTableDefinition rewardTable,
+            long seed
+    ) {
+        if (rewardTable == null) throw new IllegalArgumentException("rewardTable must not be null");
+        Context context = context();
         TurnboundProgressSavedData data = data(server);
         PlayerProgress current = data.getOrCreate(playerId, context.tuning());
-        RewardService.Applied applied = new RewardService(context.registry()).rollAndApply(current, rewardTableId, seed);
+        RewardService.Applied applied = new RewardService(context.registry()).rollAndApply(current, rewardTable, seed);
         data.put(playerId, applied.state());
         return applied;
     }

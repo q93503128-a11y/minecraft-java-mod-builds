@@ -1,17 +1,21 @@
 package kr.moonseungjun.turnboundre.battle;
 
+import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
+
 import java.util.UUID;
 
-/** Immutable reward metadata captured when an encounter opens. */
+/** Immutable reward metadata captured when an authored encounter opens. */
 public record BattleRewardContext(
         UUID ownerPlayerId,
-        String rewardTableId,
+        RewardTableDefinition rewardTable,
         long rewardSeed
 ) {
     public BattleRewardContext {
         if (ownerPlayerId == null) throw new IllegalArgumentException("ownerPlayerId must not be null");
-        if (rewardTableId == null || rewardTableId.isBlank() || rewardTableId.indexOf(':') <= 0) {
-            throw new IllegalArgumentException("rewardTableId must be a namespaced id");
-        }
+        if (rewardTable == null) throw new IllegalArgumentException("rewardTable must not be null");
+    }
+
+    public String rewardTableId() {
+        return rewardTable.id();
     }
 }

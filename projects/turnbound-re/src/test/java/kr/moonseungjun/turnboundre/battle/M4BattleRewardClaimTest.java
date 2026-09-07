@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.battle;
 
 import kr.moonseungjun.turnboundre.data.CharacterDefinition;
+import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
 import kr.moonseungjun.turnboundre.fixtures.ProductionDefinitionFixture;
 import org.junit.jupiter.api.Test;
 
@@ -27,10 +28,12 @@ class M4BattleRewardClaimTest {
         assertEquals(0, calls.get());
 
         win(fixture.battle);
+        assertEquals(List.of(fixture.battle.battleId()), fixture.manager.rewardReadyBattleIds());
         String claimed = fixture.manager.claimVictoryReward(fixture.battle.battleId(), context -> {
             calls.incrementAndGet();
             assertEquals(fixture.ownerPlayerId, context.ownerPlayerId());
             assertEquals(REWARD, context.rewardTableId());
+            assertSame(fixture.rewardTable, context.rewardTable());
             assertEquals(811L, context.rewardSeed());
             return context.rewardTableId();
         }).orElseThrow();
@@ -38,6 +41,7 @@ class M4BattleRewardClaimTest {
         assertEquals(REWARD, claimed);
         assertEquals(1, calls.get());
         assertTrue(fixture.manager.rewardClaimed(fixture.battle.battleId()));
+        assertTrue(fixture.manager.rewardReadyBattleIds().isEmpty());
         assertTrue(fixture.manager.claimVictoryReward(fixture.battle.battleId(), context -> {
             calls.incrementAndGet();
             return "duplicate";
@@ -55,6 +59,7 @@ class M4BattleRewardClaimTest {
                     throw new IllegalStateException("simulated persistence failure");
                 }));
         assertFalse(fixture.manager.rewardClaimed(fixture.battle.battleId()));
+        assertEquals(List.of(fixture.battle.battleId()), fixture.manager.rewardReadyBattleIds());
 
         assertEquals("retry-ok", fixture.manager.claimVictoryReward(
                 fixture.battle.battleId(), context -> "retry-ok").orElseThrow());
@@ -78,6 +83,9 @@ class M4BattleRewardClaimTest {
         BattleDefinitionContext context = new BattleDefinitionContext(
                 parsed.registry(), parsed.hash(), Map.of("p", zombie.id(), "e", skeleton.id()));
         BattleManager manager = new BattleManager();
+        RewardTableDefinition outsideSnapshot = new RewardTableDefinition(
+                "turnbound_re:not_loaded",
+                List.of(new RewardTableDefinition.Roll("COIN", "", 1, 1, 1, 1.0D)));
 
         assertThrows(IllegalArgumentException.class, () -> manager.register(
                 battle,
@@ -86,7 +94,7 @@ class M4BattleRewardClaimTest {
                         new EntityParticipantBinding("e", UUID.randomUUID())),
                 participants,
                 context,
-                new BattleRewardContext(UUID.randomUUID(), "turnbound_re:not_loaded", 813L)));
+                new BattleRewardContext(UUID.randomUUID(), outsideSnapshot, 813L)));
         assertEquals(0, manager.activeBattleCount());
     }
 
@@ -94,6 +102,7 @@ class M4BattleRewardClaimTest {
         var parsed = ProductionDefinitionFixture.load();
         CharacterDefinition zombie = parsed.registry().characters().get("turnbound_re:zombie");
         CharacterDefinition skeleton = parsed.registry().characters().get("turnbound_re:skeleton");
+        RewardTableDefinition rewardTable = parsed.registry().rewards().get(REWARD);
         List<BattleParticipant> participants = List.of(
                 participant("p", BattleTeam.PLAYER, 0, zombie),
                 participant("e", BattleTeam.ENEMY, 1, skeleton));
@@ -108,9 +117,9 @@ class M4BattleRewardClaimTest {
                 participants,
                 new BattleDefinitionContext(
                         parsed.registry(), parsed.hash(), Map.of("p", zombie.id(), "e", skeleton.id())),
-                new BattleRewardContext(owner, REWARD, seed));
+                new BattleRewardContext(owner, rewardTable, seed));
         battle.start();
-        return new Fixture(manager, battle, owner);
+        return new Fixture(manager, battle, owner, rewardTable);
     }
 
     private static BattleParticipant participant(
@@ -133,5 +142,10 @@ class M4BattleRewardClaimTest {
         assertEquals(BattleState.REWARD, battle.state());
     }
 
-    private record Fixture(BattleManager manager, BattleInstance battle, UUID ownerPlayerId) {}
+    private record Fixture(
+            BattleManager manager,
+            BattleInstance battle,
+            UUID ownerPlayerId,
+            RewardTableDefinition rewardTable
+    ) {}
 }

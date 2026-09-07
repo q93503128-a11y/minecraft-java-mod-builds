@@ -41,6 +41,12 @@ public final class RewardService {
     public RewardGrant roll(String rewardTableId, long seed) {
         RewardTableDefinition table = definitions.rewards().get(rewardTableId);
         if (table == null) throw new IllegalArgumentException("unknown reward table " + rewardTableId);
+        return roll(table, seed);
+    }
+
+    /** Rolls the immutable RewardTableDefinition captured when an authored encounter opened. */
+    public RewardGrant roll(RewardTableDefinition table, long seed) {
+        if (table == null) throw new IllegalArgumentException("reward table must not be null");
         SplittableRandom random = new SplittableRandom(seed);
         long coin = 0;
         long essence = 0;
@@ -78,13 +84,41 @@ public final class RewardService {
         return new Applied(grant, apply(state, grant));
     }
 
+    /** Applies a roll from an already-validated immutable encounter snapshot, even if a later /reload changed the registry. */
+    public Applied rollAndApply(PlayerProgress state, RewardTableDefinition table, long seed) {
+        RewardGrant grant = roll(table, seed);
+        return new Applied(grant, applyCapturedTableGrant(state, table, grant));
+    }
+
     public PlayerProgress apply(PlayerProgress state, RewardGrant grant) {
         if (state == null || grant == null) throw new IllegalArgumentException("state/grant required");
+        for (String characterId : grant.shards().keySet()) {
+            if (!definitions.characters().containsKey(characterId)) {
+                throw new IllegalArgumentException("reward references unknown character " + characterId);
+            }
+        }
+        return applyUnchecked(state, grant);
+    }
+
+    private static PlayerProgress applyCapturedTableGrant(
+            PlayerProgress state,
+            RewardTableDefinition table,
+            RewardGrant grant
+    ) {
+        if (state == null || table == null || grant == null) throw new IllegalArgumentException("state/table/grant required");
+        java.util.Set<String> tableShardCharacters = table.rolls().stream()
+                .filter(roll -> "CHARACTER_SHARD".equals(roll.type()))
+                .map(RewardTableDefinition.Roll::character)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        if (!tableShardCharacters.containsAll(grant.shards().keySet())) {
+            throw new IllegalArgumentException("captured reward grant contains a shard outside its table snapshot");
+        }
+        return applyUnchecked(state, grant);
+    }
+
+    private static PlayerProgress applyUnchecked(PlayerProgress state, RewardGrant grant) {
         Map<String, Integer> shards = new LinkedHashMap<>(state.shards());
         for (Map.Entry<String, Integer> entry : grant.shards().entrySet()) {
-            if (!definitions.characters().containsKey(entry.getKey())) {
-                throw new IllegalArgumentException("reward references unknown character " + entry.getKey());
-            }
             shards.put(entry.getKey(), Math.addExact(shards.getOrDefault(entry.getKey(), 0), entry.getValue()));
         }
         return new PlayerProgress(

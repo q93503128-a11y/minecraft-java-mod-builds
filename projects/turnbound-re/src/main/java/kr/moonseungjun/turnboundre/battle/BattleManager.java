@@ -90,8 +90,10 @@ public final class BattleManager {
             if (definitionContext == null) {
                 throw new IllegalArgumentException("reward context requires a data-driven definition context");
             }
-            if (!definitionContext.definitions().rewards().containsKey(rewardContext.rewardTableId())) {
-                throw new IllegalArgumentException("reward context references missing reward table " + rewardContext.rewardTableId());
+            var capturedTable = definitionContext.definitions().rewards().get(rewardContext.rewardTableId());
+            if (!Objects.equals(capturedTable, rewardContext.rewardTable())) {
+                throw new IllegalArgumentException("reward context must use the reward table from the captured definition snapshot: "
+                        + rewardContext.rewardTableId());
             }
         }
 
@@ -153,6 +155,17 @@ public final class BattleManager {
 
     public boolean rewardClaimed(UUID battleId) {
         return claimedRewards.contains(battleId);
+    }
+
+    /** Snapshot of unclaimed authored victories currently waiting for persistence. */
+    public List<UUID> rewardReadyBattleIds() {
+        return activeBattles.entrySet().stream()
+                .filter(entry -> entry.getValue().outcome() == BattleInstance.Outcome.VICTORY)
+                .filter(entry -> entry.getValue().state() == BattleState.REWARD)
+                .map(Map.Entry::getKey)
+                .filter(rewardContexts::containsKey)
+                .filter(id -> !claimedRewards.contains(id))
+                .toList();
     }
 
     /**

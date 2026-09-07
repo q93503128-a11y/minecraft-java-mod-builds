@@ -1,12 +1,15 @@
 package kr.moonseungjun.turnboundre;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.turnboundre.battle.AuthoredEncounterLauncher;
 import kr.moonseungjun.turnboundre.battle.BattleManager;
 import kr.moonseungjun.turnboundre.battle.BattleWorldEventHooks;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
+import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
+import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
 import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -23,13 +26,16 @@ public final class TurnboundRe {
     public static final BattleManager BATTLES = new BattleManager();
     public static final DefinitionRepository DEFINITIONS = new DefinitionRepository();
     public static final PlayerProgressStore PROGRESS = new PlayerProgressStore(DEFINITIONS);
+    public static final AuthoredEncounterLauncher AUTHORED_ENCOUNTERS = new AuthoredEncounterLauncher(BATTLES, DEFINITIONS);
+    public static final BattleRewardSettlementService REWARD_SETTLEMENT = new BattleRewardSettlementService(BATTLES, PROGRESS);
 
     public TurnboundRe(IEventBus modEventBus) {
         modEventBus.addListener(BattleNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
         new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
-        LOGGER.info("TURNBOUND: RE {} M4 progression foundation loaded", VERSION);
+        new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT).register(NeoForge.EVENT_BUS);
+        LOGGER.info("TURNBOUND: RE {} M4 authored encounter reward settlement loaded", VERSION);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
