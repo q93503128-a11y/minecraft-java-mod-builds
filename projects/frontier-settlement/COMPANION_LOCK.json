@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.122"
+    "frontier_settlement": "0.1.0-alpha.123"
   },
   "notes": [
     "This lock is the canonical candidate stack for Alpha.118 fresh-world and graphical-client compatibility testing.",
@@ -18,7 +18,8 @@
     "Companion integration remains soft: Frontier does not copy companion code/assets, create a second logistics authority, force-load chunks or mint virtual settlement resources.",
     "Alpha.118 adds physical lumber/quarry target caching and five-second empty-scan backoff on top of the Alpha.117 UI/runtime hardening; companion binary pins remain unchanged.",
     "Automated preflight does not promote graphical-client, spawn-density, long-session or multiplayer acceptance.",
-    "Frontier Alpha.120 changes only the Frontier runtime JAR: deterministic blacksmith reinforcement and copper/iron-only maintenance payment. Third-party companion binary versions and committed hashes remain unchanged and require fresh server validation."
+    "Frontier Alpha.120 changes only the Frontier runtime JAR: deterministic blacksmith reinforcement and copper/iron-only maintenance payment. Third-party companion binary versions and committed hashes remain unchanged and require fresh server validation.",
+    "Frontier Alpha.123 changes only the project-owned Frontier runtime JAR: central warehouse/cart-station logistics investment, physical storage expansion, and bounded productive-freight throughput. Third-party companion pins/hashes remain unchanged."
   ],
   "entries": [
     {
