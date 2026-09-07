@@ -1,6 +1,1 @@
-Traceback (most recent call last):
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/tools/test_current_docs.py", line 29, in <module>
-    require("- `M` — settlement/infrastructure palette;" in readme, "README palette key does not match runtime M")
-  File "/home/runner/work/minecraft-java-mod-builds/minecraft-java-mod-builds/projects/frontier-settlement/tools/test_current_docs.py", line 10, in require
-    raise AssertionError(message)
-AssertionError: README palette key does not match runtime M
+Frontier Settlement current docs audit: PASS (0.1.0-alpha.117)
