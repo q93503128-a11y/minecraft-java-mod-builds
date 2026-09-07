@@ -53,11 +53,13 @@ public final class ExpeditionGameplayService {
         ServerLevel overworld = level.getServer().overworld();
         prepareTechnicalCell(overworld, TECHNICAL_HUB, false);
         prepareTechnicalCell(overworld, TECHNICAL_REGION, true);
+        var encounter = Region01EncounterRuntime.begin(overworld, TECHNICAL_REGION, deployed.sequence(), world.region01Pressure());
         teleport(player, overworld, TECHNICAL_REGION.offset(0, 0, -4));
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Expedition deployed. Supply spent: " + supplyCost
                 + ". Region pressure: " + world.region01Pressure()
-                + ". Recover 3 amethyst-marked salvage nodes, then extract."
+                + ". Threats: " + encounter.totalThreats() + " (hunter=" + encounter.hunters()
+                + ", scout=" + encounter.scouts() + ", elite=" + encounter.elites() + "). Recover 3 salvage nodes."
         ));
         return deployed;
     }
@@ -77,8 +79,13 @@ public final class ExpeditionGameplayService {
         ExpeditionRun recovered = lifecycle.recover(active.get(), RESOURCE_ID, 1);
         world.updateExpedition(recovered);
         overworld.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        Region01EncounterRuntime.applySalvageHazard(player, world.region01Pressure());
         int amount = recovered.recoveredResources().getOrDefault(RESOURCE_ID, 0);
-        player.sendSystemMessage(Component.literal("[Riftfrontier] Field salvage secured: " + amount + "/3"));
+        int liveThreats = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, recovered.sequence());
+        player.sendSystemMessage(Component.literal(
+            "[Riftfrontier] Field salvage secured: " + amount + "/3. Active patrol threats=" + liveThreats
+                + ". You may fight for a safer regional outcome or risk a fast extraction."
+        ));
         return true;
     }
 
@@ -92,12 +99,16 @@ public final class ExpeditionGameplayService {
         ExpeditionLifecycle.Resolution resolution = lifecycle.resolveExtraction(requested, level.getGameTime());
         world.updateExpedition(resolution.run());
 
+        ServerLevel overworld = level.getServer().overworld();
+        boolean patrolCleared = Region01EncounterRuntime.patrolCleared(overworld, TECHNICAL_REGION, run.sequence());
         int retainedSalvage = resolution.retainedResources().getOrDefault(RESOURCE_ID, 0);
-        world.settleRegion01Extraction(retainedSalvage);
+        world.settleRegion01Extraction(retainedSalvage, patrolCleared);
+        Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, run.sequence());
         returnToHub(player);
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Extraction complete. Hub salvage +" + retainedSalvage
-                + " (stored=" + world.securedRegion01Salvage() + "). Region pressure is now " + world.region01Pressure()
+                + " (stored=" + world.securedRegion01Salvage() + "). Patrol cleared=" + patrolCleared
+                + ". Region pressure is now " + world.region01Pressure()
                 + "; next expedition supply cost=" + world.region01PreparationSupplyCost()
                 + ". " + resolution.worldConsequence()
         ));
@@ -122,6 +133,7 @@ public final class ExpeditionGameplayService {
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime());
         world.updateExpedition(failed);
+        Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Expedition failed: " + reason + ". Preparation supply is not refunded."
         ));
@@ -144,6 +156,10 @@ public final class ExpeditionGameplayService {
         return world.expeditions().stream()
             .filter(run -> !run.status().terminal())
             .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence));
+    }
+
+    public static BlockPos technicalRegionCenter() {
+        return TECHNICAL_REGION;
     }
 
     private static void prepareTechnicalCell(ServerLevel level, BlockPos center, boolean resourceNodes) {
