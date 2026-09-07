@@ -167,6 +167,29 @@ public final class ExpeditionGameplayService {
         return Optional.of(failed);
     }
 
+    /**
+     * Login/re-entry adapter for the bounded M2 field cell.
+     *
+     * Restart/logout failure may leave a player's persisted position inside the technical Region 01
+     * cell after the authoritative run has already become terminal. In that precise state, returning
+     * the player to the technical hub is an explicit field exit rather than an attempt to resurrect or
+     * infer expedition ownership. Active expeditions are never moved by this adapter.
+     */
+    public static FieldReentryDecision reconcilePlayerFieldReentry(ServerPlayer player) {
+        ServerLevel level = serverLevel(player);
+        RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
+        ServerLevel overworld = level.getServer().overworld();
+        boolean insideTechnicalRegion = level == overworld && insideTechnicalRegionCell(player.blockPosition());
+        FieldReentryDecision decision = FieldReentryDecision.evaluate(active(world).isPresent(), insideTechnicalRegion);
+        if (!decision.returnToHub()) return decision;
+
+        returnToHub(player);
+        player.sendSystemMessage(Component.literal(
+            "[Riftfrontier] Previous field expedition is no longer active. Returned to the hub; spent preparation supply remains consumed."
+        ));
+        return decision;
+    }
+
     public static String status(ServerPlayer player) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(serverLevel(player));
         String run = active(world)
