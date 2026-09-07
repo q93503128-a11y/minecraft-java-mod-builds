@@ -39,7 +39,7 @@ class FieldPlayEvidenceMetricsTest {
         assertEquals(OptionalInt.of(0), metrics.minObservedLiveThreats());
         assertEquals(OptionalInt.of(3), metrics.maxObservedLiveThreats());
         assertEquals(OptionalInt.of(0), metrics.terminalObservedLiveThreats());
-        assertEquals(3, metrics.finalObservedSalvage());
+        assertEquals(OptionalInt.of(3), metrics.finalObservedSalvage());
         assertEquals("extracted", metrics.terminalStage());
         assertEquals("extraction", metrics.endReason());
         assertTrue(metrics.reportLine().contains("firstSalvageTicks=60"));
@@ -77,6 +77,8 @@ class FieldPlayEvidenceMetricsTest {
         assertEquals(OptionalLong.of(100L), metrics.terminalElapsedTicks());
         assertFalse(metrics.firstSalvageElapsedTicks().isPresent());
         assertFalse(metrics.minObservedLiveThreats().isPresent());
+        assertFalse(metrics.finalObservedSalvage().isPresent());
+        assertTrue(metrics.reportLine().contains("finalSalvage=unavailable"));
         assertEquals("legacy-unavailable", metrics.terminalStage());
         assertEquals("other_failure", metrics.endReason());
     }
