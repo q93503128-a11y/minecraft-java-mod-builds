@@ -5,13 +5,13 @@ import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
 import kr.moonseungjun.turnboundre.client.BattleTargetMarkerState;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.TriState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * World-first target feedback for the command picker.
@@ -23,9 +23,6 @@ public final class BattleWorldTargetMarker {
 
     @SubscribeEvent
     public static void markTarget(RenderNameTagEvent.CanRender event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!(minecraft.screen instanceof BattleCommandScreen)) return;
-
         BattlePresentationModel model = BattleClientState.presentation().orElse(null);
         if (model == null || !model.awaitingPlayerCommand()) return;
 
@@ -49,5 +46,12 @@ public final class BattleWorldTargetMarker {
                 .append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(label));
         event.setCanRender(TriState.TRUE);
+    }
+
+    @SubscribeEvent
+    public static void clearWhenCommandScreenCloses(ScreenEvent.Closing event) {
+        if (event.getScreen() instanceof BattleCommandScreen) {
+            BattleTargetMarkerState.clear();
+        }
     }
 }
