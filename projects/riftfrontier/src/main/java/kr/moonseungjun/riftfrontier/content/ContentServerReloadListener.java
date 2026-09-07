@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Loads all server data-pack content documents into isolated registries, merges them, validates the full graph,
- * and only then atomically replaces the runtime snapshot. Cross-document references are therefore supported.
+ * Loads all server data-pack content documents into isolated registries, resolves their dependency graph,
+ * merges them, validates the full graph, and only then atomically replaces the runtime snapshot.
  */
 public final class ContentServerReloadListener implements ResourceManagerReloadListener {
     public static final Identifier ID = Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "content_runtime");
@@ -38,20 +38,19 @@ public final class ContentServerReloadListener implements ResourceManagerReloadL
             .toList();
 
         for (Map.Entry<Identifier, Resource> entry : ordered) {
+            String source = entry.getKey().toString();
             try (var reader = entry.getValue().openAsReader()) {
-                // Decode/schema/duplicate-definition failures are local and fail immediately.
-                // Reference validation is intentionally deferred until every document has been merged.
-                packs.add(loader.load(reader));
+                packs.add(loader.load(reader, source));
             } catch (IOException | RuntimeException error) {
-                throw new IllegalStateException("Failed to load Riftfrontier content resource " + entry.getKey() + ": " + error.getMessage(), error);
+                throw new IllegalStateException("Failed to load Riftfrontier content resource " + source + ": " + error.getMessage(), error);
             }
         }
 
         ContentPackSet.Merged merged = ContentPackSet.merge(packs);
         ContentRuntimeSnapshot snapshot = ContentRuntime.installValidated(merged.registry(), merged.packIds());
         Riftfrontier.LOGGER.info(
-            "Riftfrontier content snapshot published: generation={}, packs={}, definitions={}, fingerprint={}",
-            snapshot.generation(), snapshot.packIds(), snapshot.definitionCount(), snapshot.fingerprint()
+            "Riftfrontier content snapshot published: generation={}, packs={}, definitions={}, fingerprint={}, provenance={}",
+            snapshot.generation(), snapshot.packIds(), snapshot.definitionCount(), snapshot.fingerprint(), merged.provenance()
         );
     }
 }
