@@ -2,6 +2,7 @@ package kr.moonseungjun.turnboundre.client.ui;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
+import kr.moonseungjun.turnboundre.client.BattleCommandOverlayState;
 import kr.moonseungjun.turnboundre.client.BattlePresentationModel;
 import kr.moonseungjun.turnboundre.client.input.BattleInputHandler;
 import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
@@ -55,7 +56,9 @@ public final class BattleHud {
         renderTurnRail(graphics, font, layout.turnRail(), model);
         renderEnemySummary(graphics, font, layout.enemySummary(), model);
         renderPartyStatus(graphics, font, layout.partyStatus(), model);
-        renderCommandStrip(graphics, font, layout.commandStrip(), model);
+        if (!BattleCommandOverlayState.isOpen()) {
+            renderCommandStrip(graphics, font, layout.commandStrip(), model);
+        }
     }
 
     private static void renderTurnRail(
