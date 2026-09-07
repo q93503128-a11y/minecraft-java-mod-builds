@@ -45,6 +45,17 @@ class M3DefinitionCrossReferenceTest {
         assertTrue(DefinitionCrossReferenceValidator.validate(List.of(action), List.of(), List.of(burn)).isEmpty());
     }
 
+    @Test
+    void healEffectsCannotSilentlyResolveToZero() {
+        var inertHeal = new ActionDefinition(
+                "turnbound_re:inert_heal", "SKILL", -20, 0, 0, "ARCANE",
+                new ActionDefinition.Targeting("ALLY", "SINGLE", 1), 0,
+                List.of(new ActionDefinition.Effect("HEAL", "", 1.0D, 0, 1.0D)));
+
+        var errors = DefinitionCrossReferenceValidator.validate(List.of(inertHeal), List.of(), List.of());
+        assertTrue(errors.stream().anyMatch(it -> it.contains("HEAL effect requires hpPower > 0")), errors.toString());
+    }
+
     private static ActionDefinition action(String id, String kind, List<ActionDefinition.Effect> effects) {
         int energyDelta = switch (kind) {
             case "BASIC" -> 10;
