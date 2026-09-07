@@ -53,11 +53,13 @@ Extraction evidence has an additional atomicity contract:
 
 ```text
 DEPLOYED
-→ validateExtractionRequest (read-only)
-   ├─ rejected: no state transition, no PRE_EXTRACTION, no SavedData write
-   └─ accepted: append PRE_EXTRACTION while still DEPLOYED
-                → EXTRACTION_REQUESTED
-                → resolve extraction
+→ build candidate PRE_EXTRACTION checkpoint in memory
+→ ExpeditionExtractionGate.accept
+   ├─ validateExtractionRequest fails: source run unchanged, checkpoint is never appended, no SavedData write
+   └─ validation succeeds: append PRE_EXTRACTION immutably
+                            → EXTRACTION_REQUESTED immutably
+                            → persist the combined accepted state once
+                            → resolve extraction
 ```
 
 This ordering matters because `PRE_EXTRACTION` means an accepted extraction boundary, not merely that the player typed an extraction command. Saves produced before this contract was hardened may contain rejected-attempt checkpoints; `FIELD_PLAY_METRICS.md` keeps conservative legacy read semantics for them.
@@ -86,14 +88,15 @@ No persistence schema bump is used for this backward-compatible optional diagnos
 
 ## Required regression boundary
 
-The required native `extraction_evidence_atomicity` GameTest locks the rejected-request contract at the authoritative world boundary:
+The required native `extraction_evidence_atomicity` GameTest executes the same pure `ExpeditionExtractionGate` used by the Minecraft gameplay adapter and locks both branches:
 
-- an underfilled Region 01 run remains `DEPLOYED`;
+- an underfilled Region 01 source run remains `DEPLOYED`;
 - its evidence count does not change;
 - it gains no `PRE_EXTRACTION` checkpoint;
-- validation does not advance `worldRevision`;
-- after the required salvage is recovered, normal request/resolve still reaches `EXTRACTED`;
-- the test terminally closes its own fixture so it cannot leak a non-terminal run into other required GameTests.
+- after required salvage is recovered, the gate returns `EXTRACTION_REQUESTED` with exactly one `PRE_EXTRACTION` checkpoint;
+- normal extraction resolution from that gate output still reaches `EXTRACTED`.
+
+The fixture deliberately does **not** insert its transient run into shared `RiftfrontierWorldData`. NeoForge runs required GameTests in the same server process, so a regression fixture that leaves a temporary active expedition in shared SavedData can race unrelated restart/world-state tests. Production persistence is instead concentrated in `ExpeditionGameplayService`: the gate finishes the immutable validation/evidence/status transition first, and only then is the returned accepted run written once through `world.updateExpedition`.
 
 ## Review commands
 
