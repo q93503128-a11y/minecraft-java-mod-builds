@@ -1,6 +1,5 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
-import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.minecraft.server.level.ServerLevel;
 
@@ -34,17 +33,20 @@ public final class ExpeditionRestartReconciler {
      * Fails every persisted non-terminal run with SERVER_RESTART and records an honest terminal
      * checkpoint. liveThreats is unavailable because process-local ownership cannot survive restart.
      * Already-spent preparation supply is deliberately not refunded.
+     *
+     * This recovery edge intentionally uses ExpeditionRun.fail directly instead of validating against
+     * the current content snapshot. A historical run may reference content from an older fingerprint;
+     * server-start cleanup must still be able to close that durable fact rather than deadlocking on a
+     * definition that is no longer present in the currently loaded pack.
      */
     public static List<ExpeditionRun> reconcile(ServerLevel level) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         List<ExpeditionRun> candidates = nonTerminalRuns(world.expeditions());
         if (candidates.isEmpty()) return List.of();
 
-        var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
         long gameTime = level.getGameTime();
-
         return candidates.stream().map(run -> {
-            ExpeditionRun failed = lifecycle.fail(run, gameTime, ExpeditionRun.EndReason.SERVER_RESTART);
+            ExpeditionRun failed = run.fail(gameTime, ExpeditionRun.EndReason.SERVER_RESTART);
             world.updateExpedition(failed);
             ExpeditionEvidenceCheckpoint terminalEvidence = new ExpeditionEvidenceCheckpoint(
                 ExpeditionEvidenceCheckpoint.Stage.FAILED,
