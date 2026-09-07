@@ -74,6 +74,8 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 29. patrol-clear 보상은 **살아 있는 위협의 위치**로 우회할 수 없어야 한다. 현재 M2 runtime은 run sequence가 소유한 entity handle을 추적하며, 기술 cell 밖으로 유인된 살아 있는 위협도 여전히 patrol을 미완료 상태로 유지한다.
 30. extraction 요구조건은 `EXTRACTION_REQUESTED` 상태를 저장하기 전에 검증한다. 실패한 extraction 요청은 authoritative run을 `DEPLOYED`에 남겨 회수 플레이를 계속할 수 있어야 한다.
 31. 명시적 player abort는 FAILED 처리와 encounter cleanup 후 technical hub로 귀환한다. death/logout은 실패 정책만 적용하며 임의 순간이동으로 실제 이벤트 의미를 숨기지 않는다.
+32. server restart 뒤 process-local encounter ownership을 증명할 수 없는 persisted non-terminal expedition은 성공/진행 상태로 추정하지 않고 명시적으로 `FAILED` 처리한다. 이미 지불한 preparation supply는 환불하지 않는다.
+33. persisted technical proxy 정리는 stable run tag + entity-load event로 수행한다. restart cleanup을 startup/per-tick broad world scan이나 위치 기반 ownership 추정으로 구현하지 않는다.
 
 ## 정본 읽기 순서
 
@@ -90,11 +92,12 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 9. content/runtime/persistence 작업이면 `CONTENT_RUNTIME.md`
 10. expedition 작업이면 `EXPEDITION_RUNTIME.md`
 11. M2 gameplay 작업이면 `M2B_GAMEPLAY_ADAPTER.md`
-12. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
+12. restart/encounter persistence 작업이면 `RESTART_RECONCILIATION.md`
+13. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
 
 ## 현재 단계
 
-`M2-B — REGION 01 EDGE HARDENED / RESTART RECONCILIATION + FIELD PLAY NEXT`
+`M2-B — RESTART RECONCILIATION VERIFIED / FIELD PLAY NEXT`
 
 M0/M1에서 빌드/JAR, typed content graph, atomic runtime snapshot, ResourceManager reload, validator, authoritative SavedData, diagnostics, native GameTest/CI gate를 검증했다.
 
@@ -118,18 +121,21 @@ M2-B에서 지금까지 검증된 실제 Minecraft adapter:
 - terminal cleanup이 위치와 무관하게 현재 process에서 추적 중인 run threat를 제거
 - contract 미충족 extraction 요청은 상태 전이 전에 거부되어 soft-lock을 만들지 않음
 - explicit abort는 FAILED + cleanup 후 technical hub 귀환
-- required native GameTest에서 pressure scaling + 실제 encounter spawn/tracking + 48블록 lure regression + cleanup 검증
+- server restart에서 persisted non-terminal expedition → authoritative FAILED, preparation supply 미환불
+- persisted stable run-tag technical proxy → tracker 부재 시 entity-load event에서 orphan cleanup
+- restart cleanup은 broad per-tick world scan을 사용하지 않음
+- required native GameTest에서 pressure/encounter/lure/cleanup과 restart reconciliation 회귀 검증
 
-현재 검증 기준 코드 커밋은 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, GitHub Actions `Build Riftfrontier` run은 `34104215746`이다. clean/unit test/build, **3 required native GameTests**, dedicated server smoke, Xvfb client smoke, executable JAR 검사, artifact/report 단계가 모두 성공했다. 검증 JAR SHA-256은 `525d9359b1e5097c677b2775a7c550e33e6352e2be1cf487f9ac84661d55336a`다.
+현재 검증 기준 코드 커밋은 `eef82853220ba36aa1d6d2096293541fc5c92c41`, GitHub Actions `Build Riftfrontier` run은 `34109970161`이다. clean/unit test/build, required native GameTests, dedicated server smoke, Xvfb client smoke, executable JAR 검사, artifact/report 단계가 모두 성공했다. 검증 JAR SHA-256은 `f42cff32667fa5aab72fb31d196a3d03aff2c265746de8041eed4d169716d490`다.
 
 ## 다음 정확한 개발 경계
 
-다음 묶음은 이미 닫은 encounter runtime이나 lure/underfilled-extraction 회귀를 다시 만드는 작업이 아니다.
+다음 묶음은 이미 닫은 encounter runtime, lure/underfilled-extraction 회귀, restart reconciliation을 다시 만드는 작업이 아니다.
 
-1. **서버 재시작/reload 경계:** 현재 `RUN_THREATS`는 process-local entity handle 추적이다. active expedition 중 서버가 재시작되면 SavedData의 run과 저장된 proxy entity를 어떻게 authoritative하게 reconcile할지 명시적으로 구현·GameTest/통합 검증한다. broad per-tick world scan으로 때우지 않는다.
-2. 실제 Minecraft client에서 반복 플레이하며 spawn spacing, aggro/pacing, salvage hazard, extraction 선택 압력을 검수한다.
-3. death/logout/abort/extraction 직전·직후의 플레이 체감과 저장 결과를 수동 field-play에서 재검수한다.
-4. 플레이 결과를 기준으로 pressure scaling과 patrol reward 수치를 조정한다. 추측만으로 장기 밸런스를 확정하지 않는다.
+1. 실제 Minecraft client에서 반복 플레이하며 spawn spacing, aggro/pacing, salvage hazard, extraction 선택 압력을 검수한다.
+2. death/logout/abort/extraction 직전·직후와 restart 이후 플레이어 재진입의 플레이 체감·동선·저장 결과를 수동 field-play에서 재검수한다.
+3. 플레이 결과를 기준으로 pressure scaling과 patrol reward 수치를 조정한다. 추측만으로 장기 밸런스를 확정하지 않는다.
+4. restart/logout 뒤 stranded/re-entry 문제가 실제로 확인되면 무조건 순간이동이 아니라 명시적 field-exit/re-entry adapter를 설계·검증한다.
 5. M3 전투/elite/boss presentation 작업 전 `REFERENCE_TARGETS.md` 원칙에 맞는 combat/visual reference dossier를 만든다.
 6. 기술 proxy를 최종 모델·애니메이션으로 오인하지 않는다. 실제 플레이/시각 검수 전 combat/presentation 완료를 선언하지 않는다.
 7. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체 vertical slice를 실제 게임에서 검수한 뒤 M2 완료 여부를 판단한다.
