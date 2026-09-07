@@ -70,6 +70,11 @@ public final class SettlementBuildingIntegrityService {
     }
 
     private static int repairDamagedHouses(ServerLevel level, SettlementData data) {
+        // Most passes have no house damage. Detect one repairable vacancy before touching the shared
+        // physical storage network; otherwise an intact settlement paid for a full inventory scan
+        // once per second solely to discover that there was nothing to repair.
+        if (!hasRepairableHouseDamage(level, data)) return 0;
+
         // Repair is a real physical resource transaction. If any authoritative settlement storage
         // is unloaded, fail closed rather than repairing from a stale/partial ledger.
         if (!SettlementStorageService.storageAvailable(level, data)) return 0;
@@ -123,6 +128,29 @@ public final class SettlementBuildingIntegrityService {
             if (level.setBlock(candidate.pos(), candidate.expected(), 3)) repaired++;
         }
         return repaired;
+    }
+
+    private static boolean hasRepairableHouseDamage(ServerLevel level, SettlementData data) {
+        if (data.houseCount() <= 0) return false;
+        for (BuildingRecord building : data.buildings()) {
+            if (building.buildingType() != BuildingType.HOUSE) continue;
+            List<BuildingBlueprints.Placement> plan = RotatedBlueprints.create(
+                    BuildingType.HOUSE, building.origin(), building.rotation());
+            boolean loaded = true;
+            for (BuildingBlueprints.Placement placement : plan) {
+                if (!level.hasChunkAt(placement.pos())) {
+                    loaded = false;
+                    break;
+                }
+            }
+            if (!loaded) continue;
+            for (BuildingBlueprints.Placement placement : plan) {
+                BlockPos pos = placement.pos();
+                BlockState current = level.getBlockState(pos);
+                if (!current.is(placement.state().getBlock()) && canRepairVacancy(level, pos, current)) return true;
+            }
+        }
+        return false;
     }
 
     private static RepairMaterial repairMaterial(BlockState expected) {
