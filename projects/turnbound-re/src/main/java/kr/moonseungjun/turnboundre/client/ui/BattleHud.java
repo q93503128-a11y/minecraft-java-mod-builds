@@ -83,7 +83,9 @@ public final class BattleHud {
             String label = fit(font, displayName(participant), region.width() - 24);
             graphics.text(font, Component.literal(label), region.x() + 24, y + 2,
                     participant.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
-            String secondary = current ? "NOW" : (participant.exposed() ? "EXPOSED" : resourceLine(participant));
+            String secondary = current
+                    ? BattleHudPresentation.currentTurnLabel().getString()
+                    : (participant.exposed() ? BattleHudPresentation.exposedLabel().getString() : resourceLine(participant));
             graphics.text(font, Component.literal(fit(font, secondary, region.width() - 24)),
                     region.x() + 24, y + 11, TEXT_SECONDARY, true);
         }
@@ -112,10 +114,12 @@ public final class BattleHud {
         drawBar(graphics, region.x(), region.y() + 11, region.width(), 5, enemy.hp(), enemy.maxHp(), HP_PROGRESS);
         drawBar(graphics, region.x(), region.y() + 18, region.width(), 4, enemy.poise(), enemy.poiseMax(), POISE_PROGRESS);
 
-        String intent = intentLine(enemy);
+        BattleNetworkPayloads.SnapshotIntent snapshotIntent = enemy.intent();
+        String actionName = snapshotIntent == null ? "" : conciseActionName(snapshotIntent.actionId(), displayName(enemy));
+        String intent = BattleHudPresentation.intentLine(enemy, actionName).getString();
         graphics.text(font, Component.literal(fit(font, intent, region.width())), region.x(), region.y() + 24,
                 TEXT_PRIMARY, true);
-        String status = statusLine(enemy);
+        String status = BattleHudPresentation.statusLine(enemy).getString();
         if (!status.isBlank()) {
             graphics.text(font, Component.literal(fit(font, status, region.width())), region.x(), region.y() + 34,
                     TEXT_SECONDARY, true);
@@ -132,38 +136,91 @@ public final class BattleHud {
         List<BattleNetworkPayloads.SnapshotParticipant> party = model.playerParty();
         if (party.isEmpty()) return;
         int count = Math.min(4, party.size());
-        int rawWidth = region.width() / count;
-        int slotWidth = Math.min(180, rawWidth);
+        UiLayoutMetrics.PartyGridLayout grid = UiLayoutMetrics.partyGrid(region, count);
         graphics.enableScissor(region.x(), region.y(), region.right(), region.bottom());
 
         for (int i = 0; i < count; i++) {
             BattleNetworkPayloads.SnapshotParticipant member = party.get(i);
-            int x = region.x() + i * rawWidth;
-            boolean current = member.id().equals(model.currentActorId());
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE,
-                    x, region.y(), 20, 20);
-            drawCentered(graphics, font, Integer.toString(i + 1), x + 10, region.y() + 6,
-                    member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
-
-            int textX = x + 24;
-            int contentWidth = Math.max(24, slotWidth - 24 - UiLayoutMetrics.SPACE_4);
-            graphics.text(font, Component.literal(fit(font, displayName(member), contentWidth)), textX, region.y() + 1,
-                    member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
-            graphics.text(font, Component.literal("HP " + member.hp() + "/" + member.maxHp()), textX, region.y() + 11,
-                    TEXT_SECONDARY, true);
-
-            int barWidth = Math.max(24, slotWidth - UiLayoutMetrics.SPACE_4);
-            drawBar(graphics, x, region.y() + 24, barWidth, 5, member.hp(), member.maxHp(), HP_PROGRESS);
-            drawBar(graphics, x, region.y() + 31, barWidth, 4, member.energy(), 100, ENERGY_PROGRESS);
-            graphics.text(font, Component.literal("E " + member.energy() + "/100"), x, region.y() + 38,
-                    TEXT_SECONDARY, true);
-            String status = statusLine(member);
-            if (!status.isBlank() && region.height() >= 58) {
-                graphics.text(font, Component.literal(fit(font, status, barWidth)), x, region.y() + 48,
-                        TEXT_SECONDARY, true);
+            int col = i % grid.columns();
+            int row = i / grid.columns();
+            int x = region.x() + col * grid.cellWidth();
+            int y = region.y() + row * grid.cellHeight();
+            if (grid.compact()) {
+                renderCompactPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, model);
+            } else {
+                renderRegularPartyMember(graphics, font, x, y, grid.cellWidth(), grid.cellHeight(), i, member, model);
             }
         }
         graphics.disableScissor();
+    }
+
+    private static void renderRegularPartyMember(
+            GuiGraphicsExtractor graphics,
+            Font font,
+            int x,
+            int y,
+            int cellWidth,
+            int cellHeight,
+            int index,
+            BattleNetworkPayloads.SnapshotParticipant member,
+            BattlePresentationModel model
+    ) {
+        int slotWidth = Math.min(180, cellWidth);
+        boolean current = member.id().equals(model.currentActorId());
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
+        drawCentered(graphics, font, Integer.toString(index + 1), x + 10, y + 6,
+                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+
+        int textX = x + 24;
+        int contentWidth = Math.max(24, slotWidth - 24 - UiLayoutMetrics.SPACE_4);
+        graphics.text(font, Component.literal(fit(font, displayName(member), contentWidth)), textX, y + 1,
+                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+        graphics.text(font, Component.literal("HP " + member.hp() + "/" + member.maxHp()), textX, y + 11,
+                TEXT_SECONDARY, true);
+
+        int barWidth = Math.max(24, slotWidth - UiLayoutMetrics.SPACE_4);
+        drawBar(graphics, x, y + 24, barWidth, 5, member.hp(), member.maxHp(), HP_PROGRESS);
+        drawBar(graphics, x, y + 31, barWidth, 4, member.energy(), 100, ENERGY_PROGRESS);
+        graphics.text(font, Component.literal("E " + member.energy() + "/100"), x, y + 38,
+                TEXT_SECONDARY, true);
+        String status = BattleHudPresentation.statusLine(member).getString();
+        if (!status.isBlank() && cellHeight >= 58) {
+            graphics.text(font, Component.literal(fit(font, status, barWidth)), x, y + 48,
+                    TEXT_SECONDARY, true);
+        }
+    }
+
+    private static void renderCompactPartyMember(
+            GuiGraphicsExtractor graphics,
+            Font font,
+            int x,
+            int y,
+            int cellWidth,
+            int cellHeight,
+            int index,
+            BattleNetworkPayloads.SnapshotParticipant member,
+            BattlePresentationModel model
+    ) {
+        int contentWidth = Math.max(24, cellWidth - 22 - UiLayoutMetrics.SPACE_4);
+        int barWidth = Math.max(24, cellWidth - UiLayoutMetrics.SPACE_4);
+        boolean current = member.id().equals(model.currentActorId());
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE, x, y, 18, 18);
+        drawCentered(graphics, font, Integer.toString(index + 1), x + 9, y + 5,
+                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+        graphics.text(font, Component.literal(fit(font, displayName(member), contentWidth)), x + 22, y,
+                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+
+        String resources = "HP " + member.hp() + "/" + member.maxHp() + " · E " + member.energy();
+        graphics.text(font, Component.literal(fit(font, resources, contentWidth)), x + 22, y + 10,
+                TEXT_SECONDARY, true);
+        drawBar(graphics, x, y + 21, barWidth, 4, member.hp(), member.maxHp(), HP_PROGRESS);
+        drawBar(graphics, x, y + 27, barWidth, 4, member.energy(), 100, ENERGY_PROGRESS);
+
+        String status = BattleHudPresentation.statusLine(member).getString();
+        if (!status.isBlank() && cellHeight >= 40) {
+            graphics.text(font, Component.literal(fit(font, status, barWidth)), x, y + 32,
+                    TEXT_SECONDARY, true);
+        }
     }
 
     private static void renderCommandStrip(
@@ -247,26 +304,6 @@ public final class BattleHud {
     private static String resourceLine(BattleNetworkPayloads.SnapshotParticipant participant) {
         if ("PLAYER".equals(participant.team())) return "E " + participant.energy();
         return "P " + participant.poise() + "/" + participant.poiseMax();
-    }
-
-    private static String intentLine(BattleNetworkPayloads.SnapshotParticipant enemy) {
-        BattleNetworkPayloads.SnapshotIntent intent = enemy.intent();
-        if (intent == null) return enemy.alive() ? "INTENT -" : "DEFEATED";
-        String action = conciseActionName(intent.actionId(), displayName(enemy));
-        String breakRule = intent.breakCancelable() ? " · BREAK CANCEL" : "";
-        return "INTENT " + intent.risk() + " · " + action + " · " + intent.type() + "/" + intent.targeting() + breakRule;
-    }
-
-    private static String statusLine(BattleNetworkPayloads.SnapshotParticipant participant) {
-        if (!participant.alive()) return "DEFEATED";
-        if (participant.exposed()) return "EXPOSED";
-        if (participant.guard()) return "GUARD";
-        if (participant.poiseGuard()) return "POISE GUARD";
-        if (participant.statuses().isEmpty()) return "";
-        BattleNetworkPayloads.SnapshotStatus status = participant.statuses().getFirst();
-        String remaining = status.remaining() > 0 ? " " + status.remaining() + "T" : "";
-        String stacks = status.stacks() > 1 ? " x" + status.stacks() : "";
-        return humanizeId(status.id()) + stacks + remaining;
     }
 
     private static String slotGlyph(String slot) {
