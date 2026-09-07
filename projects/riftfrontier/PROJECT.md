@@ -71,6 +71,9 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 26. M2 전투에서 바닐라 엔티티를 사용하는 것은 **behaviour/runtime 검증용 technical proxy**에 한정한다. 이를 production creature art/최종 AI로 간주하지 않고 M3 reference/visual gate 전에 외형을 확정하지 않는다.
 27. elite 역할은 단순 HP 배수만으로 만들지 않는다. 최소 하나 이상의 관찰 가능한 대응/반격 창이 있어야 한다. Region 01 technical elite는 Ravager의 방패 stun 상호작용으로 이 원칙을 검증한다.
 28. resource와 combat은 별도 체크리스트가 아니라 같은 원정 안에서 선택 압력을 만들어야 한다. Region 01에서는 빠른 extraction과 patrol suppression + bonus salvage를 실제 보상 차이로 연결한다.
+29. patrol-clear 보상은 **살아 있는 위협의 위치**로 우회할 수 없어야 한다. 현재 M2 runtime은 run sequence가 소유한 entity handle을 추적하며, 기술 cell 밖으로 유인된 살아 있는 위협도 여전히 patrol을 미완료 상태로 유지한다.
+30. extraction 요구조건은 `EXTRACTION_REQUESTED` 상태를 저장하기 전에 검증한다. 실패한 extraction 요청은 authoritative run을 `DEPLOYED`에 남겨 회수 플레이를 계속할 수 있어야 한다.
+31. 명시적 player abort는 FAILED 처리와 encounter cleanup 후 technical hub로 귀환한다. death/logout은 실패 정책만 적용하며 임의 순간이동으로 실제 이벤트 의미를 숨기지 않는다.
 
 ## 정본 읽기 순서
 
@@ -91,7 +94,7 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 
 ## 현재 단계
 
-`M2-B — REGION 01 ENCOUNTER RUNTIME VERIFIED / FIELD PLAY REVIEW NEXT`
+`M2-B — REGION 01 EDGE HARDENED / RESTART RECONCILIATION + FIELD PLAY NEXT`
 
 M0/M1에서 빌드/JAR, typed content graph, atomic runtime snapshot, ResourceManager reload, validator, authoritative SavedData, diagnostics, native GameTest/CI gate를 검증했다.
 
@@ -111,17 +114,22 @@ M2-B에서 지금까지 검증된 실제 Minecraft adapter:
 - pressure 증가에 따른 hunter/scout 수, hazard 지속시간/강도 증가
 - patrol suppression 시 +1 retained salvage bonus와 빠른 extraction의 실제 보상 trade-off
 - extraction/failure 시 run encounter cleanup
-- required native GameTest에서 pressure scaling + 실제 encounter spawn/tracking/cleanup 검증
+- run-owned direct threat tracking으로 기술 cell 밖으로 유인된 살아 있는 적도 patrol-clear를 막음
+- terminal cleanup이 위치와 무관하게 현재 process에서 추적 중인 run threat를 제거
+- contract 미충족 extraction 요청은 상태 전이 전에 거부되어 soft-lock을 만들지 않음
+- explicit abort는 FAILED + cleanup 후 technical hub 귀환
+- required native GameTest에서 pressure scaling + 실제 encounter spawn/tracking + 48블록 lure regression + cleanup 검증
 
-현재 검증 기준 코드 커밋은 `a7791123eade916c14041b4d32306c4befd8fc6a`, GitHub Actions `Build Riftfrontier` run은 `34099256007`이다. clean/unit test/build, required native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, artifact/report 단계가 모두 성공했다.
+현재 검증 기준 코드 커밋은 `fe23d9d8de05fca6f630b6a0e5292bb0918ae094`, GitHub Actions `Build Riftfrontier` run은 `34104215746`이다. clean/unit test/build, **3 required native GameTests**, dedicated server smoke, Xvfb client smoke, executable JAR 검사, artifact/report 단계가 모두 성공했다. 검증 JAR SHA-256은 `525d9359b1e5097c677b2775a7c550e33e6352e2be1cf487f9ac84661d55336a`다.
 
 ## 다음 정확한 개발 경계
 
-다음 묶음은 이미 닫은 encounter runtime을 다시 만드는 작업이 아니다. **실제 field play에서 현재 수직 구간의 전투·회수·철수 흐름을 검수하고 M3 production combat gate로 넘길 근거를 만든다.**
+다음 묶음은 이미 닫은 encounter runtime이나 lure/underfilled-extraction 회귀를 다시 만드는 작업이 아니다.
 
-1. 실제 Minecraft client에서 반복 플레이하며 spawn spacing, aggro/pacing, salvage hazard, extraction 선택 압력을 검수한다.
-2. mob이 기술 cell을 벗어나거나 원정이 실패/종료될 때 encounter cleanup이 누락되지 않는지 강화한다.
-3. 플레이 결과를 기준으로 pressure scaling과 patrol reward 수치를 조정한다. 추측만으로 장기 밸런스를 확정하지 않는다.
-4. M3 전투/elite/boss presentation 작업 전 `REFERENCE_TARGETS.md` 원칙에 맞는 combat/visual reference dossier를 만든다.
-5. 기술 proxy를 최종 모델·애니메이션으로 오인하지 않는다. 실제 플레이/시각 검수 전 combat/presentation 완료를 선언하지 않는다.
-6. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체 vertical slice를 실제 게임에서 검수한 뒤 M2 완료 여부를 판단한다.
+1. **서버 재시작/reload 경계:** 현재 `RUN_THREATS`는 process-local entity handle 추적이다. active expedition 중 서버가 재시작되면 SavedData의 run과 저장된 proxy entity를 어떻게 authoritative하게 reconcile할지 명시적으로 구현·GameTest/통합 검증한다. broad per-tick world scan으로 때우지 않는다.
+2. 실제 Minecraft client에서 반복 플레이하며 spawn spacing, aggro/pacing, salvage hazard, extraction 선택 압력을 검수한다.
+3. death/logout/abort/extraction 직전·직후의 플레이 체감과 저장 결과를 수동 field-play에서 재검수한다.
+4. 플레이 결과를 기준으로 pressure scaling과 patrol reward 수치를 조정한다. 추측만으로 장기 밸런스를 확정하지 않는다.
+5. M3 전투/elite/boss presentation 작업 전 `REFERENCE_TARGETS.md` 원칙에 맞는 combat/visual reference dossier를 만든다.
+6. 기술 proxy를 최종 모델·애니메이션으로 오인하지 않는다. 실제 플레이/시각 검수 전 combat/presentation 완료를 선언하지 않는다.
+7. `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` 전체 vertical slice를 실제 게임에서 검수한 뒤 M2 완료 여부를 판단한다.
