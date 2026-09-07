@@ -5,7 +5,9 @@ import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayService;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionLifecycle;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRun;
+import kr.moonseungjun.riftfrontier.expedition.Region01EncounterRuntime;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.neoforged.bus.api.IEventBus;
@@ -22,6 +24,7 @@ public final class RiftfrontierGameTests {
 
     static {
         TEST_FUNCTIONS.register("authoritative_runtime_state", () -> RiftfrontierGameTests::authoritativeRuntimeState);
+        TEST_FUNCTIONS.register("region_01_encounter_runtime", () -> RiftfrontierGameTests::region01EncounterRuntime);
     }
 
     private RiftfrontierGameTests() {}
@@ -89,6 +92,29 @@ public final class RiftfrontierGameTests {
         );
         helper.assertTrue(snapshot.fingerprint().equals(resolvedAgain.contentFingerprint()), "World root must retain the active content fingerprint");
         helper.assertTrue(resolvedAgain.worldRevision() > 0L, "World revision must advance after authoritative mutations");
+        helper.succeed();
+    }
+
+    private static void region01EncounterRuntime(GameTestHelper helper) {
+        var low = Region01EncounterRuntime.planForPressure(0);
+        var high = Region01EncounterRuntime.planForPressure(6);
+        helper.assertTrue(low.hunters() == 1 && low.scouts() == 1 && low.elites() == 1, "Pressure zero must begin with the minimal two-role patrol plus elite");
+        helper.assertTrue(high.hunters() > low.hunters(), "Higher pressure must add pursuing threats");
+        helper.assertTrue(high.scouts() > low.scouts(), "Higher pressure must add ranged/skirmishing threats");
+        helper.assertTrue(high.hazardTicks() > low.hazardTicks(), "Higher pressure must lengthen the salvage hazard");
+        helper.assertTrue(high.hazardAmplifier() > low.hazardAmplifier(), "Higher pressure must intensify the salvage hazard");
+
+        BlockPos center = helper.absolutePos(new BlockPos(8, 3, 8));
+        long technicalRun = 900_001L;
+        Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
+        var spawned = Region01EncounterRuntime.begin(helper.getLevel(), center, technicalRun, 0);
+        helper.assertTrue(
+            Region01EncounterRuntime.liveThreatCount(helper.getLevel(), center, technicalRun) == spawned.totalThreats(),
+            "Encounter runtime must spawn and track every hunter/scout/elite role in the actual GameTest world"
+        );
+        helper.assertTrue(!Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Live encounter must not report patrol-cleared");
+        Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
+        helper.assertTrue(Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Run cleanup must remove every encounter proxy");
         helper.succeed();
     }
 }
