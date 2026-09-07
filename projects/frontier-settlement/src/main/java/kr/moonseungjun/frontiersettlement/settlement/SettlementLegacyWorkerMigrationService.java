@@ -17,6 +17,7 @@ import java.util.Set;
 
 /** One-way migration of loaded pre-Alpha.84 Frontier-managed vanilla villagers. */
 public final class SettlementLegacyWorkerMigrationService {
+    private static final int MIGRATION_INTERVAL_TICKS = 200;
     private static final Set<String> LEGACY_NAMES = Set.of(
             "건설 주민", "벌목 주민", "농사 주민", "채석 주민", "광산 주민",
             "작업장 주민", "고급 제작 주민", "건설 보급 주민", "운송 주민");
@@ -24,7 +25,11 @@ public final class SettlementLegacyWorkerMigrationService {
     private SettlementLegacyWorkerMigrationService() {}
 
     public static void tick(MinecraftServer server, SettlementData data) {
-        if (server.getTickCount() % 10 != 0) return;
+        // This is save-compatibility maintenance, not live worker AI. Running the settlement-wide
+        // AABB scan twice per second forever made old-save recovery disproportionately expensive as
+        // roads/outposts expanded. New settlements need no migration at all; established worlds can
+        // tolerate at most a ten-second delay before a loaded legacy villager is converted.
+        if (!data.founded() || server.getTickCount() % MIGRATION_INTERVAL_TICKS != 0) return;
         ServerLevel level = server.overworld();
         List<Villager> legacy = new ArrayList<>(level.getEntitiesOfClass(
                 Villager.class, searchBounds(data), SettlementLegacyWorkerMigrationService::isManagedLegacy));
