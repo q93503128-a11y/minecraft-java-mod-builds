@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -27,6 +28,7 @@ public final class RiftfrontierGameTests {
     static {
         TEST_FUNCTIONS.register("authoritative_runtime_state", () -> RiftfrontierGameTests::authoritativeRuntimeState);
         TEST_FUNCTIONS.register("region_01_encounter_runtime", () -> RiftfrontierGameTests::region01EncounterRuntime);
+        TEST_FUNCTIONS.register("restart_reconciliation", () -> RiftfrontierGameTests::restartReconciliation);
     }
 
     private RiftfrontierGameTests() {}
@@ -116,7 +118,6 @@ public final class RiftfrontierGameTests {
         );
         helper.assertTrue(!Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Live encounter must not report patrol-cleared");
 
-        // Regression: the old 16-block spatial lookup treated a lured but still-living proxy as defeated.
         var localThreats = helper.getLevel().getEntitiesOfClass(Mob.class, new AABB(center).inflate(12.0D, 8.0D, 12.0D));
         helper.assertTrue(!localThreats.isEmpty(), "Encounter must expose at least one live proxy for lure-boundary regression coverage");
         Mob lured = localThreats.getFirst();
@@ -129,6 +130,43 @@ public final class RiftfrontierGameTests {
         Region01EncounterRuntime.clearRun(helper.getLevel(), center, technicalRun);
         helper.assertTrue(lured.isRemoved(), "Terminal cleanup must discard a tracked proxy even after it left the technical cell");
         helper.assertTrue(Region01EncounterRuntime.patrolCleared(helper.getLevel(), center, technicalRun), "Run cleanup must remove every encounter proxy");
+        helper.succeed();
+    }
+
+    private static void restartReconciliation(GameTestHelper helper) {
+        var snapshot = ContentRuntime.requireCurrent();
+        var lifecycle = new ExpeditionLifecycle(snapshot);
+        var worldData = RiftfrontierWorldData.get(helper.getLevel());
+        helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Restart regression requires no pre-existing active expedition");
+
+        int supplyBefore = worldData.expeditionSupply();
+        helper.assertTrue(worldData.consumeRegion01PreparationSupply(), "Restart regression must spend preparation supply before deployment");
+        int supplyAfterSpend = worldData.expeditionSupply();
+        helper.assertTrue(supplyAfterSpend < supplyBefore, "Restart reconciliation must have a non-refundable preparation cost to preserve");
+
+        ExpeditionRun persisted = worldData.createExpedition(
+            ExpeditionGameplayService.REGION_ID,
+            ExpeditionGameplayService.CONTRACT_ID,
+            snapshot.fingerprint(),
+            helper.getLevel().getGameTime()
+        );
+        ExpeditionRun deployed = lifecycle.deploy(persisted);
+        worldData.updateExpedition(deployed);
+        helper.assertTrue(ExpeditionGameplayService.active(worldData).isPresent(), "Deployed run must be non-terminal before restart reconciliation");
+
+        ExpeditionRun failed = ExpeditionGameplayService.reconcileAfterServerRestart(helper.getLevel()).orElseThrow();
+        helper.assertTrue(failed.sequence() == deployed.sequence(), "Restart reconciliation must fail the exact persisted active run");
+        helper.assertTrue(failed.status() == ExpeditionRun.Status.FAILED, "Restart reconciliation must choose explicit FAILED instead of guessing recovery state");
+        helper.assertTrue(ExpeditionGameplayService.active(worldData).isEmpty(), "Restart reconciliation must leave no authoritative non-terminal run");
+        helper.assertTrue(worldData.expeditionSupply() == supplyAfterSpend, "Server restart failure must not refund already-spent expedition supply");
+
+        long orphanRun = 9_999_991L;
+        Zombie orphan = new Zombie(helper.getLevel());
+        orphan.addTag("riftfrontier.region01.run." + orphanRun);
+        orphan.addTag("riftfrontier.region01.role.hunter");
+        orphan.snapTo(helper.absolutePos(new BlockPos(4, 3, 4)).getCenter().x(), helper.absolutePos(new BlockPos(4, 3, 4)).getY(), helper.absolutePos(new BlockPos(4, 3, 4)).getCenter().z(), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(orphan);
+        helper.assertTrue(orphan.isRemoved(), "A persisted tagged proxy with no process-local run tracker must be discarded when it loads");
         helper.succeed();
     }
 }
