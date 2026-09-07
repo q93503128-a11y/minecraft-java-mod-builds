@@ -7,7 +7,8 @@
 `/riftfrontier expedition review trail`은 원정 lifecycle의 개별 checkpoint를 보여준다. 이번 계층은 그 trail을 다시 조작하지 않고 다음 값을 순수하게 요약한다.
 
 - 첫 salvage까지 걸린 tick
-- pre-extraction까지 걸린 tick
+- 실제 성공 extraction의 pre-extraction까지 걸린 tick
+- extraction attempt checkpoint 수
 - terminal까지 걸린 tick
 - salvage 간 최소/최대 간격
 - 관측된 live threat 최소/최대
@@ -35,11 +36,26 @@ high pressure metrics
 
 예를 들어 고압에서 `firstSalvageTicks`와 salvage interval이 크게 늘었다면 압박이 실제 진행 속도에 영향을 준 증거는 된다. 그러나 그것이 좋은 난이도 상승인지, 부당한 aggro 때문인지는 사람이 실제 화면과 플레이로 판단해야 한다.
 
+## extraction attempt 의미
+
+현재 M2 adapter는 extraction 명령이 호출되면 contract 요구조건 검증 전에 `PRE_EXTRACTION` checkpoint를 남길 수 있다. 따라서 salvage가 부족해 authoritative run이 계속 `DEPLOYED`로 남는 거부된 시도도 trail에는 attempt 흔적으로 남을 수 있다.
+
+metric 계층은 이 흔적을 실제 성공 철수 시간처럼 해석하지 않는다.
+
+- `extractionAttempts`: persisted `PRE_EXTRACTION` checkpoint의 총 개수
+- active/failed run: `preExtractionTicks=unavailable`
+- successfully `EXTRACTED` run: 마지막 `PRE_EXTRACTION` checkpoint만 accepted pre-extraction으로 사용
+- 성공 전의 더 이른 `PRE_EXTRACTION` checkpoint는 rejected attempt로 간주하며 성공 pacing 값을 앞당기지 않음
+
+따라서 반복된 underfilled extraction 시도가 있어도 `preExtractionTicks`는 최초 거부 시점이 아니라 실제 성공 철수 직전 시점을 가리킨다. 이 규칙은 기존 persisted trail을 깨거나 추정값을 새 사실로 만들지 않고 읽기 단계에서 의미를 보존한다.
+
 ## unavailable 규칙
 
 관측되지 않은 값은 `0`으로 만들지 않고 `unavailable`로 출력한다.
 
 특히 server restart는 이전 프로세스의 terminal live-threat 수를 증명할 수 없으므로 `terminalLiveThreats=unavailable`을 유지한다. legacy run에 persisted evidence trail이 없다면 pacing/threat metric도 재구성하지 않는다.
+
+거부된 extraction attempt 역시 authoritative extraction 상태 전이가 아니므로 active/failed run에서 `preExtractionTicks`를 만들어내지 않는다.
 
 ## 데이터 경계
 
