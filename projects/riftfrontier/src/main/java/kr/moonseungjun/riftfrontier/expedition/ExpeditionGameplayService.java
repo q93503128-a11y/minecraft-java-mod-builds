@@ -127,6 +127,14 @@ public final class ExpeditionGameplayService {
         ));
     }
 
+    /** Manual abort is an explicit field exit, unlike death/logout failure policy. */
+    public static ExpeditionRun abort(ServerPlayer player) {
+        ExpeditionRun failed = failActive(player, "aborted by player")
+            .orElseThrow(() -> new IllegalStateException("No active expedition"));
+        returnToHub(player);
+        return failed;
+    }
+
     public static Optional<ExpeditionRun> failActive(ServerPlayer player, String reason) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
