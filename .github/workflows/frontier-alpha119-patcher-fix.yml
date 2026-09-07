@@ -24,7 +24,7 @@ jobs:
           from pathlib import Path
           p = Path('.github/workflows/frontier-alpha119-city-admin-buffer.yml')
           text = p.read_text(encoding='utf-8')
-          needle = "'            // 600-tick recruitment boundary so duplicate authority is normalized before any new arrival.\\\\n',"
+          needle = '600-tick recruitment boundary so duplicate authority is normalized before any new arrival.'
           if text.count(needle) != 1:
               raise SystemExit(f'expected obsolete comment needle once, got {text.count(needle)}')
           idx = text.index(needle)
