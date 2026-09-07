@@ -73,11 +73,13 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 정본: `EXPEDITION_RUNTIME.md`
 
-### M2-B — Gameplay integration — SYSTEM FEEDBACK VERIFIED / ENCOUNTER NEXT
+### M2-B — Gameplay integration — REGION ENCOUNTER RUNTIME VERIFIED / FIELD PLAY REVIEW NEXT
 
 첫 gameplay adapter 기준 코드 커밋 `c0ef978c81d36fe63cb9e69942a8aa7f3c6cae6d`, GitHub Actions run `34094802012`에서 전체 Riftfrontier gate가 성공했다.
 
-첫 원정→거점→다음 원정 feedback loop 기준 코드 커밋은 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions `Build Riftfrontier` run `34096694269`이다. clean/unit test/build, native GameTest, dedicated server, Xvfb client, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
+첫 원정→거점→다음 원정 feedback loop 기준 코드 커밋은 `73b7d490ded496c7da24a5b658849b5476ecc16f`, GitHub Actions run `34096694269`이다.
+
+Region 01 encounter runtime 기준 코드 커밋은 `a7791123eade916c14041b4d32306c4befd8fc6a`, GitHub Actions run `34099256007`이다. 이 run에서 clean/unit test/build, required native GameTest, dedicated server smoke, Xvfb client smoke, executable JAR 검사, report/deliverable upload가 모두 성공했다.
 
 완료·검증됨:
 
@@ -102,18 +104,33 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 - 원정 시작 전에 supply를 원자적으로 소비하고 부족하면 run 생성을 거부
 - failure는 preparation supply를 환불하지 않음
 - native GameTest에서 preparation 소비 → extraction settlement → pressure → provisioning → SavedData 재조회까지 검증
+- production `region_01` salvage 회수 시 server-authoritative movement hazard
+- pressure 0에서 hunter 1 + scout 1 + elite 1의 최소 patrol 구성
+- pressure 증가에 따라 hunter/scout 실제 spawn 수 증가
+- pressure 증가에 따라 salvage hazard 지속시간과 amplifier 증가
+- hunter는 근접 추격 역할, scout는 원거리 압박 역할로 실제 Minecraft entity를 사용해 runtime behaviour boundary 검증
+- elite anchor는 단순 HP multiplier가 아니라 Ravager의 shield-stun counterplay를 이용한 technical role로 검증
+- 모든 encounter entity는 run tag/role tag를 가지며 run 단위 live-threat 추적/정리
+- resource objective와 combat objective를 보상 trade-off로 연결: patrol을 제거하면 extraction retained salvage +1, 빠른 extraction은 가능하지만 bonus 포기
+- 원정 실패/철수에서 해당 run encounter cleanup
+- 두 번째 required native GameTest에서 pressure plan 변화 + 실제 hunter/scout/elite spawn/tracking/cleanup 검증
+
+중요한 품질 경계:
+
+- 현재 Zombie/Skeleton/Ravager는 M2 **technical behaviour proxy**다. production creature model/animation/최종 AI가 아니다.
+- technical cell/명령 UI 역시 production presentation이 아니다.
+- automated GameTest/CI가 녹색이어도 실제 Minecraft 반복 플레이와 시각 검수를 하지 않았으므로 combat/presentation 완료를 선언하지 않는다.
 
 정본: `M2B_GAMEPLAY_ADAPTER.md`
 
-다음 구현 묶음 — 이미 검증한 gameplay adapter와 storage/supply feedback을 반복하지 않는다:
+다음 구현 묶음 — encounter runtime을 다시 만들지 않는다:
 
-- production `region_01` environment rule 1개를 실제 runtime effect로 연결
-- 일반 적 archetype 역할 2종을 server-authoritative spawn/defeat 상태에 연결
-- elite 1종을 별도 encounter 역할로 연결
-- `region_01_pressure`가 environment 또는 encounter 위험 하나 이상을 실제 변경
-- resource objective와 combat objective가 같은 원정에서 의미 있게 충돌하도록 composition
-- 위 전체 native GameTest
-- 실제 Minecraft 플레이 검수 전에는 presentation/전투 품질 완료를 선언하지 않음
+- 실제 Minecraft client에서 Region 01 원정을 반복 플레이해 combat pacing / spawn spacing / aggro / salvage hazard / extraction choice를 검수
+- 원정 종료·실패·mob 이탈 등 cleanup edge case를 field play 결과와 함께 강화
+- pressure scaling과 patrol bonus 수치는 실제 플레이 근거로 조정
+- M3 production combat/elite/boss 작업 전에 reference dossier 작성
+- 전체 `준비 → 진입 → 탐사/전투/회수 → 철수 → 투자 → 다음 원정 변화` vertical slice를 실제 플레이 검수
+- 실제 화면/플레이 검수를 통과하기 전에는 presentation/전투 품질 완료를 선언하지 않음
 
 M2 완료 조건:
 
