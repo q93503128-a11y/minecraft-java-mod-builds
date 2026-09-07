@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 
 /**
  * Server-authoritative technical combat adapter for Region 01.
@@ -39,10 +41,10 @@ public final class Region01EncounterRuntime {
     private static final String ROLE_ELITE = "elite_anchor";
 
     /**
-     * M2 has exactly one authoritative non-terminal expedition. Keep direct entity handles so patrol
-     * ownership survives movement and chunk-boundary pathing without any per-tick world scan. Entries
-     * are removed on terminal cleanup. A persisted restart-recovery policy belongs to the later field
-     * hardening pass and must not silently degrade into broad entity scanning.
+     * M2 has exactly one authoritative non-terminal expedition. Direct handles make same-process
+     * ownership independent of movement. They intentionally do not survive a JVM/server restart.
+     * Persisted tagged proxies from a previous process are rejected event-by-event when they load;
+     * no global or per-tick world scan is required.
      */
     private static final Map<Long, List<Mob>> RUN_THREATS = new HashMap<>();
 
@@ -77,8 +79,6 @@ public final class Region01EncounterRuntime {
             spawn(level, scout, center.offset(4 - (i * 2), 0, -3), runSequence, ROLE_SCOUT);
         }
 
-        // Technical proxy for a heavy controller role. Ravager's native shield-stun window gives
-        // this elite actual counterplay instead of a health multiplier. Final art/AI is an M3 gate.
         Ravager elite = new Ravager(EntityTypes.RAVAGER, level);
         spawn(level, elite, center.offset(0, 0, 2), runSequence, ROLE_ELITE);
         return plan;
@@ -109,6 +109,34 @@ public final class Region01EncounterRuntime {
             if (!mob.isRemoved()) mob.discard();
         }
         tracked.clear();
+    }
+
+    /**
+     * Event-driven restart cleanup. A tagged Region 01 proxy is valid only when this server process
+     * owns a live direct tracker for its run sequence. Persisted proxies loaded after a restart have
+     * tags but no process-local tracker, so they are discarded immediately as stale technical state.
+     */
+    public static boolean discardIfOrphaned(Entity entity) {
+        OptionalLong runSequence = taggedRunSequence(entity);
+        if (runSequence.isEmpty()) return false;
+        if (RUN_THREATS.containsKey(runSequence.getAsLong())) return false;
+        entity.discard();
+        return true;
+    }
+
+    /** Exposed for deterministic regression coverage of the stable run ownership tag. */
+    public static OptionalLong taggedRunSequence(Entity entity) {
+        for (String tag : entity.getTags()) {
+            if (!tag.startsWith(RUN_TAG_PREFIX)) continue;
+            String suffix = tag.substring(RUN_TAG_PREFIX.length());
+            try {
+                long sequence = Long.parseLong(suffix);
+                return sequence > 0L ? OptionalLong.of(sequence) : OptionalLong.empty();
+            } catch (NumberFormatException ignored) {
+                return OptionalLong.empty();
+            }
+        }
+        return OptionalLong.empty();
     }
 
     private static List<Mob> liveThreats(ServerLevel level, BlockPos center, long runSequence) {
