@@ -129,23 +129,24 @@ public final class ExpeditionGameplayService {
 
     /** Manual abort is an explicit field exit, unlike death/logout failure policy. */
     public static ExpeditionRun abort(ServerPlayer player) {
-        ExpeditionRun failed = failActive(player, "aborted by player")
+        ExpeditionRun failed = failActive(player, ExpeditionRun.EndReason.PLAYER_ABORT, "aborted by player")
             .orElseThrow(() -> new IllegalStateException("No active expedition"));
         returnToHub(player);
         return failed;
     }
 
-    public static Optional<ExpeditionRun> failActive(ServerPlayer player, String reason) {
+    public static Optional<ExpeditionRun> failActive(ServerPlayer player, ExpeditionRun.EndReason endReason, String messageReason) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         Optional<ExpeditionRun> active = active(world);
         if (active.isEmpty()) return Optional.empty();
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
-        ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime());
+        ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime(), endReason);
         world.updateExpedition(failed);
         Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
         player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Expedition failed: " + reason + ". Preparation supply is not refunded."
+            "[Riftfrontier] Expedition failed: " + messageReason + " [cause=" + endReason.serializedName()
+                + "]. Preparation supply is not refunded."
         ));
         return Optional.of(failed);
     }
@@ -161,7 +162,7 @@ public final class ExpeditionGameplayService {
         Optional<ExpeditionRun> active = active(world);
         if (active.isEmpty()) return Optional.empty();
         var lifecycle = new ExpeditionLifecycle(ContentRuntime.requireCurrent());
-        ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime());
+        ExpeditionRun failed = lifecycle.fail(active.get(), level.getGameTime(), ExpeditionRun.EndReason.SERVER_RESTART);
         world.updateExpedition(failed);
         Region01EncounterRuntime.clearRun(level.getServer().overworld(), TECHNICAL_REGION, failed.sequence());
         return Optional.of(failed);
@@ -183,9 +184,14 @@ public final class ExpeditionGameplayService {
         FieldReentryDecision decision = FieldReentryDecision.evaluate(active(world).isPresent(), insideTechnicalRegion);
         if (!decision.returnToHub()) return decision;
 
+        ExpeditionRun latest = world.expeditions().stream()
+            .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence))
+            .orElse(null);
+        String cause = latest == null ? "unknown" : latest.endReason().serializedName();
         returnToHub(player);
         player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Previous field expedition is no longer active. Returned to the hub; spent preparation supply remains consumed."
+            "[Riftfrontier] Previous field expedition is no longer active (cause=" + cause
+                + "). Returned to the hub; spent preparation supply remains consumed."
         ));
         return decision;
     }
@@ -194,7 +200,11 @@ public final class ExpeditionGameplayService {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(serverLevel(player));
         String run = active(world)
             .map(value -> "sequence=" + value.sequence() + ", status=" + value.status() + ", recovered=" + value.recoveredResources())
-            .orElse("no active expedition");
+            .orElseGet(() -> world.expeditions().stream()
+                .max(java.util.Comparator.comparingLong(ExpeditionRun::sequence))
+                .map(value -> "no active expedition; latestSequence=" + value.sequence() + ", latestStatus=" + value.status()
+                    + ", latestCause=" + value.endReason().serializedName())
+                .orElse("no expedition recorded"));
         return run
             + ", hubSalvage=" + world.securedRegion01Salvage()
             + ", supply=" + world.expeditionSupply()
