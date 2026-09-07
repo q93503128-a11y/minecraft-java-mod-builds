@@ -84,7 +84,7 @@ public final class ExpeditionGameplayService {
         int liveThreats = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, recovered.sequence());
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Field salvage secured: " + amount + "/3. Active patrol threats=" + liveThreats
-                + ". You may fight for a safer regional outcome or risk a fast extraction."
+                + ". Clear the patrol for a bonus salvage unit, or risk a fast extraction."
         ));
         return true;
     }
@@ -101,14 +101,16 @@ public final class ExpeditionGameplayService {
 
         ServerLevel overworld = level.getServer().overworld();
         boolean patrolCleared = Region01EncounterRuntime.patrolCleared(overworld, TECHNICAL_REGION, run.sequence());
-        int retainedSalvage = resolution.retainedResources().getOrDefault(RESOURCE_ID, 0);
-        world.settleRegion01Extraction(retainedSalvage, patrolCleared);
+        int baseRetainedSalvage = resolution.retainedResources().getOrDefault(RESOURCE_ID, 0);
+        int patrolBonus = patrolCleared ? 1 : 0;
+        int retainedSalvage = Math.addExact(baseRetainedSalvage, patrolBonus);
+        world.settleRegion01Extraction(retainedSalvage);
         Region01EncounterRuntime.clearRun(overworld, TECHNICAL_REGION, run.sequence());
         returnToHub(player);
         player.sendSystemMessage(Component.literal(
             "[Riftfrontier] Extraction complete. Hub salvage +" + retainedSalvage
-                + " (stored=" + world.securedRegion01Salvage() + "). Patrol cleared=" + patrolCleared
-                + ". Region pressure is now " + world.region01Pressure()
+                + " (base=" + baseRetainedSalvage + ", patrol bonus=" + patrolBonus
+                + ", stored=" + world.securedRegion01Salvage() + "). Region pressure is now " + world.region01Pressure()
                 + "; next expedition supply cost=" + world.region01PreparationSupplyCost()
                 + ". " + resolution.worldConsequence()
         ));
