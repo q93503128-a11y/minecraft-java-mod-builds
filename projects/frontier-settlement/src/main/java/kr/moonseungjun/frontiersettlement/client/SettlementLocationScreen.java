@@ -13,15 +13,6 @@ import java.util.List;
 
 /** Explicit, checkpoint-independent navigation view for the saved main settlement and outposts. */
 public final class SettlementLocationScreen extends Screen {
-    private static final int PANEL_BG = 0xF0121418;
-    private static final int PANEL_EDGE = 0xFFD0A45C;
-    private static final int CARD_BG = 0xB01A1D21;
-    private static final int MAIN_EDGE = 0xFFFFD58A;
-    private static final int OUTPOST_EDGE = 0xFF65B8C8;
-    private static final int TEXT_PRIMARY = 0xFFF4F1EA;
-    private static final int TEXT_SECONDARY = 0xFFBEB7AA;
-    private static final int TEXT_MUTED = 0xFF918B82;
-
     private final Screen parent;
     private int panelX, panelY, panelWidth, panelHeight;
 
@@ -32,10 +23,10 @@ public final class SettlementLocationScreen extends Screen {
 
     @Override
     protected void init() {
-        panelWidth = Math.min(590, Math.max(310, this.width - 16));
-        panelHeight = Math.min(340, Math.max(220, this.height - 16));
+        panelWidth = Math.min(620, Math.max(310, this.width - FrontierUiTheme.L));
+        panelHeight = Math.min(350, Math.max(220, this.height - FrontierUiTheme.L));
         panelX = (this.width - panelWidth) / 2;
-        panelY = Math.max(8, (this.height - panelHeight) / 2);
+        panelY = Math.max(FrontierUiTheme.S, (this.height - panelHeight) / 2);
         addRenderableWidget(Button.builder(Component.literal("돌아가기"), b -> this.minecraft.gui.setScreen(parent))
                 .bounds(panelX + panelWidth - 82, panelY + panelHeight - 30, 68, 20).build());
     }
@@ -44,18 +35,23 @@ public final class SettlementLocationScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float p) {
-        g.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BG);
-        g.fill(panelX, panelY, panelX + 4, panelY + panelHeight, PANEL_EDGE);
-        int x = panelX + 16;
-        g.text(this.font, Component.literal("거점 위치"), x, panelY + 14, TEXT_PRIMARY, true);
-        g.text(this.font, Component.literal("체크포인트와 무관한 월드 저장 좌표 · 본진과 완공 전초기지"),
-                x, panelY + 31, TEXT_SECONDARY, false);
+        FrontierUiTheme.panel(g, panelX, panelY, panelWidth, panelHeight);
+        int x = panelX + FrontierUiTheme.M;
+        int innerWidth = panelWidth - FrontierUiTheme.M * 2;
+        g.text(this.font, Component.literal("거점 위치"), x, panelY + FrontierUiTheme.M,
+                FrontierUiTheme.TEXT_PRIMARY, true);
+        g.text(this.font, Component.literal("본진과 완공 전초기지 · 체크포인트와 무관한 저장 좌표"),
+                x, panelY + 31, FrontierUiTheme.TEXT_SECONDARY, false);
+        FrontierUiTheme.divider(g, x, panelY + 46, innerWidth);
 
         List<SettlementContextTarget> bases = bases();
         if (bases.isEmpty()) {
-            g.fill(x - 4, panelY + 53, panelX + panelWidth - 14, panelY + 94, CARD_BG);
-            g.text(this.font, Component.literal("위치 정보 동기화 대기 중…"), x + 6, panelY + 67, TEXT_MUTED, false);
-            g.text(this.font, Component.literal("월드에 다시 들어오거나 M 메뉴를 다시 열어 주세요."), x + 6, panelY + 80, TEXT_MUTED, false);
+            int emptyY = panelY + 58;
+            FrontierUiTheme.surface(g, x, emptyY, innerWidth, 54);
+            g.text(this.font, Component.literal("동기화 대기 중"), x + FrontierUiTheme.M, emptyY + 11,
+                    FrontierUiTheme.WARNING, true);
+            g.text(this.font, Component.literal("월드에 다시 들어오거나 M 메뉴를 다시 열어 주세요."),
+                    x + FrontierUiTheme.M, emptyY + 29, FrontierUiTheme.TEXT_SECONDARY, false);
             super.extractRenderState(g, mx, my, p);
             return;
         }
@@ -73,20 +69,22 @@ public final class SettlementLocationScreen extends Screen {
             return Integer.compare(a.markerX(), b.markerX());
         });
 
-        int top = panelY + 53;
+        int top = panelY + 58;
         int bottom = panelY + panelHeight - 40;
-        int rowHeight = 36;
+        int rowHeight = 35;
         int maxRows = Math.max(1, (bottom - top) / rowHeight);
         int visible = Math.min(maxRows, bases.size());
         for (int i = 0; i < visible; i++) {
             SettlementContextTarget target = bases.get(i);
             boolean main = "settlement".equals(target.kind());
             int y = top + i * rowHeight;
-            g.fill(x - 4, y, panelX + panelWidth - 14, y + 30, CARD_BG);
-            g.fill(x - 4, y, x - 1, y + 30, main ? MAIN_EDGE : OUTPOST_EDGE);
+            int stateColor = main ? FrontierUiTheme.PRIMARY : FrontierUiTheme.SECONDARY;
+            g.fill(x, y, x + innerWidth, y + 29, FrontierUiTheme.SURFACE_SOFT);
+            g.fill(x, y, x + 3, y + 29, stateColor);
 
             String label = main ? "본진" : target.title();
-            g.text(this.font, Component.literal(label), x + 6, y + 5, main ? MAIN_EDGE : OUTPOST_EDGE, true);
+            g.text(this.font, Component.literal(trim(label, Math.max(40, innerWidth / 3))),
+                    x + FrontierUiTheme.S, y + 5, main ? FrontierUiTheme.ACCENT : FrontierUiTheme.TEXT_PRIMARY, true);
             String coords = "X " + target.markerX() + "   Y " + target.markerY() + "   Z " + target.markerZ();
             if (player != null && overworld) {
                 long dx = Math.round(target.markerX() + 0.5D - player.getX());
@@ -96,11 +94,12 @@ public final class SettlementLocationScreen extends Screen {
             } else {
                 coords += "   ·   오버월드";
             }
-            g.text(this.font, Component.literal(trim(coords, panelWidth - 48)), x + 6, y + 18, TEXT_SECONDARY, false);
+            g.text(this.font, Component.literal(trim(coords, innerWidth - FrontierUiTheme.L)),
+                    x + FrontierUiTheme.S, y + 18, FrontierUiTheme.TEXT_SECONDARY, false);
         }
         if (bases.size() > visible) {
-            g.text(this.font, Component.literal("외 " + (bases.size() - visible) + "개 거점 · 화면이 넓으면 더 표시됩니다."),
-                    x, bottom + 2, TEXT_MUTED, false);
+            g.text(this.font, Component.literal("외 " + (bases.size() - visible) + "개 거점 · 창 크기를 키우면 더 표시됩니다."),
+                    x, bottom + 2, FrontierUiTheme.TEXT_MUTED, false);
         }
         super.extractRenderState(g, mx, my, p);
     }
