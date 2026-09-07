@@ -1,19 +1,22 @@
 # 16 — CURRENT IMPLEMENTATION STATUS
 
-최종 갱신: 2026-09-07
+최종 갱신: 2026-09-08
 
 이 문서는 TURNBOUND: RE의 현재 구현 상태와 다음 실제 개발 시작점을 기록하는 개발 인수인계 정본이다.
 기획 정본을 대체하지 않는다. CANON/세부 규칙은 기존 문서가 우선하며, 이 문서는 "어디까지 구현/검증됐는가"만 기록한다.
 
 ## 1. 마지막 검증 기준
-- 마지막 TURNBOUND: RE 코드 검증 커밋: `744043f6ed1111b146593336f4116616eb59268f`
-- GitHub Actions: `Build turnbound-re` run `34103168177`
+
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `a367e3e1c8678b987c1a0714a807f579bf577135`
+- GitHub Actions: `Build turnbound-re` run `34171544704`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `5a7c16256693066800d07ff44c1d61fa70e9d5082837243dfa7b43df3d7163b6`
+- SHA-256: `7b78790ce0825d9b55055e91ac9168068badcfb2e7e9e1a7661faa088b45c6ba`
 
-위 검증에는 M0~M4 회귀와 M5 production Battle HUD + 실제 command input/target selection/network protocol v4 계약이 포함된다.
+위 검증에는 M0~M4 회귀와 현재 M5 Battle HUD 구조/interaction/readability 자동 계약이 포함된다.
+현재 battle network presentation protocol은 `v5`이며, server-published eligible targets와 participant→entity UUID binding, world marker, command-strip target chooser, overlay lifecycle, localized HUD, 최소 logical canvas compact party layout까지 검증되었다.
+
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
 ## 2. M0 — Bootstrap & Contracts
@@ -141,87 +144,144 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. M5 — Production UI / Presentation
-상태: **PRODUCTION BATTLE HUD + COMMAND INPUT AUTOMATED PASS / VISUAL SCREENSHOT AUDIT PENDING**
+상태: **BATTLE UI STRUCTURE + INTERACTION + READABILITY AUTO GATE PASS / VISUAL SCREENSHOT AUDIT PENDING**
 
-완료된 visual gate:
+### 8.1 Visual gate / 방향성
+완료:
 - 공용 `QUALITY_STANDARD.md`와 `AGENT_RULES.md` 재확인.
 - Persona 5 Royal, OCTOPATH TRAVELER II, Honkai: Star Rail, Metaphor: ReFantazio, Slay the Spire, Darkest Dungeon II, Pokémon Scarlet/Violet, Into the Breach, Clair Obscur 등 상용 사례 비교.
 - Cobblemon, Cobblemon Extended Battle UI, TurnBasedMinecraftMod, FTB/Questify 계열 Minecraft UI 사례 비교.
 - proprietary UI art를 복제하지 않고 문제/원리/변환만 기록.
 - 선택 방향: **Minecraft-native tactical overlay**.
-- `08_REFERENCE_CATALOG.md` M5 UI reference set 보강.
-- `17_M5_UI_VISUAL_GATE.md` 생성.
-- Battle HUD P0/P1/P2/P3 information hierarchy 확정.
-- Party/Character/Growth information hierarchy 확정.
+- `08_REFERENCE_CATALOG.md`, `17_M5_UI_VISUAL_GATE.md` 정본화.
+- Battle HUD 및 Party/Character/Growth information hierarchy 확정.
 - spacing/surface/typography/icon/motion semantic token contract 확정.
-- Battle HUD structural mockup 정본화.
-- Party Formation structural mockup 정본화.
-- Minecraft 26.2/NeoForge `Screen`, GUI-scale relative layout, `blitSprite`, `nine_slice`, scissor/tooltip feasibility 확인.
-- 첫 production pass는 Vanilla/NeoForge GUI를 사용하고 대형 UI dependency를 추가하지 않기로 결정.
+- Battle HUD / Party Formation structural mockup 확정.
+- 첫 production pass는 Vanilla/NeoForge GUI를 사용하고 대형 UI dependency를 추가하지 않음.
 
-production Battle HUD 자동 구현 완료:
-- S2C participant snapshot에 `team`, `participantOrdinal`, `characterId`, active statuses, Enemy Intent를 서버 권위 데이터로 제공.
-- 현재 player actor에 대해 Basic / Skill 1 / Skill 2 / Guard / Burst를 `SnapshotAction`으로 서버가 제공.
-- action마다 Energy cost, target team/shape/count, `usable`, `disabledReason`을 서버가 판정.
-- `BattleClientState`가 authoritative snapshot/event의 유일 client cache.
-- read-only `BattlePresentationModel`이 현재 actor부터 시작하는 turn rail을 만들되 party slot은 `participantOrdinal` 기준으로 안정적으로 유지.
-- `UiLayoutMetrics`가 battle HUD logical layout을 pure helper로 관리하고 지원 불가 초소형 canvas에서는 겹쳐 그리지 않고 HUD를 생략.
-- production `BattleHud`가 `VanillaGuiLayers.HOTBAR` 위에 등록되어 chat/title/subtitle를 `AboveAll` 방식으로 덮지 않음.
-- 좌측 turn rail, enemy HP/Poise/Intent/EXPOSED, 하단 party HP/Energy/status, server-published command strip을 렌더.
-- 중앙 Minecraft world viewport를 상시 가리는 대형 panel을 두지 않음.
-- 첫 구조 검증 자산은 Minecraft 자체 advancement frame / title box / boss bar sprite를 사용하며, 임의 AI 제작 최종 frame/icon을 정본으로 굳히지 않음.
-- 옛 `DebugBattleHud`는 삭제. duplicate production/debug HUD를 남기지 않음.
-- production definition 기반 M5 테스트에서 Skeleton의 5 action slot, Energy 부족 disabled state, 다중 target 부족 disabled state를 검증.
-- turn rail 회전과 안정적인 party slot 순서를 회귀 테스트.
-- 1280×720 / 1920×1080 / 640×360 layout bounds 자동 검증 및 320×180 unsupported guard 검증.
+### 8.2 Production Battle HUD
+완료:
+- `BattleClientState` authoritative snapshot/event client cache.
+- read-only `BattlePresentationModel`.
+- 좌측 turn rail.
+- enemy HP / Poise / Intent / EXPOSED.
+- 하단 party HP / Energy / status.
+- server-published command strip.
+- `VanillaGuiLayers.HOTBAR` 위에 등록하여 chat/title/subtitle를 무작정 덮지 않음.
+- 중앙 Minecraft world viewport를 상시 가리는 대형 panel 없음.
+- 첫 구조 검증 자산은 Minecraft 자체 advancement frame/title box/boss bar sprite 사용.
+- 옛 `DebugBattleHud` 삭제.
 
-production command input / target selection 자동 구현 완료:
-- battle network protocol을 `v4`로 승격.
-- `SnapshotAction.eligibleTargetIds`를 서버가 직접 계산하여 전송. client가 `targetTeam`을 보고 후보를 재계산하지 않음.
-- 후보 타깃은 `participantOrdinal` 기준 안정 순서로 publish하여 SPD/initiative 변화 때문에 selection UI가 매 턴 뒤섞이지 않음.
-- configurable `KeyMapping` 기반 기본 `B` 키로 전투 명령 화면 진입. Minecraft Controls에서 재지정 가능하도록 구현.
-- `BattleCommandScreen`은 non-pausing / in-game UI이며 상시 world viewport를 덮는 메뉴로 쓰지 않음.
-- 서버가 publish한 action만 버튼으로 표시하고 `usable=false` action은 선택 불가.
-- 단일 타깃, 다중 타깃, 페이지 분할, cancel/confirm 흐름 구현.
-- 후보 수와 요구 수가 정확히 같으면 self/강제 다중 타깃을 자동 결정하되, 그 후보 자체는 서버 snapshot에서만 가져옴.
-- pure `BattleCommandSelection`이 current snapshot의 action 존재 여부, disabled state, target count, published candidate membership을 검증하고 `BattleCommand`을 생성.
-- 실제 제출은 `ClientPacketDistributor.sendToServer(BattleCommandC2S)` 경로.
-- 제출 후 legality는 기존 server `BattleNetworkGateway`/`BattleCommandService`가 revision/sender/current actor/action/targets를 다시 검증. client selection은 권위가 아님.
-- `M5CommandSelectionTest`에서 서버가 publish하지 않은 같은 ENEMY 팀 participant를 client가 임의 타깃으로 만들 수 없음을 검증.
-- production Skeleton + 3 Zombie fixture로 Basic/Guard/Burst candidate와 다중 target command build를 검증.
-- `en_us` + `ko_kr` key/screen translation 추가.
-- 첫 CI에서 initiative 순서와 고정 slot 순서 기대가 충돌한 것을 발견했고 테스트를 완화하지 않고 production 후보 publish를 `participantOrdinal` 안정 순서로 수정.
-- `Build turnbound-re` run `34103168177`: clean build/JUnit + production JAR verify **SUCCESS**.
+### 8.3 Command input / action presentation
+완료:
+- configurable `KeyMapping`, 기본 `B`, Minecraft Controls에서 재지정 가능.
+- 실제 설정된 key name을 HUD에 표시.
+- non-pausing/in-game `BattleCommandScreen`.
+- 서버가 publish한 action만 선택 가능.
+- Basic / Skill / Guard / Burst action picker.
+- action concise identity + Energy cost.
+- action tooltip: name / Energy / HP power / Poise power / damage tag / target rule.
+- `ENERGY`, `TARGETS` disabled reason을 EN/KO player-facing copy로 표시.
+- submit은 `BattleCommandC2S`; 최종 legality는 server strict gate가 재검증.
 
-아직 완료가 아닌 것:
-- command strip selected/hover 상태의 HUD 직접 시각 연결.
-- action tooltip 및 `ENERGY` / `TARGETS` 등 상세 disabled reason의 사용자 친화 presentation.
-- 실제 world/entity target marker 또는 전투 대상과 화면 selection의 더 강한 시각 연결.
-- 실제 TURNBOUND production sprite/icon asset 선정·제작/도입과 source/license 기록.
-- Party Formation 실제 Screen 구현.
-- Character Overview / Skills / Growth 실제 Screen 구현.
-- 실제 Minecraft screenshot side-by-side audit.
-- 여러 GUI scale/1280×720/1920×1080 실화면 검증.
-- 구현 후 visual regression 수정.
+### 8.4 Protocol v5 / authoritative target presentation
+완료:
+- battle presentation network protocol `v5`.
+- `SnapshotAction.eligibleTargetIds`는 서버가 직접 계산.
+- 후보 순서는 `participantOrdinal` 기준 안정 순서.
+- `SnapshotParticipant.entityId`는 `BattleManager`의 authoritative participant↔entity binding에서만 옴.
+- client가 주변 Mob을 검색해 target 후보를 추측하지 않음.
+- server entity UUID가 없는 participant는 world marker를 임의 생성하지 않음.
+- world marker `TARGET / FOCUS / SELECTED` + EN/KO localization.
+- world marker와 target chooser slot의 동일 authoritative `#N` 번호.
+- marker state는 `battleId + revision`에 귀속되어 stale snapshot에서 무효화.
+- selected marker가 hovered marker보다 우선.
+
+### 8.5 World-first target chooser
+완료:
+- 중앙 target modal 제거.
+- action 선택 후 기존 하단 우측 `commandStrip` 자체가 target chooser로 전환.
+- single-target 즉시 실행.
+- multi-target 선택/해제/confirm.
+- cancel / pagination.
+- target chooser가 reserved world viewport를 침범하지 않는 자동 layout 계약.
+
+### 8.6 Command overlay lifecycle
+완료:
+- `BattleCommandOverlayState`는 presentation-only open state만 보관.
+- interactive command screen이 열리면 passive HUD command strip만 숨김.
+- turn rail/enemy/party 정보는 계속 보임.
+- screen 종료/ESC/교체/command submit 시 passive HUD 복귀.
+- `BattleCommandScreen.removed()`에서 overlay state + world target marker를 반드시 clear.
+- passive/interactive command UI 중복 렌더 제거.
+- 상세 정본: `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`.
+
+### 8.7 HUD readability / localization
+완료:
+- `BattleHudPresentation`으로 HUD player-facing copy 중앙화.
+- `NOW / INTENT / BREAK CANCEL / DEFEATED` 등 코드 내부 영문을 HUD에 직접 박던 경로 제거.
+- Enemy Intent Risk 3종 / Type 5종 / Targeting 4종 EN/KO mapping.
+- authored core status 12종 EN/KO mapping.
+- status stack / remaining turns EN/KO presentation.
+- unknown future status는 의미를 발명하지 않고 humanized id fallback.
+- `en_us` / `ko_kr` exact key parity 자동 검증.
+- 480×270에서 4인 party를 2×2 compact grid로 전환.
+- 최소 compact cell width >=120 / height >=40 자동 계약.
+- minimum reserved world viewport >=300×96 자동 계약.
+- 640×360 이상 normal 조건에서는 4인 party 한 줄 유지.
+- 상세 정본: `17B_M5_HUD_READABILITY_GATE.md`.
+
+### 8.8 현재 자동 검증 범위
+- 480×270 minimum supported logical canvas.
+- 640×360 narrow layout.
+- 1280×720.
+- 1920×1080.
+- unsupported 320×180 guard.
+- commandStrip/target chooser region reuse.
+- target chooser world viewport non-invasion.
+- authoritative target order / world marker numbering.
+- stale marker rejection.
+- null entity binding marker rejection.
+- EN/KO key parity.
+- current Enemy Intent enum translation coverage.
+- current 12 core status translation coverage.
+- compact/normal party layout contracts.
+
+마지막 자동 검증:
+- commit `a367e3e1c8678b987c1a0714a807f579bf577135`
+- `Build turnbound-re` Run `34171544704`
+- clean build/JUnit: **PASS**
+- production JAR verify: **PASS**
+- artifact upload: **PASS**
+- JAR SHA-256: `7b78790ce0825d9b55055e91ac9168068badcfb2e7e9e1a7661faa088b45c6ba`
+
+### 8.9 아직 PASS가 아닌 것
+- 실제 Minecraft implementation screenshot quality.
+- 실제 GUI Scale 옵션별 clipping/가독성/시선 이동 체감.
+- final production sprite/icon/frame asset quality 및 source/license 기록.
+- animation/transition timing 체감.
+- Party Formation production Screen.
+- Character Overview / Skills / Growth production Screen.
+- battle result/reward transition의 최종 presentation.
+- 캐릭터 외형 / skill VFX / world visual gate.
 
 중요:
-- Battle HUD + command input 자동 gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
+- Battle UI 자동 gate가 통과했다고 M5 전체 production visual PASS가 된 것은 아니다.
 - 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
-- client presentation은 서버 snapshot을 표시하고 선택만 담당한다. combat 결과/소유권/자원/target legality를 client가 권위적으로 재계산하지 않는다.
+- 사용자 방침상 지금 중간 JAR 테스트를 요구하지 않고 전체적인 integrated test 시 함께 확인한다.
 
-## 9. 다음 세션의 정확한 시작점
-1. 현재 GitHub `main` HEAD 재확인. 위 검증 SHA가 최신 main이라고 가정하지 않는다.
-2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md` 재확인.
-3. M5 battle interaction polish를 이어서 구현:
-   - HUD에 configurable command key hint 및 selected/hover/targeting 상태 연결.
-   - action tooltip.
-   - `ENERGY`, `TARGETS` 등 disabled reason의 localized player-facing 설명.
-   - target selection과 실제 participant/world entity의 시각 연결/marker를 현재 binding 구조를 확인한 뒤 구현.
-4. pure layout/selection 계약과 서버 권위 경계를 유지하며 JUnit 보강.
-5. clean build/JUnit/JAR verify 후 main 반영.
-6. 이어서 Party Formation Screen 구현.
-7. Character Overview / Skills / Growth Screen 구현.
-8. 실제 Minecraft screenshot을 reference/structural mockup과 비교해 visual QA 반복.
-9. 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
+## 9. 다음 실제 개발 시작점
 
-구 TURNBOUND는 계속 ZERO AUTHORITY다. UI도 구 프로젝트에서 자동 계승하지 않는다.
+1. 현재 GitHub `main` HEAD를 다시 조회한다. 위 검증 SHA를 최신 main이라고 가정하지 않는다.
+2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`, `17B_M5_HUD_READABILITY_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 확인한다.
+3. Battle HUD의 자동 구조/interaction/readability gate는 닫힌 것으로 취급한다. 실제 screenshot visual QA는 integrated client test까지 **pending**으로 남긴다.
+4. 다음 production UI 개발은 정본 structural mockup을 따라 **Party Formation Screen skeleton**으로 이동한다.
+   - M4의 persisted `PlayerProgress` / active party / unlocked characters / Squad Cost를 source로 사용.
+   - client가 progression truth를 임의 계산하지 않도록 server-authoritative read/write 경계를 먼저 확정.
+   - roster / active party / selected detail 영역을 structural mockup 기준으로 구현.
+   - Squad Cost 초과 이유가 조합 시점에 명확히 보이게 한다.
+5. 이어서 같은 character context를 유지하는 Character Overview → Skills → Growth detail pane을 구현한다.
+6. production sprite/icon asset은 reference/source/license gate 후 적용한다.
+7. 전체적으로 검토할 만한 상태가 되면 실제 Minecraft에서 Battle/Party/Growth GUI scale 및 screenshot audit, M2 20회 client gate, M4 save/reconnect gate를 한 번에 수행한다.
+
+구 TURNBOUND는 계속 ZERO AUTHORITY다. UI/코드/수치/디자인을 구 프로젝트에서 자동 계승하지 않는다.
