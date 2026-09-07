@@ -6,14 +6,14 @@
 기획 정본을 대체하지 않는다. CANON/세부 규칙은 기존 문서가 우선하며, 이 문서는 "어디까지 구현/검증됐는가"만 기록한다.
 
 ## 1. 마지막 검증 기준
-- 마지막 TURNBOUND: RE 코드 검증 커밋: `4d6123170791dbf752ac40f21fc20be6e5a04d4f`
-- GitHub Actions: `Build turnbound-re` run `34098792600`
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `744043f6ed1111b146593336f4116616eb59268f`
+- GitHub Actions: `Build turnbound-re` run `34103168177`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `5e5bf0225724646c8553876b7512380d12522b013fb936577a9ba10de412c8c9`
+- SHA-256: `5a7c16256693066800d07ff44c1d61fa70e9d5082837243dfa7b43df3d7163b6`
 
-위 검증에는 M0~M4 회귀와 M5 첫 production Battle HUD의 protocol/presentation/layout 계약이 포함된다.
+위 검증에는 M0~M4 회귀와 M5 production Battle HUD + 실제 command input/target selection/network protocol v4 계약이 포함된다.
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
 ## 2. M0 — Bootstrap & Contracts
@@ -141,7 +141,7 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. M5 — Production UI / Presentation
-상태: **FIRST PRODUCTION BATTLE HUD AUTOMATED PASS / VISUAL SCREENSHOT AUDIT PENDING**
+상태: **PRODUCTION BATTLE HUD + COMMAND INPUT AUTOMATED PASS / VISUAL SCREENSHOT AUDIT PENDING**
 
 완료된 visual gate:
 - 공용 `QUALITY_STANDARD.md`와 `AGENT_RULES.md` 재확인.
@@ -159,11 +159,10 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - Minecraft 26.2/NeoForge `Screen`, GUI-scale relative layout, `blitSprite`, `nine_slice`, scissor/tooltip feasibility 확인.
 - 첫 production pass는 Vanilla/NeoForge GUI를 사용하고 대형 UI dependency를 추가하지 않기로 결정.
 
-첫 production Battle HUD 자동 구현 완료:
-- network protocol `v3`.
+production Battle HUD 자동 구현 완료:
 - S2C participant snapshot에 `team`, `participantOrdinal`, `characterId`, active statuses, Enemy Intent를 서버 권위 데이터로 제공.
 - 현재 player actor에 대해 Basic / Skill 1 / Skill 2 / Guard / Burst를 `SnapshotAction`으로 서버가 제공.
-- action마다 Energy cost, target team/shape/count, `usable`, `disabledReason`을 서버가 판정하여 client가 소유권/자원/타깃 가능성을 추측하지 않음.
+- action마다 Energy cost, target team/shape/count, `usable`, `disabledReason`을 서버가 판정.
 - `BattleClientState`가 authoritative snapshot/event의 유일 client cache.
 - read-only `BattlePresentationModel`이 현재 actor부터 시작하는 turn rail을 만들되 party slot은 `participantOrdinal` 기준으로 안정적으로 유지.
 - `UiLayoutMetrics`가 battle HUD logical layout을 pure helper로 관리하고 지원 불가 초소형 canvas에서는 겹쳐 그리지 않고 HUD를 생략.
@@ -175,12 +174,29 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - production definition 기반 M5 테스트에서 Skeleton의 5 action slot, Energy 부족 disabled state, 다중 target 부족 disabled state를 검증.
 - turn rail 회전과 안정적인 party slot 순서를 회귀 테스트.
 - 1280×720 / 1920×1080 / 640×360 layout bounds 자동 검증 및 320×180 unsupported guard 검증.
-- `Build turnbound-re` run `34098792600`: clean build/JUnit + production JAR verify **SUCCESS**.
+
+production command input / target selection 자동 구현 완료:
+- battle network protocol을 `v4`로 승격.
+- `SnapshotAction.eligibleTargetIds`를 서버가 직접 계산하여 전송. client가 `targetTeam`을 보고 후보를 재계산하지 않음.
+- 후보 타깃은 `participantOrdinal` 기준 안정 순서로 publish하여 SPD/initiative 변화 때문에 selection UI가 매 턴 뒤섞이지 않음.
+- configurable `KeyMapping` 기반 기본 `B` 키로 전투 명령 화면 진입. Minecraft Controls에서 재지정 가능하도록 구현.
+- `BattleCommandScreen`은 non-pausing / in-game UI이며 상시 world viewport를 덮는 메뉴로 쓰지 않음.
+- 서버가 publish한 action만 버튼으로 표시하고 `usable=false` action은 선택 불가.
+- 단일 타깃, 다중 타깃, 페이지 분할, cancel/confirm 흐름 구현.
+- 후보 수와 요구 수가 정확히 같으면 self/강제 다중 타깃을 자동 결정하되, 그 후보 자체는 서버 snapshot에서만 가져옴.
+- pure `BattleCommandSelection`이 current snapshot의 action 존재 여부, disabled state, target count, published candidate membership을 검증하고 `BattleCommand`을 생성.
+- 실제 제출은 `ClientPacketDistributor.sendToServer(BattleCommandC2S)` 경로.
+- 제출 후 legality는 기존 server `BattleNetworkGateway`/`BattleCommandService`가 revision/sender/current actor/action/targets를 다시 검증. client selection은 권위가 아님.
+- `M5CommandSelectionTest`에서 서버가 publish하지 않은 같은 ENEMY 팀 participant를 client가 임의 타깃으로 만들 수 없음을 검증.
+- production Skeleton + 3 Zombie fixture로 Basic/Guard/Burst candidate와 다중 target command build를 검증.
+- `en_us` + `ko_kr` key/screen translation 추가.
+- 첫 CI에서 initiative 순서와 고정 slot 순서 기대가 충돌한 것을 발견했고 테스트를 완화하지 않고 production 후보 publish를 `participantOrdinal` 안정 순서로 수정.
+- `Build turnbound-re` run `34103168177`: clean build/JUnit + production JAR verify **SUCCESS**.
 
 아직 완료가 아닌 것:
-- Battle HUD의 실제 keyboard/mouse action selection 및 `BattleCommandC2S` 제출 UX.
-- target selection / world target marker.
-- action tooltip 및 상세 disabled reason presentation.
+- command strip selected/hover 상태의 HUD 직접 시각 연결.
+- action tooltip 및 `ENERGY` / `TARGETS` 등 상세 disabled reason의 사용자 친화 presentation.
+- 실제 world/entity target marker 또는 전투 대상과 화면 selection의 더 강한 시각 연결.
 - 실제 TURNBOUND production sprite/icon asset 선정·제작/도입과 source/license 기록.
 - Party Formation 실제 Screen 구현.
 - Character Overview / Skills / Growth 실제 Screen 구현.
@@ -189,23 +205,23 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 구현 후 visual regression 수정.
 
 중요:
-- 첫 HUD 자동 gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
+- Battle HUD + command input 자동 gate가 통과했다고 M5 전체가 PASS인 것은 아니다.
 - 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
 - client presentation은 서버 snapshot을 표시하고 선택만 담당한다. combat 결과/소유권/자원/target legality를 client가 권위적으로 재계산하지 않는다.
 
 ## 9. 다음 세션의 정확한 시작점
-1. 현재 GitHub `main` HEAD 재확인.
-2. NeoForge 26.2의 실제 client keyboard/mouse/key-mapping 및 client→server payload 전송 API를 확인.
-3. production battle input controller를 구현:
-   - 현재 server-published action slot 선택.
-   - 선택 action의 server-published target rule/count에 따른 candidate target 선택 UI.
-   - local state는 선택/hover presentation에만 한정.
-   - submit 시 authoritative snapshot의 `battleId`, `revision`, `currentActorId`, selected `actionId`, selected target ids로 `BattleCommandC2S`를 구성.
-   - 최종 legality는 기존 server `BattleNetworkGateway`/`BattleCommandService`가 다시 검증.
-4. command strip selected/disabled/targeting 상태, action tooltip, target marker를 HUD에 연결.
+1. 현재 GitHub `main` HEAD 재확인. 위 검증 SHA가 최신 main이라고 가정하지 않는다.
+2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md` 재확인.
+3. M5 battle interaction polish를 이어서 구현:
+   - HUD에 configurable command key hint 및 selected/hover/targeting 상태 연결.
+   - action tooltip.
+   - `ENERGY`, `TARGETS` 등 disabled reason의 localized player-facing 설명.
+   - target selection과 실제 participant/world entity의 시각 연결/marker를 현재 binding 구조를 확인한 뒤 구현.
+4. pure layout/selection 계약과 서버 권위 경계를 유지하며 JUnit 보강.
 5. clean build/JUnit/JAR verify 후 main 반영.
-6. 이어서 Party Formation + Character Overview/Skills/Growth Screen 구현.
-7. 실제 Minecraft screenshot을 reference/structural mockup과 비교해 visual QA 반복.
-8. 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
+6. 이어서 Party Formation Screen 구현.
+7. Character Overview / Skills / Growth Screen 구현.
+8. 실제 Minecraft screenshot을 reference/structural mockup과 비교해 visual QA 반복.
+9. 사용자에게 중간 JAR 테스트를 요구하지 않고 전체적으로 검토할 만한 완성도까지 계속 개발한다.
 
 구 TURNBOUND는 계속 ZERO AUTHORITY다. UI도 구 프로젝트에서 자동 계승하지 않는다.
