@@ -1,9 +1,9 @@
 # 17 — M5 UI VISUAL GATE
 
 최종 갱신: 2026-09-07
-상태: **PRE-IMPLEMENTATION VISUAL GATE PASS**
+상태: **PRE-IMPLEMENTATION VISUAL GATE PASS / BATTLE UI STRUCTURE AUTO GATE PASS / VISUAL QA PENDING**
 
-이 문서는 TURNBOUND: RE의 M5 production UI를 코드로 만들기 전에 반드시 고정해야 하는 레퍼런스, 정보 계층, 디자인 토큰, 구조 목업, 구현 경계를 정본화한다.
+이 문서는 TURNBOUND: RE의 M5 production UI를 구현하기 전후에 반드시 지켜야 하는 레퍼런스, 정보 계층, 디자인 토큰, 구조 목업, 구현 경계와 검증 상태를 정본화한다.
 
 이 문서는 캐릭터 외형, 스킬 VFX, 월드/마을/던전 미술의 최종 디자인을 고정하지 않는다. 해당 영역은 각각 별도 visual gate를 거친다.
 
@@ -312,13 +312,26 @@ Semantic tokens:
                                              selected action summary / cost
 ```
 
+Target selection mode:
+
+```text
+                         [ Minecraft battle world ]
+                    Zombie · #1 TARGET    Skeleton · #2 FOCUS
+
+ Ally A   HP ━━━━━  EN ━━━                    [취소] Skill · 대상 0/1
+ Ally C   HP ━━━━━  EN ━━━                    [#1 Zombie] [#2 Skeleton] [#3 Spider]
+```
+
 Layout rules:
 - turn order rail은 좌상단 edge에 고정하고 폭을 작게 유지.
 - enemy 상태는 가능한 한 해당 enemy와 시각적으로 연관되는 상단/월드 인접 위치에 둔다.
 - 하단 좌측은 party status, 하단 우측은 현재 actor command.
 - 중앙 3D 전투 공간에 항상 켜진 큰 panel을 두지 않는다.
 - target 선택 중에는 list popup보다 world entity outline/marker를 우선한다.
-- action을 선택하면 command 영역 바로 위/옆에 상세 요약이 확장되고, 취소하면 다시 접힌다.
+- **target 선택은 중앙 modal을 열지 않고 기존 하단 우측 command strip을 그대로 target chooser로 전환한다.**
+- command-strip target slot의 `#N`과 같은 authoritative 대상의 world marker `#N`을 일치시킨다.
+- action을 선택하면 command 영역 안에서 action 요약/선택 수/취소/확정/페이지 이동을 처리하고, 취소하면 다시 action command로 돌아간다.
+- 대상 후보와 번호 순서는 현재 server snapshot의 eligible target 순서를 사용하며 client가 주변 엔티티를 검색해 추측하지 않는다.
 
 ---
 
@@ -402,6 +415,9 @@ Party/Growth:
 - layout 계산은 pure helper로 분리해 해상도/GUI-scale test 가능하게 함
 - client는 snapshot/event를 표시하고 command intent만 server에 보냄
 - reward/progression 결과를 client가 계산하지 않음
+- target world marker는 protocol v5 snapshot의 `participant → entity UUID` binding만 사용한다.
+- target legality/eligible list/order는 server snapshot이 권위이며 client proximity scan으로 보완하지 않는다.
+- marker cache는 `battleId + revision`에 귀속시키고 stale snapshot에서는 표시하지 않는다.
 
 예상 resource 경로:
 ```text
@@ -417,16 +433,23 @@ assets/turnbound_re/textures/gui/sprites/common/
 
 ## 12. 첫 구현 순서
 
-1. `UiLayoutMetrics` / semantic token contract.
-2. read-only `BattlePresentationModel`.
-3. turn queue + participant bars.
-4. Intent/Poise/EXPOSED 표시.
-5. Basic/Skill/Guard/Burst command strip.
-6. action tooltip / target highlight / disabled reason.
-7. Party Formation screen skeleton.
-8. Character Overview / Skills / Growth detail pane.
-9. resource sprite/nine-slice 적용.
-10. 실제 Minecraft screenshot audit.
+현재 진행 상태:
+
+1. `UiLayoutMetrics` / semantic token contract. — **구조 구현 완료**
+2. read-only `BattlePresentationModel`. — **구현 완료**
+3. turn queue + participant bars. — **첫 구조 구현 완료**
+4. Intent/Poise/EXPOSED 표시. — **첫 구조 구현 완료**
+5. Basic/Skill/Guard/Burst command strip. — **첫 구조 구현 완료**
+6. action tooltip / target highlight / disabled reason. — **첫 구조 구현 완료**
+   - protocol v5 participant entity UUID binding
+   - world `TARGET / FOCUS / SELECTED` marker
+   - world marker와 command-strip target slot의 동일 `#N` 번호
+   - 중앙 target modal 제거
+   - multi-target confirm/cancel/pagination 유지
+7. Party Formation screen skeleton. — **미착수**
+8. Character Overview / Skills / Growth detail pane. — **미착수**
+9. resource sprite/nine-slice 적용. — **최종 품질 미확정**
+10. 실제 Minecraft screenshot audit. — **미실행**
 
 처음부터 예쁜 texture를 만들기보다 **정본 layout과 interaction이 실제 Screen에서 맞는지 먼저 확인**하고, 그 다음 승인된 sprite asset을 입힌다.
 
@@ -435,18 +458,35 @@ assets/turnbound_re/textures/gui/sprites/common/
 ## 13. Visual QA gate after implementation
 
 자동:
+- 480×270 최소 supported logical canvas.
+- 640×360 narrow layout.
 - 1280×720 logical layout bounds.
 - 1920×1080 logical layout bounds.
-- narrow GUI width fallback.
+- target chooser가 `commandStrip`과 정확히 같은 영역을 재사용하는지 검사.
+- target chooser가 center `reservedWorldViewport`를 침범하지 않는지 검사.
+- authoritative eligible target 순서와 world marker `#N` 번호 일치 계약.
+- null entity binding은 world marker를 생성하지 않음.
+- battleId/revision stale marker 거부.
+- selected marker가 hovered marker보다 우선함.
 - long Korean/English strings.
 - action disabled/selected state conflict.
-- center battle viewport reserved area 침범 검사.
+
+2026-09-07 자동 게이트:
+- commit: `327721b7f9030da3fc2b115b58192ba411561047`
+- workflow: `Build turnbound-re` Run `34115850056`
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta
+- dependency resolution + clean build + JUnit: **PASS**
+- production JAR verify: **PASS**
+- JAR: `turnbound_re-0.1.0-alpha.1.jar`
+- JAR SHA-256: `7afee7168c920c5fcfa28fab29ac40ff8b012e3385aa52321b876a5976f892c3`
 
 수동 screenshot:
 - GUI scale 여러 단계.
 - 1280×720 최소 기준.
 - 1920×1080.
-- battle ready / target / EXPOSED / dangerous Intent.
+- battle ready / action hover / target / EXPOSED / dangerous Intent.
+- command strip → target chooser 전환 시 기존 HUD와 시각 중복/겹침 여부.
+- world `#N` marker와 하단 target slot의 실제 시선 이동/가독성.
 - Party Formation / Growth.
 
 각 screenshot에서 기록:
@@ -475,10 +515,29 @@ assets/turnbound_re/textures/gui/sprites/common/
 - Party Formation structural mockup.
 - NeoForge implementation feasibility 확인.
 
+### BATTLE UI STRUCTURE AUTO GATE: PASS
+현재 자동 검증까지 완료된 첫 production 구조:
+- world-first battle HUD 영역 분리.
+- server-authoritative action/target presentation.
+- protocol v5 participant entity UUID 전달.
+- 실제 server binding이 있는 엔티티만 world target marker로 사용.
+- `TARGET / FOCUS / SELECTED` 텍스트+색 상태.
+- eligible target 순서 기반 `#N` world marker.
+- 하단 target slot과 world marker의 동일 번호 대응.
+- 중앙 target-selection popup 제거.
+- 하단 우측 `commandStrip`을 action 선택 후 target chooser로 재사용.
+- single-target 즉시 실행, multi-target 선택/확정, 취소, pagination 유지.
+- target chooser의 reserved world viewport 비침범 자동 계약.
+- stale battle/revision marker 차단.
+- Java 25 clean build/JUnit/JAR verify 통과.
+
 ### 아직 PASS가 아닌 것
 - 실제 production sprite/icon asset quality.
 - 실제 Minecraft 구현 screenshot quality.
+- GUI scale별 실제 체감과 text clipping.
+- command picker/target chooser와 항상 렌더되는 HUD의 실제 시각적 중복 여부.
 - animation timing 체감.
+- Party Formation / Character / Growth production UI.
 - 캐릭터/VFX/world visual gate.
 
-따라서 다음 작업은 production UI를 무작정 완성하는 것이 아니라, 이 문서의 구조를 그대로 이용한 **첫 실제 Battle HUD implementation + screenshot-ready 상태**를 만드는 것이다.
+따라서 다음 작업은 구조를 다시 설계하는 것이 아니라 **현재 Battle HUD/command chooser를 screenshot-ready로 정리하고 실제 Minecraft 화면에서 시각 감사**하는 것이다. 특히 target chooser가 활성화될 때 기존 command HUD와 중복 렌더되는 부분이 있는지 우선 확인·정리한 뒤, GUI scale별 screenshot gate로 넘어간다.
