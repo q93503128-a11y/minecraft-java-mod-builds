@@ -36,7 +36,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(FrontierSettlement.MOD_ID)
 public final class FrontierSettlement {
     public static final String MOD_ID = "frontier_settlement";
-    // Alpha.124 military/territory investment: paid defense grades and physical post-combat resupply.
+    // Alpha.124 canonical/integrated validation trigger after paid military/territory investment.
 
     public FrontierSettlement(IEventBus modBus, ModContainer modContainer) {
         FrontierContent.register(modBus);
