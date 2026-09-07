@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "status": "m1-kernel-fixture",
+  "types": ["combat_archetype", "region", "loot_profile", "creature", "encounter"],
+  "note": "Runtime JSON loading is intentionally deferred until the typed kernel and validation contract are proven by tests."
+}
