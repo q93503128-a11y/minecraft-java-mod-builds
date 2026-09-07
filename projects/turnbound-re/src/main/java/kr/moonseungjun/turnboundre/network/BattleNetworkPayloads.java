@@ -10,6 +10,8 @@ import kr.moonseungjun.turnboundre.battle.BattleState;
 import kr.moonseungjun.turnboundre.battle.BattleTeam;
 import kr.moonseungjun.turnboundre.battle.EnemyIntent;
 import kr.moonseungjun.turnboundre.battle.ParticipantCombatState;
+import kr.moonseungjun.turnboundre.data.ActionDefinition;
+import kr.moonseungjun.turnboundre.data.CharacterDefinition;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -66,6 +68,39 @@ public final class BattleNetworkPayloads {
         }
     }
 
+    /**
+     * A server-published action affordance for the current player actor.
+     * "usable" is presentation guidance only; the server strict command gate remains authoritative.
+     */
+    public record SnapshotAction(
+            String id,
+            String slot,
+            String kind,
+            int energyCost,
+            int hpPower,
+            int poisePower,
+            String damageTag,
+            String targetTeam,
+            String targetShape,
+            int targetCount,
+            boolean usable,
+            String disabledReason
+    ) {
+        public SnapshotAction {
+            if (id == null || id.isBlank()) throw new IllegalArgumentException("action id must not be blank");
+            if (slot == null || slot.isBlank()) throw new IllegalArgumentException("action slot must not be blank");
+            if (kind == null || kind.isBlank()) throw new IllegalArgumentException("action kind must not be blank");
+            if (energyCost < 0) throw new IllegalArgumentException("action energyCost must be >= 0");
+            if (targetTeam == null || targetTeam.isBlank()) throw new IllegalArgumentException("action targetTeam must not be blank");
+            if (targetShape == null || targetShape.isBlank()) throw new IllegalArgumentException("action targetShape must not be blank");
+            if (targetCount <= 0) throw new IllegalArgumentException("action targetCount must be > 0");
+            if (damageTag == null) damageTag = "";
+            if (disabledReason == null) disabledReason = "";
+            if (usable && !disabledReason.isBlank()) throw new IllegalArgumentException("usable action must not carry disabledReason");
+            if (!usable && disabledReason.isBlank()) throw new IllegalArgumentException("disabled action requires disabledReason");
+        }
+    }
+
     public record SnapshotParticipant(
             String id,
             int hp,
@@ -78,6 +113,7 @@ public final class BattleNetworkPayloads {
             boolean poiseGuard,
             boolean alive,
             String team,
+            int participantOrdinal,
             String characterId,
             List<SnapshotStatus> statuses,
             SnapshotIntent intent
@@ -85,6 +121,7 @@ public final class BattleNetworkPayloads {
         public SnapshotParticipant {
             if (id == null || id.isBlank()) throw new IllegalArgumentException("participant id must not be blank");
             if (team == null || team.isBlank()) throw new IllegalArgumentException("participant team must not be blank");
+            if (participantOrdinal < 0) throw new IllegalArgumentException("participantOrdinal must be >= 0");
             if (characterId == null) characterId = "";
             statuses = statuses == null ? List.of() : List.copyOf(statuses);
         }
@@ -96,10 +133,12 @@ public final class BattleNetworkPayloads {
             String state,
             int cycle,
             String currentActorId,
-            List<SnapshotParticipant> participants
+            List<SnapshotParticipant> participants,
+            List<SnapshotAction> availableActions
     ) {
         public DecodedSnapshot {
             participants = participants == null ? List.of() : List.copyOf(participants);
+            availableActions = availableActions == null ? List.of() : List.copyOf(availableActions);
         }
     }
 
@@ -115,9 +154,7 @@ public final class BattleNetworkPayloads {
         public static final StreamCodec<RegistryFriendlyByteBuf, BattleCommandC2S> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, BattleCommandC2S::wire, BattleCommandC2S::new);
 
-        public BattleCommandC2S {
-            wire = checkedWire(wire);
-        }
+        public BattleCommandC2S { wire = checkedWire(wire); }
 
         public static BattleCommandC2S of(UUID battleId, BattleCommand command) {
             return new BattleCommandC2S(join(
@@ -145,7 +182,7 @@ public final class BattleNetworkPayloads {
             return from(battle, null);
         }
 
-        /** Production path: includes immutable character identity captured when the battle opened. */
+        /** Production path: includes immutable character identity and action affordances captured when the battle opened. */
         public static BattleSnapshotS2C from(BattleInstance battle, BattleDefinitionContext definitions) {
             if (battle == null) throw new IllegalArgumentException("battle must not be null");
             List<String> participantRows = new ArrayList<>();
@@ -181,73 +218,129 @@ public final class BattleNetworkPayloads {
                         Boolean.toString(state.poiseGuard()),
                         Boolean.toString(state.alive()),
                         participant.team().name(),
+                        Integer.toString(participant.participantOrdinal()),
                         characterId,
                         packList(statusRows),
                         packIntent(intent)));
             }
+
+            List<String> actionRows = snapshotActions(battle, definitions).stream()
+                    .map(action -> join(
+                            action.id(), action.slot(), action.kind(), Integer.toString(action.energyCost()),
+                            Integer.toString(action.hpPower()), Integer.toString(action.poisePower()), action.damageTag(),
+                            action.targetTeam(), action.targetShape(), Integer.toString(action.targetCount()),
+                            Boolean.toString(action.usable()), action.disabledReason()))
+                    .toList();
+
             return new BattleSnapshotS2C(join(
-                    battle.battleId().toString(),
-                    Long.toString(battle.revision()),
-                    battle.state().name(),
-                    Integer.toString(battle.cycle()),
-                    battle.currentActorId(),
-                    packList(participantRows)));
+                    battle.battleId().toString(), Long.toString(battle.revision()), battle.state().name(),
+                    Integer.toString(battle.cycle()), battle.currentActorId(), packList(participantRows), packList(actionRows)));
         }
 
         public DecodedSnapshot decode() {
-            List<String> p = split(wire, 6);
+            List<String> p = split(wire, 7);
             List<SnapshotParticipant> participants = new ArrayList<>();
             for (String row : unpackList(p.get(5))) {
-                List<String> r = split(row, 14);
+                List<String> r = split(row, 15);
                 List<SnapshotStatus> statuses = new ArrayList<>();
-                for (String statusRow : unpackList(r.get(12))) {
+                for (String statusRow : unpackList(r.get(13))) {
                     List<String> status = split(statusRow, 3);
-                    statuses.add(new SnapshotStatus(
-                            status.get(0),
-                            Integer.parseInt(status.get(1)),
-                            Integer.parseInt(status.get(2))));
+                    statuses.add(new SnapshotStatus(status.get(0), Integer.parseInt(status.get(1)), Integer.parseInt(status.get(2))));
                 }
                 participants.add(new SnapshotParticipant(
-                        r.get(0),
-                        Integer.parseInt(r.get(1)),
-                        Integer.parseInt(r.get(2)),
-                        Integer.parseInt(r.get(3)),
-                        Integer.parseInt(r.get(4)),
-                        Integer.parseInt(r.get(5)),
-                        Boolean.parseBoolean(r.get(6)),
-                        Boolean.parseBoolean(r.get(7)),
-                        Boolean.parseBoolean(r.get(8)),
-                        Boolean.parseBoolean(r.get(9)),
-                        r.get(10),
-                        r.get(11),
-                        List.copyOf(statuses),
-                        unpackIntent(r.get(13))));
+                        r.get(0), Integer.parseInt(r.get(1)), Integer.parseInt(r.get(2)), Integer.parseInt(r.get(3)),
+                        Integer.parseInt(r.get(4)), Integer.parseInt(r.get(5)), Boolean.parseBoolean(r.get(6)),
+                        Boolean.parseBoolean(r.get(7)), Boolean.parseBoolean(r.get(8)), Boolean.parseBoolean(r.get(9)),
+                        r.get(10), Integer.parseInt(r.get(11)), r.get(12), List.copyOf(statuses), unpackIntent(r.get(14))));
             }
+
+            List<SnapshotAction> actions = new ArrayList<>();
+            for (String row : unpackList(p.get(6))) {
+                List<String> r = split(row, 12);
+                actions.add(new SnapshotAction(
+                        r.get(0), r.get(1), r.get(2), Integer.parseInt(r.get(3)), Integer.parseInt(r.get(4)),
+                        Integer.parseInt(r.get(5)), r.get(6), r.get(7), r.get(8), Integer.parseInt(r.get(9)),
+                        Boolean.parseBoolean(r.get(10)), r.get(11)));
+            }
+
             return new DecodedSnapshot(
-                    UUID.fromString(p.get(0)),
-                    Long.parseLong(p.get(1)),
-                    p.get(2),
-                    Integer.parseInt(p.get(3)),
-                    p.get(4),
-                    List.copyOf(participants));
+                    UUID.fromString(p.get(0)), Long.parseLong(p.get(1)), p.get(2), Integer.parseInt(p.get(3)), p.get(4),
+                    List.copyOf(participants), List.copyOf(actions));
         }
 
-        private static SnapshotIntent snapshotIntent(
-                BattleInstance battle,
-                BattleParticipant participant,
-                ParticipantCombatState state
-        ) {
-            if (participant.team() != BattleTeam.ENEMY || !state.alive() || battle.state() == BattleState.ENCOUNTER_OPEN) {
-                return null;
-            }
+        private static SnapshotIntent snapshotIntent(BattleInstance battle, BattleParticipant participant, ParticipantCombatState state) {
+            if (participant.team() != BattleTeam.ENEMY || !state.alive() || battle.state() == BattleState.ENCOUNTER_OPEN) return null;
             EnemyIntent intent = battle.enemyIntent(participant.id());
             return new SnapshotIntent(
-                    intent.actionId(),
-                    intent.type().name(),
-                    intent.targeting().name(),
-                    intent.risk().name(),
-                    intent.breakCancelable(),
-                    intent.breakDowngradeAction());
+                    intent.actionId(), intent.type().name(), intent.targeting().name(), intent.risk().name(),
+                    intent.breakCancelable(), intent.breakDowngradeAction());
+        }
+
+        private static List<SnapshotAction> snapshotActions(BattleInstance battle, BattleDefinitionContext definitions) {
+            if (definitions == null || battle.state() != BattleState.AWAIT_COMMAND) return List.of();
+
+            String actorId = battle.currentActorId();
+            BattleParticipant actor = battle.participant(actorId);
+            ParticipantCombatState actorState = battle.combatState(actorId);
+            if (actor.team() != BattleTeam.PLAYER || !actorState.alive()) return List.of();
+
+            String characterId = definitions.characterId(actorId);
+            if (characterId == null || characterId.isBlank()) {
+                throw new IllegalStateException("battle definition snapshot has no character id for current actor " + actorId);
+            }
+            CharacterDefinition character = definitions.definitions().characters().get(characterId);
+            if (character == null) throw new IllegalStateException("battle definition snapshot has no CharacterDefinition " + characterId);
+
+            List<SnapshotAction> actions = new ArrayList<>();
+            addDataAction(actions, battle, actor, actorState, definitions, character.basicAction(), "BASIC");
+            for (int i = 0; i < character.skills().size(); i++) {
+                addDataAction(actions, battle, actor, actorState, definitions, character.skills().get(i), "SKILL_" + (i + 1));
+            }
+            actions.add(new SnapshotAction("guard", "GUARD", "GUARD", 0, 0, 0, "", "SELF", "SINGLE", 1, true, ""));
+            addDataAction(actions, battle, actor, actorState, definitions, character.burst(), "BURST");
+            return List.copyOf(actions);
+        }
+
+        private static void addDataAction(
+                List<SnapshotAction> out,
+                BattleInstance battle,
+                BattleParticipant actor,
+                ParticipantCombatState actorState,
+                BattleDefinitionContext definitions,
+                String actionId,
+                String slot
+        ) {
+            ActionDefinition action = definitions.definitions().actions().get(actionId);
+            if (action == null) throw new IllegalStateException("battle definition snapshot has no ActionDefinition " + actionId);
+
+            String disabledReason = "";
+            if (actorState.energy() < action.energyCost()) {
+                disabledReason = "ENERGY";
+            } else if (eligibleTargetCount(battle, actor, action.targeting().team()) < action.targeting().count()) {
+                disabledReason = "TARGETS";
+            }
+
+            out.add(new SnapshotAction(
+                    action.id(), slot, action.kind(), action.energyCost(), action.hpPower(), action.poisePower(),
+                    action.damageTag(), action.targeting().team(), action.targeting().shape(), action.targeting().count(),
+                    disabledReason.isEmpty(), disabledReason));
+        }
+
+        private static int eligibleTargetCount(BattleInstance battle, BattleParticipant actor, String targetTeam) {
+            int count = 0;
+            for (String participantId : battle.actorOrder()) {
+                if (!battle.combatState(participantId).alive()) continue;
+                BattleParticipant target = battle.participant(participantId);
+                boolean allowed = switch (targetTeam) {
+                    case "SELF" -> target.id().equals(actor.id());
+                    case "ALLY" -> target.team() == actor.team();
+                    case "ENEMY" -> target.team() != actor.team();
+                    case "ANY" -> true;
+                    default -> throw new IllegalStateException("validated action has unsupported target team " + targetTeam);
+                };
+                if (allowed) count++;
+            }
+            return count;
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -262,14 +355,13 @@ public final class BattleNetworkPayloads {
 
         public static BattleEventsS2C from(UUID battleId, long resultingRevision, int fromIndex, List<BattleEvent> events) {
             List<String> rows = new ArrayList<>();
-            for (BattleEvent event : events) {
-                rows.add(join(Long.toString(event.revision()), event.type(), event.actorId(), event.detail()));
-            }
+            for (BattleEvent event : events) rows.add(join(Long.toString(event.revision()), event.type(), event.actorId(), event.detail()));
             return new BattleEventsS2C(join(battleId.toString(), Long.toString(resultingRevision), Integer.toString(fromIndex), packList(rows)));
         }
 
         public static BattleEventsS2C rejection(UUID battleId, long revision, String reason) {
-            return new BattleEventsS2C(join(battleId.toString(), Long.toString(revision), "-1", packList(List.of(join(Long.toString(revision), "COMMAND_REJECTED", "", reason)))));
+            return new BattleEventsS2C(join(battleId.toString(), Long.toString(revision), "-1",
+                    packList(List.of(join(Long.toString(revision), "COMMAND_REJECTED", "", reason)))));
         }
 
         public DecodedEvents decode() {
@@ -279,11 +371,7 @@ public final class BattleNetworkPayloads {
                 List<String> r = split(row, 4);
                 events.add(new BattleEvent(Long.parseLong(r.get(0)), r.get(1), r.get(2), r.get(3)));
             }
-            return new DecodedEvents(
-                    UUID.fromString(p.get(0)),
-                    Long.parseLong(p.get(1)),
-                    Integer.parseInt(p.get(2)),
-                    List.copyOf(events));
+            return new DecodedEvents(UUID.fromString(p.get(0)), Long.parseLong(p.get(1)), Integer.parseInt(p.get(2)), List.copyOf(events));
         }
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -291,25 +379,15 @@ public final class BattleNetworkPayloads {
 
     private static String packIntent(SnapshotIntent intent) {
         if (intent == null) return "";
-        return join(
-                intent.actionId(),
-                intent.type(),
-                intent.targeting(),
-                intent.risk(),
-                Boolean.toString(intent.breakCancelable()),
-                intent.breakDowngradeAction());
+        return join(intent.actionId(), intent.type(), intent.targeting(), intent.risk(),
+                Boolean.toString(intent.breakCancelable()), intent.breakDowngradeAction());
     }
 
     private static SnapshotIntent unpackIntent(String packed) {
         if (packed == null || packed.isEmpty()) return null;
         List<String> values = split(packed, 6);
-        return new SnapshotIntent(
-                values.get(0),
-                values.get(1),
-                values.get(2),
-                values.get(3),
-                Boolean.parseBoolean(values.get(4)),
-                values.get(5));
+        return new SnapshotIntent(values.get(0), values.get(1), values.get(2), values.get(3),
+                Boolean.parseBoolean(values.get(4)), values.get(5));
     }
 
     static String join(String... values) {
