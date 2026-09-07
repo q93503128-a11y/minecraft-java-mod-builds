@@ -17,7 +17,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Coast/river specialization overlay for otherwise-general outposts.
@@ -44,6 +48,14 @@ public final class SettlementFishingOutpostService {
     private static final int MAX_CATCH = 3;
     private static final double WORK_RANGE_SQR = 9.0D;
     private static final double SEARCH_RADIUS = 48.0D;
+
+    // Fishing, waterfront and UI/context summaries can ask the same environmental question several
+    // times in one server tick. Cache only that tick: world edits are therefore visible next tick and
+    // no stale shoreline state survives a save/reload or chunk transition.
+    private static ServerLevel shorelineCacheLevel;
+    private static long shorelineCacheGameTime = Long.MIN_VALUE;
+    private static final Map<Integer, FishingSpot> shorelineHits = new HashMap<>();
+    private static final Set<Integer> shorelineMisses = new HashSet<>();
 
     private SettlementFishingOutpostService() {}
 
@@ -219,6 +231,28 @@ public final class SettlementFishingOutpostService {
     }
 
     private static FishingSpot findFishingSpot(ServerLevel level, OutpostRecord outpost) {
+        prepareShorelineCache(level);
+        int id = outpost.id();
+        FishingSpot cached = shorelineHits.get(id);
+        if (cached != null) return cached;
+        if (shorelineMisses.contains(id)) return null;
+
+        FishingSpot result = scanFishingSpot(level, outpost);
+        if (result == null) shorelineMisses.add(id);
+        else shorelineHits.put(id, result);
+        return result;
+    }
+
+    private static void prepareShorelineCache(ServerLevel level) {
+        long gameTime = level.getGameTime();
+        if (shorelineCacheLevel == level && shorelineCacheGameTime == gameTime) return;
+        shorelineCacheLevel = level;
+        shorelineCacheGameTime = gameTime;
+        shorelineHits.clear();
+        shorelineMisses.clear();
+    }
+
+    private static FishingSpot scanFishingSpot(ServerLevel level, OutpostRecord outpost) {
         BlockPos center = outpost.center();
         int waterColumns = 0;
         BlockPos bestBank = null;
