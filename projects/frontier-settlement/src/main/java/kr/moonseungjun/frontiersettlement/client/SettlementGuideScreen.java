@@ -21,17 +21,17 @@ public final class SettlementGuideScreen extends Screen {
 
     @Override
     protected void init() {
-        panelWidth = Math.min(560, Math.max(300, this.width - 16));
-        panelHeight = Math.min(286, Math.max(220, this.height - 16));
+        panelWidth = Math.min(580, Math.max(300, this.width - FrontierUiTheme.L));
+        panelHeight = Math.min(294, Math.max(220, this.height - FrontierUiTheme.L));
         panelX = (this.width - panelWidth) / 2;
-        panelY = Math.max(8, (this.height - panelHeight) / 2);
+        panelY = Math.max(FrontierUiTheme.S, (this.height - panelHeight) / 2);
         int y = panelY + panelHeight - 30;
         if (page > 0) addRenderableWidget(Button.builder(Component.literal("이전"),
                 b -> this.minecraft.gui.setScreen(new SettlementGuideScreen(parent, page - 1)))
-                .bounds(panelX + 14, y, 58, 20).build());
+                .bounds(panelX + FrontierUiTheme.M, y, 58, 20).build());
         if (page < PAGE_COUNT - 1) addRenderableWidget(Button.builder(Component.literal("다음"),
                 b -> this.minecraft.gui.setScreen(new SettlementGuideScreen(parent, page + 1)))
-                .bounds(panelX + 78, y, 58, 20).build());
+                .bounds(panelX + FrontierUiTheme.M + 64, y, 58, 20).build());
         addRenderableWidget(Button.builder(Component.literal("돌아가기"), b -> this.minecraft.gui.setScreen(parent))
                 .bounds(panelX + panelWidth - 82, y, 68, 20).build());
     }
@@ -40,47 +40,65 @@ public final class SettlementGuideScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float p) {
-        g.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE0121418);
-        g.fill(panelX, panelY, panelX + 4, panelY + panelHeight, 0xFFD0A45C);
-        int x = panelX + 16, y = panelY + 14;
-        g.text(this.font, Component.literal("FRONTIER GUIDE   " + (page + 1) + " / " + PAGE_COUNT), x, y, 0xFFD0A45C, true);
+        FrontierUiTheme.panel(g, panelX, panelY, panelWidth, panelHeight);
+        int x = panelX + FrontierUiTheme.M;
+        int y = panelY + FrontierUiTheme.M;
+        g.text(this.font, Component.literal("FRONTIER GUIDE"), x, y, FrontierUiTheme.ACCENT, true);
+        String pageText = (page + 1) + " / " + PAGE_COUNT;
+        g.text(this.font, Component.literal(pageText), panelX + panelWidth - FrontierUiTheme.M - this.font.width(pageText),
+                y, FrontierUiTheme.TEXT_MUTED, false);
+        drawPageProgress(g, x, y + 14, panelWidth - FrontierUiTheme.M * 2);
+
         switch (page) {
             case 0 -> draw(g, x, y, "1. 개척지 시작",
                     "M → ‘현재 위치에 개척지 세우기’를 누릅니다.",
-                    "표식과 공동 창고가 실제 월드에 생성됩니다.",
-                    "실패하면 평평하고 빈 지면으로 이동해 다시 시도하세요.",
+                    "표식과 54칸 공동 보급고가 실제 월드에 생성됩니다.",
+                    "실패하면 평평하고 빈 오버월드 지면으로 이동해 다시 시도하세요.",
                     "명령어는 필요 없습니다.");
             case 1 -> draw(g, x, y, "2. 자원과 건설",
-                    "공동 창고에 목재·돌·금속·음식을 넣습니다.",
-                    "HUD 숫자는 창고의 실제 아이템을 집계한 값입니다.",
+                    "공동 보급고와 연결된 저장소에 목재·돌·금속·음식을 넣습니다.",
+                    "HUD 숫자는 실제 저장 아이템을 집계한 값입니다.",
                     "M → 건물 선택 / R 회전 / Enter 확정.",
-                    "주민이 재료를 운반해 실제 블록으로 건설합니다.");
+                    "주민이 실제 재료를 운반해 실제 블록으로 건설합니다.");
             case 2 -> draw(g, x, y, "3. 초반 성장",
                     "권장 순서: 주택 → 벌목소 → 농장 → 채석장 → 창고.",
-                    "생산시설은 반복 건설만 강요하지 않고 마을 단계에 따라 기존 시설이 자동 개량됩니다.",
+                    "생산시설은 마을 단계와 영토 확장에 따라 역할이 넓어집니다.",
                     "농장 주민은 작물을 직접 관리해 바닐라 랜덤 성장만 기다리지 않습니다.",
-                    "HUD의 노란 ‘다음 목표’를 따라가면 해금 흐름이 이어집니다.");
+                    "다음 성장 조건은 M 화면의 마을 등급 바로 아래에서 확인합니다.");
             case 3 -> draw(g, x, y, "4. 영토와 물류",
                     "M → 인프라 → 거점 위치에서 본진·전초 좌표와 방향을 확인합니다.",
                     "도로 끝에 전초기지를 세워 영토·생산 거점을 넓힙니다.",
-                    "체크포인트를 바꿔도 거점 저장 좌표는 사라지지 않습니다.",
+                    "체크포인트를 바꿔도 저장된 거점 좌표는 사라지지 않습니다.",
                     "언로드 지역은 강제로 로드하지 않으며 운송도 멈춥니다.");
             default -> draw(g, x, y, "5. 영지와 개척 수도",
                     "개척 도시부터 시민회관, 영지부터 교역회관·성채가 열립니다.",
-                    "교역회관은 기존 유물 교역 가치를 높이고 성채는 감시망을 넓힙니다.",
-                    "인구 20 · 전초 5 · 도로 4 · 탐험 7과 랜드마크 3종을 완성하세요.",
+                    "교역회관은 교역 가치를 높이고 성채는 영지 감시망을 넓힙니다.",
+                    "인구·전초·도로·탐험·랜드마크 조건을 함께 달성해야 합니다.",
                     "조건을 모두 채우면 최종 단계 ‘개척 수도’가 완성됩니다.");
         }
         super.extractRenderState(g, mx, my, p);
     }
 
+    private void drawPageProgress(GuiGraphicsExtractor g, int x, int y, int width) {
+        int gap = FrontierUiTheme.XS;
+        int segment = Math.max(12, (width - gap * (PAGE_COUNT - 1)) / PAGE_COUNT);
+        for (int i = 0; i < PAGE_COUNT; i++) {
+            int sx = x + i * (segment + gap);
+            g.fill(sx, y, sx + segment, y + 3, i <= page ? FrontierUiTheme.PRIMARY : FrontierUiTheme.TRACK);
+        }
+    }
+
     private void draw(GuiGraphicsExtractor g, int x, int y, String title, String a, String b, String c, String d) {
-        g.text(this.font, Component.literal(title), x, y + 25, 0xFFFFFFFF, true);
-        g.fill(x - 4, y + 43, panelX + panelWidth - 14, y + 130, 0x701F2328);
-        g.text(this.font, Component.literal(a), x + 4, y + 52, 0xFFE7E0D3, false);
-        g.text(this.font, Component.literal(b), x + 4, y + 70, 0xFFE7E0D3, false);
-        g.text(this.font, Component.literal(c), x + 4, y + 88, 0xFFE7E0D3, false);
-        g.text(this.font, Component.literal(d), x + 4, y + 106, 0xFFFFD58A, false);
+        int titleY = y + 29;
+        g.text(this.font, Component.literal(title), x, titleY, FrontierUiTheme.TEXT_PRIMARY, true);
+        int surfaceY = titleY + 20;
+        FrontierUiTheme.surface(g, x, surfaceY, panelWidth - FrontierUiTheme.M * 2, 104);
+        int tx = x + FrontierUiTheme.M;
+        g.text(this.font, Component.literal(a), tx, surfaceY + 12, FrontierUiTheme.TEXT_PRIMARY, false);
+        g.text(this.font, Component.literal(b), tx, surfaceY + 31, FrontierUiTheme.TEXT_SECONDARY, false);
+        g.text(this.font, Component.literal(c), tx, surfaceY + 50, FrontierUiTheme.TEXT_SECONDARY, false);
+        FrontierUiTheme.divider(g, tx, surfaceY + 69, panelWidth - FrontierUiTheme.M * 4);
+        g.text(this.font, Component.literal(d), tx, surfaceY + 80, FrontierUiTheme.WARNING, false);
     }
 
     @Override public boolean isPauseScreen() { return false; }
