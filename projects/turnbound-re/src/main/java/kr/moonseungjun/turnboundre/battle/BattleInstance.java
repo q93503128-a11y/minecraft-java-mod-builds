@@ -1,8 +1,10 @@
 package kr.moonseungjun.turnboundre.battle;
 
 import kr.moonseungjun.turnboundre.data.ActionDefinition;
+import kr.moonseungjun.turnboundre.data.StatusDefinition;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -86,7 +88,7 @@ public final class BattleInstance {
         prepareCurrentActor();
     }
 
-    /** Convenience path for the two universal built-in commands. Data-defined Skill/Burst uses submit(command, action). */
+    /** Convenience path for the two universal built-in commands. Data-defined actions use submit(command, action). */
     public CommandResult submit(BattleCommand command) {
         ActionDefinition action = switch (command.actionId()) {
             case "basic" -> new ActionDefinition("basic", "BASIC", 0, 0, 0);
@@ -97,10 +99,7 @@ public final class BattleInstance {
         return submit(command, action);
     }
 
-    /**
-     * Server-authoritative command acceptance for current M1 action semantics.
-     * Failed validation never changes revision, event log, Energy, Guard or phase.
-     */
+    /** Failed validation never changes revision, event log, Energy, Guard or phase. */
     public CommandResult submit(BattleCommand command, ActionDefinition action) {
         if (state != BattleState.AWAIT_COMMAND) return CommandResult.WRONG_PHASE;
         if (command.expectedRevision() != revision) return CommandResult.STALE_REVISION;
@@ -114,9 +113,7 @@ public final class BattleInstance {
             return CommandResult.INVALID_ACTION;
         }
         if (action.energyCost() < 0) return CommandResult.INVALID_ACTION;
-        if ((kind.equals("BASIC") || kind.equals("GUARD")) && action.energyCost() != 0) {
-            return CommandResult.INVALID_ACTION;
-        }
+        if ((kind.equals("BASIC") || kind.equals("GUARD")) && action.energyCost() != 0) return CommandResult.INVALID_ACTION;
 
         ParticipantCombatState actorState = combatState(actor.id());
         if ((kind.equals("SKILL") || kind.equals("BURST")) && actorState.energy() < action.energyCost()) {
@@ -156,10 +153,6 @@ public final class BattleInstance {
         }
     }
 
-    /**
-     * M1 AI stub: the action actually resolved is always the currently published Intent action.
-     * Poise-cancelled intents therefore resolve RECOVER instead of silently choosing another action.
-     */
     public void resolveEnemyStub() {
         if (state != BattleState.RESOLVING) throw new IllegalStateException("enemy resolution requires RESOLVING");
         BattleParticipant actor = participants.get(currentActorId());
@@ -169,12 +162,9 @@ public final class BattleInstance {
         if (intent == null) throw new IllegalStateException("enemy has no published intent: " + actor.id());
         revision++;
         eventLog.add(new BattleEvent(revision, "AI_COMMAND", actor.id(), intent.actionId()));
-        if ("recover".equals(intent.actionId())) {
-            emit("RECOVER", actor.id(), "poise=" + combatState(actor.id()).poise());
-        }
+        if ("recover".equals(intent.actionId())) emit("RECOVER", actor.id(), "poise=" + combatState(actor.id()).poise());
     }
 
-    /** Test/data hook for M1 AI scripting. Replacing a published intent always logs INTENT_CHANGED first. */
     public void setEnemyIntent(String enemyId, EnemyIntent intent) {
         BattleParticipant participant = participants.get(enemyId);
         if (participant == null || participant.team() != BattleTeam.ENEMY) {
@@ -201,7 +191,6 @@ public final class BattleInstance {
         }
     }
 
-    /** Applies canonical deterministic damage using this battle's single RNG stream and mutable target state. */
     public DamageService.DamageResult resolveDamage(String actorId, String targetId, DamageService.DamageRequest request) {
         requireState(BattleState.RESOLVING);
         if (!participants.containsKey(actorId)) throw new IllegalArgumentException("unknown actor: " + actorId);
@@ -224,11 +213,90 @@ public final class BattleInstance {
             emit("EXPOSED_APPLIED", targetId, "poise=0");
             applyPoiseBreakToIntent(targetId);
         }
-        if (!target.alive()) {
-            enemyIntents.remove(targetId);
-            emit("PARTICIPANT_DEFEATED", targetId, "hp=0");
-        }
+        markDefeatedIfNeeded(targetId);
         return result;
+    }
+
+    void resolvePoiseOnly(String actorId, String targetId, AffinityGrade affinity, int poisePower, String actionId) {
+        requireState(BattleState.RESOLVING);
+        if (affinity == null) throw new IllegalArgumentException("affinity must not be null");
+        ParticipantCombatState target = combatState(targetId);
+        if (!target.alive()) throw new IllegalArgumentException("target is not alive: " + targetId);
+        int damage = affinity == AffinityGrade.IMMUNE
+                ? 0 : Math.max(0, (int) Math.floor(poisePower * affinity.poiseMultiplier()));
+        boolean broke = target.applyPoiseDamage(damage);
+        revision++;
+        emit("POISE_DAMAGE", actorId, "target=" + targetId + " amount=" + damage + " action=" + actionId);
+        if (broke) {
+            emit("EXPOSED_APPLIED", targetId, "poise=0");
+            applyPoiseBreakToIntent(targetId);
+        }
+    }
+
+    void resolveHeal(String actorId, String targetId, int amount, String actionId) {
+        requireState(BattleState.RESOLVING);
+        ParticipantCombatState target = combatState(targetId);
+        if (!target.alive()) throw new IllegalArgumentException("cannot heal defeated target: " + targetId);
+        int restored = target.heal(amount);
+        revision++;
+        emit("HEAL", actorId, "target=" + targetId + " amount=" + restored + " action=" + actionId);
+    }
+
+    void applyDataStatus(String actorId, String targetId, StatusDefinition definition, int durationOverride) {
+        requireState(BattleState.RESOLVING);
+        ParticipantCombatState target = combatState(targetId);
+        if (!target.alive()) throw new IllegalArgumentException("cannot apply status to defeated target: " + targetId);
+        StatusService.apply(target.statuses(), definition, 1, durationOverride);
+        revision++;
+        emit("STATUS_APPLIED", actorId, "target=" + targetId + " status=" + definition.id()
+                + " stacks=" + target.statuses().stacks(definition.id()) + " remaining=" + target.statuses().remaining(definition.id()));
+        processStatusHooks(targetId, "ON_APPLY");
+    }
+
+    void removeDataStatus(String actorId, String targetId, String statusId) {
+        requireState(BattleState.RESOLVING);
+        boolean removed = StatusService.remove(combatState(targetId).statuses(), statusId);
+        revision++;
+        emit("STATUS_REMOVED", actorId, "target=" + targetId + " status=" + statusId + " removed=" + removed);
+    }
+
+    void adjustEnergy(String actorId, String targetId, int delta, String actionId) {
+        requireState(BattleState.RESOLVING);
+        ParticipantCombatState target = combatState(targetId);
+        int before = target.energy();
+        target.adjustEnergy(delta);
+        revision++;
+        emit("ENERGY_CHANGED", actorId, "target=" + targetId + " " + before + "->" + target.energy()
+                + " reason=EFFECT action=" + actionId);
+    }
+
+    void delayEnemyIntent(String actorId, String targetId, String actionId) {
+        requireState(BattleState.RESOLVING);
+        BattleParticipant target = participant(targetId);
+        if (target.team() != BattleTeam.ENEMY || !combatState(targetId).alive()) {
+            throw new IllegalArgumentException("INTENT_DELAY target must be a living enemy: " + targetId);
+        }
+        EnemyIntent current = enemyIntents.get(targetId);
+        if (current == null) throw new IllegalStateException("enemy has no published intent: " + targetId);
+        revision++;
+        if ("recover".equals(current.actionId())) {
+            emit("INTENT_DELAY_NOOP", actorId, "target=" + targetId + " action=" + actionId);
+        } else {
+            revealEnemyIntent(targetId, EnemyIntent.recover(), true, "action_delay:" + actionId);
+        }
+    }
+
+    boolean rollEffectChance(double chance) {
+        if (!Double.isFinite(chance) || chance < 0.0D || chance > 1.0D) {
+            throw new IllegalArgumentException("chance must be finite in [0,1]");
+        }
+        if (chance <= 0.0D) return false;
+        if (chance >= 1.0D) return true;
+        return rng.nextUnitDouble() < chance;
+    }
+
+    void recordEffectEvent(String type, String actorId, String detail) {
+        emit(type, actorId, detail);
     }
 
     private void applyPoiseBreakToIntent(String targetId) {
@@ -236,7 +304,6 @@ public final class BattleInstance {
         if (target == null || target.team() != BattleTeam.ENEMY) return;
         EnemyIntent current = enemyIntents.get(targetId);
         if (current == null) return;
-
         if (current.breakCancelable()) {
             revealEnemyIntent(targetId, EnemyIntent.recover(), true, "poise_break_cancel");
         } else if (current.breakDowngradeAction() != null) {
@@ -249,6 +316,9 @@ public final class BattleInstance {
         requireState(BattleState.RESOLVING);
         String resolvedActorId = currentActorId();
         BattleParticipant resolvedActor = participants.get(resolvedActorId);
+
+        processStatusHooks(resolvedActorId, "TURN_END");
+        expireStatuses(resolvedActorId, "TURN");
         transition(BattleState.CHECK_END);
 
         Outcome checked = checkOutcome();
@@ -264,6 +334,66 @@ public final class BattleInstance {
 
         advanceToNextLivingActor();
         prepareCurrentActor();
+    }
+
+    private void processStatusHooks(String participantId, String when) {
+        ParticipantCombatState target = combatState(participantId);
+        List<StatusRuntime.TriggeredHook> hooks = target.statuses().hooks(when);
+        for (StatusRuntime.TriggeredHook triggered : hooks) {
+            String type = triggered.hook().effect().type();
+            double value = triggered.hook().effect().value();
+            int stacks = triggered.stacks();
+            switch (type) {
+                case "DAMAGE_MAX_HP_PERCENT" -> {
+                    int amount = Math.max(0, (int) Math.floor(target.maxHp() * value * stacks));
+                    target.applyHpDamage(amount);
+                    revision++;
+                    emit("STATUS_DAMAGE", participantId, "status=" + triggered.statusId() + " amount=" + amount + " timing=" + when);
+                    markDefeatedIfNeeded(participantId);
+                }
+                case "DAMAGE_FLAT" -> {
+                    int amount = Math.max(0, (int) Math.floor(value * stacks));
+                    target.applyHpDamage(amount);
+                    revision++;
+                    emit("STATUS_DAMAGE", participantId, "status=" + triggered.statusId() + " amount=" + amount + " timing=" + when);
+                    markDefeatedIfNeeded(participantId);
+                }
+                case "HEAL_MAX_HP_PERCENT" -> {
+                    if (!target.alive()) break;
+                    int amount = Math.max(0, (int) Math.floor(target.maxHp() * value * stacks));
+                    int restored = target.heal(amount);
+                    revision++;
+                    emit("STATUS_HEAL", participantId, "status=" + triggered.statusId() + " amount=" + restored + " timing=" + when);
+                }
+                case "ATK_MULTIPLIER", "DEF_MULTIPLIER", "SPD_MULTIPLIER", "DAMAGE_TAKEN_MULTIPLIER", "POISE_TAKEN_MULTIPLIER", "NONE" -> {
+                    // Continuous modifiers are queried by the action/initiative resolver while the status is active.
+                }
+                default -> throw new IllegalStateException("validated status has unsupported hook effect " + type);
+            }
+        }
+    }
+
+    private void expireStatuses(String participantId, String durationUnit) {
+        for (String expired : combatState(participantId).statuses().tick(durationUnit)) {
+            emit("STATUS_EXPIRED", participantId, expired + " unit=" + durationUnit);
+        }
+    }
+
+    private void processCycleStatuses() {
+        for (BattleParticipant participant : participants.values()) {
+            if (!combatState(participant.id()).alive()) continue;
+            processStatusHooks(participant.id(), "CYCLE_START");
+            expireStatuses(participant.id(), "CYCLE");
+        }
+    }
+
+    private void markDefeatedIfNeeded(String participantId) {
+        ParticipantCombatState target = combatState(participantId);
+        if (target.alive()) return;
+        enemyIntents.remove(participantId);
+        boolean alreadyLogged = eventLog.stream().anyMatch(event ->
+                "PARTICIPANT_DEFEATED".equals(event.type()) && participantId.equals(event.actorId()));
+        if (!alreadyLogged) emit("PARTICIPANT_DEFEATED", participantId, "hp=0");
     }
 
     private Outcome checkOutcome() {
@@ -290,7 +420,6 @@ public final class BattleInstance {
         emit("REWARD_READY", "", "outcome=" + checked.name());
     }
 
-    /** Finalizes the terminal battle and clears battle-owned transient resources. */
     public void cleanup() {
         requireState(BattleState.REWARD);
         transition(BattleState.CLEANUP);
@@ -307,7 +436,8 @@ public final class BattleInstance {
             if (actorIndex >= actorOrder.size()) {
                 cycle++;
                 actorIndex = 0;
-                actorOrder = InitiativeService.order(List.copyOf(participants.values()));
+                processCycleStatuses();
+                actorOrder = effectiveInitiativeOrder();
                 emit("CYCLE_STARTED", "", Integer.toString(cycle));
             }
             inspected++;
@@ -317,10 +447,21 @@ public final class BattleInstance {
         throw new IllegalStateException("no living actor found while battle outcome is ongoing");
     }
 
+    private List<String> effectiveInitiativeOrder() {
+        return participants.values().stream()
+                .sorted(Comparator
+                        .comparingDouble((BattleParticipant participant) -> effectiveSpeed(participant)).reversed()
+                        .thenComparingInt(BattleParticipant::participantOrdinal))
+                .map(BattleParticipant::id)
+                .toList();
+    }
+
+    private double effectiveSpeed(BattleParticipant participant) {
+        return participant.speed() * combatState(participant.id()).statuses().multiplier("SPD_MULTIPLIER");
+    }
+
     private void prepareCurrentActor() {
-        if (!combatState(currentActorId()).alive()) {
-            throw new IllegalStateException("cannot prepare defeated actor: " + currentActorId());
-        }
+        if (!combatState(currentActorId()).alive()) throw new IllegalStateException("cannot prepare defeated actor: " + currentActorId());
         transition(BattleState.ACTOR_READY);
         ParticipantCombatState actorState = combatState(currentActorId());
         if (actorState.exposed()) {
@@ -353,6 +494,12 @@ public final class BattleInstance {
 
     private String currentActorIdOrBlank() {
         return actorOrder.isEmpty() ? "" : actorOrder.get(actorIndex);
+    }
+
+    public BattleParticipant participant(String participantId) {
+        BattleParticipant participant = participants.get(participantId);
+        if (participant == null) throw new IllegalArgumentException("unknown participant: " + participantId);
+        return participant;
     }
 
     public ParticipantCombatState combatState(String participantId) {

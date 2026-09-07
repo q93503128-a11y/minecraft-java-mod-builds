@@ -1,6 +1,7 @@
 package kr.moonseungjun.turnboundre.network;
 
 import kr.moonseungjun.turnboundre.battle.ActionUsePolicy;
+import kr.moonseungjun.turnboundre.battle.BattleCharacterSource;
 import kr.moonseungjun.turnboundre.data.ActionDefinition;
 import kr.moonseungjun.turnboundre.data.CharacterDefinition;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
@@ -9,41 +10,29 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Converts validated, loaded data definitions plus runtime eligibility into the strict M1 action policy.
+ * Converts validated, loaded data definitions plus runtime eligibility into the strict action policy.
  * It never fabricates missing actions, character ownership, cooldown state, status eligibility or targeting.
  */
 public final class DataActionResolver {
-    @FunctionalInterface
-    public interface ParticipantCharacterSource {
-        String characterId(UUID battleId, String participantId);
-    }
-
     public interface RuntimeEligibility {
         boolean cooldownReady(UUID battleId, String participantId, String actionId);
         boolean statusEligible(UUID battleId, String participantId, String actionId);
     }
 
     public static final RuntimeEligibility ALLOW_ALL_RUNTIME = new RuntimeEligibility() {
-        @Override
-        public boolean cooldownReady(UUID battleId, String participantId, String actionId) {
-            return true;
-        }
-
-        @Override
-        public boolean statusEligible(UUID battleId, String participantId, String actionId) {
-            return true;
-        }
+        @Override public boolean cooldownReady(UUID battleId, String participantId, String actionId) { return true; }
+        @Override public boolean statusEligible(UUID battleId, String participantId, String actionId) { return true; }
     };
 
     public record ResolvedAction(ActionDefinition definition, ActionUsePolicy policy) {}
 
     private final DefinitionRegistry definitions;
-    private final ParticipantCharacterSource characters;
+    private final BattleCharacterSource characters;
     private final RuntimeEligibility runtimeEligibility;
 
     public DataActionResolver(
             DefinitionRegistry definitions,
-            ParticipantCharacterSource characters,
+            BattleCharacterSource characters,
             RuntimeEligibility runtimeEligibility
     ) {
         if (definitions == null) throw new IllegalArgumentException("definitions must not be null");
@@ -60,9 +49,7 @@ public final class DataActionResolver {
         }
 
         ActionDefinition action = definitions.actions().get(actionId);
-        if (action == null || !isSubmitAction(action.kind())) {
-            return Optional.empty();
-        }
+        if (action == null || !isSubmitAction(action.kind())) return Optional.empty();
 
         String characterId = characters.characterId(battleId, participantId);
         if (characterId == null || characterId.isBlank()) return Optional.empty();
@@ -77,14 +64,8 @@ public final class DataActionResolver {
         boolean owned = character.actions().contains(actionId);
         boolean cooldownReady = runtimeEligibility.cooldownReady(battleId, participantId, actionId);
         boolean statusEligible = runtimeEligibility.statusEligible(battleId, participantId, actionId);
-        ActionUsePolicy policy = new ActionUsePolicy(
-                owned,
-                cooldownReady,
-                statusEligible,
-                targetCount,
-                targetCount,
-                targetRule
-        );
+        ActionUsePolicy policy = new ActionUsePolicy(owned, cooldownReady, statusEligible,
+                targetCount, targetCount, targetRule);
         return Optional.of(new ResolvedAction(action, policy));
     }
 

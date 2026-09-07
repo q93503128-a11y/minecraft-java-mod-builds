@@ -33,6 +33,14 @@ public final class ParticipantCombatState {
         hp = Math.max(0, hp - damage);
     }
 
+    /** Returns actual HP restored. */
+    public int heal(int amount) {
+        if (amount < 0) throw new IllegalArgumentException("amount must be >= 0");
+        int before = hp;
+        hp = Math.min(maxHp, hp + amount);
+        return hp - before;
+    }
+
     /** Returns true only when this hit newly breaks Poise. */
     public boolean applyPoiseDamage(int damage) {
         if (damage < 0) throw new IllegalArgumentException("damage must be >= 0");
@@ -72,6 +80,11 @@ public final class ParticipantCombatState {
         if (energy < amount) return false;
         energy -= amount;
         return true;
+    }
+
+    /** Effect-level Energy changes clamp to the canonical 0..100 range. */
+    public void adjustEnergy(int delta) {
+        energy = Math.max(0, Math.min(100, energy + delta));
     }
 
     public void setGuard(boolean guard) {

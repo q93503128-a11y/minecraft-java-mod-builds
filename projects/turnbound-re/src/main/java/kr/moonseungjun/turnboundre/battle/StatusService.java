@@ -18,10 +18,14 @@ public final class StatusService {
         requireRuntime(runtime).apply(statusId, 1, 1);
     }
 
-    /** Applies an explicit stack count using the data definition's maxStacks contract. */
     public static void apply(StatusRuntime runtime, StatusDefinition definition, int stacks) {
+        apply(runtime, definition, stacks, 0);
+    }
+
+    /** durationOverride <= 0 means use StatusDefinition.baseDuration. */
+    public static void apply(StatusRuntime runtime, StatusDefinition definition, int stacks, int durationOverride) {
         if (definition == null) throw new IllegalArgumentException("definition must not be null");
-        requireRuntime(runtime).apply(definition.id(), stacks, definition.maxStacks());
+        requireRuntime(runtime).apply(definition, stacks, durationOverride);
     }
 
     public static boolean remove(StatusRuntime runtime, String statusId) {

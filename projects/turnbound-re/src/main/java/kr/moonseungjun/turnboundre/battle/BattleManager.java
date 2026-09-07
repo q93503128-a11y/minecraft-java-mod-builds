@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Server-side active battle registry and entity-to-battle ownership gate.
@@ -17,37 +18,57 @@ public final class BattleManager {
     private final Map<UUID, UUID> entityToBattle = new HashMap<>();
     private final Map<UUID, Map<String, EntityParticipantBinding>> bindingsByBattle = new HashMap<>();
     private final Map<UUID, BattleCommandService> commandServices = new HashMap<>();
+    private final Map<UUID, BattleDefinitionContext> definitionContexts = new HashMap<>();
 
-    /**
-     * Compatibility registration for adapter-only tests that do not submit player commands.
-     * Network-enabled encounters must use the overload that also supplies the canonical participant list.
-     */
+    /** Adapter-only registration for tests/flows that do not submit player commands. */
     public void register(BattleInstance battle, List<EntityParticipantBinding> bindings) {
-        registerInternal(battle, bindings, null);
+        registerInternal(battle, bindings, null, null, null);
     }
 
-    /**
-     * Registers a live battle together with its persistent strict command gate.
-     * Keeping one BattleCommandService per battle preserves command-id replay protection across packets.
-     */
+    /** Universal/debug command registration without data-driven character definitions. */
     public void register(BattleInstance battle, List<EntityParticipantBinding> bindings, List<BattleParticipant> participants) {
         if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
-        registerInternal(battle, bindings, new BattleCommandService(battle, participants));
+        registerInternal(battle, bindings, participants, new BattleCommandService(battle, participants), null);
     }
 
-    private void registerInternal(BattleInstance battle, List<EntityParticipantBinding> bindings, BattleCommandService commandService) {
+    /**
+     * Production/data-driven registration. Definition context is snapshotted for the whole battle so /reload cannot
+     * silently alter an already-running encounter.
+     */
+    public void register(
+            BattleInstance battle,
+            List<EntityParticipantBinding> bindings,
+            List<BattleParticipant> participants,
+            BattleDefinitionContext definitionContext
+    ) {
+        if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
+        if (definitionContext == null) throw new IllegalArgumentException("definitionContext must not be null");
+        registerInternal(battle, bindings, participants, new BattleCommandService(battle, participants), definitionContext);
+    }
+
+    private void registerInternal(
+            BattleInstance battle,
+            List<EntityParticipantBinding> bindings,
+            List<BattleParticipant> participants,
+            BattleCommandService commandService,
+            BattleDefinitionContext definitionContext
+    ) {
         if (battle == null) throw new IllegalArgumentException("battle must not be null");
         if (bindings == null || bindings.isEmpty()) throw new IllegalArgumentException("bindings must not be empty");
         UUID battleId = battle.battleId();
-        if (activeBattles.containsKey(battleId)) {
-            throw new IllegalStateException("battle already registered: " + battleId);
+        if (activeBattles.containsKey(battleId)) throw new IllegalStateException("battle already registered: " + battleId);
+
+        if (definitionContext != null) {
+            Set<String> participantIds = participants.stream().map(BattleParticipant::id).collect(Collectors.toUnmodifiableSet());
+            if (!definitionContext.characterIdsByParticipant().keySet().equals(participantIds)) {
+                throw new IllegalArgumentException("definition context must map every participant exactly once");
+            }
         }
 
         Map<String, EntityParticipantBinding> byParticipant = new HashMap<>();
         Set<UUID> localEntityIds = new HashSet<>();
         for (EntityParticipantBinding binding : bindings) {
             if (binding == null) throw new IllegalArgumentException("binding must not be null");
-            // Proves that the binding points at a participant actually owned by the core battle.
             battle.combatState(binding.participantId());
             if (byParticipant.putIfAbsent(binding.participantId(), binding) != null) {
                 throw new IllegalArgumentException("duplicate participant binding: " + binding.participantId());
@@ -64,9 +85,8 @@ public final class BattleManager {
         activeBattles.put(battleId, battle);
         bindingsByBattle.put(battleId, Map.copyOf(byParticipant));
         if (commandService != null) commandServices.put(battleId, commandService);
-        for (EntityParticipantBinding binding : bindings) {
-            entityToBattle.put(binding.entityId(), battleId);
-        }
+        if (definitionContext != null) definitionContexts.put(battleId, definitionContext);
+        for (EntityParticipantBinding binding : bindings) entityToBattle.put(binding.entityId(), battleId);
     }
 
     public Optional<BattleInstance> battle(UUID battleId) {
@@ -87,25 +107,26 @@ public final class BattleManager {
         return Optional.ofNullable(commandServices.get(battleId));
     }
 
-    public int activeBattleCount() {
-        return activeBattles.size();
+    public Optional<BattleDefinitionContext> definitionContext(UUID battleId) {
+        return Optional.ofNullable(definitionContexts.get(battleId));
     }
 
-    public int boundEntityCount() {
-        return entityToBattle.size();
+    public Optional<String> characterId(UUID battleId, String participantId) {
+        BattleDefinitionContext context = definitionContexts.get(battleId);
+        return context == null ? Optional.empty() : Optional.ofNullable(context.characterId(participantId));
     }
 
-    /**
-     * Idempotent cleanup used by normal battle completion and exceptional lifecycle guards.
-     */
+    public int activeBattleCount() { return activeBattles.size(); }
+    public int boundEntityCount() { return entityToBattle.size(); }
+
+    /** Idempotent cleanup used by normal battle completion and exceptional lifecycle guards. */
     public Optional<BattleInstance> cleanup(UUID battleId) {
         BattleInstance battle = activeBattles.remove(battleId);
         commandServices.remove(battleId);
+        definitionContexts.remove(battleId);
         Map<String, EntityParticipantBinding> bindings = bindingsByBattle.remove(battleId);
         if (bindings != null) {
-            for (EntityParticipantBinding binding : bindings.values()) {
-                entityToBattle.remove(binding.entityId(), battleId);
-            }
+            for (EntityParticipantBinding binding : bindings.values()) entityToBattle.remove(binding.entityId(), battleId);
         }
         return Optional.ofNullable(battle);
     }

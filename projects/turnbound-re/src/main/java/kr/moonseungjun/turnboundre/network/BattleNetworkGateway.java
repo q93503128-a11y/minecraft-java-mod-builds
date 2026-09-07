@@ -1,7 +1,9 @@
 package kr.moonseungjun.turnboundre.network;
 
 import kr.moonseungjun.turnboundre.battle.ActionUsePolicy;
+import kr.moonseungjun.turnboundre.battle.BattleActionExecutor;
 import kr.moonseungjun.turnboundre.battle.BattleCommandService;
+import kr.moonseungjun.turnboundre.battle.BattleDefinitionContext;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
 import kr.moonseungjun.turnboundre.battle.BattleManager;
 import kr.moonseungjun.turnboundre.battle.EntityParticipantBinding;
@@ -11,10 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Server-only authority and strict-command gateway for C2S battle commands.
- * The network layer never mutates BattleInstance directly.
- */
+/** Server-only authority and strict-command gateway for C2S battle commands. */
 public final class BattleNetworkGateway {
     public enum ResultCode {
         ACCEPTED,
@@ -32,19 +31,13 @@ public final class BattleNetworkGateway {
         public boolean accepted() { return code == ResultCode.ACCEPTED; }
     }
 
-    private record ResolvedAction(ActionDefinition definition, ActionUsePolicy policy) {}
+    private record ResolvedAction(ActionDefinition definition, ActionUsePolicy policy, BattleDefinitionContext context) {}
 
     private final BattleManager manager;
-    private final DataActionResolver dataActions;
 
     public BattleNetworkGateway(BattleManager manager) {
-        this(manager, null);
-    }
-
-    public BattleNetworkGateway(BattleManager manager, DataActionResolver dataActions) {
         if (manager == null) throw new IllegalArgumentException("manager must not be null");
         this.manager = manager;
-        this.dataActions = dataActions;
     }
 
     public Result submit(UUID senderEntityId, BattleNetworkPayloads.DecodedCommand incoming) {
@@ -74,15 +67,12 @@ public final class BattleNetworkGateway {
 
         Optional<BattleCommandService> strictGate = manager.commandService(incoming.battleId());
         if (strictGate.isEmpty()) {
-            return new Result(ResultCode.STRICT_GATE_NOT_REGISTERED, battle, eventStart, "network encounter missing persistent command service");
+            return new Result(ResultCode.STRICT_GATE_NOT_REGISTERED, battle, eventStart,
+                    "network encounter missing persistent command service");
         }
 
         ResolvedAction resolved = resolveUniversal(incoming.actionId());
-        if (resolved == null && dataActions != null) {
-            resolved = dataActions.resolve(incoming.battleId(), incoming.actorId(), incoming.actionId())
-                    .map(it -> new ResolvedAction(it.definition(), it.policy()))
-                    .orElse(null);
-        }
+        if (resolved == null) resolved = resolveData(incoming);
         if (resolved == null) {
             return new Result(ResultCode.DATA_ACTION_NOT_RESOLVED, battle, eventStart, incoming.actionId());
         }
@@ -91,7 +81,27 @@ public final class BattleNetworkGateway {
         if (commandResult != BattleCommandService.Result.ACCEPTED) {
             return new Result(ResultCode.COMMAND_REJECTED, battle, eventStart, commandResult.name());
         }
+
+        if (resolved.context() != null) {
+            BattleDefinitionContext context = resolved.context();
+            BattleActionExecutor executor = new BattleActionExecutor(
+                    context.definitions(), (battleId, participantId) -> context.characterId(participantId));
+            executor.execute(battle, incoming.actorId(), resolved.definition(), incoming.targetIds());
+            battle.finishResolution();
+        }
         return new Result(ResultCode.ACCEPTED, battle, eventStart, "accepted");
+    }
+
+    private ResolvedAction resolveData(BattleNetworkPayloads.DecodedCommand incoming) {
+        BattleDefinitionContext context = manager.definitionContext(incoming.battleId()).orElse(null);
+        if (context == null) return null;
+        DataActionResolver resolver = new DataActionResolver(
+                context.definitions(),
+                (battleId, participantId) -> context.characterId(participantId),
+                DataActionResolver.ALLOW_ALL_RUNTIME);
+        return resolver.resolve(incoming.battleId(), incoming.actorId(), incoming.actionId())
+                .map(it -> new ResolvedAction(it.definition(), it.policy(), context))
+                .orElse(null);
     }
 
     public static List<kr.moonseungjun.turnboundre.battle.BattleEvent> eventsSince(Result result) {
@@ -103,8 +113,10 @@ public final class BattleNetworkGateway {
 
     private static ResolvedAction resolveUniversal(String actionId) {
         return switch (actionId) {
-            case "basic" -> new ResolvedAction(new ActionDefinition("basic", "BASIC", 0, 0, 0), ActionUsePolicy.singleEnemy());
-            case "guard" -> new ResolvedAction(new ActionDefinition("guard", "GUARD", 0, 0, 0), ActionUsePolicy.self());
+            case "basic" -> new ResolvedAction(
+                    new ActionDefinition("basic", "BASIC", 0, 0, 0), ActionUsePolicy.singleEnemy(), null);
+            case "guard" -> new ResolvedAction(
+                    new ActionDefinition("guard", "GUARD", 0, 0, 0), ActionUsePolicy.self(), null);
             default -> null;
         };
     }
