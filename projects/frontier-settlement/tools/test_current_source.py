@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.116" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.117" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -282,4 +282,4 @@ require("instanceof BlockItem blockItem" in logistics and "Tags.Blocks.ORES" in 
 tier = text(SETTLEMENT / "SettlementTier.java")
 require("hasMatureFoodBase" in tier and "BuildingType.WAREHOUSE" in tier, "Domain still forces duplicate farm footprint")
 
-print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.116 Alpha.117 UI/performance hardening + prior invariants")
+print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.117 UI/runtime hardening + prior invariants")
