@@ -5,10 +5,12 @@ import kr.moonseungjun.turnboundre.battle.BattleCommand;
 import kr.moonseungjun.turnboundre.battle.BattleDefinitionContext;
 import kr.moonseungjun.turnboundre.battle.BattleEvent;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
+import kr.moonseungjun.turnboundre.battle.BattleManager;
 import kr.moonseungjun.turnboundre.battle.BattleParticipant;
 import kr.moonseungjun.turnboundre.battle.BattleState;
 import kr.moonseungjun.turnboundre.battle.BattleTeam;
 import kr.moonseungjun.turnboundre.battle.EnemyIntent;
+import kr.moonseungjun.turnboundre.battle.EntityParticipantBinding;
 import kr.moonseungjun.turnboundre.battle.ParticipantCombatState;
 import kr.moonseungjun.turnboundre.data.ActionDefinition;
 import kr.moonseungjun.turnboundre.data.CharacterDefinition;
@@ -24,6 +26,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Server-authoritative battle wire contracts.
@@ -129,8 +132,30 @@ public final class BattleNetworkPayloads {
             int participantOrdinal,
             String characterId,
             List<SnapshotStatus> statuses,
-            SnapshotIntent intent
+            SnapshotIntent intent,
+            UUID entityId
     ) {
+        public SnapshotParticipant(
+                String id,
+                int hp,
+                int maxHp,
+                int poise,
+                int poiseMax,
+                int energy,
+                boolean guard,
+                boolean exposed,
+                boolean poiseGuard,
+                boolean alive,
+                String team,
+                int participantOrdinal,
+                String characterId,
+                List<SnapshotStatus> statuses,
+                SnapshotIntent intent
+        ) {
+            this(id, hp, maxHp, poise, poiseMax, energy, guard, exposed, poiseGuard, alive,
+                    team, participantOrdinal, characterId, statuses, intent, null);
+        }
+
         public SnapshotParticipant {
             if (id == null || id.isBlank()) throw new IllegalArgumentException("participant id must not be blank");
             if (team == null || team.isBlank()) throw new IllegalArgumentException("participant team must not be blank");
@@ -192,12 +217,37 @@ public final class BattleNetworkPayloads {
 
         /** Core/unit-test path when no immutable data-definition context exists. */
         public static BattleSnapshotS2C from(BattleInstance battle) {
-            return from(battle, null);
+            return encodeSnapshot(battle, null, ignored -> null);
         }
 
-        /** Production path: includes immutable character identity and action affordances captured when the battle opened. */
+        /** Production presentation path without world bindings, retained for deterministic core tests. */
         public static BattleSnapshotS2C from(BattleInstance battle, BattleDefinitionContext definitions) {
+            return encodeSnapshot(battle, definitions, ignored -> null);
+        }
+
+        /** Production/server path: includes immutable definitions plus authoritative participant -> entity bindings. */
+        public static BattleSnapshotS2C from(
+                BattleInstance battle,
+                BattleDefinitionContext definitions,
+                BattleManager battles
+        ) {
             if (battle == null) throw new IllegalArgumentException("battle must not be null");
+            if (battles == null) throw new IllegalArgumentException("battles must not be null");
+            return encodeSnapshot(
+                    battle,
+                    definitions,
+                    participantId -> battles.binding(battle.battleId(), participantId)
+                            .map(EntityParticipantBinding::entityId)
+                            .orElse(null));
+        }
+
+        private static BattleSnapshotS2C encodeSnapshot(
+                BattleInstance battle,
+                BattleDefinitionContext definitions,
+                Function<String, UUID> entityIds
+        ) {
+            if (battle == null) throw new IllegalArgumentException("battle must not be null");
+            if (entityIds == null) throw new IllegalArgumentException("entityIds must not be null");
             List<String> participantRows = new ArrayList<>();
             for (String id : battle.actorOrder()) {
                 BattleParticipant participant = battle.participant(id);
@@ -209,6 +259,7 @@ public final class BattleNetworkPayloads {
                         throw new IllegalStateException("battle definition snapshot has no character id for participant " + id);
                     }
                 }
+                UUID entityId = entityIds.apply(id);
 
                 List<String> statusRows = state.statuses().activeIds().stream()
                         .sorted(Comparator.naturalOrder())
@@ -234,7 +285,8 @@ public final class BattleNetworkPayloads {
                         Integer.toString(participant.participantOrdinal()),
                         characterId,
                         packList(statusRows),
-                        packIntent(intent)));
+                        packIntent(intent),
+                        entityId == null ? "" : entityId.toString()));
             }
 
             List<String> actionRows = snapshotActions(battle, definitions).stream()
@@ -254,7 +306,7 @@ public final class BattleNetworkPayloads {
             List<String> p = split(wire, 7);
             List<SnapshotParticipant> participants = new ArrayList<>();
             for (String row : unpackList(p.get(5))) {
-                List<String> r = split(row, 15);
+                List<String> r = split(row, 16);
                 List<SnapshotStatus> statuses = new ArrayList<>();
                 for (String statusRow : unpackList(r.get(13))) {
                     List<String> status = split(statusRow, 3);
@@ -264,7 +316,8 @@ public final class BattleNetworkPayloads {
                         r.get(0), Integer.parseInt(r.get(1)), Integer.parseInt(r.get(2)), Integer.parseInt(r.get(3)),
                         Integer.parseInt(r.get(4)), Integer.parseInt(r.get(5)), Boolean.parseBoolean(r.get(6)),
                         Boolean.parseBoolean(r.get(7)), Boolean.parseBoolean(r.get(8)), Boolean.parseBoolean(r.get(9)),
-                        r.get(10), Integer.parseInt(r.get(11)), r.get(12), List.copyOf(statuses), unpackIntent(r.get(14))));
+                        r.get(10), Integer.parseInt(r.get(11)), r.get(12), List.copyOf(statuses), unpackIntent(r.get(14)),
+                        r.get(15).isBlank() ? null : UUID.fromString(r.get(15))));
             }
 
             List<SnapshotAction> actions = new ArrayList<>();
