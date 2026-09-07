@@ -22,6 +22,18 @@ For a terminal run `liveThreats=terminal` is intentional. Cleanup has already de
 
 For the latest successful extraction, the run pressure is reconstructed as `current region pressure - 1`, because Region 01 advances pressure exactly once on successful settlement. Failed and non-terminal runs use current pressure. This is a bounded M2 diagnostic rule, not a general historical telemetry system.
 
+## Re-entry boundary
+
+Restart or logout failure can leave a player's persisted position inside the bounded technical Region 01 cell after the authoritative expedition has already become terminal. On `PlayerLoggedInEvent`, Riftfrontier now evaluates a pure re-entry decision from two facts only: whether an expedition is still active, and whether the player's actual login position is inside the technical Region 01 cell.
+
+- active expedition + technical field position: do not move the player;
+- no active expedition + outside technical field: do not move the player;
+- no active expedition + still inside technical field: explicit field exit to the technical hub with a message explaining that the previous expedition is no longer active and spent preparation supply remains consumed.
+
+This is intentionally event-driven. It does not scan the world, infer entity ownership from proximity, resurrect a reconciled run, refund supply, or teleport players who are not stranded in the technical field cell.
+
+The adapter closes an automatically verifiable lifecycle/position inconsistency, but whether the re-entry message and transition feel good in actual play remains part of the manual field-play gate.
+
 ## Manual review passes
 
 Capture at least one review line before the first salvage, after each salvage recovery, before extraction, and after extraction/failure. Repeat across low and elevated pressure.
@@ -31,7 +43,7 @@ The human reviewer must still judge:
 2. aggro and combat pacing rather than only total enemy count;
 3. whether salvage slowness produces a meaningful but fair risk window;
 4. whether fast extraction versus patrol-clear bonus is a real choice;
-5. death, logout, abort, extraction and restart re-entry UX;
+5. death, logout, abort, extraction and restart re-entry UX, including whether the explicit login field-exit message is understandable;
 6. whether technical proxy behaviour is good enough to inform M3 without mistaking proxy art for final design.
 
 ## Evidence rule
