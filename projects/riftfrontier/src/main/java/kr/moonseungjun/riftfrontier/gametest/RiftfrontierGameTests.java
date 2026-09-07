@@ -1,7 +1,12 @@
 package kr.moonseungjun.riftfrontier.gametest;
 
 import kr.moonseungjun.riftfrontier.Riftfrontier;
+import kr.moonseungjun.riftfrontier.content.ContentCatalog;
+import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
+import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionLifecycle;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionRun;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -32,21 +37,44 @@ public final class RiftfrontierGameTests {
 
     private static void authoritativeRuntimeState(GameTestHelper helper) {
         var snapshot = ContentRuntime.requireCurrent();
-        helper.assertTrue(snapshot.definitionCount() > 0, "Content runtime must publish at least one validated definition");
+        helper.assertTrue(snapshot.definitionCount() >= 10, "Content runtime must publish the M2 expedition fixture graph");
         helper.assertTrue(!snapshot.fingerprint().isBlank(), "Content runtime fingerprint must not be blank");
+
+        var pack = CoreContentBootstrap.bootstrapAndValidate();
+        var lifecycle = new ExpeditionLifecycle(pack.registry());
+        String fixtureFingerprint = ContentCatalog.from(pack.registry()).fingerprint();
+        ContentId region = ContentId.rift("region/vertical_slice_01");
+        ContentId contract = ContentId.rift("contract/salvage_recovery");
+        ContentId salvage = ContentId.rift("resource/rift_salvage");
 
         var worldData = RiftfrontierWorldData.get(helper.getLevel());
         long before = worldData.expeditionSequence();
-        long allocated = worldData.allocateExpeditionSequence(snapshot.fingerprint());
+        ExpeditionRun preparing = lifecycle.begin(before + 1L, region, contract, fixtureFingerprint, helper.getLevel().getGameTime());
+        long allocated = worldData.allocateExpeditionSequence(fixtureFingerprint);
+        helper.assertTrue(allocated == preparing.sequence(), "Domain run sequence must match authoritative allocation");
+
+        ExpeditionRun persisted = worldData.createExpedition(region, contract, fixtureFingerprint, helper.getLevel().getGameTime());
+        helper.assertTrue(persisted.sequence() == allocated + 1L, "Persisted run allocation must advance monotonically");
+        ExpeditionRun deployed = lifecycle.deploy(persisted);
+        worldData.updateExpedition(deployed);
+        ExpeditionRun recovered = lifecycle.recover(deployed, salvage, 3);
+        worldData.updateExpedition(recovered);
+        ExpeditionRun requested = lifecycle.requestExtraction(recovered);
+        worldData.updateExpedition(requested);
+        var resolution = lifecycle.resolveExtraction(requested, helper.getLevel().getGameTime());
+        worldData.updateExpedition(resolution.run());
+
         var resolvedAgain = RiftfrontierWorldData.get(helper.getLevel());
+        var persistedAgain = resolvedAgain.expedition(resolution.run().sequence()).orElseThrow();
 
         helper.assertTrue(resolvedAgain == worldData, "SavedData lookup must return the authoritative cached world root");
-        helper.assertTrue(allocated == before + 1L, "Expedition sequence must increase exactly once");
+        helper.assertTrue(persistedAgain.status() == ExpeditionRun.Status.EXTRACTED, "Completed expedition must persist as EXTRACTED");
+        helper.assertTrue(persistedAgain.recoveredResources().getOrDefault(salvage, 0) == 3, "Recovered resources must survive authoritative updates");
         helper.assertTrue(
-            snapshot.fingerprint().equals(resolvedAgain.contentFingerprint()),
-            "World root must retain the active validated content fingerprint"
+            fixtureFingerprint.equals(resolvedAgain.contentFingerprint()),
+            "World root must retain the content fingerprint that authored the expedition"
         );
-        helper.assertTrue(resolvedAgain.worldRevision() > 0L, "World revision must advance after authoritative mutation");
+        helper.assertTrue(resolvedAgain.worldRevision() > 0L, "World revision must advance after authoritative mutations");
         helper.succeed();
     }
 }
