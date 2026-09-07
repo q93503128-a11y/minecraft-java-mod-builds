@@ -24,12 +24,7 @@ public final class FieldPlayReview {
         long end = terminal ? run.endedGameTime() : now;
         long elapsedTicks = Math.max(0L, end - run.startedGameTime());
 
-        // Region 01 pressure advances exactly once on successful extraction. For the latest run this
-        // reconstructs the pressure used to create its encounter without adding persistence solely for
-        // developer telemetry. Failed/non-terminal runs do not advance pressure.
-        int pressureAtRun = run.status() == ExpeditionRun.Status.EXTRACTED
-            ? Math.max(0, world.region01Pressure() - 1)
-            : world.region01Pressure();
+        int pressureAtRun = ExpeditionReviewHistory.pressureAtStart(run, world.expeditions(), world.region01Pressure());
         Region01EncounterRuntime.EncounterPlan plan = Region01EncounterRuntime.planForPressure(pressureAtRun);
 
         int liveThreats = -1;
