@@ -34,6 +34,27 @@ jobs:
           gradle --version
       - name: Tests and clean build
         run: gradle --no-daemon clean test build --stacktrace
+      - name: Riftfrontier GameTest gate
+        run: |
+          mkdir -p build/smoke
+          set +e
+          timeout 240s gradle --no-daemon runGameTestServer --stacktrace > build/smoke/gametest-console.log 2>&1
+          STATUS=$?
+          set -e
+          cat build/smoke/gametest-console.log
+          if [ "$STATUS" -ne 0 ]; then
+            echo "runGameTestServer failed or timed out with status $STATUS"
+            exit "$STATUS"
+          fi
+          LOGS=$(find . -type f -path '*/logs/latest.log' -print)
+          if [ -n "$LOGS" ]; then
+            cat $LOGS > build/smoke/gametest-latest-combined.log
+          fi
+          if grep -Eq 'Game test.*failed|Failed game tests|Crash report|Encountered an unexpected exception' build/smoke/gametest-console.log build/smoke/gametest-latest-combined.log 2>/dev/null; then
+            echo 'GameTest failure marker found'
+            exit 1
+          fi
+          echo 'PASS — Riftfrontier registered GameTest suite completed successfully' > build/smoke/gametest.status
       - name: Dedicated server smoke
         run: |
           mkdir -p build/smoke run runs/server
@@ -56,12 +77,13 @@ jobs:
           cat $LOGS > build/smoke/server-latest-combined.log
           grep -q 'Riftfrontier core loaded' build/smoke/server-latest-combined.log
           grep -q 'Riftfrontier content snapshot published' build/smoke/server-latest-combined.log
+          grep -q 'Riftfrontier authoritative world root ready' build/smoke/server-latest-combined.log
           grep -q 'Done (' build/smoke/server-latest-combined.log
           if grep -Eq 'Crash report|Encountered an unexpected exception|Failed to start the minecraft server' build/smoke/server-latest-combined.log; then
             echo 'Fatal server startup marker found'
             exit 1
           fi
-          echo 'PASS — dedicated server reached ready state and loaded Riftfrontier content' > build/smoke/server.status
+          echo 'PASS — dedicated server reached ready state, loaded content, and attached authoritative world state' > build/smoke/server.status
       - name: Client smoke under virtual display
         run: |
           mkdir -p build/smoke
@@ -102,6 +124,7 @@ jobs:
         if: always()
         run: |
           mkdir -p build/reports/riftfrontier
+          GAMETEST_STATUS=$(cat build/smoke/gametest.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           SERVER_STATUS=$(cat build/smoke/server.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           CLIENT_STATUS=$(cat build/smoke/client.status 2>/dev/null || echo 'FAILED OR NOT COMPLETED — see smoke logs')
           {
@@ -113,9 +136,9 @@ jobs:
             echo '- Minecraft: 26.2'
             echo '- NeoForge: 26.2.0.38-beta'
             echo '- clean/test/build: see workflow logs'
+            echo "- GameTest: $GAMETEST_STATUS"
             echo "- server smoke: $SERVER_STATUS"
             echo "- client smoke: $CLIENT_STATUS"
-            echo '- GameTest: NOT RUN until first registered GameTest fixture'
           } > build/reports/riftfrontier/BUILD_AND_RUNTIME_REPORT.md
       - name: Upload deliverables
         if: success()

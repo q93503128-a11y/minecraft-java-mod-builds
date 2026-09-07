@@ -4,11 +4,15 @@ import com.mojang.logging.LogUtils;
 import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
+import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
+import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.Logger;
 
 @Mod(Riftfrontier.MOD_ID)
@@ -28,9 +32,26 @@ public final class Riftfrontier {
         );
 
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
+        NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
     }
 
     private static void addServerReloadListeners(AddServerReloadListenersEvent event) {
         event.addListener(ContentServerReloadListener.ID, new ContentServerReloadListener());
+    }
+
+    private static void registerCommands(RegisterCommandsEvent event) {
+        RuntimeDiagnosticsCommand.register(event);
+    }
+
+    private static void serverStarted(ServerStartedEvent event) {
+        var snapshot = ContentRuntime.snapshot();
+        var worldData = RiftfrontierWorldData.get(event.getServer().overworld());
+        boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
+        LOGGER.info(
+            "Riftfrontier authoritative world root ready: changed={}, {}",
+            changed,
+            worldData.diagnosticSummary()
+        );
     }
 }
