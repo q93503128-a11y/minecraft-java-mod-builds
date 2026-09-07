@@ -30,6 +30,18 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/alpha124/patch.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementBarracksService.java')
+          s=p.read_text(encoding='utf-8')
+          old_call='Monster threat = nearestThreat(level, data, barracks.workCenter());'
+          new_call='Monster threat = nearestThreat(level, data, barracks, barracks.workCenter());'
+          old_sig='private static Monster nearestThreat(ServerLevel level, SettlementData data, BlockPos center) {'
+          new_sig='private static Monster nearestThreat(ServerLevel level, SettlementData data, BuildingRecord barracks, BlockPos center) {'
+          if s.count(old_call) != 1 or s.count(old_sig) != 1:
+              raise SystemExit('barracks threat signature patch drifted')
+          p.write_text(s.replace(old_call,new_call,1).replace(old_sig,new_sig,1), encoding='utf-8')
+          PY
       - name: Audit Alpha.124 source and docs
         shell: bash
         run: |
