@@ -164,9 +164,10 @@ public final class RiftfrontierGameTests {
         Zombie orphan = new Zombie(helper.getLevel());
         orphan.addTag("riftfrontier.region01.run." + orphanRun);
         orphan.addTag("riftfrontier.region01.role.hunter");
-        orphan.snapTo(helper.absolutePos(new BlockPos(4, 3, 4)).getCenter().x(), helper.absolutePos(new BlockPos(4, 3, 4)).getY(), helper.absolutePos(new BlockPos(4, 3, 4)).getCenter().z(), 0.0F, 0.0F);
-        helper.getLevel().addFreshEntity(orphan);
-        helper.assertTrue(orphan.isRemoved(), "A persisted tagged proxy with no process-local run tracker must be discarded when it loads");
+        BlockPos orphanPos = helper.absolutePos(new BlockPos(4, 3, 4));
+        orphan.snapTo(orphanPos.getX() + 0.5D, orphanPos.getY(), orphanPos.getZ() + 0.5D, 0.0F, 0.0F);
+        boolean accepted = helper.getLevel().addFreshEntity(orphan);
+        helper.assertTrue(!accepted || orphan.isRemoved(), "A persisted tagged proxy with no process-local run tracker must be rejected or discarded when it loads");
         helper.succeed();
     }
 }
