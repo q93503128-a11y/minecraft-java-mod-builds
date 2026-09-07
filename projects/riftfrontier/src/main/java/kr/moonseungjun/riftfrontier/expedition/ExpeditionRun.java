@@ -1,7 +1,5 @@
 package kr.moonseungjun.riftfrontier.expedition;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 
 import java.util.LinkedHashMap;
@@ -9,8 +7,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Persistable authoritative state for one expedition run.
- * Content definitions describe what may happen; this record stores what actually happened in a world.
+ * Authoritative immutable state for one expedition run.
+ *
+ * This domain record deliberately has no Minecraft/DFU dependency. Serialization belongs to
+ * ExpeditionRunCodec so pure lifecycle tests can load and exercise the state machine without
+ * constructing a Minecraft runtime.
  */
 public record ExpeditionRun(
     long sequence,
@@ -22,20 +23,6 @@ public record ExpeditionRun(
     long startedGameTime,
     long endedGameTime
 ) {
-    private static final Codec<ContentId> CONTENT_ID_CODEC = Codec.STRING.xmap(ContentId::parse, ContentId::toString);
-    private static final Codec<Status> STATUS_CODEC = Codec.STRING.xmap(Status::parse, Status::serializedName);
-
-    public static final Codec<ExpeditionRun> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        Codec.LONG.fieldOf("sequence").forGetter(ExpeditionRun::sequence),
-        CONTENT_ID_CODEC.fieldOf("region").forGetter(ExpeditionRun::regionId),
-        CONTENT_ID_CODEC.fieldOf("contract").forGetter(ExpeditionRun::contractId),
-        Codec.STRING.fieldOf("content_fingerprint").forGetter(ExpeditionRun::contentFingerprint),
-        STATUS_CODEC.fieldOf("status").forGetter(ExpeditionRun::status),
-        Codec.unboundedMap(CONTENT_ID_CODEC, Codec.INT).optionalFieldOf("recovered_resources", Map.of()).forGetter(ExpeditionRun::recoveredResources),
-        Codec.LONG.fieldOf("started_game_time").forGetter(ExpeditionRun::startedGameTime),
-        Codec.LONG.optionalFieldOf("ended_game_time", -1L).forGetter(ExpeditionRun::endedGameTime)
-    ).apply(instance, ExpeditionRun::new));
-
     public enum Status {
         PREPARING("preparing"),
         DEPLOYED("deployed"),
@@ -122,22 +109,11 @@ public record ExpeditionRun(
         return copy(Status.FAILED, recoveredResources, gameTime);
     }
 
-    public boolean satisfies(CoreDefinitionContractView contract) {
-        Objects.requireNonNull(contract, "contract");
-        return contract.requiredResources().entrySet().stream()
-            .allMatch(entry -> recoveredResources.getOrDefault(entry.getKey(), 0) >= entry.getValue());
-    }
-
     private void requireStatus(Status expected) {
         if (status != expected) throw new IllegalStateException("Expected expedition status " + expected + " but was " + status);
     }
 
     private ExpeditionRun copy(Status nextStatus, Map<ContentId, Integer> resources, long endTime) {
         return new ExpeditionRun(sequence, regionId, contractId, contentFingerprint, nextStatus, resources, startedGameTime, endTime);
-    }
-
-    /** Narrow adapter keeps the state machine independent from the full content-definition type. */
-    public interface CoreDefinitionContractView {
-        Map<ContentId, Integer> requiredResources();
     }
 }
