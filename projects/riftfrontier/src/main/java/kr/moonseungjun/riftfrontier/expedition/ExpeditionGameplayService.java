@@ -35,6 +35,19 @@ public final class ExpeditionGameplayService {
         var snapshot = ContentRuntime.requireCurrent();
         var lifecycle = new ExpeditionLifecycle(snapshot);
         long expectedSequence = world.expeditionSequence() + 1L;
+        int pressureAtStart = world.region01Pressure();
+        int supplyCost = world.region01PreparationSupplyCost();
+        Region01EncounterRuntime.EncounterPlan plannedEncounter = Region01EncounterRuntime.planForPressure(pressureAtStart);
+        ExpeditionStartContext startContext = new ExpeditionStartContext(
+            pressureAtStart,
+            supplyCost,
+            plannedEncounter.hunters(),
+            plannedEncounter.scouts(),
+            plannedEncounter.elites(),
+            plannedEncounter.hazardTicks(),
+            plannedEncounter.hazardAmplifier()
+        );
+
         ExpeditionRun validated = lifecycle.begin(
             expectedSequence,
             REGION_ID,
@@ -44,7 +57,6 @@ public final class ExpeditionGameplayService {
             level.getGameTime()
         );
 
-        int supplyCost = world.region01PreparationSupplyCost();
         if (!world.consumeRegion01PreparationSupply()) {
             throw new IllegalStateException(
                 "Insufficient expedition supply: need " + supplyCost + ", have " + world.expeditionSupply()
@@ -52,13 +64,28 @@ public final class ExpeditionGameplayService {
             );
         }
 
-        ExpeditionRun persisted = world.createExpedition(
+        ExpeditionRun allocated = world.createExpedition(
             REGION_ID,
             CONTRACT_ID,
             player.getUUID(),
             snapshot.fingerprint(),
             level.getGameTime()
         );
+        ExpeditionRun persisted = new ExpeditionRun(
+            allocated.sequence(),
+            allocated.regionId(),
+            allocated.contractId(),
+            allocated.ownerId(),
+            allocated.contentFingerprint(),
+            Optional.of(startContext),
+            allocated.status(),
+            allocated.recoveredResources(),
+            allocated.startedGameTime(),
+            allocated.endedGameTime(),
+            allocated.endReason()
+        );
+        world.updateExpedition(persisted);
+
         if (persisted.sequence() != validated.sequence()) throw new IllegalStateException("Authoritative expedition allocation drifted from validated sequence");
         if (!persisted.ownerId().equals(validated.ownerId())) throw new IllegalStateException("Authoritative expedition owner drifted from validated participant");
 
@@ -67,11 +94,16 @@ public final class ExpeditionGameplayService {
         ServerLevel overworld = level.getServer().overworld();
         prepareTechnicalCell(overworld, TECHNICAL_HUB, false);
         prepareTechnicalCell(overworld, TECHNICAL_REGION, true);
-        var encounter = Region01EncounterRuntime.begin(overworld, TECHNICAL_REGION, deployed.sequence(), world.region01Pressure());
+        var encounter = Region01EncounterRuntime.begin(overworld, TECHNICAL_REGION, deployed.sequence(), startContext.regionPressure());
+        if (encounter.hunters() != startContext.plannedHunters()
+            || encounter.scouts() != startContext.plannedScouts()
+            || encounter.elites() != startContext.plannedElites()) {
+            throw new IllegalStateException("Region 01 encounter runtime drifted from persisted expedition start context");
+        }
         teleport(player, overworld, TECHNICAL_REGION.offset(0, 0, -4));
         player.sendSystemMessage(Component.literal(
-            "[Riftfrontier] Expedition deployed. Supply spent: " + supplyCost
-                + ". Region pressure: " + world.region01Pressure()
+            "[Riftfrontier] Expedition deployed. Supply spent: " + startContext.preparationSupplyCost()
+                + ". Region pressure: " + startContext.regionPressure()
                 + ". Threats: " + encounter.totalThreats() + " (hunter=" + encounter.hunters()
                 + ", scout=" + encounter.scouts() + ", elite=" + encounter.elites() + "). Recover 3 salvage nodes."
         ));
@@ -93,7 +125,10 @@ public final class ExpeditionGameplayService {
         ExpeditionRun recovered = lifecycle.recover(active.get(), RESOURCE_ID, 1);
         world.updateExpedition(recovered);
         overworld.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-        Region01EncounterRuntime.applySalvageHazard(player, world.region01Pressure());
+        int hazardPressure = recovered.startContext()
+            .map(ExpeditionStartContext::regionPressure)
+            .orElseGet(world::region01Pressure);
+        Region01EncounterRuntime.applySalvageHazard(player, hazardPressure);
         int amount = recovered.recoveredResources().getOrDefault(RESOURCE_ID, 0);
         int liveThreats = Region01EncounterRuntime.liveThreatCount(overworld, TECHNICAL_REGION, recovered.sequence());
         player.sendSystemMessage(Component.literal(
@@ -165,12 +200,6 @@ public final class ExpeditionGameplayService {
         return Optional.of(failed);
     }
 
-    /**
-     * Conservative restart policy for M2: process-local encounter ownership cannot be proven after a
-     * JVM/server restart, so any persisted non-terminal expedition becomes FAILED before new play is
-     * accepted. Preparation cost remains spent. Persisted proxy mobs are cleaned lazily by their stable
-     * run tags when each entity loads; this avoids broad startup or per-tick world scans.
-     */
     public static Optional<ExpeditionRun> reconcileAfterServerRestart(ServerLevel level) {
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
         Optional<ExpeditionRun> active = active(world);
@@ -182,14 +211,6 @@ public final class ExpeditionGameplayService {
         return Optional.of(failed);
     }
 
-    /**
-     * Login/re-entry adapter for the bounded M2 field cell.
-     *
-     * Restart/logout failure may leave a player's persisted position inside the technical Region 01
-     * cell after the authoritative run has already become terminal. In that precise state, returning
-     * the player to the technical hub is an explicit field exit rather than an attempt to resurrect or
-     * infer expedition ownership. Another player's active run must not suppress this stranded-player exit.
-     */
     public static FieldReentryDecision reconcilePlayerFieldReentry(ServerPlayer player) {
         ServerLevel level = serverLevel(player);
         RiftfrontierWorldData world = RiftfrontierWorldData.get(level);
@@ -238,9 +259,7 @@ public final class ExpeditionGameplayService {
         return active(world).filter(run -> run.ownedBy(player.getUUID()));
     }
 
-    public static BlockPos technicalRegionCenter() {
-        return TECHNICAL_REGION;
-    }
+    public static BlockPos technicalRegionCenter() { return TECHNICAL_REGION; }
 
     private static void prepareTechnicalCell(ServerLevel level, BlockPos center, boolean resourceNodes) {
         for (int dx = -5; dx <= 5; dx++) {
@@ -267,9 +286,7 @@ public final class ExpeditionGameplayService {
         teleport(player, overworld, TECHNICAL_HUB);
     }
 
-    private static ServerLevel serverLevel(ServerPlayer player) {
-        return (ServerLevel) player.level();
-    }
+    private static ServerLevel serverLevel(ServerPlayer player) { return (ServerLevel) player.level(); }
 
     private static void teleport(ServerPlayer player, ServerLevel level, BlockPos pos) {
         boolean moved = player.teleportTo(level, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, Set.<Relative>of(), player.getYRot(), player.getXRot(), false);

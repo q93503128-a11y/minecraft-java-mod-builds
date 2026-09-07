@@ -24,17 +24,30 @@ public final class FieldPlayReview {
         long end = terminal ? run.endedGameTime() : now;
         long elapsedTicks = Math.max(0L, end - run.startedGameTime());
 
-        int pressureAtRun = ExpeditionReviewHistory.pressureAtStart(run, world.expeditions(), world.region01Pressure());
-        Region01EncounterRuntime.EncounterPlan plan = Region01EncounterRuntime.planForPressure(pressureAtRun);
+        ExpeditionStartContext context;
+        String contextSource;
+        if (run.startContext().isPresent()) {
+            context = run.startContext().orElseThrow();
+            contextSource = "persisted";
+        } else {
+            int reconstructedPressure = ExpeditionReviewHistory.pressureAtStart(run, world.expeditions(), world.region01Pressure());
+            Region01EncounterRuntime.EncounterPlan reconstructedPlan = Region01EncounterRuntime.planForPressure(reconstructedPressure);
+            context = new ExpeditionStartContext(
+                reconstructedPressure,
+                Math.min(3, 1 + (reconstructedPressure / 2)),
+                reconstructedPlan.hunters(),
+                reconstructedPlan.scouts(),
+                reconstructedPlan.elites(),
+                reconstructedPlan.hazardTicks(),
+                reconstructedPlan.hazardAmplifier()
+            );
+            contextSource = "legacy-reconstructed";
+        }
 
         int liveThreats = -1;
         if (!terminal) {
             ServerLevel overworld = playerLevel.getServer().overworld();
-            liveThreats = Region01EncounterRuntime.liveThreatCount(
-                overworld,
-                ExpeditionGameplayService.technicalRegionCenter(),
-                run.sequence()
-            );
+            liveThreats = Region01EncounterRuntime.liveThreatCount(overworld, ExpeditionGameplayService.technicalRegionCenter(), run.sequence());
         }
 
         int recovered = run.recoveredResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
@@ -47,16 +60,17 @@ public final class FieldPlayReview {
             terminal,
             elapsedTicks,
             recovered,
-            pressureAtRun,
-            plan.hunters(),
-            plan.scouts(),
-            plan.elites(),
+            context.regionPressure(),
+            context.plannedHunters(),
+            context.plannedScouts(),
+            context.plannedElites(),
             liveThreats,
-            plan.hazardTicks(),
-            plan.hazardAmplifier(),
+            context.hazardTicks(),
+            context.hazardAmplifier(),
             world.securedRegion01Salvage(),
             world.expeditionSupply(),
             world.region01PreparationSupplyCost(),
+            contextSource,
             currentFingerprint.equals(run.contentFingerprint()),
             run.contentFingerprint()
         );
