@@ -54,6 +54,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementAdvancedWorkshopService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementCartStationService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementConstructionOfficeService::onBreakBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementBarracksService::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(SettlementMilitaryOutpostService::onLivingDrops);
