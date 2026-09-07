@@ -215,11 +215,11 @@ public final class RiftfrontierGameTests {
         ));
         worldData.updateExpedition(deployed);
 
-        int evidenceBefore = deployed.fieldEvidence().size();
+        int evidenceBefore = deployed.evidenceTrail().size();
         long revisionBefore = worldData.worldRevision();
         boolean rejected = false;
         try {
-            lifecycle.requestExtraction(deployed);
+            lifecycle.validateExtractionRequest(deployed);
         } catch (IllegalStateException expected) {
             rejected = true;
         }
@@ -227,18 +227,19 @@ public final class RiftfrontierGameTests {
 
         ExpeditionRun after = worldData.expedition(deployed.sequence()).orElseThrow();
         helper.assertTrue(after.status() == ExpeditionRun.Status.DEPLOYED, "Rejected extraction must leave the authoritative run DEPLOYED");
-        helper.assertTrue(after.fieldEvidence().size() == evidenceBefore, "Rejected extraction must not append PRE_EXTRACTION evidence");
+        helper.assertTrue(after.evidenceTrail().size() == evidenceBefore, "Rejected extraction must not append PRE_EXTRACTION evidence");
         helper.assertTrue(
-            after.fieldEvidence().stream().noneMatch(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION),
+            after.evidenceTrail().stream().noneMatch(checkpoint -> checkpoint.stage() == ExpeditionEvidenceCheckpoint.Stage.PRE_EXTRACTION),
             "Rejected extraction must not leave a misleading PRE_EXTRACTION checkpoint"
         );
-        helper.assertTrue(worldData.worldRevision() == revisionBefore, "Rejected extraction must not dirty authoritative SavedData");
+        helper.assertTrue(worldData.worldRevision() == revisionBefore, "Rejected extraction validation must not dirty authoritative SavedData");
 
         ExpeditionRun recovered = lifecycle.recover(after, ExpeditionGameplayService.RESOURCE_ID, 3);
         worldData.updateExpedition(recovered);
+        lifecycle.validateExtractionRequest(recovered);
         ExpeditionRun accepted = lifecycle.requestExtraction(recovered);
         helper.assertTrue(accepted.status() == ExpeditionRun.Status.EXTRACTION_REQUESTED, "A filled contract must still cross the extraction gate normally");
-        helper.assertTrue(accepted.fieldEvidence().size() == evidenceBefore, "Lifecycle acceptance itself must not forge gameplay-adapter evidence");
+        helper.assertTrue(accepted.evidenceTrail().size() == evidenceBefore, "Lifecycle acceptance itself must not forge gameplay-adapter evidence");
         helper.succeed();
     }
 }
