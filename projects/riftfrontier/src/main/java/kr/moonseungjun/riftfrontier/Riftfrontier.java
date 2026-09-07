@@ -7,7 +7,7 @@ import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
 import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
-import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayService;
+import kr.moonseungjun.riftfrontier.expedition.ExpeditionRestartReconciler;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
@@ -59,11 +59,14 @@ public final class Riftfrontier {
         var snapshot = ContentRuntime.requireCurrent();
         var worldData = RiftfrontierWorldData.get(event.getServer().overworld());
         boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
-        var reconciled = ExpeditionGameplayService.reconcileAfterServerRestart(event.getServer().overworld());
-        reconciled.ifPresent(run -> LOGGER.warn(
-            "Riftfrontier restart reconciliation failed non-terminal expedition sequence={} status={} without refund; persisted proxy entities will be discarded when loaded and stranded field players will be returned through the login re-entry adapter",
-            run.sequence(), run.status()
-        ));
+        var reconciled = ExpeditionRestartReconciler.reconcile(event.getServer().overworld());
+        if (!reconciled.isEmpty()) {
+            LOGGER.warn(
+                "Riftfrontier restart reconciliation failed {} non-terminal expedition(s) without refund; sequences={}. Persisted proxy entities will be discarded when loaded and stranded field players will be returned through the login re-entry adapter",
+                reconciled.size(),
+                reconciled.stream().map(run -> Long.toString(run.sequence())).toList()
+            );
+        }
         LOGGER.info("Riftfrontier authoritative world root ready: changed={}, {}", changed, worldData.diagnosticSummary());
     }
 }
