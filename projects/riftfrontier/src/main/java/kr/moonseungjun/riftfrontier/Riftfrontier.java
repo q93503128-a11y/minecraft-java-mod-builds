@@ -5,6 +5,7 @@ import kr.moonseungjun.riftfrontier.content.ContentRuntime;
 import kr.moonseungjun.riftfrontier.content.ContentServerReloadListener;
 import kr.moonseungjun.riftfrontier.content.bootstrap.CoreContentBootstrap;
 import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
+import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -31,6 +32,7 @@ public final class Riftfrontier {
             pack.packId(), pack.schemaVersion(), report.definitionCount(), snapshot.generation(), snapshot.fingerprint()
         );
 
+        RiftfrontierGameTests.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
@@ -45,7 +47,7 @@ public final class Riftfrontier {
     }
 
     private static void serverStarted(ServerStartedEvent event) {
-        var snapshot = ContentRuntime.snapshot();
+        var snapshot = ContentRuntime.requireCurrent();
         var worldData = RiftfrontierWorldData.get(event.getServer().overworld());
         boolean changed = worldData.synchronizeContentFingerprint(snapshot.fingerprint());
         LOGGER.info(

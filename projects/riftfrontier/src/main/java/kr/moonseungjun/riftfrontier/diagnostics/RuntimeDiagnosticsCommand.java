@@ -17,7 +17,7 @@ public final class RuntimeDiagnosticsCommand {
                 .then(Commands.literal("runtime")
                     .executes(context -> {
                         var source = context.getSource();
-                        var snapshot = ContentRuntime.snapshot();
+                        var snapshot = ContentRuntime.requireCurrent();
                         var worldData = RiftfrontierWorldData.get(source.getLevel());
                         source.sendSuccess(
                             () -> Component.literal(
