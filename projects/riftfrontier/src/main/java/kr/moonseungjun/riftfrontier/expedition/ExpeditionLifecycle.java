@@ -64,9 +64,9 @@ public final class ExpeditionLifecycle {
         return new Resolution(completed, resultProfile, retained, contract.worldConsequence());
     }
 
-    public ExpeditionRun fail(ExpeditionRun run, long gameTime) {
+    public ExpeditionRun fail(ExpeditionRun run, long gameTime, ExpeditionRun.EndReason reason) {
         requireRunDefinitions(run);
-        return run.fail(gameTime);
+        return run.fail(gameTime, reason);
     }
 
     private void requireRunDefinitions(ExpeditionRun run) {
