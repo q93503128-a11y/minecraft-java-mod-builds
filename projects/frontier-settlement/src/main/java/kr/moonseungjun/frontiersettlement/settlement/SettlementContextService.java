@@ -162,9 +162,16 @@ public final class SettlementContextService {
             case WORKSHOP -> "완공 · 금속 1 → 외부무기 내구 +" + SettlementExplorationBenefitService.repairPerMetal(data);
             case ADVANCED_WORKSHOP -> "완공 · 고급 제작 위력 " + SettlementExplorationBenefitService.forgePower(data)
                     + " · 영지 재련 " + SettlementExplorationBenefitService.reforgePower(data);
-            case GUARD_POST -> "완공 · 근거리 경비";
-            case WATCHTOWER -> "완공 · 로드 위협 대응";
-            case BARRACKS -> "완공 · 정식 주둔 3슬롯";
+            case GUARD_POST -> "완공 · 군사 " + SettlementMilitaryUpgradeService.roman(SettlementMilitaryUpgradeService.grade(building))
+                    + " · 경비 활동 반경 " + (int) SettlementMilitaryUpgradeService.guardHomeRadius(building) + " · "
+                    + SettlementMilitaryUpgradeService.upgradeHint(data, building);
+            case WATCHTOWER -> "완공 · 군사 " + SettlementMilitaryUpgradeService.roman(SettlementMilitaryUpgradeService.grade(building))
+                    + " · 감시 반경 " + (int) SettlementMilitaryUpgradeService.watchAlertRadius(data, building) + " · "
+                    + SettlementMilitaryUpgradeService.upgradeHint(data, building);
+            case BARRACKS -> "완공 · 군사 " + SettlementMilitaryUpgradeService.roman(SettlementMilitaryUpgradeService.grade(building))
+                    + " · 정식 주둔 " + SettlementMilitaryUpgradeService.barracksSlots(building) + "슬롯 · 순찰 "
+                    + SettlementMilitaryUpgradeService.barracksPatrolRadius(data, building) + " · "
+                    + SettlementMilitaryUpgradeService.upgradeHint(data, building);
             case MARKET -> "완공 · 유물 → 실물 교역 · 개척 보너스 +" + SettlementExplorationBenefitService.marketPayoutBonus(data);
             case CART_STATION -> "완공 · 물류 " + SettlementLogisticsUpgradeService.gradeLabel(SettlementLogisticsUpgradeService.grade(building))
                     + " · 화물 저장 " + SettlementLogisticsUpgradeService.cartFreightStorageCount(building) + "통 · 생산 운송 "
@@ -173,7 +180,11 @@ public final class SettlementContextService {
                     + SettlementLogisticsUpgradeService.upgradeHint(data, building);
             case CIVIC_HALL -> "완공 · 시민 중심 · 주거 +" + type.housingGain() + " · 주민 유입 20초 · 건설 인력 +2";
             case TRADE_HALL -> "완공 · 유물 교역 보너스 +4 · 주거 +" + type.housingGain();
-            case CITADEL -> "완공 · 감시망 반경 56 · 병영 감지 +12 · 순찰 반경 32 · 주거 +" + type.housingGain();
+            case CITADEL -> "완공 · 군사 " + SettlementMilitaryUpgradeService.roman(SettlementMilitaryUpgradeService.grade(building))
+                    + " · 감시 지휘 +" + (int) SettlementMilitaryUpgradeService.citadelWatchBonus(data)
+                    + " · 전초 군수 목표 식량 " + SettlementMilitaryUpgradeService.remoteFoodReserve(data)
+                    + " / 금속 " + SettlementMilitaryUpgradeService.remoteMetalReserve(data)
+                    + " · 주거 +" + type.housingGain() + " · " + SettlementMilitaryUpgradeService.upgradeHint(data, building);
         };
     }
 }

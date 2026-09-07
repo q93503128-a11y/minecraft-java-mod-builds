@@ -1008,3 +1008,8 @@ This pass is a manual source hardening pass. Long two-player sessions, simultane
 ## Alpha.123 logistics authority lock
 
 Central logistics now follows the same RTS investment rule as production: settlement tier unlocks capacity, while each warehouse/cart station must be paid individually with real physical resources. Warehouse grades expand only bounded physical barrel capacity; cart-station grades increase only the existing road transporter's productive outpost-to-town pickup ceiling. Local production barrels remain buffers, shared/warehouse storage remains the durable resource authority, and optional shared depots remain compatible. No logistics grade may introduce virtual cargo, background teleport delivery, forced chunk loading, a second transport worker authority, or destructive replacement of player containers/fluids/blocks.
+
+
+## Alpha.124 RTS military / territory economy lock
+
+Defense growth is paid physical infrastructure, not an abstract troop-point layer. Guard post, watchtower, barracks and citadel grades use the shared BuildingRecord grade field and real settlement wood/stone/common copper-or-iron payment. The tier only unlocks the ceiling; it never grants the upgrade for free. Barracks remain the sole town-soldier authority and the existing outpost logistics worker remains the sole long-distance freight authority. Post-combat recovery may repeatedly consume ordinary physical food plus common copper/iron, but only after real damage and only from reachable loaded storage. Hidden daily upkeep, high-value implicit payment, virtual inventory, teleport freight and force-loading remain forbidden.

@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.123
+## Current version: 0.1.0-alpha.124
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
@@ -114,6 +114,18 @@ Central warehouses remain the long-duration storage backbone; extra profession b
 - A failed eligibility, tier-cap, storage-load or material check consumes nothing.
 
 Existing external item components, enchantments, names and lore remain authoritative. Unsupported items fall through to ordinary anvil behavior.
+
+## Alpha.124 military and territory investment
+
+- Guard posts, watchtowers, barracks and the citadel now have paid military grades I-IV.
+- Grade II unlocks at Frontier Town, III at Domain and IV at Frontier Capital.
+- II/III/IV cost 256/192/32, 512/384/96 and 1024/768/192 wood/stone/common copper-or-iron items respectively.
+- Barracks scale from 3 to 6 physically recruited/supplied soldiers; added slots use real positions inside the barracks drill yard.
+- Watch and patrol ranges scale from the upgraded local building, while the citadel adds bounded settlement-wide command range.
+- Dangerous remote outposts request larger physical food/metal reserves as citadel command improves; the existing road transporter remains the only long-distance supply authority.
+- Wounded barracks soldiers and remote sentries recover only after immediate combat pressure clears. Each recovery batch consumes 4 ordinary food value and 1 copper/iron item from a real reachable storage container.
+- Recovery never silently spends gold, diamond, golden apples or enchanted golden apples.
+- There is no daily tax, virtual troop currency, free weapon minting, teleport logistics or chunk force-loading. Resource sink follows explicit investment and actual combat damage.
 
 ## Functional building families
 

@@ -46,6 +46,24 @@ public final class SettlementInventory {
     }
 
     /** Atomic local-container cost using the same value authority as the shared settlement ledger. */
+    public static long countCommonMilitaryMetal(Container container) {
+        return count(container, SettlementEquipmentUpgradeService::isBlacksmithMetal);
+    }
+
+    public static long countMilitaryFood(Container container) {
+        return countValue(container, SettlementInventory::militaryFoodValue);
+    }
+
+    /** Combat recovery never silently spends gold/diamond or golden apples. */
+    public static boolean consumeCommonMilitarySupply(Container container, long commonMetalItems, long foodValue) {
+        if (commonMetalItems < 0L || foodValue < 0L) return false;
+        if (countCommonMilitaryMetal(container) < commonMetalItems || countMilitaryFood(container) < foodValue) return false;
+        consumeMatching(container, commonMetalItems, SettlementEquipmentUpgradeService::isBlacksmithMetal);
+        consumeValue(container, foodValue, SettlementInventory::militaryFoodValue);
+        container.setChanged();
+        return true;
+    }
+
     public static boolean consumeMetalAndFood(Container container, long metal, long food) {
         if (metal < 0L || food < 0L) return false;
         if (countMetal(container) < metal || countFood(container) < food) return false;
@@ -110,6 +128,11 @@ public final class SettlementInventory {
 
     public static int foodValue(ItemStack stack) {
         return resourceMask(stack) == RESOURCE_FOOD ? rawFoodUnitValue(stack) : 0;
+    }
+
+    private static int militaryFoodValue(ItemStack stack) {
+        if (stack.is(Items.GOLDEN_APPLE) || stack.is(Items.ENCHANTED_GOLDEN_APPLE)) return 0;
+        return foodValue(stack);
     }
 
     private static int rawMetalUnitValue(ItemStack stack) {

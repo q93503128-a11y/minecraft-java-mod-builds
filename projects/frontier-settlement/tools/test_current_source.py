@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.123" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.124" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -180,6 +180,28 @@ service = text(SETTLEMENT / "SettlementService.java")
 require("SettlementProductionUpgradeService.tick(server, data)" in service, "production-grade migration is not wired into settlement runtime")
 entry = text(JAVA / "FrontierSettlement.java")
 require("SettlementProductionUpgradeService::onRightClickBlock" in entry, "production improvement interaction is not registered")
+
+military_upgrade = text(SETTLEMENT / "SettlementMilitaryUpgradeService.java")
+require("new UpgradeCost(256L, 192L, 32L)" in military_upgrade
+        and "new UpgradeCost(512L, 384L, 96L)" in military_upgrade
+        and "new UpgradeCost(1024L, 768L, 192L)" in military_upgrade,
+        "military RTS investment ladder drifted")
+require("barracksSlots" in military_upgrade and "return 2 + grade(barracks)" in military_upgrade,
+        "paid barracks capacity ladder missing")
+require("remoteFoodReserve" in military_upgrade and "remoteMetalReserve" in military_upgrade
+        and "remotePatrolRadius" in military_upgrade, "citadel territory-command benefits missing")
+require("SettlementMilitaryUpgradeService.tick(server, data)" in service, "military grade migration not wired")
+require("SettlementMilitaryUpgradeService::onRightClickBlock" in entry, "military improvement interaction not registered")
+armory = text(SETTLEMENT / "SettlementMilitaryArmoryService.java")
+require("tickRecovery" in armory and "tickOutpostRecovery" in armory
+        and "consumeCommonMilitarySupply" in armory, "physical post-combat recovery missing")
+require("countCommonMilitaryMetal" in inventory and "countMilitaryFood" in inventory
+        and "GOLDEN_APPLE" in inventory and "ENCHANTED_GOLDEN_APPLE" in inventory,
+        "military recovery can consume protected high-value supplies")
+require("soldierSlots(barracks)" in text(SETTLEMENT / "SettlementBarracksService.java")
+        and "case 3 -> 3; case 4 -> 11; default -> 13" in text(SETTLEMENT / "SettlementBarracksService.java"),
+        "expanded barracks slots are not bounded inside the drill yard")
+
 guide = text(JAVA / "client/SettlementGuideScreen.java")
 require("생산시설 현장 저장통을 우클릭" in guide, "in-game guide does not teach production investment")
 production_status = text(SETTLEMENT / "SettlementProductionStatusService.java")
@@ -378,8 +400,8 @@ print("CURRENT SOURCE CHECK PASS: Frontier Settlement 0.1.0-alpha.117 UI/runtime
 
 
 barracks_runtime = text(SETTLEMENT / "SettlementBarracksService.java")
-require("CITADEL_PATROL_RADIUS = 32" in barracks_runtime and "CITADEL_THREAT_RADIUS_BONUS = 12.0D" in barracks_runtime, "citadel response bonus missing")
-require("Monster threat = nearestThreat(level, data, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")
+require("SettlementMilitaryUpgradeService.barracksPatrolRadius(data, barracks)" in barracks_runtime and "SettlementMilitaryUpgradeService.barracksThreatRadiusBonus(data, barracks)" in barracks_runtime, "paid barracks/citadel response bonus missing")
+require("Monster threat = nearestThreat(level, data, barracks, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")
 require("patrolAreaLoaded(ServerLevel level, SettlementData data, BuildingRecord barracks)" in barracks_runtime, "citadel patrol loaded-area gate missing")
 
 

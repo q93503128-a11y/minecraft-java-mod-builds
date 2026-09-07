@@ -25,6 +25,7 @@ public final class SettlementService {
         SettlementLegacyWorkerMigrationService.tick(server, data);
         SettlementProductionUpgradeService.tick(server, data);
         SettlementLogisticsUpgradeService.tick(server, data);
+        SettlementMilitaryUpgradeService.tick(server, data);
         boolean explorationChanged = SettlementExplorationService.tick(server, data);
         // Building construction owns its per-tick presentation cadence. Roads, outposts and civil work
         // share the bounded 5-tick infrastructure scheduler below.

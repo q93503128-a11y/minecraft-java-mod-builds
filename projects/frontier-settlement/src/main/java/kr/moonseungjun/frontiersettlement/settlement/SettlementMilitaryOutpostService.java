@@ -41,7 +41,6 @@ public final class SettlementMilitaryOutpostService {
     private static final int RECRUIT_INTERVAL_TICKS = 600;
     private static final double SENTRY_SEARCH_RADIUS = 32.0D;
     private static final double HOME_RADIUS_SQR = 8.0D * 8.0D;
-    private static final double LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;
 
     private static final int[][] DANGER_SAMPLES = {
             {0, 0}, {8, 0}, {-8, 0}, {0, 8}, {0, -8},
@@ -85,6 +84,8 @@ public final class SettlementMilitaryOutpostService {
                 if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) {
                     // Combat has ended. Only now may a sentry walk to its local stockpile for a
                     // weapon that the existing road transporter already delivered physically.
+                    if (SettlementMilitaryArmoryService.tickOutpostRecovery(level, outpost, sentry,
+                            SettlementMilitaryUpgradeService.remoteRecoveryHeal(data))) continue;
                     if (!SettlementMilitaryArmoryService.tickOutpostArmament(level, outpost, sentry)) {
                         standDown(outpost, sentry);
                     }
@@ -93,7 +94,7 @@ public final class SettlementMilitaryOutpostService {
             }
 
             if (sentry == null && tick % RECRUIT_INTERVAL_TICKS == 0) sentry = tryRecruit(level, outpost);
-            if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) patrol(level, outpost, sentry);
+            if (sentry != null && tick % PATROL_INTERVAL_TICKS == 0) patrol(level, data, outpost, sentry);
         }
     }
 
@@ -131,14 +132,16 @@ public final class SettlementMilitaryOutpostService {
     public static int foodSupplyShortage(ServerLevel level, OutpostRecord outpost) {
         if (!isActiveMilitaryOutpost(level, outpost)) return 0;
         if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return 0;
-        return Math.max(0, TARGET_FOOD_RESERVE - (int) Math.min(Integer.MAX_VALUE, SettlementInventory.countFood(container)));
+        int target = SettlementMilitaryUpgradeService.remoteFoodReserve(SettlementData.get(level.getServer()));
+        return Math.max(0, target - (int) Math.min(Integer.MAX_VALUE, SettlementInventory.countFood(container)));
     }
 
     public static int metalSupplyShortage(ServerLevel level, OutpostRecord outpost) {
         if (!isActiveMilitaryOutpost(level, outpost)) return 0;
         if (!(level.getBlockEntity(outpost.stockpile()) instanceof Container container)) return 0;
         long present = SettlementInventory.countMetal(container);
-        return Math.max(0, TARGET_METAL_RESERVE - (int) Math.min(Integer.MAX_VALUE, present));
+        int target = SettlementMilitaryUpgradeService.remoteMetalReserve(SettlementData.get(level.getServer()));
+        return Math.max(0, target - (int) Math.min(Integer.MAX_VALUE, present));
     }
 
     /**
@@ -223,10 +226,11 @@ public final class SettlementMilitaryOutpostService {
         return sentry;
     }
 
-    private static void patrol(ServerLevel level, OutpostRecord outpost, FrontierSoldierEntity sentry) {
+    private static void patrol(ServerLevel level, SettlementData data, OutpostRecord outpost, FrontierSoldierEntity sentry) {
         BlockPos home = outpost.center().above();
         double homeDistance = sentry.distanceToSqr(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D);
-        if (homeDistance > LEASH_RADIUS_SQR) {
+        int patrolRadius = SettlementMilitaryUpgradeService.remotePatrolRadius(data);
+        if (homeDistance > (double) patrolRadius * patrolRadius) {
             if (sentry.getTarget() != null) sentry.setTarget(null);
             sentry.getNavigation().moveTo(home.getX() + 0.5D, home.getY(), home.getZ() + 0.5D, 0.96D);
             return;
@@ -236,6 +240,8 @@ public final class SettlementMilitaryOutpostService {
         // The dangerous overlay may remain active because of darkness/creeper pressure even when
         // there is no immediate combat target. In that idle window, equip only from the local
         // stockpile; an actual combat target always wins before this branch.
+        if (SettlementMilitaryArmoryService.tickOutpostRecovery(level, outpost, sentry,
+                SettlementMilitaryUpgradeService.remoteRecoveryHeal(data))) return;
         if (SettlementMilitaryArmoryService.tickOutpostArmament(level, outpost, sentry)) return;
         standDown(outpost, sentry);
     }

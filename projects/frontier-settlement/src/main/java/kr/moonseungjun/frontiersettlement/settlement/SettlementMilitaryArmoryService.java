@@ -16,6 +16,9 @@ public final class SettlementMilitaryArmoryService {
     public static final double STORAGE_INTERACTION_RANGE_SQR = 9.0D;
     public static final double MAX_ARMORY_ROUTE_SQR = 160.0D * 160.0D;
     public static final double ARMORY_WALK_SPEED = 0.95D;
+    public static final long RECOVERY_FOOD_COST = 4L;
+    public static final long RECOVERY_METAL_COST = 1L;
+    private static final float RECOVERY_MISSING_HEALTH_THRESHOLD = 8.0F;
 
     private SettlementMilitaryArmoryService() {}
 
@@ -43,6 +46,67 @@ public final class SettlementMilitaryArmoryService {
         soldier.setItemSlot(EquipmentSlot.MAINHAND, extracted);
         soldier.getNavigation().stop();
         return true;
+    }
+
+    /** Walk to one real loaded settlement container and pay ordinary rations/common metal after combat. */
+    public static boolean tickRecovery(ServerLevel level, SettlementData data, BlockPos routeAnchor,
+                                       FrontierSoldierEntity soldier, int healAmount) {
+        if (!needsRecovery(soldier) || !SettlementStorageService.storageAvailable(level, data)) return false;
+        BlockPos source = nearestRecoverySource(level, data, routeAnchor, soldier);
+        if (source == null) return false;
+        double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
+        if (distance > STORAGE_INTERACTION_RANGE_SQR) {
+            return SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, soldier, source, ARMORY_WALK_SPEED, STORAGE_INTERACTION_RANGE_SQR);
+        }
+        if (!(level.getBlockEntity(source) instanceof Container container)
+                || !SettlementInventory.consumeCommonMilitarySupply(container, RECOVERY_METAL_COST, RECOVERY_FOOD_COST)) return false;
+        soldier.heal(Math.max(1, healAmount));
+        soldier.getNavigation().stop();
+        return true;
+    }
+
+    /** Local outpost recovery pays only from the road-delivered physical stockpile. */
+    public static boolean tickOutpostRecovery(ServerLevel level, OutpostRecord outpost,
+                                              FrontierSoldierEntity soldier, int healAmount) {
+        if (!needsRecovery(soldier)) return false;
+        BlockPos source = outpost.stockpile();
+        if (!level.hasChunkAt(source) || !(level.getBlockEntity(source) instanceof Container container)
+                || !containsRecoverySupply(container)) return false;
+        if (!SettlementWorkerStorageNavigation.canReachInteraction(level, soldier, source, STORAGE_INTERACTION_RANGE_SQR)) return false;
+        double distance = soldier.distanceToSqr(source.getX() + 0.5D, source.getY() + 0.5D, source.getZ() + 0.5D);
+        if (distance > STORAGE_INTERACTION_RANGE_SQR) {
+            return SettlementWorkerStorageNavigation.moveToInteraction(
+                    level, soldier, source, ARMORY_WALK_SPEED, STORAGE_INTERACTION_RANGE_SQR);
+        }
+        if (!SettlementInventory.consumeCommonMilitarySupply(container, RECOVERY_METAL_COST, RECOVERY_FOOD_COST)) return false;
+        soldier.heal(Math.max(1, healAmount));
+        soldier.getNavigation().stop();
+        return true;
+    }
+
+    private static boolean needsRecovery(FrontierSoldierEntity soldier) {
+        return soldier != null && soldier.isAlive()
+                && soldier.getHealth() <= soldier.getMaxHealth() - RECOVERY_MISSING_HEALTH_THRESHOLD;
+    }
+
+    private static BlockPos nearestRecoverySource(ServerLevel level, SettlementData data, BlockPos routeAnchor,
+                                                  FrontierSoldierEntity soldier) {
+        BlockPos best = null;
+        double bestDistance = MAX_ARMORY_ROUTE_SQR + 1.0D;
+        for (BlockPos pos : SettlementStorageService.storagePositions(data)) {
+            if (pos.distSqr(routeAnchor) > MAX_ARMORY_ROUTE_SQR || !level.hasChunkAt(pos)) continue;
+            if (!(level.getBlockEntity(pos) instanceof Container container) || !containsRecoverySupply(container)) continue;
+            if (!SettlementWorkerStorageNavigation.canReachInteraction(level, soldier, pos, STORAGE_INTERACTION_RANGE_SQR)) continue;
+            double distance = soldier.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
+            if (distance <= MAX_ARMORY_ROUTE_SQR && distance < bestDistance) { bestDistance = distance; best = pos; }
+        }
+        return best;
+    }
+
+    private static boolean containsRecoverySupply(Container container) {
+        return SettlementInventory.countCommonMilitaryMetal(container) >= RECOVERY_METAL_COST
+                && SettlementInventory.countMilitaryFood(container) >= RECOVERY_FOOD_COST;
     }
 
     /**

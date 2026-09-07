@@ -19,6 +19,7 @@ import kr.moonseungjun.frontiersettlement.settlement.SettlementLogisticsUpgradeS
 import kr.moonseungjun.frontiersettlement.settlement.SettlementProductionUpgradeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementMarketService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementMilitaryOutpostService;
+import kr.moonseungjun.frontiersettlement.settlement.SettlementMilitaryUpgradeService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostLogisticsService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementOutpostService;
 import kr.moonseungjun.frontiersettlement.settlement.SettlementRoadService;
@@ -35,7 +36,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(FrontierSettlement.MOD_ID)
 public final class FrontierSettlement {
     public static final String MOD_ID = "frontier_settlement";
-    // Alpha.123 canonical/integrated CI retrigger after central logistics investment.
+    // Alpha.124 military/territory investment: paid defense grades and physical post-combat resupply.
 
     public FrontierSettlement(IEventBus modBus, ModContainer modContainer) {
         FrontierContent.register(modBus);
@@ -60,6 +61,7 @@ public final class FrontierSettlement {
         NeoForge.EVENT_BUS.addListener(SettlementConstructionOfficeService::onBreakBlock);
         NeoForge.EVENT_BUS.addListener(SettlementProductionUpgradeService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementLogisticsUpgradeService::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(SettlementMilitaryUpgradeService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(SettlementEquipmentUpgradeService::onItemAttributeModifiers);
         NeoForge.EVENT_BUS.addListener(SettlementBenefitService::onLivingDrops);
