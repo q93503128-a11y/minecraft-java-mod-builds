@@ -23,11 +23,16 @@ class ExpeditionLifecycleTest {
 
         run = lifecycle.deploy(run);
         run = lifecycle.recover(run, SALVAGE, 2);
-        run = lifecycle.requestExtraction(run);
         ExpeditionRun underfilled = run;
-        assertThrows(IllegalStateException.class, () -> lifecycle.resolveExtraction(underfilled, 140L));
+        assertThrows(IllegalStateException.class, () -> lifecycle.requestExtraction(underfilled));
+        assertEquals(
+            ExpeditionRun.Status.DEPLOYED,
+            underfilled.status(),
+            "Rejected extraction must not strand the authoritative run in EXTRACTION_REQUESTED"
+        );
 
         run = lifecycle.recover(run, SALVAGE, 1);
+        run = lifecycle.requestExtraction(run);
         var resolution = lifecycle.resolveExtraction(run, 150L);
         assertEquals(ExpeditionRun.Status.EXTRACTED, resolution.run().status());
         assertEquals(150L, resolution.run().endedGameTime());
