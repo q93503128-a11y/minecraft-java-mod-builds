@@ -20,7 +20,9 @@ public final class ExpeditionGameplayCommand {
                     .then(Commands.literal("abort").executes(context -> mutate(context.getSource(), () -> ExpeditionGameplayService.failActive(context.getSource().getPlayerOrException(), "aborted by player"))))
                     .then(Commands.literal("status").executes(context -> {
                         var source = context.getSource();
-                        source.sendSuccess(() -> Component.literal("Riftfrontier expedition | " + ExpeditionGameplayService.status(source.getPlayerOrException())), false);
+                        var player = source.getPlayerOrException();
+                        String status = ExpeditionGameplayService.status(player);
+                        source.sendSuccess(() -> Component.literal("Riftfrontier expedition | " + status), false);
                         return Command.SINGLE_SUCCESS;
                     }))
                 )
