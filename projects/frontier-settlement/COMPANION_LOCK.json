@@ -12,6 +12,7 @@
     "This lock is the canonical candidate stack for Alpha.117 fresh-world and graphical-client compatibility testing.",
     "All third-party versions and hashes are unchanged from the previously verified Alpha.116 candidate stack; Alpha.117 requires a fresh dedicated-server preflight because the Frontier runtime JAR changed.",
     "Resolved client/server profiles have now been regenerated for Alpha.117; this revision intentionally retriggers build, preflight and fresh-world validation against that resolved state.",
+    "Frontier Alpha.117 core CI run 34075488787 passed source audit, current-doc audit, Java 25 clean build and runtime JAR verification; this revision performs the final companion preflight/fresh-world validation on the corrected current-doc audit.",
     "World-generation entries must be present before the test world is created.",
     "Dungeons and Taverns 5.3.0 NeoForge is pinned to official Modrinth version UP9sRfQF and remains byte-identical to the previously verified binary.",
     "Companion integration remains soft: Frontier does not copy companion code/assets, create a second logistics authority, force-load chunks or mint virtual settlement resources.",
