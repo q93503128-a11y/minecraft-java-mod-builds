@@ -46,6 +46,7 @@ public final class FieldPlayReview {
         return new FieldPlayReviewSnapshot(
             run.sequence(),
             run.status().serializedName(),
+            run.endReason().serializedName(),
             terminal,
             elapsedTicks,
             recovered,
