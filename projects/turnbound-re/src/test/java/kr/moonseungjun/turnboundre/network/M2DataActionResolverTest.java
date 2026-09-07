@@ -33,7 +33,8 @@ class M2DataActionResolverTest {
 
     private static DefinitionRegistry definitions() {
         var basic = action(BASIC, "BASIC", 10, 25, 5);
-        var skill = action(SKILL, "SKILL", -20, 40, 10);
+        // Resolver acceptance is tested independently from Energy spending; M1 owns the Energy-cost contract.
+        var skill = action(SKILL, "SKILL", 0, 40, 10);
         var burst = action(BURST, "BURST", -100, 100, 25);
         var unowned = action(UNOWNED, "SKILL", -20, 20, 5);
         var character = new CharacterDefinition(

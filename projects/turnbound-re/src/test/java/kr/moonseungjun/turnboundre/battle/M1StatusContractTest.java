@@ -46,9 +46,11 @@ class M1StatusContractTest {
         var invalid = new StatusDefinition(
                 "bad", "UNKNOWN", "SECOND", 0, 0, "", List.of(""),
                 List.of(new StatusDefinition.Hook("UNKNOWN", new StatusDefinition.Effect("UNKNOWN", Double.NaN))));
-        var duplicate = new StatusDefinition(
-                "bad", "NEGATIVE", "TURN", 1, 1, "REFRESH_DURATION", List.of(), List.of());
-        var errors = DefinitionValidator.validateStatuses(List.of(invalid, duplicate));
+        var duplicateA = new StatusDefinition(
+                "turnbound_re:duplicate", "NEGATIVE", "TURN", 1, 1, "REFRESH_DURATION", List.of(), List.of());
+        var duplicateB = new StatusDefinition(
+                "turnbound_re:duplicate", "NEGATIVE", "TURN", 1, 1, "REFRESH_DURATION", List.of(), List.of());
+        var errors = DefinitionValidator.validateStatuses(List.of(invalid, duplicateA, duplicateB));
         assertTrue(errors.stream().anyMatch(it -> it.contains("duplicate status id")), errors.toString());
         assertTrue(errors.stream().anyMatch(it -> it.contains("invalid status id")), errors.toString());
         assertTrue(errors.stream().anyMatch(it -> it.contains("unknown polarity")), errors.toString());
