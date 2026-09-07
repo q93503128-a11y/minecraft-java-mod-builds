@@ -12,6 +12,7 @@ import java.util.Objects;
 public record FieldPlayReviewSnapshot(
     long sequence,
     String status,
+    String endReason,
     boolean terminal,
     long elapsedTicks,
     int recoveredSalvage,
@@ -32,6 +33,11 @@ public record FieldPlayReviewSnapshot(
         if (sequence <= 0L) throw new IllegalArgumentException("sequence must be > 0");
         status = Objects.requireNonNull(status, "status");
         if (status.isBlank()) throw new IllegalArgumentException("status cannot be blank");
+        endReason = Objects.requireNonNull(endReason, "endReason");
+        if (endReason.isBlank()) throw new IllegalArgumentException("endReason cannot be blank");
+        if (!terminal && !"none".equals(endReason)) {
+            throw new IllegalArgumentException("active snapshots must use endReason=none");
+        }
         if (elapsedTicks < 0L) throw new IllegalArgumentException("elapsedTicks must be >= 0");
         if (recoveredSalvage < 0) throw new IllegalArgumentException("recoveredSalvage must be >= 0");
         if (pressureAtRun < 0) throw new IllegalArgumentException("pressureAtRun must be >= 0");
@@ -57,6 +63,7 @@ public record FieldPlayReviewSnapshot(
         String threatObservation = terminal ? "terminal" : Integer.toString(liveThreats);
         return "run=" + sequence
             + ";status=" + status
+            + ";endReason=" + endReason
             + ";elapsedTicks=" + elapsedTicks
             + ";salvage=" + recoveredSalvage
             + ";pressure=" + pressureAtRun
