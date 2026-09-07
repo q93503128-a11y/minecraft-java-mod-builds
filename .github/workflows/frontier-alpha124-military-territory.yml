@@ -32,7 +32,8 @@ jobs:
           python3 .github/alpha124/patch.py
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('projects/frontier-settlement/src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementBarracksService.java')
+          root=Path('projects/frontier-settlement')
+          p=root/'src/main/java/kr/moonseungjun/frontiersettlement/settlement/SettlementBarracksService.java'
           s=p.read_text(encoding='utf-8')
           old_call='Monster threat = nearestThreat(level, data, barracks.workCenter());'
           new_call='Monster threat = nearestThreat(level, data, barracks, barracks.workCenter());'
@@ -41,6 +42,16 @@ jobs:
           if s.count(old_call) != 1 or s.count(old_sig) != 1:
               raise SystemExit('barracks threat signature patch drifted')
           p.write_text(s.replace(old_call,new_call,1).replace(old_sig,new_sig,1), encoding='utf-8')
+
+          t=root/'tools/test_current_source.py'
+          a=t.read_text(encoding='utf-8')
+          old1='require("CITADEL_PATROL_RADIUS = 32" in barracks_runtime and "CITADEL_THREAT_RADIUS_BONUS = 12.0D" in barracks_runtime, "citadel response bonus missing")'
+          new1='require("SettlementMilitaryUpgradeService.barracksPatrolRadius(data, barracks)" in barracks_runtime and "SettlementMilitaryUpgradeService.barracksThreatRadiusBonus(data, barracks)" in barracks_runtime, "paid barracks/citadel response bonus missing")'
+          old2='require("Monster threat = nearestThreat(level, data, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")'
+          new2='require("Monster threat = nearestThreat(level, data, barracks, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks shared threat scan missing")'
+          if a.count(old1) != 1 or a.count(old2) != 1:
+              raise SystemExit('legacy military source audit patch drifted')
+          t.write_text(a.replace(old1,new1,1).replace(old2,new2,1), encoding='utf-8')
           PY
       - name: Audit Alpha.124 source and docs
         shell: bash
