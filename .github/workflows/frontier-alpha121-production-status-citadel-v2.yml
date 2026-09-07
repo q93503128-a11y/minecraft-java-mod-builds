@@ -1,0 +1,125 @@
+name: Frontier Alpha.121 Production Status and Citadel v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha121-production-status-citadel-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha121-production-status-citadel-v2
+  cancel-in-progress: false
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Patch Alpha.121
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root=Path('projects/frontier-settlement')
+          sett=root/'src/main/java/kr/moonseungjun/frontiersettlement/settlement'
+          def r(path, old, new, label):
+              text=path.read_text(encoding='utf-8')
+              n=text.count(old)
+              if n!=1: raise SystemExit(f'{label}: expected 1, found {n}')
+              path.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          r(root/'gradle.properties','mod_version=0.1.0-alpha.120','mod_version=0.1.0-alpha.121','version')
+          r(root/'gradle.properties','# Alpha.120 canonical validation trigger (2026-09-07).','# Alpha.120 canonical validation trigger (2026-09-07).\n# Alpha.121 live production-state context and citadel garrison-response hardening.\n# Alpha.121 canonical validation trigger (2026-09-07).','version note')
+          r(root/'README.md','## Current version: 0.1.0-alpha.120','## Current version: 0.1.0-alpha.121','readme version')
+          p=root/'README.md'; t=p.read_text(encoding='utf-8')
+          t+='''\n\n## Alpha.121 production state and citadel response\n\n- Existing production AI publishes presentation-only runtime states; UI/Jade does not launch a second entity/resource scan.\n- Loaded lumber/farm/quarry/mine buildings expose staffing, travel, depletion and storage-blocked states; unloaded sites report `청크 미로드`.\n- A citadel raises the barracks patrol leash from 24 to 32 blocks and adds 12 blocks to loaded garrison threat detection.\n- One threat lookup is shared by all three soldiers of a barracks per patrol pass instead of repeating the same monster AABB scan three times.\n- Soldier capacity, real-weapon authority, recruitment payment, physical cargo and no-force-load rules are unchanged.\n'''; p.write_text(t,encoding='utf-8')
+
+          for rel in ('COMPANION_LOCK.json','companion-testpack/resolved-lock.client.json','companion-testpack/resolved-lock.server.json'):
+              p=root/rel; d=json.loads(p.read_text(encoding='utf-8'))
+              if d.get('target',{}).get('frontier_settlement')!='0.1.0-alpha.120': raise SystemExit(rel+' target drift')
+              d['target']['frontier_settlement']='0.1.0-alpha.121'
+              p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          (sett/'SettlementProductionStatusService.java').write_text('''package kr.moonseungjun.frontiersettlement.settlement;\n\nimport net.minecraft.server.level.ServerLevel;\nimport java.util.HashMap;\nimport java.util.Map;\n\n/** Presentation-only status cache fed by existing production AI; never simulation authority. */\npublic final class SettlementProductionStatusService {\n    private static final long STALE_AFTER_TICKS = 200L;\n    private static final Map<BuildingKey, StatusEntry> STATUS = new HashMap<>();\n    private SettlementProductionStatusService() {}\n    private record BuildingKey(String type,int x,int y,int z,int rotation) {}\n    private record StatusEntry(String text,long tick) {}\n    public static void mark(ServerLevel level, BuildingRecord building, String text) {\n        if(level==null||building==null||text==null||text.isBlank()) return;\n        STATUS.put(key(building),new StatusEntry(text,level.getGameTime()));\n    }\n    public static String statusFor(ServerLevel level, BuildingRecord building) {\n        if(level==null||building==null) return "상태 확인 중";\n        if(!level.hasChunkAt(building.workCenter())) return "청크 미로드";\n        StatusEntry e=STATUS.get(key(building));\n        if(e==null||level.getGameTime()-e.tick()>STALE_AFTER_TICKS) return "상태 확인 중";\n        return e.text();\n    }\n    public static void clear(){ STATUS.clear(); }\n    private static BuildingKey key(BuildingRecord b){ return new BuildingKey(b.type(),b.originX(),b.originY(),b.originZ(),b.rotation()); }\n}\n''',encoding='utf-8')
+
+          w=sett/'SettlementWorkerService.java'
+          r(w,'        RESOURCE_TARGETS.clear();\n        RESOURCE_SEARCH_RETRY_AFTER.clear();','        SettlementProductionStatusService.clear();\n        RESOURCE_TARGETS.clear();\n        RESOURCE_SEARCH_RETRY_AFTER.clear();','clear status')
+          r(w,'        List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);\n        for (WorkerBuildingAssignment assignment : matchWorkersToBuildings(loadedBuildings, workers)) {','        for (BuildingRecord building : loadedBuildings) SettlementProductionStatusService.mark(level, building, "주민 없음");\n        List<FrontierWorkerEntity> workers = workersByName(level, data, type, workerName);\n        for (WorkerBuildingAssignment assignment : matchWorkersToBuildings(loadedBuildings, workers)) {','unstaffed')
+          r(w,'            worker.setNoAi(false);\n            worker.setInvulnerable(false);\n            // Old saves can contain a worker that was carrying a worksite-export stack.','            worker.setNoAi(false);\n            worker.setInvulnerable(false);\n            SettlementProductionStatusService.mark(level, building, "정상 작업 중");\n            // Old saves can contain a worker that was carrying a worksite-export stack.','staffed')
+          r(w,'        if (target == null) {\n            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, camp, carried);\n            else moveNear(level, worker, camp.workCenter(), 0.82D);','        if (target == null) {\n            if (!carried.isEmpty()) { SettlementProductionStatusService.mark(level, camp, "생산물 보관 중"); deliverToWorksiteStorage(level, data, worker, camp, carried); }\n            else { SettlementProductionStatusService.mark(level, camp, "주변 벌목 대상 없음"); moveNear(level, worker, camp.workCenter(), 0.82D); }','lumber empty')
+          r(w,'        if (!withinResourceWorkReach(worker, target, LUMBER_REMOTE_WORK_REACH_SQR)) {\n            moveNear(level, worker, target, 0.92D);','        if (!withinResourceWorkReach(worker, target, LUMBER_REMOTE_WORK_REACH_SQR)) {\n            SettlementProductionStatusService.mark(level, camp, "벌목지 이동 중");\n            moveNear(level, worker, target, 0.92D);','lumber travel')
+          r(w,'        if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {\n            moveNear(level, worker, farm.workCenter(), 0.88D);','        if (worker.distanceToSqr(farm.workCenter().getX() + 0.5D, farm.workCenter().getY(), farm.workCenter().getZ() + 0.5D) > 64.0D) {\n            SettlementProductionStatusService.mark(level, farm, "농장 복귀 중");\n            moveNear(level, worker, farm.workCenter(), 0.88D);','farm travel')
+          r(w,'        if (grown > 0) worker.swing(InteractionHand.MAIN_HAND);\n        if (!worker.getMainHandItem().isEmpty() && replanted == 0) {','        if (grown > 0) worker.swing(InteractionHand.MAIN_HAND);\n        if (harvested == 0 && grown == 0 && replanted == 0) SettlementProductionStatusService.mark(level, farm, "작물 성장 대기");\n        if (!worker.getMainHandItem().isEmpty() && replanted == 0) {','farm wait')
+          r(w,'        if (target == null) {\n            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, quarry, carried);\n            else moveNear(level, worker, quarry.workCenter(), 0.82D);','        if (target == null) {\n            if (!carried.isEmpty()) { SettlementProductionStatusService.mark(level, quarry, "생산물 보관 중"); deliverToWorksiteStorage(level, data, worker, quarry, carried); }\n            else { SettlementProductionStatusService.mark(level, quarry, "접근 가능한 채석면 없음"); moveNear(level, worker, quarry.workCenter(), 0.82D); }','quarry empty')
+          r(w,'        if (approach == null) {\n            clearResourceTarget(worker);','        if (approach == null) {\n            SettlementProductionStatusService.mark(level, quarry, "이동 경로 재탐색 중");\n            clearResourceTarget(worker);','quarry approach')
+          r(w,'        if (!withinResourceWorkReach(worker, approach, QUARRY_REMOTE_WORK_REACH_SQR)) {\n            moveNear(level, worker, approach, 0.90D);','        if (!withinResourceWorkReach(worker, approach, QUARRY_REMOTE_WORK_REACH_SQR)) {\n            SettlementProductionStatusService.mark(level, quarry, "채석면 이동 중");\n            moveNear(level, worker, approach, 0.90D);','quarry travel')
+          r(w,'        if (!level.getBlockState(target.above()).isAir()) {\n            if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);','        if (!level.getBlockState(target.above()).isAir()) {\n            SettlementProductionStatusService.mark(level, quarry, "채석면 정리 중");\n            if (clearTopQuarryOverburden(level, data, target)) worker.swing(InteractionHand.MAIN_HAND);','quarry grade')
+          r(w,'        if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {\n            moveNear(level, worker, work, 0.86D);','        if (worker.distanceToSqr(work.getX() + 0.5D, work.getY(), work.getZ() + 0.5D) > 16.0D) {\n            SettlementProductionStatusService.mark(level, mine, "광산 복귀 중");\n            moveNear(level, worker, work, 0.86D);','mine travel')
+          r(w,'        if (ore == null) {\n            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, mine, carried);','        if (ore == null) {\n            SettlementProductionStatusService.mark(level, mine, "광맥 고갈");\n            if (!carried.isEmpty()) deliverToWorksiteStorage(level, data, worker, mine, carried);','mine empty')
+          r(w,'                worker.getNavigation().stop();\n                ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);','                worker.getNavigation().stop();\n                SettlementProductionStatusService.mark(level, building, "현장 저장고 적재 중");\n                ItemStack remaining = SettlementStorageService.insertAt(level, local, carried);','local deposit')
+          r(w,'            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) return;\n        }\n        deliverToTownStorage(level, data, worker, carried);','            if (!isTargetBlocked(level, worker, local) && moveNear(level, worker, local, 0.86D)) { SettlementProductionStatusService.mark(level, building, "현장 저장고 운반 중"); return; }\n        }\n        deliverToTownStorage(level, data, worker, building, carried);','local travel')
+          r(w,'    private static void deliverToTownStorage(ServerLevel level, SettlementData data,\n                                             FrontierWorkerEntity worker, ItemStack carried) {','    private static void deliverToTownStorage(ServerLevel level, SettlementData data,\n                                             FrontierWorkerEntity worker, BuildingRecord building, ItemStack carried) {','town signature')
+          r(w,'        if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {\n            worker.getNavigation().stop();','        if (target == null || !level.hasChunkAt(target) || !SettlementStorageService.hasRoomAt(level, target, carried)) {\n            SettlementProductionStatusService.mark(level, building, "현장·공동 저장고 가득 참");\n            worker.getNavigation().stop();','storage full')
+          r(w,'        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {\n            moveNear(level, worker, target, 0.85D);','        if (worker.distanceToSqr(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D) > 9.0D) {\n            SettlementProductionStatusService.mark(level, building, "공동 창고 운반 중");\n            moveNear(level, worker, target, 0.85D);','town travel')
+
+          c=sett/'SettlementContextService.java'
+          r(c,'type.displayName(), buildingDetail(type, data), -1));','type.displayName(), buildingDetail(level, building, type, data), -1));','context call')
+          r(c,'    private static String buildingDetail(BuildingType type, SettlementData data) {','    private static String buildingDetail(ServerLevel level, BuildingRecord building, BuildingType type, SettlementData data) {','context signature')
+          r(c,'            case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data);','            case LUMBER_CAMP, FARM, QUARRY, MINE -> "완공 · " + SettlementProductionEfficiencyService.detail(type, data) + " · 상태: " + SettlementProductionStatusService.statusFor(level, building);','context status')
+          r(c,'            case CITADEL -> "완공 · 감시망 반경 56 · 주거 +" + type.housingGain();','            case CITADEL -> "완공 · 감시망 반경 56 · 병영 감지 +12 · 순찰 반경 32 · 주거 +" + type.housingGain();','context citadel')
+
+          b=sett/'SettlementBarracksService.java'
+          r(b,'    private static final int PATROL_RADIUS = 24;\n    public static final double BASE_THREAT_RADIUS = 28.0D;','    private static final int BASE_PATROL_RADIUS = 24;\n    private static final int CITADEL_PATROL_RADIUS = 32;\n    private static final double CITADEL_THREAT_RADIUS_BONUS = 12.0D;\n    public static final double BASE_THREAT_RADIUS = 28.0D;','b constants')
+          r(b,'    private static final double PATROL_LEASH_RADIUS_SQR = PATROL_RADIUS * PATROL_RADIUS;\n','','b static leash')
+          r(b,'        for (BuildingRecord barracks : barracks(data)) {\n            if (!patrolAreaLoaded(level, barracks)) continue;\n            for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {\n                FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);\n                if (soldier != null) patrol(level, data, barracks, slot, soldier);\n            }\n        }','        for (BuildingRecord barracks : barracks(data)) {\n            if (!patrolAreaLoaded(level, barracks)) continue;\n            Monster threat = nearestThreat(level, data, barracks.workCenter());\n            for (int slot = 0; slot < SOLDIERS_PER_BARRACKS; slot++) {\n                FrontierSoldierEntity soldier = findSoldier(level, data, barracks, slot);\n                if (soldier != null) patrol(level, data, barracks, slot, soldier, threat);\n            }\n        }','b one scan')
+          r(b,'    private static void patrol(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier) {\n        BlockPos home = soldierHome(barracks, slot);\n        Monster threat = nearestThreat(level, barracks.workCenter());','    private static void patrol(ServerLevel level, SettlementData data, BuildingRecord barracks, int slot, FrontierSoldierEntity soldier, Monster threat) {\n        BlockPos home = soldierHome(barracks, slot);','b patrol arg')
+          r(b,'        if (homeDistance > PATROL_LEASH_RADIUS_SQR) {','        int patrolRadius = data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_PATROL_RADIUS : BASE_PATROL_RADIUS;\n        if (homeDistance > (double) patrolRadius * patrolRadius) {','b leash')
+          r(b,'    private static Monster nearestThreat(ServerLevel level, BlockPos center) {\n        double threatRadius = SettlementExplorationBenefitService.barracksThreatRadius(level.getServer());','    private static Monster nearestThreat(ServerLevel level, SettlementData data, BlockPos center) {\n        double threatRadius = SettlementExplorationBenefitService.barracksThreatRadius(level.getServer()) + (data.buildingCount(BuildingType.CITADEL) > 0 ? CITADEL_THREAT_RADIUS_BONUS : 0.0D);','b threat')
+
+          test=root/'tools/test_current_source.py'
+          r(test,'require("mod_version=0.1.0-alpha.120" in gradle, "current verifier/version drift")','require("mod_version=0.1.0-alpha.121" in gradle, "current verifier/version drift")','test version')
+          t=test.read_text(encoding='utf-8')
+          anchor='require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")\n'
+          if anchor not in t: raise SystemExit('test anchor missing')
+          t=t.replace(anchor,'''production_status = text(SETTLEMENT / "SettlementProductionStatusService.java")\nrequire("STALE_AFTER_TICKS = 200L" in production_status and "statusFor" in production_status, "production status cache missing")\nrequire("주민 없음" in worker and "주변 벌목 대상 없음" in worker and "접근 가능한 채석면 없음" in worker and "광맥 고갈" in worker and "현장·공동 저장고 가득 참" in worker, "production status coverage missing")\ncontext = text(SETTLEMENT / "SettlementContextService.java")\nrequire("SettlementProductionStatusService.statusFor(level, building)" in context, "production context cache reader missing")\n'''+anchor,1)
+          t+='''\n\nbarracks_runtime = text(SETTLEMENT / "SettlementBarracksService.java")\nrequire("CITADEL_PATROL_RADIUS = 32" in barracks_runtime and "CITADEL_THREAT_RADIUS_BONUS = 12.0D" in barracks_runtime, "citadel response bonus missing")\nrequire("Monster threat = nearestThreat(level, data, barracks.workCenter());" in barracks_runtime and "patrol(level, data, barracks, slot, soldier, threat)" in barracks_runtime, "barracks repeated threat scan optimization missing")\n'''
+          test.write_text(t,encoding='utf-8')
+          PY
+      - name: Audit and build
+        working-directory: projects/frontier-settlement
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          python3 tools/test_companion_testpack.py
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache clean build --stacktrace --console=plain
+          python3 tools/verify_jar.py build/libs/frontier_settlement-0.1.0-alpha.121.jar
+      - name: Commit Alpha.121
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git diff --cached --check
+          git commit -m 'frontier: release 0.1.0-alpha.121 production status and citadel response'
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
