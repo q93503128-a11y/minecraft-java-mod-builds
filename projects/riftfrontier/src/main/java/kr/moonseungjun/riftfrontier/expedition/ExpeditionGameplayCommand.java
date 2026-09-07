@@ -26,6 +26,19 @@ public final class ExpeditionGameplayCommand {
                         source.sendSuccess(() -> Component.literal("Riftfrontier expedition | " + status), false);
                         return Command.SINGLE_SUCCESS;
                     }))
+                    .then(Commands.literal("review").executes(context -> {
+                        var source = context.getSource();
+                        try {
+                            var snapshot = FieldPlayReview.capture(source.getPlayerOrException());
+                            source.sendSuccess(() -> Component.literal("Riftfrontier field review | " + snapshot.reportLine()), false);
+                            return Command.SINGLE_SUCCESS;
+                        } catch (CommandSyntaxException error) {
+                            throw error;
+                        } catch (RuntimeException error) {
+                            source.sendFailure(Component.literal("Riftfrontier field review unavailable: " + error.getMessage()));
+                            return 0;
+                        }
+                    }))
                 )
         );
     }
