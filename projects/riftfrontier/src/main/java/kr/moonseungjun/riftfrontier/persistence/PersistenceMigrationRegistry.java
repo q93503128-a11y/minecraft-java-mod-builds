@@ -55,7 +55,8 @@ public final class PersistenceMigrationRegistry {
 
     /**
      * Schema 0 was the pre-alpha unversioned root. Schema 1 introduced revision/content breadcrumbs.
-     * Schema 2 introduces persisted expedition runs. Old worlds migrate with an explicit empty run list.
+     * Schema 2 introduced persisted expedition runs. Schema 3 adds the first authoritative hub economy
+     * and region-response state used by the M2 vertical slice.
      */
     public static PersistenceMigrationRegistry defaults() {
         return new PersistenceMigrationRegistry()
@@ -63,6 +64,13 @@ public final class PersistenceMigrationRegistry {
             .register(1, input -> {
                 Map<String, Object> migrated = new LinkedHashMap<>(input);
                 migrated.putIfAbsent("expeditions", new ArrayList<>());
+                return migrated;
+            })
+            .register(2, input -> {
+                Map<String, Object> migrated = new LinkedHashMap<>(input);
+                migrated.putIfAbsent("secured_region_01_salvage", 0);
+                migrated.putIfAbsent("expedition_supply", 2);
+                migrated.putIfAbsent("region_01_pressure", 0);
                 return migrated;
             });
     }

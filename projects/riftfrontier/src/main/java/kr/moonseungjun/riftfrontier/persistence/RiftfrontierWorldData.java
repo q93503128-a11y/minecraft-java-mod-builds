@@ -28,12 +28,17 @@ import java.util.Optional;
 public final class RiftfrontierWorldData extends SavedData {
     public static final Identifier STORAGE_ID = Identifier.fromNamespaceAndPath(Riftfrontier.MOD_ID, "world_state");
 
+    private static final int FRESH_WORLD_SUPPLY = 2;
+
     private static final Codec<RiftfrontierWorldData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         Codec.INT.optionalFieldOf(PersistenceSchema.VERSION_KEY, 0).forGetter(data -> PersistenceSchema.CURRENT),
         Codec.LONG.optionalFieldOf("world_revision", 0L).forGetter(RiftfrontierWorldData::worldRevision),
         Codec.LONG.optionalFieldOf("expedition_sequence", 0L).forGetter(RiftfrontierWorldData::expeditionSequence),
         Codec.STRING.optionalFieldOf("content_fingerprint", "").forGetter(RiftfrontierWorldData::contentFingerprint),
-        ExpeditionRunCodec.CODEC.listOf().optionalFieldOf("expeditions", List.of()).forGetter(RiftfrontierWorldData::expeditions)
+        ExpeditionRunCodec.CODEC.listOf().optionalFieldOf("expeditions", List.of()).forGetter(RiftfrontierWorldData::expeditions),
+        Codec.INT.optionalFieldOf("secured_region_01_salvage", 0).forGetter(RiftfrontierWorldData::securedRegion01Salvage),
+        Codec.INT.optionalFieldOf("expedition_supply", FRESH_WORLD_SUPPLY).forGetter(RiftfrontierWorldData::expeditionSupply),
+        Codec.INT.optionalFieldOf("region_01_pressure", 0).forGetter(RiftfrontierWorldData::region01Pressure)
     ).apply(instance, RiftfrontierWorldData::decode));
 
     public static final SavedDataType<RiftfrontierWorldData> TYPE = new SavedDataType<>(
@@ -47,18 +52,35 @@ public final class RiftfrontierWorldData extends SavedData {
     private long expeditionSequence;
     private String contentFingerprint;
     private final List<ExpeditionRun> expeditions;
+    private int securedRegion01Salvage;
+    private int expeditionSupply;
+    private int region01Pressure;
 
     private RiftfrontierWorldData() {
-        this(0L, 0L, "", List.of());
+        this(0L, 0L, "", List.of(), 0, FRESH_WORLD_SUPPLY, 0);
     }
 
-    private RiftfrontierWorldData(long worldRevision, long expeditionSequence, String contentFingerprint, List<ExpeditionRun> expeditions) {
+    private RiftfrontierWorldData(
+        long worldRevision,
+        long expeditionSequence,
+        String contentFingerprint,
+        List<ExpeditionRun> expeditions,
+        int securedRegion01Salvage,
+        int expeditionSupply,
+        int region01Pressure
+    ) {
         if (worldRevision < 0L) throw new IllegalArgumentException("worldRevision must be >= 0");
         if (expeditionSequence < 0L) throw new IllegalArgumentException("expeditionSequence must be >= 0");
+        if (securedRegion01Salvage < 0) throw new IllegalArgumentException("securedRegion01Salvage must be >= 0");
+        if (expeditionSupply < 0) throw new IllegalArgumentException("expeditionSupply must be >= 0");
+        if (region01Pressure < 0) throw new IllegalArgumentException("region01Pressure must be >= 0");
         this.worldRevision = worldRevision;
         this.expeditionSequence = expeditionSequence;
         this.contentFingerprint = Objects.requireNonNull(contentFingerprint, "contentFingerprint");
         this.expeditions = new ArrayList<>(Objects.requireNonNull(expeditions, "expeditions"));
+        this.securedRegion01Salvage = securedRegion01Salvage;
+        this.expeditionSupply = expeditionSupply;
+        this.region01Pressure = region01Pressure;
         validateExpeditionSequences(this.expeditions, expeditionSequence);
     }
 
@@ -67,7 +89,10 @@ public final class RiftfrontierWorldData extends SavedData {
         long worldRevision,
         long expeditionSequence,
         String contentFingerprint,
-        List<ExpeditionRun> expeditions
+        List<ExpeditionRun> expeditions,
+        int securedRegion01Salvage,
+        int expeditionSupply,
+        int region01Pressure
     ) {
         Map<String, Object> raw = new LinkedHashMap<>();
         raw.put(PersistenceSchema.VERSION_KEY, sourceSchema);
@@ -75,6 +100,9 @@ public final class RiftfrontierWorldData extends SavedData {
         raw.put("expedition_sequence", expeditionSequence);
         raw.put("content_fingerprint", contentFingerprint);
         raw.put("expeditions", expeditions);
+        raw.put("secured_region_01_salvage", securedRegion01Salvage);
+        raw.put("expedition_supply", expeditionSupply);
+        raw.put("region_01_pressure", region01Pressure);
 
         Map<String, Object> migrated = PersistenceMigrationRegistry.defaults().migrate(sourceSchema, raw);
         @SuppressWarnings("unchecked")
@@ -85,7 +113,10 @@ public final class RiftfrontierWorldData extends SavedData {
             longValue(migrated, "world_revision"),
             longValue(migrated, "expedition_sequence"),
             String.valueOf(migrated.getOrDefault("content_fingerprint", "")),
-            migratedExpeditions
+            migratedExpeditions,
+            intValue(migrated, "secured_region_01_salvage", 0),
+            intValue(migrated, "expedition_supply", FRESH_WORLD_SUPPLY),
+            intValue(migrated, "region_01_pressure", 0)
         );
     }
 
@@ -95,6 +126,14 @@ public final class RiftfrontierWorldData extends SavedData {
             throw new IllegalStateException("Persistence field '" + key + "' must be numeric");
         }
         return number.longValue();
+    }
+
+    private static int intValue(Map<String, Object> values, String key, int fallback) {
+        Object value = values.getOrDefault(key, fallback);
+        if (!(value instanceof Number number)) {
+            throw new IllegalStateException("Persistence field '" + key + "' must be numeric");
+        }
+        return number.intValue();
     }
 
     private static void validateExpeditionSequences(List<ExpeditionRun> runs, long highestAllocated) {
@@ -112,24 +151,48 @@ public final class RiftfrontierWorldData extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(TYPE);
     }
 
-    public long worldRevision() {
-        return worldRevision;
-    }
-
-    public long expeditionSequence() {
-        return expeditionSequence;
-    }
-
-    public String contentFingerprint() {
-        return contentFingerprint;
-    }
-
-    public List<ExpeditionRun> expeditions() {
-        return List.copyOf(expeditions);
-    }
+    public long worldRevision() { return worldRevision; }
+    public long expeditionSequence() { return expeditionSequence; }
+    public String contentFingerprint() { return contentFingerprint; }
+    public List<ExpeditionRun> expeditions() { return List.copyOf(expeditions); }
+    public int securedRegion01Salvage() { return securedRegion01Salvage; }
+    public int expeditionSupply() { return expeditionSupply; }
+    public int region01Pressure() { return region01Pressure; }
 
     public Optional<ExpeditionRun> expedition(long sequence) {
         return expeditions.stream().filter(run -> run.sequence() == sequence).findFirst();
+    }
+
+    /** World response: repeated successful Region 01 extraction gradually raises preparation pressure. */
+    public int region01PreparationSupplyCost() {
+        return Math.min(3, 1 + (region01Pressure / 2));
+    }
+
+    public boolean consumeRegion01PreparationSupply() {
+        int cost = region01PreparationSupplyCost();
+        if (expeditionSupply < cost) return false;
+        expeditionSupply -= cost;
+        worldRevision++;
+        setDirty();
+        return true;
+    }
+
+    /** Settles retained Region 01 salvage into hub storage and advances visible regional pressure. */
+    public void settleRegion01Extraction(int retainedSalvage) {
+        if (retainedSalvage < 0) throw new IllegalArgumentException("retainedSalvage must be >= 0");
+        securedRegion01Salvage = Math.addExact(securedRegion01Salvage, retainedSalvage);
+        region01Pressure = Math.addExact(region01Pressure, 1);
+        worldRevision++;
+        setDirty();
+    }
+
+    /** Converts secured salvage into expedition supply without inventing a separate production subsystem yet. */
+    public void provisionRegion01Supply() {
+        if (securedRegion01Salvage < 1) throw new IllegalStateException("At least 1 secured Region 01 salvage is required to provision supplies");
+        securedRegion01Salvage -= 1;
+        expeditionSupply = Math.addExact(expeditionSupply, 2);
+        worldRevision++;
+        setDirty();
     }
 
     /** Allocates the next stable expedition sequence and records the content snapshot that authored it. */
@@ -187,6 +250,10 @@ public final class RiftfrontierWorldData extends SavedData {
             + ", expeditionSequence=" + expeditionSequence
             + ", expeditions=" + expeditions.size()
             + ", activeExpeditions=" + active
+            + ", securedRegion01Salvage=" + securedRegion01Salvage
+            + ", expeditionSupply=" + expeditionSupply
+            + ", region01Pressure=" + region01Pressure
+            + ", nextRegion01SupplyCost=" + region01PreparationSupplyCost()
             + ", contentFingerprint=" + (contentFingerprint.isBlank() ? "<unset>" : contentFingerprint);
     }
 }

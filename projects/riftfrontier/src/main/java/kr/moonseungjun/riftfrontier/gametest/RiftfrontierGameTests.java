@@ -37,6 +37,13 @@ public final class RiftfrontierGameTests {
 
         var lifecycle = new ExpeditionLifecycle(snapshot);
         var worldData = RiftfrontierWorldData.get(helper.getLevel());
+        int supplyBefore = worldData.expeditionSupply();
+        int storageBefore = worldData.securedRegion01Salvage();
+        int pressureBefore = worldData.region01Pressure();
+        helper.assertTrue(supplyBefore >= worldData.region01PreparationSupplyCost(), "Fresh authoritative world must fund the first expedition preparation");
+        helper.assertTrue(worldData.consumeRegion01PreparationSupply(), "Preparation must atomically consume authoritative supply");
+        helper.assertTrue(worldData.expeditionSupply() < supplyBefore, "Preparation supply must decrease before deployment");
+
         long expected = worldData.expeditionSequence() + 1L;
         ExpeditionRun validated = lifecycle.begin(
             expected,
@@ -61,6 +68,16 @@ public final class RiftfrontierGameTests {
         worldData.updateExpedition(requested);
         var resolution = lifecycle.resolveExtraction(requested, helper.getLevel().getGameTime());
         worldData.updateExpedition(resolution.run());
+
+        int retained = resolution.retainedResources().getOrDefault(ExpeditionGameplayService.RESOURCE_ID, 0);
+        worldData.settleRegion01Extraction(retained);
+        helper.assertTrue(worldData.securedRegion01Salvage() == storageBefore + retained, "Retained field resource must settle into authoritative hub storage");
+        helper.assertTrue(worldData.region01Pressure() == pressureBefore + 1, "Successful extraction must advance Region 01 world-response pressure");
+
+        int supplyAfterExpedition = worldData.expeditionSupply();
+        worldData.provisionRegion01Supply();
+        helper.assertTrue(worldData.securedRegion01Salvage() == storageBefore + retained - 1, "Provisioning must spend secured salvage rather than duplicate it");
+        helper.assertTrue(worldData.expeditionSupply() == supplyAfterExpedition + 2, "Provisioning must create the documented two-supply preparation stock");
 
         var resolvedAgain = RiftfrontierWorldData.get(helper.getLevel());
         var persistedAgain = resolvedAgain.expedition(resolution.run().sequence()).orElseThrow();

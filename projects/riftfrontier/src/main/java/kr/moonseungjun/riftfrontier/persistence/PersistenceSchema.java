@@ -2,7 +2,7 @@ package kr.moonseungjun.riftfrontier.persistence;
 
 /** Stable root contract for every authoritative Riftfrontier saved-data payload. */
 public final class PersistenceSchema {
-    public static final int CURRENT = 2;
+    public static final int CURRENT = 3;
     public static final String VERSION_KEY = "riftfrontier_schema_version";
 
     private PersistenceSchema() {}

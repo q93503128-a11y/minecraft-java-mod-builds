@@ -17,6 +17,7 @@ public final class ExpeditionGameplayCommand {
                 .then(Commands.literal("expedition")
                     .then(Commands.literal("start").executes(context -> mutate(context.getSource(), () -> ExpeditionGameplayService.start(context.getSource().getPlayerOrException()))))
                     .then(Commands.literal("extract").executes(context -> mutate(context.getSource(), () -> ExpeditionGameplayService.extract(context.getSource().getPlayerOrException()))))
+                    .then(Commands.literal("provision").executes(context -> mutate(context.getSource(), () -> ExpeditionGameplayService.provision(context.getSource().getPlayerOrException()))))
                     .then(Commands.literal("abort").executes(context -> mutate(context.getSource(), () -> ExpeditionGameplayService.failActive(context.getSource().getPlayerOrException(), "aborted by player"))))
                     .then(Commands.literal("status").executes(context -> {
                         var source = context.getSource();

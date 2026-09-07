@@ -14,17 +14,35 @@ class PersistenceMigrationRegistryTest {
         assertEquals("legacy", migrated.get("marker"));
         assertEquals(PersistenceSchema.CURRENT, migrated.get(PersistenceSchema.VERSION_KEY));
         assertEquals(List.of(), migrated.get("expeditions"));
+        assertEquals(0, migrated.get("secured_region_01_salvage"));
+        assertEquals(2, migrated.get("expedition_supply"));
+        assertEquals(0, migrated.get("region_01_pressure"));
     }
 
     @Test
-    void schemaOneExplicitlyAddsEmptyExpeditionDomain() {
+    void schemaOneExplicitlyAddsExpeditionAndHubEconomyDomains() {
         var migrated = PersistenceMigrationRegistry.defaults().migrate(
             1,
             Map.of(PersistenceSchema.VERSION_KEY, 1, "world_revision", 4L)
         );
-        assertEquals(2, migrated.get(PersistenceSchema.VERSION_KEY));
+        assertEquals(PersistenceSchema.CURRENT, migrated.get(PersistenceSchema.VERSION_KEY));
         assertEquals(4L, migrated.get("world_revision"));
         assertEquals(List.of(), migrated.get("expeditions"));
+        assertEquals(2, migrated.get("expedition_supply"));
+    }
+
+    @Test
+    void schemaTwoAddsFirstVerticalSliceHubStateWithoutLosingExpeditions() {
+        var expeditions = List.of("preserved-marker");
+        var migrated = PersistenceMigrationRegistry.defaults().migrate(
+            2,
+            Map.of(PersistenceSchema.VERSION_KEY, 2, "expeditions", expeditions)
+        );
+        assertEquals(PersistenceSchema.CURRENT, migrated.get(PersistenceSchema.VERSION_KEY));
+        assertEquals(expeditions, migrated.get("expeditions"));
+        assertEquals(0, migrated.get("secured_region_01_salvage"));
+        assertEquals(2, migrated.get("expedition_supply"));
+        assertEquals(0, migrated.get("region_01_pressure"));
     }
 
     @Test
