@@ -9,6 +9,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public final class OutpostPlacementClient {
+    private static final int STATIONARY_REFRESH_TICKS = 20;
+
     private static boolean active;
     private static BlockPos target = BlockPos.ZERO;
     private static OutpostPreviewPayload preview;
@@ -47,7 +49,7 @@ public final class OutpostPlacementClient {
 
         if (refreshTicks-- <= 0) {
             send(false);
-            refreshTicks = 5;
+            refreshTicks = STATIONARY_REFRESH_TICKS;
         }
     }
 
