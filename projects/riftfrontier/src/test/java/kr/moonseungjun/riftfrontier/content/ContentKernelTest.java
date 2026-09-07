@@ -14,7 +14,7 @@ class ContentKernelTest {
     void fixtureContentLoadsFromJsonAndResolvesWithoutErrors() {
         var pack = CoreContentBootstrap.bootstrapAndValidate();
         assertFalse(pack.validation().hasErrors(), pack.validation()::format);
-        assertEquals(7, pack.validation().definitionCount());
+        assertEquals(10, pack.validation().definitionCount());
         assertEquals(ContentPackLoader.CURRENT_CONTENT_SCHEMA, pack.schemaVersion());
         assertEquals("riftfrontier:fixture/vertical_slice_01", pack.packId());
     }
@@ -27,8 +27,30 @@ class ContentKernelTest {
         assertEquals(first.fingerprint(), second.fingerprint());
         assertEquals(2, first.counts().get(CoreDefinition.Kind.COMBAT_ARCHETYPE));
         assertEquals(2, first.counts().get(CoreDefinition.Kind.CREATURE));
-        assertEquals(7, first.entries().size());
+        assertEquals(1, first.counts().get(CoreDefinition.Kind.EXPEDITION_RESOURCE));
+        assertEquals(1, first.counts().get(CoreDefinition.Kind.CONTRACT));
+        assertEquals(1, first.counts().get(CoreDefinition.Kind.EXTRACTION_RESULT));
+        assertEquals(10, first.entries().size());
         assertEquals(64, first.fingerprint().length());
+    }
+
+    @Test
+    void m2RegionContractResourceReferencesResolveAsOneGraph() {
+        var registry = CoreContentBootstrap.bootstrapAndValidate().registry();
+        ContentId regionId = ContentId.rift("region/vertical_slice_01");
+        ContentId resourceId = ContentId.rift("resource/rift_salvage");
+        ContentId contractId = ContentId.rift("contract/salvage_recovery");
+
+        var region = (CoreDefinition.Region) registry.find(CoreDefinition.Kind.REGION, regionId).orElseThrow();
+        var resource = (CoreDefinition.ExpeditionResource) registry.find(CoreDefinition.Kind.EXPEDITION_RESOURCE, resourceId).orElseThrow();
+        var contract = (CoreDefinition.Contract) registry.find(CoreDefinition.Kind.CONTRACT, contractId).orElseThrow();
+
+        assertTrue(region.resources().contains(resourceId));
+        assertTrue(region.contracts().contains(contractId));
+        assertEquals(regionId, resource.region());
+        assertEquals(regionId, contract.region());
+        assertEquals(3, contract.requiredResources().get(resourceId));
+        assertTrue(registry.contains(CoreDefinition.Kind.EXTRACTION_RESULT, contract.extractionResult()));
     }
 
     @Test
@@ -114,8 +136,7 @@ class ContentKernelTest {
         registry.register(new CoreDefinition.Encounter(ContentId.rift("encounter/test"), region, List.of(creature), "survive", ""));
         var report = new ContentValidator().validate(registry);
         assertFalse(report.hasErrors(), report::format);
-        assertEquals(1, report.warnings().size());
-        assertEquals(ContentValidator.Code.NO_WORLD_CONSEQUENCE, report.warnings().getFirst().code());
+        assertEquals(1, report.byCode(ContentValidator.Code.NO_WORLD_CONSEQUENCE).size());
     }
 
     @Test
