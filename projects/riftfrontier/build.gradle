@@ -53,6 +53,8 @@ neoForge {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    // Gradle 9 no longer supplies the JUnit Platform launcher implicitly.
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
