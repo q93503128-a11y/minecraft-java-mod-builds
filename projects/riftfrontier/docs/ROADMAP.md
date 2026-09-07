@@ -73,22 +73,35 @@ M1 기반을 반복 확장하지 않는다. 새 type은 실제 M2+ 플레이 요
 
 정본: `EXPEDITION_RUNTIME.md`
 
-### M2-B — Gameplay integration — NEXT
+### M2-B — Gameplay integration — PARTIAL VERIFIED
 
-다음 구현 묶음:
+기준 코드 커밋 `c0ef978c81d36fe63cb9e69942a8aa7f3c6cae6d`, GitHub Actions `Build Riftfrontier` run `34094802012`에서 clean/unit test/build, native GameTest, dedicated server, Xvfb client, executable JAR 검사와 artifact/report 단계가 모두 성공했다.
 
-- fixture와 분리된 production `region_01` Region Pack
-- 중앙 거점 최소 contract selection 경로
-- authoritative expedition 시작
-- 실제 region 진입/귀환
-- 환경 규칙 1개
-- 일반 적 archetype 여러 역할
+완료·검증됨:
+
+- fixture와 stable ID가 분리된 production `region_01` Region Pack
+- runtime gameplay용 read-only `ContentLookup` 경계
+- 중앙 거점 최소 contract acceptance 명령 경로
+- validated content snapshot 기반 authoritative expedition 시작
+- bounded technical hub / region cell 진입과 귀환
+- 실제 block 우클릭 resource interaction → `recovered_resources` 기록
+- extraction request/resolve → terminal `EXTRACTED` → 귀환/정산 결과 출력
+- abort / player death / logout → terminal `FAILED` policy
+- production graph를 쓰는 native GameTest 원정 전이 검증
+- technical cell이 production art가 아니라는 명시적 presentation gate
+- first slice에서는 ownership schema가 없으므로 world-wide nonterminal expedition 1개만 허용
+
+정본: `M2B_GAMEPLAY_ADAPTER.md`
+
+다음 구현 묶음 — 이미 검증한 gameplay adapter를 반복하지 않는다:
+
+- production `region_01` environment rule 1개를 실제 runtime effect로 연결
+- 일반 적 archetype 역할 2종의 실제 encounter spawn/defeat 연결
 - elite 1종
-- 실제 resource interaction → recovered resource 기록
-- extraction request/resolve → 귀환/정산
-- 실패/사망/이탈 policy
-- 저장/보급/가공의 최소 물류 연결
-- world response 1계열
+- extraction retained resource를 hub authoritative storage로 정산
+- storage → 보급/준비 비용 또는 선택 1개 연결
+- world response 1계열이 다음 원정 위험/보급 조건을 실제 변경
+- 위 상호작용 전체 native GameTest + 실제 플레이 검수
 
 M2 완료 조건:
 
