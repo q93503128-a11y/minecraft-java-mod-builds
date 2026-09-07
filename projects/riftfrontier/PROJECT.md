@@ -13,12 +13,12 @@
 - Final JAR: `riftfrontier-0.1.0-alpha.1.jar`
 - Existing-world compatibility: 첫 플레이어블 알파 이전에는 세이브 스키마를 실험할 수 있다. 첫 플레이어블 알파 이후부터 registry ID, 저장 키, content ID를 고정하고 migration을 우선한다.
 - Required dependencies: Minecraft, NeoForge
-- Optional external mods/libraries: M0/M1에서 현재 26.2 호환성과 유지보수 상태를 다시 검증한 뒤 목적별로 단일 선택한다. 애니메이션은 GeckoLib 계열을 우선 검토하고, 복잡한 AI/UI 라이브러리는 실제 필요가 생긴 뒤 추가한다.
+- Optional external mods/libraries: 현재 26.2 호환성과 유지보수 상태를 다시 검증한 뒤 목적별로 단일 선택한다. 애니메이션은 GeckoLib 계열을 우선 검토하고, 복잡한 AI/UI 라이브러리는 실제 필요가 생긴 뒤 추가한다.
 - Forbidden bundled dependencies: Minecraft 원본 파일, NeoForge 배포 파일, 외부 모드 JAR, 재배포 권한이 불명확한 모델·텍스처·음원·UI 자산
-- Datagen task: M0 bootstrap에서 추가
-- GameTest task: M1 content kernel에서 추가
-- Server smoke-test task: M0 bootstrap에서 추가
-- Client smoke-test task: M0 bootstrap에서 추가
+- Datagen task: `runData` (생성 대상은 schema/content type 확장에 맞춰 단계적으로 추가)
+- GameTest task: `runGameTestServer` / 실제 Riftfrontier GameTest fixture는 M1 후속에서 등록
+- Server smoke-test task: CI `Dedicated server smoke` → `runServer`, ready/content marker 검증
+- Client smoke-test task: CI `Client smoke under virtual display` → Xvfb `runClient`, init/fatal-crash marker 검증
 
 ## 프로젝트 정체성
 
@@ -56,6 +56,9 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 11. 기능이 돌아간다는 이유만으로 완료하지 않는다. 실제 플레이, 시각 검수, GameTest, 성능 측정, 빌드/JAR 검증까지 품질 게이트를 통과해야 한다.
 12. 범위가 커질수록 넓고 얕게 만들지 않는다. 먼저 수직 구간 하나를 상용 게임에 가까운 품질로 완성하고, 검증된 생산 체계를 복제해 확장한다.
 13. 다른 프로젝트의 코드·자산·워크플로를 복제하지 않는다. 공용 표준과 공개 기술 자료는 참고하되 Riftfrontier의 구현은 독립적으로 유지한다.
+14. content document는 `pack_id`, optional `depends_on`, source provenance를 가지며 dependency graph를 통과한 전체 graph만 atomic publish한다.
+15. validator 진단은 사람이 읽는 message 외에 stable machine-readable issue code를 가진다.
+16. authoritative persistence는 schema version과 명시적 순차 migration을 사용하며 알 수 없는 미래 schema나 빠진 migration step을 묵시적으로 수용하지 않는다.
 
 ## 정본 읽기 순서
 
@@ -66,10 +69,23 @@ Riftfrontier는 단순한 RPG 콘텐츠 팩이나 차원 추가 모드가 아니
 3. `/docs/QUALITY_STANDARD.md`
 4. `/projects/riftfrontier/PROJECT.md`
 5. `/projects/riftfrontier/docs/CANONICAL.md`
-6. 작업 성격에 따라 `GAME_DESIGN_MASTER.md`, `CONTENT_ARCHITECTURE.md`, `REFERENCE_TARGETS.md`, `ROADMAP.md`
+6. `GAME_DESIGN_MASTER.md`
+7. `CONTENT_ARCHITECTURE.md`
+8. `ROADMAP.md`
+9. content runtime 작업이면 `CONTENT_RUNTIME.md`
+10. 디자인/자산 작업이면 `REFERENCE_TARGETS.md`, `THIRD_PARTY_ASSETS.md`
 
 ## 현재 단계
 
-`M0 — Canon & Bootstrap`
+`M1 — Content Kernel / Runtime Foundation`
 
-현재 커밋은 프로젝트 방향, 시스템 경계, 콘텐츠 생산 규칙을 고정하는 단계다. 다음 구현 단계에서는 이 정본을 훼손하지 않고 빌드 가능한 NeoForge 26.2 프로젝트와 content kernel을 만든다.
+현재까지 M0 빌드/JAR 기반과 M1의 stable content ID, typed JSON definition, merged graph validation, atomic runtime snapshot, deterministic catalog fingerprint, server ResourceManager reload, pack dependency/provenance 계약, machine-readable validator code, persistence migration registry 기반이 구현되어 있다.
+
+M1을 끝내기 전에 다음을 닫는다.
+
+- 실제 Riftfrontier GameTest fixture 최소 1개와 `runGameTestServer` 검증
+- 실제 Minecraft SavedData root/domain adapter
+- reload/runtime 진단 경로
+- M2에 필요한 region / expedition resource / contract schema 경계 확정
+
+M2로 넘어가면 `준비 → 진입 → 탐사/목표 → 철수 → 투자 → 다음 원정 변화`의 최소 실제 플레이 루프를 먼저 완성한다.
