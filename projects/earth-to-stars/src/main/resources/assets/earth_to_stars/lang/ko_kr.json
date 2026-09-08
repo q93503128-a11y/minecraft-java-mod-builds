@@ -10,5 +10,12 @@
   "message.earth_to_stars.launch.deployed": "소형 개척선의 시동이 걸렸습니다.",
   "message.earth_to_stars.launch.existing": "이미 등록된 개척선이 있습니다.",
   "message.earth_to_stars.launch.control_unavailable": "개척선은 조립됐지만 조종권을 연결할 수 없습니다.",
-  "message.earth_to_stars.launch.failed": "이 위치에서는 개척선을 조립할 수 없습니다."
+  "message.earth_to_stars.launch.failed": "이 위치에서는 개척선을 조립할 수 없습니다.",
+  "message.earth_to_stars.supply.propellant_loaded": "추진제 셀을 개척선 연료계통에 장전했습니다.",
+  "message.earth_to_stars.supply.oxygen_loaded": "산소 카트리지를 생명유지 계통에 연결했습니다.",
+  "message.earth_to_stars.supply.propellant_full": "추진제 저장고가 이미 가득 찼습니다.",
+  "message.earth_to_stars.supply.oxygen_full": "산소 저장고가 이미 가득 찼습니다.",
+  "message.earth_to_stars.supply.no_ship": "보급할 수 있는 개척선이 가까이에 없습니다.",
+  "message.earth_to_stars.flight.orbit_entered": "지구 궤도에 진입했습니다.",
+  "message.earth_to_stars.flight.earth_returned": "대기권으로 복귀했습니다."
 }
