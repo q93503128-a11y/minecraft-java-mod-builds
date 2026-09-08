@@ -8,17 +8,17 @@
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
-- Gradle: `9.2.1` target for M0 bootstrap
-- Build plugin: `ModDevGradle 2.0.143` target for M0 bootstrap
+- Gradle: `9.2.1`
+- Build plugin: `ModDevGradle 2.0.143`
 - Final JAR: `earth_to_stars-0.1.0-alpha.1.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
-- Optional external mods/libraries: none approved as a hard runtime dependency at project registration. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
+- Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
-- Datagen task: `runData` after M0 bootstrap
-- GameTest task: register during M0/P0 for ship/runtime/network contracts
-- Server smoke-test task: `runServer` after M0 bootstrap
-- Client smoke-test task: `runClient` after M0 bootstrap
+- Datagen task: `runData` (`NOT RUN` at current gate)
+- GameTest task: not yet registered; first Minecraft ship persistence integration gate must add it
+- Server smoke-test task: `runServer` (`NOT RUN` at current gate)
+- Client smoke-test task: `runClient` (`NOT RUN` at current gate)
 
 ## Project identity
 
@@ -85,8 +85,40 @@ Server authority includes at minimum:
 
 Clients provide input, rendering, animation, UI and safe prediction only. A client never tells the server that damage, resources, travel completion or crafting already succeeded.
 
+## Current implementation baseline
+
+Verified implementation commit: `d1c34db306680944c5696ecabd5f018943fef772`
+
+GitHub Actions `Build earth-to-stars` run `34175374292` verified:
+
+- Gradle 9.2.1 / Java 25 / NeoForge 26.2.0.38-beta project bootstrap
+- minimal mod entrypoint and metadata
+- compiled production JAR
+- authoritative pure-Java ship kernel
+- owner/crew/guest permission policy
+- module definition/instance + slot compatibility
+- stable `ShipId`
+- versioned schema 1 ship persistence codec
+- repository duplicate-identity protection
+- JUnit contracts for install/remove/permission/duplicate/round-trip/schema rejection
+- production JAR verifier
+
+Verified JAR SHA-256: `baea44c12f5383781967c503c41363831312676643f1870fac82df9108c46848`
+
+Not yet verified:
+
+- Minecraft SavedData persistence adapter
+- GameTest create/save/reload/restore integration
+- dedicated server smoke
+- client smoke
+- live multiplayer session
+- moving ship exterior
+- space transition
+- linked interior
+- manual/automatic turret gameplay
+
 ## Current phase
 
-`M0 — CANON LOCKED / BUILD BOOTSTRAP NEXT`
+`M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / MINECRAFT INTEGRATION GATE PENDING / P0-B NEXT`
 
-This project is ready for technical production bootstrap. No claim is made yet that a runnable JAR, seamless space transition, multiplayer session, modular ship or turret is implemented or tested.
+The pure authoritative ship domain is now real code and has passed one meaningful clean test/build/JAR gate. P0-A is **not** called fully integration-complete until Minecraft persistence/reload is proven. The next production unit is P0-B Ship Exterior / Movement Backend, with the first Minecraft server integration also closing the pending P0-A persistence gate.
