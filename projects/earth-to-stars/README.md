@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D NEXT**
+> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E NEXT**
 
 ## 한 줄 설명
 
@@ -59,36 +59,38 @@ Minecraft 생존
 
 ## 현재 검증 기준
 
-최신 검증 구현 커밋: `a99f7b8470b09cfd509ec4f0aaf054c537db0f3f`
+최신 검증 구현 커밋: `492d8fa0536b23881591ad9a31b0501c7048b6e3`
 
-GitHub Actions `Build earth-to-stars` run `34181251912`:
+GitHub Actions `Build earth-to-stars` run `34183711601`:
 
 - `clean test build`: PASS
-- P0-A/P0-B regression JUnit: PASS
-- P0-C transition-policy JUnit: PASS
-- Minecraft 26.2 SavedData adapter compile: PASS
-- orbital dimension data packaging: PASS
-- transition runtime adapter compile: PASS
+- P0-A/P0-B/P0-C regression JUnit: PASS
+- P0-D interior slot/layout/allocation JUnit: PASS
+- corrupt slot collision rejection: PASS
+- Minecraft 26.2 `InteriorSavedData` / teleport / recovery adapter compile: PASS
+- `earth_to_stars:ship_interiors` dimension packaging: PASS
 - production JAR verify: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.3.jar`
-- SHA-256: `d49b228ad0fee44ceb395d56b040f2a796e55f452b9b410117ed6f947c3d1fd8`
+- JAR: `earth_to_stars-0.1.0-alpha.4.jar`
+- SHA-256: `a5f3d8ffb24869c6085079af40106a3830b12ce7ea53e57775930b372fc03284`
 
-P0-C에는 지구 상승 경계→궤도 레이어, 궤도 하강 경계→지구 귀환 정책과 서버 전환 transaction, 동일 `ShipState`/`ShipId` 유지 경계, lease 회수/재발급, target exterior 생성 실패 rollback, 서버 전역 SavedData 저장 어댑터, 저장된 소유 함선 restore 명령이 들어가 있다.
+P0-D는 하나의 안정된 `ship_interiors` 공간을 함선별 2048블록 셀로 나누고 `ShipId → interior slot`을 서버 전역 저장하는 구조다. 외부 함선이 움직이거나 지구↔궤도 전환을 해도 내부 승무원은 안정된 내부 좌표에 남고, 같은 `ShipId`를 통해 현재 외부 함선 상태와 연결되는 방향으로 고정했다.
 
-다만 **실제 디스크 재시작 복원, dedicated server datapack boot, 실제 지구↔우주 비행, client 조종감, 다인 승객 이동, 실멀티는 아직 테스트하지 않았다.** 자동 빌드 성공을 실플레이 완료로 간주하지 않는다.
+다만 **실제 디스크 재시작 복원, dedicated server custom-dimension boot, 실제 지구↔우주 비행, 실제 exterior↔interior 출입, 2인 동시 내부 체류, 외부 조종 중 내부 승무원 유지, client 조종감, 실멀티는 아직 테스트하지 않았다.** 자동 빌드 성공을 실플레이 완료로 간주하지 않는다.
 
 ## 다음 작업
 
-다음 의미 있는 작업 단위는 **P0-D Linked Ship Interior**다.
+다음 의미 있는 작업 단위는 **P0-E Representative Turret**다.
 
-- 외부 함선이 이동해도 안정적인 interior instance 유지
-- `InteriorRef(shipId)` 서버 정본
-- exterior ↔ interior 출입
-- owner/crew/guest 접근 권한
-- 같은 함선의 power/alarm/damage 상태 projection 경계
-- 함선 전환 중 interior crew/passenger 처리 기반
-- 서버 재시작 뒤 exterior/interior link 복원 구조
+- 하나의 대표 autocannon
+- OFF / MANUAL / AUTO_DEFENSE 상태
+- manual control lease
+- server-authoritative aim/fire
+- ammo / cooldown / legal arc
+- 중앙 SensorGrid contact를 공유하는 자동 방어 경계
+- friendly/invalid target 거부
+- disconnect / mode switch 안전성
+- per-turret full-world scan 금지
 
-반복적인 사용자 테스트는 요구하지 않는다. P0-D까지 의미 있는 기술 묶음을 더 만든 뒤 P0-A/B/C/D의 실제 Minecraft lifecycle을 한 번의 큰 검증으로 확인한다.
+반복적인 사용자 테스트는 계속 요구하지 않는다. P0-E/F까지 기술축을 더 묶고, 이후 P0-G에서 실제 Minecraft lifecycle/멀티 검증을 의미 있는 한 번의 게이트로 진행한다.
 
-최종 함선 모델·cockpit UI·우주 전환 연출은 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
+최종 함선 모델·cockpit UI·내부 디자인·포탑 모델/VFX는 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
