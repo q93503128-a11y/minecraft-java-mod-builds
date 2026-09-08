@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F NEXT**
+> **상태: M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G LIFECYCLE GATE NEXT**
 
 ## 한 줄 설명
 
@@ -59,29 +59,35 @@ Minecraft 생존
 
 ## 현재 검증 기준
 
-최신 검증 기준 커밋: `85e4003223839dd3fe24e87e8fd8382a1931e693`
+최신 검증 기준 커밋: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
 
-GitHub Actions `Build earth-to-stars` run `34186350799`:
+GitHub Actions `Build earth-to-stars` run `34187867167`:
 
 - `clean test build`: PASS
 - P0-A/P0-B/P0-C regression JUnit: PASS
-- P0-D interior allocation/layout JUnit: PASS
+- P0-D linked interior JUnit: PASS
 - P0-E representative turret JUnit: PASS
-- OFF / MANUAL / AUTO_DEFENSE state machine: PASS
-- exclusive manual lease / replay rejection: PASS
-- ammo / cooldown / firing-arc rules: PASS
-- shared SensorGrid target selection: PASS
-- Minecraft 26.2 turret adapter compile: PASS
+- P0-F central PowerGrid / AmmoPool / SensorGrid JUnit: PASS
+- power priority reserve / generation monotonicity: PASS
+- 두 turret runtime이 하나의 공용 ammo pool을 소비: PASS
+- 전력 부족 weapon transaction이 ammo/power를 부분 소비하지 않음: PASS
+- propulsion input이 중앙 PowerGrid를 소비: PASS
+- stale SensorGrid contact expiry: PASS
+- interior-linked crew의 동일 ShipId systems 조회 adapter compile: PASS
+- Minecraft 26.2 central systems coordinator compile: PASS
 - production JAR verify: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.5.jar`
-- SHA-256: `53499a1cf6f14bd21cfefc8cdd095b2e2999c322c20c1be8c660d005efd48835`
+- JAR: `earth_to_stars-0.1.0-alpha.6.jar`
+- SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
 
-P0-E는 하나의 대표 autocannon 상태를 `ShipId`에 연결하고, `OFF / MANUAL / AUTO_DEFENSE`를 같은 서버 정본에서 다룬다. 수동 모드는 단일 control lease와 session/sequence 검증을 사용하며, 자동 모드는 포탑별 world scan 대신 함선당 공유 `SensorGrid` contact cache를 사용한다. 현재 Minecraft adapter는 10 tick 간격의 staggered scan으로 P0 구조를 검증한다.
+P0-F부터 함선의 핵심 운용 자원은 `ShipId` 단위 중앙 정본으로 묶인다. 대표 기관포는 더 이상 자체 탄약을 소유하지 않고 공용 `AmmoPool`에서 탄을 소비하며, 수동/자동 모드가 같은 탄약과 전력 상태를 공유한다. `SensorGrid` 역시 함선당 하나의 contact cache를 사용하고 스캔은 주기·phase offset으로 묶는다.
 
-현재 projectile은 기술검증용 서버 논리 shot이며 실제 모델·트레이서·총구화염·사운드·카메라 반동이 없다. 자동 적 판정도 P0에서 `Enemy` 계열만 hostile로 취급하는 임시 정책이다. 이는 production 전투/세력 판정이 아니다.
+전력은 `ESSENTIAL → PROPULSION → WEAPONS → UTILITY` 우선순위와 reserve 경계를 갖는다. 현재 P0 수치는 최종 밸런스가 아니라 `ShipSystemsTuning.P0` 한 곳에 모인 기술 검증값이며, 콘텐츠 생산 단계에서 data-driven 정의로 승격한다.
 
-## 아직 실게임 검증하지 않은 것
+현재 projectile, ArmorStand exterior, 기술 interior room, command 조작면은 여전히 P0 프록시다. 최종 모델·트레이서·총구화염·사운드·조종석 UI·카메라·함선 내부 비주얼로 간주하지 않는다.
 
+## 아직 실게임 검증/구현하지 않은 것
+
+- **중앙 전력/탄약 현재량의 서버 재시작 persistence: NOT IMPLEMENTED / NOT TESTED**
 - 실제 save→disk→server restart→same ship/interior restore
 - dedicated server custom-dimension boot/smoke
 - 실제 Earth↔orbit 비행과 조종감/camera/interpolation
@@ -97,15 +103,14 @@ P0-E는 하나의 대표 autocannon 상태를 `ShipId`에 연결하고, `OFF / M
 
 ## 다음 작업
 
-다음 의미 있는 작업 단위는 **P0-F Central Ship Systems**다.
+다음 의미 있는 작업 단위는 **P0-G Lifecycle / Multiplayer Gate**다. 다만 실멀티를 바로 시키기 전에 다음 순서로 준비한다.
 
-- 중앙 PowerGrid: generation / storage / demand / priority shortage
-- 중앙 AmmoPool: compatible weapon server consumption
-- 중앙 SensorGrid runtime을 P0-E 임시 adapter에서 함선 시스템으로 승격
-- 여러 turret/module이 같은 계산 결과를 공유
-- synthetic multi-module/multi-turret load로 구조적 비용 확인
-- P0-E의 local ammo를 중앙 authoritative resource로 이동
+1. 중앙 PowerGrid / AmmoPool의 versioned persistence를 `ShipId`에 연결한다.
+2. save → disk → restart → same ship/interior/systems 복원 경계를 자동화한다.
+3. dedicated server에서 `orbital_space` / `ship_interiors` 실제 boot/smoke를 확인한다.
+4. 그 뒤에 Earth↔orbit + interior + pilot/gunner + 공용 ammo/power를 한 번의 실제 lifecycle 테스트로 묶는다.
+5. 실제 2인 환경이 없으면 멀티는 `NOT TESTED`로 남기며 성공했다고 꾸미지 않는다.
 
-P0-F까지 기술축을 묶은 뒤 P0-G에서 실제 Minecraft lifecycle/멀티 검증을 한 번의 큰 게이트로 진행한다. 반복적인 사용자 테스트는 요구하지 않는다.
+작은 수정마다 사용자 테스트를 요구하지 않는다. P0-G에서 실제로 의미 있는 통합 상태가 됐을 때 한 번에 테스트한다.
 
 최종 함선 모델·cockpit UI·내부 디자인·포탑 모델/VFX/사운드는 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
