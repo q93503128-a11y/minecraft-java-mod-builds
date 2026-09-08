@@ -8,10 +8,10 @@ import org.slf4j.Logger;
 @Mod(EarthToStars.MOD_ID)
 public final class EarthToStars {
     public static final String MOD_ID = "earth_to_stars";
-    public static final String VERSION = "0.1.0-alpha.2";
+    public static final String VERSION = "0.1.0-alpha.3";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public EarthToStars(IEventBus modEventBus) {
-        LOGGER.info("EARTH TO STARS {} ship movement backend loaded", VERSION);
+        LOGGER.info("EARTH TO STARS {} persistence and orbital transition slice loaded", VERSION);
     }
 }

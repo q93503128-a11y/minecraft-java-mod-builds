@@ -34,6 +34,11 @@ public final class ShipFlightRuntime {
         return Optional.ofNullable(lease);
     }
 
+    public void relocate(ShipTransform nextTransform) {
+        this.transform = Objects.requireNonNull(nextTransform, "nextTransform");
+        this.input = ShipControlInput.ZERO;
+    }
+
     public Optional<UUID> requestControl(UUID playerId, long tick) {
         Objects.requireNonNull(playerId, "playerId");
         expireIfNeeded(tick);

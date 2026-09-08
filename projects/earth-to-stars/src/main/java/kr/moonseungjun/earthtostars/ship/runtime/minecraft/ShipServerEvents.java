@@ -34,6 +34,20 @@ public final class ShipServerEvents {
                                     );
                                     return 1;
                                 }))
+                                .then(Commands.literal("restore").executes(context -> {
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    boolean restored = ShipRuntimeManager.restoreAndControl(
+                                            player,
+                                            context.getSource().getLevel(),
+                                            context.getSource().getLevel().getGameTime()
+                                    );
+                                    if (restored) {
+                                        context.getSource().sendSuccess(() -> Component.literal("저장된 개척선을 현재 위치에 다시 연결했습니다."), false);
+                                        return 1;
+                                    }
+                                    context.getSource().sendFailure(Component.literal("이 플레이어가 소유한 저장 함선을 찾지 못했습니다."));
+                                    return 0;
+                                }))
                                 .then(Commands.literal("control").executes(context -> {
                                     ServerPlayer player = context.getSource().getPlayerOrException();
                                     boolean controlled = ShipRuntimeManager.controlNearest(
@@ -67,7 +81,7 @@ public final class ShipServerEvents {
 
     @SubscribeEvent
     private static void onServerStarting(ServerStartingEvent event) {
-        ShipRuntimeManager.clear();
+        ShipRuntimeManager.initialize(event.getServer());
     }
 
     @SubscribeEvent

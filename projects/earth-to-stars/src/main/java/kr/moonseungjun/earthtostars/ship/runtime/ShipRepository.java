@@ -5,6 +5,7 @@ import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,18 @@ public final class ShipRepository {
 
     public Optional<ShipState> find(ShipId shipId) {
         return Optional.ofNullable(ships.get(shipId));
+    }
+
+    public Optional<ShipState> findOwnedBy(UUID ownerId) {
+        return ships.values().stream().filter(ship -> ship.ownerId().equals(ownerId)).findFirst();
+    }
+
+    public Collection<ShipState> all() {
+        return List.copyOf(ships.values());
+    }
+
+    public void clear() {
+        ships.clear();
     }
 
     public int size() {
