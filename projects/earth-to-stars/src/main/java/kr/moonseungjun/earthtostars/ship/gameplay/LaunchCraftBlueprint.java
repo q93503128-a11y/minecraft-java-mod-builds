@@ -11,8 +11,9 @@ import java.util.UUID;
 
 /**
  * Canonical M1 starter craft loadout. The first launch craft deliberately leaves
- * the weapon hardpoint empty so orbital salvage can create the first meaningful
- * combat upgrade instead of giving the player every system at construction time.
+ * the weapon hardpoint and auxiliary sensor slot empty so the first orbital
+ * recovery creates two capability upgrades instead of giving the player every
+ * system at construction time.
  */
 public final class LaunchCraftBlueprint {
     private static final List<ModuleSlot> SLOTS = List.of(
@@ -21,7 +22,8 @@ public final class LaunchCraftBlueprint {
             new ModuleSlot("power", ModuleSlotType.POWER, 1),
             new ModuleSlot("cargo", ModuleSlotType.CARGO, 1),
             new ModuleSlot("life_support", ModuleSlotType.UTILITY, 1),
-            new ModuleSlot("turret", ModuleSlotType.WEAPON_HARDPOINT, 1)
+            new ModuleSlot("turret", ModuleSlotType.WEAPON_HARDPOINT, 1),
+            new ModuleSlot("sensor", ModuleSlotType.UTILITY, 1)
     );
 
     private LaunchCraftBlueprint() {
