@@ -7,9 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
@@ -19,14 +17,6 @@ import java.util.Locale;
 /** Production Party Formation + Character detail shell. Persistence and growth truth stay server-owned. */
 public final class PartyFormationScreen extends Screen {
     private enum DetailTab { OVERVIEW, SKILLS, GROWTH }
-
-    private static final Identifier TITLE_BOX = Identifier.withDefaultNamespace("advancements/title_box");
-    private static final Identifier FRAME_IDLE = Identifier.withDefaultNamespace("advancements/task_frame_unobtained");
-    private static final Identifier FRAME_ACTIVE = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
-    private static final int TEXT_PRIMARY = 0xFFFFFFFF;
-    private static final int TEXT_SECONDARY = 0xFFAAAAAA;
-    private static final int TEXT_WARNING = 0xFFFFCC66;
-    private static final int TEXT_SUCCESS = 0xFFAAFFAA;
 
     private final List<Button> rosterButtons = new ArrayList<>();
     private final List<Button> partyButtons = new ArrayList<>();
@@ -121,10 +111,11 @@ public final class PartyFormationScreen extends Screen {
     private void buildTabs(UiLayoutMetrics.PartyFormationLayout layout) {
         UiLayoutMetrics.Rect tabs = layout.tabs();
         int gap = UiLayoutMetrics.SPACE_4;
-        int width = Math.min(82, Math.max(64, (tabs.width() - gap * 2) / 5));
+        int width = Math.min(92, Math.max(64, (tabs.width() - gap * 3) / 4));
         int x = tabs.x();
         for (DetailTab tab : DetailTab.values()) {
-            this.addRenderableWidget(Button.builder(tabLabel(tab), ignored -> selectTab(tab))
+            String focus = tab == detailTab ? "◆ " : "";
+            this.addRenderableWidget(Button.builder(Component.literal(focus + tabLabel(tab).getString()), ignored -> selectTab(tab))
                     .bounds(x, tabs.y(), width, tabs.height()).build());
             x += width + gap;
         }
@@ -311,7 +302,7 @@ public final class PartyFormationScreen extends Screen {
             ProgressionNetworkPayloads.CharacterView character = snapshot.characters().get(index);
             boolean selected = character.id().equals(selectedCharacterId);
             boolean active = draftParty.contains(character.id());
-            String prefix = selected ? "> " : (active ? "• " : "");
+            String prefix = selected ? "◆ " : (active ? "● " : "  ");
             String state = character.owned()
                     ? stars(character.currentStar()) + " Lv" + character.level() + " C" + character.squadCost()
                     : Component.translatable("screen.turnbound_re.party.locked_short").getString();
@@ -321,13 +312,14 @@ public final class PartyFormationScreen extends Screen {
 
         for (int slot = 0; slot < partyButtons.size(); slot++) {
             Button button = partyButtons.get(slot);
+            String focus = selectedSlot == slot ? "◆ " : "  ";
             String label;
             if (slot < draftParty.size()) {
                 String id = draftParty.get(slot);
                 int cost = snapshot.character(id).map(ProgressionNetworkPayloads.CharacterView::squadCost).orElse(0);
-                label = (selectedSlot == slot ? "> " : "") + (slot + 1) + " · " + displayName(id) + " · C" + cost;
+                label = focus + (slot + 1) + " · " + displayName(id) + " · C" + cost;
             } else {
-                label = (selectedSlot == slot ? "> " : "") + (slot + 1) + " · "
+                label = focus + (slot + 1) + " · "
                         + Component.translatable("screen.turnbound_re.party.empty_slot").getString();
             }
             button.setMessage(Component.literal(fit(label, button.getWidth() - 8)));
@@ -379,40 +371,46 @@ public final class PartyFormationScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (!UiLayoutMetrics.supportsPartyScreen(this.width, this.height)) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.canvas_too_small"),
-                    Math.max(8, this.width / 2 - 100), Math.max(8, this.height / 2 - 20), TEXT_WARNING, true);
+                    Math.max(8, this.width / 2 - 100), Math.max(8, this.height / 2 - 20), UiVisualLanguage.TEXT_WARNING, true);
             super.extractRenderState(graphics, mouseX, mouseY, partialTick);
             return;
         }
 
         UiLayoutMetrics.PartyFormationLayout layout = UiLayoutMetrics.partyFormation(this.width, this.height);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX,
-                layout.header().x(), layout.header().y(), layout.header().width(), layout.header().height());
-        graphics.text(this.font, this.title, layout.header().x() + UiLayoutMetrics.SPACE_8,
-                layout.header().y() + 7, TEXT_PRIMARY, true);
+        UiVisualLanguage.titleBand(graphics, this.font,
+                layout.header().x(), layout.header().y(), layout.header().width(), layout.header().height(),
+                this.title, UiVisualLanguage.TEXT_PRIMARY, false);
 
         if (snapshot == null) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.loading"),
-                    layout.root().x() + UiLayoutMetrics.SPACE_8, layout.roster().y(), TEXT_SECONDARY, true);
+                    layout.root().x() + UiLayoutMetrics.SPACE_8, layout.roster().y(), UiVisualLanguage.TEXT_SECONDARY, true);
         } else {
             int draftCost = PartyFormationDraft.cost(draftParty, snapshot);
             String cost = Component.translatable("screen.turnbound_re.party.squad_cost", draftCost, snapshot.partyCapacity()).getString();
             graphics.text(this.font, Component.literal(cost),
                     layout.header().right() - UiLayoutMetrics.SPACE_8 - this.font.width(cost),
-                    layout.header().y() + 7, draftCost > snapshot.partyCapacity() ? TEXT_WARNING : TEXT_PRIMARY, true);
+                    layout.header().y() + 7,
+                    draftCost > snapshot.partyCapacity() ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_FOCUS,
+                    true);
 
-            graphics.text(this.font, Component.translatable("screen.turnbound_re.party.roster"),
-                    layout.roster().x(), layout.roster().y() + 4, TEXT_PRIMARY, true);
-            graphics.text(this.font, Component.translatable("screen.turnbound_re.party.active_party"),
-                    layout.activeParty().x(), layout.activeParty().y() + 4, TEXT_PRIMARY, true);
-            graphics.text(this.font, tabLabel(detailTab),
-                    layout.selectedDetail().x(), layout.selectedDetail().y() + 4, TEXT_PRIMARY, true);
+            UiVisualLanguage.titleBand(graphics, this.font,
+                    layout.roster().x(), layout.roster().y(), layout.roster().width(), 16,
+                    Component.translatable("screen.turnbound_re.party.roster"), UiVisualLanguage.TEXT_PRIMARY, false);
+            UiVisualLanguage.titleBand(graphics, this.font,
+                    layout.activeParty().x(), layout.activeParty().y(), layout.activeParty().width(), 16,
+                    Component.translatable("screen.turnbound_re.party.active_party"), UiVisualLanguage.TEXT_PRIMARY, false);
+            UiVisualLanguage.titleBand(graphics, this.font,
+                    layout.selectedDetail().x(), layout.selectedDetail().y(), layout.selectedDetail().width(), 16,
+                    tabLabel(detailTab), UiVisualLanguage.TEXT_FOCUS, false);
             renderSelectedDetail(graphics, layout.selectedDetail());
         }
 
         if (!feedback.isBlank()) {
-            int feedbackX = layout.tabs().x() + Math.min(270, layout.tabs().width() / 2);
+            int feedbackX = layout.tabs().x() + Math.min(300, layout.tabs().width() * 3 / 4);
             graphics.text(this.font, Component.literal(fit(feedback, layout.tabs().right() - feedbackX)),
-                    feedbackX, layout.tabs().y() + 6, feedbackSuccess ? TEXT_SUCCESS : TEXT_WARNING, true);
+                    feedbackX, layout.tabs().y() + 6,
+                    feedbackSuccess ? UiVisualLanguage.TEXT_SUCCESS : UiVisualLanguage.TEXT_WARNING,
+                    true);
         }
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
@@ -432,7 +430,7 @@ public final class PartyFormationScreen extends Screen {
         int y = renderCharacterHeader(graphics, region, character, textWidth);
         if (!character.owned()) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.locked_detail"),
-                    region.x(), y, TEXT_SECONDARY, true);
+                    region.x(), y, UiVisualLanguage.TEXT_SECONDARY, true);
             return;
         }
         switch (detailTab) {
@@ -446,13 +444,14 @@ public final class PartyFormationScreen extends Screen {
                                       ProgressionNetworkPayloads.CharacterView character, int textWidth) {
         int x = region.x();
         int y = region.y() + 18;
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, character.owned() ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
+        UiVisualLanguage.frame(graphics, x, y, 20, 20, character.owned());
         graphics.text(this.font, Component.literal(fit(displayName(character.id()), Math.max(1, textWidth - 26))), x + 26, y + 2,
-                character.owned() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                character.owned() ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_SECONDARY, true);
         String progression = character.owned()
                 ? stars(character.currentStar()) + "  Lv" + character.level() + "/" + character.levelCap()
                 : stars(character.originStar()) + "  " + Component.translatable("screen.turnbound_re.party.locked_short").getString();
-        graphics.text(this.font, Component.literal(fit(progression, Math.max(1, textWidth - 26))), x + 26, y + 12, TEXT_SECONDARY, true);
+        graphics.text(this.font, Component.literal(fit(progression, Math.max(1, textWidth - 26))), x + 26, y + 12,
+                UiVisualLanguage.TEXT_SECONDARY, true);
         return y + 30;
     }
 
@@ -460,20 +459,20 @@ public final class PartyFormationScreen extends Screen {
                                 ProgressionNetworkPayloads.CharacterView character, int y, int textWidth) {
         int x = region.x();
         String roles = character.roles().stream().map(PartyFormationScreen::roleName).reduce((a, b) -> a + " · " + b).orElse("-");
-        line(graphics, x, y, roles + "  C" + character.squadCost(), TEXT_PRIMARY, textWidth); y += 12;
-        line(graphics, x, y, "HP " + character.hp() + "   ATK " + character.atk(), TEXT_PRIMARY, textWidth); y += 11;
-        line(graphics, x, y, "DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise(), TEXT_PRIMARY, textWidth); y += 13;
+        line(graphics, x, y, roles + "  C" + character.squadCost(), UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 12;
+        line(graphics, x, y, "HP " + character.hp() + "   ATK " + character.atk(), UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, "DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise(), UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 13;
         if (!character.affinities().isEmpty()) {
             String affinity = character.affinities().stream().limit(3).map(PartyFormationScreen::affinityName)
                     .reduce((a, b) -> a + " · " + b).orElse("");
-            line(graphics, x, y, affinity, TEXT_SECONDARY, textWidth); y += 12;
+            line(graphics, x, y, affinity, UiVisualLanguage.TEXT_SECONDARY, textWidth); y += 12;
         }
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()), TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()), UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 11;
         String skills = character.skills().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills, TEXT_PRIMARY, textWidth); y += 11;
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()), TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills, UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()), UiVisualLanguage.TEXT_PRIMARY, textWidth); y += 11;
         String passives = character.passives().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.passive").getString() + "  " + passives, TEXT_SECONDARY, textWidth);
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.passive").getString() + "  " + passives, UiVisualLanguage.TEXT_SECONDARY, textWidth);
     }
 
     private void renderSkills(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
@@ -484,13 +483,13 @@ public final class PartyFormationScreen extends Screen {
             if (y + 18 > maxY) break;
             String energy = action.energyDelta() > 0 ? "+" + action.energyDelta() : Integer.toString(action.energyDelta());
             line(graphics, x, y, actionKind(action.kind()) + " · " + displayName(action.id()) + " · E " + energy,
-                    TEXT_PRIMARY, region.width());
+                    UiVisualLanguage.TEXT_PRIMARY, region.width());
             y += 10;
             String facts = "HP " + action.hpPower() + " · P " + action.poisePower() + " · "
                     + damageTagName(action.damageTag()) + " · " + targetName(action);
             String special = firstSpecialEffect(action.effects());
             if (!special.isBlank()) facts += " · " + special;
-            line(graphics, x, y, facts, TEXT_SECONDARY, region.width());
+            line(graphics, x, y, facts, UiVisualLanguage.TEXT_SECONDARY, region.width());
             y += 9;
         }
     }
@@ -500,22 +499,22 @@ public final class PartyFormationScreen extends Screen {
         int x = region.x();
         ProgressionNetworkPayloads.GrowthView growth = character.growth();
         line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.wallet",
-                snapshot.coin(), snapshot.essence(), growth.shardBalance()).getString(), TEXT_SECONDARY, region.width()); y += 12;
+                snapshot.coin(), snapshot.essence(), growth.shardBalance()).getString(), UiVisualLanguage.TEXT_SECONDARY, region.width()); y += 12;
 
         line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.level_preview",
-                character.level(), growth.nextLevel()).getString(), TEXT_PRIMARY, region.width()); y += 10;
-        line(graphics, x, y, statDelta(character, growth.nextLevelStats()), TEXT_SECONDARY, region.width()); y += 10;
-        line(graphics, x, y, costText(growth.levelCost()), TEXT_SECONDARY, region.width()); y += 10;
+                character.level(), growth.nextLevel()).getString(), UiVisualLanguage.TEXT_FOCUS, region.width()); y += 10;
+        line(graphics, x, y, statDelta(character, growth.nextLevelStats()), UiVisualLanguage.TEXT_SECONDARY, region.width()); y += 10;
+        line(graphics, x, y, costText(growth.levelCost()), UiVisualLanguage.TEXT_SECONDARY, region.width()); y += 10;
         if (!growth.levelBlockCode().isBlank()) {
-            line(graphics, x, y, growthBlock(growth.levelBlockCode()), TEXT_WARNING, region.width()); y += 12;
+            line(graphics, x, y, growthBlock(growth.levelBlockCode()), UiVisualLanguage.TEXT_WARNING, region.width()); y += 12;
         } else y += 2;
 
         line(graphics, x, y, Component.translatable("screen.turnbound_re.growth.ascend_preview",
-                character.currentStar(), growth.nextStar(), growth.nextLevelCap()).getString(), TEXT_PRIMARY, region.width()); y += 10;
-        line(graphics, x, y, statDelta(character, growth.nextStarStats()), TEXT_SECONDARY, region.width()); y += 10;
-        line(graphics, x, y, costText(growth.ascendCost()), TEXT_SECONDARY, region.width()); y += 10;
+                character.currentStar(), growth.nextStar(), growth.nextLevelCap()).getString(), UiVisualLanguage.TEXT_FOCUS, region.width()); y += 10;
+        line(graphics, x, y, statDelta(character, growth.nextStarStats()), UiVisualLanguage.TEXT_SECONDARY, region.width()); y += 10;
+        line(graphics, x, y, costText(growth.ascendCost()), UiVisualLanguage.TEXT_SECONDARY, region.width()); y += 10;
         if (!growth.ascendBlockCode().isBlank()) {
-            line(graphics, x, y, growthBlock(growth.ascendBlockCode()), TEXT_WARNING, region.width());
+            line(graphics, x, y, growthBlock(growth.ascendBlockCode()), UiVisualLanguage.TEXT_WARNING, region.width());
         }
     }
 
