@@ -58,7 +58,7 @@ jobs:
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — P0-E Build Report
+          # EARTH TO STARS — P0-F Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -70,13 +70,17 @@ jobs:
           - production JAR verify: PASS
           - SHA-256: $SHA
           - P0-A/P0-B/P0-C regression JUnit: PASS
-          - P0-D interior allocation/layout JUnit: PASS
+          - P0-D linked interior JUnit: PASS
           - P0-E representative turret JUnit: PASS
-          - OFF / MANUAL / AUTO_DEFENSE state machine: PASS
-          - exclusive manual lease + replay rejection: PASS
-          - ammo / cooldown / firing-arc rules: PASS
-          - shared SensorGrid target selection: PASS
-          - Minecraft 26.2 turret adapter compile: PASS
+          - P0-F central PowerGrid / AmmoPool / SensorGrid JUnit: PASS
+          - priority reserve / generation monotonicity: PASS
+          - two turret runtimes share one ammo pool: PASS
+          - failed weapon transaction consumes no ammo or power: PASS
+          - propulsion draw uses central power: PASS
+          - stale sensor contact expiry: PASS
+          - interior-linked crew system lookup adapter compile: PASS
+          - Minecraft 26.2 central systems coordinator compile: PASS
+          - systems persistence across restart: NOT IMPLEMENTED / NOT TESTED
           - P0 projectile simulation: BUILD VERIFIED / LIVE HIT FEEL NOT TESTED
           - datagen: NOT RUN
           - GameTest: NOT REGISTERED / NOT RUN
