@@ -6,6 +6,7 @@ import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.gameplay.LaunchReadinessPolicy;
+import kr.moonseungjun.earthtostars.ship.gameplay.OrbitalRecoveryProgression;
 import kr.moonseungjun.earthtostars.ship.persistence.ShipBootstrapCatalog;
 import kr.moonseungjun.earthtostars.ship.persistence.minecraft.ShipSavedData;
 import kr.moonseungjun.earthtostars.ship.persistence.minecraft.ShipSystemsSavedData;
@@ -88,7 +89,8 @@ public final class ShipSystemsManager {
 
             systems.sensorGrid().expireOlderThan(tick, systems.tuning().sensorStaleTicks());
             if (shouldScan(ship.shipId(), tick, systems.tuning()) && systems.tryPowerSensorScan()) {
-                systems.sensorGrid().update(scanContacts(anchor, systems.tuning().sensorRange()), tick);
+                double sensorRange = OrbitalRecoveryProgression.sensorRange(ship, systems.tuning().sensorRange());
+                systems.sensorGrid().update(scanContacts(ship.shipId(), anchor, sensorRange), tick);
             }
         }
         checkpointIfDue(server);
@@ -161,6 +163,7 @@ public final class ShipSystemsManager {
                 systems.ammoAmount(ammoType),
                 systems.ammoCapacity(ammoType),
                 systems.sensorGrid().contactCount(),
+                OrbitalRecoveryProgression.sensorRange(ship, systems.tuning().sensorRange()),
                 systems.propellantStored(),
                 systems.propellantCapacity(),
                 systems.oxygenStored(),
@@ -216,7 +219,7 @@ public final class ShipSystemsManager {
         return Math.floorMod(tick, interval) == phase;
     }
 
-    private static List<SensorContact> scanContacts(ShipRuntimeManager.ExteriorAnchor anchor, double range) {
+    private static List<SensorContact> scanContacts(ShipId shipId, ShipRuntimeManager.ExteriorAnchor anchor, double range) {
         ShipVec3 position = anchor.transform().position();
         AABB box = new AABB(
                 position.x() - range,
@@ -231,7 +234,7 @@ public final class ShipSystemsManager {
                 box,
                 entity -> entity instanceof LivingEntity && !(entity instanceof ArmorStand) && entity.isAlive()
         );
-        List<SensorContact> contacts = new ArrayList<>(entities.size());
+        List<SensorContact> contacts = new ArrayList<>(entities.size() + 1);
         for (Entity entity : entities) {
             Vec3 pos = entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D);
             boolean hostile = entity instanceof Enemy;
@@ -241,6 +244,16 @@ public final class ShipSystemsManager {
                     hostile,
                     hostile ? 10.0D : 0.0D
             ));
+        }
+        for (SensorContact contact : OrbitalMissionManager.sensorContacts(shipId)) {
+            ShipVec3 delta = new ShipVec3(
+                    contact.position().x() - position.x(),
+                    contact.position().y() - position.y(),
+                    contact.position().z() - position.z()
+            );
+            if (delta.lengthSquared() <= range * range) {
+                contacts.add(contact);
+            }
         }
         return contacts;
     }
@@ -274,6 +287,7 @@ public final class ShipSystemsManager {
             int ammo,
             int ammoCapacity,
             int contacts,
+            double sensorRange,
             double propellant,
             double propellantCapacity,
             double oxygen,
@@ -281,7 +295,7 @@ public final class ShipSystemsManager {
             boolean lifeSupportInstalled
     ) {
         static SystemStatus unavailable() {
-            return new SystemStatus(false, 0.0D, 0.0D, 0.0D, 0, 0, 0, 0.0D, 0.0D, 0.0D, 0.0D, false);
+            return new SystemStatus(false, 0.0D, 0.0D, 0.0D, 0, 0, 0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, false);
         }
     }
 }
