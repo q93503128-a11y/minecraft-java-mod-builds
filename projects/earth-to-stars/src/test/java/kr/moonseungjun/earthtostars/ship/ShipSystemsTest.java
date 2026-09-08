@@ -79,19 +79,7 @@ final class ShipSystemsTest {
 
     @Test
     void failedWeaponTransactionConsumesNeitherAmmoNorPower() {
-        ShipSystemsTuning lowPower = new ShipSystemsTuning(
-                100.0D,
-                1.0D,
-                0.0D,
-                3.0D,
-                0.5D,
-                "autocannon_round",
-                10,
-                5,
-                64.0D,
-                10,
-                30
-        );
+        ShipSystemsTuning lowPower = tuning(1.0D, 80.0D, 80.0D);
         ShipSystemsRuntime systems = new ShipSystemsRuntime(ShipId.random(), lowPower);
         int ammoBefore = systems.ammoAmount(TurretProfile.P0_AUTOCANNON.ammoType());
         double powerBefore = systems.powerStored();
@@ -102,14 +90,49 @@ final class ShipSystemsTest {
     }
 
     @Test
-    void propulsionDrawScalesWithInputAndIdleCostsNothing() {
+    void propulsionDrawConsumesPowerAndPropellantAtomically() {
         ShipSystemsRuntime systems = ShipSystemsRuntime.p0(ShipId.random());
-        double start = systems.powerStored();
-        assertTrue(systems.tryPowerPropulsion(ShipControlInput.ZERO));
-        assertEquals(start, systems.powerStored(), 1.0E-9D);
+        double powerStart = systems.powerStored();
+        double fuelStart = systems.propellantStored();
+        assertTrue(systems.tryPowerPropulsion(ShipControlInput.ZERO, 0.0D));
+        assertEquals(powerStart, systems.powerStored(), 1.0E-9D);
+        assertEquals(fuelStart, systems.propellantStored(), 1.0E-9D);
 
-        assertTrue(systems.tryPowerPropulsion(new ShipControlInput(0.5D, 0.0D, 0.0D)));
-        assertEquals(start - ShipSystemsTuning.P0.propulsionMaxPowerPerTick() * 0.5D, systems.powerStored(), 1.0E-9D);
+        assertTrue(systems.tryPowerPropulsion(new ShipControlInput(0.5D, 0.0D, 0.0D), 0.25D));
+        assertEquals(powerStart - ShipSystemsTuning.P0.propulsionMaxPowerPerTick() * 0.5D, systems.powerStored(), 1.0E-9D);
+        assertEquals(fuelStart - 0.25D, systems.propellantStored(), 1.0E-9D);
+
+        ShipSystemsRuntime noFuel = new ShipSystemsRuntime(ShipId.random(), tuning(80.0D, 0.0D, 80.0D));
+        double noFuelPower = noFuel.powerStored();
+        assertFalse(noFuel.tryPowerPropulsion(new ShipControlInput(1.0D, 0.0D, 0.0D), 0.1D));
+        assertEquals(noFuelPower, noFuel.powerStored(), 1.0E-9D);
+        assertEquals(0.0D, noFuel.propellantStored(), 1.0E-9D);
+    }
+
+    @Test
+    void supplyCellsFillSharedShipTanksAndRespectCapacity() {
+        ShipSystemsRuntime systems = ShipSystemsRuntime.p0(ShipId.random());
+        double fuelBefore = systems.propellantStored();
+        double oxygenBefore = systems.oxygenStored();
+        assertEquals(ShipSystemsTuning.P0.propellantPerCell(), systems.loadPropellantCell(), 1.0E-9D);
+        assertEquals(ShipSystemsTuning.P0.oxygenPerCartridge(), systems.loadOxygenCartridge(), 1.0E-9D);
+        assertEquals(fuelBefore + ShipSystemsTuning.P0.propellantPerCell(), systems.propellantStored(), 1.0E-9D);
+        assertEquals(oxygenBefore + ShipSystemsTuning.P0.oxygenPerCartridge(), systems.oxygenStored(), 1.0E-9D);
+
+        while (systems.loadPropellantCell() > 0.0D) {
+            // fill to capacity
+        }
+        assertEquals(ShipSystemsTuning.P0.propellantCapacity(), systems.propellantStored(), 1.0E-9D);
+        assertEquals(0.0D, systems.loadPropellantCell(), 1.0E-9D);
+    }
+
+    @Test
+    void oxygenConsumptionCannotDriveReserveNegative() {
+        ShipSystemsRuntime systems = new ShipSystemsRuntime(ShipId.random(), tuning(80.0D, 80.0D, 0.05D));
+        assertTrue(systems.consumeOxygen(0.04D));
+        assertEquals(0.01D, systems.oxygenStored(), 1.0E-9D);
+        assertFalse(systems.consumeOxygen(0.02D));
+        assertEquals(0.01D, systems.oxygenStored(), 1.0E-9D);
     }
 
     @Test
@@ -127,19 +150,23 @@ final class ShipSystemsTest {
     }
 
     @Test
-    void systemsSnapshotRestoresPowerAndAmmoButNotSensorCache() {
+    void systemsSnapshotRestoresPersistentResourcesButNotSensorCache() {
         ShipId shipId = ShipId.random();
         String ammoType = ShipSystemsTuning.P0.primaryAmmoType();
         ShipSystemsSnapshot snapshot = new ShipSystemsSnapshot(
                 shipId,
                 37.5D,
-                Map.of(ammoType, 73)
+                Map.of(ammoType, 73),
+                51.25D,
+                66.5D
         );
 
         ShipSystemsRuntime restored = ShipSystemsRuntime.restore(snapshot, ShipSystemsTuning.P0);
         assertEquals(shipId, restored.shipId());
         assertEquals(37.5D, restored.powerStored(), 1.0E-9D);
         assertEquals(73, restored.ammoAmount(ammoType));
+        assertEquals(51.25D, restored.propellantStored(), 1.0E-9D);
+        assertEquals(66.5D, restored.oxygenStored(), 1.0E-9D);
         assertEquals(0, restored.sensorGrid().contactCount());
         assertEquals(snapshot, restored.snapshot());
     }
@@ -151,16 +178,58 @@ final class ShipSystemsTest {
         ShipSystemsSnapshot tooMuchPower = new ShipSystemsSnapshot(
                 shipId,
                 ShipSystemsTuning.P0.powerCapacity() + 1.0D,
-                Map.of(ammoType, 1)
+                Map.of(ammoType, 1),
+                1.0D,
+                1.0D
         );
         ShipSystemsSnapshot tooMuchAmmo = new ShipSystemsSnapshot(
                 shipId,
                 1.0D,
-                Map.of(ammoType, ShipSystemsTuning.P0.primaryAmmoCapacity() + 1)
+                Map.of(ammoType, ShipSystemsTuning.P0.primaryAmmoCapacity() + 1),
+                1.0D,
+                1.0D
+        );
+        ShipSystemsSnapshot tooMuchFuel = new ShipSystemsSnapshot(
+                shipId,
+                1.0D,
+                Map.of(ammoType, 1),
+                ShipSystemsTuning.P0.propellantCapacity() + 1.0D,
+                1.0D
+        );
+        ShipSystemsSnapshot tooMuchOxygen = new ShipSystemsSnapshot(
+                shipId,
+                1.0D,
+                Map.of(ammoType, 1),
+                1.0D,
+                ShipSystemsTuning.P0.oxygenCapacity() + 1.0D
         );
 
         assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchPower, ShipSystemsTuning.P0));
         assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchAmmo, ShipSystemsTuning.P0));
+        assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchFuel, ShipSystemsTuning.P0));
+        assertThrows(IllegalArgumentException.class, () -> ShipSystemsRuntime.restore(tooMuchOxygen, ShipSystemsTuning.P0));
+    }
+
+    private static ShipSystemsTuning tuning(double initialPower, double initialFuel, double initialOxygen) {
+        return new ShipSystemsTuning(
+                100.0D,
+                initialPower,
+                0.0D,
+                3.0D,
+                0.5D,
+                "autocannon_round",
+                10,
+                5,
+                64.0D,
+                10,
+                30,
+                240.0D,
+                initialFuel,
+                40.0D,
+                240.0D,
+                initialOxygen,
+                40.0D
+        );
     }
 
     private static ShipState ship(UUID owner) {
