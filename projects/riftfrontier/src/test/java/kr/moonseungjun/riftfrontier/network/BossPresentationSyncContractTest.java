@@ -2,6 +2,7 @@ package kr.moonseungjun.riftfrontier.network;
 
 import kr.moonseungjun.riftfrontier.client.BossPresentationClientState;
 import kr.moonseungjun.riftfrontier.combat.AttackExecution;
+import kr.moonseungjun.riftfrontier.combat.BossPresentationSemanticState;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import kr.moonseungjun.riftfrontier.content.ContentId;
 import kr.moonseungjun.riftfrontier.content.CoreDefinition;
@@ -19,7 +20,7 @@ final class BossPresentationSyncContractTest {
     }
 
     @Test
-    void payloadCopiesOnlyAuthoritativePresentationSemantics() {
+    void semanticStateCopiesOnlyAuthoritativePresentationSemantics() {
         var pattern = new CoreDefinition.AttackPattern(
             ContentId.parse("riftfrontier:sync_contract"),
             "line_charge",
@@ -30,23 +31,23 @@ final class BossPresentationSyncContractTest {
             "lowered_charge"
         );
         var frame = MinecraftBossCombatAdapter.PresentationFrame.from(2, AttackExecution.start(pattern, 100L).sample(105L));
-        var payload = BossPresentationPayload.fromFrame(77, 105L, frame);
+        var state = BossPresentationSemanticState.fromFrame(77, 105L, frame);
 
-        assertTrue(payload.active());
-        assertEquals(77, payload.entityId());
-        assertEquals(105L, payload.serverGameTick());
-        assertEquals(frame.bossPhase(), payload.bossPhase());
-        assertEquals(frame.patternId().toString(), payload.patternId());
-        assertEquals(frame.attackPhase().name(), payload.attackPhase());
-        assertEquals(frame.phaseProgress(), payload.phaseProgress(), 0.000001D);
-        assertEquals(frame.presentationCue(), payload.presentationCue());
-        assertEquals(frame.delivery(), payload.delivery());
-        assertEquals(frame.counterplay().stream().sorted().toList(), payload.counterplay());
-        assertEquals(frame.hitWindowOpen(), payload.hitWindowOpen());
+        assertTrue(state.active());
+        assertEquals(77, state.entityId());
+        assertEquals(105L, state.serverGameTick());
+        assertEquals(frame.bossPhase(), state.bossPhase());
+        assertEquals(frame.patternId().toString(), state.patternId());
+        assertEquals(frame.attackPhase().name(), state.attackPhase());
+        assertEquals(frame.phaseProgress(), state.phaseProgress(), 0.000001D);
+        assertEquals(frame.presentationCue(), state.presentationCue());
+        assertEquals(frame.delivery(), state.delivery());
+        assertEquals(frame.counterplay().stream().sorted().toList(), state.counterplay());
+        assertEquals(frame.hitWindowOpen(), state.hitWindowOpen());
     }
 
     @Test
-    void delayedPayloadCannotRewindClientPresentation() {
+    void delayedStateCannotRewindClientPresentation() {
         var newest = active(12, 220L, "ACTIVE", true);
         var older = active(12, 219L, "TELEGRAPH", false);
 
@@ -58,7 +59,7 @@ final class BossPresentationSyncContractTest {
     @Test
     void authoritativeClearRejectsOlderReactivation() {
         var active = active(8, 300L, "ACTIVE", true);
-        var clear = BossPresentationPayload.clear(8, 301L);
+        var clear = BossPresentationSemanticState.clear(8, 301L);
         var delayed = active(8, 300L, "RECOVERY", false);
 
         assertTrue(BossPresentationClientState.accept(active));
@@ -79,13 +80,13 @@ final class BossPresentationSyncContractTest {
     }
 
     @Test
-    void payloadRejectsImpossibleHitWindowSemantics() {
+    void semanticStateRejectsImpossibleHitWindowSemantics() {
         assertThrows(IllegalArgumentException.class, () -> active(4, 10L, "TELEGRAPH", true));
         assertThrows(IllegalArgumentException.class, () -> active(4, 10L, "ACTIVE", false));
     }
 
-    private static BossPresentationPayload active(int entityId, long tick, String phase, boolean hitWindowOpen) {
-        return new BossPresentationPayload(
+    private static BossPresentationSemanticState active(int entityId, long tick, String phase, boolean hitWindowOpen) {
+        return new BossPresentationSemanticState(
             entityId,
             tick,
             true,
