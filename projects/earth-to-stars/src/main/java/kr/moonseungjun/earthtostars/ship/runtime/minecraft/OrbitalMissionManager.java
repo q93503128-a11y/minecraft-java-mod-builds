@@ -221,7 +221,7 @@ public final class OrbitalMissionManager {
         }
         ShipSavedData.get(server).put(ship);
         removeSalvage(ship.shipId());
-        ShipTurretManager.removeShip(ship.shipId());
+        ShipTurretManager.activateRecoveredAutocannon(ship);
         notifyActiveCrew(
                 server,
                 ship,
