@@ -8,6 +8,7 @@ import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.DefinitionResourceLoader;
 import kr.moonseungjun.turnboundre.debug.TurnboundDebugCommands;
 import kr.moonseungjun.turnboundre.network.BattleNetwork;
+import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
 import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
 import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
@@ -28,14 +29,15 @@ public final class TurnboundRe {
     public static final PlayerProgressStore PROGRESS = new PlayerProgressStore(DEFINITIONS);
     public static final AuthoredEncounterLauncher AUTHORED_ENCOUNTERS = new AuthoredEncounterLauncher(BATTLES, DEFINITIONS);
     public static final BattleRewardSettlementService REWARD_SETTLEMENT = new BattleRewardSettlementService(BATTLES, PROGRESS);
+    public static final BattleResultPresentationService RESULT_PRESENTATION = new BattleResultPresentationService(BATTLES);
 
     public TurnboundRe(IEventBus modEventBus) {
         modEventBus.addListener(BattleNetwork::register);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
         new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
-        new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT).register(NeoForge.EVENT_BUS);
-        LOGGER.info("TURNBOUND: RE {} M4 authored encounter reward settlement loaded", VERSION);
+        new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT, RESULT_PRESENTATION).register(NeoForge.EVENT_BUS);
+        LOGGER.info("TURNBOUND: RE {} M5 result/reward presentation lifecycle loaded", VERSION);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
