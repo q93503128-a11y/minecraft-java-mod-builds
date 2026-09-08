@@ -1,0 +1,48 @@
+name: Frontier Alpha.129 Worker Runtime Patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontier-alpha129-worker-runtime.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontier-alpha129-worker-runtime
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply Alpha.129 worker runtime patch
+        run: python3 .github/frontier_alpha129_worker_runtime_patch.py
+      - name: Targeted source audit and compile
+        working-directory: projects/frontier-settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_current_source.py
+          python3 tools/test_current_docs.py
+          ./gradlew --no-daemon --no-configuration-cache --no-build-cache compileJava --stacktrace --console=plain
+          git diff --check
+      - name: Commit Alpha.129
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add projects/frontier-settlement
+          git commit -m 'frontier: fix worker production stalls and tick spikes in alpha.129'
+          git push origin HEAD:main
