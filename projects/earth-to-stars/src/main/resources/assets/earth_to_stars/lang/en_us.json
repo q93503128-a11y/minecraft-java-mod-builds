@@ -5,6 +5,9 @@
   "item.earth_to_stars.oxygen_cartridge": "Compressed Oxygen Cartridge",
   "item.earth_to_stars.life_support_unit": "Life Support Unit",
   "item.earth_to_stars.launch_craft_kit": "Launch Craft Assembly Package",
+  "item.earth_to_stars.recovered_sensor_core": "Recovered Sensor Core",
+  "entity.earth_to_stars.orbital_salvage_proxy": "Drifting Salvage Signal",
+  "entity.earth_to_stars.interceptor_proxy": "Unknown Interceptor Drone",
   "message.earth_to_stars.launch.earth_only": "This craft must be assembled on Earth's surface.",
   "message.earth_to_stars.launch.blocked": "Clear a 3x3x3 area before assembling the craft.",
   "message.earth_to_stars.launch.deployed": "The launch craft comes online.",
@@ -17,5 +20,14 @@
   "message.earth_to_stars.supply.oxygen_full": "The oxygen reserve is already full.",
   "message.earth_to_stars.supply.no_ship": "There is no accessible launch craft nearby.",
   "message.earth_to_stars.flight.orbit_entered": "Earth orbit achieved.",
-  "message.earth_to_stars.flight.earth_returned": "Atmospheric re-entry complete."
+  "message.earth_to_stars.flight.earth_returned": "Atmospheric re-entry complete.",
+  "message.earth_to_stars.orbit.salvage_detected": "Sensors detected nearby drifting salvage. Bring the craft close to the signal.",
+  "message.earth_to_stars.orbit.autocannon_recovered": "A working autocannon was recovered and linked to the empty weapon hardpoint.",
+  "message.earth_to_stars.orbit.hostile_detected": "Warning: an unknown interceptor is approaching. The recovered autocannon is available.",
+  "message.earth_to_stars.orbit.hostile_destroyed": "The interceptor is disabled. A recoverable sensor core is drifting near the craft.",
+  "message.earth_to_stars.upgrade.sensor_installed": "The recovered sensor core was installed in the auxiliary sensor slot. Detection range increased.",
+  "message.earth_to_stars.upgrade.sensor_earth_only": "Install this sensor core while servicing the craft on Earth.",
+  "message.earth_to_stars.upgrade.sensor_no_ship": "There is no accessible launch craft to service nearby.",
+  "message.earth_to_stars.upgrade.sensor_already": "A recovered orbital scanner is already installed.",
+  "message.earth_to_stars.upgrade.sensor_slot_blocked": "The auxiliary sensor slot is unavailable."
 }
