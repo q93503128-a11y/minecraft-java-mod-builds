@@ -126,6 +126,10 @@ public final class ShipSystemsRuntime {
         return true;
     }
 
+    public synchronized double drainPowerFromHostile(double amount) {
+        return powerGrid.drain(amount);
+    }
+
     public synchronized double consumeOxygen(double amount) {
         return oxygenTank.drain(amount);
     }
