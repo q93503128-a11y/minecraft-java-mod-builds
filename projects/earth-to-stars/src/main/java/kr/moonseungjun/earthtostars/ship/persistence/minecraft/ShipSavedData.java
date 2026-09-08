@@ -3,6 +3,7 @@ package kr.moonseungjun.earthtostars.ship.persistence.minecraft;
 import com.mojang.serialization.Codec;
 import kr.moonseungjun.earthtostars.EarthToStars;
 import kr.moonseungjun.earthtostars.ship.domain.ModuleCatalog;
+import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.persistence.ShipStateCodec;
 import net.minecraft.resources.Identifier;
@@ -45,6 +46,14 @@ public final class ShipSavedData extends SavedData {
                 Base64.getEncoder().encodeToString(ShipStateCodec.encode(state))
         );
         setDirty();
+    }
+
+    public synchronized boolean remove(ShipId shipId) {
+        if (encodedShips.remove(shipId.toString()) == null) {
+            return false;
+        }
+        setDirty();
+        return true;
     }
 
     public synchronized List<ShipState> decodeAll(ModuleCatalog catalog) {
