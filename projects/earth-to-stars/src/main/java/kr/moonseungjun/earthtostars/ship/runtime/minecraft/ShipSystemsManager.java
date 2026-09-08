@@ -20,7 +20,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -105,22 +104,16 @@ public final class ShipSystemsManager {
     static boolean canEnterOrbit(ShipState ship) {
         ShipSystemsRuntime systems = systems(ship);
         return LaunchReadinessPolicy.hasOrbitReserve(
-                systems.propellantStored(),
-                systems.oxygenStored(),
-                hasLifeSupport(ship)
-        );
+                systems.propellantStored(), systems.oxygenStored(), hasLifeSupport(ship));
     }
 
     static OrbitReadiness orbitReadiness(ShipState ship) {
         ShipSystemsRuntime systems = systems(ship);
         return new OrbitReadiness(
-                canEnterOrbit(ship),
-                hasLifeSupport(ship),
-                systems.propellantStored(),
-                systems.oxygenStored(),
+                canEnterOrbit(ship), hasLifeSupport(ship),
+                systems.propellantStored(), systems.oxygenStored(),
                 LaunchReadinessPolicy.MIN_ORBIT_PROPELLANT,
-                LaunchReadinessPolicy.MIN_ORBIT_OXYGEN
-        );
+                LaunchReadinessPolicy.MIN_ORBIT_OXYGEN);
     }
 
     static ShipSystemsRuntime systems(ShipState ship) {
@@ -133,50 +126,33 @@ public final class ShipSystemsManager {
 
     public static SupplyLoadResult loadSupply(ServerPlayer player, SupplyType type) {
         ShipState ship = ShipRuntimeManager.accessibleShip(player, ShipPermission.INTERIOR_ACCESS).orElse(null);
-        if (ship == null) {
-            return SupplyLoadResult.NO_ACCESSIBLE_SHIP;
-        }
+        if (ship == null) return SupplyLoadResult.NO_ACCESSIBLE_SHIP;
         ShipSystemsRuntime systems = systems(ship);
         double accepted = switch (type) {
             case PROPELLANT -> systems.loadPropellantCell();
             case OXYGEN -> systems.loadOxygenCartridge();
         };
-        if (accepted <= 1.0E-9D) {
-            return SupplyLoadResult.TANK_FULL;
-        }
+        if (accepted <= 1.0E-9D) return SupplyLoadResult.TANK_FULL;
         ShipSystemsSavedData.get(player.level().getServer()).put(systems.snapshot());
         return SupplyLoadResult.LOADED;
     }
 
     public static SystemStatus status(ServerPlayer player) {
         ShipState ship = ShipRuntimeManager.accessibleShip(player, ShipPermission.INTERIOR_ACCESS).orElse(null);
-        if (ship == null) {
-            return SystemStatus.unavailable();
-        }
+        if (ship == null) return SystemStatus.unavailable();
         ShipSystemsRuntime systems = systems(ship);
         String ammoType = systems.tuning().primaryAmmoType();
         return new SystemStatus(
-                true,
-                systems.powerStored(),
-                systems.powerCapacity(),
-                systems.generationPerTick(),
-                systems.ammoAmount(ammoType),
-                systems.ammoCapacity(ammoType),
-                systems.sensorGrid().contactCount(),
-                OrbitalRecoveryProgression.sensorRange(ship, systems.tuning().sensorRange()),
-                systems.propellantStored(),
-                systems.propellantCapacity(),
-                systems.oxygenStored(),
-                systems.oxygenCapacity(),
-                hasLifeSupport(ship)
-        );
+                true, systems.powerStored(), systems.powerCapacity(), systems.generationPerTick(),
+                systems.ammoAmount(ammoType), systems.ammoCapacity(ammoType),
+                systems.sensorGrid().contactCount(), OrbitalRecoveryProgression.sensorRange(ship, systems.tuning().sensorRange()),
+                systems.propellantStored(), systems.propellantCapacity(),
+                systems.oxygenStored(), systems.oxygenCapacity(), hasLifeSupport(ship));
     }
 
     public static void flush(MinecraftServer server) {
         ShipSystemsSavedData savedData = ShipSystemsSavedData.get(server);
-        for (ShipSystemsRuntime runtime : SYSTEMS.values()) {
-            savedData.put(runtime.snapshot());
-        }
+        for (ShipSystemsRuntime runtime : SYSTEMS.values()) savedData.put(runtime.snapshot());
     }
 
     public static void removeShip(ShipId shipId) {
@@ -202,13 +178,9 @@ public final class ShipSystemsManager {
 
     private static void checkpointIfDue(MinecraftServer server) {
         var overworld = server.getLevel(Level.OVERWORLD);
-        if (overworld == null) {
-            return;
-        }
+        if (overworld == null) return;
         long tick = overworld.getGameTime();
-        if (lastPersistTick != Long.MIN_VALUE && tick - lastPersistTick < PERSIST_INTERVAL_TICKS) {
-            return;
-        }
+        if (lastPersistTick != Long.MIN_VALUE && tick - lastPersistTick < PERSIST_INTERVAL_TICKS) return;
         flush(server);
         lastPersistTick = tick;
     }
@@ -222,80 +194,45 @@ public final class ShipSystemsManager {
     private static List<SensorContact> scanContacts(ShipId shipId, ShipRuntimeManager.ExteriorAnchor anchor, double range) {
         ShipVec3 position = anchor.transform().position();
         AABB box = new AABB(
-                position.x() - range,
-                position.y() - range,
-                position.z() - range,
-                position.x() + range,
-                position.y() + range,
-                position.z() + range
-        );
+                position.x() - range, position.y() - range, position.z() - range,
+                position.x() + range, position.y() + range, position.z() + range);
         List<Entity> entities = anchor.level().getEntities(
-                (Entity) null,
-                box,
-                entity -> entity instanceof LivingEntity && !(entity instanceof ArmorStand) && entity.isAlive()
-        );
+                (Entity) null, box, entity -> entity instanceof LivingEntity && entity.isAlive());
         List<SensorContact> contacts = new ArrayList<>(entities.size() + 1);
         for (Entity entity : entities) {
             Vec3 pos = entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D);
             boolean hostile = entity instanceof Enemy;
             contacts.add(new SensorContact(
-                    entity.getUUID(),
-                    new ShipVec3(pos.x, pos.y, pos.z),
-                    hostile,
-                    hostile ? 10.0D : 0.0D
-            ));
+                    entity.getUUID(), new ShipVec3(pos.x, pos.y, pos.z), hostile, hostile ? 10.0D : 0.0D));
         }
         for (SensorContact contact : OrbitalMissionManager.sensorContacts(shipId)) {
             ShipVec3 delta = new ShipVec3(
                     contact.position().x() - position.x(),
                     contact.position().y() - position.y(),
-                    contact.position().z() - position.z()
-            );
-            if (delta.lengthSquared() <= range * range) {
-                contacts.add(contact);
-            }
+                    contact.position().z() - position.z());
+            if (delta.lengthSquared() <= range * range) contacts.add(contact);
         }
         return contacts;
     }
 
-    public enum SupplyType {
-        PROPELLANT,
-        OXYGEN
-    }
-
-    public enum SupplyLoadResult {
-        LOADED,
-        TANK_FULL,
-        NO_ACCESSIBLE_SHIP
-    }
+    public enum SupplyType { PROPELLANT, OXYGEN }
+    public enum SupplyLoadResult { LOADED, TANK_FULL, NO_ACCESSIBLE_SHIP }
 
     record OrbitReadiness(
-            boolean ready,
-            boolean lifeSupportInstalled,
-            double propellant,
-            double oxygen,
-            double requiredPropellant,
-            double requiredOxygen
-    ) {
+            boolean ready, boolean lifeSupportInstalled,
+            double propellant, double oxygen,
+            double requiredPropellant, double requiredOxygen) {
     }
 
     public record SystemStatus(
             boolean available,
-            double powerStored,
-            double powerCapacity,
-            double generationPerTick,
-            int ammo,
-            int ammoCapacity,
-            int contacts,
-            double sensorRange,
-            double propellant,
-            double propellantCapacity,
-            double oxygen,
-            double oxygenCapacity,
-            boolean lifeSupportInstalled
-    ) {
+            double powerStored, double powerCapacity, double generationPerTick,
+            int ammo, int ammoCapacity, int contacts, double sensorRange,
+            double propellant, double propellantCapacity,
+            double oxygen, double oxygenCapacity, boolean lifeSupportInstalled) {
         static SystemStatus unavailable() {
-            return new SystemStatus(false, 0.0D, 0.0D, 0.0D, 0, 0, 0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, false);
+            return new SystemStatus(false, 0.0D, 0.0D, 0.0D, 0, 0, 0, 0.0D,
+                    0.0D, 0.0D, 0.0D, 0.0D, false);
         }
     }
 }
