@@ -63,7 +63,7 @@ jobs:
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
       - name: Dedicated server save restart lifecycle
-        if: github.event_name == 'workflow_dispatch' || env.MOD_VERSION == '0.1.0-alpha.11'
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           rm -rf run
@@ -83,10 +83,10 @@ jobs:
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" || "$MOD_VERSION" == "0.1.0-alpha.11" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             LIFECYCLE_STATUS="PASS (this run)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified run 34192830690 includes fuel/oxygen"
+            LIFECYCLE_STATUS="NOT RERUN; last verified run 34197931566 includes ShipState schema 2 plus fuel/oxygen"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
           # EARTH TO STARS — M1-D Orbital Recovery Build Report
