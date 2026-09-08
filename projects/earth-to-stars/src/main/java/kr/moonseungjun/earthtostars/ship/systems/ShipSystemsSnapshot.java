@@ -9,13 +9,15 @@ import java.util.Objects;
 public record ShipSystemsSnapshot(
         ShipId shipId,
         double powerStored,
-        Map<String, Integer> ammoAmounts
+        Map<String, Integer> ammoAmounts,
+        double propellantStored,
+        double oxygenStored
 ) {
     public ShipSystemsSnapshot {
         Objects.requireNonNull(shipId, "shipId");
-        if (!Double.isFinite(powerStored) || powerStored < 0.0D) {
-            throw new IllegalArgumentException("powerStored must be finite and >= 0");
-        }
+        requireNonNegativeFinite(powerStored, "powerStored");
+        requireNonNegativeFinite(propellantStored, "propellantStored");
+        requireNonNegativeFinite(oxygenStored, "oxygenStored");
         Objects.requireNonNull(ammoAmounts, "ammoAmounts");
         Map<String, Integer> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : ammoAmounts.entrySet()) {
@@ -30,5 +32,15 @@ public record ShipSystemsSnapshot(
             copy.put(type, amount);
         }
         ammoAmounts = Map.copyOf(copy);
+    }
+
+    public ShipSystemsSnapshot(ShipId shipId, double powerStored, Map<String, Integer> ammoAmounts) {
+        this(shipId, powerStored, ammoAmounts, 0.0D, 0.0D);
+    }
+
+    private static void requireNonNegativeFinite(double value, String name) {
+        if (!Double.isFinite(value) || value < 0.0D) {
+            throw new IllegalArgumentException(name + " must be finite and >= 0");
+        }
     }
 }
