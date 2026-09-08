@@ -34,11 +34,13 @@ jobs:
           java-version: '25'
           cache: gradle
       - name: Resolve mod version
+        id: version
         shell: bash
         run: |
           VERSION=$(awk -F= '$1=="mod_version" { print $2 }' gradle.properties)
           test -n "$VERSION"
           echo "MOD_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Verify toolchain
         run: |
           java -version
@@ -61,7 +63,7 @@ jobs:
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
       - name: Dedicated server save restart lifecycle
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || steps.version.outputs.version == '0.1.0-alpha.10'
         shell: bash
         run: |
           rm -rf run
@@ -74,18 +76,20 @@ jobs:
 
           EARTH_TO_STARS_LIFECYCLE_PROBE=verify timeout --kill-after=15s 180s ./gradlew --no-daemon runServer --stacktrace 2>&1 | tee build/logs/p0g-server-verify.log
           grep -q 'EARTH_TO_STARS_P0G_VERIFY_PASS' build/logs/p0g-server-verify.log
+          grep -q 'propellant=51.25' build/logs/p0g-server-verify.log
+          grep -q 'oxygen=66.5' build/logs/p0g-server-verify.log
       - name: Write build report
         shell: bash
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            LIFECYCLE_STATUS="PASS (this run)"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" || "$MOD_VERSION" == "0.1.0-alpha.10" ]]; then
+            LIFECYCLE_STATUS="PASS (this run; fuel/oxygen included)"
           else
-            LIFECYCLE_STATUS="NOT RERUN; last verified run 34188840459"
+            LIFECYCLE_STATUS="NOT RERUN; last verified lifecycle run retained"
           fi
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — M1 Earth Launch Build Report
+          # EARTH TO STARS — M1-C Launch Readiness Build Report
 
           - Commit: $GITHUB_SHA
           - Mod version: $MOD_VERSION
@@ -93,23 +97,21 @@ jobs:
           - Gradle: 9.2.1 wrapper
           - Minecraft: 26.2
           - NeoForge: 26.2.0.38-beta
-          - P0-H progression validator self-tests: PASS
-          - canonical main progression graph validation: PASS
+          - P0-H progression validator: PASS
           - M1 launch recipe dependency closure: PASS
           - M1 launch recipe Nether/End independence: PASS
-          - starter craft blueprint JUnit: PASS
+          - launch readiness / atmosphere JUnit: PASS
+          - central power + propellant propulsion transaction JUnit: PASS
+          - oxygen continuous drain JUnit: PASS
+          - fuel/oxygen snapshot restore JUnit: PASS
           - clean/test/build: PASS
           - production JAR verify: PASS
-          - M1 recipes/client item definitions packaged: PASS
-          - SHA-256: $SHA
-          - P0-A through P0-G JUnit regression: PASS
           - dedicated server save/restart lifecycle: $LIFECYCLE_STATUS
-          - last dedicated lifecycle verified run: 34188840459
-          - survival recipe crafting in live client: NOT TESTED
-          - launch package in-world deployment: NOT TESTED
+          - SHA-256: $SHA
+          - live fuel/oxygen supply interaction: NOT TESTED
+          - live atmosphere ascent/readiness block: NOT TESTED
           - live Earth↔orbit player flight: NOT TESTED
-          - actual two-player pilot + gunner session: NOT TESTED
-          - actual multi-player linked-interior session: NOT TESTED
+          - actual two-player pilot + crew session: NOT TESTED
           - client smoke / visual quality: NOT RUN
           - production ship/interior/turret visuals: NOT IMPLEMENTED
           EOF
