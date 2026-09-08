@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "FAF",
+    "FLF",
+    "P P"
+  ],
+  "key": {
+    "F": { "item": "earth_to_stars:reinforced_frame" },
+    "A": { "item": "earth_to_stars:avionics_unit" },
+    "L": { "item": "earth_to_stars:life_support_unit" },
+    "P": { "item": "earth_to_stars:propellant_cell" }
+  },
+  "result": {
+    "id": "earth_to_stars:launch_craft_kit",
+    "count": 1
+  }
+}
