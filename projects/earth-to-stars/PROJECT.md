@@ -3,14 +3,14 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.3`
+- Mod version: `0.1.0-alpha.4`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.3.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.4.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
@@ -87,59 +87,68 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Latest verified implementation commit: `a99f7b8470b09cfd509ec4f0aaf054c537db0f3f`
+Latest verified implementation commit: `492d8fa0536b23881591ad9a31b0501c7048b6e3`
 
-GitHub Actions `Build earth-to-stars` run `34181251912` verified:
+GitHub Actions `Build earth-to-stars` run `34183711601` verified:
 
-- M0 Gradle 9.2.1 / Java 25 / NeoForge 26.2.0.38-beta bootstrap regression
-- P0-A authoritative pure-Java ship kernel regression
-- P0-B movement transform/control lease regression
-- P0-C altitude/direction transition policy JUnit
-- server-global Minecraft `SavedData` adapter compile using versioned `ShipStateCodec` payloads
-- persisted ship key↔decoded `ShipId` consistency rejection path
-- persisted owner ship repository restore path and `/earthtostars ship restore` adapter compile
-- custom `earth_to_stars:orbital_space` dimension data packaged in production JAR
-- server-authoritative Earth↔orbit pilot transition transaction adapter compile
-- control lease revoke/reissue boundary across transition
-- target exterior spawn failure rollback path
+- M0 bootstrap regression
+- P0-A authoritative ship kernel / persistence-codec regression
+- P0-B movement transform / control lease regression
+- P0-C Earth↔orbit transition-policy regression
+- P0-D stable `ShipId → interior slot` allocation/layout JUnit
+- duplicate/corrupt interior slot collision rejection
+- server-global `InteriorSavedData` adapter compile
+- custom `earth_to_stars:ship_interiors` technical dimension packaged in production JAR
+- permission-gated exterior→interior entry adapter compile
+- interior→current live exterior return adapter compile
+- unlinked interior login recovery adapter compile
+- Minecraft 26.2 respawn recovery API alignment
 - `clean test build`
 - production JAR verifier
 
-Verified JAR SHA-256: `d49b228ad0fee44ceb395d56b040f2a796e55f452b9b410117ed6f947c3d1fd8`
+Verified JAR SHA-256: `a5f3d8ffb24869c6085079af40106a3830b12ce7ea53e57775930b372fc03284`
 
-The P0-B/P0-C exterior is still a temporary vanilla `ArmorStand` proxy. The orbital layer is also a technical P0 environment. Neither is a production ship model, final space presentation or final world-design decision.
+The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, and the small generated interior room are technical P0 environments only. None is a final ship model, interior layout, UI, space presentation, or world-design decision.
+
+## P0-D interior architecture
+
+P0-D uses one stable `earth_to_stars:ship_interiors` server space rather than creating a dynamic dimension per ship. Each authoritative `ShipId` receives a persistent isolated interior cell. Current P0 allocation uses 2048-block spacing in an 8192×8192 grid and rejects persisted slot collisions instead of silently relinking ships.
+
+A player inside a ship interior remains in that stable interior coordinate space while the exterior ship moves or crosses Earth↔orbit. The interior is linked by `ShipId`; interior crew therefore do not need to inherit every exterior translation/rotation or be teleported during every exterior layer transition. This is the intended multiplayer-safe foundation for later crew, control-station, power/alarm/damage, cargo, and external-view projection.
+
+The interior assignment is currently stored in dedicated versioned-world data alongside the ship SavedData boundary, not yet embedded into the `ShipState` binary schema. The project is still before the first playable-alpha compatibility freeze, so this may be migrated into a unified save schema before that freeze.
 
 ## Verification boundary
 
-Verified by the alpha.3 automated gate:
+Verified by the alpha.4 automated gate:
 
 - source/API compilation against Minecraft 26.2 / NeoForge 26.2.0.38-beta
-- pure ship kernel/movement/transition policy tests
-- production JAR structure and packaged orbital dimension data
-- SavedData and TeleportTransition adapters compile as part of the mod
+- P0-A/B/C regression JUnit
+- pure interior slot/layout/allocation tests
+- production JAR structure
+- packaged `orbital_space` and `ship_interiors` dimension data
+- SavedData / TeleportTransition / interior entry-exit-recovery adapters compile as part of the mod
 
 Still **NOT RUN / NOT TESTED**:
 
-- actual disk save → dedicated-server restart → same ship restore
+- actual disk save → dedicated-server restart → same ship/interior restore
 - GameTest create/save/reload/restore integration
-- dedicated server data-pack boot/smoke
+- dedicated server custom-dimension data-pack boot/smoke
 - client smoke
 - real in-game Earth→orbit→Earth flight transition
 - real P0-B control feel/camera/interpolation/reconnect lifecycle
-- multi-player passenger transfer during ship transition
+- actual exterior↔interior entry/exit in Minecraft
+- two or more players coexisting in the same ship interior
+- one player piloting while another remains inside during exterior movement/layer transition
+- destroyed/unavailable exterior recovery in live gameplay
 - live multiplayer session
-- linked interior
-- production ship exterior/rendering
+- production ship/interior rendering
 - manual/automatic turret gameplay
 
 No item in the second list is called complete merely because its adapter compiles.
 
 ## Current phase
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-D NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-E NEXT`
 
-P0-C now has a real server-authoritative transition boundary in code: an upward ship crossing the Earth envelope targets the orbital layer, and a descending orbital ship can target Earth re-entry while retaining the same in-memory `ShipState`/`ShipId`. The pilot lease is revoked before transfer and reissued only after a successful target exterior replacement; target-exterior failure attempts rollback instead of silently duplicating a craft.
-
-This is not yet a claim that the transition feels continuous or even that the custom orbital layer successfully boots in a live Minecraft server; those require the later batched live integration gate.
-
-The next production unit is **P0-D Linked Ship Interior**. It extends the same authoritative `ShipId` across a stable interior instance and is also the right place to expand transition handling from the current pilot-first proof to multiple crew/passengers without turning every small milestone into a separate manual test request.
+P0-D now provides the stable linked-interior backend required by the B-type ship architecture. The next production unit is **P0-E Representative Turret**: one authoritative autocannon path that proves manual and `AUTO_DEFENSE` control can share the same weapon state safely, while beginning the centralized SensorGrid/ammo boundary instead of building per-turret world scans.
