@@ -62,6 +62,19 @@ public final class InteriorAssignmentTable {
         return new InteriorRef(shipId, slot);
     }
 
+    public Optional<Long> release(ShipId shipId) {
+        Objects.requireNonNull(shipId, "shipId");
+        Long slot = assignments.remove(shipId);
+        if (slot == null) {
+            return Optional.empty();
+        }
+        reverse.remove(slot);
+        if (slot < nextCandidate) {
+            nextCandidate = slot;
+        }
+        return Optional.of(slot);
+    }
+
     public Optional<ShipId> findShip(long slot) {
         InteriorSlotLayout.requireValidSlot(slot);
         return Optional.ofNullable(reverse.get(slot));
