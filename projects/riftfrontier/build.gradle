@@ -55,8 +55,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     // Gradle 9 no longer supplies the JUnit Platform launcher implicitly.
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    // Gson is supplied by the Minecraft/NeoForge runtime, but plain JVM unit tests need it explicitly.
-    testRuntimeOnly 'com.google.code.gson:gson:2.13.1'
+    // Gson is supplied by the Minecraft/NeoForge runtime; plain JVM tests compile against the codec API too.
+    testImplementation 'com.google.code.gson:gson:2.13.1'
 }
 
 test {
