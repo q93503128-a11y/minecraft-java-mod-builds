@@ -2,6 +2,63 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-B ship movement backend
+
+### Added
+
+- pure-Java `ShipVec3`, `ShipTransform`, forward/right/up orientation basis
+- throttle / yaw / pitch 입력 계약
+- acceleration / braking / forward/reverse speed tuning
+- server-side `ShipMovementSimulator`
+- `ShipFlightRuntime`와 서버 발급 `ShipControlLease`
+- control session UUID + monotonic sequence를 이용한 stale/replay input rejection
+- owner/crew `PILOT` 권한과 guest 조종 거부
+- control lease TTL과 release/expiry 후 zero-input 안전 상태
+- client→server 입력 payload; 좌표/속도/회전 결과를 client payload에 포함하지 않는 server-authoritative 경계
+- logout / dimension change 시 control lease 해제 경로
+- `/earthtostars ship spawn`, `control`, `release` 조종 연결 명령
+- Minecraft-side 임시 `ArmorStand` exterior proxy와 서버 transform projection
+- mouse가 game에 grab되지 않은 상태에서 조종 입력을 zero로 보내는 client guard
+- 이동 basis / 가속·감속 / pitch clamp / lease permission / replay / expiry JUnit
+- mod version `0.1.0-alpha.2`
+
+### Boundary
+
+현재 `ArmorStand` exterior는 movement/backend 연결을 검증하기 위한 내부 기술 프록시다. 최종 함선 모델, cockpit, production visual 또는 함선 형태로 간주하지 않는다.
+
+### Verification
+
+최종 검증 기준 커밋: `cc89f0c1693fa063de5bb091ca355a35a5413b8f`
+
+GitHub Actions `Build earth-to-stars` run `34176522000`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- `clean test build`: `PASS`
+- P0-A regression JUnit: `PASS`
+- P0-B pure movement/lease JUnit: `PASS`
+- Minecraft-side proxy/network/client adapter compile: `PASS`
+- production JAR verifier: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.2.jar`
+- JAR SHA-256: `a834a372008b1604d4591b595b88b10ba06446e1c149ce044a6842db0f3a2413`
+- datagen: `NOT RUN`
+- GameTest / Minecraft reload persistence: `NOT REGISTERED / NOT RUN`
+- dedicated server smoke: `NOT RUN`
+- client smoke: `NOT RUN`
+- live multiplayer session: `NOT TESTED`
+- 실제 조종감/카메라/interpolation/reconnect acceptance: `NOT TESTED`
+
+첫 P0-B build run `34176273788`은 Minecraft 26.2 API 차이 3건으로 `compileJava`에서 실패했다. 이는 순수 movement/lease 설계 실패가 아니었고, client screen 접근, payload player 정적 타입, server clock 접근을 26.2 API에 맞춘 뒤 같은 게이트를 재실행해 최종 성공했다.
+
+### Status
+
+`P0-B BACKEND BUILD VERIFIED / LIVE MINECRAFT ACCEPTANCE DEFERRED`
+
+반복 테스트를 피하기 위해 P0-B의 실제 Minecraft 조종·재접속 검증은 즉시 별도 사용자 테스트로 요청하지 않는다. 다음 P0-C 및 persistence integration과 묶어 더 큰 의미의 플레이 검증 게이트에서 확인한다.
+
+다음 의미 있는 작업 단위는 **P0-C Earth → Orbital Space Transition + Minecraft persistence integration**이다.
+
+---
+
 ## 2026-09-08 — M0 bootstrap + P0-A authoritative ship kernel
 
 ### Added

@@ -3,14 +3,14 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.1`
+- Mod version: `0.1.0-alpha.2`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.1.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.2.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
@@ -87,23 +87,26 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Verified implementation commit: `d1c34db306680944c5696ecabd5f018943fef772`
+Latest verified implementation commit: `cc89f0c1693fa063de5bb091ca355a35a5413b8f`
 
-GitHub Actions `Build earth-to-stars` run `34175374292` verified:
+GitHub Actions `Build earth-to-stars` run `34176522000` verified:
 
-- Gradle 9.2.1 / Java 25 / NeoForge 26.2.0.38-beta project bootstrap
-- minimal mod entrypoint and metadata
-- compiled production JAR
-- authoritative pure-Java ship kernel
-- owner/crew/guest permission policy
-- module definition/instance + slot compatibility
-- stable `ShipId`
-- versioned schema 1 ship persistence codec
-- repository duplicate-identity protection
-- JUnit contracts for install/remove/permission/duplicate/round-trip/schema rejection
+- M0 Gradle 9.2.1 / Java 25 / NeoForge 26.2.0.38-beta bootstrap regression
+- P0-A authoritative pure-Java ship kernel regression
+- P0-B pure movement transform and orientation math
+- throttle / yaw / pitch / acceleration / braking rules
+- server-issued control lease with session UUID, monotonically increasing input sequence and expiry
+- owner/crew pilot permission enforcement
+- client payload contains control input only; authoritative transform remains server-owned
+- logout/dimension-change lease revocation path
+- Minecraft-side temporary exterior proxy and control command/network adapter compile
+- `clean test build`
+- P0-A/P0-B JUnit
 - production JAR verifier
 
-Verified JAR SHA-256: `baea44c12f5383781967c503c41363831312676643f1870fac82df9108c46848`
+Verified JAR SHA-256: `a834a372008b1604d4591b595b88b10ba06446e1c149ce044a6842db0f3a2413`
+
+The P0-B exterior is currently a temporary vanilla `ArmorStand` proxy used only to prove the backend boundary. It is **not** a production ship model, visual target or content decision.
 
 Not yet verified:
 
@@ -112,13 +115,17 @@ Not yet verified:
 - dedicated server smoke
 - client smoke
 - live multiplayer session
-- moving ship exterior
-- space transition
+- real in-game P0-B control feel / camera / interpolation acceptance
+- reconnect lease behavior in a live Minecraft session
+- production ship exterior model/rendering
+- Earth → orbital-space transition
 - linked interior
 - manual/automatic turret gameplay
 
 ## Current phase
 
-`M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / MINECRAFT INTEGRATION GATE PENDING / P0-B NEXT`
+`M0 VERIFIED / P0-A PURE KERNEL VERIFIED / P0-B BACKEND BUILD VERIFIED / MINECRAFT PLAY VALIDATION DEFERRED / P0-C NEXT`
 
-The pure authoritative ship domain is now real code and has passed one meaningful clean test/build/JAR gate. P0-A is **not** called fully integration-complete until Minecraft persistence/reload is proven. The next production unit is P0-B Ship Exterior / Movement Backend, with the first Minecraft server integration also closing the pending P0-A persistence gate.
+P0-B's movement and multiplayer-authority backend is now real code and passes the project build/JUnit/JAR gate. It is **not** called fully gameplay-verified until an actual Minecraft client/server session checks control feel, interpolation, reconnect and lifecycle behavior. To avoid repetitive testing, that live validation is deliberately batched with the next meaningful integration slice instead of being requested after every code unit.
+
+The next production unit is **P0-C Earth → Orbital Space Transition**, while also connecting ShipState to Minecraft persistence so the next larger integration gate can cover P0-A persistence + P0-B movement lifecycle + P0-C transition together.

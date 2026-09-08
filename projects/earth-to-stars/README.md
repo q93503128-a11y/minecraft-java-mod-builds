@@ -2,7 +2,7 @@
 
 Minecraft Java / NeoForge 26.2 기반의 SF 우주 개척·모듈식 함선 성장 프로젝트다.
 
-> **상태: M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / P0-B NEXT**
+> **상태: M0 VERIFIED / P0-A PURE KERNEL VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C NEXT**
 
 ## 한 줄 설명
 
@@ -55,32 +55,38 @@ Minecraft 생존
 - 자동 포탑이 각자 매 tick 전체 엔티티를 검색하는 구조를 만들지 않는다.
 - 싱글 구현 후 마지막에 멀티를 붙이지 않는다.
 - 최종 SF UI를 검은 반투명 패널 + 네온 테두리 + 의미 없는 글로우로 즉흥 제작하지 않는다.
-- 바닐라 파티클과 임시 큐브 모델을 production 최종 비주얼로 남기지 않는다.
+- 바닐라 파티클과 임시 엔티티를 production 최종 비주얼로 남기지 않는다.
 
 ## 현재 검증 기준
 
-구현 커밋: `d1c34db306680944c5696ecabd5f018943fef772`
+최신 검증 커밋: `cc89f0c1693fa063de5bb091ca355a35a5413b8f`
 
-GitHub Actions `Build earth-to-stars` run `34175374292`에서 한 번의 의미 있는 M0/P0-A 게이트를 통과했다.
+GitHub Actions `Build earth-to-stars` run `34176522000`:
 
 - `clean test build`: PASS
-- P0-A JUnit: PASS
+- P0-A kernel regression: PASS
+- P0-B movement/lease JUnit: PASS
+- Minecraft 26.2 control/network adapter compile: PASS
 - production JAR verify: PASS
-- JAR: `earth_to_stars-0.1.0-alpha.1.jar`
-- SHA-256: `baea44c12f5383781967c503c41363831312676643f1870fac82df9108c46848`
+- JAR: `earth_to_stars-0.1.0-alpha.2.jar`
+- SHA-256: `a834a372008b1604d4591b595b88b10ba06446e1c149ce044a6842db0f3a2413`
 
-GameTest, dedicated server, client, live multiplayer는 이번 순수 커널 게이트에서 실행하지 않았다. 특히 실제 멀티는 `NOT TESTED`이며 성공했다고 간주하지 않는다.
+현재 P0-B 구현에는 서버 권한 transform, forward/right/up 방향 basis, throttle, yaw/pitch, 가속/감속, 서버 발급 control lease, sequence replay 방어, logout/dimension lease 해제, client→server 입력 패킷과 Minecraft 임시 exterior proxy가 들어가 있다.
+
+GameTest, dedicated server smoke, client smoke, 실제 멀티플레이와 실제 조종감 검수는 아직 실행하지 않았다. 따라서 P0-B를 게임플레이 검증 완료라고 표현하지 않는다.
 
 ## 다음 작업
 
-다음 의미 있는 작업 단위는 **P0-B Ship Exterior / Movement Backend + 첫 Minecraft persistence integration**이다.
+다음 의미 있는 작업 단위는 **P0-C Earth → Orbital Space Transition + Minecraft persistence integration**이다.
 
-1. 최소 함선 exterior object/entity
-2. server-authoritative transform
-3. throttle / yaw / pitch / acceleration / deceleration
-4. 조종 권한과 control lease
-5. client interpolation 경계
-6. ShipState를 Minecraft 저장 경계에 연결
-7. create → save → reload → 동일 shipId/modules 복원 integration gate
+1. Overworld test craft의 altitude transition envelope
+2. 서버 주도 orbital-space transfer
+3. 동일 `ShipId` 유지
+4. passenger/control recovery 정책
+5. transition 중 disconnect/failure recovery
+6. ShipState의 Minecraft 저장 경계 연결
+7. create → save → reload → 동일 shipId/modules 복원 integration 준비
 
-이 묶음이 끝나기 전에는 최종 함선 모델이나 cockpit UI를 즉흥 제작하지 않는다. P0-B 외형은 기술 프록시에 한정하고, 최종 시각 작업은 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 진행한다.
+반복적인 사용자 테스트는 요구하지 않는다. P0-A 저장, P0-B 실제 조종 lifecycle, P0-C 전환을 충분히 묶은 뒤 한 번의 의미 있는 Minecraft 검증으로 확인한다.
+
+최종 함선 모델·cockpit UI·우주 전환 연출은 기술 프록시 단계에서 즉흥 제작하지 않고 `docs/03_UI_ART_REFERENCE_GATE.md`를 통과한 뒤 production 품질로 진행한다.
