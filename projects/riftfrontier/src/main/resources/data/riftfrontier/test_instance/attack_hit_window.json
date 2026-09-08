@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:function",
+  "function": "riftfrontier:attack_hit_window",
+  "environment": "minecraft:default",
+  "structure": "riftfrontier:empty",
+  "max_ticks": 100,
+  "setup_ticks": 0,
+  "required": true,
+  "rotation": "none",
+  "manual_only": false,
+  "max_attempts": 1,
+  "required_successes": 1,
+  "sky_access": false
+}

@@ -8,6 +8,7 @@ import kr.moonseungjun.riftfrontier.diagnostics.RuntimeDiagnosticsCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayCommand;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionGameplayEvents;
 import kr.moonseungjun.riftfrontier.expedition.ExpeditionRestartReconciler;
+import kr.moonseungjun.riftfrontier.gametest.CombatGameTests;
 import kr.moonseungjun.riftfrontier.gametest.RiftfrontierGameTests;
 import kr.moonseungjun.riftfrontier.persistence.RiftfrontierWorldData;
 import net.neoforged.bus.api.IEventBus;
@@ -36,6 +37,7 @@ public final class Riftfrontier {
         );
 
         RiftfrontierGameTests.register(modEventBus);
+        CombatGameTests.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::addServerReloadListeners);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::registerCommands);
         NeoForge.EVENT_BUS.addListener(Riftfrontier::serverStarted);
