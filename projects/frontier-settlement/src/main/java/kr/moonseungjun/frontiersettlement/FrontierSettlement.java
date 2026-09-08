@@ -37,7 +37,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(FrontierSettlement.MOD_ID)
 public final class FrontierSettlement {
     public static final String MOD_ID = "frontier_settlement";
-    // Alpha.127 canonical/integrated validation trigger after final territory-network visibility pass.
+    // Alpha.128 canonical/integrated validation trigger after real-play construction stall recovery.
 
     public FrontierSettlement(IEventBus modBus, ModContainer modContainer) {
         FrontierContent.register(modBus);
