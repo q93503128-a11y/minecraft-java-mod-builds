@@ -16,7 +16,7 @@ def require(condition, message):
 
 
 gradle = text(ROOT / "gradle.properties")
-require("mod_version=0.1.0-alpha.128" in gradle, "current verifier/version drift")
+require("mod_version=0.1.0-alpha.129" in gradle, "current verifier/version drift")
 
 inventory = text(SETTLEMENT / "SettlementInventory.java")
 storage = text(SETTLEMENT / "SettlementStorageService.java")
@@ -218,7 +218,7 @@ guide = text(JAVA / "client/SettlementGuideScreen.java")
 require("생산시설 현장 저장통을 우클릭" in guide, "in-game guide does not teach production investment")
 production_status = text(SETTLEMENT / "SettlementProductionStatusService.java")
 require("STALE_AFTER_TICKS = 200L" in production_status and "statusFor" in production_status, "production status cache missing")
-require("주민 없음" in worker and "주변 벌목 대상 없음" in worker and "접근 가능한 채석면 없음" in worker and "광맥 고갈" in worker and "현장·공동 저장고 가득 참" in worker, "production status coverage missing")
+require("주민 없음" in worker and "주변 벌목 대상 없음" in worker and "접근 가능한 채석면 없음" in worker and "광맥 탐색 중" in worker and "현장·공동 저장고 가득 참" in worker, "production status coverage missing")
 context = text(SETTLEMENT / "SettlementContextService.java")
 require("SettlementProductionStatusService.statusFor(level, building)" in context, "production context cache reader missing")
 require("SettlementProductionEfficiencyService.farmWorkPeriod" in worker, "farm still uses fixed work cadence")
@@ -227,9 +227,24 @@ require("SettlementProductionEfficiencyService.farmBatch" in worker and "harvest
 require("state.setValue(BlockStateProperties.AGE_7, Math.min(7, age + 1))" in worker, "staffed farm does not actively tend crop growth")
 require("tryReplantHarvestedTree" in worker and "saplingForNaturalLog" in worker,
         "town lumber worker no longer restores a physical managed forestry cycle")
-require("findManagedQuarryStone" in worker and "MANAGED_QUARRY_MAX_OVERBURDEN = 4" in worker
-        and "clearTopQuarryOverburden" in worker,
-        "town quarry still requires player-pre-exposed stone")
+require("findManagedQuarryStone" in worker and "MANAGED_QUARRY_MAX_OVERBURDEN = 12" in worker
+        and "Heightmap.Types.MOTION_BLOCKING_NO_LEAVES" in worker and "clearTopQuarryOverburden" in worker,
+        "town quarry search/managed-face recovery regressed")
+require("TREE_SEARCH_RADIUS = 64" in worker and "TREE_FELL_MAX_LOGS = 192" in worker
+        and "fellWholeTree" in worker and "connectedTreeLogs" in worker
+        and "harvestVerticalTrunk" not in worker,
+        "whole-tree bounded lumber recovery missing")
+require("safeWorkerSpawn" in worker and "recoverBlockedWorker" in worker,
+        "non-farm workers can regress to solid work-center spawn cells")
+require("productionEvidenceLoaded" in worker
+        and "productionEvidenceLoaded(level, data, BuildingType.LUMBER_CAMP)" in worker
+        and "productionEvidenceLoaded(level, data, BuildingType.FARM)" in worker,
+        "one unloaded production lane can suppress every other profession again")
+require("MAX_APPROACH_PATH_TRIES = 24" in worker and "findOreForWorker" in worker
+        and "findNearbyOre" in worker and "for (int radius = 0; radius <= MINE_HORIZONTAL_SEARCH_RADIUS; radius++)" in worker,
+        "bounded worker path/ore hot-path recovery missing")
+require("List<BuildingRecord> jobs = buildings(data, type);" in worker and "AABB search = null;" in worker,
+        "production worker lookup returned to one wide entity scan per building")
 for stale in ("FARM_WORK_PERIOD_TICKS", "LUMBER_WORK_PERIOD_TICKS", "QUARRY_WORK_PERIOD_TICKS", "MINING_WORK_PERIOD_TICKS"):
     require(stale not in worker, f"stale fixed production pacing authority returned: {stale}")
 outpost_production = text(SETTLEMENT / "SettlementOutpostProductionService.java")

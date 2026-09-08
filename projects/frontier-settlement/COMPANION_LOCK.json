@@ -6,7 +6,7 @@
     "minecraft": "26.2",
     "loader": "neoforge",
     "neoforge": "26.2.0.38-beta",
-    "frontier_settlement": "0.1.0-alpha.128"
+    "frontier_settlement": "0.1.0-alpha.129"
   },
   "notes": [
     "This lock is the canonical candidate stack for Alpha.118 fresh-world and graphical-client compatibility testing.",
@@ -23,7 +23,8 @@
     "Frontier Alpha.124 changes only the project-owned Frontier runtime JAR: paid military grades, bounded barracks/watch/citadel command growth and physical post-combat military resupply. Third-party companion pins/hashes remain unchanged.",
     "Frontier Alpha.125 changes only the project-owned Frontier runtime JAR and presentation: RTS operations summary, bottleneck/upgrade backlog visibility, and corrected per-building upgrade UI. Third-party companion pins/hashes remain unchanged.",
     "Frontier Alpha.126 changes only the project-owned Frontier runtime JAR and presentation: paid civic/trade city investment grades, stronger physical late-game resource sinks, grade-scaled administration/market benefits, and progression-guidance alignment. Third-party companion pins/hashes remain unchanged.",
-    "Frontier Alpha.128 hardens real-play construction recovery: builders no longer choose arbitrary roofs/log pillars as home positions, grading uses bounded ground-aware approach candidates, and the HUD exposes the immediate stall category. Third-party companion pins/hashes remain unchanged."
+    "Frontier Alpha.128 hardens real-play construction recovery: builders no longer choose arbitrary roofs/log pillars as home positions, grading uses bounded ground-aware approach candidates, and the HUD exposes the immediate stall category. Third-party companion pins/hashes remain unchanged.",
+    "Frontier Alpha.129 hardens real-play worker runtime: whole-tree felling, safe production-worker spawn/recovery, per-profession staffing evidence and bounded lumber/quarry/mine search hot paths reduce server tick spikes. Third-party companion pins/hashes remain unchanged."
   ],
   "entries": [
     {

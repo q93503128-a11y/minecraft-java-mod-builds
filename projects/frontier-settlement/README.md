@@ -2,7 +2,11 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.128
+## Current version: 0.1.0-alpha.129
+
+## Alpha.129 worker runtime recovery
+
+Real-play feedback exposed a shared failure pattern behind partial forestry, idle non-farm workers and integrated-server tick hitches. Lumber now fells a complete verified connected tree instead of orphaning upper/branch logs; production workers spawn/recover on real walkable cells; staffing evidence is isolated per profession; and lumber/quarry/mine target acquisition avoids the previous huge 3-D/plane rescans. Physical resource/storage authority and loaded-only simulation remain unchanged.
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
