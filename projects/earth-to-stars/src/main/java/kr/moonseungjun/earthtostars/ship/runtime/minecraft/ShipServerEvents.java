@@ -26,7 +26,7 @@ public final class ShipServerEvents {
                                     int entityId = ShipRuntimeManager.spawnAndControl(
                                             player,
                                             context.getSource().getLevel(),
-                                            context.getSource().getServer().getTickCount()
+                                            context.getSource().getLevel().getGameTime()
                                     );
                                     context.getSource().sendSuccess(
                                             () -> Component.literal("개척선 조종 연결 완료. W/S 가속, A/D 선회, Space/Shift 기수 조절. 선체 ID: " + entityId),
@@ -38,7 +38,7 @@ public final class ShipServerEvents {
                                     ServerPlayer player = context.getSource().getPlayerOrException();
                                     boolean controlled = ShipRuntimeManager.controlNearest(
                                             player,
-                                            context.getSource().getServer().getTickCount()
+                                            context.getSource().getLevel().getGameTime()
                                     );
                                     if (controlled) {
                                         context.getSource().sendSuccess(() -> Component.literal("가까운 개척선 조종을 연결했습니다."), false);

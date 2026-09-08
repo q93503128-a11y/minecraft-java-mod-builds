@@ -112,7 +112,7 @@ public final class ShipRuntimeManager {
                 payload.sessionId(),
                 payload.sequence(),
                 input,
-                player.getServer().getTickCount()
+                player.level().getGameTime()
         );
     }
 
@@ -126,7 +126,7 @@ public final class ShipRuntimeManager {
                 continue;
             }
 
-            Optional<UUID> expiredController = entry.runtime().tick(server.getTickCount());
+            Optional<UUID> expiredController = entry.runtime().tick(entry.exterior().level().getGameTime());
             expiredController.ifPresent(playerId -> {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
                 if (player != null) {

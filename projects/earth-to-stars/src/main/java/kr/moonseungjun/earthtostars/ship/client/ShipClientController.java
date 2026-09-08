@@ -42,7 +42,7 @@ public final class ShipClientController {
         float throttle = axis(minecraft.options.keyUp.isDown(), minecraft.options.keyDown.isDown());
         float yaw = axis(minecraft.options.keyRight.isDown(), minecraft.options.keyLeft.isDown());
         float pitch = axis(minecraft.options.keyShift.isDown(), minecraft.options.keyJump.isDown());
-        if (minecraft.screen != null) {
+        if (!minecraft.mouseHandler.isMouseGrabbed()) {
             throttle = 0.0F;
             yaw = 0.0F;
             pitch = 0.0F;

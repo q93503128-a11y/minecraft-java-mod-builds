@@ -2,6 +2,7 @@ package kr.moonseungjun.earthtostars.ship.networking;
 
 import kr.moonseungjun.earthtostars.EarthToStars;
 import kr.moonseungjun.earthtostars.ship.runtime.minecraft.ShipRuntimeManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -17,7 +18,11 @@ public final class ShipNetworking {
         registrar.playToServer(
                 ShipControlInputPayload.TYPE,
                 ShipControlInputPayload.STREAM_CODEC,
-                (payload, context) -> ShipRuntimeManager.acceptControlInput(context.player(), payload)
+                (payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        ShipRuntimeManager.acceptControlInput(player, payload);
+                    }
+                }
         );
         registrar.playToClient(
                 ShipControlSessionPayload.TYPE,
