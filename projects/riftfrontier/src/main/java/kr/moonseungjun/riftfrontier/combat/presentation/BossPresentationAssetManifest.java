@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Explicit production-asset boundary for boss presentation.
@@ -74,6 +75,11 @@ public final class BossPresentationAssetManifest {
 
     public Map<ContentId, Asset> assets() {
         return assets;
+    }
+
+    /** Read-only lookup used only after the manifest has passed its profile/resource gates. */
+    public Optional<Asset> find(ContentId logicalKey) {
+        return Optional.ofNullable(assets.get(Objects.requireNonNull(logicalKey, "logicalKey")));
     }
 
     /** Validates that every logical key referenced by the authored snapshot has one correctly typed selection. */
