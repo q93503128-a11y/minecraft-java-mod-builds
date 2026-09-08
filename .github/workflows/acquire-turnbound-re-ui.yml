@@ -18,17 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify and install Kenney CC0 source assets
+      - name: Install verified Kenney CC0 assets
         run: |
           set -euo pipefail
           curl -fL --retry 3 --retry-delay 2 \
             'https://opengameart.org/sites/default/files/kenney_ui-pack-pixel-adventure.zip' \
             -o /tmp/kenney-ui.zip
           echo '6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048  /tmp/kenney-ui.zip' | sha256sum -c -
-          rm -rf /tmp/kenney-ui
-          mkdir -p /tmp/kenney-ui
+          rm -rf /tmp/kenney-ui && mkdir -p /tmp/kenney-ui
           unzip -q /tmp/kenney-ui.zip -d /tmp/kenney-ui
-
           SRC='/tmp/kenney-ui/Tiles/Large tiles/Thin outline'
           DEST='projects/turnbound-re/src/main/resources/assets/turnbound_re/textures/gui/sprites/ui'
           LICENSE_DEST='projects/turnbound-re/src/main/resources/META-INF/licenses'
@@ -40,7 +38,6 @@ jobs:
           cp "$SRC/tile_0021.png" "$DEST/frame_success.png"
           cp "$SRC/tile_0002.png" "$DEST/title_surface.png"
           cp /tmp/kenney-ui/License.txt "$LICENSE_DEST/kenney-ui-pack-pixel-adventure-CC0.txt"
-
           for sprite in frame_idle frame_focus frame_disabled frame_warning frame_success title_surface; do
             cat > "$DEST/${sprite}.png.mcmeta" <<'JSON'
           {
@@ -56,13 +53,12 @@ jobs:
           }
           JSON
           done
-
           printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAFCAYAAAAkG+5xAAAAKklEQVR42mMMjM/+zzCAgEVYXIphQB1gYOk4sA64cHz/wDrg7ctnA+oAAJh0CCxgVZp1AAAAAElFTkSuQmCC' | base64 -d > "$DEST/meter_track.png"
           printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAFCAYAAAAkG+5xAAAAKklEQVR42mPss7f4zzCAgMVRXpphQB0gy8M9sA54/OXrwDpg/8OnA+oAAHlRCBb++kobAAAAAElFTkSuQmCC' | base64 -d > "$DEST/meter_hp.png"
           printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAFCAYAAAAkG+5xAAAAKklEQVR42mO0zpj4n2EAAYuilT/DgDqAnVd4YB3w8/PbgXXA/WMbB9QBAC9BCEU/8Zq8AAAAAElFTkSuQmCC' | base64 -d > "$DEST/meter_energy.png"
           printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAFCAYAAAAkG+5xAAAAKklEQVR42mPM9Vb/zzCAgMVcVZhhQB2gKM47sA64//LzwDrg5O23A+oAABA8B/CUQGdaAAAAAElFTkSuQmCC' | base64 -d > "$DEST/meter_poise.png"
 
-      - name: Switch M5 UI code to semantic TURNBOUND sprites
+      - name: Switch M5 semantic UI to TURNBOUND sprites
         run: |
           set -euo pipefail
           cat > projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui/UiVisualLanguage.java <<'JAVA'
@@ -103,19 +99,16 @@ jobs:
                   return Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "ui/" + path);
               }
 
-              public static void titleBand(
-                      GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height,
-                      Component text, int color, boolean centered
-              ) {
+              public static void titleBand(GuiGraphicsExtractor graphics, Font font, int x, int y, int width,
+                                           int height, Component text, int color, boolean centered) {
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX, x, y, width, height);
                   int textX = centered ? x + (width - font.width(text)) / 2 : x + UiLayoutMetrics.SPACE_8;
                   int textY = y + Math.max(1, (height - font.lineHeight) / 2);
                   graphics.text(font, text, textX, textY, color, true);
               }
 
-              public static void frame(
-                      GuiGraphicsExtractor graphics, int x, int y, int width, int height, FrameState state
-              ) {
+              public static void frame(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                                       FrameState state) {
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, frameSprite(state), x, y, width, height);
               }
 
@@ -139,10 +132,8 @@ jobs:
                   };
               }
 
-              public static void meter(
-                      GuiGraphicsExtractor graphics, int x, int y, int width, int height,
-                      int value, int max, Identifier progressSprite
-              ) {
+              public static void meter(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                                       int value, int max, Identifier progressSprite) {
                   if (width <= 0 || height <= 0 || max <= 0) return;
                   graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BAR_BACKGROUND, x, y, width, height);
                   int clampedValue = Math.max(0, Math.min(value, max));
@@ -162,41 +153,32 @@ jobs:
           from pathlib import Path
           import re
 
-          def replace_exact(path, old, new, count=1):
-              p = Path(path)
-              text = p.read_text()
-              actual = text.count(old)
-              if actual != count:
-                  raise SystemExit(f'{path}: expected {count} occurrence(s), found {actual}: {old!r}')
+          def replace_exact(path, old, new):
+              p = Path(path); text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: migration anchor drifted: {old!r}')
               p.write_text(text.replace(old, new))
 
           hud = 'projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui/BattleHud.java'
-          replace_exact(hud,
-              'UiVisualLanguage.frame(graphics, region.x(), y, 20, 20, current);',
+          replace_exact(hud, 'UiVisualLanguage.frame(graphics, region.x(), y, 20, 20, current);',
               'UiVisualLanguage.frame(graphics, region.x(), y, 20, 20,\n                    current ? UiVisualLanguage.FrameState.FOCUS\n                            : participant.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);')
-          replace_exact(hud,
-              'UiVisualLanguage.frame(graphics, x, y, 20, 20, current);',
+          replace_exact(hud, 'UiVisualLanguage.frame(graphics, x, y, 20, 20, current);',
               'UiVisualLanguage.frame(graphics, x, y, 20, 20,\n                current ? UiVisualLanguage.FrameState.FOCUS\n                        : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);')
-          replace_exact(hud,
-              'UiVisualLanguage.frame(graphics, x, y, 18, 18, current);',
+          replace_exact(hud, 'UiVisualLanguage.frame(graphics, x, y, 18, 18, current);',
               'UiVisualLanguage.frame(graphics, x, y, 18, 18,\n                current ? UiVisualLanguage.FrameState.FOCUS\n                        : member.alive() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);')
-          replace_exact(hud,
-              'UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18, action.usable());',
+          replace_exact(hud, 'UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18, action.usable());',
               'UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18,\n                    action.usable() ? UiVisualLanguage.FrameState.IDLE : UiVisualLanguage.FrameState.DISABLED);')
 
           party = 'projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui/PartyFormationScreen.java'
-          replace_exact(party,
-              'UiVisualLanguage.frame(graphics, x, y, 20, 20, character.owned());',
+          replace_exact(party, 'UiVisualLanguage.frame(graphics, x, y, 20, 20, character.owned());',
               'UiVisualLanguage.frame(graphics, x, y, 20, 20,\n                character.owned() ? UiVisualLanguage.FrameState.FOCUS : UiVisualLanguage.FrameState.DISABLED);')
 
           result = 'projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui/BattleResultScreen.java'
-          replace_exact(result,
-              'UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, true);',
+          replace_exact(result, 'UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, true);',
               'UiVisualLanguage.frame(graphics, region.x() + 8, y, 20, 20, UiVisualLanguage.FrameState.SUCCESS);')
 
-          root = Path('projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui')
           bad = []
-          for p in root.glob('*.java'):
+          for p in Path('projects/turnbound-re/src/main/java/kr/moonseungjun/turnboundre/client/ui').glob('*.java'):
               text = p.read_text()
               for match in re.finditer(r'UiVisualLanguage\.frame\((.*?)\);', text, re.S):
                   if 'UiVisualLanguage.FrameState.' not in match.group(1):
@@ -205,7 +187,7 @@ jobs:
               raise SystemExit('Non-semantic frame call remains:\n' + '\n'.join(bad))
           PY
 
-      - name: Update provenance and packaging contracts
+      - name: Update provenance contract
         run: |
           set -euo pipefail
           python3 <<'PY'
@@ -215,40 +197,24 @@ jobs:
           text = third.read_text()
           old = '| REF-UI-001 | UI 자산 후보 / 1순위 | Kenney, `UI Pack - Pixel Adventure` — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | 파일 반입 전 | M5 공통 panel/button/frame/bar/slot의 최종 skin 후보. thin/thick outline과 별도 PNG/tilesheet를 필요한 부분만 선별 사용하고 TURNBOUND: RE layout에 맞게 crop/9-slice/색 조정 가능 |'
           new = '| REF-UI-001 | UI production skin | Kenney, `UI Pack - Pixel Adventure` 2.0 — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 1.0 | **사용 중** | Large tiles / Thin outline의 `tile_0002`, `0008`, `0009`, `0020`, `0021`, `0022`를 title + semantic frame으로 사용. meter는 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 수정본. GUI 확장은 9-slice metadata 사용 |'
-          if old not in text:
-              raise SystemExit('THIRD_PARTY_ASSETS Kenney row drifted')
+          if old not in text: raise SystemExit('THIRD_PARTY_ASSETS row drifted')
           text = text.replace(old, new)
           old2 = '- 실제 PNG가 저장소에 들어오기 전까지 `현재 사용`은 **파일 반입 전**이다. 코드가 지금 사용하는 vanilla advancement/boss-bar sprite는 구조 검증 bridge이며 최종 skin으로 확정하지 않는다.'
           new2 = '- 검증 원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`. 현재 M5 frame/title/meter는 `turnbound_re` namespace production resource를 사용하며 vanilla advancement/boss-bar bridge는 제거했다.'
-          if old2 not in text:
-              raise SystemExit('THIRD_PARTY_ASSETS pending note drifted')
+          if old2 not in text: raise SystemExit('THIRD_PARTY_ASSETS note drifted')
           third.write_text(text.replace(old2, new2))
 
           doc = Path('projects/turnbound-re/docs/19_M5_UI_ASSET_SELECTION.md')
           text = doc.read_text()
           old_status = '상태: **PRIMARY CANDIDATE SELECTED / BINARY IMPORT PENDING / SCREENSHOT GATE PENDING**'
-          if old_status not in text:
-              raise SystemExit('asset selection status drifted')
+          if old_status not in text: raise SystemExit('asset status drifted')
           text = text.replace(old_status, '상태: **PRIMARY ASSET IMPORTED / VANILLA BRIDGE REMOVED / SCREENSHOT GATE PENDING**')
           start = '## 6. Binary import가 아직 pending인 이유'
           end = '## 7. Screenshot acceptance'
-          if start not in text or end not in text:
-              raise SystemExit('asset selection section markers drifted')
-          before, rest = text.split(start, 1)
-          _, after = rest.split(end, 1)
-          imported = '''## 6. 실제 production 반입 결과\n\n검증 원본: `UI Pack - Pixel Adventure (2.0)`\n원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`\n라이선스: **CC0 1.0** (`META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt`에 원문 보존)\n\n직접 사용 mapping:\n- `tile_0009.png` → `ui/frame_idle.png`\n- `tile_0022.png` → `ui/frame_focus.png`\n- `tile_0008.png` → `ui/frame_disabled.png`\n- `tile_0020.png` → `ui/frame_warning.png`\n- `tile_0021.png` → `ui/frame_success.png`\n- `tile_0002.png` → `ui/title_surface.png`\n\n모든 frame/title은 `Large tiles / Thin outline` 한 family만 사용하며 32×32 원본 모서리를 보존하기 위해 4px `nine_slice` metadata를 사용한다. meter 4종은 별도 화풍을 만들지 않고 같은 pack에서 이미 쓰는 neutral/red/blue/gold palette를 5px strip으로 축약한 derivative다.\n\n`UiVisualLanguage`는 이제 `turnbound_re:ui/*`만 가리키며 vanilla advancement / boss-bar sprite bridge를 사용하지 않는다. 호출부 역시 IDLE / FOCUS / DISABLED / WARNING / SUCCESS를 명시적으로 요청한다.\n\n실제 Minecraft 화면에서의 크기·contrast·pixel crispness는 아직 검수 전이므로 **visual 완료 처리는 하지 않는다.**\n\n'''
+          if start not in text or end not in text: raise SystemExit('section drifted')
+          before, rest = text.split(start, 1); _, after = rest.split(end, 1)
+          imported = '''## 6. 실제 production 반입 결과\n\n검증 원본: `UI Pack - Pixel Adventure (2.0)`\n원본 ZIP SHA-256: `6ebf462e7f209f5f348419b09be6601a559ef1e1d6b595f0e9f8aa4c00a84048`\n라이선스: **CC0 1.0** (`META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt`에 원문 보존)\n\n직접 사용 mapping:\n- `tile_0009.png` → `ui/frame_idle.png`\n- `tile_0022.png` → `ui/frame_focus.png`\n- `tile_0008.png` → `ui/frame_disabled.png`\n- `tile_0020.png` → `ui/frame_warning.png`\n- `tile_0021.png` → `ui/frame_success.png`\n- `tile_0002.png` → `ui/title_surface.png`\n\n모든 frame/title은 `Large tiles / Thin outline` 한 family만 사용하며 32×32 원본 모서리를 보존하기 위해 4px `nine_slice` metadata를 사용한다. meter 4종은 같은 pack의 neutral/red/blue/gold palette를 5px strip으로 축약한 derivative다.\n\n`UiVisualLanguage`는 이제 `turnbound_re:ui/*`만 가리키며 vanilla advancement / boss-bar sprite bridge를 사용하지 않는다. 호출부 역시 IDLE / FOCUS / DISABLED / WARNING / SUCCESS를 명시적으로 요청한다.\n\n실제 Minecraft 화면에서의 크기·contrast·pixel crispness는 아직 검수 전이므로 **visual 완료 처리는 하지 않는다.**\n\n'''
           doc.write_text(before + imported + end + after)
-          PY
-
-          python3 <<'PY'
-          from pathlib import Path
-          p = Path('.github/workflows/build-turnbound-re.yml')
-          text = p.read_text()
-          old = "            unzip -l \"$JAR\" | grep 'assets/turnbound_re/'\n            unzip -l \"$JAR\" | grep 'data/turnbound_re/'"
-          new = "            unzip -l \"$JAR\" | grep 'assets/turnbound_re/'\n            unzip -l \"$JAR\" | grep 'assets/turnbound_re/textures/gui/sprites/ui/frame_focus.png'\n            unzip -l \"$JAR\" | grep 'assets/turnbound_re/textures/gui/sprites/ui/frame_focus.png.mcmeta'\n            unzip -l \"$JAR\" | grep 'assets/turnbound_re/textures/gui/sprites/ui/meter_hp.png'\n            unzip -l \"$JAR\" | grep 'META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt'\n            unzip -l \"$JAR\" | grep 'data/turnbound_re/'"
-          if old not in text:
-              raise SystemExit('build verifier anchor drifted')
-          p.write_text(text.replace(old, new))
           PY
 
       - name: Static migration guard
@@ -262,13 +228,12 @@ jobs:
           test -s projects/turnbound-re/src/main/resources/META-INF/licenses/kenney-ui-pack-pixel-adventure-CC0.txt
           git diff --check
 
-      - name: Commit production skin and remove one-time workflow
+      - name: Commit only TURNBOUND RE production files
         run: |
           set -euo pipefail
           git config user.name 'coworkaccount'
           git config user.email 'cyp1jhh2@gmail.com'
-          git rm -f .github/workflows/acquire-turnbound-re-ui.yml
-          git add projects/turnbound-re .github/workflows/build-turnbound-re.yml
+          git add projects/turnbound-re
           git commit -m 'turnbound-re: apply verified M5 UI skin'
           git pull --rebase origin main
           git push origin HEAD:main
