@@ -1,15 +1,13 @@
 package kr.moonseungjun.riftfrontier.network;
 
-import kr.moonseungjun.riftfrontier.client.BossPresentationClientState;
 import kr.moonseungjun.riftfrontier.combat.MinecraftBossCombatAdapter;
 import net.minecraft.world.entity.LivingEntity;
-import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.Objects;
 
-/** Network registration and server-to-client semantic presentation bridge. */
+/** Common-side payload registration and server-to-client semantic presentation bridge. */
 public final class RiftfrontierNetworking {
     private static final String NETWORK_VERSION = "1";
 
@@ -19,13 +17,6 @@ public final class RiftfrontierNetworking {
         event.registrar(NETWORK_VERSION).playToClient(
             BossPresentationPayload.TYPE,
             BossPresentationPayload.STREAM_CODEC
-        );
-    }
-
-    public static void registerClientPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
-        event.register(
-            BossPresentationPayload.TYPE,
-            (payload, context) -> BossPresentationClientState.accept(payload)
         );
     }
 
