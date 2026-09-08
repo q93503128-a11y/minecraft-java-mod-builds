@@ -2,6 +2,7 @@ package kr.moonseungjun.turnboundre.network;
 
 import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.client.ProgressionClientState;
+import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.progression.CharacterProgress;
 import kr.moonseungjun.turnboundre.progression.PlayerProgress;
 import kr.moonseungjun.turnboundre.progression.ProgressionService;
@@ -31,11 +32,15 @@ public final class ProgressionNetwork {
                 ProgressionNetworkPayloads.ProgressSnapshotS2C.TYPE,
                 ProgressionNetworkPayloads.ProgressSnapshotS2C.STREAM_CODEC,
                 (payload, context) -> ProgressionClientState.accept(payload));
+        registrar.playToClient(
+                CharacterPresentationNetworkPayloads.CatalogS2C.TYPE,
+                CharacterPresentationNetworkPayloads.CatalogS2C.STREAM_CODEC,
+                (payload, context) -> ProgressionClientState.accept(payload));
     }
 
     private static void handleRequest(ProgressionNetworkPayloads.RequestProgressC2S payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
-        context.reply(snapshot(player, "", ""));
+        replyState(context, player, "", "");
     }
 
     private static void handleSetParty(ProgressionNetworkPayloads.SetPartyC2S payload, IPayloadContext context) {
@@ -53,12 +58,12 @@ public final class ProgressionNetwork {
         if (server == null) return;
         PlayerProgress current = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
         if (!current.party().equals(decoded.expectedParty())) {
-            context.reply(snapshot(player, "STALE_PARTY", ""));
+            replyState(context, player, "STALE_PARTY", "");
             return;
         }
 
         ProgressionService.Result result = TurnboundRe.PROGRESS.setParty(server, player.getUUID(), decoded.requestedParty());
-        context.reply(snapshot(player, result.code().name(), result.detail()));
+        replyState(context, player, result.code().name(), result.detail());
     }
 
     private static void handleGrowth(ProgressionNetworkPayloads.GrowthC2S payload, IPayloadContext context) {
@@ -77,11 +82,11 @@ public final class ProgressionNetwork {
         PlayerProgress current = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
         CharacterProgress character = current.characters().get(decoded.characterId());
         if (character == null) {
-            context.reply(snapshot(player, "GROWTH_NOT_OWNED", decoded.characterId()));
+            replyState(context, player, "GROWTH_NOT_OWNED", decoded.characterId());
             return;
         }
         if (character.currentStar() != decoded.expectedStar() || character.level() != decoded.expectedLevel()) {
-            context.reply(snapshot(player, "GROWTH_STALE", decoded.characterId()));
+            replyState(context, player, "GROWTH_STALE", decoded.characterId());
             return;
         }
 
@@ -91,13 +96,14 @@ public final class ProgressionNetwork {
             default -> null;
         };
         if (result == null) {
-            context.reply(snapshot(player, "GROWTH_INVALID_OPERATION", decoded.operation()));
+            replyState(context, player, "GROWTH_INVALID_OPERATION", decoded.operation());
             return;
         }
-        context.reply(snapshot(player, "GROWTH_" + result.code().name(), result.detail()));
+        replyState(context, player, "GROWTH_" + result.code().name(), result.detail());
     }
 
-    private static ProgressionNetworkPayloads.ProgressSnapshotS2C snapshot(
+    private static void replyState(
+            IPayloadContext context,
             ServerPlayer player,
             String resultCode,
             String resultDetail
@@ -105,10 +111,12 @@ public final class ProgressionNetwork {
         MinecraftServer server = player.level().getServer();
         if (server == null) throw new IllegalStateException("server unavailable for progression snapshot");
         PlayerProgress progress = TurnboundRe.PROGRESS.getOrCreate(server, player.getUUID());
-        return ProgressionNetworkPayloads.ProgressSnapshotS2C.from(
+        DefinitionRegistry definitions = TurnboundRe.DEFINITIONS.snapshot().registry();
+        context.reply(CharacterPresentationNetworkPayloads.CatalogS2C.from(definitions));
+        context.reply(ProgressionNetworkPayloads.ProgressSnapshotS2C.from(
                 progress,
-                TurnboundRe.DEFINITIONS.snapshot().registry(),
+                definitions,
                 resultCode,
-                resultDetail);
+                resultDetail));
     }
 }

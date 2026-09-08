@@ -30,6 +30,7 @@ public final class PartyFormationScreen extends Screen {
 
     private final List<Button> rosterButtons = new ArrayList<>();
     private final List<Button> partyButtons = new ArrayList<>();
+    private final CharacterEntityPreview entityPreview = new CharacterEntityPreview();
     private ProgressionNetworkPayloads.Snapshot snapshot;
     private List<String> draftParty = List.of();
     private String selectedCharacterId = "";
@@ -83,6 +84,12 @@ public final class PartyFormationScreen extends Screen {
             syncFromClient();
             this.rebuildWidgets();
         }
+    }
+
+    @Override
+    public void removed() {
+        entityPreview.clear();
+        super.removed();
     }
 
     private void syncFromClient() {
@@ -414,51 +421,59 @@ public final class PartyFormationScreen extends Screen {
         if (snapshot == null || selectedCharacterId.isBlank()) return;
         ProgressionNetworkPayloads.CharacterView character = snapshot.character(selectedCharacterId).orElse(null);
         if (character == null) return;
-        int y = renderCharacterHeader(graphics, region, character);
+
+        EntityPreviewLayout.PreviewSpec preview = detailTab == DetailTab.OVERVIEW
+                ? entityPreview.layout(this.minecraft,
+                        ProgressionClientState.sourceEntity(character.id()).orElse(""), region.width(), region.height())
+                : EntityPreviewLayout.PreviewSpec.hidden(region.width());
+        if (preview.visible()) entityPreview.extract(graphics, region, preview);
+        int textWidth = preview.visible() ? preview.textWidth() : region.width();
+
+        int y = renderCharacterHeader(graphics, region, character, textWidth);
         if (!character.owned()) {
             graphics.text(this.font, Component.translatable("screen.turnbound_re.party.locked_detail"),
                     region.x(), y, TEXT_SECONDARY, true);
             return;
         }
         switch (detailTab) {
-            case OVERVIEW -> renderOverview(graphics, region, character, y);
+            case OVERVIEW -> renderOverview(graphics, region, character, y, textWidth);
             case SKILLS -> renderSkills(graphics, region, character, y);
             case GROWTH -> renderGrowth(graphics, region, character, y);
         }
     }
 
     private int renderCharacterHeader(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
-                                      ProgressionNetworkPayloads.CharacterView character) {
+                                      ProgressionNetworkPayloads.CharacterView character, int textWidth) {
         int x = region.x();
         int y = region.y() + 18;
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, character.owned() ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
-        graphics.text(this.font, Component.literal(displayName(character.id())), x + 26, y + 2,
+        graphics.text(this.font, Component.literal(fit(displayName(character.id()), Math.max(1, textWidth - 26))), x + 26, y + 2,
                 character.owned() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
         String progression = character.owned()
                 ? stars(character.currentStar()) + "  Lv" + character.level() + "/" + character.levelCap()
                 : stars(character.originStar()) + "  " + Component.translatable("screen.turnbound_re.party.locked_short").getString();
-        graphics.text(this.font, Component.literal(fit(progression, region.width() - 26)), x + 26, y + 12, TEXT_SECONDARY, true);
+        graphics.text(this.font, Component.literal(fit(progression, Math.max(1, textWidth - 26))), x + 26, y + 12, TEXT_SECONDARY, true);
         return y + 30;
     }
 
     private void renderOverview(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
-                                ProgressionNetworkPayloads.CharacterView character, int y) {
+                                ProgressionNetworkPayloads.CharacterView character, int y, int textWidth) {
         int x = region.x();
         String roles = character.roles().stream().map(PartyFormationScreen::roleName).reduce((a, b) -> a + " · " + b).orElse("-");
-        line(graphics, x, y, roles + "  C" + character.squadCost(), TEXT_PRIMARY, region.width()); y += 12;
-        line(graphics, x, y, "HP " + character.hp() + "   ATK " + character.atk(), TEXT_PRIMARY, region.width()); y += 11;
-        line(graphics, x, y, "DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise(), TEXT_PRIMARY, region.width()); y += 13;
+        line(graphics, x, y, roles + "  C" + character.squadCost(), TEXT_PRIMARY, textWidth); y += 12;
+        line(graphics, x, y, "HP " + character.hp() + "   ATK " + character.atk(), TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, "DEF " + character.def() + "   SPD " + character.spd() + "   P " + character.poise(), TEXT_PRIMARY, textWidth); y += 13;
         if (!character.affinities().isEmpty()) {
             String affinity = character.affinities().stream().limit(3).map(PartyFormationScreen::affinityName)
                     .reduce((a, b) -> a + " · " + b).orElse("");
-            line(graphics, x, y, affinity, TEXT_SECONDARY, region.width()); y += 12;
+            line(graphics, x, y, affinity, TEXT_SECONDARY, textWidth); y += 12;
         }
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()), TEXT_PRIMARY, region.width()); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.basic").getString() + "  " + displayName(character.basicAction()), TEXT_PRIMARY, textWidth); y += 11;
         String skills = character.skills().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills, TEXT_PRIMARY, region.width()); y += 11;
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()), TEXT_PRIMARY, region.width()); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.skills").getString() + "  " + skills, TEXT_PRIMARY, textWidth); y += 11;
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.burst").getString() + "  " + displayName(character.burst()), TEXT_PRIMARY, textWidth); y += 11;
         String passives = character.passives().stream().map(PartyFormationScreen::displayName).reduce((a, b) -> a + " / " + b).orElse("-");
-        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.passive").getString() + "  " + passives, TEXT_SECONDARY, region.width());
+        line(graphics, x, y, Component.translatable("screen.turnbound_re.party.passive").getString() + "  " + passives, TEXT_SECONDARY, textWidth);
     }
 
     private void renderSkills(GuiGraphicsExtractor graphics, UiLayoutMetrics.Rect region,
