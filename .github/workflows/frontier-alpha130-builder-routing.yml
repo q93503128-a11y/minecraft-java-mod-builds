@@ -27,7 +27,11 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
       - name: Apply Alpha.130 builder routing patch
-        run: python3 .github/frontier_alpha130_builder_routing_patch.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/frontier_alpha130_builder_routing_patch.py
+          python3 .github/frontier_alpha130_builder_routing_assertion_fix.py
       - name: Targeted source/docs audit and compile
         working-directory: projects/frontier-settlement
         shell: bash
