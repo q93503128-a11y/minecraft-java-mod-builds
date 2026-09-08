@@ -2,6 +2,87 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-F central ship systems backend
+
+### Added
+
+- mod version `0.1.0-alpha.6`
+- 함선당 하나의 `ShipSystemsRuntime`
+- 중앙 `ShipPowerGrid`: capacity / stored energy / deterministic generation / authoritative consumption
+- `ESSENTIAL`, `PROPULSION`, `WEAPONS`, `UTILITY` power priority와 reserve boundary
+- 중앙 multi-type `ShipAmmoPool`
+- P0 대표 기관포의 turret-local ammo 제거 및 `autocannon_round` 공용 탄약 사용
+- `TurretProfile`에 ammo type / power-per-shot 계약 추가
+- weapon fire에서 power+ammo 사전검사 후 함께 소비하는 authoritative transaction boundary
+- 두 개 이상의 turret runtime이 같은 `ShipId`의 하나의 ammo pool을 공유하는 구조
+- P0-E `ShipSensorGrid`를 중앙 함선 시스템으로 승격
+- sensor scan power draw / interval scan / per-ShipId phase staggering / stale contact expiry
+- propulsion input 크기에 비례하는 central power draw
+- 전력 부족 시 서버가 추진 입력을 적용하지 않는 경계
+- interior player가 `InteriorSavedData → ShipId → ShipRepository`를 통해 같은 함선 systems authority에 접근하는 경계
+- `/earthtostars ship systems status` 기술검증 상태 조회
+- turret status가 private ammo 대신 공용 ammo를 표시
+- dimension change/logout에서 turret manual lease 정리 강화
+- P0-F 중앙 튜닝을 `ShipSystemsTuning.P0` 한 곳에 집약
+- PowerGrid / shared ammo / failed transaction / propulsion draw / stale sensors JUnit
+
+### Architecture
+
+P0-F부터 함선 자원은 weapon/entity별 임시 숫자가 아니라 `ShipId`에 연결된 중앙 서버 정본으로 취급한다.
+
+```text
+ShipId
+ └─ ShipSystemsRuntime
+     ├─ ShipPowerGrid
+     ├─ ShipAmmoPool
+     └─ ShipSensorGrid
+          ↑
+   propulsion / sensors / turret(s)
+```
+
+전력 우선순위는 현재 P0 기준 `ESSENTIAL → PROPULSION → WEAPONS → UTILITY`다. 낮은 우선순위 계통은 높은 우선순위를 위해 확보한 reserve를 침범하지 못한다. 구체 수치는 기술검증값이며 production balance 확정값이 아니다.
+
+P0-E에서 각 포탑이 독립 탄약을 가지던 구조를 제거했다. 같은 함선의 수동/자동 포탑과 이후 추가될 다수 hardpoint는 동일 ammo/power authority를 사용해야 한다. 센서도 포탑별 broad scan이 아니라 함선당 하나의 캐시를 공유한다.
+
+### Verification
+
+최종 검증 기준 커밋: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
+
+GitHub Actions `Build earth-to-stars` run `34187867167`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- `clean test build`: `PASS`
+- P0-A/P0-B/P0-C regression JUnit: `PASS`
+- P0-D linked interior JUnit: `PASS`
+- P0-E representative turret JUnit: `PASS`
+- P0-F central PowerGrid / AmmoPool / SensorGrid JUnit: `PASS`
+- priority reserve / generation monotonicity: `PASS`
+- two turret runtimes share one ammo pool: `PASS`
+- failed weapon transaction consumes neither ammo nor power: `PASS`
+- propulsion draw uses central power: `PASS`
+- stale sensor contact expiry: `PASS`
+- interior-linked crew system lookup adapter compile: `PASS`
+- Minecraft 26.2 central systems coordinator compile: `PASS`
+- production JAR verifier: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.6.jar`
+- JAR SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
+- central system runtime quantities persistence across restart: `NOT IMPLEMENTED / NOT TESTED`
+- datagen: `NOT RUN`
+- GameTest: `NOT REGISTERED / NOT RUN`
+- dedicated server smoke: `NOT RUN`
+- client smoke: `NOT RUN`
+- live multiplayer session: `NOT TESTED`
+
+첫 P0-F run `34187734949`은 production compile은 통과했지만 `priorityReservePreventsLowerPriorityBrownout` 테스트가 reserve 의미를 반대로 기대하여 실패했다. `UTILITY`의 40% reserve를 침범하는 소비를 허용하는 잘못된 기대값이었으며 production 로직은 변경하지 않고 테스트를 reserve 계약에 맞춰 수정했다. 재게이트 run `34187867167`에서 전체 성공했다.
+
+### Status
+
+`P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / SYSTEMS RESTART PERSISTENCE & LIVE ACCEPTANCE DEFERRED`
+
+다음 의미 있는 작업 단위는 **P0-G Lifecycle / Multiplayer Gate**다. 실멀티 테스트를 바로 요구하지 않고 central power/ammo persistence, save/restart, custom-dimension server boot를 먼저 자동/서버 생명주기 수준에서 닫은 뒤 Earth↔orbit + interior + pilot/gunner + shared resources를 한 번의 의미 있는 live gate로 묶는다.
+
+---
+
 ## 2026-09-08 — P0-E representative turret backend
 
 ### Added
@@ -69,8 +150,6 @@ GitHub Actions `Build earth-to-stars` run `34186350799`:
 ### Status
 
 `P0-E TURRET BACKEND BUILD VERIFIED / LIVE COMBAT & MULTIPLAYER ACCEPTANCE DEFERRED`
-
-다음 의미 있는 작업 단위는 **P0-F Central Ship Systems**다.
 
 ---
 
