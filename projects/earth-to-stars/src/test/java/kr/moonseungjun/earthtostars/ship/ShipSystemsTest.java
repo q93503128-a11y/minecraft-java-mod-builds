@@ -127,12 +127,12 @@ final class ShipSystemsTest {
     }
 
     @Test
-    void oxygenConsumptionCannotDriveReserveNegative() {
+    void oxygenDrainReachesZeroInsteadOfLeavingAnImmortalRemainder() {
         ShipSystemsRuntime systems = new ShipSystemsRuntime(ShipId.random(), tuning(80.0D, 80.0D, 0.05D));
-        assertTrue(systems.consumeOxygen(0.04D));
+        assertEquals(0.04D, systems.consumeOxygen(0.04D), 1.0E-9D);
         assertEquals(0.01D, systems.oxygenStored(), 1.0E-9D);
-        assertFalse(systems.consumeOxygen(0.02D));
-        assertEquals(0.01D, systems.oxygenStored(), 1.0E-9D);
+        assertEquals(0.01D, systems.consumeOxygen(0.02D), 1.0E-9D);
+        assertEquals(0.0D, systems.oxygenStored(), 1.0E-9D);
     }
 
     @Test
