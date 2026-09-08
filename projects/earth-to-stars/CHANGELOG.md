@@ -2,6 +2,78 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-E representative turret backend
+
+### Added
+
+- mod version `0.1.0-alpha.5`
+- 공통 `TurretControlMode`: `OFF`, `MANUAL`, `AUTO_DEFENSE`
+- P0 `autocannon_mk1` profile: ammo / cooldown / range / firing arc / projectile speed / lifetime / damage 계약
+- server-owned `TurretRuntime`
+- owner/crew `WEAPON_CONTROL` 권한 검증
+- 수동 함포 단일 control lease / session UUID / monotonic sequence replay rejection
+- mode switch / logout 시 manual lease 회수 경계
+- manual aim + authoritative fire solution
+- no-ammo / cooldown / invalid-arc shot rejection
+- 함선당 공유 `ShipSensorGrid` contact cache
+- hostile/neutral 분리와 threat→distance 우선순위 target selection
+- Minecraft P0 adapter의 10-tick staggered ship sensor scan
+- 포탑별 per-tick broad world scan 금지 구조
+- P0에서는 `Enemy` 계열만 auto-defense hostile로 취급하는 임시 target policy
+- server-side logical projectile movement/lifetime/collision/damage adapter
+- `/earthtostars ship turret off|manual|auto|control|release|fire|status` 기술 검증 조작면
+- P0-E manual lease / replay / ammo / cooldown / arc / auto target JUnit
+- build workflow에서 `gradle.properties`의 `mod_version`을 자동 읽어 artifact/report 이름에 반영하는 version-aware CI
+
+### Architecture
+
+Manual과 AUTO_DEFENSE를 별도 무기 구현으로 나누지 않는다. 동일 `TurretRuntime`의 ammo/cooldown/arc 상태를 두 모드가 공유한다. 자동 방어는 각 포탑이 개별적으로 월드를 검색하지 않고 함선 단위 SensorGrid 캐시를 이용한다.
+
+현재 manual command는 최종 포수 UI/키가 아니라 P0 서버 상태머신 검증용 조작면이다. 현재 projectile 역시 렌더 entity가 아닌 서버 논리 shot이다. 최종 함포 모델, 회전 애니메이션, 트레이서, 총구화염, 피격 VFX, 사운드, camera feedback은 `docs/03_UI_ART_REFERENCE_GATE.md` 이후 production 작업에서 구현한다.
+
+Ammo는 아직 P0 turret-local이다. P0-F에서 중앙 AmmoPool/PowerGrid/SensorGrid로 승격하여 여러 weapon이 하나의 authoritative 함선 자원을 공유하도록 한다.
+
+### Verification
+
+최종 검증 기준 커밋: `85e4003223839dd3fe24e87e8fd8382a1931e693`
+
+GitHub Actions `Build earth-to-stars` run `34186350799`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- dynamic mod-version resolve: `PASS`
+- `clean test build`: `PASS`
+- P0-A/P0-B/P0-C regression JUnit: `PASS`
+- P0-D interior allocation/layout JUnit: `PASS`
+- P0-E representative turret JUnit: `PASS`
+- OFF / MANUAL / AUTO_DEFENSE state machine: `PASS`
+- exclusive manual lease + replay rejection: `PASS`
+- ammo / cooldown / firing-arc rules: `PASS`
+- shared SensorGrid target selection: `PASS`
+- Minecraft 26.2 turret adapter compile: `PASS`
+- production JAR verifier: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.5.jar`
+- JAR SHA-256: `53499a1cf6f14bd21cfefc8cdd095b2e2999c322c20c1be8c660d005efd48835`
+- datagen: `NOT RUN`
+- GameTest: `NOT REGISTERED / NOT RUN`
+- dedicated server smoke: `NOT RUN`
+- client smoke: `NOT RUN`
+- 실제 manual/auto 포탑 전투: `NOT TESTED`
+- 실제 projectile 시각/타격감: `NOT TESTED`
+- 2인 pilot+gunner session: `NOT TESTED`
+- live multiplayer session: `NOT TESTED`
+
+첫 P0-E run `34186139690`은 Minecraft 26.2에서 `Level#getEntities` overload가 추가되어 `null` 인자가 모호해진 컴파일 오류 2건으로 실패했다. 호출의 source entity 타입을 명시하여 API ambiguity만 수정했고, 설계/기능 삭제 없이 다음 gate에서 성공했다.
+
+이후 성공 run `34186225022`의 실제 JAR은 alpha.5였지만 기존 workflow가 artifact/report 라벨을 alpha.4/P0-D로 하드코딩한 문제를 자체 검수에서 발견했다. workflow를 version-aware하게 수정하고 P0-E 보고서 항목을 갱신한 뒤 run `34186350799`를 다시 성공시켜 산출물 이름과 정본 버전을 일치시켰다.
+
+### Status
+
+`P0-E TURRET BACKEND BUILD VERIFIED / LIVE COMBAT & MULTIPLAYER ACCEPTANCE DEFERRED`
+
+다음 의미 있는 작업 단위는 **P0-F Central Ship Systems**다.
+
+---
+
 ## 2026-09-08 — P0-D linked ship interior backend
 
 ### Added
@@ -59,8 +131,6 @@ GitHub Actions `Build earth-to-stars` run `34183711601`:
 
 자동 빌드 성공은 실제 내부 출입, custom dimension live boot, 2인 동시 체류, 서버 재시작 복원까지 검증했다는 뜻이 아니다. 반복적인 사용자 테스트를 피하기 위해 이 항목들은 P0-E/F 이후 P0-G multiplayer/lifecycle gate에서 의미 있게 묶어 검증한다.
 
-다음 의미 있는 작업 단위는 **P0-E Representative Turret**이다.
-
 ---
 
 ## 2026-09-08 — P0-C orbital transition + Minecraft persistence adapter
@@ -113,8 +183,6 @@ GitHub Actions `Build earth-to-stars` run `34181251912`:
 ### Status
 
 `P0-C TRANSITION BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED`
-
-빌드 성공은 orbital dimension이 실제 서버에서 로드되고 플레이어가 자연스럽게 우주로 넘어가는 것을 의미하지 않는다. 현재 검증은 코드/API/리소스 패키징 및 순수 정책 수준이다.
 
 ---
 
@@ -207,8 +275,6 @@ GitHub Actions `Build earth-to-stars` run `34175374292`:
 ### Status
 
 `M0 BUILD BOOTSTRAP VERIFIED / P0-A PURE SHIP KERNEL VERIFIED / MINECRAFT INTEGRATION GATE PENDING`
-
-P0-A의 순수 서버 정본 커널은 구현·자동 검증되었다. Minecraft SavedData/GameTest를 통한 실제 서버 생성→저장→reload→동일 shipId/module 복원 검증은 아직 수행하지 않았다.
 
 ---
 
