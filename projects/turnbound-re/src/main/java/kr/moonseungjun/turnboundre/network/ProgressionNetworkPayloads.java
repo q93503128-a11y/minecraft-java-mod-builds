@@ -101,6 +101,8 @@ public final class ProgressionNetworkPayloads {
         }
 
         public RequestProgressC2S() { this("request"); }
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     public record SetPartyC2S(String wire) implements CustomPacketPayload {
@@ -119,6 +121,8 @@ public final class ProgressionNetworkPayloads {
             if (parts.length != 2) throw new IllegalArgumentException("invalid set-party wire");
             return new DecodedSetParty(unpackList(parts[0]), unpackList(parts[1]));
         }
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     public record ProgressSnapshotS2C(String wire) implements CustomPacketPayload {
@@ -203,6 +207,8 @@ public final class ProgressionNetworkPayloads {
                     unpack(parts[5]),
                     unpack(parts[6]));
         }
+
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
     private static String packCharacters(List<CharacterView> characters) {
