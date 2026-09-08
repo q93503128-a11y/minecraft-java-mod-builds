@@ -39,14 +39,14 @@ public final class BossPresentationClientResourcePath {
     }
 
     private static String modelPath(String path) {
-        if (path.startsWith("geckolib/models/")) return appendIfMissing(path, ".geo.json");
+        if (path.startsWith("geckolib/models/")) return structuredJson(path, ".geo.json");
         if (path.startsWith("models/")) return appendIfMissing(path, ".json");
         return null;
     }
 
     private static String animationPath(String path) {
         if (!path.startsWith("geckolib/animations/")) return null;
-        return appendIfMissing(path, ".animation.json");
+        return structuredJson(path, ".animation.json");
     }
 
     private static String vfxPath(String path) {
@@ -57,6 +57,11 @@ public final class BossPresentationClientResourcePath {
     private static String soundPath(String path) {
         if (!path.startsWith("sounds/")) return null;
         return appendIfMissing(path, ".ogg");
+    }
+
+    private static String structuredJson(String path, String preferredSuffix) {
+        if (path.endsWith(".json")) return path;
+        return path + preferredSuffix;
     }
 
     private static String appendIfMissing(String path, String suffix) {

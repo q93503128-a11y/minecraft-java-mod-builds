@@ -67,7 +67,7 @@ final class BossPresentationClientResourcePathTest {
     }
 
     @Test
-    void doesNotDuplicateAlreadyExplicitPhysicalSuffixes() {
+    void preservesExplicitGeckoLib5JsonVariantsAndOtherPhysicalSuffixes() {
         assertEquals(
             ContentId.rift("geckolib/models/entity/region_01_boss.geo.json"),
             BossPresentationClientResourcePath.resolve(
@@ -76,10 +76,24 @@ final class BossPresentationClientResourcePathTest {
             ).orElseThrow()
         );
         assertEquals(
+            ContentId.rift("geckolib/models/entity/region_01_boss.json"),
+            BossPresentationClientResourcePath.resolve(
+                BossPresentationAssetManifest.Kind.MODEL,
+                ContentId.rift("geckolib/models/entity/region_01_boss.json")
+            ).orElseThrow()
+        );
+        assertEquals(
             ContentId.rift("geckolib/animations/entity/region_01_boss.animation.json"),
             BossPresentationClientResourcePath.resolve(
                 BossPresentationAssetManifest.Kind.ANIMATION,
                 ContentId.rift("geckolib/animations/entity/region_01_boss.animation.json")
+            ).orElseThrow()
+        );
+        assertEquals(
+            ContentId.rift("geckolib/animations/entity/region_01_boss.json"),
+            BossPresentationClientResourcePath.resolve(
+                BossPresentationAssetManifest.Kind.ANIMATION,
+                ContentId.rift("geckolib/animations/entity/region_01_boss.json")
             ).orElseThrow()
         );
         assertEquals(
