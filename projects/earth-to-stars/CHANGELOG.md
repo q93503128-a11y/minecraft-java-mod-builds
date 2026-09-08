@@ -2,6 +2,89 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — P0-G dedicated lifecycle + systems persistence
+
+### Added
+
+- mod version `0.1.0-alpha.7`
+- `ShipSystemsSnapshot`: `ShipId`, current power, ammo amounts 영속 snapshot
+- server-global `ShipSystemsSavedData` (`earth_to_stars:ship_systems`)
+- central PowerGrid / AmmoPool 실제 SavedData persistence
+- persisted power/ammo capacity validation
+- persisted systems가 canonical `ShipSavedData`에 없는 unknown ShipId를 가리킬 때 orphan state 거부
+- old ship save에 systems snapshot이 없는 경우 P0 기본값으로 명시적으로 bootstrap 후 snapshot 생성
+- server tick checkpoint와 `ServerStoppingEvent` final flush
+- sensor contact를 persistence 대상에서 제외하고 restart 후 재획득하는 volatile-cache 계약
+- `ShipLifecycleProbe`: 일반 플레이에 노출되지 않고 CI 환경변수에서만 활성화되는 dedicated lifecycle 검증기
+- dedicated server clean first boot → SavedData seed → clean shutdown → same world second boot → restore 검증
+- `orbital_space` / `ship_interiors` custom dimension 실제 dedicated-server 등록 검증
+- deterministic probe ShipId/owner/module slots/interior slot/power/ammo disk round-trip 검증
+- systems snapshot restore/invalid capacity JUnit
+- CI에 `runServer` 2회 same-world lifecycle gate 추가
+
+### Architecture
+
+영속 상태와 휘발 상태를 분리한다.
+
+Persisted:
+
+- `ShipState` / ownership / module slots
+- `ShipId → interior slot`
+- central current power
+- central current ammo
+
+Not persisted:
+
+- `SensorGrid` contacts
+- pilot/turret control leases
+- logical projectiles
+- temporary exterior entity IDs
+
+센서/lease/entity ID를 저장하지 않는 것은 누락이 아니라 restart 후 ghost target, stale authority, invalid entity reference를 막기 위한 계약이다.
+
+### Verification
+
+최종 검증 기준 구현 커밋: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
+
+GitHub Actions `Build earth-to-stars` run `34188840459`:
+
+- Java 25 / Gradle 9.2.1 / NeoForge 26.2.0.38-beta: `PASS`
+- `clean test build`: `PASS`
+- P0-A~F regression JUnit: `PASS`
+- P0-G systems snapshot restore JUnit: `PASS`
+- production JAR verifier: `PASS`
+- dedicated server first boot: `PASS`
+- `earth_to_stars:orbital_space` registration: `PASS`
+- `earth_to_stars:ship_interiors` registration: `PASS`
+- first boot SavedData seed: `PASS`
+- clean server shutdown/all dimension save: `PASS`
+- second dedicated-server boot on same `run/world`: `PASS`
+- same ShipId / owner / module slots restore: `PASS`
+- same interior slot restore: `PASS`
+- central power `37.5` restore: `PASS`
+- autocannon ammo `73` restore: `PASS`
+- restored `ShipSystemsRuntime` initialization: `PASS`
+- 생성 JAR: `earth_to_stars-0.1.0-alpha.7.jar`
+- JAR SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
+- client smoke: `NOT RUN`
+- actual Earth↔orbit player flight: `NOT TESTED`
+- actual two-player pilot+gunner: `NOT TESTED`
+- actual multi-player linked interior: `NOT TESTED`
+- production visual/audio: `NOT IMPLEMENTED`
+
+실제 로그 마커:
+
+- `EARTH_TO_STARS_P0G_SEED_PASS ship=11111111-2222-3333-4444-555555555555 slot=0 power=37.5 ammo=73`
+- `EARTH_TO_STARS_P0G_VERIFY_PASS ship=11111111-2222-3333-4444-555555555555 slot=0 power=37.5 ammo=73`
+
+### Status
+
+`P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT`
+
+다음 의미 있는 작업 단위는 **P0-H Nether/End Independence Validator**다. 메인 progression에서 Nether/End-only 자원·구조·advancement가 필수 ancestor가 되는 회귀를 CI에서 자동 차단한다.
+
+---
+
 ## 2026-09-08 — P0-F central ship systems backend
 
 ### Added
@@ -78,8 +161,6 @@ GitHub Actions `Build earth-to-stars` run `34187867167`:
 ### Status
 
 `P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / SYSTEMS RESTART PERSISTENCE & LIVE ACCEPTANCE DEFERRED`
-
-다음 의미 있는 작업 단위는 **P0-G Lifecycle / Multiplayer Gate**다. 실멀티 테스트를 바로 요구하지 않고 central power/ammo persistence, save/restart, custom-dimension server boot를 먼저 자동/서버 생명주기 수준에서 닫은 뒤 Earth↔orbit + interior + pilot/gunner + shared resources를 한 번의 의미 있는 live gate로 묶는다.
 
 ---
 
@@ -207,8 +288,6 @@ GitHub Actions `Build earth-to-stars` run `34183711601`:
 ### Status
 
 `P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED`
-
-자동 빌드 성공은 실제 내부 출입, custom dimension live boot, 2인 동시 체류, 서버 재시작 복원까지 검증했다는 뜻이 아니다. 반복적인 사용자 테스트를 피하기 위해 이 항목들은 P0-E/F 이후 P0-G multiplayer/lifecycle gate에서 의미 있게 묶어 검증한다.
 
 ---
 
