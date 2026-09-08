@@ -4,6 +4,12 @@
 
 ## 활성 프로젝트
 
+- [`earth-to-stars`](./earth-to-stars/) — EARTH TO STARS, SF 우주 개척 + 모듈식 함선 성장 + 협동 함선 운용
+  - 상태: `M0 CANON LOCKED / BUILD BOOTSTRAP NEXT`
+  - 정본 시작점: [`earth-to-stars/README.md`](./earth-to-stars/README.md)
+  - 개발 순서: M0 Build Bootstrap → P0 Ship/Space/Multiplayer Technical Gate → M1 Earth/Orbit Gameplay Slice → M2 Moon Vertical Slice → M3 Production Visual Gate → M4 Asteroid/Ship Growth → M5 Mars/Expedition Ship → M6 Belt/Multi-System Scale → M7+ Outer System/Deep Space
+  - 핵심 원칙: Overworld=Earth, Nether/End 비필수, B형 모듈식 함선, 서버 권한 멀티 구조, 수동/자동 포탑, 중앙 power/ammo/sensor simulation, 외부 reference 기반 SF 디자인
+
 - [`riftfrontier`](./riftfrontier/) — Riftfrontier / 균열 개척기, 차원 탐사 액션 RPG + 개척·물류 + 산업·연구 + 세력 시뮬레이션
   - 상태: `M0 CANON LOCKED / BUILD BOOTSTRAP NEXT`
   - 정본 시작점: [`riftfrontier/README.md`](./riftfrontier/README.md)
