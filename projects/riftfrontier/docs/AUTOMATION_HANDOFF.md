@@ -30,7 +30,8 @@ M3 Minecraft client physical-resource probe adapter:
 ## Verification
 
 - Previous physical promotion run `34224017933`: full Riftfrontier workflow `SUCCESS`.
-- This batch compile/unit/GameTest/server/client/JAR CI: PENDING until the new commit run is observed.
+- Implementation commit: `ce8b2f709f99c955e97274a581c8ae2917d06608`.
+- `Build Riftfrontier` run `34230099784`: full `SUCCESS` for toolchain, tests + clean build, required native GameTest gate, dedicated server smoke, Xvfb client smoke, executable JAR inspection, report, deliverables, and logs upload.
 - Actual production resource existence: NOT TESTED because production Region 01 boss assets are not selected.
 - Actual multiplayer semantic packet → physical renderer path: NOT TESTED.
 - Final production Region 01 boss entity integration: NOT IMPLEMENTED / NOT TESTED.
@@ -51,8 +52,8 @@ M3 Minecraft client physical-resource probe adapter:
 
 ## Exact next start point
 
-1. Re-check current remote `main` and the `Build Riftfrontier` run for this batch; fix the first real failure if present.
-2. If green, connect the client resource probe to the client reload lifecycle so a selected manifest can be revalidated atomically when client resource packs reload, while remaining inactive when no production manifest exists.
+1. Re-check current remote `main` and confirm `Build Riftfrontier` run `34230099784` remains full `SUCCESS`.
+2. Connect the client resource probe to the client reload lifecycle so a selected manifest can be revalidated atomically when client resource packs reload, while remaining inactive when no production manifest exists.
 3. Keep renderer activation fail-closed: semantic packet → logical resolver → validated physical selection only; no resource or timing fallback.
 4. Perform actual Region 01 boss identity/presentation reference and asset selection under `M3_COMBAT_REFERENCE_DOSSIER.md`, `REFERENCE_TARGETS.md`, repository license rules; create `THIRD_PARTY_ASSETS.md` only when an external bundled asset is actually selected.
 5. Re-verify one animation technology for Minecraft 26.2 only when real animated production assets require it.
