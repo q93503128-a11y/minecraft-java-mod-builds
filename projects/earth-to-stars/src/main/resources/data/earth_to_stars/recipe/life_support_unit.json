@@ -7,11 +7,11 @@
     "CLC"
   ],
   "key": {
-    "C": { "item": "minecraft:copper_ingot" },
-    "R": { "item": "minecraft:redstone" },
-    "O": { "item": "earth_to_stars:oxygen_cartridge" },
-    "I": { "item": "minecraft:iron_ingot" },
-    "L": { "item": "minecraft:leather" }
+    "C": "minecraft:copper_ingot",
+    "R": "minecraft:redstone",
+    "O": "earth_to_stars:oxygen_cartridge",
+    "I": "minecraft:iron_ingot",
+    "L": "minecraft:leather"
   },
   "result": {
     "id": "earth_to_stars:life_support_unit",
