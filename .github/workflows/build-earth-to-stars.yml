@@ -46,13 +46,13 @@ jobs:
           ./gradlew --no-daemon clean test build --stacktrace 2>&1 | tee build/logs/build.log
       - name: Verify production JAR
         run: python3 tools/verify_jar.py
-      - name: Write bootstrap report
+      - name: Write build report
         shell: bash
         run: |
           JAR=$(ls build/libs/earth_to_stars-*.jar | head -n1)
           SHA=$(cat "$JAR.sha256")
           cat > build/BUILD_AND_RUNTIME_REPORT.md <<EOF
-          # EARTH TO STARS — M0/P0-A Build Report
+          # EARTH TO STARS — M0/P0-A/P0-B Build Report
 
           - Commit: $GITHUB_SHA
           - Java: 25
@@ -62,6 +62,8 @@ jobs:
           - clean/test/build: PASS
           - production JAR verify: PASS
           - SHA-256: $SHA
+          - P0-B pure movement/lease JUnit: PASS
+          - debug exterior proxy compile: PASS
           - datagen: NOT RUN
           - GameTest: NOT REGISTERED / NOT RUN
           - dedicated server smoke: NOT RUN
@@ -72,7 +74,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.1-deliverables
+          name: earth-to-stars-0.1.0-alpha.2-deliverables
           path: |
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar
             projects/earth-to-stars/build/libs/earth_to_stars-*.jar.sha256
@@ -82,7 +84,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: earth-to-stars-0.1.0-alpha.1-logs
+          name: earth-to-stars-0.1.0-alpha.2-logs
           path: projects/earth-to-stars/build/logs/
           if-no-files-found: ignore
           retention-days: 7
