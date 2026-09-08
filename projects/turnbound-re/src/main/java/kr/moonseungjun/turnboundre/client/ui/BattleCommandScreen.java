@@ -152,7 +152,7 @@ public final class BattleCommandScreen extends Screen {
             int y = layout.grid().y() + row * (rowHeight + gap);
             int ordinal = from + i + 1;
             boolean chosen = selectedTargetIds.contains(participant.id());
-            String label = (chosen ? "✓ " : "") + "#" + ordinal + " " + displayName(participant);
+            String label = (chosen ? "◆ " : "  ") + "#" + ordinal + " " + displayName(participant);
             Button target = Button.builder(Component.literal(label), ignored -> toggleTarget(model, participant.id()))
                     .bounds(x, y, buttonWidth, rowHeight)
                     .build();
@@ -271,16 +271,23 @@ public final class BattleCommandScreen extends Screen {
                         "hud.turnbound_re.command_header",
                         displayName(actor),
                         BattleInputHandler.openKeyName()).getString();
-                graphics.text(this.font, Component.literal(fit(header, command.width() - UiLayoutMetrics.SPACE_8)),
-                        command.x() + UiLayoutMetrics.SPACE_4, command.y() + UiLayoutMetrics.SPACE_4,
-                        0xFFFFFFFF, true);
+                UiVisualLanguage.titleBand(
+                        graphics,
+                        this.font,
+                        command.x(),
+                        command.y(),
+                        command.width(),
+                        16,
+                        Component.literal(fit(header, command.width() - UiLayoutMetrics.SPACE_8)),
+                        UiVisualLanguage.TEXT_FOCUS,
+                        true);
             }
             if (model.availableActions().isEmpty()) {
                 String unavailable = Component.translatable("hud.turnbound_re.no_actions").getString();
                 graphics.text(this.font, Component.literal(fit(unavailable, command.width() - UiLayoutMetrics.SPACE_8)),
                         command.x() + UiLayoutMetrics.SPACE_4,
-                        command.y() + UiLayoutMetrics.SPACE_4 + this.font.lineHeight + UiLayoutMetrics.SPACE_2,
-                        0xFFAAAAAA, true);
+                        command.y() + 20,
+                        UiVisualLanguage.TEXT_SECONDARY, true);
             }
         }
 
@@ -290,13 +297,13 @@ public final class BattleCommandScreen extends Screen {
                     + Component.translatable("screen.turnbound_re.select_targets",
                     selectedTargetIds.size(), selectedAction.targetCount()).getString();
             graphics.text(this.font, Component.literal(fit(summary, targetHeaderTextWidth)),
-                    targetHeaderTextX, targetHeaderTextY, 0xFFFFFFFF, true);
+                    targetHeaderTextX, targetHeaderTextY, UiVisualLanguage.TEXT_FOCUS, true);
         }
         if (!feedback.isBlank()) {
             UiLayoutMetrics.Rect command = commandRegion();
             graphics.text(this.font, Component.literal(fit(feedback, command.width())),
                     command.x(), Math.max(UiLayoutMetrics.SPACE_8, command.y() - this.font.lineHeight - UiLayoutMetrics.SPACE_2),
-                    0xFFFFCC66, true);
+                    UiVisualLanguage.TEXT_WARNING, true);
         }
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
