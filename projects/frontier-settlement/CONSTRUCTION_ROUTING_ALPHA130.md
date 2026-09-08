@@ -19,3 +19,5 @@ Alpha.128 made builder spawn/home recovery reject obvious roofs, but ordinary bu
 ## Acceptance
 
 Automated source/docs regression and Java 25 compile are required before the patch commits. A produced JAR may then go through the existing canonical build/runtime pipeline. Real graphical play must still verify that several builders visibly approach ordinary construction from ground, spread out when idle, and do not stall on a nearby roof/log structure. Multiplayer remains separately unverified until an actual LAN/server session is run.
+
+Canonical Alpha.130 validation trigger: 2026-09-08.
