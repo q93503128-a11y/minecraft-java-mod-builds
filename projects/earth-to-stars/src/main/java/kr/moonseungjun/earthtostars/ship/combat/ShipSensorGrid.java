@@ -13,7 +13,7 @@ public final class ShipSensorGrid {
     private final Map<UUID, SensorContact> contacts = new LinkedHashMap<>();
     private long lastScanTick = Long.MIN_VALUE;
 
-    public void update(Collection<SensorContact> freshContacts, long tick) {
+    public synchronized void update(Collection<SensorContact> freshContacts, long tick) {
         contacts.clear();
         for (SensorContact contact : freshContacts) {
             contacts.put(contact.targetId(), contact);
@@ -21,7 +21,22 @@ public final class ShipSensorGrid {
         lastScanTick = tick;
     }
 
-    public Optional<SensorContact> bestHostile(ShipVec3 origin, ShipVec3 forward, TurretProfile profile) {
+    public synchronized void expireOlderThan(long tick, long maxAgeTicks) {
+        if (maxAgeTicks < 0L) {
+            throw new IllegalArgumentException("maxAgeTicks must be >= 0");
+        }
+        if (lastScanTick == Long.MIN_VALUE) {
+            return;
+        }
+        if (tick < lastScanTick) {
+            throw new IllegalArgumentException("sensor tick must be monotonic");
+        }
+        if (tick - lastScanTick > maxAgeTicks) {
+            contacts.clear();
+        }
+    }
+
+    public synchronized Optional<SensorContact> bestHostile(ShipVec3 origin, ShipVec3 forward, TurretProfile profile) {
         ShipVec3 normalizedForward = forward.normalized();
         if (normalizedForward.lengthSquared() < 1.0E-12D) {
             return Optional.empty();
@@ -41,11 +56,11 @@ public final class ShipSensorGrid {
                         .thenComparingDouble(contact -> subtract(contact.position(), origin).lengthSquared()));
     }
 
-    public int contactCount() {
+    public synchronized int contactCount() {
         return contacts.size();
     }
 
-    public long lastScanTick() {
+    public synchronized long lastScanTick() {
         return lastScanTick;
     }
 
