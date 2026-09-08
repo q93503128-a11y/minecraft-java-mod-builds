@@ -1,0 +1,29 @@
+name: Temporary Hidden Rubric Lane05 action performers
+on:
+  push:
+    branches: [tmp-hiddenrubric-lane05-replacements]
+    paths:
+      - '.github/workflows/tmp-hiddenrubric-lane05-action-performers.yml'
+      - 'tools/tmp_hiddenrubric_lane05_action_performers.py'
+permissions:
+  contents: write
+jobs:
+  mine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-hiddenrubric-lane05-replacements
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pyarrow huggingface_hub
+      - run: python tools/tmp_hiddenrubric_lane05_action_performers.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp/hiddenrubric-lane05-action-performers
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'temp: materialize Lane05 action performers [skip ci]'
+          git push origin HEAD:tmp-hiddenrubric-lane05-replacements
