@@ -13,13 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Small server-authoritative semantic snapshot for boss presentation.
- *
- * <p>This payload carries no animation, VFX, sound or damage cadence. Clients resolve authored
- * presentation assets from these semantics and the server tick. The server's PresentationFrame remains
- * derived from the exact AttackExecution snapshot used by damage.</p>
- */
+/** Server-authoritative semantic snapshot for boss presentation. */
 public record BossPresentationPayload(
     int entityId,
     long serverGameTick,
@@ -27,8 +21,6 @@ public record BossPresentationPayload(
     int bossPhase,
     String patternId,
     String attackPhase,
-    long phaseTick,
-    long phaseTicksRemaining,
     double phaseProgress,
     String presentationCue,
     String delivery,
@@ -55,9 +47,6 @@ public record BossPresentationPayload(
         if (!Double.isFinite(phaseProgress) || phaseProgress < 0.0D || phaseProgress > 1.0D) {
             throw new IllegalArgumentException("phaseProgress must be finite and between 0 and 1");
         }
-        if (phaseTick < 0 || phaseTicksRemaining < 0) {
-            throw new IllegalArgumentException("phase timing must be >= 0");
-        }
         if (active) {
             if (bossPhase <= 0) throw new IllegalArgumentException("active presentation requires a positive boss phase");
             ContentId.parse(patternId);
@@ -71,11 +60,7 @@ public record BossPresentationPayload(
         }
     }
 
-    public static BossPresentationPayload fromFrame(
-        int entityId,
-        long serverGameTick,
-        MinecraftBossCombatAdapter.PresentationFrame frame
-    ) {
+    public static BossPresentationPayload fromFrame(int entityId, long serverGameTick, MinecraftBossCombatAdapter.PresentationFrame frame) {
         Objects.requireNonNull(frame, "frame");
         return new BossPresentationPayload(
             entityId,
@@ -84,8 +69,6 @@ public record BossPresentationPayload(
             frame.bossPhase(),
             frame.patternId().toString(),
             frame.attackPhase().name(),
-            frame.phaseTick(),
-            frame.phaseTicksRemaining(),
             frame.phaseProgress(),
             frame.presentationCue(),
             frame.delivery(),
@@ -95,7 +78,7 @@ public record BossPresentationPayload(
     }
 
     public static BossPresentationPayload clear(int entityId, long serverGameTick) {
-        return new BossPresentationPayload(entityId, serverGameTick, false, 0, "", "", 0, 0, 0.0D, "", "", List.of(), false);
+        return new BossPresentationPayload(entityId, serverGameTick, false, 0, "", "", 0.0D, "", "", List.of(), false);
     }
 
     private void encode(RegistryFriendlyByteBuf buf) {
@@ -105,8 +88,6 @@ public record BossPresentationPayload(
         buf.writeVarInt(bossPhase);
         buf.writeUtf(patternId);
         buf.writeUtf(attackPhase);
-        buf.writeVarLong(phaseTick);
-        buf.writeVarLong(phaseTicksRemaining);
         buf.writeDouble(phaseProgress);
         buf.writeUtf(presentationCue);
         buf.writeUtf(delivery);
@@ -122,8 +103,6 @@ public record BossPresentationPayload(
         int bossPhase = buf.readVarInt();
         String patternId = buf.readUtf();
         String attackPhase = buf.readUtf();
-        long phaseTick = buf.readVarLong();
-        long phaseTicksRemaining = buf.readVarLong();
         double phaseProgress = buf.readDouble();
         String presentationCue = buf.readUtf();
         String delivery = buf.readUtf();
@@ -134,7 +113,7 @@ public record BossPresentationPayload(
         boolean hitWindowOpen = buf.readBoolean();
         return new BossPresentationPayload(
             entityId, serverGameTick, active, bossPhase, patternId, attackPhase,
-            phaseTick, phaseTicksRemaining, phaseProgress, presentationCue, delivery, counterplay, hitWindowOpen
+            phaseProgress, presentationCue, delivery, counterplay, hitWindowOpen
         );
     }
 
