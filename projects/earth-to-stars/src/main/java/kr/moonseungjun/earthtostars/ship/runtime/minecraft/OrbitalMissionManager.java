@@ -22,10 +22,12 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * M1-D first-orbit gameplay coordinator.
@@ -51,6 +53,7 @@ public final class OrbitalMissionManager {
 
     private static final Map<ShipId, SalvageEncounter> SALVAGE = new LinkedHashMap<>();
     private static final Map<ShipId, HostileEncounter> HOSTILES = new LinkedHashMap<>();
+    private static final Set<ShipId> HOSTILE_CLEARED = new HashSet<>();
 
     private OrbitalMissionManager() {
     }
@@ -67,13 +70,18 @@ public final class OrbitalMissionManager {
             }
 
             if (OrbitalRecoveryProgression.hasOrbitalScanner(ship)) {
+                HOSTILE_CLEARED.remove(shipId);
                 removeEncounter(shipId);
                 continue;
             }
 
             if (!OrbitalRecoveryProgression.hasAutocannon(ship)) {
+                HOSTILE_CLEARED.remove(shipId);
                 ensureSalvage(ship, anchor);
                 tickSalvage(server, ship, anchor);
+            } else if (HOSTILE_CLEARED.contains(shipId)) {
+                removeSalvage(shipId);
+                removeHostile(shipId);
             } else {
                 removeSalvage(shipId);
                 ensureHostile(ship, anchor);
@@ -81,16 +89,16 @@ public final class OrbitalMissionManager {
             }
         }
 
-        SALVAGE.keySet().removeIf(shipId -> {
-            if (live.contains(shipId)) return false;
-            removeSalvage(shipId);
-            return true;
-        });
-        HOSTILES.keySet().removeIf(shipId -> {
-            if (live.contains(shipId)) return false;
-            removeHostile(shipId);
-            return true;
-        });
+        List<ShipId> staleSalvage = SALVAGE.keySet().stream()
+                .filter(shipId -> !live.contains(shipId))
+                .toList();
+        staleSalvage.forEach(OrbitalMissionManager::removeSalvage);
+
+        List<ShipId> staleHostiles = HOSTILES.keySet().stream()
+                .filter(shipId -> !live.contains(shipId))
+                .toList();
+        staleHostiles.forEach(OrbitalMissionManager::removeHostile);
+        HOSTILE_CLEARED.removeIf(shipId -> !live.contains(shipId));
     }
 
     static List<SensorContact> sensorContacts(ShipId shipId) {
@@ -129,6 +137,7 @@ public final class OrbitalMissionManager {
                     .findFirst()
                     .orElse(null);
             ShipRuntimeManager.ExteriorAnchor anchor = ShipRuntimeManager.exteriorAnchor(firingShip).orElse(null);
+            HOSTILE_CLEARED.add(firingShip);
             removeHostile(firingShip);
             if (ship != null && anchor != null) {
                 dropSensorCore(anchor);
@@ -156,6 +165,7 @@ public final class OrbitalMissionManager {
         if (!OrbitalRecoveryProgression.installRecoveredScanner(ship, CATALOG, player.getUUID())) {
             return ScannerInstallResult.SLOT_UNAVAILABLE;
         }
+        HOSTILE_CLEARED.remove(ship.shipId());
         ShipSavedData.get(player.level().getServer()).put(ship);
         ShipSystemsManager.flush(player.level().getServer());
         return ScannerInstallResult.INSTALLED;
@@ -170,6 +180,7 @@ public final class OrbitalMissionManager {
         }
         SALVAGE.clear();
         HOSTILES.clear();
+        HOSTILE_CLEARED.clear();
     }
 
     private static void ensureSalvage(ShipState ship, ShipRuntimeManager.ExteriorAnchor anchor) {
@@ -220,7 +231,7 @@ public final class OrbitalMissionManager {
     }
 
     private static void ensureHostile(ShipState ship, ShipRuntimeManager.ExteriorAnchor anchor) {
-        if (OrbitalRecoveryProgression.hasOrbitalScanner(ship)) {
+        if (OrbitalRecoveryProgression.hasOrbitalScanner(ship) || HOSTILE_CLEARED.contains(ship.shipId())) {
             return;
         }
         HostileEncounter existing = HOSTILES.get(ship.shipId());
