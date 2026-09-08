@@ -18,17 +18,45 @@ public final class ShipSystemsRuntime {
     private final ShipSensorGrid sensorGrid = new ShipSensorGrid();
 
     public ShipSystemsRuntime(ShipId shipId, ShipSystemsTuning tuning) {
+        this(
+                shipId,
+                tuning,
+                tuning.initialPower(),
+                Map.of(tuning.primaryAmmoType(), tuning.initialPrimaryAmmo())
+        );
+    }
+
+    private ShipSystemsRuntime(
+            ShipId shipId,
+            ShipSystemsTuning tuning,
+            double initialPower,
+            Map<String, Integer> initialAmmo
+    ) {
         this.shipId = Objects.requireNonNull(shipId, "shipId");
         this.tuning = Objects.requireNonNull(tuning, "tuning");
-        this.powerGrid = new ShipPowerGrid(tuning.powerCapacity(), tuning.initialPower(), tuning.generationPerTick());
+        this.powerGrid = new ShipPowerGrid(tuning.powerCapacity(), initialPower, tuning.generationPerTick());
         this.ammoPool = new ShipAmmoPool(
                 Map.of(tuning.primaryAmmoType(), tuning.primaryAmmoCapacity()),
-                Map.of(tuning.primaryAmmoType(), tuning.initialPrimaryAmmo())
+                Objects.requireNonNull(initialAmmo, "initialAmmo")
         );
     }
 
     public static ShipSystemsRuntime p0(ShipId shipId) {
         return new ShipSystemsRuntime(shipId, ShipSystemsTuning.P0);
+    }
+
+    public static ShipSystemsRuntime restore(ShipSystemsSnapshot snapshot, ShipSystemsTuning tuning) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(tuning, "tuning");
+        if (snapshot.powerStored() > tuning.powerCapacity()) {
+            throw new IllegalArgumentException("persisted power exceeds current capacity for ship " + snapshot.shipId());
+        }
+        return new ShipSystemsRuntime(
+                snapshot.shipId(),
+                tuning,
+                snapshot.powerStored(),
+                snapshot.ammoAmounts()
+        );
     }
 
     public void beginTick(long tick) {
@@ -63,6 +91,10 @@ public final class ShipSystemsRuntime {
             throw new IllegalStateException("ammo availability changed during authoritative weapon transaction");
         }
         return true;
+    }
+
+    public synchronized ShipSystemsSnapshot snapshot() {
+        return new ShipSystemsSnapshot(shipId, powerGrid.stored(), ammoPool.snapshotAmounts());
     }
 
     public ShipSensorGrid sensorGrid() {
