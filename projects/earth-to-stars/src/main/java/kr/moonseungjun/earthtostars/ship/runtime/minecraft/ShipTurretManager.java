@@ -7,6 +7,7 @@ import kr.moonseungjun.earthtostars.ship.combat.TurretRuntime;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
+import kr.moonseungjun.earthtostars.ship.gameplay.OrbitalRecoveryProgression;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipTransform;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
@@ -69,7 +70,12 @@ public final class ShipTurretManager {
         if (session == null) return false;
         TurretRuntime turret = TURRETS.get(session.shipId());
         ShipRuntimeManager.ExteriorAnchor anchor = ShipRuntimeManager.exteriorAnchor(session.shipId()).orElse(null);
-        if (turret == null || anchor == null || !turret.ship().can(player.getUUID(), ShipPermission.WEAPON_CONTROL)) return false;
+        if (turret == null
+                || anchor == null
+                || !OrbitalRecoveryProgression.hasAutocannon(turret.ship())
+                || !turret.ship().can(player.getUUID(), ShipPermission.WEAPON_CONTROL)) {
+            return false;
+        }
 
         Vec3 look = player.getLookAngle();
         ShipVec3 aim = new ShipVec3(look.x, look.y, look.z);
@@ -107,6 +113,10 @@ public final class ShipTurretManager {
         for (Map.Entry<ShipId, TurretRuntime> mapEntry : TURRETS.entrySet()) {
             ShipId shipId = mapEntry.getKey();
             TurretRuntime turret = mapEntry.getValue();
+            if (!OrbitalRecoveryProgression.hasAutocannon(turret.ship())) {
+                stale.add(shipId);
+                continue;
+            }
             ShipRuntimeManager.ExteriorAnchor anchor = ShipRuntimeManager.exteriorAnchor(shipId).orElse(null);
             if (anchor == null) {
                 stale.add(shipId);
@@ -144,10 +154,14 @@ public final class ShipTurretManager {
     }
 
     private static Optional<ShipState> resolveAccessibleShip(ServerPlayer player) {
-        return ShipRuntimeManager.accessibleShip(player, ShipPermission.WEAPON_CONTROL);
+        return ShipRuntimeManager.accessibleShip(player, ShipPermission.WEAPON_CONTROL)
+                .filter(OrbitalRecoveryProgression::hasAutocannon);
     }
 
     private static TurretRuntime turret(ShipState ship) {
+        if (!OrbitalRecoveryProgression.hasAutocannon(ship)) {
+            throw new IllegalStateException("ship has no installed autocannon module: " + ship.shipId());
+        }
         return TURRETS.computeIfAbsent(ship.shipId(), ignored -> new TurretRuntime(ship, TurretProfile.P0_AUTOCANNON));
     }
 
@@ -175,6 +189,16 @@ public final class ShipTurretManager {
                 continue;
             }
             ShipVec3 next = shot.position().add(shot.velocity());
+            if (OrbitalMissionManager.tryHitHostile(
+                    shot.level(),
+                    shot.shipId(),
+                    next,
+                    PROJECTILE_COLLISION_RADIUS,
+                    shot.damage()
+            )) {
+                iterator.remove();
+                continue;
+            }
             LivingEntity hit = firstHostileCollision(shot.level(), next);
             if (hit != null) {
                 hit.hurtServer(shot.level(), shot.level().damageSources().generic(), shot.damage());
