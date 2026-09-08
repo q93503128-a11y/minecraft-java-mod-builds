@@ -123,13 +123,47 @@ class M5LanguageContractsTest {
                 "screen.turnbound_re.party.locked_detail",
                 "screen.turnbound_re.party.basic",
                 "screen.turnbound_re.party.skills",
-                "screen.turnbound_re.party.burst"));
+                "screen.turnbound_re.party.burst",
+                "screen.turnbound_re.party.passive"));
 
         for (String role : List.of("vanguard", "breaker", "striker", "controller", "support")) {
             assertTrue(en.has("screen.turnbound_re.party.role." + role), "missing party role: " + role);
         }
         for (String affinity : List.of("normal", "weak", "resist", "immune")) {
             assertTrue(en.has("screen.turnbound_re.party.affinity." + affinity), "missing affinity grade: " + affinity);
+        }
+    }
+
+    @Test
+    void characterDetailSkillsAndGrowthCopyIsComplete() {
+        JsonObject en = read(EN);
+        requireNonBlank(en, Set.of(
+                "screen.turnbound_re.tab.overview",
+                "screen.turnbound_re.tab.skills",
+                "screen.turnbound_re.tab.growth",
+                "screen.turnbound_re.growth.level_up",
+                "screen.turnbound_re.growth.ascend",
+                "screen.turnbound_re.growth.saving",
+                "screen.turnbound_re.growth.saved",
+                "screen.turnbound_re.growth.stale",
+                "screen.turnbound_re.growth.insufficient_coin",
+                "screen.turnbound_re.growth.insufficient_essence",
+                "screen.turnbound_re.growth.insufficient_shards",
+                "screen.turnbound_re.growth.level_cap",
+                "screen.turnbound_re.growth.not_at_level_cap",
+                "screen.turnbound_re.growth.max_star",
+                "screen.turnbound_re.growth.not_owned",
+                "screen.turnbound_re.growth.server_rejected",
+                "screen.turnbound_re.growth.wallet",
+                "screen.turnbound_re.growth.level_preview",
+                "screen.turnbound_re.growth.ascend_preview",
+                "screen.turnbound_re.growth.cost"));
+
+        for (String kind : List.of("basic", "skill", "burst", "passive", "guard")) {
+            requireNonBlank(en, Set.of("screen.turnbound_re.skill.kind." + kind));
+        }
+        for (String effect : List.of("apply_status", "remove_status", "intent_delay", "energy", "poise_damage")) {
+            requireNonBlank(en, Set.of("screen.turnbound_re.skill.effect." + effect));
         }
     }
 
