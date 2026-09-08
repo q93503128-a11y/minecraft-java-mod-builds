@@ -1,0 +1,34 @@
+name: Temporary Hidden Rubric Lane05 final materialization
+on:
+  push:
+    branches: [tmp-hiddenrubric-lane05-extract]
+    paths:
+      - '.github/workflows/tmp-hiddenrubric-lane05-finalize.yml'
+      - 'tools/tmp_hiddenrubric_lane05_finalize.py'
+permissions:
+  contents: write
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-hiddenrubric-lane05-extract
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Materialize reviewed Lane05 bundle
+        run: python tools/tmp_hiddenrubric_lane05_finalize.py
+      - name: Validate exact-span bundle
+        working-directory: tmp/hiddenrubric-lane05-final
+        run: python scripts/modeling/validate_router_stage05_parallel_v1_lane05_audience_performer.py | tee validator-output.json
+      - name: Commit review bundle
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp/hiddenrubric-lane05-final
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'temp: materialize reviewed Lane05 final bundle [skip ci]'
+          git push origin HEAD:tmp-hiddenrubric-lane05-extract
