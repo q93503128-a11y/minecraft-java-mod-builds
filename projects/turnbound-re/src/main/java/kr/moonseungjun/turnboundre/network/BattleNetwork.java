@@ -4,6 +4,7 @@ import kr.moonseungjun.turnboundre.TurnboundRe;
 import kr.moonseungjun.turnboundre.battle.BattleDefinitionContext;
 import kr.moonseungjun.turnboundre.battle.BattleEvent;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
+import kr.moonseungjun.turnboundre.battle.EnemyTurnService;
 import kr.moonseungjun.turnboundre.client.BattleClientState;
 import kr.moonseungjun.turnboundre.client.BattleResultClientState;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,9 +14,9 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.List;
 
-/** Play-phase network registration. Battle and progression truth remain server-authoritative. */
+/** Play-phase network registration. Battle, expedition and progression truth remain server-authoritative. */
 public final class BattleNetwork {
-    private static final String PROTOCOL_VERSION = "9";
+    private static final String PROTOCOL_VERSION = "10";
     private static final BattleNetworkGateway GATEWAY = new BattleNetworkGateway(TurnboundRe.BATTLES);
 
     private BattleNetwork() {}
@@ -41,6 +42,7 @@ public final class BattleNetwork {
                 BattleResultNetworkPayloads.ResultClosedS2C.STREAM_CODEC,
                 (payload, context) -> BattleResultClientState.accept(payload));
         ProgressionNetwork.register(registrar);
+        ExpeditionNetwork.register(registrar);
     }
 
     private static void handleCommand(BattleNetworkPayloads.BattleCommandC2S payload, IPayloadContext context) {
@@ -59,6 +61,7 @@ public final class BattleNetwork {
         if (battle == null) return;
 
         if (result.accepted()) {
+            EnemyTurnService.resolveUntilPlayerOrTerminal(TurnboundRe.BATTLES, battle);
             List<BattleEvent> events = BattleNetworkGateway.eventsSince(result);
             context.reply(BattleNetworkPayloads.BattleEventsS2C.from(
                     battle.battleId(), battle.revision(), result.eventStartIndex(), events));

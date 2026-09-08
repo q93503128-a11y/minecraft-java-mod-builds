@@ -12,6 +12,8 @@ import kr.moonseungjun.turnboundre.network.BattleResultPresentationService;
 import kr.moonseungjun.turnboundre.progression.BattleRewardLifecycleHooks;
 import kr.moonseungjun.turnboundre.progression.BattleRewardSettlementService;
 import kr.moonseungjun.turnboundre.progression.PlayerProgressStore;
+import kr.moonseungjun.turnboundre.world.ExpeditionJournalLifecycle;
+import kr.moonseungjun.turnboundre.world.VanillaMobWorldPolicy;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -37,7 +39,9 @@ public final class TurnboundRe {
         NeoForge.EVENT_BUS.addListener(this::addServerReloadListeners);
         new BattleWorldEventHooks(BATTLES).register(NeoForge.EVENT_BUS);
         new BattleRewardLifecycleHooks(BATTLES, REWARD_SETTLEMENT, RESULT_PRESENTATION).register(NeoForge.EVENT_BUS);
-        LOGGER.info("TURNBOUND: RE {} M5 result/reward presentation lifecycle loaded", VERSION);
+        new ExpeditionJournalLifecycle().register(NeoForge.EVENT_BUS);
+        new VanillaMobWorldPolicy().register(NeoForge.EVENT_BUS);
+        LOGGER.info("TURNBOUND: RE {} natural expedition/battle lifecycle loaded", VERSION);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {

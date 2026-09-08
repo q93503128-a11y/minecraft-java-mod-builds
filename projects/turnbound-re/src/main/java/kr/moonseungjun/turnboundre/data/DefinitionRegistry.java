@@ -83,6 +83,7 @@ public final class DefinitionRegistry {
         errors.addAll(DefinitionCrossReferenceValidator.validate(actions, characters, statuses));
 
         Map<String, CharacterDefinition> characterMap = mapCharacters(characters);
+        errors.addAll(ProgressionDefinitionValidator.validateStarterParties(progressions, characterMap));
         Set<String> characterIds = Set.copyOf(characterMap.keySet());
         errors.addAll(DefinitionValidator.validateRewards(rewards, characterIds));
 

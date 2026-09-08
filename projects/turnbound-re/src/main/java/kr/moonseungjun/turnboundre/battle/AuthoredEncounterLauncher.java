@@ -42,6 +42,7 @@ public final class AuthoredEncounterLauncher {
         this.definitions = definitions;
     }
 
+    /** Legacy/entity-backed adapter retained for tests and later presentation entities. */
     public Launch open(
             String encounterId,
             UUID ownerPlayerId,
@@ -57,16 +58,12 @@ public final class AuthoredEncounterLauncher {
 
         DefinitionRepository.Snapshot snapshot = definitions.snapshot();
         DefinitionRegistry registry = snapshot.registry();
-        EncounterDefinition encounter = registry.encounters().get(encounterId);
-        if (encounter == null) throw new IllegalArgumentException("unknown authored encounter " + encounterId);
+        EncounterDefinition encounter = requireEncounter(registry, encounterId);
         if (enemyEntityIds.size() != encounter.enemies().size()) {
             throw new IllegalArgumentException("enemy entity count " + enemyEntityIds.size()
                     + " does not match authored encounter slots " + encounter.enemies().size());
         }
-        RewardTableDefinition rewardTable = registry.rewards().get(encounter.rewardTable());
-        if (rewardTable == null) {
-            throw new IllegalStateException("validated encounter reward table disappeared: " + encounter.rewardTable());
-        }
+        RewardTableDefinition rewardTable = requireReward(registry, encounter);
 
         List<BattleParticipant> participants = new ArrayList<>();
         List<EntityParticipantBinding> bindings = new ArrayList<>();
@@ -75,41 +72,133 @@ public final class AuthoredEncounterLauncher {
         int ordinal = 0;
 
         for (PlayerSlot slot : playerSlots) {
-            if (characterIds.putIfAbsent(slot.participantId(), slot.progress().characterId()) != null) {
-                throw new IllegalArgumentException("duplicate player participantId " + slot.participantId());
-            }
-            CharacterDefinition definition = requireCharacter(registry, slot.progress().characterId());
-            CharacterDefinition.Stats stats = ProgressionRules.stats(definition, slot.progress());
-            participants.add(participant(slot.participantId(), BattleTeam.PLAYER, ordinal++, stats));
+            addPlayer(registry, participants, characterIds, controllers, slot.participantId(), slot.progress(), ownerPlayerId, ordinal++);
             bindings.add(new EntityParticipantBinding(slot.participantId(), slot.entityId()));
-            controllers.put(slot.participantId(), ownerPlayerId);
         }
 
         for (int index = 0; index < encounter.enemies().size(); index++) {
-            EncounterDefinition.EnemySlot authored = encounter.enemies().get(index);
             String participantId = "enemy_" + index;
-            if (characterIds.containsKey(participantId)) {
-                throw new IllegalArgumentException("player participantId collides with authored enemy id " + participantId);
-            }
-            CharacterDefinition definition = requireCharacter(registry, authored.character());
-            CharacterProgress progress = new CharacterProgress(
-                    definition.id(), definition.originStar(), authored.currentStar(), authored.level());
-            CharacterDefinition.Stats stats = ProgressionRules.stats(definition, progress);
-            characterIds.put(participantId, definition.id());
-            participants.add(participant(participantId, BattleTeam.ENEMY, ordinal++, stats));
+            addEnemy(registry, participants, characterIds, encounter.enemies().get(index), participantId, ordinal++);
             UUID entityId = enemyEntityIds.get(index);
             if (entityId == null) throw new IllegalArgumentException("enemy entityId must not be null at slot " + index);
             bindings.add(new EntityParticipantBinding(participantId, entityId));
         }
 
+        return register(encounter, rewardTable, snapshot, ownerPlayerId, battleId, battleSeed,
+                participants, bindings, characterIds, controllers);
+    }
+
+    /**
+     * Production gameplay path while final character presentation entities are not yet approved.
+     * Participants are logical TURNBOUND actors only: no Minecraft Mob or phantom entity UUID is required.
+     */
+    public Launch openVirtual(
+            String encounterId,
+            UUID ownerPlayerId,
+            List<CharacterProgress> party,
+            UUID battleId,
+            long battleSeed
+    ) {
+        if (encounterId == null || encounterId.isBlank()) throw new IllegalArgumentException("encounterId must not be blank");
+        if (ownerPlayerId == null || battleId == null) throw new IllegalArgumentException("ownerPlayerId/battleId required");
+        if (party == null || party.isEmpty() || party.size() > 4) throw new IllegalArgumentException("party must contain 1..4 characters");
+
+        DefinitionRepository.Snapshot snapshot = definitions.snapshot();
+        DefinitionRegistry registry = snapshot.registry();
+        EncounterDefinition encounter = requireEncounter(registry, encounterId);
+        RewardTableDefinition rewardTable = requireReward(registry, encounter);
+
+        List<BattleParticipant> participants = new ArrayList<>();
+        Map<String, String> characterIds = new LinkedHashMap<>();
+        Map<String, UUID> controllers = new LinkedHashMap<>();
+        int ordinal = 0;
+        for (int index = 0; index < party.size(); index++) {
+            CharacterProgress progress = party.get(index);
+            if (progress == null) throw new IllegalArgumentException("party progress must not be null");
+            addPlayer(registry, participants, characterIds, controllers,
+                    "party_" + index, progress, ownerPlayerId, ordinal++);
+        }
+        for (int index = 0; index < encounter.enemies().size(); index++) {
+            addEnemy(registry, participants, characterIds, encounter.enemies().get(index), "enemy_" + index, ordinal++);
+        }
+
+        return register(encounter, rewardTable, snapshot, ownerPlayerId, battleId, battleSeed,
+                participants, List.of(), characterIds, controllers);
+    }
+
+    private Launch register(
+            EncounterDefinition encounter,
+            RewardTableDefinition rewardTable,
+            DefinitionRepository.Snapshot snapshot,
+            UUID ownerPlayerId,
+            UUID battleId,
+            long battleSeed,
+            List<BattleParticipant> participants,
+            List<EntityParticipantBinding> bindings,
+            Map<String, String> characterIds,
+            Map<String, UUID> controllers
+    ) {
         BattleInstance battle = new BattleInstance(battleId, battleSeed, participants);
-        BattleDefinitionContext definitionContext = new BattleDefinitionContext(registry, snapshot.hash(), characterIds);
+        BattleDefinitionContext definitionContext = new BattleDefinitionContext(snapshot.registry(), snapshot.hash(), characterIds);
         BattleRewardContext rewardContext = new BattleRewardContext(
                 ownerPlayerId, rewardTable, rewardSeed(battleSeed, ownerPlayerId, encounter.id()));
         battles.register(battle, bindings, participants, definitionContext, rewardContext, controllers);
         battle.start();
         publishAuthoredEnemyIntents(battle, definitionContext);
         return new Launch(encounter, battle, definitionContext, rewardContext);
+    }
+
+    private static void addPlayer(
+            DefinitionRegistry registry,
+            List<BattleParticipant> participants,
+            Map<String, String> characterIds,
+            Map<String, UUID> controllers,
+            String participantId,
+            CharacterProgress progress,
+            UUID ownerPlayerId,
+            int ordinal
+    ) {
+        if (characterIds.putIfAbsent(participantId, progress.characterId()) != null) {
+            throw new IllegalArgumentException("duplicate player participantId " + participantId);
+        }
+        CharacterDefinition definition = requireCharacter(registry, progress.characterId());
+        ProgressionRules.requireMatches(definition, progress);
+        CharacterDefinition.Stats stats = ProgressionRules.stats(definition, progress);
+        participants.add(participant(participantId, BattleTeam.PLAYER, ordinal, stats));
+        controllers.put(participantId, ownerPlayerId);
+    }
+
+    private static void addEnemy(
+            DefinitionRegistry registry,
+            List<BattleParticipant> participants,
+            Map<String, String> characterIds,
+            EncounterDefinition.EnemySlot authored,
+            String participantId,
+            int ordinal
+    ) {
+        if (characterIds.containsKey(participantId)) {
+            throw new IllegalArgumentException("participant id collision " + participantId);
+        }
+        CharacterDefinition definition = requireCharacter(registry, authored.character());
+        CharacterProgress progress = new CharacterProgress(
+                definition.id(), definition.originStar(), authored.currentStar(), authored.level());
+        CharacterDefinition.Stats stats = ProgressionRules.stats(definition, progress);
+        characterIds.put(participantId, definition.id());
+        participants.add(participant(participantId, BattleTeam.ENEMY, ordinal, stats));
+    }
+
+    private static EncounterDefinition requireEncounter(DefinitionRegistry registry, String encounterId) {
+        EncounterDefinition encounter = registry.encounters().get(encounterId);
+        if (encounter == null) throw new IllegalArgumentException("unknown authored encounter " + encounterId);
+        return encounter;
+    }
+
+    private static RewardTableDefinition requireReward(DefinitionRegistry registry, EncounterDefinition encounter) {
+        RewardTableDefinition rewardTable = registry.rewards().get(encounter.rewardTable());
+        if (rewardTable == null) {
+            throw new IllegalStateException("validated encounter reward table disappeared: " + encounter.rewardTable());
+        }
+        return rewardTable;
     }
 
     private static CharacterDefinition requireCharacter(DefinitionRegistry registry, String characterId) {

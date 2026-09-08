@@ -24,6 +24,13 @@ public final class ProgressionDefinitionValidator {
             if (!validId(id)) errors.add("invalid progression id: " + id);
             else if (!seen.add(id)) errors.add("duplicate progression id: " + id);
             if (value.partyCapacity() < 1 || value.partyCapacity() > 100) errors.add(id + ": partyCapacity must be 1..100");
+            if (value.starterParty().size() > 4) errors.add(id + ": starterParty may contain at most four characters");
+            if (value.starterParty().stream().distinct().count() != value.starterParty().size()) {
+                errors.add(id + ": starterParty must not contain duplicates");
+            }
+            for (String characterId : value.starterParty()) {
+                if (!validId(characterId)) errors.add(id + ": invalid starterParty character id " + characterId);
+            }
             if (!value.unlockShardCostByOriginStar().keySet().equals(ORIGIN_STARS)) {
                 errors.add(id + ": unlockShardCostByOriginStar must define exactly " + ORIGIN_STARS);
             }
@@ -58,6 +65,31 @@ public final class ProgressionDefinitionValidator {
                 previousCoin = row.coin();
                 previousEssence = row.essence();
                 previousShards = row.shards();
+            }
+        }
+        return List.copyOf(errors);
+    }
+
+    /** Cross-reference validation once CharacterDefinitions are available. */
+    public static List<String> validateStarterParties(
+            List<ProgressionDefinition> values,
+            Map<String, CharacterDefinition> characters
+    ) {
+        List<String> errors = new ArrayList<>();
+        if (values == null || characters == null) return List.of("progressions/characters must not be null");
+        for (ProgressionDefinition value : values) {
+            if (value == null) continue;
+            int squadCost = 0;
+            for (String characterId : value.starterParty()) {
+                CharacterDefinition character = characters.get(characterId);
+                if (character == null) {
+                    errors.add(value.id() + ": starterParty references missing character " + characterId);
+                    continue;
+                }
+                squadCost = Math.addExact(squadCost, character.squadCost());
+            }
+            if (squadCost > value.partyCapacity()) {
+                errors.add(value.id() + ": starterParty squad cost " + squadCost + " exceeds capacity " + value.partyCapacity());
             }
         }
         return List.copyOf(errors);

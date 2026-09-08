@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 /**
  * Server-side active battle registry.
- * World actor bindings and player command ownership are intentionally separate: one player may control several
- * party participants while every participant still owns a distinct world presentation entity.
+ * World presentation bindings and player command ownership are independent. A logical participant may deliberately
+ * have no Minecraft entity while presentation assets are still pending, and one player may control several party actors.
  */
 public final class BattleManager {
     private final Map<UUID, BattleInstance> activeBattles = new HashMap<>();
@@ -58,7 +58,7 @@ public final class BattleManager {
         register(battle, bindings, participants, definitionContext, null);
     }
 
-    /** Production registration preserving the old one-entity-per-player ownership behavior for compatibility. */
+    /** Production registration preserving legacy one-bound-entity-per-player ownership when no controller map is supplied. */
     public void register(
             BattleInstance battle,
             List<EntityParticipantBinding> bindings,
@@ -69,10 +69,7 @@ public final class BattleManager {
         register(battle, bindings, participants, definitionContext, rewardContext, defaultControllers(participants, bindings));
     }
 
-    /**
-     * Production/data-driven registration with explicit controller ownership. Definition/reward metadata and controller
-     * ownership are snapshotted for the entire battle.
-     */
+    /** Production/data-driven registration with explicit controller ownership. */
     public void register(
             BattleInstance battle,
             List<EntityParticipantBinding> bindings,
@@ -103,7 +100,7 @@ public final class BattleManager {
             Map<String, UUID> controllers
     ) {
         if (battle == null) throw new IllegalArgumentException("battle must not be null");
-        if (bindings == null || bindings.isEmpty()) throw new IllegalArgumentException("bindings must not be empty");
+        if (bindings == null) throw new IllegalArgumentException("bindings must not be null");
         if (controllers == null) throw new IllegalArgumentException("controllers must not be null");
         UUID battleId = battle.battleId();
         if (activeBattles.containsKey(battleId)) throw new IllegalStateException("battle already registered: " + battleId);
@@ -173,7 +170,7 @@ public final class BattleManager {
             List<EntityParticipantBinding> bindings
     ) {
         if (participants == null || participants.isEmpty()) throw new IllegalArgumentException("participants must not be empty");
-        if (bindings == null || bindings.isEmpty()) throw new IllegalArgumentException("bindings must not be empty");
+        if (bindings == null) throw new IllegalArgumentException("bindings must not be null");
         Map<String, UUID> bound = new HashMap<>();
         for (EntityParticipantBinding binding : bindings) {
             if (binding != null) bound.put(binding.participantId(), binding.entityId());
@@ -215,7 +212,6 @@ public final class BattleManager {
         return bindings == null ? Optional.empty() : Optional.ofNullable(bindings.get(participantId));
     }
 
-    /** Stable read-only snapshot used by server presentation ownership resolution. */
     public List<EntityParticipantBinding> bindings(UUID battleId) {
         Map<String, EntityParticipantBinding> bindings = bindingsByBattle.get(battleId);
         if (bindings == null) return List.of();
@@ -260,7 +256,6 @@ public final class BattleManager {
         return claimedRewards.contains(battleId);
     }
 
-    /** Snapshot of every terminal battle waiting for player-facing result acknowledgement. */
     public List<UUID> terminalRewardStateBattleIds() {
         return activeBattles.entrySet().stream()
                 .filter(entry -> entry.getValue().state() == BattleState.REWARD)
@@ -270,7 +265,6 @@ public final class BattleManager {
                 .toList();
     }
 
-    /** Snapshot of unclaimed authored victories currently waiting for persistence. */
     public List<UUID> rewardReadyBattleIds() {
         return activeBattles.entrySet().stream()
                 .filter(entry -> entry.getValue().outcome() == BattleInstance.Outcome.VICTORY)
@@ -281,7 +275,6 @@ public final class BattleManager {
                 .toList();
     }
 
-    /** Executes a reward claim at most once for a data-driven VICTORY in REWARD. */
     public <T> Optional<T> claimVictoryReward(UUID battleId, Function<BattleRewardContext, T> claim) {
         if (battleId == null || claim == null) throw new IllegalArgumentException("battleId/claim required");
         BattleInstance battle = activeBattles.get(battleId);
@@ -298,7 +291,6 @@ public final class BattleManager {
     public int activeBattleCount() { return activeBattles.size(); }
     public int boundEntityCount() { return entityToBattle.size(); }
 
-    /** Idempotent cleanup used by normal battle completion and exceptional lifecycle guards. */
     public Optional<BattleInstance> cleanup(UUID battleId) {
         BattleInstance battle = activeBattles.remove(battleId);
         commandServices.remove(battleId);

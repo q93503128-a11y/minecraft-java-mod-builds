@@ -3,6 +3,7 @@
     {
       "id":"turnbound_re:default_progression",
       "partyCapacity":12,
+      "starterParty":["turnbound_re:zombie","turnbound_re:skeleton","turnbound_re:spider","turnbound_re:creeper"],
       "unlockShardCostByOriginStar":{"1":5,"2":10,"3":20,"4":40,"5":60},
       "levelCostsByStar":{
         "1":{"coinBase":6,"coinPerLevel":2,"essenceBase":3,"essencePerLevel":1},

@@ -1,12 +1,15 @@
 package kr.moonseungjun.turnboundre.progression;
 
+import kr.moonseungjun.turnboundre.data.CharacterDefinition;
 import kr.moonseungjun.turnboundre.data.DefinitionRegistry;
 import kr.moonseungjun.turnboundre.data.DefinitionRepository;
 import kr.moonseungjun.turnboundre.data.ProgressionDefinition;
 import kr.moonseungjun.turnboundre.data.RewardTableDefinition;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Thin server persistence facade. Every operation captures one immutable definition snapshot before reading/writing. */
@@ -22,13 +25,18 @@ public final class PlayerProgressStore {
 
     public PlayerProgress getOrCreate(MinecraftServer server, UUID playerId) {
         Context context = context();
-        return data(server).getOrCreate(playerId, context.tuning());
+        TurnboundProgressSavedData data = data(server);
+        return data.get(playerId).orElseGet(() -> {
+            PlayerProgress created = freshWithStarterParty(context);
+            data.put(playerId, created);
+            return created;
+        });
     }
 
     public PlayerProgress grantCurrency(MinecraftServer server, UUID playerId, long coin, long essence) {
         Context context = context();
         TurnboundProgressSavedData data = data(server);
-        PlayerProgress current = data.getOrCreate(playerId, context.tuning());
+        PlayerProgress current = currentOrFresh(data, playerId, context);
         PlayerProgress next = new ProgressionService(context.registry(), context.tuning()).grantCurrency(current, coin, essence);
         data.put(playerId, next);
         return next;
@@ -37,7 +45,7 @@ public final class PlayerProgressStore {
     public PlayerProgress grantShards(MinecraftServer server, UUID playerId, String characterId, int amount) {
         Context context = context();
         TurnboundProgressSavedData data = data(server);
-        PlayerProgress current = data.getOrCreate(playerId, context.tuning());
+        PlayerProgress current = currentOrFresh(data, playerId, context);
         PlayerProgress next = new ProgressionService(context.registry(), context.tuning()).grantShards(current, characterId, amount);
         data.put(playerId, next);
         return next;
@@ -76,7 +84,7 @@ public final class PlayerProgressStore {
         if (rewardTable == null) throw new IllegalArgumentException("rewardTable must not be null");
         Context context = context();
         TurnboundProgressSavedData data = data(server);
-        PlayerProgress current = data.getOrCreate(playerId, context.tuning());
+        PlayerProgress current = currentOrFresh(data, playerId, context);
         RewardService.Applied applied = new RewardService(context.registry()).rollAndApply(current, rewardTable, seed);
         data.put(playerId, applied.state());
         return applied;
@@ -89,11 +97,39 @@ public final class PlayerProgressStore {
     ) {
         Context context = context();
         TurnboundProgressSavedData data = data(server);
-        PlayerProgress current = data.getOrCreate(playerId, context.tuning());
+        PlayerProgress current = currentOrFresh(data, playerId, context);
         ProgressionService service = new ProgressionService(context.registry(), context.tuning());
         ProgressionService.Result result = operation.apply(service).apply(current);
         if (result.accepted()) data.put(playerId, result.state());
         return result;
+    }
+
+    private static PlayerProgress currentOrFresh(TurnboundProgressSavedData data, UUID playerId, Context context) {
+        return data.get(playerId).orElseGet(() -> {
+            PlayerProgress created = freshWithStarterParty(context);
+            data.put(playerId, created);
+            return created;
+        });
+    }
+
+    private static PlayerProgress freshWithStarterParty(Context context) {
+        Map<String, CharacterProgress> characters = new LinkedHashMap<>();
+        for (String characterId : context.tuning().starterParty()) {
+            CharacterDefinition definition = context.registry().characters().get(characterId);
+            if (definition == null) {
+                throw new IllegalStateException("validated starter character disappeared: " + characterId);
+            }
+            characters.put(characterId, new CharacterProgress(
+                    characterId, definition.originStar(), definition.originStar(), 1));
+        }
+        return new PlayerProgress(
+                PlayerProgress.CURRENT_SCHEMA,
+                0L,
+                0L,
+                Map.of(),
+                characters,
+                context.tuning().starterParty(),
+                context.tuning().partyCapacity());
     }
 
     private Context context() {
