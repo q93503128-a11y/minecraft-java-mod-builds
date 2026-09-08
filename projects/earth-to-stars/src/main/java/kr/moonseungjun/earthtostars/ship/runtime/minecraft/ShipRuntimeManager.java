@@ -113,17 +113,33 @@ public final class ShipRuntimeManager {
         return nearest != null && grantControl(player, nearest, tick);
     }
 
-    static Optional<ShipState> nearestInteriorAccessible(ServerPlayer player) {
+    static Optional<ShipState> accessibleShip(ServerPlayer player, ShipPermission permission) {
+        Optional<ShipId> interiorShip = ShipInteriorManager.linkedShip(player);
+        if (interiorShip.isPresent()) {
+            return REPOSITORY.find(interiorShip.orElseThrow())
+                    .filter(ship -> ship.can(player.getUUID(), permission));
+        }
         return ENTRIES.values().stream()
                 .filter(entry -> !entry.exterior().isRemoved())
                 .filter(entry -> entry.exterior().level() == player.level())
-                .filter(entry -> entry.runtime().ship().can(player.getUUID(), ShipPermission.INTERIOR_ACCESS))
+                .filter(entry -> entry.runtime().ship().can(player.getUUID(), permission))
                 .filter(entry -> entry.exterior().distanceToSqr(player) <= CONTROL_RANGE_SQUARED)
                 .min((left, right) -> Double.compare(
                         left.exterior().distanceToSqr(player),
                         right.exterior().distanceToSqr(player)
                 ))
                 .map(entry -> entry.runtime().ship());
+    }
+
+    static Optional<ShipState> nearestInteriorAccessible(ServerPlayer player) {
+        return accessibleShip(player, ShipPermission.INTERIOR_ACCESS);
+    }
+
+    static List<ShipState> liveShips() {
+        return ENTRIES.values().stream()
+                .filter(entry -> !entry.exterior().isRemoved())
+                .map(entry -> entry.runtime().ship())
+                .toList();
     }
 
     static Optional<ExteriorAnchor> exteriorAnchor(ShipId shipId) {
@@ -186,7 +202,12 @@ public final class ShipRuntimeManager {
                 continue;
             }
 
-            Optional<UUID> expiredController = entry.runtime().tick(entry.exterior().level().getGameTime());
+            long gameTime = entry.exterior().level().getGameTime();
+            boolean propulsionPowered = ShipSystemsManager.allowPropulsion(
+                    entry.runtime().ship(),
+                    entry.runtime().currentInput()
+            );
+            Optional<UUID> expiredController = entry.runtime().tick(gameTime, propulsionPowered);
             expiredController.ifPresent(playerId -> {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
                 if (player != null) {
