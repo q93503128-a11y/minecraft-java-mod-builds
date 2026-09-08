@@ -64,7 +64,18 @@ final class BossPresentationSyncContractTest {
         assertTrue(BossPresentationClientState.accept(active));
         assertTrue(BossPresentationClientState.accept(clear));
         assertTrue(BossPresentationClientState.current(8).isEmpty());
-        assertTrue(BossPresentationClientState.accept(delayed), "no cache remains, so transport alone cannot remember the clear watermark");
+        assertFalse(BossPresentationClientState.accept(delayed));
+        assertTrue(BossPresentationClientState.current(8).isEmpty());
+    }
+
+    @Test
+    void clearingConnectionStateAllowsNewServerTickEpoch() {
+        var oldSession = active(5, 900L, "ACTIVE", true);
+        var newSession = active(5, 12L, "TELEGRAPH", false);
+        assertTrue(BossPresentationClientState.accept(oldSession));
+        BossPresentationClientState.clearAll();
+        assertTrue(BossPresentationClientState.accept(newSession));
+        assertEquals(newSession, BossPresentationClientState.current(5).orElseThrow());
     }
 
     @Test
