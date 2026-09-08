@@ -33,7 +33,7 @@ public final class SettlementContextService {
                         : gradeTotal + Math.max(0, construction.buildStep());
                 projectProgress = percent(worked, gradeTotal + buildTotal);
                 String constructionIssue = SettlementConstructionService.constructionIssue(server, data);
-                projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · 막힘");
+                projectLabel = type.displayName() + " 공사" + (constructionIssue.isBlank() ? "" : " · " + constructionIssueSummary(constructionIssue));
                 String constructionDetail = construction.grading()
                         ? "부지 정리 중 · 건물 자재는 정리 완료 후 실물 운반"
                         : "자재 운반·시공 중";
@@ -142,6 +142,18 @@ public final class SettlementContextService {
 
         return new SettlementContextPayload(data.buildings().size(), data.outposts().size(),
                 projectLabel, projectProgress, targets);
+    }
+
+    private static String constructionIssueSummary(String issue) {
+        if (issue == null || issue.isBlank()) return "";
+        if (issue.contains("접근 불가")) return issue.contains("부지 정리") ? "부지 접근 불가" : "자재·현장 접근 불가";
+        if (issue.contains("청크 미로드")) return "청크 미로드";
+        if (issue.contains("목재 대기")) return "목재 대기";
+        if (issue.contains("석재 대기")) return "석재 대기";
+        if (issue.contains("자재통")) return "자재통 문제";
+        if (issue.contains("위치 막힘") || issue.contains("정리 막힘")) return "부지 막힘";
+        if (issue.contains("건설 주민")) return "건설 주민 대기";
+        return "막힘";
     }
 
     private static int percent(int worked, int total) {

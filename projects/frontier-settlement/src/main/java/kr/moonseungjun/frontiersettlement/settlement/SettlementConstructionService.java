@@ -388,14 +388,12 @@ public final class SettlementConstructionService {
     }
 
     private static boolean moveBuilderTowardGradeCell(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-        if (moveToReachable(builder, target, 1.05D)) return true;
-        int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
-        for (int[] offset : offsets) {
-            int x = target.getX() + offset[0];
-            int z = target.getZ() + offset[1];
-            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            BlockPos candidate = new BlockPos(x, y, z);
-            if (!isWalkableApproachCell(level, candidate)) continue;
+        for (BlockPos candidate : gradeApproachPositions(level, builder, target)) {
+            double distance = builder.distanceToSqr(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
+            if (distance <= 4.0D) {
+                builder.getNavigation().stop();
+                return true;
+            }
             if (moveToReachable(builder, candidate, 1.05D)) return true;
         }
         builder.getNavigation().stop();
@@ -403,16 +401,40 @@ public final class SettlementConstructionService {
     }
 
     private static boolean hasReachableGradeWorkPosition(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
-        if (createReachablePath(builder, target) != null) return true;
-        int[][] offsets = { {1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1} };
-        for (int[] offset : offsets) {
-            int x = target.getX() + offset[0];
-            int z = target.getZ() + offset[1];
-            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            BlockPos candidate = new BlockPos(x, y, z);
-            if (isWalkableApproachCell(level, candidate) && createReachablePath(builder, candidate) != null) return true;
+        for (BlockPos candidate : gradeApproachPositions(level, builder, target)) {
+            if (builder.distanceToSqr(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D) <= 4.0D
+                    || createReachablePath(builder, candidate) != null) return true;
         }
         return false;
+    }
+
+    /**
+     * Placement intentionally accepts natural trees and soft vegetation inside a lot. Approach the
+     * first pending grade cell from nearby real ground so one tree-covered corner cannot pin a
+     * valid project at zero percent.
+     */
+    private static List<BlockPos> gradeApproachPositions(ServerLevel level, FrontierWorkerEntity builder, BlockPos target) {
+        Set<BlockPos> unique = new HashSet<>();
+        for (int radius = 0; radius <= 3; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                    int x = target.getX() + dx;
+                    int z = target.getZ() + dz;
+                    int y = terrainSurfaceHeight(level, x, z);
+                    BlockPos candidate = new BlockPos(x, y, z);
+                    if (isWalkableApproachCell(level, candidate)) unique.add(candidate);
+                }
+            }
+        }
+        List<BlockPos> result = new ArrayList<>(unique);
+        result.sort(Comparator.comparingDouble(pos -> {
+            double tx = pos.getX() - target.getX();
+            double tz = pos.getZ() - target.getZ();
+            return (tx * tx + tz * tz) * 4.0D + builder.distanceToSqr(
+                    pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
+        }));
+        return List.copyOf(result);
     }
 
     private static List<GradeCell> createGradePlan(ServerLevel level, ConstructionState construction, BuildingType type) {
@@ -1442,12 +1464,36 @@ public final class SettlementConstructionService {
         BlockPos feet = builder.blockPosition();
         BlockPos head = feet.above();
         if (!level.hasChunkAt(feet) || !level.hasChunkAt(head)) return;
-        if (!blocksCurrentPathCell(level, feet, level.getBlockState(feet))
-                && !blocksCurrentPathCell(level, head, level.getBlockState(head))) return;
+        boolean physicallyBlocked = blocksCurrentPathCell(level, feet, level.getBlockState(feet))
+                || blocksCurrentPathCell(level, head, level.getBlockState(head));
+        boolean elevatedStranded = !physicallyBlocked && builderStrandedOnArtificialElevation(level, data, builder);
+        if (!physicallyBlocked && !elevatedStranded) return;
         BlockPos safe = findSafeBuilderHome(level, data);
         if (safe == null) return;
+        if (elevatedStranded && createReachablePath(builder, safe) != null) return;
         builder.getNavigation().stop();
         builder.setPos(safe.getX() + 0.5D, safe.getY(), safe.getZ() + 0.5D);
+    }
+
+    /** Accessible balconies/bridges stay physical; only a disconnected elevated perch is recovered. */
+    private static boolean builderStrandedOnArtificialElevation(ServerLevel level, SettlementData data,
+                                                                 FrontierWorkerEntity builder) {
+        BlockPos feet = builder.blockPosition();
+        int naturalGroundY = nearestNaturalGroundBelow(level, feet, 16);
+        if (naturalGroundY == Integer.MIN_VALUE) return false;
+        int artificialRise = (feet.getY() - 1) - naturalGroundY;
+        if (artificialRise < 3) return false;
+        BlockPos safe = findSafeBuilderHome(level, data);
+        return safe != null && createReachablePath(builder, safe) == null;
+    }
+
+    private static int nearestNaturalGroundBelow(ServerLevel level, BlockPos feet, int maxDepth) {
+        for (int depth = 1; depth <= maxDepth; depth++) {
+            BlockPos probe = feet.below(depth);
+            if (!level.hasChunkAt(probe)) return Integer.MIN_VALUE;
+            if (isNaturalGround(level.getBlockState(probe))) return probe.getY();
+        }
+        return Integer.MIN_VALUE;
     }
 
     private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data) {
@@ -1456,19 +1502,29 @@ public final class SettlementConstructionService {
 
     private static BlockPos findSafeBuilderHome(ServerLevel level, SettlementData data, Set<BlockPos> occupied) {
         BlockPos center = data.centerPos();
-        BlockPos preferred = safeSurfaceCell(level, center.getX() + 1, center.getZ() + 1);
+        int referenceY = center.getY();
+        BlockPos preferred = safeBuilderHomeCell(level, center.getX() + 1, center.getZ() + 1, referenceY);
         if (preferred != null && !occupied.contains(preferred)) return preferred;
-        for (int radius = 1; radius <= 8; radius++) {
+        // Spawn/recovery is rare: a wider bounded real-ground search is cheaper than a roof-stranded project.
+        for (int radius = 1; radius <= 24; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                    BlockPos candidate = safeSurfaceCell(level, center.getX() + dx, center.getZ() + dz);
+                    BlockPos candidate = safeBuilderHomeCell(level, center.getX() + dx, center.getZ() + dz, referenceY);
                     if (candidate != null && !occupied.contains(candidate)) return candidate;
                 }
             }
         }
-        BlockPos fallback = safeSurfaceCell(level, center.getX(), center.getZ());
-        return fallback != null && !occupied.contains(fallback) ? fallback : null;
+        return null;
+    }
+
+    /** Never choose an arbitrary highest collision surface such as a roof or tall log pillar as home. */
+    private static BlockPos safeBuilderHomeCell(ServerLevel level, int x, int z, int referenceY) {
+        BlockPos candidate = safeSurfaceCell(level, x, z);
+        if (candidate == null) return null;
+        BlockState support = level.getBlockState(candidate.below());
+        if (isNaturalGround(support) || support.is(Blocks.DIRT_PATH)) return candidate;
+        return null;
     }
 
     private static BlockPos safeSurfaceCell(ServerLevel level, int x, int z) {

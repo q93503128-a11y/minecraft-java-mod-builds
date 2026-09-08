@@ -2,7 +2,7 @@
 
 Minecraft Java 26.2 / NeoForge 26.2 cooperative survival settlement-growth mod.
 
-## Current version: 0.1.0-alpha.127
+## Current version: 0.1.0-alpha.128
 
 Frontier Settlement owns the shared settlement, physical construction, residents, production, roads, outposts, logistics, defense infrastructure, bounded civil works and territory progression. Companion mods remain the preferred source of biome, dungeon, structure, combat, weapon and loot breadth.
 
