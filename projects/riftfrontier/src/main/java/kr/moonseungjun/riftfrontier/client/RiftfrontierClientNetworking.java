@@ -17,7 +17,7 @@ public final class RiftfrontierClientNetworking {
     private static void registerClientPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
         event.register(
             BossPresentationPayload.TYPE,
-            (payload, context) -> BossPresentationClientState.accept(payload)
+            (payload, context) -> BossPresentationClientState.accept(payload.state())
         );
     }
 
