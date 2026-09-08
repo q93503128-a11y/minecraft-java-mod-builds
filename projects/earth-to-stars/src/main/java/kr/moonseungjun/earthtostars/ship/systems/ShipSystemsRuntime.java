@@ -126,8 +126,8 @@ public final class ShipSystemsRuntime {
         return true;
     }
 
-    public synchronized boolean consumeOxygen(double amount) {
-        return oxygenTank.tryConsume(amount);
+    public synchronized double consumeOxygen(double amount) {
+        return oxygenTank.drain(amount);
     }
 
     public synchronized double loadPropellantCell() {
