@@ -65,6 +65,7 @@ public final class OrbitalMissionManager {
             live.add(shipId);
             ShipRuntimeManager.ExteriorAnchor anchor = ShipRuntimeManager.exteriorAnchor(shipId).orElse(null);
             if (anchor == null || !anchor.level().dimension().equals(SpaceLevels.ORBITAL_SPACE)) {
+                HOSTILE_CLEARED.remove(shipId);
                 removeEncounter(shipId);
                 continue;
             }
