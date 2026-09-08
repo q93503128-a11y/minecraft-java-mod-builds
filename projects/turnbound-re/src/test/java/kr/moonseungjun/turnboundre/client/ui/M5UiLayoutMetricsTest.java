@@ -78,11 +78,47 @@ class M5UiLayoutMetricsTest {
     }
 
     @Test
+    void partyFormationKeepsRosterActivePartyAndDetailVisibleTogether() {
+        for (int[] size : List.of(
+                new int[]{480, 270},
+                new int[]{640, 360},
+                new int[]{1280, 720},
+                new int[]{1920, 1080})) {
+            assertTrue(UiLayoutMetrics.supportsPartyScreen(size[0], size[1]));
+            UiLayoutMetrics.PartyFormationLayout layout = UiLayoutMetrics.partyFormation(size[0], size[1]);
+            List<UiLayoutMetrics.Rect> regions = List.of(
+                    layout.root(), layout.header(), layout.tabs(), layout.roster(),
+                    layout.activeParty(), layout.selectedDetail(), layout.footer());
+            assertTrue(regions.stream().allMatch(rect -> rect.inside(size[0], size[1])),
+                    () -> "party screen out of bounds at " + size[0] + "x" + size[1]);
+            assertFalse(layout.roster().intersects(layout.activeParty()));
+            assertFalse(layout.activeParty().intersects(layout.selectedDetail()));
+            assertFalse(layout.roster().intersects(layout.selectedDetail()));
+            assertTrue(layout.roster().width() >= 160);
+            assertTrue(layout.activeParty().width() >= 110);
+            assertTrue(layout.selectedDetail().width() >= 150);
+            assertTrue(layout.roster().height() >= 150);
+        }
+    }
+
+    @Test
+    void partyFormationCapsWideLayoutInsteadOfStretchingScanDistancesForever() {
+        UiLayoutMetrics.PartyFormationLayout layout = UiLayoutMetrics.partyFormation(1920, 1080);
+        assertEquals(960, layout.root().width());
+        assertEquals((1920 - 960) / 2, layout.root().x());
+    }
+
+    @Test
     void unsupportedTinyLogicalCanvasIsDetectedBeforeRenderAndStillFailsExplicitLayout() {
         assertFalse(UiLayoutMetrics.supportsBattleHud(320, 180));
-        IllegalArgumentException error = assertThrows(
+        assertFalse(UiLayoutMetrics.supportsPartyScreen(320, 180));
+        IllegalArgumentException battleError = assertThrows(
                 IllegalArgumentException.class,
                 () -> UiLayoutMetrics.battleHud(320, 180));
-        assertTrue(error.getMessage().contains("requires at least"));
+        IllegalArgumentException partyError = assertThrows(
+                IllegalArgumentException.class,
+                () -> UiLayoutMetrics.partyFormation(320, 180));
+        assertTrue(battleError.getMessage().contains("requires at least"));
+        assertTrue(partyError.getMessage().contains("requires at least"));
     }
 }
