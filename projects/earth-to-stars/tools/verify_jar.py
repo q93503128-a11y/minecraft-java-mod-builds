@@ -32,6 +32,8 @@ def main() -> None:
             "assets/earth_to_stars/lang/ko_kr.json",
             "assets/earth_to_stars/items/launch_craft_kit.json",
             "assets/earth_to_stars/models/item/launch_craft_kit.json",
+            "assets/earth_to_stars/items/recovered_sensor_core.json",
+            "assets/earth_to_stars/models/item/recovered_sensor_core.json",
             "data/earth_to_stars/bootstrap/kernel.json",
             "data/earth_to_stars/progression/main_path.json",
             "data/earth_to_stars/recipe/reinforced_frame.json",
@@ -46,10 +48,16 @@ def main() -> None:
                 fail(f"missing {entry}")
         if not any(name.startswith("kr/moonseungjun/earthtostars/") and name.endswith(".class") for name in names):
             fail("no compiled EARTH TO STARS classes")
-        if "kr/moonseungjun/earthtostars/content/LaunchCraftKitItem.class" not in names:
-            fail("M1 launch craft item class missing")
-        if "kr/moonseungjun/earthtostars/ship/gameplay/LaunchCraftBlueprint.class" not in names:
-            fail("M1 launch craft blueprint class missing")
+        required_classes = [
+            "kr/moonseungjun/earthtostars/content/LaunchCraftKitItem.class",
+            "kr/moonseungjun/earthtostars/content/RecoveredSensorCoreItem.class",
+            "kr/moonseungjun/earthtostars/ship/gameplay/LaunchCraftBlueprint.class",
+            "kr/moonseungjun/earthtostars/ship/gameplay/OrbitalRecoveryProgression.class",
+            "kr/moonseungjun/earthtostars/ship/runtime/minecraft/OrbitalMissionManager.class",
+        ]
+        for entry in required_classes:
+            if entry not in names:
+                fail(f"missing M1 gameplay class {entry}")
         if any(name.endswith(".java") for name in names):
             fail("development Java source leaked into production jar")
         if len(names) != len(set(names)):
