@@ -9,7 +9,6 @@ import kr.moonseungjun.turnboundre.network.BattleNetworkPayloads;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
@@ -21,23 +20,12 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import java.util.List;
 
 /**
- * First production battle HUD: a Minecraft-native tactical overlay over authoritative S2C presentation data.
- * It deliberately leaves the center world viewport unobstructed and owns no combat calculations.
+ * Production battle HUD over authoritative S2C presentation data.
+ * The center world viewport stays unobstructed while semantic focus/warning states share the M5 visual language.
  */
 @EventBusSubscriber(modid = TurnboundRe.MOD_ID, value = Dist.CLIENT)
 public final class BattleHud {
     private static final Identifier LAYER_ID = Identifier.fromNamespaceAndPath(TurnboundRe.MOD_ID, "battle_hud");
-
-    private static final Identifier FRAME_IDLE = Identifier.withDefaultNamespace("advancements/task_frame_unobtained");
-    private static final Identifier FRAME_ACTIVE = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
-    private static final Identifier TITLE_BOX = Identifier.withDefaultNamespace("advancements/title_box");
-    private static final Identifier BAR_BACKGROUND = Identifier.withDefaultNamespace("boss_bar/white_background");
-    private static final Identifier HP_PROGRESS = Identifier.withDefaultNamespace("boss_bar/red_progress");
-    private static final Identifier POISE_PROGRESS = Identifier.withDefaultNamespace("boss_bar/yellow_progress");
-    private static final Identifier ENERGY_PROGRESS = Identifier.withDefaultNamespace("boss_bar/blue_progress");
-
-    private static final int TEXT_PRIMARY = 0xFFFFFFFF;
-    private static final int TEXT_SECONDARY = 0xFFAAAAAA;
 
     private BattleHud() {}
 
@@ -75,24 +63,29 @@ public final class BattleHud {
             BattleNetworkPayloads.SnapshotParticipant participant = order.get(i);
             int y = region.y() + i * rowHeight;
             boolean current = participant.id().equals(model.currentActorId());
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE,
-                    region.x(), y, 20, 20);
+            UiVisualLanguage.frame(graphics, region.x(), y, 20, 20, current);
             String teamGlyph = "PLAYER".equals(participant.team()) ? "P" : "E";
             drawCentered(graphics, font, teamGlyph, region.x() + 10, y + 6,
-                    participant.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                    participant.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                            : UiVisualLanguage.TEXT_SECONDARY,
+                    true);
             String label = fit(font, displayName(participant), region.width() - 24);
             graphics.text(font, Component.literal(label), region.x() + 24, y + 2,
-                    participant.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                    participant.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                            : UiVisualLanguage.TEXT_SECONDARY,
+                    true);
             String secondary = current
                     ? BattleHudPresentation.currentTurnLabel().getString()
                     : (participant.exposed() ? BattleHudPresentation.exposedLabel().getString() : resourceLine(participant));
+            int secondaryColor = current ? UiVisualLanguage.TEXT_FOCUS
+                    : (participant.exposed() ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_SECONDARY);
             graphics.text(font, Component.literal(fit(font, secondary, region.width() - 24)),
-                    region.x() + 24, y + 11, TEXT_SECONDARY, true);
+                    region.x() + 24, y + 11, secondaryColor, true);
         }
         if (order.size() > visible) {
             String more = "+" + (order.size() - visible);
             graphics.text(font, Component.literal(more), region.x() + 2, region.bottom() - font.lineHeight,
-                    TEXT_SECONDARY, true);
+                    UiVisualLanguage.TEXT_SECONDARY, true);
         }
         graphics.disableScissor();
     }
@@ -110,19 +103,21 @@ public final class BattleHud {
         String headline = displayName(enemy) + "  HP " + enemy.hp() + "/" + enemy.maxHp()
                 + "  P " + enemy.poise() + "/" + enemy.poiseMax();
         graphics.text(font, Component.literal(fit(font, headline, region.width())), region.x(), region.y(),
-                enemy.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
-        drawBar(graphics, region.x(), region.y() + 11, region.width(), 5, enemy.hp(), enemy.maxHp(), HP_PROGRESS);
-        drawBar(graphics, region.x(), region.y() + 18, region.width(), 4, enemy.poise(), enemy.poiseMax(), POISE_PROGRESS);
+                enemy.alive() ? UiVisualLanguage.TEXT_PRIMARY : UiVisualLanguage.TEXT_SECONDARY, true);
+        UiVisualLanguage.meter(graphics, region.x(), region.y() + 11, region.width(), 5,
+                enemy.hp(), enemy.maxHp(), UiVisualLanguage.HP_PROGRESS);
+        UiVisualLanguage.meter(graphics, region.x(), region.y() + 18, region.width(), 4,
+                enemy.poise(), enemy.poiseMax(), UiVisualLanguage.POISE_PROGRESS);
 
         BattleNetworkPayloads.SnapshotIntent snapshotIntent = enemy.intent();
         String actionName = snapshotIntent == null ? "" : conciseActionName(snapshotIntent.actionId(), displayName(enemy));
         String intent = BattleHudPresentation.intentLine(enemy, actionName).getString();
         graphics.text(font, Component.literal(fit(font, intent, region.width())), region.x(), region.y() + 24,
-                TEXT_PRIMARY, true);
+                snapshotIntent == null ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
         String status = BattleHudPresentation.statusLine(enemy).getString();
         if (!status.isBlank()) {
             graphics.text(font, Component.literal(fit(font, status, region.width())), region.x(), region.y() + 34,
-                    TEXT_SECONDARY, true);
+                    enemy.exposed() ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_SECONDARY, true);
         }
         graphics.disableScissor();
     }
@@ -167,26 +162,32 @@ public final class BattleHud {
     ) {
         int slotWidth = Math.min(180, cellWidth);
         boolean current = member.id().equals(model.currentActorId());
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE, x, y, 20, 20);
+        UiVisualLanguage.frame(graphics, x, y, 20, 20, current);
         drawCentered(graphics, font, Integer.toString(index + 1), x + 10, y + 6,
-                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                        : UiVisualLanguage.TEXT_SECONDARY,
+                true);
 
         int textX = x + 24;
         int contentWidth = Math.max(24, slotWidth - 24 - UiLayoutMetrics.SPACE_4);
         graphics.text(font, Component.literal(fit(font, displayName(member), contentWidth)), textX, y + 1,
-                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                        : UiVisualLanguage.TEXT_SECONDARY,
+                true);
         graphics.text(font, Component.literal("HP " + member.hp() + "/" + member.maxHp()), textX, y + 11,
-                TEXT_SECONDARY, true);
+                UiVisualLanguage.TEXT_SECONDARY, true);
 
         int barWidth = Math.max(24, slotWidth - UiLayoutMetrics.SPACE_4);
-        drawBar(graphics, x, y + 24, barWidth, 5, member.hp(), member.maxHp(), HP_PROGRESS);
-        drawBar(graphics, x, y + 31, barWidth, 4, member.energy(), 100, ENERGY_PROGRESS);
+        UiVisualLanguage.meter(graphics, x, y + 24, barWidth, 5,
+                member.hp(), member.maxHp(), UiVisualLanguage.HP_PROGRESS);
+        UiVisualLanguage.meter(graphics, x, y + 31, barWidth, 4,
+                member.energy(), 100, UiVisualLanguage.ENERGY_PROGRESS);
         graphics.text(font, Component.literal("E " + member.energy() + "/100"), x, y + 38,
-                TEXT_SECONDARY, true);
+                UiVisualLanguage.TEXT_SECONDARY, true);
         String status = BattleHudPresentation.statusLine(member).getString();
         if (!status.isBlank() && cellHeight >= 58) {
             graphics.text(font, Component.literal(fit(font, status, barWidth)), x, y + 48,
-                    TEXT_SECONDARY, true);
+                    member.exposed() ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_SECONDARY, true);
         }
     }
 
@@ -204,22 +205,28 @@ public final class BattleHud {
         int contentWidth = Math.max(24, cellWidth - 22 - UiLayoutMetrics.SPACE_4);
         int barWidth = Math.max(24, cellWidth - UiLayoutMetrics.SPACE_4);
         boolean current = member.id().equals(model.currentActorId());
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, current ? FRAME_ACTIVE : FRAME_IDLE, x, y, 18, 18);
+        UiVisualLanguage.frame(graphics, x, y, 18, 18, current);
         drawCentered(graphics, font, Integer.toString(index + 1), x + 9, y + 5,
-                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                        : UiVisualLanguage.TEXT_SECONDARY,
+                true);
         graphics.text(font, Component.literal(fit(font, displayName(member), contentWidth)), x + 22, y,
-                member.alive() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                member.alive() ? (current ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_PRIMARY)
+                        : UiVisualLanguage.TEXT_SECONDARY,
+                true);
 
         String resources = "HP " + member.hp() + "/" + member.maxHp() + " · E " + member.energy();
         graphics.text(font, Component.literal(fit(font, resources, contentWidth)), x + 22, y + 10,
-                TEXT_SECONDARY, true);
-        drawBar(graphics, x, y + 21, barWidth, 4, member.hp(), member.maxHp(), HP_PROGRESS);
-        drawBar(graphics, x, y + 27, barWidth, 4, member.energy(), 100, ENERGY_PROGRESS);
+                UiVisualLanguage.TEXT_SECONDARY, true);
+        UiVisualLanguage.meter(graphics, x, y + 21, barWidth, 4,
+                member.hp(), member.maxHp(), UiVisualLanguage.HP_PROGRESS);
+        UiVisualLanguage.meter(graphics, x, y + 27, barWidth, 4,
+                member.energy(), 100, UiVisualLanguage.ENERGY_PROGRESS);
 
         String status = BattleHudPresentation.statusLine(member).getString();
         if (!status.isBlank() && cellHeight >= 40) {
             graphics.text(font, Component.literal(fit(font, status, barWidth)), x, y + 32,
-                    TEXT_SECONDARY, true);
+                    member.exposed() ? UiVisualLanguage.TEXT_WARNING : UiVisualLanguage.TEXT_SECONDARY, true);
         }
     }
 
@@ -234,20 +241,26 @@ public final class BattleHud {
         if (actor == null) return;
 
         graphics.enableScissor(region.x(), region.y(), region.right(), region.bottom());
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_BOX,
-                region.x(), region.y(), region.width(), 16);
         String header = Component.translatable(
                 "hud.turnbound_re.command_header",
                 displayName(actor),
                 BattleInputHandler.openKeyName()).getString();
-        drawCentered(graphics, font, fit(font, header, region.width() - UiLayoutMetrics.SPACE_8),
-                region.x() + region.width() / 2, region.y() + 4, TEXT_PRIMARY, true);
+        UiVisualLanguage.titleBand(
+                graphics,
+                font,
+                region.x(),
+                region.y(),
+                region.width(),
+                16,
+                Component.literal(fit(font, header, region.width() - UiLayoutMetrics.SPACE_8)),
+                UiVisualLanguage.TEXT_FOCUS,
+                true);
 
         List<BattleNetworkPayloads.SnapshotAction> actions = model.availableActions();
         if (actions.isEmpty()) {
             String unavailable = Component.translatable("hud.turnbound_re.no_actions").getString();
             graphics.text(font, Component.literal(fit(font, unavailable, region.width() - UiLayoutMetrics.SPACE_8)),
-                    region.x() + UiLayoutMetrics.SPACE_4, region.y() + 24, TEXT_SECONDARY, true);
+                    region.x() + UiLayoutMetrics.SPACE_4, region.y() + 24, UiVisualLanguage.TEXT_SECONDARY, true);
             graphics.disableScissor();
             return;
         }
@@ -258,35 +271,18 @@ public final class BattleHud {
             BattleNetworkPayloads.SnapshotAction action = actions.get(i);
             int x = region.x() + i * slotWidth;
             int centerX = x + slotWidth / 2;
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, action.usable() ? FRAME_ACTIVE : FRAME_IDLE,
-                    centerX - 9, region.y() + 18, 18, 18);
+            UiVisualLanguage.frame(graphics, centerX - 9, region.y() + 18, 18, 18, action.usable());
             drawCentered(graphics, font, slotGlyph(action.slot()), centerX, region.y() + 23,
-                    action.usable() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                    action.usable() ? UiVisualLanguage.TEXT_FOCUS : UiVisualLanguage.TEXT_SECONDARY, true);
 
             String name = conciseActionName(action.id(), displayName(actor));
             drawCentered(graphics, font, fit(font, name, slotWidth - UiLayoutMetrics.SPACE_2), centerX, region.y() + 38,
-                    action.usable() ? TEXT_PRIMARY : TEXT_SECONDARY, true);
+                    action.usable() ? UiVisualLanguage.TEXT_PRIMARY : UiVisualLanguage.TEXT_SECONDARY, true);
             String cost = BattleActionPresentation.hudCost(action).getString();
             drawCentered(graphics, font, fit(font, cost, slotWidth - UiLayoutMetrics.SPACE_2), centerX, region.y() + 48,
-                    TEXT_SECONDARY, true);
+                    action.usable() ? UiVisualLanguage.TEXT_SECONDARY : UiVisualLanguage.TEXT_WARNING, true);
         }
         graphics.disableScissor();
-    }
-
-    private static void drawBar(
-            GuiGraphicsExtractor graphics,
-            int x,
-            int y,
-            int width,
-            int height,
-            int value,
-            int max,
-            Identifier progressSprite
-    ) {
-        if (width <= 0 || height <= 0 || max <= 0) return;
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BAR_BACKGROUND, x, y, width, height);
-        int fill = Math.max(0, Math.min(width, (int) Math.round(width * (Math.max(0, Math.min(value, max)) / (double) max))));
-        if (fill > 0) graphics.blitSprite(RenderPipelines.GUI_TEXTURED, progressSprite, x, y, fill, height);
     }
 
     private static void drawCentered(
