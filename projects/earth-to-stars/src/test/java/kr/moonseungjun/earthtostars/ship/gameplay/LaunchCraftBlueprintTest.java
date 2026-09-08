@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LaunchCraftBlueprintTest {
     @Test
-    void starterCraftHasCoreSystemsButLeavesWeaponHardpointOpen() {
+    void starterCraftHasCoreSystemsButLeavesFirstOrbitUpgradeSlotsOpen() {
         UUID owner = UUID.randomUUID();
         ShipState ship = ShipState.create(ShipId.random(), owner, LaunchCraftBlueprint.slots());
 
         LaunchCraftBlueprint.installStarterModules(ship, ShipBootstrapCatalog.create());
 
-        assertEquals(6, ship.slots().size());
+        assertEquals(7, ship.slots().size());
         assertEquals(5, ship.modules().size());
         Set<String> definitions = ship.modules().values().stream()
                 .map(module -> module.definitionId())
@@ -32,6 +32,8 @@ class LaunchCraftBlueprintTest {
         assertTrue(definitions.contains("cargo_mk1"));
         assertTrue(definitions.contains("life_support_mk1"));
         assertFalse(definitions.contains("autocannon_mk1"));
+        assertFalse(definitions.contains("orbital_scanner_mk1"));
         assertTrue(ship.modules().values().stream().noneMatch(module -> module.slotId().equals("turret")));
+        assertTrue(ship.modules().values().stream().noneMatch(module -> module.slotId().equals("sensor")));
     }
 }
