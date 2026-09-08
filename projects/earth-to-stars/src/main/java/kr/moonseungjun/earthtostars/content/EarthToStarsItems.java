@@ -37,6 +37,11 @@ public final class EarthToStarsItems {
             LaunchCraftKitItem::new,
             props -> props.stacksTo(1)
     );
+    public static final DeferredItem<RecoveredSensorCoreItem> RECOVERED_SENSOR_CORE = ITEMS.registerItem(
+            "recovered_sensor_core",
+            RecoveredSensorCoreItem::new,
+            props -> props.stacksTo(1)
+    );
 
     private EarthToStarsItems() {
     }
