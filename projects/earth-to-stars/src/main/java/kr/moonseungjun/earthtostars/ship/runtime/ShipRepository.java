@@ -34,6 +34,10 @@ public final class ShipRepository {
         return ships.values().stream().filter(ship -> ship.ownerId().equals(ownerId)).findFirst();
     }
 
+    public Optional<ShipState> remove(ShipId shipId) {
+        return Optional.ofNullable(ships.remove(shipId));
+    }
+
     public Collection<ShipState> all() {
         return List.copyOf(ships.values());
     }
