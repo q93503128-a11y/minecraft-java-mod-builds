@@ -139,6 +139,10 @@ public final class ExpeditionJournalScreen extends Screen {
         return end == 0 ? "" : text.substring(0, end) + suffix;
     }
 
+    private void closeScreen() {
+        this.minecraft.gui.setScreen(null);
+    }
+
     @Override public boolean isPauseScreen() { return false; }
     @Override public boolean isInGameUi() { return true; }
 }
