@@ -1,0 +1,13 @@
+{
+  "assistantOutputsIncluded": false,
+  "audienceExactSpanRows": 72,
+  "audiencePerformerOverlapRows": 10,
+  "globalPromotionPerformed": false,
+  "independentReviewCompletedRows": 0,
+  "performerExactSpanRows": 60,
+  "schemaVersion": "router-stage05-parallel-v1-lane05-validation-v1",
+  "status": "PASS",
+  "trainingEligibleRows": 0,
+  "uniqueFamilies": 122,
+  "uniqueTargetTurns": 122
+}

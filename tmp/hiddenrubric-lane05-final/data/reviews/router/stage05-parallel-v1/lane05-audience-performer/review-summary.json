@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane05-review-summary-v1",
+  "reviewedRows": 122,
+  "acceptedRows": 122,
+  "rejectedRowsNotMaterialized": true,
+  "audienceExactSpanRows": 72,
+  "performerExactSpanRows": 60,
+  "independentReviewCompletedRows": 0,
+  "trainingEligibleRows": 0
+}

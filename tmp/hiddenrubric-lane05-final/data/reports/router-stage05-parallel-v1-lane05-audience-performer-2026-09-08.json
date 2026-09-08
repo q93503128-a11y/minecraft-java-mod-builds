@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane05-report-v1",
+  "asOfDate": "2026-09-08",
+  "status": "STAGING_COMPLETE_NO_GLOBAL_PROMOTION",
+  "sourceAudit": {
+    "rawRows": 135634,
+    "canonicalSessions": 41038,
+    "assistantOutputsIncluded": false,
+    "sourceRevision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35"
+  },
+  "counts": {
+    "uniqueTargetTurns": 122,
+    "audienceExactSpanRows": 72,
+    "performerExactSpanRows": 60,
+    "overlapRows": 10,
+    "firstPersonPerformerRows": 30
+  },
+  "targets": {
+    "targetTurnsRange": [
+      120,
+      170
+    ],
+    "audienceMinimum": 70,
+    "performerMinimum": 50,
+    "targetTurnsMet": true,
+    "audienceMet": true,
+    "performerMet": true
+  },
+  "qualityGates": {
+    "higherLaneFamilyExcluded": true,
+    "requesterEvaluatorConfusionChecked": true,
+    "quotedTextFalsePositiveRemoved": true,
+    "assistantRoleplayFalsePositiveRemoved": true,
+    "actorSpanExactSubstring": true,
+    "sourceCompleteness": true,
+    "privacy": true,
+    "duplicate": true,
+    "assistantOutputAbsent": true,
+    "translationFidelityScope": "actor-exact-span"
+  },
+  "authority": {
+    "trainingEligibleRows": 0,
+    "independentReviewCompletedRows": 0,
+    "globalPromotionPerformed": false,
+    "productionAuthorityChanged": false
+  },
+  "files": {
+    "stagingManifest": "data/staging/router-stage05/parallel-v1/lane05-audience-performer/manifest.json",
+    "review": "data/reviews/router/stage05-parallel-v1/lane05-audience-performer/review.jsonl",
+    "reviewSummary": "data/reviews/router/stage05-parallel-v1/lane05-audience-performer/review-summary.json",
+    "validator": "scripts/modeling/validate_router_stage05_parallel_v1_lane05_audience_performer.py"
+  }
+}

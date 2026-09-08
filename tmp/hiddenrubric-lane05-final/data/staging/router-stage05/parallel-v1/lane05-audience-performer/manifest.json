@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "router-stage05-parallel-v1-lane05-manifest-v1",
+  "asOfDate": "2026-09-08",
+  "lane": "05-audience-performer",
+  "source": {
+    "dataset": "lmarena-ai/arena-human-preference-140k",
+    "revision": "a9cb587ee0906192dc1fc5e51778282f36c6bf35",
+    "rawRowsAuthority": 135634,
+    "canonicalSessionsObserved": 41038,
+    "humanUserTextOnly": true,
+    "assistantOutputsIncluded": false
+  },
+  "selection": {
+    "uniqueTargetTurns": 122,
+    "audienceExactSpanRows": 72,
+    "performerExactSpanRows": 60,
+    "audiencePerformerOverlapRows": 10,
+    "firstPersonPerformerRows": 30,
+    "higherLaneFamilyExcluded": true,
+    "quotedTextFalsePositiveExcluded": true
+  },
+  "localization": {
+    "scope": "actor-exact-span",
+    "method": "direct-manual-model-localization",
+    "translator": "OpenAI GPT-5.6 Sol",
+    "automaticTranslationApiUsed": false,
+    "bulkMachineTranslationUsed": false,
+    "independentTranslationReviewCompleted": false
+  },
+  "authority": {
+    "trainingEligibleRows": 0,
+    "independentReviewCompletedRows": 0,
+    "globalPromotionPerformed": false,
+    "productionAuthorityChanged": false
+  },
+  "batches": [
+    {
+      "path": "data/staging/router-stage05/parallel-v1/lane05-audience-performer/lane05-audience-performer-000.jsonl",
+      "rows": 31,
+      "sha256": "bafaaddb203adbff4245996295ff862701737a30fb6da32bbfa96a047df0444a"
+    },
+    {
+      "path": "data/staging/router-stage05/parallel-v1/lane05-audience-performer/lane05-audience-performer-001.jsonl",
+      "rows": 31,
+      "sha256": "39c35f7290b991374bfe6ea1452966e4ab2898c9593cd6760bfe540204a37f55"
+    },
+    {
+      "path": "data/staging/router-stage05/parallel-v1/lane05-audience-performer/lane05-audience-performer-002.jsonl",
+      "rows": 31,
+      "sha256": "9cceb89986fb91844e4c9c9d2e6983b8ce1c18caae6cb4698f12d24e3fdcf50d"
+    },
+    {
+      "path": "data/staging/router-stage05/parallel-v1/lane05-audience-performer/lane05-audience-performer-003.jsonl",
+      "rows": 29,
+      "sha256": "4790499d09c2db05049a6150510117b67bdaa7bf6865445c18ca81a01fe6749b"
+    }
+  ]
+}
