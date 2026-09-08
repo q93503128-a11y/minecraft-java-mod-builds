@@ -1,7 +1,5 @@
 package kr.moonseungjun.earthtostars.ship.runtime.minecraft;
 
-import kr.moonseungjun.earthtostars.ship.combat.SensorContact;
-import kr.moonseungjun.earthtostars.ship.combat.ShipSensorGrid;
 import kr.moonseungjun.earthtostars.ship.combat.TurretControlMode;
 import kr.moonseungjun.earthtostars.ship.combat.TurretFireSolution;
 import kr.moonseungjun.earthtostars.ship.combat.TurretProfile;
@@ -11,6 +9,7 @@ import kr.moonseungjun.earthtostars.ship.domain.ShipPermission;
 import kr.moonseungjun.earthtostars.ship.domain.ShipState;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipTransform;
 import kr.moonseungjun.earthtostars.ship.runtime.ShipVec3;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsRuntime;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,10 +29,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ShipTurretManager {
-    private static final int SENSOR_INTERVAL_TICKS = 10;
     private static final double PROJECTILE_COLLISION_RADIUS = 0.55D;
     private static final Map<ShipId, TurretRuntime> TURRETS = new LinkedHashMap<>();
-    private static final Map<ShipId, ShipSensorGrid> SENSORS = new LinkedHashMap<>();
     private static final Map<UUID, ManualSession> MANUAL_SESSIONS = new HashMap<>();
     private static final List<ActiveShot> SHOTS = new ArrayList<>();
 
@@ -78,7 +75,15 @@ public final class ShipTurretManager {
         ShipVec3 aim = new ShipVec3(look.x, look.y, look.z);
         if (!turret.acceptManualAim(player.getUUID(), session.sessionId(), tick, aim, tick)) return false;
         ShipVec3 muzzle = muzzle(anchor.transform());
-        Optional<TurretFireSolution> shot = turret.fireManual(player.getUUID(), session.sessionId(), muzzle, anchor.transform().forward(), tick);
+        ShipSystemsRuntime systems = ShipSystemsManager.systems(turret.ship());
+        Optional<TurretFireSolution> shot = turret.fireManual(
+                player.getUUID(),
+                session.sessionId(),
+                systems,
+                muzzle,
+                anchor.transform().forward(),
+                tick
+        );
         shot.ifPresent(solution -> spawnShot(anchor.level(), session.shipId(), solution));
         return shot.isPresent();
     }
@@ -87,8 +92,14 @@ public final class ShipTurretManager {
         ShipState ship = resolveAccessibleShip(player).orElse(null);
         if (ship == null) return TurretStatus.unavailable();
         TurretRuntime turret = turret(ship);
-        ShipSensorGrid grid = sensor(ship.shipId());
-        return new TurretStatus(true, turret.mode(), turret.ammo(), grid.contactCount(), turret.lease().isPresent());
+        ShipSystemsRuntime systems = ShipSystemsManager.systems(ship);
+        return new TurretStatus(
+                true,
+                turret.mode(),
+                systems.ammoAmount(turret.profile().ammoType()),
+                systems.sensorGrid().contactCount(),
+                turret.lease().isPresent()
+        );
     }
 
     public static void tick(MinecraftServer server) {
@@ -103,8 +114,13 @@ public final class ShipTurretManager {
             }
             long tick = anchor.level().getGameTime();
             turret.expireLease(tick);
-            if (shouldScan(shipId, tick)) sensor(shipId).update(scanContacts(anchor), tick);
-            Optional<TurretFireSolution> autoShot = turret.tickAuto(sensor(shipId), muzzle(anchor.transform()), anchor.transform().forward(), tick);
+            ShipSystemsRuntime systems = ShipSystemsManager.systems(turret.ship());
+            Optional<TurretFireSolution> autoShot = turret.tickAuto(
+                    systems,
+                    muzzle(anchor.transform()),
+                    anchor.transform().forward(),
+                    tick
+            );
             autoShot.ifPresent(solution -> spawnShot(anchor.level(), shipId, solution));
         }
         stale.forEach(ShipTurretManager::removeShip);
@@ -117,48 +133,22 @@ public final class ShipTurretManager {
 
     public static void removeShip(ShipId shipId) {
         TURRETS.remove(shipId);
-        SENSORS.remove(shipId);
         MANUAL_SESSIONS.entrySet().removeIf(entry -> entry.getValue().shipId().equals(shipId));
         SHOTS.removeIf(shot -> shot.shipId().equals(shipId));
     }
 
     public static void clear() {
         TURRETS.clear();
-        SENSORS.clear();
         MANUAL_SESSIONS.clear();
         SHOTS.clear();
     }
 
     private static Optional<ShipState> resolveAccessibleShip(ServerPlayer player) {
-        return ShipRuntimeManager.nearestInteriorAccessible(player)
-                .filter(ship -> ship.can(player.getUUID(), ShipPermission.WEAPON_CONTROL));
+        return ShipRuntimeManager.accessibleShip(player, ShipPermission.WEAPON_CONTROL);
     }
 
     private static TurretRuntime turret(ShipState ship) {
         return TURRETS.computeIfAbsent(ship.shipId(), ignored -> new TurretRuntime(ship, TurretProfile.P0_AUTOCANNON));
-    }
-
-    private static ShipSensorGrid sensor(ShipId shipId) {
-        return SENSORS.computeIfAbsent(shipId, ignored -> new ShipSensorGrid());
-    }
-
-    private static boolean shouldScan(ShipId shipId, long tick) {
-        int phase = Math.floorMod(shipId.value().hashCode(), SENSOR_INTERVAL_TICKS);
-        return Math.floorMod(tick, SENSOR_INTERVAL_TICKS) == phase;
-    }
-
-    private static List<SensorContact> scanContacts(ShipRuntimeManager.ExteriorAnchor anchor) {
-        double range = TurretProfile.P0_AUTOCANNON.range();
-        ShipVec3 position = anchor.transform().position();
-        AABB box = new AABB(position.x() - range, position.y() - range, position.z() - range, position.x() + range, position.y() + range, position.z() + range);
-        List<Entity> entities = anchor.level().getEntities((Entity) null, box, entity -> entity instanceof LivingEntity && entity.isAlive());
-        List<SensorContact> contacts = new ArrayList<>(entities.size());
-        for (Entity entity : entities) {
-            Vec3 pos = entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D);
-            boolean hostile = entity instanceof Enemy;
-            contacts.add(new SensorContact(entity.getUUID(), new ShipVec3(pos.x, pos.y, pos.z), hostile, hostile ? 10.0D : 0.0D));
-        }
-        return contacts;
     }
 
     private static ShipVec3 muzzle(ShipTransform transform) {
@@ -166,7 +156,14 @@ public final class ShipTurretManager {
     }
 
     private static void spawnShot(ServerLevel level, ShipId shipId, TurretFireSolution solution) {
-        SHOTS.add(new ActiveShot(level, shipId, solution.origin(), solution.direction().normalized().scale(solution.projectileSpeed()), solution.projectileLifetimeTicks(), solution.damage()));
+        SHOTS.add(new ActiveShot(
+                level,
+                shipId,
+                solution.origin(),
+                solution.direction().normalized().scale(solution.projectileSpeed()),
+                solution.projectileLifetimeTicks(),
+                solution.damage()
+        ));
     }
 
     private static void tickShots() {
@@ -189,12 +186,28 @@ public final class ShipTurretManager {
     }
 
     private static LivingEntity firstHostileCollision(ServerLevel level, ShipVec3 position) {
-        AABB hitBox = new AABB(position.x() - PROJECTILE_COLLISION_RADIUS, position.y() - PROJECTILE_COLLISION_RADIUS, position.z() - PROJECTILE_COLLISION_RADIUS, position.x() + PROJECTILE_COLLISION_RADIUS, position.y() + PROJECTILE_COLLISION_RADIUS, position.z() + PROJECTILE_COLLISION_RADIUS);
-        return level.getEntities((Entity) null, hitBox, entity -> entity instanceof LivingEntity && entity instanceof Enemy && entity.isAlive()).stream().map(entity -> (LivingEntity) entity).findFirst().orElse(null);
+        AABB hitBox = new AABB(
+                position.x() - PROJECTILE_COLLISION_RADIUS,
+                position.y() - PROJECTILE_COLLISION_RADIUS,
+                position.z() - PROJECTILE_COLLISION_RADIUS,
+                position.x() + PROJECTILE_COLLISION_RADIUS,
+                position.y() + PROJECTILE_COLLISION_RADIUS,
+                position.z() + PROJECTILE_COLLISION_RADIUS
+        );
+        return level.getEntities(
+                        (Entity) null,
+                        hitBox,
+                        entity -> entity instanceof LivingEntity && entity instanceof Enemy && entity.isAlive()
+                ).stream()
+                .map(entity -> (LivingEntity) entity)
+                .findFirst()
+                .orElse(null);
     }
 
     public record TurretStatus(boolean available, TurretControlMode mode, int ammo, int contacts, boolean controlled) {
-        static TurretStatus unavailable() { return new TurretStatus(false, TurretControlMode.OFF, 0, 0, false); }
+        static TurretStatus unavailable() {
+            return new TurretStatus(false, TurretControlMode.OFF, 0, 0, false);
+        }
     }
 
     private record ManualSession(ShipId shipId, UUID sessionId) {
@@ -216,6 +229,7 @@ public final class ShipTurretManager {
             this.remainingTicks = remainingTicks;
             this.damage = damage;
         }
+
         ServerLevel level() { return level; }
         ShipId shipId() { return shipId; }
         ShipVec3 position() { return position; }
