@@ -12,6 +12,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.Locale;
+
 @EventBusSubscriber(modid = EarthToStars.MOD_ID)
 public final class ShipServerEvents {
     private ShipServerEvents() {
@@ -77,6 +79,26 @@ public final class ShipServerEvents {
                                             context.getSource().sendFailure(Component.literal("현재 함선 내부에 있지 않거나 외부로 이동할 수 없습니다."));
                                             return 0;
                                         })))
+                                .then(Commands.literal("systems")
+                                        .then(Commands.literal("status").executes(context -> {
+                                            ShipSystemsManager.SystemStatus status = ShipSystemsManager.status(context.getSource().getPlayerOrException());
+                                            if (!status.available()) {
+                                                context.getSource().sendFailure(Component.literal("확인할 수 있는 함선 시스템이 없습니다."));
+                                                return 0;
+                                            }
+                                            String text = String.format(
+                                                    Locale.ROOT,
+                                                    "함선 전력 %.1f / %.1f (틱당 +%.1f) | 기관포 탄약 %d / %d | 센서 접촉 %d",
+                                                    status.powerStored(),
+                                                    status.powerCapacity(),
+                                                    status.generationPerTick(),
+                                                    status.ammo(),
+                                                    status.ammoCapacity(),
+                                                    status.contacts()
+                                            );
+                                            context.getSource().sendSuccess(() -> Component.literal(text), false);
+                                            return 1;
+                                        })))
                                 .then(Commands.literal("turret")
                                         .then(Commands.literal("off").executes(context -> setTurretMode(context.getSource().getPlayerOrException(), TurretControlMode.OFF, context)))
                                         .then(Commands.literal("manual").executes(context -> setTurretMode(context.getSource().getPlayerOrException(), TurretControlMode.MANUAL, context)))
@@ -104,7 +126,7 @@ public final class ShipServerEvents {
                                                 context.getSource().sendSuccess(() -> Component.literal("함포 발사."), false);
                                                 return 1;
                                             }
-                                            context.getSource().sendFailure(Component.literal("발사할 수 없습니다. 조종권, 탄약, 재장전 시간 또는 사격각을 확인하세요."));
+                                            context.getSource().sendFailure(Component.literal("발사할 수 없습니다. 전력, 탄약, 조종권, 재장전 시간 또는 사격각을 확인하세요."));
                                             return 0;
                                         }))
                                         .then(Commands.literal("status").executes(context -> {
@@ -114,7 +136,7 @@ public final class ShipServerEvents {
                                                 return 0;
                                             }
                                             context.getSource().sendSuccess(() -> Component.literal(
-                                                    "함포: " + status.mode() + " | 탄약 " + status.ammo() + " | 추적 " + status.contacts() + " | 수동조종 " + (status.controlled() ? "사용 중" : "비어 있음")
+                                                    "함포: " + status.mode() + " | 공용 탄약 " + status.ammo() + " | 추적 " + status.contacts() + " | 수동조종 " + (status.controlled() ? "사용 중" : "비어 있음")
                                             ), false);
                                             return 1;
                                         }))))
@@ -132,6 +154,7 @@ public final class ShipServerEvents {
 
     @SubscribeEvent
     private static void onServerTick(ServerTickEvent.Post event) {
+        ShipSystemsManager.tick(event.getServer());
         ShipRuntimeManager.tick(event.getServer());
         ShipTurretManager.tick(event.getServer());
     }
@@ -139,6 +162,7 @@ public final class ShipServerEvents {
     @SubscribeEvent
     private static void onServerStarting(ServerStartingEvent event) {
         ShipRuntimeManager.initialize(event.getServer());
+        ShipSystemsManager.clear();
         ShipTurretManager.clear();
     }
 
@@ -158,5 +182,6 @@ public final class ShipServerEvents {
     @SubscribeEvent
     private static void onDimensionChanged(PlayerEvent.PlayerChangedDimensionEvent event) {
         ShipRuntimeManager.releaseController(event.getEntity().getUUID());
+        ShipTurretManager.releaseManualControl(event.getEntity().getUUID());
     }
 }
