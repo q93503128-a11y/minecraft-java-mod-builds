@@ -5,53 +5,51 @@ This file is a recovery aid for scheduled development sessions. Current GitHub `
 ## Last recovered baseline
 
 - Required docs were re-read from remote `main` in canonical order.
-- Remote `main` recovered at run start: `b27f873c14348c1ea965be0020bf8084a3eba295`.
-- Previous geometry-sanitizer workflow `34273047515`: full `SUCCESS`.
+- Remote `main` recovered at run start: `0ecc719bccb96ee7eaec857c5df8cd30fb7b9d88`.
+- Previous exact-source derivation workflow `34279483680`: full `SUCCESS`.
 - `Dragon Evolved` remains selected only as the Region 01 first-boss geometry/rig derivation source; source `Atlas` art is not production-approved.
 
 ## Completed in this batch
 
-M3 exact-source derivation acceptance/fingerprint gate:
+M3 GeckoLib 5 render-resource contract boundary:
 
-- Re-obtained creator-hosted `Dragon_Evolved.gltf` from the recorded Quaternius Google Drive file ID and verified exact SHA-256 `39ba6ea24b5f27acf68bbf4c19fe80ba070dbec167ff14bbe933453303426f5c` and 991,335-byte size.
-- Ran the deterministic geometry sanitizer semantics against the exact selected bytes and inspected the real output rather than a synthetic fixture.
-- Exact accepted sanitizer result: 681,773-byte canonical glTF, SHA-256 `ff5041de9a0779d11eedcb40256bdaa1ff848efb99c834bdffaadaf20e121cac`.
-- Preserved: 1 mesh, 1 skin, 46 joints, 48 nodes, 4,437 vertices, 7,440 triangles, 737 accessors, 737 bufferViews and all 8 named source clips.
-- Source-space bounds verified: min `[-2.7376062870025635, 0.30027779936790466, -1.4310814142227173]`, max `[2.7376062870025635, 3.1581382751464844, 0.984516441822052]`.
-- Verified the source PNG image bufferView is excluded and primitive material binding plus top-level `materials`/`textures`/`images`/texture `samplers` are absent. The embedded retained payload is 381,212 bytes.
-- Added `assets/sources/region_01_boss_dragon_evolved.acceptance.json` to pin the exact source/output fingerprints and structural bounds.
-- Added `tools/verify_region01_boss_derivation.py`, a fail-closed acceptance verifier for SHA/provenance/structure/bounds/art stripping.
-- Added regression tests for accepted derivation, hash drift and re-pinned forbidden material payload.
-- First CI attempt `34279350520` failed at the asset-tool step because the new test used pytest while this repository intentionally runs `unittest discover`; the test was fixed without changing CI or weakening coverage.
-- Updated `THIRD_PARTY_ASSETS.md` with the exact verified conversion fingerprint and clarified that this sanitized glTF is still a pre-runtime derivation, not a renderable MODEL resource.
+- Re-checked the current Minecraft 26.2 GeckoLib distribution rather than trusting the stale local note. Official distribution feeds currently expose GeckoLib **5.5.5** for Minecraft 26.2 NeoForge; exact observed Maven coordinate: `com.geckolib:geckolib-neoforge-26.2:5.5.5`.
+- Did **not** add GeckoLib as a dependency yet because Riftfrontier still has no concrete Region 01 boss entity/renderer consuming a real converted model. Re-verify the coordinate again at the dependency-adding commit.
+- Corrected the animated boss physical resource contract from legacy GeckoLib 4-style `geo/` + unscoped `animations/` to GeckoLib 5 `geckolib/models/` + `geckolib/animations/` roots.
+- Preserved vanilla `models/` support for static vanilla model JSON; VFX and sound resource policies remain unchanged.
+- Added `BossPresentationGeckoLibResourceId`, the fail-closed bridge from already physically validated client resource paths to GeckoLib 5 GeoModel-relative identifiers without JSON suffixes.
+- Legacy roots, cross-kind paths, missing suffixes and unscoped paths are rejected instead of guessing fallbacks.
+- During review, found and fixed a real short-JSON edge case: GeckoLib 5 permits the `.geo` / `.animation` name portions to be omitted, so explicit `geckolib/.../*.json` resources must be preserved instead of becoming `*.json.geo.json` or `*.json.animation.json`.
+- Updated the third-party/runtime registry so it no longer claims 5.5.1 is current and records the selected GeckoLib 5 resource layout without falsely claiming a runtime dependency or model exists.
 
 ## Changed systems/files
 
-- `assets/sources/region_01_boss_dragon_evolved.acceptance.json` — exact production derivation receipt.
-- `tools/verify_region01_boss_derivation.py` — deterministic acceptance/fail-closed verifier.
-- `tools/tests/test_verify_region01_boss_derivation.py` — verifier regression tests under the repository's standard `unittest` gate.
-- `docs/THIRD_PARTY_ASSETS.md` — exact source/derivation fingerprint and current distribution state.
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationClientResourcePath.java` — GeckoLib 5 client resource-pack physical path policy; legacy animated roots fail closed.
+- `src/main/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationGeckoLibResourceId.java` — physical-resource → GeoModel-relative ID bridge.
+- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationClientResourcePathTest.java` — canonical/short JSON, legacy and cross-kind path coverage.
+- `src/test/java/kr/moonseungjun/riftfrontier/combat/presentation/BossPresentationGeckoLibResourceIdTest.java` — relative-ID and rejection coverage.
+- `docs/THIRD_PARTY_ASSETS.md` — current GeckoLib 26.2 runtime/library note and resource layout.
 - `docs/AUTOMATION_HANDOFF.md` — this recovery update.
 
 ## Verification
 
-- Exact creator source SHA/size: VERIFIED.
-- Exact sanitized output SHA/size/geometry topology/bounds/art stripping: VERIFIED locally from actual selected bytes.
-- Local acceptance verifier against actual sanitized output/provenance: PASS.
-- Local verifier regression tests: 3 PASS.
-- Test-bearing fix commit: `2cf3c6daea3d4a496ca9bdcbaf7bb38bd0ceb3c5`.
-- `Build Riftfrontier` run `34279483680`: IN PROGRESS at last check.
+- Implementation commit: `f69febf0f4b87ed32789c9f80f27c52ff0ecccf8`.
+- Correctness follow-up commit: `638e942a77f4d20858094770e89beeea0a4072d2`.
+- `Build Riftfrontier` run `34284912972` for the implementation commit: full `SUCCESS`.
+- `Build Riftfrontier` run `34285487373` for the final correctness commit: full `SUCCESS`.
 - CI toolchain: SUCCESS.
 - CI asset intake tool tests: SUCCESS.
 - CI clean tests/build: SUCCESS.
 - CI required native GameTest: SUCCESS.
-- CI dedicated server smoke: IN PROGRESS at last check.
-- CI Xvfb client smoke: NOT RUN yet.
-- CI executable JAR/report/artifact gate: NOT RUN yet.
-- Accepted sanitized glTF bytes committed as a runtime MODEL resource: NOT IMPLEMENTED. Only its exact acceptance receipt is committed because a renderer-consumable production format/path has not yet been selected.
-- GeckoLib/runtime renderer integration: NOT IMPLEMENTED / NOT TESTED.
+- CI dedicated server smoke: SUCCESS.
+- CI Xvfb client smoke: SUCCESS.
+- CI executable JAR inspection: SUCCESS.
+- CI build report + deliverable/log artifact upload: SUCCESS.
+- Accepted sanitized Dragon glTF converted to a renderer-consumable GeckoLib model/animation resource: NOT IMPLEMENTED.
+- GeckoLib runtime dependency + boss entity/renderer integration: NOT IMPLEMENTED / NOT TESTED.
+- Real `presentation_assets` production manifest: NOT IMPLEMENTED.
 - Production material/texture treatment: NOT IMPLEMENTED / NOT TESTED.
-- In-Minecraft boss scale/hitbox/deformation alignment: NOT TESTED.
+- In-Minecraft Region 01 boss model scale/hitbox/deformation/readability: NOT TESTED.
 - Production VFX/sound timing and human field-play: NOT IMPLEMENTED / NOT TESTED.
 
 ## Do not repeat or revert
@@ -61,17 +59,19 @@ M3 exact-source derivation acceptance/fingerprint gate:
 - Preserve `AttackPattern` as the only authoritative hit-timing source and ACTIVE-only damage semantics.
 - Preserve fail-closed logical/physical asset resolution, atomic client resource reload and exact content-generation matching.
 - Do not permit source `Atlas` material/texture/image bytes into production resources.
-- Do not weaken URI/path/extension/morph/unsupported-field or derivation acceptance gates to accept another export.
-- Do not add GeckoLib merely because it is compatible; verify the current Minecraft 26.2 + NeoForge coordinate as part of concrete renderer integration.
-- Do not create placeholder production resources or a fake `presentation_assets` manifest.
+- For animated boss resources, do not restore legacy `geo/` or unscoped `animations/` physical roots. Current selected target contract is GeckoLib 5 `geckolib/models/` + `geckolib/animations/`.
+- Preserve support for both canonical `.geo.json` / `.animation.json` files and GeckoLib 5 short `.json` variants without double-appending suffixes.
+- Do not add GeckoLib merely because the current coordinate is known; add it only with concrete renderer/entity integration and re-verify the current 26.2 coordinate at that time.
+- Do not create placeholder production model/animation/VFX/sound files or a fake `presentation_assets` manifest.
+- Do not assume the accepted triangle-mesh glTF can be losslessly or trivially converted to GeckoLib/Bedrock cube geometry. Prove a valid Blockbench/GeckoLib conversion/import path first.
 - Do not tune M2 pressure/patrol values without field-play evidence.
 
 ## Exact next start point
 
 1. Re-check remote `main`, canonical docs and this handoff.
-2. Close `Build Riftfrontier` run `34279483680` through dedicated server, Xvfb client, executable JAR/report/artifact. Do not call it successful before completion.
-3. Inspect the current client presentation MODEL resource path/resolver and choose the renderer-consumable physical format for the accepted geometry/skin derivation. Do not commit the 681,773-byte glTF into `src/main/resources` merely because it passed derivation acceptance if the runtime cannot consume that format directly.
-4. At actual renderer implementation time, freshly verify the current GeckoLib 5.x coordinate for Minecraft 26.2 + NeoForge. Add it only if it is the selected runtime path.
-5. Produce the first renderer-consumable physical model/animation resource from the accepted receipt, then validate it through existing `ResourceProbe`/reload generation gates.
-6. Only after physical loadability is proven, create the first real `presentation_assets` manifest and connect `BossPresentationRenderResolver` to the renderer.
-7. Author commitment/displacement/arena-pressure/phase-transition presentation around authoritative server timing, then perform in-Minecraft scale, hitbox, deformation, VFX/sound, performance and human readability gates.
+2. Inspect current GeckoLib 5 / Blockbench model-format capabilities for a valid, deterministic path from the accepted Dragon Evolved glTF geometry/skin/animation data to a renderer-consumable resource. Treat arbitrary triangle-mesh → Bedrock/GeckoLib cube conversion as unproven until demonstrated; do not invent lossy geometry silently.
+3. If a valid conversion/import route exists, acquire the exact pinned Dragon source bytes again, pass the existing source/derivation acceptance gates, generate the first real renderer-consumable `geckolib/models/...` and `geckolib/animations/...` resources, and add deterministic validation for bone hierarchy, clip inventory and resource loadability.
+4. If GeckoLib cannot represent the selected mesh faithfully, document that evidence and select/implement a renderer path that can consume the accepted geometry without lowering the art or rig contract.
+5. Only when real physical resources and a concrete boss entity/renderer exist: freshly verify the current Minecraft 26.2 GeckoLib coordinate, add the dependency if still selected, register the renderer, and validate through existing `ResourceProbe` / atomic reload / generation-match gates.
+6. Then create the first real `presentation_assets` manifest; do not create it before all referenced physical resources exist.
+7. After renderer loadability is proven, author commitment/displacement/arena-pressure/phase-transition presentation around authoritative server timing and perform Minecraft scale, hitbox, deformation, VFX/sound, performance and human readability field-play gates.

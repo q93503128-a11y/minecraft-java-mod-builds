@@ -102,9 +102,17 @@ This file records external assets and source families considered or used by Rift
 
 ## Runtime/library note — not an asset
 
-GeckoLib is a code/runtime dependency candidate, not a third-party art asset. The 2026-09-09 GeckoLib 5 support table lists Minecraft 26.2 with GeckoLib 5.5.1. Dependency coordinates and NeoForge compatibility must be re-verified at the moment the dependency is actually added.
+GeckoLib is a code/runtime dependency candidate, not a third-party art asset. Fresh verification on 2026-09-09 found that the GeckoLib 5 wiki support table still lists Minecraft 26.2 with GeckoLib 5.5.1, while the current official distribution feeds have advanced to **GeckoLib 5.5.5** for Minecraft 26.2 NeoForge. The exact current Maven coordinate observed is `com.geckolib:geckolib-neoforge-26.2:5.5.5`.
 
-Source: https://wiki.geckolib.com/docs/geckolib5/
+Riftfrontier does **not** add GeckoLib in the resource-contract batch alone. Add the dependency only when a concrete boss entity/renderer integration consumes real renderer-compatible resources, and re-verify the coordinate again at that commit.
+
+GeckoLib 5 resource layout for that future integration is now treated as the runtime target contract: animated models under `assets/<namespace>/geckolib/models/`, animations under `assets/<namespace>/geckolib/animations/`, with GeoModel-facing identifiers relative to those roots and without JSON suffixes. The legacy GeckoLib 4-style `geo/` root and unscoped `animations/` root must not be treated as production-loadable proof.
+
+Sources checked 2026-09-09:
+
+- https://wiki.geckolib.com/docs/geckolib5/
+- https://www.curseforge.com/minecraft/mc-mods/geckolib/files/all
+- https://cloudsmith.io/~geckolib3/repos/geckolib/packages/detail/maven/geckolib-neoforge-26.2/latest/a%3Dnoarch%3Bxg%3Dcom.geckolib/
 
 ## Bundle rule
 
@@ -118,4 +126,4 @@ Before adding external bytes to `src/main/resources` or any distributable packag
 6. verify that redistribution of the actual downloaded file is allowed, not merely use in screenshots or local projects;
 7. inspect the final JAR to ensure no unrelated source-pack files were accidentally bundled.
 
-For `Dragon Evolved`, source selection and exact deterministic sanitizer acceptance are now recorded. The accepted sanitized bytes are still a pre-runtime derivation artifact, not a final renderable production MODEL resource; runtime-format conversion, final material/texture treatment, `Used in` runtime paths and JAR inclusion remain pending.
+For `Dragon Evolved`, source selection and exact deterministic sanitizer acceptance are recorded. The accepted sanitized bytes are still a pre-runtime derivation artifact, not a final renderer-consumable production MODEL resource. The valid animated-resource target namespace is now fixed to the GeckoLib 5 `geckolib/models/` + `geckolib/animations/` contract, but actual runtime-format conversion, final material/texture treatment, `Used in` runtime paths, dependency/renderer integration and JAR inclusion remain pending.
