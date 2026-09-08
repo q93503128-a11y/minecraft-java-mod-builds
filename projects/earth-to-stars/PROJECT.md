@@ -3,21 +3,21 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.7`
+- Mod version: `0.1.0-alpha.8`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.7.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.8.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- GameTest task: not yet registered; persistence restart is currently covered by the dedicated-server two-boot lifecycle gate
-- Server smoke-test task: `runServer` (`P0-G TWO-BOOT LIFECYCLE VERIFIED`)
+- GameTest task: not yet registered; persistence restart was verified by the P0-G dedicated-server two-boot lifecycle gate.
+- Server smoke-test task: `runServer` (`P0-G TWO-BOOT LIFECYCLE VERIFIED`, not rerun on ordinary alpha.8 push)
 - Client smoke-test task: `runClient` (`NOT RUN` at current gate)
 
 ## Project identity
@@ -88,20 +88,35 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Latest verified implementation/CI commit: `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`
+### Latest P0-H verification
 
-GitHub Actions `Build earth-to-stars` run `34188840459` verified:
+Latest verified implementation/CI commit: `8b3b4edda64505d476418e0b08fbe85baea6b0ba`
 
-- M0 bootstrap regression
-- P0-A authoritative ship kernel / persistence-codec regression
-- P0-B movement transform / control lease regression
-- P0-C Earth↔orbit transition-policy regression
-- P0-D stable linked-interior allocation/layout regression
-- P0-E representative turret state-machine regression
-- P0-F central `ShipPowerGrid`, `ShipAmmoPool`, `ShipSensorGrid`
-- P0-G `ShipSystemsSnapshot` restore JUnit
+GitHub Actions `Build earth-to-stars` run `34189697283` verified:
+
+- P0-H progression validator self-tests
+- canonical main progression graph validation
+- Nether-only required main route rejection
+- End-only required main route rejection
+- clean alternative route acceptance
+- optional Nether/End side-route acceptance
+- dependency cycle rejection
+- unknown dependency rejection
+- P0-A through P0-G JUnit regression
+- `clean test build`
+- production JAR verifier
+- production JAR contains `data/earth_to_stars/progression/main_path.json`
+
+Verified alpha.8 JAR SHA-256: `3af179b7cdb16236722507434a000f38dcc82fc59079aab584e1f79771f2e688`
+
+### P0-G lifecycle verification retained
+
+The expensive two-boot dedicated lifecycle gate was **not rerun** for alpha.8 because P0-H does not modify persistence or custom-dimension lifecycle behavior. The last dedicated lifecycle verification remains GitHub Actions run `34188840459`, commit `557d273ecfa78c1ba9cc62956cd78f6eb7c55153`.
+
+That run verified:
+
 - dedicated server first boot on a clean run directory
-- `earth_to_stars:orbital_space` and `earth_to_stars:ship_interiors` registration on a dedicated server
+- `earth_to_stars:orbital_space` and `earth_to_stars:ship_interiors` registration
 - deterministic ship/interior/system seed into real SavedData
 - clean server shutdown with all dimensions saved
 - second dedicated-server boot on the same world directory
@@ -110,12 +125,46 @@ GitHub Actions `Build earth-to-stars` run `34188840459` verified:
 - disk restore of central power / ammo quantities
 - restored central systems runtime initialization
 - sensor cache rebuilt instead of persisted
-- `clean test build`
-- production JAR verifier
 
-Verified JAR SHA-256: `76bc15395500382f0acbc68826c7e6b95533b5ce9863de40e837c9a2856ac708`
+This test is now run on explicit lifecycle verification rather than every ordinary code/data push, to avoid validation spam.
 
-The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret/system control surfaces, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
+## P0-H progression independence contract
+
+Canonical graph:
+
+`src/main/resources/data/earth_to_stars/progression/main_path.json`
+
+Validator:
+
+`tools/validate_progression.py`
+
+Self-tests:
+
+`tools/test_progression_validator.py`
+
+The graph uses `requires_any` alternatives. A main milestone passes only when at least one complete prerequisite derivation exists that never requires a node located in:
+
+- `minecraft:the_nether`
+- `minecraft:the_end`
+
+This means optional Nether/End shortcuts remain legal. A node merely mentioning or living in Nether/End is not automatically rejected. The failure condition is that a **main milestone loses every Nether/End-independent derivation**.
+
+Current main milestones:
+
+```text
+Earth Industry
+→ Launch Craft
+→ Earth Orbit Access
+→ Orbital Salvage
+→ Moon Access
+→ Near-Earth Asteroid Access
+→ Mars Access
+→ Main Belt Access
+→ Outer System Access
+→ Deep Space Access
+```
+
+The canonical graph deliberately contains optional `nether_heat_shortcut`, `nether_propellant_variant`, and `end_navigation_sidegrade` nodes so the validator itself proves that optional side routes remain allowed.
 
 ## Linked interior architecture
 
@@ -202,9 +251,9 @@ One cache is shared by weapons. Contact acquisition is interval-based and stagge
 
 A player inside a linked interior resolves the authoritative ship through `InteriorSavedData → ShipId → ShipRepository`, so interior stations can later operate the same ship systems without depending on proximity to the exterior entity.
 
-## P0-G persistence and lifecycle architecture
+## Persistence and lifecycle architecture
 
-Persistent operational state is now separated from volatile world-derived state.
+Persistent operational state is separated from volatile world-derived state.
 
 Persisted:
 
@@ -223,17 +272,25 @@ The non-persisted items are runtime state and must be rebuilt/reacquired after r
 
 The CI lifecycle probe is dormant during normal play and activates only through `EARTH_TO_STARS_LIFECYCLE_PROBE`. It exists to prove actual SavedData disk behavior without exposing development commands to players.
 
+## Technical proxy boundary
+
+The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret/system control surfaces, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
+
 ## Verification boundary
 
-Verified by the alpha.7 gate:
+Automated technical gates completed:
 
-- source/API compilation against Minecraft 26.2 / NeoForge 26.2.0.38-beta
-- P0-A~F regression JUnit
-- P0-G snapshot validation/restore JUnit
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta compilation
+- authoritative ShipState/module/permission persistence contract
+- movement/control lease logic
+- Earth↔orbit transition backend
+- linked interior allocation/persistence
+- manual/auto turret server state machine
+- central power/ammo/sensor authority
+- real dedicated-server save/restart restore
+- custom dimension dedicated-server registration
+- Nether/End-independent main progression graph guard
 - production JAR structure
-- two clean dedicated-server boots using the same world directory
-- real custom-dimension registration and save
-- real save → shutdown → restart → restore for ship/interior/power/ammo
 
 Still **NOT RUN / NOT TESTED**:
 
@@ -250,10 +307,12 @@ Still **NOT RUN / NOT TESTED**:
 - live multiplayer session
 - production ship/interior/turret rendering and audio
 
-No item in the second list is called complete merely because the dedicated-server lifecycle gate passed.
+No item in the second list is called complete merely because the automated P0 technical gates passed.
 
 ## Current phase
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / P0-G DEDICATED LIFECYCLE VERIFIED / LIVE MULTIPLAYER NOT TESTED / P0-H NEXT`
+`P0 AUTOMATED TECHNICAL GATES COMPLETE / P0-G DEDICATED LIFECYCLE VERIFIED / P0-H NETHER-END INDEPENDENCE VERIFIED / LIVE ACCEPTANCE DEFERRED / LIVE MULTIPLAYER NOT TESTED / M1 EARTH-ORBIT GAMEPLAY SLICE NEXT`
 
-The next production unit is **P0-H Nether/End Independence Validator**. It must make accidental Nether/End mandatory gates mechanically detectable before content production grows. After P0-H, the current technical systems are ready to be bundled into a meaningful player-facing test slice rather than tested one tiny feature at a time.
+The next production unit is **M1 Earth/Orbit Gameplay Slice**. Development stops adding isolated technical proofs and begins connecting the existing systems into one player-facing loop: Earth preparation → launch craft → fuel/oxygen → atmospheric ascent → orbit → salvage/hostile contact → manual/auto weapon use → return → ship upgrade.
+
+The slice is not considered complete until it is actually playable and visually reviewed in Minecraft. User testing should happen once the slice is meaningful enough to evaluate as a whole, not after every small implementation change.
