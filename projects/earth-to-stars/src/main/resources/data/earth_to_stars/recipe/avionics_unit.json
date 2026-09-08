@@ -7,10 +7,10 @@
     " G "
   ],
   "key": {
-    "C": { "item": "minecraft:copper_ingot" },
-    "R": { "item": "minecraft:redstone" },
-    "A": { "item": "minecraft:amethyst_shard" },
-    "G": { "item": "minecraft:gold_ingot" }
+    "C": "minecraft:copper_ingot",
+    "R": "minecraft:redstone",
+    "A": "minecraft:amethyst_shard",
+    "G": "minecraft:gold_ingot"
   },
   "result": {
     "id": "earth_to_stars:avionics_unit",
