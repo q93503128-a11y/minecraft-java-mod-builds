@@ -1,6 +1,10 @@
 package kr.moonseungjun.riftfrontier.content;
 
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfile;
+import kr.moonseungjun.riftfrontier.combat.presentation.BossPresentationProfileValidator;
+
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,6 +18,7 @@ public final class ContentRuntime {
     private static final AtomicReference<ContentRuntimeSnapshot> CURRENT = new AtomicReference<>();
     private static final AtomicLong GENERATION = new AtomicLong();
     private static final ContentValidator VALIDATOR = new ContentValidator();
+    private static final BossPresentationProfileValidator PRESENTATION_VALIDATOR = new BossPresentationProfileValidator();
 
     private ContentRuntime() {}
 
@@ -27,17 +32,35 @@ public final class ContentRuntime {
         return snapshot;
     }
 
-    public static synchronized ContentRuntimeSnapshot installValidated(ContentRegistry registry, List<String> packIds) {
+    public static ContentRuntimeSnapshot installValidated(ContentRegistry registry, List<String> packIds) {
+        return installValidated(registry, packIds, List.of());
+    }
+
+    public static synchronized ContentRuntimeSnapshot installValidated(
+        ContentRegistry registry,
+        List<String> packIds,
+        Collection<BossPresentationProfile> presentationProfiles
+    ) {
         Objects.requireNonNull(registry, "registry");
         Objects.requireNonNull(packIds, "packIds");
+        Objects.requireNonNull(presentationProfiles, "presentationProfiles");
 
         ContentValidator.Report report = VALIDATOR.validate(registry);
         if (report.hasErrors()) {
             throw new IllegalStateException("Refusing to publish invalid content snapshot:\n" + report.format());
         }
 
+        List<BossPresentationProfile> presentations = List.copyOf(presentationProfiles);
+        BossPresentationProfileValidator.Report presentationReport = PRESENTATION_VALIDATOR.validate(registry, presentations);
+        if (presentationReport.hasErrors()) {
+            String formatted = presentationReport.issues().stream()
+                .map(issue -> issue.code() + " " + issue.source() + " - " + issue.message())
+                .collect(java.util.stream.Collectors.joining("\n"));
+            throw new IllegalStateException("Refusing to publish invalid boss presentation snapshot:\n" + formatted);
+        }
+
         long generation = GENERATION.incrementAndGet();
-        ContentRuntimeSnapshot snapshot = new ContentRuntimeSnapshot(generation, Instant.now(), packIds, registry);
+        ContentRuntimeSnapshot snapshot = new ContentRuntimeSnapshot(generation, Instant.now(), packIds, registry, presentations);
         CURRENT.set(snapshot);
         return snapshot;
     }
