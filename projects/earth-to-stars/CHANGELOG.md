@@ -2,6 +2,103 @@
 
 이 문서는 실제 정본 변경을 기록한다.
 
+## 2026-09-08 — M1-D Orbital salvage + first contact + return upgrade
+
+### Added / Changed
+
+- mod version `0.1.0-alpha.11`
+- starter craft에 비어 있는 `sensor` UTILITY slot 추가
+- `orbital_scanner_mk1` module definition 추가
+- `recovered_sensor_core` player-facing item 추가
+- 첫 Earth Orbit 진입의 ship-scoped salvage encounter backend
+- salvage 접근 시 실제 `autocannon_mk1`을 빈 turret hardpoint에 설치하고 ShipSavedData 즉시 갱신
+- 실제 autocannon module이 없으면 기술 command/runtime도 함포를 가짜 생성하지 못하는 capability gate
+- 회수 직후 동일 turret runtime을 `AUTO_DEFENSE`로 자동 기동
+- 이후 같은 무장을 `MANUAL`로 전환 가능한 기존 control contract 유지
+- first unmanned interceptor logical encounter
+- server-authoritative hostile position / health / movement / attack interval
+- hostile 공격이 중앙 `ShipPowerGrid`를 실제 drain
+- mission hostile을 함선 중앙 `SensorGrid` contact에 합류
+- turret logical projectile가 first-contact hostile health를 서버 판정으로 타격
+- hostile 격파 시 `recovered_sensor_core` 보상 생성
+- 지구 귀환 후 sensor core 사용으로 `orbital_scanner_mk1` 설치
+- scanner 설치 후 sensor range `64 → 96`
+- sensor core는 Earth-only / accessible ship / free sensor slot 조건을 만족할 때만 소비
+- 같은 Orbit session에서 hostile/reward 즉시 무한 재생성 방지
+- sensor core를 놓치거나 잃은 상태에서 Earth 귀환 시 session clear를 해제하여 다음 Orbit에서 first-contact 재수행이 가능한 anti-soft-lock 처리
+- controlling pilot과 authoritative exterior의 64-block input-authority drift를 막는 M1 technical cockpit tether
+- ShipState schema `1 → 2`
+- schema 1 save decode 시 ShipId / owner / crew / 기존 slots / modules를 보존하고 누락된 `sensor` slot만 migration
+- unknown future schema는 reset하지 않고 계속 거부
+- starter empty turret/sensor contract JUnit
+- recovered autocannon/scanner progression JUnit
+- sensor range upgrade JUnit
+- schema 1→2 migration JUnit
+- production JAR verifier에 M1-D classes/resources 계약 추가
+
+### Fixes found during alpha.11 review
+
+- stale encounter cleanup에서 collection mutation 위험이 없도록 현재 stale-key copy/remove 패턴 유지 확인
+- first hostile clear 후 core를 획득하지 못한 채 Orbit을 떠났을 때 이후 progression이 영구 막힐 수 있던 session-state soft-lock 수정
+- 무장 모듈이 실제 ShipState에 없는데 기술 경로로 TurretRuntime을 생성할 수 있던 P0-era drift 제거
+
+### Architecture
+
+첫 Orbit 원정은 단순 loot 숫자가 아니라 두 번의 capability 변화로 연결된다.
+
+```text
+starter: turret 없음 / scanner 없음
+→ orbital salvage 접근
+→ autocannon_mk1 획득
+→ AUTO_DEFENSE + MANUAL weapon capability
+→ first interceptor contact
+→ recovered_sensor_core
+→ Earth return
+→ orbital_scanner_mk1 설치
+→ sensor range 64 → 96
+```
+
+Salvage/interceptor의 ArmorStand는 기술 proxy일 뿐 reward/health/authority의 정본이 아니다. encounter state, module install, hostile health, damage, power drain, reward resolution은 서버가 결정한다.
+
+현재 cockpit tether 역시 production 탑승/카메라가 아니라 M1 integrated flight를 실제로 시험하기 위한 기술 연결이다.
+
+### Verification
+
+최종 검증 기준 구현 커밋: `afe0d181667582877e911ef279a869c7e31d0c23`
+
+GitHub Actions `Build earth-to-stars` run `34197931566`: `PASS`
+
+- P0-H progression validator: `PASS`
+- M1 launch recipe dependency closure: `PASS`
+- M1 launch recipe Nether/End independence: `PASS`
+- starter empty weapon/sensor slots JUnit: `PASS`
+- recovered autocannon/scanner progression JUnit: `PASS`
+- sensor range `64 → 96` JUnit: `PASS`
+- ShipState schema 1→2 migration JUnit: `PASS`
+- existing regression JUnit: `PASS`
+- `clean test build`: `PASS`
+- Minecraft 26.2 / NeoForge 26.2.0.38-beta compile: `PASS`
+- production JAR verify: `PASS`
+- orbital mission / recovered sensor resources packaged: `PASS`
+- dedicated server first boot/save: `PASS`
+- clean shutdown: `PASS`
+- same-world second boot/restore: `PASS`
+- generated JAR: `earth_to_stars-0.1.0-alpha.11.jar`
+- JAR SHA-256: `f818686c7dde57e7a33e27967069c7e2074ce6b97febd0b13721e1165ac37fb0`
+- live Earth→Orbit→salvage→combat→Earth return cycle: `NOT TESTED`
+- live multiplayer pilot/gunner/interior session: `NOT TESTED`
+- client visual quality: `NOT TESTED`
+
+ShipState schema가 바뀌었기 때문에 alpha.11에서는 expensive dedicated two-boot lifecycle을 의도적으로 한 번 다시 실행했다. 성공 후 workflow는 다시 explicit `workflow_dispatch`에서만 lifecycle을 반복하도록 복귀했다.
+
+### Status
+
+`M1-D ORBITAL RECOVERY + FIRST CONTACT BACKEND VERIFIED / SHIPSTATE SCHEMA 1→2 LIFECYCLE VERIFIED / FULL EARTH→ORBIT→RETURN LIVE ACCEPTANCE NEXT / LIVE MULTIPLAYER NOT TESTED`
+
+다음은 Moon 기능 추가가 아니라 첫 Earth→Orbit→salvage→combat→Earth→scanner upgrade 사이클의 live acceptance와 feel 교정이다.
+
+---
+
 ## 2026-09-08 — M1-A/B Earth preparation + first launch craft
 
 ### Added
