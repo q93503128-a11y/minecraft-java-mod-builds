@@ -7,15 +7,15 @@
 
 ## 1. 마지막 검증 기준
 
-- 마지막 TURNBOUND: RE 코드 검증 커밋: `65d6fe652bd1d5eec563df69cb3e8f99f40816db`
-- GitHub Actions: `Build turnbound-re` run `34177388163`
+- 마지막 TURNBOUND: RE 코드 검증 커밋: `24f203db728d7d56b64602f67af76d0fbf715bb8`
+- GitHub Actions: `Build turnbound-re` run `34187037774`
 - 결과: **SUCCESS**
 - 포함 검증: Java 25 toolchain, dependency resolution, `clean build`, 전체 JUnit, production JAR verify, artifact upload.
 - 검증 JAR: `turnbound_re-0.1.0-alpha.1.jar`
-- SHA-256: `2e983c621678a803eee3340e471a3412464fc9149b1c4cd2f26cdf90bfcda906`
+- SHA-256: `adc1dc812d980f990d14ce343f338482b87fe0a9c7d078d21c7b6923032ed92b`
 
-위 검증에는 M0~M4 회귀와 현재 M5 Battle HUD 구조/interaction/readability, Party Formation structure/authority, Character Overview/Skills/Growth presentation + server-authoritative growth write, selected-character adaptive 3D entity preview 자동 계약이 포함된다.
-현재 공용 play-phase presentation protocol은 `v8`이며, 기존 battle target/progression/growth presentation에 current server `DefinitionRegistry` 기반 character visual catalog가 추가되었다.
+위 검증에는 M0~M4 회귀와 현재 M5 Battle HUD 구조/interaction/readability, Party Formation structure/authority, Character Overview/Skills/Growth presentation + server-authoritative growth write, selected-character adaptive 3D entity preview, Battle Result/Reward terminal lifecycle 자동 계약이 포함된다.
+현재 공용 play-phase presentation protocol은 `v9`이며, 기존 battle target/progression/growth/visual catalog에 server-authored Battle Result / ACK / close 흐름이 추가되었다.
 
 공용 모노레포의 `main`은 다른 프로젝트 작업으로 계속 전진할 수 있으므로 새 작업 세션에서는 위 SHA를 최신 HEAD로 가정하지 말고 반드시 현재 `main`을 다시 읽는다.
 
@@ -144,7 +144,7 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - 기능 교체 시 옛 호출부/테스트/리소스까지 제거.
 
 ## 8. M5 — Production UI / Presentation
-상태: **BATTLE UI + PARTY FORMATION + CHARACTER DETAIL/GROWTH + 3D PREVIEW AUTO GATE PASS / VISUAL SCREENSHOT AUDIT PENDING**
+상태: **BATTLE UI + PARTY FORMATION + CHARACTER DETAIL/GROWTH + 3D PREVIEW + BATTLE RESULT/REWARD AUTO GATE PASS / VISUAL SCREENSHOT AUDIT PENDING**
 
 ### 8.1 Visual gate / 방향성
 완료:
@@ -185,9 +185,9 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - `ENERGY`, `TARGETS` disabled reason을 EN/KO player-facing copy로 표시.
 - submit은 `BattleCommandC2S`; 최종 legality는 server strict gate가 재검증.
 
-### 8.4 Protocol v8 / authoritative target + progression + growth + visual catalog
+### 8.4 Protocol v9 / authoritative target + progression + growth + visual catalog + result
 완료:
-- play-phase presentation protocol `v8`.
+- play-phase presentation protocol `v9`.
 - 기존 battle target presentation v5 계약 유지.
 - `SnapshotAction.eligibleTargetIds`는 서버가 직접 계산.
 - 후보 순서는 `participantOrdinal` 기준 안정 순서.
@@ -204,10 +204,13 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - `ActionView`, `EffectView`, `StatsView`, `CostView`, `GrowthView`, `GrowthC2S` 유지.
 - Skills facts는 current `ActionDefinition`에서 서버가 publish.
 - Growth current→next stats/cost/disabled reason은 current persisted progress + canonical `ProgressionRules`로 서버가 publish.
-- `CharacterPresentationNetworkPayloads.CatalogS2C` 추가.
+- `CharacterPresentationNetworkPayloads.CatalogS2C` 유지.
 - visual catalog는 current `DefinitionRegistry`의 `CharacterDefinition.sourceEntity`에서 서버가 작성.
 - progression state reply에서 visual catalog와 dynamic snapshot이 같은 captured registry를 사용.
 - client character→entity hardcode / 주변 entity 추측 금지.
+- `BattleResultNetworkPayloads.ResultS2C`, `AcknowledgeResultC2S`, `ResultClosedS2C` 추가.
+- terminal result의 outcome/reward delta/total은 server-authored fact만 사용.
+- client result screen은 reward roll을 재현하거나 battle cleanup을 직접 수행하지 않음.
 
 ### 8.5 World-first target chooser
 완료:
@@ -305,7 +308,27 @@ Witch healing의 `hpPower=0` 문제는 수정 완료.
 - malformed/unregistered/non-Living source는 debug text 없이 preview만 fail closed.
 - 상세 정본: `17E_M5_CHARACTER_ENTITY_PREVIEW_GATE.md`.
 
-### 8.11 현재 자동 검증 범위
+### 8.11 Battle Result / Reward terminal presentation
+완료:
+- `BattleResultPresentationService`가 terminal battle presentation을 서버에서 소유.
+- authored VICTORY는 `BattleRewardSettlementService` persistence 성공 뒤 실제 `RewardGrant + resulting PlayerProgress`를 result source로 사용.
+- persistence 실패 중에는 reward claim이 소비되지 않으며 result UI도 열지 않고 다음 tick retry.
+- DEFEAT / rewardless debug terminal은 임의 reward를 생성하지 않고 outcome + no-reward 상태만 publish.
+- `ResultS2C`에 outcome / Coin delta+total / Essence delta+total / shard delta+total을 포함.
+- `BattleResultClientState`는 presentation cache만 담당.
+- `BattleResultClientEvents`가 새 result를 한 번만 `BattleResultScreen`으로 연다.
+- result screen은 non-pausing compact overlay이며 world를 완전히 가리지 않음.
+- Continue 또는 ESC는 `AcknowledgeResultC2S`를 보냄.
+- server가 owner / published state / battleId / revision / outcome / terminal phase를 재검증.
+- 검증 성공 시에만 `battle.cleanup()` + `BattleManager.cleanup()` 실행.
+- `ResultClosedS2C` 성공 뒤 client result state를 제거하고 월드로 복귀.
+- entity↔battle binding은 result acknowledgement 전까지 유지.
+- minimum 480×270 / root max 520×230 / reward region >=160 / 320×180 fail-closed.
+- EN/KO result/reward/close feedback + exact key parity.
+- 첫 layout gate에서 480×270 reward 영역 152px 문제가 발견되어 test를 낮추지 않고 production max height를 220→230으로 수정.
+- 상세 정본: `17F_M5_BATTLE_RESULT_REWARD_GATE.md`.
+
+### 8.12 현재 자동 검증 범위
 Battle UI:
 - 480×270 minimum supported logical canvas.
 - 640×360 narrow layout.
@@ -347,52 +370,75 @@ Party / Character / Growth / Preview:
 - Zombie-like / Enderman-like / Iron-Golem-like / Spider-like body fit.
 - invalid body dimensions fail closed.
 
+Battle Result / Reward:
+- authoritative result payload exact round-trip.
+- Coin/Essence/shard delta + total fact preservation.
+- rewardless DEFEAT explicit state.
+- acknowledgement / close response round-trip.
+- invalid outcome / impossible shard totals rejection.
+- terminal battle registry.
+- result ACK 전 entity binding 유지.
+- cleanup 후 terminal registry/entity binding 제거.
+- 480×270 / 640×360 / 1280×720 / 1920×1080 result bounds.
+- result reward region minimum 160px.
+- unsupported 320×180 guard.
+- EN/KO result copy + exact key parity.
+
 첫 Party Formation CI에서 발견 후 수정된 API 적응 오류:
 - `CustomPacketPayload.type()` 3개 누락.
 - 존재하지 않는 `minecraft.gui.getScreen()` 호출.
 - 존재하지 않는 `ServerPlayer.getServer()` 호출 2개.
 - 테스트를 완화하지 않고 실제 NeoForge 26.2 API에 맞게 수정.
 
+Battle Result 첫 layout gate에서 발견 후 수정:
+- Run `34186812650`에서 compile은 성공했으나 최소 480×270 result reward region이 152px로 계약 실패.
+- assertion 완화 없이 production `MAX_ROOT_HEIGHT`를 220→230으로 수정.
+- Run `34186892199` SUCCESS.
+
 마지막 자동 검증:
-- commit `65d6fe652bd1d5eec563df69cb3e8f99f40816db`
-- `Build turnbound-re` Run `34177388163`
+- commit `24f203db728d7d56b64602f67af76d0fbf715bb8`
+- `Build turnbound-re` Run `34187037774`
 - Java Temurin 25.0.4+1.
 - Gradle 9.2.1.
 - NeoForge 26.2.0.38-beta.
 - clean build/JUnit: **PASS**
 - production JAR verify: **PASS**
 - artifact upload: **PASS**
-- JAR SHA-256: `2e983c621678a803eee3340e471a3412464fc9149b1c4cd2f26cdf90bfcda906`
+- JAR SHA-256: `adc1dc812d980f990d14ce343f338482b87fe0a9c7d078d21c7b6923032ed92b`
 
-### 8.12 아직 PASS가 아닌 것
+### 8.13 아직 PASS가 아닌 것
 - 실제 Minecraft implementation screenshot quality.
 - 실제 GUI Scale 옵션별 clipping/가독성/시선 이동 체감.
-- 480×270에서 Skills/Growth 실제 정보밀도와 텍스트 clipping 체감.
+- 480×270에서 Skills/Growth/Result 실제 정보밀도와 텍스트 clipping 체감.
 - final production sprite/icon/frame asset quality 및 source/license 기록.
-- animation/transition timing 체감.
+- animation/transition/reward reveal timing 체감.
 - 실제 Zombie/Enderman/Iron Golem/Spider preview의 중심/pose/시선/clipping 체감.
-- battle result/reward transition의 최종 presentation.
+- Battle Result의 최종 frame/icon/motion/audio presentation quality.
 - 캐릭터 외형 / skill VFX / world visual gate.
 - 실제 client Level Up / Ascend 이후 save/reconnect persistence 체감.
+- 실제 VICTORY/DEFEAT → result → ACK → world 복귀 runtime 체감.
 
 중요:
-- Battle UI, Party Formation, Character Detail/Growth, 3D Preview 자동 gate가 통과했다고 M5 전체 production visual PASS가 된 것은 아니다.
+- Battle UI, Party Formation, Character Detail/Growth, 3D Preview, Battle Result/Reward 자동 gate가 통과했다고 M5 전체 production visual PASS가 된 것은 아니다.
 - 실제 Minecraft screenshot을 reference/mockup과 비교하기 전 **production visual PASS를 선언하지 않는다.**
 - 사용자 방침상 지금 중간 JAR 테스트를 요구하지 않고 전체적인 integrated test 시 함께 확인한다.
 
 ## 9. 다음 실제 개발 시작점
 
 1. 현재 GitHub `main` HEAD를 다시 조회한다. 위 검증 SHA를 최신 main이라고 가정하지 않는다.
-2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`, `17B_M5_HUD_READABILITY_GATE.md`, `17C_M5_PARTY_FORMATION_SKELETON_GATE.md`, `17D_M5_CHARACTER_DETAIL_GROWTH_GATE.md`, `17E_M5_CHARACTER_ENTITY_PREVIEW_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 확인한다.
-3. Battle HUD 자동 구조/interaction/readability, Party Formation structure/authority, Character Detail/Growth server-write, selected-character 3D preview implementation gate는 닫힌 것으로 취급한다. 실제 screenshot visual QA는 integrated client test까지 **pending**으로 남긴다.
-4. 다음 production UI 작업은 **Battle Result / Reward transition presentation**이다.
-   - 현재 battle terminal state와 M4 reward settlement/claim 흐름을 먼저 다시 읽는다.
-   - client가 reward roll을 재현하거나 추측하지 않는다.
-   - 실제 지급된 Coin/Essence/Character Shard 및 unlock/성장 변화가 필요하다면 server-authored presentation payload로 publish한다.
-   - victory/defeat → reward → world 복귀 흐름을 끊김 없이 설계한다.
-   - 중복 claim, stale result, settlement retry와 presentation이 충돌하지 않게 한다.
-   - 결과 화면은 개발자 로그가 아니라 플레이어가 보상과 다음 행동을 즉시 이해할 수 있는 게임 UI여야 한다.
-5. production sprite/icon/frame asset은 reference/source/license gate 후 적용한다.
-6. Battle/Party/Growth/Result가 함께 검토할 만한 상태가 되면 실제 Minecraft에서 screenshot/GUI scale audit, M2 20회 client gate, M4 save/reconnect gate를 한 번에 수행한다.
+2. `16_CURRENT_IMPLEMENTATION_STATUS.md`, `17_M5_UI_VISUAL_GATE.md`, `17A_M5_COMMAND_OVERLAY_LIFECYCLE_GATE.md`, `17B_M5_HUD_READABILITY_GATE.md`, `17C_M5_PARTY_FORMATION_SKELETON_GATE.md`, `17D_M5_CHARACTER_DETAIL_GROWTH_GATE.md`, `17E_M5_CHARACTER_ENTITY_PREVIEW_GATE.md`, `17F_M5_BATTLE_RESULT_REWARD_GATE.md`, `06_UI_UX_PRESENTATION.md`, `08_REFERENCE_CATALOG.md`를 확인한다.
+3. Battle HUD 구조/interaction/readability, Party Formation authority, Character Detail/Growth write, 3D preview, Battle Result/Reward terminal authority의 자동 implementation gate는 닫힌 것으로 취급한다. 실제 screenshot visual QA는 integrated client test까지 **pending**으로 남긴다.
+4. 다음 production 작업은 새로운 generic UI Java를 더 만드는 것이 아니라 **M5 전체 visual asset/reference + screenshot-ready polish**다.
+   - Battle HUD / Command / Party / Character / Growth / Result 간 정보계층·spacing·상태 강조·시각 언어를 다시 비교한다.
+   - production frame/icon/sprite 후보는 외부 reference/source/license를 확인하고 기록한 뒤 적용한다.
+   - motion/transition/reward reveal/audio feedback을 설계하되 world visibility와 Minecraft 조작성을 해치지 않는다.
+   - 즉흥적인 검은 반투명 카드/임의 컬러 border를 최종 디자인으로 굳히지 않는다.
+5. visual presentation 기반이 충분히 통일되면 character exterior / skill VFX / world visual gate로 이동한다. 기존 `CharacterDefinition.sourceEntity`와 data-driven character/action 정본을 기준으로 하며 구 TURNBOUND 디자인을 계승하지 않는다.
+6. 전체적으로 사용자가 한 번에 검토할 가치가 있는 상태가 되면 실제 Minecraft에서 통합 검증한다.
+   - Battle / Party / Growth / Result GUI Scale 및 1280×720 / 1920×1080 screenshot audit.
+   - M2 실제 client 20 encounter gate.
+   - M4 world save/reconnect persistence gate.
+   - VICTORY/DEFEAT → result → server ACK → world 복귀.
+7. screenshot/reference 비교 전 M5 production visual PASS를 선언하지 않는다.
 
 구 TURNBOUND는 계속 ZERO AUTHORITY다. UI/코드/수치/디자인을 구 프로젝트에서 자동 계승하지 않는다.
