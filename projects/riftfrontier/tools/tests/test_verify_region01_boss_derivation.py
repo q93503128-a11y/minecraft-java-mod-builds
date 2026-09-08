@@ -2,9 +2,9 @@ import base64
 import hashlib
 import importlib.util
 import json
+import tempfile
+import unittest
 from pathlib import Path
-
-import pytest
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "verify_region01_boss_derivation.py"
@@ -73,43 +73,44 @@ def _fixture(tmp_path: Path):
     return receipt_path, geometry_path, provenance_path, geometry
 
 
-def test_accepts_pinned_art_neutral_derivation(tmp_path):
-    receipt, geometry, provenance, _ = _fixture(tmp_path)
+class BossDerivationVerificationTests(unittest.TestCase):
+    def test_accepts_pinned_art_neutral_derivation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt, geometry, provenance, _ = _fixture(Path(tmp))
+            result = VERIFY.verify(receipt, geometry, provenance)
+            self.assertTrue(result["art_payload_stripped"])
+            self.assertEqual(1, result["mesh_count"])
+            self.assertEqual(1, result["joint_count"])
+            self.assertEqual(1, result["animation_count"])
 
-    result = VERIFY.verify(receipt, geometry, provenance)
+    def test_rejects_material_payload_even_when_hashes_are_repinned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt_path, geometry_path, provenance_path, geometry = _fixture(Path(tmp))
+            geometry["materials"] = [{"name": "Forbidden"}]
+            geometry["meshes"][0]["primitives"][0]["material"] = 0
+            geometry_path.write_bytes(_canonical(geometry))
 
-    assert result["art_payload_stripped"] is True
-    assert result["mesh_count"] == 1
-    assert result["joint_count"] == 1
-    assert result["animation_count"] == 1
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+            geometry_sha = hashlib.sha256(geometry_path.read_bytes()).hexdigest()
+            provenance["output_sha256"] = geometry_sha
+            provenance_path.write_bytes(_canonical(provenance))
+            receipt["output"]["geometry_sha256"] = geometry_sha
+            receipt["output"]["provenance_sha256"] = hashlib.sha256(provenance_path.read_bytes()).hexdigest()
+            receipt_path.write_bytes(_canonical(receipt))
+
+            with self.assertRaises(VERIFY.VerificationError) as raised:
+                VERIFY.verify(receipt_path, geometry_path, provenance_path)
+            self.assertEqual("BOSS_DERIVATION_ART_POLICY_VIOLATION", raised.exception.code)
+
+    def test_rejects_geometry_sha_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt, geometry, provenance, _ = _fixture(Path(tmp))
+            geometry.write_bytes(geometry.read_bytes() + b" ")
+            with self.assertRaises(VERIFY.VerificationError) as raised:
+                VERIFY.verify(receipt, geometry, provenance)
+            self.assertEqual("BOSS_DERIVATION_SHA256_MISMATCH", raised.exception.code)
 
 
-def test_rejects_material_payload_even_when_hashes_are_repinned(tmp_path):
-    receipt_path, geometry_path, provenance_path, geometry = _fixture(tmp_path)
-    geometry["materials"] = [{"name": "Forbidden"}]
-    geometry["meshes"][0]["primitives"][0]["material"] = 0
-    geometry_path.write_bytes(_canonical(geometry))
-
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
-    geometry_sha = hashlib.sha256(geometry_path.read_bytes()).hexdigest()
-    provenance["output_sha256"] = geometry_sha
-    provenance_path.write_bytes(_canonical(provenance))
-    receipt["output"]["geometry_sha256"] = geometry_sha
-    receipt["output"]["provenance_sha256"] = hashlib.sha256(provenance_path.read_bytes()).hexdigest()
-    receipt_path.write_bytes(_canonical(receipt))
-
-    with pytest.raises(VERIFY.VerificationError) as exc:
-        VERIFY.verify(receipt_path, geometry_path, provenance_path)
-
-    assert exc.value.code == "BOSS_DERIVATION_ART_POLICY_VIOLATION"
-
-
-def test_rejects_geometry_sha_drift(tmp_path):
-    receipt, geometry, provenance, _ = _fixture(tmp_path)
-    geometry.write_bytes(geometry.read_bytes() + b" ")
-
-    with pytest.raises(VERIFY.VerificationError) as exc:
-        VERIFY.verify(receipt, geometry, provenance)
-
-    assert exc.value.code == "BOSS_DERIVATION_SHA256_MISMATCH"
+if __name__ == "__main__":
+    unittest.main()
