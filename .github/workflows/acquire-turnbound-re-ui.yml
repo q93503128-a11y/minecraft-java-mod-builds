@@ -1,0 +1,33 @@
+name: Acquire TURNBOUND RE UI source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/acquire-turnbound-re-ui.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified CC0 source pack
+        run: |
+          set -euo pipefail
+          mkdir -p acquisition
+          curl -fL --retry 3 --retry-delay 2 \
+            'https://opengameart.org/sites/default/files/kenney_ui-pack-pixel-adventure.zip' \
+            -o acquisition/kenney_ui-pack-pixel-adventure.zip
+          unzip -t acquisition/kenney_ui-pack-pixel-adventure.zip
+          unzip -l acquisition/kenney_ui-pack-pixel-adventure.zip > acquisition/archive-list.txt
+          sha256sum acquisition/kenney_ui-pack-pixel-adventure.zip > acquisition/source.sha256
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-re-kenney-pixel-adventure-source
+          path: acquisition/
+          retention-days: 1
