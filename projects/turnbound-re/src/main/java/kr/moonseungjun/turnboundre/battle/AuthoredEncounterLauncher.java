@@ -71,6 +71,7 @@ public final class AuthoredEncounterLauncher {
         List<BattleParticipant> participants = new ArrayList<>();
         List<EntityParticipantBinding> bindings = new ArrayList<>();
         Map<String, String> characterIds = new LinkedHashMap<>();
+        Map<String, UUID> controllers = new LinkedHashMap<>();
         int ordinal = 0;
 
         for (PlayerSlot slot : playerSlots) {
@@ -81,6 +82,7 @@ public final class AuthoredEncounterLauncher {
             CharacterDefinition.Stats stats = ProgressionRules.stats(definition, slot.progress());
             participants.add(participant(slot.participantId(), BattleTeam.PLAYER, ordinal++, stats));
             bindings.add(new EntityParticipantBinding(slot.participantId(), slot.entityId()));
+            controllers.put(slot.participantId(), ownerPlayerId);
         }
 
         for (int index = 0; index < encounter.enemies().size(); index++) {
@@ -104,7 +106,7 @@ public final class AuthoredEncounterLauncher {
         BattleDefinitionContext definitionContext = new BattleDefinitionContext(registry, snapshot.hash(), characterIds);
         BattleRewardContext rewardContext = new BattleRewardContext(
                 ownerPlayerId, rewardTable, rewardSeed(battleSeed, ownerPlayerId, encounter.id()));
-        battles.register(battle, bindings, participants, definitionContext, rewardContext);
+        battles.register(battle, bindings, participants, definitionContext, rewardContext, controllers);
         battle.start();
         publishAuthoredEnemyIntents(battle, definitionContext);
         return new Launch(encounter, battle, definitionContext, rewardContext);
@@ -126,17 +128,26 @@ public final class AuthoredEncounterLauncher {
                 participantId, team, ordinal, stats.spd(), stats.hp(), stats.atk(), stats.def(), stats.poise());
     }
 
-    private static void publishAuthoredEnemyIntents(BattleInstance battle, BattleDefinitionContext context) {
+    public static void publishAuthoredEnemyIntents(BattleInstance battle, BattleDefinitionContext context) {
         for (String participantId : battle.actorOrder()) {
             if (battle.participant(participantId).team() != BattleTeam.ENEMY || !battle.combatState(participantId).alive()) continue;
-            CharacterDefinition enemy = requireCharacter(context.definitions(), context.characterId(participantId));
-            ActionDefinition basic = context.definitions().actions().get(enemy.basicAction());
-            if (basic == null) throw new IllegalStateException("enemy basic action missing from battle snapshot: " + enemy.basicAction());
-            EnemyIntent.Targeting targeting = "MULTI".equals(basic.targeting().shape())
-                    ? EnemyIntent.Targeting.ALL : EnemyIntent.Targeting.SINGLE;
-            battle.setEnemyIntent(participantId, new EnemyIntent(
-                    basic.id(), EnemyIntent.Type.ATTACK, targeting, EnemyIntent.Risk.NORMAL, true, null));
+            publishAuthoredEnemyIntent(battle, context, participantId);
         }
+    }
+
+    public static void publishAuthoredEnemyIntent(
+            BattleInstance battle,
+            BattleDefinitionContext context,
+            String participantId
+    ) {
+        if (battle.participant(participantId).team() != BattleTeam.ENEMY || !battle.combatState(participantId).alive()) return;
+        CharacterDefinition enemy = requireCharacter(context.definitions(), context.characterId(participantId));
+        ActionDefinition basic = context.definitions().actions().get(enemy.basicAction());
+        if (basic == null) throw new IllegalStateException("enemy basic action missing from battle snapshot: " + enemy.basicAction());
+        EnemyIntent.Targeting targeting = "MULTI".equals(basic.targeting().shape())
+                ? EnemyIntent.Targeting.ALL : EnemyIntent.Targeting.SINGLE;
+        battle.setEnemyIntent(participantId, new EnemyIntent(
+                basic.id(), EnemyIntent.Type.ATTACK, targeting, EnemyIntent.Risk.NORMAL, true, null));
     }
 
     private static long rewardSeed(long battleSeed, UUID ownerPlayerId, String encounterId) {

@@ -6,7 +6,6 @@ import kr.moonseungjun.turnboundre.battle.BattleCommandService;
 import kr.moonseungjun.turnboundre.battle.BattleDefinitionContext;
 import kr.moonseungjun.turnboundre.battle.BattleInstance;
 import kr.moonseungjun.turnboundre.battle.BattleManager;
-import kr.moonseungjun.turnboundre.battle.EntityParticipantBinding;
 import kr.moonseungjun.turnboundre.data.ActionDefinition;
 
 import java.util.List;
@@ -40,8 +39,8 @@ public final class BattleNetworkGateway {
         this.manager = manager;
     }
 
-    public Result submit(UUID senderEntityId, BattleNetworkPayloads.DecodedCommand incoming) {
-        if (senderEntityId == null) throw new IllegalArgumentException("senderEntityId must not be null");
+    public Result submit(UUID senderPlayerId, BattleNetworkPayloads.DecodedCommand incoming) {
+        if (senderPlayerId == null) throw new IllegalArgumentException("senderPlayerId must not be null");
         if (incoming == null) throw new IllegalArgumentException("incoming must not be null");
 
         Optional<BattleInstance> battleOpt = manager.battle(incoming.battleId());
@@ -49,11 +48,12 @@ public final class BattleNetworkGateway {
         BattleInstance battle = battleOpt.get();
         int eventStart = battle.eventLog().size();
 
-        Optional<EntityParticipantBinding> senderBinding = manager.binding(incoming.battleId(), incoming.actorId());
-        if (senderBinding.isEmpty() || !senderBinding.get().entityId().equals(senderEntityId)) {
-            return new Result(ResultCode.SENDER_NOT_BOUND, battle, eventStart, "sender_not_bound");
+        Optional<UUID> controller = manager.controller(incoming.battleId(), incoming.actorId());
+        if (controller.isEmpty() || !controller.get().equals(senderPlayerId)) {
+            // Keep the legacy result enum for wire/test compatibility; ownership is now controller-based.
+            return new Result(ResultCode.SENDER_NOT_BOUND, battle, eventStart, "sender_not_controller");
         }
-        if (!senderBinding.get().participantId().equals(incoming.actorId())) {
+        if (battle.participant(incoming.actorId()).team() != kr.moonseungjun.turnboundre.battle.BattleTeam.PLAYER) {
             return new Result(ResultCode.ACTOR_NOT_OWNED, battle, eventStart, "actor_not_owned");
         }
         if (incoming.expectedRevision() != battle.revision()) {
