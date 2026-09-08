@@ -36,7 +36,7 @@ jobs:
           replace(exterior, 'public boolean canBeCollidedWith() {', 'public boolean canBeCollidedWith(Entity other) {', expected=1)
 
           runtime = root / 'src/main/java/kr/moonseungjun/earthtostars/ship/runtime/minecraft/ShipRuntimeManager.java'
-          replace(runtime, 'displayClientMessage(', 'sendSystemMessage(', expected=8)
+          replace(runtime, 'displayClientMessage(', 'sendSystemMessage(', expected=10)
 
           supply = root / 'src/main/java/kr/moonseungjun/earthtostars/content/ShipSupplyItem.java'
           replace(supply, 'displayClientMessage(', 'sendSystemMessage(', expected=3)
