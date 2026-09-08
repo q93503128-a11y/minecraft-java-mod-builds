@@ -25,27 +25,31 @@ Earth 생존/채집
 
 # 1. M1 진행 상태
 
-현재 버전: `0.1.0-alpha.9`
+현재 버전: `0.1.0-alpha.10`
 
 현재 상태:
 
-`M1-A/B EARTH PREPARATION + FIRST LAUNCH CRAFT BACKEND BUILD VERIFIED / LIVE CLIENT PLAY NOT TESTED / M1-C LAUNCH READINESS + ATMOSPHERE NEXT`
+`M1-C LAUNCH READINESS + ATMOSPHERE BACKEND VERIFIED / FUEL-OXYGEN DISK LIFECYCLE VERIFIED / LIVE FLIGHT NOT TESTED / M1-D ORBITAL SALVAGE + CONTACT NEXT`
 
-완료된 자동 기술축:
+완료된 자동/서버 기술축:
 
 - 실제 Minecraft item registry 6종
 - Earth-only crafting chain
 - actual recipe dependency closure validator
 - Nether/End-independent launch recipe contract
 - player-facing launch craft assembly item
-- Earth-only deployment check
-- 3×3×3 deployment clearance check
-- duplicate-owned-ship rejection
-- successful deployment에서만 package 소비
-- authoritative ShipState creation
-- immediate ShipSavedData persistence boundary
-- server-issued pilot control lease
+- Earth-only deployment / 3×3×3 clearance / duplicate-owned-ship rejection
+- authoritative starter `ShipState` creation + persistence
 - starter craft canonical module loadout
+- server-authoritative propellant / oxygen reserves
+- propellant cell / oxygen cartridge 실제 함선 보급 상호작용 backend
+- power + propellant 원자적 추진 transaction
+- atmosphere-band별 추진제 소비
+- active crew 기반 산소 소비
+- life-support + fuel + oxygen orbit-readiness gate
+- insufficient readiness 시 Earth→Orbit transition 차단
+- propellant / oxygen SavedData persistence 및 구 save 기본값 migration
+- dedicated server save → shutdown → restart → fuel/oxygen restore 검증
 - production JAR packaging
 
 아직 실제 플레이 검증되지 않은 축:
@@ -53,12 +57,13 @@ Earth 생존/채집
 - crafting book/client recipe usability
 - item rendering/temporary icons in client
 - in-world launch package deployment
+- propellant / oxygen 실제 보급 조작감
 - actual pilot controls/camera feel
-- actual oxygen/fuel consumption
-- atmosphere transition presentation
-- live Earth→orbit flight
+- 실제 atmosphere ascent feel
+- readiness warning readability
+- live Earth→orbit→Earth flight
 - live salvage/contact loop
-- multiplayer pilot + crew session
+- multiplayer pilot + interior crew session
 
 ---
 
@@ -122,7 +127,7 @@ ID: `earth_to_stars:propellant_cell`
 
 역할:
 - 첫 발사 능력을 만드는 지구 기반 추진 재료
-- 후속 M1-C에서 실제 launch readiness / fuel quantity와 연결
+- alpha.10부터 실제 함선 propellant reserve에 연결
 
 현재 제작 1회 output ×2:
 - iron ingot ×1
@@ -130,19 +135,27 @@ ID: `earth_to_stars:propellant_cell`
 - paper ×1
 - copper ingot ×1
 
+보급 효과:
+- 셀 1개당 `+40` propellant
+- starter capacity `240`
+
 ## 3.4 압축 산소 카트리지
 
 ID: `earth_to_stars:oxygen_cartridge`
 
 역할:
 - 첫 진공 생존 자원
-- 후속 M1-C에서 실제 oxygen reserve와 연결
+- alpha.10부터 실제 함선 oxygen reserve에 연결
 
 현재 제작 1회 output ×2:
 - copper ingot ×1
 - iron ingot ×2
 - water bucket ×1
 - redstone ×1
+
+보급 효과:
+- 카트리지 1개당 `+40` oxygen
+- starter capacity `240`
 
 이 제작식은 초기 생존 단계의 압축된 abstraction이다. M1/M2에서 산업 설비가 생기면 같은 재료 흐름을 산소 생산/압축 기계로 승격할 수 있다.
 
@@ -167,7 +180,7 @@ ID: `earth_to_stars:launch_craft_kit`
 
 역할:
 - Earth preparation의 최종 제작물
-- 아이템을 실제 authoritative ShipState로 전환하는 플레이어-facing construction object
+- 아이템을 실제 authoritative ShipState로 전환하는 player-facing construction object
 
 현재 제작:
 - reinforced frame ×4
@@ -189,7 +202,8 @@ ID: `earth_to_stars:launch_craft_kit`
 4. authoritative ShipState를 만들 수 있는가.
 5. exterior proxy를 월드에 생성할 수 있는가.
 6. ShipSavedData에 기록할 수 있는가.
-7. pilot control lease를 서버가 발급할 수 있는가.
+7. central ShipSystemsRuntime을 만들고 저장할 수 있는가.
+8. pilot control lease를 서버가 발급할 수 있는가.
 
 성공 시에만 survival inventory에서 조립 패키지 1개를 소비한다.
 
@@ -230,13 +244,153 @@ turret
 
 - `turret`
 
+초기 central resources:
+
+- Power: `80 / 100`
+- Propellant: `80 / 240`
+- Oxygen: `80 / 240`
+
 첫 함선에 자동포탑까지 모두 지급하지 않는다.
 
 Earth Orbit의 첫 salvage/combat reward가 무기 hardpoint를 채우거나 강화하는 식으로, **첫 우주 원정이 실제 함선 능력을 바꾸는 성장**으로 연결되어야 한다.
 
 ---
 
-# 6. Nether / End 독립성
+# 6. M1-C Launch Readiness + Atmosphere
+
+## 6.1 자원 authority
+
+Propellant와 oxygen은 인벤토리 숫자가 아니라 `ShipId`에 연결된 `ShipSystemsRuntime`의 서버 정본이다.
+
+```text
+ShipId
+ └─ ShipSystemsRuntime
+     ├─ PowerGrid
+     ├─ AmmoPool
+     ├─ SensorGrid
+     ├─ PropellantTank
+     └─ OxygenTank
+```
+
+추진 중에는 Power와 Propellant를 하나의 authoritative transaction으로 검사한다.
+
+- 둘 다 충분하면 둘 다 소비한다.
+- 어느 한쪽이 부족하면 둘 다 소비하지 않고 추진 입력을 적용하지 않는다.
+- client는 연료 성공/실패를 결정하지 않는다.
+
+Oxygen은 연속 reserve라서 남은 양보다 소비량이 큰 마지막 tick에서도 정확히 0까지 drain된다.
+
+## 6.2 보급
+
+현재 M1 기술 UX:
+
+- `propellant_cell`을 접근 가능한 함선 근처에서 사용 → 함선 PropellantTank에 최대 +40
+- `oxygen_cartridge`를 접근 가능한 함선 근처에서 사용 → 함선 OxygenTank에 최대 +40
+- 탱크가 가득 찼거나 접근 가능한 함선이 없으면 아이템을 소비하지 않는다.
+
+이 방식은 M1 gameplay 연결용이다.
+
+Production에서는 함체 연료 포트/내부 보급 패널/적절한 애니메이션과 사운드로 승격할 수 있으며, 현재 임시 use-on-block interaction을 최종 UX로 고정하지 않는다.
+
+## 6.3 대기권 구간
+
+현재 M1-C gameplay bands:
+
+```text
+Dense Atmosphere : Y < 256
+Thin Atmosphere  : 256 ≤ Y < 384
+Upper Atmosphere : 384 ≤ Y < 512
+Earth Exit       : Y = 512
+Orbit             : orbital_space
+```
+
+기존 P0의 Y=300 transition은 기술 proof였고 production 방향이 아니다.
+
+alpha.10에서는 산/고지대가 사실상 우주 입구처럼 느껴지지 않게 transition boundary를 `Y=512`로 올리고, 그 사이를 실제 자원 소비 구간으로 만든다.
+
+Re-entry destination은 Earth `Y=504`다.
+
+정확한 고도/속도/소비율은 실제 조종감 검증 후 조정 가능한 gameplay tuning 값이다.
+
+## 6.4 추진제 소비
+
+활성 조종 입력의 최대 축 크기에 비례한다.
+
+현재 rate:
+
+- Dense: `0.020 / tick × activity`
+- Thin: `0.040 / tick × activity`
+- Upper: `0.070 / tick × activity`
+- Orbit: `0.015 / tick × activity`
+- Other: `0.025 / tick × activity`
+- Idle: `0`
+
+따라서 상층 대기권 돌파가 지상 기동보다 비싸며, 궤도 내 기동은 대기권 돌파보다 효율적이다.
+
+## 6.5 산소 소비
+
+산소는 실제 active crew 수에 비례한다.
+
+현재 active crew 정의:
+
+- 현재 pilot lease controller
+- 같은 ShipId의 linked interior에 실제 접속 중인 플레이어
+- UUID 기준 중복 제거
+
+현재 rate / crew:
+
+- Dense: `0`
+- Thin: `0.0025 / tick`
+- Upper: `0.010 / tick`
+- Orbit: `0.015 / tick`
+- Other: `0.005 / tick`
+
+빈 함선은 산소를 소비하지 않는다.
+
+이 구조는 멀티에서 플레이어 수에 따른 실제 생명유지 비용을 서버가 결정하게 하지만, 각 플레이어가 개별 산소 게이지 여러 개를 관리하도록 만들지는 않는다.
+
+## 6.6 Orbit readiness
+
+Earth→Orbit 진입에는 다음 세 조건이 모두 필요하다.
+
+- `life_support_mk1` 설치
+- Propellant ≥ `8`
+- Oxygen ≥ `20`
+
+조건을 만족하지 못한 상태로 Y=512 경계를 넘으려 하면:
+
+- dimension transition을 거부한다.
+- ship transform을 Y=511 이하로 유지한다.
+- 상승 velocity를 제거한다.
+- pilot에게 현재/필요 Propellant, Oxygen, Life Support 상태를 알린다.
+- 경고는 최대 100 tick에 한 번으로 제한한다.
+
+관리 노동을 늘리는 복잡한 발사 체크리스트 메뉴는 만들지 않는다.
+
+## 6.7 persistence / migration
+
+Propellant와 Oxygen은 Power/Ammo와 함께 `ShipSystemsSavedData`에 저장한다.
+
+alpha.10 이전 저장에는 두 필드가 없으므로 codec default를 starter initial reserve인 `80 / 80`으로 둔다.
+
+따라서 기존 P0/alpha.9 save가 새 필드 부재 때문에 로드 불가 상태가 되거나 fuel=0/oxygen=0으로 갑자기 고립되지 않는다.
+
+alpha.10 CI run `34192830690`에서 real dedicated server:
+
+```text
+first boot
+→ propellant 51.25 / oxygen 66.5 저장
+→ 정상 server shutdown
+→ 동일 world directory 재부팅
+→ same ShipId systems restore
+→ propellant 51.25 / oxygen 66.5 복원
+```
+
+을 검증했다.
+
+---
+
+# 7. Nether / End 독립성
 
 P0-H의 canonical progression graph뿐 아니라 실제 M1 launch recipe closure도 별도로 검사한다.
 
@@ -252,11 +406,11 @@ Nether/End sidegrade는 이후 추가 가능하지만 첫 우주 진입의 유�
 
 ---
 
-# 7. 현재 visual boundary
+# 8. 현재 visual boundary
 
-alpha.9의 아이템 모델은 **클라이언트 등록/가시성 기술용 placeholder**다.
+alpha.10의 아이템 모델, ArmorStand exterior, 기술 interior, 빈 orbital space, command 조작면은 **기술/게임플레이 연결용 placeholder**다.
 
-현재 vanilla texture proxy를 production art로 유지하지 않는다.
+현재 vanilla texture proxy나 임시 텍스트를 production art/UX로 유지하지 않는다.
 
 Production 전환 시 `03_UI_ART_REFERENCE_GATE.md`와 `THIRD_PARTY_ASSETS.md`를 따른다.
 
@@ -267,40 +421,78 @@ Production 전환 시 `03_UI_ART_REFERENCE_GATE.md`와 `THIRD_PARTY_ASSETS.md`�
 - cockpit
 - thruster/engine
 - life-support module
-- fuel/oxygen containers
+- fuel/oxygen ports/containers
 - item icons
+- atmosphere/re-entry VFX
 - launch VFX/sound
+- readiness feedback
 
 외부 reference/asset 검토 없이 AI 즉흥 SF 디자인으로 확정하지 않는다.
 
 ---
 
-# 8. M1-C — 다음 구현 단위
+# 9. M1-D — 다음 구현 단위
 
-다음 묶음은 **Launch Readiness + Atmosphere**다.
+다음 묶음은 **First Orbital Salvage + Contact + Return Reward**다.
 
 목표:
 
-- propellant cell을 실제 ship fuel/launch reserve와 연결
-- oxygen cartridge/life support를 실제 survival reserve와 연결
-- launch craft가 준비 부족 상태에서 단순히 비행 가능한 문제 제거
-- Earth atmosphere 구간 정의
-- 고도 상승에 따라 산소/대기/추진 요구가 달라지는 최소 gameplay
-- Earth→Orbit transition에 fuel/oxygen capability gate 연결
-- 플레이어에게 관리 노동이 되지 않는 간단한 readiness feedback
+- orbital_space에 첫 의미 있는 gameplay target 배치
+- first salvage contact
+- first hostile contact
+- starter craft의 빈 turret hardpoint를 채우거나 다음 능력을 여는 첫 회수 보상
+- salvage를 서버 권한 cargo/reward로 처리
+- Earth return이 단순 귀환이 아니라 첫 함선 개수조로 연결
+- 같은 자원을 반복 채굴하는 것이 아니라 `우주에 갔기 때문에 새 행동이 열린다`는 경험 확보
 
-하지 않는 것:
+M1-D에서 하지 않는 것:
 
-- 연료 종류 10개 추가
-- 산소 압력 숫자 여러 개를 항상 직접 관리하게 하기
-- 장비 메뉴/게이지를 먼저 대량 추가
-- production HUD를 reference 없이 즉흥 제작
+- 여러 행성 콘텐츠를 미리 벌리기
+- 우주 광물 10종 추가
+- production 우주선/UI를 placeholder 디자인으로 확정
+- 궤도에 의미 없는 랜덤 상자만 뿌리기
 
-M1-C 이후 M1-D에서 첫 orbital salvage/contact와 Earth return reward를 연결한다.
+M1-D가 붙으면 `Earth 준비 → 상승 → Orbit → 회수/위험 → Earth 귀환 → 함선 변화` 첫 폐쇄 루프가 형성된다.
 
 ---
 
-# 9. M1 전체 종료 조건
+# 10. Verification — alpha.10
+
+검증 기준 source commit: `34da5747f400d5815e751085afae1fd2fb7a066e`
+
+GitHub Actions `Build earth-to-stars` run `34192830690`:
+
+- P0-H progression guard: `PASS`
+- M1 actual launch recipe closure: `PASS`
+- M1 Nether/End launch independence: `PASS`
+- launch readiness / atmosphere JUnit: `PASS`
+- Power + Propellant atomic propulsion JUnit: `PASS`
+- Oxygen continuous drain JUnit: `PASS`
+- Fuel/Oxygen snapshot restore JUnit: `PASS`
+- `clean test build`: `PASS`
+- production JAR verify: `PASS`
+- dedicated server first boot/save: `PASS`
+- dedicated server shutdown: `PASS`
+- same-world second boot: `PASS`
+- Propellant 51.25 restore: `PASS`
+- Oxygen 66.5 restore: `PASS`
+
+JAR SHA-256:
+
+`aa3c01597544dae55ec1e2309c3c4538b61185bb6022a266cb93374d5db5a8f3`
+
+Still NOT TESTED:
+
+- live fuel/oxygen supply interaction
+- actual atmosphere ascent feel
+- actual readiness boundary/player feedback
+- live Earth→Orbit→Earth flight
+- client camera/interpolation
+- multiplayer pilot + interior crew oxygen consumption
+
+---
+
+# 11. M1 전체 종료 조건
 
 M1은 아래 경험이 실제 Minecraft에서 한 사이클로 동작할 때 완료다.
 
