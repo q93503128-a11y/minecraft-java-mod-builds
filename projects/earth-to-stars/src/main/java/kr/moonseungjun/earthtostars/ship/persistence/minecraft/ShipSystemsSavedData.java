@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import kr.moonseungjun.earthtostars.EarthToStars;
 import kr.moonseungjun.earthtostars.ship.domain.ShipId;
 import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsSnapshot;
+import kr.moonseungjun.earthtostars.ship.systems.ShipSystemsTuning;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -16,10 +17,17 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ShipSystemsSavedData extends SavedData {
-    private record PersistedSystems(double powerStored, Map<String, Integer> ammoAmounts) {
+    private record PersistedSystems(
+            double powerStored,
+            Map<String, Integer> ammoAmounts,
+            double propellantStored,
+            double oxygenStored
+    ) {
         private static final Codec<PersistedSystems> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.DOUBLE.fieldOf("power_stored").forGetter(PersistedSystems::powerStored),
-                Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf("ammo").forGetter(PersistedSystems::ammoAmounts)
+                Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf("ammo").forGetter(PersistedSystems::ammoAmounts),
+                Codec.DOUBLE.optionalFieldOf("propellant_stored", ShipSystemsTuning.P0.initialPropellant()).forGetter(PersistedSystems::propellantStored),
+                Codec.DOUBLE.optionalFieldOf("oxygen_stored", ShipSystemsTuning.P0.initialOxygen()).forGetter(PersistedSystems::oxygenStored)
         ).apply(instance, PersistedSystems::new));
     }
 
@@ -50,7 +58,12 @@ public final class ShipSystemsSavedData extends SavedData {
     }
 
     public synchronized void put(ShipSystemsSnapshot snapshot) {
-        PersistedSystems next = new PersistedSystems(snapshot.powerStored(), snapshot.ammoAmounts());
+        PersistedSystems next = new PersistedSystems(
+                snapshot.powerStored(),
+                snapshot.ammoAmounts(),
+                snapshot.propellantStored(),
+                snapshot.oxygenStored()
+        );
         PersistedSystems previous = entries.put(snapshot.shipId().toString(), next);
         if (!next.equals(previous)) {
             setDirty();
@@ -80,7 +93,13 @@ public final class ShipSystemsSavedData extends SavedData {
     private static ShipSystemsSnapshot decode(String encodedShipId, PersistedSystems persisted) {
         try {
             ShipId shipId = new ShipId(UUID.fromString(encodedShipId));
-            return new ShipSystemsSnapshot(shipId, persisted.powerStored(), persisted.ammoAmounts());
+            return new ShipSystemsSnapshot(
+                    shipId,
+                    persisted.powerStored(),
+                    persisted.ammoAmounts(),
+                    persisted.propellantStored(),
+                    persisted.oxygenStored()
+            );
         } catch (RuntimeException corrupt) {
             throw new IllegalStateException("invalid persisted ship systems for " + encodedShipId, corrupt);
         }
