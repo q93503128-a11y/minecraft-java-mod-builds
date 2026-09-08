@@ -1,6 +1,7 @@
 package kr.moonseungjun.earthtostars;
 
 import com.mojang.logging.LogUtils;
+import kr.moonseungjun.earthtostars.content.EarthToStarsEntities;
 import kr.moonseungjun.earthtostars.content.EarthToStarsItems;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -14,6 +15,7 @@ public final class EarthToStars {
 
     public EarthToStars(IEventBus modEventBus) {
         EarthToStarsItems.register(modEventBus);
+        EarthToStarsEntities.register(modEventBus);
         LOGGER.info("EARTH TO STARS {} orbital recovery and first-contact systems loaded", VERSION);
     }
 }
