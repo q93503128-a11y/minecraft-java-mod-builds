@@ -17,17 +17,17 @@ final class BossPresentationClientResourcePathTest {
             ).orElseThrow()
         );
         assertEquals(
-            ContentId.rift("geo/boss/region_01.geo.json"),
+            ContentId.rift("geckolib/models/entity/region_01_boss.geo.json"),
             BossPresentationClientResourcePath.resolve(
                 BossPresentationAssetManifest.Kind.MODEL,
-                ContentId.rift("geo/boss/region_01")
+                ContentId.rift("geckolib/models/entity/region_01_boss")
             ).orElseThrow()
         );
         assertEquals(
-            ContentId.rift("animations/boss/slam_active.animation.json"),
+            ContentId.rift("geckolib/animations/entity/region_01_boss.animation.json"),
             BossPresentationClientResourcePath.resolve(
                 BossPresentationAssetManifest.Kind.ANIMATION,
-                ContentId.rift("animations/boss/slam_active")
+                ContentId.rift("geckolib/animations/entity/region_01_boss")
             ).orElseThrow()
         );
         assertEquals(
@@ -47,14 +47,18 @@ final class BossPresentationClientResourcePathTest {
     }
 
     @Test
-    void rejectsCrossKindOrUnscopedPathsInsteadOfGuessingFallbacks() {
+    void rejectsLegacyOrCrossKindPathsInsteadOfGuessingFallbacks() {
         assertTrue(BossPresentationClientResourcePath.resolve(
-            BossPresentationAssetManifest.Kind.SOUND,
-            ContentId.rift("animations/boss/slam_active")
+            BossPresentationAssetManifest.Kind.MODEL,
+            ContentId.rift("geo/boss/region_01")
         ).isEmpty());
         assertTrue(BossPresentationClientResourcePath.resolve(
             BossPresentationAssetManifest.Kind.ANIMATION,
-            ContentId.rift("boss/slam_active")
+            ContentId.rift("animations/boss/slam_active")
+        ).isEmpty());
+        assertTrue(BossPresentationClientResourcePath.resolve(
+            BossPresentationAssetManifest.Kind.SOUND,
+            ContentId.rift("geckolib/animations/entity/region_01_boss")
         ).isEmpty());
         assertTrue(BossPresentationClientResourcePath.resolve(
             BossPresentationAssetManifest.Kind.MODEL,
@@ -65,10 +69,17 @@ final class BossPresentationClientResourcePathTest {
     @Test
     void doesNotDuplicateAlreadyExplicitPhysicalSuffixes() {
         assertEquals(
-            ContentId.rift("models/boss/region_01.json"),
+            ContentId.rift("geckolib/models/entity/region_01_boss.geo.json"),
             BossPresentationClientResourcePath.resolve(
                 BossPresentationAssetManifest.Kind.MODEL,
-                ContentId.rift("models/boss/region_01.json")
+                ContentId.rift("geckolib/models/entity/region_01_boss.geo.json")
+            ).orElseThrow()
+        );
+        assertEquals(
+            ContentId.rift("geckolib/animations/entity/region_01_boss.animation.json"),
+            BossPresentationClientResourcePath.resolve(
+                BossPresentationAssetManifest.Kind.ANIMATION,
+                ContentId.rift("geckolib/animations/entity/region_01_boss.animation.json")
             ).orElseThrow()
         );
         assertEquals(

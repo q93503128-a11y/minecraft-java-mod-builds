@@ -11,6 +11,10 @@ import java.util.Optional;
  * <p>The asset manifest stores stable selected resource IDs without loader/library file suffixes. This policy is the
  * only place that turns those IDs into exact CLIENT_RESOURCES paths. It intentionally does not touch server datapack
  * resources and does not invent a fallback when a kind/path combination is invalid.</p>
+ *
+ * <p>GeckoLib 5 resources use {@code geckolib/models/} and {@code geckolib/animations/}. The legacy GeckoLib 4-style
+ * {@code geo/} root is intentionally rejected so a path that can never be consumed by the selected 26.2 runtime does
+ * not pass physical validation merely because a file happens to exist there.</p>
  */
 public final class BossPresentationClientResourcePath {
     private BossPresentationClientResourcePath() { }
@@ -35,13 +39,13 @@ public final class BossPresentationClientResourcePath {
     }
 
     private static String modelPath(String path) {
+        if (path.startsWith("geckolib/models/")) return appendIfMissing(path, ".geo.json");
         if (path.startsWith("models/")) return appendIfMissing(path, ".json");
-        if (path.startsWith("geo/")) return appendIfMissing(path, ".geo.json");
         return null;
     }
 
     private static String animationPath(String path) {
-        if (!path.startsWith("animations/")) return null;
+        if (!path.startsWith("geckolib/animations/")) return null;
         return appendIfMissing(path, ".animation.json");
     }
 
