@@ -3,20 +3,20 @@
 - Slug: `earth-to-stars`
 - Mod ID: `earth_to_stars`
 - Namespace: `earth_to_stars`
-- Mod version: `0.1.0-alpha.5`
+- Mod version: `0.1.0-alpha.6`
 - Minecraft: `26.2`
 - Java: `25`
 - Loader: `NeoForge`
 - Loader version: `26.2.0.38-beta`
 - Gradle: `9.2.1`
 - Build plugin: `ModDevGradle 2.0.143`
-- Final JAR: `earth_to_stars-0.1.0-alpha.5.jar`
+- Final JAR: `earth_to_stars-0.1.0-alpha.6.jar`
 - Existing-world compatibility: before first playable alpha, save schema may change deliberately; from first playable alpha onward registry IDs, save roots, module IDs and migration rules become compatibility contracts.
 - Required dependencies: Minecraft, NeoForge
 - Optional external mods/libraries: none approved as a hard runtime dependency. Any addition requires current 26.2 compatibility, maintenance, license, multiplayer and performance review.
 - Forbidden bundled dependencies: Minecraft original files, NeoForge distribution files, external mod JARs, and models/textures/audio/UI assets without redistribution permission.
 - Datagen task: `runData` (`NOT RUN` at current gate)
-- GameTest task: not yet registered; save/reload disk integration remains a later batched gate
+- GameTest task: not yet registered; save/reload disk integration is the next batched lifecycle gate
 - Server smoke-test task: `runServer` (`NOT RUN` at current gate)
 - Client smoke-test task: `runClient` (`NOT RUN` at current gate)
 
@@ -88,30 +88,31 @@ Clients provide input, rendering, animation, UI and safe prediction only. A clie
 
 ## Current implementation baseline
 
-Latest verified implementation/CI commit: `85e4003223839dd3fe24e87e8fd8382a1931e693`
+Latest verified implementation/CI commit: `8e65d142f2a4dc3edfd7ef30116ad0929d4bc622`
 
-GitHub Actions `Build earth-to-stars` run `34186350799` verified:
+GitHub Actions `Build earth-to-stars` run `34187867167` verified:
 
 - M0 bootstrap regression
 - P0-A authoritative ship kernel / persistence-codec regression
 - P0-B movement transform / control lease regression
 - P0-C Earth↔orbit transition-policy regression
 - P0-D stable linked-interior allocation/layout regression
-- P0-E representative turret state-machine JUnit
-- `OFF / MANUAL / AUTO_DEFENSE`
-- exclusive manual turret lease
-- session/sequence replay rejection
-- ammo consumption / fire cooldown / legal firing arc
-- shared `ShipSensorGrid` hostile selection and neutral rejection
-- Minecraft 26.2 turret adapter compile
-- server-side P0 logical projectile path compile
-- version-aware CI report/artifact naming
+- P0-E representative turret state-machine regression
+- P0-F central `ShipPowerGrid`, `ShipAmmoPool`, `ShipSensorGrid`
+- priority reserve across ESSENTIAL / PROPULSION / WEAPONS / UTILITY
+- monotonic once-per-tick power generation
+- multiple turret runtimes consuming one ship ammo pool
+- failed weapon resource transaction consuming neither power nor ammo
+- propulsion draw using central ship power
+- stale sensor-contact expiry
+- interior-linked crew resolving the same `ShipId` system authority
+- Minecraft 26.2 central systems coordinator compile
 - `clean test build`
 - production JAR verifier
 
-Verified JAR SHA-256: `53499a1cf6f14bd21cfefc8cdd095b2e2999c322c20c1be8c660d005efd48835`
+Verified JAR SHA-256: `527f02b6c3a70337c25a8aeebda3c0d2059818fc9e49efc77ab23bba016a07e6`
 
-The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret control surface, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
+The P0-B/P0-C exterior remains a temporary vanilla `ArmorStand` proxy. `orbital_space`, `ship_interiors`, the generated interior room, command-driven turret/system control surfaces, and logical projectile are technical P0 environments only. None is a final ship model, interior layout, cockpit/UI, weapon model, VFX, sound, projectile presentation, space presentation, or world-design decision.
 
 ## Linked interior architecture
 
@@ -119,9 +120,9 @@ P0-D uses one stable `earth_to_stars:ship_interiors` server space rather than cr
 
 A player inside a ship interior remains in that stable interior coordinate space while the exterior ship moves or crosses Earth↔orbit. The interior is linked by `ShipId`; interior crew therefore do not need to inherit every exterior translation/rotation or be teleported during every exterior layer transition.
 
-## P0-E weapon architecture
+## Weapon architecture
 
-The representative turret is one server-owned `TurretRuntime` per current P0 ship weapon path. It proves that manual and automatic control share the same ammo/cooldown/arc state instead of becoming two unrelated weapon implementations.
+The representative turret uses the same server-owned mode/cooldown/arc logic for manual and automatic operation.
 
 ### Manual
 
@@ -131,7 +132,7 @@ WEAPON_CONTROL permission
 → exclusive turret lease
 → server reads authoritative player aim request
 → session/sequence validation
-→ legal arc / ammo / cooldown validation
+→ legal arc / shared power / shared ammo / cooldown validation
 → server creates logical shot
 ```
 
@@ -140,36 +141,83 @@ The current command adapter is only a P0 control surface. Production manual cont
 ### Automatic
 
 ```text
-shared ShipSensorGrid
+central ShipSensorGrid
 → interval contact acquisition
 → hostile filter
 → firing-arc/range eligibility
 → AUTO_DEFENSE fire decision
-→ same authoritative ammo/cooldown state
+→ same authoritative PowerGrid / AmmoPool / cooldown state
 ```
 
-The Minecraft P0 adapter refreshes one ship contact cache every 10 ticks with a per-ShipId phase offset. It does **not** make each turret perform a broad world query every tick. P0 hostile classification currently recognizes Minecraft `Enemy` entities only; faction/ship/friendly-fire policy is a later production system.
+P0 hostile classification currently recognizes Minecraft `Enemy` entities only; faction/ship/friendly-fire policy is a later production system.
 
 ### Projectile boundary
 
 P0 shots are server-side logical moving points with lifetime, velocity, collision envelope and authoritative damage. They intentionally do not yet provide production projectile entity rendering, tracer VFX, muzzle flash, impact effects, animation, sound or camera feedback.
 
-Ammo is currently local to the P0 turret runtime. P0-F must move it into the central ship ammo/logistics authority so multiple weapons cannot create independent ammunition economies.
+## P0-F central ship systems architecture
+
+P0-F removes the representative turret's private ammunition economy and introduces one central systems authority per live `ShipId`.
+
+```text
+ShipId
+ └─ ShipSystemsRuntime
+     ├─ ShipPowerGrid
+     ├─ ShipAmmoPool
+     └─ ShipSensorGrid
+          ↑
+   propulsion / sensors / turret(s)
+```
+
+### PowerGrid
+
+Current P0 power policy:
+
+- finite storage
+- deterministic generation
+- server-tick monotonicity
+- input-scaled propulsion draw
+- sensor acquisition draw
+- weapon shot draw
+- priority reserves:
+  - `ESSENTIAL`: may use emergency reserve to zero
+  - `PROPULSION`: preserves 10% capacity
+  - `WEAPONS`: preserves 25%
+  - `UTILITY`: preserves 40%
+
+This policy prevents convenience or weapon systems from draining the last energy required by more important systems. The exact percentages are P0 tuning, not final balance.
+
+### AmmoPool
+
+Ammo is keyed by ammo type and owned once per ship system. Two weapon runtimes firing from one `ShipId` reduce the same authoritative ammo count. A rejected shot does not partially consume ammo or power.
+
+### SensorGrid
+
+One cache is shared by weapons. Contact acquisition is interval-based and staggered by `ShipId`, and stale contacts expire. Per-turret broad world scanning remains forbidden.
+
+### Interior crew access
+
+A player inside a linked interior resolves the authoritative ship through `InteriorSavedData → ShipId → ShipRepository`, so interior stations can later operate the same ship systems without depending on proximity to the exterior entity.
+
+### Current limitation
+
+**Power and ammo runtime quantities are not persisted across a real server restart yet.** This is intentionally not called complete. P0-G must version and persist central system state before restart/multiplayer acceptance can pass.
 
 ## Verification boundary
 
-Verified by the alpha.5 automated gate:
+Verified by the alpha.6 automated gate:
 
 - source/API compilation against Minecraft 26.2 / NeoForge 26.2.0.38-beta
-- P0-A/B/C/D regression JUnit
-- pure P0-E turret state/lease/ammo/cooldown/arc/target-selection tests
+- P0-A/B/C/D/E regression JUnit
+- central power/ammo/sensor pure-Java tests
+- resource priority and transaction rules
+- central systems Minecraft coordinator compilation
 - production JAR structure
-- Minecraft turret adapter compilation
-- version-aware P0-E build report/artifact generation
 
 Still **NOT RUN / NOT TESTED**:
 
-- actual disk save → dedicated-server restart → same ship/interior restore
+- persistence of current PowerGrid / AmmoPool quantities across server restart
+- actual disk save → dedicated-server restart → same ship/interior/systems restore
 - GameTest create/save/reload/restore integration
 - dedicated server custom-dimension boot/smoke
 - client smoke
@@ -189,6 +237,6 @@ No item in the second list is called complete merely because its adapter compile
 
 ## Current phase
 
-`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-F NEXT`
+`M0 VERIFIED / P0-A SAVEDDATA ADAPTER BUILD VERIFIED / P0-B BACKEND BUILD VERIFIED / P0-C TRANSITION BACKEND BUILD VERIFIED / P0-D LINKED INTERIOR BACKEND BUILD VERIFIED / P0-E TURRET BACKEND BUILD VERIFIED / P0-F CENTRAL SYSTEMS BACKEND BUILD VERIFIED / LIVE INTEGRATION DEFERRED / P0-G LIFECYCLE GATE NEXT`
 
-The next production unit is **P0-F Central Ship Systems**. It promotes power, ammunition and sensors into ship-level authoritative services, removes P0-E's local-ammo limitation, ensures many modules/turrets share calculations rather than each simulating the world independently, and adds a synthetic scale test before the larger P0-G live Minecraft/multiplayer lifecycle gate.
+The next production unit is **P0-G Lifecycle / Multiplayer Gate**. Before asking for a live multiplayer test, it first closes central-system persistence and automated/dedicated-server lifecycle gaps, then validates Earth↔orbit, interior, pilot/gunner control, shared ammo/power and disconnect/restart behavior as one meaningful integration gate.
